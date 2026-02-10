@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	_ "github.com/marcboeker/go-duckdb"
+	_ "github.com/duckdb/duckdb-go/v2"
 
 	"duck-demo/policy"
 )
@@ -59,12 +59,7 @@ func setupEngine(t *testing.T) *SecureEngine {
 	}
 	t.Cleanup(func() { db.Close() })
 
-	// Install substrait extension
-	if _, err := db.Exec("INSTALL substrait; LOAD substrait;"); err != nil {
-		t.Fatalf("install substrait: %v", err)
-	}
-
-	// Register parquet as a table
+	// Register parquet as a table (no substrait extension needed)
 	if _, err := db.Exec("CREATE TABLE titanic AS SELECT * FROM '../titanic.parquet'"); err != nil {
 		t.Fatalf("create table: %v", err)
 	}
@@ -95,7 +90,7 @@ func TestFirstClassAnalystOnlySeesClass1(t *testing.T) {
 	eng := setupEngine(t)
 	ctx := context.Background()
 
-	rows, err := eng.Query(ctx, "first_class_analyst", "SELECT \"Pclass\" FROM titanic")
+	rows, err := eng.Query(ctx, "first_class_analyst", `SELECT "Pclass" FROM titanic`)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -122,7 +117,7 @@ func TestSurvivorResearcherOnlySeesSurvivors(t *testing.T) {
 	eng := setupEngine(t)
 	ctx := context.Background()
 
-	rows, err := eng.Query(ctx, "survivor_researcher", "SELECT \"Survived\" FROM titanic")
+	rows, err := eng.Query(ctx, "survivor_researcher", `SELECT "Survived" FROM titanic`)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -174,7 +169,7 @@ func TestModifiedPlanExecutesCorrectly(t *testing.T) {
 	ctx := context.Background()
 
 	// First class analyst should get valid results with correct schema
-	rows, err := eng.Query(ctx, "first_class_analyst", "SELECT \"PassengerId\", \"Name\", \"Pclass\" FROM titanic LIMIT 5")
+	rows, err := eng.Query(ctx, "first_class_analyst", `SELECT "PassengerId", "Name", "Pclass" FROM titanic LIMIT 5`)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

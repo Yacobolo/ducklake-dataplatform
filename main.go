@@ -8,8 +8,9 @@ import (
 	"os"
 	"strings"
 
-	_ "github.com/marcboeker/go-duckdb"
+	_ "github.com/duckdb/duckdb-go/v2"
 
+	"duck-demo/config"
 	"duck-demo/engine"
 	"duck-demo/policy"
 )
@@ -78,20 +79,38 @@ func printRows(rows *sql.Rows) (int, error) {
 }
 
 func main() {
+	ctx := context.Background()
+
+	// Load .env file (if present)
+	if err := config.LoadDotEnv(".env"); err != nil {
+		log.Printf("warning: could not load .env: %v", err)
+	}
+
 	db, err := sql.Open("duckdb", "")
 	if err != nil {
 		log.Fatalf("failed to open duckdb: %v", err)
 	}
 	defer db.Close()
 
-	// Install substrait extension
-	if _, err := db.Exec("INSTALL substrait; LOAD substrait;"); err != nil {
-		log.Fatalf("failed to load substrait: %v", err)
-	}
-
-	// Register parquet as a table
-	if _, err := db.Exec("CREATE TABLE titanic AS SELECT * FROM 'titanic.parquet'"); err != nil {
-		log.Fatalf("failed to create table: %v", err)
+	// Try to set up DuckLake with Hetzner S3
+	cfg, cfgErr := config.LoadFromEnv()
+	if cfgErr == nil {
+		fmt.Println("Setting up DuckLake with Hetzner S3...")
+		if err := engine.SetupDuckLake(ctx, db, cfg); err != nil {
+			log.Printf("DuckLake setup failed, falling back to local parquet: %v", err)
+			// Fallback: load from local parquet
+			if _, err := db.Exec("CREATE TABLE titanic AS SELECT * FROM 'titanic.parquet'"); err != nil {
+				log.Fatalf("failed to create table: %v", err)
+			}
+		} else {
+			fmt.Println("DuckLake ready (data on Hetzner S3, metadata in SQLite)")
+		}
+	} else {
+		fmt.Println("No S3 config found, using local parquet file...")
+		// Fallback: load from local parquet
+		if _, err := db.Exec("CREATE TABLE titanic AS SELECT * FROM 'titanic.parquet'"); err != nil {
+			log.Fatalf("failed to create table: %v", err)
+		}
 	}
 
 	eng := engine.NewSecureEngine(db, buildPolicyStore())
@@ -104,7 +123,6 @@ func main() {
 		roles = os.Args[1:]
 	}
 
-	ctx := context.Background()
 	for _, role := range roles {
 		fmt.Printf("\n=== Role: %s ===\n", role)
 		fmt.Printf("Query: %s\n\n", query)
