@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 
-	"duck-demo/domain"
+	"duck-demo/internal/domain"
 )
 
 type AuditService struct {

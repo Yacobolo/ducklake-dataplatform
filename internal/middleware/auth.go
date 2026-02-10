@@ -8,12 +8,16 @@ import (
 	"net/http"
 	"strings"
 
-	dbstore "duck-demo/db/catalog"
-
 	"github.com/golang-jwt/jwt/v5"
 )
 
 type principalKey struct{}
+
+// APIKeyLookup abstracts the API key verification store.
+type APIKeyLookup interface {
+	// LookupPrincipalByAPIKeyHash returns the principal name for a valid, non-expired API key hash.
+	LookupPrincipalByAPIKeyHash(ctx context.Context, keyHash string) (string, error)
+}
 
 // WithPrincipal stores the principal name in the context.
 func WithPrincipal(ctx context.Context, name string) context.Context {
@@ -27,7 +31,7 @@ func PrincipalFromContext(ctx context.Context) (string, bool) {
 }
 
 // AuthMiddleware tries JWT first, then API key. Returns 401 if both fail.
-func AuthMiddleware(jwtSecret []byte, apiKeyQueries *dbstore.Queries) func(http.Handler) http.Handler {
+func AuthMiddleware(jwtSecret []byte, apiKeys APIKeyLookup) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Try JWT Bearer token
@@ -49,13 +53,13 @@ func AuthMiddleware(jwtSecret []byte, apiKeyQueries *dbstore.Queries) func(http.
 			}
 
 			// Try API Key
-			if apiKey := r.Header.Get("X-API-Key"); apiKey != "" && apiKeyQueries != nil {
+			if apiKey := r.Header.Get("X-API-Key"); apiKey != "" && apiKeys != nil {
 				hash := sha256.Sum256([]byte(apiKey))
 				hashStr := hex.EncodeToString(hash[:])
 
-				row, err := apiKeyQueries.GetAPIKeyByHash(r.Context(), hashStr)
+				principalName, err := apiKeys.LookupPrincipalByAPIKeyHash(r.Context(), hashStr)
 				if err == nil {
-					ctx := WithPrincipal(r.Context(), row.PrincipalName)
+					ctx := WithPrincipal(r.Context(), principalName)
 					next.ServeHTTP(w, r.WithContext(ctx))
 					return
 				}

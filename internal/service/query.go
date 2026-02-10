@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"duck-demo/domain"
-	"duck-demo/engine"
+	"duck-demo/internal/domain"
+	"duck-demo/internal/engine"
 )
 
 // QueryResult holds the structured output of a SQL query.

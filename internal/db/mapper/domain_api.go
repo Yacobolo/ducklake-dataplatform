@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"duck-demo/domain"
+	"duck-demo/internal/domain"
 )
 
 // HTTPStatusFromDomainError maps domain errors to HTTP status codes.

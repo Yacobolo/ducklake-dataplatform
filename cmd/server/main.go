@@ -12,20 +12,20 @@ import (
 	chimw "github.com/go-chi/chi/v5/middleware"
 	_ "github.com/mattn/go-sqlite3"
 
-	"duck-demo/api"
-	"duck-demo/catalog"
-	"duck-demo/config"
-	dbstore "duck-demo/db/catalog"
-	"duck-demo/engine"
+	"duck-demo/internal/api"
+	"duck-demo/internal/config"
+	internaldb "duck-demo/internal/db"
+	dbstore "duck-demo/internal/db/dbstore"
+	"duck-demo/internal/db/repository"
+	"duck-demo/internal/domain"
+	"duck-demo/internal/engine"
 	"duck-demo/internal/middleware"
-	"duck-demo/internal/repository"
 	"duck-demo/internal/service"
 )
 
 // seedCatalog populates the metastore with demo principals, groups, grants,
 // row filters, and column masks. Idempotent — checks if data already exists.
-func seedCatalog(ctx context.Context, cat *catalog.CatalogService) error {
-	q := cat.Queries()
+func seedCatalog(ctx context.Context, cat *service.AuthorizationService, q *dbstore.Queries) error {
 
 	// Check if already seeded
 	principals, _ := q.ListPrincipals(ctx)
@@ -118,8 +118,8 @@ func seedCatalog(ctx context.Context, cat *catalog.CatalogService) error {
 	// --- Privilege grants ---
 	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		PrincipalID: adminsGroup.ID, PrincipalType: "group",
-		SecurableType: catalog.SecurableCatalog, SecurableID: catalog.CatalogID,
-		Privilege: catalog.PrivAllPrivileges,
+		SecurableType: domain.SecurableCatalog, SecurableID: domain.CatalogID,
+		Privilege: domain.PrivAllPrivileges,
 	})
 	if err != nil {
 		return fmt.Errorf("grant admins ALL_PRIVILEGES: %w", err)
@@ -127,16 +127,16 @@ func seedCatalog(ctx context.Context, cat *catalog.CatalogService) error {
 
 	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		PrincipalID: firstClassGroup.ID, PrincipalType: "group",
-		SecurableType: catalog.SecurableSchema, SecurableID: schemaID,
-		Privilege: catalog.PrivUsage,
+		SecurableType: domain.SecurableSchema, SecurableID: schemaID,
+		Privilege: domain.PrivUsage,
 	})
 	if err != nil {
 		return fmt.Errorf("grant first_class USAGE: %w", err)
 	}
 	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		PrincipalID: firstClassGroup.ID, PrincipalType: "group",
-		SecurableType: catalog.SecurableTable, SecurableID: titanicID,
-		Privilege: catalog.PrivSelect,
+		SecurableType: domain.SecurableTable, SecurableID: titanicID,
+		Privilege: domain.PrivSelect,
 	})
 	if err != nil {
 		return fmt.Errorf("grant first_class SELECT: %w", err)
@@ -144,16 +144,16 @@ func seedCatalog(ctx context.Context, cat *catalog.CatalogService) error {
 
 	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		PrincipalID: survivorGroup.ID, PrincipalType: "group",
-		SecurableType: catalog.SecurableSchema, SecurableID: schemaID,
-		Privilege: catalog.PrivUsage,
+		SecurableType: domain.SecurableSchema, SecurableID: schemaID,
+		Privilege: domain.PrivUsage,
 	})
 	if err != nil {
 		return fmt.Errorf("grant survivor USAGE: %w", err)
 	}
 	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		PrincipalID: survivorGroup.ID, PrincipalType: "group",
-		SecurableType: catalog.SecurableTable, SecurableID: titanicID,
-		Privilege: catalog.PrivSelect,
+		SecurableType: domain.SecurableTable, SecurableID: titanicID,
+		Privilege: domain.PrivSelect,
 	})
 	if err != nil {
 		return fmt.Errorf("grant survivor SELECT: %w", err)
@@ -251,16 +251,8 @@ func main() {
 
 	// Run migrations
 	fmt.Println("Running catalog migrations...")
-	if err := catalog.RunMigrations(metaDB); err != nil {
+	if err := internaldb.RunMigrations(metaDB); err != nil {
 		log.Fatalf("migration failed: %v", err)
-	}
-
-	// Create catalog service
-	cat := catalog.NewCatalogService(metaDB)
-
-	// Seed demo data
-	if err := seedCatalog(ctx, cat); err != nil {
-		log.Fatalf("seed catalog: %v", err)
 	}
 
 	// Create repositories
@@ -271,6 +263,18 @@ func main() {
 	columnMaskRepo := repository.NewColumnMaskRepo(metaDB)
 	auditRepo := repository.NewAuditRepo(metaDB)
 	introspectionRepo := repository.NewIntrospectionRepo(metaDB)
+
+	// Create authorization service
+	cat := service.NewAuthorizationService(
+		principalRepo, groupRepo, grantRepo,
+		rowFilterRepo, columnMaskRepo, introspectionRepo,
+	)
+
+	// Seed demo data
+	q := dbstore.New(metaDB)
+	if err := seedCatalog(ctx, cat, q); err != nil {
+		log.Fatalf("seed catalog: %v", err)
+	}
 
 	// Create secure engine
 	eng := engine.NewSecureEngine(duckDB, cat)
@@ -308,8 +312,8 @@ func main() {
 	}
 
 	// Auth middleware
-	apiKeyQueries := dbstore.New(metaDB)
-	r.Use(middleware.AuthMiddleware(jwtSecret, apiKeyQueries))
+	apiKeyRepo := repository.NewAPIKeyRepo(metaDB)
+	r.Use(middleware.AuthMiddleware(jwtSecret, apiKeyRepo))
 
 	// Register API routes under /v1 prefix
 	r.Route("/v1", func(r chi.Router) {

@@ -20,3 +20,11 @@ type ColumnMaskBinding struct {
 	PrincipalType string // "user" or "group"
 	SeeOriginal   bool
 }
+
+// ColumnMaskWithBinding is a denormalised view combining mask + binding info,
+// returned by repository queries that join column_masks with their bindings.
+type ColumnMaskWithBinding struct {
+	ColumnName     string
+	MaskExpression string
+	SeeOriginal    bool
+}

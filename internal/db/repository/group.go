@@ -4,9 +4,9 @@ import (
 	"context"
 	"database/sql"
 
-	dbstore "duck-demo/db/catalog"
-	"duck-demo/domain"
-	"duck-demo/internal/mapper"
+	dbstore "duck-demo/internal/db/dbstore"
+	"duck-demo/internal/db/mapper"
+	"duck-demo/internal/domain"
 )
 
 type GroupRepo struct {

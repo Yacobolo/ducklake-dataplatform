@@ -4,9 +4,9 @@ import (
 	"context"
 	"database/sql"
 
-	dbstore "duck-demo/db/catalog"
-	"duck-demo/domain"
-	"duck-demo/internal/mapper"
+	dbstore "duck-demo/internal/db/dbstore"
+	"duck-demo/internal/db/mapper"
+	"duck-demo/internal/domain"
 )
 
 type GrantRepo struct {
@@ -67,4 +67,18 @@ func (r *GrantRepo) ListForSecurable(ctx context.Context, securableType string, 
 		return nil, err
 	}
 	return mapper.GrantsFromDB(rows), nil
+}
+
+func (r *GrantRepo) HasPrivilege(ctx context.Context, principalID int64, principalType, securableType string, securableID int64, privilege string) (bool, error) {
+	cnt, err := r.q.CheckDirectGrantAny(ctx, dbstore.CheckDirectGrantAnyParams{
+		PrincipalID:   principalID,
+		PrincipalType: principalType,
+		SecurableType: securableType,
+		SecurableID:   securableID,
+		Privilege:     privilege,
+	})
+	if err != nil {
+		return false, err
+	}
+	return cnt > 0, nil
 }

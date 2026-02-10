@@ -6,21 +6,21 @@ import (
 	"fmt"
 	"log"
 
-	"duck-demo/catalog"
-	"duck-demo/config"
-	"duck-demo/sqlrewrite"
+	"duck-demo/internal/config"
+	"duck-demo/internal/domain"
+	"duck-demo/internal/sqlrewrite"
 )
 
 // SecureEngine wraps a DuckDB connection and enforces RBAC + RLS + column masking
 // by intercepting queries through the catalog permission model and SQL-level rewriting.
 type SecureEngine struct {
 	db      *sql.DB
-	catalog *catalog.CatalogService
+	catalog domain.AuthorizationService
 }
 
 // NewSecureEngine creates a SecureEngine with the given DuckDB connection
-// and catalog service (backed by the SQLite metastore).
-func NewSecureEngine(db *sql.DB, cat *catalog.CatalogService) *SecureEngine {
+// and authorization service (backed by the SQLite metastore).
+func NewSecureEngine(db *sql.DB, cat domain.AuthorizationService) *SecureEngine {
 	return &SecureEngine{db: db, catalog: cat}
 }
 
@@ -73,7 +73,7 @@ func (e *SecureEngine) Query(ctx context.Context, principalName, sqlQuery string
 		}
 
 		// Check privilege
-		allowed, err := e.catalog.CheckPrivilege(ctx, principalName, catalog.SecurableTable, tableID, requiredPriv)
+		allowed, err := e.catalog.CheckPrivilege(ctx, principalName, domain.SecurableTable, tableID, requiredPriv)
 		if err != nil {
 			return nil, fmt.Errorf("privilege check: %w", err)
 		}
@@ -122,13 +122,13 @@ func (e *SecureEngine) Query(ctx context.Context, principalName, sqlQuery string
 func privilegeForStatement(t sqlrewrite.StatementType) (string, error) {
 	switch t {
 	case sqlrewrite.StmtSelect:
-		return catalog.PrivSelect, nil
+		return domain.PrivSelect, nil
 	case sqlrewrite.StmtInsert:
-		return catalog.PrivInsert, nil
+		return domain.PrivInsert, nil
 	case sqlrewrite.StmtUpdate:
-		return catalog.PrivUpdate, nil
+		return domain.PrivUpdate, nil
 	case sqlrewrite.StmtDelete:
-		return catalog.PrivDelete, nil
+		return domain.PrivDelete, nil
 	case sqlrewrite.StmtDDL:
 		return "", fmt.Errorf("DDL statements are not allowed through the query engine")
 	default:

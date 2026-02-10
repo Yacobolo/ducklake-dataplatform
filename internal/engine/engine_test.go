@@ -1,4 +1,4 @@
-package engine
+package engine_test
 
 import (
 	"context"
@@ -9,13 +9,16 @@ import (
 	_ "github.com/duckdb/duckdb-go/v2"
 	_ "github.com/mattn/go-sqlite3"
 
-	"duck-demo/catalog"
-	dbstore "duck-demo/db/catalog"
+	internaldb "duck-demo/internal/db"
+	dbstore "duck-demo/internal/db/dbstore"
+	"duck-demo/internal/db/repository"
+	"duck-demo/internal/engine"
+	"duck-demo/internal/service"
 )
 
 // setupTestCatalog creates a temporary SQLite metastore with demo permissions.
 // It also creates the DuckLake-like metadata tables that the catalog service queries.
-func setupTestCatalog(t *testing.T) *catalog.CatalogService {
+func setupTestCatalog(t *testing.T) *service.AuthorizationService {
 	t.Helper()
 
 	tmpDir := t.TempDir()
@@ -28,7 +31,7 @@ func setupTestCatalog(t *testing.T) *catalog.CatalogService {
 	t.Cleanup(func() { metaDB.Close() })
 
 	// Run permission migrations
-	if err := catalog.RunMigrations(metaDB); err != nil {
+	if err := internaldb.RunMigrations(metaDB); err != nil {
 		t.Fatalf("migrations: %v", err)
 	}
 
@@ -62,9 +65,16 @@ func setupTestCatalog(t *testing.T) *catalog.CatalogService {
 		t.Fatalf("create mock ducklake tables: %v", err)
 	}
 
-	cat := catalog.NewCatalogService(metaDB)
+	cat := service.NewAuthorizationService(
+		repository.NewPrincipalRepo(metaDB),
+		repository.NewGroupRepo(metaDB),
+		repository.NewGrantRepo(metaDB),
+		repository.NewRowFilterRepo(metaDB),
+		repository.NewColumnMaskRepo(metaDB),
+		repository.NewIntrospectionRepo(metaDB),
+	)
 	ctx := context.Background()
-	q := cat.Queries()
+	q := dbstore.New(metaDB)
 
 	// Create principals
 	adminUser, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
@@ -93,14 +103,11 @@ func setupTestCatalog(t *testing.T) *catalog.CatalogService {
 	})
 
 	// Grant privileges
-	// Admin: ALL_PRIVILEGES on catalog
 	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		PrincipalID: adminUser.ID, PrincipalType: "user",
 		SecurableType: "catalog", SecurableID: 0,
 		Privilege: "ALL_PRIVILEGES",
 	})
-
-	// Analysts: USAGE on schema + SELECT on titanic
 	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		PrincipalID: analystsGroup.ID, PrincipalType: "group",
 		SecurableType: "schema", SecurableID: 0,
@@ -111,8 +118,6 @@ func setupTestCatalog(t *testing.T) *catalog.CatalogService {
 		SecurableType: "table", SecurableID: 1,
 		Privilege: "SELECT",
 	})
-
-	// Survivors: USAGE on schema + SELECT on titanic
 	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		PrincipalID: survivorGroup.ID, PrincipalType: "group",
 		SecurableType: "schema", SecurableID: 0,
@@ -137,10 +142,10 @@ func setupTestCatalog(t *testing.T) *catalog.CatalogService {
 }
 
 // setupEngine creates a SecureEngine with a real DuckDB connection and test catalog.
-func setupEngine(t *testing.T) *SecureEngine {
+func setupEngine(t *testing.T) *engine.SecureEngine {
 	t.Helper()
 
-	if _, err := os.Stat("../titanic.parquet"); os.IsNotExist(err) {
+	if _, err := os.Stat("../../titanic.parquet"); os.IsNotExist(err) {
 		t.Skip("titanic.parquet not found, skipping integration test")
 	}
 
@@ -150,12 +155,12 @@ func setupEngine(t *testing.T) *SecureEngine {
 	}
 	t.Cleanup(func() { db.Close() })
 
-	if _, err := db.Exec("CREATE TABLE titanic AS SELECT * FROM '../titanic.parquet'"); err != nil {
+	if _, err := db.Exec("CREATE TABLE titanic AS SELECT * FROM '../../titanic.parquet'"); err != nil {
 		t.Fatalf("create table: %v", err)
 	}
 
 	cat := setupTestCatalog(t)
-	return NewSecureEngine(db, cat)
+	return engine.NewSecureEngine(db, cat)
 }
 
 func TestAdminSeesAllRows(t *testing.T) {
@@ -205,7 +210,6 @@ func TestFirstClassAnalystOnlySeesClass1(t *testing.T) {
 }
 
 func TestSurvivorResearcherSeesAll(t *testing.T) {
-	// survivor_researcher has no row filter (only analysts have the Pclass filter)
 	eng := setupEngine(t)
 	ctx := context.Background()
 
@@ -286,7 +290,6 @@ func TestRowCountReducedByRLS(t *testing.T) {
 	eng := setupEngine(t)
 	ctx := context.Background()
 
-	// Admin count
 	adminRows, err := eng.Query(ctx, "admin", "SELECT count(*) FROM titanic")
 	if err != nil {
 		t.Fatalf("admin query: %v", err)
@@ -300,7 +303,6 @@ func TestRowCountReducedByRLS(t *testing.T) {
 	}
 	adminRows.Close()
 
-	// First class count
 	fcRows, err := eng.Query(ctx, "first_class_analyst", "SELECT count(*) FROM titanic")
 	if err != nil {
 		t.Fatalf("first_class query: %v", err)
@@ -349,7 +351,6 @@ func TestInsertRequiresPrivilege(t *testing.T) {
 	eng := setupEngine(t)
 	ctx := context.Background()
 
-	// first_class_analyst only has SELECT, not INSERT
 	_, err := eng.Query(ctx, "first_class_analyst", `INSERT INTO titanic ("PassengerId") VALUES (9999)`)
 	if err == nil {
 		t.Error("expected INSERT to be denied for user without INSERT privilege")

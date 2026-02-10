@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"strings"
 
-	"duck-demo/domain"
+	"duck-demo/internal/domain"
 )
 
 func boolToInt(b bool) int64 {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 
-	"duck-demo/domain"
+	"duck-demo/internal/domain"
 )
 
 // IntrospectionRepo queries DuckLake metadata tables directly.
@@ -85,4 +85,32 @@ func (r *IntrospectionRepo) ListColumns(ctx context.Context, tableID int64) ([]d
 		columns = append(columns, c)
 	}
 	return columns, rows.Err()
+}
+
+func (r *IntrospectionRepo) GetTableByName(ctx context.Context, tableName string) (*domain.Table, error) {
+	var t domain.Table
+	err := r.db.QueryRowContext(ctx,
+		`SELECT table_id, schema_id, table_name FROM ducklake_table WHERE table_name = ? AND end_snapshot IS NULL`, tableName).
+		Scan(&t.ID, &t.SchemaID, &t.Name)
+	if err == sql.ErrNoRows {
+		return nil, &domain.NotFoundError{Message: "table not found"}
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
+}
+
+func (r *IntrospectionRepo) GetSchemaByName(ctx context.Context, schemaName string) (*domain.Schema, error) {
+	var s domain.Schema
+	err := r.db.QueryRowContext(ctx,
+		`SELECT schema_id, schema_name FROM ducklake_schema WHERE schema_name = ? AND end_snapshot IS NULL`, schemaName).
+		Scan(&s.ID, &s.Name)
+	if err == sql.ErrNoRows {
+		return nil, &domain.NotFoundError{Message: "schema not found"}
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &s, nil
 }

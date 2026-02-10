@@ -1,4 +1,4 @@
-package catalog
+package service
 
 import (
 	"context"
@@ -7,12 +7,15 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 
-	dbstore "duck-demo/db/catalog"
+	internaldb "duck-demo/internal/db"
+	dbstore "duck-demo/internal/db/dbstore"
+	"duck-demo/internal/db/repository"
 )
 
-// setupTestService creates a CatalogService with a temporary SQLite DB,
+// setupTestService creates an AuthorizationService with a temporary SQLite DB,
 // runs migrations, and creates mock DuckLake metadata tables.
-func setupTestService(t *testing.T) (*CatalogService, context.Context) {
+// Returns the service, a dbstore.Queries (for test data seeding), and a context.
+func setupTestService(t *testing.T) (*AuthorizationService, *dbstore.Queries, context.Context) {
 	t.Helper()
 
 	tmpDir := t.TempDir()
@@ -22,7 +25,7 @@ func setupTestService(t *testing.T) (*CatalogService, context.Context) {
 	}
 	t.Cleanup(func() { db.Close() })
 
-	if err := RunMigrations(db); err != nil {
+	if err := internaldb.RunMigrations(db); err != nil {
 		t.Fatalf("migrations: %v", err)
 	}
 
@@ -58,12 +61,27 @@ func setupTestService(t *testing.T) (*CatalogService, context.Context) {
 		t.Fatalf("create mock tables: %v", err)
 	}
 
-	return NewCatalogService(db), context.Background()
+	// Create repositories
+	principalRepo := repository.NewPrincipalRepo(db)
+	groupRepo := repository.NewGroupRepo(db)
+	grantRepo := repository.NewGrantRepo(db)
+	rowFilterRepo := repository.NewRowFilterRepo(db)
+	columnMaskRepo := repository.NewColumnMaskRepo(db)
+	introspectionRepo := repository.NewIntrospectionRepo(db)
+
+	svc := NewAuthorizationService(
+		principalRepo, groupRepo, grantRepo,
+		rowFilterRepo, columnMaskRepo, introspectionRepo,
+	)
+
+	// Return dbstore.Queries for test data seeding
+	q := dbstore.New(db)
+
+	return svc, q, context.Background()
 }
 
 func TestAdminBypassesAllChecks(t *testing.T) {
-	cat, ctx := setupTestService(t)
-	q := cat.Queries()
+	cat, q, ctx := setupTestService(t)
 
 	_, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "admin", Type: "user", IsAdmin: 1,
@@ -83,8 +101,7 @@ func TestAdminBypassesAllChecks(t *testing.T) {
 }
 
 func TestUserWithNoGrantsDenied(t *testing.T) {
-	cat, ctx := setupTestService(t)
-	q := cat.Queries()
+	cat, q, ctx := setupTestService(t)
 
 	_, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "nobody", Type: "user", IsAdmin: 0,
@@ -103,8 +120,7 @@ func TestUserWithNoGrantsDenied(t *testing.T) {
 }
 
 func TestDirectTableGrant(t *testing.T) {
-	cat, ctx := setupTestService(t)
-	q := cat.Queries()
+	cat, q, ctx := setupTestService(t)
 
 	user, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "analyst", Type: "user", IsAdmin: 0,
@@ -134,8 +150,7 @@ func TestDirectTableGrant(t *testing.T) {
 }
 
 func TestUsageGateRequired(t *testing.T) {
-	cat, ctx := setupTestService(t)
-	q := cat.Queries()
+	cat, q, ctx := setupTestService(t)
 
 	user, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "analyst", Type: "user", IsAdmin: 0,
@@ -158,8 +173,7 @@ func TestUsageGateRequired(t *testing.T) {
 }
 
 func TestSchemaLevelInheritance(t *testing.T) {
-	cat, ctx := setupTestService(t)
-	q := cat.Queries()
+	cat, q, ctx := setupTestService(t)
 
 	user, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "analyst", Type: "user", IsAdmin: 0,
@@ -197,8 +211,7 @@ func TestSchemaLevelInheritance(t *testing.T) {
 }
 
 func TestCatalogLevelInheritance(t *testing.T) {
-	cat, ctx := setupTestService(t)
-	q := cat.Queries()
+	cat, q, ctx := setupTestService(t)
 
 	user, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "superuser", Type: "user", IsAdmin: 0,
@@ -222,8 +235,7 @@ func TestCatalogLevelInheritance(t *testing.T) {
 }
 
 func TestGroupMembership(t *testing.T) {
-	cat, ctx := setupTestService(t)
-	q := cat.Queries()
+	cat, q, ctx := setupTestService(t)
 
 	user, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "analyst", Type: "user", IsAdmin: 0,
@@ -256,8 +268,7 @@ func TestGroupMembership(t *testing.T) {
 }
 
 func TestNestedGroupMembership(t *testing.T) {
-	cat, ctx := setupTestService(t)
-	q := cat.Queries()
+	cat, q, ctx := setupTestService(t)
 
 	user, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "analyst", Type: "user", IsAdmin: 0,
@@ -291,8 +302,7 @@ func TestNestedGroupMembership(t *testing.T) {
 }
 
 func TestRowFilterForPrincipal(t *testing.T) {
-	cat, ctx := setupTestService(t)
-	q := cat.Queries()
+	cat, q, ctx := setupTestService(t)
 
 	user, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "analyst", Type: "user", IsAdmin: 0,
@@ -320,8 +330,7 @@ func TestRowFilterForPrincipal(t *testing.T) {
 }
 
 func TestRowFilterForGroupMember(t *testing.T) {
-	cat, ctx := setupTestService(t)
-	q := cat.Queries()
+	cat, q, ctx := setupTestService(t)
 
 	user, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "analyst", Type: "user", IsAdmin: 0,
@@ -349,8 +358,7 @@ func TestRowFilterForGroupMember(t *testing.T) {
 }
 
 func TestAdminNoRowFilter(t *testing.T) {
-	cat, ctx := setupTestService(t)
-	q := cat.Queries()
+	cat, q, ctx := setupTestService(t)
 
 	_, _ = q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "admin", Type: "user", IsAdmin: 1,
@@ -375,8 +383,7 @@ func TestAdminNoRowFilter(t *testing.T) {
 }
 
 func TestColumnMaskForPrincipal(t *testing.T) {
-	cat, ctx := setupTestService(t)
-	q := cat.Queries()
+	cat, q, ctx := setupTestService(t)
 
 	user, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "analyst", Type: "user", IsAdmin: 0,
@@ -405,8 +412,7 @@ func TestColumnMaskForPrincipal(t *testing.T) {
 }
 
 func TestColumnMaskSeeOriginal(t *testing.T) {
-	cat, ctx := setupTestService(t)
-	q := cat.Queries()
+	cat, q, ctx := setupTestService(t)
 
 	user, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "analyst", Type: "user", IsAdmin: 0,
@@ -433,8 +439,7 @@ func TestColumnMaskSeeOriginal(t *testing.T) {
 }
 
 func TestAdminNoColumnMasks(t *testing.T) {
-	cat, ctx := setupTestService(t)
-	q := cat.Queries()
+	cat, q, ctx := setupTestService(t)
 
 	_, _ = q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "admin", Type: "user", IsAdmin: 1,
@@ -460,7 +465,7 @@ func TestAdminNoColumnMasks(t *testing.T) {
 }
 
 func TestUnknownPrincipalError(t *testing.T) {
-	cat, ctx := setupTestService(t)
+	cat, _, ctx := setupTestService(t)
 
 	_, err := cat.CheckPrivilege(ctx, "nobody", SecurableTable, 1, PrivSelect)
 	if err == nil {
@@ -469,7 +474,7 @@ func TestUnknownPrincipalError(t *testing.T) {
 }
 
 func TestLookupTableID(t *testing.T) {
-	cat, ctx := setupTestService(t)
+	cat, _, ctx := setupTestService(t)
 
 	tableID, schemaID, err := cat.LookupTableID(ctx, "titanic")
 	if err != nil {
@@ -484,7 +489,7 @@ func TestLookupTableID(t *testing.T) {
 }
 
 func TestLookupTableIDNotFound(t *testing.T) {
-	cat, ctx := setupTestService(t)
+	cat, _, ctx := setupTestService(t)
 
 	_, _, err := cat.LookupTableID(ctx, "nonexistent")
 	if err == nil {
@@ -493,7 +498,7 @@ func TestLookupTableIDNotFound(t *testing.T) {
 }
 
 func TestLookupSchemaID(t *testing.T) {
-	cat, ctx := setupTestService(t)
+	cat, _, ctx := setupTestService(t)
 
 	schemaID, err := cat.LookupSchemaID(ctx, "main")
 	if err != nil {

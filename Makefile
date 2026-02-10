@@ -1,5 +1,5 @@
 DB_PATH         = ./ducklake_meta.sqlite
-MIGRATIONS_DIR  = db/migrations
+MIGRATIONS_DIR  = internal/db/migrations
 
 .PHONY: migrate-up migrate-down migrate-status sqlc new-migration build test vet generate-api generate
 
@@ -19,8 +19,8 @@ sqlc:
 	sqlc generate
 
 generate-api:
-	oapi-codegen -generate models -package api -o api/types.gen.go api/openapi.yaml
-	oapi-codegen -generate chi-server,strict-server,spec -package api -o api/server.gen.go api/openapi.yaml
+	oapi-codegen -generate models -package api -o internal/api/types.gen.go internal/api/openapi.yaml
+	oapi-codegen -generate chi-server,strict-server,spec -package api -o internal/api/server.gen.go internal/api/openapi.yaml
 
 generate: generate-api sqlc
 

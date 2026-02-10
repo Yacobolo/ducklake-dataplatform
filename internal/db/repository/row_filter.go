@@ -4,9 +4,9 @@ import (
 	"context"
 	"database/sql"
 
-	dbstore "duck-demo/db/catalog"
-	"duck-demo/domain"
-	"duck-demo/internal/mapper"
+	dbstore "duck-demo/internal/db/dbstore"
+	"duck-demo/internal/db/mapper"
+	"duck-demo/internal/domain"
 )
 
 type RowFilterRepo struct {
@@ -64,4 +64,16 @@ func (r *RowFilterRepo) ListBindings(ctx context.Context, filterID int64) ([]dom
 		return nil, err
 	}
 	return mapper.RowFilterBindingsFromDB(rows), nil
+}
+
+func (r *RowFilterRepo) GetForTableAndPrincipal(ctx context.Context, tableID, principalID int64, principalType string) ([]domain.RowFilter, error) {
+	rows, err := r.q.GetRowFiltersForTableAndPrincipal(ctx, dbstore.GetRowFiltersForTableAndPrincipalParams{
+		TableID:       tableID,
+		PrincipalID:   principalID,
+		PrincipalType: principalType,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return mapper.RowFiltersFromDB(rows), nil
 }

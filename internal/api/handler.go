@@ -3,7 +3,7 @@ package api
 import (
 	"context"
 
-	"duck-demo/domain"
+	"duck-demo/internal/domain"
 	"duck-demo/internal/middleware"
 	"duck-demo/internal/service"
 )

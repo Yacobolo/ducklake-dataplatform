@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	dbstore "duck-demo/db/catalog"
-	"duck-demo/domain"
+	dbstore "duck-demo/internal/db/dbstore"
+	"duck-demo/internal/domain"
 )
 
 const timeLayout = "2006-01-02 15:04:05"

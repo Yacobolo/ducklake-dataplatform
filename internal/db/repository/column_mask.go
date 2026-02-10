@@ -4,9 +4,9 @@ import (
 	"context"
 	"database/sql"
 
-	dbstore "duck-demo/db/catalog"
-	"duck-demo/domain"
-	"duck-demo/internal/mapper"
+	dbstore "duck-demo/internal/db/dbstore"
+	"duck-demo/internal/db/mapper"
+	"duck-demo/internal/domain"
 )
 
 type ColumnMaskRepo struct {
@@ -66,4 +66,24 @@ func (r *ColumnMaskRepo) ListBindings(ctx context.Context, maskID int64) ([]doma
 		return nil, err
 	}
 	return mapper.ColumnMaskBindingsFromDB(rows), nil
+}
+
+func (r *ColumnMaskRepo) GetForTableAndPrincipal(ctx context.Context, tableID, principalID int64, principalType string) ([]domain.ColumnMaskWithBinding, error) {
+	rows, err := r.q.GetColumnMaskForTableAndPrincipal(ctx, dbstore.GetColumnMaskForTableAndPrincipalParams{
+		TableID:       tableID,
+		PrincipalID:   principalID,
+		PrincipalType: principalType,
+	})
+	if err != nil {
+		return nil, err
+	}
+	result := make([]domain.ColumnMaskWithBinding, len(rows))
+	for i, row := range rows {
+		result[i] = domain.ColumnMaskWithBinding{
+			ColumnName:     row.ColumnName,
+			MaskExpression: row.MaskExpression,
+			SeeOriginal:    row.SeeOriginal != 0,
+		}
+	}
+	return result, nil
 }

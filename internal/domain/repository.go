@@ -34,6 +34,7 @@ type GrantRepository interface {
 	Revoke(ctx context.Context, g *PrivilegeGrant) error
 	ListForPrincipal(ctx context.Context, principalID int64, principalType string) ([]PrivilegeGrant, error)
 	ListForSecurable(ctx context.Context, securableType string, securableID int64) ([]PrivilegeGrant, error)
+	HasPrivilege(ctx context.Context, principalID int64, principalType, securableType string, securableID int64, privilege string) (bool, error)
 }
 
 // RowFilterRepository provides CRUD operations for row filters and bindings.
@@ -44,6 +45,7 @@ type RowFilterRepository interface {
 	Bind(ctx context.Context, b *RowFilterBinding) error
 	Unbind(ctx context.Context, b *RowFilterBinding) error
 	ListBindings(ctx context.Context, filterID int64) ([]RowFilterBinding, error)
+	GetForTableAndPrincipal(ctx context.Context, tableID, principalID int64, principalType string) ([]RowFilter, error)
 }
 
 // ColumnMaskRepository provides CRUD operations for column masks and bindings.
@@ -54,6 +56,7 @@ type ColumnMaskRepository interface {
 	Bind(ctx context.Context, b *ColumnMaskBinding) error
 	Unbind(ctx context.Context, b *ColumnMaskBinding) error
 	ListBindings(ctx context.Context, maskID int64) ([]ColumnMaskBinding, error)
+	GetForTableAndPrincipal(ctx context.Context, tableID, principalID int64, principalType string) ([]ColumnMaskWithBinding, error)
 }
 
 // AuditFilter holds filter parameters for querying audit logs.
@@ -78,4 +81,15 @@ type IntrospectionRepository interface {
 	ListTables(ctx context.Context, schemaID int64) ([]Table, error)
 	GetTable(ctx context.Context, tableID int64) (*Table, error)
 	ListColumns(ctx context.Context, tableID int64) ([]Column, error)
+	GetTableByName(ctx context.Context, tableName string) (*Table, error)
+	GetSchemaByName(ctx context.Context, schemaName string) (*Schema, error)
+}
+
+// AuthorizationService defines the interface for permission checking.
+// The engine depends on this interface rather than a concrete service type.
+type AuthorizationService interface {
+	LookupTableID(ctx context.Context, tableName string) (tableID, schemaID int64, err error)
+	CheckPrivilege(ctx context.Context, principalName, securableType string, securableID int64, privilege string) (bool, error)
+	GetEffectiveRowFilters(ctx context.Context, principalName string, tableID int64) ([]string, error)
+	GetEffectiveColumnMasks(ctx context.Context, principalName string, tableID int64) (map[string]string, error)
 }

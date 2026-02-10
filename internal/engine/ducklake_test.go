@@ -1,4 +1,4 @@
-package engine
+package engine_test
 
 import (
 	"context"
@@ -9,15 +9,18 @@ import (
 	_ "github.com/duckdb/duckdb-go/v2"
 	_ "github.com/mattn/go-sqlite3"
 
-	"duck-demo/catalog"
-	"duck-demo/config"
-	dbstore "duck-demo/db/catalog"
+	"duck-demo/internal/config"
+	internaldb "duck-demo/internal/db"
+	dbstore "duck-demo/internal/db/dbstore"
+	"duck-demo/internal/db/repository"
+	"duck-demo/internal/engine"
+	"duck-demo/internal/service"
 )
 
 // TestDuckLakeWithHetznerSetup tests the full SetupDuckLake flow with real
 // Hetzner S3 credentials. Skipped if .env is not present or credentials are missing.
 func TestDuckLakeWithHetznerSetup(t *testing.T) {
-	if err := config.LoadDotEnv("../.env"); err != nil {
+	if err := config.LoadDotEnv("../../.env"); err != nil {
 		t.Skipf("could not load .env: %v", err)
 	}
 
@@ -26,13 +29,13 @@ func TestDuckLakeWithHetznerSetup(t *testing.T) {
 		t.Skipf("missing config: %v", err)
 	}
 
-	if _, err := os.Stat("../titanic.parquet"); os.IsNotExist(err) {
+	if _, err := os.Stat("../../titanic.parquet"); os.IsNotExist(err) {
 		t.Skip("titanic.parquet not found, skipping integration test")
 	}
 
 	tmpDir := t.TempDir()
 	cfg.MetaDBPath = tmpDir + "/test_meta.sqlite"
-	cfg.ParquetPath = "../titanic.parquet"
+	cfg.ParquetPath = "../../titanic.parquet"
 
 	db, err := sql.Open("duckdb", "")
 	if err != nil {
@@ -42,7 +45,7 @@ func TestDuckLakeWithHetznerSetup(t *testing.T) {
 
 	ctx := context.Background()
 
-	if err := SetupDuckLake(ctx, db, cfg); err != nil {
+	if err := engine.SetupDuckLake(ctx, db, cfg); err != nil {
 		t.Skipf("SetupDuckLake failed (S3 bucket may not exist): %v", err)
 	}
 
@@ -60,7 +63,7 @@ func TestDuckLakeWithHetznerSetup(t *testing.T) {
 
 // TestDuckLakeRBACIntegration tests the full RBAC + RLS flow through DuckLake.
 func TestDuckLakeRBACIntegration(t *testing.T) {
-	if err := config.LoadDotEnv("../.env"); err != nil {
+	if err := config.LoadDotEnv("../../.env"); err != nil {
 		t.Skipf("could not load .env: %v", err)
 	}
 
@@ -69,13 +72,13 @@ func TestDuckLakeRBACIntegration(t *testing.T) {
 		t.Skipf("missing config: %v", err)
 	}
 
-	if _, err := os.Stat("../titanic.parquet"); os.IsNotExist(err) {
+	if _, err := os.Stat("../../titanic.parquet"); os.IsNotExist(err) {
 		t.Skip("titanic.parquet not found")
 	}
 
 	tmpDir := t.TempDir()
 	cfg.MetaDBPath = tmpDir + "/test_meta.sqlite"
-	cfg.ParquetPath = "../titanic.parquet"
+	cfg.ParquetPath = "../../titanic.parquet"
 
 	db, err := sql.Open("duckdb", "")
 	if err != nil {
@@ -85,7 +88,7 @@ func TestDuckLakeRBACIntegration(t *testing.T) {
 
 	ctx := context.Background()
 
-	if err := SetupDuckLake(ctx, db, cfg); err != nil {
+	if err := engine.SetupDuckLake(ctx, db, cfg); err != nil {
 		t.Skipf("SetupDuckLake failed (S3 bucket may not exist): %v", err)
 	}
 
@@ -96,12 +99,19 @@ func TestDuckLakeRBACIntegration(t *testing.T) {
 	}
 	defer metaDB.Close()
 
-	if err := catalog.RunMigrations(metaDB); err != nil {
+	if err := internaldb.RunMigrations(metaDB); err != nil {
 		t.Fatalf("migrations: %v", err)
 	}
 
-	cat := catalog.NewCatalogService(metaDB)
-	q := cat.Queries()
+	cat := service.NewAuthorizationService(
+		repository.NewPrincipalRepo(metaDB),
+		repository.NewGroupRepo(metaDB),
+		repository.NewGrantRepo(metaDB),
+		repository.NewRowFilterRepo(metaDB),
+		repository.NewColumnMaskRepo(metaDB),
+		repository.NewIntrospectionRepo(metaDB),
+	)
+	q := dbstore.New(metaDB)
 
 	// Seed principals and grants
 	adminUser, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
@@ -154,7 +164,7 @@ func TestDuckLakeRBACIntegration(t *testing.T) {
 		RowFilterID: filter.ID, PrincipalID: analystsGroup.ID, PrincipalType: "group",
 	})
 
-	eng := NewSecureEngine(db, cat)
+	eng := engine.NewSecureEngine(db, cat)
 
 	t.Run("AdminAccess", func(t *testing.T) {
 		rows, err := eng.Query(ctx, "admin", "SELECT * FROM titanic LIMIT 10")

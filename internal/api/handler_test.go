@@ -16,11 +16,11 @@ import (
 	_ "github.com/duckdb/duckdb-go/v2"
 	_ "github.com/mattn/go-sqlite3"
 
-	"duck-demo/catalog"
-	dbstore "duck-demo/db/catalog"
-	"duck-demo/engine"
+	internaldb "duck-demo/internal/db"
+	dbstore "duck-demo/internal/db/dbstore"
+	"duck-demo/internal/db/repository"
+	"duck-demo/internal/engine"
 	"duck-demo/internal/middleware"
-	"duck-demo/internal/repository"
 	"duck-demo/internal/service"
 )
 
@@ -28,7 +28,7 @@ import (
 func setupTestServer(t *testing.T, principalName string) *httptest.Server {
 	t.Helper()
 
-	if _, err := os.Stat("../titanic.parquet"); os.IsNotExist(err) {
+	if _, err := os.Stat("../../titanic.parquet"); os.IsNotExist(err) {
 		t.Skip("titanic.parquet not found, skipping integration test")
 	}
 
@@ -39,7 +39,7 @@ func setupTestServer(t *testing.T, principalName string) *httptest.Server {
 	}
 	t.Cleanup(func() { duckDB.Close() })
 
-	if _, err := duckDB.Exec("CREATE TABLE titanic AS SELECT * FROM '../titanic.parquet'"); err != nil {
+	if _, err := duckDB.Exec("CREATE TABLE titanic AS SELECT * FROM '../../titanic.parquet'"); err != nil {
 		t.Fatalf("create table: %v", err)
 	}
 
@@ -51,7 +51,7 @@ func setupTestServer(t *testing.T, principalName string) *httptest.Server {
 	}
 	t.Cleanup(func() { metaDB.Close() })
 
-	if err := catalog.RunMigrations(metaDB); err != nil {
+	if err := internaldb.RunMigrations(metaDB); err != nil {
 		t.Fatalf("migrations: %v", err)
 	}
 
@@ -106,10 +106,7 @@ func setupTestServer(t *testing.T, principalName string) *httptest.Server {
 	filter, _ := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{TableID: 1, FilterSql: `"Pclass" = 1`})
 	q.BindRowFilter(ctx, dbstore.BindRowFilterParams{RowFilterID: filter.ID, PrincipalID: analystsGroup.ID, PrincipalType: "group"})
 
-	// Build services
-	cat := catalog.NewCatalogService(metaDB)
-	eng := engine.NewSecureEngine(duckDB, cat)
-
+	// Build repositories and services
 	auditRepo := repository.NewAuditRepo(metaDB)
 	principalRepo := repository.NewPrincipalRepo(metaDB)
 	groupRepo := repository.NewGroupRepo(metaDB)
@@ -117,6 +114,9 @@ func setupTestServer(t *testing.T, principalName string) *httptest.Server {
 	rowFilterRepo := repository.NewRowFilterRepo(metaDB)
 	columnMaskRepo := repository.NewColumnMaskRepo(metaDB)
 	introspectionRepo := repository.NewIntrospectionRepo(metaDB)
+
+	cat := service.NewAuthorizationService(principalRepo, groupRepo, grantRepo, rowFilterRepo, columnMaskRepo, introspectionRepo)
+	eng := engine.NewSecureEngine(duckDB, cat)
 
 	querySvc := service.NewQueryService(eng, auditRepo)
 	principalSvc := service.NewPrincipalService(principalRepo, auditRepo)
