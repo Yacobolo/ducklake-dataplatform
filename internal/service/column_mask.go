@@ -34,8 +34,8 @@ func (s *ColumnMaskService) Create(ctx context.Context, m *domain.ColumnMask) (*
 	return result, nil
 }
 
-func (s *ColumnMaskService) GetForTable(ctx context.Context, tableID int64) ([]domain.ColumnMask, error) {
-	return s.repo.GetForTable(ctx, tableID)
+func (s *ColumnMaskService) GetForTable(ctx context.Context, tableID int64, page domain.PageRequest) ([]domain.ColumnMask, int64, error) {
+	return s.repo.GetForTable(ctx, tableID, page)
 }
 
 func (s *ColumnMaskService) Delete(ctx context.Context, id int64) error {

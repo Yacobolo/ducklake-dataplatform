@@ -43,10 +43,10 @@ func (s *GrantService) Revoke(ctx context.Context, g *domain.PrivilegeGrant) err
 	return nil
 }
 
-func (s *GrantService) ListForPrincipal(ctx context.Context, principalID int64, principalType string) ([]domain.PrivilegeGrant, error) {
-	return s.repo.ListForPrincipal(ctx, principalID, principalType)
+func (s *GrantService) ListForPrincipal(ctx context.Context, principalID int64, principalType string, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error) {
+	return s.repo.ListForPrincipal(ctx, principalID, principalType, page)
 }
 
-func (s *GrantService) ListForSecurable(ctx context.Context, securableType string, securableID int64) ([]domain.PrivilegeGrant, error) {
-	return s.repo.ListForSecurable(ctx, securableType, securableID)
+func (s *GrantService) ListForSecurable(ctx context.Context, securableType string, securableID int64, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error) {
+	return s.repo.ListForSecurable(ctx, securableType, securableID, page)
 }

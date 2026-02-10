@@ -31,8 +31,8 @@ func (s *RowFilterService) Create(ctx context.Context, f *domain.RowFilter) (*do
 	return result, nil
 }
 
-func (s *RowFilterService) GetForTable(ctx context.Context, tableID int64) ([]domain.RowFilter, error) {
-	return s.repo.GetForTable(ctx, tableID)
+func (s *RowFilterService) GetForTable(ctx context.Context, tableID int64, page domain.PageRequest) ([]domain.RowFilter, int64, error) {
+	return s.repo.GetForTable(ctx, tableID, page)
 }
 
 func (s *RowFilterService) Delete(ctx context.Context, id int64) error {

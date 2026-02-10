@@ -33,18 +33,18 @@ type AuditEntry struct {
 	TablesAccessed *[]string  `json:"tables_accessed,omitempty"`
 }
 
-// AuditLogResponse defines model for AuditLogResponse.
-type AuditLogResponse struct {
-	Data   *[]AuditEntry `json:"data,omitempty"`
-	Limit  *int          `json:"limit,omitempty"`
-	Offset *int          `json:"offset,omitempty"`
-	Total  *int64        `json:"total,omitempty"`
-}
-
 // BindingRequest defines model for BindingRequest.
 type BindingRequest struct {
 	PrincipalId   int64  `json:"principal_id"`
 	PrincipalType string `json:"principal_type"`
+}
+
+// CatalogInfo defines model for CatalogInfo.
+type CatalogInfo struct {
+	Comment   *string    `json:"comment,omitempty"`
+	CreatedAt *time.Time `json:"created_at,omitempty"`
+	Name      *string    `json:"name,omitempty"`
+	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 }
 
 // Column defines model for Column.
@@ -53,6 +53,14 @@ type Column struct {
 	Name    *string `json:"name,omitempty"`
 	TableId *int64  `json:"table_id,omitempty"`
 	Type    *string `json:"type,omitempty"`
+}
+
+// ColumnDetail defines model for ColumnDetail.
+type ColumnDetail struct {
+	Comment  *string `json:"comment,omitempty"`
+	Name     *string `json:"name,omitempty"`
+	Position *int    `json:"position,omitempty"`
+	Type     *string `json:"type,omitempty"`
 }
 
 // ColumnMask defines model for ColumnMask.
@@ -70,6 +78,12 @@ type ColumnMaskBindingRequest struct {
 	PrincipalId   int64  `json:"principal_id"`
 	PrincipalType string `json:"principal_type"`
 	SeeOriginal   *bool  `json:"see_original,omitempty"`
+}
+
+// CreateColumnDef defines model for CreateColumnDef.
+type CreateColumnDef struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
 }
 
 // CreateColumnMaskRequest defines model for CreateColumnMaskRequest.
@@ -96,6 +110,20 @@ type CreatePrincipalRequest struct {
 type CreateRowFilterRequest struct {
 	Description *string `json:"description,omitempty"`
 	FilterSql   string  `json:"filter_sql"`
+}
+
+// CreateSchemaRequest defines model for CreateSchemaRequest.
+type CreateSchemaRequest struct {
+	Comment    *string            `json:"comment,omitempty"`
+	Name       string             `json:"name"`
+	Properties *map[string]string `json:"properties,omitempty"`
+}
+
+// CreateTableApiRequest defines model for CreateTableApiRequest.
+type CreateTableApiRequest struct {
+	Columns []CreateColumnDef `json:"columns"`
+	Comment *string           `json:"comment,omitempty"`
+	Name    string            `json:"name"`
 }
 
 // Error defines model for Error.
@@ -149,6 +177,94 @@ type ManifestResponse struct {
 	RowFilters  *[]string          `json:"row_filters,omitempty"`
 	Schema      *string            `json:"schema,omitempty"`
 	Table       *string            `json:"table,omitempty"`
+}
+
+// MetastoreSummary defines model for MetastoreSummary.
+type MetastoreSummary struct {
+	CatalogName    *string `json:"catalog_name,omitempty"`
+	DataPath       *string `json:"data_path,omitempty"`
+	MetastoreType  *string `json:"metastore_type,omitempty"`
+	SchemaCount    *int64  `json:"schema_count,omitempty"`
+	StorageBackend *string `json:"storage_backend,omitempty"`
+	TableCount     *int64  `json:"table_count,omitempty"`
+}
+
+// PaginatedAuditLogs defines model for PaginatedAuditLogs.
+type PaginatedAuditLogs struct {
+	Data          *[]AuditEntry `json:"data,omitempty"`
+	NextPageToken *string       `json:"next_page_token,omitempty"`
+}
+
+// PaginatedColumnDetails defines model for PaginatedColumnDetails.
+type PaginatedColumnDetails struct {
+	Data          *[]ColumnDetail `json:"data,omitempty"`
+	NextPageToken *string         `json:"next_page_token,omitempty"`
+}
+
+// PaginatedColumnMasks defines model for PaginatedColumnMasks.
+type PaginatedColumnMasks struct {
+	Data          *[]ColumnMask `json:"data,omitempty"`
+	NextPageToken *string       `json:"next_page_token,omitempty"`
+}
+
+// PaginatedColumns defines model for PaginatedColumns.
+type PaginatedColumns struct {
+	Data          *[]Column `json:"data,omitempty"`
+	NextPageToken *string   `json:"next_page_token,omitempty"`
+}
+
+// PaginatedGrants defines model for PaginatedGrants.
+type PaginatedGrants struct {
+	Data          *[]PrivilegeGrant `json:"data,omitempty"`
+	NextPageToken *string           `json:"next_page_token,omitempty"`
+}
+
+// PaginatedGroupMembers defines model for PaginatedGroupMembers.
+type PaginatedGroupMembers struct {
+	Data          *[]GroupMember `json:"data,omitempty"`
+	NextPageToken *string        `json:"next_page_token,omitempty"`
+}
+
+// PaginatedGroups defines model for PaginatedGroups.
+type PaginatedGroups struct {
+	Data          *[]Group `json:"data,omitempty"`
+	NextPageToken *string  `json:"next_page_token,omitempty"`
+}
+
+// PaginatedPrincipals defines model for PaginatedPrincipals.
+type PaginatedPrincipals struct {
+	Data          *[]Principal `json:"data,omitempty"`
+	NextPageToken *string      `json:"next_page_token,omitempty"`
+}
+
+// PaginatedRowFilters defines model for PaginatedRowFilters.
+type PaginatedRowFilters struct {
+	Data          *[]RowFilter `json:"data,omitempty"`
+	NextPageToken *string      `json:"next_page_token,omitempty"`
+}
+
+// PaginatedSchemaDetails defines model for PaginatedSchemaDetails.
+type PaginatedSchemaDetails struct {
+	Data          *[]SchemaDetail `json:"data,omitempty"`
+	NextPageToken *string         `json:"next_page_token,omitempty"`
+}
+
+// PaginatedSchemas defines model for PaginatedSchemas.
+type PaginatedSchemas struct {
+	Data          *[]Schema `json:"data,omitempty"`
+	NextPageToken *string   `json:"next_page_token,omitempty"`
+}
+
+// PaginatedTableDetails defines model for PaginatedTableDetails.
+type PaginatedTableDetails struct {
+	Data          *[]TableDetail `json:"data,omitempty"`
+	NextPageToken *string        `json:"next_page_token,omitempty"`
+}
+
+// PaginatedTables defines model for PaginatedTables.
+type PaginatedTables struct {
+	Data          *[]Table `json:"data,omitempty"`
+	NextPageToken *string  `json:"next_page_token,omitempty"`
 }
 
 // Principal defines model for Principal.
@@ -208,6 +324,18 @@ type Schema struct {
 	Name *string `json:"name,omitempty"`
 }
 
+// SchemaDetail defines model for SchemaDetail.
+type SchemaDetail struct {
+	CatalogName *string            `json:"catalog_name,omitempty"`
+	Comment     *string            `json:"comment,omitempty"`
+	CreatedAt   *time.Time         `json:"created_at,omitempty"`
+	Name        *string            `json:"name,omitempty"`
+	Owner       *string            `json:"owner,omitempty"`
+	Properties  *map[string]string `json:"properties,omitempty"`
+	SchemaId    *int64             `json:"schema_id,omitempty"`
+	UpdatedAt   *time.Time         `json:"updated_at,omitempty"`
+}
+
 // SetAdminRequest defines model for SetAdminRequest.
 type SetAdminRequest struct {
 	IsAdmin bool `json:"is_admin"`
@@ -220,13 +348,77 @@ type Table struct {
 	SchemaId *int64  `json:"schema_id,omitempty"`
 }
 
+// TableDetail defines model for TableDetail.
+type TableDetail struct {
+	CatalogName *string            `json:"catalog_name,omitempty"`
+	Columns     *[]ColumnDetail    `json:"columns,omitempty"`
+	Comment     *string            `json:"comment,omitempty"`
+	CreatedAt   *time.Time         `json:"created_at,omitempty"`
+	Name        *string            `json:"name,omitempty"`
+	Owner       *string            `json:"owner,omitempty"`
+	Properties  *map[string]string `json:"properties,omitempty"`
+	SchemaName  *string            `json:"schema_name,omitempty"`
+	TableId     *int64             `json:"table_id,omitempty"`
+	TableType   *string            `json:"table_type,omitempty"`
+	UpdatedAt   *time.Time         `json:"updated_at,omitempty"`
+}
+
+// UpdateSchemaRequest defines model for UpdateSchemaRequest.
+type UpdateSchemaRequest struct {
+	Comment    *string            `json:"comment,omitempty"`
+	Properties *map[string]string `json:"properties,omitempty"`
+}
+
+// MaxResults defines model for MaxResults.
+type MaxResults = int
+
+// PageToken defines model for PageToken.
+type PageToken = string
+
 // ListAuditLogsParams defines parameters for ListAuditLogs.
 type ListAuditLogsParams struct {
 	PrincipalName *string `form:"principal_name,omitempty" json:"principal_name,omitempty"`
 	Action        *string `form:"action,omitempty" json:"action,omitempty"`
 	Status        *string `form:"status,omitempty" json:"status,omitempty"`
-	Limit         *int    `form:"limit,omitempty" json:"limit,omitempty"`
-	Offset        *int    `form:"offset,omitempty" json:"offset,omitempty"`
+
+	// MaxResults Maximum number of results to return per page.
+	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
+
+	// PageToken Opaque pagination token from a previous response.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// ListCatalogSchemasParams defines parameters for ListCatalogSchemas.
+type ListCatalogSchemasParams struct {
+	// MaxResults Maximum number of results to return per page.
+	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
+
+	// PageToken Opaque pagination token from a previous response.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// DeleteSchemaParams defines parameters for DeleteSchema.
+type DeleteSchemaParams struct {
+	// Force Force deletion even if the schema contains tables.
+	Force *bool `form:"force,omitempty" json:"force,omitempty"`
+}
+
+// ListCatalogTablesParams defines parameters for ListCatalogTables.
+type ListCatalogTablesParams struct {
+	// MaxResults Maximum number of results to return per page.
+	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
+
+	// PageToken Opaque pagination token from a previous response.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// ListTableColumnsParams defines parameters for ListTableColumns.
+type ListTableColumnsParams struct {
+	// MaxResults Maximum number of results to return per page.
+	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
+
+	// PageToken Opaque pagination token from a previous response.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
 }
 
 // ListGrantsParams defines parameters for ListGrants.
@@ -235,7 +427,94 @@ type ListGrantsParams struct {
 	PrincipalType *string `form:"principal_type,omitempty" json:"principal_type,omitempty"`
 	SecurableType *string `form:"securable_type,omitempty" json:"securable_type,omitempty"`
 	SecurableId   *int64  `form:"securable_id,omitempty" json:"securable_id,omitempty"`
+
+	// MaxResults Maximum number of results to return per page.
+	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
+
+	// PageToken Opaque pagination token from a previous response.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
 }
+
+// ListGroupsParams defines parameters for ListGroups.
+type ListGroupsParams struct {
+	// MaxResults Maximum number of results to return per page.
+	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
+
+	// PageToken Opaque pagination token from a previous response.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// ListGroupMembersParams defines parameters for ListGroupMembers.
+type ListGroupMembersParams struct {
+	// MaxResults Maximum number of results to return per page.
+	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
+
+	// PageToken Opaque pagination token from a previous response.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// ListPrincipalsParams defines parameters for ListPrincipals.
+type ListPrincipalsParams struct {
+	// MaxResults Maximum number of results to return per page.
+	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
+
+	// PageToken Opaque pagination token from a previous response.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// ListSchemasParams defines parameters for ListSchemas.
+type ListSchemasParams struct {
+	// MaxResults Maximum number of results to return per page.
+	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
+
+	// PageToken Opaque pagination token from a previous response.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// ListTablesParams defines parameters for ListTables.
+type ListTablesParams struct {
+	// MaxResults Maximum number of results to return per page.
+	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
+
+	// PageToken Opaque pagination token from a previous response.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// ListColumnsParams defines parameters for ListColumns.
+type ListColumnsParams struct {
+	// MaxResults Maximum number of results to return per page.
+	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
+
+	// PageToken Opaque pagination token from a previous response.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// ListColumnMasksParams defines parameters for ListColumnMasks.
+type ListColumnMasksParams struct {
+	// MaxResults Maximum number of results to return per page.
+	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
+
+	// PageToken Opaque pagination token from a previous response.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// ListRowFiltersParams defines parameters for ListRowFilters.
+type ListRowFiltersParams struct {
+	// MaxResults Maximum number of results to return per page.
+	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
+
+	// PageToken Opaque pagination token from a previous response.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// CreateSchemaJSONRequestBody defines body for CreateSchema for application/json ContentType.
+type CreateSchemaJSONRequestBody = CreateSchemaRequest
+
+// UpdateSchemaMetadataJSONRequestBody defines body for UpdateSchemaMetadata for application/json ContentType.
+type UpdateSchemaMetadataJSONRequestBody = UpdateSchemaRequest
+
+// CreateCatalogTableJSONRequestBody defines body for CreateCatalogTable for application/json ContentType.
+type CreateCatalogTableJSONRequestBody = CreateTableApiRequest
 
 // UnbindColumnMaskJSONRequestBody defines body for UnbindColumnMask for application/json ContentType.
 type UnbindColumnMaskJSONRequestBody = BindingRequest

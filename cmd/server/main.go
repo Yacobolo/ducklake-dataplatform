@@ -263,6 +263,7 @@ func main() {
 	columnMaskRepo := repository.NewColumnMaskRepo(metaDB)
 	auditRepo := repository.NewAuditRepo(metaDB)
 	introspectionRepo := repository.NewIntrospectionRepo(metaDB)
+	catalogRepo := repository.NewCatalogRepo(metaDB, duckDB)
 
 	// Create authorization service
 	cat := service.NewAuthorizationService(
@@ -302,11 +303,14 @@ func main() {
 		}
 	}
 
+	// Create catalog service for UC-compatible catalog management
+	catalogSvc := service.NewCatalogService(catalogRepo, cat, auditRepo)
+
 	// Create API handler
 	handler := api.NewHandler(
 		querySvc, principalSvc, groupSvc, grantSvc,
 		rowFilterSvc, columnMaskSvc, introspectionSvc, auditSvc,
-		manifestSvc,
+		manifestSvc, catalogSvc,
 	)
 
 	// Create strict handler wrapper

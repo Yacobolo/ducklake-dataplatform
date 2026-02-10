@@ -99,8 +99,8 @@ func (s *ManifestService) GetManifest(
 		return nil, fmt.Errorf("column masks: %w", err)
 	}
 
-	// 5. Get column metadata
-	columns, err := s.introRepo.ListColumns(ctx, tableID)
+	// 5. Get column metadata (fetch all columns with large page size)
+	columns, _, err := s.introRepo.ListColumns(ctx, tableID, domain.PageRequest{MaxResults: 10000})
 	if err != nil {
 		return nil, fmt.Errorf("list columns: %w", err)
 	}

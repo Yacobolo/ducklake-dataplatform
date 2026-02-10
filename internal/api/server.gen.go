@@ -26,6 +26,39 @@ type ServerInterface interface {
 	// Query audit logs
 	// (GET /audit-logs)
 	ListAuditLogs(w http.ResponseWriter, r *http.Request, params ListAuditLogsParams)
+	// Get catalog info
+	// (GET /catalog)
+	GetCatalog(w http.ResponseWriter, r *http.Request)
+	// List schemas in the catalog
+	// (GET /catalog/schemas)
+	ListCatalogSchemas(w http.ResponseWriter, r *http.Request, params ListCatalogSchemasParams)
+	// Create a new schema
+	// (POST /catalog/schemas)
+	CreateSchema(w http.ResponseWriter, r *http.Request)
+	// Delete a schema
+	// (DELETE /catalog/schemas/{schemaName})
+	DeleteSchema(w http.ResponseWriter, r *http.Request, schemaName string, params DeleteSchemaParams)
+	// Get a schema by name
+	// (GET /catalog/schemas/{schemaName})
+	GetSchemaByName(w http.ResponseWriter, r *http.Request, schemaName string)
+	// Update schema metadata (comment, properties)
+	// (PATCH /catalog/schemas/{schemaName})
+	UpdateSchemaMetadata(w http.ResponseWriter, r *http.Request, schemaName string)
+	// List tables in a schema
+	// (GET /catalog/schemas/{schemaName}/tables)
+	ListCatalogTables(w http.ResponseWriter, r *http.Request, schemaName string, params ListCatalogTablesParams)
+	// Create a new table in a schema
+	// (POST /catalog/schemas/{schemaName}/tables)
+	CreateCatalogTable(w http.ResponseWriter, r *http.Request, schemaName string)
+	// Delete a table
+	// (DELETE /catalog/schemas/{schemaName}/tables/{tableName})
+	DropTable(w http.ResponseWriter, r *http.Request, schemaName string, tableName string)
+	// Get a table by name
+	// (GET /catalog/schemas/{schemaName}/tables/{tableName})
+	GetTableByName(w http.ResponseWriter, r *http.Request, schemaName string, tableName string)
+	// List columns of a table
+	// (GET /catalog/schemas/{schemaName}/tables/{tableName}/columns)
+	ListTableColumns(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params ListTableColumnsParams)
 	// Delete column mask
 	// (DELETE /column-masks/{id})
 	DeleteColumnMask(w http.ResponseWriter, r *http.Request, id int64)
@@ -46,7 +79,7 @@ type ServerInterface interface {
 	GrantPrivilege(w http.ResponseWriter, r *http.Request)
 	// List all groups
 	// (GET /groups)
-	ListGroups(w http.ResponseWriter, r *http.Request)
+	ListGroups(w http.ResponseWriter, r *http.Request, params ListGroupsParams)
 	// Create a group
 	// (POST /groups)
 	CreateGroup(w http.ResponseWriter, r *http.Request)
@@ -61,16 +94,19 @@ type ServerInterface interface {
 	RemoveGroupMember(w http.ResponseWriter, r *http.Request, id int64)
 	// List group members
 	// (GET /groups/{id}/members)
-	ListGroupMembers(w http.ResponseWriter, r *http.Request, id int64)
+	ListGroupMembers(w http.ResponseWriter, r *http.Request, id int64, params ListGroupMembersParams)
 	// Add member to group
 	// (POST /groups/{id}/members)
 	AddGroupMember(w http.ResponseWriter, r *http.Request, id int64)
 	// Get table manifest with presigned URLs and security policies
 	// (POST /manifest)
 	GetManifest(w http.ResponseWriter, r *http.Request)
+	// Get metastore summary
+	// (GET /metastore/summary)
+	GetMetastoreSummary(w http.ResponseWriter, r *http.Request)
 	// List all principals
 	// (GET /principals)
-	ListPrincipals(w http.ResponseWriter, r *http.Request)
+	ListPrincipals(w http.ResponseWriter, r *http.Request, params ListPrincipalsParams)
 	// Create a principal
 	// (POST /principals)
 	CreatePrincipal(w http.ResponseWriter, r *http.Request)
@@ -95,24 +131,24 @@ type ServerInterface interface {
 	// Bind filter to principal
 	// (POST /row-filters/{id}/bindings)
 	BindRowFilter(w http.ResponseWriter, r *http.Request, id int64)
-	// List DuckLake schemas
+	// List DuckLake schemas (deprecated, use /catalog/schemas)
 	// (GET /schemas)
-	ListSchemas(w http.ResponseWriter, r *http.Request)
-	// List tables in schema
+	ListSchemas(w http.ResponseWriter, r *http.Request, params ListSchemasParams)
+	// List tables in schema (deprecated, use /catalog/schemas/{name}/tables)
 	// (GET /schemas/{id}/tables)
-	ListTables(w http.ResponseWriter, r *http.Request, id int64)
-	// List columns in table
+	ListTables(w http.ResponseWriter, r *http.Request, id int64, params ListTablesParams)
+	// List columns in table (deprecated, use /catalog/schemas/{name}/tables/{name}/columns)
 	// (GET /tables/{id}/columns)
-	ListColumns(w http.ResponseWriter, r *http.Request, id int64)
+	ListColumns(w http.ResponseWriter, r *http.Request, id int64, params ListColumnsParams)
 	// List column masks
 	// (GET /tables/{tableId}/column-masks)
-	ListColumnMasks(w http.ResponseWriter, r *http.Request, tableId int64)
+	ListColumnMasks(w http.ResponseWriter, r *http.Request, tableId int64, params ListColumnMasksParams)
 	// Create column mask
 	// (POST /tables/{tableId}/column-masks)
 	CreateColumnMask(w http.ResponseWriter, r *http.Request, tableId int64)
 	// List row filters for table
 	// (GET /tables/{tableId}/row-filters)
-	ListRowFilters(w http.ResponseWriter, r *http.Request, tableId int64)
+	ListRowFilters(w http.ResponseWriter, r *http.Request, tableId int64, params ListRowFiltersParams)
 	// Create row filter
 	// (POST /tables/{tableId}/row-filters)
 	CreateRowFilter(w http.ResponseWriter, r *http.Request, tableId int64)
@@ -125,6 +161,72 @@ type Unimplemented struct{}
 // Query audit logs
 // (GET /audit-logs)
 func (_ Unimplemented) ListAuditLogs(w http.ResponseWriter, r *http.Request, params ListAuditLogsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get catalog info
+// (GET /catalog)
+func (_ Unimplemented) GetCatalog(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List schemas in the catalog
+// (GET /catalog/schemas)
+func (_ Unimplemented) ListCatalogSchemas(w http.ResponseWriter, r *http.Request, params ListCatalogSchemasParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create a new schema
+// (POST /catalog/schemas)
+func (_ Unimplemented) CreateSchema(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Delete a schema
+// (DELETE /catalog/schemas/{schemaName})
+func (_ Unimplemented) DeleteSchema(w http.ResponseWriter, r *http.Request, schemaName string, params DeleteSchemaParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get a schema by name
+// (GET /catalog/schemas/{schemaName})
+func (_ Unimplemented) GetSchemaByName(w http.ResponseWriter, r *http.Request, schemaName string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update schema metadata (comment, properties)
+// (PATCH /catalog/schemas/{schemaName})
+func (_ Unimplemented) UpdateSchemaMetadata(w http.ResponseWriter, r *http.Request, schemaName string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List tables in a schema
+// (GET /catalog/schemas/{schemaName}/tables)
+func (_ Unimplemented) ListCatalogTables(w http.ResponseWriter, r *http.Request, schemaName string, params ListCatalogTablesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create a new table in a schema
+// (POST /catalog/schemas/{schemaName}/tables)
+func (_ Unimplemented) CreateCatalogTable(w http.ResponseWriter, r *http.Request, schemaName string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Delete a table
+// (DELETE /catalog/schemas/{schemaName}/tables/{tableName})
+func (_ Unimplemented) DropTable(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get a table by name
+// (GET /catalog/schemas/{schemaName}/tables/{tableName})
+func (_ Unimplemented) GetTableByName(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List columns of a table
+// (GET /catalog/schemas/{schemaName}/tables/{tableName}/columns)
+func (_ Unimplemented) ListTableColumns(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params ListTableColumnsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -166,7 +268,7 @@ func (_ Unimplemented) GrantPrivilege(w http.ResponseWriter, r *http.Request) {
 
 // List all groups
 // (GET /groups)
-func (_ Unimplemented) ListGroups(w http.ResponseWriter, r *http.Request) {
+func (_ Unimplemented) ListGroups(w http.ResponseWriter, r *http.Request, params ListGroupsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -196,7 +298,7 @@ func (_ Unimplemented) RemoveGroupMember(w http.ResponseWriter, r *http.Request,
 
 // List group members
 // (GET /groups/{id}/members)
-func (_ Unimplemented) ListGroupMembers(w http.ResponseWriter, r *http.Request, id int64) {
+func (_ Unimplemented) ListGroupMembers(w http.ResponseWriter, r *http.Request, id int64, params ListGroupMembersParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -212,9 +314,15 @@ func (_ Unimplemented) GetManifest(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Get metastore summary
+// (GET /metastore/summary)
+func (_ Unimplemented) GetMetastoreSummary(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // List all principals
 // (GET /principals)
-func (_ Unimplemented) ListPrincipals(w http.ResponseWriter, r *http.Request) {
+func (_ Unimplemented) ListPrincipals(w http.ResponseWriter, r *http.Request, params ListPrincipalsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -266,27 +374,27 @@ func (_ Unimplemented) BindRowFilter(w http.ResponseWriter, r *http.Request, id 
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// List DuckLake schemas
+// List DuckLake schemas (deprecated, use /catalog/schemas)
 // (GET /schemas)
-func (_ Unimplemented) ListSchemas(w http.ResponseWriter, r *http.Request) {
+func (_ Unimplemented) ListSchemas(w http.ResponseWriter, r *http.Request, params ListSchemasParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// List tables in schema
+// List tables in schema (deprecated, use /catalog/schemas/{name}/tables)
 // (GET /schemas/{id}/tables)
-func (_ Unimplemented) ListTables(w http.ResponseWriter, r *http.Request, id int64) {
+func (_ Unimplemented) ListTables(w http.ResponseWriter, r *http.Request, id int64, params ListTablesParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// List columns in table
+// List columns in table (deprecated, use /catalog/schemas/{name}/tables/{name}/columns)
 // (GET /tables/{id}/columns)
-func (_ Unimplemented) ListColumns(w http.ResponseWriter, r *http.Request, id int64) {
+func (_ Unimplemented) ListColumns(w http.ResponseWriter, r *http.Request, id int64, params ListColumnsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // List column masks
 // (GET /tables/{tableId}/column-masks)
-func (_ Unimplemented) ListColumnMasks(w http.ResponseWriter, r *http.Request, tableId int64) {
+func (_ Unimplemented) ListColumnMasks(w http.ResponseWriter, r *http.Request, tableId int64, params ListColumnMasksParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -298,7 +406,7 @@ func (_ Unimplemented) CreateColumnMask(w http.ResponseWriter, r *http.Request, 
 
 // List row filters for table
 // (GET /tables/{tableId}/row-filters)
-func (_ Unimplemented) ListRowFilters(w http.ResponseWriter, r *http.Request, tableId int64) {
+func (_ Unimplemented) ListRowFilters(w http.ResponseWriter, r *http.Request, tableId int64, params ListRowFiltersParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -357,24 +465,451 @@ func (siw *ServerInterfaceWrapper) ListAuditLogs(w http.ResponseWriter, r *http.
 		return
 	}
 
-	// ------------- Optional query parameter "limit" -------------
+	// ------------- Optional query parameter "max_results" -------------
 
-	err = runtime.BindQueryParameter("form", true, false, "limit", r.URL.Query(), &params.Limit)
+	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
 		return
 	}
 
-	// ------------- Optional query parameter "offset" -------------
+	// ------------- Optional query parameter "page_token" -------------
 
-	err = runtime.BindQueryParameter("form", true, false, "offset", r.URL.Query(), &params.Offset)
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
 		return
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListAuditLogs(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCatalog operation middleware
+func (siw *ServerInterfaceWrapper) GetCatalog(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCatalog(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListCatalogSchemas operation middleware
+func (siw *ServerInterfaceWrapper) ListCatalogSchemas(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListCatalogSchemasParams
+
+	// ------------- Optional query parameter "max_results" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListCatalogSchemas(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateSchema operation middleware
+func (siw *ServerInterfaceWrapper) CreateSchema(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateSchema(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteSchema operation middleware
+func (siw *ServerInterfaceWrapper) DeleteSchema(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "schemaName" -------------
+	var schemaName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "schemaName", chi.URLParam(r, "schemaName"), &schemaName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schemaName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DeleteSchemaParams
+
+	// ------------- Optional query parameter "force" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "force", r.URL.Query(), &params.Force)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "force", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteSchema(w, r, schemaName, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetSchemaByName operation middleware
+func (siw *ServerInterfaceWrapper) GetSchemaByName(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "schemaName" -------------
+	var schemaName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "schemaName", chi.URLParam(r, "schemaName"), &schemaName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schemaName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSchemaByName(w, r, schemaName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateSchemaMetadata operation middleware
+func (siw *ServerInterfaceWrapper) UpdateSchemaMetadata(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "schemaName" -------------
+	var schemaName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "schemaName", chi.URLParam(r, "schemaName"), &schemaName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schemaName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateSchemaMetadata(w, r, schemaName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListCatalogTables operation middleware
+func (siw *ServerInterfaceWrapper) ListCatalogTables(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "schemaName" -------------
+	var schemaName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "schemaName", chi.URLParam(r, "schemaName"), &schemaName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schemaName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListCatalogTablesParams
+
+	// ------------- Optional query parameter "max_results" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListCatalogTables(w, r, schemaName, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateCatalogTable operation middleware
+func (siw *ServerInterfaceWrapper) CreateCatalogTable(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "schemaName" -------------
+	var schemaName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "schemaName", chi.URLParam(r, "schemaName"), &schemaName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schemaName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateCatalogTable(w, r, schemaName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DropTable operation middleware
+func (siw *ServerInterfaceWrapper) DropTable(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "schemaName" -------------
+	var schemaName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "schemaName", chi.URLParam(r, "schemaName"), &schemaName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schemaName", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "tableName" -------------
+	var tableName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tableName", chi.URLParam(r, "tableName"), &tableName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tableName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DropTable(w, r, schemaName, tableName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetTableByName operation middleware
+func (siw *ServerInterfaceWrapper) GetTableByName(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "schemaName" -------------
+	var schemaName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "schemaName", chi.URLParam(r, "schemaName"), &schemaName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schemaName", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "tableName" -------------
+	var tableName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tableName", chi.URLParam(r, "tableName"), &tableName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tableName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetTableByName(w, r, schemaName, tableName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListTableColumns operation middleware
+func (siw *ServerInterfaceWrapper) ListTableColumns(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "schemaName" -------------
+	var schemaName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "schemaName", chi.URLParam(r, "schemaName"), &schemaName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schemaName", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "tableName" -------------
+	var tableName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tableName", chi.URLParam(r, "tableName"), &tableName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tableName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListTableColumnsParams
+
+	// ------------- Optional query parameter "max_results" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListTableColumns(w, r, schemaName, tableName, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -553,6 +1088,22 @@ func (siw *ServerInterfaceWrapper) ListGrants(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	// ------------- Optional query parameter "max_results" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListGrants(w, r, params)
 	}))
@@ -589,6 +1140,8 @@ func (siw *ServerInterfaceWrapper) GrantPrivilege(w http.ResponseWriter, r *http
 // ListGroups operation middleware
 func (siw *ServerInterfaceWrapper) ListGroups(w http.ResponseWriter, r *http.Request) {
 
+	var err error
+
 	ctx := r.Context()
 
 	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
@@ -597,8 +1150,27 @@ func (siw *ServerInterfaceWrapper) ListGroups(w http.ResponseWriter, r *http.Req
 
 	r = r.WithContext(ctx)
 
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListGroupsParams
+
+	// ------------- Optional query parameter "max_results" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListGroups(w, r)
+		siw.Handler.ListGroups(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -751,8 +1323,27 @@ func (siw *ServerInterfaceWrapper) ListGroupMembers(w http.ResponseWriter, r *ht
 
 	r = r.WithContext(ctx)
 
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListGroupMembersParams
+
+	// ------------- Optional query parameter "max_results" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListGroupMembers(w, r, id)
+		siw.Handler.ListGroupMembers(w, r, id, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -817,8 +1408,8 @@ func (siw *ServerInterfaceWrapper) GetManifest(w http.ResponseWriter, r *http.Re
 	handler.ServeHTTP(w, r)
 }
 
-// ListPrincipals operation middleware
-func (siw *ServerInterfaceWrapper) ListPrincipals(w http.ResponseWriter, r *http.Request) {
+// GetMetastoreSummary operation middleware
+func (siw *ServerInterfaceWrapper) GetMetastoreSummary(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
@@ -829,7 +1420,50 @@ func (siw *ServerInterfaceWrapper) ListPrincipals(w http.ResponseWriter, r *http
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListPrincipals(w, r)
+		siw.Handler.GetMetastoreSummary(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListPrincipals operation middleware
+func (siw *ServerInterfaceWrapper) ListPrincipals(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListPrincipalsParams
+
+	// ------------- Optional query parameter "max_results" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListPrincipals(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1084,6 +1718,8 @@ func (siw *ServerInterfaceWrapper) BindRowFilter(w http.ResponseWriter, r *http.
 // ListSchemas operation middleware
 func (siw *ServerInterfaceWrapper) ListSchemas(w http.ResponseWriter, r *http.Request) {
 
+	var err error
+
 	ctx := r.Context()
 
 	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
@@ -1092,8 +1728,27 @@ func (siw *ServerInterfaceWrapper) ListSchemas(w http.ResponseWriter, r *http.Re
 
 	r = r.WithContext(ctx)
 
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListSchemasParams
+
+	// ------------- Optional query parameter "max_results" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListSchemas(w, r)
+		siw.Handler.ListSchemas(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1125,8 +1780,27 @@ func (siw *ServerInterfaceWrapper) ListTables(w http.ResponseWriter, r *http.Req
 
 	r = r.WithContext(ctx)
 
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListTablesParams
+
+	// ------------- Optional query parameter "max_results" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListTables(w, r, id)
+		siw.Handler.ListTables(w, r, id, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1158,8 +1832,27 @@ func (siw *ServerInterfaceWrapper) ListColumns(w http.ResponseWriter, r *http.Re
 
 	r = r.WithContext(ctx)
 
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListColumnsParams
+
+	// ------------- Optional query parameter "max_results" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListColumns(w, r, id)
+		siw.Handler.ListColumns(w, r, id, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1191,8 +1884,27 @@ func (siw *ServerInterfaceWrapper) ListColumnMasks(w http.ResponseWriter, r *htt
 
 	r = r.WithContext(ctx)
 
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListColumnMasksParams
+
+	// ------------- Optional query parameter "max_results" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListColumnMasks(w, r, tableId)
+		siw.Handler.ListColumnMasks(w, r, tableId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1257,8 +1969,27 @@ func (siw *ServerInterfaceWrapper) ListRowFilters(w http.ResponseWriter, r *http
 
 	r = r.WithContext(ctx)
 
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListRowFiltersParams
+
+	// ------------- Optional query parameter "max_results" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListRowFilters(w, r, tableId)
+		siw.Handler.ListRowFilters(w, r, tableId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1418,6 +2149,39 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/audit-logs", wrapper.ListAuditLogs)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/catalog", wrapper.GetCatalog)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/catalog/schemas", wrapper.ListCatalogSchemas)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/catalog/schemas", wrapper.CreateSchema)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/catalog/schemas/{schemaName}", wrapper.DeleteSchema)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/catalog/schemas/{schemaName}", wrapper.GetSchemaByName)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/catalog/schemas/{schemaName}", wrapper.UpdateSchemaMetadata)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/catalog/schemas/{schemaName}/tables", wrapper.ListCatalogTables)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/catalog/schemas/{schemaName}/tables", wrapper.CreateCatalogTable)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}", wrapper.DropTable)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}", wrapper.GetTableByName)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}/columns", wrapper.ListTableColumns)
+	})
+	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/column-masks/{id}", wrapper.DeleteColumnMask)
 	})
 	r.Group(func(r chi.Router) {
@@ -1458,6 +2222,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/manifest", wrapper.GetManifest)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/metastore/summary", wrapper.GetMetastoreSummary)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/principals", wrapper.ListPrincipals)
@@ -1519,11 +2286,347 @@ type ListAuditLogsResponseObject interface {
 	VisitListAuditLogsResponse(w http.ResponseWriter) error
 }
 
-type ListAuditLogs200JSONResponse AuditLogResponse
+type ListAuditLogs200JSONResponse PaginatedAuditLogs
 
 func (response ListAuditLogs200JSONResponse) VisitListAuditLogsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCatalogRequestObject struct {
+}
+
+type GetCatalogResponseObject interface {
+	VisitGetCatalogResponse(w http.ResponseWriter) error
+}
+
+type GetCatalog200JSONResponse CatalogInfo
+
+func (response GetCatalog200JSONResponse) VisitGetCatalogResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCatalogSchemasRequestObject struct {
+	Params ListCatalogSchemasParams
+}
+
+type ListCatalogSchemasResponseObject interface {
+	VisitListCatalogSchemasResponse(w http.ResponseWriter) error
+}
+
+type ListCatalogSchemas200JSONResponse PaginatedSchemaDetails
+
+func (response ListCatalogSchemas200JSONResponse) VisitListCatalogSchemasResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateSchemaRequestObject struct {
+	Body *CreateSchemaJSONRequestBody
+}
+
+type CreateSchemaResponseObject interface {
+	VisitCreateSchemaResponse(w http.ResponseWriter) error
+}
+
+type CreateSchema201JSONResponse SchemaDetail
+
+func (response CreateSchema201JSONResponse) VisitCreateSchemaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateSchema400JSONResponse Error
+
+func (response CreateSchema400JSONResponse) VisitCreateSchemaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateSchema403JSONResponse Error
+
+func (response CreateSchema403JSONResponse) VisitCreateSchemaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateSchema409JSONResponse Error
+
+func (response CreateSchema409JSONResponse) VisitCreateSchemaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteSchemaRequestObject struct {
+	SchemaName string `json:"schemaName"`
+	Params     DeleteSchemaParams
+}
+
+type DeleteSchemaResponseObject interface {
+	VisitDeleteSchemaResponse(w http.ResponseWriter) error
+}
+
+type DeleteSchema204Response struct {
+}
+
+func (response DeleteSchema204Response) VisitDeleteSchemaResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteSchema403JSONResponse Error
+
+func (response DeleteSchema403JSONResponse) VisitDeleteSchemaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteSchema404JSONResponse Error
+
+func (response DeleteSchema404JSONResponse) VisitDeleteSchemaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSchemaByNameRequestObject struct {
+	SchemaName string `json:"schemaName"`
+}
+
+type GetSchemaByNameResponseObject interface {
+	VisitGetSchemaByNameResponse(w http.ResponseWriter) error
+}
+
+type GetSchemaByName200JSONResponse SchemaDetail
+
+func (response GetSchemaByName200JSONResponse) VisitGetSchemaByNameResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSchemaByName404JSONResponse Error
+
+func (response GetSchemaByName404JSONResponse) VisitGetSchemaByNameResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateSchemaMetadataRequestObject struct {
+	SchemaName string `json:"schemaName"`
+	Body       *UpdateSchemaMetadataJSONRequestBody
+}
+
+type UpdateSchemaMetadataResponseObject interface {
+	VisitUpdateSchemaMetadataResponse(w http.ResponseWriter) error
+}
+
+type UpdateSchemaMetadata200JSONResponse SchemaDetail
+
+func (response UpdateSchemaMetadata200JSONResponse) VisitUpdateSchemaMetadataResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateSchemaMetadata403JSONResponse Error
+
+func (response UpdateSchemaMetadata403JSONResponse) VisitUpdateSchemaMetadataResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateSchemaMetadata404JSONResponse Error
+
+func (response UpdateSchemaMetadata404JSONResponse) VisitUpdateSchemaMetadataResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCatalogTablesRequestObject struct {
+	SchemaName string `json:"schemaName"`
+	Params     ListCatalogTablesParams
+}
+
+type ListCatalogTablesResponseObject interface {
+	VisitListCatalogTablesResponse(w http.ResponseWriter) error
+}
+
+type ListCatalogTables200JSONResponse PaginatedTableDetails
+
+func (response ListCatalogTables200JSONResponse) VisitListCatalogTablesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCatalogTables404JSONResponse Error
+
+func (response ListCatalogTables404JSONResponse) VisitListCatalogTablesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateCatalogTableRequestObject struct {
+	SchemaName string `json:"schemaName"`
+	Body       *CreateCatalogTableJSONRequestBody
+}
+
+type CreateCatalogTableResponseObject interface {
+	VisitCreateCatalogTableResponse(w http.ResponseWriter) error
+}
+
+type CreateCatalogTable201JSONResponse TableDetail
+
+func (response CreateCatalogTable201JSONResponse) VisitCreateCatalogTableResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateCatalogTable400JSONResponse Error
+
+func (response CreateCatalogTable400JSONResponse) VisitCreateCatalogTableResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateCatalogTable403JSONResponse Error
+
+func (response CreateCatalogTable403JSONResponse) VisitCreateCatalogTableResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateCatalogTable409JSONResponse Error
+
+func (response CreateCatalogTable409JSONResponse) VisitCreateCatalogTableResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DropTableRequestObject struct {
+	SchemaName string `json:"schemaName"`
+	TableName  string `json:"tableName"`
+}
+
+type DropTableResponseObject interface {
+	VisitDropTableResponse(w http.ResponseWriter) error
+}
+
+type DropTable204Response struct {
+}
+
+func (response DropTable204Response) VisitDropTableResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DropTable403JSONResponse Error
+
+func (response DropTable403JSONResponse) VisitDropTableResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DropTable404JSONResponse Error
+
+func (response DropTable404JSONResponse) VisitDropTableResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetTableByNameRequestObject struct {
+	SchemaName string `json:"schemaName"`
+	TableName  string `json:"tableName"`
+}
+
+type GetTableByNameResponseObject interface {
+	VisitGetTableByNameResponse(w http.ResponseWriter) error
+}
+
+type GetTableByName200JSONResponse TableDetail
+
+func (response GetTableByName200JSONResponse) VisitGetTableByNameResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetTableByName404JSONResponse Error
+
+func (response GetTableByName404JSONResponse) VisitGetTableByNameResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListTableColumnsRequestObject struct {
+	SchemaName string `json:"schemaName"`
+	TableName  string `json:"tableName"`
+	Params     ListTableColumnsParams
+}
+
+type ListTableColumnsResponseObject interface {
+	VisitListTableColumnsResponse(w http.ResponseWriter) error
+}
+
+type ListTableColumns200JSONResponse PaginatedColumnDetails
+
+func (response ListTableColumns200JSONResponse) VisitListTableColumnsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListTableColumns404JSONResponse Error
+
+func (response ListTableColumns404JSONResponse) VisitListTableColumnsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -1602,7 +2705,7 @@ type ListGrantsResponseObject interface {
 	VisitListGrantsResponse(w http.ResponseWriter) error
 }
 
-type ListGrants200JSONResponse []PrivilegeGrant
+type ListGrants200JSONResponse PaginatedGrants
 
 func (response ListGrants200JSONResponse) VisitListGrantsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -1629,13 +2732,14 @@ func (response GrantPrivilege201JSONResponse) VisitGrantPrivilegeResponse(w http
 }
 
 type ListGroupsRequestObject struct {
+	Params ListGroupsParams
 }
 
 type ListGroupsResponseObject interface {
 	VisitListGroupsResponse(w http.ResponseWriter) error
 }
 
-type ListGroups200JSONResponse []Group
+type ListGroups200JSONResponse PaginatedGroups
 
 func (response ListGroups200JSONResponse) VisitListGroupsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -1721,14 +2825,15 @@ func (response RemoveGroupMember204Response) VisitRemoveGroupMemberResponse(w ht
 }
 
 type ListGroupMembersRequestObject struct {
-	Id int64 `json:"id"`
+	Id     int64 `json:"id"`
+	Params ListGroupMembersParams
 }
 
 type ListGroupMembersResponseObject interface {
 	VisitListGroupMembersResponse(w http.ResponseWriter) error
 }
 
-type ListGroupMembers200JSONResponse []GroupMember
+type ListGroupMembers200JSONResponse PaginatedGroupMembers
 
 func (response ListGroupMembers200JSONResponse) VisitListGroupMembersResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -1798,14 +2903,31 @@ func (response GetManifest404JSONResponse) VisitGetManifestResponse(w http.Respo
 	return json.NewEncoder(w).Encode(response)
 }
 
+type GetMetastoreSummaryRequestObject struct {
+}
+
+type GetMetastoreSummaryResponseObject interface {
+	VisitGetMetastoreSummaryResponse(w http.ResponseWriter) error
+}
+
+type GetMetastoreSummary200JSONResponse MetastoreSummary
+
+func (response GetMetastoreSummary200JSONResponse) VisitGetMetastoreSummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type ListPrincipalsRequestObject struct {
+	Params ListPrincipalsParams
 }
 
 type ListPrincipalsResponseObject interface {
 	VisitListPrincipalsResponse(w http.ResponseWriter) error
 }
 
-type ListPrincipals200JSONResponse []Principal
+type ListPrincipals200JSONResponse PaginatedPrincipals
 
 func (response ListPrincipals200JSONResponse) VisitListPrincipalsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -2012,13 +3134,14 @@ func (response BindRowFilter204Response) VisitBindRowFilterResponse(w http.Respo
 }
 
 type ListSchemasRequestObject struct {
+	Params ListSchemasParams
 }
 
 type ListSchemasResponseObject interface {
 	VisitListSchemasResponse(w http.ResponseWriter) error
 }
 
-type ListSchemas200JSONResponse []Schema
+type ListSchemas200JSONResponse PaginatedSchemas
 
 func (response ListSchemas200JSONResponse) VisitListSchemasResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -2028,14 +3151,15 @@ func (response ListSchemas200JSONResponse) VisitListSchemasResponse(w http.Respo
 }
 
 type ListTablesRequestObject struct {
-	Id int64 `json:"id"`
+	Id     int64 `json:"id"`
+	Params ListTablesParams
 }
 
 type ListTablesResponseObject interface {
 	VisitListTablesResponse(w http.ResponseWriter) error
 }
 
-type ListTables200JSONResponse []Table
+type ListTables200JSONResponse PaginatedTables
 
 func (response ListTables200JSONResponse) VisitListTablesResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -2045,14 +3169,15 @@ func (response ListTables200JSONResponse) VisitListTablesResponse(w http.Respons
 }
 
 type ListColumnsRequestObject struct {
-	Id int64 `json:"id"`
+	Id     int64 `json:"id"`
+	Params ListColumnsParams
 }
 
 type ListColumnsResponseObject interface {
 	VisitListColumnsResponse(w http.ResponseWriter) error
 }
 
-type ListColumns200JSONResponse []Column
+type ListColumns200JSONResponse PaginatedColumns
 
 func (response ListColumns200JSONResponse) VisitListColumnsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -2063,13 +3188,14 @@ func (response ListColumns200JSONResponse) VisitListColumnsResponse(w http.Respo
 
 type ListColumnMasksRequestObject struct {
 	TableId int64 `json:"tableId"`
+	Params  ListColumnMasksParams
 }
 
 type ListColumnMasksResponseObject interface {
 	VisitListColumnMasksResponse(w http.ResponseWriter) error
 }
 
-type ListColumnMasks200JSONResponse []ColumnMask
+type ListColumnMasks200JSONResponse PaginatedColumnMasks
 
 func (response ListColumnMasks200JSONResponse) VisitListColumnMasksResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -2098,13 +3224,14 @@ func (response CreateColumnMask201JSONResponse) VisitCreateColumnMaskResponse(w 
 
 type ListRowFiltersRequestObject struct {
 	TableId int64 `json:"tableId"`
+	Params  ListRowFiltersParams
 }
 
 type ListRowFiltersResponseObject interface {
 	VisitListRowFiltersResponse(w http.ResponseWriter) error
 }
 
-type ListRowFilters200JSONResponse []RowFilter
+type ListRowFilters200JSONResponse PaginatedRowFilters
 
 func (response ListRowFilters200JSONResponse) VisitListRowFiltersResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -2136,6 +3263,39 @@ type StrictServerInterface interface {
 	// Query audit logs
 	// (GET /audit-logs)
 	ListAuditLogs(ctx context.Context, request ListAuditLogsRequestObject) (ListAuditLogsResponseObject, error)
+	// Get catalog info
+	// (GET /catalog)
+	GetCatalog(ctx context.Context, request GetCatalogRequestObject) (GetCatalogResponseObject, error)
+	// List schemas in the catalog
+	// (GET /catalog/schemas)
+	ListCatalogSchemas(ctx context.Context, request ListCatalogSchemasRequestObject) (ListCatalogSchemasResponseObject, error)
+	// Create a new schema
+	// (POST /catalog/schemas)
+	CreateSchema(ctx context.Context, request CreateSchemaRequestObject) (CreateSchemaResponseObject, error)
+	// Delete a schema
+	// (DELETE /catalog/schemas/{schemaName})
+	DeleteSchema(ctx context.Context, request DeleteSchemaRequestObject) (DeleteSchemaResponseObject, error)
+	// Get a schema by name
+	// (GET /catalog/schemas/{schemaName})
+	GetSchemaByName(ctx context.Context, request GetSchemaByNameRequestObject) (GetSchemaByNameResponseObject, error)
+	// Update schema metadata (comment, properties)
+	// (PATCH /catalog/schemas/{schemaName})
+	UpdateSchemaMetadata(ctx context.Context, request UpdateSchemaMetadataRequestObject) (UpdateSchemaMetadataResponseObject, error)
+	// List tables in a schema
+	// (GET /catalog/schemas/{schemaName}/tables)
+	ListCatalogTables(ctx context.Context, request ListCatalogTablesRequestObject) (ListCatalogTablesResponseObject, error)
+	// Create a new table in a schema
+	// (POST /catalog/schemas/{schemaName}/tables)
+	CreateCatalogTable(ctx context.Context, request CreateCatalogTableRequestObject) (CreateCatalogTableResponseObject, error)
+	// Delete a table
+	// (DELETE /catalog/schemas/{schemaName}/tables/{tableName})
+	DropTable(ctx context.Context, request DropTableRequestObject) (DropTableResponseObject, error)
+	// Get a table by name
+	// (GET /catalog/schemas/{schemaName}/tables/{tableName})
+	GetTableByName(ctx context.Context, request GetTableByNameRequestObject) (GetTableByNameResponseObject, error)
+	// List columns of a table
+	// (GET /catalog/schemas/{schemaName}/tables/{tableName}/columns)
+	ListTableColumns(ctx context.Context, request ListTableColumnsRequestObject) (ListTableColumnsResponseObject, error)
 	// Delete column mask
 	// (DELETE /column-masks/{id})
 	DeleteColumnMask(ctx context.Context, request DeleteColumnMaskRequestObject) (DeleteColumnMaskResponseObject, error)
@@ -2178,6 +3338,9 @@ type StrictServerInterface interface {
 	// Get table manifest with presigned URLs and security policies
 	// (POST /manifest)
 	GetManifest(ctx context.Context, request GetManifestRequestObject) (GetManifestResponseObject, error)
+	// Get metastore summary
+	// (GET /metastore/summary)
+	GetMetastoreSummary(ctx context.Context, request GetMetastoreSummaryRequestObject) (GetMetastoreSummaryResponseObject, error)
 	// List all principals
 	// (GET /principals)
 	ListPrincipals(ctx context.Context, request ListPrincipalsRequestObject) (ListPrincipalsResponseObject, error)
@@ -2205,13 +3368,13 @@ type StrictServerInterface interface {
 	// Bind filter to principal
 	// (POST /row-filters/{id}/bindings)
 	BindRowFilter(ctx context.Context, request BindRowFilterRequestObject) (BindRowFilterResponseObject, error)
-	// List DuckLake schemas
+	// List DuckLake schemas (deprecated, use /catalog/schemas)
 	// (GET /schemas)
 	ListSchemas(ctx context.Context, request ListSchemasRequestObject) (ListSchemasResponseObject, error)
-	// List tables in schema
+	// List tables in schema (deprecated, use /catalog/schemas/{name}/tables)
 	// (GET /schemas/{id}/tables)
 	ListTables(ctx context.Context, request ListTablesRequestObject) (ListTablesResponseObject, error)
-	// List columns in table
+	// List columns in table (deprecated, use /catalog/schemas/{name}/tables/{name}/columns)
 	// (GET /tables/{id}/columns)
 	ListColumns(ctx context.Context, request ListColumnsRequestObject) (ListColumnsResponseObject, error)
 	// List column masks
@@ -2276,6 +3439,315 @@ func (sh *strictHandler) ListAuditLogs(w http.ResponseWriter, r *http.Request, p
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListAuditLogsResponseObject); ok {
 		if err := validResponse.VisitListAuditLogsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCatalog operation middleware
+func (sh *strictHandler) GetCatalog(w http.ResponseWriter, r *http.Request) {
+	var request GetCatalogRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCatalog(ctx, request.(GetCatalogRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCatalog")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCatalogResponseObject); ok {
+		if err := validResponse.VisitGetCatalogResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListCatalogSchemas operation middleware
+func (sh *strictHandler) ListCatalogSchemas(w http.ResponseWriter, r *http.Request, params ListCatalogSchemasParams) {
+	var request ListCatalogSchemasRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCatalogSchemas(ctx, request.(ListCatalogSchemasRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCatalogSchemas")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListCatalogSchemasResponseObject); ok {
+		if err := validResponse.VisitListCatalogSchemasResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateSchema operation middleware
+func (sh *strictHandler) CreateSchema(w http.ResponseWriter, r *http.Request) {
+	var request CreateSchemaRequestObject
+
+	var body CreateSchemaJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateSchema(ctx, request.(CreateSchemaRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateSchema")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateSchemaResponseObject); ok {
+		if err := validResponse.VisitCreateSchemaResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteSchema operation middleware
+func (sh *strictHandler) DeleteSchema(w http.ResponseWriter, r *http.Request, schemaName string, params DeleteSchemaParams) {
+	var request DeleteSchemaRequestObject
+
+	request.SchemaName = schemaName
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteSchema(ctx, request.(DeleteSchemaRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteSchema")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteSchemaResponseObject); ok {
+		if err := validResponse.VisitDeleteSchemaResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetSchemaByName operation middleware
+func (sh *strictHandler) GetSchemaByName(w http.ResponseWriter, r *http.Request, schemaName string) {
+	var request GetSchemaByNameRequestObject
+
+	request.SchemaName = schemaName
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSchemaByName(ctx, request.(GetSchemaByNameRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSchemaByName")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetSchemaByNameResponseObject); ok {
+		if err := validResponse.VisitGetSchemaByNameResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateSchemaMetadata operation middleware
+func (sh *strictHandler) UpdateSchemaMetadata(w http.ResponseWriter, r *http.Request, schemaName string) {
+	var request UpdateSchemaMetadataRequestObject
+
+	request.SchemaName = schemaName
+
+	var body UpdateSchemaMetadataJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateSchemaMetadata(ctx, request.(UpdateSchemaMetadataRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateSchemaMetadata")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateSchemaMetadataResponseObject); ok {
+		if err := validResponse.VisitUpdateSchemaMetadataResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListCatalogTables operation middleware
+func (sh *strictHandler) ListCatalogTables(w http.ResponseWriter, r *http.Request, schemaName string, params ListCatalogTablesParams) {
+	var request ListCatalogTablesRequestObject
+
+	request.SchemaName = schemaName
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCatalogTables(ctx, request.(ListCatalogTablesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCatalogTables")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListCatalogTablesResponseObject); ok {
+		if err := validResponse.VisitListCatalogTablesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateCatalogTable operation middleware
+func (sh *strictHandler) CreateCatalogTable(w http.ResponseWriter, r *http.Request, schemaName string) {
+	var request CreateCatalogTableRequestObject
+
+	request.SchemaName = schemaName
+
+	var body CreateCatalogTableJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateCatalogTable(ctx, request.(CreateCatalogTableRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateCatalogTable")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateCatalogTableResponseObject); ok {
+		if err := validResponse.VisitCreateCatalogTableResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DropTable operation middleware
+func (sh *strictHandler) DropTable(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
+	var request DropTableRequestObject
+
+	request.SchemaName = schemaName
+	request.TableName = tableName
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DropTable(ctx, request.(DropTableRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DropTable")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DropTableResponseObject); ok {
+		if err := validResponse.VisitDropTableResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetTableByName operation middleware
+func (sh *strictHandler) GetTableByName(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
+	var request GetTableByNameRequestObject
+
+	request.SchemaName = schemaName
+	request.TableName = tableName
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetTableByName(ctx, request.(GetTableByNameRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetTableByName")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetTableByNameResponseObject); ok {
+		if err := validResponse.VisitGetTableByNameResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListTableColumns operation middleware
+func (sh *strictHandler) ListTableColumns(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params ListTableColumnsParams) {
+	var request ListTableColumnsRequestObject
+
+	request.SchemaName = schemaName
+	request.TableName = tableName
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListTableColumns(ctx, request.(ListTableColumnsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListTableColumns")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListTableColumnsResponseObject); ok {
+		if err := validResponse.VisitListTableColumnsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -2464,8 +3936,10 @@ func (sh *strictHandler) GrantPrivilege(w http.ResponseWriter, r *http.Request) 
 }
 
 // ListGroups operation middleware
-func (sh *strictHandler) ListGroups(w http.ResponseWriter, r *http.Request) {
+func (sh *strictHandler) ListGroups(w http.ResponseWriter, r *http.Request, params ListGroupsParams) {
 	var request ListGroupsRequestObject
+
+	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.ListGroups(ctx, request.(ListGroupsRequestObject))
@@ -2604,10 +4078,11 @@ func (sh *strictHandler) RemoveGroupMember(w http.ResponseWriter, r *http.Reques
 }
 
 // ListGroupMembers operation middleware
-func (sh *strictHandler) ListGroupMembers(w http.ResponseWriter, r *http.Request, id int64) {
+func (sh *strictHandler) ListGroupMembers(w http.ResponseWriter, r *http.Request, id int64, params ListGroupMembersParams) {
 	var request ListGroupMembersRequestObject
 
 	request.Id = id
+	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.ListGroupMembers(ctx, request.(ListGroupMembersRequestObject))
@@ -2693,9 +4168,35 @@ func (sh *strictHandler) GetManifest(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetMetastoreSummary operation middleware
+func (sh *strictHandler) GetMetastoreSummary(w http.ResponseWriter, r *http.Request) {
+	var request GetMetastoreSummaryRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMetastoreSummary(ctx, request.(GetMetastoreSummaryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMetastoreSummary")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMetastoreSummaryResponseObject); ok {
+		if err := validResponse.VisitGetMetastoreSummaryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListPrincipals operation middleware
-func (sh *strictHandler) ListPrincipals(w http.ResponseWriter, r *http.Request) {
+func (sh *strictHandler) ListPrincipals(w http.ResponseWriter, r *http.Request, params ListPrincipalsParams) {
 	var request ListPrincipalsRequestObject
+
+	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.ListPrincipals(ctx, request.(ListPrincipalsRequestObject))
@@ -2957,8 +4458,10 @@ func (sh *strictHandler) BindRowFilter(w http.ResponseWriter, r *http.Request, i
 }
 
 // ListSchemas operation middleware
-func (sh *strictHandler) ListSchemas(w http.ResponseWriter, r *http.Request) {
+func (sh *strictHandler) ListSchemas(w http.ResponseWriter, r *http.Request, params ListSchemasParams) {
 	var request ListSchemasRequestObject
+
+	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.ListSchemas(ctx, request.(ListSchemasRequestObject))
@@ -2981,10 +4484,11 @@ func (sh *strictHandler) ListSchemas(w http.ResponseWriter, r *http.Request) {
 }
 
 // ListTables operation middleware
-func (sh *strictHandler) ListTables(w http.ResponseWriter, r *http.Request, id int64) {
+func (sh *strictHandler) ListTables(w http.ResponseWriter, r *http.Request, id int64, params ListTablesParams) {
 	var request ListTablesRequestObject
 
 	request.Id = id
+	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.ListTables(ctx, request.(ListTablesRequestObject))
@@ -3007,10 +4511,11 @@ func (sh *strictHandler) ListTables(w http.ResponseWriter, r *http.Request, id i
 }
 
 // ListColumns operation middleware
-func (sh *strictHandler) ListColumns(w http.ResponseWriter, r *http.Request, id int64) {
+func (sh *strictHandler) ListColumns(w http.ResponseWriter, r *http.Request, id int64, params ListColumnsParams) {
 	var request ListColumnsRequestObject
 
 	request.Id = id
+	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.ListColumns(ctx, request.(ListColumnsRequestObject))
@@ -3033,10 +4538,11 @@ func (sh *strictHandler) ListColumns(w http.ResponseWriter, r *http.Request, id 
 }
 
 // ListColumnMasks operation middleware
-func (sh *strictHandler) ListColumnMasks(w http.ResponseWriter, r *http.Request, tableId int64) {
+func (sh *strictHandler) ListColumnMasks(w http.ResponseWriter, r *http.Request, tableId int64, params ListColumnMasksParams) {
 	var request ListColumnMasksRequestObject
 
 	request.TableId = tableId
+	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.ListColumnMasks(ctx, request.(ListColumnMasksRequestObject))
@@ -3092,10 +4598,11 @@ func (sh *strictHandler) CreateColumnMask(w http.ResponseWriter, r *http.Request
 }
 
 // ListRowFilters operation middleware
-func (sh *strictHandler) ListRowFilters(w http.ResponseWriter, r *http.Request, tableId int64) {
+func (sh *strictHandler) ListRowFilters(w http.ResponseWriter, r *http.Request, tableId int64, params ListRowFiltersParams) {
 	var request ListRowFiltersRequestObject
 
 	request.TableId = tableId
+	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.ListRowFilters(ctx, request.(ListRowFiltersRequestObject))
@@ -3153,47 +4660,64 @@ func (sh *strictHandler) CreateRowFilter(w http.ResponseWriter, r *http.Request,
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
-	"3uHNw+Z/AQAA//9Kziq+/EQAAA==",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

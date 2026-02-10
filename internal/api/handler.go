@@ -19,6 +19,7 @@ type APIHandler struct {
 	introspection *service.IntrospectionService
 	audit         *service.AuditService
 	manifest      *service.ManifestService
+	catalog       *service.CatalogService
 }
 
 func NewHandler(
@@ -31,6 +32,7 @@ func NewHandler(
 	introspection *service.IntrospectionService,
 	audit *service.AuditService,
 	manifest *service.ManifestService,
+	catalog *service.CatalogService,
 ) *APIHandler {
 	return &APIHandler{
 		query:         query,
@@ -42,11 +44,26 @@ func NewHandler(
 		introspection: introspection,
 		audit:         audit,
 		manifest:      manifest,
+		catalog:       catalog,
 	}
 }
 
 // Ensure Handler implements the interface.
 var _ StrictServerInterface = (*APIHandler)(nil)
+
+// --- helpers ---
+
+// pageFromParams extracts a PageRequest from optional max_results/page_token params.
+func pageFromParams(maxResults *MaxResults, pageToken *PageToken) domain.PageRequest {
+	p := domain.PageRequest{}
+	if maxResults != nil {
+		p.MaxResults = *maxResults
+	}
+	if pageToken != nil {
+		p.PageToken = *pageToken
+	}
+	return p
+}
 
 func (h *APIHandler) ExecuteQuery(ctx context.Context, req ExecuteQueryRequestObject) (ExecuteQueryResponseObject, error) {
 	principal, _ := middleware.PrincipalFromContext(ctx)
@@ -77,7 +94,6 @@ func (h *APIHandler) GetManifest(ctx context.Context, req GetManifestRequestObje
 
 	result, err := h.manifest.GetManifest(ctx, principal, schemaName, req.Body.Table)
 	if err != nil {
-		// Check error type to return proper HTTP status
 		switch err.(type) {
 		case *domain.NotFoundError:
 			return GetManifest404JSONResponse{Code: 404, Message: err.Error()}, nil
@@ -106,16 +122,20 @@ func (h *APIHandler) GetManifest(ctx context.Context, req GetManifestRequestObje
 	}, nil
 }
 
-func (h *APIHandler) ListPrincipals(ctx context.Context, _ ListPrincipalsRequestObject) (ListPrincipalsResponseObject, error) {
-	ps, err := h.principals.List(ctx)
+// === Principals ===
+
+func (h *APIHandler) ListPrincipals(ctx context.Context, req ListPrincipalsRequestObject) (ListPrincipalsResponseObject, error) {
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	ps, total, err := h.principals.List(ctx, page)
 	if err != nil {
 		return nil, err
 	}
-	out := make(ListPrincipals200JSONResponse, len(ps))
+	out := make([]Principal, len(ps))
 	for i, p := range ps {
 		out[i] = principalToAPI(p)
 	}
-	return out, nil
+	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return ListPrincipals200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
 }
 
 func (h *APIHandler) CreatePrincipal(ctx context.Context, req CreatePrincipalRequestObject) (CreatePrincipalResponseObject, error) {
@@ -157,16 +177,20 @@ func (h *APIHandler) SetAdmin(ctx context.Context, req SetAdminRequestObject) (S
 	return SetAdmin204Response{}, nil
 }
 
-func (h *APIHandler) ListGroups(ctx context.Context, _ ListGroupsRequestObject) (ListGroupsResponseObject, error) {
-	gs, err := h.groups.List(ctx)
+// === Groups ===
+
+func (h *APIHandler) ListGroups(ctx context.Context, req ListGroupsRequestObject) (ListGroupsResponseObject, error) {
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	gs, total, err := h.groups.List(ctx, page)
 	if err != nil {
 		return nil, err
 	}
-	out := make(ListGroups200JSONResponse, len(gs))
+	out := make([]Group, len(gs))
 	for i, g := range gs {
 		out[i] = groupToAPI(g)
 	}
-	return out, nil
+	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return ListGroups200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
 }
 
 func (h *APIHandler) CreateGroup(ctx context.Context, req CreateGroupRequestObject) (CreateGroupResponseObject, error) {
@@ -197,15 +221,17 @@ func (h *APIHandler) DeleteGroup(ctx context.Context, req DeleteGroupRequestObje
 }
 
 func (h *APIHandler) ListGroupMembers(ctx context.Context, req ListGroupMembersRequestObject) (ListGroupMembersResponseObject, error) {
-	ms, err := h.groups.ListMembers(ctx, req.Id)
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	ms, total, err := h.groups.ListMembers(ctx, req.Id, page)
 	if err != nil {
 		return nil, err
 	}
-	out := make(ListGroupMembers200JSONResponse, len(ms))
+	out := make([]GroupMember, len(ms))
 	for i, m := range ms {
 		out[i] = groupMemberToAPI(m, req.Id)
 	}
-	return out, nil
+	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return ListGroupMembers200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
 }
 
 func (h *APIHandler) AddGroupMember(ctx context.Context, req AddGroupMemberRequestObject) (AddGroupMemberResponseObject, error) {
@@ -230,27 +256,31 @@ func (h *APIHandler) RemoveGroupMember(ctx context.Context, req RemoveGroupMembe
 	return RemoveGroupMember204Response{}, nil
 }
 
+// === Grants ===
+
 func (h *APIHandler) ListGrants(ctx context.Context, req ListGrantsRequestObject) (ListGrantsResponseObject, error) {
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	var grants []domain.PrivilegeGrant
+	var total int64
 	var err error
 
 	if req.Params.PrincipalId != nil && req.Params.PrincipalType != nil {
-		grants, err = h.grants.ListForPrincipal(ctx, *req.Params.PrincipalId, *req.Params.PrincipalType)
+		grants, total, err = h.grants.ListForPrincipal(ctx, *req.Params.PrincipalId, *req.Params.PrincipalType, page)
 	} else if req.Params.SecurableType != nil && req.Params.SecurableId != nil {
-		grants, err = h.grants.ListForSecurable(ctx, *req.Params.SecurableType, *req.Params.SecurableId)
+		grants, total, err = h.grants.ListForSecurable(ctx, *req.Params.SecurableType, *req.Params.SecurableId, page)
 	} else {
-		// Return empty list if no filter provided
 		grants = []domain.PrivilegeGrant{}
 	}
 	if err != nil {
 		return nil, err
 	}
 
-	out := make(ListGrants200JSONResponse, len(grants))
+	out := make([]PrivilegeGrant, len(grants))
 	for i, g := range grants {
 		out[i] = grantToAPI(g)
 	}
-	return out, nil
+	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return ListGrants200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
 }
 
 func (h *APIHandler) GrantPrivilege(ctx context.Context, req GrantPrivilegeRequestObject) (GrantPrivilegeResponseObject, error) {
@@ -281,16 +311,20 @@ func (h *APIHandler) RevokePrivilege(ctx context.Context, req RevokePrivilegeReq
 	return RevokePrivilege204Response{}, nil
 }
 
+// === Row Filters ===
+
 func (h *APIHandler) ListRowFilters(ctx context.Context, req ListRowFiltersRequestObject) (ListRowFiltersResponseObject, error) {
-	fs, err := h.rowFilters.GetForTable(ctx, req.TableId)
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	fs, total, err := h.rowFilters.GetForTable(ctx, req.TableId, page)
 	if err != nil {
 		return nil, err
 	}
-	out := make(ListRowFilters200JSONResponse, len(fs))
+	out := make([]RowFilter, len(fs))
 	for i, f := range fs {
 		out[i] = rowFilterToAPI(f)
 	}
-	return out, nil
+	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return ListRowFilters200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
 }
 
 func (h *APIHandler) CreateRowFilter(ctx context.Context, req CreateRowFilterRequestObject) (CreateRowFilterResponseObject, error) {
@@ -337,16 +371,20 @@ func (h *APIHandler) UnbindRowFilter(ctx context.Context, req UnbindRowFilterReq
 	return UnbindRowFilter204Response{}, nil
 }
 
+// === Column Masks ===
+
 func (h *APIHandler) ListColumnMasks(ctx context.Context, req ListColumnMasksRequestObject) (ListColumnMasksResponseObject, error) {
-	ms, err := h.columnMasks.GetForTable(ctx, req.TableId)
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	ms, total, err := h.columnMasks.GetForTable(ctx, req.TableId, page)
 	if err != nil {
 		return nil, err
 	}
-	out := make(ListColumnMasks200JSONResponse, len(ms))
+	out := make([]ColumnMask, len(ms))
 	for i, m := range ms {
 		out[i] = columnMaskToAPI(m)
 	}
-	return out, nil
+	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return ListColumnMasks200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
 }
 
 func (h *APIHandler) CreateColumnMask(ctx context.Context, req CreateColumnMaskRequestObject) (CreateColumnMaskResponseObject, error) {
@@ -399,55 +437,59 @@ func (h *APIHandler) UnbindColumnMask(ctx context.Context, req UnbindColumnMaskR
 	return UnbindColumnMask204Response{}, nil
 }
 
-func (h *APIHandler) ListSchemas(ctx context.Context, _ ListSchemasRequestObject) (ListSchemasResponseObject, error) {
-	ss, err := h.introspection.ListSchemas(ctx)
+// === Introspection (deprecated) ===
+
+func (h *APIHandler) ListSchemas(ctx context.Context, req ListSchemasRequestObject) (ListSchemasResponseObject, error) {
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	ss, total, err := h.introspection.ListSchemas(ctx, page)
 	if err != nil {
 		return nil, err
 	}
-	out := make(ListSchemas200JSONResponse, len(ss))
+	out := make([]Schema, len(ss))
 	for i, s := range ss {
 		out[i] = schemaToAPI(s)
 	}
-	return out, nil
+	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return ListSchemas200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
 }
 
 func (h *APIHandler) ListTables(ctx context.Context, req ListTablesRequestObject) (ListTablesResponseObject, error) {
-	ts, err := h.introspection.ListTables(ctx, req.Id)
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	ts, total, err := h.introspection.ListTables(ctx, req.Id, page)
 	if err != nil {
 		return nil, err
 	}
-	out := make(ListTables200JSONResponse, len(ts))
+	out := make([]Table, len(ts))
 	for i, t := range ts {
 		out[i] = tableToAPI(t)
 	}
-	return out, nil
+	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return ListTables200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
 }
 
 func (h *APIHandler) ListColumns(ctx context.Context, req ListColumnsRequestObject) (ListColumnsResponseObject, error) {
-	cs, err := h.introspection.ListColumns(ctx, req.Id)
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	cs, total, err := h.introspection.ListColumns(ctx, req.Id, page)
 	if err != nil {
 		return nil, err
 	}
-	out := make(ListColumns200JSONResponse, len(cs))
+	out := make([]Column, len(cs))
 	for i, c := range cs {
 		out[i] = columnToAPI(c)
 	}
-	return out, nil
+	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return ListColumns200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
 }
 
+// === Audit Logs ===
+
 func (h *APIHandler) ListAuditLogs(ctx context.Context, req ListAuditLogsRequestObject) (ListAuditLogsResponseObject, error) {
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	filter := domain.AuditFilter{
 		PrincipalName: req.Params.PrincipalName,
 		Action:        req.Params.Action,
 		Status:        req.Params.Status,
-		Limit:         50,
-		Offset:        0,
-	}
-	if req.Params.Limit != nil {
-		filter.Limit = *req.Params.Limit
-	}
-	if req.Params.Offset != nil {
-		filter.Offset = *req.Params.Offset
+		Page:          page,
 	}
 
 	entries, total, err := h.audit.List(ctx, filter)
@@ -460,18 +502,227 @@ func (h *APIHandler) ListAuditLogs(ctx context.Context, req ListAuditLogsRequest
 		data[i] = auditEntryToAPI(e)
 	}
 
-	totalInt := int64(total)
-	limit := filter.Limit
-	offset := filter.Offset
-	return ListAuditLogs200JSONResponse{
-		Data:   &data,
-		Total:  &totalInt,
-		Limit:  &limit,
-		Offset: &offset,
+	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return ListAuditLogs200JSONResponse{Data: &data, NextPageToken: optStr(npt)}, nil
+}
+
+// === Catalog Management ===
+
+func (h *APIHandler) GetCatalog(ctx context.Context, _ GetCatalogRequestObject) (GetCatalogResponseObject, error) {
+	info, err := h.catalog.GetCatalogInfo(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return GetCatalog200JSONResponse(catalogInfoToAPI(*info)), nil
+}
+
+func (h *APIHandler) ListCatalogSchemas(ctx context.Context, req ListCatalogSchemasRequestObject) (ListCatalogSchemasResponseObject, error) {
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	schemas, total, err := h.catalog.ListSchemas(ctx, page)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]SchemaDetail, len(schemas))
+	for i, s := range schemas {
+		out[i] = schemaDetailToAPI(s)
+	}
+	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return ListCatalogSchemas200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
+}
+
+func (h *APIHandler) CreateSchema(ctx context.Context, req CreateSchemaRequestObject) (CreateSchemaResponseObject, error) {
+	domReq := domain.CreateSchemaRequest{
+		Name: req.Body.Name,
+	}
+	if req.Body.Comment != nil {
+		domReq.Comment = *req.Body.Comment
+	}
+	if req.Body.Properties != nil {
+		domReq.Properties = *req.Body.Properties
+	}
+
+	result, err := h.catalog.CreateSchema(ctx, domReq)
+	if err != nil {
+		switch err.(type) {
+		case *domain.AccessDeniedError:
+			return CreateSchema403JSONResponse{Code: 403, Message: err.Error()}, nil
+		case *domain.ValidationError:
+			return CreateSchema400JSONResponse{Code: 400, Message: err.Error()}, nil
+		case *domain.ConflictError:
+			return CreateSchema409JSONResponse{Code: 409, Message: err.Error()}, nil
+		default:
+			return CreateSchema400JSONResponse{Code: 400, Message: err.Error()}, nil
+		}
+	}
+	return CreateSchema201JSONResponse(schemaDetailToAPI(*result)), nil
+}
+
+func (h *APIHandler) GetSchemaByName(ctx context.Context, req GetSchemaByNameRequestObject) (GetSchemaByNameResponseObject, error) {
+	result, err := h.catalog.GetSchema(ctx, req.SchemaName)
+	if err != nil {
+		switch err.(type) {
+		case *domain.NotFoundError:
+			return GetSchemaByName404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return GetSchemaByName200JSONResponse(schemaDetailToAPI(*result)), nil
+}
+
+func (h *APIHandler) UpdateSchemaMetadata(ctx context.Context, req UpdateSchemaMetadataRequestObject) (UpdateSchemaMetadataResponseObject, error) {
+	var props map[string]string
+	if req.Body.Properties != nil {
+		props = *req.Body.Properties
+	}
+
+	result, err := h.catalog.UpdateSchema(ctx, req.SchemaName, req.Body.Comment, props)
+	if err != nil {
+		switch err.(type) {
+		case *domain.AccessDeniedError:
+			return UpdateSchemaMetadata403JSONResponse{Code: 403, Message: err.Error()}, nil
+		case *domain.NotFoundError:
+			return UpdateSchemaMetadata404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return UpdateSchemaMetadata200JSONResponse(schemaDetailToAPI(*result)), nil
+}
+
+func (h *APIHandler) DeleteSchema(ctx context.Context, req DeleteSchemaRequestObject) (DeleteSchemaResponseObject, error) {
+	force := false
+	if req.Params.Force != nil {
+		force = *req.Params.Force
+	}
+
+	if err := h.catalog.DeleteSchema(ctx, req.SchemaName, force); err != nil {
+		switch err.(type) {
+		case *domain.AccessDeniedError:
+			return DeleteSchema403JSONResponse{Code: 403, Message: err.Error()}, nil
+		case *domain.NotFoundError:
+			return DeleteSchema404JSONResponse{Code: 404, Message: err.Error()}, nil
+		case *domain.ConflictError:
+			return DeleteSchema403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return DeleteSchema204Response{}, nil
+}
+
+func (h *APIHandler) ListCatalogTables(ctx context.Context, req ListCatalogTablesRequestObject) (ListCatalogTablesResponseObject, error) {
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	tables, total, err := h.catalog.ListTables(ctx, req.SchemaName, page)
+	if err != nil {
+		switch err.(type) {
+		case *domain.NotFoundError:
+			return ListCatalogTables404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	out := make([]TableDetail, len(tables))
+	for i, t := range tables {
+		out[i] = tableDetailToAPI(t)
+	}
+	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return ListCatalogTables200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
+}
+
+func (h *APIHandler) CreateCatalogTable(ctx context.Context, req CreateCatalogTableRequestObject) (CreateCatalogTableResponseObject, error) {
+	cols := make([]domain.CreateColumnDef, len(req.Body.Columns))
+	for i, c := range req.Body.Columns {
+		cols[i] = domain.CreateColumnDef{Name: c.Name, Type: c.Type}
+	}
+	domReq := domain.CreateTableRequest{
+		Name:    req.Body.Name,
+		Columns: cols,
+	}
+	if req.Body.Comment != nil {
+		domReq.Comment = *req.Body.Comment
+	}
+
+	result, err := h.catalog.CreateTable(ctx, req.SchemaName, domReq)
+	if err != nil {
+		switch err.(type) {
+		case *domain.AccessDeniedError:
+			return CreateCatalogTable403JSONResponse{Code: 403, Message: err.Error()}, nil
+		case *domain.ValidationError:
+			return CreateCatalogTable400JSONResponse{Code: 400, Message: err.Error()}, nil
+		case *domain.ConflictError:
+			return CreateCatalogTable409JSONResponse{Code: 409, Message: err.Error()}, nil
+		case *domain.NotFoundError:
+			return CreateCatalogTable400JSONResponse{Code: 400, Message: err.Error()}, nil
+		default:
+			return CreateCatalogTable400JSONResponse{Code: 400, Message: err.Error()}, nil
+		}
+	}
+	return CreateCatalogTable201JSONResponse(tableDetailToAPI(*result)), nil
+}
+
+func (h *APIHandler) GetTableByName(ctx context.Context, req GetTableByNameRequestObject) (GetTableByNameResponseObject, error) {
+	result, err := h.catalog.GetTable(ctx, req.SchemaName, req.TableName)
+	if err != nil {
+		switch err.(type) {
+		case *domain.NotFoundError:
+			return GetTableByName404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return GetTableByName200JSONResponse(tableDetailToAPI(*result)), nil
+}
+
+func (h *APIHandler) DropTable(ctx context.Context, req DropTableRequestObject) (DropTableResponseObject, error) {
+	if err := h.catalog.DeleteTable(ctx, req.SchemaName, req.TableName); err != nil {
+		switch err.(type) {
+		case *domain.AccessDeniedError:
+			return DropTable403JSONResponse{Code: 403, Message: err.Error()}, nil
+		case *domain.NotFoundError:
+			return DropTable404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return DropTable204Response{}, nil
+}
+
+func (h *APIHandler) ListTableColumns(ctx context.Context, req ListTableColumnsRequestObject) (ListTableColumnsResponseObject, error) {
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	cols, total, err := h.catalog.ListColumns(ctx, req.SchemaName, req.TableName, page)
+	if err != nil {
+		switch err.(type) {
+		case *domain.NotFoundError:
+			return ListTableColumns404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	out := make([]ColumnDetail, len(cols))
+	for i, c := range cols {
+		out[i] = columnDetailToAPI(c)
+	}
+	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return ListTableColumns200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
+}
+
+func (h *APIHandler) GetMetastoreSummary(ctx context.Context, _ GetMetastoreSummaryRequestObject) (GetMetastoreSummaryResponseObject, error) {
+	summary, err := h.catalog.GetMetastoreSummary(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return GetMetastoreSummary200JSONResponse{
+		CatalogName:    &summary.CatalogName,
+		MetastoreType:  &summary.MetastoreType,
+		StorageBackend: &summary.StorageBackend,
+		DataPath:       &summary.DataPath,
+		SchemaCount:    &summary.SchemaCount,
+		TableCount:     &summary.TableCount,
 	}, nil
 }
 
-// --- Mapping helpers ---
+// === Mapping helpers ===
 
 func principalToAPI(p domain.Principal) Principal {
 	t := p.CreatedAt
@@ -578,4 +829,63 @@ func auditEntryToAPI(e domain.AuditEntry) AuditEntry {
 		DurationMs:     e.DurationMs,
 		CreatedAt:      &t,
 	}
+}
+
+func catalogInfoToAPI(c domain.CatalogInfo) CatalogInfo {
+	return CatalogInfo{
+		Name:      &c.Name,
+		Comment:   &c.Comment,
+		CreatedAt: &c.CreatedAt,
+		UpdatedAt: &c.UpdatedAt,
+	}
+}
+
+func schemaDetailToAPI(s domain.SchemaDetail) SchemaDetail {
+	return SchemaDetail{
+		SchemaId:    &s.SchemaID,
+		Name:        &s.Name,
+		CatalogName: &s.CatalogName,
+		Comment:     &s.Comment,
+		Owner:       &s.Owner,
+		Properties:  &s.Properties,
+		CreatedAt:   &s.CreatedAt,
+		UpdatedAt:   &s.UpdatedAt,
+	}
+}
+
+func tableDetailToAPI(t domain.TableDetail) TableDetail {
+	cols := make([]ColumnDetail, len(t.Columns))
+	for i, c := range t.Columns {
+		cols[i] = columnDetailToAPI(c)
+	}
+	return TableDetail{
+		TableId:     &t.TableID,
+		Name:        &t.Name,
+		SchemaName:  &t.SchemaName,
+		CatalogName: &t.CatalogName,
+		TableType:   &t.TableType,
+		Columns:     &cols,
+		Comment:     &t.Comment,
+		Owner:       &t.Owner,
+		Properties:  &t.Properties,
+		CreatedAt:   &t.CreatedAt,
+		UpdatedAt:   &t.UpdatedAt,
+	}
+}
+
+func columnDetailToAPI(c domain.ColumnDetail) ColumnDetail {
+	return ColumnDetail{
+		Name:     &c.Name,
+		Type:     &c.Type,
+		Position: &c.Position,
+		Comment:  &c.Comment,
+	}
+}
+
+// optStr returns a pointer to the string if non-empty, otherwise nil.
+func optStr(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }

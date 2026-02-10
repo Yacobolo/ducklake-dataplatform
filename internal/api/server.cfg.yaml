@@ -1,5 +1,5 @@
 package: api
-output: server.gen.go
+output: internal/api/server.gen.go
 generate:
   chi-server: true
   strict-server: true

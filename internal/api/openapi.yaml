@@ -1,8 +1,10 @@
 openapi: "3.0.3"
 info:
   title: DuckDB Data Platform API
-  version: "1.0.0"
-  description: HTTP API for the DuckDB data platform with RBAC, RLS, and column masking.
+  version: "2.0.0"
+  description: |
+    HTTP API for the DuckDB data platform with RBAC, RLS, column masking,
+    and Unity Catalog-compatible catalog management.
 
 servers:
   - url: /v1
@@ -22,6 +24,24 @@ components:
       in: header
       name: X-API-Key
 
+  parameters:
+    MaxResults:
+      name: max_results
+      in: query
+      description: Maximum number of results to return per page.
+      required: false
+      schema:
+        type: integer
+        default: 100
+        maximum: 1000
+    PageToken:
+      name: page_token
+      in: query
+      description: Opaque pagination token from a previous response.
+      required: false
+      schema:
+        type: string
+
   schemas:
     Error:
       type: object
@@ -32,6 +52,7 @@ components:
         message:
           type: string
 
+    # --- Query ---
     QueryRequest:
       type: object
       required: [sql]
@@ -54,6 +75,7 @@ components:
         row_count:
           type: integer
 
+    # --- Principals ---
     Principal:
       type: object
       properties:
@@ -90,6 +112,17 @@ components:
         is_admin:
           type: boolean
 
+    PaginatedPrincipals:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Principal'
+        next_page_token:
+          type: string
+
+    # --- Groups ---
     Group:
       type: object
       properties:
@@ -135,6 +168,27 @@ components:
           type: integer
           format: int64
 
+    PaginatedGroups:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Group'
+        next_page_token:
+          type: string
+
+    PaginatedGroupMembers:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupMember'
+        next_page_token:
+          type: string
+
+    # --- Grants ---
     PrivilegeGrant:
       type: object
       properties:
@@ -195,6 +249,17 @@ components:
         privilege:
           type: string
 
+    PaginatedGrants:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrivilegeGrant'
+        next_page_token:
+          type: string
+
+    # --- Row Filters ---
     RowFilter:
       type: object
       properties:
@@ -231,6 +296,17 @@ components:
         principal_type:
           type: string
 
+    PaginatedRowFilters:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/RowFilter'
+        next_page_token:
+          type: string
+
+    # --- Column Masks ---
     ColumnMask:
       type: object
       properties:
@@ -274,6 +350,17 @@ components:
           type: boolean
           default: false
 
+    PaginatedColumnMasks:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ColumnMask'
+        next_page_token:
+          type: string
+
+    # --- Legacy Introspection (deprecated) ---
     Schema:
       type: object
       properties:
@@ -309,6 +396,37 @@ components:
         type:
           type: string
 
+    PaginatedSchemas:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Schema'
+        next_page_token:
+          type: string
+
+    PaginatedTables:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Table'
+        next_page_token:
+          type: string
+
+    PaginatedColumns:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Column'
+        next_page_token:
+          type: string
+
+    # --- Audit ---
     AuditEntry:
       type: object
       properties:
@@ -345,21 +463,17 @@ components:
           type: string
           format: date-time
 
-    AuditLogResponse:
+    PaginatedAuditLogs:
       type: object
       properties:
         data:
           type: array
           items:
             $ref: '#/components/schemas/AuditEntry'
-        total:
-          type: integer
-          format: int64
-        limit:
-          type: integer
-        offset:
-          type: integer
+        next_page_token:
+          type: string
 
+    # --- Manifest ---
     ManifestRequest:
       type: object
       required: [table]
@@ -405,7 +519,186 @@ components:
           type: string
           format: date-time
 
+    # --- Catalog Management ---
+    CatalogInfo:
+      type: object
+      properties:
+        name:
+          type: string
+        comment:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    SchemaDetail:
+      type: object
+      properties:
+        schema_id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        catalog_name:
+          type: string
+        comment:
+          type: string
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+        owner:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateSchemaRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        comment:
+          type: string
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+
+    UpdateSchemaRequest:
+      type: object
+      properties:
+        comment:
+          type: string
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+
+    PaginatedSchemaDetails:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SchemaDetail'
+        next_page_token:
+          type: string
+
+    TableDetail:
+      type: object
+      properties:
+        table_id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        schema_name:
+          type: string
+        catalog_name:
+          type: string
+        table_type:
+          type: string
+        columns:
+          type: array
+          items:
+            $ref: '#/components/schemas/ColumnDetail'
+        comment:
+          type: string
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+        owner:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ColumnDetail:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        position:
+          type: integer
+        comment:
+          type: string
+
+    CreateTableApiRequest:
+      type: object
+      required: [name, columns]
+      properties:
+        name:
+          type: string
+        columns:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreateColumnDef'
+        comment:
+          type: string
+
+    CreateColumnDef:
+      type: object
+      required: [name, type]
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+
+    PaginatedTableDetails:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TableDetail'
+        next_page_token:
+          type: string
+
+    PaginatedColumnDetails:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ColumnDetail'
+        next_page_token:
+          type: string
+
+    MetastoreSummary:
+      type: object
+      properties:
+        catalog_name:
+          type: string
+        metastore_type:
+          type: string
+        storage_backend:
+          type: string
+        data_path:
+          type: string
+        schema_count:
+          type: integer
+          format: int64
+        table_count:
+          type: integer
+          format: int64
+
 paths:
+  # === Query ===
   /query:
     post:
       operationId: executeQuery
@@ -436,19 +729,21 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  # === Principals ===
   /principals:
     get:
       operationId: listPrincipals
       summary: List all principals
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
       responses:
         '200':
-          description: List of principals
+          description: Paginated list of principals
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Principal'
+                $ref: '#/components/schemas/PaginatedPrincipals'
     post:
       operationId: createPrincipal
       summary: Create a principal
@@ -542,19 +837,21 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  # === Groups ===
   /groups:
     get:
       operationId: listGroups
       summary: List all groups
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
       responses:
         '200':
-          description: List of groups
+          description: Paginated list of groups
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Group'
+                $ref: '#/components/schemas/PaginatedGroups'
     post:
       operationId: createGroup
       summary: Create a group
@@ -614,15 +911,16 @@ paths:
     get:
       operationId: listGroupMembers
       summary: List group members
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
       responses:
         '200':
-          description: List of members
+          description: Paginated list of members
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/GroupMember'
+                $ref: '#/components/schemas/PaginatedGroupMembers'
     post:
       operationId: addGroupMember
       summary: Add member to group
@@ -648,6 +946,7 @@ paths:
         '204':
           description: Member removed
 
+  # === Grants ===
   /grants:
     get:
       operationId: listGrants
@@ -671,15 +970,15 @@ paths:
           schema:
             type: integer
             format: int64
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
       responses:
         '200':
-          description: List of grants
+          description: Paginated list of grants
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/PrivilegeGrant'
+                $ref: '#/components/schemas/PaginatedGrants'
     post:
       operationId: grantPrivilege
       summary: Grant a privilege
@@ -709,6 +1008,7 @@ paths:
         '204':
           description: Revoked
 
+  # === Row Filters ===
   /tables/{tableId}/row-filters:
     parameters:
       - name: tableId
@@ -720,15 +1020,16 @@ paths:
     get:
       operationId: listRowFilters
       summary: List row filters for table
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
       responses:
         '200':
-          description: List of filters
+          description: Paginated list of filters
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/RowFilter'
+                $ref: '#/components/schemas/PaginatedRowFilters'
     post:
       operationId: createRowFilter
       summary: Create row filter
@@ -794,6 +1095,7 @@ paths:
         '204':
           description: Unbound
 
+  # === Column Masks ===
   /tables/{tableId}/column-masks:
     parameters:
       - name: tableId
@@ -805,15 +1107,16 @@ paths:
     get:
       operationId: listColumnMasks
       summary: List column masks
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
       responses:
         '200':
-          description: List of masks
+          description: Paginated list of masks
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ColumnMask'
+                $ref: '#/components/schemas/PaginatedColumnMasks'
     post:
       operationId: createColumnMask
       summary: Create column mask
@@ -879,19 +1182,22 @@ paths:
         '204':
           description: Unbound
 
+  # === Legacy Introspection (deprecated) ===
   /schemas:
     get:
       operationId: listSchemas
-      summary: List DuckLake schemas
+      summary: List DuckLake schemas (deprecated, use /catalog/schemas)
+      deprecated: true
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
       responses:
         '200':
-          description: List of schemas
+          description: Paginated list of schemas
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Schema'
+                $ref: '#/components/schemas/PaginatedSchemas'
 
   /schemas/{id}/tables:
     parameters:
@@ -903,16 +1209,18 @@ paths:
           format: int64
     get:
       operationId: listTables
-      summary: List tables in schema
+      summary: List tables in schema (deprecated, use /catalog/schemas/{name}/tables)
+      deprecated: true
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
       responses:
         '200':
-          description: List of tables
+          description: Paginated list of tables
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Table'
+                $ref: '#/components/schemas/PaginatedTables'
 
   /tables/{id}/columns:
     parameters:
@@ -924,17 +1232,20 @@ paths:
           format: int64
     get:
       operationId: listColumns
-      summary: List columns in table
+      summary: List columns in table (deprecated, use /catalog/schemas/{name}/tables/{name}/columns)
+      deprecated: true
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
       responses:
         '200':
-          description: List of columns
+          description: Paginated list of columns
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Column'
+                $ref: '#/components/schemas/PaginatedColumns'
 
+  # === Manifest ===
   /manifest:
     post:
       operationId: getManifest
@@ -976,6 +1287,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  # === Audit Logs ===
   /audit-logs:
     get:
       operationId: listAuditLogs
@@ -993,20 +1305,306 @@ paths:
           in: query
           schema:
             type: string
-        - name: limit
-          in: query
-          schema:
-            type: integer
-            default: 50
-        - name: offset
-          in: query
-          schema:
-            type: integer
-            default: 0
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
       responses:
         '200':
-          description: Audit log entries
+          description: Paginated audit log entries
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuditLogResponse'
+                $ref: '#/components/schemas/PaginatedAuditLogs'
+
+  # === Catalog Management ===
+  /catalog:
+    get:
+      operationId: getCatalog
+      summary: Get catalog info
+      description: Returns information about the single DuckLake catalog.
+      responses:
+        '200':
+          description: Catalog information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogInfo'
+
+  /catalog/schemas:
+    get:
+      operationId: listCatalogSchemas
+      summary: List schemas in the catalog
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of schemas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSchemaDetails'
+    post:
+      operationId: createSchema
+      summary: Create a new schema
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSchemaRequest'
+      responses:
+        '201':
+          description: Schema created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaDetail'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Schema already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /catalog/schemas/{schemaName}:
+    parameters:
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getSchemaByName
+      summary: Get a schema by name
+      responses:
+        '200':
+          description: Schema details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaDetail'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      operationId: updateSchemaMetadata
+      summary: Update schema metadata (comment, properties)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSchemaRequest'
+      responses:
+        '200':
+          description: Updated schema
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaDetail'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: deleteSchema
+      summary: Delete a schema
+      parameters:
+        - name: force
+          in: query
+          description: Force deletion even if the schema contains tables.
+          required: false
+          schema:
+            type: boolean
+      responses:
+        '204':
+          description: Schema deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /catalog/schemas/{schemaName}/tables:
+    parameters:
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: listCatalogTables
+      summary: List tables in a schema
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of tables
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTableDetails'
+        '404':
+          description: Schema not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: createCatalogTable
+      summary: Create a new table in a schema
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTableApiRequest'
+      responses:
+        '201':
+          description: Table created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableDetail'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Table already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /catalog/schemas/{schemaName}/tables/{tableName}:
+    parameters:
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: tableName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getTableByName
+      summary: Get a table by name
+      responses:
+        '200':
+          description: Table details including columns
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableDetail'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: dropTable
+      summary: Delete a table
+      responses:
+        '204':
+          description: Table deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /catalog/schemas/{schemaName}/tables/{tableName}/columns:
+    parameters:
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: tableName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: listTableColumns
+      summary: List columns of a table
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of columns
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedColumnDetails'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # === Metastore ===
+  /metastore/summary:
+    get:
+      operationId: getMetastoreSummary
+      summary: Get metastore summary
+      description: Returns high-level information about the DuckLake metastore.
+      responses:
+        '200':
+          description: Metastore summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetastoreSummary'

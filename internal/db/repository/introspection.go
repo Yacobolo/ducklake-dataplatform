@@ -16,11 +16,18 @@ func NewIntrospectionRepo(db *sql.DB) *IntrospectionRepo {
 	return &IntrospectionRepo{db: db}
 }
 
-func (r *IntrospectionRepo) ListSchemas(ctx context.Context) ([]domain.Schema, error) {
+func (r *IntrospectionRepo) ListSchemas(ctx context.Context, page domain.PageRequest) ([]domain.Schema, int64, error) {
+	var total int64
+	if err := r.db.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM ducklake_schema WHERE end_snapshot IS NULL`).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
 	rows, err := r.db.QueryContext(ctx,
-		`SELECT schema_id, schema_name FROM ducklake_schema WHERE end_snapshot IS NULL ORDER BY schema_name`)
+		`SELECT schema_id, schema_name FROM ducklake_schema WHERE end_snapshot IS NULL ORDER BY schema_name LIMIT ? OFFSET ?`,
+		page.Limit(), page.Offset())
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -28,18 +35,26 @@ func (r *IntrospectionRepo) ListSchemas(ctx context.Context) ([]domain.Schema, e
 	for rows.Next() {
 		var s domain.Schema
 		if err := rows.Scan(&s.ID, &s.Name); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		schemas = append(schemas, s)
 	}
-	return schemas, rows.Err()
+	return schemas, total, rows.Err()
 }
 
-func (r *IntrospectionRepo) ListTables(ctx context.Context, schemaID int64) ([]domain.Table, error) {
+func (r *IntrospectionRepo) ListTables(ctx context.Context, schemaID int64, page domain.PageRequest) ([]domain.Table, int64, error) {
+	var total int64
+	if err := r.db.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM ducklake_table WHERE schema_id = ? AND end_snapshot IS NULL`,
+		schemaID).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
 	rows, err := r.db.QueryContext(ctx,
-		`SELECT table_id, schema_id, table_name FROM ducklake_table WHERE schema_id = ? AND end_snapshot IS NULL ORDER BY table_name`, schemaID)
+		`SELECT table_id, schema_id, table_name FROM ducklake_table WHERE schema_id = ? AND end_snapshot IS NULL ORDER BY table_name LIMIT ? OFFSET ?`,
+		schemaID, page.Limit(), page.Offset())
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -47,11 +62,11 @@ func (r *IntrospectionRepo) ListTables(ctx context.Context, schemaID int64) ([]d
 	for rows.Next() {
 		var t domain.Table
 		if err := rows.Scan(&t.ID, &t.SchemaID, &t.Name); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		tables = append(tables, t)
 	}
-	return tables, rows.Err()
+	return tables, total, rows.Err()
 }
 
 func (r *IntrospectionRepo) GetTable(ctx context.Context, tableID int64) (*domain.Table, error) {
@@ -68,11 +83,19 @@ func (r *IntrospectionRepo) GetTable(ctx context.Context, tableID int64) (*domai
 	return &t, nil
 }
 
-func (r *IntrospectionRepo) ListColumns(ctx context.Context, tableID int64) ([]domain.Column, error) {
+func (r *IntrospectionRepo) ListColumns(ctx context.Context, tableID int64, page domain.PageRequest) ([]domain.Column, int64, error) {
+	var total int64
+	if err := r.db.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM ducklake_column WHERE table_id = ? AND end_snapshot IS NULL`,
+		tableID).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
 	rows, err := r.db.QueryContext(ctx,
-		`SELECT column_id, table_id, column_name, column_type FROM ducklake_column WHERE table_id = ? AND end_snapshot IS NULL ORDER BY column_id`, tableID)
+		`SELECT column_id, table_id, column_name, column_type FROM ducklake_column WHERE table_id = ? AND end_snapshot IS NULL ORDER BY column_id LIMIT ? OFFSET ?`,
+		tableID, page.Limit(), page.Offset())
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -80,11 +103,11 @@ func (r *IntrospectionRepo) ListColumns(ctx context.Context, tableID int64) ([]d
 	for rows.Next() {
 		var c domain.Column
 		if err := rows.Scan(&c.ID, &c.TableID, &c.Name, &c.Type); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		columns = append(columns, c)
 	}
-	return columns, rows.Err()
+	return columns, total, rows.Err()
 }
 
 func (r *IntrospectionRepo) GetTableByName(ctx context.Context, tableName string) (*domain.Table, error) {

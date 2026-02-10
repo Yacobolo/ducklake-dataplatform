@@ -31,12 +31,29 @@ func (r *ColumnMaskRepo) Create(ctx context.Context, m *domain.ColumnMask) (*dom
 	return mapper.ColumnMaskFromDB(row), nil
 }
 
-func (r *ColumnMaskRepo) GetForTable(ctx context.Context, tableID int64) ([]domain.ColumnMask, error) {
-	rows, err := r.q.GetColumnMasksForTable(ctx, tableID)
-	if err != nil {
-		return nil, err
+func (r *ColumnMaskRepo) GetForTable(ctx context.Context, tableID int64, page domain.PageRequest) ([]domain.ColumnMask, int64, error) {
+	var total int64
+	if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM column_masks WHERE table_id = ?`, tableID).Scan(&total); err != nil {
+		return nil, 0, err
 	}
-	return mapper.ColumnMasksFromDB(rows), nil
+
+	rows, err := r.db.QueryContext(ctx,
+		`SELECT id, table_id, column_name, mask_expression, description, created_at FROM column_masks WHERE table_id = ? ORDER BY id LIMIT ? OFFSET ?`,
+		tableID, page.Limit(), page.Offset())
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var masks []domain.ColumnMask
+	for rows.Next() {
+		var m dbstore.ColumnMask
+		if err := rows.Scan(&m.ID, &m.TableID, &m.ColumnName, &m.MaskExpression, &m.Description, &m.CreatedAt); err != nil {
+			return nil, 0, err
+		}
+		masks = append(masks, *mapper.ColumnMaskFromDB(m))
+	}
+	return masks, total, rows.Err()
 }
 
 func (r *ColumnMaskRepo) Delete(ctx context.Context, id int64) error {

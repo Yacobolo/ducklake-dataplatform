@@ -26,8 +26,8 @@ func (s *GroupService) GetByID(ctx context.Context, id int64) (*domain.Group, er
 	return s.repo.GetByID(ctx, id)
 }
 
-func (s *GroupService) List(ctx context.Context) ([]domain.Group, error) {
-	return s.repo.List(ctx)
+func (s *GroupService) List(ctx context.Context, page domain.PageRequest) ([]domain.Group, int64, error) {
+	return s.repo.List(ctx, page)
 }
 
 func (s *GroupService) Delete(ctx context.Context, id int64) error {
@@ -42,6 +42,6 @@ func (s *GroupService) RemoveMember(ctx context.Context, m *domain.GroupMember) 
 	return s.repo.RemoveMember(ctx, m)
 }
 
-func (s *GroupService) ListMembers(ctx context.Context, groupID int64) ([]domain.GroupMember, error) {
-	return s.repo.ListMembers(ctx, groupID)
+func (s *GroupService) ListMembers(ctx context.Context, groupID int64, page domain.PageRequest) ([]domain.GroupMember, int64, error) {
+	return s.repo.ListMembers(ctx, groupID, page)
 }

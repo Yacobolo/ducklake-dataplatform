@@ -46,11 +46,8 @@ func (r *AuditRepo) List(ctx context.Context, filter domain.AuditFilter) ([]doma
 		status = *filter.Status
 	}
 
-	limit := int64(filter.Limit)
-	if limit <= 0 {
-		limit = 50
-	}
-	offset := int64(filter.Offset)
+	limit := int64(filter.Page.Limit())
+	offset := int64(filter.Page.Offset())
 
 	// Count
 	total, err := r.q.CountAuditLogs(ctx, dbstore.CountAuditLogsParams{

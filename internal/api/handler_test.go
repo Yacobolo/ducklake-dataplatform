@@ -127,7 +127,10 @@ func setupTestServer(t *testing.T, principalName string) *httptest.Server {
 	introspectionSvc := service.NewIntrospectionService(introspectionRepo)
 	auditSvc := service.NewAuditService(auditRepo)
 
-	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, introspectionSvc, auditSvc)
+	catalogRepo := repository.NewCatalogRepo(metaDB, duckDB)
+	catalogSvc := service.NewCatalogService(catalogRepo, cat, auditRepo)
+
+	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, introspectionSvc, auditSvc, nil, catalogSvc)
 	strictHandler := NewStrictHandler(handler, nil)
 
 	// Setup router with fixed auth (test principal)
@@ -157,14 +160,14 @@ func TestAPI_ListPrincipals(t *testing.T) {
 		t.Errorf("expected 200, got %d", resp.StatusCode)
 	}
 
-	var principals []Principal
-	if err := json.NewDecoder(resp.Body).Decode(&principals); err != nil {
+	var result PaginatedPrincipals
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		t.Fatal(err)
 	}
-	if len(principals) < 2 {
-		t.Errorf("expected at least 2 principals, got %d", len(principals))
+	if result.Data == nil || len(*result.Data) < 2 {
+		t.Errorf("expected at least 2 principals, got %v", result.Data)
 	}
-	t.Logf("got %d principals", len(principals))
+	t.Logf("got %d principals", len(*result.Data))
 }
 
 func TestAPI_ExecuteQuery_Admin(t *testing.T) {
@@ -257,12 +260,12 @@ func TestAPI_ListSchemas(t *testing.T) {
 		t.Errorf("expected 200, got %d", resp.StatusCode)
 	}
 
-	var schemas []Schema
-	json.NewDecoder(resp.Body).Decode(&schemas)
-	if len(schemas) == 0 {
+	var schemasResult PaginatedSchemas
+	json.NewDecoder(resp.Body).Decode(&schemasResult)
+	if schemasResult.Data == nil || len(*schemasResult.Data) == 0 {
 		t.Error("expected at least one schema")
 	}
-	t.Logf("got %d schemas", len(schemas))
+	t.Logf("got %d schemas", len(*schemasResult.Data))
 }
 
 func TestAPI_AuditLogs(t *testing.T) {
@@ -284,9 +287,11 @@ func TestAPI_AuditLogs(t *testing.T) {
 		t.Errorf("expected 200, got %d", resp.StatusCode)
 	}
 
-	var result AuditLogResponse
-	json.NewDecoder(resp.Body).Decode(&result)
-	t.Logf("got %d audit entries (total: %v)", len(*result.Data), result.Total)
+	var auditResult PaginatedAuditLogs
+	json.NewDecoder(resp.Body).Decode(&auditResult)
+	if auditResult.Data != nil {
+		t.Logf("got %d audit entries", len(*auditResult.Data))
+	}
 }
 
 func itoa(i int64) string {

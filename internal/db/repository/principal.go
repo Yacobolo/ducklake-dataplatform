@@ -46,12 +46,29 @@ func (r *PrincipalRepo) GetByName(ctx context.Context, name string) (*domain.Pri
 	return mapper.PrincipalFromDB(row), nil
 }
 
-func (r *PrincipalRepo) List(ctx context.Context) ([]domain.Principal, error) {
-	rows, err := r.q.ListPrincipals(ctx)
-	if err != nil {
-		return nil, err
+func (r *PrincipalRepo) List(ctx context.Context, page domain.PageRequest) ([]domain.Principal, int64, error) {
+	var total int64
+	if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM principals`).Scan(&total); err != nil {
+		return nil, 0, err
 	}
-	return mapper.PrincipalsFromDB(rows), nil
+
+	rows, err := r.db.QueryContext(ctx,
+		`SELECT id, name, type, is_admin, created_at FROM principals ORDER BY id LIMIT ? OFFSET ?`,
+		page.Limit(), page.Offset())
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var principals []domain.Principal
+	for rows.Next() {
+		var p dbstore.Principal
+		if err := rows.Scan(&p.ID, &p.Name, &p.Type, &p.IsAdmin, &p.CreatedAt); err != nil {
+			return nil, 0, err
+		}
+		principals = append(principals, *mapper.PrincipalFromDB(p))
+	}
+	return principals, total, rows.Err()
 }
 
 func (r *PrincipalRepo) Delete(ctx context.Context, id int64) error {

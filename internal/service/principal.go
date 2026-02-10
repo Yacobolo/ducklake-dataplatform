@@ -37,8 +37,8 @@ func (s *PrincipalService) GetByID(ctx context.Context, id int64) (*domain.Princ
 	return s.repo.GetByID(ctx, id)
 }
 
-func (s *PrincipalService) List(ctx context.Context) ([]domain.Principal, error) {
-	return s.repo.List(ctx)
+func (s *PrincipalService) List(ctx context.Context, page domain.PageRequest) ([]domain.Principal, int64, error) {
+	return s.repo.List(ctx, page)
 }
 
 func (s *PrincipalService) Delete(ctx context.Context, id int64) error {
