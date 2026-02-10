@@ -6,7 +6,7 @@
 #include "duckdb/parser/expression/function_expression.hpp"
 #include "duckdb/parser/expression/columnref_expression.hpp"
 #include "duckdb/parser/expression/conjunction_expression.hpp"
-#include "duckdb/parser/expression/comparison_expression.hpp"
+
 #include "duckdb/parser/expression/star_expression.hpp"
 #include "duckdb/parser/tableref/table_function_ref.hpp"
 #include "duckdb/parser/tableref/subqueryref.hpp"
@@ -62,7 +62,7 @@ unique_ptr<TableRef> DuckAccessScan::ReplacementScanFunction(
 	//
 	// We construct:
 	//   SELECT <masked_columns>
-	//   FROM read_parquet([url1, url2, ...], SECRET='NONE')
+	//   FROM read_parquet([url1, url2, ...])
 	//   WHERE <rls_filter_1> AND <rls_filter_2> ...
 
 	// Build read_parquet function expression
@@ -79,16 +79,9 @@ unique_ptr<TableRef> DuckAccessScan::ReplacementScanFunction(
 
 	auto function = make_uniq<FunctionExpression>("read_parquet", std::move(func_children));
 
-	// Add secret='NONE' as a named parameter to prevent httpfs from injecting
-	// S3 auth headers onto presigned URLs (which would invalidate the signature).
-	// In DuckDB's parser AST, named params are ComparisonExpression(EQUAL, colref, const).
-	function->children.push_back(
-		make_uniq<ComparisonExpression>(
-			ExpressionType::COMPARE_EQUAL,
-			make_uniq<ColumnRefExpression>("secret"),
-			make_uniq<ConstantExpression>(Value("NONE"))
-		)
-	);
+	// Note: presigned URLs use https:// scheme, not s3://, so httpfs will treat
+	// them as plain HTTP requests and will NOT inject S3 auth headers.
+	// No secret='NONE' workaround is needed.
 
 	// If no row filters and no column masks, return simple table function ref
 	if (manifest->row_filters.empty() && manifest->column_masks.empty()) {

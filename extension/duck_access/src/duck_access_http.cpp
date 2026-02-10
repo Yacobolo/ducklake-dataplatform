@@ -29,9 +29,12 @@ HttpResponse DuckAccessHttp::PostJson(
 		: "/";
 
 	httplib::Client cli(base_url);
-	cli.set_connection_timeout(0, timeout_ms * 1000);  // microseconds
-	cli.set_read_timeout(timeout_ms / 1000, 0);        // seconds
-	cli.set_write_timeout(timeout_ms / 1000, 0);
+	// set_connection_timeout(seconds, microseconds) - convert milliseconds properly
+	int timeout_sec = timeout_ms / 1000;
+	int timeout_usec = (timeout_ms % 1000) * 1000;
+	cli.set_connection_timeout(timeout_sec, timeout_usec);
+	cli.set_read_timeout(timeout_sec, timeout_usec);
+	cli.set_write_timeout(timeout_sec, timeout_usec);
 
 	httplib::Headers headers = {
 		{"Content-Type", "application/json"},
@@ -41,7 +44,8 @@ HttpResponse DuckAccessHttp::PostJson(
 	auto res = cli.Post(path, headers, json_body, "application/json");
 
 	if (!res) {
-		response.error = "HTTP request failed: " + httplib::to_string(res.error());
+		auto err = res.error();
+		response.error = "HTTP request failed: " + httplib::to_string(err);
 		return response;
 	}
 

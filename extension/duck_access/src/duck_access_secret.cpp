@@ -1,7 +1,7 @@
 #include "duck_access_secret.hpp"
 #include "duckdb/main/secret/secret.hpp"
 #include "duckdb/main/secret/secret_manager.hpp"
-#include "duckdb/main/extension_util.hpp"
+#include "duckdb/main/extension/extension_loader.hpp"
 #include "duckdb/common/string_util.hpp"
 
 namespace duckdb {
@@ -33,19 +33,19 @@ static unique_ptr<BaseSecret> CreateDuckAccessSecret(ClientContext &context, Cre
 	return std::move(secret);
 }
 
-void DuckAccessSecret::Register(DatabaseInstance &instance) {
+void DuckAccessSecret::Register(ExtensionLoader &loader) {
 	// Register the secret type
 	SecretType secret_type;
 	secret_type.name = TYPE_NAME;
 	secret_type.deserializer = KeyValueSecret::Deserialize<KeyValueSecret>;
 	secret_type.default_provider = "config";
-	ExtensionUtil::RegisterSecretType(instance, secret_type);
+	loader.RegisterSecretType(secret_type);
 
 	// Register the "config" provider for this type
 	CreateSecretFunction create_func = {TYPE_NAME, "config", CreateDuckAccessSecret};
 	create_func.named_parameters["api_url"] = LogicalType::VARCHAR;
 	create_func.named_parameters["api_key"] = LogicalType::VARCHAR;
-	ExtensionUtil::RegisterFunction(instance, create_func);
+	loader.RegisterFunction(create_func);
 }
 
 unique_ptr<DuckAccessSecretData> DuckAccessSecret::GetSecret(ClientContext &context) {

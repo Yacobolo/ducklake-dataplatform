@@ -7,8 +7,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# DuckDB version to target (should match the Go bindings version)
-DUCKDB_VERSION="v1.3.0"
+# DuckDB version to target (v1.4.4 LTS — latest stable)
+DUCKDB_VERSION="v1.4.4"
 
 echo "=== duck_access extension setup ==="
 
@@ -20,10 +20,10 @@ else
     echo "DuckDB already present, skipping clone."
 fi
 
-# 2. Clone extension-ci-tools (if not already present)
+# 2. Clone extension-ci-tools (pinned to same DuckDB version)
 if [ ! -d "extension-ci-tools" ]; then
-    echo "Cloning extension-ci-tools..."
-    git clone --depth 1 https://github.com/duckdb/extension-ci-tools.git
+    echo "Cloning extension-ci-tools ${DUCKDB_VERSION}..."
+    git clone --depth 1 --branch "$DUCKDB_VERSION" https://github.com/duckdb/extension-ci-tools.git
 else
     echo "extension-ci-tools already present, skipping clone."
 fi

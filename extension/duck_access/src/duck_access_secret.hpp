@@ -4,6 +4,8 @@
 
 namespace duckdb {
 
+class ExtensionLoader;
+
 /// Data extracted from a duck_access secret for use by the replacement scan.
 struct DuckAccessSecretData {
 	string api_url;
@@ -19,7 +21,7 @@ struct DuckAccessSecretData {
 ///   );
 class DuckAccessSecret {
 public:
-	static void Register(DatabaseInstance &instance);
+	static void Register(ExtensionLoader &loader);
 
 	/// Look up the first duck_access secret in the secret manager.
 	/// Returns nullptr if no secret of this type exists.

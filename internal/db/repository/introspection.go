@@ -70,7 +70,7 @@ func (r *IntrospectionRepo) GetTable(ctx context.Context, tableID int64) (*domai
 
 func (r *IntrospectionRepo) ListColumns(ctx context.Context, tableID int64) ([]domain.Column, error) {
 	rows, err := r.db.QueryContext(ctx,
-		`SELECT column_id, table_id, column_name, data_type FROM ducklake_column WHERE table_id = ? AND end_snapshot IS NULL ORDER BY column_id`, tableID)
+		`SELECT column_id, table_id, column_name, column_type FROM ducklake_column WHERE table_id = ? AND end_snapshot IS NULL ORDER BY column_id`, tableID)
 	if err != nil {
 		return nil, err
 	}
