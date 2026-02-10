@@ -1,7 +1,6 @@
 # Ignore extensionless files at root (Go build/test binaries)
 /*
 !/*.*
-!/Makefile
 
 # Re-ignore specific files (must come after the un-ignore pattern)
 .opencode/

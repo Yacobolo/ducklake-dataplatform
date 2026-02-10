@@ -1,0 +1,58 @@
+# https://taskfile.dev
+
+version: '3'
+
+vars:
+  DB_PATH: ./ducklake_meta.sqlite
+  MIGRATIONS_DIR: internal/db/migrations
+
+tasks:
+  migrate-up:
+    desc: Run database migrations up
+    cmds:
+      - goose -dir {{.MIGRATIONS_DIR}} sqlite3 {{.DB_PATH}} up
+
+  migrate-down:
+    desc: Run database migrations down
+    cmds:
+      - goose -dir {{.MIGRATIONS_DIR}} sqlite3 {{.DB_PATH}} down
+
+  migrate-status:
+    desc: Show database migration status
+    cmds:
+      - goose -dir {{.MIGRATIONS_DIR}} sqlite3 {{.DB_PATH}} status
+
+  new-migration:
+    desc: "Create a new migration (usage: task new-migration -- NAME)"
+    cmds:
+      - goose -dir {{.MIGRATIONS_DIR}} create {{.CLI_ARGS}} sql
+
+  sqlc:
+    desc: Generate sqlc code
+    cmds:
+      - sqlc generate
+
+  generate-api:
+    desc: Generate API types and server from OpenAPI spec
+    cmds:
+      - oapi-codegen -generate models -package api -o internal/api/types.gen.go internal/api/openapi.yaml
+      - oapi-codegen -generate chi-server,strict-server,spec -package api -o internal/api/server.gen.go internal/api/openapi.yaml
+
+  generate:
+    desc: Run all code generation
+    deps: [generate-api, sqlc]
+
+  build:
+    desc: Build all packages
+    cmds:
+      - go build ./...
+
+  test:
+    desc: Run tests with race detection
+    cmds:
+      - go test -race ./...
+
+  vet:
+    desc: Run go vet
+    cmds:
+      - go vet ./...
