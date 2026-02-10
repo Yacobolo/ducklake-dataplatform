@@ -4,9 +4,24 @@ import (
 	pb "github.com/substrait-io/substrait-protobuf/go/substraitpb"
 )
 
+// resolveTableName extracts the table name from a NamedTable's compound
+// identifier. In Substrait, Names is a compound identifier like
+// ["catalog", "schema", "table"]. The actual table name is the last element.
+// Returns empty string if names is empty.
+func resolveTableName(names []string) string {
+	if len(names) == 0 {
+		return ""
+	}
+	return names[len(names)-1]
+}
+
 // ExtractTableNames returns deduplicated table names found in
 // NamedTable ReadRel nodes across the entire plan.
 func ExtractTableNames(plan *pb.Plan) []string {
+	if plan == nil {
+		return nil
+	}
+
 	seen := make(map[string]bool)
 	var tables []string
 
@@ -14,8 +29,8 @@ func ExtractTableNames(plan *pb.Plan) []string {
 		if root := rel.GetRoot(); root != nil {
 			walkRel(root.GetInput(), seen, &tables)
 		}
-		if rel := rel.GetRel(); rel != nil {
-			walkRel(rel, seen, &tables)
+		if bareRel := rel.GetRel(); bareRel != nil {
+			walkRel(bareRel, seen, &tables)
 		}
 	}
 
@@ -31,11 +46,10 @@ func walkRel(rel *pb.Rel, seen map[string]bool, tables *[]string) {
 	switch r := rel.RelType.(type) {
 	case *pb.Rel_Read:
 		if nt := r.Read.GetNamedTable(); nt != nil {
-			for _, name := range nt.GetNames() {
-				if !seen[name] {
-					seen[name] = true
-					*tables = append(*tables, name)
-				}
+			name := resolveTableName(nt.GetNames())
+			if name != "" && !seen[name] {
+				seen[name] = true
+				*tables = append(*tables, name)
 			}
 		}
 

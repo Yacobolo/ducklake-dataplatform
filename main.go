@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -17,12 +18,12 @@ import (
 func buildPolicyStore() *policy.PolicyStore {
 	store := policy.NewPolicyStore()
 
-	store.AddRole(&policy.Role{
+	store.UpdateRole(&policy.Role{
 		Name:          "admin",
 		AllowedTables: []string{"*"},
 	})
 
-	store.AddRole(&policy.Role{
+	store.UpdateRole(&policy.Role{
 		Name:          "first_class_analyst",
 		AllowedTables: []string{"titanic"},
 		RLSRules: []policy.RLSRule{
@@ -30,7 +31,7 @@ func buildPolicyStore() *policy.PolicyStore {
 		},
 	})
 
-	store.AddRole(&policy.Role{
+	store.UpdateRole(&policy.Role{
 		Name:          "survivor_researcher",
 		AllowedTables: []string{"titanic"},
 		RLSRules: []policy.RLSRule{
@@ -38,7 +39,7 @@ func buildPolicyStore() *policy.PolicyStore {
 		},
 	})
 
-	store.AddRole(&policy.Role{
+	store.UpdateRole(&policy.Role{
 		Name:          "no_access",
 		AllowedTables: []string{},
 	})
@@ -103,11 +104,12 @@ func main() {
 		roles = os.Args[1:]
 	}
 
+	ctx := context.Background()
 	for _, role := range roles {
 		fmt.Printf("\n=== Role: %s ===\n", role)
 		fmt.Printf("Query: %s\n\n", query)
 
-		rows, err := eng.Query(role, query)
+		rows, err := eng.Query(ctx, role, query)
 		if err != nil {
 			fmt.Printf("ERROR: %v\n", err)
 			continue

@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 
@@ -23,6 +24,7 @@ func NewSecureEngine(db *sql.DB, store *policy.PolicyStore) *SecureEngine {
 }
 
 // Query executes a SQL query as the given role, enforcing RBAC and RLS.
+// It accepts a context for cancellation and timeout support.
 //
 // The flow:
 //  1. Look up the role in the policy store
@@ -31,7 +33,7 @@ func NewSecureEngine(db *sql.DB, store *policy.PolicyStore) *SecureEngine {
 //  4. Check RBAC: does the role have access to all tables?
 //  5. Apply RLS: inject FilterRel for each table with rules
 //  6. Execute the modified plan via from_substrait()
-func (e *SecureEngine) Query(roleName, sqlQuery string) (*sql.Rows, error) {
+func (e *SecureEngine) Query(ctx context.Context, roleName, sqlQuery string) (*sql.Rows, error) {
 	// 1. Look up role
 	role, err := e.store.GetRole(roleName)
 	if err != nil {
@@ -40,7 +42,7 @@ func (e *SecureEngine) Query(roleName, sqlQuery string) (*sql.Rows, error) {
 
 	// 2. Get substrait plan
 	var blob []byte
-	err = e.db.QueryRow("CALL get_substrait($1)", sqlQuery).Scan(&blob)
+	err = e.db.QueryRowContext(ctx, "CALL get_substrait($1)", sqlQuery).Scan(&blob)
 	if err != nil {
 		return nil, fmt.Errorf("get_substrait: %w", err)
 	}
@@ -54,7 +56,7 @@ func (e *SecureEngine) Query(roleName, sqlQuery string) (*sql.Rows, error) {
 	// 4. Extract tables and check RBAC
 	tables := ExtractTableNames(plan)
 	if err := role.CheckAccess(tables); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("RBAC check failed: %w", err)
 	}
 
 	// 5. Build RLS rules map for tables in this query
@@ -67,18 +69,19 @@ func (e *SecureEngine) Query(roleName, sqlQuery string) (*sql.Rows, error) {
 	}
 
 	// 6. Rewrite the plan with RLS filters
-	if err := RewritePlan(plan, rulesByTable); err != nil {
+	rewrittenPlan, err := RewritePlan(plan, rulesByTable)
+	if err != nil {
 		return nil, fmt.Errorf("rewrite plan: %w", err)
 	}
 
 	// 7. Marshal the modified plan
-	modifiedBlob, err := proto.Marshal(plan)
+	modifiedBlob, err := proto.Marshal(rewrittenPlan)
 	if err != nil {
 		return nil, fmt.Errorf("marshal plan: %w", err)
 	}
 
 	// 8. Execute via from_substrait
-	rows, err := e.db.Query("CALL from_substrait($1::BLOB)", modifiedBlob)
+	rows, err := e.db.QueryContext(ctx, "CALL from_substrait($1::BLOB)", modifiedBlob)
 	if err != nil {
 		return nil, fmt.Errorf("from_substrait: %w", err)
 	}

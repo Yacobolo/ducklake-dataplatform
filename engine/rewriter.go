@@ -7,6 +7,7 @@ import (
 
 	pb "github.com/substrait-io/substrait-protobuf/go/substraitpb"
 	pbext "github.com/substrait-io/substrait-protobuf/go/substraitpb/extensions"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -15,29 +16,48 @@ const (
 	extensionURIBoolean = "https://github.com/substrait-io/substrait/blob/main/extensions/functions_boolean.yaml"
 )
 
-// RewritePlan traverses the plan and injects FilterRel nodes around ReadRel
-// nodes according to the given RLS rules (keyed by table name).
-// It modifies the plan in place.
-func RewritePlan(plan *pb.Plan, rulesByTable map[string][]policy.RLSRule) error {
+// DecimalValue represents a Substrait decimal literal.
+// Value is a 16-byte little-endian two's-complement integer.
+type DecimalValue struct {
+	Value     []byte // 16 bytes, little-endian two's complement
+	Precision int32
+	Scale     int32
+}
+
+// RewritePlan clones the plan and traverses the copy, injecting filter
+// expressions into ReadRel nodes according to the given RLS rules
+// (keyed by table name). The original plan is never modified.
+// Returns the rewritten plan, or the original plan if no rules apply.
+func RewritePlan(plan *pb.Plan, rulesByTable map[string][]policy.RLSRule) (*pb.Plan, error) {
 	if len(rulesByTable) == 0 {
-		return nil
+		return plan, nil
 	}
 
+	// Clone so we never mutate the original
+	planCopy := proto.Clone(plan).(*pb.Plan)
+
 	// Track the next available function anchor
-	maxAnchor := findMaxFuncAnchor(plan)
+	maxAnchor := findMaxFuncAnchor(planCopy)
 	anchorAlloc := &anchorAllocator{next: maxAnchor + 1}
 
-	for _, rel := range plan.GetRelations() {
+	for _, rel := range planCopy.GetRelations() {
 		if root := rel.GetRoot(); root != nil {
-			newInput, err := rewriteRel(root.GetInput(), rulesByTable, plan, anchorAlloc)
+			newInput, err := rewriteRel(root.GetInput(), rulesByTable, planCopy, anchorAlloc)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			root.Input = newInput
 		}
+		if bareRel := rel.GetRel(); bareRel != nil {
+			newRel, err := rewriteRel(bareRel, rulesByTable, planCopy, anchorAlloc)
+			if err != nil {
+				return nil, err
+			}
+			rel.RelType = &pb.PlanRel_Rel{Rel: newRel}
+		}
 	}
 
-	return nil
+	return planCopy, nil
 }
 
 type anchorAllocator struct {
@@ -188,6 +208,50 @@ func rewriteRel(rel *pb.Rel, rulesByTable map[string][]policy.RLSRule, plan *pb.
 			r.Set.Inputs[i] = newInput
 		}
 		return rel, nil
+
+	case *pb.Rel_HashJoin:
+		newLeft, err := rewriteRel(r.HashJoin.GetLeft(), rulesByTable, plan, aa)
+		if err != nil {
+			return nil, err
+		}
+		newRight, err := rewriteRel(r.HashJoin.GetRight(), rulesByTable, plan, aa)
+		if err != nil {
+			return nil, err
+		}
+		r.HashJoin.Left = newLeft
+		r.HashJoin.Right = newRight
+		return rel, nil
+
+	case *pb.Rel_MergeJoin:
+		newLeft, err := rewriteRel(r.MergeJoin.GetLeft(), rulesByTable, plan, aa)
+		if err != nil {
+			return nil, err
+		}
+		newRight, err := rewriteRel(r.MergeJoin.GetRight(), rulesByTable, plan, aa)
+		if err != nil {
+			return nil, err
+		}
+		r.MergeJoin.Left = newLeft
+		r.MergeJoin.Right = newRight
+		return rel, nil
+
+	case *pb.Rel_ExtensionSingle:
+		newInput, err := rewriteRel(r.ExtensionSingle.GetInput(), rulesByTable, plan, aa)
+		if err != nil {
+			return nil, err
+		}
+		r.ExtensionSingle.Input = newInput
+		return rel, nil
+
+	case *pb.Rel_ExtensionMulti:
+		for i, input := range r.ExtensionMulti.GetInputs() {
+			newInput, err := rewriteRel(input, rulesByTable, plan, aa)
+			if err != nil {
+				return nil, err
+			}
+			r.ExtensionMulti.Inputs[i] = newInput
+		}
+		return rel, nil
 	}
 
 	return rel, nil
@@ -207,14 +271,21 @@ func rewriteRead(rel *pb.Rel, read *pb.ReadRel, rulesByTable map[string][]policy
 		return rel, nil
 	}
 
-	tableName := nt.GetNames()[0]
+	tableName := resolveTableName(nt.GetNames())
+	if tableName == "" {
+		return rel, nil
+	}
 	rules, ok := rulesByTable[tableName]
 	if !ok || len(rules) == 0 {
 		return rel, nil
 	}
 
 	// Resolve column names from the base schema
-	colIndex := buildColumnIndex(read.GetBaseSchema())
+	schema := read.GetBaseSchema()
+	if schema == nil {
+		return nil, fmt.Errorf("table %q: ReadRel has no base schema, cannot apply RLS filters", tableName)
+	}
+	colIndex := buildColumnIndex(schema)
 
 	// Build filter condition
 	rlsCond, err := buildFilterCondition(rules, colIndex, read.GetBaseSchema(), plan, aa)
@@ -253,13 +324,16 @@ func rewriteRead(rel *pb.Rel, read *pb.ReadRel, rulesByTable map[string][]policy
 }
 
 // buildColumnIndex creates a map from column name to 0-based index.
+// If duplicate column names exist, the first occurrence wins.
 func buildColumnIndex(schema *pb.NamedStruct) map[string]int {
 	idx := make(map[string]int)
 	if schema == nil {
 		return idx
 	}
 	for i, name := range schema.Names {
-		idx[name] = i
+		if _, exists := idx[name]; !exists {
+			idx[name] = i
+		}
 	}
 	return idx
 }
@@ -350,6 +424,12 @@ func buildFilterCondition(rules []policy.RLSRule, colIndex map[string]int, schem
 // buildComparisonComponents determines the substrait function name and
 // literal expression for a given RLS rule, based on the column type.
 func buildComparisonComponents(rule policy.RLSRule, schema *pb.NamedStruct, colIdx int) (string, *pb.Expression, error) {
+	if schema == nil || schema.Struct == nil {
+		return "", nil, fmt.Errorf("schema is nil for column %q", rule.Column)
+	}
+	if colIdx < 0 || colIdx >= len(schema.Struct.Types) {
+		return "", nil, fmt.Errorf("column index %d out of range (schema has %d types)", colIdx, len(schema.Struct.Types))
+	}
 	colType := schema.Struct.Types[colIdx]
 
 	var opPrefix string
@@ -441,6 +521,140 @@ func buildComparisonComponents(rule policy.RLSRule, schema *pb.NamedStruct, colI
 			RexType: &pb.Expression_Literal_{
 				Literal: &pb.Expression_Literal{
 					LiteralType: &pb.Expression_Literal_Boolean{Boolean: val},
+				},
+			},
+		}
+		return funcName, lit, nil
+
+	case *pb.Type_I16_:
+		val, ok := rule.Value.(int32)
+		if !ok {
+			return "", nil, fmt.Errorf("column type is i16 but value is %T (use int32)", rule.Value)
+		}
+		funcName := fmt.Sprintf("%s:i16_i16", opPrefix)
+		lit := &pb.Expression{
+			RexType: &pb.Expression_Literal_{
+				Literal: &pb.Expression_Literal{
+					LiteralType: &pb.Expression_Literal_I16{I16: val},
+				},
+			},
+		}
+		return funcName, lit, nil
+
+	case *pb.Type_I8_:
+		val, ok := rule.Value.(int32)
+		if !ok {
+			return "", nil, fmt.Errorf("column type is i8 but value is %T (use int32)", rule.Value)
+		}
+		funcName := fmt.Sprintf("%s:i8_i8", opPrefix)
+		lit := &pb.Expression{
+			RexType: &pb.Expression_Literal_{
+				Literal: &pb.Expression_Literal{
+					LiteralType: &pb.Expression_Literal_I8{I8: val},
+				},
+			},
+		}
+		return funcName, lit, nil
+
+	case *pb.Type_Fp32:
+		val, ok := rule.Value.(float32)
+		if !ok {
+			return "", nil, fmt.Errorf("column type is fp32 but value is %T", rule.Value)
+		}
+		funcName := fmt.Sprintf("%s:fp32_fp32", opPrefix)
+		lit := &pb.Expression{
+			RexType: &pb.Expression_Literal_{
+				Literal: &pb.Expression_Literal{
+					LiteralType: &pb.Expression_Literal_Fp32{Fp32: val},
+				},
+			},
+		}
+		return funcName, lit, nil
+
+	case *pb.Type_Date_:
+		// Date values are int32 representing days since UNIX epoch.
+		val, ok := rule.Value.(int32)
+		if !ok {
+			return "", nil, fmt.Errorf("column type is date but value is %T (use int32 days since epoch)", rule.Value)
+		}
+		funcName := fmt.Sprintf("%s:date_date", opPrefix)
+		lit := &pb.Expression{
+			RexType: &pb.Expression_Literal_{
+				Literal: &pb.Expression_Literal{
+					LiteralType: &pb.Expression_Literal_Date{Date: val},
+				},
+			},
+		}
+		return funcName, lit, nil
+
+	case *pb.Type_Timestamp_:
+		// Timestamp values are int64 representing microseconds since UNIX epoch.
+		val, ok := rule.Value.(int64)
+		if !ok {
+			return "", nil, fmt.Errorf("column type is timestamp but value is %T (use int64 microseconds since epoch)", rule.Value)
+		}
+		funcName := fmt.Sprintf("%s:ts_ts", opPrefix)
+		lit := &pb.Expression{
+			RexType: &pb.Expression_Literal_{
+				Literal: &pb.Expression_Literal{
+					LiteralType: &pb.Expression_Literal_Timestamp{Timestamp: val},
+				},
+			},
+		}
+		return funcName, lit, nil
+
+	case *pb.Type_Varchar:
+		val, ok := rule.Value.(string)
+		if !ok {
+			return "", nil, fmt.Errorf("column type is varchar but value is %T", rule.Value)
+		}
+		funcName := fmt.Sprintf("%s:vchar_vchar", opPrefix)
+		lit := &pb.Expression{
+			RexType: &pb.Expression_Literal_{
+				Literal: &pb.Expression_Literal{
+					LiteralType: &pb.Expression_Literal_VarChar_{
+						VarChar: &pb.Expression_Literal_VarChar{
+							Value:  val,
+							Length: uint32(len(val)),
+						},
+					},
+				},
+			},
+		}
+		return funcName, lit, nil
+
+	case *pb.Type_FixedChar_:
+		val, ok := rule.Value.(string)
+		if !ok {
+			return "", nil, fmt.Errorf("column type is fixedchar but value is %T", rule.Value)
+		}
+		funcName := fmt.Sprintf("%s:fchar_fchar", opPrefix)
+		lit := &pb.Expression{
+			RexType: &pb.Expression_Literal_{
+				Literal: &pb.Expression_Literal{
+					LiteralType: &pb.Expression_Literal_FixedChar{FixedChar: val},
+				},
+			},
+		}
+		return funcName, lit, nil
+
+	case *pb.Type_Decimal_:
+		// Decimal values must be provided as a DecimalValue struct.
+		val, ok := rule.Value.(*DecimalValue)
+		if !ok {
+			return "", nil, fmt.Errorf("column type is decimal but value is %T (use *engine.DecimalValue)", rule.Value)
+		}
+		funcName := fmt.Sprintf("%s:dec_dec", opPrefix)
+		lit := &pb.Expression{
+			RexType: &pb.Expression_Literal_{
+				Literal: &pb.Expression_Literal{
+					LiteralType: &pb.Expression_Literal_Decimal_{
+						Decimal: &pb.Expression_Literal_Decimal{
+							Value:     val.Value,
+							Precision: val.Precision,
+							Scale:     val.Scale,
+						},
+					},
 				},
 			},
 		}

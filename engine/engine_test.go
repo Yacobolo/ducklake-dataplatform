@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"context"
 	"database/sql"
 	"os"
 	"testing"
@@ -14,12 +15,12 @@ import (
 func testPolicyStore() *policy.PolicyStore {
 	store := policy.NewPolicyStore()
 
-	store.AddRole(&policy.Role{
+	store.UpdateRole(&policy.Role{
 		Name:          "admin",
 		AllowedTables: []string{"*"},
 	})
 
-	store.AddRole(&policy.Role{
+	store.UpdateRole(&policy.Role{
 		Name:          "first_class_analyst",
 		AllowedTables: []string{"titanic"},
 		RLSRules: []policy.RLSRule{
@@ -27,7 +28,7 @@ func testPolicyStore() *policy.PolicyStore {
 		},
 	})
 
-	store.AddRole(&policy.Role{
+	store.UpdateRole(&policy.Role{
 		Name:          "survivor_researcher",
 		AllowedTables: []string{"titanic"},
 		RLSRules: []policy.RLSRule{
@@ -35,7 +36,7 @@ func testPolicyStore() *policy.PolicyStore {
 		},
 	})
 
-	store.AddRole(&policy.Role{
+	store.UpdateRole(&policy.Role{
 		Name:          "no_access",
 		AllowedTables: []string{},
 	})
@@ -73,8 +74,9 @@ func setupEngine(t *testing.T) *SecureEngine {
 
 func TestAdminSeesAllRows(t *testing.T) {
 	eng := setupEngine(t)
+	ctx := context.Background()
 
-	rows, err := eng.Query("admin", "SELECT * FROM titanic LIMIT 10")
+	rows, err := eng.Query(ctx, "admin", "SELECT * FROM titanic LIMIT 10")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -91,8 +93,9 @@ func TestAdminSeesAllRows(t *testing.T) {
 
 func TestFirstClassAnalystOnlySeesClass1(t *testing.T) {
 	eng := setupEngine(t)
+	ctx := context.Background()
 
-	rows, err := eng.Query("first_class_analyst", "SELECT \"Pclass\" FROM titanic")
+	rows, err := eng.Query(ctx, "first_class_analyst", "SELECT \"Pclass\" FROM titanic")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -117,8 +120,9 @@ func TestFirstClassAnalystOnlySeesClass1(t *testing.T) {
 
 func TestSurvivorResearcherOnlySeesSurvivors(t *testing.T) {
 	eng := setupEngine(t)
+	ctx := context.Background()
 
-	rows, err := eng.Query("survivor_researcher", "SELECT \"Survived\" FROM titanic")
+	rows, err := eng.Query(ctx, "survivor_researcher", "SELECT \"Survived\" FROM titanic")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -143,8 +147,9 @@ func TestSurvivorResearcherOnlySeesSurvivors(t *testing.T) {
 
 func TestNoAccessRoleDenied(t *testing.T) {
 	eng := setupEngine(t)
+	ctx := context.Background()
 
-	_, err := eng.Query("no_access", "SELECT * FROM titanic LIMIT 10")
+	_, err := eng.Query(ctx, "no_access", "SELECT * FROM titanic LIMIT 10")
 	if err == nil {
 		t.Error("expected access denied error for no_access role")
 	}
@@ -153,10 +158,11 @@ func TestNoAccessRoleDenied(t *testing.T) {
 
 func TestAccessToDeniedTableFails(t *testing.T) {
 	eng := setupEngine(t)
+	ctx := context.Background()
 
 	// first_class_analyst can only access "titanic"
 	// Try to query a non-existent table that they don't have access to
-	_, err := eng.Query("first_class_analyst", "SELECT * FROM secret_data LIMIT 10")
+	_, err := eng.Query(ctx, "first_class_analyst", "SELECT * FROM secret_data LIMIT 10")
 	if err == nil {
 		t.Error("expected error when accessing unauthorized table")
 	}
@@ -165,9 +171,10 @@ func TestAccessToDeniedTableFails(t *testing.T) {
 
 func TestModifiedPlanExecutesCorrectly(t *testing.T) {
 	eng := setupEngine(t)
+	ctx := context.Background()
 
 	// First class analyst should get valid results with correct schema
-	rows, err := eng.Query("first_class_analyst", "SELECT \"PassengerId\", \"Name\", \"Pclass\" FROM titanic LIMIT 5")
+	rows, err := eng.Query(ctx, "first_class_analyst", "SELECT \"PassengerId\", \"Name\", \"Pclass\" FROM titanic LIMIT 5")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -200,25 +207,34 @@ func TestModifiedPlanExecutesCorrectly(t *testing.T) {
 
 func TestRowCountReducedByRLS(t *testing.T) {
 	eng := setupEngine(t)
+	ctx := context.Background()
 
 	// Admin count
-	adminRows, err := eng.Query("admin", "SELECT count(*) FROM titanic")
+	adminRows, err := eng.Query(ctx, "admin", "SELECT count(*) FROM titanic")
 	if err != nil {
 		t.Fatalf("admin query: %v", err)
 	}
 	var adminCount int64
-	adminRows.Next()
-	adminRows.Scan(&adminCount)
+	if !adminRows.Next() {
+		t.Fatal("expected a row from admin count query")
+	}
+	if err := adminRows.Scan(&adminCount); err != nil {
+		t.Fatalf("admin scan: %v", err)
+	}
 	adminRows.Close()
 
 	// First class count
-	fcRows, err := eng.Query("first_class_analyst", "SELECT count(*) FROM titanic")
+	fcRows, err := eng.Query(ctx, "first_class_analyst", "SELECT count(*) FROM titanic")
 	if err != nil {
 		t.Fatalf("first_class query: %v", err)
 	}
 	var fcCount int64
-	fcRows.Next()
-	fcRows.Scan(&fcCount)
+	if !fcRows.Next() {
+		t.Fatal("expected a row from first_class count query")
+	}
+	if err := fcRows.Scan(&fcCount); err != nil {
+		t.Fatalf("first_class scan: %v", err)
+	}
 	fcRows.Close()
 
 	t.Logf("admin sees %d rows, first_class_analyst sees %d rows", adminCount, fcCount)
@@ -233,8 +249,9 @@ func TestRowCountReducedByRLS(t *testing.T) {
 
 func TestUnknownRoleReturnsError(t *testing.T) {
 	eng := setupEngine(t)
+	ctx := context.Background()
 
-	_, err := eng.Query("nonexistent_role", "SELECT * FROM titanic LIMIT 10")
+	_, err := eng.Query(ctx, "nonexistent_role", "SELECT * FROM titanic LIMIT 10")
 	if err == nil {
 		t.Error("expected error for unknown role")
 	}

@@ -1,18 +1,19 @@
 package policy
 
 import (
+	"sync"
 	"testing"
 )
 
 func defaultStore() *PolicyStore {
 	store := NewPolicyStore()
 
-	store.AddRole(&Role{
+	store.UpdateRole(&Role{
 		Name:          "admin",
 		AllowedTables: []string{"*"},
 	})
 
-	store.AddRole(&Role{
+	store.UpdateRole(&Role{
 		Name:          "first_class_analyst",
 		AllowedTables: []string{"titanic"},
 		RLSRules: []RLSRule{
@@ -20,7 +21,7 @@ func defaultStore() *PolicyStore {
 		},
 	})
 
-	store.AddRole(&Role{
+	store.UpdateRole(&Role{
 		Name:          "survivor_researcher",
 		AllowedTables: []string{"titanic"},
 		RLSRules: []RLSRule{
@@ -28,12 +29,12 @@ func defaultStore() *PolicyStore {
 		},
 	})
 
-	store.AddRole(&Role{
+	store.UpdateRole(&Role{
 		Name:          "no_access",
 		AllowedTables: []string{},
 	})
 
-	store.AddRole(&Role{
+	store.UpdateRole(&Role{
 		Name:          "deny_override",
 		AllowedTables: []string{"*"},
 		DeniedTables:  []string{"secret_data"},
@@ -157,5 +158,124 @@ func TestCheckAccessMultipleTables(t *testing.T) {
 	// Should fail with a disallowed table
 	if err := role.CheckAccess([]string{"titanic", "secret_data"}); err == nil {
 		t.Error("expected error when accessing secret_data")
+	}
+}
+
+func TestCheckAccessEmptyTableList(t *testing.T) {
+	store := defaultStore()
+	role, _ := store.GetRole("first_class_analyst")
+	if err := role.CheckAccess([]string{}); err != nil {
+		t.Errorf("empty table list should succeed, got: %v", err)
+	}
+}
+
+func TestAddRoleDuplicateReturnsError(t *testing.T) {
+	store := NewPolicyStore()
+	err := store.AddRole(&Role{Name: "test", AllowedTables: []string{"*"}})
+	if err != nil {
+		t.Fatalf("first AddRole should succeed: %v", err)
+	}
+	err = store.AddRole(&Role{Name: "test", AllowedTables: []string{"other"}})
+	if err == nil {
+		t.Error("second AddRole with same name should return error")
+	}
+}
+
+func TestUpdateRoleOverwrites(t *testing.T) {
+	store := NewPolicyStore()
+	store.UpdateRole(&Role{Name: "test", AllowedTables: []string{"a"}})
+	store.UpdateRole(&Role{Name: "test", AllowedTables: []string{"b"}})
+
+	role, err := store.GetRole("test")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(role.AllowedTables) != 1 || role.AllowedTables[0] != "b" {
+		t.Errorf("expected AllowedTables=[b], got %v", role.AllowedTables)
+	}
+}
+
+func TestRemoveRole(t *testing.T) {
+	store := NewPolicyStore()
+	store.UpdateRole(&Role{Name: "removable", AllowedTables: []string{"*"}})
+
+	err := store.RemoveRole("removable")
+	if err != nil {
+		t.Fatalf("RemoveRole should succeed: %v", err)
+	}
+
+	_, err = store.GetRole("removable")
+	if err == nil {
+		t.Error("GetRole should fail after RemoveRole")
+	}
+}
+
+func TestRemoveNonexistentRoleReturnsError(t *testing.T) {
+	store := NewPolicyStore()
+	err := store.RemoveRole("ghost")
+	if err == nil {
+		t.Error("RemoveRole for nonexistent role should return error")
+	}
+}
+
+func TestConcurrentPolicyAccess(t *testing.T) {
+	store := NewPolicyStore()
+
+	// Pre-populate with some roles
+	for i := 0; i < 10; i++ {
+		store.UpdateRole(&Role{
+			Name:          "role_" + string(rune('a'+i)),
+			AllowedTables: []string{"*"},
+		})
+	}
+
+	// Run concurrent reads and writes
+	var wg sync.WaitGroup
+	const goroutines = 50
+
+	for i := 0; i < goroutines; i++ {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+			if id%3 == 0 {
+				// Write
+				store.UpdateRole(&Role{
+					Name:          "concurrent_role",
+					AllowedTables: []string{"*"},
+				})
+			} else {
+				// Read
+				store.GetRole("role_a")
+			}
+		}(i)
+	}
+
+	wg.Wait()
+	// If we get here without panic, the mutex is working
+}
+
+func TestRLSRulesWithDifferentOperators(t *testing.T) {
+	role := &Role{
+		Name:          "analyst",
+		AllowedTables: []string{"data"},
+		RLSRules: []RLSRule{
+			{Table: "data", Column: "age", Operator: OpGreaterThan, Value: int64(18)},
+			{Table: "data", Column: "status", Operator: OpNotEqual, Value: "inactive"},
+			{Table: "data", Column: "score", Operator: OpLessEqual, Value: int64(100)},
+		},
+	}
+
+	rules := role.RLSRulesForTable("data")
+	if len(rules) != 3 {
+		t.Fatalf("expected 3 rules, got %d", len(rules))
+	}
+	if rules[0].Operator != OpGreaterThan {
+		t.Errorf("expected gt, got %s", rules[0].Operator)
+	}
+	if rules[1].Operator != OpNotEqual {
+		t.Errorf("expected neq, got %s", rules[1].Operator)
+	}
+	if rules[2].Operator != OpLessEqual {
+		t.Errorf("expected lte, got %s", rules[2].Operator)
 	}
 }

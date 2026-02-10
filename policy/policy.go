@@ -1,6 +1,9 @@
 package policy
 
-import "fmt"
+import (
+	"fmt"
+	"sync"
+)
 
 // Operator constants for RLS rule conditions.
 const (
@@ -71,8 +74,9 @@ func (r *Role) RLSRulesForTable(table string) []RLSRule {
 	return rules
 }
 
-// PolicyStore holds all defined roles and provides lookup.
+// PolicyStore holds all defined roles and provides thread-safe lookup.
 type PolicyStore struct {
+	mu    sync.RWMutex
 	roles map[string]*Role
 }
 
@@ -81,13 +85,40 @@ func NewPolicyStore() *PolicyStore {
 	return &PolicyStore{roles: make(map[string]*Role)}
 }
 
-// AddRole registers a role in the store.
-func (s *PolicyStore) AddRole(role *Role) {
+// AddRole registers a new role in the store. Returns an error if a role
+// with the same name already exists. Use UpdateRole to overwrite.
+func (s *PolicyStore) AddRole(role *Role) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, exists := s.roles[role.Name]; exists {
+		return fmt.Errorf("role %q already exists", role.Name)
+	}
 	s.roles[role.Name] = role
+	return nil
+}
+
+// UpdateRole adds or replaces a role in the store.
+func (s *PolicyStore) UpdateRole(role *Role) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.roles[role.Name] = role
+}
+
+// RemoveRole deletes a role from the store. Returns an error if not found.
+func (s *PolicyStore) RemoveRole(name string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, ok := s.roles[name]; !ok {
+		return fmt.Errorf("role %q not found", name)
+	}
+	delete(s.roles, name)
+	return nil
 }
 
 // GetRole returns the role with the given name, or an error if not found.
 func (s *PolicyStore) GetRole(name string) (*Role, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	role, ok := s.roles[name]
 	if !ok {
 		return nil, fmt.Errorf("unknown role: %q", name)
