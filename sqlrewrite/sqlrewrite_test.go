@@ -4,8 +4,6 @@ import (
 	"sort"
 	"strings"
 	"testing"
-
-	"duck-demo/policy"
 )
 
 // --- ExtractTableNames tests ---
@@ -89,7 +87,7 @@ func TestExtractTableNames_InvalidSQL(t *testing.T) {
 	}
 }
 
-// --- RewriteQuery tests (backward-compatible policy.RLSRule API) ---
+// --- RewriteQuery tests (backward-compatible RLSRule API) ---
 
 func TestRewriteQuery_NoRules(t *testing.T) {
 	sql := "SELECT * FROM titanic"
@@ -104,9 +102,9 @@ func TestRewriteQuery_NoRules(t *testing.T) {
 
 func TestRewriteQuery_SingleRule(t *testing.T) {
 	sql := "SELECT * FROM titanic"
-	rules := map[string][]policy.RLSRule{
+	rules := map[string][]RLSRule{
 		"titanic": {
-			{Table: "titanic", Column: "Pclass", Operator: policy.OpEqual, Value: int64(1)},
+			{Table: "titanic", Column: "Pclass", Operator: OpEqual, Value: int64(1)},
 		},
 	}
 
@@ -128,10 +126,10 @@ func TestRewriteQuery_SingleRule(t *testing.T) {
 
 func TestRewriteQuery_MultipleRules(t *testing.T) {
 	sql := "SELECT * FROM titanic"
-	rules := map[string][]policy.RLSRule{
+	rules := map[string][]RLSRule{
 		"titanic": {
-			{Table: "titanic", Column: "Pclass", Operator: policy.OpEqual, Value: int64(1)},
-			{Table: "titanic", Column: "Survived", Operator: policy.OpEqual, Value: int64(1)},
+			{Table: "titanic", Column: "Pclass", Operator: OpEqual, Value: int64(1)},
+			{Table: "titanic", Column: "Survived", Operator: OpEqual, Value: int64(1)},
 		},
 	}
 
@@ -152,9 +150,9 @@ func TestRewriteQuery_MultipleRules(t *testing.T) {
 
 func TestRewriteQuery_PreservesExistingWhere(t *testing.T) {
 	sql := `SELECT * FROM titanic WHERE "Sex" = 'male'`
-	rules := map[string][]policy.RLSRule{
+	rules := map[string][]RLSRule{
 		"titanic": {
-			{Table: "titanic", Column: "Pclass", Operator: policy.OpEqual, Value: int64(1)},
+			{Table: "titanic", Column: "Pclass", Operator: OpEqual, Value: int64(1)},
 		},
 	}
 
@@ -176,9 +174,9 @@ func TestRewriteQuery_PreservesExistingWhere(t *testing.T) {
 
 func TestRewriteQuery_WithLimit(t *testing.T) {
 	sql := "SELECT * FROM titanic LIMIT 10"
-	rules := map[string][]policy.RLSRule{
+	rules := map[string][]RLSRule{
 		"titanic": {
-			{Table: "titanic", Column: "Pclass", Operator: policy.OpEqual, Value: int64(1)},
+			{Table: "titanic", Column: "Pclass", Operator: OpEqual, Value: int64(1)},
 		},
 	}
 
@@ -200,9 +198,9 @@ func TestRewriteQuery_WithLimit(t *testing.T) {
 
 func TestRewriteQuery_WithOrderBy(t *testing.T) {
 	sql := `SELECT * FROM titanic ORDER BY "Name" LIMIT 10`
-	rules := map[string][]policy.RLSRule{
+	rules := map[string][]RLSRule{
 		"titanic": {
-			{Table: "titanic", Column: "Survived", Operator: policy.OpEqual, Value: int64(1)},
+			{Table: "titanic", Column: "Survived", Operator: OpEqual, Value: int64(1)},
 		},
 	}
 
@@ -221,9 +219,9 @@ func TestRewriteQuery_WithOrderBy(t *testing.T) {
 
 func TestRewriteQuery_JoinWithRules(t *testing.T) {
 	sql := "SELECT * FROM titanic t JOIN cabins c ON t.id = c.passenger_id"
-	rules := map[string][]policy.RLSRule{
+	rules := map[string][]RLSRule{
 		"titanic": {
-			{Table: "titanic", Column: "Pclass", Operator: policy.OpEqual, Value: int64(1)},
+			{Table: "titanic", Column: "Pclass", Operator: OpEqual, Value: int64(1)},
 		},
 	}
 
@@ -244,18 +242,18 @@ func TestRewriteQuery_AllOperators(t *testing.T) {
 		op    string
 		sqlOp string
 	}{
-		{policy.OpEqual, "="},
-		{policy.OpNotEqual, "<>"},
-		{policy.OpLessThan, "<"},
-		{policy.OpLessEqual, "<="},
-		{policy.OpGreaterThan, ">"},
-		{policy.OpGreaterEqual, ">="},
+		{OpEqual, "="},
+		{OpNotEqual, "<>"},
+		{OpLessThan, "<"},
+		{OpLessEqual, "<="},
+		{OpGreaterThan, ">"},
+		{OpGreaterEqual, ">="},
 	}
 
 	for _, tc := range ops {
 		t.Run(tc.op, func(t *testing.T) {
 			sql := "SELECT * FROM titanic"
-			rules := map[string][]policy.RLSRule{
+			rules := map[string][]RLSRule{
 				"titanic": {
 					{Table: "titanic", Column: "Age", Operator: tc.op, Value: int64(30)},
 				},
@@ -277,9 +275,9 @@ func TestRewriteQuery_AllOperators(t *testing.T) {
 
 func TestRewriteQuery_StringValue(t *testing.T) {
 	sql := "SELECT * FROM titanic"
-	rules := map[string][]policy.RLSRule{
+	rules := map[string][]RLSRule{
 		"titanic": {
-			{Table: "titanic", Column: "Sex", Operator: policy.OpEqual, Value: "male"},
+			{Table: "titanic", Column: "Sex", Operator: OpEqual, Value: "male"},
 		},
 	}
 
@@ -297,9 +295,9 @@ func TestRewriteQuery_StringValue(t *testing.T) {
 
 func TestRewriteQuery_FloatValue(t *testing.T) {
 	sql := "SELECT * FROM titanic"
-	rules := map[string][]policy.RLSRule{
+	rules := map[string][]RLSRule{
 		"titanic": {
-			{Table: "titanic", Column: "Fare", Operator: policy.OpGreaterThan, Value: float64(50.5)},
+			{Table: "titanic", Column: "Fare", Operator: OpGreaterThan, Value: float64(50.5)},
 		},
 	}
 
@@ -317,7 +315,7 @@ func TestRewriteQuery_FloatValue(t *testing.T) {
 
 func TestRewriteQuery_UnsupportedOperator(t *testing.T) {
 	sql := "SELECT * FROM titanic"
-	rules := map[string][]policy.RLSRule{
+	rules := map[string][]RLSRule{
 		"titanic": {
 			{Table: "titanic", Column: "Pclass", Operator: "invalid_op", Value: int64(1)},
 		},
@@ -331,9 +329,9 @@ func TestRewriteQuery_UnsupportedOperator(t *testing.T) {
 
 func TestRewriteQuery_UnsupportedValueType(t *testing.T) {
 	sql := "SELECT * FROM titanic"
-	rules := map[string][]policy.RLSRule{
+	rules := map[string][]RLSRule{
 		"titanic": {
-			{Table: "titanic", Column: "Pclass", Operator: policy.OpEqual, Value: []int{1, 2}},
+			{Table: "titanic", Column: "Pclass", Operator: OpEqual, Value: []int{1, 2}},
 		},
 	}
 
@@ -345,9 +343,9 @@ func TestRewriteQuery_UnsupportedValueType(t *testing.T) {
 
 func TestRewriteQuery_NoMatchingTable(t *testing.T) {
 	sql := "SELECT * FROM titanic"
-	rules := map[string][]policy.RLSRule{
+	rules := map[string][]RLSRule{
 		"other_table": {
-			{Table: "other_table", Column: "id", Operator: policy.OpEqual, Value: int64(1)},
+			{Table: "other_table", Column: "id", Operator: OpEqual, Value: int64(1)},
 		},
 	}
 
@@ -361,9 +359,9 @@ func TestRewriteQuery_NoMatchingTable(t *testing.T) {
 
 func TestRewriteQuery_SelectedColumns(t *testing.T) {
 	sql := `SELECT "PassengerId", "Name", "Pclass" FROM titanic LIMIT 5`
-	rules := map[string][]policy.RLSRule{
+	rules := map[string][]RLSRule{
 		"titanic": {
-			{Table: "titanic", Column: "Pclass", Operator: policy.OpEqual, Value: int64(1)},
+			{Table: "titanic", Column: "Pclass", Operator: OpEqual, Value: int64(1)},
 		},
 	}
 
@@ -380,9 +378,9 @@ func TestRewriteQuery_SelectedColumns(t *testing.T) {
 }
 
 func TestRewriteQuery_InvalidSQL(t *testing.T) {
-	_, err := RewriteQuery("SELEKT * FORM titanic", map[string][]policy.RLSRule{
+	_, err := RewriteQuery("SELEKT * FORM titanic", map[string][]RLSRule{
 		"titanic": {
-			{Table: "titanic", Column: "id", Operator: policy.OpEqual, Value: int64(1)},
+			{Table: "titanic", Column: "id", Operator: OpEqual, Value: int64(1)},
 		},
 	})
 	if err == nil {
@@ -392,9 +390,9 @@ func TestRewriteQuery_InvalidSQL(t *testing.T) {
 
 func TestRewriteQuery_Union(t *testing.T) {
 	sql := "SELECT * FROM titanic UNION ALL SELECT * FROM titanic"
-	rules := map[string][]policy.RLSRule{
+	rules := map[string][]RLSRule{
 		"titanic": {
-			{Table: "titanic", Column: "Pclass", Operator: policy.OpEqual, Value: int64(1)},
+			{Table: "titanic", Column: "Pclass", Operator: OpEqual, Value: int64(1)},
 		},
 	}
 
@@ -619,9 +617,9 @@ func TestQuoteIdentifier(t *testing.T) {
 
 func TestMakeIntegerConst_LargeValue(t *testing.T) {
 	sql := "SELECT * FROM titanic"
-	rules := map[string][]policy.RLSRule{
+	rules := map[string][]RLSRule{
 		"titanic": {
-			{Table: "titanic", Column: "id", Operator: policy.OpEqual, Value: int64(3000000000)},
+			{Table: "titanic", Column: "id", Operator: OpEqual, Value: int64(3000000000)},
 		},
 	}
 

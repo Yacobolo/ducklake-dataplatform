@@ -10,10 +10,26 @@ import (
 	"fmt"
 	"strings"
 
-	"duck-demo/policy"
-
 	pg_query "github.com/pganalyze/pg_query_go/v6"
 )
+
+// Operator constants for RLS rule conditions (migrated from policy package).
+const (
+	OpEqual        = "eq"
+	OpNotEqual     = "neq"
+	OpLessThan     = "lt"
+	OpLessEqual    = "lte"
+	OpGreaterThan  = "gt"
+	OpGreaterEqual = "gte"
+)
+
+// RLSRule defines a row-level security filter applied to a specific table.
+type RLSRule struct {
+	Table    string      // table name this rule applies to
+	Column   string      // column name to filter on
+	Operator string      // comparison operator (use Op* constants)
+	Value    interface{} // literal value to compare against
+}
 
 // ExtractTableNames parses a SQL query and returns the deduplicated list
 // of table names referenced in FROM clauses and JOINs.
@@ -37,7 +53,7 @@ func ExtractTableNames(sql string) ([]string, error) {
 // RewriteQuery parses the SQL query, injects WHERE clause conditions based on
 // the RLS rules, and returns the rewritten SQL string.
 // If rulesByTable is empty, the original query is returned unchanged.
-func RewriteQuery(sql string, rulesByTable map[string][]policy.RLSRule) (string, error) {
+func RewriteQuery(sql string, rulesByTable map[string][]RLSRule) (string, error) {
 	if len(rulesByTable) == 0 {
 		return sql, nil
 	}
@@ -153,6 +169,26 @@ func InjectRowFilterSQL(sqlStr string, tableName string, filterSQL string) (stri
 		return "", fmt.Errorf("deparse SQL: %w", err)
 	}
 	return output, nil
+}
+
+// InjectMultipleRowFilters injects multiple row filter expressions into a SQL
+// query for a given table. Multiple filters are combined with OR (each filter
+// represents a separate visibility window), then ANDed with any existing WHERE.
+func InjectMultipleRowFilters(sqlStr string, tableName string, filters []string) (string, error) {
+	if len(filters) == 0 {
+		return sqlStr, nil
+	}
+	if len(filters) == 1 {
+		return InjectRowFilterSQL(sqlStr, tableName, filters[0])
+	}
+
+	// Combine filters with OR: (filter1) OR (filter2) OR ...
+	parts := make([]string, len(filters))
+	for i, f := range filters {
+		parts[i] = "(" + f + ")"
+	}
+	combined := strings.Join(parts, " OR ")
+	return InjectRowFilterSQL(sqlStr, tableName, combined)
 }
 
 // injectRawFilterIntoNode recurses into statement nodes to find SELECTs.
@@ -422,7 +458,7 @@ func addTable(name string, seen map[string]bool, tables *[]string) {
 }
 
 // injectFiltersIntoNode finds SELECT statements and injects WHERE conditions.
-func injectFiltersIntoNode(node *pg_query.Node, rulesByTable map[string][]policy.RLSRule) error {
+func injectFiltersIntoNode(node *pg_query.Node, rulesByTable map[string][]RLSRule) error {
 	if node == nil {
 		return nil
 	}
@@ -436,7 +472,7 @@ func injectFiltersIntoNode(node *pg_query.Node, rulesByTable map[string][]policy
 
 // injectFiltersIntoSelectStmt injects WHERE conditions into a SELECT statement
 // based on the tables referenced in its FROM clause.
-func injectFiltersIntoSelectStmt(sel *pg_query.SelectStmt, rulesByTable map[string][]policy.RLSRule) error {
+func injectFiltersIntoSelectStmt(sel *pg_query.SelectStmt, rulesByTable map[string][]RLSRule) error {
 	if sel == nil {
 		return nil
 	}
@@ -548,7 +584,7 @@ func collectTableRefsFromNode(node *pg_query.Node, refs *[]tableRef) {
 }
 
 // injectFiltersIntoFromNode recurses into subqueries in FROM clause.
-func injectFiltersIntoFromNode(node *pg_query.Node, rulesByTable map[string][]policy.RLSRule) error {
+func injectFiltersIntoFromNode(node *pg_query.Node, rulesByTable map[string][]RLSRule) error {
 	if node == nil {
 		return nil
 	}
@@ -566,7 +602,7 @@ func injectFiltersIntoFromNode(node *pg_query.Node, rulesByTable map[string][]po
 }
 
 // injectFiltersIntoExpr recurses into subqueries in expressions.
-func injectFiltersIntoExpr(node *pg_query.Node, rulesByTable map[string][]policy.RLSRule) error {
+func injectFiltersIntoExpr(node *pg_query.Node, rulesByTable map[string][]RLSRule) error {
 	if node == nil {
 		return nil
 	}
@@ -591,7 +627,7 @@ func injectFiltersIntoExpr(node *pg_query.Node, rulesByTable map[string][]policy
 
 // buildRuleExpr creates an A_Expr node representing a single RLS rule condition.
 // For example: "Pclass" = 1 or t."Survived" = 1
-func buildRuleExpr(rule policy.RLSRule, tableAlias string) (*pg_query.Node, error) {
+func buildRuleExpr(rule RLSRule, tableAlias string) (*pg_query.Node, error) {
 	// Left side: column reference (optionally qualified with table alias)
 	colRef := makeColumnRef(rule.Column, tableAlias)
 
@@ -622,17 +658,17 @@ func buildRuleExpr(rule policy.RLSRule, tableAlias string) (*pg_query.Node, erro
 // operatorToSQL converts a policy operator constant to a SQL operator string.
 func operatorToSQL(op string) (string, error) {
 	switch op {
-	case policy.OpEqual:
+	case OpEqual:
 		return "=", nil
-	case policy.OpNotEqual:
+	case OpNotEqual:
 		return "<>", nil
-	case policy.OpLessThan:
+	case OpLessThan:
 		return "<", nil
-	case policy.OpLessEqual:
+	case OpLessEqual:
 		return "<=", nil
-	case policy.OpGreaterThan:
+	case OpGreaterThan:
 		return ">", nil
-	case policy.OpGreaterEqual:
+	case OpGreaterEqual:
 		return ">=", nil
 	default:
 		return "", fmt.Errorf("unsupported operator: %q", op)

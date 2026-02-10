@@ -81,14 +81,14 @@ func (e *SecureEngine) Query(ctx context.Context, principalName, sqlQuery string
 			return nil, fmt.Errorf("access denied: %q lacks %s on table %q", principalName, requiredPriv, tableName)
 		}
 
-		// Get row filter (only for SELECT)
+		// Get row filters (only for SELECT)
 		if stmtType == sqlrewrite.StmtSelect {
-			filter, err := e.catalog.GetEffectiveRowFilter(ctx, principalName, tableID)
+			filters, err := e.catalog.GetEffectiveRowFilters(ctx, principalName, tableID)
 			if err != nil {
 				return nil, fmt.Errorf("row filter: %w", err)
 			}
-			if filter != nil {
-				rewritten, err = sqlrewrite.InjectRowFilterSQL(rewritten, tableName, *filter)
+			if len(filters) > 0 {
+				rewritten, err = sqlrewrite.InjectMultipleRowFilters(rewritten, tableName, filters)
 				if err != nil {
 					return nil, fmt.Errorf("inject row filter: %w", err)
 				}

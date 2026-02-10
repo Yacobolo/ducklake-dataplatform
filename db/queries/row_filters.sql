@@ -3,7 +3,7 @@ INSERT INTO row_filters (table_id, filter_sql, description)
 VALUES (?, ?, ?)
 RETURNING *;
 
--- name: GetRowFilterForTable :one
+-- name: GetRowFiltersForTable :many
 SELECT * FROM row_filters WHERE table_id = ?;
 
 -- name: DeleteRowFilter :exec
@@ -25,7 +25,7 @@ SELECT rf.* FROM row_filters rf
 JOIN row_filter_bindings rfb ON rf.id = rfb.row_filter_id
 WHERE rfb.principal_id = ? AND rfb.principal_type = ?;
 
--- name: GetRowFilterForTableAndPrincipal :one
+-- name: GetRowFiltersForTableAndPrincipal :many
 SELECT rf.* FROM row_filters rf
 JOIN row_filter_bindings rfb ON rf.id = rfb.row_filter_id
 WHERE rf.table_id = ? AND rfb.principal_id = ? AND rfb.principal_type = ?;

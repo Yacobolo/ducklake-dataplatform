@@ -1,0 +1,926 @@
+openapi: "3.0.3"
+info:
+  title: DuckDB Data Platform API
+  version: "1.0.0"
+  description: HTTP API for the DuckDB data platform with RBAC, RLS, and column masking.
+
+servers:
+  - url: /v1
+
+security:
+  - BearerAuth: []
+  - ApiKeyAuth: []
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+
+    QueryRequest:
+      type: object
+      required: [sql]
+      properties:
+        sql:
+          type: string
+
+    QueryResult:
+      type: object
+      properties:
+        columns:
+          type: array
+          items:
+            type: string
+        rows:
+          type: array
+          items:
+            type: array
+            items: {}
+        row_count:
+          type: integer
+
+    Principal:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        type:
+          type: string
+        is_admin:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    CreatePrincipalRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          default: user
+        is_admin:
+          type: boolean
+          default: false
+
+    SetAdminRequest:
+      type: object
+      required: [is_admin]
+      properties:
+        is_admin:
+          type: boolean
+
+    Group:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    CreateGroupRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+
+    GroupMember:
+      type: object
+      properties:
+        group_id:
+          type: integer
+          format: int64
+        member_type:
+          type: string
+        member_id:
+          type: integer
+          format: int64
+
+    AddGroupMemberRequest:
+      type: object
+      required: [member_type, member_id]
+      properties:
+        member_type:
+          type: string
+        member_id:
+          type: integer
+          format: int64
+
+    PrivilegeGrant:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        principal_id:
+          type: integer
+          format: int64
+        principal_type:
+          type: string
+        securable_type:
+          type: string
+        securable_id:
+          type: integer
+          format: int64
+        privilege:
+          type: string
+        granted_by:
+          type: integer
+          format: int64
+          nullable: true
+        granted_at:
+          type: string
+          format: date-time
+
+    GrantRequest:
+      type: object
+      required: [principal_id, principal_type, securable_type, securable_id, privilege]
+      properties:
+        principal_id:
+          type: integer
+          format: int64
+        principal_type:
+          type: string
+        securable_type:
+          type: string
+        securable_id:
+          type: integer
+          format: int64
+        privilege:
+          type: string
+
+    RevokeRequest:
+      type: object
+      required: [principal_id, principal_type, securable_type, securable_id, privilege]
+      properties:
+        principal_id:
+          type: integer
+          format: int64
+        principal_type:
+          type: string
+        securable_type:
+          type: string
+        securable_id:
+          type: integer
+          format: int64
+        privilege:
+          type: string
+
+    RowFilter:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        table_id:
+          type: integer
+          format: int64
+        filter_sql:
+          type: string
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    CreateRowFilterRequest:
+      type: object
+      required: [filter_sql]
+      properties:
+        filter_sql:
+          type: string
+        description:
+          type: string
+
+    BindingRequest:
+      type: object
+      required: [principal_id, principal_type]
+      properties:
+        principal_id:
+          type: integer
+          format: int64
+        principal_type:
+          type: string
+
+    ColumnMask:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        table_id:
+          type: integer
+          format: int64
+        column_name:
+          type: string
+        mask_expression:
+          type: string
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    CreateColumnMaskRequest:
+      type: object
+      required: [column_name, mask_expression]
+      properties:
+        column_name:
+          type: string
+        mask_expression:
+          type: string
+        description:
+          type: string
+
+    ColumnMaskBindingRequest:
+      type: object
+      required: [principal_id, principal_type]
+      properties:
+        principal_id:
+          type: integer
+          format: int64
+        principal_type:
+          type: string
+        see_original:
+          type: boolean
+          default: false
+
+    Schema:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+
+    Table:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        schema_id:
+          type: integer
+          format: int64
+        name:
+          type: string
+
+    Column:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        table_id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        type:
+          type: string
+
+    AuditEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        principal_name:
+          type: string
+        action:
+          type: string
+        statement_type:
+          type: string
+          nullable: true
+        original_sql:
+          type: string
+          nullable: true
+        rewritten_sql:
+          type: string
+          nullable: true
+        tables_accessed:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+        error_message:
+          type: string
+          nullable: true
+        duration_ms:
+          type: integer
+          format: int64
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    AuditLogResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditEntry'
+        total:
+          type: integer
+          format: int64
+        limit:
+          type: integer
+        offset:
+          type: integer
+
+paths:
+  /query:
+    post:
+      operationId: executeQuery
+      summary: Execute SQL as authenticated principal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueryRequest'
+      responses:
+        '200':
+          description: Query result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryResult'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /principals:
+    get:
+      operationId: listPrincipals
+      summary: List all principals
+      responses:
+        '200':
+          description: List of principals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Principal'
+    post:
+      operationId: createPrincipal
+      summary: Create a principal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePrincipalRequest'
+      responses:
+        '201':
+          description: Created principal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Principal'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /principals/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    get:
+      operationId: getPrincipal
+      summary: Get principal by ID
+      responses:
+        '200':
+          description: Principal details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Principal'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: deletePrincipal
+      summary: Delete a principal
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /principals/{id}/admin:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    put:
+      operationId: setAdmin
+      summary: Set or unset admin flag
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetAdminRequest'
+      responses:
+        '204':
+          description: Updated
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /groups:
+    get:
+      operationId: listGroups
+      summary: List all groups
+      responses:
+        '200':
+          description: List of groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Group'
+    post:
+      operationId: createGroup
+      summary: Create a group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGroupRequest'
+      responses:
+        '201':
+          description: Created group
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+
+  /groups/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    get:
+      operationId: getGroup
+      summary: Get group by ID
+      responses:
+        '200':
+          description: Group details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: deleteGroup
+      summary: Delete a group
+      responses:
+        '204':
+          description: Deleted
+
+  /groups/{id}/members:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    get:
+      operationId: listGroupMembers
+      summary: List group members
+      responses:
+        '200':
+          description: List of members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GroupMember'
+    post:
+      operationId: addGroupMember
+      summary: Add member to group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddGroupMemberRequest'
+      responses:
+        '204':
+          description: Member added
+    delete:
+      operationId: removeGroupMember
+      summary: Remove member from group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddGroupMemberRequest'
+      responses:
+        '204':
+          description: Member removed
+
+  /grants:
+    get:
+      operationId: listGrants
+      summary: List grants
+      parameters:
+        - name: principal_id
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: principal_type
+          in: query
+          schema:
+            type: string
+        - name: securable_type
+          in: query
+          schema:
+            type: string
+        - name: securable_id
+          in: query
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: List of grants
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PrivilegeGrant'
+    post:
+      operationId: grantPrivilege
+      summary: Grant a privilege
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GrantRequest'
+      responses:
+        '201':
+          description: Granted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivilegeGrant'
+    delete:
+      operationId: revokePrivilege
+      summary: Revoke a privilege
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevokeRequest'
+      responses:
+        '204':
+          description: Revoked
+
+  /tables/{tableId}/row-filters:
+    parameters:
+      - name: tableId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    get:
+      operationId: listRowFilters
+      summary: List row filters for table
+      responses:
+        '200':
+          description: List of filters
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RowFilter'
+    post:
+      operationId: createRowFilter
+      summary: Create row filter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRowFilterRequest'
+      responses:
+        '201':
+          description: Created filter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RowFilter'
+
+  /row-filters/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    delete:
+      operationId: deleteRowFilter
+      summary: Delete row filter
+      responses:
+        '204':
+          description: Deleted
+
+  /row-filters/{id}/bindings:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    post:
+      operationId: bindRowFilter
+      summary: Bind filter to principal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BindingRequest'
+      responses:
+        '204':
+          description: Bound
+    delete:
+      operationId: unbindRowFilter
+      summary: Unbind filter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BindingRequest'
+      responses:
+        '204':
+          description: Unbound
+
+  /tables/{tableId}/column-masks:
+    parameters:
+      - name: tableId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    get:
+      operationId: listColumnMasks
+      summary: List column masks
+      responses:
+        '200':
+          description: List of masks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ColumnMask'
+    post:
+      operationId: createColumnMask
+      summary: Create column mask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateColumnMaskRequest'
+      responses:
+        '201':
+          description: Created mask
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ColumnMask'
+
+  /column-masks/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    delete:
+      operationId: deleteColumnMask
+      summary: Delete column mask
+      responses:
+        '204':
+          description: Deleted
+
+  /column-masks/{id}/bindings:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    post:
+      operationId: bindColumnMask
+      summary: Bind mask to principal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ColumnMaskBindingRequest'
+      responses:
+        '204':
+          description: Bound
+    delete:
+      operationId: unbindColumnMask
+      summary: Unbind mask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BindingRequest'
+      responses:
+        '204':
+          description: Unbound
+
+  /schemas:
+    get:
+      operationId: listSchemas
+      summary: List DuckLake schemas
+      responses:
+        '200':
+          description: List of schemas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Schema'
+
+  /schemas/{id}/tables:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    get:
+      operationId: listTables
+      summary: List tables in schema
+      responses:
+        '200':
+          description: List of tables
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Table'
+
+  /tables/{id}/columns:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    get:
+      operationId: listColumns
+      summary: List columns in table
+      responses:
+        '200':
+          description: List of columns
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Column'
+
+  /audit-logs:
+    get:
+      operationId: listAuditLogs
+      summary: Query audit logs
+      parameters:
+        - name: principal_name
+          in: query
+          schema:
+            type: string
+        - name: action
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Audit log entries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogResponse'

@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// Config holds the configuration for DuckLake + S3 storage.
+// Config holds the configuration for DuckLake + S3 storage and the HTTP API.
 type Config struct {
 	S3KeyID     string
 	S3Secret    string
@@ -16,6 +16,8 @@ type Config struct {
 	S3Bucket    string
 	MetaDBPath  string // path to SQLite metadata file
 	ParquetPath string // path to local parquet file for initial data load
+	JWTSecret   string // secret key for JWT token validation
+	ListenAddr  string // HTTP listen address (default ":8080")
 }
 
 // LoadFromEnv loads configuration from environment variables.
@@ -28,6 +30,8 @@ func LoadFromEnv() (*Config, error) {
 		S3Region:   os.Getenv("REGION"),
 		S3Bucket:   os.Getenv("BUCKET"),
 		MetaDBPath: os.Getenv("META_DB_PATH"),
+		JWTSecret:  os.Getenv("JWT_SECRET"),
+		ListenAddr: os.Getenv("LISTEN_ADDR"),
 	}
 
 	if cfg.S3Bucket == "" {
@@ -38,6 +42,12 @@ func LoadFromEnv() (*Config, error) {
 	}
 	if cfg.ParquetPath == "" {
 		cfg.ParquetPath = "titanic.parquet"
+	}
+	if cfg.ListenAddr == "" {
+		cfg.ListenAddr = ":8080"
+	}
+	if cfg.JWTSecret == "" {
+		cfg.JWTSecret = "dev-secret-change-in-production"
 	}
 
 	if cfg.S3KeyID == "" {

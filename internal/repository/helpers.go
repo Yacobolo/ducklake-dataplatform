@@ -1,0 +1,28 @@
+package repository
+
+import (
+	"database/sql"
+	"strings"
+
+	"duck-demo/domain"
+)
+
+func boolToInt(b bool) int64 {
+	if b {
+		return 1
+	}
+	return 0
+}
+
+func mapDBError(err error) error {
+	if err == nil {
+		return nil
+	}
+	if err == sql.ErrNoRows {
+		return &domain.NotFoundError{Message: "resource not found"}
+	}
+	if strings.Contains(err.Error(), "UNIQUE constraint failed") {
+		return &domain.ConflictError{Message: "resource already exists"}
+	}
+	return err
+}

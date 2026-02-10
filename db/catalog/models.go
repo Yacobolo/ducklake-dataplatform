@@ -8,6 +8,29 @@ import (
 	"database/sql"
 )
 
+type ApiKey struct {
+	ID          int64
+	KeyHash     string
+	PrincipalID int64
+	Name        string
+	ExpiresAt   sql.NullString
+	CreatedAt   string
+}
+
+type AuditLog struct {
+	ID             int64
+	PrincipalName  string
+	Action         string
+	StatementType  sql.NullString
+	OriginalSql    sql.NullString
+	RewrittenSql   sql.NullString
+	TablesAccessed sql.NullString
+	Status         string
+	ErrorMessage   sql.NullString
+	DurationMs     sql.NullInt64
+	CreatedAt      string
+}
+
 type ColumnMask struct {
 	ID             int64
 	TableID        int64

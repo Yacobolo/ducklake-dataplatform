@@ -344,3 +344,37 @@ func TestDDLBlocked(t *testing.T) {
 	}
 	t.Logf("DDL blocked: %v", err)
 }
+
+func TestInsertRequiresPrivilege(t *testing.T) {
+	eng := setupEngine(t)
+	ctx := context.Background()
+
+	// first_class_analyst only has SELECT, not INSERT
+	_, err := eng.Query(ctx, "first_class_analyst", `INSERT INTO titanic ("PassengerId") VALUES (9999)`)
+	if err == nil {
+		t.Error("expected INSERT to be denied for user without INSERT privilege")
+	}
+	t.Logf("INSERT denied: %v", err)
+}
+
+func TestUpdateRequiresPrivilege(t *testing.T) {
+	eng := setupEngine(t)
+	ctx := context.Background()
+
+	_, err := eng.Query(ctx, "first_class_analyst", `UPDATE titanic SET "Name" = 'test' WHERE "PassengerId" = 1`)
+	if err == nil {
+		t.Error("expected UPDATE to be denied for user without UPDATE privilege")
+	}
+	t.Logf("UPDATE denied: %v", err)
+}
+
+func TestDeleteRequiresPrivilege(t *testing.T) {
+	eng := setupEngine(t)
+	ctx := context.Background()
+
+	_, err := eng.Query(ctx, "first_class_analyst", `DELETE FROM titanic WHERE "PassengerId" = 1`)
+	if err == nil {
+		t.Error("expected DELETE to be denied for user without DELETE privilege")
+	}
+	t.Logf("DELETE denied: %v", err)
+}

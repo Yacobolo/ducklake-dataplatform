@@ -1,0 +1,18 @@
+-- name: CreateAPIKey :one
+INSERT INTO api_keys (key_hash, principal_id, name, expires_at)
+VALUES (?, ?, ?, ?)
+RETURNING *;
+
+-- name: GetAPIKeyByHash :one
+SELECT ak.*, p.name as principal_name FROM api_keys ak
+JOIN principals p ON ak.principal_id = p.id
+WHERE ak.key_hash = ? AND (ak.expires_at IS NULL OR ak.expires_at > datetime('now'));
+
+-- name: ListAPIKeysForPrincipal :many
+SELECT * FROM api_keys WHERE principal_id = ? ORDER BY created_at DESC;
+
+-- name: DeleteAPIKey :exec
+DELETE FROM api_keys WHERE id = ?;
+
+-- name: DeleteExpiredKeys :exec
+DELETE FROM api_keys WHERE expires_at IS NOT NULL AND expires_at <= datetime('now');

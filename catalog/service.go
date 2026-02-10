@@ -242,10 +242,10 @@ func (s *CatalogService) checkSchemaPrivilege(ctx context.Context, principalID i
 	return s.hasGrant(ctx, principalID, groupIDs, SecurableCatalog, CatalogID, privilege)
 }
 
-// GetEffectiveRowFilter returns the SQL filter expression for a table if the
-// principal (or any of their groups) is bound to a row filter for that table.
-// Returns nil if no filter applies.
-func (s *CatalogService) GetEffectiveRowFilter(ctx context.Context, principalName string, tableID int64) (*string, error) {
+// GetEffectiveRowFilters returns all SQL filter expressions for a table that
+// apply to the principal (or any of their groups). Multiple filters are
+// combined with OR by the caller. Returns nil if no filters apply.
+func (s *CatalogService) GetEffectiveRowFilters(ctx context.Context, principalName string, tableID int64) ([]string, error) {
 	principal, err := s.queries.GetPrincipalByName(ctx, principalName)
 	if err != nil {
 		return nil, err
@@ -256,17 +256,23 @@ func (s *CatalogService) GetEffectiveRowFilter(ctx context.Context, principalNam
 		return nil, nil
 	}
 
-	// Check direct user binding
-	rf, err := s.queries.GetRowFilterForTableAndPrincipal(ctx, dbstore.GetRowFilterForTableAndPrincipalParams{
+	seen := map[int64]bool{}
+	var filters []string
+
+	// Check direct user bindings
+	userFilters, err := s.queries.GetRowFiltersForTableAndPrincipal(ctx, dbstore.GetRowFiltersForTableAndPrincipalParams{
 		TableID:       tableID,
 		PrincipalID:   principal.ID,
 		PrincipalType: "user",
 	})
-	if err == nil {
-		return &rf.FilterSql, nil
-	}
-	if err != sql.ErrNoRows {
+	if err != nil {
 		return nil, err
+	}
+	for _, rf := range userFilters {
+		if !seen[rf.ID] {
+			seen[rf.ID] = true
+			filters = append(filters, rf.FilterSql)
+		}
 	}
 
 	// Check group bindings
@@ -276,20 +282,26 @@ func (s *CatalogService) GetEffectiveRowFilter(ctx context.Context, principalNam
 	}
 
 	for _, gid := range groupIDs {
-		rf, err := s.queries.GetRowFilterForTableAndPrincipal(ctx, dbstore.GetRowFilterForTableAndPrincipalParams{
+		groupFilters, err := s.queries.GetRowFiltersForTableAndPrincipal(ctx, dbstore.GetRowFiltersForTableAndPrincipalParams{
 			TableID:       tableID,
 			PrincipalID:   gid,
 			PrincipalType: "group",
 		})
-		if err == nil {
-			return &rf.FilterSql, nil
-		}
-		if err != sql.ErrNoRows {
+		if err != nil {
 			return nil, err
+		}
+		for _, rf := range groupFilters {
+			if !seen[rf.ID] {
+				seen[rf.ID] = true
+				filters = append(filters, rf.FilterSql)
+			}
 		}
 	}
 
-	return nil, nil
+	if len(filters) == 0 {
+		return nil, nil
+	}
+	return filters, nil
 }
 
 // GetEffectiveColumnMasks returns a map of column_name → mask_expression for

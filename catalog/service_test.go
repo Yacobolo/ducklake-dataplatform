@@ -307,15 +307,15 @@ func TestRowFilterForPrincipal(t *testing.T) {
 		RowFilterID: filter.ID, PrincipalID: user.ID, PrincipalType: "user",
 	})
 
-	result, err := cat.GetEffectiveRowFilter(ctx, "analyst", 1)
+	results, err := cat.GetEffectiveRowFilters(ctx, "analyst", 1)
 	if err != nil {
-		t.Fatalf("get row filter: %v", err)
+		t.Fatalf("get row filters: %v", err)
 	}
-	if result == nil {
-		t.Fatal("expected row filter, got nil")
+	if len(results) == 0 {
+		t.Fatal("expected row filters, got none")
 	}
-	if *result != `"Pclass" = 1` {
-		t.Errorf("expected filter \"Pclass\" = 1, got %q", *result)
+	if results[0] != `"Pclass" = 1` {
+		t.Errorf("expected filter \"Pclass\" = 1, got %q", results[0])
 	}
 }
 
@@ -339,12 +339,12 @@ func TestRowFilterForGroupMember(t *testing.T) {
 		RowFilterID: filter.ID, PrincipalID: group.ID, PrincipalType: "group",
 	})
 
-	result, err := cat.GetEffectiveRowFilter(ctx, "analyst", 1)
+	results, err := cat.GetEffectiveRowFilters(ctx, "analyst", 1)
 	if err != nil {
-		t.Fatalf("get row filter: %v", err)
+		t.Fatalf("get row filters: %v", err)
 	}
-	if result == nil {
-		t.Fatal("expected row filter via group, got nil")
+	if len(results) == 0 {
+		t.Fatal("expected row filter via group, got none")
 	}
 }
 
@@ -365,12 +365,12 @@ func TestAdminNoRowFilter(t *testing.T) {
 		RowFilterID: filter.ID, PrincipalID: 1, PrincipalType: "user",
 	})
 
-	result, err := cat.GetEffectiveRowFilter(ctx, "admin", 1)
+	results, err := cat.GetEffectiveRowFilters(ctx, "admin", 1)
 	if err != nil {
-		t.Fatalf("get row filter: %v", err)
+		t.Fatalf("get row filters: %v", err)
 	}
-	if result != nil {
-		t.Error("admin should have no row filter")
+	if len(results) != 0 {
+		t.Error("admin should have no row filters")
 	}
 }
 

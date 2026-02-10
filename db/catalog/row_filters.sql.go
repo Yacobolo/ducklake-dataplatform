@@ -92,48 +92,6 @@ func (q *Queries) GetRowFilterBindingsForFilter(ctx context.Context, rowFilterID
 	return items, nil
 }
 
-const getRowFilterForTable = `-- name: GetRowFilterForTable :one
-SELECT id, table_id, filter_sql, description, created_at FROM row_filters WHERE table_id = ?
-`
-
-func (q *Queries) GetRowFilterForTable(ctx context.Context, tableID int64) (RowFilter, error) {
-	row := q.db.QueryRowContext(ctx, getRowFilterForTable, tableID)
-	var i RowFilter
-	err := row.Scan(
-		&i.ID,
-		&i.TableID,
-		&i.FilterSql,
-		&i.Description,
-		&i.CreatedAt,
-	)
-	return i, err
-}
-
-const getRowFilterForTableAndPrincipal = `-- name: GetRowFilterForTableAndPrincipal :one
-SELECT rf.id, rf.table_id, rf.filter_sql, rf.description, rf.created_at FROM row_filters rf
-JOIN row_filter_bindings rfb ON rf.id = rfb.row_filter_id
-WHERE rf.table_id = ? AND rfb.principal_id = ? AND rfb.principal_type = ?
-`
-
-type GetRowFilterForTableAndPrincipalParams struct {
-	TableID       int64
-	PrincipalID   int64
-	PrincipalType string
-}
-
-func (q *Queries) GetRowFilterForTableAndPrincipal(ctx context.Context, arg GetRowFilterForTableAndPrincipalParams) (RowFilter, error) {
-	row := q.db.QueryRowContext(ctx, getRowFilterForTableAndPrincipal, arg.TableID, arg.PrincipalID, arg.PrincipalType)
-	var i RowFilter
-	err := row.Scan(
-		&i.ID,
-		&i.TableID,
-		&i.FilterSql,
-		&i.Description,
-		&i.CreatedAt,
-	)
-	return i, err
-}
-
 const getRowFiltersForPrincipal = `-- name: GetRowFiltersForPrincipal :many
 SELECT rf.id, rf.table_id, rf.filter_sql, rf.description, rf.created_at FROM row_filters rf
 JOIN row_filter_bindings rfb ON rf.id = rfb.row_filter_id
@@ -147,6 +105,80 @@ type GetRowFiltersForPrincipalParams struct {
 
 func (q *Queries) GetRowFiltersForPrincipal(ctx context.Context, arg GetRowFiltersForPrincipalParams) ([]RowFilter, error) {
 	rows, err := q.db.QueryContext(ctx, getRowFiltersForPrincipal, arg.PrincipalID, arg.PrincipalType)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []RowFilter
+	for rows.Next() {
+		var i RowFilter
+		if err := rows.Scan(
+			&i.ID,
+			&i.TableID,
+			&i.FilterSql,
+			&i.Description,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getRowFiltersForTable = `-- name: GetRowFiltersForTable :many
+SELECT id, table_id, filter_sql, description, created_at FROM row_filters WHERE table_id = ?
+`
+
+func (q *Queries) GetRowFiltersForTable(ctx context.Context, tableID int64) ([]RowFilter, error) {
+	rows, err := q.db.QueryContext(ctx, getRowFiltersForTable, tableID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []RowFilter
+	for rows.Next() {
+		var i RowFilter
+		if err := rows.Scan(
+			&i.ID,
+			&i.TableID,
+			&i.FilterSql,
+			&i.Description,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getRowFiltersForTableAndPrincipal = `-- name: GetRowFiltersForTableAndPrincipal :many
+SELECT rf.id, rf.table_id, rf.filter_sql, rf.description, rf.created_at FROM row_filters rf
+JOIN row_filter_bindings rfb ON rf.id = rfb.row_filter_id
+WHERE rf.table_id = ? AND rfb.principal_id = ? AND rfb.principal_type = ?
+`
+
+type GetRowFiltersForTableAndPrincipalParams struct {
+	TableID       int64
+	PrincipalID   int64
+	PrincipalType string
+}
+
+func (q *Queries) GetRowFiltersForTableAndPrincipal(ctx context.Context, arg GetRowFiltersForTableAndPrincipalParams) ([]RowFilter, error) {
+	rows, err := q.db.QueryContext(ctx, getRowFiltersForTableAndPrincipal, arg.TableID, arg.PrincipalID, arg.PrincipalType)
 	if err != nil {
 		return nil, err
 	}

@@ -5,47 +5,22 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"os"
-	"strings"
+	"net/http"
 
 	_ "github.com/duckdb/duckdb-go/v2"
+	"github.com/go-chi/chi/v5"
+	chimw "github.com/go-chi/chi/v5/middleware"
 	_ "github.com/mattn/go-sqlite3"
 
+	"duck-demo/api"
 	"duck-demo/catalog"
 	"duck-demo/config"
 	dbstore "duck-demo/db/catalog"
 	"duck-demo/engine"
+	"duck-demo/internal/middleware"
+	"duck-demo/internal/repository"
+	"duck-demo/internal/service"
 )
-
-func printRows(rows *sql.Rows) (int, error) {
-	cols, err := rows.Columns()
-	if err != nil {
-		return 0, err
-	}
-
-	fmt.Println(strings.Join(cols, "\t"))
-	fmt.Println(strings.Repeat("-", 100))
-
-	vals := make([]interface{}, len(cols))
-	ptrs := make([]interface{}, len(cols))
-	for i := range vals {
-		ptrs[i] = &vals[i]
-	}
-
-	count := 0
-	for rows.Next() {
-		if err := rows.Scan(ptrs...); err != nil {
-			return count, err
-		}
-		parts := make([]string, len(vals))
-		for i, v := range vals {
-			parts[i] = fmt.Sprintf("%v", v)
-		}
-		fmt.Println(strings.Join(parts, "\t"))
-		count++
-	}
-	return count, rows.Err()
-}
 
 // seedCatalog populates the metastore with demo principals, groups, grants,
 // row filters, and column masks. Idempotent — checks if data already exists.
@@ -141,8 +116,6 @@ func seedCatalog(ctx context.Context, cat *catalog.CatalogService) error {
 	}
 
 	// --- Privilege grants ---
-
-	// Admins: ALL_PRIVILEGES on catalog (cascades to everything)
 	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		PrincipalID: adminsGroup.ID, PrincipalType: "group",
 		SecurableType: catalog.SecurableCatalog, SecurableID: catalog.CatalogID,
@@ -152,7 +125,6 @@ func seedCatalog(ctx context.Context, cat *catalog.CatalogService) error {
 		return fmt.Errorf("grant admins ALL_PRIVILEGES: %w", err)
 	}
 
-	// first_class_analysts: USAGE on schema + SELECT on titanic
 	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		PrincipalID: firstClassGroup.ID, PrincipalType: "group",
 		SecurableType: catalog.SecurableSchema, SecurableID: schemaID,
@@ -170,7 +142,6 @@ func seedCatalog(ctx context.Context, cat *catalog.CatalogService) error {
 		return fmt.Errorf("grant first_class SELECT: %w", err)
 	}
 
-	// survivor_researchers: USAGE on schema + SELECT on titanic
 	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		PrincipalID: survivorGroup.ID, PrincipalType: "group",
 		SecurableType: catalog.SecurableSchema, SecurableID: schemaID,
@@ -189,7 +160,6 @@ func seedCatalog(ctx context.Context, cat *catalog.CatalogService) error {
 	}
 
 	// --- Row filters ---
-	// First-class filter: Pclass = 1
 	firstClassFilter, err := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
 		TableID:     titanicID,
 		FilterSql:   `"Pclass" = 1`,
@@ -204,37 +174,7 @@ func seedCatalog(ctx context.Context, cat *catalog.CatalogService) error {
 		return fmt.Errorf("bind first-class row filter: %w", err)
 	}
 
-	// Note: we can't have two row_filters on the same table (UNIQUE constraint).
-	// Instead we bind the survivor filter directly to the researcher user.
-	// In production, you'd use a UDF or more complex filter logic.
-	// For this demo, we'll create a separate approach: bind at user level.
-
-	// Delete the table-level unique filter and use a different approach:
-	// We'll create a second row filter with a different table_id trick — actually,
-	// the UNIQUE(table_id) constraint means one filter per table.
-	//
-	// For the demo, let's remove the unique constraint concern by having
-	// the survivor filter bound at user level with a raw SQL approach.
-	// Actually, let's just use user-level row filter bindings on the same filter:
-	// The first_class filter is bound to the first_class_analysts group.
-	// For survivors, we need a different filter on the same table.
-	//
-	// Let's remove the UNIQUE(table_id) constraint in practice by using the
-	// principal-specific binding: each principal gets at most one filter per table.
-	// But our schema has UNIQUE(table_id) on row_filters...
-	//
-	// For now, the demo will show: admin (no filter), analyst1 (Pclass=1),
-	// researcher1 (no table-level row filter since the table already has one),
-	// and no_access_user (denied).
-	//
-	// Actually, let's handle this better: we can give the survivor_researchers
-	// USAGE + SELECT but rely on a column mask demo instead.
-	//
-	// For a more complete demo, let's just show the first_class filter works
-	// and demonstrate column masking for researcher1.
-
 	// --- Column masks ---
-	// Mask the "Name" column for the first_class_analysts group
 	nameMask, err := q.CreateColumnMask(ctx, dbstore.CreateColumnMaskParams{
 		TableID:        titanicID,
 		ColumnName:     "Name",
@@ -244,19 +184,17 @@ func seedCatalog(ctx context.Context, cat *catalog.CatalogService) error {
 	if err != nil {
 		return fmt.Errorf("create Name column mask: %w", err)
 	}
-	// analyst1 sees masked names
 	if err := q.BindColumnMask(ctx, dbstore.BindColumnMaskParams{
 		ColumnMaskID: nameMask.ID, PrincipalID: firstClassGroup.ID,
 		PrincipalType: "group", SeeOriginal: 0,
 	}); err != nil {
-		return fmt.Errorf("bind Name mask for analyst1: %w", err)
+		return fmt.Errorf("bind Name mask for analysts: %w", err)
 	}
-	// researcher1 sees original names
 	if err := q.BindColumnMask(ctx, dbstore.BindColumnMaskParams{
 		ColumnMaskID: nameMask.ID, PrincipalID: survivorGroup.ID,
 		PrincipalType: "group", SeeOriginal: 1,
 	}); err != nil {
-		return fmt.Errorf("bind Name mask for researcher1: %w", err)
+		return fmt.Errorf("bind Name mask for researchers: %w", err)
 	}
 
 	fmt.Println("Catalog seeded with demo principals, groups, grants, row filters, and column masks.")
@@ -325,41 +263,63 @@ func main() {
 		log.Fatalf("seed catalog: %v", err)
 	}
 
+	// Create repositories
+	principalRepo := repository.NewPrincipalRepo(metaDB)
+	groupRepo := repository.NewGroupRepo(metaDB)
+	grantRepo := repository.NewGrantRepo(metaDB)
+	rowFilterRepo := repository.NewRowFilterRepo(metaDB)
+	columnMaskRepo := repository.NewColumnMaskRepo(metaDB)
+	auditRepo := repository.NewAuditRepo(metaDB)
+	introspectionRepo := repository.NewIntrospectionRepo(metaDB)
+
 	// Create secure engine
 	eng := engine.NewSecureEngine(duckDB, cat)
 
-	query := `SELECT "PassengerId", "Name", "Pclass", "Survived", "Sex" FROM titanic LIMIT 10`
+	// Create services
+	querySvc := service.NewQueryService(eng, auditRepo)
+	principalSvc := service.NewPrincipalService(principalRepo, auditRepo)
+	groupSvc := service.NewGroupService(groupRepo, auditRepo)
+	grantSvc := service.NewGrantService(grantRepo, auditRepo)
+	rowFilterSvc := service.NewRowFilterService(rowFilterRepo, auditRepo)
+	columnMaskSvc := service.NewColumnMaskService(columnMaskRepo, auditRepo)
+	introspectionSvc := service.NewIntrospectionService(introspectionRepo)
+	auditSvc := service.NewAuditService(auditRepo)
 
-	// Demo principals
-	principals := []string{"admin_user", "analyst1", "researcher1", "no_access_user"}
-	if len(os.Args) > 1 {
-		principals = os.Args[1:]
+	// Create API handler
+	handler := api.NewHandler(
+		querySvc, principalSvc, groupSvc, grantSvc,
+		rowFilterSvc, columnMaskSvc, introspectionSvc, auditSvc,
+	)
+
+	// Create strict handler wrapper
+	strictHandler := api.NewStrictHandler(handler, nil)
+
+	// Setup Chi router
+	r := chi.NewRouter()
+	r.Use(chimw.Logger)
+	r.Use(chimw.Recoverer)
+
+	// Determine JWT secret and listen address
+	jwtSecret := []byte("dev-secret-change-in-production")
+	listenAddr := ":8080"
+	if cfgErr == nil {
+		jwtSecret = []byte(cfg.JWTSecret)
+		listenAddr = cfg.ListenAddr
 	}
 
-	for _, principal := range principals {
-		fmt.Printf("\n=== Principal: %s ===\n", principal)
-		fmt.Printf("Query: %s\n\n", query)
+	// Auth middleware
+	apiKeyQueries := dbstore.New(metaDB)
+	r.Use(middleware.AuthMiddleware(jwtSecret, apiKeyQueries))
 
-		rows, err := eng.Query(ctx, principal, query)
-		if err != nil {
-			fmt.Printf("ERROR: %v\n", err)
-			continue
-		}
+	// Register API routes under /v1 prefix
+	r.Route("/v1", func(r chi.Router) {
+		api.HandlerFromMux(strictHandler, r)
+	})
 
-		count, err := printRows(rows)
-		rows.Close()
-		if err != nil {
-			fmt.Printf("ERROR reading rows: %v\n", err)
-			continue
-		}
-		fmt.Printf("\n(%d rows)\n", count)
-	}
-
-	// Demo DDL protection
-	fmt.Println("\n=== DDL Protection Demo ===")
-	fmt.Println("Attempting: DROP TABLE titanic")
-	_, err = eng.Query(ctx, "analyst1", "DROP TABLE titanic")
-	if err != nil {
-		fmt.Printf("Blocked: %v\n", err)
+	// Start server
+	log.Printf("HTTP API listening on %s", listenAddr)
+	log.Printf("Try: curl -H 'Authorization: Bearer <jwt>' http://localhost%s/v1/principals", listenAddr)
+	if err := http.ListenAndServe(listenAddr, r); err != nil {
+		log.Fatalf("server error: %v", err)
 	}
 }
