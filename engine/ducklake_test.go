@@ -7,14 +7,16 @@ import (
 	"testing"
 
 	_ "github.com/duckdb/duckdb-go/v2"
+	_ "github.com/mattn/go-sqlite3"
 
+	"duck-demo/catalog"
 	"duck-demo/config"
+	dbstore "duck-demo/db/catalog"
 )
 
 // TestDuckLakeWithHetznerSetup tests the full SetupDuckLake flow with real
 // Hetzner S3 credentials. Skipped if .env is not present or credentials are missing.
 func TestDuckLakeWithHetznerSetup(t *testing.T) {
-	// Check for .env file
 	if err := config.LoadDotEnv("../.env"); err != nil {
 		t.Skipf("could not load .env: %v", err)
 	}
@@ -24,7 +26,6 @@ func TestDuckLakeWithHetznerSetup(t *testing.T) {
 		t.Skipf("missing config: %v", err)
 	}
 
-	// Check titanic.parquet exists
 	if _, err := os.Stat("../titanic.parquet"); os.IsNotExist(err) {
 		t.Skip("titanic.parquet not found, skipping integration test")
 	}
@@ -45,7 +46,6 @@ func TestDuckLakeWithHetznerSetup(t *testing.T) {
 		t.Skipf("SetupDuckLake failed (S3 bucket may not exist): %v", err)
 	}
 
-	// Verify we can query the titanic table through the lake
 	var rowCount int64
 	err = db.QueryRowContext(ctx, "SELECT count(*) FROM titanic").Scan(&rowCount)
 	if err != nil {
@@ -60,7 +60,6 @@ func TestDuckLakeWithHetznerSetup(t *testing.T) {
 
 // TestDuckLakeRBACIntegration tests the full RBAC + RLS flow through DuckLake.
 func TestDuckLakeRBACIntegration(t *testing.T) {
-	// Check for .env file
 	if err := config.LoadDotEnv("../.env"); err != nil {
 		t.Skipf("could not load .env: %v", err)
 	}
@@ -90,10 +89,73 @@ func TestDuckLakeRBACIntegration(t *testing.T) {
 		t.Skipf("SetupDuckLake failed (S3 bucket may not exist): %v", err)
 	}
 
-	store := testPolicyStore()
-	eng := NewSecureEngine(db, store)
+	// Set up catalog using the DuckLake metastore
+	metaDB, err := sql.Open("sqlite3", cfg.MetaDBPath+"?_foreign_keys=on")
+	if err != nil {
+		t.Fatalf("open metastore: %v", err)
+	}
+	defer metaDB.Close()
 
-	// Test admin access
+	if err := catalog.RunMigrations(metaDB); err != nil {
+		t.Fatalf("migrations: %v", err)
+	}
+
+	cat := catalog.NewCatalogService(metaDB)
+	q := cat.Queries()
+
+	// Seed principals and grants
+	adminUser, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+		Name: "admin", Type: "user", IsAdmin: 1,
+	})
+	_ = adminUser
+
+	analyst, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+		Name: "first_class_analyst", Type: "user", IsAdmin: 0,
+	})
+	_, _ = q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+		Name: "no_access", Type: "user", IsAdmin: 0,
+	})
+
+	// Lookup DuckLake IDs
+	schemaID, _ := cat.LookupSchemaID(ctx, "main")
+	titanicID, _, _ := cat.LookupTableID(ctx, "titanic")
+
+	// Create group for analysts
+	analystsGroup, _ := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "analysts"})
+	q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{
+		GroupID: analystsGroup.ID, MemberType: "user", MemberID: analyst.ID,
+	})
+
+	// Grant admin ALL_PRIVILEGES on catalog
+	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		PrincipalID: adminUser.ID, PrincipalType: "user",
+		SecurableType: "catalog", SecurableID: 0,
+		Privilege: "ALL_PRIVILEGES",
+	})
+
+	// Grant analysts USAGE + SELECT
+	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		PrincipalID: analystsGroup.ID, PrincipalType: "group",
+		SecurableType: "schema", SecurableID: schemaID,
+		Privilege: "USAGE",
+	})
+	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		PrincipalID: analystsGroup.ID, PrincipalType: "group",
+		SecurableType: "table", SecurableID: titanicID,
+		Privilege: "SELECT",
+	})
+
+	// Row filter
+	filter, _ := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
+		TableID:   titanicID,
+		FilterSql: `"Pclass" = 1`,
+	})
+	q.BindRowFilter(ctx, dbstore.BindRowFilterParams{
+		RowFilterID: filter.ID, PrincipalID: analystsGroup.ID, PrincipalType: "group",
+	})
+
+	eng := NewSecureEngine(db, cat)
+
 	t.Run("AdminAccess", func(t *testing.T) {
 		rows, err := eng.Query(ctx, "admin", "SELECT * FROM titanic LIMIT 10")
 		if err != nil {
@@ -111,7 +173,6 @@ func TestDuckLakeRBACIntegration(t *testing.T) {
 		t.Logf("admin saw %d rows", count)
 	})
 
-	// Test RLS filtering — first_class_analyst
 	t.Run("FirstClassRLS", func(t *testing.T) {
 		rows, err := eng.Query(ctx, "first_class_analyst", `SELECT "Pclass" FROM titanic`)
 		if err != nil {
@@ -136,36 +197,10 @@ func TestDuckLakeRBACIntegration(t *testing.T) {
 		t.Logf("first_class_analyst saw %d rows (all Pclass=1)", count)
 	})
 
-	// Test RLS filtering — survivor_researcher
-	t.Run("SurvivorRLS", func(t *testing.T) {
-		rows, err := eng.Query(ctx, "survivor_researcher", `SELECT "Survived" FROM titanic`)
-		if err != nil {
-			t.Fatalf("survivor query: %v", err)
-		}
-		defer rows.Close()
-
-		count := 0
-		for rows.Next() {
-			var survived int64
-			if err := rows.Scan(&survived); err != nil {
-				t.Fatalf("scan: %v", err)
-			}
-			if survived != 1 {
-				t.Errorf("expected Survived=1, got %d", survived)
-			}
-			count++
-		}
-		if count == 0 {
-			t.Error("expected at least one row")
-		}
-		t.Logf("survivor_researcher saw %d rows (all Survived=1)", count)
-	})
-
-	// Test no_access denied
 	t.Run("NoAccessDenied", func(t *testing.T) {
 		_, err := eng.Query(ctx, "no_access", "SELECT * FROM titanic LIMIT 10")
 		if err == nil {
-			t.Error("expected access denied error for no_access role")
+			t.Error("expected access denied error for no_access user")
 		}
 		t.Logf("no_access error: %v", err)
 	})

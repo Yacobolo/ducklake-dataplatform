@@ -4,7 +4,9 @@ go 1.25.5
 
 require (
 	github.com/duckdb/duckdb-go/v2 v2.5.5
+	github.com/mattn/go-sqlite3 v1.14.34
 	github.com/pganalyze/pg_query_go/v6 v6.2.2
+	github.com/pressly/goose/v3 v3.26.0
 )
 
 require (
@@ -21,8 +23,11 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/klauspost/compress v1.18.3 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
+	github.com/mfridman/interpolate v0.0.2 // indirect
 	github.com/pierrec/lz4/v4 v4.1.25 // indirect
+	github.com/sethvargo/go-retry v0.3.0 // indirect
 	github.com/zeebo/xxh3 v1.1.0 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20260112195511-716be5621a96 // indirect
 	golang.org/x/mod v0.32.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect

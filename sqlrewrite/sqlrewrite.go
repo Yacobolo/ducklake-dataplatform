@@ -61,11 +61,245 @@ func RewriteQuery(sql string, rulesByTable map[string][]policy.RLSRule) (string,
 	return output, nil
 }
 
-// resolveTableName extracts the table name from a compound identifier.
-// For "lake.main.titanic", returns "titanic". For "titanic", returns "titanic".
-func resolveTableName(schemaname, relname string) string {
-	// relname is always the table name in PostgreSQL's RangeVar
-	return relname
+// StatementType represents the kind of SQL statement.
+type StatementType int
+
+const (
+	StmtSelect StatementType = iota
+	StmtInsert
+	StmtUpdate
+	StmtDelete
+	StmtDDL
+	StmtOther
+)
+
+func (t StatementType) String() string {
+	switch t {
+	case StmtSelect:
+		return "SELECT"
+	case StmtInsert:
+		return "INSERT"
+	case StmtUpdate:
+		return "UPDATE"
+	case StmtDelete:
+		return "DELETE"
+	case StmtDDL:
+		return "DDL"
+	default:
+		return "OTHER"
+	}
+}
+
+// ClassifyStatement parses the SQL and returns the statement type.
+func ClassifyStatement(sql string) (StatementType, error) {
+	result, err := pg_query.Parse(sql)
+	if err != nil {
+		return StmtOther, fmt.Errorf("parse SQL: %w", err)
+	}
+
+	if len(result.Stmts) == 0 {
+		return StmtOther, nil
+	}
+
+	switch result.Stmts[0].Stmt.Node.(type) {
+	case *pg_query.Node_SelectStmt:
+		return StmtSelect, nil
+	case *pg_query.Node_InsertStmt:
+		return StmtInsert, nil
+	case *pg_query.Node_UpdateStmt:
+		return StmtUpdate, nil
+	case *pg_query.Node_DeleteStmt:
+		return StmtDelete, nil
+	case *pg_query.Node_CreateStmt, *pg_query.Node_AlterTableStmt, *pg_query.Node_DropStmt,
+		*pg_query.Node_IndexStmt, *pg_query.Node_ViewStmt, *pg_query.Node_CreateSchemaStmt,
+		*pg_query.Node_TruncateStmt, *pg_query.Node_RenameStmt:
+		return StmtDDL, nil
+	default:
+		return StmtOther, nil
+	}
+}
+
+// InjectRowFilterSQL injects a raw SQL WHERE clause expression into all SELECT
+// statements that reference the given table. The filterSQL is a raw expression
+// string like `"Pclass" = 1`.
+func InjectRowFilterSQL(sqlStr string, tableName string, filterSQL string) (string, error) {
+	if filterSQL == "" {
+		return sqlStr, nil
+	}
+
+	// Parse the filter expression into an AST node
+	filterResult, err := pg_query.Parse("SELECT 1 WHERE " + filterSQL)
+	if err != nil {
+		return "", fmt.Errorf("parse row filter %q: %w", filterSQL, err)
+	}
+	sel := filterResult.Stmts[0].Stmt.GetSelectStmt()
+	if sel == nil || sel.WhereClause == nil {
+		return "", fmt.Errorf("row filter %q did not produce a WHERE clause", filterSQL)
+	}
+	filterNode := sel.WhereClause
+
+	// Parse the original query
+	result, err := pg_query.Parse(sqlStr)
+	if err != nil {
+		return "", fmt.Errorf("parse SQL: %w", err)
+	}
+
+	for _, stmt := range result.Stmts {
+		injectRawFilterIntoNode(stmt.Stmt, tableName, filterNode)
+	}
+
+	output, err := pg_query.Deparse(result)
+	if err != nil {
+		return "", fmt.Errorf("deparse SQL: %w", err)
+	}
+	return output, nil
+}
+
+// injectRawFilterIntoNode recurses into statement nodes to find SELECTs.
+func injectRawFilterIntoNode(node *pg_query.Node, tableName string, filterNode *pg_query.Node) {
+	if node == nil {
+		return
+	}
+	if n, ok := node.Node.(*pg_query.Node_SelectStmt); ok {
+		injectRawFilterIntoSelectStmt(n.SelectStmt, tableName, filterNode)
+	}
+}
+
+func injectRawFilterIntoSelectStmt(sel *pg_query.SelectStmt, tableName string, filterNode *pg_query.Node) {
+	if sel == nil {
+		return
+	}
+	// Recurse into UNION/INTERSECT/EXCEPT
+	if sel.Larg != nil {
+		injectRawFilterIntoSelectStmt(sel.Larg, tableName, filterNode)
+	}
+	if sel.Rarg != nil {
+		injectRawFilterIntoSelectStmt(sel.Rarg, tableName, filterNode)
+	}
+
+	// Check if this SELECT references the target table
+	refs := collectTableRefs(sel.FromClause)
+	found := false
+	for _, ref := range refs {
+		if ref.tableName == tableName {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return
+	}
+
+	// Inject filter
+	if sel.WhereClause == nil {
+		sel.WhereClause = filterNode
+	} else {
+		sel.WhereClause = makeAndExpr(sel.WhereClause, filterNode)
+	}
+}
+
+// ApplyColumnMasks rewrites SELECT target columns to apply mask expressions.
+// masks is a map of column_name → mask_expression (e.g., {"Name": "'***'"}).
+// Only top-level SELECT * or explicit column references are rewritten.
+func ApplyColumnMasks(sqlStr string, tableName string, masks map[string]string) (string, error) {
+	if len(masks) == 0 {
+		return sqlStr, nil
+	}
+
+	result, err := pg_query.Parse(sqlStr)
+	if err != nil {
+		return "", fmt.Errorf("parse SQL: %w", err)
+	}
+
+	for _, stmt := range result.Stmts {
+		if n, ok := stmt.Stmt.Node.(*pg_query.Node_SelectStmt); ok {
+			applyMasksToSelectStmt(n.SelectStmt, tableName, masks)
+		}
+	}
+
+	output, err := pg_query.Deparse(result)
+	if err != nil {
+		return "", fmt.Errorf("deparse SQL: %w", err)
+	}
+	return output, nil
+}
+
+// applyMasksToSelectStmt modifies the target list of a SELECT to replace
+// masked columns with their mask expressions.
+func applyMasksToSelectStmt(sel *pg_query.SelectStmt, tableName string, masks map[string]string) {
+	if sel == nil {
+		return
+	}
+
+	// Recurse into UNION
+	if sel.Larg != nil {
+		applyMasksToSelectStmt(sel.Larg, tableName, masks)
+	}
+	if sel.Rarg != nil {
+		applyMasksToSelectStmt(sel.Rarg, tableName, masks)
+	}
+
+	// Check if this SELECT references the target table
+	refs := collectTableRefs(sel.FromClause)
+	found := false
+	for _, ref := range refs {
+		if ref.tableName == tableName {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return
+	}
+
+	// Rewrite target list: replace column refs that match masked columns
+	for i, target := range sel.TargetList {
+		rt, ok := target.Node.(*pg_query.Node_ResTarget)
+		if !ok {
+			continue
+		}
+
+		colName := extractColumnName(rt.ResTarget.Val)
+		if colName == "" {
+			continue
+		}
+
+		maskExpr, shouldMask := masks[colName]
+		if !shouldMask {
+			continue
+		}
+
+		// Parse the mask expression and replace the target value
+		maskResult, err := pg_query.Parse("SELECT " + maskExpr + " AS " + QuoteIdentifier(colName))
+		if err != nil {
+			continue // skip columns with unparseable mask expressions
+		}
+		maskSel := maskResult.Stmts[0].Stmt.GetSelectStmt()
+		if maskSel != nil && len(maskSel.TargetList) > 0 {
+			sel.TargetList[i] = maskSel.TargetList[0]
+		}
+	}
+}
+
+// extractColumnName gets the column name from a node, handling ColumnRef.
+func extractColumnName(node *pg_query.Node) string {
+	if node == nil {
+		return ""
+	}
+	cr, ok := node.Node.(*pg_query.Node_ColumnRef)
+	if !ok {
+		return ""
+	}
+	// The last field in a column ref is the column name
+	fields := cr.ColumnRef.Fields
+	if len(fields) == 0 {
+		return ""
+	}
+	last := fields[len(fields)-1]
+	if s, ok := last.Node.(*pg_query.Node_String_); ok {
+		return s.String_.Sval
+	}
+	return ""
 }
 
 // collectTablesFromNode recursively walks a parse tree node, collecting
@@ -455,15 +689,21 @@ func makeLiteral(v interface{}) (*pg_query.Node, error) {
 }
 
 func makeIntegerConst(v int64) *pg_query.Node {
-	return &pg_query.Node{
-		Node: &pg_query.Node_AConst{
-			AConst: &pg_query.A_Const{
-				Val: &pg_query.A_Const_Ival{
-					Ival: &pg_query.Integer{Ival: int32(v)},
+	// If value fits in int32, use Ival; otherwise use Fval (string representation)
+	// to avoid silent overflow.
+	if v >= -2147483648 && v <= 2147483647 {
+		return &pg_query.Node{
+			Node: &pg_query.Node_AConst{
+				AConst: &pg_query.A_Const{
+					Val: &pg_query.A_Const_Ival{
+						Ival: &pg_query.Integer{Ival: int32(v)},
+					},
 				},
 			},
-		},
+		}
 	}
+	// Large values: represent as numeric string
+	return makeFloatConst(fmt.Sprintf("%d", v))
 }
 
 func makeFloatConst(v string) *pg_query.Node {

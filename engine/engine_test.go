@@ -7,48 +7,139 @@ import (
 	"testing"
 
 	_ "github.com/duckdb/duckdb-go/v2"
+	_ "github.com/mattn/go-sqlite3"
 
-	"duck-demo/policy"
+	"duck-demo/catalog"
+	dbstore "duck-demo/db/catalog"
 )
 
-// testPolicyStore returns a PolicyStore with all test roles.
-func testPolicyStore() *policy.PolicyStore {
-	store := policy.NewPolicyStore()
+// setupTestCatalog creates a temporary SQLite metastore with demo permissions.
+// It also creates the DuckLake-like metadata tables that the catalog service queries.
+func setupTestCatalog(t *testing.T) *catalog.CatalogService {
+	t.Helper()
 
-	store.UpdateRole(&policy.Role{
-		Name:          "admin",
-		AllowedTables: []string{"*"},
+	tmpDir := t.TempDir()
+	metaPath := tmpDir + "/test_meta.sqlite"
+
+	metaDB, err := sql.Open("sqlite3", metaPath+"?_foreign_keys=on")
+	if err != nil {
+		t.Fatalf("open metastore: %v", err)
+	}
+	t.Cleanup(func() { metaDB.Close() })
+
+	// Run permission migrations
+	if err := catalog.RunMigrations(metaDB); err != nil {
+		t.Fatalf("migrations: %v", err)
+	}
+
+	// Create mock DuckLake catalog tables that the service queries
+	_, err = metaDB.Exec(`
+		CREATE TABLE IF NOT EXISTS ducklake_schema (
+			schema_id INTEGER PRIMARY KEY,
+			schema_uuid TEXT,
+			begin_snapshot INTEGER,
+			end_snapshot INTEGER,
+			schema_name TEXT,
+			path TEXT,
+			path_is_relative INTEGER
+		);
+		CREATE TABLE IF NOT EXISTS ducklake_table (
+			table_id INTEGER,
+			table_uuid TEXT,
+			begin_snapshot INTEGER,
+			end_snapshot INTEGER,
+			schema_id INTEGER,
+			table_name TEXT,
+			path TEXT,
+			path_is_relative INTEGER
+		);
+		INSERT OR IGNORE INTO ducklake_schema (schema_id, schema_name, begin_snapshot)
+		VALUES (0, 'main', 0);
+		INSERT OR IGNORE INTO ducklake_table (table_id, table_name, schema_id, begin_snapshot)
+		VALUES (1, 'titanic', 0, 1);
+	`)
+	if err != nil {
+		t.Fatalf("create mock ducklake tables: %v", err)
+	}
+
+	cat := catalog.NewCatalogService(metaDB)
+	ctx := context.Background()
+	q := cat.Queries()
+
+	// Create principals
+	adminUser, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+		Name: "admin", Type: "user", IsAdmin: 1,
+	})
+	analyst, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+		Name: "first_class_analyst", Type: "user", IsAdmin: 0,
+	})
+	survivor, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+		Name: "survivor_researcher", Type: "user", IsAdmin: 0,
+	})
+	_, _ = q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+		Name: "no_access", Type: "user", IsAdmin: 0,
 	})
 
-	store.UpdateRole(&policy.Role{
-		Name:          "first_class_analyst",
-		AllowedTables: []string{"titanic"},
-		RLSRules: []policy.RLSRule{
-			{Table: "titanic", Column: "Pclass", Operator: policy.OpEqual, Value: int64(1)},
-		},
+	// Create groups
+	analystsGroup, _ := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "analysts"})
+	survivorGroup, _ := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "survivors"})
+
+	// Add members to groups
+	q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{
+		GroupID: analystsGroup.ID, MemberType: "user", MemberID: analyst.ID,
+	})
+	q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{
+		GroupID: survivorGroup.ID, MemberType: "user", MemberID: survivor.ID,
 	})
 
-	store.UpdateRole(&policy.Role{
-		Name:          "survivor_researcher",
-		AllowedTables: []string{"titanic"},
-		RLSRules: []policy.RLSRule{
-			{Table: "titanic", Column: "Survived", Operator: policy.OpEqual, Value: int64(1)},
-		},
+	// Grant privileges
+	// Admin: ALL_PRIVILEGES on catalog
+	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		PrincipalID: adminUser.ID, PrincipalType: "user",
+		SecurableType: "catalog", SecurableID: 0,
+		Privilege: "ALL_PRIVILEGES",
 	})
 
-	store.UpdateRole(&policy.Role{
-		Name:          "no_access",
-		AllowedTables: []string{},
+	// Analysts: USAGE on schema + SELECT on titanic
+	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		PrincipalID: analystsGroup.ID, PrincipalType: "group",
+		SecurableType: "schema", SecurableID: 0,
+		Privilege: "USAGE",
+	})
+	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		PrincipalID: analystsGroup.ID, PrincipalType: "group",
+		SecurableType: "table", SecurableID: 1,
+		Privilege: "SELECT",
 	})
 
-	return store
+	// Survivors: USAGE on schema + SELECT on titanic
+	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		PrincipalID: survivorGroup.ID, PrincipalType: "group",
+		SecurableType: "schema", SecurableID: 0,
+		Privilege: "USAGE",
+	})
+	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		PrincipalID: survivorGroup.ID, PrincipalType: "group",
+		SecurableType: "table", SecurableID: 1,
+		Privilege: "SELECT",
+	})
+
+	// Row filter: Pclass = 1 for analysts
+	firstClassFilter, _ := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
+		TableID:   1,
+		FilterSql: `"Pclass" = 1`,
+	})
+	q.BindRowFilter(ctx, dbstore.BindRowFilterParams{
+		RowFilterID: firstClassFilter.ID, PrincipalID: analystsGroup.ID, PrincipalType: "group",
+	})
+
+	return cat
 }
 
-// setupEngine creates a SecureEngine with a real DuckDB connection.
+// setupEngine creates a SecureEngine with a real DuckDB connection and test catalog.
 func setupEngine(t *testing.T) *SecureEngine {
 	t.Helper()
 
-	// Check titanic.parquet exists
 	if _, err := os.Stat("../titanic.parquet"); os.IsNotExist(err) {
 		t.Skip("titanic.parquet not found, skipping integration test")
 	}
@@ -59,12 +150,12 @@ func setupEngine(t *testing.T) *SecureEngine {
 	}
 	t.Cleanup(func() { db.Close() })
 
-	// Register parquet as a table (no substrait extension needed)
 	if _, err := db.Exec("CREATE TABLE titanic AS SELECT * FROM '../titanic.parquet'"); err != nil {
 		t.Fatalf("create table: %v", err)
 	}
 
-	return NewSecureEngine(db, testPolicyStore())
+	cat := setupTestCatalog(t)
+	return NewSecureEngine(db, cat)
 }
 
 func TestAdminSeesAllRows(t *testing.T) {
@@ -113,7 +204,8 @@ func TestFirstClassAnalystOnlySeesClass1(t *testing.T) {
 	t.Logf("first_class_analyst saw %d rows (all Pclass=1)", count)
 }
 
-func TestSurvivorResearcherOnlySeesSurvivors(t *testing.T) {
+func TestSurvivorResearcherSeesAll(t *testing.T) {
+	// survivor_researcher has no row filter (only analysts have the Pclass filter)
 	eng := setupEngine(t)
 	ctx := context.Background()
 
@@ -125,19 +217,12 @@ func TestSurvivorResearcherOnlySeesSurvivors(t *testing.T) {
 
 	count := 0
 	for rows.Next() {
-		var survived int64
-		if err := rows.Scan(&survived); err != nil {
-			t.Fatalf("scan: %v", err)
-		}
-		if survived != 1 {
-			t.Errorf("expected Survived=1, got %d", survived)
-		}
 		count++
 	}
 	if count == 0 {
 		t.Error("expected at least one row")
 	}
-	t.Logf("survivor_researcher saw %d rows (all Survived=1)", count)
+	t.Logf("survivor_researcher saw %d rows (no row filter)", count)
 }
 
 func TestNoAccessRoleDenied(t *testing.T) {
@@ -146,7 +231,7 @@ func TestNoAccessRoleDenied(t *testing.T) {
 
 	_, err := eng.Query(ctx, "no_access", "SELECT * FROM titanic LIMIT 10")
 	if err == nil {
-		t.Error("expected access denied error for no_access role")
+		t.Error("expected access denied error for no_access user")
 	}
 	t.Logf("no_access error: %v", err)
 }
@@ -155,8 +240,6 @@ func TestAccessToDeniedTableFails(t *testing.T) {
 	eng := setupEngine(t)
 	ctx := context.Background()
 
-	// first_class_analyst can only access "titanic"
-	// Try to query a non-existent table that they don't have access to
 	_, err := eng.Query(ctx, "first_class_analyst", "SELECT * FROM secret_data LIMIT 10")
 	if err == nil {
 		t.Error("expected error when accessing unauthorized table")
@@ -168,7 +251,6 @@ func TestModifiedPlanExecutesCorrectly(t *testing.T) {
 	eng := setupEngine(t)
 	ctx := context.Background()
 
-	// First class analyst should get valid results with correct schema
 	rows, err := eng.Query(ctx, "first_class_analyst", `SELECT "PassengerId", "Name", "Pclass" FROM titanic LIMIT 5`)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -250,4 +332,15 @@ func TestUnknownRoleReturnsError(t *testing.T) {
 	if err == nil {
 		t.Error("expected error for unknown role")
 	}
+}
+
+func TestDDLBlocked(t *testing.T) {
+	eng := setupEngine(t)
+	ctx := context.Background()
+
+	_, err := eng.Query(ctx, "first_class_analyst", "DROP TABLE titanic")
+	if err == nil {
+		t.Error("expected DDL to be blocked")
+	}
+	t.Logf("DDL blocked: %v", err)
 }

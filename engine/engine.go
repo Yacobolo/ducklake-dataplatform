@@ -4,74 +4,136 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 
+	"duck-demo/catalog"
 	"duck-demo/config"
-	"duck-demo/policy"
 	"duck-demo/sqlrewrite"
 )
 
-// SecureEngine wraps a DuckDB connection and enforces RBAC + RLS
-// by intercepting queries through SQL-level rewriting.
+// SecureEngine wraps a DuckDB connection and enforces RBAC + RLS + column masking
+// by intercepting queries through the catalog permission model and SQL-level rewriting.
 type SecureEngine struct {
-	db    *sql.DB
-	store *policy.PolicyStore
+	db      *sql.DB
+	catalog *catalog.CatalogService
 }
 
-// NewSecureEngine creates a SecureEngine with the given database and policy store.
-func NewSecureEngine(db *sql.DB, store *policy.PolicyStore) *SecureEngine {
-	return &SecureEngine{db: db, store: store}
+// NewSecureEngine creates a SecureEngine with the given DuckDB connection
+// and catalog service (backed by the SQLite metastore).
+func NewSecureEngine(db *sql.DB, cat *catalog.CatalogService) *SecureEngine {
+	return &SecureEngine{db: db, catalog: cat}
 }
 
-// Query executes a SQL query as the given role, enforcing RBAC and RLS.
-// It accepts a context for cancellation and timeout support.
+// Query executes a SQL query as the given principal, enforcing:
+//   - Statement type classification (DDL/DML protection)
+//   - RBAC privilege checks via the catalog
+//   - Row-level security via filter injection
+//   - Column masking via SELECT rewriting
 //
 // The flow:
-//  1. Look up the role in the policy store
-//  2. Parse the SQL and extract table names
-//  3. Check RBAC: does the role have access to all tables?
-//  4. Build RLS rules map for tables in the query
-//  5. Rewrite the SQL with injected WHERE clauses for RLS
-//  6. Execute the rewritten SQL against DuckDB
-func (e *SecureEngine) Query(ctx context.Context, roleName, sqlQuery string) (*sql.Rows, error) {
-	// 1. Look up role
-	role, err := e.store.GetRole(roleName)
+//  1. Classify statement type
+//  2. Extract table names from the query
+//  3. For each table: check privilege, get row filter, get column masks
+//  4. Inject row filters and column masks into the SQL
+//  5. Execute the rewritten SQL against DuckDB
+func (e *SecureEngine) Query(ctx context.Context, principalName, sqlQuery string) (*sql.Rows, error) {
+	// 1. Classify statement type
+	stmtType, err := sqlrewrite.ClassifyStatement(sqlQuery)
 	if err != nil {
-		return nil, fmt.Errorf("policy error: %w", err)
+		return nil, fmt.Errorf("classify statement: %w", err)
 	}
 
-	// 2. Parse SQL and extract table names
+	// Map statement type to required privilege
+	requiredPriv, err := privilegeForStatement(stmtType)
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. Extract table names
 	tables, err := sqlrewrite.ExtractTableNames(sqlQuery)
 	if err != nil {
 		return nil, fmt.Errorf("parse SQL: %w", err)
 	}
 
-	// 3. Check RBAC
-	if err := role.CheckAccess(tables); err != nil {
-		return nil, fmt.Errorf("RBAC check failed: %w", err)
+	if len(tables) == 0 {
+		// No tables referenced — utility statement, just execute
+		rows, err := e.db.QueryContext(ctx, sqlQuery)
+		if err != nil {
+			return nil, fmt.Errorf("execute query: %w", err)
+		}
+		return rows, nil
 	}
 
-	// 4. Build RLS rules map for tables in this query
-	rulesByTable := make(map[string][]policy.RLSRule)
-	for _, table := range tables {
-		rules := role.RLSRulesForTable(table)
-		if len(rules) > 0 {
-			rulesByTable[table] = rules
+	// 3. Check privileges + collect filters/masks for each table
+	rewritten := sqlQuery
+	for _, tableName := range tables {
+		tableID, _, err := e.catalog.LookupTableID(ctx, tableName)
+		if err != nil {
+			return nil, fmt.Errorf("catalog lookup: %w", err)
+		}
+
+		// Check privilege
+		allowed, err := e.catalog.CheckPrivilege(ctx, principalName, catalog.SecurableTable, tableID, requiredPriv)
+		if err != nil {
+			return nil, fmt.Errorf("privilege check: %w", err)
+		}
+		if !allowed {
+			return nil, fmt.Errorf("access denied: %q lacks %s on table %q", principalName, requiredPriv, tableName)
+		}
+
+		// Get row filter (only for SELECT)
+		if stmtType == sqlrewrite.StmtSelect {
+			filter, err := e.catalog.GetEffectiveRowFilter(ctx, principalName, tableID)
+			if err != nil {
+				return nil, fmt.Errorf("row filter: %w", err)
+			}
+			if filter != nil {
+				rewritten, err = sqlrewrite.InjectRowFilterSQL(rewritten, tableName, *filter)
+				if err != nil {
+					return nil, fmt.Errorf("inject row filter: %w", err)
+				}
+			}
+
+			// Get column masks
+			masks, err := e.catalog.GetEffectiveColumnMasks(ctx, principalName, tableID)
+			if err != nil {
+				return nil, fmt.Errorf("column masks: %w", err)
+			}
+			if masks != nil {
+				rewritten, err = sqlrewrite.ApplyColumnMasks(rewritten, tableName, masks)
+				if err != nil {
+					return nil, fmt.Errorf("apply column masks: %w", err)
+				}
+			}
 		}
 	}
 
-	// 5. Rewrite the SQL with RLS filters
-	rewrittenSQL, err := sqlrewrite.RewriteQuery(sqlQuery, rulesByTable)
-	if err != nil {
-		return nil, fmt.Errorf("rewrite SQL: %w", err)
-	}
+	log.Printf("[audit] principal=%q stmt=%s tables=%v sql=%q", principalName, stmtType, tables, rewritten)
 
-	// 6. Execute the rewritten SQL
-	rows, err := e.db.QueryContext(ctx, rewrittenSQL)
+	// 5. Execute
+	rows, err := e.db.QueryContext(ctx, rewritten)
 	if err != nil {
 		return nil, fmt.Errorf("execute query: %w", err)
 	}
-
 	return rows, nil
+}
+
+// privilegeForStatement maps a statement type to the required privilege.
+func privilegeForStatement(t sqlrewrite.StatementType) (string, error) {
+	switch t {
+	case sqlrewrite.StmtSelect:
+		return catalog.PrivSelect, nil
+	case sqlrewrite.StmtInsert:
+		return catalog.PrivInsert, nil
+	case sqlrewrite.StmtUpdate:
+		return catalog.PrivUpdate, nil
+	case sqlrewrite.StmtDelete:
+		return catalog.PrivDelete, nil
+	case sqlrewrite.StmtDDL:
+		return "", fmt.Errorf("DDL statements are not allowed through the query engine")
+	default:
+		return "", fmt.Errorf("unsupported statement type: %s", t)
+	}
 }
 
 // SetupDuckLake initializes DuckDB with DuckLake extension, S3 credentials,

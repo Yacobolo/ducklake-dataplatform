@@ -63,7 +63,6 @@ func TestExtractTableNames_CTE(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	// CTEs: "cte" is in FROM but is virtual; "titanic" is the real table
 	assertContains(t, tables, "titanic")
 }
 
@@ -72,7 +71,6 @@ func TestExtractTableNames_Deduplication(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	// Should deduplicate
 	assertTables(t, tables, []string{"titanic"})
 }
 
@@ -91,7 +89,7 @@ func TestExtractTableNames_InvalidSQL(t *testing.T) {
 	}
 }
 
-// --- RewriteQuery tests ---
+// --- RewriteQuery tests (backward-compatible policy.RLSRule API) ---
 
 func TestRewriteQuery_NoRules(t *testing.T) {
 	sql := "SELECT * FROM titanic"
@@ -119,7 +117,6 @@ func TestRewriteQuery_SingleRule(t *testing.T) {
 
 	t.Logf("rewritten: %s", result)
 
-	// Should contain the WHERE clause with the filter
 	lower := strings.ToLower(result)
 	if !strings.Contains(lower, "where") {
 		t.Error("expected WHERE clause in rewritten query")
@@ -145,7 +142,6 @@ func TestRewriteQuery_MultipleRules(t *testing.T) {
 
 	t.Logf("rewritten: %s", result)
 
-	// Should contain AND combining both conditions
 	if !strings.Contains(result, "Pclass") {
 		t.Error("expected Pclass in rewritten query")
 	}
@@ -169,11 +165,9 @@ func TestRewriteQuery_PreservesExistingWhere(t *testing.T) {
 
 	t.Logf("rewritten: %s", result)
 
-	// Should preserve the original WHERE and add the RLS filter
 	if !strings.Contains(result, "Pclass") {
 		t.Error("expected Pclass in rewritten query")
 	}
-	// Original condition should still be present
 	lower := strings.ToLower(result)
 	if !strings.Contains(lower, "sex") {
 		t.Error("expected original Sex condition to be preserved")
@@ -240,7 +234,6 @@ func TestRewriteQuery_JoinWithRules(t *testing.T) {
 
 	t.Logf("rewritten: %s", result)
 
-	// Should qualify the column with the table alias
 	if !strings.Contains(result, "Pclass") {
 		t.Error("expected Pclass filter")
 	}
@@ -363,7 +356,6 @@ func TestRewriteQuery_NoMatchingTable(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	// No matching table means no filter injected
 	t.Logf("result: %s", result)
 }
 
@@ -382,7 +374,6 @@ func TestRewriteQuery_SelectedColumns(t *testing.T) {
 
 	t.Logf("rewritten: %s", result)
 
-	// Should have WHERE clause
 	if !strings.Contains(result, "Pclass") {
 		t.Error("expected Pclass filter")
 	}
@@ -414,11 +405,189 @@ func TestRewriteQuery_Union(t *testing.T) {
 
 	t.Logf("rewritten: %s", result)
 
-	// Both sides of UNION should have the filter
-	// Count occurrences of "Pclass"
 	count := strings.Count(result, "Pclass")
 	if count < 2 {
 		t.Errorf("expected Pclass filter in both UNION branches, found %d occurrences", count)
+	}
+}
+
+// --- ClassifyStatement tests ---
+
+func TestClassifyStatement_Select(t *testing.T) {
+	typ, err := ClassifyStatement("SELECT * FROM titanic")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if typ != StmtSelect {
+		t.Errorf("expected SELECT, got %s", typ)
+	}
+}
+
+func TestClassifyStatement_Insert(t *testing.T) {
+	typ, err := ClassifyStatement("INSERT INTO titanic (id) VALUES (1)")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if typ != StmtInsert {
+		t.Errorf("expected INSERT, got %s", typ)
+	}
+}
+
+func TestClassifyStatement_Update(t *testing.T) {
+	typ, err := ClassifyStatement("UPDATE titanic SET name = 'test' WHERE id = 1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if typ != StmtUpdate {
+		t.Errorf("expected UPDATE, got %s", typ)
+	}
+}
+
+func TestClassifyStatement_Delete(t *testing.T) {
+	typ, err := ClassifyStatement("DELETE FROM titanic WHERE id = 1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if typ != StmtDelete {
+		t.Errorf("expected DELETE, got %s", typ)
+	}
+}
+
+func TestClassifyStatement_DDL_Create(t *testing.T) {
+	typ, err := ClassifyStatement("CREATE TABLE foo (id INT)")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if typ != StmtDDL {
+		t.Errorf("expected DDL, got %s", typ)
+	}
+}
+
+func TestClassifyStatement_DDL_Drop(t *testing.T) {
+	typ, err := ClassifyStatement("DROP TABLE titanic")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if typ != StmtDDL {
+		t.Errorf("expected DDL, got %s", typ)
+	}
+}
+
+func TestClassifyStatement_Invalid(t *testing.T) {
+	_, err := ClassifyStatement("SELEKT * FORM titanic")
+	if err == nil {
+		t.Error("expected error for invalid SQL")
+	}
+}
+
+// --- InjectRowFilterSQL tests ---
+
+func TestInjectRowFilterSQL_Basic(t *testing.T) {
+	result, err := InjectRowFilterSQL(
+		`SELECT * FROM titanic`,
+		"titanic",
+		`"Pclass" = 1`,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("result: %s", result)
+
+	lower := strings.ToLower(result)
+	if !strings.Contains(lower, "where") {
+		t.Error("expected WHERE clause")
+	}
+}
+
+func TestInjectRowFilterSQL_PreservesExistingWhere(t *testing.T) {
+	result, err := InjectRowFilterSQL(
+		`SELECT * FROM titanic WHERE "Sex" = 'male'`,
+		"titanic",
+		`"Pclass" = 1`,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("result: %s", result)
+
+	lower := strings.ToLower(result)
+	if !strings.Contains(lower, "sex") {
+		t.Error("expected original WHERE to be preserved")
+	}
+	if !strings.Contains(lower, "pclass") {
+		t.Error("expected injected filter")
+	}
+}
+
+func TestInjectRowFilterSQL_NoMatchingTable(t *testing.T) {
+	result, err := InjectRowFilterSQL(
+		`SELECT * FROM other_table`,
+		"titanic",
+		`"Pclass" = 1`,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Should not inject anything
+	lower := strings.ToLower(result)
+	if strings.Contains(lower, "where") {
+		t.Error("should not inject filter for non-matching table")
+	}
+}
+
+func TestInjectRowFilterSQL_EmptyFilter(t *testing.T) {
+	sql := "SELECT * FROM titanic"
+	result, err := InjectRowFilterSQL(sql, "titanic", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result != sql {
+		t.Error("empty filter should return original SQL")
+	}
+}
+
+// --- ApplyColumnMasks tests ---
+
+func TestApplyColumnMasks_Basic(t *testing.T) {
+	result, err := ApplyColumnMasks(
+		`SELECT "PassengerId", "Name", "Pclass" FROM titanic`,
+		"titanic",
+		map[string]string{"Name": "'***'"},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("result: %s", result)
+
+	if !strings.Contains(result, "'***'") {
+		t.Error("expected mask expression in result")
+	}
+	// The original "Name" column reference should be replaced
+	if !strings.Contains(result, "PassengerId") {
+		t.Error("expected non-masked columns to be preserved")
+	}
+}
+
+func TestApplyColumnMasks_NoMasks(t *testing.T) {
+	sql := `SELECT "Name" FROM titanic`
+	result, err := ApplyColumnMasks(sql, "titanic", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result != sql {
+		t.Error("nil masks should return original SQL")
+	}
+}
+
+func TestApplyColumnMasks_NoMatchingTable(t *testing.T) {
+	sql := `SELECT "Name" FROM other_table`
+	result, err := ApplyColumnMasks(sql, "titanic", map[string]string{"Name": "'***'"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Should not modify
+	if strings.Contains(result, "'***'") {
+		t.Error("should not mask columns for non-matching table")
 	}
 }
 
@@ -443,6 +612,28 @@ func TestQuoteIdentifier(t *testing.T) {
 				t.Errorf("QuoteIdentifier(%q) = %q, want %q", tc.input, got, tc.expected)
 			}
 		})
+	}
+}
+
+// --- int32 overflow fix test ---
+
+func TestMakeIntegerConst_LargeValue(t *testing.T) {
+	sql := "SELECT * FROM titanic"
+	rules := map[string][]policy.RLSRule{
+		"titanic": {
+			{Table: "titanic", Column: "id", Operator: policy.OpEqual, Value: int64(3000000000)},
+		},
+	}
+
+	result, err := RewriteQuery(sql, rules)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	t.Logf("rewritten: %s", result)
+
+	// Should contain the large value without overflow
+	if !strings.Contains(result, "3000000000") {
+		t.Error("expected large integer value to be preserved")
 	}
 }
 
