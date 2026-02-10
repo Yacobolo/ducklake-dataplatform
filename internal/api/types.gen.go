@@ -128,6 +128,29 @@ type GroupMember struct {
 	MemberType *string `json:"member_type,omitempty"`
 }
 
+// ManifestColumn defines model for ManifestColumn.
+type ManifestColumn struct {
+	Name *string `json:"name,omitempty"`
+	Type *string `json:"type,omitempty"`
+}
+
+// ManifestRequest defines model for ManifestRequest.
+type ManifestRequest struct {
+	Schema *string `json:"schema,omitempty"`
+	Table  string  `json:"table"`
+}
+
+// ManifestResponse defines model for ManifestResponse.
+type ManifestResponse struct {
+	ColumnMasks *map[string]string `json:"column_masks,omitempty"`
+	Columns     *[]ManifestColumn  `json:"columns,omitempty"`
+	ExpiresAt   *time.Time         `json:"expires_at,omitempty"`
+	Files       *[]string          `json:"files,omitempty"`
+	RowFilters  *[]string          `json:"row_filters,omitempty"`
+	Schema      *string            `json:"schema,omitempty"`
+	Table       *string            `json:"table,omitempty"`
+}
+
 // Principal defines model for Principal.
 type Principal struct {
 	CreatedAt *time.Time `json:"created_at,omitempty"`
@@ -234,6 +257,9 @@ type RemoveGroupMemberJSONRequestBody = AddGroupMemberRequest
 
 // AddGroupMemberJSONRequestBody defines body for AddGroupMember for application/json ContentType.
 type AddGroupMemberJSONRequestBody = AddGroupMemberRequest
+
+// GetManifestJSONRequestBody defines body for GetManifest for application/json ContentType.
+type GetManifestJSONRequestBody = ManifestRequest
 
 // CreatePrincipalJSONRequestBody defines body for CreatePrincipal for application/json ContentType.
 type CreatePrincipalJSONRequestBody = CreatePrincipalRequest

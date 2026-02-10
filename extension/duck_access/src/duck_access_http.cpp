@@ -1,0 +1,53 @@
+#include "duck_access_http.hpp"
+
+// CPPHTTPLIB_OPENSSL_SUPPORT is defined via CMake compile definitions
+#include "include/httplib.h"
+
+namespace duckdb {
+
+HttpResponse DuckAccessHttp::PostJson(
+	const std::string &url,
+	const std::string &api_key,
+	const std::string &json_body,
+	int timeout_ms
+) {
+	HttpResponse response;
+
+	// Parse URL: "https://host:port/path"
+	auto scheme_end = url.find("://");
+	if (scheme_end == std::string::npos) {
+		response.error = "Invalid URL: missing scheme in '" + url + "'";
+		return response;
+	}
+
+	auto path_start = url.find('/', scheme_end + 3);
+	std::string base_url = (path_start != std::string::npos)
+		? url.substr(0, path_start)
+		: url;
+	std::string path = (path_start != std::string::npos)
+		? url.substr(path_start)
+		: "/";
+
+	httplib::Client cli(base_url);
+	cli.set_connection_timeout(0, timeout_ms * 1000);  // microseconds
+	cli.set_read_timeout(timeout_ms / 1000, 0);        // seconds
+	cli.set_write_timeout(timeout_ms / 1000, 0);
+
+	httplib::Headers headers = {
+		{"Content-Type", "application/json"},
+		{"X-API-Key", api_key}
+	};
+
+	auto res = cli.Post(path, headers, json_body, "application/json");
+
+	if (!res) {
+		response.error = "HTTP request failed: " + httplib::to_string(res.error());
+		return response;
+	}
+
+	response.status_code = res->status;
+	response.body = res->body;
+	return response;
+}
+
+} // namespace duckdb

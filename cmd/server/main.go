@@ -289,10 +289,24 @@ func main() {
 	introspectionSvc := service.NewIntrospectionService(introspectionRepo)
 	auditSvc := service.NewAuditService(auditRepo)
 
+	// Create manifest service for duck_access extension support.
+	// Only available when S3 credentials are configured (DuckLake mode).
+	var manifestSvc *service.ManifestService
+	if cfgErr == nil {
+		presigner, err := service.NewS3Presigner(cfg)
+		if err != nil {
+			log.Printf("warning: could not create S3 presigner: %v", err)
+		} else {
+			manifestSvc = service.NewManifestService(metaDB, cat, presigner, introspectionRepo, auditRepo)
+			log.Println("Manifest service enabled (duck_access extension support)")
+		}
+	}
+
 	// Create API handler
 	handler := api.NewHandler(
 		querySvc, principalSvc, groupSvc, grantSvc,
 		rowFilterSvc, columnMaskSvc, introspectionSvc, auditSvc,
+		manifestSvc,
 	)
 
 	// Create strict handler wrapper

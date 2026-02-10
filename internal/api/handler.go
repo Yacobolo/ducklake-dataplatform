@@ -18,6 +18,7 @@ type APIHandler struct {
 	columnMasks   *service.ColumnMaskService
 	introspection *service.IntrospectionService
 	audit         *service.AuditService
+	manifest      *service.ManifestService
 }
 
 func NewHandler(
@@ -29,6 +30,7 @@ func NewHandler(
 	columnMasks *service.ColumnMaskService,
 	introspection *service.IntrospectionService,
 	audit *service.AuditService,
+	manifest *service.ManifestService,
 ) *APIHandler {
 	return &APIHandler{
 		query:         query,
@@ -39,6 +41,7 @@ func NewHandler(
 		columnMasks:   columnMasks,
 		introspection: introspection,
 		audit:         audit,
+		manifest:      manifest,
 	}
 }
 
@@ -61,6 +64,45 @@ func (h *APIHandler) ExecuteQuery(ctx context.Context, req ExecuteQueryRequestOb
 		Columns:  &result.Columns,
 		Rows:     &rows,
 		RowCount: &result.RowCount,
+	}, nil
+}
+
+func (h *APIHandler) GetManifest(ctx context.Context, req GetManifestRequestObject) (GetManifestResponseObject, error) {
+	principal, _ := middleware.PrincipalFromContext(ctx)
+
+	schemaName := "main"
+	if req.Body.Schema != nil {
+		schemaName = *req.Body.Schema
+	}
+
+	result, err := h.manifest.GetManifest(ctx, principal, schemaName, req.Body.Table)
+	if err != nil {
+		// Check error type to return proper HTTP status
+		switch err.(type) {
+		case *domain.NotFoundError:
+			return GetManifest404JSONResponse{Code: 404, Message: err.Error()}, nil
+		case *domain.AccessDeniedError:
+			return GetManifest403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return GetManifest403JSONResponse{Code: 403, Message: err.Error()}, nil
+		}
+	}
+
+	cols := make([]ManifestColumn, len(result.Columns))
+	for i, c := range result.Columns {
+		name := c.Name
+		typ := c.Type
+		cols[i] = ManifestColumn{Name: &name, Type: &typ}
+	}
+
+	return GetManifest200JSONResponse{
+		Table:       &result.Table,
+		Schema:      &result.Schema,
+		Columns:     &cols,
+		Files:       &result.Files,
+		RowFilters:  &result.RowFilters,
+		ColumnMasks: &result.ColumnMasks,
+		ExpiresAt:   &result.ExpiresAt,
 	}, nil
 }
 

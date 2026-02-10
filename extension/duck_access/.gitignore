@@ -1,0 +1,5 @@
+build/
+duckdb/
+extension-ci-tools/
+src/include/httplib.h
+src/include/json.hpp

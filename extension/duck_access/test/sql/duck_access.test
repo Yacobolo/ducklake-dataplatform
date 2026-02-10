@@ -1,0 +1,44 @@
+# name: test/sql/duck_access.test
+# description: Test duck_access extension loading and secret creation
+# group: [duck_access]
+
+# Require the extension to be loaded
+require duck_access
+
+# Test: Secret creation succeeds
+statement ok
+CREATE SECRET test_platform (
+    TYPE duck_access,
+    API_URL 'http://localhost:8080/v1',
+    API_KEY 'test_key_abc123'
+);
+
+# Test: Secret appears in duckdb_secrets()
+query I
+SELECT count(*) FROM duckdb_secrets() WHERE type = 'duck_access';
+----
+1
+
+# Test: API_KEY is redacted in duckdb_secrets()
+query I
+SELECT count(*) FROM duckdb_secrets() WHERE type = 'duck_access' AND secret_string LIKE '%test_key_abc123%';
+----
+0
+
+# Test: Missing API_URL fails
+statement error
+CREATE SECRET bad_secret_1 (
+    TYPE duck_access,
+    API_KEY 'some_key'
+);
+----
+duck_access secret requires API_URL parameter
+
+# Test: Missing API_KEY fails
+statement error
+CREATE SECRET bad_secret_2 (
+    TYPE duck_access,
+    API_URL 'http://localhost:8080/v1'
+);
+----
+duck_access secret requires API_KEY parameter
