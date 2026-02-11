@@ -32,7 +32,7 @@ go.work.sum
 # .vscode/
 
 .opencode/reference-docs
-ducklake_meta.sqlite
+ducklake_meta.sqlite*
 
 # Binaries
 server
