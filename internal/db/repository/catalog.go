@@ -243,12 +243,12 @@ func (r *CatalogRepo) DeleteSchema(ctx context.Context, name string, force bool)
 		return fmt.Errorf("drop schema: %w", err)
 	}
 
-	// Clean up schema metadata
+	// Soft-delete schema metadata (set deleted_at instead of removing)
 	_, _ = r.metaDB.ExecContext(ctx,
-		`DELETE FROM catalog_metadata WHERE securable_type = 'schema' AND securable_name = ?`, name)
-	// Clean up table metadata for tables that were in this schema
+		`UPDATE catalog_metadata SET deleted_at = datetime('now') WHERE securable_type = 'schema' AND securable_name = ?`, name)
+	// Soft-delete table metadata for tables that were in this schema
 	_, _ = r.metaDB.ExecContext(ctx,
-		`DELETE FROM catalog_metadata WHERE securable_type = 'table' AND securable_name LIKE ?`, name+".%")
+		`UPDATE catalog_metadata SET deleted_at = datetime('now') WHERE securable_type = 'table' AND securable_name LIKE ?`, name+".%")
 
 	// Cascade: remove tag assignments for the schema
 	_, _ = r.metaDB.ExecContext(ctx,
@@ -434,10 +434,10 @@ func (r *CatalogRepo) DeleteTable(ctx context.Context, schemaName, tableName str
 		return fmt.Errorf("drop table: %w", err)
 	}
 
-	// Clean up metadata
+	// Soft-delete table metadata (set deleted_at instead of removing)
 	securableName := schemaName + "." + tableName
 	_, _ = r.metaDB.ExecContext(ctx,
-		`DELETE FROM catalog_metadata WHERE securable_type = 'table' AND securable_name = ?`, securableName)
+		`UPDATE catalog_metadata SET deleted_at = datetime('now') WHERE securable_type = 'table' AND securable_name = ?`, securableName)
 
 	// Cascade: remove row filters and their bindings (bindings cascade via FK)
 	_, _ = r.metaDB.ExecContext(ctx,
@@ -662,10 +662,10 @@ func (r *CatalogRepo) loadColumns(ctx context.Context, tableID int64) ([]domain.
 
 func (r *CatalogRepo) enrichSchemaMetadata(ctx context.Context, s *domain.SchemaDetail) {
 	var comment, properties, owner sql.NullString
-	var createdAt, updatedAt sql.NullString
+	var createdAt, updatedAt, deletedAt sql.NullString
 	err := r.metaDB.QueryRowContext(ctx,
-		`SELECT comment, properties, owner, created_at, updated_at FROM catalog_metadata WHERE securable_type = 'schema' AND securable_name = ?`,
-		s.Name).Scan(&comment, &properties, &owner, &createdAt, &updatedAt)
+		`SELECT comment, properties, owner, created_at, updated_at, deleted_at FROM catalog_metadata WHERE securable_type = 'schema' AND securable_name = ?`,
+		s.Name).Scan(&comment, &properties, &owner, &createdAt, &updatedAt, &deletedAt)
 	if err != nil {
 		return
 	}
@@ -684,15 +684,19 @@ func (r *CatalogRepo) enrichSchemaMetadata(ctx context.Context, s *domain.Schema
 	if updatedAt.Valid {
 		s.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt.String)
 	}
+	if deletedAt.Valid {
+		t, _ := time.Parse("2006-01-02 15:04:05", deletedAt.String)
+		s.DeletedAt = &t
+	}
 }
 
 func (r *CatalogRepo) enrichTableMetadata(ctx context.Context, t *domain.TableDetail) {
 	securableName := t.SchemaName + "." + t.Name
 	var comment, properties, owner sql.NullString
-	var createdAt, updatedAt sql.NullString
+	var createdAt, updatedAt, deletedAt sql.NullString
 	err := r.metaDB.QueryRowContext(ctx,
-		`SELECT comment, properties, owner, created_at, updated_at FROM catalog_metadata WHERE securable_type = 'table' AND securable_name = ?`,
-		securableName).Scan(&comment, &properties, &owner, &createdAt, &updatedAt)
+		`SELECT comment, properties, owner, created_at, updated_at, deleted_at FROM catalog_metadata WHERE securable_type = 'table' AND securable_name = ?`,
+		securableName).Scan(&comment, &properties, &owner, &createdAt, &updatedAt, &deletedAt)
 	if err != nil {
 		return
 	}
@@ -710,6 +714,10 @@ func (r *CatalogRepo) enrichTableMetadata(ctx context.Context, t *domain.TableDe
 	}
 	if updatedAt.Valid {
 		t.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt.String)
+	}
+	if deletedAt.Valid {
+		dt, _ := time.Parse("2006-01-02 15:04:05", deletedAt.String)
+		t.DeletedAt = &dt
 	}
 }
 

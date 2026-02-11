@@ -26,6 +26,8 @@ func (r *LineageRepo) InsertEdge(ctx context.Context, edge *domain.LineageEdge) 
 		EdgeType:      edge.EdgeType,
 		PrincipalName: edge.PrincipalName,
 		QueryHash:     mapper.NullStrFromPtr(edge.QueryHash),
+		SourceSchema:  mapper.NullStrFromStr(edge.SourceSchema),
+		TargetSchema:  mapper.NullStrFromStr(edge.TargetSchema),
 	})
 }
 

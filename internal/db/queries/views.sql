@@ -3,13 +3,13 @@ INSERT INTO views (schema_id, name, view_definition, comment, properties, owner,
 VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING *;
 
 -- name: GetViewByName :one
-SELECT * FROM views WHERE schema_id = ? AND name = ?;
+SELECT * FROM views WHERE schema_id = ? AND name = ? AND deleted_at IS NULL;
 
 -- name: ListViews :many
-SELECT * FROM views WHERE schema_id = ? ORDER BY name LIMIT ? OFFSET ?;
+SELECT * FROM views WHERE schema_id = ? AND deleted_at IS NULL ORDER BY name LIMIT ? OFFSET ?;
 
 -- name: CountViews :one
-SELECT COUNT(*) as cnt FROM views WHERE schema_id = ?;
+SELECT COUNT(*) as cnt FROM views WHERE schema_id = ? AND deleted_at IS NULL;
 
 -- name: DeleteView :exec
-DELETE FROM views WHERE schema_id = ? AND name = ?;
+UPDATE views SET deleted_at = datetime('now') WHERE schema_id = ? AND name = ?;

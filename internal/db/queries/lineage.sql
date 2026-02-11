@@ -1,16 +1,16 @@
 -- name: InsertLineageEdge :exec
-INSERT INTO lineage_edges (source_table, target_table, edge_type, principal_name, query_hash)
-VALUES (?, ?, ?, ?, ?);
+INSERT INTO lineage_edges (source_table, target_table, edge_type, principal_name, query_hash, source_schema, target_schema)
+VALUES (?, ?, ?, ?, ?, ?, ?);
 
 -- name: GetUpstreamLineage :many
-SELECT DISTINCT source_table, target_table, edge_type, principal_name, created_at
+SELECT DISTINCT source_table, target_table, edge_type, principal_name, created_at, source_schema, target_schema
 FROM lineage_edges
 WHERE target_table = ?
 ORDER BY created_at DESC
 LIMIT ? OFFSET ?;
 
 -- name: GetDownstreamLineage :many
-SELECT DISTINCT source_table, target_table, edge_type, principal_name, created_at
+SELECT DISTINCT source_table, target_table, edge_type, principal_name, created_at, source_schema, target_schema
 FROM lineage_edges
 WHERE source_table = ?
 ORDER BY created_at DESC

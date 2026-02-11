@@ -268,8 +268,14 @@ type LineageEdge struct {
 	EdgeType      *string `json:"edge_type,omitempty"`
 	Id            *int64  `json:"id,omitempty"`
 	PrincipalName *string `json:"principal_name,omitempty"`
-	SourceTable   *string `json:"source_table,omitempty"`
-	TargetTable   *string `json:"target_table"`
+
+	// SourceSchema Schema of the source table
+	SourceSchema *string `json:"source_schema,omitempty"`
+	SourceTable  *string `json:"source_table,omitempty"`
+
+	// TargetSchema Schema of the target table
+	TargetSchema *string `json:"target_schema,omitempty"`
+	TargetTable  *string `json:"target_table"`
 }
 
 // LineageNode defines model for LineageNode.

@@ -274,3 +274,81 @@ func TestTagService_ListAssignmentsForTag(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, assignments, 1)
 }
+
+// === Classification Validation ===
+
+func TestValidateClassificationTag(t *testing.T) {
+	tests := []struct {
+		name    string
+		key     string
+		value   *string
+		wantErr bool
+	}{
+		{"valid classification pii", "classification", strPtr("pii"), false},
+		{"valid classification sensitive", "classification", strPtr("sensitive"), false},
+		{"valid classification confidential", "classification", strPtr("confidential"), false},
+		{"valid classification public", "classification", strPtr("public"), false},
+		{"valid classification personal_data", "classification", strPtr("personal_data"), false},
+		{"valid sensitivity high", "sensitivity", strPtr("high"), false},
+		{"valid sensitivity medium", "sensitivity", strPtr("medium"), false},
+		{"valid sensitivity low", "sensitivity", strPtr("low"), false},
+		{"invalid classification value", "classification", strPtr("invalid"), true},
+		{"invalid sensitivity value", "sensitivity", strPtr("extreme"), true},
+		{"classification without value", "classification", nil, true},
+		{"sensitivity without value", "sensitivity", nil, true},
+		{"custom tag allowed", "env", strPtr("production"), false},
+		{"custom tag without value allowed", "team", nil, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tag := &domain.Tag{Key: tt.key, Value: tt.value}
+			err := validateClassificationTag(tag)
+			if tt.wantErr {
+				require.Error(t, err)
+				var validationErr *domain.ValidationError
+				assert.True(t, errors.As(err, &validationErr))
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+// === CreateTag with Classification Validation ===
+
+func TestTagService_CreateTag_ClassificationValidation(t *testing.T) {
+	t.Run("valid classification passes", func(t *testing.T) {
+		repo := &mockTagRepo{
+			createTagFn: func(_ context.Context, tag *domain.Tag) (*domain.Tag, error) {
+				return &domain.Tag{ID: 1, Key: tag.Key, Value: tag.Value, CreatedBy: tag.CreatedBy, CreatedAt: time.Now()}, nil
+			},
+		}
+		audit := &mockAuditRepo{}
+		svc := NewTagService(repo, audit)
+
+		val := "pii"
+		result, err := svc.CreateTag(ctxWithPrincipal("alice"), &domain.Tag{Key: "classification", Value: &val})
+
+		require.NoError(t, err)
+		assert.Equal(t, "classification", result.Key)
+	})
+
+	t.Run("invalid classification rejected", func(t *testing.T) {
+		repo := &mockTagRepo{
+			// createTagFn should NOT be called
+		}
+		audit := &mockAuditRepo{}
+		svc := NewTagService(repo, audit)
+
+		val := "invalid_class"
+		_, err := svc.CreateTag(ctxWithPrincipal("alice"), &domain.Tag{Key: "classification", Value: &val})
+
+		require.Error(t, err)
+		var validationErr *domain.ValidationError
+		assert.True(t, errors.As(err, &validationErr))
+		assert.Empty(t, audit.entries, "audit should not be logged on validation error")
+	})
+}
+
+func strPtr(s string) *string { return &s }

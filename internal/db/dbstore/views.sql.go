@@ -11,7 +11,7 @@ import (
 )
 
 const countViews = `-- name: CountViews :one
-SELECT COUNT(*) as cnt FROM views WHERE schema_id = ?
+SELECT COUNT(*) as cnt FROM views WHERE schema_id = ? AND deleted_at IS NULL
 `
 
 func (q *Queries) CountViews(ctx context.Context, schemaID int64) (int64, error) {
@@ -64,7 +64,7 @@ func (q *Queries) CreateView(ctx context.Context, arg CreateViewParams) (View, e
 }
 
 const deleteView = `-- name: DeleteView :exec
-DELETE FROM views WHERE schema_id = ? AND name = ?
+UPDATE views SET deleted_at = datetime('now') WHERE schema_id = ? AND name = ?
 `
 
 type DeleteViewParams struct {
@@ -78,7 +78,7 @@ func (q *Queries) DeleteView(ctx context.Context, arg DeleteViewParams) error {
 }
 
 const getViewByName = `-- name: GetViewByName :one
-SELECT id, schema_id, name, view_definition, comment, properties, owner, source_tables, created_at, updated_at, deleted_at FROM views WHERE schema_id = ? AND name = ?
+SELECT id, schema_id, name, view_definition, comment, properties, owner, source_tables, created_at, updated_at, deleted_at FROM views WHERE schema_id = ? AND name = ? AND deleted_at IS NULL
 `
 
 type GetViewByNameParams struct {
@@ -106,7 +106,7 @@ func (q *Queries) GetViewByName(ctx context.Context, arg GetViewByNameParams) (V
 }
 
 const listViews = `-- name: ListViews :many
-SELECT id, schema_id, name, view_definition, comment, properties, owner, source_tables, created_at, updated_at, deleted_at FROM views WHERE schema_id = ? ORDER BY name LIMIT ? OFFSET ?
+SELECT id, schema_id, name, view_definition, comment, properties, owner, source_tables, created_at, updated_at, deleted_at FROM views WHERE schema_id = ? AND deleted_at IS NULL ORDER BY name LIMIT ? OFFSET ?
 `
 
 type ListViewsParams struct {

@@ -1463,10 +1463,19 @@ func lineageEdgeToAPI(e domain.LineageEdge) LineageEdge {
 		Id:            &e.ID,
 		SourceTable:   &e.SourceTable,
 		TargetTable:   e.TargetTable,
+		SourceSchema:  strPtrIfNonEmpty(e.SourceSchema),
+		TargetSchema:  strPtrIfNonEmpty(e.TargetSchema),
 		EdgeType:      &e.EdgeType,
 		PrincipalName: &e.PrincipalName,
 		CreatedAt:     &t,
 	}
+}
+
+func strPtrIfNonEmpty(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }
 
 func tagToAPI(t domain.Tag) Tag {

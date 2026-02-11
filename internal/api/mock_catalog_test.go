@@ -350,16 +350,64 @@ func (m *mockCatalogRepo) ListColumns(_ context.Context, schemaName, tableName s
 	return cols[offset:end], total, nil
 }
 
-func (m *mockCatalogRepo) UpdateTable(_ context.Context, _, _ string, _ *string, _ map[string]string, _ *string) (*domain.TableDetail, error) {
-	panic("unexpected call to mockCatalogRepo.UpdateTable")
+func (m *mockCatalogRepo) UpdateTable(_ context.Context, schemaName, tableName string, comment *string, props map[string]string, owner *string) (*domain.TableDetail, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	key := schemaName + "." + tableName
+	t, exists := m.tables[key]
+	if !exists {
+		return nil, domain.ErrNotFound("table %q not found in schema %q", tableName, schemaName)
+	}
+	if comment != nil {
+		t.Comment = *comment
+	}
+	if props != nil {
+		t.Properties = props
+	}
+	if owner != nil {
+		t.Owner = *owner
+	}
+	t.UpdatedAt = time.Now()
+	m.tables[key] = t
+	t.Columns = m.columns[key]
+	return &t, nil
 }
 
-func (m *mockCatalogRepo) UpdateCatalog(_ context.Context, _ *string) (*domain.CatalogInfo, error) {
-	panic("unexpected call to mockCatalogRepo.UpdateCatalog")
+func (m *mockCatalogRepo) UpdateCatalog(_ context.Context, comment *string) (*domain.CatalogInfo, error) {
+	info := &domain.CatalogInfo{
+		Name:      "lake",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	if comment != nil {
+		info.Comment = *comment
+	}
+	return info, nil
 }
 
-func (m *mockCatalogRepo) UpdateColumn(_ context.Context, _, _, _ string, _ *string, _ map[string]string) (*domain.ColumnDetail, error) {
-	panic("unexpected call to mockCatalogRepo.UpdateColumn")
+func (m *mockCatalogRepo) UpdateColumn(_ context.Context, schemaName, tableName, columnName string, comment *string, props map[string]string) (*domain.ColumnDetail, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	key := schemaName + "." + tableName
+	cols, exists := m.columns[key]
+	if !exists {
+		return nil, domain.ErrNotFound("table %q not found in schema %q", tableName, schemaName)
+	}
+	for i, c := range cols {
+		if c.Name == columnName {
+			if comment != nil {
+				cols[i].Comment = *comment
+			}
+			if props != nil {
+				cols[i].Properties = props
+			}
+			m.columns[key] = cols
+			return &cols[i], nil
+		}
+	}
+	return nil, domain.ErrNotFound("column %q not found", columnName)
 }
 
 func (m *mockCatalogRepo) SetSchemaStoragePath(_ context.Context, _ int64, _ string) error {

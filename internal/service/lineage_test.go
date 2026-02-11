@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -196,5 +198,100 @@ func TestLineageService_GetFullLineage(t *testing.T) {
 		assert.Equal(t, "unknown_table", node.TableName)
 		assert.Empty(t, node.Upstream)
 		assert.Empty(t, node.Downstream)
+	})
+}
+
+// === DeleteEdge ===
+
+func TestLineageService_DeleteEdge(t *testing.T) {
+	t.Run("happy_path", func(t *testing.T) {
+		repo := &mockLineageRepo{
+			deleteEdgeFn: func(_ context.Context, id int64) error {
+				assert.Equal(t, int64(42), id)
+				return nil
+			},
+		}
+		svc := NewLineageService(repo)
+
+		err := svc.DeleteEdge(context.Background(), 42)
+
+		require.NoError(t, err)
+	})
+
+	t.Run("not_found", func(t *testing.T) {
+		repo := &mockLineageRepo{
+			deleteEdgeFn: func(_ context.Context, _ int64) error {
+				return domain.ErrNotFound("edge not found")
+			},
+		}
+		svc := NewLineageService(repo)
+
+		err := svc.DeleteEdge(context.Background(), 999)
+
+		require.Error(t, err)
+		var notFound *domain.NotFoundError
+		assert.True(t, errors.As(err, &notFound))
+	})
+
+	t.Run("repo_error", func(t *testing.T) {
+		repo := &mockLineageRepo{
+			deleteEdgeFn: func(_ context.Context, _ int64) error {
+				return errTest
+			},
+		}
+		svc := NewLineageService(repo)
+
+		err := svc.DeleteEdge(context.Background(), 1)
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, errTest)
+	})
+}
+
+// === PurgeOlderThan ===
+
+func TestLineageService_PurgeOlderThan(t *testing.T) {
+	t.Run("happy_path", func(t *testing.T) {
+		repo := &mockLineageRepo{
+			purgeOlderThanFn: func(_ context.Context, before time.Time) (int64, error) {
+				// Should be approximately 90 days ago
+				assert.True(t, before.Before(time.Now().AddDate(0, 0, -89)))
+				return 5, nil
+			},
+		}
+		svc := NewLineageService(repo)
+
+		deleted, err := svc.PurgeOlderThan(context.Background(), 90)
+
+		require.NoError(t, err)
+		assert.Equal(t, int64(5), deleted)
+	})
+
+	t.Run("repo_error", func(t *testing.T) {
+		repo := &mockLineageRepo{
+			purgeOlderThanFn: func(_ context.Context, _ time.Time) (int64, error) {
+				return 0, errTest
+			},
+		}
+		svc := NewLineageService(repo)
+
+		_, err := svc.PurgeOlderThan(context.Background(), 30)
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, errTest)
+	})
+
+	t.Run("zero_deleted", func(t *testing.T) {
+		repo := &mockLineageRepo{
+			purgeOlderThanFn: func(_ context.Context, _ time.Time) (int64, error) {
+				return 0, nil
+			},
+		}
+		svc := NewLineageService(repo)
+
+		deleted, err := svc.PurgeOlderThan(context.Background(), 7)
+
+		require.NoError(t, err)
+		assert.Equal(t, int64(0), deleted)
 	})
 }

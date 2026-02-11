@@ -74,13 +74,17 @@ func (s *QueryService) emitLineage(ctx context.Context, principalName, sqlQuery 
 
 	if targetTable != "" {
 		// DML statement (INSERT/UPDATE/DELETE) — source tables write into target
+		targetSchema, targetName := splitQualifiedName(targetTable)
 		for _, src := range tables {
 			if src == targetTable {
 				continue
 			}
+			srcSchema, srcName := splitQualifiedName(src)
 			_ = s.lineage.InsertEdge(ctx, &domain.LineageEdge{
-				SourceTable:   src,
-				TargetTable:   &targetTable,
+				SourceTable:   srcName,
+				TargetTable:   &targetName,
+				SourceSchema:  srcSchema,
+				TargetSchema:  targetSchema,
 				EdgeType:      "WRITE",
 				PrincipalName: principalName,
 			})
@@ -88,13 +92,25 @@ func (s *QueryService) emitLineage(ctx context.Context, principalName, sqlQuery 
 	} else {
 		// SELECT — all tables are read sources
 		for _, src := range tables {
+			srcSchema, srcName := splitQualifiedName(src)
 			_ = s.lineage.InsertEdge(ctx, &domain.LineageEdge{
-				SourceTable:   src,
+				SourceTable:   srcName,
+				SourceSchema:  srcSchema,
 				EdgeType:      "READ",
 				PrincipalName: principalName,
 			})
 		}
 	}
+}
+
+// splitQualifiedName splits "schema.table" into ("schema", "table").
+// If there is no dot, it returns ("main", name).
+func splitQualifiedName(name string) (schema, table string) {
+	parts := strings.SplitN(name, ".", 2)
+	if len(parts) == 2 {
+		return parts[0], parts[1]
+	}
+	return "main", name
 }
 
 func scanRows(rows *sql.Rows) (*QueryResult, error) {

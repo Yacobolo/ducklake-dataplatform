@@ -121,9 +121,11 @@ func (m *mockTagRepo) ListAssignmentsForTag(ctx context.Context, tagID int64) ([
 // === Lineage Repository Mock ===
 
 type mockLineageRepo struct {
-	insertEdgeFn    func(ctx context.Context, edge *domain.LineageEdge) error
-	getUpstreamFn   func(ctx context.Context, tableName string, page domain.PageRequest) ([]domain.LineageEdge, int64, error)
-	getDownstreamFn func(ctx context.Context, tableName string, page domain.PageRequest) ([]domain.LineageEdge, int64, error)
+	insertEdgeFn     func(ctx context.Context, edge *domain.LineageEdge) error
+	getUpstreamFn    func(ctx context.Context, tableName string, page domain.PageRequest) ([]domain.LineageEdge, int64, error)
+	getDownstreamFn  func(ctx context.Context, tableName string, page domain.PageRequest) ([]domain.LineageEdge, int64, error)
+	deleteEdgeFn     func(ctx context.Context, id int64) error
+	purgeOlderThanFn func(ctx context.Context, before time.Time) (int64, error)
 }
 
 func (m *mockLineageRepo) InsertEdge(ctx context.Context, edge *domain.LineageEdge) error {
@@ -147,11 +149,17 @@ func (m *mockLineageRepo) GetDownstream(ctx context.Context, tableName string, p
 	panic("unexpected call to mockLineageRepo.GetDownstream")
 }
 
-func (m *mockLineageRepo) DeleteEdge(_ context.Context, _ int64) error {
+func (m *mockLineageRepo) DeleteEdge(ctx context.Context, id int64) error {
+	if m.deleteEdgeFn != nil {
+		return m.deleteEdgeFn(ctx, id)
+	}
 	panic("unexpected call to mockLineageRepo.DeleteEdge")
 }
 
-func (m *mockLineageRepo) PurgeOlderThan(_ context.Context, _ time.Time) (int64, error) {
+func (m *mockLineageRepo) PurgeOlderThan(ctx context.Context, before time.Time) (int64, error) {
+	if m.purgeOlderThanFn != nil {
+		return m.purgeOlderThanFn(ctx, before)
+	}
 	panic("unexpected call to mockLineageRepo.PurgeOlderThan")
 }
 

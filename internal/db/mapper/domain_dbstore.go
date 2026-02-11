@@ -68,6 +68,11 @@ func NullStrFromPtr(s *string) sql.NullString {
 	return nullStr(s)
 }
 
+// NullStrFromStr converts a string to sql.NullString (empty string → NULL).
+func NullStrFromStr(s string) sql.NullString {
+	return nullStrVal(s)
+}
+
 // InterfaceFromPtr converts a *string to interface{} (nil or the string value).
 // Useful for sqlc-generated nullable check parameters.
 func InterfaceFromPtr(s *string) interface{} {
@@ -306,6 +311,8 @@ func LineageEdgeFromDB(e dbstore.GetUpstreamLineageRow) *domain.LineageEdge {
 	return &domain.LineageEdge{
 		SourceTable:   e.SourceTable,
 		TargetTable:   ptrStr(e.TargetTable),
+		SourceSchema:  e.SourceSchema.String,
+		TargetSchema:  e.TargetSchema.String,
 		EdgeType:      e.EdgeType,
 		PrincipalName: e.PrincipalName,
 		CreatedAt:     parseTime(e.CreatedAt),
@@ -316,6 +323,8 @@ func LineageEdgeFromDownstreamDB(e dbstore.GetDownstreamLineageRow) *domain.Line
 	return &domain.LineageEdge{
 		SourceTable:   e.SourceTable,
 		TargetTable:   ptrStr(e.TargetTable),
+		SourceSchema:  e.SourceSchema.String,
+		TargetSchema:  e.TargetSchema.String,
 		EdgeType:      e.EdgeType,
 		PrincipalName: e.PrincipalName,
 		CreatedAt:     parseTime(e.CreatedAt),
@@ -360,7 +369,7 @@ func ViewFromDB(v dbstore.View) *domain.ViewDetail {
 	if v.SourceTables.Valid && v.SourceTables.String != "" {
 		json.Unmarshal([]byte(v.SourceTables.String), &sources)
 	}
-	return &domain.ViewDetail{
+	vd := &domain.ViewDetail{
 		ID:             v.ID,
 		SchemaID:       v.SchemaID,
 		Name:           v.Name,
@@ -372,4 +381,9 @@ func ViewFromDB(v dbstore.View) *domain.ViewDetail {
 		CreatedAt:      parseTime(v.CreatedAt),
 		UpdatedAt:      parseTime(v.UpdatedAt),
 	}
+	if v.DeletedAt.Valid {
+		t := parseTime(v.DeletedAt.String)
+		vd.DeletedAt = &t
+	}
+	return vd
 }

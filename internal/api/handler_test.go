@@ -1043,3 +1043,133 @@ func ptrVal[T any](p *T) T {
 	}
 	return *p
 }
+
+// === UpdateTable ===
+
+func TestAPI_UpdateTable(t *testing.T) {
+	mock := newMockCatalogRepo()
+	mock.addSchema("main")
+	mock.addTable("main", "users", []domain.ColumnDetail{
+		{Name: "id", Type: "INTEGER"},
+		{Name: "name", Type: "VARCHAR"},
+	})
+	srv := setupCatalogTestServer(t, "admin_user", mock)
+	defer srv.Close()
+
+	t.Run("update comment", func(t *testing.T) {
+		resp := doRequest(t, "PATCH", srv.URL+"/catalog/schemas/main/tables/users", `{"comment":"updated table comment"}`)
+		if resp.StatusCode != 200 {
+			t.Fatalf("status: got %d, want 200", resp.StatusCode)
+		}
+		r := decodeJSON[TableDetail](t, resp)
+		if r.Comment == nil || *r.Comment != "updated table comment" {
+			t.Errorf("comment: got %v, want 'updated table comment'", r.Comment)
+		}
+	})
+
+	t.Run("update properties", func(t *testing.T) {
+		resp := doRequest(t, "PATCH", srv.URL+"/catalog/schemas/main/tables/users", `{"properties":{"team":"data"}}`)
+		if resp.StatusCode != 200 {
+			t.Fatalf("status: got %d, want 200", resp.StatusCode)
+		}
+		r := decodeJSON[TableDetail](t, resp)
+		if r.Properties == nil || (*r.Properties)["team"] != "data" {
+			t.Errorf("properties: got %v, want {team:data}", r.Properties)
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		resp := doRequest(t, "PATCH", srv.URL+"/catalog/schemas/main/tables/nonexistent", `{"comment":"nope"}`)
+		defer resp.Body.Close()
+		if resp.StatusCode != 404 {
+			t.Errorf("status: got %d, want 404", resp.StatusCode)
+		}
+	})
+}
+
+// === UpdateCatalog ===
+
+func TestAPI_UpdateCatalog(t *testing.T) {
+	mock := newMockCatalogRepo()
+	srv := setupCatalogTestServer(t, "admin_user", mock)
+	defer srv.Close()
+
+	t.Run("update catalog comment", func(t *testing.T) {
+		resp := doRequest(t, "PATCH", srv.URL+"/catalog", `{"comment":"my data catalog"}`)
+		if resp.StatusCode != 200 {
+			t.Fatalf("status: got %d, want 200", resp.StatusCode)
+		}
+		r := decodeJSON[CatalogInfo](t, resp)
+		if r.Comment == nil || *r.Comment != "my data catalog" {
+			t.Errorf("comment: got %v, want 'my data catalog'", r.Comment)
+		}
+	})
+}
+
+// === UpdateColumn ===
+
+func TestAPI_UpdateColumn(t *testing.T) {
+	mock := newMockCatalogRepo()
+	mock.addSchema("main")
+	mock.addTable("main", "users", []domain.ColumnDetail{
+		{Name: "id", Type: "INTEGER"},
+		{Name: "name", Type: "VARCHAR"},
+	})
+	srv := setupCatalogTestServer(t, "admin_user", mock)
+	defer srv.Close()
+
+	t.Run("update column comment", func(t *testing.T) {
+		resp := doRequest(t, "PATCH", srv.URL+"/catalog/schemas/main/tables/users/columns/id", `{"comment":"primary key"}`)
+		if resp.StatusCode != 200 {
+			t.Fatalf("status: got %d, want 200", resp.StatusCode)
+		}
+		r := decodeJSON[ColumnDetail](t, resp)
+		if r.Comment == nil || *r.Comment != "primary key" {
+			t.Errorf("comment: got %v, want 'primary key'", r.Comment)
+		}
+	})
+
+	t.Run("column not found", func(t *testing.T) {
+		resp := doRequest(t, "PATCH", srv.URL+"/catalog/schemas/main/tables/users/columns/nonexistent", `{"comment":"nope"}`)
+		defer resp.Body.Close()
+		if resp.StatusCode != 404 {
+			t.Errorf("status: got %d, want 404", resp.StatusCode)
+		}
+	})
+}
+
+// === Authorization for new update endpoints ===
+
+func TestAPI_UpdateEndpoints_Authorization(t *testing.T) {
+	mock := newMockCatalogRepo()
+	mock.addSchema("main")
+	mock.addTable("main", "users", []domain.ColumnDetail{{Name: "id", Type: "INTEGER"}})
+
+	tests := []struct {
+		name       string
+		principal  string
+		method     string
+		path       string
+		body       string
+		wantStatus int
+	}{
+		{"update table denied", "no_access_user", "PATCH", "/catalog/schemas/main/tables/users", `{"comment":"nope"}`, 403},
+		{"update column denied", "no_access_user", "PATCH", "/catalog/schemas/main/tables/users/columns/id", `{"comment":"nope"}`, 403},
+		{"update catalog denied", "no_access_user", "PATCH", "/catalog", `{"comment":"nope"}`, 403},
+		{"admin update table", "admin_user", "PATCH", "/catalog/schemas/main/tables/users", `{"comment":"ok"}`, 200},
+		{"admin update catalog", "admin_user", "PATCH", "/catalog", `{"comment":"ok"}`, 200},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := setupCatalogTestServer(t, tt.principal, mock)
+			defer srv.Close()
+
+			resp := doRequest(t, tt.method, srv.URL+tt.path, tt.body)
+			defer resp.Body.Close()
+			if resp.StatusCode != tt.wantStatus {
+				t.Errorf("status: got %d, want %d", resp.StatusCode, tt.wantStatus)
+			}
+		})
+	}
+}

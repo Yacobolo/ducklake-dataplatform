@@ -53,6 +53,16 @@ func (r *SearchRepo) Search(ctx context.Context, query string, objectType *strin
 			WHERE ds.end_snapshot IS NULL AND (LOWER(t.key) LIKE ? OR LOWER(COALESCE(t.value, '')) LIKE ?)
 			AND LOWER(ds.schema_name) NOT LIKE ?`)
 		args = append(args, likePattern, likePattern, likePattern)
+
+		// Search schemas by properties
+		unions = append(unions, `
+			SELECT 'schema' as type, ds.schema_name as name, NULL as schema_name, NULL as table_name,
+				cm.comment as comment, 'property' as match_field
+			FROM ducklake_schema ds
+			JOIN catalog_metadata cm ON cm.securable_type = 'schema' AND cm.securable_name = ds.schema_name AND cm.deleted_at IS NULL
+			WHERE ds.end_snapshot IS NULL AND LOWER(cm.properties) LIKE ?
+			AND LOWER(ds.schema_name) NOT LIKE ? AND (cm.comment IS NULL OR LOWER(cm.comment) NOT LIKE ?)`)
+		args = append(args, likePattern, likePattern, likePattern)
 	}
 
 	// Search tables by name
@@ -88,18 +98,55 @@ func (r *SearchRepo) Search(ctx context.Context, query string, objectType *strin
 			WHERE dt.end_snapshot IS NULL AND (LOWER(t.key) LIKE ? OR LOWER(COALESCE(t.value, '')) LIKE ?)
 			AND LOWER(dt.table_name) NOT LIKE ?`)
 		args = append(args, likePattern, likePattern, likePattern)
+
+		// Search tables by properties
+		unions = append(unions, `
+			SELECT 'table' as type, dt.table_name as name, ds.schema_name as schema_name, NULL as table_name,
+				cm.comment as comment, 'property' as match_field
+			FROM ducklake_table dt
+			JOIN ducklake_schema ds ON dt.schema_id = ds.schema_id AND ds.end_snapshot IS NULL
+			JOIN catalog_metadata cm ON cm.securable_type = 'table' AND cm.securable_name = ds.schema_name || '.' || dt.table_name AND cm.deleted_at IS NULL
+			WHERE dt.end_snapshot IS NULL AND LOWER(cm.properties) LIKE ?
+			AND LOWER(dt.table_name) NOT LIKE ? AND (cm.comment IS NULL OR LOWER(cm.comment) NOT LIKE ?)`)
+		args = append(args, likePattern, likePattern, likePattern)
 	}
 
 	// Search columns by name
 	if objectType == nil || *objectType == "column" {
 		unions = append(unions, `
 			SELECT 'column' as type, dc.column_name as name, ds.schema_name as schema_name, dt.table_name as table_name,
-				NULL as comment, 'name' as match_field
+				colm.comment as comment, 'name' as match_field
 			FROM ducklake_column dc
 			JOIN ducklake_table dt ON dc.table_id = dt.table_id AND dt.end_snapshot IS NULL
 			JOIN ducklake_schema ds ON dt.schema_id = ds.schema_id AND ds.end_snapshot IS NULL
+			LEFT JOIN column_metadata colm ON colm.table_securable_name = ds.schema_name || '.' || dt.table_name AND colm.column_name = dc.column_name
 			WHERE dc.end_snapshot IS NULL AND LOWER(dc.column_name) LIKE ?`)
 		args = append(args, likePattern)
+
+		// Search columns by comment
+		unions = append(unions, `
+			SELECT 'column' as type, dc.column_name as name, ds.schema_name as schema_name, dt.table_name as table_name,
+				colm.comment as comment, 'comment' as match_field
+			FROM ducklake_column dc
+			JOIN ducklake_table dt ON dc.table_id = dt.table_id AND dt.end_snapshot IS NULL
+			JOIN ducklake_schema ds ON dt.schema_id = ds.schema_id AND ds.end_snapshot IS NULL
+			JOIN column_metadata colm ON colm.table_securable_name = ds.schema_name || '.' || dt.table_name AND colm.column_name = dc.column_name
+			WHERE dc.end_snapshot IS NULL AND LOWER(colm.comment) LIKE ? AND LOWER(dc.column_name) NOT LIKE ?`)
+		args = append(args, likePattern, likePattern)
+
+		// Search columns by tag
+		unions = append(unions, `
+			SELECT 'column' as type, dc.column_name as name, ds.schema_name as schema_name, dt.table_name as table_name,
+				colm.comment as comment, 'tag' as match_field
+			FROM ducklake_column dc
+			JOIN ducklake_table dt ON dc.table_id = dt.table_id AND dt.end_snapshot IS NULL
+			JOIN ducklake_schema ds ON dt.schema_id = ds.schema_id AND ds.end_snapshot IS NULL
+			JOIN tag_assignments ta ON ta.securable_type = 'column' AND ta.securable_id = dt.table_id AND ta.column_name = dc.column_name
+			JOIN tags t ON t.id = ta.tag_id
+			LEFT JOIN column_metadata colm ON colm.table_securable_name = ds.schema_name || '.' || dt.table_name AND colm.column_name = dc.column_name
+			WHERE dc.end_snapshot IS NULL AND (LOWER(t.key) LIKE ? OR LOWER(COALESCE(t.value, '')) LIKE ?)
+			AND LOWER(dc.column_name) NOT LIKE ?`)
+		args = append(args, likePattern, likePattern, likePattern)
 	}
 
 	if len(unions) == 0 {

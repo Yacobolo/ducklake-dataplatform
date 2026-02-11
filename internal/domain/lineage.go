@@ -7,6 +7,8 @@ type LineageEdge struct {
 	ID            int64
 	SourceTable   string
 	TargetTable   *string
+	SourceSchema  string
+	TargetSchema  string
 	EdgeType      string // "READ", "WRITE", "READ_WRITE"
 	PrincipalName string
 	QueryHash     *string

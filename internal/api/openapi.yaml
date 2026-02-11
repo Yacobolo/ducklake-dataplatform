@@ -865,6 +865,12 @@ components:
         target_table:
           type: string
           nullable: true
+        source_schema:
+          type: string
+          description: Schema of the source table
+        target_schema:
+          type: string
+          description: Schema of the target table
         edge_type:
           type: string
           description: "Edge type: READ, WRITE, READ_WRITE"

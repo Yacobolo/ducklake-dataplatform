@@ -33,7 +33,7 @@ func (q *Queries) CountUpstreamLineage(ctx context.Context, targetTable sql.Null
 }
 
 const getDownstreamLineage = `-- name: GetDownstreamLineage :many
-SELECT DISTINCT source_table, target_table, edge_type, principal_name, created_at
+SELECT DISTINCT source_table, target_table, edge_type, principal_name, created_at, source_schema, target_schema
 FROM lineage_edges
 WHERE source_table = ?
 ORDER BY created_at DESC
@@ -52,6 +52,8 @@ type GetDownstreamLineageRow struct {
 	EdgeType      string
 	PrincipalName string
 	CreatedAt     string
+	SourceSchema  sql.NullString
+	TargetSchema  sql.NullString
 }
 
 func (q *Queries) GetDownstreamLineage(ctx context.Context, arg GetDownstreamLineageParams) ([]GetDownstreamLineageRow, error) {
@@ -69,6 +71,8 @@ func (q *Queries) GetDownstreamLineage(ctx context.Context, arg GetDownstreamLin
 			&i.EdgeType,
 			&i.PrincipalName,
 			&i.CreatedAt,
+			&i.SourceSchema,
+			&i.TargetSchema,
 		); err != nil {
 			return nil, err
 		}
@@ -84,7 +88,7 @@ func (q *Queries) GetDownstreamLineage(ctx context.Context, arg GetDownstreamLin
 }
 
 const getUpstreamLineage = `-- name: GetUpstreamLineage :many
-SELECT DISTINCT source_table, target_table, edge_type, principal_name, created_at
+SELECT DISTINCT source_table, target_table, edge_type, principal_name, created_at, source_schema, target_schema
 FROM lineage_edges
 WHERE target_table = ?
 ORDER BY created_at DESC
@@ -103,6 +107,8 @@ type GetUpstreamLineageRow struct {
 	EdgeType      string
 	PrincipalName string
 	CreatedAt     string
+	SourceSchema  sql.NullString
+	TargetSchema  sql.NullString
 }
 
 func (q *Queries) GetUpstreamLineage(ctx context.Context, arg GetUpstreamLineageParams) ([]GetUpstreamLineageRow, error) {
@@ -120,6 +126,8 @@ func (q *Queries) GetUpstreamLineage(ctx context.Context, arg GetUpstreamLineage
 			&i.EdgeType,
 			&i.PrincipalName,
 			&i.CreatedAt,
+			&i.SourceSchema,
+			&i.TargetSchema,
 		); err != nil {
 			return nil, err
 		}
@@ -135,8 +143,8 @@ func (q *Queries) GetUpstreamLineage(ctx context.Context, arg GetUpstreamLineage
 }
 
 const insertLineageEdge = `-- name: InsertLineageEdge :exec
-INSERT INTO lineage_edges (source_table, target_table, edge_type, principal_name, query_hash)
-VALUES (?, ?, ?, ?, ?)
+INSERT INTO lineage_edges (source_table, target_table, edge_type, principal_name, query_hash, source_schema, target_schema)
+VALUES (?, ?, ?, ?, ?, ?, ?)
 `
 
 type InsertLineageEdgeParams struct {
@@ -145,6 +153,8 @@ type InsertLineageEdgeParams struct {
 	EdgeType      string
 	PrincipalName string
 	QueryHash     sql.NullString
+	SourceSchema  sql.NullString
+	TargetSchema  sql.NullString
 }
 
 func (q *Queries) InsertLineageEdge(ctx context.Context, arg InsertLineageEdgeParams) error {
@@ -154,6 +164,8 @@ func (q *Queries) InsertLineageEdge(ctx context.Context, arg InsertLineageEdgePa
 		arg.EdgeType,
 		arg.PrincipalName,
 		arg.QueryHash,
+		arg.SourceSchema,
+		arg.TargetSchema,
 	)
 	return err
 }
