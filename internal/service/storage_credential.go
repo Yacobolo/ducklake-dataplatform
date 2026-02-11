@@ -29,10 +29,9 @@ func NewStorageCredentialService(
 }
 
 // Create validates and persists a new storage credential.
-// Requires ALL_PRIVILEGES on catalog.
+// Requires CREATE_STORAGE_CREDENTIAL on catalog.
 func (s *StorageCredentialService) Create(ctx context.Context, principal string, req domain.CreateStorageCredentialRequest) (*domain.StorageCredential, error) {
-
-	if err := s.requireCatalogAdmin(ctx, principal); err != nil {
+	if err := s.requirePrivilege(ctx, principal, domain.PrivCreateStorageCredential); err != nil {
 		return nil, err
 	}
 
@@ -72,10 +71,9 @@ func (s *StorageCredentialService) List(ctx context.Context, page domain.PageReq
 }
 
 // Update updates a storage credential by name.
-// Requires ALL_PRIVILEGES on catalog.
+// Requires CREATE_STORAGE_CREDENTIAL on catalog.
 func (s *StorageCredentialService) Update(ctx context.Context, principal string, name string, req domain.UpdateStorageCredentialRequest) (*domain.StorageCredential, error) {
-
-	if err := s.requireCatalogAdmin(ctx, principal); err != nil {
+	if err := s.requirePrivilege(ctx, principal, domain.PrivCreateStorageCredential); err != nil {
 		return nil, err
 	}
 
@@ -94,10 +92,9 @@ func (s *StorageCredentialService) Update(ctx context.Context, principal string,
 }
 
 // Delete removes a storage credential by name.
-// Requires ALL_PRIVILEGES on catalog.
+// Requires CREATE_STORAGE_CREDENTIAL on catalog.
 func (s *StorageCredentialService) Delete(ctx context.Context, principal string, name string) error {
-
-	if err := s.requireCatalogAdmin(ctx, principal); err != nil {
+	if err := s.requirePrivilege(ctx, principal, domain.PrivCreateStorageCredential); err != nil {
 		return err
 	}
 
@@ -114,14 +111,14 @@ func (s *StorageCredentialService) Delete(ctx context.Context, principal string,
 	return nil
 }
 
-// requireCatalogAdmin checks that the principal has ALL_PRIVILEGES on the catalog.
-func (s *StorageCredentialService) requireCatalogAdmin(ctx context.Context, principal string) error {
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivAllPrivileges)
+// requirePrivilege checks that the principal has the given privilege on the catalog.
+func (s *StorageCredentialService) requirePrivilege(ctx context.Context, principal string, privilege string) error {
+	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, privilege)
 	if err != nil {
 		return fmt.Errorf("check privilege: %w", err)
 	}
 	if !allowed {
-		return domain.ErrAccessDenied("%q lacks ALL_PRIVILEGES on catalog", principal)
+		return domain.ErrAccessDenied("%q lacks %s on catalog", principal, privilege)
 	}
 	return nil
 }
