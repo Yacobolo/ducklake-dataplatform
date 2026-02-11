@@ -321,6 +321,24 @@ func applyMasksToSelectStmt(sel *pg_query.SelectStmt, tableName string, masks ma
 		}
 	}
 
+	// Recurse into CTEs
+	if sel.WithClause != nil {
+		for _, cte := range sel.WithClause.Ctes {
+			if c, ok := cte.Node.(*pg_query.Node_CommonTableExpr); ok {
+				if err := applyMasksToNode(c.CommonTableExpr.Ctequery, tableName, masks); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	// Recurse into FROM subqueries
+	for _, from := range sel.FromClause {
+		if err := applyMasksToFromNode(from, tableName, masks); err != nil {
+			return err
+		}
+	}
+
 	// Check if this SELECT references the target table
 	refs := collectTableRefs(sel.FromClause)
 	found := false
@@ -367,6 +385,34 @@ func applyMasksToSelectStmt(sel *pg_query.SelectStmt, tableName string, masks ma
 		if maskSel != nil && len(maskSel.TargetList) > 0 {
 			sel.TargetList[i] = maskSel.TargetList[0]
 		}
+	}
+	return nil
+}
+
+// applyMasksToNode recurses into statement nodes to find SELECTs for masking.
+func applyMasksToNode(node *pg_query.Node, tableName string, masks map[string]string) error {
+	if node == nil {
+		return nil
+	}
+	if n, ok := node.Node.(*pg_query.Node_SelectStmt); ok {
+		return applyMasksToSelectStmt(n.SelectStmt, tableName, masks, nil)
+	}
+	return nil
+}
+
+// applyMasksToFromNode recurses into subqueries in FROM clause nodes for masking.
+func applyMasksToFromNode(node *pg_query.Node, tableName string, masks map[string]string) error {
+	if node == nil {
+		return nil
+	}
+	switch n := node.Node.(type) {
+	case *pg_query.Node_RangeSubselect:
+		return applyMasksToNode(n.RangeSubselect.Subquery, tableName, masks)
+	case *pg_query.Node_JoinExpr:
+		if err := applyMasksToFromNode(n.JoinExpr.Larg, tableName, masks); err != nil {
+			return err
+		}
+		return applyMasksToFromNode(n.JoinExpr.Rarg, tableName, masks)
 	}
 	return nil
 }

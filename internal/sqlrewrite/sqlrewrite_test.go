@@ -698,6 +698,38 @@ func TestApplyColumnMasks_ValidExpressionSucceeds(t *testing.T) {
 	}
 }
 
+func TestApplyColumnMasks_Subquery(t *testing.T) {
+	result, err := ApplyColumnMasks(
+		`SELECT "Name" FROM (SELECT "Name" FROM titanic) sub`,
+		"titanic",
+		map[string]string{"Name": "'***'"},
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	t.Logf("result: %s", result)
+	if !strings.Contains(result, "'***'") {
+		t.Error("expected mask to be applied inside subquery")
+	}
+}
+
+func TestApplyColumnMasks_CTE(t *testing.T) {
+	result, err := ApplyColumnMasks(
+		`WITH cte AS (SELECT "Name" FROM titanic) SELECT "Name" FROM cte`,
+		"titanic",
+		map[string]string{"Name": "'***'"},
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	t.Logf("result: %s", result)
+	if !strings.Contains(result, "'***'") {
+		t.Error("expected mask to be applied inside CTE")
+	}
+}
+
 // --- QuoteIdentifier tests ---
 
 func TestQuoteIdentifier(t *testing.T) {
