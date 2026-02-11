@@ -2,6 +2,7 @@ package engine
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
 	"fmt"
 	"regexp"
@@ -134,11 +135,16 @@ func (p *InformationSchemaProvider) queryVirtualTable(ctx context.Context, db *s
 		return nil, err
 	}
 
-	// Build CREATE TEMP TABLE + INSERT statements
-	tempName := fmt.Sprintf("__info_schema_%s", table)
+	// Pin a single connection for the entire temp table lifecycle (CREATE, INSERT,
+	// SELECT) to avoid DuckDB connection pool issues — temp tables are per-connection.
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("acquire connection: %w", err)
+	}
 
-	// Drop if exists
-	_, _ = db.ExecContext(ctx, fmt.Sprintf("DROP TABLE IF EXISTS %s", tempName))
+	// Build CREATE TEMP TABLE + INSERT statements with unique name to avoid
+	// race conditions between concurrent information_schema queries.
+	tempName := fmt.Sprintf("__info_schema_%s_%s", table, randomSuffix())
 
 	// Build column defs
 	colDefs := make([]string, len(columns))
@@ -146,7 +152,8 @@ func (p *InformationSchemaProvider) queryVirtualTable(ctx context.Context, db *s
 		colDefs[i] = fmt.Sprintf("%s VARCHAR", c)
 	}
 	createSQL := fmt.Sprintf("CREATE TEMPORARY TABLE %s (%s)", tempName, strings.Join(colDefs, ", "))
-	if _, err := db.ExecContext(ctx, createSQL); err != nil {
+	if _, err := conn.ExecContext(ctx, createSQL); err != nil {
+		conn.Close()
 		return nil, fmt.Errorf("create temp table: %w", err)
 	}
 
@@ -158,7 +165,8 @@ func (p *InformationSchemaProvider) queryVirtualTable(ctx context.Context, db *s
 		}
 		insertSQL := fmt.Sprintf("INSERT INTO %s VALUES (%s)", tempName, strings.Join(placeholders, ", "))
 		for _, row := range dataRows {
-			if _, err := db.ExecContext(ctx, insertSQL, row...); err != nil {
+			if _, err := conn.ExecContext(ctx, insertSQL, row...); err != nil {
+				conn.Close()
 				return nil, fmt.Errorf("insert row: %w", err)
 			}
 		}
@@ -167,14 +175,15 @@ func (p *InformationSchemaProvider) queryVirtualTable(ctx context.Context, db *s
 	// Rewrite the query to use the temp table (case-insensitive).
 	rewritten := replaceAllCaseInsensitive(sqlQuery, "information_schema."+table, tempName)
 
-	rows, err := db.QueryContext(ctx, rewritten)
+	rows, err := conn.QueryContext(ctx, rewritten)
 	if err != nil {
+		conn.Close()
 		return nil, fmt.Errorf("execute information_schema query: %w", err)
 	}
 
-	// Clean up temp table asynchronously after the rows are closed
-	// This is best-effort — DuckDB will clean it up when the connection closes anyway
-
+	// The *sql.Rows keeps the connection pinned until rows.Close().
+	// The temp table lives on this connection and will be cleaned up when
+	// the connection is eventually closed or reused.
 	return rows, nil
 }
 
@@ -184,4 +193,11 @@ func (p *InformationSchemaProvider) queryVirtualTable(ctx context.Context, db *s
 func replaceAllCaseInsensitive(s, old, replacement string) string {
 	re := regexp.MustCompile("(?i)" + regexp.QuoteMeta(old))
 	return re.ReplaceAllLiteralString(s, replacement)
+}
+
+// randomSuffix generates a short random hex string for unique temp table names.
+func randomSuffix() string {
+	b := make([]byte, 4)
+	_, _ = rand.Read(b)
+	return fmt.Sprintf("%x", b)
 }
