@@ -80,6 +80,14 @@ type ColumnMaskBindingRequest struct {
 	SeeOriginal   *bool  `json:"see_original,omitempty"`
 }
 
+// CommitIngestionRequest defines model for CommitIngestionRequest.
+type CommitIngestionRequest struct {
+	Options *IngestionOptions `json:"options,omitempty"`
+
+	// S3Keys S3 keys returned from upload-url to register.
+	S3Keys []string `json:"s3_keys"`
+}
+
 // CreateColumnDef defines model for CreateColumnDef.
 type CreateColumnDef struct {
 	Name string `json:"name"`
@@ -176,6 +184,26 @@ type GroupMember struct {
 	MemberType *string `json:"member_type,omitempty"`
 }
 
+// IngestionOptions defines model for IngestionOptions.
+type IngestionOptions struct {
+	// AllowMissingColumns Allow columns in the table that are missing from the Parquet file.
+	AllowMissingColumns *bool `json:"allow_missing_columns,omitempty"`
+
+	// IgnoreExtraColumns Ignore columns in the Parquet file not present in the table.
+	IgnoreExtraColumns *bool `json:"ignore_extra_columns,omitempty"`
+}
+
+// IngestionResult defines model for IngestionResult.
+type IngestionResult struct {
+	// FilesRegistered Number of files successfully registered.
+	FilesRegistered *int `json:"files_registered,omitempty"`
+
+	// FilesSkipped Number of files skipped (e.g., empty files).
+	FilesSkipped *int    `json:"files_skipped,omitempty"`
+	Schema       *string `json:"schema,omitempty"`
+	Table        *string `json:"table,omitempty"`
+}
+
 // LineageEdge defines model for LineageEdge.
 type LineageEdge struct {
 	CreatedAt *time.Time `json:"created_at,omitempty"`
@@ -192,6 +220,14 @@ type LineageNode struct {
 	Downstream *[]LineageEdge `json:"downstream,omitempty"`
 	TableName  *string        `json:"table_name,omitempty"`
 	Upstream   *[]LineageEdge `json:"upstream,omitempty"`
+}
+
+// LoadExternalRequest defines model for LoadExternalRequest.
+type LoadExternalRequest struct {
+	Options *IngestionOptions `json:"options,omitempty"`
+
+	// Paths S3 paths or globs to register.
+	Paths []string `json:"paths"`
 }
 
 // ManifestColumn defines model for ManifestColumn.
@@ -486,6 +522,24 @@ type UpdateSchemaRequest struct {
 	Properties *map[string]string `json:"properties,omitempty"`
 }
 
+// UploadUrlRequest defines model for UploadUrlRequest.
+type UploadUrlRequest struct {
+	// Filename Optional filename hint for the uploaded file.
+	Filename *string `json:"filename,omitempty"`
+}
+
+// UploadUrlResponse defines model for UploadUrlResponse.
+type UploadUrlResponse struct {
+	// ExpiresAt When the presigned URL expires.
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+
+	// S3Key The S3 key where the file will be stored.
+	S3Key *string `json:"s3_key,omitempty"`
+
+	// UploadUrl Presigned PUT URL for uploading the Parquet file.
+	UploadUrl *string `json:"upload_url,omitempty"`
+}
+
 // ViewDetail defines model for ViewDetail.
 type ViewDetail struct {
 	CatalogName    *string            `json:"catalog_name,omitempty"`
@@ -721,6 +775,15 @@ type UpdateSchemaMetadataJSONRequestBody = UpdateSchemaRequest
 
 // CreateCatalogTableJSONRequestBody defines body for CreateCatalogTable for application/json ContentType.
 type CreateCatalogTableJSONRequestBody = CreateTableApiRequest
+
+// CommitIngestionJSONRequestBody defines body for CommitIngestion for application/json ContentType.
+type CommitIngestionJSONRequestBody = CommitIngestionRequest
+
+// LoadExternalFilesJSONRequestBody defines body for LoadExternalFiles for application/json ContentType.
+type LoadExternalFilesJSONRequestBody = LoadExternalRequest
+
+// RequestUploadUrlJSONRequestBody defines body for RequestUploadUrl for application/json ContentType.
+type RequestUploadUrlJSONRequestBody = UploadUrlRequest
 
 // CreateViewJSONRequestBody defines body for CreateView for application/json ContentType.
 type CreateViewJSONRequestBody = CreateViewRequest

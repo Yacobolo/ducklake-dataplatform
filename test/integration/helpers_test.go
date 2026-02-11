@@ -595,6 +595,7 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 		rowFilterSvc, columnMaskSvc, introspectionSvc, auditSvc,
 		manifestSvc, nil, // catalogSvc=nil — integration tests only hit /v1/manifest
 		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
+		nil, // ingestionSvc
 	)
 	strictHandler := api.NewStrictHandler(handler, nil)
 
@@ -993,6 +994,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		rowFilterSvc, columnMaskSvc, introspectionSvc, auditSvc,
 		manifestSvc, catalogSvc,
 		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
+		nil, // ingestionSvc
 	)
 	strictHandler := api.NewStrictHandler(handler, nil)
 

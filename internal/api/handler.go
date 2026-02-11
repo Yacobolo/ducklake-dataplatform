@@ -25,6 +25,7 @@ type APIHandler struct {
 	search        *service.SearchService
 	tags          *service.TagService
 	views         *service.ViewService
+	ingestion     *service.IngestionService
 }
 
 func NewHandler(
@@ -43,6 +44,7 @@ func NewHandler(
 	search *service.SearchService,
 	tags *service.TagService,
 	views *service.ViewService,
+	ingestion *service.IngestionService,
 ) *APIHandler {
 	return &APIHandler{
 		query:         query,
@@ -60,6 +62,7 @@ func NewHandler(
 		search:        search,
 		tags:          tags,
 		views:         views,
+		ingestion:     ingestion,
 	}
 }
 
@@ -991,6 +994,107 @@ func (h *APIHandler) DropView(ctx context.Context, req DropViewRequestObject) (D
 		}
 	}
 	return DropView204Response{}, nil
+}
+
+// === Ingestion ===
+
+func (h *APIHandler) RequestUploadUrl(ctx context.Context, req RequestUploadUrlRequestObject) (RequestUploadUrlResponseObject, error) {
+	if h.ingestion == nil {
+		return RequestUploadUrl400JSONResponse{Code: 400, Message: "ingestion not available (S3 not configured)"}, nil
+	}
+
+	result, err := h.ingestion.RequestUploadURL(ctx, req.SchemaName, req.TableName, req.Body.Filename)
+	if err != nil {
+		switch err.(type) {
+		case *domain.NotFoundError:
+			return RequestUploadUrl404JSONResponse{Code: 404, Message: err.Error()}, nil
+		case *domain.AccessDeniedError:
+			return RequestUploadUrl403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return RequestUploadUrl400JSONResponse{Code: 400, Message: err.Error()}, nil
+		}
+	}
+
+	t := result.ExpiresAt
+	return RequestUploadUrl200JSONResponse{
+		UploadUrl: &result.UploadURL,
+		S3Key:     &result.S3Key,
+		ExpiresAt: &t,
+	}, nil
+}
+
+func (h *APIHandler) CommitIngestion(ctx context.Context, req CommitIngestionRequestObject) (CommitIngestionResponseObject, error) {
+	if h.ingestion == nil {
+		return CommitIngestion400JSONResponse{Code: 400, Message: "ingestion not available (S3 not configured)"}, nil
+	}
+
+	opts := domain.IngestionOptions{}
+	if req.Body.Options != nil {
+		if req.Body.Options.AllowMissingColumns != nil {
+			opts.AllowMissingColumns = *req.Body.Options.AllowMissingColumns
+		}
+		if req.Body.Options.IgnoreExtraColumns != nil {
+			opts.IgnoreExtraColumns = *req.Body.Options.IgnoreExtraColumns
+		}
+	}
+
+	result, err := h.ingestion.CommitIngestion(ctx, req.SchemaName, req.TableName, req.Body.S3Keys, opts)
+	if err != nil {
+		switch err.(type) {
+		case *domain.NotFoundError:
+			return CommitIngestion404JSONResponse{Code: 404, Message: err.Error()}, nil
+		case *domain.AccessDeniedError:
+			return CommitIngestion403JSONResponse{Code: 403, Message: err.Error()}, nil
+		case *domain.ValidationError:
+			return CommitIngestion400JSONResponse{Code: 400, Message: err.Error()}, nil
+		default:
+			return CommitIngestion400JSONResponse{Code: 400, Message: err.Error()}, nil
+		}
+	}
+
+	return CommitIngestion200JSONResponse{
+		FilesRegistered: &result.FilesRegistered,
+		FilesSkipped:    &result.FilesSkipped,
+		Schema:          &result.Schema,
+		Table:           &result.Table,
+	}, nil
+}
+
+func (h *APIHandler) LoadExternalFiles(ctx context.Context, req LoadExternalFilesRequestObject) (LoadExternalFilesResponseObject, error) {
+	if h.ingestion == nil {
+		return LoadExternalFiles400JSONResponse{Code: 400, Message: "ingestion not available (S3 not configured)"}, nil
+	}
+
+	opts := domain.IngestionOptions{}
+	if req.Body.Options != nil {
+		if req.Body.Options.AllowMissingColumns != nil {
+			opts.AllowMissingColumns = *req.Body.Options.AllowMissingColumns
+		}
+		if req.Body.Options.IgnoreExtraColumns != nil {
+			opts.IgnoreExtraColumns = *req.Body.Options.IgnoreExtraColumns
+		}
+	}
+
+	result, err := h.ingestion.LoadExternalFiles(ctx, req.SchemaName, req.TableName, req.Body.Paths, opts)
+	if err != nil {
+		switch err.(type) {
+		case *domain.NotFoundError:
+			return LoadExternalFiles404JSONResponse{Code: 404, Message: err.Error()}, nil
+		case *domain.AccessDeniedError:
+			return LoadExternalFiles403JSONResponse{Code: 403, Message: err.Error()}, nil
+		case *domain.ValidationError:
+			return LoadExternalFiles400JSONResponse{Code: 400, Message: err.Error()}, nil
+		default:
+			return LoadExternalFiles400JSONResponse{Code: 400, Message: err.Error()}, nil
+		}
+	}
+
+	return LoadExternalFiles200JSONResponse{
+		FilesRegistered: &result.FilesRegistered,
+		FilesSkipped:    &result.FilesSkipped,
+		Schema:          &result.Schema,
+		Table:           &result.Table,
+	}, nil
 }
 
 // === Mapping helpers ===

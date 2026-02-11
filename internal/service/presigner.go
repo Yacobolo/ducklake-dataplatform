@@ -61,6 +61,27 @@ func (p *S3Presigner) PresignGetObject(ctx context.Context, s3Path string, expir
 	return result.URL, nil
 }
 
+// PresignPutObject generates a presigned PUT URL for uploading an S3 object.
+func (p *S3Presigner) PresignPutObject(ctx context.Context, bucket, key string, expiry time.Duration) (string, error) {
+	result, err := p.presignClient.PresignPutObject(ctx,
+		&s3.PutObjectInput{
+			Bucket:      aws.String(bucket),
+			Key:         aws.String(key),
+			ContentType: aws.String("application/octet-stream"),
+		},
+		s3.WithPresignExpires(expiry),
+	)
+	if err != nil {
+		return "", fmt.Errorf("presign PutObject for %q/%q: %w", bucket, key, err)
+	}
+	return result.URL, nil
+}
+
+// Bucket returns the configured S3 bucket name.
+func (p *S3Presigner) Bucket() string {
+	return p.bucket
+}
+
 // parseS3Path extracts bucket and key from an "s3://bucket/path/to/file" URI.
 func parseS3Path(s3Path string) (bucket, key string, err error) {
 	u, err := url.Parse(s3Path)

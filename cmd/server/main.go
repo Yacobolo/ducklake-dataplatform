@@ -302,9 +302,10 @@ func main() {
 	tagSvc := service.NewTagService(tagRepo, auditRepo)
 	viewSvc := service.NewViewService(viewRepo, catalogRepo, cat, auditRepo)
 
-	// Create manifest service for duck_access extension support.
+	// Create manifest and ingestion services for duck_access extension support.
 	// Only available when S3 credentials are configured (DuckLake mode).
 	var manifestSvc *service.ManifestService
+	var ingestionSvc *service.IngestionService
 	if cfgErr == nil {
 		presigner, err := service.NewS3Presigner(cfg)
 		if err != nil {
@@ -312,6 +313,11 @@ func main() {
 		} else {
 			manifestSvc = service.NewManifestService(metaDB, cat, presigner, introspectionRepo, auditRepo)
 			log.Println("Manifest service enabled (duck_access extension support)")
+
+			ingestionSvc = service.NewIngestionService(
+				duckDB, metaDB, cat, presigner, auditRepo, "lake", cfg.S3Bucket,
+			)
+			log.Println("Ingestion service enabled")
 		}
 	}
 
@@ -324,6 +330,7 @@ func main() {
 		rowFilterSvc, columnMaskSvc, introspectionSvc, auditSvc,
 		manifestSvc, catalogSvc,
 		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
+		ingestionSvc,
 	)
 
 	// Create strict handler wrapper

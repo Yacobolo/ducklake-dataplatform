@@ -951,6 +951,78 @@ components:
         next_page_token:
           type: string
 
+    # --- Ingestion ---
+    UploadUrlRequest:
+      type: object
+      properties:
+        filename:
+          type: string
+          description: Optional filename hint for the uploaded file.
+
+    UploadUrlResponse:
+      type: object
+      properties:
+        upload_url:
+          type: string
+          description: Presigned PUT URL for uploading the Parquet file.
+        s3_key:
+          type: string
+          description: The S3 key where the file will be stored.
+        expires_at:
+          type: string
+          format: date-time
+          description: When the presigned URL expires.
+
+    IngestionOptions:
+      type: object
+      properties:
+        allow_missing_columns:
+          type: boolean
+          default: false
+          description: Allow columns in the table that are missing from the Parquet file.
+        ignore_extra_columns:
+          type: boolean
+          default: false
+          description: Ignore columns in the Parquet file not present in the table.
+
+    CommitIngestionRequest:
+      type: object
+      required: [s3_keys]
+      properties:
+        s3_keys:
+          type: array
+          items:
+            type: string
+          description: S3 keys returned from upload-url to register.
+        options:
+          $ref: '#/components/schemas/IngestionOptions'
+
+    LoadExternalRequest:
+      type: object
+      required: [paths]
+      properties:
+        paths:
+          type: array
+          items:
+            type: string
+          description: S3 paths or globs to register.
+        options:
+          $ref: '#/components/schemas/IngestionOptions'
+
+    IngestionResult:
+      type: object
+      properties:
+        files_registered:
+          type: integer
+          description: Number of files successfully registered.
+        files_skipped:
+          type: integer
+          description: Number of files skipped (e.g., empty files).
+        schema:
+          type: string
+        table:
+          type: string
+
 paths:
   # === Query ===
   /query:
@@ -2213,6 +2285,161 @@ paths:
                 $ref: '#/components/schemas/Error'
         '404':
           description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # === Ingestion ===
+  /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url:
+    parameters:
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: tableName
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      operationId: requestUploadUrl
+      summary: Get a presigned URL for uploading a Parquet file
+      description: >
+        Returns a presigned PUT URL that the client can use to upload a Parquet file
+        directly to S3. The file can then be registered via the commit endpoint.
+        Requires INSERT privilege on the target table.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadUrlRequest'
+      responses:
+        '200':
+          description: Presigned upload URL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadUrlResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Table not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/commit:
+    parameters:
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: tableName
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      operationId: commitIngestion
+      summary: Register uploaded Parquet files in DuckLake
+      description: >
+        Registers previously uploaded files (from upload-url) in the DuckLake catalog.
+        DuckLake validates schema compatibility, extracts column statistics, and
+        registers files atomically. Requires INSERT privilege on the target table.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommitIngestionRequest'
+      responses:
+        '200':
+          description: Ingestion result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestionResult'
+        '400':
+          description: Validation error (schema mismatch, missing files, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Table not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/load:
+    parameters:
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: tableName
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      operationId: loadExternalFiles
+      summary: Register existing S3 files in DuckLake
+      description: >
+        Registers existing S3 files or globs in the DuckLake catalog. Paths without
+        an s3:// prefix are treated as relative to the lake data path. DuckLake validates
+        schema compatibility, extracts column statistics, and registers files atomically.
+        Requires INSERT privilege on the target table.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoadExternalRequest'
+      responses:
+        '200':
+          description: Ingestion result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestionResult'
+        '400':
+          description: Validation error (schema mismatch, missing files, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Table not found
           content:
             application/json:
               schema:
