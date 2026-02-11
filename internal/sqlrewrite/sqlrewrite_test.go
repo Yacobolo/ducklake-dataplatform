@@ -671,6 +671,33 @@ func TestApplyColumnMasks_NoMatchingTable(t *testing.T) {
 	}
 }
 
+func TestApplyColumnMasks_MalformedExpressionErrors(t *testing.T) {
+	_, err := ApplyColumnMasks(
+		`SELECT "Name" FROM titanic`,
+		"titanic",
+		map[string]string{"Name": "INVALID SQL $$"},
+		nil,
+	)
+	if err == nil {
+		t.Error("expected error for malformed mask expression")
+	}
+}
+
+func TestApplyColumnMasks_ValidExpressionSucceeds(t *testing.T) {
+	result, err := ApplyColumnMasks(
+		`SELECT "Name" FROM titanic`,
+		"titanic",
+		map[string]string{"Name": "'***'"},
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(result, "'***'") {
+		t.Error("expected mask expression in result")
+	}
+}
+
 // --- QuoteIdentifier tests ---
 
 func TestQuoteIdentifier(t *testing.T) {
