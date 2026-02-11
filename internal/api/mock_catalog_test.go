@@ -2,11 +2,11 @@ package api
 
 import (
 	"context"
-	"regexp"
 	"sort"
 	"sync"
 	"time"
 
+	"duck-demo/internal/ddl"
 	"duck-demo/internal/domain"
 )
 
@@ -31,17 +31,9 @@ func newMockCatalogRepo() *mockCatalogRepo {
 	}
 }
 
-var mockIdentifierRe = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
-
 func (m *mockCatalogRepo) validateIdentifier(name string) error {
-	if name == "" {
-		return domain.ErrValidation("name is required")
-	}
-	if len(name) > 128 {
-		return domain.ErrValidation("name must be at most 128 characters")
-	}
-	if !mockIdentifierRe.MatchString(name) {
-		return domain.ErrValidation("name must match [a-zA-Z_][a-zA-Z0-9_]*")
+	if err := ddl.ValidateIdentifier(name); err != nil {
+		return domain.ErrValidation("%s", err.Error())
 	}
 	return nil
 }

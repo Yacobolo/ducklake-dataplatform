@@ -11,12 +11,11 @@ import (
 )
 
 type ViewRepo struct {
-	q  *dbstore.Queries
-	db *sql.DB
+	q *dbstore.Queries
 }
 
 func NewViewRepo(db *sql.DB) *ViewRepo {
-	return &ViewRepo{q: dbstore.New(db), db: db}
+	return &ViewRepo{q: dbstore.New(db)}
 }
 
 func (r *ViewRepo) Create(ctx context.Context, view *domain.ViewDetail) (*domain.ViewDetail, error) {
@@ -104,12 +103,14 @@ func (r *ViewRepo) Update(ctx context.Context, schemaID int64, viewName string, 
 	newSourceTables := existing.SourceTables
 	sourcesJSON, _ := json.Marshal(newSourceTables)
 
-	_, err = r.db.ExecContext(ctx,
-		`UPDATE views SET comment = ?, properties = ?, view_definition = ?, source_tables = ?, updated_at = datetime('now')
-		 WHERE schema_id = ? AND name = ?`,
-		sql.NullString{String: stringFromPtr(newComment), Valid: newComment != nil},
-		string(propsJSON), newViewDef, string(sourcesJSON),
-		schemaID, viewName)
+	err = r.q.UpdateView(ctx, dbstore.UpdateViewParams{
+		Comment:        sql.NullString{String: stringFromPtr(newComment), Valid: newComment != nil},
+		Properties:     sql.NullString{String: string(propsJSON), Valid: true},
+		ViewDefinition: newViewDef,
+		SourceTables:   sql.NullString{String: string(sourcesJSON), Valid: true},
+		SchemaID:       schemaID,
+		Name:           viewName,
+	})
 	if err != nil {
 		return nil, mapDBError(err)
 	}

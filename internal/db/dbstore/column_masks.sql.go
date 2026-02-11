@@ -32,6 +32,17 @@ func (q *Queries) BindColumnMask(ctx context.Context, arg BindColumnMaskParams) 
 	return err
 }
 
+const countColumnMasksForTable = `-- name: CountColumnMasksForTable :one
+SELECT COUNT(*) as cnt FROM column_masks WHERE table_id = ?
+`
+
+func (q *Queries) CountColumnMasksForTable(ctx context.Context, tableID int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countColumnMasksForTable, tableID)
+	var cnt int64
+	err := row.Scan(&cnt)
+	return cnt, err
+}
+
 const createColumnMask = `-- name: CreateColumnMask :one
 INSERT INTO column_masks (table_id, column_name, mask_expression, description)
 VALUES (?, ?, ?, ?)
@@ -70,6 +81,15 @@ DELETE FROM column_masks WHERE id = ?
 
 func (q *Queries) DeleteColumnMask(ctx context.Context, id int64) error {
 	_, err := q.db.ExecContext(ctx, deleteColumnMask, id)
+	return err
+}
+
+const deleteColumnMasksByTable = `-- name: DeleteColumnMasksByTable :exec
+DELETE FROM column_masks WHERE table_id = ?
+`
+
+func (q *Queries) DeleteColumnMasksByTable(ctx context.Context, tableID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteColumnMasksByTable, tableID)
 	return err
 }
 
@@ -201,6 +221,46 @@ SELECT id, table_id, column_name, mask_expression, description, created_at FROM 
 
 func (q *Queries) GetColumnMasksForTable(ctx context.Context, tableID int64) ([]ColumnMask, error) {
 	rows, err := q.db.QueryContext(ctx, getColumnMasksForTable, tableID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ColumnMask
+	for rows.Next() {
+		var i ColumnMask
+		if err := rows.Scan(
+			&i.ID,
+			&i.TableID,
+			&i.ColumnName,
+			&i.MaskExpression,
+			&i.Description,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listColumnMasksForTablePaginated = `-- name: ListColumnMasksForTablePaginated :many
+SELECT id, table_id, column_name, mask_expression, description, created_at FROM column_masks WHERE table_id = ? ORDER BY id LIMIT ? OFFSET ?
+`
+
+type ListColumnMasksForTablePaginatedParams struct {
+	TableID int64
+	Limit   int64
+	Offset  int64
+}
+
+func (q *Queries) ListColumnMasksForTablePaginated(ctx context.Context, arg ListColumnMasksForTablePaginatedParams) ([]ColumnMask, error) {
+	rows, err := q.db.QueryContext(ctx, listColumnMasksForTablePaginated, arg.TableID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}

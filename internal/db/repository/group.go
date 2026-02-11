@@ -10,12 +10,11 @@ import (
 )
 
 type GroupRepo struct {
-	q  *dbstore.Queries
-	db *sql.DB
+	q *dbstore.Queries
 }
 
 func NewGroupRepo(db *sql.DB) *GroupRepo {
-	return &GroupRepo{q: dbstore.New(db), db: db}
+	return &GroupRepo{q: dbstore.New(db)}
 }
 
 func (r *GroupRepo) Create(ctx context.Context, g *domain.Group) (*domain.Group, error) {
@@ -46,28 +45,20 @@ func (r *GroupRepo) GetByName(ctx context.Context, name string) (*domain.Group, 
 }
 
 func (r *GroupRepo) List(ctx context.Context, page domain.PageRequest) ([]domain.Group, int64, error) {
-	var total int64
-	if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM groups`).Scan(&total); err != nil {
-		return nil, 0, err
-	}
-
-	rows, err := r.db.QueryContext(ctx,
-		`SELECT id, name, description, created_at FROM groups ORDER BY id LIMIT ? OFFSET ?`,
-		page.Limit(), page.Offset())
+	total, err := r.q.CountGroups(ctx)
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
 
-	var groups []domain.Group
-	for rows.Next() {
-		var g dbstore.Group
-		if err := rows.Scan(&g.ID, &g.Name, &g.Description, &g.CreatedAt); err != nil {
-			return nil, 0, err
-		}
-		groups = append(groups, *mapper.GroupFromDB(g))
+	rows, err := r.q.ListGroupsPaginated(ctx, dbstore.ListGroupsPaginatedParams{
+		Limit:  int64(page.Limit()),
+		Offset: int64(page.Offset()),
+	})
+	if err != nil {
+		return nil, 0, err
 	}
-	return groups, total, rows.Err()
+
+	return mapper.GroupsFromDB(rows), total, nil
 }
 
 func (r *GroupRepo) Delete(ctx context.Context, id int64) error {
@@ -91,28 +82,21 @@ func (r *GroupRepo) RemoveMember(ctx context.Context, m *domain.GroupMember) err
 }
 
 func (r *GroupRepo) ListMembers(ctx context.Context, groupID int64, page domain.PageRequest) ([]domain.GroupMember, int64, error) {
-	var total int64
-	if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM group_members WHERE group_id = ?`, groupID).Scan(&total); err != nil {
-		return nil, 0, err
-	}
-
-	rows, err := r.db.QueryContext(ctx,
-		`SELECT group_id, member_type, member_id FROM group_members WHERE group_id = ? ORDER BY member_id LIMIT ? OFFSET ?`,
-		groupID, page.Limit(), page.Offset())
+	total, err := r.q.CountGroupMembers(ctx, groupID)
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
 
-	var members []domain.GroupMember
-	for rows.Next() {
-		var m domain.GroupMember
-		if err := rows.Scan(&m.GroupID, &m.MemberType, &m.MemberID); err != nil {
-			return nil, 0, err
-		}
-		members = append(members, m)
+	rows, err := r.q.ListGroupMembersPaginated(ctx, dbstore.ListGroupMembersPaginatedParams{
+		GroupID: groupID,
+		Limit:   int64(page.Limit()),
+		Offset:  int64(page.Offset()),
+	})
+	if err != nil {
+		return nil, 0, err
 	}
-	return members, total, rows.Err()
+
+	return mapper.GroupMembersFromDB(rows), total, nil
 }
 
 func (r *GroupRepo) GetGroupsForMember(ctx context.Context, memberType string, memberID int64) ([]domain.Group, error) {

@@ -9,6 +9,17 @@ import (
 	"context"
 )
 
+const countPrincipals = `-- name: CountPrincipals :one
+SELECT COUNT(*) as cnt FROM principals
+`
+
+func (q *Queries) CountPrincipals(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countPrincipals)
+	var cnt int64
+	err := row.Scan(&cnt)
+	return cnt, err
+}
+
 const createPrincipal = `-- name: CreatePrincipal :one
 INSERT INTO principals (name, type, is_admin)
 VALUES (?, ?, ?)
@@ -83,6 +94,44 @@ SELECT id, name, type, is_admin, created_at FROM principals ORDER BY name
 
 func (q *Queries) ListPrincipals(ctx context.Context) ([]Principal, error) {
 	rows, err := q.db.QueryContext(ctx, listPrincipals)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Principal
+	for rows.Next() {
+		var i Principal
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Type,
+			&i.IsAdmin,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPrincipalsPaginated = `-- name: ListPrincipalsPaginated :many
+SELECT id, name, type, is_admin, created_at FROM principals ORDER BY id LIMIT ? OFFSET ?
+`
+
+type ListPrincipalsPaginatedParams struct {
+	Limit  int64
+	Offset int64
+}
+
+func (q *Queries) ListPrincipalsPaginated(ctx context.Context, arg ListPrincipalsPaginatedParams) ([]Principal, error) {
+	rows, err := q.db.QueryContext(ctx, listPrincipalsPaginated, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}

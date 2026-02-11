@@ -96,6 +96,35 @@ func (q *Queries) DeleteTagAssignment(ctx context.Context, id int64) error {
 	return err
 }
 
+const deleteTagAssignmentsBySecurable = `-- name: DeleteTagAssignmentsBySecurable :exec
+DELETE FROM tag_assignments WHERE securable_type = ? AND securable_id = ?
+`
+
+type DeleteTagAssignmentsBySecurableParams struct {
+	SecurableType string
+	SecurableID   int64
+}
+
+func (q *Queries) DeleteTagAssignmentsBySecurable(ctx context.Context, arg DeleteTagAssignmentsBySecurableParams) error {
+	_, err := q.db.ExecContext(ctx, deleteTagAssignmentsBySecurable, arg.SecurableType, arg.SecurableID)
+	return err
+}
+
+const deleteTagAssignmentsBySecurableTypes = `-- name: DeleteTagAssignmentsBySecurableTypes :exec
+DELETE FROM tag_assignments WHERE securable_type IN (?, ?) AND securable_id = ?
+`
+
+type DeleteTagAssignmentsBySecurableTypesParams struct {
+	SecurableType   string
+	SecurableType_2 string
+	SecurableID     int64
+}
+
+func (q *Queries) DeleteTagAssignmentsBySecurableTypes(ctx context.Context, arg DeleteTagAssignmentsBySecurableTypesParams) error {
+	_, err := q.db.ExecContext(ctx, deleteTagAssignmentsBySecurableTypes, arg.SecurableType, arg.SecurableType_2, arg.SecurableID)
+	return err
+}
+
 const getTag = `-- name: GetTag :one
 SELECT id, "key", value, created_by, created_at FROM tags WHERE id = ?
 `

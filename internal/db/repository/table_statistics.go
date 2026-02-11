@@ -5,42 +5,31 @@ import (
 	"database/sql"
 	"time"
 
+	dbstore "duck-demo/internal/db/dbstore"
 	"duck-demo/internal/domain"
 )
 
 // TableStatisticsRepo implements domain.TableStatisticsRepository.
 type TableStatisticsRepo struct {
-	db *sql.DB
+	q *dbstore.Queries
 }
 
 func NewTableStatisticsRepo(db *sql.DB) *TableStatisticsRepo {
-	return &TableStatisticsRepo{db: db}
+	return &TableStatisticsRepo{q: dbstore.New(db)}
 }
 
 func (r *TableStatisticsRepo) Upsert(ctx context.Context, securableName string, stats *domain.TableStatistics) error {
-	_, err := r.db.ExecContext(ctx,
-		`INSERT INTO table_statistics (table_securable_name, row_count, size_bytes, column_count, last_profiled_at, profiled_by)
-		 VALUES (?, ?, ?, ?, datetime('now'), ?)
-		 ON CONFLICT(table_securable_name)
-		 DO UPDATE SET row_count = excluded.row_count,
-		               size_bytes = excluded.size_bytes,
-		               column_count = excluded.column_count,
-		               last_profiled_at = datetime('now'),
-		               profiled_by = excluded.profiled_by`,
-		securableName, stats.RowCount, stats.SizeBytes, stats.ColumnCount, stats.ProfiledBy)
-	return err
+	return r.q.UpsertTableStatistics(ctx, dbstore.UpsertTableStatisticsParams{
+		TableSecurableName: securableName,
+		RowCount:           nullInt64(stats.RowCount),
+		SizeBytes:          nullInt64(stats.SizeBytes),
+		ColumnCount:        nullInt64(stats.ColumnCount),
+		ProfiledBy:         sql.NullString{String: stats.ProfiledBy, Valid: stats.ProfiledBy != ""},
+	})
 }
 
 func (r *TableStatisticsRepo) Get(ctx context.Context, securableName string) (*domain.TableStatistics, error) {
-	var stats domain.TableStatistics
-	var rowCount, sizeBytes, columnCount sql.NullInt64
-	var lastProfiledAt sql.NullString
-	var profiledBy sql.NullString
-
-	err := r.db.QueryRowContext(ctx,
-		`SELECT row_count, size_bytes, column_count, last_profiled_at, profiled_by
-		 FROM table_statistics WHERE table_securable_name = ?`, securableName).
-		Scan(&rowCount, &sizeBytes, &columnCount, &lastProfiledAt, &profiledBy)
+	row, err := r.q.GetTableStatistics(ctx, securableName)
 	if err == sql.ErrNoRows {
 		return nil, nil // No stats yet, not an error
 	}
@@ -48,28 +37,34 @@ func (r *TableStatisticsRepo) Get(ctx context.Context, securableName string) (*d
 		return nil, err
 	}
 
-	if rowCount.Valid {
-		stats.RowCount = &rowCount.Int64
+	var stats domain.TableStatistics
+	if row.RowCount.Valid {
+		stats.RowCount = &row.RowCount.Int64
 	}
-	if sizeBytes.Valid {
-		stats.SizeBytes = &sizeBytes.Int64
+	if row.SizeBytes.Valid {
+		stats.SizeBytes = &row.SizeBytes.Int64
 	}
-	if columnCount.Valid {
-		stats.ColumnCount = &columnCount.Int64
+	if row.ColumnCount.Valid {
+		stats.ColumnCount = &row.ColumnCount.Int64
 	}
-	if lastProfiledAt.Valid {
-		t, _ := time.Parse("2006-01-02 15:04:05", lastProfiledAt.String)
+	if row.LastProfiledAt.Valid {
+		t, _ := time.Parse("2006-01-02 15:04:05", row.LastProfiledAt.String)
 		stats.LastProfiledAt = &t
 	}
-	if profiledBy.Valid {
-		stats.ProfiledBy = profiledBy.String
+	if row.ProfiledBy.Valid {
+		stats.ProfiledBy = row.ProfiledBy.String
 	}
 
 	return &stats, nil
 }
 
 func (r *TableStatisticsRepo) Delete(ctx context.Context, securableName string) error {
-	_, err := r.db.ExecContext(ctx,
-		`DELETE FROM table_statistics WHERE table_securable_name = ?`, securableName)
-	return err
+	return r.q.DeleteTableStatistics(ctx, securableName)
+}
+
+func nullInt64(p *int64) sql.NullInt64 {
+	if p == nil {
+		return sql.NullInt64{}
+	}
+	return sql.NullInt64{Int64: *p, Valid: true}
 }

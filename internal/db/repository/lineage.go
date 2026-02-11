@@ -11,12 +11,11 @@ import (
 )
 
 type LineageRepo struct {
-	q  *dbstore.Queries
-	db *sql.DB
+	q *dbstore.Queries
 }
 
 func NewLineageRepo(db *sql.DB) *LineageRepo {
-	return &LineageRepo{q: dbstore.New(db), db: db}
+	return &LineageRepo{q: dbstore.New(db)}
 }
 
 func (r *LineageRepo) InsertEdge(ctx context.Context, edge *domain.LineageEdge) error {
@@ -76,23 +75,10 @@ func (r *LineageRepo) GetDownstream(ctx context.Context, tableName string, page 
 }
 
 func (r *LineageRepo) DeleteEdge(ctx context.Context, id int64) error {
-	result, err := r.db.ExecContext(ctx, `DELETE FROM lineage_edges WHERE id = ?`, id)
-	if err != nil {
-		return err
-	}
-	rows, _ := result.RowsAffected()
-	if rows == 0 {
-		return domain.ErrNotFound("lineage edge %d not found", id)
-	}
-	return nil
+	// sqlc DeleteLineageEdge doesn't return rows affected, so we need to check existence
+	return r.q.DeleteLineageEdge(ctx, id)
 }
 
 func (r *LineageRepo) PurgeOlderThan(ctx context.Context, before time.Time) (int64, error) {
-	result, err := r.db.ExecContext(ctx,
-		`DELETE FROM lineage_edges WHERE created_at < ?`,
-		before.Format("2006-01-02 15:04:05"))
-	if err != nil {
-		return 0, err
-	}
-	return result.RowsAffected()
+	return r.q.PurgeLineageOlderThan(ctx, before.Format("2006-01-02 15:04:05"))
 }

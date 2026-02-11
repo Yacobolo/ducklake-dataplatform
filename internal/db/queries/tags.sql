@@ -29,3 +29,9 @@ ORDER BY t.key, t.value;
 
 -- name: ListAssignmentsForTag :many
 SELECT * FROM tag_assignments WHERE tag_id = ?;
+
+-- name: DeleteTagAssignmentsBySecurable :exec
+DELETE FROM tag_assignments WHERE securable_type = ? AND securable_id = ?;
+
+-- name: DeleteTagAssignmentsBySecurableTypes :exec
+DELETE FROM tag_assignments WHERE securable_type IN (?, ?) AND securable_id = ?;

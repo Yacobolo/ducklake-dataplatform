@@ -77,6 +77,15 @@ func (q *Queries) DeleteView(ctx context.Context, arg DeleteViewParams) error {
 	return err
 }
 
+const deleteViewsBySchema = `-- name: DeleteViewsBySchema :exec
+UPDATE views SET deleted_at = datetime('now') WHERE schema_id = ?
+`
+
+func (q *Queries) DeleteViewsBySchema(ctx context.Context, schemaID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteViewsBySchema, schemaID)
+	return err
+}
+
 const getViewByName = `-- name: GetViewByName :one
 SELECT id, schema_id, name, view_definition, comment, properties, owner, source_tables, created_at, updated_at, deleted_at FROM views WHERE schema_id = ? AND name = ? AND deleted_at IS NULL
 `
@@ -148,4 +157,30 @@ func (q *Queries) ListViews(ctx context.Context, arg ListViewsParams) ([]View, e
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateView = `-- name: UpdateView :exec
+UPDATE views SET comment = ?, properties = ?, view_definition = ?, source_tables = ?, updated_at = datetime('now')
+WHERE schema_id = ? AND name = ?
+`
+
+type UpdateViewParams struct {
+	Comment        sql.NullString
+	Properties     sql.NullString
+	ViewDefinition string
+	SourceTables   sql.NullString
+	SchemaID       int64
+	Name           string
+}
+
+func (q *Queries) UpdateView(ctx context.Context, arg UpdateViewParams) error {
+	_, err := q.db.ExecContext(ctx, updateView,
+		arg.Comment,
+		arg.Properties,
+		arg.ViewDefinition,
+		arg.SourceTables,
+		arg.SchemaID,
+		arg.Name,
+	)
+	return err
 }

@@ -31,3 +31,12 @@ SELECT cm.column_name, cm.mask_expression, cmb.see_original
 FROM column_masks cm
 JOIN column_mask_bindings cmb ON cm.id = cmb.column_mask_id
 WHERE cm.table_id = ? AND cmb.principal_id = ? AND cmb.principal_type = ?;
+
+-- name: CountColumnMasksForTable :one
+SELECT COUNT(*) as cnt FROM column_masks WHERE table_id = ?;
+
+-- name: ListColumnMasksForTablePaginated :many
+SELECT * FROM column_masks WHERE table_id = ? ORDER BY id LIMIT ? OFFSET ?;
+
+-- name: DeleteColumnMasksByTable :exec
+DELETE FROM column_masks WHERE table_id = ?;

@@ -17,3 +17,9 @@ DELETE FROM principals WHERE id = ?;
 
 -- name: SetAdmin :exec
 UPDATE principals SET is_admin = ? WHERE id = ?;
+
+-- name: CountPrincipals :one
+SELECT COUNT(*) as cnt FROM principals;
+
+-- name: ListPrincipalsPaginated :many
+SELECT * FROM principals ORDER BY id LIMIT ? OFFSET ?;

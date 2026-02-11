@@ -21,3 +21,15 @@ SELECT COUNT(DISTINCT source_table) as cnt FROM lineage_edges WHERE target_table
 
 -- name: CountDownstreamLineage :one
 SELECT COUNT(DISTINCT source_table || '->' || COALESCE(target_table, '')) as cnt FROM lineage_edges WHERE source_table = ?;
+
+-- name: DeleteLineageEdge :exec
+DELETE FROM lineage_edges WHERE id = ?;
+
+-- name: PurgeLineageOlderThan :execrows
+DELETE FROM lineage_edges WHERE created_at < ?;
+
+-- name: DeleteLineageByTable :exec
+DELETE FROM lineage_edges WHERE source_table = ? OR target_table = ?;
+
+-- name: DeleteLineageByTablePattern :exec
+DELETE FROM lineage_edges WHERE source_table LIKE ? OR target_table LIKE ?;

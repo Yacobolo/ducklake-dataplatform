@@ -10,12 +10,11 @@ import (
 )
 
 type PrincipalRepo struct {
-	q  *dbstore.Queries
-	db *sql.DB
+	q *dbstore.Queries
 }
 
 func NewPrincipalRepo(db *sql.DB) *PrincipalRepo {
-	return &PrincipalRepo{q: dbstore.New(db), db: db}
+	return &PrincipalRepo{q: dbstore.New(db)}
 }
 
 func (r *PrincipalRepo) Create(ctx context.Context, p *domain.Principal) (*domain.Principal, error) {
@@ -47,28 +46,20 @@ func (r *PrincipalRepo) GetByName(ctx context.Context, name string) (*domain.Pri
 }
 
 func (r *PrincipalRepo) List(ctx context.Context, page domain.PageRequest) ([]domain.Principal, int64, error) {
-	var total int64
-	if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM principals`).Scan(&total); err != nil {
-		return nil, 0, err
-	}
-
-	rows, err := r.db.QueryContext(ctx,
-		`SELECT id, name, type, is_admin, created_at FROM principals ORDER BY id LIMIT ? OFFSET ?`,
-		page.Limit(), page.Offset())
+	total, err := r.q.CountPrincipals(ctx)
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
 
-	var principals []domain.Principal
-	for rows.Next() {
-		var p dbstore.Principal
-		if err := rows.Scan(&p.ID, &p.Name, &p.Type, &p.IsAdmin, &p.CreatedAt); err != nil {
-			return nil, 0, err
-		}
-		principals = append(principals, *mapper.PrincipalFromDB(p))
+	rows, err := r.q.ListPrincipalsPaginated(ctx, dbstore.ListPrincipalsPaginatedParams{
+		Limit:  int64(page.Limit()),
+		Offset: int64(page.Offset()),
+	})
+	if err != nil {
+		return nil, 0, err
 	}
-	return principals, total, rows.Err()
+
+	return mapper.PrincipalsFromDB(rows), total, nil
 }
 
 func (r *PrincipalRepo) Delete(ctx context.Context, id int64) error {

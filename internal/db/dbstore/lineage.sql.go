@@ -32,6 +32,43 @@ func (q *Queries) CountUpstreamLineage(ctx context.Context, targetTable sql.Null
 	return cnt, err
 }
 
+const deleteLineageByTable = `-- name: DeleteLineageByTable :exec
+DELETE FROM lineage_edges WHERE source_table = ? OR target_table = ?
+`
+
+type DeleteLineageByTableParams struct {
+	SourceTable string
+	TargetTable sql.NullString
+}
+
+func (q *Queries) DeleteLineageByTable(ctx context.Context, arg DeleteLineageByTableParams) error {
+	_, err := q.db.ExecContext(ctx, deleteLineageByTable, arg.SourceTable, arg.TargetTable)
+	return err
+}
+
+const deleteLineageByTablePattern = `-- name: DeleteLineageByTablePattern :exec
+DELETE FROM lineage_edges WHERE source_table LIKE ? OR target_table LIKE ?
+`
+
+type DeleteLineageByTablePatternParams struct {
+	SourceTable string
+	TargetTable sql.NullString
+}
+
+func (q *Queries) DeleteLineageByTablePattern(ctx context.Context, arg DeleteLineageByTablePatternParams) error {
+	_, err := q.db.ExecContext(ctx, deleteLineageByTablePattern, arg.SourceTable, arg.TargetTable)
+	return err
+}
+
+const deleteLineageEdge = `-- name: DeleteLineageEdge :exec
+DELETE FROM lineage_edges WHERE id = ?
+`
+
+func (q *Queries) DeleteLineageEdge(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteLineageEdge, id)
+	return err
+}
+
 const getDownstreamLineage = `-- name: GetDownstreamLineage :many
 SELECT DISTINCT source_table, target_table, edge_type, principal_name, created_at, source_schema, target_schema
 FROM lineage_edges
@@ -168,4 +205,16 @@ func (q *Queries) InsertLineageEdge(ctx context.Context, arg InsertLineageEdgePa
 		arg.TargetSchema,
 	)
 	return err
+}
+
+const purgeLineageOlderThan = `-- name: PurgeLineageOlderThan :execrows
+DELETE FROM lineage_edges WHERE created_at < ?
+`
+
+func (q *Queries) PurgeLineageOlderThan(ctx context.Context, createdAt string) (int64, error) {
+	result, err := q.db.ExecContext(ctx, purgeLineageOlderThan, createdAt)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }

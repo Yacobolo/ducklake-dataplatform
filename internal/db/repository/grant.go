@@ -10,12 +10,11 @@ import (
 )
 
 type GrantRepo struct {
-	q  *dbstore.Queries
-	db *sql.DB
+	q *dbstore.Queries
 }
 
 func NewGrantRepo(db *sql.DB) *GrantRepo {
-	return &GrantRepo{q: dbstore.New(db), db: db}
+	return &GrantRepo{q: dbstore.New(db)}
 }
 
 func (r *GrantRepo) Grant(ctx context.Context, g *domain.PrivilegeGrant) (*domain.PrivilegeGrant, error) {
@@ -48,59 +47,47 @@ func (r *GrantRepo) Revoke(ctx context.Context, g *domain.PrivilegeGrant) error 
 }
 
 func (r *GrantRepo) ListForPrincipal(ctx context.Context, principalID int64, principalType string, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error) {
-	var total int64
-	if err := r.db.QueryRowContext(ctx,
-		`SELECT COUNT(*) FROM privilege_grants WHERE principal_id = ? AND principal_type = ?`,
-		principalID, principalType).Scan(&total); err != nil {
-		return nil, 0, err
-	}
-
-	rows, err := r.db.QueryContext(ctx,
-		`SELECT id, principal_id, principal_type, securable_type, securable_id, privilege, granted_by, granted_at
-		FROM privilege_grants WHERE principal_id = ? AND principal_type = ? ORDER BY id LIMIT ? OFFSET ?`,
-		principalID, principalType, page.Limit(), page.Offset())
+	total, err := r.q.CountGrantsForPrincipal(ctx, dbstore.CountGrantsForPrincipalParams{
+		PrincipalID:   principalID,
+		PrincipalType: principalType,
+	})
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
 
-	var grants []domain.PrivilegeGrant
-	for rows.Next() {
-		var g dbstore.PrivilegeGrant
-		if err := rows.Scan(&g.ID, &g.PrincipalID, &g.PrincipalType, &g.SecurableType, &g.SecurableID, &g.Privilege, &g.GrantedBy, &g.GrantedAt); err != nil {
-			return nil, 0, err
-		}
-		grants = append(grants, *mapper.GrantFromDB(g))
+	rows, err := r.q.ListGrantsForPrincipalPaginated(ctx, dbstore.ListGrantsForPrincipalPaginatedParams{
+		PrincipalID:   principalID,
+		PrincipalType: principalType,
+		Limit:         int64(page.Limit()),
+		Offset:        int64(page.Offset()),
+	})
+	if err != nil {
+		return nil, 0, err
 	}
-	return grants, total, rows.Err()
+
+	return mapper.GrantsFromDB(rows), total, nil
 }
 
 func (r *GrantRepo) ListForSecurable(ctx context.Context, securableType string, securableID int64, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error) {
-	var total int64
-	if err := r.db.QueryRowContext(ctx,
-		`SELECT COUNT(*) FROM privilege_grants WHERE securable_type = ? AND securable_id = ?`,
-		securableType, securableID).Scan(&total); err != nil {
-		return nil, 0, err
-	}
-
-	rows, err := r.db.QueryContext(ctx,
-		`SELECT id, principal_id, principal_type, securable_type, securable_id, privilege, granted_by, granted_at
-		FROM privilege_grants WHERE securable_type = ? AND securable_id = ? ORDER BY id LIMIT ? OFFSET ?`,
-		securableType, securableID, page.Limit(), page.Offset())
+	total, err := r.q.CountGrantsForSecurable(ctx, dbstore.CountGrantsForSecurableParams{
+		SecurableType: securableType,
+		SecurableID:   securableID,
+	})
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
 
-	var grants []domain.PrivilegeGrant
-	for rows.Next() {
-		var g dbstore.PrivilegeGrant
-		if err := rows.Scan(&g.ID, &g.PrincipalID, &g.PrincipalType, &g.SecurableType, &g.SecurableID, &g.Privilege, &g.GrantedBy, &g.GrantedAt); err != nil {
-			return nil, 0, err
-		}
-		grants = append(grants, *mapper.GrantFromDB(g))
+	rows, err := r.q.ListGrantsForSecurablePaginated(ctx, dbstore.ListGrantsForSecurablePaginatedParams{
+		SecurableType: securableType,
+		SecurableID:   securableID,
+		Limit:         int64(page.Limit()),
+		Offset:        int64(page.Offset()),
+	})
+	if err != nil {
+		return nil, 0, err
 	}
-	return grants, total, rows.Err()
+
+	return mapper.GrantsFromDB(rows), total, nil
 }
 
 func (r *GrantRepo) HasPrivilege(ctx context.Context, principalID int64, principalType, securableType string, securableID int64, privilege string) (bool, error) {

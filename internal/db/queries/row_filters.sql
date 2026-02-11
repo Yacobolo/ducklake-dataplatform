@@ -29,3 +29,12 @@ WHERE rfb.principal_id = ? AND rfb.principal_type = ?;
 SELECT rf.* FROM row_filters rf
 JOIN row_filter_bindings rfb ON rf.id = rfb.row_filter_id
 WHERE rf.table_id = ? AND rfb.principal_id = ? AND rfb.principal_type = ?;
+
+-- name: CountRowFiltersForTable :one
+SELECT COUNT(*) as cnt FROM row_filters WHERE table_id = ?;
+
+-- name: ListRowFiltersForTablePaginated :many
+SELECT * FROM row_filters WHERE table_id = ? ORDER BY id LIMIT ? OFFSET ?;
+
+-- name: DeleteRowFiltersByTable :exec
+DELETE FROM row_filters WHERE table_id = ?;

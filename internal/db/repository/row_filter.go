@@ -10,12 +10,11 @@ import (
 )
 
 type RowFilterRepo struct {
-	q  *dbstore.Queries
-	db *sql.DB
+	q *dbstore.Queries
 }
 
 func NewRowFilterRepo(db *sql.DB) *RowFilterRepo {
-	return &RowFilterRepo{q: dbstore.New(db), db: db}
+	return &RowFilterRepo{q: dbstore.New(db)}
 }
 
 func (r *RowFilterRepo) Create(ctx context.Context, f *domain.RowFilter) (*domain.RowFilter, error) {
@@ -31,28 +30,21 @@ func (r *RowFilterRepo) Create(ctx context.Context, f *domain.RowFilter) (*domai
 }
 
 func (r *RowFilterRepo) GetForTable(ctx context.Context, tableID int64, page domain.PageRequest) ([]domain.RowFilter, int64, error) {
-	var total int64
-	if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM row_filters WHERE table_id = ?`, tableID).Scan(&total); err != nil {
-		return nil, 0, err
-	}
-
-	rows, err := r.db.QueryContext(ctx,
-		`SELECT id, table_id, filter_sql, description, created_at FROM row_filters WHERE table_id = ? ORDER BY id LIMIT ? OFFSET ?`,
-		tableID, page.Limit(), page.Offset())
+	total, err := r.q.CountRowFiltersForTable(ctx, tableID)
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
 
-	var filters []domain.RowFilter
-	for rows.Next() {
-		var f dbstore.RowFilter
-		if err := rows.Scan(&f.ID, &f.TableID, &f.FilterSql, &f.Description, &f.CreatedAt); err != nil {
-			return nil, 0, err
-		}
-		filters = append(filters, *mapper.RowFilterFromDB(f))
+	rows, err := r.q.ListRowFiltersForTablePaginated(ctx, dbstore.ListRowFiltersForTablePaginatedParams{
+		TableID: tableID,
+		Limit:   int64(page.Limit()),
+		Offset:  int64(page.Offset()),
+	})
+	if err != nil {
+		return nil, 0, err
 	}
-	return filters, total, rows.Err()
+
+	return mapper.RowFiltersFromDB(rows), total, nil
 }
 
 func (r *RowFilterRepo) Delete(ctx context.Context, id int64) error {

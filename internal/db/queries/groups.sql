@@ -30,3 +30,15 @@ SELECT * FROM group_members WHERE group_id = ?;
 SELECT g.* FROM groups g
 JOIN group_members gm ON g.id = gm.group_id
 WHERE gm.member_type = ? AND gm.member_id = ?;
+
+-- name: CountGroups :one
+SELECT COUNT(*) as cnt FROM groups;
+
+-- name: ListGroupsPaginated :many
+SELECT * FROM groups ORDER BY id LIMIT ? OFFSET ?;
+
+-- name: CountGroupMembers :one
+SELECT COUNT(*) as cnt FROM group_members WHERE group_id = ?;
+
+-- name: ListGroupMembersPaginated :many
+SELECT * FROM group_members WHERE group_id = ? ORDER BY member_id LIMIT ? OFFSET ?;

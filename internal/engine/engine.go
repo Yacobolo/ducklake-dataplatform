@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"strings"
 
+	"duck-demo/internal/ddl"
 	"duck-demo/internal/domain"
 	"duck-demo/internal/sqlrewrite"
 )
@@ -167,21 +167,10 @@ func InstallExtensions(ctx context.Context, db *sql.DB) error {
 
 // CreateS3Secret creates a named DuckDB secret for S3-compatible storage.
 func CreateS3Secret(ctx context.Context, db *sql.DB, name, keyID, secret, endpoint, region, urlStyle string) error {
-	secretSQL := fmt.Sprintf(`CREATE SECRET "%s" (
-		TYPE S3,
-		KEY_ID '%s',
-		SECRET '%s',
-		ENDPOINT '%s',
-		REGION '%s',
-		URL_STYLE '%s'
-	)`,
-		strings.ReplaceAll(name, `"`, `""`),
-		strings.ReplaceAll(keyID, "'", "''"),
-		strings.ReplaceAll(secret, "'", "''"),
-		strings.ReplaceAll(endpoint, "'", "''"),
-		strings.ReplaceAll(region, "'", "''"),
-		strings.ReplaceAll(urlStyle, "'", "''"),
-	)
+	secretSQL, err := ddl.CreateS3Secret(name, keyID, secret, endpoint, region, urlStyle)
+	if err != nil {
+		return fmt.Errorf("build DDL: %w", err)
+	}
 	if _, err := db.ExecContext(ctx, secretSQL); err != nil {
 		return fmt.Errorf("create S3 secret %q: %w", name, err)
 	}
@@ -190,7 +179,10 @@ func CreateS3Secret(ctx context.Context, db *sql.DB, name, keyID, secret, endpoi
 
 // DropS3Secret removes a named DuckDB secret.
 func DropS3Secret(ctx context.Context, db *sql.DB, name string) error {
-	dropSQL := fmt.Sprintf(`DROP SECRET IF EXISTS "%s"`, strings.ReplaceAll(name, `"`, `""`))
+	dropSQL, err := ddl.DropS3Secret(name)
+	if err != nil {
+		return fmt.Errorf("build DDL: %w", err)
+	}
 	if _, err := db.ExecContext(ctx, dropSQL); err != nil {
 		return fmt.Errorf("drop S3 secret %q: %w", name, err)
 	}
@@ -199,9 +191,10 @@ func DropS3Secret(ctx context.Context, db *sql.DB, name string) error {
 
 // AttachDuckLake attaches the DuckLake catalog with the given metastore and data path.
 func AttachDuckLake(ctx context.Context, db *sql.DB, metaDBPath, dataPath string) error {
-	attachSQL := fmt.Sprintf(`ATTACH 'ducklake:sqlite:%s' AS lake (
-		DATA_PATH '%s'
-	)`, metaDBPath, strings.ReplaceAll(dataPath, "'", "''"))
+	attachSQL, err := ddl.AttachDuckLake(metaDBPath, dataPath)
+	if err != nil {
+		return fmt.Errorf("build DDL: %w", err)
+	}
 
 	if _, err := db.ExecContext(ctx, attachSQL); err != nil {
 		return fmt.Errorf("attach ducklake: %w", err)

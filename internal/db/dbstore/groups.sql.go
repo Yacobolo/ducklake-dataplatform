@@ -26,6 +26,28 @@ func (q *Queries) AddGroupMember(ctx context.Context, arg AddGroupMemberParams) 
 	return err
 }
 
+const countGroupMembers = `-- name: CountGroupMembers :one
+SELECT COUNT(*) as cnt FROM group_members WHERE group_id = ?
+`
+
+func (q *Queries) CountGroupMembers(ctx context.Context, groupID int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countGroupMembers, groupID)
+	var cnt int64
+	err := row.Scan(&cnt)
+	return cnt, err
+}
+
+const countGroups = `-- name: CountGroups :one
+SELECT COUNT(*) as cnt FROM groups
+`
+
+func (q *Queries) CountGroups(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countGroups)
+	var cnt int64
+	err := row.Scan(&cnt)
+	return cnt, err
+}
+
 const createGroup = `-- name: CreateGroup :one
 INSERT INTO groups (name, description)
 VALUES (?, ?)
@@ -156,12 +178,82 @@ func (q *Queries) ListGroupMembers(ctx context.Context, groupID int64) ([]GroupM
 	return items, nil
 }
 
+const listGroupMembersPaginated = `-- name: ListGroupMembersPaginated :many
+SELECT group_id, member_type, member_id FROM group_members WHERE group_id = ? ORDER BY member_id LIMIT ? OFFSET ?
+`
+
+type ListGroupMembersPaginatedParams struct {
+	GroupID int64
+	Limit   int64
+	Offset  int64
+}
+
+func (q *Queries) ListGroupMembersPaginated(ctx context.Context, arg ListGroupMembersPaginatedParams) ([]GroupMember, error) {
+	rows, err := q.db.QueryContext(ctx, listGroupMembersPaginated, arg.GroupID, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GroupMember
+	for rows.Next() {
+		var i GroupMember
+		if err := rows.Scan(&i.GroupID, &i.MemberType, &i.MemberID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listGroups = `-- name: ListGroups :many
 SELECT id, name, description, created_at FROM groups ORDER BY name
 `
 
 func (q *Queries) ListGroups(ctx context.Context) ([]Group, error) {
 	rows, err := q.db.QueryContext(ctx, listGroups)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Group
+	for rows.Next() {
+		var i Group
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listGroupsPaginated = `-- name: ListGroupsPaginated :many
+SELECT id, name, description, created_at FROM groups ORDER BY id LIMIT ? OFFSET ?
+`
+
+type ListGroupsPaginatedParams struct {
+	Limit  int64
+	Offset int64
+}
+
+func (q *Queries) ListGroupsPaginated(ctx context.Context, arg ListGroupsPaginatedParams) ([]Group, error) {
+	rows, err := q.db.QueryContext(ctx, listGroupsPaginated, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}

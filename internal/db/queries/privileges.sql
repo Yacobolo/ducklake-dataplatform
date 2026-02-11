@@ -34,3 +34,21 @@ WHERE (principal_type = 'user' AND principal_id = ?)
    OR (principal_type = 'group' AND principal_id IN (
        SELECT group_id FROM group_members WHERE member_type = 'user' AND member_id = ?
    ));
+
+-- name: CountGrantsForPrincipal :one
+SELECT COUNT(*) as cnt FROM privilege_grants
+WHERE principal_id = ? AND principal_type = ?;
+
+-- name: ListGrantsForPrincipalPaginated :many
+SELECT * FROM privilege_grants
+WHERE principal_id = ? AND principal_type = ?
+ORDER BY id LIMIT ? OFFSET ?;
+
+-- name: CountGrantsForSecurable :one
+SELECT COUNT(*) as cnt FROM privilege_grants
+WHERE securable_type = ? AND securable_id = ?;
+
+-- name: ListGrantsForSecurablePaginated :many
+SELECT * FROM privilege_grants
+WHERE securable_type = ? AND securable_id = ?
+ORDER BY id LIMIT ? OFFSET ?;

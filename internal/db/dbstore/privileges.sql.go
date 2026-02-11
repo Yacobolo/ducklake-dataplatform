@@ -63,6 +63,40 @@ func (q *Queries) CheckDirectGrantAny(ctx context.Context, arg CheckDirectGrantA
 	return cnt, err
 }
 
+const countGrantsForPrincipal = `-- name: CountGrantsForPrincipal :one
+SELECT COUNT(*) as cnt FROM privilege_grants
+WHERE principal_id = ? AND principal_type = ?
+`
+
+type CountGrantsForPrincipalParams struct {
+	PrincipalID   int64
+	PrincipalType string
+}
+
+func (q *Queries) CountGrantsForPrincipal(ctx context.Context, arg CountGrantsForPrincipalParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countGrantsForPrincipal, arg.PrincipalID, arg.PrincipalType)
+	var cnt int64
+	err := row.Scan(&cnt)
+	return cnt, err
+}
+
+const countGrantsForSecurable = `-- name: CountGrantsForSecurable :one
+SELECT COUNT(*) as cnt FROM privilege_grants
+WHERE securable_type = ? AND securable_id = ?
+`
+
+type CountGrantsForSecurableParams struct {
+	SecurableType string
+	SecurableID   int64
+}
+
+func (q *Queries) CountGrantsForSecurable(ctx context.Context, arg CountGrantsForSecurableParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countGrantsForSecurable, arg.SecurableType, arg.SecurableID)
+	var cnt int64
+	err := row.Scan(&cnt)
+	return cnt, err
+}
+
 const grantPrivilege = `-- name: GrantPrivilege :one
 INSERT INTO privilege_grants (principal_id, principal_type, securable_type, securable_id, privilege, granted_by)
 VALUES (?, ?, ?, ?, ?, ?)
@@ -237,6 +271,56 @@ func (q *Queries) ListGrantsForPrincipalOnSecurable(ctx context.Context, arg Lis
 	return items, nil
 }
 
+const listGrantsForPrincipalPaginated = `-- name: ListGrantsForPrincipalPaginated :many
+SELECT id, principal_id, principal_type, securable_type, securable_id, privilege, granted_by, granted_at FROM privilege_grants
+WHERE principal_id = ? AND principal_type = ?
+ORDER BY id LIMIT ? OFFSET ?
+`
+
+type ListGrantsForPrincipalPaginatedParams struct {
+	PrincipalID   int64
+	PrincipalType string
+	Limit         int64
+	Offset        int64
+}
+
+func (q *Queries) ListGrantsForPrincipalPaginated(ctx context.Context, arg ListGrantsForPrincipalPaginatedParams) ([]PrivilegeGrant, error) {
+	rows, err := q.db.QueryContext(ctx, listGrantsForPrincipalPaginated,
+		arg.PrincipalID,
+		arg.PrincipalType,
+		arg.Limit,
+		arg.Offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PrivilegeGrant
+	for rows.Next() {
+		var i PrivilegeGrant
+		if err := rows.Scan(
+			&i.ID,
+			&i.PrincipalID,
+			&i.PrincipalType,
+			&i.SecurableType,
+			&i.SecurableID,
+			&i.Privilege,
+			&i.GrantedBy,
+			&i.GrantedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listGrantsForSecurable = `-- name: ListGrantsForSecurable :many
 SELECT id, principal_id, principal_type, securable_type, securable_id, privilege, granted_by, granted_at FROM privilege_grants
 WHERE securable_type = ? AND securable_id = ?
@@ -249,6 +333,56 @@ type ListGrantsForSecurableParams struct {
 
 func (q *Queries) ListGrantsForSecurable(ctx context.Context, arg ListGrantsForSecurableParams) ([]PrivilegeGrant, error) {
 	rows, err := q.db.QueryContext(ctx, listGrantsForSecurable, arg.SecurableType, arg.SecurableID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PrivilegeGrant
+	for rows.Next() {
+		var i PrivilegeGrant
+		if err := rows.Scan(
+			&i.ID,
+			&i.PrincipalID,
+			&i.PrincipalType,
+			&i.SecurableType,
+			&i.SecurableID,
+			&i.Privilege,
+			&i.GrantedBy,
+			&i.GrantedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listGrantsForSecurablePaginated = `-- name: ListGrantsForSecurablePaginated :many
+SELECT id, principal_id, principal_type, securable_type, securable_id, privilege, granted_by, granted_at FROM privilege_grants
+WHERE securable_type = ? AND securable_id = ?
+ORDER BY id LIMIT ? OFFSET ?
+`
+
+type ListGrantsForSecurablePaginatedParams struct {
+	SecurableType string
+	SecurableID   int64
+	Limit         int64
+	Offset        int64
+}
+
+func (q *Queries) ListGrantsForSecurablePaginated(ctx context.Context, arg ListGrantsForSecurablePaginatedParams) ([]PrivilegeGrant, error) {
+	rows, err := q.db.QueryContext(ctx, listGrantsForSecurablePaginated,
+		arg.SecurableType,
+		arg.SecurableID,
+		arg.Limit,
+		arg.Offset,
+	)
 	if err != nil {
 		return nil, err
 	}

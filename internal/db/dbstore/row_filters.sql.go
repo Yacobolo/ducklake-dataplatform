@@ -26,6 +26,17 @@ func (q *Queries) BindRowFilter(ctx context.Context, arg BindRowFilterParams) er
 	return err
 }
 
+const countRowFiltersForTable = `-- name: CountRowFiltersForTable :one
+SELECT COUNT(*) as cnt FROM row_filters WHERE table_id = ?
+`
+
+func (q *Queries) CountRowFiltersForTable(ctx context.Context, tableID int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countRowFiltersForTable, tableID)
+	var cnt int64
+	err := row.Scan(&cnt)
+	return cnt, err
+}
+
 const createRowFilter = `-- name: CreateRowFilter :one
 INSERT INTO row_filters (table_id, filter_sql, description)
 VALUES (?, ?, ?)
@@ -57,6 +68,15 @@ DELETE FROM row_filters WHERE id = ?
 
 func (q *Queries) DeleteRowFilter(ctx context.Context, id int64) error {
 	_, err := q.db.ExecContext(ctx, deleteRowFilter, id)
+	return err
+}
+
+const deleteRowFiltersByTable = `-- name: DeleteRowFiltersByTable :exec
+DELETE FROM row_filters WHERE table_id = ?
+`
+
+func (q *Queries) DeleteRowFiltersByTable(ctx context.Context, tableID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteRowFiltersByTable, tableID)
 	return err
 }
 
@@ -179,6 +199,45 @@ type GetRowFiltersForTableAndPrincipalParams struct {
 
 func (q *Queries) GetRowFiltersForTableAndPrincipal(ctx context.Context, arg GetRowFiltersForTableAndPrincipalParams) ([]RowFilter, error) {
 	rows, err := q.db.QueryContext(ctx, getRowFiltersForTableAndPrincipal, arg.TableID, arg.PrincipalID, arg.PrincipalType)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []RowFilter
+	for rows.Next() {
+		var i RowFilter
+		if err := rows.Scan(
+			&i.ID,
+			&i.TableID,
+			&i.FilterSql,
+			&i.Description,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRowFiltersForTablePaginated = `-- name: ListRowFiltersForTablePaginated :many
+SELECT id, table_id, filter_sql, description, created_at FROM row_filters WHERE table_id = ? ORDER BY id LIMIT ? OFFSET ?
+`
+
+type ListRowFiltersForTablePaginatedParams struct {
+	TableID int64
+	Limit   int64
+	Offset  int64
+}
+
+func (q *Queries) ListRowFiltersForTablePaginated(ctx context.Context, arg ListRowFiltersForTablePaginatedParams) ([]RowFilter, error) {
+	rows, err := q.db.QueryContext(ctx, listRowFiltersForTablePaginated, arg.TableID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}

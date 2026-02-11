@@ -13,3 +13,10 @@ SELECT COUNT(*) as cnt FROM views WHERE schema_id = ? AND deleted_at IS NULL;
 
 -- name: DeleteView :exec
 UPDATE views SET deleted_at = datetime('now') WHERE schema_id = ? AND name = ?;
+
+-- name: UpdateView :exec
+UPDATE views SET comment = ?, properties = ?, view_definition = ?, source_tables = ?, updated_at = datetime('now')
+WHERE schema_id = ? AND name = ?;
+
+-- name: DeleteViewsBySchema :exec
+UPDATE views SET deleted_at = datetime('now') WHERE schema_id = ?;
