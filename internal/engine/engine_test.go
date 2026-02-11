@@ -4,10 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"os"
+	"strings"
 	"testing"
 
 	_ "github.com/duckdb/duckdb-go/v2"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	internaldb "duck-demo/internal/db"
 	dbstore "duck-demo/internal/db/dbstore"
@@ -366,4 +369,96 @@ func TestDeleteRequiresPrivilege(t *testing.T) {
 		t.Error("expected DELETE to be denied for user without DELETE privilege")
 	}
 	t.Logf("DELETE denied: %v", err)
+}
+
+func TestMultiStatementBlocked(t *testing.T) {
+	eng := setupEngine(t)
+	ctx := context.Background()
+
+	tests := []struct {
+		name string
+		sql  string
+	}{
+		{"select_then_drop", "SELECT 1; DROP TABLE titanic"},
+		{"select_then_insert", "SELECT 1; INSERT INTO titanic (\"PassengerId\") VALUES (9999)"},
+		{"two_selects", "SELECT 1; SELECT * FROM titanic"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := eng.Query(ctx, "admin", tc.sql)
+			if err == nil {
+				t.Error("expected multi-statement query to be blocked")
+			}
+		})
+	}
+}
+
+func TestTablelessStatementRequiresAuth(t *testing.T) {
+	eng := setupEngine(t)
+	ctx := context.Background()
+
+	t.Run("admin_allowed", func(t *testing.T) {
+		rows, err := eng.Query(ctx, "admin", "SELECT 1 + 1")
+		require.NoError(t, err)
+		rows.Close()
+	})
+
+	t.Run("non_privileged_denied", func(t *testing.T) {
+		_, err := eng.Query(ctx, "first_class_analyst", "SELECT 1 + 1")
+		require.Error(t, err)
+		assert.True(t, strings.Contains(err.Error(), "access denied") || strings.Contains(err.Error(), "privilege"),
+			"expected access denied error, got: %v", err)
+	})
+
+	t.Run("no_access_denied", func(t *testing.T) {
+		_, err := eng.Query(ctx, "no_access", "SELECT 1 + 1")
+		require.Error(t, err)
+	})
+}
+
+func TestDDLVariantsBlocked(t *testing.T) {
+	eng := setupEngine(t)
+	ctx := context.Background()
+
+	tests := []struct {
+		name string
+		sql  string
+	}{
+		{"create_table", "CREATE TABLE evil (id INT)"},
+		{"drop_table", "DROP TABLE titanic"},
+		{"alter_table", `ALTER TABLE titanic ADD COLUMN evil INT`},
+		{"truncate", "TRUNCATE TABLE titanic"},
+		{"create_schema", "CREATE SCHEMA evil"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := eng.Query(ctx, "first_class_analyst", tc.sql)
+			require.Error(t, err, "expected DDL %q to be blocked", tc.name)
+		})
+	}
+}
+
+func TestMalformedSQLReturnsError(t *testing.T) {
+	eng := setupEngine(t)
+	ctx := context.Background()
+
+	tests := []struct {
+		name string
+		sql  string
+	}{
+		{"garbage", "NOT VALID SQL AT ALL"},
+		{"incomplete", "SELECT FROM"},
+		{"empty", ""},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := eng.Query(ctx, "admin", tc.sql)
+			// Should return a parse error, not panic
+			if tc.sql == "" {
+				// Empty SQL may or may not error depending on parser
+				return
+			}
+			require.Error(t, err, "expected parse error for malformed SQL")
+		})
+	}
 }

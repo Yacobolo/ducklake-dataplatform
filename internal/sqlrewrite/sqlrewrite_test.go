@@ -488,6 +488,26 @@ func TestClassifyStatement_Invalid(t *testing.T) {
 	}
 }
 
+func TestClassifyStatement_MultiStatementRejected(t *testing.T) {
+	tests := []struct {
+		name string
+		sql  string
+	}{
+		{"select_then_drop", "SELECT 1; DROP TABLE titanic"},
+		{"select_then_insert", "SELECT 1; INSERT INTO titanic (id) VALUES (1)"},
+		{"two_selects", "SELECT 1; SELECT 2"},
+		{"select_then_delete", "SELECT * FROM titanic; DELETE FROM titanic WHERE id = 1"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := ClassifyStatement(tc.sql)
+			if err == nil {
+				t.Error("expected error for multi-statement SQL")
+			}
+		})
+	}
+}
+
 // --- InjectRowFilterSQL tests ---
 
 func TestInjectRowFilterSQL_Basic(t *testing.T) {
@@ -551,6 +571,50 @@ func TestInjectRowFilterSQL_EmptyFilter(t *testing.T) {
 	}
 	if result != sql {
 		t.Error("empty filter should return original SQL")
+	}
+}
+
+func TestInjectRowFilterSQL_SelfJoin(t *testing.T) {
+	result, err := InjectRowFilterSQL(
+		`SELECT * FROM titanic t1 JOIN titanic t2 ON t1."PassengerId" = t2."PassengerId"`,
+		"titanic",
+		`"Pclass" = 1`,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("result: %s", result)
+
+	lower := strings.ToLower(result)
+	if !strings.Contains(lower, "where") {
+		t.Error("expected WHERE clause to be injected for self-join")
+	}
+	if !strings.Contains(result, "Pclass") {
+		t.Error("expected Pclass filter in self-join query")
+	}
+}
+
+func TestInjectMultipleRowFilters_ORComposition(t *testing.T) {
+	result, err := InjectMultipleRowFilters(
+		`SELECT * FROM titanic`,
+		"titanic",
+		[]string{`"Pclass" = 1`, `"Survived" = 1`},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("result: %s", result)
+
+	lower := strings.ToLower(result)
+	if !strings.Contains(lower, "pclass") {
+		t.Error("expected Pclass in OR-composed filter")
+	}
+	if !strings.Contains(lower, "survived") {
+		t.Error("expected Survived in OR-composed filter")
+	}
+	// Filters should be combined with OR, so both conditions should appear
+	if !strings.Contains(lower, "or") {
+		t.Error("expected OR in combined filter (two filters compose with OR)")
 	}
 }
 
@@ -648,6 +712,65 @@ func TestApplyColumnMasks_NoMatchingTable(t *testing.T) {
 	// Should not modify
 	if strings.Contains(result, "'***'") {
 		t.Error("should not mask columns for non-matching table")
+	}
+}
+
+func TestApplyColumnMasks_MalformedExpressionErrors(t *testing.T) {
+	_, err := ApplyColumnMasks(
+		`SELECT "Name" FROM titanic`,
+		"titanic",
+		map[string]string{"Name": "INVALID SQL $$"},
+		nil,
+	)
+	if err == nil {
+		t.Error("expected error for malformed mask expression")
+	}
+}
+
+func TestApplyColumnMasks_ValidExpressionSucceeds(t *testing.T) {
+	result, err := ApplyColumnMasks(
+		`SELECT "Name" FROM titanic`,
+		"titanic",
+		map[string]string{"Name": "'***'"},
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(result, "'***'") {
+		t.Error("expected mask expression in result")
+	}
+}
+
+func TestApplyColumnMasks_Subquery(t *testing.T) {
+	result, err := ApplyColumnMasks(
+		`SELECT "Name" FROM (SELECT "Name" FROM titanic) sub`,
+		"titanic",
+		map[string]string{"Name": "'***'"},
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	t.Logf("result: %s", result)
+	if !strings.Contains(result, "'***'") {
+		t.Error("expected mask to be applied inside subquery")
+	}
+}
+
+func TestApplyColumnMasks_CTE(t *testing.T) {
+	result, err := ApplyColumnMasks(
+		`WITH cte AS (SELECT "Name" FROM titanic) SELECT "Name" FROM cte`,
+		"titanic",
+		map[string]string{"Name": "'***'"},
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	t.Logf("result: %s", result)
+	if !strings.Contains(result, "'***'") {
+		t.Error("expected mask to be applied inside CTE")
 	}
 }
 

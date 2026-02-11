@@ -22,23 +22,17 @@ const (
 	CreateStorageCredentialRequestCredentialTypeS3 CreateStorageCredentialRequestCredentialType = "S3"
 )
 
-// Defines values for CreateTableApiRequestFileFormat.
+// Defines values for CreateTableRequestFileFormat.
 const (
-	Csv     CreateTableApiRequestFileFormat = "csv"
-	Parquet CreateTableApiRequestFileFormat = "parquet"
+	Csv     CreateTableRequestFileFormat = "csv"
+	Parquet CreateTableRequestFileFormat = "parquet"
 )
 
-// Defines values for CreateTableApiRequestTableType.
+// Defines values for CreateTableRequestTableType.
 const (
-	EXTERNAL CreateTableApiRequestTableType = "EXTERNAL"
-	MANAGED  CreateTableApiRequestTableType = "MANAGED"
+	EXTERNAL CreateTableRequestTableType = "EXTERNAL"
+	MANAGED  CreateTableRequestTableType = "MANAGED"
 )
-
-// AddGroupMemberRequest defines model for AddGroupMemberRequest.
-type AddGroupMemberRequest struct {
-	MemberId   int64  `json:"member_id"`
-	MemberType string `json:"member_type"`
-}
 
 // AuditEntry defines model for AuditEntry.
 type AuditEntry struct {
@@ -55,26 +49,12 @@ type AuditEntry struct {
 	TablesAccessed *[]string  `json:"tables_accessed,omitempty"`
 }
 
-// BindingRequest defines model for BindingRequest.
-type BindingRequest struct {
-	PrincipalId   int64  `json:"principal_id"`
-	PrincipalType string `json:"principal_type"`
-}
-
 // CatalogInfo defines model for CatalogInfo.
 type CatalogInfo struct {
 	Comment   *string    `json:"comment,omitempty"`
 	CreatedAt *time.Time `json:"created_at,omitempty"`
 	Name      *string    `json:"name,omitempty"`
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
-}
-
-// Column defines model for Column.
-type Column struct {
-	Id      *int64  `json:"id,omitempty"`
-	Name    *string `json:"name,omitempty"`
-	TableId *int64  `json:"table_id,omitempty"`
-	Type    *string `json:"type,omitempty"`
 }
 
 // ColumnDetail defines model for ColumnDetail.
@@ -111,17 +91,17 @@ type CommitIngestionRequest struct {
 	S3Keys []string `json:"s3_keys"`
 }
 
-// CreateColumnDef defines model for CreateColumnDef.
-type CreateColumnDef struct {
-	Name string `json:"name"`
-	Type string `json:"type"`
-}
-
 // CreateColumnMaskRequest defines model for CreateColumnMaskRequest.
 type CreateColumnMaskRequest struct {
 	ColumnName     string  `json:"column_name"`
 	Description    *string `json:"description,omitempty"`
 	MaskExpression string  `json:"mask_expression"`
+}
+
+// CreateColumnRequest defines model for CreateColumnRequest.
+type CreateColumnRequest struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
 }
 
 // CreateExternalLocationRequest defines model for CreateExternalLocationRequest.
@@ -136,6 +116,21 @@ type CreateExternalLocationRequest struct {
 
 // CreateExternalLocationRequestStorageType defines model for CreateExternalLocationRequest.StorageType.
 type CreateExternalLocationRequestStorageType string
+
+// CreateGrantRequest defines model for CreateGrantRequest.
+type CreateGrantRequest struct {
+	PrincipalId   int64  `json:"principal_id"`
+	PrincipalType string `json:"principal_type"`
+	Privilege     string `json:"privilege"`
+	SecurableId   int64  `json:"securable_id"`
+	SecurableType string `json:"securable_type"`
+}
+
+// CreateGroupMemberRequest defines model for CreateGroupMemberRequest.
+type CreateGroupMemberRequest struct {
+	MemberId   int64  `json:"member_id"`
+	MemberType string `json:"member_type"`
+}
 
 // CreateGroupRequest defines model for CreateGroupRequest.
 type CreateGroupRequest struct {
@@ -181,14 +176,14 @@ type CreateStorageCredentialRequest struct {
 // CreateStorageCredentialRequestCredentialType defines model for CreateStorageCredentialRequest.CredentialType.
 type CreateStorageCredentialRequestCredentialType string
 
-// CreateTableApiRequest defines model for CreateTableApiRequest.
-type CreateTableApiRequest struct {
+// CreateTableRequest defines model for CreateTableRequest.
+type CreateTableRequest struct {
 	// Columns Required for MANAGED tables; auto-discovered for EXTERNAL if omitted.
-	Columns *[]CreateColumnDef `json:"columns,omitempty"`
-	Comment *string            `json:"comment,omitempty"`
+	Columns *[]CreateColumnRequest `json:"columns,omitempty"`
+	Comment *string                `json:"comment,omitempty"`
 
 	// FileFormat File format of the external data. Required for EXTERNAL tables.
-	FileFormat *CreateTableApiRequestFileFormat `json:"file_format,omitempty"`
+	FileFormat *CreateTableRequestFileFormat `json:"file_format,omitempty"`
 
 	// LocationName Name of the external location that owns the source path. Required for EXTERNAL tables.
 	LocationName *string `json:"location_name,omitempty"`
@@ -198,14 +193,14 @@ type CreateTableApiRequest struct {
 	SourcePath *string `json:"source_path,omitempty"`
 
 	// TableType Type of table. MANAGED (default) or EXTERNAL.
-	TableType *CreateTableApiRequestTableType `json:"table_type,omitempty"`
+	TableType *CreateTableRequestTableType `json:"table_type,omitempty"`
 }
 
-// CreateTableApiRequestFileFormat File format of the external data. Required for EXTERNAL tables.
-type CreateTableApiRequestFileFormat string
+// CreateTableRequestFileFormat File format of the external data. Required for EXTERNAL tables.
+type CreateTableRequestFileFormat string
 
-// CreateTableApiRequestTableType Type of table. MANAGED (default) or EXTERNAL.
-type CreateTableApiRequestTableType string
+// CreateTableRequestTableType Type of table. MANAGED (default) or EXTERNAL.
+type CreateTableRequestTableType string
 
 // CreateTagAssignmentRequest defines model for CreateTagAssignmentRequest.
 type CreateTagAssignmentRequest struct {
@@ -227,6 +222,15 @@ type CreateViewRequest struct {
 	ViewDefinition string  `json:"view_definition"`
 }
 
+// DeleteGrantRequest defines model for DeleteGrantRequest.
+type DeleteGrantRequest struct {
+	PrincipalId   int64  `json:"principal_id"`
+	PrincipalType string `json:"principal_type"`
+	Privilege     string `json:"privilege"`
+	SecurableId   int64  `json:"securable_id"`
+	SecurableType string `json:"securable_type"`
+}
+
 // Error defines model for Error.
 type Error struct {
 	Code    int    `json:"code"`
@@ -245,15 +249,6 @@ type ExternalLocation struct {
 	StorageType    *string    `json:"storage_type,omitempty"`
 	UpdatedAt      *time.Time `json:"updated_at,omitempty"`
 	Url            *string    `json:"url,omitempty"`
-}
-
-// GrantRequest defines model for GrantRequest.
-type GrantRequest struct {
-	PrincipalId   int64  `json:"principal_id"`
-	PrincipalType string `json:"principal_type"`
-	Privilege     string `json:"privilege"`
-	SecurableId   int64  `json:"securable_id"`
-	SecurableType string `json:"securable_type"`
 }
 
 // Group defines model for Group.
@@ -375,12 +370,6 @@ type PaginatedColumnMasks struct {
 	NextPageToken *string       `json:"next_page_token,omitempty"`
 }
 
-// PaginatedColumns defines model for PaginatedColumns.
-type PaginatedColumns struct {
-	Data          *[]Column `json:"data,omitempty"`
-	NextPageToken *string   `json:"next_page_token,omitempty"`
-}
-
 // PaginatedExternalLocations defines model for PaginatedExternalLocations.
 type PaginatedExternalLocations struct {
 	Data          *[]ExternalLocation `json:"data,omitempty"`
@@ -417,8 +406,8 @@ type PaginatedPrincipals struct {
 	NextPageToken *string      `json:"next_page_token,omitempty"`
 }
 
-// PaginatedQueryHistory defines model for PaginatedQueryHistory.
-type PaginatedQueryHistory struct {
+// PaginatedQueryHistoryEntries defines model for PaginatedQueryHistoryEntries.
+type PaginatedQueryHistoryEntries struct {
 	Data          *[]QueryHistoryEntry `json:"data,omitempty"`
 	NextPageToken *string              `json:"next_page_token,omitempty"`
 }
@@ -433,12 +422,6 @@ type PaginatedRowFilters struct {
 type PaginatedSchemaDetails struct {
 	Data          *[]SchemaDetail `json:"data,omitempty"`
 	NextPageToken *string         `json:"next_page_token,omitempty"`
-}
-
-// PaginatedSchemas defines model for PaginatedSchemas.
-type PaginatedSchemas struct {
-	Data          *[]Schema `json:"data,omitempty"`
-	NextPageToken *string   `json:"next_page_token,omitempty"`
 }
 
 // PaginatedSearchResults defines model for PaginatedSearchResults.
@@ -457,12 +440,6 @@ type PaginatedStorageCredentials struct {
 type PaginatedTableDetails struct {
 	Data          *[]TableDetail `json:"data,omitempty"`
 	NextPageToken *string        `json:"next_page_token,omitempty"`
-}
-
-// PaginatedTables defines model for PaginatedTables.
-type PaginatedTables struct {
-	Data          *[]Table `json:"data,omitempty"`
-	NextPageToken *string  `json:"next_page_token,omitempty"`
 }
 
 // PaginatedTags defines model for PaginatedTags.
@@ -536,15 +513,6 @@ type QueryResult struct {
 	Rows     *[][]interface{} `json:"rows,omitempty"`
 }
 
-// RevokeRequest defines model for RevokeRequest.
-type RevokeRequest struct {
-	PrincipalId   int64  `json:"principal_id"`
-	PrincipalType string `json:"principal_type"`
-	Privilege     string `json:"privilege"`
-	SecurableId   int64  `json:"securable_id"`
-	SecurableType string `json:"securable_type"`
-}
-
 // RowFilter defines model for RowFilter.
 type RowFilter struct {
 	CreatedAt   *time.Time `json:"created_at,omitempty"`
@@ -554,10 +522,10 @@ type RowFilter struct {
 	TableId     *int64     `json:"table_id,omitempty"`
 }
 
-// Schema defines model for Schema.
-type Schema struct {
-	Id   *int64  `json:"id,omitempty"`
-	Name *string `json:"name,omitempty"`
+// RowFilterBindingRequest defines model for RowFilterBindingRequest.
+type RowFilterBindingRequest struct {
+	PrincipalId   int64  `json:"principal_id"`
+	PrincipalType string `json:"principal_type"`
 }
 
 // SchemaDetail defines model for SchemaDetail.
@@ -588,11 +556,6 @@ type SearchResult struct {
 	Type *string `json:"type,omitempty"`
 }
 
-// SetAdminRequest defines model for SetAdminRequest.
-type SetAdminRequest struct {
-	IsAdmin bool `json:"is_admin"`
-}
-
 // StorageCredential defines model for StorageCredential.
 type StorageCredential struct {
 	Comment        *string    `json:"comment,omitempty"`
@@ -605,13 +568,6 @@ type StorageCredential struct {
 	Region         *string    `json:"region,omitempty"`
 	UpdatedAt      *time.Time `json:"updated_at,omitempty"`
 	UrlStyle       *string    `json:"url_style,omitempty"`
-}
-
-// Table defines model for Table.
-type Table struct {
-	Id       *int64  `json:"id,omitempty"`
-	Name     *string `json:"name,omitempty"`
-	SchemaId *int64  `json:"schema_id,omitempty"`
 }
 
 // TableDetail defines model for TableDetail.
@@ -688,6 +644,11 @@ type UpdateExternalLocationRequest struct {
 	Owner          *string `json:"owner,omitempty"`
 	ReadOnly       *bool   `json:"read_only,omitempty"`
 	Url            *string `json:"url,omitempty"`
+}
+
+// UpdatePrincipalAdminRequest defines model for UpdatePrincipalAdminRequest.
+type UpdatePrincipalAdminRequest struct {
+	IsAdmin bool `json:"is_admin"`
 }
 
 // UpdateSchemaRequest defines model for UpdateSchemaRequest.
@@ -773,8 +734,8 @@ type ListAuditLogsParams struct {
 	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
 }
 
-// ListCatalogSchemasParams defines parameters for ListCatalogSchemas.
-type ListCatalogSchemasParams struct {
+// ListSchemasParams defines parameters for ListSchemas.
+type ListSchemasParams struct {
 	// MaxResults Maximum number of results to return per page.
 	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
 
@@ -788,8 +749,8 @@ type DeleteSchemaParams struct {
 	Force *bool `form:"force,omitempty" json:"force,omitempty"`
 }
 
-// ListCatalogTablesParams defines parameters for ListCatalogTables.
-type ListCatalogTablesParams struct {
+// ListTablesParams defines parameters for ListTables.
+type ListTablesParams struct {
 	// MaxResults Maximum number of results to return per page.
 	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
 
@@ -799,6 +760,33 @@ type ListCatalogTablesParams struct {
 
 // ListTableColumnsParams defines parameters for ListTableColumns.
 type ListTableColumnsParams struct {
+	// MaxResults Maximum number of results to return per page.
+	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
+
+	// PageToken Opaque pagination token from a previous response.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// GetTableLineageParams defines parameters for GetTableLineage.
+type GetTableLineageParams struct {
+	// MaxResults Maximum number of results to return per page.
+	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
+
+	// PageToken Opaque pagination token from a previous response.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// GetDownstreamLineageParams defines parameters for GetDownstreamLineage.
+type GetDownstreamLineageParams struct {
+	// MaxResults Maximum number of results to return per page.
+	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
+
+	// PageToken Opaque pagination token from a previous response.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// GetUpstreamLineageParams defines parameters for GetUpstreamLineage.
+type GetUpstreamLineageParams struct {
 	// MaxResults Maximum number of results to return per page.
 	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
 
@@ -856,33 +844,6 @@ type ListGroupMembersParams struct {
 	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
 }
 
-// GetTableLineageParams defines parameters for GetTableLineage.
-type GetTableLineageParams struct {
-	// MaxResults Maximum number of results to return per page.
-	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
-
-	// PageToken Opaque pagination token from a previous response.
-	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
-}
-
-// GetDownstreamLineageParams defines parameters for GetDownstreamLineage.
-type GetDownstreamLineageParams struct {
-	// MaxResults Maximum number of results to return per page.
-	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
-
-	// PageToken Opaque pagination token from a previous response.
-	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
-}
-
-// GetUpstreamLineageParams defines parameters for GetUpstreamLineage.
-type GetUpstreamLineageParams struct {
-	// MaxResults Maximum number of results to return per page.
-	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
-
-	// PageToken Opaque pagination token from a previous response.
-	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
-}
-
 // ListPrincipalsParams defines parameters for ListPrincipals.
 type ListPrincipalsParams struct {
 	// MaxResults Maximum number of results to return per page.
@@ -906,24 +867,6 @@ type ListQueryHistoryParams struct {
 	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
 }
 
-// ListSchemasParams defines parameters for ListSchemas.
-type ListSchemasParams struct {
-	// MaxResults Maximum number of results to return per page.
-	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
-
-	// PageToken Opaque pagination token from a previous response.
-	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
-}
-
-// ListTablesParams defines parameters for ListTables.
-type ListTablesParams struct {
-	// MaxResults Maximum number of results to return per page.
-	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
-
-	// PageToken Opaque pagination token from a previous response.
-	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
-}
-
 // SearchCatalogParams defines parameters for SearchCatalog.
 type SearchCatalogParams struct {
 	Query string `form:"query" json:"query"`
@@ -940,15 +883,6 @@ type SearchCatalogParams struct {
 
 // ListStorageCredentialsParams defines parameters for ListStorageCredentials.
 type ListStorageCredentialsParams struct {
-	// MaxResults Maximum number of results to return per page.
-	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
-
-	// PageToken Opaque pagination token from a previous response.
-	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
-}
-
-// ListColumnsParams defines parameters for ListColumns.
-type ListColumnsParams struct {
 	// MaxResults Maximum number of results to return per page.
 	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
 
@@ -989,26 +923,26 @@ type UpdateCatalogJSONRequestBody = UpdateCatalogRequest
 // CreateSchemaJSONRequestBody defines body for CreateSchema for application/json ContentType.
 type CreateSchemaJSONRequestBody = CreateSchemaRequest
 
-// UpdateSchemaMetadataJSONRequestBody defines body for UpdateSchemaMetadata for application/json ContentType.
-type UpdateSchemaMetadataJSONRequestBody = UpdateSchemaRequest
+// UpdateSchemaJSONRequestBody defines body for UpdateSchema for application/json ContentType.
+type UpdateSchemaJSONRequestBody = UpdateSchemaRequest
 
-// CreateCatalogTableJSONRequestBody defines body for CreateCatalogTable for application/json ContentType.
-type CreateCatalogTableJSONRequestBody = CreateTableApiRequest
+// CreateTableJSONRequestBody defines body for CreateTable for application/json ContentType.
+type CreateTableJSONRequestBody = CreateTableRequest
 
-// UpdateTableMetadataJSONRequestBody defines body for UpdateTableMetadata for application/json ContentType.
-type UpdateTableMetadataJSONRequestBody = UpdateTableRequest
+// UpdateTableJSONRequestBody defines body for UpdateTable for application/json ContentType.
+type UpdateTableJSONRequestBody = UpdateTableRequest
 
-// UpdateColumnMetadataJSONRequestBody defines body for UpdateColumnMetadata for application/json ContentType.
-type UpdateColumnMetadataJSONRequestBody = UpdateColumnRequest
+// UpdateColumnJSONRequestBody defines body for UpdateColumn for application/json ContentType.
+type UpdateColumnJSONRequestBody = UpdateColumnRequest
 
-// CommitIngestionJSONRequestBody defines body for CommitIngestion for application/json ContentType.
-type CommitIngestionJSONRequestBody = CommitIngestionRequest
+// CommitTableIngestionJSONRequestBody defines body for CommitTableIngestion for application/json ContentType.
+type CommitTableIngestionJSONRequestBody = CommitIngestionRequest
 
-// LoadExternalFilesJSONRequestBody defines body for LoadExternalFiles for application/json ContentType.
-type LoadExternalFilesJSONRequestBody = LoadExternalRequest
+// LoadTableExternalFilesJSONRequestBody defines body for LoadTableExternalFiles for application/json ContentType.
+type LoadTableExternalFilesJSONRequestBody = LoadExternalRequest
 
-// RequestUploadUrlJSONRequestBody defines body for RequestUploadUrl for application/json ContentType.
-type RequestUploadUrlJSONRequestBody = UploadUrlRequest
+// CreateUploadUrlJSONRequestBody defines body for CreateUploadUrl for application/json ContentType.
+type CreateUploadUrlJSONRequestBody = UploadUrlRequest
 
 // CreateViewJSONRequestBody defines body for CreateView for application/json ContentType.
 type CreateViewJSONRequestBody = CreateViewRequest
@@ -1016,11 +950,11 @@ type CreateViewJSONRequestBody = CreateViewRequest
 // UpdateViewJSONRequestBody defines body for UpdateView for application/json ContentType.
 type UpdateViewJSONRequestBody = UpdateViewRequest
 
-// UnbindColumnMaskJSONRequestBody defines body for UnbindColumnMask for application/json ContentType.
-type UnbindColumnMaskJSONRequestBody = BindingRequest
-
 // BindColumnMaskJSONRequestBody defines body for BindColumnMask for application/json ContentType.
 type BindColumnMaskJSONRequestBody = ColumnMaskBindingRequest
+
+// UnbindColumnMaskJSONRequestBody defines body for UnbindColumnMask for application/json ContentType.
+type UnbindColumnMaskJSONRequestBody = RowFilterBindingRequest
 
 // CreateExternalLocationJSONRequestBody defines body for CreateExternalLocation for application/json ContentType.
 type CreateExternalLocationJSONRequestBody = CreateExternalLocationRequest
@@ -1028,41 +962,41 @@ type CreateExternalLocationJSONRequestBody = CreateExternalLocationRequest
 // UpdateExternalLocationJSONRequestBody defines body for UpdateExternalLocation for application/json ContentType.
 type UpdateExternalLocationJSONRequestBody = UpdateExternalLocationRequest
 
-// RevokePrivilegeJSONRequestBody defines body for RevokePrivilege for application/json ContentType.
-type RevokePrivilegeJSONRequestBody = RevokeRequest
+// CreateGrantJSONRequestBody defines body for CreateGrant for application/json ContentType.
+type CreateGrantJSONRequestBody = CreateGrantRequest
 
-// GrantPrivilegeJSONRequestBody defines body for GrantPrivilege for application/json ContentType.
-type GrantPrivilegeJSONRequestBody = GrantRequest
+// DeleteGrantJSONRequestBody defines body for DeleteGrant for application/json ContentType.
+type DeleteGrantJSONRequestBody = DeleteGrantRequest
 
 // CreateGroupJSONRequestBody defines body for CreateGroup for application/json ContentType.
 type CreateGroupJSONRequestBody = CreateGroupRequest
 
-// RemoveGroupMemberJSONRequestBody defines body for RemoveGroupMember for application/json ContentType.
-type RemoveGroupMemberJSONRequestBody = AddGroupMemberRequest
+// CreateGroupMemberJSONRequestBody defines body for CreateGroupMember for application/json ContentType.
+type CreateGroupMemberJSONRequestBody = CreateGroupMemberRequest
 
-// AddGroupMemberJSONRequestBody defines body for AddGroupMember for application/json ContentType.
-type AddGroupMemberJSONRequestBody = AddGroupMemberRequest
+// DeleteGroupMemberJSONRequestBody defines body for DeleteGroupMember for application/json ContentType.
+type DeleteGroupMemberJSONRequestBody = CreateGroupMemberRequest
 
 // PurgeLineageJSONRequestBody defines body for PurgeLineage for application/json ContentType.
 type PurgeLineageJSONRequestBody = PurgeLineageRequest
 
-// GetManifestJSONRequestBody defines body for GetManifest for application/json ContentType.
-type GetManifestJSONRequestBody = ManifestRequest
+// CreateManifestJSONRequestBody defines body for CreateManifest for application/json ContentType.
+type CreateManifestJSONRequestBody = ManifestRequest
 
 // CreatePrincipalJSONRequestBody defines body for CreatePrincipal for application/json ContentType.
 type CreatePrincipalJSONRequestBody = CreatePrincipalRequest
 
-// SetAdminJSONRequestBody defines body for SetAdmin for application/json ContentType.
-type SetAdminJSONRequestBody = SetAdminRequest
+// UpdatePrincipalAdminJSONRequestBody defines body for UpdatePrincipalAdmin for application/json ContentType.
+type UpdatePrincipalAdminJSONRequestBody = UpdatePrincipalAdminRequest
 
 // ExecuteQueryJSONRequestBody defines body for ExecuteQuery for application/json ContentType.
 type ExecuteQueryJSONRequestBody = QueryRequest
 
-// UnbindRowFilterJSONRequestBody defines body for UnbindRowFilter for application/json ContentType.
-type UnbindRowFilterJSONRequestBody = BindingRequest
-
 // BindRowFilterJSONRequestBody defines body for BindRowFilter for application/json ContentType.
-type BindRowFilterJSONRequestBody = BindingRequest
+type BindRowFilterJSONRequestBody = RowFilterBindingRequest
+
+// UnbindRowFilterJSONRequestBody defines body for UnbindRowFilter for application/json ContentType.
+type UnbindRowFilterJSONRequestBody = RowFilterBindingRequest
 
 // CreateStorageCredentialJSONRequestBody defines body for CreateStorageCredential for application/json ContentType.
 type CreateStorageCredentialJSONRequestBody = CreateStorageCredentialRequest
@@ -1079,5 +1013,5 @@ type CreateRowFilterJSONRequestBody = CreateRowFilterRequest
 // CreateTagJSONRequestBody defines body for CreateTag for application/json ContentType.
 type CreateTagJSONRequestBody = CreateTagRequest
 
-// AssignTagJSONRequestBody defines body for AssignTag for application/json ContentType.
-type AssignTagJSONRequestBody = CreateTagAssignmentRequest
+// CreateTagAssignmentJSONRequestBody defines body for CreateTagAssignment for application/json ContentType.
+type CreateTagAssignmentJSONRequestBody = CreateTagAssignmentRequest

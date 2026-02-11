@@ -1,7 +1,7 @@
 openapi: "3.0.3"
 info:
   title: DuckDB Data Platform API
-  version: "2.0.0"
+  version: "3.0.0"
   description: |
     HTTP API for the DuckDB data platform with RBAC, RLS, column masking,
     and Unity Catalog-compatible catalog management.
@@ -12,6 +12,26 @@ servers:
 security:
   - BearerAuth: []
   - ApiKeyAuth: []
+
+tags:
+  - name: Query
+    description: Execute SQL queries against the platform.
+  - name: Catalog
+    description: Catalog, schema, table, column, and view management.
+  - name: Ingestion
+    description: Data ingestion via upload, commit, and external file loading.
+  - name: Security
+    description: Principals, groups, grants, row filters, and column masks.
+  - name: Lineage
+    description: Table lineage tracking and management.
+  - name: Governance
+    description: Tags, classifications, and catalog search.
+  - name: Observability
+    description: Audit logs, query history, and metastore summary.
+  - name: Storage
+    description: Storage credentials and external locations.
+  - name: Manifest
+    description: Client-side query manifest with presigned URLs.
 
 components:
   securitySchemes:
@@ -105,7 +125,7 @@ components:
           type: boolean
           default: false
 
-    SetAdminRequest:
+    UpdatePrincipalAdminRequest:
       type: object
       required: [is_admin]
       properties:
@@ -158,7 +178,7 @@ components:
           type: integer
           format: int64
 
-    AddGroupMemberRequest:
+    CreateGroupMemberRequest:
       type: object
       required: [member_type, member_id]
       properties:
@@ -215,7 +235,7 @@ components:
           type: string
           format: date-time
 
-    GrantRequest:
+    CreateGrantRequest:
       type: object
       required: [principal_id, principal_type, securable_type, securable_id, privilege]
       properties:
@@ -232,7 +252,7 @@ components:
         privilege:
           type: string
 
-    RevokeRequest:
+    DeleteGrantRequest:
       type: object
       required: [principal_id, principal_type, securable_type, securable_id, privilege]
       properties:
@@ -286,7 +306,7 @@ components:
         description:
           type: string
 
-    BindingRequest:
+    RowFilterBindingRequest:
       type: object
       required: [principal_id, principal_type]
       properties:
@@ -357,72 +377,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ColumnMask'
-        next_page_token:
-          type: string
-
-    # --- Legacy Introspection (deprecated) ---
-    Schema:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-        name:
-          type: string
-
-    Table:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-        schema_id:
-          type: integer
-          format: int64
-        name:
-          type: string
-
-    Column:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-        table_id:
-          type: integer
-          format: int64
-        name:
-          type: string
-        type:
-          type: string
-
-    PaginatedSchemas:
-      type: object
-      properties:
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/Schema'
-        next_page_token:
-          type: string
-
-    PaginatedTables:
-      type: object
-      properties:
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/Table'
-        next_page_token:
-          type: string
-
-    PaginatedColumns:
-      type: object
-      properties:
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/Column'
         next_page_token:
           type: string
 
@@ -689,7 +643,7 @@ components:
           additionalProperties:
             type: string
 
-    CreateTableApiRequest:
+    CreateTableRequest:
       type: object
       required: [name]
       properties:
@@ -698,7 +652,7 @@ components:
         columns:
           type: array
           items:
-            $ref: '#/components/schemas/CreateColumnDef'
+            $ref: '#/components/schemas/CreateColumnRequest'
           description: Required for MANAGED tables; auto-discovered for EXTERNAL if omitted.
         comment:
           type: string
@@ -719,7 +673,7 @@ components:
           type: string
           description: Name of the external location that owns the source path. Required for EXTERNAL tables.
 
-    CreateColumnDef:
+    CreateColumnRequest:
       type: object
       required: [name, type]
       properties:
@@ -837,7 +791,7 @@ components:
           type: string
           format: date-time
 
-    PaginatedQueryHistory:
+    PaginatedQueryHistoryEntries:
       type: object
       properties:
         data:
@@ -1315,6 +1269,7 @@ paths:
     post:
       operationId: executeQuery
       summary: Execute SQL as authenticated principal
+      tags: [Query]
       requestBody:
         required: true
         content:
@@ -1346,6 +1301,7 @@ paths:
     get:
       operationId: listPrincipals
       summary: List all principals
+      tags: [Security]
       parameters:
         - $ref: '#/components/parameters/MaxResults'
         - $ref: '#/components/parameters/PageToken'
@@ -1359,6 +1315,7 @@ paths:
     post:
       operationId: createPrincipal
       summary: Create a principal
+      tags: [Security]
       requestBody:
         required: true
         content:
@@ -1385,9 +1342,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /principals/{id}:
+  /principals/{principalId}:
     parameters:
-      - name: id
+      - name: principalId
         in: path
         required: true
         schema:
@@ -1396,6 +1353,7 @@ paths:
     get:
       operationId: getPrincipal
       summary: Get principal by ID
+      tags: [Security]
       responses:
         '200':
           description: Principal details
@@ -1412,6 +1370,7 @@ paths:
     delete:
       operationId: deletePrincipal
       summary: Delete a principal
+      tags: [Security]
       responses:
         '204':
           description: Deleted
@@ -1422,23 +1381,24 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /principals/{id}/admin:
+  /principals/{principalId}/admin:
     parameters:
-      - name: id
+      - name: principalId
         in: path
         required: true
         schema:
           type: integer
           format: int64
     put:
-      operationId: setAdmin
+      operationId: updatePrincipalAdmin
       summary: Set or unset admin flag
+      tags: [Security]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SetAdminRequest'
+              $ref: '#/components/schemas/UpdatePrincipalAdminRequest'
       responses:
         '204':
           description: Updated
@@ -1454,6 +1414,7 @@ paths:
     get:
       operationId: listGroups
       summary: List all groups
+      tags: [Security]
       parameters:
         - $ref: '#/components/parameters/MaxResults'
         - $ref: '#/components/parameters/PageToken'
@@ -1467,6 +1428,7 @@ paths:
     post:
       operationId: createGroup
       summary: Create a group
+      tags: [Security]
       requestBody:
         required: true
         content:
@@ -1480,10 +1442,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Group'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
-  /groups/{id}:
+  /groups/{groupId}:
     parameters:
-      - name: id
+      - name: groupId
         in: path
         required: true
         schema:
@@ -1492,6 +1466,7 @@ paths:
     get:
       operationId: getGroup
       summary: Get group by ID
+      tags: [Security]
       responses:
         '200':
           description: Group details
@@ -1508,13 +1483,20 @@ paths:
     delete:
       operationId: deleteGroup
       summary: Delete a group
+      tags: [Security]
       responses:
         '204':
           description: Deleted
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
-  /groups/{id}/members:
+  /groups/{groupId}/members:
     parameters:
-      - name: id
+      - name: groupId
         in: path
         required: true
         schema:
@@ -1523,6 +1505,7 @@ paths:
     get:
       operationId: listGroupMembers
       summary: List group members
+      tags: [Security]
       parameters:
         - $ref: '#/components/parameters/MaxResults'
         - $ref: '#/components/parameters/PageToken'
@@ -1533,36 +1516,78 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedGroupMembers'
+        '404':
+          description: Group not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     post:
-      operationId: addGroupMember
+      operationId: createGroupMember
       summary: Add member to group
+      tags: [Security]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AddGroupMemberRequest'
+              $ref: '#/components/schemas/CreateGroupMemberRequest'
       responses:
         '204':
           description: Member added
-    delete:
-      operationId: removeGroupMember
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Group not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /groups/{groupId}/members/remove:
+    parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    post:
+      operationId: deleteGroupMember
       summary: Remove member from group
+      tags: [Security]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AddGroupMemberRequest'
+              $ref: '#/components/schemas/CreateGroupMemberRequest'
       responses:
         '204':
           description: Member removed
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Group or member not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   # === Grants ===
   /grants:
     get:
       operationId: listGrants
       summary: List grants
+      tags: [Security]
       parameters:
         - name: principal_id
           in: query
@@ -1592,14 +1617,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedGrants'
     post:
-      operationId: grantPrivilege
+      operationId: createGrant
       summary: Grant a privilege
+      tags: [Security]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GrantRequest'
+              $ref: '#/components/schemas/CreateGrantRequest'
       responses:
         '201':
           description: Granted
@@ -1607,18 +1633,51 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PrivilegeGrant'
-    delete:
-      operationId: revokePrivilege
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Grant already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /grants/revoke:
+    post:
+      operationId: deleteGrant
       summary: Revoke a privilege
+      tags: [Security]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RevokeRequest'
+              $ref: '#/components/schemas/DeleteGrantRequest'
       responses:
         '204':
           description: Revoked
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Grant not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   # === Row Filters ===
   /tables/{tableId}/row-filters:
@@ -1632,6 +1691,7 @@ paths:
     get:
       operationId: listRowFilters
       summary: List row filters for table
+      tags: [Security]
       parameters:
         - $ref: '#/components/parameters/MaxResults'
         - $ref: '#/components/parameters/PageToken'
@@ -1642,9 +1702,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedRowFilters'
+        '404':
+          description: Table not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     post:
       operationId: createRowFilter
       summary: Create row filter
+      tags: [Security]
       requestBody:
         required: true
         content:
@@ -1658,10 +1725,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RowFilter'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Table not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
-  /row-filters/{id}:
+  /row-filters/{rowFilterId}:
     parameters:
-      - name: id
+      - name: rowFilterId
         in: path
         required: true
         schema:
@@ -1670,13 +1749,20 @@ paths:
     delete:
       operationId: deleteRowFilter
       summary: Delete row filter
+      tags: [Security]
       responses:
         '204':
           description: Deleted
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
-  /row-filters/{id}/bindings:
+  /row-filters/{rowFilterId}/bind:
     parameters:
-      - name: id
+      - name: rowFilterId
         in: path
         required: true
         schema:
@@ -1685,27 +1771,62 @@ paths:
     post:
       operationId: bindRowFilter
       summary: Bind filter to principal
+      tags: [Security]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/BindingRequest'
+              $ref: '#/components/schemas/RowFilterBindingRequest'
       responses:
         '204':
           description: Bound
-    delete:
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Row filter not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /row-filters/{rowFilterId}/unbind:
+    parameters:
+      - name: rowFilterId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    post:
       operationId: unbindRowFilter
-      summary: Unbind filter
+      summary: Unbind filter from principal
+      tags: [Security]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/BindingRequest'
+              $ref: '#/components/schemas/RowFilterBindingRequest'
       responses:
         '204':
           description: Unbound
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Row filter not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   # === Column Masks ===
   /tables/{tableId}/column-masks:
@@ -1719,6 +1840,7 @@ paths:
     get:
       operationId: listColumnMasks
       summary: List column masks
+      tags: [Security]
       parameters:
         - $ref: '#/components/parameters/MaxResults'
         - $ref: '#/components/parameters/PageToken'
@@ -1729,9 +1851,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedColumnMasks'
+        '404':
+          description: Table not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     post:
       operationId: createColumnMask
       summary: Create column mask
+      tags: [Security]
       requestBody:
         required: true
         content:
@@ -1745,10 +1874,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ColumnMask'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Table not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
-  /column-masks/{id}:
+  /column-masks/{columnMaskId}:
     parameters:
-      - name: id
+      - name: columnMaskId
         in: path
         required: true
         schema:
@@ -1757,13 +1898,20 @@ paths:
     delete:
       operationId: deleteColumnMask
       summary: Delete column mask
+      tags: [Security]
       responses:
         '204':
           description: Deleted
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
-  /column-masks/{id}/bindings:
+  /column-masks/{columnMaskId}/bind:
     parameters:
-      - name: id
+      - name: columnMaskId
         in: path
         required: true
         schema:
@@ -1772,6 +1920,7 @@ paths:
     post:
       operationId: bindColumnMask
       summary: Bind mask to principal
+      tags: [Security]
       requestBody:
         required: true
         content:
@@ -1781,87 +1930,59 @@ paths:
       responses:
         '204':
           description: Bound
-    delete:
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Column mask not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /column-masks/{columnMaskId}/unbind:
+    parameters:
+      - name: columnMaskId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    post:
       operationId: unbindColumnMask
-      summary: Unbind mask
+      summary: Unbind mask from principal
+      tags: [Security]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/BindingRequest'
+              $ref: '#/components/schemas/RowFilterBindingRequest'
       responses:
         '204':
           description: Unbound
-
-  # === Legacy Introspection (deprecated) ===
-  /schemas:
-    get:
-      operationId: listSchemas
-      summary: List DuckLake schemas (deprecated, use /catalog/schemas)
-      deprecated: true
-      parameters:
-        - $ref: '#/components/parameters/MaxResults'
-        - $ref: '#/components/parameters/PageToken'
-      responses:
-        '200':
-          description: Paginated list of schemas
+        '400':
+          description: Validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedSchemas'
-
-  /schemas/{id}/tables:
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-    get:
-      operationId: listTables
-      summary: List tables in schema (deprecated, use /catalog/schemas/{name}/tables)
-      deprecated: true
-      parameters:
-        - $ref: '#/components/parameters/MaxResults'
-        - $ref: '#/components/parameters/PageToken'
-      responses:
-        '200':
-          description: Paginated list of tables
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Column mask not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedTables'
-
-  /tables/{id}/columns:
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-    get:
-      operationId: listColumns
-      summary: List columns in table (deprecated, use /catalog/schemas/{name}/tables/{name}/columns)
-      deprecated: true
-      parameters:
-        - $ref: '#/components/parameters/MaxResults'
-        - $ref: '#/components/parameters/PageToken'
-      responses:
-        '200':
-          description: Paginated list of columns
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedColumns'
+                $ref: '#/components/schemas/Error'
 
   # === Manifest ===
   /manifest:
     post:
-      operationId: getManifest
-      summary: Get table manifest with presigned URLs and security policies
+      operationId: createManifest
+      summary: Create table manifest with presigned URLs and security policies
+      tags: [Manifest]
       description: >
         Returns presigned S3 URLs for the Parquet files backing a table,
         along with RLS row filters and column masks for the authenticated
@@ -1880,6 +2001,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ManifestResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Unauthorized
           content:
@@ -1904,6 +2031,7 @@ paths:
     get:
       operationId: listAuditLogs
       summary: Query audit logs
+      tags: [Observability]
       parameters:
         - name: principal_name
           in: query
@@ -1932,6 +2060,7 @@ paths:
     get:
       operationId: getCatalog
       summary: Get catalog info
+      tags: [Catalog]
       description: Returns information about the single DuckLake catalog.
       responses:
         '200':
@@ -1943,6 +2072,7 @@ paths:
     patch:
       operationId: updateCatalog
       summary: Update catalog metadata
+      tags: [Catalog]
       requestBody:
         required: true
         content:
@@ -1965,8 +2095,9 @@ paths:
 
   /catalog/schemas:
     get:
-      operationId: listCatalogSchemas
+      operationId: listSchemas
       summary: List schemas in the catalog
+      tags: [Catalog]
       parameters:
         - $ref: '#/components/parameters/MaxResults'
         - $ref: '#/components/parameters/PageToken'
@@ -1980,6 +2111,7 @@ paths:
     post:
       operationId: createSchema
       summary: Create a new schema
+      tags: [Catalog]
       requestBody:
         required: true
         content:
@@ -2020,8 +2152,9 @@ paths:
         schema:
           type: string
     get:
-      operationId: getSchemaByName
+      operationId: getSchema
       summary: Get a schema by name
+      tags: [Catalog]
       responses:
         '200':
           description: Schema details
@@ -2036,8 +2169,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
     patch:
-      operationId: updateSchemaMetadata
-      summary: Update schema metadata (comment, properties)
+      operationId: updateSchema
+      summary: Update schema metadata
+      tags: [Catalog]
       requestBody:
         required: true
         content:
@@ -2066,6 +2200,7 @@ paths:
     delete:
       operationId: deleteSchema
       summary: Delete a schema
+      tags: [Catalog]
       parameters:
         - name: force
           in: query
@@ -2088,6 +2223,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '409':
+          description: Schema not empty
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /catalog/schemas/{schemaName}/tables:
     parameters:
@@ -2097,8 +2238,9 @@ paths:
         schema:
           type: string
     get:
-      operationId: listCatalogTables
+      operationId: listTables
       summary: List tables in a schema
+      tags: [Catalog]
       parameters:
         - $ref: '#/components/parameters/MaxResults'
         - $ref: '#/components/parameters/PageToken'
@@ -2116,14 +2258,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
     post:
-      operationId: createCatalogTable
+      operationId: createTable
       summary: Create a new table in a schema
+      tags: [Catalog]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateTableApiRequest'
+              $ref: '#/components/schemas/CreateTableRequest'
       responses:
         '201':
           description: Table created
@@ -2163,8 +2306,9 @@ paths:
         schema:
           type: string
     get:
-      operationId: getTableByName
+      operationId: getTable
       summary: Get a table by name
+      tags: [Catalog]
       responses:
         '200':
           description: Table details including columns
@@ -2179,8 +2323,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
     patch:
-      operationId: updateTableMetadata
-      summary: Update table metadata (comment, properties, owner)
+      operationId: updateTable
+      summary: Update table metadata
+      tags: [Catalog]
       requestBody:
         required: true
         content:
@@ -2207,8 +2352,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
     delete:
-      operationId: dropTable
+      operationId: deleteTable
       summary: Delete a table
+      tags: [Catalog]
       responses:
         '204':
           description: Table deleted
@@ -2240,6 +2386,7 @@ paths:
     get:
       operationId: listTableColumns
       summary: List columns of a table
+      tags: [Catalog]
       parameters:
         - $ref: '#/components/parameters/MaxResults'
         - $ref: '#/components/parameters/PageToken'
@@ -2275,8 +2422,9 @@ paths:
         schema:
           type: string
     patch:
-      operationId: updateColumnMetadata
-      summary: Update column metadata (comment, properties)
+      operationId: updateColumn
+      summary: Update column metadata
+      tags: [Catalog]
       requestBody:
         required: true
         content:
@@ -2318,6 +2466,7 @@ paths:
     post:
       operationId: profileTable
       summary: Profile a table to collect statistics
+      tags: [Catalog]
       description: Runs profiling queries and stores statistics (row count, column count, size).
       responses:
         '200':
@@ -2344,6 +2493,7 @@ paths:
     get:
       operationId: getMetastoreSummary
       summary: Get metastore summary
+      tags: [Observability]
       description: Returns high-level information about the DuckLake metastore.
       responses:
         '200':
@@ -2358,6 +2508,7 @@ paths:
     get:
       operationId: listQueryHistory
       summary: List query execution history
+      tags: [Observability]
       parameters:
         - name: principal_name
           in: query
@@ -2385,13 +2536,14 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedQueryHistory'
+                $ref: '#/components/schemas/PaginatedQueryHistoryEntries'
 
   # === Search ===
   /search:
     get:
       operationId: searchCatalog
       summary: Search catalog objects
+      tags: [Governance]
       description: Full-text search across schemas, tables, and columns.
       parameters:
         - name: query
@@ -2415,7 +2567,7 @@ paths:
                 $ref: '#/components/schemas/PaginatedSearchResults'
 
   # === Lineage ===
-  /lineage/tables/{schemaName}/{tableName}:
+  /catalog/schemas/{schemaName}/tables/{tableName}/lineage:
     parameters:
       - name: schemaName
         in: path
@@ -2430,6 +2582,7 @@ paths:
     get:
       operationId: getTableLineage
       summary: Get full lineage for a table
+      tags: [Lineage]
       description: Returns both upstream and downstream lineage edges for a table.
       parameters:
         - $ref: '#/components/parameters/MaxResults'
@@ -2442,7 +2595,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/LineageNode'
 
-  /lineage/tables/{schemaName}/{tableName}/upstream:
+  /catalog/schemas/{schemaName}/tables/{tableName}/lineage/upstream:
     parameters:
       - name: schemaName
         in: path
@@ -2457,6 +2610,7 @@ paths:
     get:
       operationId: getUpstreamLineage
       summary: Get upstream lineage for a table
+      tags: [Lineage]
       parameters:
         - $ref: '#/components/parameters/MaxResults'
         - $ref: '#/components/parameters/PageToken'
@@ -2468,7 +2622,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedLineageEdges'
 
-  /lineage/tables/{schemaName}/{tableName}/downstream:
+  /catalog/schemas/{schemaName}/tables/{tableName}/lineage/downstream:
     parameters:
       - name: schemaName
         in: path
@@ -2483,6 +2637,7 @@ paths:
     get:
       operationId: getDownstreamLineage
       summary: Get downstream lineage for a table
+      tags: [Lineage]
       parameters:
         - $ref: '#/components/parameters/MaxResults'
         - $ref: '#/components/parameters/PageToken'
@@ -2505,6 +2660,7 @@ paths:
     delete:
       operationId: deleteLineageEdge
       summary: Delete a lineage edge
+      tags: [Lineage]
       responses:
         '204':
           description: Edge deleted
@@ -2519,6 +2675,7 @@ paths:
     post:
       operationId: purgeLineage
       summary: Purge old lineage edges
+      tags: [Lineage]
       description: Delete lineage edges older than the specified number of days.
       requestBody:
         required: true
@@ -2545,6 +2702,7 @@ paths:
     get:
       operationId: listTags
       summary: List all tags
+      tags: [Governance]
       parameters:
         - $ref: '#/components/parameters/MaxResults'
         - $ref: '#/components/parameters/PageToken'
@@ -2558,6 +2716,7 @@ paths:
     post:
       operationId: createTag
       summary: Create a tag
+      tags: [Governance]
       requestBody:
         required: true
         content:
@@ -2589,6 +2748,7 @@ paths:
     delete:
       operationId: deleteTag
       summary: Delete a tag
+      tags: [Governance]
       responses:
         '204':
           description: Tag deleted
@@ -2608,8 +2768,9 @@ paths:
           type: integer
           format: int64
     post:
-      operationId: assignTag
+      operationId: createTagAssignment
       summary: Assign a tag to a securable object
+      tags: [Governance]
       requestBody:
         required: true
         content:
@@ -2639,17 +2800,25 @@ paths:
           type: integer
           format: int64
     delete:
-      operationId: unassignTag
+      operationId: deleteTagAssignment
       summary: Remove a tag assignment
+      tags: [Governance]
       responses:
         '204':
           description: Tag unassigned
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   # === Classifications ===
   /classifications:
     get:
       operationId: listClassifications
       summary: List classification and sensitivity tags
+      tags: [Governance]
       description: Returns all tags with governed classification/sensitivity prefixes.
       responses:
         '200':
@@ -2670,6 +2839,7 @@ paths:
     get:
       operationId: listViews
       summary: List views in a schema
+      tags: [Catalog]
       parameters:
         - $ref: '#/components/parameters/MaxResults'
         - $ref: '#/components/parameters/PageToken'
@@ -2689,6 +2859,7 @@ paths:
     post:
       operationId: createView
       summary: Create a view in a schema
+      tags: [Catalog]
       requestBody:
         required: true
         content:
@@ -2736,6 +2907,7 @@ paths:
     get:
       operationId: getView
       summary: Get a view by name
+      tags: [Catalog]
       responses:
         '200':
           description: View details
@@ -2752,6 +2924,7 @@ paths:
     patch:
       operationId: updateView
       summary: Update a view's metadata
+      tags: [Catalog]
       requestBody:
         required: true
         content:
@@ -2778,8 +2951,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
     delete:
-      operationId: dropView
+      operationId: deleteView
       summary: Delete a view
+      tags: [Catalog]
       responses:
         '204':
           description: View deleted
@@ -2810,8 +2984,9 @@ paths:
         schema:
           type: string
     post:
-      operationId: requestUploadUrl
+      operationId: createUploadUrl
       summary: Get a presigned URL for uploading a Parquet file
+      tags: [Ingestion]
       description: >
         Returns a presigned PUT URL that the client can use to upload a Parquet file
         directly to S3. The file can then be registered via the commit endpoint.
@@ -2861,8 +3036,9 @@ paths:
         schema:
           type: string
     post:
-      operationId: commitIngestion
+      operationId: commitTableIngestion
       summary: Register uploaded Parquet files in DuckLake
+      tags: [Ingestion]
       description: >
         Registers previously uploaded files (from upload-url) in the DuckLake catalog.
         DuckLake validates schema compatibility, extracts column statistics, and
@@ -2912,8 +3088,9 @@ paths:
         schema:
           type: string
     post:
-      operationId: loadExternalFiles
+      operationId: loadTableExternalFiles
       summary: Register existing S3 files in DuckLake
+      tags: [Ingestion]
       description: >
         Registers existing S3 files or globs in the DuckLake catalog. Paths without
         an s3:// prefix are treated as relative to the lake data path. DuckLake validates
@@ -2956,6 +3133,7 @@ paths:
     get:
       operationId: listStorageCredentials
       summary: List storage credentials
+      tags: [Storage]
       description: Returns a paginated list of storage credentials. Sensitive fields (key_id, secret) are never returned.
       parameters:
         - $ref: '#/components/parameters/MaxResults'
@@ -2970,6 +3148,7 @@ paths:
     post:
       operationId: createStorageCredential
       summary: Create a storage credential
+      tags: [Storage]
       description: Creates a new storage credential. Requires ALL_PRIVILEGES on catalog.
       requestBody:
         required: true
@@ -3013,6 +3192,7 @@ paths:
     get:
       operationId: getStorageCredential
       summary: Get a storage credential by name
+      tags: [Storage]
       description: Returns credential metadata. Sensitive fields (key_id, secret) are never returned.
       responses:
         '200':
@@ -3030,6 +3210,7 @@ paths:
     patch:
       operationId: updateStorageCredential
       summary: Update a storage credential
+      tags: [Storage]
       description: Updates credential fields. Requires ALL_PRIVILEGES on catalog.
       requestBody:
         required: true
@@ -3059,6 +3240,7 @@ paths:
     delete:
       operationId: deleteStorageCredential
       summary: Delete a storage credential
+      tags: [Storage]
       description: Deletes a credential. Requires ALL_PRIVILEGES on catalog.
       responses:
         '204':
@@ -3081,6 +3263,7 @@ paths:
     get:
       operationId: listExternalLocations
       summary: List external locations
+      tags: [Storage]
       parameters:
         - $ref: '#/components/parameters/MaxResults'
         - $ref: '#/components/parameters/PageToken'
@@ -3094,6 +3277,7 @@ paths:
     post:
       operationId: createExternalLocation
       summary: Create an external location
+      tags: [Storage]
       description: >
         Creates a new external location and configures DuckDB with the associated
         credential. If this is the first location, the DuckLake catalog is attached.
@@ -3140,6 +3324,7 @@ paths:
     get:
       operationId: getExternalLocation
       summary: Get an external location by name
+      tags: [Storage]
       responses:
         '200':
           description: Location details
@@ -3156,6 +3341,7 @@ paths:
     patch:
       operationId: updateExternalLocation
       summary: Update an external location
+      tags: [Storage]
       description: Updates location fields. Requires ALL_PRIVILEGES on catalog.
       requestBody:
         required: true
@@ -3185,6 +3371,7 @@ paths:
     delete:
       operationId: deleteExternalLocation
       summary: Delete an external location
+      tags: [Storage]
       description: Deletes a location and drops the associated DuckDB secret. Requires ALL_PRIVILEGES on catalog.
       responses:
         '204':

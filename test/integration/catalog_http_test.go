@@ -900,3 +900,25 @@ func TestHTTP_CascadeDeleteVerifiesGovernanceRecords(t *testing.T) {
 		}
 	}
 }
+
+// TestHTTP_TableProfileAuthorization tests profile endpoint authorization for
+// different user roles.
+func TestHTTP_TableProfileAuthorization(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
+	profileURL := env.Server.URL + "/v1/catalog/schemas/main/tables/titanic/profile"
+
+	t.Run("no_access_denied", func(t *testing.T) {
+		resp := doRequest(t, "POST", profileURL, env.Keys.NoAccess, nil)
+		assert.Equal(t, 403, resp.StatusCode,
+			"expected no_access user to be denied profile access")
+		resp.Body.Close()
+	})
+
+	t.Run("analyst_allowed", func(t *testing.T) {
+		resp := doRequest(t, "POST", profileURL, env.Keys.Analyst, nil)
+		// Analyst has SELECT on titanic table — should be able to profile it
+		assert.Equal(t, 200, resp.StatusCode,
+			"expected analyst with SELECT to be able to profile table")
+		resp.Body.Close()
+	})
+}

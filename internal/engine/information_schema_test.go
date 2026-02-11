@@ -2,8 +2,11 @@ package engine
 
 import (
 	"context"
+	"database/sql"
+	"fmt"
 	"testing"
 
+	_ "github.com/duckdb/duckdb-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -297,6 +300,62 @@ func TestBuildColumnsRows(t *testing.T) {
 		require.Len(t, rows, 1, "should skip broken table and continue")
 		assert.Equal(t, "col1", rows[0][3])
 	})
+}
+
+func TestInformationSchema_ConcurrentQueries(t *testing.T) {
+	catalog := &mockEngineCatalog{
+		listSchemasFn: func(_ context.Context, _ domain.PageRequest) ([]domain.SchemaDetail, int64, error) {
+			return []domain.SchemaDetail{
+				{SchemaID: 1, Name: "main", CatalogName: "lake", Owner: "admin"},
+			}, 1, nil
+		},
+		listTablesFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.TableDetail, int64, error) {
+			return []domain.TableDetail{
+				{Name: "orders", TableType: "MANAGED"},
+				{Name: "users", TableType: "MANAGED"},
+			}, 2, nil
+		},
+	}
+
+	provider := NewInformationSchemaProvider(catalog)
+
+	db, err := sql.Open("duckdb", "")
+	require.NoError(t, err)
+	t.Cleanup(func() { db.Close() })
+
+	const goroutines = 10
+	errs := make(chan error, goroutines)
+
+	for i := 0; i < goroutines; i++ {
+		go func() {
+			rows, err := provider.HandleQuery(context.Background(), db, "SELECT * FROM information_schema.tables")
+			if err != nil {
+				errs <- err
+				return
+			}
+			defer rows.Close()
+
+			count := 0
+			for rows.Next() {
+				count++
+			}
+			if err := rows.Err(); err != nil {
+				errs <- fmt.Errorf("rows iteration: %w", err)
+				return
+			}
+			if count != 2 {
+				errs <- fmt.Errorf("expected 2 rows, got %d", count)
+				return
+			}
+			errs <- nil
+		}()
+	}
+
+	for i := 0; i < goroutines; i++ {
+		if err := <-errs; err != nil {
+			t.Errorf("goroutine error: %v", err)
+		}
+	}
 }
 
 // errInfoTest is a sentinel error for information_schema tests.
