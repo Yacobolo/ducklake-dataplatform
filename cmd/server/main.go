@@ -399,6 +399,10 @@ func main() {
 	storageCredSvc := service.NewStorageCredentialService(storageCredRepo, cat, auditRepo)
 	extLocationSvc := service.NewExternalLocationService(externalLocRepo, storageCredRepo, cat, auditRepo, duckDB, cfg.MetaDBPath)
 
+	// Volume repo and service
+	volumeRepo := repository.NewVolumeRepo(writeDB)
+	volumeSvc := service.NewVolumeService(volumeRepo, cat, auditRepo)
+
 	// Wire location repo into catalog service for location-aware schema creation
 	catalogSvc.SetExternalLocationRepo(externalLocRepo)
 
@@ -428,6 +432,7 @@ func main() {
 		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
 		ingestionSvc,
 		storageCredSvc, extLocationSvc,
+		volumeSvc,
 	)
 
 	// Create strict handler wrapper

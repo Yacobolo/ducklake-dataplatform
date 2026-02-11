@@ -223,3 +223,16 @@ type View struct {
 	UpdatedAt      string
 	DeletedAt      sql.NullString
 }
+
+type Volume struct {
+	ID              int64
+	Name            string
+	SchemaName      string
+	CatalogName     string
+	VolumeType      string
+	StorageLocation string
+	Comment         string
+	Owner           string
+	CreatedAt       string
+	UpdatedAt       string
+}

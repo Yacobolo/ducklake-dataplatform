@@ -30,6 +30,7 @@ type APIHandler struct {
 	ingestion         *service.IngestionService
 	storageCreds      *service.StorageCredentialService
 	externalLocations *service.ExternalLocationService
+	volumes           *service.VolumeService
 }
 
 func NewHandler(
@@ -50,6 +51,7 @@ func NewHandler(
 	ingestion *service.IngestionService,
 	storageCreds *service.StorageCredentialService,
 	externalLocations *service.ExternalLocationService,
+	volumes *service.VolumeService,
 ) *APIHandler {
 	return &APIHandler{
 		query:             query,
@@ -69,6 +71,7 @@ func NewHandler(
 		ingestion:         ingestion,
 		storageCreds:      storageCreds,
 		externalLocations: externalLocations,
+		volumes:           volumes,
 	}
 }
 
@@ -1859,5 +1862,121 @@ func externalLocationToAPI(l domain.ExternalLocation) ExternalLocation {
 		ReadOnly:       &l.ReadOnly,
 		CreatedAt:      &l.CreatedAt,
 		UpdatedAt:      &l.UpdatedAt,
+	}
+}
+
+// === Volumes ===
+
+func (h *APIHandler) ListVolumes(ctx context.Context, req ListVolumesRequestObject) (ListVolumesResponseObject, error) {
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	vols, total, err := h.volumes.List(ctx, req.SchemaName, page)
+	if err != nil {
+		return nil, err
+	}
+
+	data := make([]VolumeDetail, len(vols))
+	for i, v := range vols {
+		data[i] = volumeToAPI(v)
+	}
+	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return ListVolumes200JSONResponse{
+		Data:          &data,
+		NextPageToken: optStr(nextToken),
+	}, nil
+}
+
+func (h *APIHandler) CreateVolume(ctx context.Context, req CreateVolumeRequestObject) (CreateVolumeResponseObject, error) {
+	domReq := domain.CreateVolumeRequest{
+		Name:       req.Body.Name,
+		VolumeType: string(req.Body.VolumeType),
+	}
+	if req.Body.StorageLocation != nil {
+		domReq.StorageLocation = *req.Body.StorageLocation
+	}
+	if req.Body.Comment != nil {
+		domReq.Comment = *req.Body.Comment
+	}
+
+	result, err := h.volumes.Create(ctx, req.SchemaName, domReq)
+	if err != nil {
+		var accessErr *domain.AccessDeniedError
+		var validErr *domain.ValidationError
+		var conflictErr *domain.ConflictError
+		switch {
+		case errors.As(err, &accessErr):
+			return CreateVolume403JSONResponse{Code: 403, Message: err.Error()}, nil
+		case errors.As(err, &validErr):
+			return CreateVolume400JSONResponse{Code: 400, Message: err.Error()}, nil
+		case errors.As(err, &conflictErr):
+			return CreateVolume409JSONResponse{Code: 409, Message: err.Error()}, nil
+		default:
+			return CreateVolume400JSONResponse{Code: 400, Message: err.Error()}, nil
+		}
+	}
+	return CreateVolume201JSONResponse(volumeToAPI(*result)), nil
+}
+
+func (h *APIHandler) GetVolume(ctx context.Context, req GetVolumeRequestObject) (GetVolumeResponseObject, error) {
+	result, err := h.volumes.GetByName(ctx, req.SchemaName, req.VolumeName)
+	if err != nil {
+		switch err.(type) {
+		case *domain.NotFoundError:
+			return GetVolume404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return GetVolume200JSONResponse(volumeToAPI(*result)), nil
+}
+
+func (h *APIHandler) UpdateVolume(ctx context.Context, req UpdateVolumeRequestObject) (UpdateVolumeResponseObject, error) {
+	domReq := domain.UpdateVolumeRequest{
+		NewName: req.Body.NewName,
+		Comment: req.Body.Comment,
+		Owner:   req.Body.Owner,
+	}
+
+	result, err := h.volumes.Update(ctx, req.SchemaName, req.VolumeName, domReq)
+	if err != nil {
+		switch err.(type) {
+		case *domain.AccessDeniedError:
+			return UpdateVolume403JSONResponse{Code: 403, Message: err.Error()}, nil
+		case *domain.NotFoundError:
+			return UpdateVolume404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return UpdateVolume200JSONResponse(volumeToAPI(*result)), nil
+}
+
+func (h *APIHandler) DeleteVolume(ctx context.Context, req DeleteVolumeRequestObject) (DeleteVolumeResponseObject, error) {
+	if err := h.volumes.Delete(ctx, req.SchemaName, req.VolumeName); err != nil {
+		switch err.(type) {
+		case *domain.AccessDeniedError:
+			return DeleteVolume403JSONResponse{Code: 403, Message: err.Error()}, nil
+		case *domain.NotFoundError:
+			return DeleteVolume404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return DeleteVolume204Response{}, nil
+}
+
+// volumeToAPI converts a domain Volume to the API VolumeDetail type.
+func volumeToAPI(v domain.Volume) VolumeDetail {
+	vt := VolumeDetailVolumeType(v.VolumeType)
+	return VolumeDetail{
+		Id:              &v.ID,
+		Name:            &v.Name,
+		SchemaName:      &v.SchemaName,
+		CatalogName:     &v.CatalogName,
+		VolumeType:      &vt,
+		StorageLocation: optStr(v.StorageLocation),
+		Comment:         optStr(v.Comment),
+		Owner:           &v.Owner,
+		CreatedAt:       &v.CreatedAt,
+		UpdatedAt:       &v.UpdatedAt,
 	}
 }

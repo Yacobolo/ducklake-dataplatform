@@ -104,6 +104,21 @@ type ServerInterface interface {
 	// Update a view's metadata
 	// (PATCH /catalog/schemas/{schemaName}/views/{viewName})
 	UpdateView(w http.ResponseWriter, r *http.Request, schemaName string, viewName string)
+	// List volumes in a schema
+	// (GET /catalog/schemas/{schemaName}/volumes)
+	ListVolumes(w http.ResponseWriter, r *http.Request, schemaName string, params ListVolumesParams)
+	// Create a volume in a schema
+	// (POST /catalog/schemas/{schemaName}/volumes)
+	CreateVolume(w http.ResponseWriter, r *http.Request, schemaName string)
+	// Delete a volume
+	// (DELETE /catalog/schemas/{schemaName}/volumes/{volumeName})
+	DeleteVolume(w http.ResponseWriter, r *http.Request, schemaName string, volumeName string)
+	// Get a volume by name
+	// (GET /catalog/schemas/{schemaName}/volumes/{volumeName})
+	GetVolume(w http.ResponseWriter, r *http.Request, schemaName string, volumeName string)
+	// Update a volume
+	// (PATCH /catalog/schemas/{schemaName}/volumes/{volumeName})
+	UpdateVolume(w http.ResponseWriter, r *http.Request, schemaName string, volumeName string)
 	// List classification and sensitivity tags
 	// (GET /classifications)
 	ListClassifications(w http.ResponseWriter, r *http.Request)
@@ -413,6 +428,36 @@ func (_ Unimplemented) GetView(w http.ResponseWriter, r *http.Request, schemaNam
 // Update a view's metadata
 // (PATCH /catalog/schemas/{schemaName}/views/{viewName})
 func (_ Unimplemented) UpdateView(w http.ResponseWriter, r *http.Request, schemaName string, viewName string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List volumes in a schema
+// (GET /catalog/schemas/{schemaName}/volumes)
+func (_ Unimplemented) ListVolumes(w http.ResponseWriter, r *http.Request, schemaName string, params ListVolumesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create a volume in a schema
+// (POST /catalog/schemas/{schemaName}/volumes)
+func (_ Unimplemented) CreateVolume(w http.ResponseWriter, r *http.Request, schemaName string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Delete a volume
+// (DELETE /catalog/schemas/{schemaName}/volumes/{volumeName})
+func (_ Unimplemented) DeleteVolume(w http.ResponseWriter, r *http.Request, schemaName string, volumeName string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get a volume by name
+// (GET /catalog/schemas/{schemaName}/volumes/{volumeName})
+func (_ Unimplemented) GetVolume(w http.ResponseWriter, r *http.Request, schemaName string, volumeName string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update a volume
+// (PATCH /catalog/schemas/{schemaName}/volumes/{volumeName})
+func (_ Unimplemented) UpdateVolume(w http.ResponseWriter, r *http.Request, schemaName string, volumeName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1875,6 +1920,217 @@ func (siw *ServerInterfaceWrapper) UpdateView(w http.ResponseWriter, r *http.Req
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateView(w, r, schemaName, viewName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListVolumes operation middleware
+func (siw *ServerInterfaceWrapper) ListVolumes(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "schemaName" -------------
+	var schemaName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "schemaName", chi.URLParam(r, "schemaName"), &schemaName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schemaName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListVolumesParams
+
+	// ------------- Optional query parameter "max_results" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListVolumes(w, r, schemaName, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateVolume operation middleware
+func (siw *ServerInterfaceWrapper) CreateVolume(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "schemaName" -------------
+	var schemaName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "schemaName", chi.URLParam(r, "schemaName"), &schemaName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schemaName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateVolume(w, r, schemaName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteVolume operation middleware
+func (siw *ServerInterfaceWrapper) DeleteVolume(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "schemaName" -------------
+	var schemaName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "schemaName", chi.URLParam(r, "schemaName"), &schemaName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schemaName", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "volumeName" -------------
+	var volumeName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "volumeName", chi.URLParam(r, "volumeName"), &volumeName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "volumeName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteVolume(w, r, schemaName, volumeName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetVolume operation middleware
+func (siw *ServerInterfaceWrapper) GetVolume(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "schemaName" -------------
+	var schemaName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "schemaName", chi.URLParam(r, "schemaName"), &schemaName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schemaName", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "volumeName" -------------
+	var volumeName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "volumeName", chi.URLParam(r, "volumeName"), &volumeName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "volumeName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetVolume(w, r, schemaName, volumeName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateVolume operation middleware
+func (siw *ServerInterfaceWrapper) UpdateVolume(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "schemaName" -------------
+	var schemaName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "schemaName", chi.URLParam(r, "schemaName"), &schemaName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schemaName", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "volumeName" -------------
+	var volumeName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "volumeName", chi.URLParam(r, "volumeName"), &volumeName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "volumeName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateVolume(w, r, schemaName, volumeName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3755,6 +4011,21 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Patch(options.BaseURL+"/catalog/schemas/{schemaName}/views/{viewName}", wrapper.UpdateView)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/catalog/schemas/{schemaName}/volumes", wrapper.ListVolumes)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/catalog/schemas/{schemaName}/volumes", wrapper.CreateVolume)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/catalog/schemas/{schemaName}/volumes/{volumeName}", wrapper.DeleteVolume)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/catalog/schemas/{schemaName}/volumes/{volumeName}", wrapper.GetVolume)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/catalog/schemas/{schemaName}/volumes/{volumeName}", wrapper.UpdateVolume)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/classifications", wrapper.ListClassifications)
 	})
 	r.Group(func(r chi.Router) {
@@ -4761,6 +5032,168 @@ func (response UpdateView403JSONResponse) VisitUpdateViewResponse(w http.Respons
 type UpdateView404JSONResponse Error
 
 func (response UpdateView404JSONResponse) VisitUpdateViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListVolumesRequestObject struct {
+	SchemaName string `json:"schemaName"`
+	Params     ListVolumesParams
+}
+
+type ListVolumesResponseObject interface {
+	VisitListVolumesResponse(w http.ResponseWriter) error
+}
+
+type ListVolumes200JSONResponse PaginatedVolumes
+
+func (response ListVolumes200JSONResponse) VisitListVolumesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateVolumeRequestObject struct {
+	SchemaName string `json:"schemaName"`
+	Body       *CreateVolumeJSONRequestBody
+}
+
+type CreateVolumeResponseObject interface {
+	VisitCreateVolumeResponse(w http.ResponseWriter) error
+}
+
+type CreateVolume201JSONResponse VolumeDetail
+
+func (response CreateVolume201JSONResponse) VisitCreateVolumeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateVolume400JSONResponse Error
+
+func (response CreateVolume400JSONResponse) VisitCreateVolumeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateVolume403JSONResponse Error
+
+func (response CreateVolume403JSONResponse) VisitCreateVolumeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateVolume409JSONResponse Error
+
+func (response CreateVolume409JSONResponse) VisitCreateVolumeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteVolumeRequestObject struct {
+	SchemaName string `json:"schemaName"`
+	VolumeName string `json:"volumeName"`
+}
+
+type DeleteVolumeResponseObject interface {
+	VisitDeleteVolumeResponse(w http.ResponseWriter) error
+}
+
+type DeleteVolume204Response struct {
+}
+
+func (response DeleteVolume204Response) VisitDeleteVolumeResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteVolume403JSONResponse Error
+
+func (response DeleteVolume403JSONResponse) VisitDeleteVolumeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteVolume404JSONResponse Error
+
+func (response DeleteVolume404JSONResponse) VisitDeleteVolumeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetVolumeRequestObject struct {
+	SchemaName string `json:"schemaName"`
+	VolumeName string `json:"volumeName"`
+}
+
+type GetVolumeResponseObject interface {
+	VisitGetVolumeResponse(w http.ResponseWriter) error
+}
+
+type GetVolume200JSONResponse VolumeDetail
+
+func (response GetVolume200JSONResponse) VisitGetVolumeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetVolume404JSONResponse Error
+
+func (response GetVolume404JSONResponse) VisitGetVolumeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateVolumeRequestObject struct {
+	SchemaName string `json:"schemaName"`
+	VolumeName string `json:"volumeName"`
+	Body       *UpdateVolumeJSONRequestBody
+}
+
+type UpdateVolumeResponseObject interface {
+	VisitUpdateVolumeResponse(w http.ResponseWriter) error
+}
+
+type UpdateVolume200JSONResponse VolumeDetail
+
+func (response UpdateVolume200JSONResponse) VisitUpdateVolumeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateVolume403JSONResponse Error
+
+func (response UpdateVolume403JSONResponse) VisitUpdateVolumeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateVolume404JSONResponse Error
+
+func (response UpdateVolume404JSONResponse) VisitUpdateVolumeResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
 
@@ -6229,6 +6662,21 @@ type StrictServerInterface interface {
 	// Update a view's metadata
 	// (PATCH /catalog/schemas/{schemaName}/views/{viewName})
 	UpdateView(ctx context.Context, request UpdateViewRequestObject) (UpdateViewResponseObject, error)
+	// List volumes in a schema
+	// (GET /catalog/schemas/{schemaName}/volumes)
+	ListVolumes(ctx context.Context, request ListVolumesRequestObject) (ListVolumesResponseObject, error)
+	// Create a volume in a schema
+	// (POST /catalog/schemas/{schemaName}/volumes)
+	CreateVolume(ctx context.Context, request CreateVolumeRequestObject) (CreateVolumeResponseObject, error)
+	// Delete a volume
+	// (DELETE /catalog/schemas/{schemaName}/volumes/{volumeName})
+	DeleteVolume(ctx context.Context, request DeleteVolumeRequestObject) (DeleteVolumeResponseObject, error)
+	// Get a volume by name
+	// (GET /catalog/schemas/{schemaName}/volumes/{volumeName})
+	GetVolume(ctx context.Context, request GetVolumeRequestObject) (GetVolumeResponseObject, error)
+	// Update a volume
+	// (PATCH /catalog/schemas/{schemaName}/volumes/{volumeName})
+	UpdateVolume(ctx context.Context, request UpdateVolumeRequestObject) (UpdateVolumeResponseObject, error)
 	// List classification and sensitivity tags
 	// (GET /classifications)
 	ListClassifications(ctx context.Context, request ListClassificationsRequestObject) (ListClassificationsResponseObject, error)
@@ -7193,6 +7641,154 @@ func (sh *strictHandler) UpdateView(w http.ResponseWriter, r *http.Request, sche
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateViewResponseObject); ok {
 		if err := validResponse.VisitUpdateViewResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListVolumes operation middleware
+func (sh *strictHandler) ListVolumes(w http.ResponseWriter, r *http.Request, schemaName string, params ListVolumesParams) {
+	var request ListVolumesRequestObject
+
+	request.SchemaName = schemaName
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListVolumes(ctx, request.(ListVolumesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListVolumes")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListVolumesResponseObject); ok {
+		if err := validResponse.VisitListVolumesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateVolume operation middleware
+func (sh *strictHandler) CreateVolume(w http.ResponseWriter, r *http.Request, schemaName string) {
+	var request CreateVolumeRequestObject
+
+	request.SchemaName = schemaName
+
+	var body CreateVolumeJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateVolume(ctx, request.(CreateVolumeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateVolume")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateVolumeResponseObject); ok {
+		if err := validResponse.VisitCreateVolumeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteVolume operation middleware
+func (sh *strictHandler) DeleteVolume(w http.ResponseWriter, r *http.Request, schemaName string, volumeName string) {
+	var request DeleteVolumeRequestObject
+
+	request.SchemaName = schemaName
+	request.VolumeName = volumeName
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteVolume(ctx, request.(DeleteVolumeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteVolume")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteVolumeResponseObject); ok {
+		if err := validResponse.VisitDeleteVolumeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetVolume operation middleware
+func (sh *strictHandler) GetVolume(w http.ResponseWriter, r *http.Request, schemaName string, volumeName string) {
+	var request GetVolumeRequestObject
+
+	request.SchemaName = schemaName
+	request.VolumeName = volumeName
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetVolume(ctx, request.(GetVolumeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetVolume")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetVolumeResponseObject); ok {
+		if err := validResponse.VisitGetVolumeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateVolume operation middleware
+func (sh *strictHandler) UpdateVolume(w http.ResponseWriter, r *http.Request, schemaName string, volumeName string) {
+	var request UpdateVolumeRequestObject
+
+	request.SchemaName = schemaName
+	request.VolumeName = volumeName
+
+	var body UpdateVolumeJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateVolume(ctx, request.(UpdateVolumeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateVolume")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateVolumeResponseObject); ok {
+		if err := validResponse.VisitUpdateVolumeResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -8584,126 +9180,131 @@ func (sh *strictHandler) CreateTagAssignment(w http.ResponseWriter, r *http.Requ
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"H4sIAAAAAAAC/+x9e3PbOPLgV0HxruqSKtnyXKau6pf7y0k8Wd86Ga8fs1s3m1JBIkRhTYIKAMrRuPLd",
+	"f4UXCZIgCUmk5NdffhCPRqNfaHQ3HoJZmixTgghnwfuHYAkpTBBHVP71Bf64QiyL1bcQsRnFS45TErwX",
+	"33CSJYBkyRRRkM4BVU0BTwFFPKMELBEFSxih42AUYNHpe4boOhgFBCYoeB8k8MdE9wpGAZstUALVTHOY",
+	"xTx4/8vJyUi0EjPJv05GAV8vRV9MOIoQDX7+HAWXMEI36R0idTB/X8LvGRJQYALF/wAXDcGcpgmAYEnR",
+	"CqcZE8AvU8IaQRXLmMiuJUg1MIxTTKLgpwBGfZQYO81CzM8Ip2uJW5ouEeUYyW9wpiCsjTEKZhRBjsIJ",
+	"5OLzPKWJ+C0IIUdHHCcoGNX7hBmVy5skrNQJE/5/fhXLyOIYTmMUvOc0Q3UsjgJEaUonCWIMRkiM0dCl",
+	"mBOHzqnqQ6cUC/THE/Y99hp5STGZ4SWMJwr9DiRRdE8x54h4D8o45ChBhE/UJ88uGXPOz0VHNoGzGWIM",
+	"SUxgjpKGxuofkFK4lhSr/5FO/4NmXLT4CDmM0+iczNM6rczSRMDdG7E0IjVbhhsO5lxLGmcJ+YQ4xPFm",
+	"i2kErNipKoP/c4H4AlHAFwjM5MQAxnF6z8DX24sLsIJxhthxAfg0TWMEiaSylOEKE1pEW2HXMJRtYXxZ",
+	"+n/TVhfYMMTmjbgvkN250Ca+NfPDVkLDxuTDDgyeQHY3QT+WFDHWNJhkmInnkO3Y+YBJiEl0hb5niPE6",
+	"rgrx4b2CokvDfo0ChtDESLKSlprDmKE6gUkh9T3DVEiHP8tA1Sb85lxwkmB+TiLExBY1LjeVOyh//Z8U",
+	"zYP3wf8YF2p9rBXSOB/od91erOnd5A6tHer9+h0QH7QmR6FSmNkyTmF4lNFYafkIM46o1Jn+ss9Gipnf",
+	"uXxJ0cWuN66/izW6yLybeitQ2xPWu3etpXEdjQtoFiE2VBqcZnKSMJz94IgSGF+kM9hKVR1KJ0SE4zYF",
+	"3aK5YThJSbz2YSKhg1MqjS+NhLxHcP0uGAWICNPwT/HHN4eIy2jsjTnRtr62ZlR+ppDwPQuhJcUrHKOo",
+	"SUTNMrqJnLW7+FFZuxirjVeByV5AG2LTbPkFiYNFI3oT+dl/nbq93yLtxiNrqg6QG4HtkkANvOIi02YQ",
+	"Ls1WNIKB2QSGCSZ+jNcpjgpOzBiiTttwA/Cv0vvfcMxbtrwLi3PZ3ZwH2oGx2jaDdC0151YSMtbiNZeP",
+	"1WOpMiYB0uIYmA5AdBDaNWMIzFMKlPoGWgyCJeSL442M+n4M2c0281pB+zGXpY1IhH9lFIljVJoRLowB",
+	"JzDlVo1LVc1mMRanPCUa2tswNKOIt7TjiMDmsTx1pGEYS1eNgtP/f3t1FoyCzx+vnZoLkXCZ4obBoxkT",
+	"uJrMcYwmgiScrUSLBshbtHPUxF8tyMpoPGF8HVfkgoRs5Kd9q/hqJq4boU06rEGHSXul55Rc9eX06+nn",
+	"s09AHeP/L4AZT49CzGbpCpk2Z/+6Obv6enoB8BykCeYchSVTt83Ydhl8NWO4nYDk3hrNVsYq/Z4hHlQs",
+	"2+A3HEuRkUAO0rk8EefiJYQcHoMSCvLlKRwcW8ZUMcOMrZzU2SHfvgohVoUhF3F8ISC8J0x+Z2lGZ1qw",
+	"dULoT8hq2Jw5qsebsS1QhbwVoAgsAYH3N+ztFrDwkh1VbJgmttqG3ayXCkui33FOk290z7fAmtfenmI8",
+	"89WxR5sJ7BsYnTKGIyLIceuT1h7sz3b7snWBjctq0jrSedQNkujePPEfGN1vZUI0YnmF0f0kRHNMMPc6",
+	"r2oJW+3XArPYZ9Qv1OYcZ6RAh4DO+W0lYWHH4DwiaUV8O7lQdagp3a2ZpjyiC2mfUIxej4MDHAfPKE2p",
+	"i/5C5HbaWtcXXS6cUB3tVHvn5BVPyfB+eR+3ivdONo6Q3hNEuz0z3Z6YHq4PWhw0tf2QR2zHJhzS8d18",
+	"cHeDr5wa9UVE4uPGzoz+nB81aGvO4vrBLY7T+0mCGcMkmpSs7rJnoSzkT0U3fVPDACbS7pIGkDILIUVA",
+	"D6p8zuL7pbJHpWnmvsvBUjlM0A9OoT8wSqVUobFnAyTlYEkRQ4SXoHWB0YpIdZNex6OYhU2ML13dJFaM",
+	"6fyKXbYFLJOXjvMsjteg6Hjs3Ho1PLvDy6XX2KoheIOOo+MRQMmSr9Wnt+7xG+/CtTnsSW8XmCAYobNQ",
+	"Ce/dWRyFJZ+xvWYxCRCf3oOrs9NPI/DPq/Obs5H8YyJ/D3a57fa4vNZnEzvioXQ6US4ffX7S5yOFzVHj",
+	"YE3YFvtAI8Q9Z1ONm2fTg+Wzddyht+z1V63FK04+cS7kFMGkdKXedta2acdxxlanspY77z6nc643haEx",
+	"Joa4xBMnWPcVnvwiTpFRnE5ZT3d2ajqXxfQFEjxHjCu3Ry8XXI1zNCLSEUYUJBCTxgN7t7Gomn1rhUaF",
+	"DzUemRPI7nYMJLC0mhedVnbDwRnoxxJTxDaSq1IXbBLtMgpoej9R/vYNO/akW74gDoXtiq6zJIGuYKyZ",
+	"ir5puUKGHDb7WRMzQUvwgFzKRPqvfY9i2tyewtkdImFLUIX/qC70XKrYOBTKcLWLNHIYe2L93oRnhb05",
+	"NpWgH3xihdP57WEOpB1ctCugpUCloUD9Yjh/Z0BlYFD/YFbPubsCWzs39w+ydLXsCuelcT3I0QaBMj/x",
+	"7QqrfXgcCNBeQBwAOMvc2hXEDkNxR0Dz+/ceCFMNNACQ/8gQXf8NC92yFiIa74zU6ohDCP08NmBXYPOB",
+	"BgBSnaP60Uz2WEOAiiCdLazY/l1AtcYaAtRqJMHO8FYHHABoeUPdDyVYQw0CaLQ7gNEAgP2B0X0/CCxG",
+	"GgJMdTm1K4hylN6BzNVILw41b/+XHWW2RVSZ38psy83hTYdk0+WZPtP1lvkzW/gHn/xNYH1nMhohbWY1",
+	"u7riENEJX0AyCaEr+Fzdp4JYjQOQMP2A7AVEL8AXmIEEkjUQ/Y/d51zbgVOd8Vsn6E3unFCCFu545K7b",
+	"TP1ca70mgXUNStN7NjFJDVsi6VEnkknSanaO+sTGNgXF6qHd11gu76SXZzDnpDqixWaVBjS/uLz8nZgp",
+	"bP+93CG3RiNvwDc7503l6z5E2tTOSVClk9Dmjtu+QzSM/G/p0ykMtojM6CsZUbuhNyC+iO16EugnqbR0",
+	"zGyLxOlEfwL5bDGZYxQ77sN/E/9WkQiyHQrfy4j8EdBTjICeeT0CKQUcRptFpaoNMN87gS1fXnY3d154",
+	"/y6xqK+8FQQjdcMr16BEt+c21E7PHRH9PcTq7xSDv0sQ1qHi9oeN8WqM798yfKsI/PegH9udsY003+wK",
+	"tOuC5zFqh1rYf1OIvyMqHbzRkfuSrdnqrTNAtiN2/8ydkrRzQP7etFs/KQG+6xWmPWYcz/xceddFc+uO",
+	"1w3SFWJpvEIh+JTN7i7gnU5QyMErJ7G0pCRsaGw2OhkejzlQxWVT3EXzOb37nBdDxidLmgqO3I2n80Gm",
+	"7kSD0jlomxMp/gtNpmuOtjv3uxEc9XNOMn0alu5Nmp1JGltEopWyXhyWjPy24XrzTg0LruTQ9OdgGcLH",
+	"J1l+l8PnreR2Xd1mi4SSljHbiym0qfbeMmIbQNtbjYWtQ/n9o+7VivK7hNMwwcQrwbyjHEre9FvjpDuk",
+	"Xw+9w6/5zQPnJ/eQhuxN3F35xM04GNqkbYZ566zCvmxtryTEJuB3SC9E95uLQzckcQrDW9rMuYJ2O6o3",
+	"mCZggYk6kPEF0lWSUFhNV/EEp+nqqRytW6uCpnJTlhQp8wPcXl0A3UXA4Ge8qHpM9fFvFgioklDgfoEo",
+	"knPJ/Jh7HMdgimR9ilIOiu1XEGubaJ1THvgyh/fy9kbCLLCoemAStWX/tKHTuvTfyWfcaZ0NepP+hBzF",
+	"nkdvdVLd7JJoG7fUdtKpFIdx+LuGIemkc78c2dq9OAx3zM6uK0h5hsF8La1FtVOnS/x3tD7NlNkhy7ku",
+	"EAxljSJdz/VfR6eX50d/R+sCRih7CRg/IEgRNf2n8q/fzOr+3z9vTAlYad/Kr8UoC86XqhAs1rU8ywLv",
+	"bzc3l+D08jzXFp+y2d2nD9qzE0Mu0AjuMV+Aqw+nH0fg6uJ6ZCpbJpDdYRKN/k0gCcEtwXwN9NnqaJYm",
+	"S8jxNEZAUypIIIGRvKk+/rf072MuRFmgp/wkprw0U55engejYIWoqoEXvDs+OT6RRLREBC6x/te7wEo4",
+	"GsMsxPwo1jkDkTLLBNNIojkPg/fBBWa8yCwYlUoM//ngLrZbvvlvK7g7co+gq+tu0VPf1Hf0dPm9ioWN",
+	"rcLJHq2L8sU/vwnLVxkAEqP/++REWUSEa8kCl8sYK54c/4cpxixAbQ0rrud5SDqtKGTTCsi9BYKOkA4U",
+	"luxmcmhUOEDRSuBM+Qf/DH6fMkRXcIpjzNfBN9FvrInSopOqs5NnVCbhKkGCUwLgNM24SoLEJIpR4QjV",
+	"owlzoExunxHXHBEMiEu7XK8DifqzvZYK8j4jnrOpFBQF8gz431Rq32xR56mSVyVQB2vE+Ic0XPe2RKfn",
+	"5mf5GC+Mop+HQ7MCMTSIFMLq15N3vc2uqk845j2VsTogRASjsLKxCqZCBCMOZSyoa38tthhbZcMbxei1",
+	"blMTok9aHJXj5ltFUoyZLG1lkFVGvUCR+WRy9Wc5jzjZK2UOVNvF/wZiLld9QS/e+qU3EMopBnWs67Rw",
+	"bbgq3joZnrf+gDEOlfRHqs1hmFrM+l/Dz6qxDGOKYLgG6AdmvErXilgABATda/r2FSfjB/XLV5ign0X8",
+	"ap3mVchtTvMV+VK5hE7pDAE5ktymFSIA61oFmmhSwiEmzLqZdNlaczGQy9QqnMZ1CfRrYwUDfft+SIr5",
+	"dfhZv6YczNOM7J1GScpVPZAKeepobdhGmiO3UvuMuCVmB1I0noIuNApo//tYswwNLsF0DUxZb6d1WD9K",
+	"6ZKb5jSTc39Q1S1tJ5xvHZbnoLrRdfmzZ7uzi2SM4alHezECx2Xpakrd1NAtaaZx4RdsNH5vVJPnZfuW",
+	"EgW9TF+NqX1tviX7XTQgTW4de4ZJlw4YVF61mPI3upjRcJZ86Qpxz4Z8KUO0voPy86sZP+ysCsn+Vrwq",
+	"eNfFMZ5ic/wgf3ra+AUzdJnValEvzqp2G7d5QbQNbNsGVJ/sl/W1YQswmcWZvFQ1YdSPw9RVvHAgS3fk",
+	"HCznp16t5iHVkCOSZc82cwctGpNZ8dGLtpgVwfdhMNuSf2wlR7Qb0R91w+dlSpcLg3nZ0o9FDkor2hSh",
+	"Tecd2uZpyMIdKHj8oH7JDZonsWL3WMVKelUlH03K3oA3f+W3S/Z88VdK3Gq5+ctrW75cdWJiQ/rWJ9iU",
+	"mhXAJpg/GU60vAHVEANV/Jbl7z7H63K0JgNvKg9dvjU3ibXQg+I/K3XYRay4/1CxODL+YQRkVfIZZ2ar",
+	"ipSxEYAkzIvyMg0D5GmCZzCO1/kjNAycf70+u7oBeZ0XkJJawWYV5lNxgcjNk4o/Lx48lC/E/WDpnmVH",
+	"teK6g6PyJvrR8oO5RcAb4z7FTOabj4ri94IURgDx2fHbZy7g1Dm1ycdouLbgVDsgWPodDSdasq+g9V2l",
+	"n5j0Ock+6Z0SFHb9TmMwLxDeKOouZSHxe8wXacYBJIC9ez8eCzE6xz/kmw1cORgBZICiGHK8QuZVrbiU",
+	"ufpU5OZFCpV73mRz/YbV/cMQktNVIv5VbL6KzT7EZp3fh5aYhfX0HOSmCkuFVmqNSVWRZWJklJnMtgMz",
+	"SOSzrTzVugrA8mMyIaZoxuO1aHH97hjcmCyamaxqhwiYIutFF7DCUI0vDStgUu76sAqluM6zjgY7SVaS",
+	"rPYs0+pZVS6/UL6vetNury5e5D3ZwUWWug8op7CV08HK/NSj8NK1Jjuj06cpXwDzZIw0QooHayoFKwXk",
+	"sHgsyn07pAtOPg9frP2wT+PmG0zXt36exXGOQwt71jYbdD1vP6jGwbj8FlLTLeOnvNWzIib3AwAOsvrU",
+	"wIAOCnPw6iudobH9BFYTld0uXzKNmdV3Uli2fKWvnL502aNncAjICANqNcIK+Z4hihGT6l/mvTPLNQHe",
+	"UPnAZUZ4nrep/2L4L/S2bgtcKjTtJ1rErj/WpKJZqUbZC7xZ0TuSB6fwVOxkjGbcxs1WFy0rjO7b7+j/",
+	"kC2el3y1n3PwuppXaHpMUa4Sokcc5CpQPGiMq11yZs8hrvYbHo4zNEb3rwGuAy9X4NgvvlUwyu6hrZLd",
+	"xg/ih2dga84AXXGtci2vYa35Zm0Y1erG88k+mf1x5WpJgn9U8auGa3qNORpQwdRrmu3ZUdxOcybaSDLL",
+	"i441UsT+v9iO0Uar4tmsZjNYt3lmhrBelZ8RnDeuW6PqU0nP7sn4rJQ6kWqf6bwWBdZxUTjbwKlnEsBW",
+	"Kksd52WsTVuY8fQoQkRQhNUDFD3y66+PV2enN2eTP36/uP1yBlKSRyw0XnmpDRjWUC6VN9y3qVx6S86h",
+	"P+X3V3N54OUqLHsazKpxiZV9Rej4Qf3isJFdb6qxfDofJqqxkDa0CxbqNLXV0l6NbWujgzbbugG1J/uW",
+	"D4/MwlZAGRv7AAZ1zmRbm9Quk5KZlcnXiNhWPGmX1B3WPN9cre2PbHMTPWexF22kayxILRJDxvAcW4/7",
+	"t0Y4wDgGwqRXNSijdIUoQSEoDzNmiDDM8QrztY4CVWV+6nb8x8r8+ymr4C5uWIZFLtOZilVuJq95rPXK",
+	"bsW557NEESQzZI4+8tLnKIHsLs9l+gLZ3Xno4cX6mDf3UrCfbM16eB1n1Sm1MHStS7R6ukJsjLWK2+4X",
+	"Kb517Md4iolncHefUDV58j9gElYIYIgsDTNB5UFIL5HuoMEPRTWqg50k9kD6HwvabrwpEhhVLXgK8jK2",
+	"blboIs2MPC7ivJXwDE6eTc+Vbkudt2T6Sp+5hSD3ULWRiW4eNIp0XsKR8b+0++2qj988Nw9efX1evjxU",
+	"fVXPaXk4Wln7ovxgpcqlbc642mDSkpmlZI6jTBwydB1waejxBQKQsXSGVWJt/rLNMTifqxfXMdPPPlDG",
+	"8zFHzowh0RZyDmcLFFqnmtOLi8nl1fkf5xdnn8+uvfx1VXQP6rlrerhpzz682ppd3K7zrfIC/a+evEFm",
+	"vch5x8eXR+pM52Rgt1wdP5hfN3DnlZg7pOmSVXlZs7l6N8mLGxscf05e7NK/OQJfnYCbUEizj7B7F072",
+	"KomsDX5EPkMHnh139CWV2mll29zZsx8wh7HmCdyAS92vDw7qFNxJY+6XTo2LsKwxX6yTcBNVFVFIeLvZ",
+	"/1k12fB9FxwGm51OR10jyh7bvPtSfgp1pxG2WdWTPhPpzfc6CEWmbe3wExkScvsNW2Jf5fyDngzkDAc6",
+	"Dlya5F61TAeW5YfX2/yhZpXobT8A6CZFInazP0WR+ZiiVXqncmOclK0MxiEp25phVyfblVzMC3CyqX1u",
+	"rrkg0OBLBmm27NKpssnz8p/pRXnqCt22pitgHJuvW+mLNFsOrC/SbHkgfaFW1+IzilSDg/Lqf+3DIU7m",
+	"MTbPRNbjriJNBa0MOn6QP73ubguyemLXtq24aPZENKz3ZHhKlh8elcNBIhBM1+D80/Y335rU+rj0rlLv",
+	"OEHJVE7dpXC+6IbPUO2YpXkpH4Ow/ZkWgoJacxAVkSX5Bh2WzDx0rEL48JpWzbOrFatGATAMX4Yp20Zv",
+	"p2GoCQ3wdFNVaYTNmKIkXXkWABiYKi0V/SSpUqHyxdBlSg35NR+2BEJMKxnN0EGmpt6JLN4xfhA/vOw6",
+	"qzqIl3UnGpavux6DiWeXLtm6FInCWR8GitmMZUajkhvEZSlXSmulcSjk0kJVzQNsiWZ4jlEISCaJIZ2D",
+	"EK4dAamXYrKihM0Q/G9PcaDbkDIILZXvRLtSLc8DP56sAErjsFJnx0WtgoYSSPAcKbJpL99YFJW7fgdu",
+	"ry5Y/v5+uZjwFM7uVKE5WfljBGCckki/x39xDWh6L1rKorMqmiYPuiqGhBlfIMIF4lBYhFgdg1uGQnFG",
+	"EI3CbHY3gQoZ+oYe/eCIMHkLmFIg7xNMbckjhkMkC8+sMWkJl/liMDIMcZvhD0TYxfTNRG3aqD0rFRPU",
+	"FXu0UgDLNMYzbB7TO5hK/WX4iW+JIMmU4r+effxFe4VJ7fvRL/BsTimFIMoZTUsixKEsBTXOJ+vIs1jg",
+	"aHEUoxWKASZKZ8oonmma8XJMXT62s4zkF/P1Wk88JP9V53Lxn2kDWN6o6ixJam0KxP4+ZYiuoKoBrrGb",
+	"i9B298Vl0ex5OS+shXm5LpZ2e6fvfGmjamP/+aUVNTzcGSqf5XD3rnqVLb70IoD6xfvTPWLJC7IbP+S/",
+	"e53ByiT35PzrHbhp9rG3rPtkP5Sef3xU/vYcobv63C0y7ONY20ThYxgmmPh5wnoEaRQsM95U0Sff2VMJ",
+	"25BxguWpds7pUaF8ByfEa8RBSkFGGOJAbjCYxzBqln8qZKwx5uPsB5plHP1DB5YNsR1y7AMd3/TcTc+L",
+	"yM/7flrkAwwBNeh4BC4QTQLg+h8XALImV4JFYYpYLPI6WmBhW69bTWXZ62+64YZBmzqGevMASQ55xrbp",
+	"Oadp4g6pFHLgiGMV1O03GE+3GupJHyDs7T4jnOKuElQSZ8BQkuMQoRogSa3CFF3ktNR2kKPp/ZF2n40f",
+	"qMn09DIA87zQp2gAFm7D7Q0VC119GCqNW7FBTnyPILWlxJe3/vGnHL+QhPirnKjb8+F1G7+M+Gay3CQf",
+	"fg+EqVKpnxppvphseA/i1MnwupVvOjxDkKpMLqd797csjo84+sGBagjgjKbMvHDIRsr3rB8w1A9e1/26",
+	"17KvqajpZZ99tw4N3qWuKrArTEzXIJ3+B804ED3ea9BH5kYspebZ5ZHbvvLIn3nSxpTanBxARzl5tfM0",
+	"b1E+M8qPJlFeYbq1npCuf3lU5OR7VHECy5pX2NTRtMY5Bte6sJGpQQbe3KH1BIcjnS/8Vr7uSdBKhqCI",
+	"wVHoLvSkU8Y+WlA+Ly+8Y4Fe3ngH3l0WtavZ9sUf6qNtl1OqRq0tfVDHf222A10A1FfdchFQIBq8YVWm",
+	"ShPMOQrfvmZoDXQ1USDfr+ZqnT0ak18d4nf8UPyxQamGXXlRjeTmxS7Dz8LQayGGTUhg1K5oLbY3NdH7",
+	"UqqfEffY65O9i7uCjh5Tjdj6du5c76HM5D1XfLDg3L3mw770c8NsB7pP8CJYU/bBYvMXXh12A91XetTv",
+	"PPxZKljYesFQ1Al8bscAe2V+iUSq6aMIgFP1ba2g1e390Zomhs0iGr4aamWaAx01rHW2nDFkXd1n77rz",
+	"CuHsrDTsFF+Wd7lVeuVu1+cmvKyFeckug6xHJL3sEHwZcV95W/cxirGhrwkqsxxIiBWrbJFh+hr0VYpB",
+	"j3thJcSiI8gYjkgiZ34o/vC6OL+B0Wnew8tXcAMjkBE1zSMwXHWiHwQcRgDaS3G6zH2Y3kZhH5fpCpAW",
+	"hXKj3gx4Tqqk6ZGFuhJpemfBPDXRspMtMvVGBtoNJ01vYHQgOSpW1iJBufi8J8eqEAV+HlVeinusXWKJ",
+	"D8IQi3xllrekenSJti2Y8DNIov6EkkH52NIgfiEUvYDRycEVzTQgLxczHY6rrdU28VpJ6e6ZwYvJy6Ug",
+	"5L+1/uUpgCAvdamvrxsZX4xjrBlBZx8QpIieZnwRvP/zm1Bqp0v8d7TO//NNdKArQ5cZjYP3wXj1i9Rp",
+	"eo5aur0VMvs9QxQjBmAEMWEqkW4ZQy5o9bggbhU0W4+A0BEXo2rMgzptqqAN+dxvAgmMkNhJa1QTr1Ef",
+	"9xPkEGASISYt0RWGIFvGKQzF0EmCuRo6r8g6xzEC4jsmkTXBuRnBMUWRIzbSldFGuqLmyD4yjWppy9b4",
+	"ueVZH16ZsyYtm1OTJy1fk3DgwiRqu0aK2KjyxpIBSwdFqNAZazSLquoDnmYh5iBOxbCluFU1aC3Z0Bq3",
+	"HKNaH/q6fidf3qi8druNRe1CdZBXNZe7NQfVGjLPNv357ed/BwAA//8v2dg/tBUBAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

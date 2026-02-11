@@ -1239,6 +1239,70 @@ components:
         next_page_token:
           type: string
 
+    # --- Volumes ---
+    VolumeDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        schema_name:
+          type: string
+        catalog_name:
+          type: string
+        volume_type:
+          type: string
+          enum: [MANAGED, EXTERNAL]
+        storage_location:
+          type: string
+        comment:
+          type: string
+        owner:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateVolumeRequest:
+      type: object
+      required: [name, volume_type]
+      properties:
+        name:
+          type: string
+        volume_type:
+          type: string
+          enum: [MANAGED, EXTERNAL]
+        storage_location:
+          type: string
+          description: Required for EXTERNAL volumes. Ignored for MANAGED.
+        comment:
+          type: string
+
+    UpdateVolumeRequest:
+      type: object
+      properties:
+        new_name:
+          type: string
+        comment:
+          type: string
+        owner:
+          type: string
+
+    PaginatedVolumes:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/VolumeDetail'
+        next_page_token:
+          type: string
+
     # --- Ingestion ---
     UploadUrlRequest:
       type: object
@@ -3424,6 +3488,143 @@ paths:
       responses:
         '204':
           description: Location deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # === Volumes ===
+  /catalog/schemas/{schemaName}/volumes:
+    parameters:
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: listVolumes
+      summary: List volumes in a schema
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of volumes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedVolumes'
+    post:
+      operationId: createVolume
+      summary: Create a volume in a schema
+      description: >
+        Creates a new volume. EXTERNAL volumes require a storage_location.
+        MANAGED volumes auto-generate a storage location.
+        Requires CREATE_VOLUME on catalog.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateVolumeRequest'
+      responses:
+        '201':
+          description: Volume created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VolumeDetail'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Volume already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /catalog/schemas/{schemaName}/volumes/{volumeName}:
+    parameters:
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: volumeName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getVolume
+      summary: Get a volume by name
+      responses:
+        '200':
+          description: Volume details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VolumeDetail'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      operationId: updateVolume
+      summary: Update a volume
+      description: Updates volume fields. Requires CREATE_VOLUME on catalog.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateVolumeRequest'
+      responses:
+        '200':
+          description: Updated volume
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VolumeDetail'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: deleteVolume
+      summary: Delete a volume
+      description: Deletes a volume. Requires CREATE_VOLUME on catalog.
+      responses:
+        '204':
+          description: Volume deleted
         '403':
           description: Access denied
           content:

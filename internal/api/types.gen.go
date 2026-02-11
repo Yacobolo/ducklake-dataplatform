@@ -32,8 +32,14 @@ const (
 
 // Defines values for CreateTableRequestTableType.
 const (
-	EXTERNAL CreateTableRequestTableType = "EXTERNAL"
-	MANAGED  CreateTableRequestTableType = "MANAGED"
+	CreateTableRequestTableTypeEXTERNAL CreateTableRequestTableType = "EXTERNAL"
+	CreateTableRequestTableTypeMANAGED  CreateTableRequestTableType = "MANAGED"
+)
+
+// Defines values for CreateVolumeRequestVolumeType.
+const (
+	CreateVolumeRequestVolumeTypeEXTERNAL CreateVolumeRequestVolumeType = "EXTERNAL"
+	CreateVolumeRequestVolumeTypeMANAGED  CreateVolumeRequestVolumeType = "MANAGED"
 )
 
 // Defines values for StorageCredentialCredentialType.
@@ -41,6 +47,12 @@ const (
 	AZURE StorageCredentialCredentialType = "AZURE"
 	GCS   StorageCredentialCredentialType = "GCS"
 	S3    StorageCredentialCredentialType = "S3"
+)
+
+// Defines values for VolumeDetailVolumeType.
+const (
+	EXTERNAL VolumeDetailVolumeType = "EXTERNAL"
+	MANAGED  VolumeDetailVolumeType = "MANAGED"
 )
 
 // AuditEntry defines model for AuditEntry.
@@ -239,6 +251,19 @@ type CreateViewRequest struct {
 	Name           string  `json:"name"`
 	ViewDefinition string  `json:"view_definition"`
 }
+
+// CreateVolumeRequest defines model for CreateVolumeRequest.
+type CreateVolumeRequest struct {
+	Comment *string `json:"comment,omitempty"`
+	Name    string  `json:"name"`
+
+	// StorageLocation Required for EXTERNAL volumes. Ignored for MANAGED.
+	StorageLocation *string                       `json:"storage_location,omitempty"`
+	VolumeType      CreateVolumeRequestVolumeType `json:"volume_type"`
+}
+
+// CreateVolumeRequestVolumeType defines model for CreateVolumeRequest.VolumeType.
+type CreateVolumeRequestVolumeType string
 
 // DeleteGrantRequest defines model for DeleteGrantRequest.
 type DeleteGrantRequest struct {
@@ -470,6 +495,12 @@ type PaginatedTags struct {
 type PaginatedViewDetails struct {
 	Data          *[]ViewDetail `json:"data,omitempty"`
 	NextPageToken *string       `json:"next_page_token,omitempty"`
+}
+
+// PaginatedVolumes defines model for PaginatedVolumes.
+type PaginatedVolumes struct {
+	Data          *[]VolumeDetail `json:"data,omitempty"`
+	NextPageToken *string         `json:"next_page_token,omitempty"`
 }
 
 // Principal defines model for Principal.
@@ -715,6 +746,13 @@ type UpdateViewRequest struct {
 	ViewDefinition *string            `json:"view_definition,omitempty"`
 }
 
+// UpdateVolumeRequest defines model for UpdateVolumeRequest.
+type UpdateVolumeRequest struct {
+	Comment *string `json:"comment,omitempty"`
+	NewName *string `json:"new_name,omitempty"`
+	Owner   *string `json:"owner,omitempty"`
+}
+
 // UploadUrlRequest defines model for UploadUrlRequest.
 type UploadUrlRequest struct {
 	// Filename Optional filename hint for the uploaded file.
@@ -748,6 +786,23 @@ type ViewDetail struct {
 	UpdatedAt      *time.Time         `json:"updated_at,omitempty"`
 	ViewDefinition *string            `json:"view_definition,omitempty"`
 }
+
+// VolumeDetail defines model for VolumeDetail.
+type VolumeDetail struct {
+	CatalogName     *string                 `json:"catalog_name,omitempty"`
+	Comment         *string                 `json:"comment,omitempty"`
+	CreatedAt       *time.Time              `json:"created_at,omitempty"`
+	Id              *int64                  `json:"id,omitempty"`
+	Name            *string                 `json:"name,omitempty"`
+	Owner           *string                 `json:"owner,omitempty"`
+	SchemaName      *string                 `json:"schema_name,omitempty"`
+	StorageLocation *string                 `json:"storage_location,omitempty"`
+	UpdatedAt       *time.Time              `json:"updated_at,omitempty"`
+	VolumeType      *VolumeDetailVolumeType `json:"volume_type,omitempty"`
+}
+
+// VolumeDetailVolumeType defines model for VolumeDetail.VolumeType.
+type VolumeDetailVolumeType string
 
 // MaxResults defines model for MaxResults.
 type MaxResults = int
@@ -830,6 +885,15 @@ type GetUpstreamLineageParams struct {
 
 // ListViewsParams defines parameters for ListViews.
 type ListViewsParams struct {
+	// MaxResults Maximum number of results to return per page.
+	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
+
+	// PageToken Opaque pagination token from a previous response.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// ListVolumesParams defines parameters for ListVolumes.
+type ListVolumesParams struct {
 	// MaxResults Maximum number of results to return per page.
 	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
 
@@ -983,6 +1047,12 @@ type CreateViewJSONRequestBody = CreateViewRequest
 
 // UpdateViewJSONRequestBody defines body for UpdateView for application/json ContentType.
 type UpdateViewJSONRequestBody = UpdateViewRequest
+
+// CreateVolumeJSONRequestBody defines body for CreateVolume for application/json ContentType.
+type CreateVolumeJSONRequestBody = CreateVolumeRequest
+
+// UpdateVolumeJSONRequestBody defines body for UpdateVolume for application/json ContentType.
+type UpdateVolumeJSONRequestBody = UpdateVolumeRequest
 
 // BindColumnMaskJSONRequestBody defines body for BindColumnMask for application/json ContentType.
 type BindColumnMaskJSONRequestBody = ColumnMaskBindingRequest
