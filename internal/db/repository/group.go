@@ -47,12 +47,12 @@ func (r *GroupRepo) GetByName(ctx context.Context, name string) (*domain.Group, 
 
 func (r *GroupRepo) List(ctx context.Context, page domain.PageRequest) ([]domain.Group, int64, error) {
 	var total int64
-	if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM groups_table`).Scan(&total); err != nil {
+	if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM groups`).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
 	rows, err := r.db.QueryContext(ctx,
-		`SELECT id, name, description, created_at FROM groups_table ORDER BY id LIMIT ? OFFSET ?`,
+		`SELECT id, name, description, created_at FROM groups ORDER BY id LIMIT ? OFFSET ?`,
 		page.Limit(), page.Offset())
 	if err != nil {
 		return nil, 0, err
