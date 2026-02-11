@@ -67,7 +67,15 @@ func (e *SecureEngine) Query(ctx context.Context, principalName, sqlQuery string
 	}
 
 	if len(tables) == 0 {
-		// No tables referenced — utility statement, just execute
+		// No tables referenced — require catalog-level privilege to prevent
+		// unguarded execution of functions like read_parquet(), read_csv_auto(), etc.
+		allowed, authErr := e.catalog.CheckPrivilege(ctx, principalName, domain.SecurableCatalog, domain.CatalogID, requiredPriv)
+		if authErr != nil {
+			return nil, fmt.Errorf("privilege check: %w", authErr)
+		}
+		if !allowed {
+			return nil, fmt.Errorf("access denied: %q lacks %s privilege for table-less queries", principalName, requiredPriv)
+		}
 		rows, err := e.db.QueryContext(ctx, sqlQuery)
 		if err != nil {
 			return nil, fmt.Errorf("execute query: %w", err)
