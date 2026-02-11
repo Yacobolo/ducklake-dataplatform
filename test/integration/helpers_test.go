@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	_ "github.com/duckdb/duckdb-go/v2"
 	"github.com/go-chi/chi/v5"
 	_ "github.com/mattn/go-sqlite3"
 
@@ -597,6 +598,74 @@ func extractLastJSONArray(s string) string {
 		}
 	}
 	return ""
+}
+
+// ---------------------------------------------------------------------------
+// Local DuckLake setup (no S3, no credentials — for catalog repo tests)
+// ---------------------------------------------------------------------------
+
+// catalogTestEnv bundles the DuckDB + SQLite connections for catalog repo tests.
+type catalogTestEnv struct {
+	DuckDB *sql.DB
+	MetaDB *sql.DB
+}
+
+// setupLocalDuckLake creates a local DuckLake instance using filesystem storage.
+// It opens an in-memory DuckDB, installs the ducklake + sqlite extensions,
+// attaches a DuckLake catalog backed by a temp SQLite file, opens a separate
+// SQLite connection for metaDB reads, and runs app migrations (catalog_metadata).
+// Skips the test if DuckLake extensions are unavailable.
+func setupLocalDuckLake(t *testing.T) *catalogTestEnv {
+	t.Helper()
+
+	tmpDir := t.TempDir()
+	metaPath := filepath.Join(tmpDir, "meta.sqlite")
+	dataPath := filepath.Join(tmpDir, "lake_data") + "/"
+	if err := os.MkdirAll(dataPath, 0o755); err != nil {
+		t.Fatalf("mkdir lake_data: %v", err)
+	}
+
+	duckDB, err := sql.Open("duckdb", "")
+	if err != nil {
+		t.Fatalf("open duckdb: %v", err)
+	}
+	t.Cleanup(func() { duckDB.Close() })
+
+	// Install and load DuckLake + SQLite extensions (skip if unavailable)
+	for _, stmt := range []string{
+		"INSTALL ducklake", "LOAD ducklake",
+		"INSTALL sqlite", "LOAD sqlite",
+	} {
+		if _, err := duckDB.Exec(stmt); err != nil {
+			t.Skipf("%s failed (extension not available): %v", stmt, err)
+		}
+	}
+
+	// Attach DuckLake catalog with local filesystem storage
+	attachSQL := fmt.Sprintf(
+		`ATTACH 'ducklake:sqlite:%s' AS lake (DATA_PATH '%s')`,
+		metaPath, dataPath,
+	)
+	if _, err := duckDB.Exec(attachSQL); err != nil {
+		t.Fatalf("attach ducklake: %v", err)
+	}
+	if _, err := duckDB.Exec("USE lake"); err != nil {
+		t.Fatalf("use lake: %v", err)
+	}
+
+	// Open same SQLite for metaDB (CatalogRepo reads/writes catalog_metadata here)
+	metaDB, err := sql.Open("sqlite3", metaPath+"?_foreign_keys=on")
+	if err != nil {
+		t.Fatalf("open sqlite: %v", err)
+	}
+	t.Cleanup(func() { metaDB.Close() })
+
+	// Run app migrations (creates catalog_metadata table)
+	if err := internaldb.RunMigrations(metaDB); err != nil {
+		t.Fatalf("migrations: %v", err)
+	}
+
+	return &catalogTestEnv{DuckDB: duckDB, MetaDB: metaDB}
 }
 
 // ---------------------------------------------------------------------------

@@ -99,6 +99,11 @@ func (r *CatalogRepo) CreateSchema(ctx context.Context, name, comment, owner str
 		return nil, err
 	}
 
+	// Check if schema already exists (DuckDB silently succeeds on duplicate CREATE SCHEMA)
+	if _, err := r.GetSchema(ctx, name); err == nil {
+		return nil, domain.ErrConflict("schema %q already exists", name)
+	}
+
 	ddl := fmt.Sprintf(`CREATE SCHEMA lake."%s"`, name)
 	if _, err := r.duckDB.ExecContext(ctx, ddl); err != nil {
 		errMsg := err.Error()
