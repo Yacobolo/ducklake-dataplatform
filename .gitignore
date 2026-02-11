@@ -31,7 +31,7 @@ go.work.sum
 # .idea/
 # .vscode/
 
-.opencode/
+.opencode/reference-docs
 ducklake_meta.sqlite
 
 # Binaries
