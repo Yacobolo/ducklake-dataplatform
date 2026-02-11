@@ -34,6 +34,113 @@ import (
 )
 
 // ---------------------------------------------------------------------------
+// TestMain — shared setup for all integration tests
+// ---------------------------------------------------------------------------
+
+// sharedCatalogEnv is initialized once in TestMain and shared by all catalog
+// tests. This avoids 6 redundant DuckDB instance + extension install + migration
+// cycles (one per TestCatalog_* function).
+var sharedCatalogEnv *catalogTestEnv
+var sharedCatalogCleanup func()
+
+func TestMain(m *testing.M) {
+	env, cleanup, err := setupSharedDuckLake()
+	if err != nil {
+		// DuckLake not available — catalog tests will skip, extension tests unaffected
+		fmt.Fprintf(os.Stderr, "DuckLake shared setup skipped: %v\n", err)
+	} else {
+		sharedCatalogEnv = env
+		sharedCatalogCleanup = cleanup
+	}
+
+	code := m.Run()
+
+	if sharedCatalogCleanup != nil {
+		sharedCatalogCleanup()
+	}
+	os.Exit(code)
+}
+
+// setupSharedDuckLake creates a single DuckLake instance for all catalog tests.
+// Unlike setupLocalDuckLake, it does not require *testing.T and returns an
+// explicit cleanup function + error (for use in TestMain).
+func setupSharedDuckLake() (*catalogTestEnv, func(), error) {
+	tmpDir, err := os.MkdirTemp("", "ducklake-integration-*")
+	if err != nil {
+		return nil, nil, err
+	}
+	metaPath := filepath.Join(tmpDir, "meta.sqlite")
+	dataPath := filepath.Join(tmpDir, "lake_data") + "/"
+	if err := os.MkdirAll(dataPath, 0o755); err != nil {
+		os.RemoveAll(tmpDir)
+		return nil, nil, err
+	}
+
+	duckDB, err := sql.Open("duckdb", "")
+	if err != nil {
+		os.RemoveAll(tmpDir)
+		return nil, nil, err
+	}
+
+	for _, stmt := range []string{
+		"INSTALL ducklake", "LOAD ducklake",
+		"INSTALL sqlite", "LOAD sqlite",
+	} {
+		if _, err := duckDB.Exec(stmt); err != nil {
+			duckDB.Close()
+			os.RemoveAll(tmpDir)
+			return nil, nil, fmt.Errorf("%s: %w", stmt, err)
+		}
+	}
+
+	attachSQL := fmt.Sprintf(
+		`ATTACH 'ducklake:sqlite:%s' AS lake (DATA_PATH '%s')`,
+		metaPath, dataPath,
+	)
+	if _, err := duckDB.Exec(attachSQL); err != nil {
+		duckDB.Close()
+		os.RemoveAll(tmpDir)
+		return nil, nil, fmt.Errorf("attach ducklake: %w", err)
+	}
+	if _, err := duckDB.Exec("USE lake"); err != nil {
+		duckDB.Close()
+		os.RemoveAll(tmpDir)
+		return nil, nil, fmt.Errorf("use lake: %w", err)
+	}
+
+	metaDB, err := sql.Open("sqlite3", metaPath+"?_foreign_keys=on")
+	if err != nil {
+		duckDB.Close()
+		os.RemoveAll(tmpDir)
+		return nil, nil, err
+	}
+
+	if err := internaldb.RunMigrations(metaDB); err != nil {
+		metaDB.Close()
+		duckDB.Close()
+		os.RemoveAll(tmpDir)
+		return nil, nil, fmt.Errorf("migrations: %w", err)
+	}
+
+	cleanup := func() {
+		metaDB.Close()
+		duckDB.Close()
+		os.RemoveAll(tmpDir)
+	}
+
+	return &catalogTestEnv{DuckDB: duckDB, MetaDB: metaDB}, cleanup, nil
+}
+
+// requireCatalogEnv returns the shared DuckLake environment or skips the test.
+func requireCatalogEnv(t *testing.T) *catalogTestEnv {
+	t.Helper()
+	if sharedCatalogEnv == nil {
+		t.Skip("DuckLake extensions not available — skipping catalog test")
+	}
+	return sharedCatalogEnv
+}
+
+// ---------------------------------------------------------------------------
 // Path helpers
 // ---------------------------------------------------------------------------
 

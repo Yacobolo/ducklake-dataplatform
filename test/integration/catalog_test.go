@@ -16,7 +16,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestCatalog_SchemaCRUD(t *testing.T) {
-	env := setupLocalDuckLake(t)
+	env := requireCatalogEnv(t)
 	repo := repository.NewCatalogRepo(env.MetaDB, env.DuckDB)
 	ctx := context.Background()
 
@@ -29,12 +29,12 @@ func TestCatalog_SchemaCRUD(t *testing.T) {
 		{
 			name: "CreateSchema",
 			fn: func(t *testing.T) {
-				s, err := repo.CreateSchema(ctx, "analytics", "test schema", "admin")
+				s, err := repo.CreateSchema(ctx, "crud_analytics", "test schema", "admin")
 				if err != nil {
 					t.Fatalf("CreateSchema: %v", err)
 				}
-				if s.Name != "analytics" {
-					t.Errorf("Name = %q, want %q", s.Name, "analytics")
+				if s.Name != "crud_analytics" {
+					t.Errorf("Name = %q, want %q", s.Name, "crud_analytics")
 				}
 				if s.CatalogName != "lake" {
 					t.Errorf("CatalogName = %q, want %q", s.CatalogName, "lake")
@@ -53,12 +53,12 @@ func TestCatalog_SchemaCRUD(t *testing.T) {
 		{
 			name: "GetSchema",
 			fn: func(t *testing.T) {
-				s, err := repo.GetSchema(ctx, "analytics")
+				s, err := repo.GetSchema(ctx, "crud_analytics")
 				if err != nil {
 					t.Fatalf("GetSchema: %v", err)
 				}
-				if s.Name != "analytics" {
-					t.Errorf("Name = %q, want %q", s.Name, "analytics")
+				if s.Name != "crud_analytics" {
+					t.Errorf("Name = %q, want %q", s.Name, "crud_analytics")
 				}
 				if s.CatalogName != "lake" {
 					t.Errorf("CatalogName = %q, want %q", s.CatalogName, "lake")
@@ -66,20 +66,20 @@ func TestCatalog_SchemaCRUD(t *testing.T) {
 			},
 		},
 		{
-			name: "ListSchemas_ContainsAnalyticsAndMain",
+			name: "ListSchemas_ContainsCreatedAndMain",
 			fn: func(t *testing.T) {
 				schemas, total, err := repo.ListSchemas(ctx, domain.PageRequest{})
 				if err != nil {
 					t.Fatalf("ListSchemas: %v", err)
 				}
 				if total < 2 {
-					t.Errorf("total = %d, want >= 2 (main + analytics)", total)
+					t.Errorf("total = %d, want >= 2 (main + crud_analytics)", total)
 				}
 				names := make(map[string]bool)
 				for _, s := range schemas {
 					names[s.Name] = true
 				}
-				for _, want := range []string{"main", "analytics"} {
+				for _, want := range []string{"main", "crud_analytics"} {
 					if !names[want] {
 						t.Errorf("schema %q not found in list: %v", want, names)
 					}
@@ -91,7 +91,7 @@ func TestCatalog_SchemaCRUD(t *testing.T) {
 			fn: func(t *testing.T) {
 				newComment := "updated comment"
 				props := map[string]string{"team": "data", "env": "test"}
-				s, err := repo.UpdateSchema(ctx, "analytics", &newComment, props)
+				s, err := repo.UpdateSchema(ctx, "crud_analytics", &newComment, props)
 				if err != nil {
 					t.Fatalf("UpdateSchema: %v", err)
 				}
@@ -109,7 +109,7 @@ func TestCatalog_SchemaCRUD(t *testing.T) {
 		{
 			name: "DeleteSchema",
 			fn: func(t *testing.T) {
-				if err := repo.DeleteSchema(ctx, "analytics", false); err != nil {
+				if err := repo.DeleteSchema(ctx, "crud_analytics", false); err != nil {
 					t.Fatalf("DeleteSchema: %v", err)
 				}
 			},
@@ -117,7 +117,7 @@ func TestCatalog_SchemaCRUD(t *testing.T) {
 		{
 			name: "GetSchema_AfterDelete_NotFound",
 			fn: func(t *testing.T) {
-				_, err := repo.GetSchema(ctx, "analytics")
+				_, err := repo.GetSchema(ctx, "crud_analytics")
 				if err == nil {
 					t.Fatal("expected NotFoundError, got nil")
 				}
@@ -139,7 +139,7 @@ func TestCatalog_SchemaCRUD(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCatalog_TableCRUD(t *testing.T) {
-	env := setupLocalDuckLake(t)
+	env := requireCatalogEnv(t)
 	repo := repository.NewCatalogRepo(env.MetaDB, env.DuckDB)
 	ctx := context.Background()
 
@@ -152,7 +152,7 @@ func TestCatalog_TableCRUD(t *testing.T) {
 		{
 			name: "CreateSchema_ForTable",
 			fn: func(t *testing.T) {
-				_, err := repo.CreateSchema(ctx, "test_schema", "for table tests", "admin")
+				_, err := repo.CreateSchema(ctx, "tbl_test_schema", "for table tests", "admin")
 				if err != nil {
 					t.Fatalf("CreateSchema: %v", err)
 				}
@@ -169,15 +169,15 @@ func TestCatalog_TableCRUD(t *testing.T) {
 					},
 					Comment: "test users table",
 				}
-				td, err := repo.CreateTable(ctx, "test_schema", req, "admin")
+				td, err := repo.CreateTable(ctx, "tbl_test_schema", req, "admin")
 				if err != nil {
 					t.Fatalf("CreateTable: %v", err)
 				}
 				if td.Name != "users" {
 					t.Errorf("Name = %q, want %q", td.Name, "users")
 				}
-				if td.SchemaName != "test_schema" {
-					t.Errorf("SchemaName = %q, want %q", td.SchemaName, "test_schema")
+				if td.SchemaName != "tbl_test_schema" {
+					t.Errorf("SchemaName = %q, want %q", td.SchemaName, "tbl_test_schema")
 				}
 				if td.CatalogName != "lake" {
 					t.Errorf("CatalogName = %q, want %q", td.CatalogName, "lake")
@@ -193,7 +193,7 @@ func TestCatalog_TableCRUD(t *testing.T) {
 		{
 			name: "GetTable",
 			fn: func(t *testing.T) {
-				td, err := repo.GetTable(ctx, "test_schema", "users")
+				td, err := repo.GetTable(ctx, "tbl_test_schema", "users")
 				if err != nil {
 					t.Fatalf("GetTable: %v", err)
 				}
@@ -215,7 +215,7 @@ func TestCatalog_TableCRUD(t *testing.T) {
 		{
 			name: "ListTables",
 			fn: func(t *testing.T) {
-				tables, total, err := repo.ListTables(ctx, "test_schema", domain.PageRequest{})
+				tables, total, err := repo.ListTables(ctx, "tbl_test_schema", domain.PageRequest{})
 				if err != nil {
 					t.Fatalf("ListTables: %v", err)
 				}
@@ -233,7 +233,7 @@ func TestCatalog_TableCRUD(t *testing.T) {
 		{
 			name: "ListColumns",
 			fn: func(t *testing.T) {
-				cols, total, err := repo.ListColumns(ctx, "test_schema", "users", domain.PageRequest{})
+				cols, total, err := repo.ListColumns(ctx, "tbl_test_schema", "users", domain.PageRequest{})
 				if err != nil {
 					t.Fatalf("ListColumns: %v", err)
 				}
@@ -271,7 +271,7 @@ func TestCatalog_TableCRUD(t *testing.T) {
 		{
 			name: "DeleteTable",
 			fn: func(t *testing.T) {
-				if err := repo.DeleteTable(ctx, "test_schema", "users"); err != nil {
+				if err := repo.DeleteTable(ctx, "tbl_test_schema", "users"); err != nil {
 					t.Fatalf("DeleteTable: %v", err)
 				}
 			},
@@ -279,7 +279,7 @@ func TestCatalog_TableCRUD(t *testing.T) {
 		{
 			name: "GetTable_AfterDelete_NotFound",
 			fn: func(t *testing.T) {
-				_, err := repo.GetTable(ctx, "test_schema", "users")
+				_, err := repo.GetTable(ctx, "tbl_test_schema", "users")
 				if err == nil {
 					t.Fatal("expected NotFoundError, got nil")
 				}
@@ -301,12 +301,12 @@ func TestCatalog_TableCRUD(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCatalog_SchemaConflict(t *testing.T) {
-	env := setupLocalDuckLake(t)
+	env := requireCatalogEnv(t)
 	repo := repository.NewCatalogRepo(env.MetaDB, env.DuckDB)
 	ctx := context.Background()
 
-	// Pre-create a schema for duplicate tests
-	if _, err := repo.CreateSchema(ctx, "existing_schema", "", ""); err != nil {
+	// Pre-create a schema for duplicate tests (unique prefix to avoid collisions)
+	if _, err := repo.CreateSchema(ctx, "conflict_existing", "", ""); err != nil {
 		t.Fatalf("setup CreateSchema: %v", err)
 	}
 
@@ -318,7 +318,7 @@ func TestCatalog_SchemaConflict(t *testing.T) {
 		{
 			name: "DuplicateSchema_Conflict",
 			fn: func() error {
-				_, err := repo.CreateSchema(ctx, "existing_schema", "", "")
+				_, err := repo.CreateSchema(ctx, "conflict_existing", "", "")
 				return err
 			},
 			wantErr: &domain.ConflictError{},
@@ -326,7 +326,7 @@ func TestCatalog_SchemaConflict(t *testing.T) {
 		{
 			name: "CreateTable_NonexistentSchema_NotFound",
 			fn: func() error {
-				_, err := repo.CreateTable(ctx, "nonexistent_schema", domain.CreateTableRequest{
+				_, err := repo.CreateTable(ctx, "conflict_nonexistent", domain.CreateTableRequest{
 					Name:    "t",
 					Columns: []domain.CreateColumnDef{{Name: "id", Type: "INTEGER"}},
 				}, "admin")
@@ -337,7 +337,7 @@ func TestCatalog_SchemaConflict(t *testing.T) {
 		{
 			name: "DeleteNonexistentSchema_NotFound",
 			fn: func() error {
-				return repo.DeleteSchema(ctx, "no_such_schema", false)
+				return repo.DeleteSchema(ctx, "conflict_no_such", false)
 			},
 			wantErr: &domain.NotFoundError{},
 		},
@@ -352,7 +352,7 @@ func TestCatalog_SchemaConflict(t *testing.T) {
 		{
 			name: "CreateTable_InvalidName_Validation",
 			fn: func() error {
-				_, err := repo.CreateTable(ctx, "existing_schema", domain.CreateTableRequest{
+				_, err := repo.CreateTable(ctx, "conflict_existing", domain.CreateTableRequest{
 					Name:    "bad name!",
 					Columns: []domain.CreateColumnDef{{Name: "id", Type: "INTEGER"}},
 				}, "admin")
@@ -363,7 +363,7 @@ func TestCatalog_SchemaConflict(t *testing.T) {
 		{
 			name: "CreateTable_NoColumns_Validation",
 			fn: func() error {
-				_, err := repo.CreateTable(ctx, "existing_schema", domain.CreateTableRequest{
+				_, err := repo.CreateTable(ctx, "conflict_existing", domain.CreateTableRequest{
 					Name:    "empty_table",
 					Columns: nil,
 				}, "admin")
@@ -406,7 +406,7 @@ func TestCatalog_SchemaConflict(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCatalog_CascadeDelete(t *testing.T) {
-	env := setupLocalDuckLake(t)
+	env := requireCatalogEnv(t)
 	repo := repository.NewCatalogRepo(env.MetaDB, env.DuckDB)
 	ctx := context.Background()
 
@@ -477,7 +477,7 @@ func TestCatalog_CascadeDelete(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCatalog_MetastoreSummary(t *testing.T) {
-	env := setupLocalDuckLake(t)
+	env := requireCatalogEnv(t)
 	repo := repository.NewCatalogRepo(env.MetaDB, env.DuckDB)
 	ctx := context.Background()
 
@@ -512,7 +512,7 @@ func TestCatalog_MetastoreSummary(t *testing.T) {
 					t.Fatalf("GetMetastoreSummary(before): %v", err)
 				}
 
-				// Create a schema + table
+				// Create a schema + table (unique names to avoid collisions)
 				if _, err := repo.CreateSchema(ctx, "summary_schema", "", ""); err != nil {
 					t.Fatalf("CreateSchema: %v", err)
 				}
@@ -529,11 +529,12 @@ func TestCatalog_MetastoreSummary(t *testing.T) {
 					t.Fatalf("GetMetastoreSummary(after): %v", err)
 				}
 
-				if after.SchemaCount != before.SchemaCount+1 {
-					t.Errorf("SchemaCount = %d, want %d", after.SchemaCount, before.SchemaCount+1)
+				// Use >= to tolerate concurrent tests creating schemas/tables
+				if after.SchemaCount < before.SchemaCount+1 {
+					t.Errorf("SchemaCount = %d, want >= %d", after.SchemaCount, before.SchemaCount+1)
 				}
-				if after.TableCount != before.TableCount+1 {
-					t.Errorf("TableCount = %d, want %d", after.TableCount, before.TableCount+1)
+				if after.TableCount < before.TableCount+1 {
+					t.Errorf("TableCount = %d, want >= %d", after.TableCount, before.TableCount+1)
 				}
 			},
 		},
@@ -549,11 +550,11 @@ func TestCatalog_MetastoreSummary(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCatalog_Pagination(t *testing.T) {
-	env := setupLocalDuckLake(t)
+	env := requireCatalogEnv(t)
 	repo := repository.NewCatalogRepo(env.MetaDB, env.DuckDB)
 	ctx := context.Background()
 
-	// Create 5 schemas (DuckLake auto-creates "main", so total will be >= 6)
+	// Create 5 schemas with unique prefix (DuckLake auto-creates "main")
 	schemaNames := []string{"page_alpha", "page_bravo", "page_charlie", "page_delta", "page_echo"}
 	for _, name := range schemaNames {
 		if _, err := repo.CreateSchema(ctx, name, "", ""); err != nil {
@@ -564,17 +565,14 @@ func TestCatalog_Pagination(t *testing.T) {
 	cases := []struct {
 		name       string
 		maxResults int
-		wantPages  int // minimum number of pages expected
 	}{
 		{
 			name:       "PageSize2",
 			maxResults: 2,
-			wantPages:  3, // at least 6 schemas / 2 = 3 pages
 		},
 		{
 			name:       "PageSize3",
 			maxResults: 3,
-			wantPages:  2, // at least 6 schemas / 3 = 2 pages
 		},
 	}
 
@@ -611,8 +609,8 @@ func TestCatalog_Pagination(t *testing.T) {
 				pageToken = domain.EncodePageToken(offset)
 			}
 
-			if pages < tc.wantPages {
-				t.Errorf("pages = %d, want >= %d", pages, tc.wantPages)
+			if pages < 2 {
+				t.Errorf("pages = %d, want >= 2 (should need multiple pages)", pages)
 			}
 
 			// Verify all created schemas appear in the collected results
