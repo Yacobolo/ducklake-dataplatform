@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -329,12 +330,38 @@ func main() {
 		listenAddr = cfg.ListenAddr
 	}
 
-	// Auth middleware
-	apiKeyRepo := repository.NewAPIKeyRepo(metaDB)
-	r.Use(middleware.AuthMiddleware(jwtSecret, apiKeyRepo))
+	// Public endpoints — no auth required
+	r.Get("/openapi.json", func(w http.ResponseWriter, r *http.Request) {
+		swagger, err := api.GetSwagger()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(swagger)
+	})
 
-	// Register API routes under /v1 prefix
+	r.Get("/docs", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		fmt.Fprint(w, `<!DOCTYPE html>
+<html>
+<head>
+    <title>DuckDB Data Platform API</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.44.16/dist/style.min.css" />
+</head>
+<body>
+    <script id="api-reference" data-url="/openapi.json"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.44.16/dist/browser/standalone.min.js"></script>
+</body>
+</html>`)
+	})
+
+	// Authenticated API routes under /v1 prefix
+	apiKeyRepo := repository.NewAPIKeyRepo(metaDB)
 	r.Route("/v1", func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware(jwtSecret, apiKeyRepo))
 		api.HandlerFromMux(strictHandler, r)
 	})
 
