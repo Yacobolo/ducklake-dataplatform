@@ -498,3 +498,170 @@ func TestLookupSchemaID(t *testing.T) {
 		t.Errorf("expected schemaID=0, got %d", schemaID)
 	}
 }
+
+// === Catalog-Scoped Securable Tests ===
+
+func TestCatalogScopedPrivilege_DirectGrant(t *testing.T) {
+	tests := []struct {
+		name          string
+		securableType string
+		privilege     string
+	}{
+		{"external_location with CREATE_EXTERNAL_LOCATION", SecurableExternalLocation, PrivCreateExternalLocation},
+		{"storage_credential with CREATE_STORAGE_CREDENTIAL", SecurableStorageCredential, PrivCreateStorageCredential},
+		{"volume with CREATE_VOLUME", SecurableVolume, PrivCreateVolume},
+		{"volume with READ_VOLUME", SecurableVolume, PrivReadVolume},
+		{"volume with WRITE_VOLUME", SecurableVolume, PrivWriteVolume},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			svc, q, ctx := setupTestService(t)
+
+			user, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+				Name: "user1", Type: "user", IsAdmin: 0,
+			})
+
+			// Grant the specific privilege on the securable
+			q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+				PrincipalID:   user.ID,
+				PrincipalType: "user",
+				SecurableType: tt.securableType,
+				SecurableID:   42, // arbitrary securable ID
+				Privilege:     tt.privilege,
+			})
+
+			ok, err := svc.CheckPrivilege(ctx, "user1", tt.securableType, 42, tt.privilege)
+			if err != nil {
+				t.Fatalf("check: %v", err)
+			}
+			if !ok {
+				t.Errorf("user with direct %s grant on %s should have access", tt.privilege, tt.securableType)
+			}
+		})
+	}
+}
+
+func TestCatalogScopedPrivilege_InheritFromCatalog(t *testing.T) {
+	tests := []struct {
+		name          string
+		securableType string
+		privilege     string
+	}{
+		{"external_location inherits from catalog", SecurableExternalLocation, PrivCreateExternalLocation},
+		{"storage_credential inherits from catalog", SecurableStorageCredential, PrivCreateStorageCredential},
+		{"volume inherits CREATE_VOLUME from catalog", SecurableVolume, PrivCreateVolume},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			svc, q, ctx := setupTestService(t)
+
+			user, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+				Name: "user1", Type: "user", IsAdmin: 0,
+			})
+
+			// Grant ALL_PRIVILEGES at catalog level (should inherit to catalog-scoped securables)
+			q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+				PrincipalID:   user.ID,
+				PrincipalType: "user",
+				SecurableType: SecurableCatalog,
+				SecurableID:   CatalogID,
+				Privilege:     PrivAllPrivileges,
+			})
+
+			ok, err := svc.CheckPrivilege(ctx, "user1", tt.securableType, 99, tt.privilege)
+			if err != nil {
+				t.Fatalf("check: %v", err)
+			}
+			if !ok {
+				t.Errorf("user with ALL_PRIVILEGES on catalog should inherit %s on %s", tt.privilege, tt.securableType)
+			}
+		})
+	}
+}
+
+func TestCatalogScopedPrivilege_Denied(t *testing.T) {
+	svc, q, ctx := setupTestService(t)
+
+	_, _ = q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+		Name: "nobody", Type: "user", IsAdmin: 0,
+	})
+
+	// No grants at all -- should be denied on all new securable types
+	for _, tt := range []struct {
+		securableType string
+		privilege     string
+	}{
+		{SecurableExternalLocation, PrivCreateExternalLocation},
+		{SecurableStorageCredential, PrivCreateStorageCredential},
+		{SecurableVolume, PrivCreateVolume},
+		{SecurableVolume, PrivReadVolume},
+		{SecurableVolume, PrivWriteVolume},
+	} {
+		ok, err := svc.CheckPrivilege(ctx, "nobody", tt.securableType, 1, tt.privilege)
+		if err != nil {
+			t.Fatalf("check %s/%s: %v", tt.securableType, tt.privilege, err)
+		}
+		if ok {
+			t.Errorf("user with no grants should be denied %s on %s", tt.privilege, tt.securableType)
+		}
+	}
+}
+
+func TestCatalogScopedPrivilege_AdminBypass(t *testing.T) {
+	svc, q, ctx := setupTestService(t)
+
+	_, _ = q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+		Name: "admin", Type: "user", IsAdmin: 1,
+	})
+
+	// Admin should bypass all catalog-scoped privilege checks
+	for _, tt := range []struct {
+		securableType string
+		privilege     string
+	}{
+		{SecurableExternalLocation, PrivCreateExternalLocation},
+		{SecurableStorageCredential, PrivCreateStorageCredential},
+		{SecurableVolume, PrivCreateVolume},
+		{SecurableVolume, PrivReadVolume},
+	} {
+		ok, err := svc.CheckPrivilege(ctx, "admin", tt.securableType, 1, tt.privilege)
+		if err != nil {
+			t.Fatalf("check %s/%s: %v", tt.securableType, tt.privilege, err)
+		}
+		if !ok {
+			t.Errorf("admin should bypass %s on %s", tt.privilege, tt.securableType)
+		}
+	}
+}
+
+func TestCatalogScopedPrivilege_GroupInheritance(t *testing.T) {
+	svc, q, ctx := setupTestService(t)
+
+	user, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+		Name: "user1", Type: "user", IsAdmin: 0,
+	})
+
+	group, _ := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "admins"})
+	q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{
+		GroupID: group.ID, MemberType: "user", MemberID: user.ID,
+	})
+
+	// Grant CREATE_EXTERNAL_LOCATION to the group on a specific external location
+	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		PrincipalID:   group.ID,
+		PrincipalType: "group",
+		SecurableType: SecurableExternalLocation,
+		SecurableID:   10,
+		Privilege:     PrivCreateExternalLocation,
+	})
+
+	ok, err := svc.CheckPrivilege(ctx, "user1", SecurableExternalLocation, 10, PrivCreateExternalLocation)
+	if err != nil {
+		t.Fatalf("check: %v", err)
+	}
+	if !ok {
+		t.Error("user in group with CREATE_EXTERNAL_LOCATION should have access")
+	}
+}

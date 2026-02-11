@@ -174,6 +174,15 @@ type ExternalLocationRepository interface {
 	Delete(ctx context.Context, id int64) error
 }
 
+// VolumeRepository provides CRUD operations for volumes.
+type VolumeRepository interface {
+	Create(ctx context.Context, vol *Volume) (*Volume, error)
+	GetByName(ctx context.Context, schemaName, name string) (*Volume, error)
+	List(ctx context.Context, schemaName string, page PageRequest) ([]Volume, int64, error)
+	Update(ctx context.Context, id int64, req UpdateVolumeRequest) (*Volume, error)
+	Delete(ctx context.Context, id int64) error
+}
+
 // ExternalTableRepository provides CRUD operations for external tables.
 type ExternalTableRepository interface {
 	Create(ctx context.Context, et *ExternalTableRecord) (*ExternalTableRecord, error)

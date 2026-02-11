@@ -19,7 +19,9 @@ const (
 
 // Defines values for CreateStorageCredentialRequestCredentialType.
 const (
-	CreateStorageCredentialRequestCredentialTypeS3 CreateStorageCredentialRequestCredentialType = "S3"
+	CreateStorageCredentialRequestCredentialTypeAZURE CreateStorageCredentialRequestCredentialType = "AZURE"
+	CreateStorageCredentialRequestCredentialTypeGCS   CreateStorageCredentialRequestCredentialType = "GCS"
+	CreateStorageCredentialRequestCredentialTypeS3    CreateStorageCredentialRequestCredentialType = "S3"
 )
 
 // Defines values for CreateTableRequestFileFormat.
@@ -30,8 +32,27 @@ const (
 
 // Defines values for CreateTableRequestTableType.
 const (
-	EXTERNAL CreateTableRequestTableType = "EXTERNAL"
-	MANAGED  CreateTableRequestTableType = "MANAGED"
+	CreateTableRequestTableTypeEXTERNAL CreateTableRequestTableType = "EXTERNAL"
+	CreateTableRequestTableTypeMANAGED  CreateTableRequestTableType = "MANAGED"
+)
+
+// Defines values for CreateVolumeRequestVolumeType.
+const (
+	CreateVolumeRequestVolumeTypeEXTERNAL CreateVolumeRequestVolumeType = "EXTERNAL"
+	CreateVolumeRequestVolumeTypeMANAGED  CreateVolumeRequestVolumeType = "MANAGED"
+)
+
+// Defines values for StorageCredentialCredentialType.
+const (
+	AZURE StorageCredentialCredentialType = "AZURE"
+	GCS   StorageCredentialCredentialType = "GCS"
+	S3    StorageCredentialCredentialType = "S3"
+)
+
+// Defines values for VolumeDetailVolumeType.
+const (
+	EXTERNAL VolumeDetailVolumeType = "EXTERNAL"
+	MANAGED  VolumeDetailVolumeType = "MANAGED"
 )
 
 // AuditEntry defines model for AuditEntry.
@@ -59,8 +80,11 @@ type CatalogInfo struct {
 
 // ColumnDetail defines model for ColumnDetail.
 type ColumnDetail struct {
-	Comment    *string            `json:"comment,omitempty"`
-	Name       *string            `json:"name,omitempty"`
+	Comment *string `json:"comment,omitempty"`
+	Name    *string `json:"name,omitempty"`
+
+	// Nullable Whether the column allows NULL values.
+	Nullable   *bool              `json:"nullable,omitempty"`
 	Position   *int               `json:"position,omitempty"`
 	Properties *map[string]string `json:"properties,omitempty"`
 	Type       *string            `json:"type,omitempty"`
@@ -163,14 +187,20 @@ type CreateSchemaRequest struct {
 
 // CreateStorageCredentialRequest defines model for CreateStorageCredentialRequest.
 type CreateStorageCredentialRequest struct {
-	Comment        *string                                      `json:"comment,omitempty"`
-	CredentialType CreateStorageCredentialRequestCredentialType `json:"credential_type"`
-	Endpoint       string                                       `json:"endpoint"`
-	KeyId          string                                       `json:"key_id"`
-	Name           string                                       `json:"name"`
-	Region         string                                       `json:"region"`
-	Secret         string                                       `json:"secret"`
-	UrlStyle       *string                                      `json:"url_style,omitempty"`
+	AzureAccountKey   *string                                      `json:"azure_account_key,omitempty"`
+	AzureAccountName  *string                                      `json:"azure_account_name,omitempty"`
+	AzureClientId     *string                                      `json:"azure_client_id,omitempty"`
+	AzureClientSecret *string                                      `json:"azure_client_secret,omitempty"`
+	AzureTenantId     *string                                      `json:"azure_tenant_id,omitempty"`
+	Comment           *string                                      `json:"comment,omitempty"`
+	CredentialType    CreateStorageCredentialRequestCredentialType `json:"credential_type"`
+	Endpoint          *string                                      `json:"endpoint,omitempty"`
+	GcsKeyFilePath    *string                                      `json:"gcs_key_file_path,omitempty"`
+	KeyId             *string                                      `json:"key_id,omitempty"`
+	Name              string                                       `json:"name"`
+	Region            *string                                      `json:"region,omitempty"`
+	Secret            *string                                      `json:"secret,omitempty"`
+	UrlStyle          *string                                      `json:"url_style,omitempty"`
 }
 
 // CreateStorageCredentialRequestCredentialType defines model for CreateStorageCredentialRequest.CredentialType.
@@ -221,6 +251,19 @@ type CreateViewRequest struct {
 	Name           string  `json:"name"`
 	ViewDefinition string  `json:"view_definition"`
 }
+
+// CreateVolumeRequest defines model for CreateVolumeRequest.
+type CreateVolumeRequest struct {
+	Comment *string `json:"comment,omitempty"`
+	Name    string  `json:"name"`
+
+	// StorageLocation Required for EXTERNAL volumes. Ignored for MANAGED.
+	StorageLocation *string                       `json:"storage_location,omitempty"`
+	VolumeType      CreateVolumeRequestVolumeType `json:"volume_type"`
+}
+
+// CreateVolumeRequestVolumeType defines model for CreateVolumeRequest.VolumeType.
+type CreateVolumeRequestVolumeType string
 
 // DeleteGrantRequest defines model for DeleteGrantRequest.
 type DeleteGrantRequest struct {
@@ -454,6 +497,12 @@ type PaginatedViewDetails struct {
 	NextPageToken *string       `json:"next_page_token,omitempty"`
 }
 
+// PaginatedVolumes defines model for PaginatedVolumes.
+type PaginatedVolumes struct {
+	Data          *[]VolumeDetail `json:"data,omitempty"`
+	NextPageToken *string         `json:"next_page_token,omitempty"`
+}
+
 // Principal defines model for Principal.
 type Principal struct {
 	CreatedAt *time.Time `json:"created_at,omitempty"`
@@ -558,17 +607,24 @@ type SearchResult struct {
 
 // StorageCredential defines model for StorageCredential.
 type StorageCredential struct {
-	Comment        *string    `json:"comment,omitempty"`
-	CreatedAt      *time.Time `json:"created_at,omitempty"`
-	CredentialType *string    `json:"credential_type,omitempty"`
-	Endpoint       *string    `json:"endpoint,omitempty"`
-	Id             *int64     `json:"id,omitempty"`
-	Name           *string    `json:"name,omitempty"`
-	Owner          *string    `json:"owner,omitempty"`
-	Region         *string    `json:"region,omitempty"`
-	UpdatedAt      *time.Time `json:"updated_at,omitempty"`
-	UrlStyle       *string    `json:"url_style,omitempty"`
+	AzureAccountName *string                          `json:"azure_account_name,omitempty"`
+	AzureClientId    *string                          `json:"azure_client_id,omitempty"`
+	AzureTenantId    *string                          `json:"azure_tenant_id,omitempty"`
+	Comment          *string                          `json:"comment,omitempty"`
+	CreatedAt        *time.Time                       `json:"created_at,omitempty"`
+	CredentialType   *StorageCredentialCredentialType `json:"credential_type,omitempty"`
+	Endpoint         *string                          `json:"endpoint,omitempty"`
+	GcsKeyFilePath   *string                          `json:"gcs_key_file_path,omitempty"`
+	Id               *int64                           `json:"id,omitempty"`
+	Name             *string                          `json:"name,omitempty"`
+	Owner            *string                          `json:"owner,omitempty"`
+	Region           *string                          `json:"region,omitempty"`
+	UpdatedAt        *time.Time                       `json:"updated_at,omitempty"`
+	UrlStyle         *string                          `json:"url_style,omitempty"`
 }
+
+// StorageCredentialCredentialType defines model for StorageCredential.CredentialType.
+type StorageCredentialCredentialType string
 
 // TableDetail defines model for TableDetail.
 type TableDetail struct {
@@ -591,10 +647,13 @@ type TableDetail struct {
 	// SourcePath S3/storage path for EXTERNAL tables.
 	SourcePath *string          `json:"source_path,omitempty"`
 	Statistics *TableStatistics `json:"statistics,omitempty"`
-	TableId    *int64           `json:"table_id,omitempty"`
-	TableType  *string          `json:"table_type,omitempty"`
-	Tags       *[]Tag           `json:"tags,omitempty"`
-	UpdatedAt  *time.Time       `json:"updated_at,omitempty"`
+
+	// StoragePath Resolved DuckLake data path for MANAGED tables.
+	StoragePath *string    `json:"storage_path,omitempty"`
+	TableId     *int64     `json:"table_id,omitempty"`
+	TableType   *string    `json:"table_type,omitempty"`
+	Tags        *[]Tag     `json:"tags,omitempty"`
+	UpdatedAt   *time.Time `json:"updated_at,omitempty"`
 }
 
 // TableStatistics defines model for TableStatistics.
@@ -659,12 +718,18 @@ type UpdateSchemaRequest struct {
 
 // UpdateStorageCredentialRequest defines model for UpdateStorageCredentialRequest.
 type UpdateStorageCredentialRequest struct {
-	Comment  *string `json:"comment,omitempty"`
-	Endpoint *string `json:"endpoint,omitempty"`
-	KeyId    *string `json:"key_id,omitempty"`
-	Region   *string `json:"region,omitempty"`
-	Secret   *string `json:"secret,omitempty"`
-	UrlStyle *string `json:"url_style,omitempty"`
+	AzureAccountKey   *string `json:"azure_account_key,omitempty"`
+	AzureAccountName  *string `json:"azure_account_name,omitempty"`
+	AzureClientId     *string `json:"azure_client_id,omitempty"`
+	AzureClientSecret *string `json:"azure_client_secret,omitempty"`
+	AzureTenantId     *string `json:"azure_tenant_id,omitempty"`
+	Comment           *string `json:"comment,omitempty"`
+	Endpoint          *string `json:"endpoint,omitempty"`
+	GcsKeyFilePath    *string `json:"gcs_key_file_path,omitempty"`
+	KeyId             *string `json:"key_id,omitempty"`
+	Region            *string `json:"region,omitempty"`
+	Secret            *string `json:"secret,omitempty"`
+	UrlStyle          *string `json:"url_style,omitempty"`
 }
 
 // UpdateTableRequest defines model for UpdateTableRequest.
@@ -679,6 +744,13 @@ type UpdateViewRequest struct {
 	Comment        *string            `json:"comment,omitempty"`
 	Properties     *map[string]string `json:"properties,omitempty"`
 	ViewDefinition *string            `json:"view_definition,omitempty"`
+}
+
+// UpdateVolumeRequest defines model for UpdateVolumeRequest.
+type UpdateVolumeRequest struct {
+	Comment *string `json:"comment,omitempty"`
+	NewName *string `json:"new_name,omitempty"`
+	Owner   *string `json:"owner,omitempty"`
 }
 
 // UploadUrlRequest defines model for UploadUrlRequest.
@@ -714,6 +786,23 @@ type ViewDetail struct {
 	UpdatedAt      *time.Time         `json:"updated_at,omitempty"`
 	ViewDefinition *string            `json:"view_definition,omitempty"`
 }
+
+// VolumeDetail defines model for VolumeDetail.
+type VolumeDetail struct {
+	CatalogName     *string                 `json:"catalog_name,omitempty"`
+	Comment         *string                 `json:"comment,omitempty"`
+	CreatedAt       *time.Time              `json:"created_at,omitempty"`
+	Id              *int64                  `json:"id,omitempty"`
+	Name            *string                 `json:"name,omitempty"`
+	Owner           *string                 `json:"owner,omitempty"`
+	SchemaName      *string                 `json:"schema_name,omitempty"`
+	StorageLocation *string                 `json:"storage_location,omitempty"`
+	UpdatedAt       *time.Time              `json:"updated_at,omitempty"`
+	VolumeType      *VolumeDetailVolumeType `json:"volume_type,omitempty"`
+}
+
+// VolumeDetailVolumeType defines model for VolumeDetail.VolumeType.
+type VolumeDetailVolumeType string
 
 // MaxResults defines model for MaxResults.
 type MaxResults = int
@@ -796,6 +885,15 @@ type GetUpstreamLineageParams struct {
 
 // ListViewsParams defines parameters for ListViews.
 type ListViewsParams struct {
+	// MaxResults Maximum number of results to return per page.
+	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
+
+	// PageToken Opaque pagination token from a previous response.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// ListVolumesParams defines parameters for ListVolumes.
+type ListVolumesParams struct {
 	// MaxResults Maximum number of results to return per page.
 	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
 
@@ -949,6 +1047,12 @@ type CreateViewJSONRequestBody = CreateViewRequest
 
 // UpdateViewJSONRequestBody defines body for UpdateView for application/json ContentType.
 type UpdateViewJSONRequestBody = UpdateViewRequest
+
+// CreateVolumeJSONRequestBody defines body for CreateVolume for application/json ContentType.
+type CreateVolumeJSONRequestBody = CreateVolumeRequest
+
+// UpdateVolumeJSONRequestBody defines body for UpdateVolume for application/json ContentType.
+type UpdateVolumeJSONRequestBody = UpdateVolumeRequest
 
 // BindColumnMaskJSONRequestBody defines body for BindColumnMask for application/json ContentType.
 type BindColumnMaskJSONRequestBody = ColumnMaskBindingRequest

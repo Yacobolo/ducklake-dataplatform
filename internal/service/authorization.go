@@ -18,9 +18,20 @@ const (
 	PrivCreateSchema  = domain.PrivCreateSchema
 	PrivAllPrivileges = domain.PrivAllPrivileges
 
-	SecurableCatalog = domain.SecurableCatalog
-	SecurableSchema  = domain.SecurableSchema
-	SecurableTable   = domain.SecurableTable
+	PrivCreateExternalLocation  = domain.PrivCreateExternalLocation
+	PrivCreateStorageCredential = domain.PrivCreateStorageCredential
+	PrivCreateVolume            = domain.PrivCreateVolume
+	PrivReadVolume              = domain.PrivReadVolume
+	PrivWriteVolume             = domain.PrivWriteVolume
+	PrivReadFiles               = domain.PrivReadFiles
+	PrivWriteFiles              = domain.PrivWriteFiles
+
+	SecurableCatalog           = domain.SecurableCatalog
+	SecurableSchema            = domain.SecurableSchema
+	SecurableTable             = domain.SecurableTable
+	SecurableExternalLocation  = domain.SecurableExternalLocation
+	SecurableStorageCredential = domain.SecurableStorageCredential
+	SecurableVolume            = domain.SecurableVolume
 
 	CatalogID = domain.CatalogID
 )
@@ -188,6 +199,8 @@ func (s *AuthorizationService) checkPrivilegeForIdentities(ctx context.Context, 
 		return s.checkSchemaPrivilege(ctx, principalID, groupIDs, securableID, privilege)
 	case domain.SecurableCatalog:
 		return s.hasGrant(ctx, principalID, groupIDs, domain.SecurableCatalog, domain.CatalogID, privilege)
+	case domain.SecurableExternalLocation, domain.SecurableStorageCredential, domain.SecurableVolume:
+		return s.checkCatalogScopedPrivilege(ctx, principalID, groupIDs, securableType, securableID, privilege)
 	default:
 		return false, fmt.Errorf("unknown securable type: %s", securableType)
 	}
@@ -249,6 +262,18 @@ func (s *AuthorizationService) checkSchemaPrivilege(ctx context.Context, princip
 	if err != nil || ok {
 		return ok, err
 	}
+	return s.hasGrant(ctx, principalID, groupIDs, domain.SecurableCatalog, domain.CatalogID, privilege)
+}
+
+// checkCatalogScopedPrivilege checks a privilege on a catalog-scoped securable
+// (external_location, storage_credential, volume). These inherit from catalog.
+func (s *AuthorizationService) checkCatalogScopedPrivilege(ctx context.Context, principalID int64, groupIDs []int64, securableType string, securableID int64, privilege string) (bool, error) {
+	// Check direct grant on the securable itself
+	ok, err := s.hasGrant(ctx, principalID, groupIDs, securableType, securableID, privilege)
+	if err != nil || ok {
+		return ok, err
+	}
+	// Inherit from catalog
 	return s.hasGrant(ctx, principalID, groupIDs, domain.SecurableCatalog, domain.CatalogID, privilege)
 }
 

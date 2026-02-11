@@ -163,18 +163,24 @@ type RowFilterBinding struct {
 }
 
 type StorageCredential struct {
-	ID              int64
-	Name            string
-	CredentialType  string
-	KeyIDEncrypted  string
-	SecretEncrypted string
-	Endpoint        string
-	Region          string
-	UrlStyle        string
-	Comment         string
-	Owner           string
-	CreatedAt       string
-	UpdatedAt       string
+	ID                         int64
+	Name                       string
+	CredentialType             string
+	KeyIDEncrypted             string
+	SecretEncrypted            string
+	Endpoint                   string
+	Region                     string
+	UrlStyle                   string
+	Comment                    string
+	Owner                      string
+	CreatedAt                  string
+	UpdatedAt                  string
+	AzureAccountName           string
+	AzureAccountKeyEncrypted   string
+	AzureClientID              string
+	AzureTenantID              string
+	AzureClientSecretEncrypted string
+	GcsKeyFilePath             string
 }
 
 type TableStatistic struct {
@@ -216,4 +222,17 @@ type View struct {
 	CreatedAt      string
 	UpdatedAt      string
 	DeletedAt      sql.NullString
+}
+
+type Volume struct {
+	ID              int64
+	Name            string
+	SchemaName      string
+	CatalogName     string
+	VolumeType      string
+	StorageLocation string
+	Comment         string
+	Owner           string
+	CreatedAt       string
+	UpdatedAt       string
 }

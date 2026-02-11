@@ -195,16 +195,46 @@ func CreateS3Secret(ctx context.Context, db *sql.DB, name, keyID, secret, endpoi
 	return nil
 }
 
-// DropS3Secret removes a named DuckDB secret.
-func DropS3Secret(ctx context.Context, db *sql.DB, name string) error {
-	dropSQL, err := ddl.DropS3Secret(name)
+// CreateAzureSecret creates a named DuckDB secret for Azure Blob Storage.
+func CreateAzureSecret(ctx context.Context, db *sql.DB, name, accountName, accountKey, connectionString string) error {
+	secretSQL, err := ddl.CreateAzureSecret(name, accountName, accountKey, connectionString)
+	if err != nil {
+		return fmt.Errorf("build DDL: %w", err)
+	}
+	if _, err := db.ExecContext(ctx, secretSQL); err != nil {
+		return fmt.Errorf("create Azure secret %q: %w", name, err)
+	}
+	return nil
+}
+
+// CreateGCSSecret creates a named DuckDB secret for Google Cloud Storage.
+func CreateGCSSecret(ctx context.Context, db *sql.DB, name, keyFilePath string) error {
+	secretSQL, err := ddl.CreateGCSSecret(name, keyFilePath)
+	if err != nil {
+		return fmt.Errorf("build DDL: %w", err)
+	}
+	if _, err := db.ExecContext(ctx, secretSQL); err != nil {
+		return fmt.Errorf("create GCS secret %q: %w", name, err)
+	}
+	return nil
+}
+
+// DropSecret removes a named DuckDB secret (any type: S3, Azure, GCS).
+func DropSecret(ctx context.Context, db *sql.DB, name string) error {
+	dropSQL, err := ddl.DropSecret(name)
 	if err != nil {
 		return fmt.Errorf("build DDL: %w", err)
 	}
 	if _, err := db.ExecContext(ctx, dropSQL); err != nil {
-		return fmt.Errorf("drop S3 secret %q: %w", name, err)
+		return fmt.Errorf("drop secret %q: %w", name, err)
 	}
 	return nil
+}
+
+// DropS3Secret removes a named DuckDB secret.
+// Deprecated: Use DropSecret instead. Kept for backward compatibility.
+func DropS3Secret(ctx context.Context, db *sql.DB, name string) error {
+	return DropSecret(ctx, db, name)
 }
 
 // AttachDuckLake attaches the DuckLake catalog with the given metastore and data path.

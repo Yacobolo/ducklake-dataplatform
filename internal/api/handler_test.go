@@ -130,7 +130,7 @@ func setupTestServer(t *testing.T, principalName string) *httptest.Server {
 	tagSvc := service.NewTagService(repository.NewTagRepo(metaDB), auditRepo)
 	viewSvc := service.NewViewService(repository.NewViewRepo(metaDB), catalogRepo, cat, auditRepo)
 
-	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, auditSvc, nil, catalogSvc, queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc, nil, nil, nil)
+	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, auditSvc, nil, catalogSvc, queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc, nil, nil, nil, nil)
 	strictHandler := NewStrictHandler(handler, nil)
 
 	// Setup router with fixed auth (test principal)
@@ -379,7 +379,7 @@ func setupCatalogTestServer(t *testing.T, principalName string, mockRepo *mockCa
 	tagSvc := service.NewTagService(repository.NewTagRepo(metaDB), auditRepo)
 	viewSvc := service.NewViewService(repository.NewViewRepo(metaDB), mockRepo, cat, auditRepo)
 
-	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, auditSvc, nil, catalogSvc, queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc, nil, nil, nil)
+	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, auditSvc, nil, catalogSvc, queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc, nil, nil, nil, nil)
 	strictHandler := NewStrictHandler(handler, nil)
 
 	r := chi.NewRouter()
@@ -642,6 +642,12 @@ func TestAPI_TableCRUD(t *testing.T) {
 				}
 				if cols[1].Type == nil || *cols[1].Type != "VARCHAR" {
 					t.Errorf("col[1].type: got %v, want VARCHAR", cols[1].Type)
+				}
+				// Verify nullable field is present in column response
+				if cols[0].Nullable == nil {
+					t.Error("col[0].nullable should not be nil")
+				} else if *cols[0].Nullable != false {
+					t.Errorf("col[0].nullable: got %v, want false", *cols[0].Nullable)
 				}
 			},
 		},
@@ -1147,5 +1153,34 @@ func TestAPI_UpdateEndpoints_Authorization(t *testing.T) {
 				t.Errorf("status: got %d, want %d", resp.StatusCode, tt.wantStatus)
 			}
 		})
+	}
+}
+
+func TestAPI_ColumnNullable(t *testing.T) {
+	mock := newMockCatalogRepo()
+	mock.addSchema("main")
+	mock.addTable("main", "events", []domain.ColumnDetail{
+		{Name: "id", Type: "INTEGER", Nullable: false},
+		{Name: "name", Type: "VARCHAR", Nullable: true},
+	})
+	srv := setupCatalogTestServer(t, "admin_user", mock)
+	defer srv.Close()
+
+	resp := doRequest(t, "GET", srv.URL+"/catalog/schemas/main/tables/events", "")
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		t.Fatalf("status: got %d, want 200", resp.StatusCode)
+	}
+
+	r := decodeJSON[TableDetail](t, resp)
+	if r.Columns == nil || len(*r.Columns) != 2 {
+		t.Fatalf("expected 2 columns, got %d", len(*r.Columns))
+	}
+	cols := *r.Columns
+	if cols[0].Nullable == nil || *cols[0].Nullable != false {
+		t.Errorf("col[0] (id) nullable: got %v, want false", cols[0].Nullable)
+	}
+	if cols[1].Nullable == nil || *cols[1].Nullable != true {
+		t.Errorf("col[1] (name) nullable: got %v, want true", cols[1].Nullable)
 	}
 }

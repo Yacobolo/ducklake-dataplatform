@@ -30,6 +30,7 @@ type APIHandler struct {
 	ingestion         *service.IngestionService
 	storageCreds      *service.StorageCredentialService
 	externalLocations *service.ExternalLocationService
+	volumes           *service.VolumeService
 }
 
 func NewHandler(
@@ -50,6 +51,7 @@ func NewHandler(
 	ingestion *service.IngestionService,
 	storageCreds *service.StorageCredentialService,
 	externalLocations *service.ExternalLocationService,
+	volumes *service.VolumeService,
 ) *APIHandler {
 	return &APIHandler{
 		query:             query,
@@ -69,6 +71,7 @@ func NewHandler(
 		ingestion:         ingestion,
 		storageCreds:      storageCreds,
 		externalLocations: externalLocations,
+		volumes:           volumes,
 	}
 }
 
@@ -1406,6 +1409,9 @@ func tableDetailToAPI(t domain.TableDetail) TableDetail {
 	if t.Statistics != nil {
 		td.Statistics = tableStatisticsPtr(t.Statistics)
 	}
+	if t.StoragePath != "" {
+		td.StoragePath = &t.StoragePath
+	}
 	if t.SourcePath != "" {
 		td.SourcePath = &t.SourcePath
 	}
@@ -1423,6 +1429,7 @@ func columnDetailToAPI(c domain.ColumnDetail) ColumnDetail {
 		Name:       &c.Name,
 		Type:       &c.Type,
 		Position:   &c.Position,
+		Nullable:   &c.Nullable,
 		Comment:    &c.Comment,
 		Properties: &c.Properties,
 	}
@@ -1573,15 +1580,44 @@ func (h *APIHandler) CreateStorageCredential(ctx context.Context, req CreateStor
 	domReq := domain.CreateStorageCredentialRequest{
 		Name:           req.Body.Name,
 		CredentialType: domain.CredentialType(req.Body.CredentialType),
-		KeyID:          req.Body.KeyId,
-		Secret:         req.Body.Secret,
-		Endpoint:       req.Body.Endpoint,
-		Region:         req.Body.Region,
+	}
+	// S3 fields
+	if req.Body.KeyId != nil {
+		domReq.KeyID = *req.Body.KeyId
+	}
+	if req.Body.Secret != nil {
+		domReq.Secret = *req.Body.Secret
+	}
+	if req.Body.Endpoint != nil {
+		domReq.Endpoint = *req.Body.Endpoint
+	}
+	if req.Body.Region != nil {
+		domReq.Region = *req.Body.Region
 	}
 	if req.Body.UrlStyle != nil {
 		domReq.URLStyle = *req.Body.UrlStyle
 	} else {
 		domReq.URLStyle = "path"
+	}
+	// Azure fields
+	if req.Body.AzureAccountName != nil {
+		domReq.AzureAccountName = *req.Body.AzureAccountName
+	}
+	if req.Body.AzureAccountKey != nil {
+		domReq.AzureAccountKey = *req.Body.AzureAccountKey
+	}
+	if req.Body.AzureClientId != nil {
+		domReq.AzureClientID = *req.Body.AzureClientId
+	}
+	if req.Body.AzureTenantId != nil {
+		domReq.AzureTenantID = *req.Body.AzureTenantId
+	}
+	if req.Body.AzureClientSecret != nil {
+		domReq.AzureClientSecret = *req.Body.AzureClientSecret
+	}
+	// GCS fields
+	if req.Body.GcsKeyFilePath != nil {
+		domReq.GCSKeyFilePath = *req.Body.GcsKeyFilePath
 	}
 	if req.Body.Comment != nil {
 		domReq.Comment = *req.Body.Comment
@@ -1622,12 +1658,21 @@ func (h *APIHandler) GetStorageCredential(ctx context.Context, req GetStorageCre
 
 func (h *APIHandler) UpdateStorageCredential(ctx context.Context, req UpdateStorageCredentialRequestObject) (UpdateStorageCredentialResponseObject, error) {
 	domReq := domain.UpdateStorageCredentialRequest{
+		// S3 fields
 		KeyID:    req.Body.KeyId,
 		Secret:   req.Body.Secret,
 		Endpoint: req.Body.Endpoint,
 		Region:   req.Body.Region,
 		URLStyle: req.Body.UrlStyle,
-		Comment:  req.Body.Comment,
+		// Azure fields
+		AzureAccountName:  req.Body.AzureAccountName,
+		AzureAccountKey:   req.Body.AzureAccountKey,
+		AzureClientID:     req.Body.AzureClientId,
+		AzureTenantID:     req.Body.AzureTenantId,
+		AzureClientSecret: req.Body.AzureClientSecret,
+		// GCS fields
+		GCSKeyFilePath: req.Body.GcsKeyFilePath,
+		Comment:        req.Body.Comment,
 	}
 
 	principal, _ := middleware.PrincipalFromContext(ctx)
@@ -1779,21 +1824,29 @@ func (h *APIHandler) DeleteExternalLocation(ctx context.Context, req DeleteExter
 // === API Mappers for Storage Credentials / External Locations ===
 
 // storageCredentialToAPI converts a domain StorageCredential to the API type.
-// IMPORTANT: Never expose key_id or secret in API responses.
+// IMPORTANT: Never expose key_id, secret, azure_account_key, or azure_client_secret in API responses.
 func storageCredentialToAPI(c domain.StorageCredential) StorageCredential {
-	ct := string(c.CredentialType)
-	return StorageCredential{
+	ct := StorageCredentialCredentialType(c.CredentialType)
+	resp := StorageCredential{
 		Id:             &c.ID,
 		Name:           &c.Name,
 		CredentialType: &ct,
-		Endpoint:       &c.Endpoint,
-		Region:         &c.Region,
-		UrlStyle:       &c.URLStyle,
+		// S3 fields (non-sensitive)
+		Endpoint: &c.Endpoint,
+		Region:   &c.Region,
+		UrlStyle: &c.URLStyle,
+		// Azure fields (non-sensitive only)
+		AzureAccountName: optStr(c.AzureAccountName),
+		AzureClientId:    optStr(c.AzureClientID),
+		AzureTenantId:    optStr(c.AzureTenantID),
+		// GCS fields
+		GcsKeyFilePath: optStr(c.GCSKeyFilePath),
 		Comment:        optStr(c.Comment),
 		Owner:          &c.Owner,
 		CreatedAt:      &c.CreatedAt,
 		UpdatedAt:      &c.UpdatedAt,
 	}
+	return resp
 }
 
 func externalLocationToAPI(l domain.ExternalLocation) ExternalLocation {
@@ -1809,5 +1862,121 @@ func externalLocationToAPI(l domain.ExternalLocation) ExternalLocation {
 		ReadOnly:       &l.ReadOnly,
 		CreatedAt:      &l.CreatedAt,
 		UpdatedAt:      &l.UpdatedAt,
+	}
+}
+
+// === Volumes ===
+
+func (h *APIHandler) ListVolumes(ctx context.Context, req ListVolumesRequestObject) (ListVolumesResponseObject, error) {
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	vols, total, err := h.volumes.List(ctx, req.SchemaName, page)
+	if err != nil {
+		return nil, err
+	}
+
+	data := make([]VolumeDetail, len(vols))
+	for i, v := range vols {
+		data[i] = volumeToAPI(v)
+	}
+	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return ListVolumes200JSONResponse{
+		Data:          &data,
+		NextPageToken: optStr(nextToken),
+	}, nil
+}
+
+func (h *APIHandler) CreateVolume(ctx context.Context, req CreateVolumeRequestObject) (CreateVolumeResponseObject, error) {
+	domReq := domain.CreateVolumeRequest{
+		Name:       req.Body.Name,
+		VolumeType: string(req.Body.VolumeType),
+	}
+	if req.Body.StorageLocation != nil {
+		domReq.StorageLocation = *req.Body.StorageLocation
+	}
+	if req.Body.Comment != nil {
+		domReq.Comment = *req.Body.Comment
+	}
+
+	result, err := h.volumes.Create(ctx, req.SchemaName, domReq)
+	if err != nil {
+		var accessErr *domain.AccessDeniedError
+		var validErr *domain.ValidationError
+		var conflictErr *domain.ConflictError
+		switch {
+		case errors.As(err, &accessErr):
+			return CreateVolume403JSONResponse{Code: 403, Message: err.Error()}, nil
+		case errors.As(err, &validErr):
+			return CreateVolume400JSONResponse{Code: 400, Message: err.Error()}, nil
+		case errors.As(err, &conflictErr):
+			return CreateVolume409JSONResponse{Code: 409, Message: err.Error()}, nil
+		default:
+			return CreateVolume400JSONResponse{Code: 400, Message: err.Error()}, nil
+		}
+	}
+	return CreateVolume201JSONResponse(volumeToAPI(*result)), nil
+}
+
+func (h *APIHandler) GetVolume(ctx context.Context, req GetVolumeRequestObject) (GetVolumeResponseObject, error) {
+	result, err := h.volumes.GetByName(ctx, req.SchemaName, req.VolumeName)
+	if err != nil {
+		switch err.(type) {
+		case *domain.NotFoundError:
+			return GetVolume404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return GetVolume200JSONResponse(volumeToAPI(*result)), nil
+}
+
+func (h *APIHandler) UpdateVolume(ctx context.Context, req UpdateVolumeRequestObject) (UpdateVolumeResponseObject, error) {
+	domReq := domain.UpdateVolumeRequest{
+		NewName: req.Body.NewName,
+		Comment: req.Body.Comment,
+		Owner:   req.Body.Owner,
+	}
+
+	result, err := h.volumes.Update(ctx, req.SchemaName, req.VolumeName, domReq)
+	if err != nil {
+		switch err.(type) {
+		case *domain.AccessDeniedError:
+			return UpdateVolume403JSONResponse{Code: 403, Message: err.Error()}, nil
+		case *domain.NotFoundError:
+			return UpdateVolume404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return UpdateVolume200JSONResponse(volumeToAPI(*result)), nil
+}
+
+func (h *APIHandler) DeleteVolume(ctx context.Context, req DeleteVolumeRequestObject) (DeleteVolumeResponseObject, error) {
+	if err := h.volumes.Delete(ctx, req.SchemaName, req.VolumeName); err != nil {
+		switch err.(type) {
+		case *domain.AccessDeniedError:
+			return DeleteVolume403JSONResponse{Code: 403, Message: err.Error()}, nil
+		case *domain.NotFoundError:
+			return DeleteVolume404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return DeleteVolume204Response{}, nil
+}
+
+// volumeToAPI converts a domain Volume to the API VolumeDetail type.
+func volumeToAPI(v domain.Volume) VolumeDetail {
+	vt := VolumeDetailVolumeType(v.VolumeType)
+	return VolumeDetail{
+		Id:              &v.ID,
+		Name:            &v.Name,
+		SchemaName:      &v.SchemaName,
+		CatalogName:     &v.CatalogName,
+		VolumeType:      &vt,
+		StorageLocation: optStr(v.StorageLocation),
+		Comment:         optStr(v.Comment),
+		Owner:           &v.Owner,
+		CreatedAt:       &v.CreatedAt,
+		UpdatedAt:       &v.UpdatedAt,
 	}
 }
