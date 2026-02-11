@@ -53,7 +53,7 @@ func TestStorageCredentialService_Create(t *testing.T) {
 		audit := &mockAuditRepo{}
 		svc := NewStorageCredentialService(repo, auth, audit)
 
-		result, err := svc.Create(ctxWithPrincipal("admin_user"), validReq)
+		result, err := svc.Create(ctxWithPrincipal("admin_user"), "admin_user", validReq)
 
 		require.NoError(t, err)
 		assert.Equal(t, "my-cred", result.Name)
@@ -70,7 +70,7 @@ func TestStorageCredentialService_Create(t *testing.T) {
 		audit := &mockAuditRepo{}
 		svc := NewStorageCredentialService(&mockStorageCredentialRepo{}, auth, audit)
 
-		_, err := svc.Create(ctxWithPrincipal("nobody"), validReq)
+		_, err := svc.Create(ctxWithPrincipal("nobody"), "nobody", validReq)
 
 		require.Error(t, err)
 		var denied *domain.AccessDeniedError
@@ -87,7 +87,7 @@ func TestStorageCredentialService_Create(t *testing.T) {
 		audit := &mockAuditRepo{}
 		svc := NewStorageCredentialService(&mockStorageCredentialRepo{}, auth, audit)
 
-		_, err := svc.Create(ctxWithPrincipal("admin_user"), domain.CreateStorageCredentialRequest{})
+		_, err := svc.Create(ctxWithPrincipal("admin_user"), "admin_user", domain.CreateStorageCredentialRequest{})
 
 		require.Error(t, err)
 		var valErr *domain.ValidationError
@@ -108,7 +108,7 @@ func TestStorageCredentialService_Create(t *testing.T) {
 		audit := &mockAuditRepo{}
 		svc := NewStorageCredentialService(repo, auth, audit)
 
-		_, err := svc.Create(ctxWithPrincipal("admin_user"), validReq)
+		_, err := svc.Create(ctxWithPrincipal("admin_user"), "admin_user", validReq)
 
 		require.Error(t, err)
 		assert.Empty(t, audit.entries)
@@ -205,7 +205,7 @@ func TestStorageCredentialService_Delete(t *testing.T) {
 		audit := &mockAuditRepo{}
 		svc := NewStorageCredentialService(repo, auth, audit)
 
-		err := svc.Delete(ctxWithPrincipal("admin_user"), "my-cred")
+		err := svc.Delete(ctxWithPrincipal("admin_user"), "admin_user", "my-cred")
 
 		require.NoError(t, err)
 		assert.True(t, audit.hasAction("DELETE_STORAGE_CREDENTIAL"))
@@ -220,7 +220,7 @@ func TestStorageCredentialService_Delete(t *testing.T) {
 		audit := &mockAuditRepo{}
 		svc := NewStorageCredentialService(&mockStorageCredentialRepo{}, auth, audit)
 
-		err := svc.Delete(ctxWithPrincipal("nobody"), "my-cred")
+		err := svc.Delete(ctxWithPrincipal("nobody"), "nobody", "my-cred")
 
 		require.Error(t, err)
 		var denied *domain.AccessDeniedError
@@ -241,7 +241,7 @@ func TestStorageCredentialService_Delete(t *testing.T) {
 		}
 		svc := NewStorageCredentialService(repo, auth, &mockAuditRepo{})
 
-		err := svc.Delete(ctxWithPrincipal("admin_user"), "missing")
+		err := svc.Delete(ctxWithPrincipal("admin_user"), "admin_user", "missing")
 
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
@@ -274,7 +274,7 @@ func TestStorageCredentialService_Update(t *testing.T) {
 		audit := &mockAuditRepo{}
 		svc := NewStorageCredentialService(repo, auth, audit)
 
-		result, err := svc.Update(ctxWithPrincipal("admin_user"), "my-cred", updateReq)
+		result, err := svc.Update(ctxWithPrincipal("admin_user"), "admin_user", "my-cred", updateReq)
 
 		require.NoError(t, err)
 		assert.Equal(t, "s3-new.example.com", result.Endpoint)
@@ -289,7 +289,7 @@ func TestStorageCredentialService_Update(t *testing.T) {
 		}
 		svc := NewStorageCredentialService(&mockStorageCredentialRepo{}, auth, &mockAuditRepo{})
 
-		_, err := svc.Update(ctxWithPrincipal("nobody"), "my-cred", updateReq)
+		_, err := svc.Update(ctxWithPrincipal("nobody"), "nobody", "my-cred", updateReq)
 
 		require.Error(t, err)
 		var denied *domain.AccessDeniedError

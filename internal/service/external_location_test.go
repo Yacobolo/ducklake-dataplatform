@@ -80,7 +80,7 @@ func TestExternalLocationService_Create(t *testing.T) {
 
 		svc := NewExternalLocationService(locRepo, credRepo, auth, audit, duckDB, t.TempDir()+"/meta.db")
 
-		result, err := svc.Create(ctxWithPrincipal("admin_user"), validReq)
+		result, err := svc.Create(ctxWithPrincipal("admin_user"), "admin_user", validReq)
 
 		require.NoError(t, err)
 		assert.Equal(t, "my-location", result.Name)
@@ -100,7 +100,7 @@ func TestExternalLocationService_Create(t *testing.T) {
 			auth, &mockAuditRepo{}, nil, "",
 		)
 
-		_, err := svc.Create(ctxWithPrincipal("nobody"), validReq)
+		_, err := svc.Create(ctxWithPrincipal("nobody"), "nobody", validReq)
 
 		require.Error(t, err)
 		var denied *domain.AccessDeniedError
@@ -118,7 +118,7 @@ func TestExternalLocationService_Create(t *testing.T) {
 			auth, &mockAuditRepo{}, nil, "",
 		)
 
-		_, err := svc.Create(ctxWithPrincipal("admin_user"), domain.CreateExternalLocationRequest{})
+		_, err := svc.Create(ctxWithPrincipal("admin_user"), "admin_user", domain.CreateExternalLocationRequest{})
 
 		require.Error(t, err)
 		var valErr *domain.ValidationError
@@ -141,7 +141,7 @@ func TestExternalLocationService_Create(t *testing.T) {
 			auth, &mockAuditRepo{}, nil, "",
 		)
 
-		_, err := svc.Create(ctxWithPrincipal("admin_user"), validReq)
+		_, err := svc.Create(ctxWithPrincipal("admin_user"), "admin_user", validReq)
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "credential")
@@ -165,7 +165,7 @@ func TestExternalLocationService_Create(t *testing.T) {
 		}
 		svc := NewExternalLocationService(locRepo, credRepo, auth, &mockAuditRepo{}, nil, "")
 
-		_, err := svc.Create(ctxWithPrincipal("admin_user"), validReq)
+		_, err := svc.Create(ctxWithPrincipal("admin_user"), "admin_user", validReq)
 
 		require.Error(t, err)
 	})
@@ -252,7 +252,7 @@ func TestExternalLocationService_Delete(t *testing.T) {
 		audit := &mockAuditRepo{}
 		svc := NewExternalLocationService(locRepo, &mockStorageCredentialRepo{}, auth, audit, duckDB, "")
 
-		err := svc.Delete(ctxWithPrincipal("admin_user"), "my-loc")
+		err := svc.Delete(ctxWithPrincipal("admin_user"), "admin_user", "my-loc")
 
 		require.NoError(t, err)
 		assert.True(t, audit.hasAction("DELETE_EXTERNAL_LOCATION"))
@@ -269,7 +269,7 @@ func TestExternalLocationService_Delete(t *testing.T) {
 			auth, &mockAuditRepo{}, nil, "",
 		)
 
-		err := svc.Delete(ctxWithPrincipal("nobody"), "my-loc")
+		err := svc.Delete(ctxWithPrincipal("nobody"), "nobody", "my-loc")
 
 		require.Error(t, err)
 		var denied *domain.AccessDeniedError

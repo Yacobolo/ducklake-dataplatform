@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"duck-demo/internal/domain"
-	"duck-demo/internal/middleware"
 
 	"github.com/google/uuid"
 )
@@ -62,10 +61,10 @@ func (s *IngestionService) SetCredentialRepos(
 // The caller must have INSERT privilege on the target table.
 func (s *IngestionService) RequestUploadURL(
 	ctx context.Context,
+	principal string,
 	schemaName, tableName string,
 	filename *string,
 ) (*domain.UploadURLResult, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
 
 	// Authorize: check INSERT on table
 	if err := s.checkInsertPrivilege(ctx, principal, tableName); err != nil {
@@ -110,11 +109,11 @@ func (s *IngestionService) RequestUploadURL(
 // s3Keys are relative keys (from upload-url response), converted to full s3:// URIs.
 func (s *IngestionService) CommitIngestion(
 	ctx context.Context,
+	principal string,
 	schemaName, tableName string,
 	s3Keys []string,
 	opts domain.IngestionOptions,
 ) (*domain.IngestionResult, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
 
 	if len(s3Keys) == 0 {
 		return nil, domain.ErrValidation("s3_keys must not be empty")
@@ -155,11 +154,11 @@ func (s *IngestionService) CommitIngestion(
 // Paths can be full s3:// URIs or relative to the lake data path.
 func (s *IngestionService) LoadExternalFiles(
 	ctx context.Context,
+	principal string,
 	schemaName, tableName string,
 	paths []string,
 	opts domain.IngestionOptions,
 ) (*domain.IngestionResult, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
 
 	if len(paths) == 0 {
 		return nil, domain.ErrValidation("paths must not be empty")

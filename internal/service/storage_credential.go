@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"duck-demo/internal/domain"
-	"duck-demo/internal/middleware"
 )
 
 // StorageCredentialService provides CRUD operations for storage credentials
@@ -31,8 +30,7 @@ func NewStorageCredentialService(
 
 // Create validates and persists a new storage credential.
 // Requires ALL_PRIVILEGES on catalog.
-func (s *StorageCredentialService) Create(ctx context.Context, req domain.CreateStorageCredentialRequest) (*domain.StorageCredential, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+func (s *StorageCredentialService) Create(ctx context.Context, principal string, req domain.CreateStorageCredentialRequest) (*domain.StorageCredential, error) {
 
 	if err := s.requireCatalogAdmin(ctx, principal); err != nil {
 		return nil, err
@@ -75,8 +73,7 @@ func (s *StorageCredentialService) List(ctx context.Context, page domain.PageReq
 
 // Update updates a storage credential by name.
 // Requires ALL_PRIVILEGES on catalog.
-func (s *StorageCredentialService) Update(ctx context.Context, name string, req domain.UpdateStorageCredentialRequest) (*domain.StorageCredential, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+func (s *StorageCredentialService) Update(ctx context.Context, principal string, name string, req domain.UpdateStorageCredentialRequest) (*domain.StorageCredential, error) {
 
 	if err := s.requireCatalogAdmin(ctx, principal); err != nil {
 		return nil, err
@@ -98,8 +95,7 @@ func (s *StorageCredentialService) Update(ctx context.Context, name string, req 
 
 // Delete removes a storage credential by name.
 // Requires ALL_PRIVILEGES on catalog.
-func (s *StorageCredentialService) Delete(ctx context.Context, name string) error {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+func (s *StorageCredentialService) Delete(ctx context.Context, principal string, name string) error {
 
 	if err := s.requireCatalogAdmin(ctx, principal); err != nil {
 		return err

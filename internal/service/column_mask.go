@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"duck-demo/internal/domain"
-	"duck-demo/internal/middleware"
 )
 
 type ColumnMaskService struct {
@@ -16,7 +15,7 @@ func NewColumnMaskService(repo domain.ColumnMaskRepository, audit domain.AuditRe
 	return &ColumnMaskService{repo: repo, audit: audit}
 }
 
-func (s *ColumnMaskService) Create(ctx context.Context, m *domain.ColumnMask) (*domain.ColumnMask, error) {
+func (s *ColumnMaskService) Create(ctx context.Context, principal string, m *domain.ColumnMask) (*domain.ColumnMask, error) {
 	if m.ColumnName == "" {
 		return nil, domain.ErrValidation("column_name is required")
 	}
@@ -27,7 +26,6 @@ func (s *ColumnMaskService) Create(ctx context.Context, m *domain.ColumnMask) (*
 	if err != nil {
 		return nil, err
 	}
-	principal, _ := middleware.PrincipalFromContext(ctx)
 	_ = s.audit.Insert(ctx, &domain.AuditEntry{
 		PrincipalName: principal,
 		Action:        "CREATE_COLUMN_MASK",

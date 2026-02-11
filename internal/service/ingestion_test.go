@@ -144,7 +144,7 @@ func TestIngestion_CommitEmptyKeys(t *testing.T) {
 	})
 
 	ctx = middleware.WithPrincipal(ctx, "writer")
-	_, err := svc.CommitIngestion(ctx, "main", "titanic", []string{}, domain.IngestionOptions{})
+	_, err := svc.CommitIngestion(ctx, "writer", "main", "titanic", []string{}, domain.IngestionOptions{})
 	require.Error(t, err)
 
 	var validationErr *domain.ValidationError
@@ -160,7 +160,7 @@ func TestIngestion_LoadEmptyPaths(t *testing.T) {
 	})
 
 	ctx = middleware.WithPrincipal(ctx, "writer")
-	_, err := svc.LoadExternalFiles(ctx, "main", "titanic", []string{}, domain.IngestionOptions{})
+	_, err := svc.LoadExternalFiles(ctx, "writer", "main", "titanic", []string{}, domain.IngestionOptions{})
 	require.Error(t, err)
 
 	var validationErr *domain.ValidationError
@@ -179,7 +179,7 @@ func TestIngestion_AccessDenied(t *testing.T) {
 	ctx = middleware.WithPrincipal(ctx, "no_access")
 
 	t.Run("upload-url denied", func(t *testing.T) {
-		_, err := svc.RequestUploadURL(ctx, "main", "titanic", nil)
+		_, err := svc.RequestUploadURL(ctx, "no_access", "main", "titanic", nil)
 		require.Error(t, err)
 
 		var accessDenied *domain.AccessDeniedError
@@ -187,7 +187,7 @@ func TestIngestion_AccessDenied(t *testing.T) {
 	})
 
 	t.Run("commit denied", func(t *testing.T) {
-		_, err := svc.CommitIngestion(ctx, "main", "titanic",
+		_, err := svc.CommitIngestion(ctx, "no_access", "main", "titanic",
 			[]string{"lake_data/main/titanic/uploads/test.parquet"},
 			domain.IngestionOptions{})
 		require.Error(t, err)
@@ -197,7 +197,7 @@ func TestIngestion_AccessDenied(t *testing.T) {
 	})
 
 	t.Run("load denied", func(t *testing.T) {
-		_, err := svc.LoadExternalFiles(ctx, "main", "titanic",
+		_, err := svc.LoadExternalFiles(ctx, "no_access", "main", "titanic",
 			[]string{"s3://bucket/data.parquet"},
 			domain.IngestionOptions{})
 		require.Error(t, err)
@@ -216,7 +216,7 @@ func TestIngestion_TableNotFound(t *testing.T) {
 
 	ctx = middleware.WithPrincipal(ctx, "writer")
 
-	_, err := svc.RequestUploadURL(ctx, "main", "nonexistent_table", nil)
+	_, err := svc.RequestUploadURL(ctx, "writer", "main", "nonexistent_table", nil)
 	require.Error(t, err)
 
 	var notFoundErr *domain.NotFoundError
@@ -234,7 +234,7 @@ func TestIngestion_AdminPassesAuthCheck(t *testing.T) {
 
 	// Admin should pass the auth check for commit, but fail on validation (empty keys).
 	// This verifies auth is not the blocker.
-	_, err := svc.CommitIngestion(ctx, "main", "titanic", []string{}, domain.IngestionOptions{})
+	_, err := svc.CommitIngestion(ctx, "admin", "main", "titanic", []string{}, domain.IngestionOptions{})
 	require.Error(t, err)
 	// Should be validation error, not access denied
 	var validationErr *domain.ValidationError
@@ -263,7 +263,7 @@ func TestIngestion_UserWithInsertGrant(t *testing.T) {
 	ctx = middleware.WithPrincipal(ctx, "inserter")
 
 	// Should pass auth, but fail on validation (empty keys) — NOT AccessDenied.
-	_, err := svc.CommitIngestion(ctx, "main", "titanic", []string{}, domain.IngestionOptions{})
+	_, err := svc.CommitIngestion(ctx, "inserter", "main", "titanic", []string{}, domain.IngestionOptions{})
 	require.Error(t, err)
 	var validationErr *domain.ValidationError
 	assert.ErrorAs(t, err, &validationErr, "user with INSERT should pass auth, fail on validation")

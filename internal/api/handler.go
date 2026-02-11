@@ -336,7 +336,8 @@ func (h *APIHandler) GrantPrivilege(ctx context.Context, req GrantPrivilegeReque
 		SecurableID:   req.Body.SecurableId,
 		Privilege:     req.Body.Privilege,
 	}
-	result, err := h.grants.Grant(ctx, g)
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	result, err := h.grants.Grant(ctx, principal, g)
 	if err != nil {
 		return nil, err
 	}
@@ -344,7 +345,8 @@ func (h *APIHandler) GrantPrivilege(ctx context.Context, req GrantPrivilegeReque
 }
 
 func (h *APIHandler) RevokePrivilege(ctx context.Context, req RevokePrivilegeRequestObject) (RevokePrivilegeResponseObject, error) {
-	if err := h.grants.Revoke(ctx, &domain.PrivilegeGrant{
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	if err := h.grants.Revoke(ctx, principal, &domain.PrivilegeGrant{
 		PrincipalID:   req.Body.PrincipalId,
 		PrincipalType: req.Body.PrincipalType,
 		SecurableType: req.Body.SecurableType,
@@ -380,7 +382,8 @@ func (h *APIHandler) CreateRowFilter(ctx context.Context, req CreateRowFilterReq
 	if req.Body.Description != nil {
 		f.Description = *req.Body.Description
 	}
-	result, err := h.rowFilters.Create(ctx, f)
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	result, err := h.rowFilters.Create(ctx, principal, f)
 	if err != nil {
 		return nil, err
 	}
@@ -441,7 +444,8 @@ func (h *APIHandler) CreateColumnMask(ctx context.Context, req CreateColumnMaskR
 	if req.Body.Description != nil {
 		m.Description = *req.Body.Description
 	}
-	result, err := h.columnMasks.Create(ctx, m)
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	result, err := h.columnMasks.Create(ctx, principal, m)
 	if err != nil {
 		return nil, err
 	}
@@ -567,7 +571,8 @@ func (h *APIHandler) UpdateCatalog(ctx context.Context, req UpdateCatalogRequest
 		domReq.Comment = req.Body.Comment
 	}
 
-	result, err := h.catalog.UpdateCatalog(ctx, domReq)
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	result, err := h.catalog.UpdateCatalog(ctx, principal, domReq)
 	if err != nil {
 		switch err.(type) {
 		case *domain.AccessDeniedError:
@@ -607,7 +612,8 @@ func (h *APIHandler) CreateSchema(ctx context.Context, req CreateSchemaRequestOb
 		domReq.LocationName = *req.Body.LocationName
 	}
 
-	result, err := h.catalog.CreateSchema(ctx, domReq)
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	result, err := h.catalog.CreateSchema(ctx, principal, domReq)
 	if err != nil {
 		switch err.(type) {
 		case *domain.AccessDeniedError:
@@ -642,7 +648,8 @@ func (h *APIHandler) UpdateSchemaMetadata(ctx context.Context, req UpdateSchemaM
 		props = *req.Body.Properties
 	}
 
-	result, err := h.catalog.UpdateSchema(ctx, req.SchemaName, req.Body.Comment, props)
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	result, err := h.catalog.UpdateSchema(ctx, principal, req.SchemaName, req.Body.Comment, props)
 	if err != nil {
 		switch err.(type) {
 		case *domain.AccessDeniedError:
@@ -662,7 +669,8 @@ func (h *APIHandler) DeleteSchema(ctx context.Context, req DeleteSchemaRequestOb
 		force = *req.Params.Force
 	}
 
-	if err := h.catalog.DeleteSchema(ctx, req.SchemaName, force); err != nil {
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	if err := h.catalog.DeleteSchema(ctx, principal, req.SchemaName, force); err != nil {
 		code := errorCodeFromError(err)
 		switch code {
 		case http.StatusForbidden:
@@ -725,7 +733,8 @@ func (h *APIHandler) CreateCatalogTable(ctx context.Context, req CreateCatalogTa
 		domReq.LocationName = *req.Body.LocationName
 	}
 
-	result, err := h.catalog.CreateTable(ctx, req.SchemaName, domReq)
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	result, err := h.catalog.CreateTable(ctx, principal, req.SchemaName, domReq)
 	if err != nil {
 		switch err.(type) {
 		case *domain.AccessDeniedError:
@@ -768,7 +777,8 @@ func (h *APIHandler) UpdateTableMetadata(ctx context.Context, req UpdateTableMet
 		domReq.Owner = req.Body.Owner
 	}
 
-	result, err := h.catalog.UpdateTable(ctx, req.SchemaName, req.TableName, domReq)
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	result, err := h.catalog.UpdateTable(ctx, principal, req.SchemaName, req.TableName, domReq)
 	if err != nil {
 		switch err.(type) {
 		case *domain.AccessDeniedError:
@@ -783,7 +793,8 @@ func (h *APIHandler) UpdateTableMetadata(ctx context.Context, req UpdateTableMet
 }
 
 func (h *APIHandler) DropTable(ctx context.Context, req DropTableRequestObject) (DropTableResponseObject, error) {
-	if err := h.catalog.DeleteTable(ctx, req.SchemaName, req.TableName); err != nil {
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	if err := h.catalog.DeleteTable(ctx, principal, req.SchemaName, req.TableName); err != nil {
 		switch err.(type) {
 		case *domain.AccessDeniedError:
 			return DropTable403JSONResponse{Code: 403, Message: err.Error()}, nil
@@ -824,7 +835,8 @@ func (h *APIHandler) UpdateColumnMetadata(ctx context.Context, req UpdateColumnM
 		domReq.Properties = *req.Body.Properties
 	}
 
-	result, err := h.catalog.UpdateColumn(ctx, req.SchemaName, req.TableName, req.ColumnName, domReq)
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	result, err := h.catalog.UpdateColumn(ctx, principal, req.SchemaName, req.TableName, req.ColumnName, domReq)
 	if err != nil {
 		switch err.(type) {
 		case *domain.AccessDeniedError:
@@ -839,7 +851,8 @@ func (h *APIHandler) UpdateColumnMetadata(ctx context.Context, req UpdateColumnM
 }
 
 func (h *APIHandler) ProfileTable(ctx context.Context, req ProfileTableRequestObject) (ProfileTableResponseObject, error) {
-	stats, err := h.catalog.ProfileTable(ctx, req.SchemaName, req.TableName)
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	stats, err := h.catalog.ProfileTable(ctx, principal, req.SchemaName, req.TableName)
 	if err != nil {
 		switch err.(type) {
 		case *domain.AccessDeniedError:
@@ -1020,7 +1033,8 @@ func (h *APIHandler) CreateTag(ctx context.Context, req CreateTagRequestObject) 
 		Key:   req.Body.Key,
 		Value: req.Body.Value,
 	}
-	result, err := h.tags.CreateTag(ctx, tag)
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	result, err := h.tags.CreateTag(ctx, principal, tag)
 	if err != nil {
 		switch err.(type) {
 		case *domain.ConflictError:
@@ -1033,7 +1047,8 @@ func (h *APIHandler) CreateTag(ctx context.Context, req CreateTagRequestObject) 
 }
 
 func (h *APIHandler) DeleteTag(ctx context.Context, req DeleteTagRequestObject) (DeleteTagResponseObject, error) {
-	if err := h.tags.DeleteTag(ctx, req.TagId); err != nil {
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	if err := h.tags.DeleteTag(ctx, principal, req.TagId); err != nil {
 		switch err.(type) {
 		case *domain.NotFoundError:
 			return DeleteTag404JSONResponse{Code: 404, Message: err.Error()}, nil
@@ -1051,7 +1066,8 @@ func (h *APIHandler) AssignTag(ctx context.Context, req AssignTagRequestObject) 
 		SecurableID:   req.Body.SecurableId,
 		ColumnName:    req.Body.ColumnName,
 	}
-	result, err := h.tags.AssignTag(ctx, assignment)
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	result, err := h.tags.AssignTag(ctx, principal, assignment)
 	if err != nil {
 		switch err.(type) {
 		case *domain.ConflictError:
@@ -1064,7 +1080,8 @@ func (h *APIHandler) AssignTag(ctx context.Context, req AssignTagRequestObject) 
 }
 
 func (h *APIHandler) UnassignTag(ctx context.Context, req UnassignTagRequestObject) (UnassignTagResponseObject, error) {
-	if err := h.tags.UnassignTag(ctx, req.AssignmentId); err != nil {
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	if err := h.tags.UnassignTag(ctx, principal, req.AssignmentId); err != nil {
 		return nil, err
 	}
 	return UnassignTag204Response{}, nil
@@ -1120,7 +1137,8 @@ func (h *APIHandler) CreateView(ctx context.Context, req CreateViewRequestObject
 		domReq.Comment = *req.Body.Comment
 	}
 
-	result, err := h.views.CreateView(ctx, req.SchemaName, domReq)
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	result, err := h.views.CreateView(ctx, principal, req.SchemaName, domReq)
 	if err != nil {
 		switch err.(type) {
 		case *domain.AccessDeniedError:
@@ -1161,7 +1179,8 @@ func (h *APIHandler) UpdateView(ctx context.Context, req UpdateViewRequestObject
 		domReq.ViewDefinition = req.Body.ViewDefinition
 	}
 
-	result, err := h.views.UpdateView(ctx, req.SchemaName, req.ViewName, domReq)
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	result, err := h.views.UpdateView(ctx, principal, req.SchemaName, req.ViewName, domReq)
 	if err != nil {
 		switch err.(type) {
 		case *domain.AccessDeniedError:
@@ -1176,7 +1195,8 @@ func (h *APIHandler) UpdateView(ctx context.Context, req UpdateViewRequestObject
 }
 
 func (h *APIHandler) DropView(ctx context.Context, req DropViewRequestObject) (DropViewResponseObject, error) {
-	if err := h.views.DeleteView(ctx, req.SchemaName, req.ViewName); err != nil {
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	if err := h.views.DeleteView(ctx, principal, req.SchemaName, req.ViewName); err != nil {
 		switch err.(type) {
 		case *domain.AccessDeniedError:
 			return DropView403JSONResponse{Code: 403, Message: err.Error()}, nil
@@ -1196,7 +1216,8 @@ func (h *APIHandler) RequestUploadUrl(ctx context.Context, req RequestUploadUrlR
 		return RequestUploadUrl400JSONResponse{Code: 400, Message: "ingestion not available (S3 not configured)"}, nil
 	}
 
-	result, err := h.ingestion.RequestUploadURL(ctx, req.SchemaName, req.TableName, req.Body.Filename)
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	result, err := h.ingestion.RequestUploadURL(ctx, principal, req.SchemaName, req.TableName, req.Body.Filename)
 	if err != nil {
 		switch err.(type) {
 		case *domain.NotFoundError:
@@ -1231,7 +1252,8 @@ func (h *APIHandler) CommitIngestion(ctx context.Context, req CommitIngestionReq
 		}
 	}
 
-	result, err := h.ingestion.CommitIngestion(ctx, req.SchemaName, req.TableName, req.Body.S3Keys, opts)
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	result, err := h.ingestion.CommitIngestion(ctx, principal, req.SchemaName, req.TableName, req.Body.S3Keys, opts)
 	if err != nil {
 		switch err.(type) {
 		case *domain.NotFoundError:
@@ -1268,7 +1290,8 @@ func (h *APIHandler) LoadExternalFiles(ctx context.Context, req LoadExternalFile
 		}
 	}
 
-	result, err := h.ingestion.LoadExternalFiles(ctx, req.SchemaName, req.TableName, req.Body.Paths, opts)
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	result, err := h.ingestion.LoadExternalFiles(ctx, principal, req.SchemaName, req.TableName, req.Body.Paths, opts)
 	if err != nil {
 		switch err.(type) {
 		case *domain.NotFoundError:
@@ -1635,7 +1658,8 @@ func (h *APIHandler) CreateStorageCredential(ctx context.Context, req CreateStor
 		domReq.Comment = *req.Body.Comment
 	}
 
-	result, err := h.storageCreds.Create(ctx, domReq)
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	result, err := h.storageCreds.Create(ctx, principal, domReq)
 	if err != nil {
 		var accessErr *domain.AccessDeniedError
 		var validErr *domain.ValidationError
@@ -1677,7 +1701,8 @@ func (h *APIHandler) UpdateStorageCredential(ctx context.Context, req UpdateStor
 		Comment:  req.Body.Comment,
 	}
 
-	result, err := h.storageCreds.Update(ctx, req.CredentialName, domReq)
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	result, err := h.storageCreds.Update(ctx, principal, req.CredentialName, domReq)
 	if err != nil {
 		switch err.(type) {
 		case *domain.AccessDeniedError:
@@ -1692,7 +1717,8 @@ func (h *APIHandler) UpdateStorageCredential(ctx context.Context, req UpdateStor
 }
 
 func (h *APIHandler) DeleteStorageCredential(ctx context.Context, req DeleteStorageCredentialRequestObject) (DeleteStorageCredentialResponseObject, error) {
-	if err := h.storageCreds.Delete(ctx, req.CredentialName); err != nil {
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	if err := h.storageCreds.Delete(ctx, principal, req.CredentialName); err != nil {
 		switch err.(type) {
 		case *domain.AccessDeniedError:
 			return DeleteStorageCredential403JSONResponse{Code: 403, Message: err.Error()}, nil
@@ -1741,7 +1767,8 @@ func (h *APIHandler) CreateExternalLocation(ctx context.Context, req CreateExter
 		domReq.ReadOnly = *req.Body.ReadOnly
 	}
 
-	result, err := h.externalLocations.Create(ctx, domReq)
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	result, err := h.externalLocations.Create(ctx, principal, domReq)
 	if err != nil {
 		var accessErr *domain.AccessDeniedError
 		var validErr *domain.ValidationError
@@ -1790,7 +1817,8 @@ func (h *APIHandler) UpdateExternalLocation(ctx context.Context, req UpdateExter
 		domReq.ReadOnly = req.Body.ReadOnly
 	}
 
-	result, err := h.externalLocations.Update(ctx, req.LocationName, domReq)
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	result, err := h.externalLocations.Update(ctx, principal, req.LocationName, domReq)
 	if err != nil {
 		switch err.(type) {
 		case *domain.AccessDeniedError:
@@ -1805,7 +1833,8 @@ func (h *APIHandler) UpdateExternalLocation(ctx context.Context, req UpdateExter
 }
 
 func (h *APIHandler) DeleteExternalLocation(ctx context.Context, req DeleteExternalLocationRequestObject) (DeleteExternalLocationResponseObject, error) {
-	if err := h.externalLocations.Delete(ctx, req.LocationName); err != nil {
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	if err := h.externalLocations.Delete(ctx, principal, req.LocationName); err != nil {
 		switch err.(type) {
 		case *domain.AccessDeniedError:
 			return DeleteExternalLocation403JSONResponse{Code: 403, Message: err.Error()}, nil
