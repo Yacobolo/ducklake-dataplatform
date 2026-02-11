@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"duck-demo/internal/domain"
-	"duck-demo/internal/middleware"
 )
 
 // TagService provides tag management operations.
@@ -20,8 +19,7 @@ func NewTagService(repo domain.TagRepository, audit domain.AuditRepository) *Tag
 }
 
 // CreateTag creates a new tag definition.
-func (s *TagService) CreateTag(ctx context.Context, tag *domain.Tag) (*domain.Tag, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+func (s *TagService) CreateTag(ctx context.Context, principal string, tag *domain.Tag) (*domain.Tag, error) {
 	tag.CreatedBy = principal
 
 	// Validate classification tag values
@@ -49,8 +47,7 @@ func (s *TagService) ListTags(ctx context.Context, page domain.PageRequest) ([]d
 }
 
 // DeleteTag deletes a tag by ID.
-func (s *TagService) DeleteTag(ctx context.Context, id int64) error {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+func (s *TagService) DeleteTag(ctx context.Context, principal string, id int64) error {
 
 	if err := s.repo.DeleteTag(ctx, id); err != nil {
 		return err
@@ -61,8 +58,7 @@ func (s *TagService) DeleteTag(ctx context.Context, id int64) error {
 }
 
 // AssignTag assigns a tag to a securable object.
-func (s *TagService) AssignTag(ctx context.Context, assignment *domain.TagAssignment) (*domain.TagAssignment, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+func (s *TagService) AssignTag(ctx context.Context, principal string, assignment *domain.TagAssignment) (*domain.TagAssignment, error) {
 	assignment.AssignedBy = principal
 
 	result, err := s.repo.AssignTag(ctx, assignment)
@@ -75,8 +71,7 @@ func (s *TagService) AssignTag(ctx context.Context, assignment *domain.TagAssign
 }
 
 // UnassignTag removes a tag assignment.
-func (s *TagService) UnassignTag(ctx context.Context, id int64) error {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+func (s *TagService) UnassignTag(ctx context.Context, principal string, id int64) error {
 
 	if err := s.repo.UnassignTag(ctx, id); err != nil {
 		return err

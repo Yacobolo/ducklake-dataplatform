@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"duck-demo/internal/domain"
-	"duck-demo/internal/middleware"
 )
 
 type RowFilterService struct {
@@ -16,7 +15,7 @@ func NewRowFilterService(repo domain.RowFilterRepository, audit domain.AuditRepo
 	return &RowFilterService{repo: repo, audit: audit}
 }
 
-func (s *RowFilterService) Create(ctx context.Context, f *domain.RowFilter) (*domain.RowFilter, error) {
+func (s *RowFilterService) Create(ctx context.Context, principal string, f *domain.RowFilter) (*domain.RowFilter, error) {
 	if f.FilterSQL == "" {
 		return nil, domain.ErrValidation("filter_sql is required")
 	}
@@ -24,7 +23,6 @@ func (s *RowFilterService) Create(ctx context.Context, f *domain.RowFilter) (*do
 	if err != nil {
 		return nil, err
 	}
-	principal, _ := middleware.PrincipalFromContext(ctx)
 	_ = s.audit.Insert(ctx, &domain.AuditEntry{
 		PrincipalName: principal,
 		Action:        "CREATE_ROW_FILTER",

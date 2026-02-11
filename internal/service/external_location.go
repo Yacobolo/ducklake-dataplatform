@@ -9,7 +9,6 @@ import (
 
 	"duck-demo/internal/domain"
 	"duck-demo/internal/engine"
-	"duck-demo/internal/middleware"
 )
 
 // ExternalLocationService provides CRUD operations for external locations
@@ -64,8 +63,7 @@ func (s *ExternalLocationService) IsCatalogAttached() bool {
 // secret for the associated credential, and attaches the DuckLake catalog
 // if this is the first location.
 // Requires ALL_PRIVILEGES on catalog.
-func (s *ExternalLocationService) Create(ctx context.Context, req domain.CreateExternalLocationRequest) (*domain.ExternalLocation, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+func (s *ExternalLocationService) Create(ctx context.Context, principal string, req domain.CreateExternalLocationRequest) (*domain.ExternalLocation, error) {
 
 	if err := s.requireCatalogAdmin(ctx, principal); err != nil {
 		return nil, err
@@ -135,8 +133,7 @@ func (s *ExternalLocationService) List(ctx context.Context, page domain.PageRequ
 
 // Update updates an external location by name.
 // Requires ALL_PRIVILEGES on catalog.
-func (s *ExternalLocationService) Update(ctx context.Context, name string, req domain.UpdateExternalLocationRequest) (*domain.ExternalLocation, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+func (s *ExternalLocationService) Update(ctx context.Context, principal string, name string, req domain.UpdateExternalLocationRequest) (*domain.ExternalLocation, error) {
 
 	if err := s.requireCatalogAdmin(ctx, principal); err != nil {
 		return nil, err
@@ -158,8 +155,7 @@ func (s *ExternalLocationService) Update(ctx context.Context, name string, req d
 
 // Delete removes an external location and its associated DuckDB secret.
 // Requires ALL_PRIVILEGES on catalog.
-func (s *ExternalLocationService) Delete(ctx context.Context, name string) error {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+func (s *ExternalLocationService) Delete(ctx context.Context, principal string, name string) error {
 
 	if err := s.requireCatalogAdmin(ctx, principal); err != nil {
 		return err

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"duck-demo/internal/domain"
-	"duck-demo/internal/middleware"
 )
 
 type GrantService struct {
@@ -16,7 +15,7 @@ func NewGrantService(repo domain.GrantRepository, audit domain.AuditRepository) 
 	return &GrantService{repo: repo, audit: audit}
 }
 
-func (s *GrantService) Grant(ctx context.Context, g *domain.PrivilegeGrant) (*domain.PrivilegeGrant, error) {
+func (s *GrantService) Grant(ctx context.Context, principal string, g *domain.PrivilegeGrant) (*domain.PrivilegeGrant, error) {
 	if g.Privilege == "" {
 		return nil, domain.ErrValidation("privilege is required")
 	}
@@ -24,7 +23,6 @@ func (s *GrantService) Grant(ctx context.Context, g *domain.PrivilegeGrant) (*do
 	if err != nil {
 		return nil, err
 	}
-	principal, _ := middleware.PrincipalFromContext(ctx)
 	_ = s.audit.Insert(ctx, &domain.AuditEntry{
 		PrincipalName: principal,
 		Action:        "GRANT",
@@ -33,11 +31,10 @@ func (s *GrantService) Grant(ctx context.Context, g *domain.PrivilegeGrant) (*do
 	return result, nil
 }
 
-func (s *GrantService) Revoke(ctx context.Context, g *domain.PrivilegeGrant) error {
+func (s *GrantService) Revoke(ctx context.Context, principal string, g *domain.PrivilegeGrant) error {
 	if err := s.repo.Revoke(ctx, g); err != nil {
 		return err
 	}
-	principal, _ := middleware.PrincipalFromContext(ctx)
 	_ = s.audit.Insert(ctx, &domain.AuditEntry{
 		PrincipalName: principal,
 		Action:        "REVOKE",

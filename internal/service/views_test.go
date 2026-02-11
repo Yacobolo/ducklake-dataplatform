@@ -62,7 +62,7 @@ func TestViewService_CreateView(t *testing.T) {
 		audit := &mockAuditRepo{}
 
 		svc := newTestViewService(viewRepo, catalog, auth, audit)
-		result, err := svc.CreateView(ctxWithPrincipal("alice"), "main", req)
+		result, err := svc.CreateView(ctxWithPrincipal("alice"), "alice", "main", req)
 
 		require.NoError(t, err)
 		assert.Equal(t, "v_test", result.Name)
@@ -92,7 +92,7 @@ func TestViewService_CreateView(t *testing.T) {
 		audit := &mockAuditRepo{}
 
 		svc := newTestViewService(viewRepo, catalog, auth, audit)
-		_, err := svc.CreateView(ctxWithPrincipal("bob"), "main", req)
+		_, err := svc.CreateView(ctxWithPrincipal("bob"), "bob", "main", req)
 
 		require.NoError(t, err)
 		require.NotNil(t, captured)
@@ -109,7 +109,7 @@ func TestViewService_CreateView(t *testing.T) {
 		audit := &mockAuditRepo{}
 
 		svc := newTestViewService(&mockViewRepo{}, catalog, auth, audit)
-		_, err := svc.CreateView(ctxWithPrincipal("analyst"), "main", req)
+		_, err := svc.CreateView(ctxWithPrincipal("analyst"), "analyst", "main", req)
 
 		require.Error(t, err)
 		var accessErr *domain.AccessDeniedError
@@ -126,7 +126,7 @@ func TestViewService_CreateView(t *testing.T) {
 		audit := &mockAuditRepo{}
 
 		svc := newTestViewService(&mockViewRepo{}, catalog, auth, audit)
-		_, err := svc.CreateView(ctxWithPrincipal("alice"), "main", req)
+		_, err := svc.CreateView(ctxWithPrincipal("alice"), "alice", "main", req)
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "check privilege:")
@@ -146,7 +146,7 @@ func TestViewService_CreateView(t *testing.T) {
 		audit := &mockAuditRepo{}
 
 		svc := newTestViewService(&mockViewRepo{}, catalog, auth, audit)
-		_, err := svc.CreateView(ctxWithPrincipal("alice"), "bad", req)
+		_, err := svc.CreateView(ctxWithPrincipal("alice"), "alice", "bad", req)
 
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
@@ -172,7 +172,7 @@ func TestViewService_CreateView(t *testing.T) {
 		audit := &mockAuditRepo{}
 
 		svc := newTestViewService(viewRepo, catalog, auth, audit)
-		_, err := svc.CreateView(ctxWithPrincipal("alice"), "main", req)
+		_, err := svc.CreateView(ctxWithPrincipal("alice"), "alice", "main", req)
 
 		require.Error(t, err)
 		assert.ErrorIs(t, err, errTest)
@@ -197,7 +197,7 @@ func TestViewService_CreateView(t *testing.T) {
 		audit := &mockAuditRepo{}
 
 		svc := newTestViewService(viewRepo, catalog, auth, audit)
-		_, err := svc.CreateView(ctxWithPrincipal("alice"), "main", req)
+		_, err := svc.CreateView(ctxWithPrincipal("alice"), "alice", "main", req)
 
 		require.NoError(t, err)
 		require.NotNil(t, audit.lastEntry())
@@ -373,7 +373,7 @@ func TestViewService_DeleteView(t *testing.T) {
 		audit := &mockAuditRepo{}
 
 		svc := newTestViewService(viewRepo, catalog, auth, audit)
-		err := svc.DeleteView(ctxWithPrincipal("alice"), "main", "v_test")
+		err := svc.DeleteView(ctxWithPrincipal("alice"), "alice", "main", "v_test")
 
 		require.NoError(t, err)
 		require.NotNil(t, audit.lastEntry())
@@ -388,7 +388,7 @@ func TestViewService_DeleteView(t *testing.T) {
 		}
 
 		svc := newTestViewService(&mockViewRepo{}, &mockCatalogRepo{}, auth, &mockAuditRepo{})
-		err := svc.DeleteView(ctxWithPrincipal("analyst"), "main", "v_test")
+		err := svc.DeleteView(ctxWithPrincipal("analyst"), "analyst", "main", "v_test")
 
 		require.Error(t, err)
 		var accessErr *domain.AccessDeniedError
@@ -408,7 +408,7 @@ func TestViewService_DeleteView(t *testing.T) {
 		}
 
 		svc := newTestViewService(&mockViewRepo{}, catalog, auth, &mockAuditRepo{})
-		err := svc.DeleteView(ctxWithPrincipal("alice"), "bad", "v_test")
+		err := svc.DeleteView(ctxWithPrincipal("alice"), "alice", "bad", "v_test")
 
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
@@ -433,7 +433,7 @@ func TestViewService_DeleteView(t *testing.T) {
 		}
 
 		svc := newTestViewService(viewRepo, catalog, auth, &mockAuditRepo{})
-		err := svc.DeleteView(ctxWithPrincipal("alice"), "main", "v_test")
+		err := svc.DeleteView(ctxWithPrincipal("alice"), "alice", "main", "v_test")
 
 		require.Error(t, err)
 		assert.ErrorIs(t, err, errTest)

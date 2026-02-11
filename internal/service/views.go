@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"duck-demo/internal/domain"
-	"duck-demo/internal/middleware"
 )
 
 // ViewService provides view management operations.
@@ -32,8 +31,7 @@ func NewViewService(
 }
 
 // CreateView creates a new view in the given schema.
-func (s *ViewService) CreateView(ctx context.Context, schemaName string, req domain.CreateViewRequest) (*domain.ViewDetail, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+func (s *ViewService) CreateView(ctx context.Context, principal string, schemaName string, req domain.CreateViewRequest) (*domain.ViewDetail, error) {
 
 	// Check CREATE_TABLE privilege (views require same privilege)
 	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateTable)
@@ -106,8 +104,7 @@ func (s *ViewService) ListViews(ctx context.Context, schemaName string, page dom
 }
 
 // DeleteView drops a view from the given schema.
-func (s *ViewService) DeleteView(ctx context.Context, schemaName, viewName string) error {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+func (s *ViewService) DeleteView(ctx context.Context, principal string, schemaName, viewName string) error {
 
 	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateTable)
 	if err != nil {
@@ -131,8 +128,7 @@ func (s *ViewService) DeleteView(ctx context.Context, schemaName, viewName strin
 }
 
 // UpdateView updates a view's metadata.
-func (s *ViewService) UpdateView(ctx context.Context, schemaName, viewName string, req domain.UpdateViewRequest) (*domain.ViewDetail, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+func (s *ViewService) UpdateView(ctx context.Context, principal string, schemaName, viewName string, req domain.UpdateViewRequest) (*domain.ViewDetail, error) {
 
 	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateTable)
 	if err != nil {

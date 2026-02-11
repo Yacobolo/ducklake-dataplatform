@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"duck-demo/internal/domain"
-	"duck-demo/internal/middleware"
 )
 
 // CatalogService provides catalog management operations with authorization.
@@ -67,8 +66,7 @@ func (s *CatalogService) ListSchemas(ctx context.Context, page domain.PageReques
 // CreateSchema creates a new schema, checking CREATE_SCHEMA privilege.
 // If LocationName is specified, the schema's storage path is set to the
 // external location's URL, enabling per-schema data paths in DuckLake.
-func (s *CatalogService) CreateSchema(ctx context.Context, req domain.CreateSchemaRequest) (*domain.SchemaDetail, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+func (s *CatalogService) CreateSchema(ctx context.Context, principal string, req domain.CreateSchemaRequest) (*domain.SchemaDetail, error) {
 
 	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateSchema)
 	if err != nil {
@@ -118,8 +116,7 @@ func (s *CatalogService) GetSchema(ctx context.Context, name string) (*domain.Sc
 }
 
 // UpdateSchema updates schema metadata.
-func (s *CatalogService) UpdateSchema(ctx context.Context, name string, comment *string, props map[string]string) (*domain.SchemaDetail, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+func (s *CatalogService) UpdateSchema(ctx context.Context, principal string, name string, comment *string, props map[string]string) (*domain.SchemaDetail, error) {
 
 	// Check privilege: need CREATE_SCHEMA on catalog or be admin
 	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateSchema)
@@ -140,8 +137,7 @@ func (s *CatalogService) UpdateSchema(ctx context.Context, name string, comment 
 }
 
 // DeleteSchema drops a schema, checking authorization.
-func (s *CatalogService) DeleteSchema(ctx context.Context, name string, force bool) error {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+func (s *CatalogService) DeleteSchema(ctx context.Context, principal string, name string, force bool) error {
 
 	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateSchema)
 	if err != nil {
@@ -174,8 +170,7 @@ func (s *CatalogService) ListTables(ctx context.Context, schemaName string, page
 
 // CreateTable creates a new table, checking CREATE_TABLE privilege on the schema.
 // If req.TableType is "EXTERNAL", delegates to createExternalTable.
-func (s *CatalogService) CreateTable(ctx context.Context, schemaName string, req domain.CreateTableRequest) (*domain.TableDetail, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+func (s *CatalogService) CreateTable(ctx context.Context, principal string, schemaName string, req domain.CreateTableRequest) (*domain.TableDetail, error) {
 
 	// Check CREATE_TABLE at catalog level
 	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateTable)
@@ -245,8 +240,7 @@ func (s *CatalogService) GetTable(ctx context.Context, schemaName, tableName str
 }
 
 // DeleteTable drops a table, checking authorization.
-func (s *CatalogService) DeleteTable(ctx context.Context, schemaName, tableName string) error {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+func (s *CatalogService) DeleteTable(ctx context.Context, principal string, schemaName, tableName string) error {
 
 	// Check CREATE_TABLE at catalog level (which implies table management)
 	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateTable)
@@ -271,8 +265,7 @@ func (s *CatalogService) ListColumns(ctx context.Context, schemaName, tableName 
 }
 
 // UpdateTable updates table metadata, checking CREATE_TABLE privilege.
-func (s *CatalogService) UpdateTable(ctx context.Context, schemaName, tableName string, req domain.UpdateTableRequest) (*domain.TableDetail, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+func (s *CatalogService) UpdateTable(ctx context.Context, principal string, schemaName, tableName string, req domain.UpdateTableRequest) (*domain.TableDetail, error) {
 
 	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateTable)
 	if err != nil {
@@ -294,8 +287,7 @@ func (s *CatalogService) UpdateTable(ctx context.Context, schemaName, tableName 
 }
 
 // UpdateCatalog updates catalog-level metadata (admin only).
-func (s *CatalogService) UpdateCatalog(ctx context.Context, req domain.UpdateCatalogRequest) (*domain.CatalogInfo, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+func (s *CatalogService) UpdateCatalog(ctx context.Context, principal string, req domain.UpdateCatalogRequest) (*domain.CatalogInfo, error) {
 
 	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateSchema)
 	if err != nil {
@@ -315,8 +307,7 @@ func (s *CatalogService) UpdateCatalog(ctx context.Context, req domain.UpdateCat
 }
 
 // UpdateColumn updates column metadata, checking CREATE_TABLE privilege.
-func (s *CatalogService) UpdateColumn(ctx context.Context, schemaName, tableName, columnName string, req domain.UpdateColumnRequest) (*domain.ColumnDetail, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+func (s *CatalogService) UpdateColumn(ctx context.Context, principal string, schemaName, tableName, columnName string, req domain.UpdateColumnRequest) (*domain.ColumnDetail, error) {
 
 	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateTable)
 	if err != nil {
@@ -336,8 +327,7 @@ func (s *CatalogService) UpdateColumn(ctx context.Context, schemaName, tableName
 }
 
 // ProfileTable runs profiling queries and stores statistics.
-func (s *CatalogService) ProfileTable(ctx context.Context, schemaName, tableName string) (*domain.TableStatistics, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+func (s *CatalogService) ProfileTable(ctx context.Context, principal string, schemaName, tableName string) (*domain.TableStatistics, error) {
 
 	// Verify table exists
 	tbl, err := s.repo.GetTable(ctx, schemaName, tableName)
