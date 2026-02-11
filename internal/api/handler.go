@@ -19,7 +19,6 @@ type APIHandler struct {
 	grants            *service.GrantService
 	rowFilters        *service.RowFilterService
 	columnMasks       *service.ColumnMaskService
-	introspection     *service.IntrospectionService
 	audit             *service.AuditService
 	manifest          *service.ManifestService
 	catalog           *service.CatalogService
@@ -40,7 +39,6 @@ func NewHandler(
 	grants *service.GrantService,
 	rowFilters *service.RowFilterService,
 	columnMasks *service.ColumnMaskService,
-	introspection *service.IntrospectionService,
 	audit *service.AuditService,
 	manifest *service.ManifestService,
 	catalog *service.CatalogService,
@@ -60,7 +58,6 @@ func NewHandler(
 		grants:            grants,
 		rowFilters:        rowFilters,
 		columnMasks:       columnMasks,
-		introspection:     introspection,
 		audit:             audit,
 		manifest:          manifest,
 		catalog:           catalog,
@@ -130,7 +127,7 @@ func (h *APIHandler) ExecuteQuery(ctx context.Context, req ExecuteQueryRequestOb
 	}, nil
 }
 
-func (h *APIHandler) GetManifest(ctx context.Context, req GetManifestRequestObject) (GetManifestResponseObject, error) {
+func (h *APIHandler) CreateManifest(ctx context.Context, req CreateManifestRequestObject) (CreateManifestResponseObject, error) {
 	principal, _ := middleware.PrincipalFromContext(ctx)
 
 	schemaName := "main"
@@ -143,9 +140,9 @@ func (h *APIHandler) GetManifest(ctx context.Context, req GetManifestRequestObje
 		code := errorCodeFromError(err)
 		switch code {
 		case http.StatusNotFound:
-			return GetManifest404JSONResponse{Code: code, Message: err.Error()}, nil
+			return CreateManifest404JSONResponse{Code: code, Message: err.Error()}, nil
 		default:
-			return GetManifest403JSONResponse{Code: code, Message: err.Error()}, nil
+			return CreateManifest403JSONResponse{Code: code, Message: err.Error()}, nil
 		}
 	}
 
@@ -156,7 +153,7 @@ func (h *APIHandler) GetManifest(ctx context.Context, req GetManifestRequestObje
 		cols[i] = ManifestColumn{Name: &name, Type: &typ}
 	}
 
-	return GetManifest200JSONResponse{
+	return CreateManifest200JSONResponse{
 		Table:       &result.Table,
 		Schema:      &result.Schema,
 		Columns:     &cols,
@@ -201,7 +198,7 @@ func (h *APIHandler) CreatePrincipal(ctx context.Context, req CreatePrincipalReq
 }
 
 func (h *APIHandler) GetPrincipal(ctx context.Context, req GetPrincipalRequestObject) (GetPrincipalResponseObject, error) {
-	p, err := h.principals.GetByID(ctx, req.Id)
+	p, err := h.principals.GetByID(ctx, req.PrincipalId)
 	if err != nil {
 		return GetPrincipal404JSONResponse{Code: 404, Message: err.Error()}, nil
 	}
@@ -209,17 +206,17 @@ func (h *APIHandler) GetPrincipal(ctx context.Context, req GetPrincipalRequestOb
 }
 
 func (h *APIHandler) DeletePrincipal(ctx context.Context, req DeletePrincipalRequestObject) (DeletePrincipalResponseObject, error) {
-	if err := h.principals.Delete(ctx, req.Id); err != nil {
+	if err := h.principals.Delete(ctx, req.PrincipalId); err != nil {
 		return DeletePrincipal404JSONResponse{Code: 404, Message: err.Error()}, nil
 	}
 	return DeletePrincipal204Response{}, nil
 }
 
-func (h *APIHandler) SetAdmin(ctx context.Context, req SetAdminRequestObject) (SetAdminResponseObject, error) {
-	if err := h.principals.SetAdmin(ctx, req.Id, req.Body.IsAdmin); err != nil {
-		return SetAdmin404JSONResponse{Code: 404, Message: err.Error()}, nil
+func (h *APIHandler) UpdatePrincipalAdmin(ctx context.Context, req UpdatePrincipalAdminRequestObject) (UpdatePrincipalAdminResponseObject, error) {
+	if err := h.principals.SetAdmin(ctx, req.PrincipalId, req.Body.IsAdmin); err != nil {
+		return UpdatePrincipalAdmin404JSONResponse{Code: 404, Message: err.Error()}, nil
 	}
-	return SetAdmin204Response{}, nil
+	return UpdatePrincipalAdmin204Response{}, nil
 }
 
 // === Groups ===
@@ -251,7 +248,7 @@ func (h *APIHandler) CreateGroup(ctx context.Context, req CreateGroupRequestObje
 }
 
 func (h *APIHandler) GetGroup(ctx context.Context, req GetGroupRequestObject) (GetGroupResponseObject, error) {
-	g, err := h.groups.GetByID(ctx, req.Id)
+	g, err := h.groups.GetByID(ctx, req.GroupId)
 	if err != nil {
 		return GetGroup404JSONResponse{Code: 404, Message: err.Error()}, nil
 	}
@@ -259,7 +256,7 @@ func (h *APIHandler) GetGroup(ctx context.Context, req GetGroupRequestObject) (G
 }
 
 func (h *APIHandler) DeleteGroup(ctx context.Context, req DeleteGroupRequestObject) (DeleteGroupResponseObject, error) {
-	if err := h.groups.Delete(ctx, req.Id); err != nil {
+	if err := h.groups.Delete(ctx, req.GroupId); err != nil {
 		return nil, err
 	}
 	return DeleteGroup204Response{}, nil
@@ -267,38 +264,38 @@ func (h *APIHandler) DeleteGroup(ctx context.Context, req DeleteGroupRequestObje
 
 func (h *APIHandler) ListGroupMembers(ctx context.Context, req ListGroupMembersRequestObject) (ListGroupMembersResponseObject, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
-	ms, total, err := h.groups.ListMembers(ctx, req.Id, page)
+	ms, total, err := h.groups.ListMembers(ctx, req.GroupId, page)
 	if err != nil {
 		return nil, err
 	}
 	out := make([]GroupMember, len(ms))
 	for i, m := range ms {
-		out[i] = groupMemberToAPI(m, req.Id)
+		out[i] = groupMemberToAPI(m, req.GroupId)
 	}
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return ListGroupMembers200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
 }
 
-func (h *APIHandler) AddGroupMember(ctx context.Context, req AddGroupMemberRequestObject) (AddGroupMemberResponseObject, error) {
+func (h *APIHandler) CreateGroupMember(ctx context.Context, req CreateGroupMemberRequestObject) (CreateGroupMemberResponseObject, error) {
 	if err := h.groups.AddMember(ctx, &domain.GroupMember{
-		GroupID:    req.Id,
+		GroupID:    req.GroupId,
 		MemberType: req.Body.MemberType,
 		MemberID:   req.Body.MemberId,
 	}); err != nil {
 		return nil, err
 	}
-	return AddGroupMember204Response{}, nil
+	return CreateGroupMember204Response{}, nil
 }
 
-func (h *APIHandler) RemoveGroupMember(ctx context.Context, req RemoveGroupMemberRequestObject) (RemoveGroupMemberResponseObject, error) {
+func (h *APIHandler) DeleteGroupMember(ctx context.Context, req DeleteGroupMemberRequestObject) (DeleteGroupMemberResponseObject, error) {
 	if err := h.groups.RemoveMember(ctx, &domain.GroupMember{
-		GroupID:    req.Id,
+		GroupID:    req.GroupId,
 		MemberType: req.Body.MemberType,
 		MemberID:   req.Body.MemberId,
 	}); err != nil {
 		return nil, err
 	}
-	return RemoveGroupMember204Response{}, nil
+	return DeleteGroupMember204Response{}, nil
 }
 
 // === Grants ===
@@ -328,7 +325,7 @@ func (h *APIHandler) ListGrants(ctx context.Context, req ListGrantsRequestObject
 	return ListGrants200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
 }
 
-func (h *APIHandler) GrantPrivilege(ctx context.Context, req GrantPrivilegeRequestObject) (GrantPrivilegeResponseObject, error) {
+func (h *APIHandler) CreateGrant(ctx context.Context, req CreateGrantRequestObject) (CreateGrantResponseObject, error) {
 	g := &domain.PrivilegeGrant{
 		PrincipalID:   req.Body.PrincipalId,
 		PrincipalType: req.Body.PrincipalType,
@@ -340,10 +337,10 @@ func (h *APIHandler) GrantPrivilege(ctx context.Context, req GrantPrivilegeReque
 	if err != nil {
 		return nil, err
 	}
-	return GrantPrivilege201JSONResponse(grantToAPI(*result)), nil
+	return CreateGrant201JSONResponse(grantToAPI(*result)), nil
 }
 
-func (h *APIHandler) RevokePrivilege(ctx context.Context, req RevokePrivilegeRequestObject) (RevokePrivilegeResponseObject, error) {
+func (h *APIHandler) DeleteGrant(ctx context.Context, req DeleteGrantRequestObject) (DeleteGrantResponseObject, error) {
 	if err := h.grants.Revoke(ctx, &domain.PrivilegeGrant{
 		PrincipalID:   req.Body.PrincipalId,
 		PrincipalType: req.Body.PrincipalType,
@@ -353,7 +350,7 @@ func (h *APIHandler) RevokePrivilege(ctx context.Context, req RevokePrivilegeReq
 	}); err != nil {
 		return nil, err
 	}
-	return RevokePrivilege204Response{}, nil
+	return DeleteGrant204Response{}, nil
 }
 
 // === Row Filters ===
@@ -388,7 +385,7 @@ func (h *APIHandler) CreateRowFilter(ctx context.Context, req CreateRowFilterReq
 }
 
 func (h *APIHandler) DeleteRowFilter(ctx context.Context, req DeleteRowFilterRequestObject) (DeleteRowFilterResponseObject, error) {
-	if err := h.rowFilters.Delete(ctx, req.Id); err != nil {
+	if err := h.rowFilters.Delete(ctx, req.RowFilterId); err != nil {
 		return nil, err
 	}
 	return DeleteRowFilter204Response{}, nil
@@ -396,7 +393,7 @@ func (h *APIHandler) DeleteRowFilter(ctx context.Context, req DeleteRowFilterReq
 
 func (h *APIHandler) BindRowFilter(ctx context.Context, req BindRowFilterRequestObject) (BindRowFilterResponseObject, error) {
 	if err := h.rowFilters.Bind(ctx, &domain.RowFilterBinding{
-		RowFilterID:   req.Id,
+		RowFilterID:   req.RowFilterId,
 		PrincipalID:   req.Body.PrincipalId,
 		PrincipalType: req.Body.PrincipalType,
 	}); err != nil {
@@ -407,7 +404,7 @@ func (h *APIHandler) BindRowFilter(ctx context.Context, req BindRowFilterRequest
 
 func (h *APIHandler) UnbindRowFilter(ctx context.Context, req UnbindRowFilterRequestObject) (UnbindRowFilterResponseObject, error) {
 	if err := h.rowFilters.Unbind(ctx, &domain.RowFilterBinding{
-		RowFilterID:   req.Id,
+		RowFilterID:   req.RowFilterId,
 		PrincipalID:   req.Body.PrincipalId,
 		PrincipalType: req.Body.PrincipalType,
 	}); err != nil {
@@ -449,7 +446,7 @@ func (h *APIHandler) CreateColumnMask(ctx context.Context, req CreateColumnMaskR
 }
 
 func (h *APIHandler) DeleteColumnMask(ctx context.Context, req DeleteColumnMaskRequestObject) (DeleteColumnMaskResponseObject, error) {
-	if err := h.columnMasks.Delete(ctx, req.Id); err != nil {
+	if err := h.columnMasks.Delete(ctx, req.ColumnMaskId); err != nil {
 		return nil, err
 	}
 	return DeleteColumnMask204Response{}, nil
@@ -461,7 +458,7 @@ func (h *APIHandler) BindColumnMask(ctx context.Context, req BindColumnMaskReque
 		seeOriginal = *req.Body.SeeOriginal
 	}
 	if err := h.columnMasks.Bind(ctx, &domain.ColumnMaskBinding{
-		ColumnMaskID:  req.Id,
+		ColumnMaskID:  req.ColumnMaskId,
 		PrincipalID:   req.Body.PrincipalId,
 		PrincipalType: req.Body.PrincipalType,
 		SeeOriginal:   seeOriginal,
@@ -473,57 +470,13 @@ func (h *APIHandler) BindColumnMask(ctx context.Context, req BindColumnMaskReque
 
 func (h *APIHandler) UnbindColumnMask(ctx context.Context, req UnbindColumnMaskRequestObject) (UnbindColumnMaskResponseObject, error) {
 	if err := h.columnMasks.Unbind(ctx, &domain.ColumnMaskBinding{
-		ColumnMaskID:  req.Id,
+		ColumnMaskID:  req.ColumnMaskId,
 		PrincipalID:   req.Body.PrincipalId,
 		PrincipalType: req.Body.PrincipalType,
 	}); err != nil {
 		return nil, err
 	}
 	return UnbindColumnMask204Response{}, nil
-}
-
-// === Introspection (deprecated) ===
-
-func (h *APIHandler) ListSchemas(ctx context.Context, req ListSchemasRequestObject) (ListSchemasResponseObject, error) {
-	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
-	ss, total, err := h.introspection.ListSchemas(ctx, page)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]Schema, len(ss))
-	for i, s := range ss {
-		out[i] = schemaToAPI(s)
-	}
-	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListSchemas200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
-}
-
-func (h *APIHandler) ListTables(ctx context.Context, req ListTablesRequestObject) (ListTablesResponseObject, error) {
-	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
-	ts, total, err := h.introspection.ListTables(ctx, req.Id, page)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]Table, len(ts))
-	for i, t := range ts {
-		out[i] = tableToAPI(t)
-	}
-	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListTables200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
-}
-
-func (h *APIHandler) ListColumns(ctx context.Context, req ListColumnsRequestObject) (ListColumnsResponseObject, error) {
-	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
-	cs, total, err := h.introspection.ListColumns(ctx, req.Id, page)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]Column, len(cs))
-	for i, c := range cs {
-		out[i] = columnToAPI(c)
-	}
-	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListColumns200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
 }
 
 // === Audit Logs ===
@@ -579,7 +532,7 @@ func (h *APIHandler) UpdateCatalog(ctx context.Context, req UpdateCatalogRequest
 	return UpdateCatalog200JSONResponse(catalogInfoToAPI(*result)), nil
 }
 
-func (h *APIHandler) ListCatalogSchemas(ctx context.Context, req ListCatalogSchemasRequestObject) (ListCatalogSchemasResponseObject, error) {
+func (h *APIHandler) ListSchemas(ctx context.Context, req ListSchemasRequestObject) (ListSchemasResponseObject, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	schemas, total, err := h.catalog.ListSchemas(ctx, page)
 	if err != nil {
@@ -590,7 +543,7 @@ func (h *APIHandler) ListCatalogSchemas(ctx context.Context, req ListCatalogSche
 		out[i] = schemaDetailToAPI(s)
 	}
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListCatalogSchemas200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
+	return ListSchemas200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
 }
 
 func (h *APIHandler) CreateSchema(ctx context.Context, req CreateSchemaRequestObject) (CreateSchemaResponseObject, error) {
@@ -623,20 +576,20 @@ func (h *APIHandler) CreateSchema(ctx context.Context, req CreateSchemaRequestOb
 	return CreateSchema201JSONResponse(schemaDetailToAPI(*result)), nil
 }
 
-func (h *APIHandler) GetSchemaByName(ctx context.Context, req GetSchemaByNameRequestObject) (GetSchemaByNameResponseObject, error) {
+func (h *APIHandler) GetSchema(ctx context.Context, req GetSchemaRequestObject) (GetSchemaResponseObject, error) {
 	result, err := h.catalog.GetSchema(ctx, req.SchemaName)
 	if err != nil {
 		switch err.(type) {
 		case *domain.NotFoundError:
-			return GetSchemaByName404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return GetSchema404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
 			return nil, err
 		}
 	}
-	return GetSchemaByName200JSONResponse(schemaDetailToAPI(*result)), nil
+	return GetSchema200JSONResponse(schemaDetailToAPI(*result)), nil
 }
 
-func (h *APIHandler) UpdateSchemaMetadata(ctx context.Context, req UpdateSchemaMetadataRequestObject) (UpdateSchemaMetadataResponseObject, error) {
+func (h *APIHandler) UpdateSchema(ctx context.Context, req UpdateSchemaRequestObject) (UpdateSchemaResponseObject, error) {
 	var props map[string]string
 	if req.Body.Properties != nil {
 		props = *req.Body.Properties
@@ -646,14 +599,14 @@ func (h *APIHandler) UpdateSchemaMetadata(ctx context.Context, req UpdateSchemaM
 	if err != nil {
 		switch err.(type) {
 		case *domain.AccessDeniedError:
-			return UpdateSchemaMetadata403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return UpdateSchema403JSONResponse{Code: 403, Message: err.Error()}, nil
 		case *domain.NotFoundError:
-			return UpdateSchemaMetadata404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return UpdateSchema404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
 			return nil, err
 		}
 	}
-	return UpdateSchemaMetadata200JSONResponse(schemaDetailToAPI(*result)), nil
+	return UpdateSchema200JSONResponse(schemaDetailToAPI(*result)), nil
 }
 
 func (h *APIHandler) DeleteSchema(ctx context.Context, req DeleteSchemaRequestObject) (DeleteSchemaResponseObject, error) {
@@ -669,22 +622,22 @@ func (h *APIHandler) DeleteSchema(ctx context.Context, req DeleteSchemaRequestOb
 			return DeleteSchema403JSONResponse{Code: code, Message: err.Error()}, nil
 		case http.StatusNotFound:
 			return DeleteSchema404JSONResponse{Code: code, Message: err.Error()}, nil
+		case http.StatusConflict:
+			return DeleteSchema409JSONResponse{Code: code, Message: err.Error()}, nil
 		default:
-			// ConflictError and other errors — return via 403 response with actual code.
-			// TODO: Add 409 response to OpenAPI spec for DeleteSchema.
 			return DeleteSchema403JSONResponse{Code: code, Message: err.Error()}, nil
 		}
 	}
 	return DeleteSchema204Response{}, nil
 }
 
-func (h *APIHandler) ListCatalogTables(ctx context.Context, req ListCatalogTablesRequestObject) (ListCatalogTablesResponseObject, error) {
+func (h *APIHandler) ListTables(ctx context.Context, req ListTablesRequestObject) (ListTablesResponseObject, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	tables, total, err := h.catalog.ListTables(ctx, req.SchemaName, page)
 	if err != nil {
 		switch err.(type) {
 		case *domain.NotFoundError:
-			return ListCatalogTables404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return ListTables404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
 			return nil, err
 		}
@@ -694,10 +647,10 @@ func (h *APIHandler) ListCatalogTables(ctx context.Context, req ListCatalogTable
 		out[i] = tableDetailToAPI(t)
 	}
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListCatalogTables200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
+	return ListTables200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
 }
 
-func (h *APIHandler) CreateCatalogTable(ctx context.Context, req CreateCatalogTableRequestObject) (CreateCatalogTableResponseObject, error) {
+func (h *APIHandler) CreateTable(ctx context.Context, req CreateTableRequestObject) (CreateTableResponseObject, error) {
 	var cols []domain.CreateColumnDef
 	if req.Body.Columns != nil {
 		cols = make([]domain.CreateColumnDef, len(*req.Body.Columns))
@@ -729,34 +682,34 @@ func (h *APIHandler) CreateCatalogTable(ctx context.Context, req CreateCatalogTa
 	if err != nil {
 		switch err.(type) {
 		case *domain.AccessDeniedError:
-			return CreateCatalogTable403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return CreateTable403JSONResponse{Code: 403, Message: err.Error()}, nil
 		case *domain.ValidationError:
-			return CreateCatalogTable400JSONResponse{Code: 400, Message: err.Error()}, nil
+			return CreateTable400JSONResponse{Code: 400, Message: err.Error()}, nil
 		case *domain.ConflictError:
-			return CreateCatalogTable409JSONResponse{Code: 409, Message: err.Error()}, nil
+			return CreateTable409JSONResponse{Code: 409, Message: err.Error()}, nil
 		case *domain.NotFoundError:
-			return CreateCatalogTable400JSONResponse{Code: 400, Message: err.Error()}, nil
+			return CreateTable400JSONResponse{Code: 400, Message: err.Error()}, nil
 		default:
-			return CreateCatalogTable400JSONResponse{Code: 400, Message: err.Error()}, nil
+			return CreateTable400JSONResponse{Code: 400, Message: err.Error()}, nil
 		}
 	}
-	return CreateCatalogTable201JSONResponse(tableDetailToAPI(*result)), nil
+	return CreateTable201JSONResponse(tableDetailToAPI(*result)), nil
 }
 
-func (h *APIHandler) GetTableByName(ctx context.Context, req GetTableByNameRequestObject) (GetTableByNameResponseObject, error) {
+func (h *APIHandler) GetTable(ctx context.Context, req GetTableRequestObject) (GetTableResponseObject, error) {
 	result, err := h.catalog.GetTable(ctx, req.SchemaName, req.TableName)
 	if err != nil {
 		switch err.(type) {
 		case *domain.NotFoundError:
-			return GetTableByName404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return GetTable404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
 			return nil, err
 		}
 	}
-	return GetTableByName200JSONResponse(tableDetailToAPI(*result)), nil
+	return GetTable200JSONResponse(tableDetailToAPI(*result)), nil
 }
 
-func (h *APIHandler) UpdateTableMetadata(ctx context.Context, req UpdateTableMetadataRequestObject) (UpdateTableMetadataResponseObject, error) {
+func (h *APIHandler) UpdateTable(ctx context.Context, req UpdateTableRequestObject) (UpdateTableResponseObject, error) {
 	domReq := domain.UpdateTableRequest{}
 	if req.Body.Comment != nil {
 		domReq.Comment = req.Body.Comment
@@ -772,28 +725,28 @@ func (h *APIHandler) UpdateTableMetadata(ctx context.Context, req UpdateTableMet
 	if err != nil {
 		switch err.(type) {
 		case *domain.AccessDeniedError:
-			return UpdateTableMetadata403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return UpdateTable403JSONResponse{Code: 403, Message: err.Error()}, nil
 		case *domain.NotFoundError:
-			return UpdateTableMetadata404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return UpdateTable404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
 			return nil, err
 		}
 	}
-	return UpdateTableMetadata200JSONResponse(tableDetailToAPI(*result)), nil
+	return UpdateTable200JSONResponse(tableDetailToAPI(*result)), nil
 }
 
-func (h *APIHandler) DropTable(ctx context.Context, req DropTableRequestObject) (DropTableResponseObject, error) {
+func (h *APIHandler) DeleteTable(ctx context.Context, req DeleteTableRequestObject) (DeleteTableResponseObject, error) {
 	if err := h.catalog.DeleteTable(ctx, req.SchemaName, req.TableName); err != nil {
 		switch err.(type) {
 		case *domain.AccessDeniedError:
-			return DropTable403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return DeleteTable403JSONResponse{Code: 403, Message: err.Error()}, nil
 		case *domain.NotFoundError:
-			return DropTable404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return DeleteTable404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
 			return nil, err
 		}
 	}
-	return DropTable204Response{}, nil
+	return DeleteTable204Response{}, nil
 }
 
 func (h *APIHandler) ListTableColumns(ctx context.Context, req ListTableColumnsRequestObject) (ListTableColumnsResponseObject, error) {
@@ -815,7 +768,7 @@ func (h *APIHandler) ListTableColumns(ctx context.Context, req ListTableColumnsR
 	return ListTableColumns200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
 }
 
-func (h *APIHandler) UpdateColumnMetadata(ctx context.Context, req UpdateColumnMetadataRequestObject) (UpdateColumnMetadataResponseObject, error) {
+func (h *APIHandler) UpdateColumn(ctx context.Context, req UpdateColumnRequestObject) (UpdateColumnResponseObject, error) {
 	domReq := domain.UpdateColumnRequest{}
 	if req.Body.Comment != nil {
 		domReq.Comment = req.Body.Comment
@@ -828,14 +781,14 @@ func (h *APIHandler) UpdateColumnMetadata(ctx context.Context, req UpdateColumnM
 	if err != nil {
 		switch err.(type) {
 		case *domain.AccessDeniedError:
-			return UpdateColumnMetadata403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return UpdateColumn403JSONResponse{Code: 403, Message: err.Error()}, nil
 		case *domain.NotFoundError:
-			return UpdateColumnMetadata404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return UpdateColumn404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
 			return nil, err
 		}
 	}
-	return UpdateColumnMetadata200JSONResponse(columnDetailToAPI(*result)), nil
+	return UpdateColumn200JSONResponse(columnDetailToAPI(*result)), nil
 }
 
 func (h *APIHandler) ProfileTable(ctx context.Context, req ProfileTableRequestObject) (ProfileTableResponseObject, error) {
@@ -1044,7 +997,7 @@ func (h *APIHandler) DeleteTag(ctx context.Context, req DeleteTagRequestObject) 
 	return DeleteTag204Response{}, nil
 }
 
-func (h *APIHandler) AssignTag(ctx context.Context, req AssignTagRequestObject) (AssignTagResponseObject, error) {
+func (h *APIHandler) CreateTagAssignment(ctx context.Context, req CreateTagAssignmentRequestObject) (CreateTagAssignmentResponseObject, error) {
 	assignment := &domain.TagAssignment{
 		TagID:         req.TagId,
 		SecurableType: req.Body.SecurableType,
@@ -1055,19 +1008,19 @@ func (h *APIHandler) AssignTag(ctx context.Context, req AssignTagRequestObject) 
 	if err != nil {
 		switch err.(type) {
 		case *domain.ConflictError:
-			return AssignTag409JSONResponse{Code: 409, Message: err.Error()}, nil
+			return CreateTagAssignment409JSONResponse{Code: 409, Message: err.Error()}, nil
 		default:
 			return nil, err
 		}
 	}
-	return AssignTag201JSONResponse(tagAssignmentToAPI(*result)), nil
+	return CreateTagAssignment201JSONResponse(tagAssignmentToAPI(*result)), nil
 }
 
-func (h *APIHandler) UnassignTag(ctx context.Context, req UnassignTagRequestObject) (UnassignTagResponseObject, error) {
+func (h *APIHandler) DeleteTagAssignment(ctx context.Context, req DeleteTagAssignmentRequestObject) (DeleteTagAssignmentResponseObject, error) {
 	if err := h.tags.UnassignTag(ctx, req.AssignmentId); err != nil {
 		return nil, err
 	}
-	return UnassignTag204Response{}, nil
+	return DeleteTagAssignment204Response{}, nil
 }
 
 func (h *APIHandler) ListClassifications(ctx context.Context, _ ListClassificationsRequestObject) (ListClassificationsResponseObject, error) {
@@ -1175,50 +1128,50 @@ func (h *APIHandler) UpdateView(ctx context.Context, req UpdateViewRequestObject
 	return UpdateView200JSONResponse(viewDetailToAPI(*result)), nil
 }
 
-func (h *APIHandler) DropView(ctx context.Context, req DropViewRequestObject) (DropViewResponseObject, error) {
+func (h *APIHandler) DeleteView(ctx context.Context, req DeleteViewRequestObject) (DeleteViewResponseObject, error) {
 	if err := h.views.DeleteView(ctx, req.SchemaName, req.ViewName); err != nil {
 		switch err.(type) {
 		case *domain.AccessDeniedError:
-			return DropView403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return DeleteView403JSONResponse{Code: 403, Message: err.Error()}, nil
 		case *domain.NotFoundError:
-			return DropView404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return DeleteView404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
 			return nil, err
 		}
 	}
-	return DropView204Response{}, nil
+	return DeleteView204Response{}, nil
 }
 
 // === Ingestion ===
 
-func (h *APIHandler) RequestUploadUrl(ctx context.Context, req RequestUploadUrlRequestObject) (RequestUploadUrlResponseObject, error) {
+func (h *APIHandler) CreateUploadUrl(ctx context.Context, req CreateUploadUrlRequestObject) (CreateUploadUrlResponseObject, error) {
 	if h.ingestion == nil {
-		return RequestUploadUrl400JSONResponse{Code: 400, Message: "ingestion not available (S3 not configured)"}, nil
+		return CreateUploadUrl400JSONResponse{Code: 400, Message: "ingestion not available (S3 not configured)"}, nil
 	}
 
 	result, err := h.ingestion.RequestUploadURL(ctx, req.SchemaName, req.TableName, req.Body.Filename)
 	if err != nil {
 		switch err.(type) {
 		case *domain.NotFoundError:
-			return RequestUploadUrl404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return CreateUploadUrl404JSONResponse{Code: 404, Message: err.Error()}, nil
 		case *domain.AccessDeniedError:
-			return RequestUploadUrl403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return CreateUploadUrl403JSONResponse{Code: 403, Message: err.Error()}, nil
 		default:
-			return RequestUploadUrl400JSONResponse{Code: 400, Message: err.Error()}, nil
+			return CreateUploadUrl400JSONResponse{Code: 400, Message: err.Error()}, nil
 		}
 	}
 
 	t := result.ExpiresAt
-	return RequestUploadUrl200JSONResponse{
+	return CreateUploadUrl200JSONResponse{
 		UploadUrl: &result.UploadURL,
 		S3Key:     &result.S3Key,
 		ExpiresAt: &t,
 	}, nil
 }
 
-func (h *APIHandler) CommitIngestion(ctx context.Context, req CommitIngestionRequestObject) (CommitIngestionResponseObject, error) {
+func (h *APIHandler) CommitTableIngestion(ctx context.Context, req CommitTableIngestionRequestObject) (CommitTableIngestionResponseObject, error) {
 	if h.ingestion == nil {
-		return CommitIngestion400JSONResponse{Code: 400, Message: "ingestion not available (S3 not configured)"}, nil
+		return CommitTableIngestion400JSONResponse{Code: 400, Message: "ingestion not available (S3 not configured)"}, nil
 	}
 
 	opts := domain.IngestionOptions{}
@@ -1235,17 +1188,17 @@ func (h *APIHandler) CommitIngestion(ctx context.Context, req CommitIngestionReq
 	if err != nil {
 		switch err.(type) {
 		case *domain.NotFoundError:
-			return CommitIngestion404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return CommitTableIngestion404JSONResponse{Code: 404, Message: err.Error()}, nil
 		case *domain.AccessDeniedError:
-			return CommitIngestion403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return CommitTableIngestion403JSONResponse{Code: 403, Message: err.Error()}, nil
 		case *domain.ValidationError:
-			return CommitIngestion400JSONResponse{Code: 400, Message: err.Error()}, nil
+			return CommitTableIngestion400JSONResponse{Code: 400, Message: err.Error()}, nil
 		default:
-			return CommitIngestion400JSONResponse{Code: 400, Message: err.Error()}, nil
+			return CommitTableIngestion400JSONResponse{Code: 400, Message: err.Error()}, nil
 		}
 	}
 
-	return CommitIngestion200JSONResponse{
+	return CommitTableIngestion200JSONResponse{
 		FilesRegistered: &result.FilesRegistered,
 		FilesSkipped:    &result.FilesSkipped,
 		Schema:          &result.Schema,
@@ -1253,9 +1206,9 @@ func (h *APIHandler) CommitIngestion(ctx context.Context, req CommitIngestionReq
 	}, nil
 }
 
-func (h *APIHandler) LoadExternalFiles(ctx context.Context, req LoadExternalFilesRequestObject) (LoadExternalFilesResponseObject, error) {
+func (h *APIHandler) LoadTableExternalFiles(ctx context.Context, req LoadTableExternalFilesRequestObject) (LoadTableExternalFilesResponseObject, error) {
 	if h.ingestion == nil {
-		return LoadExternalFiles400JSONResponse{Code: 400, Message: "ingestion not available (S3 not configured)"}, nil
+		return LoadTableExternalFiles400JSONResponse{Code: 400, Message: "ingestion not available (S3 not configured)"}, nil
 	}
 
 	opts := domain.IngestionOptions{}
@@ -1272,17 +1225,17 @@ func (h *APIHandler) LoadExternalFiles(ctx context.Context, req LoadExternalFile
 	if err != nil {
 		switch err.(type) {
 		case *domain.NotFoundError:
-			return LoadExternalFiles404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return LoadTableExternalFiles404JSONResponse{Code: 404, Message: err.Error()}, nil
 		case *domain.AccessDeniedError:
-			return LoadExternalFiles403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return LoadTableExternalFiles403JSONResponse{Code: 403, Message: err.Error()}, nil
 		case *domain.ValidationError:
-			return LoadExternalFiles400JSONResponse{Code: 400, Message: err.Error()}, nil
+			return LoadTableExternalFiles400JSONResponse{Code: 400, Message: err.Error()}, nil
 		default:
-			return LoadExternalFiles400JSONResponse{Code: 400, Message: err.Error()}, nil
+			return LoadTableExternalFiles400JSONResponse{Code: 400, Message: err.Error()}, nil
 		}
 	}
 
-	return LoadExternalFiles200JSONResponse{
+	return LoadTableExternalFiles200JSONResponse{
 		FilesRegistered: &result.FilesRegistered,
 		FilesSkipped:    &result.FilesSkipped,
 		Schema:          &result.Schema,
@@ -1355,30 +1308,6 @@ func columnMaskToAPI(m domain.ColumnMask) ColumnMask {
 		MaskExpression: &m.MaskExpression,
 		Description:    &m.Description,
 		CreatedAt:      &t,
-	}
-}
-
-func schemaToAPI(s domain.Schema) Schema {
-	return Schema{
-		Id:   &s.ID,
-		Name: &s.Name,
-	}
-}
-
-func tableToAPI(t domain.Table) Table {
-	return Table{
-		Id:       &t.ID,
-		SchemaId: &t.SchemaID,
-		Name:     &t.Name,
-	}
-}
-
-func columnToAPI(c domain.Column) Column {
-	return Column{
-		Id:      &c.ID,
-		TableId: &c.TableID,
-		Name:    &c.Name,
-		Type:    &c.Type,
 	}
 }
 

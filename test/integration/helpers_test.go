@@ -571,7 +571,6 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 	grantSvc := service.NewGrantService(grantRepo, auditRepo)
 	rowFilterSvc := service.NewRowFilterService(rowFilterRepo, auditRepo)
 	columnMaskSvc := service.NewColumnMaskService(columnMaskRepo, auditRepo)
-	introspectionSvc := service.NewIntrospectionService(introspectionRepo)
 	auditSvc := service.NewAuditService(auditRepo)
 	tagSvc := service.NewTagService(tagRepo, auditRepo)
 	lineageSvc := service.NewLineageService(lineageRepo)
@@ -582,7 +581,7 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 
 	handler := api.NewHandler(
 		querySvc, principalSvc, groupSvc, grantSvc,
-		rowFilterSvc, columnMaskSvc, introspectionSvc, auditSvc,
+		rowFilterSvc, columnMaskSvc, auditSvc,
 		manifestSvc, nil, // catalogSvc=nil — integration tests only hit /v1/manifest
 		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
 		nil,      // ingestionSvc
@@ -901,7 +900,6 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	grantSvc := service.NewGrantService(grantRepo, auditRepo)
 	rowFilterSvc := service.NewRowFilterService(rowFilterRepo, auditRepo)
 	columnMaskSvc := service.NewColumnMaskService(columnMaskRepo, auditRepo)
-	introspectionSvc := service.NewIntrospectionService(introspectionRepo)
 	auditSvc := service.NewAuditService(auditRepo)
 	tagSvc := service.NewTagService(tagRepo, auditRepo)
 	lineageSvc := service.NewLineageService(lineageRepo)
@@ -958,7 +956,6 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		grantSvc = service.NewGrantService(grantRepo, auditRepo)
 		rowFilterSvc = service.NewRowFilterService(rowFilterRepo, auditRepo)
 		columnMaskSvc = service.NewColumnMaskService(columnMaskRepo, auditRepo)
-		introspectionSvc = service.NewIntrospectionService(introspectionRepo)
 		auditSvc = service.NewAuditService(auditRepo)
 		querySvc = service.NewQueryService(nil, auditRepo, nil)
 		tagSvc = service.NewTagService(tagRepo, auditRepo)
@@ -1006,7 +1003,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 
 	handler := api.NewHandler(
 		querySvc, principalSvc, groupSvc, grantSvc,
-		rowFilterSvc, columnMaskSvc, introspectionSvc, auditSvc,
+		rowFilterSvc, columnMaskSvc, auditSvc,
 		manifestSvc, catalogSvc,
 		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
 		nil, // ingestionSvc

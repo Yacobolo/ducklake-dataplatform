@@ -34,7 +34,7 @@ type ServerInterface interface {
 	UpdateCatalog(w http.ResponseWriter, r *http.Request)
 	// List schemas in the catalog
 	// (GET /catalog/schemas)
-	ListCatalogSchemas(w http.ResponseWriter, r *http.Request, params ListCatalogSchemasParams)
+	ListSchemas(w http.ResponseWriter, r *http.Request, params ListSchemasParams)
 	// Create a new schema
 	// (POST /catalog/schemas)
 	CreateSchema(w http.ResponseWriter, r *http.Request)
@@ -43,40 +43,49 @@ type ServerInterface interface {
 	DeleteSchema(w http.ResponseWriter, r *http.Request, schemaName string, params DeleteSchemaParams)
 	// Get a schema by name
 	// (GET /catalog/schemas/{schemaName})
-	GetSchemaByName(w http.ResponseWriter, r *http.Request, schemaName string)
-	// Update schema metadata (comment, properties)
+	GetSchema(w http.ResponseWriter, r *http.Request, schemaName string)
+	// Update schema metadata
 	// (PATCH /catalog/schemas/{schemaName})
-	UpdateSchemaMetadata(w http.ResponseWriter, r *http.Request, schemaName string)
+	UpdateSchema(w http.ResponseWriter, r *http.Request, schemaName string)
 	// List tables in a schema
 	// (GET /catalog/schemas/{schemaName}/tables)
-	ListCatalogTables(w http.ResponseWriter, r *http.Request, schemaName string, params ListCatalogTablesParams)
+	ListTables(w http.ResponseWriter, r *http.Request, schemaName string, params ListTablesParams)
 	// Create a new table in a schema
 	// (POST /catalog/schemas/{schemaName}/tables)
-	CreateCatalogTable(w http.ResponseWriter, r *http.Request, schemaName string)
+	CreateTable(w http.ResponseWriter, r *http.Request, schemaName string)
 	// Delete a table
 	// (DELETE /catalog/schemas/{schemaName}/tables/{tableName})
-	DropTable(w http.ResponseWriter, r *http.Request, schemaName string, tableName string)
+	DeleteTable(w http.ResponseWriter, r *http.Request, schemaName string, tableName string)
 	// Get a table by name
 	// (GET /catalog/schemas/{schemaName}/tables/{tableName})
-	GetTableByName(w http.ResponseWriter, r *http.Request, schemaName string, tableName string)
-	// Update table metadata (comment, properties, owner)
+	GetTable(w http.ResponseWriter, r *http.Request, schemaName string, tableName string)
+	// Update table metadata
 	// (PATCH /catalog/schemas/{schemaName}/tables/{tableName})
-	UpdateTableMetadata(w http.ResponseWriter, r *http.Request, schemaName string, tableName string)
+	UpdateTable(w http.ResponseWriter, r *http.Request, schemaName string, tableName string)
 	// List columns of a table
 	// (GET /catalog/schemas/{schemaName}/tables/{tableName}/columns)
 	ListTableColumns(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params ListTableColumnsParams)
-	// Update column metadata (comment, properties)
+	// Update column metadata
 	// (PATCH /catalog/schemas/{schemaName}/tables/{tableName}/columns/{columnName})
-	UpdateColumnMetadata(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, columnName string)
+	UpdateColumn(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, columnName string)
 	// Register uploaded Parquet files in DuckLake
 	// (POST /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/commit)
-	CommitIngestion(w http.ResponseWriter, r *http.Request, schemaName string, tableName string)
+	CommitTableIngestion(w http.ResponseWriter, r *http.Request, schemaName string, tableName string)
 	// Register existing S3 files in DuckLake
 	// (POST /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/load)
-	LoadExternalFiles(w http.ResponseWriter, r *http.Request, schemaName string, tableName string)
+	LoadTableExternalFiles(w http.ResponseWriter, r *http.Request, schemaName string, tableName string)
 	// Get a presigned URL for uploading a Parquet file
 	// (POST /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url)
-	RequestUploadUrl(w http.ResponseWriter, r *http.Request, schemaName string, tableName string)
+	CreateUploadUrl(w http.ResponseWriter, r *http.Request, schemaName string, tableName string)
+	// Get full lineage for a table
+	// (GET /catalog/schemas/{schemaName}/tables/{tableName}/lineage)
+	GetTableLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetTableLineageParams)
+	// Get downstream lineage for a table
+	// (GET /catalog/schemas/{schemaName}/tables/{tableName}/lineage/downstream)
+	GetDownstreamLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetDownstreamLineageParams)
+	// Get upstream lineage for a table
+	// (GET /catalog/schemas/{schemaName}/tables/{tableName}/lineage/upstream)
+	GetUpstreamLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetUpstreamLineageParams)
 	// Profile a table to collect statistics
 	// (POST /catalog/schemas/{schemaName}/tables/{tableName}/profile)
 	ProfileTable(w http.ResponseWriter, r *http.Request, schemaName string, tableName string)
@@ -88,7 +97,7 @@ type ServerInterface interface {
 	CreateView(w http.ResponseWriter, r *http.Request, schemaName string)
 	// Delete a view
 	// (DELETE /catalog/schemas/{schemaName}/views/{viewName})
-	DropView(w http.ResponseWriter, r *http.Request, schemaName string, viewName string)
+	DeleteView(w http.ResponseWriter, r *http.Request, schemaName string, viewName string)
 	// Get a view by name
 	// (GET /catalog/schemas/{schemaName}/views/{viewName})
 	GetView(w http.ResponseWriter, r *http.Request, schemaName string, viewName string)
@@ -99,14 +108,14 @@ type ServerInterface interface {
 	// (GET /classifications)
 	ListClassifications(w http.ResponseWriter, r *http.Request)
 	// Delete column mask
-	// (DELETE /column-masks/{id})
-	DeleteColumnMask(w http.ResponseWriter, r *http.Request, id int64)
-	// Unbind mask
-	// (DELETE /column-masks/{id}/bindings)
-	UnbindColumnMask(w http.ResponseWriter, r *http.Request, id int64)
+	// (DELETE /column-masks/{columnMaskId})
+	DeleteColumnMask(w http.ResponseWriter, r *http.Request, columnMaskId int64)
 	// Bind mask to principal
-	// (POST /column-masks/{id}/bindings)
-	BindColumnMask(w http.ResponseWriter, r *http.Request, id int64)
+	// (POST /column-masks/{columnMaskId}/bind)
+	BindColumnMask(w http.ResponseWriter, r *http.Request, columnMaskId int64)
+	// Unbind mask from principal
+	// (POST /column-masks/{columnMaskId}/unbind)
+	UnbindColumnMask(w http.ResponseWriter, r *http.Request, columnMaskId int64)
 	// List external locations
 	// (GET /external-locations)
 	ListExternalLocations(w http.ResponseWriter, r *http.Request, params ListExternalLocationsParams)
@@ -122,15 +131,15 @@ type ServerInterface interface {
 	// Update an external location
 	// (PATCH /external-locations/{locationName})
 	UpdateExternalLocation(w http.ResponseWriter, r *http.Request, locationName string)
-	// Revoke a privilege
-	// (DELETE /grants)
-	RevokePrivilege(w http.ResponseWriter, r *http.Request)
 	// List grants
 	// (GET /grants)
 	ListGrants(w http.ResponseWriter, r *http.Request, params ListGrantsParams)
 	// Grant a privilege
 	// (POST /grants)
-	GrantPrivilege(w http.ResponseWriter, r *http.Request)
+	CreateGrant(w http.ResponseWriter, r *http.Request)
+	// Revoke a privilege
+	// (POST /grants/revoke)
+	DeleteGrant(w http.ResponseWriter, r *http.Request)
 	// List all groups
 	// (GET /groups)
 	ListGroups(w http.ResponseWriter, r *http.Request, params ListGroupsParams)
@@ -138,38 +147,29 @@ type ServerInterface interface {
 	// (POST /groups)
 	CreateGroup(w http.ResponseWriter, r *http.Request)
 	// Delete a group
-	// (DELETE /groups/{id})
-	DeleteGroup(w http.ResponseWriter, r *http.Request, id int64)
+	// (DELETE /groups/{groupId})
+	DeleteGroup(w http.ResponseWriter, r *http.Request, groupId int64)
 	// Get group by ID
-	// (GET /groups/{id})
-	GetGroup(w http.ResponseWriter, r *http.Request, id int64)
-	// Remove member from group
-	// (DELETE /groups/{id}/members)
-	RemoveGroupMember(w http.ResponseWriter, r *http.Request, id int64)
+	// (GET /groups/{groupId})
+	GetGroup(w http.ResponseWriter, r *http.Request, groupId int64)
 	// List group members
-	// (GET /groups/{id}/members)
-	ListGroupMembers(w http.ResponseWriter, r *http.Request, id int64, params ListGroupMembersParams)
+	// (GET /groups/{groupId}/members)
+	ListGroupMembers(w http.ResponseWriter, r *http.Request, groupId int64, params ListGroupMembersParams)
 	// Add member to group
-	// (POST /groups/{id}/members)
-	AddGroupMember(w http.ResponseWriter, r *http.Request, id int64)
+	// (POST /groups/{groupId}/members)
+	CreateGroupMember(w http.ResponseWriter, r *http.Request, groupId int64)
+	// Remove member from group
+	// (POST /groups/{groupId}/members/remove)
+	DeleteGroupMember(w http.ResponseWriter, r *http.Request, groupId int64)
 	// Delete a lineage edge
 	// (DELETE /lineage/edges/{edgeId})
 	DeleteLineageEdge(w http.ResponseWriter, r *http.Request, edgeId int64)
 	// Purge old lineage edges
 	// (POST /lineage/purge)
 	PurgeLineage(w http.ResponseWriter, r *http.Request)
-	// Get full lineage for a table
-	// (GET /lineage/tables/{schemaName}/{tableName})
-	GetTableLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetTableLineageParams)
-	// Get downstream lineage for a table
-	// (GET /lineage/tables/{schemaName}/{tableName}/downstream)
-	GetDownstreamLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetDownstreamLineageParams)
-	// Get upstream lineage for a table
-	// (GET /lineage/tables/{schemaName}/{tableName}/upstream)
-	GetUpstreamLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetUpstreamLineageParams)
-	// Get table manifest with presigned URLs and security policies
+	// Create table manifest with presigned URLs and security policies
 	// (POST /manifest)
-	GetManifest(w http.ResponseWriter, r *http.Request)
+	CreateManifest(w http.ResponseWriter, r *http.Request)
 	// Get metastore summary
 	// (GET /metastore/summary)
 	GetMetastoreSummary(w http.ResponseWriter, r *http.Request)
@@ -180,14 +180,14 @@ type ServerInterface interface {
 	// (POST /principals)
 	CreatePrincipal(w http.ResponseWriter, r *http.Request)
 	// Delete a principal
-	// (DELETE /principals/{id})
-	DeletePrincipal(w http.ResponseWriter, r *http.Request, id int64)
+	// (DELETE /principals/{principalId})
+	DeletePrincipal(w http.ResponseWriter, r *http.Request, principalId int64)
 	// Get principal by ID
-	// (GET /principals/{id})
-	GetPrincipal(w http.ResponseWriter, r *http.Request, id int64)
+	// (GET /principals/{principalId})
+	GetPrincipal(w http.ResponseWriter, r *http.Request, principalId int64)
 	// Set or unset admin flag
-	// (PUT /principals/{id}/admin)
-	SetAdmin(w http.ResponseWriter, r *http.Request, id int64)
+	// (PUT /principals/{principalId}/admin)
+	UpdatePrincipalAdmin(w http.ResponseWriter, r *http.Request, principalId int64)
 	// Execute SQL as authenticated principal
 	// (POST /query)
 	ExecuteQuery(w http.ResponseWriter, r *http.Request)
@@ -195,20 +195,14 @@ type ServerInterface interface {
 	// (GET /query-history)
 	ListQueryHistory(w http.ResponseWriter, r *http.Request, params ListQueryHistoryParams)
 	// Delete row filter
-	// (DELETE /row-filters/{id})
-	DeleteRowFilter(w http.ResponseWriter, r *http.Request, id int64)
-	// Unbind filter
-	// (DELETE /row-filters/{id}/bindings)
-	UnbindRowFilter(w http.ResponseWriter, r *http.Request, id int64)
+	// (DELETE /row-filters/{rowFilterId})
+	DeleteRowFilter(w http.ResponseWriter, r *http.Request, rowFilterId int64)
 	// Bind filter to principal
-	// (POST /row-filters/{id}/bindings)
-	BindRowFilter(w http.ResponseWriter, r *http.Request, id int64)
-	// List DuckLake schemas (deprecated, use /catalog/schemas)
-	// (GET /schemas)
-	ListSchemas(w http.ResponseWriter, r *http.Request, params ListSchemasParams)
-	// List tables in schema (deprecated, use /catalog/schemas/{name}/tables)
-	// (GET /schemas/{id}/tables)
-	ListTables(w http.ResponseWriter, r *http.Request, id int64, params ListTablesParams)
+	// (POST /row-filters/{rowFilterId}/bind)
+	BindRowFilter(w http.ResponseWriter, r *http.Request, rowFilterId int64)
+	// Unbind filter from principal
+	// (POST /row-filters/{rowFilterId}/unbind)
+	UnbindRowFilter(w http.ResponseWriter, r *http.Request, rowFilterId int64)
 	// Search catalog objects
 	// (GET /search)
 	SearchCatalog(w http.ResponseWriter, r *http.Request, params SearchCatalogParams)
@@ -227,9 +221,6 @@ type ServerInterface interface {
 	// Update a storage credential
 	// (PATCH /storage-credentials/{credentialName})
 	UpdateStorageCredential(w http.ResponseWriter, r *http.Request, credentialName string)
-	// List columns in table (deprecated, use /catalog/schemas/{name}/tables/{name}/columns)
-	// (GET /tables/{id}/columns)
-	ListColumns(w http.ResponseWriter, r *http.Request, id int64, params ListColumnsParams)
 	// List column masks
 	// (GET /tables/{tableId}/column-masks)
 	ListColumnMasks(w http.ResponseWriter, r *http.Request, tableId int64, params ListColumnMasksParams)
@@ -244,7 +235,7 @@ type ServerInterface interface {
 	CreateRowFilter(w http.ResponseWriter, r *http.Request, tableId int64)
 	// Remove a tag assignment
 	// (DELETE /tag-assignments/{assignmentId})
-	UnassignTag(w http.ResponseWriter, r *http.Request, assignmentId int64)
+	DeleteTagAssignment(w http.ResponseWriter, r *http.Request, assignmentId int64)
 	// List all tags
 	// (GET /tags)
 	ListTags(w http.ResponseWriter, r *http.Request, params ListTagsParams)
@@ -256,7 +247,7 @@ type ServerInterface interface {
 	DeleteTag(w http.ResponseWriter, r *http.Request, tagId int64)
 	// Assign a tag to a securable object
 	// (POST /tags/{tagId}/assignments)
-	AssignTag(w http.ResponseWriter, r *http.Request, tagId int64)
+	CreateTagAssignment(w http.ResponseWriter, r *http.Request, tagId int64)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -283,7 +274,7 @@ func (_ Unimplemented) UpdateCatalog(w http.ResponseWriter, r *http.Request) {
 
 // List schemas in the catalog
 // (GET /catalog/schemas)
-func (_ Unimplemented) ListCatalogSchemas(w http.ResponseWriter, r *http.Request, params ListCatalogSchemasParams) {
+func (_ Unimplemented) ListSchemas(w http.ResponseWriter, r *http.Request, params ListSchemasParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -301,43 +292,43 @@ func (_ Unimplemented) DeleteSchema(w http.ResponseWriter, r *http.Request, sche
 
 // Get a schema by name
 // (GET /catalog/schemas/{schemaName})
-func (_ Unimplemented) GetSchemaByName(w http.ResponseWriter, r *http.Request, schemaName string) {
+func (_ Unimplemented) GetSchema(w http.ResponseWriter, r *http.Request, schemaName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Update schema metadata (comment, properties)
+// Update schema metadata
 // (PATCH /catalog/schemas/{schemaName})
-func (_ Unimplemented) UpdateSchemaMetadata(w http.ResponseWriter, r *http.Request, schemaName string) {
+func (_ Unimplemented) UpdateSchema(w http.ResponseWriter, r *http.Request, schemaName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // List tables in a schema
 // (GET /catalog/schemas/{schemaName}/tables)
-func (_ Unimplemented) ListCatalogTables(w http.ResponseWriter, r *http.Request, schemaName string, params ListCatalogTablesParams) {
+func (_ Unimplemented) ListTables(w http.ResponseWriter, r *http.Request, schemaName string, params ListTablesParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Create a new table in a schema
 // (POST /catalog/schemas/{schemaName}/tables)
-func (_ Unimplemented) CreateCatalogTable(w http.ResponseWriter, r *http.Request, schemaName string) {
+func (_ Unimplemented) CreateTable(w http.ResponseWriter, r *http.Request, schemaName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Delete a table
 // (DELETE /catalog/schemas/{schemaName}/tables/{tableName})
-func (_ Unimplemented) DropTable(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
+func (_ Unimplemented) DeleteTable(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Get a table by name
 // (GET /catalog/schemas/{schemaName}/tables/{tableName})
-func (_ Unimplemented) GetTableByName(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
+func (_ Unimplemented) GetTable(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Update table metadata (comment, properties, owner)
+// Update table metadata
 // (PATCH /catalog/schemas/{schemaName}/tables/{tableName})
-func (_ Unimplemented) UpdateTableMetadata(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
+func (_ Unimplemented) UpdateTable(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -347,27 +338,45 @@ func (_ Unimplemented) ListTableColumns(w http.ResponseWriter, r *http.Request, 
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Update column metadata (comment, properties)
+// Update column metadata
 // (PATCH /catalog/schemas/{schemaName}/tables/{tableName}/columns/{columnName})
-func (_ Unimplemented) UpdateColumnMetadata(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, columnName string) {
+func (_ Unimplemented) UpdateColumn(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, columnName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Register uploaded Parquet files in DuckLake
 // (POST /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/commit)
-func (_ Unimplemented) CommitIngestion(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
+func (_ Unimplemented) CommitTableIngestion(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Register existing S3 files in DuckLake
 // (POST /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/load)
-func (_ Unimplemented) LoadExternalFiles(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
+func (_ Unimplemented) LoadTableExternalFiles(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Get a presigned URL for uploading a Parquet file
 // (POST /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url)
-func (_ Unimplemented) RequestUploadUrl(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
+func (_ Unimplemented) CreateUploadUrl(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get full lineage for a table
+// (GET /catalog/schemas/{schemaName}/tables/{tableName}/lineage)
+func (_ Unimplemented) GetTableLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetTableLineageParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get downstream lineage for a table
+// (GET /catalog/schemas/{schemaName}/tables/{tableName}/lineage/downstream)
+func (_ Unimplemented) GetDownstreamLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetDownstreamLineageParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get upstream lineage for a table
+// (GET /catalog/schemas/{schemaName}/tables/{tableName}/lineage/upstream)
+func (_ Unimplemented) GetUpstreamLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetUpstreamLineageParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -391,7 +400,7 @@ func (_ Unimplemented) CreateView(w http.ResponseWriter, r *http.Request, schema
 
 // Delete a view
 // (DELETE /catalog/schemas/{schemaName}/views/{viewName})
-func (_ Unimplemented) DropView(w http.ResponseWriter, r *http.Request, schemaName string, viewName string) {
+func (_ Unimplemented) DeleteView(w http.ResponseWriter, r *http.Request, schemaName string, viewName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -414,20 +423,20 @@ func (_ Unimplemented) ListClassifications(w http.ResponseWriter, r *http.Reques
 }
 
 // Delete column mask
-// (DELETE /column-masks/{id})
-func (_ Unimplemented) DeleteColumnMask(w http.ResponseWriter, r *http.Request, id int64) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// Unbind mask
-// (DELETE /column-masks/{id}/bindings)
-func (_ Unimplemented) UnbindColumnMask(w http.ResponseWriter, r *http.Request, id int64) {
+// (DELETE /column-masks/{columnMaskId})
+func (_ Unimplemented) DeleteColumnMask(w http.ResponseWriter, r *http.Request, columnMaskId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Bind mask to principal
-// (POST /column-masks/{id}/bindings)
-func (_ Unimplemented) BindColumnMask(w http.ResponseWriter, r *http.Request, id int64) {
+// (POST /column-masks/{columnMaskId}/bind)
+func (_ Unimplemented) BindColumnMask(w http.ResponseWriter, r *http.Request, columnMaskId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Unbind mask from principal
+// (POST /column-masks/{columnMaskId}/unbind)
+func (_ Unimplemented) UnbindColumnMask(w http.ResponseWriter, r *http.Request, columnMaskId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -461,12 +470,6 @@ func (_ Unimplemented) UpdateExternalLocation(w http.ResponseWriter, r *http.Req
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Revoke a privilege
-// (DELETE /grants)
-func (_ Unimplemented) RevokePrivilege(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
 // List grants
 // (GET /grants)
 func (_ Unimplemented) ListGrants(w http.ResponseWriter, r *http.Request, params ListGrantsParams) {
@@ -475,7 +478,13 @@ func (_ Unimplemented) ListGrants(w http.ResponseWriter, r *http.Request, params
 
 // Grant a privilege
 // (POST /grants)
-func (_ Unimplemented) GrantPrivilege(w http.ResponseWriter, r *http.Request) {
+func (_ Unimplemented) CreateGrant(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Revoke a privilege
+// (POST /grants/revoke)
+func (_ Unimplemented) DeleteGrant(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -492,32 +501,32 @@ func (_ Unimplemented) CreateGroup(w http.ResponseWriter, r *http.Request) {
 }
 
 // Delete a group
-// (DELETE /groups/{id})
-func (_ Unimplemented) DeleteGroup(w http.ResponseWriter, r *http.Request, id int64) {
+// (DELETE /groups/{groupId})
+func (_ Unimplemented) DeleteGroup(w http.ResponseWriter, r *http.Request, groupId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Get group by ID
-// (GET /groups/{id})
-func (_ Unimplemented) GetGroup(w http.ResponseWriter, r *http.Request, id int64) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// Remove member from group
-// (DELETE /groups/{id}/members)
-func (_ Unimplemented) RemoveGroupMember(w http.ResponseWriter, r *http.Request, id int64) {
+// (GET /groups/{groupId})
+func (_ Unimplemented) GetGroup(w http.ResponseWriter, r *http.Request, groupId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // List group members
-// (GET /groups/{id}/members)
-func (_ Unimplemented) ListGroupMembers(w http.ResponseWriter, r *http.Request, id int64, params ListGroupMembersParams) {
+// (GET /groups/{groupId}/members)
+func (_ Unimplemented) ListGroupMembers(w http.ResponseWriter, r *http.Request, groupId int64, params ListGroupMembersParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Add member to group
-// (POST /groups/{id}/members)
-func (_ Unimplemented) AddGroupMember(w http.ResponseWriter, r *http.Request, id int64) {
+// (POST /groups/{groupId}/members)
+func (_ Unimplemented) CreateGroupMember(w http.ResponseWriter, r *http.Request, groupId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Remove member from group
+// (POST /groups/{groupId}/members/remove)
+func (_ Unimplemented) DeleteGroupMember(w http.ResponseWriter, r *http.Request, groupId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -533,27 +542,9 @@ func (_ Unimplemented) PurgeLineage(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Get full lineage for a table
-// (GET /lineage/tables/{schemaName}/{tableName})
-func (_ Unimplemented) GetTableLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetTableLineageParams) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// Get downstream lineage for a table
-// (GET /lineage/tables/{schemaName}/{tableName}/downstream)
-func (_ Unimplemented) GetDownstreamLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetDownstreamLineageParams) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// Get upstream lineage for a table
-// (GET /lineage/tables/{schemaName}/{tableName}/upstream)
-func (_ Unimplemented) GetUpstreamLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetUpstreamLineageParams) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// Get table manifest with presigned URLs and security policies
+// Create table manifest with presigned URLs and security policies
 // (POST /manifest)
-func (_ Unimplemented) GetManifest(w http.ResponseWriter, r *http.Request) {
+func (_ Unimplemented) CreateManifest(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -576,20 +567,20 @@ func (_ Unimplemented) CreatePrincipal(w http.ResponseWriter, r *http.Request) {
 }
 
 // Delete a principal
-// (DELETE /principals/{id})
-func (_ Unimplemented) DeletePrincipal(w http.ResponseWriter, r *http.Request, id int64) {
+// (DELETE /principals/{principalId})
+func (_ Unimplemented) DeletePrincipal(w http.ResponseWriter, r *http.Request, principalId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Get principal by ID
-// (GET /principals/{id})
-func (_ Unimplemented) GetPrincipal(w http.ResponseWriter, r *http.Request, id int64) {
+// (GET /principals/{principalId})
+func (_ Unimplemented) GetPrincipal(w http.ResponseWriter, r *http.Request, principalId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Set or unset admin flag
-// (PUT /principals/{id}/admin)
-func (_ Unimplemented) SetAdmin(w http.ResponseWriter, r *http.Request, id int64) {
+// (PUT /principals/{principalId}/admin)
+func (_ Unimplemented) UpdatePrincipalAdmin(w http.ResponseWriter, r *http.Request, principalId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -606,32 +597,20 @@ func (_ Unimplemented) ListQueryHistory(w http.ResponseWriter, r *http.Request, 
 }
 
 // Delete row filter
-// (DELETE /row-filters/{id})
-func (_ Unimplemented) DeleteRowFilter(w http.ResponseWriter, r *http.Request, id int64) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// Unbind filter
-// (DELETE /row-filters/{id}/bindings)
-func (_ Unimplemented) UnbindRowFilter(w http.ResponseWriter, r *http.Request, id int64) {
+// (DELETE /row-filters/{rowFilterId})
+func (_ Unimplemented) DeleteRowFilter(w http.ResponseWriter, r *http.Request, rowFilterId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Bind filter to principal
-// (POST /row-filters/{id}/bindings)
-func (_ Unimplemented) BindRowFilter(w http.ResponseWriter, r *http.Request, id int64) {
+// (POST /row-filters/{rowFilterId}/bind)
+func (_ Unimplemented) BindRowFilter(w http.ResponseWriter, r *http.Request, rowFilterId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// List DuckLake schemas (deprecated, use /catalog/schemas)
-// (GET /schemas)
-func (_ Unimplemented) ListSchemas(w http.ResponseWriter, r *http.Request, params ListSchemasParams) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// List tables in schema (deprecated, use /catalog/schemas/{name}/tables)
-// (GET /schemas/{id}/tables)
-func (_ Unimplemented) ListTables(w http.ResponseWriter, r *http.Request, id int64, params ListTablesParams) {
+// Unbind filter from principal
+// (POST /row-filters/{rowFilterId}/unbind)
+func (_ Unimplemented) UnbindRowFilter(w http.ResponseWriter, r *http.Request, rowFilterId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -671,12 +650,6 @@ func (_ Unimplemented) UpdateStorageCredential(w http.ResponseWriter, r *http.Re
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// List columns in table (deprecated, use /catalog/schemas/{name}/tables/{name}/columns)
-// (GET /tables/{id}/columns)
-func (_ Unimplemented) ListColumns(w http.ResponseWriter, r *http.Request, id int64, params ListColumnsParams) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
 // List column masks
 // (GET /tables/{tableId}/column-masks)
 func (_ Unimplemented) ListColumnMasks(w http.ResponseWriter, r *http.Request, tableId int64, params ListColumnMasksParams) {
@@ -703,7 +676,7 @@ func (_ Unimplemented) CreateRowFilter(w http.ResponseWriter, r *http.Request, t
 
 // Remove a tag assignment
 // (DELETE /tag-assignments/{assignmentId})
-func (_ Unimplemented) UnassignTag(w http.ResponseWriter, r *http.Request, assignmentId int64) {
+func (_ Unimplemented) DeleteTagAssignment(w http.ResponseWriter, r *http.Request, assignmentId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -727,7 +700,7 @@ func (_ Unimplemented) DeleteTag(w http.ResponseWriter, r *http.Request, tagId i
 
 // Assign a tag to a securable object
 // (POST /tags/{tagId}/assignments)
-func (_ Unimplemented) AssignTag(w http.ResponseWriter, r *http.Request, tagId int64) {
+func (_ Unimplemented) CreateTagAssignment(w http.ResponseWriter, r *http.Request, tagId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -851,8 +824,8 @@ func (siw *ServerInterfaceWrapper) UpdateCatalog(w http.ResponseWriter, r *http.
 	handler.ServeHTTP(w, r)
 }
 
-// ListCatalogSchemas operation middleware
-func (siw *ServerInterfaceWrapper) ListCatalogSchemas(w http.ResponseWriter, r *http.Request) {
+// ListSchemas operation middleware
+func (siw *ServerInterfaceWrapper) ListSchemas(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 
@@ -865,7 +838,7 @@ func (siw *ServerInterfaceWrapper) ListCatalogSchemas(w http.ResponseWriter, r *
 	r = r.WithContext(ctx)
 
 	// Parameter object where we will unmarshal all parameters from the context
-	var params ListCatalogSchemasParams
+	var params ListSchemasParams
 
 	// ------------- Optional query parameter "max_results" -------------
 
@@ -884,7 +857,7 @@ func (siw *ServerInterfaceWrapper) ListCatalogSchemas(w http.ResponseWriter, r *
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListCatalogSchemas(w, r, params)
+		siw.Handler.ListSchemas(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -960,8 +933,8 @@ func (siw *ServerInterfaceWrapper) DeleteSchema(w http.ResponseWriter, r *http.R
 	handler.ServeHTTP(w, r)
 }
 
-// GetSchemaByName operation middleware
-func (siw *ServerInterfaceWrapper) GetSchemaByName(w http.ResponseWriter, r *http.Request) {
+// GetSchema operation middleware
+func (siw *ServerInterfaceWrapper) GetSchema(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 
@@ -983,7 +956,7 @@ func (siw *ServerInterfaceWrapper) GetSchemaByName(w http.ResponseWriter, r *htt
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetSchemaByName(w, r, schemaName)
+		siw.Handler.GetSchema(w, r, schemaName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -993,8 +966,8 @@ func (siw *ServerInterfaceWrapper) GetSchemaByName(w http.ResponseWriter, r *htt
 	handler.ServeHTTP(w, r)
 }
 
-// UpdateSchemaMetadata operation middleware
-func (siw *ServerInterfaceWrapper) UpdateSchemaMetadata(w http.ResponseWriter, r *http.Request) {
+// UpdateSchema operation middleware
+func (siw *ServerInterfaceWrapper) UpdateSchema(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 
@@ -1016,7 +989,7 @@ func (siw *ServerInterfaceWrapper) UpdateSchemaMetadata(w http.ResponseWriter, r
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.UpdateSchemaMetadata(w, r, schemaName)
+		siw.Handler.UpdateSchema(w, r, schemaName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1026,8 +999,8 @@ func (siw *ServerInterfaceWrapper) UpdateSchemaMetadata(w http.ResponseWriter, r
 	handler.ServeHTTP(w, r)
 }
 
-// ListCatalogTables operation middleware
-func (siw *ServerInterfaceWrapper) ListCatalogTables(w http.ResponseWriter, r *http.Request) {
+// ListTables operation middleware
+func (siw *ServerInterfaceWrapper) ListTables(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 
@@ -1049,7 +1022,7 @@ func (siw *ServerInterfaceWrapper) ListCatalogTables(w http.ResponseWriter, r *h
 	r = r.WithContext(ctx)
 
 	// Parameter object where we will unmarshal all parameters from the context
-	var params ListCatalogTablesParams
+	var params ListTablesParams
 
 	// ------------- Optional query parameter "max_results" -------------
 
@@ -1068,7 +1041,7 @@ func (siw *ServerInterfaceWrapper) ListCatalogTables(w http.ResponseWriter, r *h
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListCatalogTables(w, r, schemaName, params)
+		siw.Handler.ListTables(w, r, schemaName, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1078,8 +1051,8 @@ func (siw *ServerInterfaceWrapper) ListCatalogTables(w http.ResponseWriter, r *h
 	handler.ServeHTTP(w, r)
 }
 
-// CreateCatalogTable operation middleware
-func (siw *ServerInterfaceWrapper) CreateCatalogTable(w http.ResponseWriter, r *http.Request) {
+// CreateTable operation middleware
+func (siw *ServerInterfaceWrapper) CreateTable(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 
@@ -1101,7 +1074,7 @@ func (siw *ServerInterfaceWrapper) CreateCatalogTable(w http.ResponseWriter, r *
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.CreateCatalogTable(w, r, schemaName)
+		siw.Handler.CreateTable(w, r, schemaName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1111,50 +1084,8 @@ func (siw *ServerInterfaceWrapper) CreateCatalogTable(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
-// DropTable operation middleware
-func (siw *ServerInterfaceWrapper) DropTable(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "schemaName" -------------
-	var schemaName string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "schemaName", chi.URLParam(r, "schemaName"), &schemaName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schemaName", Err: err})
-		return
-	}
-
-	// ------------- Path parameter "tableName" -------------
-	var tableName string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "tableName", chi.URLParam(r, "tableName"), &tableName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tableName", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.DropTable(w, r, schemaName, tableName)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// GetTableByName operation middleware
-func (siw *ServerInterfaceWrapper) GetTableByName(w http.ResponseWriter, r *http.Request) {
+// DeleteTable operation middleware
+func (siw *ServerInterfaceWrapper) DeleteTable(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 
@@ -1185,7 +1116,7 @@ func (siw *ServerInterfaceWrapper) GetTableByName(w http.ResponseWriter, r *http
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetTableByName(w, r, schemaName, tableName)
+		siw.Handler.DeleteTable(w, r, schemaName, tableName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1195,8 +1126,8 @@ func (siw *ServerInterfaceWrapper) GetTableByName(w http.ResponseWriter, r *http
 	handler.ServeHTTP(w, r)
 }
 
-// UpdateTableMetadata operation middleware
-func (siw *ServerInterfaceWrapper) UpdateTableMetadata(w http.ResponseWriter, r *http.Request) {
+// GetTable operation middleware
+func (siw *ServerInterfaceWrapper) GetTable(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 
@@ -1227,7 +1158,49 @@ func (siw *ServerInterfaceWrapper) UpdateTableMetadata(w http.ResponseWriter, r 
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.UpdateTableMetadata(w, r, schemaName, tableName)
+		siw.Handler.GetTable(w, r, schemaName, tableName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateTable operation middleware
+func (siw *ServerInterfaceWrapper) UpdateTable(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "schemaName" -------------
+	var schemaName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "schemaName", chi.URLParam(r, "schemaName"), &schemaName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schemaName", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "tableName" -------------
+	var tableName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tableName", chi.URLParam(r, "tableName"), &tableName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tableName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateTable(w, r, schemaName, tableName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1298,8 +1271,8 @@ func (siw *ServerInterfaceWrapper) ListTableColumns(w http.ResponseWriter, r *ht
 	handler.ServeHTTP(w, r)
 }
 
-// UpdateColumnMetadata operation middleware
-func (siw *ServerInterfaceWrapper) UpdateColumnMetadata(w http.ResponseWriter, r *http.Request) {
+// UpdateColumn operation middleware
+func (siw *ServerInterfaceWrapper) UpdateColumn(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 
@@ -1339,7 +1312,7 @@ func (siw *ServerInterfaceWrapper) UpdateColumnMetadata(w http.ResponseWriter, r
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.UpdateColumnMetadata(w, r, schemaName, tableName, columnName)
+		siw.Handler.UpdateColumn(w, r, schemaName, tableName, columnName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1349,8 +1322,8 @@ func (siw *ServerInterfaceWrapper) UpdateColumnMetadata(w http.ResponseWriter, r
 	handler.ServeHTTP(w, r)
 }
 
-// CommitIngestion operation middleware
-func (siw *ServerInterfaceWrapper) CommitIngestion(w http.ResponseWriter, r *http.Request) {
+// CommitTableIngestion operation middleware
+func (siw *ServerInterfaceWrapper) CommitTableIngestion(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 
@@ -1381,7 +1354,7 @@ func (siw *ServerInterfaceWrapper) CommitIngestion(w http.ResponseWriter, r *htt
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.CommitIngestion(w, r, schemaName, tableName)
+		siw.Handler.CommitTableIngestion(w, r, schemaName, tableName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1391,8 +1364,8 @@ func (siw *ServerInterfaceWrapper) CommitIngestion(w http.ResponseWriter, r *htt
 	handler.ServeHTTP(w, r)
 }
 
-// LoadExternalFiles operation middleware
-func (siw *ServerInterfaceWrapper) LoadExternalFiles(w http.ResponseWriter, r *http.Request) {
+// LoadTableExternalFiles operation middleware
+func (siw *ServerInterfaceWrapper) LoadTableExternalFiles(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 
@@ -1423,7 +1396,7 @@ func (siw *ServerInterfaceWrapper) LoadExternalFiles(w http.ResponseWriter, r *h
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.LoadExternalFiles(w, r, schemaName, tableName)
+		siw.Handler.LoadTableExternalFiles(w, r, schemaName, tableName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1433,8 +1406,8 @@ func (siw *ServerInterfaceWrapper) LoadExternalFiles(w http.ResponseWriter, r *h
 	handler.ServeHTTP(w, r)
 }
 
-// RequestUploadUrl operation middleware
-func (siw *ServerInterfaceWrapper) RequestUploadUrl(w http.ResponseWriter, r *http.Request) {
+// CreateUploadUrl operation middleware
+func (siw *ServerInterfaceWrapper) CreateUploadUrl(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 
@@ -1465,968 +1438,7 @@ func (siw *ServerInterfaceWrapper) RequestUploadUrl(w http.ResponseWriter, r *ht
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.RequestUploadUrl(w, r, schemaName, tableName)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// ProfileTable operation middleware
-func (siw *ServerInterfaceWrapper) ProfileTable(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "schemaName" -------------
-	var schemaName string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "schemaName", chi.URLParam(r, "schemaName"), &schemaName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schemaName", Err: err})
-		return
-	}
-
-	// ------------- Path parameter "tableName" -------------
-	var tableName string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "tableName", chi.URLParam(r, "tableName"), &tableName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tableName", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ProfileTable(w, r, schemaName, tableName)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// ListViews operation middleware
-func (siw *ServerInterfaceWrapper) ListViews(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "schemaName" -------------
-	var schemaName string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "schemaName", chi.URLParam(r, "schemaName"), &schemaName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schemaName", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params ListViewsParams
-
-	// ------------- Optional query parameter "max_results" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
-		return
-	}
-
-	// ------------- Optional query parameter "page_token" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListViews(w, r, schemaName, params)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// CreateView operation middleware
-func (siw *ServerInterfaceWrapper) CreateView(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "schemaName" -------------
-	var schemaName string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "schemaName", chi.URLParam(r, "schemaName"), &schemaName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schemaName", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.CreateView(w, r, schemaName)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// DropView operation middleware
-func (siw *ServerInterfaceWrapper) DropView(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "schemaName" -------------
-	var schemaName string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "schemaName", chi.URLParam(r, "schemaName"), &schemaName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schemaName", Err: err})
-		return
-	}
-
-	// ------------- Path parameter "viewName" -------------
-	var viewName string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "viewName", chi.URLParam(r, "viewName"), &viewName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "viewName", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.DropView(w, r, schemaName, viewName)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// GetView operation middleware
-func (siw *ServerInterfaceWrapper) GetView(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "schemaName" -------------
-	var schemaName string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "schemaName", chi.URLParam(r, "schemaName"), &schemaName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schemaName", Err: err})
-		return
-	}
-
-	// ------------- Path parameter "viewName" -------------
-	var viewName string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "viewName", chi.URLParam(r, "viewName"), &viewName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "viewName", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetView(w, r, schemaName, viewName)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// UpdateView operation middleware
-func (siw *ServerInterfaceWrapper) UpdateView(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "schemaName" -------------
-	var schemaName string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "schemaName", chi.URLParam(r, "schemaName"), &schemaName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schemaName", Err: err})
-		return
-	}
-
-	// ------------- Path parameter "viewName" -------------
-	var viewName string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "viewName", chi.URLParam(r, "viewName"), &viewName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "viewName", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.UpdateView(w, r, schemaName, viewName)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// ListClassifications operation middleware
-func (siw *ServerInterfaceWrapper) ListClassifications(w http.ResponseWriter, r *http.Request) {
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListClassifications(w, r)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// DeleteColumnMask operation middleware
-func (siw *ServerInterfaceWrapper) DeleteColumnMask(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "id" -------------
-	var id int64
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.DeleteColumnMask(w, r, id)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// UnbindColumnMask operation middleware
-func (siw *ServerInterfaceWrapper) UnbindColumnMask(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "id" -------------
-	var id int64
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.UnbindColumnMask(w, r, id)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// BindColumnMask operation middleware
-func (siw *ServerInterfaceWrapper) BindColumnMask(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "id" -------------
-	var id int64
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.BindColumnMask(w, r, id)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// ListExternalLocations operation middleware
-func (siw *ServerInterfaceWrapper) ListExternalLocations(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params ListExternalLocationsParams
-
-	// ------------- Optional query parameter "max_results" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
-		return
-	}
-
-	// ------------- Optional query parameter "page_token" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListExternalLocations(w, r, params)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// CreateExternalLocation operation middleware
-func (siw *ServerInterfaceWrapper) CreateExternalLocation(w http.ResponseWriter, r *http.Request) {
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.CreateExternalLocation(w, r)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// DeleteExternalLocation operation middleware
-func (siw *ServerInterfaceWrapper) DeleteExternalLocation(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "locationName" -------------
-	var locationName string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "locationName", chi.URLParam(r, "locationName"), &locationName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "locationName", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.DeleteExternalLocation(w, r, locationName)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// GetExternalLocation operation middleware
-func (siw *ServerInterfaceWrapper) GetExternalLocation(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "locationName" -------------
-	var locationName string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "locationName", chi.URLParam(r, "locationName"), &locationName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "locationName", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetExternalLocation(w, r, locationName)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// UpdateExternalLocation operation middleware
-func (siw *ServerInterfaceWrapper) UpdateExternalLocation(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "locationName" -------------
-	var locationName string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "locationName", chi.URLParam(r, "locationName"), &locationName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "locationName", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.UpdateExternalLocation(w, r, locationName)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// RevokePrivilege operation middleware
-func (siw *ServerInterfaceWrapper) RevokePrivilege(w http.ResponseWriter, r *http.Request) {
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.RevokePrivilege(w, r)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// ListGrants operation middleware
-func (siw *ServerInterfaceWrapper) ListGrants(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params ListGrantsParams
-
-	// ------------- Optional query parameter "principal_id" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "principal_id", r.URL.Query(), &params.PrincipalId)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "principal_id", Err: err})
-		return
-	}
-
-	// ------------- Optional query parameter "principal_type" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "principal_type", r.URL.Query(), &params.PrincipalType)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "principal_type", Err: err})
-		return
-	}
-
-	// ------------- Optional query parameter "securable_type" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "securable_type", r.URL.Query(), &params.SecurableType)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "securable_type", Err: err})
-		return
-	}
-
-	// ------------- Optional query parameter "securable_id" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "securable_id", r.URL.Query(), &params.SecurableId)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "securable_id", Err: err})
-		return
-	}
-
-	// ------------- Optional query parameter "max_results" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
-		return
-	}
-
-	// ------------- Optional query parameter "page_token" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListGrants(w, r, params)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// GrantPrivilege operation middleware
-func (siw *ServerInterfaceWrapper) GrantPrivilege(w http.ResponseWriter, r *http.Request) {
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GrantPrivilege(w, r)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// ListGroups operation middleware
-func (siw *ServerInterfaceWrapper) ListGroups(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params ListGroupsParams
-
-	// ------------- Optional query parameter "max_results" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
-		return
-	}
-
-	// ------------- Optional query parameter "page_token" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListGroups(w, r, params)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// CreateGroup operation middleware
-func (siw *ServerInterfaceWrapper) CreateGroup(w http.ResponseWriter, r *http.Request) {
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.CreateGroup(w, r)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// DeleteGroup operation middleware
-func (siw *ServerInterfaceWrapper) DeleteGroup(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "id" -------------
-	var id int64
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.DeleteGroup(w, r, id)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// GetGroup operation middleware
-func (siw *ServerInterfaceWrapper) GetGroup(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "id" -------------
-	var id int64
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetGroup(w, r, id)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// RemoveGroupMember operation middleware
-func (siw *ServerInterfaceWrapper) RemoveGroupMember(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "id" -------------
-	var id int64
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.RemoveGroupMember(w, r, id)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// ListGroupMembers operation middleware
-func (siw *ServerInterfaceWrapper) ListGroupMembers(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "id" -------------
-	var id int64
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params ListGroupMembersParams
-
-	// ------------- Optional query parameter "max_results" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
-		return
-	}
-
-	// ------------- Optional query parameter "page_token" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListGroupMembers(w, r, id, params)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// AddGroupMember operation middleware
-func (siw *ServerInterfaceWrapper) AddGroupMember(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "id" -------------
-	var id int64
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.AddGroupMember(w, r, id)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// DeleteLineageEdge operation middleware
-func (siw *ServerInterfaceWrapper) DeleteLineageEdge(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "edgeId" -------------
-	var edgeId int64
-
-	err = runtime.BindStyledParameterWithOptions("simple", "edgeId", chi.URLParam(r, "edgeId"), &edgeId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "edgeId", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.DeleteLineageEdge(w, r, edgeId)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// PurgeLineage operation middleware
-func (siw *ServerInterfaceWrapper) PurgeLineage(w http.ResponseWriter, r *http.Request) {
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.PurgeLineage(w, r)
+		siw.Handler.CreateUploadUrl(w, r, schemaName, tableName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2619,8 +1631,28 @@ func (siw *ServerInterfaceWrapper) GetUpstreamLineage(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
-// GetManifest operation middleware
-func (siw *ServerInterfaceWrapper) GetManifest(w http.ResponseWriter, r *http.Request) {
+// ProfileTable operation middleware
+func (siw *ServerInterfaceWrapper) ProfileTable(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "schemaName" -------------
+	var schemaName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "schemaName", chi.URLParam(r, "schemaName"), &schemaName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schemaName", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "tableName" -------------
+	var tableName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tableName", chi.URLParam(r, "tableName"), &tableName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tableName", Err: err})
+		return
+	}
 
 	ctx := r.Context()
 
@@ -2631,7 +1663,948 @@ func (siw *ServerInterfaceWrapper) GetManifest(w http.ResponseWriter, r *http.Re
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetManifest(w, r)
+		siw.Handler.ProfileTable(w, r, schemaName, tableName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListViews operation middleware
+func (siw *ServerInterfaceWrapper) ListViews(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "schemaName" -------------
+	var schemaName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "schemaName", chi.URLParam(r, "schemaName"), &schemaName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schemaName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListViewsParams
+
+	// ------------- Optional query parameter "max_results" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListViews(w, r, schemaName, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateView operation middleware
+func (siw *ServerInterfaceWrapper) CreateView(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "schemaName" -------------
+	var schemaName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "schemaName", chi.URLParam(r, "schemaName"), &schemaName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schemaName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateView(w, r, schemaName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteView operation middleware
+func (siw *ServerInterfaceWrapper) DeleteView(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "schemaName" -------------
+	var schemaName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "schemaName", chi.URLParam(r, "schemaName"), &schemaName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schemaName", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "viewName" -------------
+	var viewName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "viewName", chi.URLParam(r, "viewName"), &viewName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "viewName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteView(w, r, schemaName, viewName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetView operation middleware
+func (siw *ServerInterfaceWrapper) GetView(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "schemaName" -------------
+	var schemaName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "schemaName", chi.URLParam(r, "schemaName"), &schemaName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schemaName", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "viewName" -------------
+	var viewName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "viewName", chi.URLParam(r, "viewName"), &viewName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "viewName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetView(w, r, schemaName, viewName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateView operation middleware
+func (siw *ServerInterfaceWrapper) UpdateView(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "schemaName" -------------
+	var schemaName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "schemaName", chi.URLParam(r, "schemaName"), &schemaName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schemaName", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "viewName" -------------
+	var viewName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "viewName", chi.URLParam(r, "viewName"), &viewName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "viewName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateView(w, r, schemaName, viewName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListClassifications operation middleware
+func (siw *ServerInterfaceWrapper) ListClassifications(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListClassifications(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteColumnMask operation middleware
+func (siw *ServerInterfaceWrapper) DeleteColumnMask(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "columnMaskId" -------------
+	var columnMaskId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "columnMaskId", chi.URLParam(r, "columnMaskId"), &columnMaskId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "columnMaskId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteColumnMask(w, r, columnMaskId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// BindColumnMask operation middleware
+func (siw *ServerInterfaceWrapper) BindColumnMask(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "columnMaskId" -------------
+	var columnMaskId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "columnMaskId", chi.URLParam(r, "columnMaskId"), &columnMaskId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "columnMaskId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BindColumnMask(w, r, columnMaskId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UnbindColumnMask operation middleware
+func (siw *ServerInterfaceWrapper) UnbindColumnMask(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "columnMaskId" -------------
+	var columnMaskId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "columnMaskId", chi.URLParam(r, "columnMaskId"), &columnMaskId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "columnMaskId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UnbindColumnMask(w, r, columnMaskId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListExternalLocations operation middleware
+func (siw *ServerInterfaceWrapper) ListExternalLocations(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListExternalLocationsParams
+
+	// ------------- Optional query parameter "max_results" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListExternalLocations(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateExternalLocation operation middleware
+func (siw *ServerInterfaceWrapper) CreateExternalLocation(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateExternalLocation(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteExternalLocation operation middleware
+func (siw *ServerInterfaceWrapper) DeleteExternalLocation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "locationName" -------------
+	var locationName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "locationName", chi.URLParam(r, "locationName"), &locationName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "locationName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteExternalLocation(w, r, locationName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetExternalLocation operation middleware
+func (siw *ServerInterfaceWrapper) GetExternalLocation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "locationName" -------------
+	var locationName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "locationName", chi.URLParam(r, "locationName"), &locationName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "locationName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetExternalLocation(w, r, locationName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateExternalLocation operation middleware
+func (siw *ServerInterfaceWrapper) UpdateExternalLocation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "locationName" -------------
+	var locationName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "locationName", chi.URLParam(r, "locationName"), &locationName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "locationName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateExternalLocation(w, r, locationName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListGrants operation middleware
+func (siw *ServerInterfaceWrapper) ListGrants(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListGrantsParams
+
+	// ------------- Optional query parameter "principal_id" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "principal_id", r.URL.Query(), &params.PrincipalId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "principal_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "principal_type" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "principal_type", r.URL.Query(), &params.PrincipalType)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "principal_type", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "securable_type" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "securable_type", r.URL.Query(), &params.SecurableType)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "securable_type", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "securable_id" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "securable_id", r.URL.Query(), &params.SecurableId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "securable_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "max_results" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListGrants(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateGrant operation middleware
+func (siw *ServerInterfaceWrapper) CreateGrant(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateGrant(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteGrant operation middleware
+func (siw *ServerInterfaceWrapper) DeleteGrant(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteGrant(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListGroups operation middleware
+func (siw *ServerInterfaceWrapper) ListGroups(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListGroupsParams
+
+	// ------------- Optional query parameter "max_results" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListGroups(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateGroup operation middleware
+func (siw *ServerInterfaceWrapper) CreateGroup(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateGroup(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteGroup operation middleware
+func (siw *ServerInterfaceWrapper) DeleteGroup(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "groupId" -------------
+	var groupId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "groupId", chi.URLParam(r, "groupId"), &groupId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "groupId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteGroup(w, r, groupId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetGroup operation middleware
+func (siw *ServerInterfaceWrapper) GetGroup(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "groupId" -------------
+	var groupId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "groupId", chi.URLParam(r, "groupId"), &groupId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "groupId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetGroup(w, r, groupId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListGroupMembers operation middleware
+func (siw *ServerInterfaceWrapper) ListGroupMembers(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "groupId" -------------
+	var groupId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "groupId", chi.URLParam(r, "groupId"), &groupId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "groupId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListGroupMembersParams
+
+	// ------------- Optional query parameter "max_results" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListGroupMembers(w, r, groupId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateGroupMember operation middleware
+func (siw *ServerInterfaceWrapper) CreateGroupMember(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "groupId" -------------
+	var groupId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "groupId", chi.URLParam(r, "groupId"), &groupId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "groupId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateGroupMember(w, r, groupId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteGroupMember operation middleware
+func (siw *ServerInterfaceWrapper) DeleteGroupMember(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "groupId" -------------
+	var groupId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "groupId", chi.URLParam(r, "groupId"), &groupId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "groupId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteGroupMember(w, r, groupId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteLineageEdge operation middleware
+func (siw *ServerInterfaceWrapper) DeleteLineageEdge(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "edgeId" -------------
+	var edgeId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "edgeId", chi.URLParam(r, "edgeId"), &edgeId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "edgeId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteLineageEdge(w, r, edgeId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PurgeLineage operation middleware
+func (siw *ServerInterfaceWrapper) PurgeLineage(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PurgeLineage(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateManifest operation middleware
+func (siw *ServerInterfaceWrapper) CreateManifest(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateManifest(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2733,12 +2706,12 @@ func (siw *ServerInterfaceWrapper) DeletePrincipal(w http.ResponseWriter, r *htt
 
 	var err error
 
-	// ------------- Path parameter "id" -------------
-	var id int64
+	// ------------- Path parameter "principalId" -------------
+	var principalId int64
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	err = runtime.BindStyledParameterWithOptions("simple", "principalId", chi.URLParam(r, "principalId"), &principalId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "principalId", Err: err})
 		return
 	}
 
@@ -2751,7 +2724,7 @@ func (siw *ServerInterfaceWrapper) DeletePrincipal(w http.ResponseWriter, r *htt
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.DeletePrincipal(w, r, id)
+		siw.Handler.DeletePrincipal(w, r, principalId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2766,12 +2739,12 @@ func (siw *ServerInterfaceWrapper) GetPrincipal(w http.ResponseWriter, r *http.R
 
 	var err error
 
-	// ------------- Path parameter "id" -------------
-	var id int64
+	// ------------- Path parameter "principalId" -------------
+	var principalId int64
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	err = runtime.BindStyledParameterWithOptions("simple", "principalId", chi.URLParam(r, "principalId"), &principalId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "principalId", Err: err})
 		return
 	}
 
@@ -2784,7 +2757,7 @@ func (siw *ServerInterfaceWrapper) GetPrincipal(w http.ResponseWriter, r *http.R
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetPrincipal(w, r, id)
+		siw.Handler.GetPrincipal(w, r, principalId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2794,17 +2767,17 @@ func (siw *ServerInterfaceWrapper) GetPrincipal(w http.ResponseWriter, r *http.R
 	handler.ServeHTTP(w, r)
 }
 
-// SetAdmin operation middleware
-func (siw *ServerInterfaceWrapper) SetAdmin(w http.ResponseWriter, r *http.Request) {
+// UpdatePrincipalAdmin operation middleware
+func (siw *ServerInterfaceWrapper) UpdatePrincipalAdmin(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 
-	// ------------- Path parameter "id" -------------
-	var id int64
+	// ------------- Path parameter "principalId" -------------
+	var principalId int64
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	err = runtime.BindStyledParameterWithOptions("simple", "principalId", chi.URLParam(r, "principalId"), &principalId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "principalId", Err: err})
 		return
 	}
 
@@ -2817,7 +2790,7 @@ func (siw *ServerInterfaceWrapper) SetAdmin(w http.ResponseWriter, r *http.Reque
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.SetAdmin(w, r, id)
+		siw.Handler.UpdatePrincipalAdmin(w, r, principalId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2929,12 +2902,12 @@ func (siw *ServerInterfaceWrapper) DeleteRowFilter(w http.ResponseWriter, r *htt
 
 	var err error
 
-	// ------------- Path parameter "id" -------------
-	var id int64
+	// ------------- Path parameter "rowFilterId" -------------
+	var rowFilterId int64
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	err = runtime.BindStyledParameterWithOptions("simple", "rowFilterId", chi.URLParam(r, "rowFilterId"), &rowFilterId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "rowFilterId", Err: err})
 		return
 	}
 
@@ -2947,40 +2920,7 @@ func (siw *ServerInterfaceWrapper) DeleteRowFilter(w http.ResponseWriter, r *htt
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.DeleteRowFilter(w, r, id)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// UnbindRowFilter operation middleware
-func (siw *ServerInterfaceWrapper) UnbindRowFilter(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "id" -------------
-	var id int64
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.UnbindRowFilter(w, r, id)
+		siw.Handler.DeleteRowFilter(w, r, rowFilterId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2995,12 +2935,12 @@ func (siw *ServerInterfaceWrapper) BindRowFilter(w http.ResponseWriter, r *http.
 
 	var err error
 
-	// ------------- Path parameter "id" -------------
-	var id int64
+	// ------------- Path parameter "rowFilterId" -------------
+	var rowFilterId int64
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	err = runtime.BindStyledParameterWithOptions("simple", "rowFilterId", chi.URLParam(r, "rowFilterId"), &rowFilterId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "rowFilterId", Err: err})
 		return
 	}
 
@@ -3013,7 +2953,7 @@ func (siw *ServerInterfaceWrapper) BindRowFilter(w http.ResponseWriter, r *http.
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.BindRowFilter(w, r, id)
+		siw.Handler.BindRowFilter(w, r, rowFilterId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3023,60 +2963,17 @@ func (siw *ServerInterfaceWrapper) BindRowFilter(w http.ResponseWriter, r *http.
 	handler.ServeHTTP(w, r)
 }
 
-// ListSchemas operation middleware
-func (siw *ServerInterfaceWrapper) ListSchemas(w http.ResponseWriter, r *http.Request) {
+// UnbindRowFilter operation middleware
+func (siw *ServerInterfaceWrapper) UnbindRowFilter(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 
-	ctx := r.Context()
+	// ------------- Path parameter "rowFilterId" -------------
+	var rowFilterId int64
 
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params ListSchemasParams
-
-	// ------------- Optional query parameter "max_results" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
+	err = runtime.BindStyledParameterWithOptions("simple", "rowFilterId", chi.URLParam(r, "rowFilterId"), &rowFilterId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
-		return
-	}
-
-	// ------------- Optional query parameter "page_token" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListSchemas(w, r, params)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// ListTables operation middleware
-func (siw *ServerInterfaceWrapper) ListTables(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "id" -------------
-	var id int64
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "rowFilterId", Err: err})
 		return
 	}
 
@@ -3088,27 +2985,8 @@ func (siw *ServerInterfaceWrapper) ListTables(w http.ResponseWriter, r *http.Req
 
 	r = r.WithContext(ctx)
 
-	// Parameter object where we will unmarshal all parameters from the context
-	var params ListTablesParams
-
-	// ------------- Optional query parameter "max_results" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
-		return
-	}
-
-	// ------------- Optional query parameter "page_token" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
-		return
-	}
-
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListTables(w, r, id, params)
+		siw.Handler.UnbindRowFilter(w, r, rowFilterId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3348,58 +3226,6 @@ func (siw *ServerInterfaceWrapper) UpdateStorageCredential(w http.ResponseWriter
 	handler.ServeHTTP(w, r)
 }
 
-// ListColumns operation middleware
-func (siw *ServerInterfaceWrapper) ListColumns(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "id" -------------
-	var id int64
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params ListColumnsParams
-
-	// ------------- Optional query parameter "max_results" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
-		return
-	}
-
-	// ------------- Optional query parameter "page_token" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListColumns(w, r, id, params)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
 // ListColumnMasks operation middleware
 func (siw *ServerInterfaceWrapper) ListColumnMasks(w http.ResponseWriter, r *http.Request) {
 
@@ -3570,8 +3396,8 @@ func (siw *ServerInterfaceWrapper) CreateRowFilter(w http.ResponseWriter, r *htt
 	handler.ServeHTTP(w, r)
 }
 
-// UnassignTag operation middleware
-func (siw *ServerInterfaceWrapper) UnassignTag(w http.ResponseWriter, r *http.Request) {
+// DeleteTagAssignment operation middleware
+func (siw *ServerInterfaceWrapper) DeleteTagAssignment(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 
@@ -3593,7 +3419,7 @@ func (siw *ServerInterfaceWrapper) UnassignTag(w http.ResponseWriter, r *http.Re
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.UnassignTag(w, r, assignmentId)
+		siw.Handler.DeleteTagAssignment(w, r, assignmentId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3701,8 +3527,8 @@ func (siw *ServerInterfaceWrapper) DeleteTag(w http.ResponseWriter, r *http.Requ
 	handler.ServeHTTP(w, r)
 }
 
-// AssignTag operation middleware
-func (siw *ServerInterfaceWrapper) AssignTag(w http.ResponseWriter, r *http.Request) {
+// CreateTagAssignment operation middleware
+func (siw *ServerInterfaceWrapper) CreateTagAssignment(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 
@@ -3724,7 +3550,7 @@ func (siw *ServerInterfaceWrapper) AssignTag(w http.ResponseWriter, r *http.Requ
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.AssignTag(w, r, tagId)
+		siw.Handler.CreateTagAssignment(w, r, tagId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3857,7 +3683,7 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Patch(options.BaseURL+"/catalog", wrapper.UpdateCatalog)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/catalog/schemas", wrapper.ListCatalogSchemas)
+		r.Get(options.BaseURL+"/catalog/schemas", wrapper.ListSchemas)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/catalog/schemas", wrapper.CreateSchema)
@@ -3866,40 +3692,49 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Delete(options.BaseURL+"/catalog/schemas/{schemaName}", wrapper.DeleteSchema)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/catalog/schemas/{schemaName}", wrapper.GetSchemaByName)
+		r.Get(options.BaseURL+"/catalog/schemas/{schemaName}", wrapper.GetSchema)
 	})
 	r.Group(func(r chi.Router) {
-		r.Patch(options.BaseURL+"/catalog/schemas/{schemaName}", wrapper.UpdateSchemaMetadata)
+		r.Patch(options.BaseURL+"/catalog/schemas/{schemaName}", wrapper.UpdateSchema)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/catalog/schemas/{schemaName}/tables", wrapper.ListCatalogTables)
+		r.Get(options.BaseURL+"/catalog/schemas/{schemaName}/tables", wrapper.ListTables)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/catalog/schemas/{schemaName}/tables", wrapper.CreateCatalogTable)
+		r.Post(options.BaseURL+"/catalog/schemas/{schemaName}/tables", wrapper.CreateTable)
 	})
 	r.Group(func(r chi.Router) {
-		r.Delete(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}", wrapper.DropTable)
+		r.Delete(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}", wrapper.DeleteTable)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}", wrapper.GetTableByName)
+		r.Get(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}", wrapper.GetTable)
 	})
 	r.Group(func(r chi.Router) {
-		r.Patch(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}", wrapper.UpdateTableMetadata)
+		r.Patch(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}", wrapper.UpdateTable)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}/columns", wrapper.ListTableColumns)
 	})
 	r.Group(func(r chi.Router) {
-		r.Patch(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}/columns/{columnName}", wrapper.UpdateColumnMetadata)
+		r.Patch(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}/columns/{columnName}", wrapper.UpdateColumn)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}/ingestion/commit", wrapper.CommitIngestion)
+		r.Post(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}/ingestion/commit", wrapper.CommitTableIngestion)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}/ingestion/load", wrapper.LoadExternalFiles)
+		r.Post(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}/ingestion/load", wrapper.LoadTableExternalFiles)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url", wrapper.RequestUploadUrl)
+		r.Post(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url", wrapper.CreateUploadUrl)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}/lineage", wrapper.GetTableLineage)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}/lineage/downstream", wrapper.GetDownstreamLineage)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}/lineage/upstream", wrapper.GetUpstreamLineage)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}/profile", wrapper.ProfileTable)
@@ -3911,7 +3746,7 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/catalog/schemas/{schemaName}/views", wrapper.CreateView)
 	})
 	r.Group(func(r chi.Router) {
-		r.Delete(options.BaseURL+"/catalog/schemas/{schemaName}/views/{viewName}", wrapper.DropView)
+		r.Delete(options.BaseURL+"/catalog/schemas/{schemaName}/views/{viewName}", wrapper.DeleteView)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/catalog/schemas/{schemaName}/views/{viewName}", wrapper.GetView)
@@ -3923,13 +3758,13 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/classifications", wrapper.ListClassifications)
 	})
 	r.Group(func(r chi.Router) {
-		r.Delete(options.BaseURL+"/column-masks/{id}", wrapper.DeleteColumnMask)
+		r.Delete(options.BaseURL+"/column-masks/{columnMaskId}", wrapper.DeleteColumnMask)
 	})
 	r.Group(func(r chi.Router) {
-		r.Delete(options.BaseURL+"/column-masks/{id}/bindings", wrapper.UnbindColumnMask)
+		r.Post(options.BaseURL+"/column-masks/{columnMaskId}/bind", wrapper.BindColumnMask)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/column-masks/{id}/bindings", wrapper.BindColumnMask)
+		r.Post(options.BaseURL+"/column-masks/{columnMaskId}/unbind", wrapper.UnbindColumnMask)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/external-locations", wrapper.ListExternalLocations)
@@ -3947,13 +3782,13 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Patch(options.BaseURL+"/external-locations/{locationName}", wrapper.UpdateExternalLocation)
 	})
 	r.Group(func(r chi.Router) {
-		r.Delete(options.BaseURL+"/grants", wrapper.RevokePrivilege)
-	})
-	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/grants", wrapper.ListGrants)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/grants", wrapper.GrantPrivilege)
+		r.Post(options.BaseURL+"/grants", wrapper.CreateGrant)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/grants/revoke", wrapper.DeleteGrant)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/groups", wrapper.ListGroups)
@@ -3962,19 +3797,19 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/groups", wrapper.CreateGroup)
 	})
 	r.Group(func(r chi.Router) {
-		r.Delete(options.BaseURL+"/groups/{id}", wrapper.DeleteGroup)
+		r.Delete(options.BaseURL+"/groups/{groupId}", wrapper.DeleteGroup)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/groups/{id}", wrapper.GetGroup)
+		r.Get(options.BaseURL+"/groups/{groupId}", wrapper.GetGroup)
 	})
 	r.Group(func(r chi.Router) {
-		r.Delete(options.BaseURL+"/groups/{id}/members", wrapper.RemoveGroupMember)
+		r.Get(options.BaseURL+"/groups/{groupId}/members", wrapper.ListGroupMembers)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/groups/{id}/members", wrapper.ListGroupMembers)
+		r.Post(options.BaseURL+"/groups/{groupId}/members", wrapper.CreateGroupMember)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/groups/{id}/members", wrapper.AddGroupMember)
+		r.Post(options.BaseURL+"/groups/{groupId}/members/remove", wrapper.DeleteGroupMember)
 	})
 	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/lineage/edges/{edgeId}", wrapper.DeleteLineageEdge)
@@ -3983,16 +3818,7 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/lineage/purge", wrapper.PurgeLineage)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/lineage/tables/{schemaName}/{tableName}", wrapper.GetTableLineage)
-	})
-	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/lineage/tables/{schemaName}/{tableName}/downstream", wrapper.GetDownstreamLineage)
-	})
-	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/lineage/tables/{schemaName}/{tableName}/upstream", wrapper.GetUpstreamLineage)
-	})
-	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/manifest", wrapper.GetManifest)
+		r.Post(options.BaseURL+"/manifest", wrapper.CreateManifest)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/metastore/summary", wrapper.GetMetastoreSummary)
@@ -4004,13 +3830,13 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/principals", wrapper.CreatePrincipal)
 	})
 	r.Group(func(r chi.Router) {
-		r.Delete(options.BaseURL+"/principals/{id}", wrapper.DeletePrincipal)
+		r.Delete(options.BaseURL+"/principals/{principalId}", wrapper.DeletePrincipal)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/principals/{id}", wrapper.GetPrincipal)
+		r.Get(options.BaseURL+"/principals/{principalId}", wrapper.GetPrincipal)
 	})
 	r.Group(func(r chi.Router) {
-		r.Put(options.BaseURL+"/principals/{id}/admin", wrapper.SetAdmin)
+		r.Put(options.BaseURL+"/principals/{principalId}/admin", wrapper.UpdatePrincipalAdmin)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/query", wrapper.ExecuteQuery)
@@ -4019,19 +3845,13 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/query-history", wrapper.ListQueryHistory)
 	})
 	r.Group(func(r chi.Router) {
-		r.Delete(options.BaseURL+"/row-filters/{id}", wrapper.DeleteRowFilter)
+		r.Delete(options.BaseURL+"/row-filters/{rowFilterId}", wrapper.DeleteRowFilter)
 	})
 	r.Group(func(r chi.Router) {
-		r.Delete(options.BaseURL+"/row-filters/{id}/bindings", wrapper.UnbindRowFilter)
+		r.Post(options.BaseURL+"/row-filters/{rowFilterId}/bind", wrapper.BindRowFilter)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/row-filters/{id}/bindings", wrapper.BindRowFilter)
-	})
-	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/schemas", wrapper.ListSchemas)
-	})
-	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/schemas/{id}/tables", wrapper.ListTables)
+		r.Post(options.BaseURL+"/row-filters/{rowFilterId}/unbind", wrapper.UnbindRowFilter)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/search", wrapper.SearchCatalog)
@@ -4052,9 +3872,6 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Patch(options.BaseURL+"/storage-credentials/{credentialName}", wrapper.UpdateStorageCredential)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/tables/{id}/columns", wrapper.ListColumns)
-	})
-	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/tables/{tableId}/column-masks", wrapper.ListColumnMasks)
 	})
 	r.Group(func(r chi.Router) {
@@ -4067,7 +3884,7 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/tables/{tableId}/row-filters", wrapper.CreateRowFilter)
 	})
 	r.Group(func(r chi.Router) {
-		r.Delete(options.BaseURL+"/tag-assignments/{assignmentId}", wrapper.UnassignTag)
+		r.Delete(options.BaseURL+"/tag-assignments/{assignmentId}", wrapper.DeleteTagAssignment)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/tags", wrapper.ListTags)
@@ -4079,7 +3896,7 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Delete(options.BaseURL+"/tags/{tagId}", wrapper.DeleteTag)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/tags/{tagId}/assignments", wrapper.AssignTag)
+		r.Post(options.BaseURL+"/tags/{tagId}/assignments", wrapper.CreateTagAssignment)
 	})
 
 	return r
@@ -4144,17 +3961,17 @@ func (response UpdateCatalog403JSONResponse) VisitUpdateCatalogResponse(w http.R
 	return json.NewEncoder(w).Encode(response)
 }
 
-type ListCatalogSchemasRequestObject struct {
-	Params ListCatalogSchemasParams
+type ListSchemasRequestObject struct {
+	Params ListSchemasParams
 }
 
-type ListCatalogSchemasResponseObject interface {
-	VisitListCatalogSchemasResponse(w http.ResponseWriter) error
+type ListSchemasResponseObject interface {
+	VisitListSchemasResponse(w http.ResponseWriter) error
 }
 
-type ListCatalogSchemas200JSONResponse PaginatedSchemaDetails
+type ListSchemas200JSONResponse PaginatedSchemaDetails
 
-func (response ListCatalogSchemas200JSONResponse) VisitListCatalogSchemasResponse(w http.ResponseWriter) error {
+func (response ListSchemas200JSONResponse) VisitListSchemasResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 
@@ -4240,233 +4057,242 @@ func (response DeleteSchema404JSONResponse) VisitDeleteSchemaResponse(w http.Res
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetSchemaByNameRequestObject struct {
-	SchemaName string `json:"schemaName"`
-}
+type DeleteSchema409JSONResponse Error
 
-type GetSchemaByNameResponseObject interface {
-	VisitGetSchemaByNameResponse(w http.ResponseWriter) error
-}
-
-type GetSchemaByName200JSONResponse SchemaDetail
-
-func (response GetSchemaByName200JSONResponse) VisitGetSchemaByNameResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GetSchemaByName404JSONResponse Error
-
-func (response GetSchemaByName404JSONResponse) VisitGetSchemaByNameResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type UpdateSchemaMetadataRequestObject struct {
-	SchemaName string `json:"schemaName"`
-	Body       *UpdateSchemaMetadataJSONRequestBody
-}
-
-type UpdateSchemaMetadataResponseObject interface {
-	VisitUpdateSchemaMetadataResponse(w http.ResponseWriter) error
-}
-
-type UpdateSchemaMetadata200JSONResponse SchemaDetail
-
-func (response UpdateSchemaMetadata200JSONResponse) VisitUpdateSchemaMetadataResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type UpdateSchemaMetadata403JSONResponse Error
-
-func (response UpdateSchemaMetadata403JSONResponse) VisitUpdateSchemaMetadataResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(403)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type UpdateSchemaMetadata404JSONResponse Error
-
-func (response UpdateSchemaMetadata404JSONResponse) VisitUpdateSchemaMetadataResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type ListCatalogTablesRequestObject struct {
-	SchemaName string `json:"schemaName"`
-	Params     ListCatalogTablesParams
-}
-
-type ListCatalogTablesResponseObject interface {
-	VisitListCatalogTablesResponse(w http.ResponseWriter) error
-}
-
-type ListCatalogTables200JSONResponse PaginatedTableDetails
-
-func (response ListCatalogTables200JSONResponse) VisitListCatalogTablesResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type ListCatalogTables404JSONResponse Error
-
-func (response ListCatalogTables404JSONResponse) VisitListCatalogTablesResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type CreateCatalogTableRequestObject struct {
-	SchemaName string `json:"schemaName"`
-	Body       *CreateCatalogTableJSONRequestBody
-}
-
-type CreateCatalogTableResponseObject interface {
-	VisitCreateCatalogTableResponse(w http.ResponseWriter) error
-}
-
-type CreateCatalogTable201JSONResponse TableDetail
-
-func (response CreateCatalogTable201JSONResponse) VisitCreateCatalogTableResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(201)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type CreateCatalogTable400JSONResponse Error
-
-func (response CreateCatalogTable400JSONResponse) VisitCreateCatalogTableResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type CreateCatalogTable403JSONResponse Error
-
-func (response CreateCatalogTable403JSONResponse) VisitCreateCatalogTableResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(403)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type CreateCatalogTable409JSONResponse Error
-
-func (response CreateCatalogTable409JSONResponse) VisitCreateCatalogTableResponse(w http.ResponseWriter) error {
+func (response DeleteSchema409JSONResponse) VisitDeleteSchemaResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(409)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type DropTableRequestObject struct {
+type GetSchemaRequestObject struct {
+	SchemaName string `json:"schemaName"`
+}
+
+type GetSchemaResponseObject interface {
+	VisitGetSchemaResponse(w http.ResponseWriter) error
+}
+
+type GetSchema200JSONResponse SchemaDetail
+
+func (response GetSchema200JSONResponse) VisitGetSchemaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSchema404JSONResponse Error
+
+func (response GetSchema404JSONResponse) VisitGetSchemaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateSchemaRequestObject struct {
+	SchemaName string `json:"schemaName"`
+	Body       *UpdateSchemaJSONRequestBody
+}
+
+type UpdateSchemaResponseObject interface {
+	VisitUpdateSchemaResponse(w http.ResponseWriter) error
+}
+
+type UpdateSchema200JSONResponse SchemaDetail
+
+func (response UpdateSchema200JSONResponse) VisitUpdateSchemaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateSchema403JSONResponse Error
+
+func (response UpdateSchema403JSONResponse) VisitUpdateSchemaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateSchema404JSONResponse Error
+
+func (response UpdateSchema404JSONResponse) VisitUpdateSchemaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListTablesRequestObject struct {
+	SchemaName string `json:"schemaName"`
+	Params     ListTablesParams
+}
+
+type ListTablesResponseObject interface {
+	VisitListTablesResponse(w http.ResponseWriter) error
+}
+
+type ListTables200JSONResponse PaginatedTableDetails
+
+func (response ListTables200JSONResponse) VisitListTablesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListTables404JSONResponse Error
+
+func (response ListTables404JSONResponse) VisitListTablesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateTableRequestObject struct {
+	SchemaName string `json:"schemaName"`
+	Body       *CreateTableJSONRequestBody
+}
+
+type CreateTableResponseObject interface {
+	VisitCreateTableResponse(w http.ResponseWriter) error
+}
+
+type CreateTable201JSONResponse TableDetail
+
+func (response CreateTable201JSONResponse) VisitCreateTableResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateTable400JSONResponse Error
+
+func (response CreateTable400JSONResponse) VisitCreateTableResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateTable403JSONResponse Error
+
+func (response CreateTable403JSONResponse) VisitCreateTableResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateTable409JSONResponse Error
+
+func (response CreateTable409JSONResponse) VisitCreateTableResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteTableRequestObject struct {
 	SchemaName string `json:"schemaName"`
 	TableName  string `json:"tableName"`
 }
 
-type DropTableResponseObject interface {
-	VisitDropTableResponse(w http.ResponseWriter) error
+type DeleteTableResponseObject interface {
+	VisitDeleteTableResponse(w http.ResponseWriter) error
 }
 
-type DropTable204Response struct {
+type DeleteTable204Response struct {
 }
 
-func (response DropTable204Response) VisitDropTableResponse(w http.ResponseWriter) error {
+func (response DeleteTable204Response) VisitDeleteTableResponse(w http.ResponseWriter) error {
 	w.WriteHeader(204)
 	return nil
 }
 
-type DropTable403JSONResponse Error
+type DeleteTable403JSONResponse Error
 
-func (response DropTable403JSONResponse) VisitDropTableResponse(w http.ResponseWriter) error {
+func (response DeleteTable403JSONResponse) VisitDeleteTableResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type DropTable404JSONResponse Error
+type DeleteTable404JSONResponse Error
 
-func (response DropTable404JSONResponse) VisitDropTableResponse(w http.ResponseWriter) error {
+func (response DeleteTable404JSONResponse) VisitDeleteTableResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetTableByNameRequestObject struct {
+type GetTableRequestObject struct {
 	SchemaName string `json:"schemaName"`
 	TableName  string `json:"tableName"`
 }
 
-type GetTableByNameResponseObject interface {
-	VisitGetTableByNameResponse(w http.ResponseWriter) error
+type GetTableResponseObject interface {
+	VisitGetTableResponse(w http.ResponseWriter) error
 }
 
-type GetTableByName200JSONResponse TableDetail
+type GetTable200JSONResponse TableDetail
 
-func (response GetTableByName200JSONResponse) VisitGetTableByNameResponse(w http.ResponseWriter) error {
+func (response GetTable200JSONResponse) VisitGetTableResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetTableByName404JSONResponse Error
+type GetTable404JSONResponse Error
 
-func (response GetTableByName404JSONResponse) VisitGetTableByNameResponse(w http.ResponseWriter) error {
+func (response GetTable404JSONResponse) VisitGetTableResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type UpdateTableMetadataRequestObject struct {
+type UpdateTableRequestObject struct {
 	SchemaName string `json:"schemaName"`
 	TableName  string `json:"tableName"`
-	Body       *UpdateTableMetadataJSONRequestBody
+	Body       *UpdateTableJSONRequestBody
 }
 
-type UpdateTableMetadataResponseObject interface {
-	VisitUpdateTableMetadataResponse(w http.ResponseWriter) error
+type UpdateTableResponseObject interface {
+	VisitUpdateTableResponse(w http.ResponseWriter) error
 }
 
-type UpdateTableMetadata200JSONResponse TableDetail
+type UpdateTable200JSONResponse TableDetail
 
-func (response UpdateTableMetadata200JSONResponse) VisitUpdateTableMetadataResponse(w http.ResponseWriter) error {
+func (response UpdateTable200JSONResponse) VisitUpdateTableResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type UpdateTableMetadata403JSONResponse Error
+type UpdateTable403JSONResponse Error
 
-func (response UpdateTableMetadata403JSONResponse) VisitUpdateTableMetadataResponse(w http.ResponseWriter) error {
+func (response UpdateTable403JSONResponse) VisitUpdateTableResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type UpdateTableMetadata404JSONResponse Error
+type UpdateTable404JSONResponse Error
 
-func (response UpdateTableMetadata404JSONResponse) VisitUpdateTableMetadataResponse(w http.ResponseWriter) error {
+func (response UpdateTable404JSONResponse) VisitUpdateTableResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
 
@@ -4501,178 +4327,235 @@ func (response ListTableColumns404JSONResponse) VisitListTableColumnsResponse(w 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type UpdateColumnMetadataRequestObject struct {
+type UpdateColumnRequestObject struct {
 	SchemaName string `json:"schemaName"`
 	TableName  string `json:"tableName"`
 	ColumnName string `json:"columnName"`
-	Body       *UpdateColumnMetadataJSONRequestBody
+	Body       *UpdateColumnJSONRequestBody
 }
 
-type UpdateColumnMetadataResponseObject interface {
-	VisitUpdateColumnMetadataResponse(w http.ResponseWriter) error
+type UpdateColumnResponseObject interface {
+	VisitUpdateColumnResponse(w http.ResponseWriter) error
 }
 
-type UpdateColumnMetadata200JSONResponse ColumnDetail
+type UpdateColumn200JSONResponse ColumnDetail
 
-func (response UpdateColumnMetadata200JSONResponse) VisitUpdateColumnMetadataResponse(w http.ResponseWriter) error {
+func (response UpdateColumn200JSONResponse) VisitUpdateColumnResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type UpdateColumnMetadata403JSONResponse Error
+type UpdateColumn403JSONResponse Error
 
-func (response UpdateColumnMetadata403JSONResponse) VisitUpdateColumnMetadataResponse(w http.ResponseWriter) error {
+func (response UpdateColumn403JSONResponse) VisitUpdateColumnResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type UpdateColumnMetadata404JSONResponse Error
+type UpdateColumn404JSONResponse Error
 
-func (response UpdateColumnMetadata404JSONResponse) VisitUpdateColumnMetadataResponse(w http.ResponseWriter) error {
+func (response UpdateColumn404JSONResponse) VisitUpdateColumnResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type CommitIngestionRequestObject struct {
+type CommitTableIngestionRequestObject struct {
 	SchemaName string `json:"schemaName"`
 	TableName  string `json:"tableName"`
-	Body       *CommitIngestionJSONRequestBody
+	Body       *CommitTableIngestionJSONRequestBody
 }
 
-type CommitIngestionResponseObject interface {
-	VisitCommitIngestionResponse(w http.ResponseWriter) error
+type CommitTableIngestionResponseObject interface {
+	VisitCommitTableIngestionResponse(w http.ResponseWriter) error
 }
 
-type CommitIngestion200JSONResponse IngestionResult
+type CommitTableIngestion200JSONResponse IngestionResult
 
-func (response CommitIngestion200JSONResponse) VisitCommitIngestionResponse(w http.ResponseWriter) error {
+func (response CommitTableIngestion200JSONResponse) VisitCommitTableIngestionResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type CommitIngestion400JSONResponse Error
+type CommitTableIngestion400JSONResponse Error
 
-func (response CommitIngestion400JSONResponse) VisitCommitIngestionResponse(w http.ResponseWriter) error {
+func (response CommitTableIngestion400JSONResponse) VisitCommitTableIngestionResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(400)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type CommitIngestion403JSONResponse Error
+type CommitTableIngestion403JSONResponse Error
 
-func (response CommitIngestion403JSONResponse) VisitCommitIngestionResponse(w http.ResponseWriter) error {
+func (response CommitTableIngestion403JSONResponse) VisitCommitTableIngestionResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type CommitIngestion404JSONResponse Error
+type CommitTableIngestion404JSONResponse Error
 
-func (response CommitIngestion404JSONResponse) VisitCommitIngestionResponse(w http.ResponseWriter) error {
+func (response CommitTableIngestion404JSONResponse) VisitCommitTableIngestionResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type LoadExternalFilesRequestObject struct {
+type LoadTableExternalFilesRequestObject struct {
 	SchemaName string `json:"schemaName"`
 	TableName  string `json:"tableName"`
-	Body       *LoadExternalFilesJSONRequestBody
+	Body       *LoadTableExternalFilesJSONRequestBody
 }
 
-type LoadExternalFilesResponseObject interface {
-	VisitLoadExternalFilesResponse(w http.ResponseWriter) error
+type LoadTableExternalFilesResponseObject interface {
+	VisitLoadTableExternalFilesResponse(w http.ResponseWriter) error
 }
 
-type LoadExternalFiles200JSONResponse IngestionResult
+type LoadTableExternalFiles200JSONResponse IngestionResult
 
-func (response LoadExternalFiles200JSONResponse) VisitLoadExternalFilesResponse(w http.ResponseWriter) error {
+func (response LoadTableExternalFiles200JSONResponse) VisitLoadTableExternalFilesResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type LoadExternalFiles400JSONResponse Error
+type LoadTableExternalFiles400JSONResponse Error
 
-func (response LoadExternalFiles400JSONResponse) VisitLoadExternalFilesResponse(w http.ResponseWriter) error {
+func (response LoadTableExternalFiles400JSONResponse) VisitLoadTableExternalFilesResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(400)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type LoadExternalFiles403JSONResponse Error
+type LoadTableExternalFiles403JSONResponse Error
 
-func (response LoadExternalFiles403JSONResponse) VisitLoadExternalFilesResponse(w http.ResponseWriter) error {
+func (response LoadTableExternalFiles403JSONResponse) VisitLoadTableExternalFilesResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type LoadExternalFiles404JSONResponse Error
+type LoadTableExternalFiles404JSONResponse Error
 
-func (response LoadExternalFiles404JSONResponse) VisitLoadExternalFilesResponse(w http.ResponseWriter) error {
+func (response LoadTableExternalFiles404JSONResponse) VisitLoadTableExternalFilesResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type RequestUploadUrlRequestObject struct {
+type CreateUploadUrlRequestObject struct {
 	SchemaName string `json:"schemaName"`
 	TableName  string `json:"tableName"`
-	Body       *RequestUploadUrlJSONRequestBody
+	Body       *CreateUploadUrlJSONRequestBody
 }
 
-type RequestUploadUrlResponseObject interface {
-	VisitRequestUploadUrlResponse(w http.ResponseWriter) error
+type CreateUploadUrlResponseObject interface {
+	VisitCreateUploadUrlResponse(w http.ResponseWriter) error
 }
 
-type RequestUploadUrl200JSONResponse UploadUrlResponse
+type CreateUploadUrl200JSONResponse UploadUrlResponse
 
-func (response RequestUploadUrl200JSONResponse) VisitRequestUploadUrlResponse(w http.ResponseWriter) error {
+func (response CreateUploadUrl200JSONResponse) VisitCreateUploadUrlResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type RequestUploadUrl400JSONResponse Error
+type CreateUploadUrl400JSONResponse Error
 
-func (response RequestUploadUrl400JSONResponse) VisitRequestUploadUrlResponse(w http.ResponseWriter) error {
+func (response CreateUploadUrl400JSONResponse) VisitCreateUploadUrlResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(400)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type RequestUploadUrl403JSONResponse Error
+type CreateUploadUrl403JSONResponse Error
 
-func (response RequestUploadUrl403JSONResponse) VisitRequestUploadUrlResponse(w http.ResponseWriter) error {
+func (response CreateUploadUrl403JSONResponse) VisitCreateUploadUrlResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type RequestUploadUrl404JSONResponse Error
+type CreateUploadUrl404JSONResponse Error
 
-func (response RequestUploadUrl404JSONResponse) VisitRequestUploadUrlResponse(w http.ResponseWriter) error {
+func (response CreateUploadUrl404JSONResponse) VisitCreateUploadUrlResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetTableLineageRequestObject struct {
+	SchemaName string `json:"schemaName"`
+	TableName  string `json:"tableName"`
+	Params     GetTableLineageParams
+}
+
+type GetTableLineageResponseObject interface {
+	VisitGetTableLineageResponse(w http.ResponseWriter) error
+}
+
+type GetTableLineage200JSONResponse LineageNode
+
+func (response GetTableLineage200JSONResponse) VisitGetTableLineageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetDownstreamLineageRequestObject struct {
+	SchemaName string `json:"schemaName"`
+	TableName  string `json:"tableName"`
+	Params     GetDownstreamLineageParams
+}
+
+type GetDownstreamLineageResponseObject interface {
+	VisitGetDownstreamLineageResponse(w http.ResponseWriter) error
+}
+
+type GetDownstreamLineage200JSONResponse PaginatedLineageEdges
+
+func (response GetDownstreamLineage200JSONResponse) VisitGetDownstreamLineageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetUpstreamLineageRequestObject struct {
+	SchemaName string `json:"schemaName"`
+	TableName  string `json:"tableName"`
+	Params     GetUpstreamLineageParams
+}
+
+type GetUpstreamLineageResponseObject interface {
+	VisitGetUpstreamLineageResponse(w http.ResponseWriter) error
+}
+
+type GetUpstreamLineage200JSONResponse PaginatedLineageEdges
+
+func (response GetUpstreamLineage200JSONResponse) VisitGetUpstreamLineageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -4785,35 +4668,35 @@ func (response CreateView409JSONResponse) VisitCreateViewResponse(w http.Respons
 	return json.NewEncoder(w).Encode(response)
 }
 
-type DropViewRequestObject struct {
+type DeleteViewRequestObject struct {
 	SchemaName string `json:"schemaName"`
 	ViewName   string `json:"viewName"`
 }
 
-type DropViewResponseObject interface {
-	VisitDropViewResponse(w http.ResponseWriter) error
+type DeleteViewResponseObject interface {
+	VisitDeleteViewResponse(w http.ResponseWriter) error
 }
 
-type DropView204Response struct {
+type DeleteView204Response struct {
 }
 
-func (response DropView204Response) VisitDropViewResponse(w http.ResponseWriter) error {
+func (response DeleteView204Response) VisitDeleteViewResponse(w http.ResponseWriter) error {
 	w.WriteHeader(204)
 	return nil
 }
 
-type DropView403JSONResponse Error
+type DeleteView403JSONResponse Error
 
-func (response DropView403JSONResponse) VisitDropViewResponse(w http.ResponseWriter) error {
+func (response DeleteView403JSONResponse) VisitDeleteViewResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type DropView404JSONResponse Error
+type DeleteView404JSONResponse Error
 
-func (response DropView404JSONResponse) VisitDropViewResponse(w http.ResponseWriter) error {
+func (response DeleteView404JSONResponse) VisitDeleteViewResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
 
@@ -4901,7 +4784,7 @@ func (response ListClassifications200JSONResponse) VisitListClassificationsRespo
 }
 
 type DeleteColumnMaskRequestObject struct {
-	Id int64 `json:"id"`
+	ColumnMaskId int64 `json:"columnMaskId"`
 }
 
 type DeleteColumnMaskResponseObject interface {
@@ -4916,9 +4799,53 @@ func (response DeleteColumnMask204Response) VisitDeleteColumnMaskResponse(w http
 	return nil
 }
 
+type DeleteColumnMask404JSONResponse Error
+
+func (response DeleteColumnMask404JSONResponse) VisitDeleteColumnMaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type BindColumnMaskRequestObject struct {
+	ColumnMaskId int64 `json:"columnMaskId"`
+	Body         *BindColumnMaskJSONRequestBody
+}
+
+type BindColumnMaskResponseObject interface {
+	VisitBindColumnMaskResponse(w http.ResponseWriter) error
+}
+
+type BindColumnMask204Response struct {
+}
+
+func (response BindColumnMask204Response) VisitBindColumnMaskResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type BindColumnMask400JSONResponse Error
+
+func (response BindColumnMask400JSONResponse) VisitBindColumnMaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type BindColumnMask404JSONResponse Error
+
+func (response BindColumnMask404JSONResponse) VisitBindColumnMaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type UnbindColumnMaskRequestObject struct {
-	Id   int64 `json:"id"`
-	Body *UnbindColumnMaskJSONRequestBody
+	ColumnMaskId int64 `json:"columnMaskId"`
+	Body         *UnbindColumnMaskJSONRequestBody
 }
 
 type UnbindColumnMaskResponseObject interface {
@@ -4933,21 +4860,22 @@ func (response UnbindColumnMask204Response) VisitUnbindColumnMaskResponse(w http
 	return nil
 }
 
-type BindColumnMaskRequestObject struct {
-	Id   int64 `json:"id"`
-	Body *BindColumnMaskJSONRequestBody
+type UnbindColumnMask400JSONResponse Error
+
+func (response UnbindColumnMask400JSONResponse) VisitUnbindColumnMaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-type BindColumnMaskResponseObject interface {
-	VisitBindColumnMaskResponse(w http.ResponseWriter) error
-}
+type UnbindColumnMask404JSONResponse Error
 
-type BindColumnMask204Response struct {
-}
+func (response UnbindColumnMask404JSONResponse) VisitUnbindColumnMaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
 
-func (response BindColumnMask204Response) VisitBindColumnMaskResponse(w http.ResponseWriter) error {
-	w.WriteHeader(204)
-	return nil
+	return json.NewEncoder(w).Encode(response)
 }
 
 type ListExternalLocationsRequestObject struct {
@@ -5107,22 +5035,6 @@ func (response UpdateExternalLocation404JSONResponse) VisitUpdateExternalLocatio
 	return json.NewEncoder(w).Encode(response)
 }
 
-type RevokePrivilegeRequestObject struct {
-	Body *RevokePrivilegeJSONRequestBody
-}
-
-type RevokePrivilegeResponseObject interface {
-	VisitRevokePrivilegeResponse(w http.ResponseWriter) error
-}
-
-type RevokePrivilege204Response struct {
-}
-
-func (response RevokePrivilege204Response) VisitRevokePrivilegeResponse(w http.ResponseWriter) error {
-	w.WriteHeader(204)
-	return nil
-}
-
 type ListGrantsRequestObject struct {
 	Params ListGrantsParams
 }
@@ -5140,19 +5052,80 @@ func (response ListGrants200JSONResponse) VisitListGrantsResponse(w http.Respons
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GrantPrivilegeRequestObject struct {
-	Body *GrantPrivilegeJSONRequestBody
+type CreateGrantRequestObject struct {
+	Body *CreateGrantJSONRequestBody
 }
 
-type GrantPrivilegeResponseObject interface {
-	VisitGrantPrivilegeResponse(w http.ResponseWriter) error
+type CreateGrantResponseObject interface {
+	VisitCreateGrantResponse(w http.ResponseWriter) error
 }
 
-type GrantPrivilege201JSONResponse PrivilegeGrant
+type CreateGrant201JSONResponse PrivilegeGrant
 
-func (response GrantPrivilege201JSONResponse) VisitGrantPrivilegeResponse(w http.ResponseWriter) error {
+func (response CreateGrant201JSONResponse) VisitCreateGrantResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateGrant400JSONResponse Error
+
+func (response CreateGrant400JSONResponse) VisitCreateGrantResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateGrant403JSONResponse Error
+
+func (response CreateGrant403JSONResponse) VisitCreateGrantResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateGrant409JSONResponse Error
+
+func (response CreateGrant409JSONResponse) VisitCreateGrantResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteGrantRequestObject struct {
+	Body *DeleteGrantJSONRequestBody
+}
+
+type DeleteGrantResponseObject interface {
+	VisitDeleteGrantResponse(w http.ResponseWriter) error
+}
+
+type DeleteGrant204Response struct {
+}
+
+func (response DeleteGrant204Response) VisitDeleteGrantResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteGrant400JSONResponse Error
+
+func (response DeleteGrant400JSONResponse) VisitDeleteGrantResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteGrant404JSONResponse Error
+
+func (response DeleteGrant404JSONResponse) VisitDeleteGrantResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -5191,8 +5164,26 @@ func (response CreateGroup201JSONResponse) VisitCreateGroupResponse(w http.Respo
 	return json.NewEncoder(w).Encode(response)
 }
 
+type CreateGroup400JSONResponse Error
+
+func (response CreateGroup400JSONResponse) VisitCreateGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateGroup409JSONResponse Error
+
+func (response CreateGroup409JSONResponse) VisitCreateGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type DeleteGroupRequestObject struct {
-	Id int64 `json:"id"`
+	GroupId int64 `json:"groupId"`
 }
 
 type DeleteGroupResponseObject interface {
@@ -5207,8 +5198,17 @@ func (response DeleteGroup204Response) VisitDeleteGroupResponse(w http.ResponseW
 	return nil
 }
 
+type DeleteGroup404JSONResponse Error
+
+func (response DeleteGroup404JSONResponse) VisitDeleteGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetGroupRequestObject struct {
-	Id int64 `json:"id"`
+	GroupId int64 `json:"groupId"`
 }
 
 type GetGroupResponseObject interface {
@@ -5233,26 +5233,9 @@ func (response GetGroup404JSONResponse) VisitGetGroupResponse(w http.ResponseWri
 	return json.NewEncoder(w).Encode(response)
 }
 
-type RemoveGroupMemberRequestObject struct {
-	Id   int64 `json:"id"`
-	Body *RemoveGroupMemberJSONRequestBody
-}
-
-type RemoveGroupMemberResponseObject interface {
-	VisitRemoveGroupMemberResponse(w http.ResponseWriter) error
-}
-
-type RemoveGroupMember204Response struct {
-}
-
-func (response RemoveGroupMember204Response) VisitRemoveGroupMemberResponse(w http.ResponseWriter) error {
-	w.WriteHeader(204)
-	return nil
-}
-
 type ListGroupMembersRequestObject struct {
-	Id     int64 `json:"id"`
-	Params ListGroupMembersParams
+	GroupId int64 `json:"groupId"`
+	Params  ListGroupMembersParams
 }
 
 type ListGroupMembersResponseObject interface {
@@ -5268,21 +5251,83 @@ func (response ListGroupMembers200JSONResponse) VisitListGroupMembersResponse(w 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type AddGroupMemberRequestObject struct {
-	Id   int64 `json:"id"`
-	Body *AddGroupMemberJSONRequestBody
+type ListGroupMembers404JSONResponse Error
+
+func (response ListGroupMembers404JSONResponse) VisitListGroupMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-type AddGroupMemberResponseObject interface {
-	VisitAddGroupMemberResponse(w http.ResponseWriter) error
+type CreateGroupMemberRequestObject struct {
+	GroupId int64 `json:"groupId"`
+	Body    *CreateGroupMemberJSONRequestBody
 }
 
-type AddGroupMember204Response struct {
+type CreateGroupMemberResponseObject interface {
+	VisitCreateGroupMemberResponse(w http.ResponseWriter) error
 }
 
-func (response AddGroupMember204Response) VisitAddGroupMemberResponse(w http.ResponseWriter) error {
+type CreateGroupMember204Response struct {
+}
+
+func (response CreateGroupMember204Response) VisitCreateGroupMemberResponse(w http.ResponseWriter) error {
 	w.WriteHeader(204)
 	return nil
+}
+
+type CreateGroupMember400JSONResponse Error
+
+func (response CreateGroupMember400JSONResponse) VisitCreateGroupMemberResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateGroupMember404JSONResponse Error
+
+func (response CreateGroupMember404JSONResponse) VisitCreateGroupMemberResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteGroupMemberRequestObject struct {
+	GroupId int64 `json:"groupId"`
+	Body    *DeleteGroupMemberJSONRequestBody
+}
+
+type DeleteGroupMemberResponseObject interface {
+	VisitDeleteGroupMemberResponse(w http.ResponseWriter) error
+}
+
+type DeleteGroupMember204Response struct {
+}
+
+func (response DeleteGroupMember204Response) VisitDeleteGroupMemberResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteGroupMember400JSONResponse Error
+
+func (response DeleteGroupMember400JSONResponse) VisitDeleteGroupMemberResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteGroupMember404JSONResponse Error
+
+func (response DeleteGroupMember404JSONResponse) VisitDeleteGroupMemberResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type DeleteLineageEdgeRequestObject struct {
@@ -5336,101 +5381,53 @@ func (response PurgeLineage403JSONResponse) VisitPurgeLineageResponse(w http.Res
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetTableLineageRequestObject struct {
-	SchemaName string `json:"schemaName"`
-	TableName  string `json:"tableName"`
-	Params     GetTableLineageParams
+type CreateManifestRequestObject struct {
+	Body *CreateManifestJSONRequestBody
 }
 
-type GetTableLineageResponseObject interface {
-	VisitGetTableLineageResponse(w http.ResponseWriter) error
+type CreateManifestResponseObject interface {
+	VisitCreateManifestResponse(w http.ResponseWriter) error
 }
 
-type GetTableLineage200JSONResponse LineageNode
+type CreateManifest200JSONResponse ManifestResponse
 
-func (response GetTableLineage200JSONResponse) VisitGetTableLineageResponse(w http.ResponseWriter) error {
+func (response CreateManifest200JSONResponse) VisitCreateManifestResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetDownstreamLineageRequestObject struct {
-	SchemaName string `json:"schemaName"`
-	TableName  string `json:"tableName"`
-	Params     GetDownstreamLineageParams
-}
+type CreateManifest400JSONResponse Error
 
-type GetDownstreamLineageResponseObject interface {
-	VisitGetDownstreamLineageResponse(w http.ResponseWriter) error
-}
-
-type GetDownstreamLineage200JSONResponse PaginatedLineageEdges
-
-func (response GetDownstreamLineage200JSONResponse) VisitGetDownstreamLineageResponse(w http.ResponseWriter) error {
+func (response CreateManifest400JSONResponse) VisitCreateManifestResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
+	w.WriteHeader(400)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetUpstreamLineageRequestObject struct {
-	SchemaName string `json:"schemaName"`
-	TableName  string `json:"tableName"`
-	Params     GetUpstreamLineageParams
-}
+type CreateManifest401JSONResponse Error
 
-type GetUpstreamLineageResponseObject interface {
-	VisitGetUpstreamLineageResponse(w http.ResponseWriter) error
-}
-
-type GetUpstreamLineage200JSONResponse PaginatedLineageEdges
-
-func (response GetUpstreamLineage200JSONResponse) VisitGetUpstreamLineageResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GetManifestRequestObject struct {
-	Body *GetManifestJSONRequestBody
-}
-
-type GetManifestResponseObject interface {
-	VisitGetManifestResponse(w http.ResponseWriter) error
-}
-
-type GetManifest200JSONResponse ManifestResponse
-
-func (response GetManifest200JSONResponse) VisitGetManifestResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GetManifest401JSONResponse Error
-
-func (response GetManifest401JSONResponse) VisitGetManifestResponse(w http.ResponseWriter) error {
+func (response CreateManifest401JSONResponse) VisitCreateManifestResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(401)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetManifest403JSONResponse Error
+type CreateManifest403JSONResponse Error
 
-func (response GetManifest403JSONResponse) VisitGetManifestResponse(w http.ResponseWriter) error {
+func (response CreateManifest403JSONResponse) VisitCreateManifestResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetManifest404JSONResponse Error
+type CreateManifest404JSONResponse Error
 
-func (response GetManifest404JSONResponse) VisitGetManifestResponse(w http.ResponseWriter) error {
+func (response CreateManifest404JSONResponse) VisitCreateManifestResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
 
@@ -5506,7 +5503,7 @@ func (response CreatePrincipal409JSONResponse) VisitCreatePrincipalResponse(w ht
 }
 
 type DeletePrincipalRequestObject struct {
-	Id int64 `json:"id"`
+	PrincipalId int64 `json:"principalId"`
 }
 
 type DeletePrincipalResponseObject interface {
@@ -5531,7 +5528,7 @@ func (response DeletePrincipal404JSONResponse) VisitDeletePrincipalResponse(w ht
 }
 
 type GetPrincipalRequestObject struct {
-	Id int64 `json:"id"`
+	PrincipalId int64 `json:"principalId"`
 }
 
 type GetPrincipalResponseObject interface {
@@ -5556,26 +5553,26 @@ func (response GetPrincipal404JSONResponse) VisitGetPrincipalResponse(w http.Res
 	return json.NewEncoder(w).Encode(response)
 }
 
-type SetAdminRequestObject struct {
-	Id   int64 `json:"id"`
-	Body *SetAdminJSONRequestBody
+type UpdatePrincipalAdminRequestObject struct {
+	PrincipalId int64 `json:"principalId"`
+	Body        *UpdatePrincipalAdminJSONRequestBody
 }
 
-type SetAdminResponseObject interface {
-	VisitSetAdminResponse(w http.ResponseWriter) error
+type UpdatePrincipalAdminResponseObject interface {
+	VisitUpdatePrincipalAdminResponse(w http.ResponseWriter) error
 }
 
-type SetAdmin204Response struct {
+type UpdatePrincipalAdmin204Response struct {
 }
 
-func (response SetAdmin204Response) VisitSetAdminResponse(w http.ResponseWriter) error {
+func (response UpdatePrincipalAdmin204Response) VisitUpdatePrincipalAdminResponse(w http.ResponseWriter) error {
 	w.WriteHeader(204)
 	return nil
 }
 
-type SetAdmin404JSONResponse Error
+type UpdatePrincipalAdmin404JSONResponse Error
 
-func (response SetAdmin404JSONResponse) VisitSetAdminResponse(w http.ResponseWriter) error {
+func (response UpdatePrincipalAdmin404JSONResponse) VisitUpdatePrincipalAdminResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
 
@@ -5625,7 +5622,7 @@ type ListQueryHistoryResponseObject interface {
 	VisitListQueryHistoryResponse(w http.ResponseWriter) error
 }
 
-type ListQueryHistory200JSONResponse PaginatedQueryHistory
+type ListQueryHistory200JSONResponse PaginatedQueryHistoryEntries
 
 func (response ListQueryHistory200JSONResponse) VisitListQueryHistoryResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -5635,7 +5632,7 @@ func (response ListQueryHistory200JSONResponse) VisitListQueryHistoryResponse(w 
 }
 
 type DeleteRowFilterRequestObject struct {
-	Id int64 `json:"id"`
+	RowFilterId int64 `json:"rowFilterId"`
 }
 
 type DeleteRowFilterResponseObject interface {
@@ -5650,26 +5647,18 @@ func (response DeleteRowFilter204Response) VisitDeleteRowFilterResponse(w http.R
 	return nil
 }
 
-type UnbindRowFilterRequestObject struct {
-	Id   int64 `json:"id"`
-	Body *UnbindRowFilterJSONRequestBody
-}
+type DeleteRowFilter404JSONResponse Error
 
-type UnbindRowFilterResponseObject interface {
-	VisitUnbindRowFilterResponse(w http.ResponseWriter) error
-}
+func (response DeleteRowFilter404JSONResponse) VisitDeleteRowFilterResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
 
-type UnbindRowFilter204Response struct {
-}
-
-func (response UnbindRowFilter204Response) VisitUnbindRowFilterResponse(w http.ResponseWriter) error {
-	w.WriteHeader(204)
-	return nil
+	return json.NewEncoder(w).Encode(response)
 }
 
 type BindRowFilterRequestObject struct {
-	Id   int64 `json:"id"`
-	Body *BindRowFilterJSONRequestBody
+	RowFilterId int64 `json:"rowFilterId"`
+	Body        *BindRowFilterJSONRequestBody
 }
 
 type BindRowFilterResponseObject interface {
@@ -5684,37 +5673,55 @@ func (response BindRowFilter204Response) VisitBindRowFilterResponse(w http.Respo
 	return nil
 }
 
-type ListSchemasRequestObject struct {
-	Params ListSchemasParams
-}
+type BindRowFilter400JSONResponse Error
 
-type ListSchemasResponseObject interface {
-	VisitListSchemasResponse(w http.ResponseWriter) error
-}
-
-type ListSchemas200JSONResponse PaginatedSchemas
-
-func (response ListSchemas200JSONResponse) VisitListSchemasResponse(w http.ResponseWriter) error {
+func (response BindRowFilter400JSONResponse) VisitBindRowFilterResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
+	w.WriteHeader(400)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type ListTablesRequestObject struct {
-	Id     int64 `json:"id"`
-	Params ListTablesParams
-}
+type BindRowFilter404JSONResponse Error
 
-type ListTablesResponseObject interface {
-	VisitListTablesResponse(w http.ResponseWriter) error
-}
-
-type ListTables200JSONResponse PaginatedTables
-
-func (response ListTables200JSONResponse) VisitListTablesResponse(w http.ResponseWriter) error {
+func (response BindRowFilter404JSONResponse) VisitBindRowFilterResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UnbindRowFilterRequestObject struct {
+	RowFilterId int64 `json:"rowFilterId"`
+	Body        *UnbindRowFilterJSONRequestBody
+}
+
+type UnbindRowFilterResponseObject interface {
+	VisitUnbindRowFilterResponse(w http.ResponseWriter) error
+}
+
+type UnbindRowFilter204Response struct {
+}
+
+func (response UnbindRowFilter204Response) VisitUnbindRowFilterResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type UnbindRowFilter400JSONResponse Error
+
+func (response UnbindRowFilter400JSONResponse) VisitUnbindRowFilterResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UnbindRowFilter404JSONResponse Error
+
+func (response UnbindRowFilter404JSONResponse) VisitUnbindRowFilterResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -5893,24 +5900,6 @@ func (response UpdateStorageCredential404JSONResponse) VisitUpdateStorageCredent
 	return json.NewEncoder(w).Encode(response)
 }
 
-type ListColumnsRequestObject struct {
-	Id     int64 `json:"id"`
-	Params ListColumnsParams
-}
-
-type ListColumnsResponseObject interface {
-	VisitListColumnsResponse(w http.ResponseWriter) error
-}
-
-type ListColumns200JSONResponse PaginatedColumns
-
-func (response ListColumns200JSONResponse) VisitListColumnsResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
 type ListColumnMasksRequestObject struct {
 	TableId int64 `json:"tableId"`
 	Params  ListColumnMasksParams
@@ -5925,6 +5914,15 @@ type ListColumnMasks200JSONResponse PaginatedColumnMasks
 func (response ListColumnMasks200JSONResponse) VisitListColumnMasksResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListColumnMasks404JSONResponse Error
+
+func (response ListColumnMasks404JSONResponse) VisitListColumnMasksResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -5947,6 +5945,24 @@ func (response CreateColumnMask201JSONResponse) VisitCreateColumnMaskResponse(w 
 	return json.NewEncoder(w).Encode(response)
 }
 
+type CreateColumnMask400JSONResponse Error
+
+func (response CreateColumnMask400JSONResponse) VisitCreateColumnMaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateColumnMask404JSONResponse Error
+
+func (response CreateColumnMask404JSONResponse) VisitCreateColumnMaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type ListRowFiltersRequestObject struct {
 	TableId int64 `json:"tableId"`
 	Params  ListRowFiltersParams
@@ -5961,6 +5977,15 @@ type ListRowFilters200JSONResponse PaginatedRowFilters
 func (response ListRowFilters200JSONResponse) VisitListRowFiltersResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListRowFilters404JSONResponse Error
+
+func (response ListRowFilters404JSONResponse) VisitListRowFiltersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -5983,20 +6008,47 @@ func (response CreateRowFilter201JSONResponse) VisitCreateRowFilterResponse(w ht
 	return json.NewEncoder(w).Encode(response)
 }
 
-type UnassignTagRequestObject struct {
+type CreateRowFilter400JSONResponse Error
+
+func (response CreateRowFilter400JSONResponse) VisitCreateRowFilterResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateRowFilter404JSONResponse Error
+
+func (response CreateRowFilter404JSONResponse) VisitCreateRowFilterResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteTagAssignmentRequestObject struct {
 	AssignmentId int64 `json:"assignmentId"`
 }
 
-type UnassignTagResponseObject interface {
-	VisitUnassignTagResponse(w http.ResponseWriter) error
+type DeleteTagAssignmentResponseObject interface {
+	VisitDeleteTagAssignmentResponse(w http.ResponseWriter) error
 }
 
-type UnassignTag204Response struct {
+type DeleteTagAssignment204Response struct {
 }
 
-func (response UnassignTag204Response) VisitUnassignTagResponse(w http.ResponseWriter) error {
+func (response DeleteTagAssignment204Response) VisitDeleteTagAssignmentResponse(w http.ResponseWriter) error {
 	w.WriteHeader(204)
 	return nil
+}
+
+type DeleteTagAssignment404JSONResponse Error
+
+func (response DeleteTagAssignment404JSONResponse) VisitDeleteTagAssignmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type ListTagsRequestObject struct {
@@ -6067,27 +6119,27 @@ func (response DeleteTag404JSONResponse) VisitDeleteTagResponse(w http.ResponseW
 	return json.NewEncoder(w).Encode(response)
 }
 
-type AssignTagRequestObject struct {
+type CreateTagAssignmentRequestObject struct {
 	TagId int64 `json:"tagId"`
-	Body  *AssignTagJSONRequestBody
+	Body  *CreateTagAssignmentJSONRequestBody
 }
 
-type AssignTagResponseObject interface {
-	VisitAssignTagResponse(w http.ResponseWriter) error
+type CreateTagAssignmentResponseObject interface {
+	VisitCreateTagAssignmentResponse(w http.ResponseWriter) error
 }
 
-type AssignTag201JSONResponse TagAssignment
+type CreateTagAssignment201JSONResponse TagAssignment
 
-func (response AssignTag201JSONResponse) VisitAssignTagResponse(w http.ResponseWriter) error {
+func (response CreateTagAssignment201JSONResponse) VisitCreateTagAssignmentResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(201)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type AssignTag409JSONResponse Error
+type CreateTagAssignment409JSONResponse Error
 
-func (response AssignTag409JSONResponse) VisitAssignTagResponse(w http.ResponseWriter) error {
+func (response CreateTagAssignment409JSONResponse) VisitCreateTagAssignmentResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(409)
 
@@ -6107,7 +6159,7 @@ type StrictServerInterface interface {
 	UpdateCatalog(ctx context.Context, request UpdateCatalogRequestObject) (UpdateCatalogResponseObject, error)
 	// List schemas in the catalog
 	// (GET /catalog/schemas)
-	ListCatalogSchemas(ctx context.Context, request ListCatalogSchemasRequestObject) (ListCatalogSchemasResponseObject, error)
+	ListSchemas(ctx context.Context, request ListSchemasRequestObject) (ListSchemasResponseObject, error)
 	// Create a new schema
 	// (POST /catalog/schemas)
 	CreateSchema(ctx context.Context, request CreateSchemaRequestObject) (CreateSchemaResponseObject, error)
@@ -6116,40 +6168,49 @@ type StrictServerInterface interface {
 	DeleteSchema(ctx context.Context, request DeleteSchemaRequestObject) (DeleteSchemaResponseObject, error)
 	// Get a schema by name
 	// (GET /catalog/schemas/{schemaName})
-	GetSchemaByName(ctx context.Context, request GetSchemaByNameRequestObject) (GetSchemaByNameResponseObject, error)
-	// Update schema metadata (comment, properties)
+	GetSchema(ctx context.Context, request GetSchemaRequestObject) (GetSchemaResponseObject, error)
+	// Update schema metadata
 	// (PATCH /catalog/schemas/{schemaName})
-	UpdateSchemaMetadata(ctx context.Context, request UpdateSchemaMetadataRequestObject) (UpdateSchemaMetadataResponseObject, error)
+	UpdateSchema(ctx context.Context, request UpdateSchemaRequestObject) (UpdateSchemaResponseObject, error)
 	// List tables in a schema
 	// (GET /catalog/schemas/{schemaName}/tables)
-	ListCatalogTables(ctx context.Context, request ListCatalogTablesRequestObject) (ListCatalogTablesResponseObject, error)
+	ListTables(ctx context.Context, request ListTablesRequestObject) (ListTablesResponseObject, error)
 	// Create a new table in a schema
 	// (POST /catalog/schemas/{schemaName}/tables)
-	CreateCatalogTable(ctx context.Context, request CreateCatalogTableRequestObject) (CreateCatalogTableResponseObject, error)
+	CreateTable(ctx context.Context, request CreateTableRequestObject) (CreateTableResponseObject, error)
 	// Delete a table
 	// (DELETE /catalog/schemas/{schemaName}/tables/{tableName})
-	DropTable(ctx context.Context, request DropTableRequestObject) (DropTableResponseObject, error)
+	DeleteTable(ctx context.Context, request DeleteTableRequestObject) (DeleteTableResponseObject, error)
 	// Get a table by name
 	// (GET /catalog/schemas/{schemaName}/tables/{tableName})
-	GetTableByName(ctx context.Context, request GetTableByNameRequestObject) (GetTableByNameResponseObject, error)
-	// Update table metadata (comment, properties, owner)
+	GetTable(ctx context.Context, request GetTableRequestObject) (GetTableResponseObject, error)
+	// Update table metadata
 	// (PATCH /catalog/schemas/{schemaName}/tables/{tableName})
-	UpdateTableMetadata(ctx context.Context, request UpdateTableMetadataRequestObject) (UpdateTableMetadataResponseObject, error)
+	UpdateTable(ctx context.Context, request UpdateTableRequestObject) (UpdateTableResponseObject, error)
 	// List columns of a table
 	// (GET /catalog/schemas/{schemaName}/tables/{tableName}/columns)
 	ListTableColumns(ctx context.Context, request ListTableColumnsRequestObject) (ListTableColumnsResponseObject, error)
-	// Update column metadata (comment, properties)
+	// Update column metadata
 	// (PATCH /catalog/schemas/{schemaName}/tables/{tableName}/columns/{columnName})
-	UpdateColumnMetadata(ctx context.Context, request UpdateColumnMetadataRequestObject) (UpdateColumnMetadataResponseObject, error)
+	UpdateColumn(ctx context.Context, request UpdateColumnRequestObject) (UpdateColumnResponseObject, error)
 	// Register uploaded Parquet files in DuckLake
 	// (POST /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/commit)
-	CommitIngestion(ctx context.Context, request CommitIngestionRequestObject) (CommitIngestionResponseObject, error)
+	CommitTableIngestion(ctx context.Context, request CommitTableIngestionRequestObject) (CommitTableIngestionResponseObject, error)
 	// Register existing S3 files in DuckLake
 	// (POST /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/load)
-	LoadExternalFiles(ctx context.Context, request LoadExternalFilesRequestObject) (LoadExternalFilesResponseObject, error)
+	LoadTableExternalFiles(ctx context.Context, request LoadTableExternalFilesRequestObject) (LoadTableExternalFilesResponseObject, error)
 	// Get a presigned URL for uploading a Parquet file
 	// (POST /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url)
-	RequestUploadUrl(ctx context.Context, request RequestUploadUrlRequestObject) (RequestUploadUrlResponseObject, error)
+	CreateUploadUrl(ctx context.Context, request CreateUploadUrlRequestObject) (CreateUploadUrlResponseObject, error)
+	// Get full lineage for a table
+	// (GET /catalog/schemas/{schemaName}/tables/{tableName}/lineage)
+	GetTableLineage(ctx context.Context, request GetTableLineageRequestObject) (GetTableLineageResponseObject, error)
+	// Get downstream lineage for a table
+	// (GET /catalog/schemas/{schemaName}/tables/{tableName}/lineage/downstream)
+	GetDownstreamLineage(ctx context.Context, request GetDownstreamLineageRequestObject) (GetDownstreamLineageResponseObject, error)
+	// Get upstream lineage for a table
+	// (GET /catalog/schemas/{schemaName}/tables/{tableName}/lineage/upstream)
+	GetUpstreamLineage(ctx context.Context, request GetUpstreamLineageRequestObject) (GetUpstreamLineageResponseObject, error)
 	// Profile a table to collect statistics
 	// (POST /catalog/schemas/{schemaName}/tables/{tableName}/profile)
 	ProfileTable(ctx context.Context, request ProfileTableRequestObject) (ProfileTableResponseObject, error)
@@ -6161,7 +6222,7 @@ type StrictServerInterface interface {
 	CreateView(ctx context.Context, request CreateViewRequestObject) (CreateViewResponseObject, error)
 	// Delete a view
 	// (DELETE /catalog/schemas/{schemaName}/views/{viewName})
-	DropView(ctx context.Context, request DropViewRequestObject) (DropViewResponseObject, error)
+	DeleteView(ctx context.Context, request DeleteViewRequestObject) (DeleteViewResponseObject, error)
 	// Get a view by name
 	// (GET /catalog/schemas/{schemaName}/views/{viewName})
 	GetView(ctx context.Context, request GetViewRequestObject) (GetViewResponseObject, error)
@@ -6172,14 +6233,14 @@ type StrictServerInterface interface {
 	// (GET /classifications)
 	ListClassifications(ctx context.Context, request ListClassificationsRequestObject) (ListClassificationsResponseObject, error)
 	// Delete column mask
-	// (DELETE /column-masks/{id})
+	// (DELETE /column-masks/{columnMaskId})
 	DeleteColumnMask(ctx context.Context, request DeleteColumnMaskRequestObject) (DeleteColumnMaskResponseObject, error)
-	// Unbind mask
-	// (DELETE /column-masks/{id}/bindings)
-	UnbindColumnMask(ctx context.Context, request UnbindColumnMaskRequestObject) (UnbindColumnMaskResponseObject, error)
 	// Bind mask to principal
-	// (POST /column-masks/{id}/bindings)
+	// (POST /column-masks/{columnMaskId}/bind)
 	BindColumnMask(ctx context.Context, request BindColumnMaskRequestObject) (BindColumnMaskResponseObject, error)
+	// Unbind mask from principal
+	// (POST /column-masks/{columnMaskId}/unbind)
+	UnbindColumnMask(ctx context.Context, request UnbindColumnMaskRequestObject) (UnbindColumnMaskResponseObject, error)
 	// List external locations
 	// (GET /external-locations)
 	ListExternalLocations(ctx context.Context, request ListExternalLocationsRequestObject) (ListExternalLocationsResponseObject, error)
@@ -6195,15 +6256,15 @@ type StrictServerInterface interface {
 	// Update an external location
 	// (PATCH /external-locations/{locationName})
 	UpdateExternalLocation(ctx context.Context, request UpdateExternalLocationRequestObject) (UpdateExternalLocationResponseObject, error)
-	// Revoke a privilege
-	// (DELETE /grants)
-	RevokePrivilege(ctx context.Context, request RevokePrivilegeRequestObject) (RevokePrivilegeResponseObject, error)
 	// List grants
 	// (GET /grants)
 	ListGrants(ctx context.Context, request ListGrantsRequestObject) (ListGrantsResponseObject, error)
 	// Grant a privilege
 	// (POST /grants)
-	GrantPrivilege(ctx context.Context, request GrantPrivilegeRequestObject) (GrantPrivilegeResponseObject, error)
+	CreateGrant(ctx context.Context, request CreateGrantRequestObject) (CreateGrantResponseObject, error)
+	// Revoke a privilege
+	// (POST /grants/revoke)
+	DeleteGrant(ctx context.Context, request DeleteGrantRequestObject) (DeleteGrantResponseObject, error)
 	// List all groups
 	// (GET /groups)
 	ListGroups(ctx context.Context, request ListGroupsRequestObject) (ListGroupsResponseObject, error)
@@ -6211,38 +6272,29 @@ type StrictServerInterface interface {
 	// (POST /groups)
 	CreateGroup(ctx context.Context, request CreateGroupRequestObject) (CreateGroupResponseObject, error)
 	// Delete a group
-	// (DELETE /groups/{id})
+	// (DELETE /groups/{groupId})
 	DeleteGroup(ctx context.Context, request DeleteGroupRequestObject) (DeleteGroupResponseObject, error)
 	// Get group by ID
-	// (GET /groups/{id})
+	// (GET /groups/{groupId})
 	GetGroup(ctx context.Context, request GetGroupRequestObject) (GetGroupResponseObject, error)
-	// Remove member from group
-	// (DELETE /groups/{id}/members)
-	RemoveGroupMember(ctx context.Context, request RemoveGroupMemberRequestObject) (RemoveGroupMemberResponseObject, error)
 	// List group members
-	// (GET /groups/{id}/members)
+	// (GET /groups/{groupId}/members)
 	ListGroupMembers(ctx context.Context, request ListGroupMembersRequestObject) (ListGroupMembersResponseObject, error)
 	// Add member to group
-	// (POST /groups/{id}/members)
-	AddGroupMember(ctx context.Context, request AddGroupMemberRequestObject) (AddGroupMemberResponseObject, error)
+	// (POST /groups/{groupId}/members)
+	CreateGroupMember(ctx context.Context, request CreateGroupMemberRequestObject) (CreateGroupMemberResponseObject, error)
+	// Remove member from group
+	// (POST /groups/{groupId}/members/remove)
+	DeleteGroupMember(ctx context.Context, request DeleteGroupMemberRequestObject) (DeleteGroupMemberResponseObject, error)
 	// Delete a lineage edge
 	// (DELETE /lineage/edges/{edgeId})
 	DeleteLineageEdge(ctx context.Context, request DeleteLineageEdgeRequestObject) (DeleteLineageEdgeResponseObject, error)
 	// Purge old lineage edges
 	// (POST /lineage/purge)
 	PurgeLineage(ctx context.Context, request PurgeLineageRequestObject) (PurgeLineageResponseObject, error)
-	// Get full lineage for a table
-	// (GET /lineage/tables/{schemaName}/{tableName})
-	GetTableLineage(ctx context.Context, request GetTableLineageRequestObject) (GetTableLineageResponseObject, error)
-	// Get downstream lineage for a table
-	// (GET /lineage/tables/{schemaName}/{tableName}/downstream)
-	GetDownstreamLineage(ctx context.Context, request GetDownstreamLineageRequestObject) (GetDownstreamLineageResponseObject, error)
-	// Get upstream lineage for a table
-	// (GET /lineage/tables/{schemaName}/{tableName}/upstream)
-	GetUpstreamLineage(ctx context.Context, request GetUpstreamLineageRequestObject) (GetUpstreamLineageResponseObject, error)
-	// Get table manifest with presigned URLs and security policies
+	// Create table manifest with presigned URLs and security policies
 	// (POST /manifest)
-	GetManifest(ctx context.Context, request GetManifestRequestObject) (GetManifestResponseObject, error)
+	CreateManifest(ctx context.Context, request CreateManifestRequestObject) (CreateManifestResponseObject, error)
 	// Get metastore summary
 	// (GET /metastore/summary)
 	GetMetastoreSummary(ctx context.Context, request GetMetastoreSummaryRequestObject) (GetMetastoreSummaryResponseObject, error)
@@ -6253,14 +6305,14 @@ type StrictServerInterface interface {
 	// (POST /principals)
 	CreatePrincipal(ctx context.Context, request CreatePrincipalRequestObject) (CreatePrincipalResponseObject, error)
 	// Delete a principal
-	// (DELETE /principals/{id})
+	// (DELETE /principals/{principalId})
 	DeletePrincipal(ctx context.Context, request DeletePrincipalRequestObject) (DeletePrincipalResponseObject, error)
 	// Get principal by ID
-	// (GET /principals/{id})
+	// (GET /principals/{principalId})
 	GetPrincipal(ctx context.Context, request GetPrincipalRequestObject) (GetPrincipalResponseObject, error)
 	// Set or unset admin flag
-	// (PUT /principals/{id}/admin)
-	SetAdmin(ctx context.Context, request SetAdminRequestObject) (SetAdminResponseObject, error)
+	// (PUT /principals/{principalId}/admin)
+	UpdatePrincipalAdmin(ctx context.Context, request UpdatePrincipalAdminRequestObject) (UpdatePrincipalAdminResponseObject, error)
 	// Execute SQL as authenticated principal
 	// (POST /query)
 	ExecuteQuery(ctx context.Context, request ExecuteQueryRequestObject) (ExecuteQueryResponseObject, error)
@@ -6268,20 +6320,14 @@ type StrictServerInterface interface {
 	// (GET /query-history)
 	ListQueryHistory(ctx context.Context, request ListQueryHistoryRequestObject) (ListQueryHistoryResponseObject, error)
 	// Delete row filter
-	// (DELETE /row-filters/{id})
+	// (DELETE /row-filters/{rowFilterId})
 	DeleteRowFilter(ctx context.Context, request DeleteRowFilterRequestObject) (DeleteRowFilterResponseObject, error)
-	// Unbind filter
-	// (DELETE /row-filters/{id}/bindings)
-	UnbindRowFilter(ctx context.Context, request UnbindRowFilterRequestObject) (UnbindRowFilterResponseObject, error)
 	// Bind filter to principal
-	// (POST /row-filters/{id}/bindings)
+	// (POST /row-filters/{rowFilterId}/bind)
 	BindRowFilter(ctx context.Context, request BindRowFilterRequestObject) (BindRowFilterResponseObject, error)
-	// List DuckLake schemas (deprecated, use /catalog/schemas)
-	// (GET /schemas)
-	ListSchemas(ctx context.Context, request ListSchemasRequestObject) (ListSchemasResponseObject, error)
-	// List tables in schema (deprecated, use /catalog/schemas/{name}/tables)
-	// (GET /schemas/{id}/tables)
-	ListTables(ctx context.Context, request ListTablesRequestObject) (ListTablesResponseObject, error)
+	// Unbind filter from principal
+	// (POST /row-filters/{rowFilterId}/unbind)
+	UnbindRowFilter(ctx context.Context, request UnbindRowFilterRequestObject) (UnbindRowFilterResponseObject, error)
 	// Search catalog objects
 	// (GET /search)
 	SearchCatalog(ctx context.Context, request SearchCatalogRequestObject) (SearchCatalogResponseObject, error)
@@ -6300,9 +6346,6 @@ type StrictServerInterface interface {
 	// Update a storage credential
 	// (PATCH /storage-credentials/{credentialName})
 	UpdateStorageCredential(ctx context.Context, request UpdateStorageCredentialRequestObject) (UpdateStorageCredentialResponseObject, error)
-	// List columns in table (deprecated, use /catalog/schemas/{name}/tables/{name}/columns)
-	// (GET /tables/{id}/columns)
-	ListColumns(ctx context.Context, request ListColumnsRequestObject) (ListColumnsResponseObject, error)
 	// List column masks
 	// (GET /tables/{tableId}/column-masks)
 	ListColumnMasks(ctx context.Context, request ListColumnMasksRequestObject) (ListColumnMasksResponseObject, error)
@@ -6317,7 +6360,7 @@ type StrictServerInterface interface {
 	CreateRowFilter(ctx context.Context, request CreateRowFilterRequestObject) (CreateRowFilterResponseObject, error)
 	// Remove a tag assignment
 	// (DELETE /tag-assignments/{assignmentId})
-	UnassignTag(ctx context.Context, request UnassignTagRequestObject) (UnassignTagResponseObject, error)
+	DeleteTagAssignment(ctx context.Context, request DeleteTagAssignmentRequestObject) (DeleteTagAssignmentResponseObject, error)
 	// List all tags
 	// (GET /tags)
 	ListTags(ctx context.Context, request ListTagsRequestObject) (ListTagsResponseObject, error)
@@ -6329,7 +6372,7 @@ type StrictServerInterface interface {
 	DeleteTag(ctx context.Context, request DeleteTagRequestObject) (DeleteTagResponseObject, error)
 	// Assign a tag to a securable object
 	// (POST /tags/{tagId}/assignments)
-	AssignTag(ctx context.Context, request AssignTagRequestObject) (AssignTagResponseObject, error)
+	CreateTagAssignment(ctx context.Context, request CreateTagAssignmentRequestObject) (CreateTagAssignmentResponseObject, error)
 }
 
 type StrictHandlerFunc = strictnethttp.StrictHTTPHandlerFunc
@@ -6442,25 +6485,25 @@ func (sh *strictHandler) UpdateCatalog(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// ListCatalogSchemas operation middleware
-func (sh *strictHandler) ListCatalogSchemas(w http.ResponseWriter, r *http.Request, params ListCatalogSchemasParams) {
-	var request ListCatalogSchemasRequestObject
+// ListSchemas operation middleware
+func (sh *strictHandler) ListSchemas(w http.ResponseWriter, r *http.Request, params ListSchemasParams) {
+	var request ListSchemasRequestObject
 
 	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.ListCatalogSchemas(ctx, request.(ListCatalogSchemasRequestObject))
+		return sh.ssi.ListSchemas(ctx, request.(ListSchemasRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "ListCatalogSchemas")
+		handler = middleware(handler, "ListSchemas")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(ListCatalogSchemasResponseObject); ok {
-		if err := validResponse.VisitListCatalogSchemasResponse(w); err != nil {
+	} else if validResponse, ok := response.(ListSchemasResponseObject); ok {
+		if err := validResponse.VisitListSchemasResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -6526,25 +6569,25 @@ func (sh *strictHandler) DeleteSchema(w http.ResponseWriter, r *http.Request, sc
 	}
 }
 
-// GetSchemaByName operation middleware
-func (sh *strictHandler) GetSchemaByName(w http.ResponseWriter, r *http.Request, schemaName string) {
-	var request GetSchemaByNameRequestObject
+// GetSchema operation middleware
+func (sh *strictHandler) GetSchema(w http.ResponseWriter, r *http.Request, schemaName string) {
+	var request GetSchemaRequestObject
 
 	request.SchemaName = schemaName
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.GetSchemaByName(ctx, request.(GetSchemaByNameRequestObject))
+		return sh.ssi.GetSchema(ctx, request.(GetSchemaRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetSchemaByName")
+		handler = middleware(handler, "GetSchema")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetSchemaByNameResponseObject); ok {
-		if err := validResponse.VisitGetSchemaByNameResponse(w); err != nil {
+	} else if validResponse, ok := response.(GetSchemaResponseObject); ok {
+		if err := validResponse.VisitGetSchemaResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -6552,13 +6595,13 @@ func (sh *strictHandler) GetSchemaByName(w http.ResponseWriter, r *http.Request,
 	}
 }
 
-// UpdateSchemaMetadata operation middleware
-func (sh *strictHandler) UpdateSchemaMetadata(w http.ResponseWriter, r *http.Request, schemaName string) {
-	var request UpdateSchemaMetadataRequestObject
+// UpdateSchema operation middleware
+func (sh *strictHandler) UpdateSchema(w http.ResponseWriter, r *http.Request, schemaName string) {
+	var request UpdateSchemaRequestObject
 
 	request.SchemaName = schemaName
 
-	var body UpdateSchemaMetadataJSONRequestBody
+	var body UpdateSchemaJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
 		return
@@ -6566,18 +6609,18 @@ func (sh *strictHandler) UpdateSchemaMetadata(w http.ResponseWriter, r *http.Req
 	request.Body = &body
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.UpdateSchemaMetadata(ctx, request.(UpdateSchemaMetadataRequestObject))
+		return sh.ssi.UpdateSchema(ctx, request.(UpdateSchemaRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "UpdateSchemaMetadata")
+		handler = middleware(handler, "UpdateSchema")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(UpdateSchemaMetadataResponseObject); ok {
-		if err := validResponse.VisitUpdateSchemaMetadataResponse(w); err != nil {
+	} else if validResponse, ok := response.(UpdateSchemaResponseObject); ok {
+		if err := validResponse.VisitUpdateSchemaResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -6585,26 +6628,26 @@ func (sh *strictHandler) UpdateSchemaMetadata(w http.ResponseWriter, r *http.Req
 	}
 }
 
-// ListCatalogTables operation middleware
-func (sh *strictHandler) ListCatalogTables(w http.ResponseWriter, r *http.Request, schemaName string, params ListCatalogTablesParams) {
-	var request ListCatalogTablesRequestObject
+// ListTables operation middleware
+func (sh *strictHandler) ListTables(w http.ResponseWriter, r *http.Request, schemaName string, params ListTablesParams) {
+	var request ListTablesRequestObject
 
 	request.SchemaName = schemaName
 	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.ListCatalogTables(ctx, request.(ListCatalogTablesRequestObject))
+		return sh.ssi.ListTables(ctx, request.(ListTablesRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "ListCatalogTables")
+		handler = middleware(handler, "ListTables")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(ListCatalogTablesResponseObject); ok {
-		if err := validResponse.VisitListCatalogTablesResponse(w); err != nil {
+	} else if validResponse, ok := response.(ListTablesResponseObject); ok {
+		if err := validResponse.VisitListTablesResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -6612,13 +6655,13 @@ func (sh *strictHandler) ListCatalogTables(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-// CreateCatalogTable operation middleware
-func (sh *strictHandler) CreateCatalogTable(w http.ResponseWriter, r *http.Request, schemaName string) {
-	var request CreateCatalogTableRequestObject
+// CreateTable operation middleware
+func (sh *strictHandler) CreateTable(w http.ResponseWriter, r *http.Request, schemaName string) {
+	var request CreateTableRequestObject
 
 	request.SchemaName = schemaName
 
-	var body CreateCatalogTableJSONRequestBody
+	var body CreateTableJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
 		return
@@ -6626,18 +6669,18 @@ func (sh *strictHandler) CreateCatalogTable(w http.ResponseWriter, r *http.Reque
 	request.Body = &body
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.CreateCatalogTable(ctx, request.(CreateCatalogTableRequestObject))
+		return sh.ssi.CreateTable(ctx, request.(CreateTableRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "CreateCatalogTable")
+		handler = middleware(handler, "CreateTable")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(CreateCatalogTableResponseObject); ok {
-		if err := validResponse.VisitCreateCatalogTableResponse(w); err != nil {
+	} else if validResponse, ok := response.(CreateTableResponseObject); ok {
+		if err := validResponse.VisitCreateTableResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -6645,26 +6688,26 @@ func (sh *strictHandler) CreateCatalogTable(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-// DropTable operation middleware
-func (sh *strictHandler) DropTable(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
-	var request DropTableRequestObject
+// DeleteTable operation middleware
+func (sh *strictHandler) DeleteTable(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
+	var request DeleteTableRequestObject
 
 	request.SchemaName = schemaName
 	request.TableName = tableName
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.DropTable(ctx, request.(DropTableRequestObject))
+		return sh.ssi.DeleteTable(ctx, request.(DeleteTableRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "DropTable")
+		handler = middleware(handler, "DeleteTable")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(DropTableResponseObject); ok {
-		if err := validResponse.VisitDropTableResponse(w); err != nil {
+	} else if validResponse, ok := response.(DeleteTableResponseObject); ok {
+		if err := validResponse.VisitDeleteTableResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -6672,26 +6715,26 @@ func (sh *strictHandler) DropTable(w http.ResponseWriter, r *http.Request, schem
 	}
 }
 
-// GetTableByName operation middleware
-func (sh *strictHandler) GetTableByName(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
-	var request GetTableByNameRequestObject
+// GetTable operation middleware
+func (sh *strictHandler) GetTable(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
+	var request GetTableRequestObject
 
 	request.SchemaName = schemaName
 	request.TableName = tableName
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.GetTableByName(ctx, request.(GetTableByNameRequestObject))
+		return sh.ssi.GetTable(ctx, request.(GetTableRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetTableByName")
+		handler = middleware(handler, "GetTable")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetTableByNameResponseObject); ok {
-		if err := validResponse.VisitGetTableByNameResponse(w); err != nil {
+	} else if validResponse, ok := response.(GetTableResponseObject); ok {
+		if err := validResponse.VisitGetTableResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -6699,14 +6742,14 @@ func (sh *strictHandler) GetTableByName(w http.ResponseWriter, r *http.Request, 
 	}
 }
 
-// UpdateTableMetadata operation middleware
-func (sh *strictHandler) UpdateTableMetadata(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
-	var request UpdateTableMetadataRequestObject
+// UpdateTable operation middleware
+func (sh *strictHandler) UpdateTable(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
+	var request UpdateTableRequestObject
 
 	request.SchemaName = schemaName
 	request.TableName = tableName
 
-	var body UpdateTableMetadataJSONRequestBody
+	var body UpdateTableJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
 		return
@@ -6714,18 +6757,18 @@ func (sh *strictHandler) UpdateTableMetadata(w http.ResponseWriter, r *http.Requ
 	request.Body = &body
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.UpdateTableMetadata(ctx, request.(UpdateTableMetadataRequestObject))
+		return sh.ssi.UpdateTable(ctx, request.(UpdateTableRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "UpdateTableMetadata")
+		handler = middleware(handler, "UpdateTable")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(UpdateTableMetadataResponseObject); ok {
-		if err := validResponse.VisitUpdateTableMetadataResponse(w); err != nil {
+	} else if validResponse, ok := response.(UpdateTableResponseObject); ok {
+		if err := validResponse.VisitUpdateTableResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -6761,15 +6804,15 @@ func (sh *strictHandler) ListTableColumns(w http.ResponseWriter, r *http.Request
 	}
 }
 
-// UpdateColumnMetadata operation middleware
-func (sh *strictHandler) UpdateColumnMetadata(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, columnName string) {
-	var request UpdateColumnMetadataRequestObject
+// UpdateColumn operation middleware
+func (sh *strictHandler) UpdateColumn(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, columnName string) {
+	var request UpdateColumnRequestObject
 
 	request.SchemaName = schemaName
 	request.TableName = tableName
 	request.ColumnName = columnName
 
-	var body UpdateColumnMetadataJSONRequestBody
+	var body UpdateColumnJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
 		return
@@ -6777,18 +6820,18 @@ func (sh *strictHandler) UpdateColumnMetadata(w http.ResponseWriter, r *http.Req
 	request.Body = &body
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.UpdateColumnMetadata(ctx, request.(UpdateColumnMetadataRequestObject))
+		return sh.ssi.UpdateColumn(ctx, request.(UpdateColumnRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "UpdateColumnMetadata")
+		handler = middleware(handler, "UpdateColumn")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(UpdateColumnMetadataResponseObject); ok {
-		if err := validResponse.VisitUpdateColumnMetadataResponse(w); err != nil {
+	} else if validResponse, ok := response.(UpdateColumnResponseObject); ok {
+		if err := validResponse.VisitUpdateColumnResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -6796,14 +6839,14 @@ func (sh *strictHandler) UpdateColumnMetadata(w http.ResponseWriter, r *http.Req
 	}
 }
 
-// CommitIngestion operation middleware
-func (sh *strictHandler) CommitIngestion(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
-	var request CommitIngestionRequestObject
+// CommitTableIngestion operation middleware
+func (sh *strictHandler) CommitTableIngestion(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
+	var request CommitTableIngestionRequestObject
 
 	request.SchemaName = schemaName
 	request.TableName = tableName
 
-	var body CommitIngestionJSONRequestBody
+	var body CommitTableIngestionJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
 		return
@@ -6811,18 +6854,18 @@ func (sh *strictHandler) CommitIngestion(w http.ResponseWriter, r *http.Request,
 	request.Body = &body
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.CommitIngestion(ctx, request.(CommitIngestionRequestObject))
+		return sh.ssi.CommitTableIngestion(ctx, request.(CommitTableIngestionRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "CommitIngestion")
+		handler = middleware(handler, "CommitTableIngestion")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(CommitIngestionResponseObject); ok {
-		if err := validResponse.VisitCommitIngestionResponse(w); err != nil {
+	} else if validResponse, ok := response.(CommitTableIngestionResponseObject); ok {
+		if err := validResponse.VisitCommitTableIngestionResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -6830,14 +6873,14 @@ func (sh *strictHandler) CommitIngestion(w http.ResponseWriter, r *http.Request,
 	}
 }
 
-// LoadExternalFiles operation middleware
-func (sh *strictHandler) LoadExternalFiles(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
-	var request LoadExternalFilesRequestObject
+// LoadTableExternalFiles operation middleware
+func (sh *strictHandler) LoadTableExternalFiles(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
+	var request LoadTableExternalFilesRequestObject
 
 	request.SchemaName = schemaName
 	request.TableName = tableName
 
-	var body LoadExternalFilesJSONRequestBody
+	var body LoadTableExternalFilesJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
 		return
@@ -6845,18 +6888,18 @@ func (sh *strictHandler) LoadExternalFiles(w http.ResponseWriter, r *http.Reques
 	request.Body = &body
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.LoadExternalFiles(ctx, request.(LoadExternalFilesRequestObject))
+		return sh.ssi.LoadTableExternalFiles(ctx, request.(LoadTableExternalFilesRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "LoadExternalFiles")
+		handler = middleware(handler, "LoadTableExternalFiles")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(LoadExternalFilesResponseObject); ok {
-		if err := validResponse.VisitLoadExternalFilesResponse(w); err != nil {
+	} else if validResponse, ok := response.(LoadTableExternalFilesResponseObject); ok {
+		if err := validResponse.VisitLoadTableExternalFilesResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -6864,14 +6907,14 @@ func (sh *strictHandler) LoadExternalFiles(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-// RequestUploadUrl operation middleware
-func (sh *strictHandler) RequestUploadUrl(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
-	var request RequestUploadUrlRequestObject
+// CreateUploadUrl operation middleware
+func (sh *strictHandler) CreateUploadUrl(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
+	var request CreateUploadUrlRequestObject
 
 	request.SchemaName = schemaName
 	request.TableName = tableName
 
-	var body RequestUploadUrlJSONRequestBody
+	var body CreateUploadUrlJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
 		return
@@ -6879,18 +6922,102 @@ func (sh *strictHandler) RequestUploadUrl(w http.ResponseWriter, r *http.Request
 	request.Body = &body
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.RequestUploadUrl(ctx, request.(RequestUploadUrlRequestObject))
+		return sh.ssi.CreateUploadUrl(ctx, request.(CreateUploadUrlRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "RequestUploadUrl")
+		handler = middleware(handler, "CreateUploadUrl")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(RequestUploadUrlResponseObject); ok {
-		if err := validResponse.VisitRequestUploadUrlResponse(w); err != nil {
+	} else if validResponse, ok := response.(CreateUploadUrlResponseObject); ok {
+		if err := validResponse.VisitCreateUploadUrlResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetTableLineage operation middleware
+func (sh *strictHandler) GetTableLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetTableLineageParams) {
+	var request GetTableLineageRequestObject
+
+	request.SchemaName = schemaName
+	request.TableName = tableName
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetTableLineage(ctx, request.(GetTableLineageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetTableLineage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetTableLineageResponseObject); ok {
+		if err := validResponse.VisitGetTableLineageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetDownstreamLineage operation middleware
+func (sh *strictHandler) GetDownstreamLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetDownstreamLineageParams) {
+	var request GetDownstreamLineageRequestObject
+
+	request.SchemaName = schemaName
+	request.TableName = tableName
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetDownstreamLineage(ctx, request.(GetDownstreamLineageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetDownstreamLineage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetDownstreamLineageResponseObject); ok {
+		if err := validResponse.VisitGetDownstreamLineageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetUpstreamLineage operation middleware
+func (sh *strictHandler) GetUpstreamLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetUpstreamLineageParams) {
+	var request GetUpstreamLineageRequestObject
+
+	request.SchemaName = schemaName
+	request.TableName = tableName
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetUpstreamLineage(ctx, request.(GetUpstreamLineageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetUpstreamLineage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetUpstreamLineageResponseObject); ok {
+		if err := validResponse.VisitGetUpstreamLineageResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -6985,26 +7112,26 @@ func (sh *strictHandler) CreateView(w http.ResponseWriter, r *http.Request, sche
 	}
 }
 
-// DropView operation middleware
-func (sh *strictHandler) DropView(w http.ResponseWriter, r *http.Request, schemaName string, viewName string) {
-	var request DropViewRequestObject
+// DeleteView operation middleware
+func (sh *strictHandler) DeleteView(w http.ResponseWriter, r *http.Request, schemaName string, viewName string) {
+	var request DeleteViewRequestObject
 
 	request.SchemaName = schemaName
 	request.ViewName = viewName
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.DropView(ctx, request.(DropViewRequestObject))
+		return sh.ssi.DeleteView(ctx, request.(DeleteViewRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "DropView")
+		handler = middleware(handler, "DeleteView")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(DropViewResponseObject); ok {
-		if err := validResponse.VisitDropViewResponse(w); err != nil {
+	} else if validResponse, ok := response.(DeleteViewResponseObject); ok {
+		if err := validResponse.VisitDeleteViewResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -7098,10 +7225,10 @@ func (sh *strictHandler) ListClassifications(w http.ResponseWriter, r *http.Requ
 }
 
 // DeleteColumnMask operation middleware
-func (sh *strictHandler) DeleteColumnMask(w http.ResponseWriter, r *http.Request, id int64) {
+func (sh *strictHandler) DeleteColumnMask(w http.ResponseWriter, r *http.Request, columnMaskId int64) {
 	var request DeleteColumnMaskRequestObject
 
-	request.Id = id
+	request.ColumnMaskId = columnMaskId
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.DeleteColumnMask(ctx, request.(DeleteColumnMaskRequestObject))
@@ -7123,44 +7250,11 @@ func (sh *strictHandler) DeleteColumnMask(w http.ResponseWriter, r *http.Request
 	}
 }
 
-// UnbindColumnMask operation middleware
-func (sh *strictHandler) UnbindColumnMask(w http.ResponseWriter, r *http.Request, id int64) {
-	var request UnbindColumnMaskRequestObject
-
-	request.Id = id
-
-	var body UnbindColumnMaskJSONRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
-		return
-	}
-	request.Body = &body
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.UnbindColumnMask(ctx, request.(UnbindColumnMaskRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "UnbindColumnMask")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(UnbindColumnMaskResponseObject); ok {
-		if err := validResponse.VisitUnbindColumnMaskResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
 // BindColumnMask operation middleware
-func (sh *strictHandler) BindColumnMask(w http.ResponseWriter, r *http.Request, id int64) {
+func (sh *strictHandler) BindColumnMask(w http.ResponseWriter, r *http.Request, columnMaskId int64) {
 	var request BindColumnMaskRequestObject
 
-	request.Id = id
+	request.ColumnMaskId = columnMaskId
 
 	var body BindColumnMaskJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -7182,6 +7276,39 @@ func (sh *strictHandler) BindColumnMask(w http.ResponseWriter, r *http.Request, 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(BindColumnMaskResponseObject); ok {
 		if err := validResponse.VisitBindColumnMaskResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UnbindColumnMask operation middleware
+func (sh *strictHandler) UnbindColumnMask(w http.ResponseWriter, r *http.Request, columnMaskId int64) {
+	var request UnbindColumnMaskRequestObject
+
+	request.ColumnMaskId = columnMaskId
+
+	var body UnbindColumnMaskJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UnbindColumnMask(ctx, request.(UnbindColumnMaskRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UnbindColumnMask")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UnbindColumnMaskResponseObject); ok {
+		if err := validResponse.VisitUnbindColumnMaskResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -7331,37 +7458,6 @@ func (sh *strictHandler) UpdateExternalLocation(w http.ResponseWriter, r *http.R
 	}
 }
 
-// RevokePrivilege operation middleware
-func (sh *strictHandler) RevokePrivilege(w http.ResponseWriter, r *http.Request) {
-	var request RevokePrivilegeRequestObject
-
-	var body RevokePrivilegeJSONRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
-		return
-	}
-	request.Body = &body
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.RevokePrivilege(ctx, request.(RevokePrivilegeRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "RevokePrivilege")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(RevokePrivilegeResponseObject); ok {
-		if err := validResponse.VisitRevokePrivilegeResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
 // ListGrants operation middleware
 func (sh *strictHandler) ListGrants(w http.ResponseWriter, r *http.Request, params ListGrantsParams) {
 	var request ListGrantsRequestObject
@@ -7388,11 +7484,11 @@ func (sh *strictHandler) ListGrants(w http.ResponseWriter, r *http.Request, para
 	}
 }
 
-// GrantPrivilege operation middleware
-func (sh *strictHandler) GrantPrivilege(w http.ResponseWriter, r *http.Request) {
-	var request GrantPrivilegeRequestObject
+// CreateGrant operation middleware
+func (sh *strictHandler) CreateGrant(w http.ResponseWriter, r *http.Request) {
+	var request CreateGrantRequestObject
 
-	var body GrantPrivilegeJSONRequestBody
+	var body CreateGrantJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
 		return
@@ -7400,18 +7496,49 @@ func (sh *strictHandler) GrantPrivilege(w http.ResponseWriter, r *http.Request) 
 	request.Body = &body
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.GrantPrivilege(ctx, request.(GrantPrivilegeRequestObject))
+		return sh.ssi.CreateGrant(ctx, request.(CreateGrantRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GrantPrivilege")
+		handler = middleware(handler, "CreateGrant")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GrantPrivilegeResponseObject); ok {
-		if err := validResponse.VisitGrantPrivilegeResponse(w); err != nil {
+	} else if validResponse, ok := response.(CreateGrantResponseObject); ok {
+		if err := validResponse.VisitCreateGrantResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteGrant operation middleware
+func (sh *strictHandler) DeleteGrant(w http.ResponseWriter, r *http.Request) {
+	var request DeleteGrantRequestObject
+
+	var body DeleteGrantJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteGrant(ctx, request.(DeleteGrantRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteGrant")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteGrantResponseObject); ok {
+		if err := validResponse.VisitDeleteGrantResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -7477,10 +7604,10 @@ func (sh *strictHandler) CreateGroup(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteGroup operation middleware
-func (sh *strictHandler) DeleteGroup(w http.ResponseWriter, r *http.Request, id int64) {
+func (sh *strictHandler) DeleteGroup(w http.ResponseWriter, r *http.Request, groupId int64) {
 	var request DeleteGroupRequestObject
 
-	request.Id = id
+	request.GroupId = groupId
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.DeleteGroup(ctx, request.(DeleteGroupRequestObject))
@@ -7503,10 +7630,10 @@ func (sh *strictHandler) DeleteGroup(w http.ResponseWriter, r *http.Request, id 
 }
 
 // GetGroup operation middleware
-func (sh *strictHandler) GetGroup(w http.ResponseWriter, r *http.Request, id int64) {
+func (sh *strictHandler) GetGroup(w http.ResponseWriter, r *http.Request, groupId int64) {
 	var request GetGroupRequestObject
 
-	request.Id = id
+	request.GroupId = groupId
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.GetGroup(ctx, request.(GetGroupRequestObject))
@@ -7528,44 +7655,11 @@ func (sh *strictHandler) GetGroup(w http.ResponseWriter, r *http.Request, id int
 	}
 }
 
-// RemoveGroupMember operation middleware
-func (sh *strictHandler) RemoveGroupMember(w http.ResponseWriter, r *http.Request, id int64) {
-	var request RemoveGroupMemberRequestObject
-
-	request.Id = id
-
-	var body RemoveGroupMemberJSONRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
-		return
-	}
-	request.Body = &body
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.RemoveGroupMember(ctx, request.(RemoveGroupMemberRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "RemoveGroupMember")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(RemoveGroupMemberResponseObject); ok {
-		if err := validResponse.VisitRemoveGroupMemberResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
 // ListGroupMembers operation middleware
-func (sh *strictHandler) ListGroupMembers(w http.ResponseWriter, r *http.Request, id int64, params ListGroupMembersParams) {
+func (sh *strictHandler) ListGroupMembers(w http.ResponseWriter, r *http.Request, groupId int64, params ListGroupMembersParams) {
 	var request ListGroupMembersRequestObject
 
-	request.Id = id
+	request.GroupId = groupId
 	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
@@ -7588,13 +7682,13 @@ func (sh *strictHandler) ListGroupMembers(w http.ResponseWriter, r *http.Request
 	}
 }
 
-// AddGroupMember operation middleware
-func (sh *strictHandler) AddGroupMember(w http.ResponseWriter, r *http.Request, id int64) {
-	var request AddGroupMemberRequestObject
+// CreateGroupMember operation middleware
+func (sh *strictHandler) CreateGroupMember(w http.ResponseWriter, r *http.Request, groupId int64) {
+	var request CreateGroupMemberRequestObject
 
-	request.Id = id
+	request.GroupId = groupId
 
-	var body AddGroupMemberJSONRequestBody
+	var body CreateGroupMemberJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
 		return
@@ -7602,18 +7696,51 @@ func (sh *strictHandler) AddGroupMember(w http.ResponseWriter, r *http.Request, 
 	request.Body = &body
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.AddGroupMember(ctx, request.(AddGroupMemberRequestObject))
+		return sh.ssi.CreateGroupMember(ctx, request.(CreateGroupMemberRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "AddGroupMember")
+		handler = middleware(handler, "CreateGroupMember")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(AddGroupMemberResponseObject); ok {
-		if err := validResponse.VisitAddGroupMemberResponse(w); err != nil {
+	} else if validResponse, ok := response.(CreateGroupMemberResponseObject); ok {
+		if err := validResponse.VisitCreateGroupMemberResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteGroupMember operation middleware
+func (sh *strictHandler) DeleteGroupMember(w http.ResponseWriter, r *http.Request, groupId int64) {
+	var request DeleteGroupMemberRequestObject
+
+	request.GroupId = groupId
+
+	var body DeleteGroupMemberJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteGroupMember(ctx, request.(DeleteGroupMemberRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteGroupMember")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteGroupMemberResponseObject); ok {
+		if err := validResponse.VisitDeleteGroupMemberResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -7678,95 +7805,11 @@ func (sh *strictHandler) PurgeLineage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetTableLineage operation middleware
-func (sh *strictHandler) GetTableLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetTableLineageParams) {
-	var request GetTableLineageRequestObject
+// CreateManifest operation middleware
+func (sh *strictHandler) CreateManifest(w http.ResponseWriter, r *http.Request) {
+	var request CreateManifestRequestObject
 
-	request.SchemaName = schemaName
-	request.TableName = tableName
-	request.Params = params
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.GetTableLineage(ctx, request.(GetTableLineageRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetTableLineage")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetTableLineageResponseObject); ok {
-		if err := validResponse.VisitGetTableLineageResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// GetDownstreamLineage operation middleware
-func (sh *strictHandler) GetDownstreamLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetDownstreamLineageParams) {
-	var request GetDownstreamLineageRequestObject
-
-	request.SchemaName = schemaName
-	request.TableName = tableName
-	request.Params = params
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.GetDownstreamLineage(ctx, request.(GetDownstreamLineageRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetDownstreamLineage")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetDownstreamLineageResponseObject); ok {
-		if err := validResponse.VisitGetDownstreamLineageResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// GetUpstreamLineage operation middleware
-func (sh *strictHandler) GetUpstreamLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetUpstreamLineageParams) {
-	var request GetUpstreamLineageRequestObject
-
-	request.SchemaName = schemaName
-	request.TableName = tableName
-	request.Params = params
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.GetUpstreamLineage(ctx, request.(GetUpstreamLineageRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetUpstreamLineage")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetUpstreamLineageResponseObject); ok {
-		if err := validResponse.VisitGetUpstreamLineageResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// GetManifest operation middleware
-func (sh *strictHandler) GetManifest(w http.ResponseWriter, r *http.Request) {
-	var request GetManifestRequestObject
-
-	var body GetManifestJSONRequestBody
+	var body CreateManifestJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
 		return
@@ -7774,18 +7817,18 @@ func (sh *strictHandler) GetManifest(w http.ResponseWriter, r *http.Request) {
 	request.Body = &body
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.GetManifest(ctx, request.(GetManifestRequestObject))
+		return sh.ssi.CreateManifest(ctx, request.(CreateManifestRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetManifest")
+		handler = middleware(handler, "CreateManifest")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetManifestResponseObject); ok {
-		if err := validResponse.VisitGetManifestResponse(w); err != nil {
+	} else if validResponse, ok := response.(CreateManifestResponseObject); ok {
+		if err := validResponse.VisitCreateManifestResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -7875,10 +7918,10 @@ func (sh *strictHandler) CreatePrincipal(w http.ResponseWriter, r *http.Request)
 }
 
 // DeletePrincipal operation middleware
-func (sh *strictHandler) DeletePrincipal(w http.ResponseWriter, r *http.Request, id int64) {
+func (sh *strictHandler) DeletePrincipal(w http.ResponseWriter, r *http.Request, principalId int64) {
 	var request DeletePrincipalRequestObject
 
-	request.Id = id
+	request.PrincipalId = principalId
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.DeletePrincipal(ctx, request.(DeletePrincipalRequestObject))
@@ -7901,10 +7944,10 @@ func (sh *strictHandler) DeletePrincipal(w http.ResponseWriter, r *http.Request,
 }
 
 // GetPrincipal operation middleware
-func (sh *strictHandler) GetPrincipal(w http.ResponseWriter, r *http.Request, id int64) {
+func (sh *strictHandler) GetPrincipal(w http.ResponseWriter, r *http.Request, principalId int64) {
 	var request GetPrincipalRequestObject
 
-	request.Id = id
+	request.PrincipalId = principalId
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.GetPrincipal(ctx, request.(GetPrincipalRequestObject))
@@ -7926,13 +7969,13 @@ func (sh *strictHandler) GetPrincipal(w http.ResponseWriter, r *http.Request, id
 	}
 }
 
-// SetAdmin operation middleware
-func (sh *strictHandler) SetAdmin(w http.ResponseWriter, r *http.Request, id int64) {
-	var request SetAdminRequestObject
+// UpdatePrincipalAdmin operation middleware
+func (sh *strictHandler) UpdatePrincipalAdmin(w http.ResponseWriter, r *http.Request, principalId int64) {
+	var request UpdatePrincipalAdminRequestObject
 
-	request.Id = id
+	request.PrincipalId = principalId
 
-	var body SetAdminJSONRequestBody
+	var body UpdatePrincipalAdminJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
 		return
@@ -7940,18 +7983,18 @@ func (sh *strictHandler) SetAdmin(w http.ResponseWriter, r *http.Request, id int
 	request.Body = &body
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.SetAdmin(ctx, request.(SetAdminRequestObject))
+		return sh.ssi.UpdatePrincipalAdmin(ctx, request.(UpdatePrincipalAdminRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "SetAdmin")
+		handler = middleware(handler, "UpdatePrincipalAdmin")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(SetAdminResponseObject); ok {
-		if err := validResponse.VisitSetAdminResponse(w); err != nil {
+	} else if validResponse, ok := response.(UpdatePrincipalAdminResponseObject); ok {
+		if err := validResponse.VisitUpdatePrincipalAdminResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -8017,10 +8060,10 @@ func (sh *strictHandler) ListQueryHistory(w http.ResponseWriter, r *http.Request
 }
 
 // DeleteRowFilter operation middleware
-func (sh *strictHandler) DeleteRowFilter(w http.ResponseWriter, r *http.Request, id int64) {
+func (sh *strictHandler) DeleteRowFilter(w http.ResponseWriter, r *http.Request, rowFilterId int64) {
 	var request DeleteRowFilterRequestObject
 
-	request.Id = id
+	request.RowFilterId = rowFilterId
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.DeleteRowFilter(ctx, request.(DeleteRowFilterRequestObject))
@@ -8042,44 +8085,11 @@ func (sh *strictHandler) DeleteRowFilter(w http.ResponseWriter, r *http.Request,
 	}
 }
 
-// UnbindRowFilter operation middleware
-func (sh *strictHandler) UnbindRowFilter(w http.ResponseWriter, r *http.Request, id int64) {
-	var request UnbindRowFilterRequestObject
-
-	request.Id = id
-
-	var body UnbindRowFilterJSONRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
-		return
-	}
-	request.Body = &body
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.UnbindRowFilter(ctx, request.(UnbindRowFilterRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "UnbindRowFilter")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(UnbindRowFilterResponseObject); ok {
-		if err := validResponse.VisitUnbindRowFilterResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
 // BindRowFilter operation middleware
-func (sh *strictHandler) BindRowFilter(w http.ResponseWriter, r *http.Request, id int64) {
+func (sh *strictHandler) BindRowFilter(w http.ResponseWriter, r *http.Request, rowFilterId int64) {
 	var request BindRowFilterRequestObject
 
-	request.Id = id
+	request.RowFilterId = rowFilterId
 
 	var body BindRowFilterJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -8108,52 +8118,32 @@ func (sh *strictHandler) BindRowFilter(w http.ResponseWriter, r *http.Request, i
 	}
 }
 
-// ListSchemas operation middleware
-func (sh *strictHandler) ListSchemas(w http.ResponseWriter, r *http.Request, params ListSchemasParams) {
-	var request ListSchemasRequestObject
+// UnbindRowFilter operation middleware
+func (sh *strictHandler) UnbindRowFilter(w http.ResponseWriter, r *http.Request, rowFilterId int64) {
+	var request UnbindRowFilterRequestObject
 
-	request.Params = params
+	request.RowFilterId = rowFilterId
+
+	var body UnbindRowFilterJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.ListSchemas(ctx, request.(ListSchemasRequestObject))
+		return sh.ssi.UnbindRowFilter(ctx, request.(UnbindRowFilterRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "ListSchemas")
+		handler = middleware(handler, "UnbindRowFilter")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(ListSchemasResponseObject); ok {
-		if err := validResponse.VisitListSchemasResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// ListTables operation middleware
-func (sh *strictHandler) ListTables(w http.ResponseWriter, r *http.Request, id int64, params ListTablesParams) {
-	var request ListTablesRequestObject
-
-	request.Id = id
-	request.Params = params
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.ListTables(ctx, request.(ListTablesRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "ListTables")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(ListTablesResponseObject); ok {
-		if err := validResponse.VisitListTablesResponse(w); err != nil {
+	} else if validResponse, ok := response.(UnbindRowFilterResponseObject); ok {
+		if err := validResponse.VisitUnbindRowFilterResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -8329,33 +8319,6 @@ func (sh *strictHandler) UpdateStorageCredential(w http.ResponseWriter, r *http.
 	}
 }
 
-// ListColumns operation middleware
-func (sh *strictHandler) ListColumns(w http.ResponseWriter, r *http.Request, id int64, params ListColumnsParams) {
-	var request ListColumnsRequestObject
-
-	request.Id = id
-	request.Params = params
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.ListColumns(ctx, request.(ListColumnsRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "ListColumns")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(ListColumnsResponseObject); ok {
-		if err := validResponse.VisitListColumnsResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
 // ListColumnMasks operation middleware
 func (sh *strictHandler) ListColumnMasks(w http.ResponseWriter, r *http.Request, tableId int64, params ListColumnMasksParams) {
 	var request ListColumnMasksRequestObject
@@ -8476,25 +8439,25 @@ func (sh *strictHandler) CreateRowFilter(w http.ResponseWriter, r *http.Request,
 	}
 }
 
-// UnassignTag operation middleware
-func (sh *strictHandler) UnassignTag(w http.ResponseWriter, r *http.Request, assignmentId int64) {
-	var request UnassignTagRequestObject
+// DeleteTagAssignment operation middleware
+func (sh *strictHandler) DeleteTagAssignment(w http.ResponseWriter, r *http.Request, assignmentId int64) {
+	var request DeleteTagAssignmentRequestObject
 
 	request.AssignmentId = assignmentId
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.UnassignTag(ctx, request.(UnassignTagRequestObject))
+		return sh.ssi.DeleteTagAssignment(ctx, request.(DeleteTagAssignmentRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "UnassignTag")
+		handler = middleware(handler, "DeleteTagAssignment")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(UnassignTagResponseObject); ok {
-		if err := validResponse.VisitUnassignTagResponse(w); err != nil {
+	} else if validResponse, ok := response.(DeleteTagAssignmentResponseObject); ok {
+		if err := validResponse.VisitDeleteTagAssignmentResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -8585,13 +8548,13 @@ func (sh *strictHandler) DeleteTag(w http.ResponseWriter, r *http.Request, tagId
 	}
 }
 
-// AssignTag operation middleware
-func (sh *strictHandler) AssignTag(w http.ResponseWriter, r *http.Request, tagId int64) {
-	var request AssignTagRequestObject
+// CreateTagAssignment operation middleware
+func (sh *strictHandler) CreateTagAssignment(w http.ResponseWriter, r *http.Request, tagId int64) {
+	var request CreateTagAssignmentRequestObject
 
 	request.TagId = tagId
 
-	var body AssignTagJSONRequestBody
+	var body CreateTagAssignmentJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
 		return
@@ -8599,18 +8562,18 @@ func (sh *strictHandler) AssignTag(w http.ResponseWriter, r *http.Request, tagId
 	request.Body = &body
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.AssignTag(ctx, request.(AssignTagRequestObject))
+		return sh.ssi.CreateTagAssignment(ctx, request.(CreateTagAssignmentRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "AssignTag")
+		handler = middleware(handler, "CreateTagAssignment")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(AssignTagResponseObject); ok {
-		if err := validResponse.VisitAssignTagResponse(w); err != nil {
+	} else if validResponse, ok := response.(CreateTagAssignmentResponseObject); ok {
+		if err := validResponse.VisitCreateTagAssignmentResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -8621,119 +8584,124 @@ func (sh *strictHandler) AssignTag(w http.ResponseWriter, r *http.Request, tagId
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

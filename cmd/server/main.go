@@ -344,7 +344,6 @@ func main() {
 	grantSvc := service.NewGrantService(grantRepo, auditRepo)
 	rowFilterSvc := service.NewRowFilterService(rowFilterRepo, auditRepo)
 	columnMaskSvc := service.NewColumnMaskService(columnMaskRepo, auditRepo)
-	introspectionSvc := service.NewIntrospectionService(introspectionRepo)
 	auditSvc := service.NewAuditService(auditRepo)
 	queryHistorySvc := service.NewQueryHistoryService(queryHistoryRepo)
 	lineageSvc := service.NewLineageService(lineageRepo)
@@ -424,7 +423,7 @@ func main() {
 	// Create API handler
 	handler := api.NewHandler(
 		querySvc, principalSvc, groupSvc, grantSvc,
-		rowFilterSvc, columnMaskSvc, introspectionSvc, auditSvc,
+		rowFilterSvc, columnMaskSvc, auditSvc,
 		manifestSvc, catalogSvc,
 		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
 		ingestionSvc,

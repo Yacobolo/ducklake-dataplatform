@@ -118,7 +118,6 @@ func setupTestServer(t *testing.T, principalName string) *httptest.Server {
 	grantSvc := service.NewGrantService(grantRepo, auditRepo)
 	rowFilterSvc := service.NewRowFilterService(rowFilterRepo, auditRepo)
 	columnMaskSvc := service.NewColumnMaskService(columnMaskRepo, auditRepo)
-	introspectionSvc := service.NewIntrospectionService(introspectionRepo)
 	auditSvc := service.NewAuditService(auditRepo)
 
 	catalogRepo := repository.NewCatalogRepo(metaDB, duckDB)
@@ -131,7 +130,7 @@ func setupTestServer(t *testing.T, principalName string) *httptest.Server {
 	tagSvc := service.NewTagService(repository.NewTagRepo(metaDB), auditRepo)
 	viewSvc := service.NewViewService(repository.NewViewRepo(metaDB), catalogRepo, cat, auditRepo)
 
-	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, introspectionSvc, auditSvc, nil, catalogSvc, queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc, nil, nil, nil)
+	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, auditSvc, nil, catalogSvc, queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc, nil, nil, nil)
 	strictHandler := NewStrictHandler(handler, nil)
 
 	// Setup router with fixed auth (test principal)
@@ -245,28 +244,6 @@ func TestAPI_CreateAndDeletePrincipal(t *testing.T) {
 	if resp2.StatusCode != 204 {
 		t.Errorf("expected 204, got %d", resp2.StatusCode)
 	}
-}
-
-func TestAPI_ListSchemas(t *testing.T) {
-	srv := setupTestServer(t, "admin_user")
-	defer srv.Close()
-
-	resp, err := http.Get(srv.URL + "/schemas")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		t.Errorf("expected 200, got %d", resp.StatusCode)
-	}
-
-	var schemasResult PaginatedSchemas
-	json.NewDecoder(resp.Body).Decode(&schemasResult)
-	if schemasResult.Data == nil || len(*schemasResult.Data) == 0 {
-		t.Error("expected at least one schema")
-	}
-	t.Logf("got %d schemas", len(*schemasResult.Data))
 }
 
 func TestAPI_AuditLogs(t *testing.T) {
@@ -390,7 +367,6 @@ func setupCatalogTestServer(t *testing.T, principalName string, mockRepo *mockCa
 	grantSvc := service.NewGrantService(grantRepo, auditRepo)
 	rowFilterSvc := service.NewRowFilterService(rowFilterRepo, auditRepo)
 	columnMaskSvc := service.NewColumnMaskService(columnMaskRepo, auditRepo)
-	introspectionSvc := service.NewIntrospectionService(introspectionRepo)
 	auditSvc := service.NewAuditService(auditRepo)
 
 	// Use the mock catalog repo instead of real DuckLake
@@ -403,7 +379,7 @@ func setupCatalogTestServer(t *testing.T, principalName string, mockRepo *mockCa
 	tagSvc := service.NewTagService(repository.NewTagRepo(metaDB), auditRepo)
 	viewSvc := service.NewViewService(repository.NewViewRepo(metaDB), mockRepo, cat, auditRepo)
 
-	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, introspectionSvc, auditSvc, nil, catalogSvc, queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc, nil, nil, nil)
+	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, auditSvc, nil, catalogSvc, queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc, nil, nil, nil)
 	strictHandler := NewStrictHandler(handler, nil)
 
 	r := chi.NewRouter()
@@ -857,8 +833,8 @@ func TestAPI_Schema_Conflict(t *testing.T) {
 		wantStatus int
 	}{
 		{"duplicate schema", "POST", "/catalog/schemas", `{"name":"existing"}`, 409},
-		// delete non-empty schema without force -> conflict (handler maps to 403)
-		{"non-empty schema delete without force", "DELETE", "/catalog/schemas/existing", "", 403},
+		// delete non-empty schema without force -> conflict
+		{"non-empty schema delete without force", "DELETE", "/catalog/schemas/existing", "", 409},
 		// delete non-empty schema with force -> success
 		{"non-empty schema delete with force", "DELETE", "/catalog/schemas/existing?force=true", "", 204},
 	}
