@@ -488,6 +488,26 @@ func TestClassifyStatement_Invalid(t *testing.T) {
 	}
 }
 
+func TestClassifyStatement_MultiStatementRejected(t *testing.T) {
+	tests := []struct {
+		name string
+		sql  string
+	}{
+		{"select_then_drop", "SELECT 1; DROP TABLE titanic"},
+		{"select_then_insert", "SELECT 1; INSERT INTO titanic (id) VALUES (1)"},
+		{"two_selects", "SELECT 1; SELECT 2"},
+		{"select_then_delete", "SELECT * FROM titanic; DELETE FROM titanic WHERE id = 1"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := ClassifyStatement(tc.sql)
+			if err == nil {
+				t.Error("expected error for multi-statement SQL")
+			}
+		})
+	}
+}
+
 // --- InjectRowFilterSQL tests ---
 
 func TestInjectRowFilterSQL_Basic(t *testing.T) {

@@ -367,3 +367,25 @@ func TestDeleteRequiresPrivilege(t *testing.T) {
 	}
 	t.Logf("DELETE denied: %v", err)
 }
+
+func TestMultiStatementBlocked(t *testing.T) {
+	eng := setupEngine(t)
+	ctx := context.Background()
+
+	tests := []struct {
+		name string
+		sql  string
+	}{
+		{"select_then_drop", "SELECT 1; DROP TABLE titanic"},
+		{"select_then_insert", "SELECT 1; INSERT INTO titanic (\"PassengerId\") VALUES (9999)"},
+		{"two_selects", "SELECT 1; SELECT * FROM titanic"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := eng.Query(ctx, "admin", tc.sql)
+			if err == nil {
+				t.Error("expected multi-statement query to be blocked")
+			}
+		})
+	}
+}
