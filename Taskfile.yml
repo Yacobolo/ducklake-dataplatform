@@ -56,3 +56,8 @@ tasks:
     desc: Run go vet
     cmds:
       - go vet ./...
+
+  integration-test:
+    desc: Run integration tests (requires extension build + S3 credentials)
+    cmds:
+      - go test -tags integration -v -timeout 120s ./test/integration/...
