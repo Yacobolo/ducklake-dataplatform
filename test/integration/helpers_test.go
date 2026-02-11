@@ -133,11 +133,11 @@ func setupSharedDuckLake() (*catalogTestEnv, func(), error) {
 	return &catalogTestEnv{DuckDB: duckDB, MetaDB: metaDB}, cleanup, nil
 }
 
-// requireCatalogEnv returns the shared DuckLake environment or skips the test.
+// requireCatalogEnv returns the shared DuckLake environment or fails the test.
 func requireCatalogEnv(t *testing.T) *catalogTestEnv {
 	t.Helper()
 	if sharedCatalogEnv == nil {
-		t.Skip("DuckLake extensions not available — skipping catalog test")
+		t.Fatal("DuckLake extensions not available — cannot run catalog test")
 	}
 	return sharedCatalogEnv
 }
@@ -570,7 +570,7 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 	)
 
 	// Remaining services (querySvc gets nil engine — we never hit /v1/query)
-	querySvc := service.NewQueryService(nil, auditRepo)
+	querySvc := service.NewQueryService(nil, auditRepo, nil)
 	principalSvc := service.NewPrincipalService(principalRepo, auditRepo)
 	groupSvc := service.NewGroupService(groupRepo, auditRepo)
 	grantSvc := service.NewGrantService(grantRepo, auditRepo)
@@ -583,6 +583,7 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 		querySvc, principalSvc, groupSvc, grantSvc,
 		rowFilterSvc, columnMaskSvc, introspectionSvc, auditSvc,
 		manifestSvc, nil, // catalogSvc=nil — integration tests only hit /v1/manifest
+		nil, nil, nil, nil, nil, // queryHistory, lineage, search, tags, views
 	)
 	strictHandler := api.NewStrictHandler(handler, nil)
 
@@ -723,7 +724,7 @@ type catalogTestEnv struct {
 // It opens an in-memory DuckDB, installs the ducklake + sqlite extensions,
 // attaches a DuckLake catalog backed by a temp SQLite file, opens a separate
 // SQLite connection for metaDB reads, and runs app migrations (catalog_metadata).
-// Skips the test if DuckLake extensions are unavailable.
+// Fails the test if DuckLake extensions are unavailable.
 func setupLocalDuckLake(t *testing.T) *catalogTestEnv {
 	t.Helper()
 
@@ -740,13 +741,13 @@ func setupLocalDuckLake(t *testing.T) *catalogTestEnv {
 	}
 	t.Cleanup(func() { duckDB.Close() })
 
-	// Install and load DuckLake + SQLite extensions (skip if unavailable)
+	// Install and load DuckLake + SQLite extensions (fail if unavailable)
 	for _, stmt := range []string{
 		"INSTALL ducklake", "LOAD ducklake",
 		"INSTALL sqlite", "LOAD sqlite",
 	} {
 		if _, err := duckDB.Exec(stmt); err != nil {
-			t.Skipf("%s failed (extension not available): %v", stmt, err)
+			t.Fatalf("%s failed (extension not available): %v", stmt, err)
 		}
 	}
 
@@ -898,7 +899,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	auditSvc := service.NewAuditService(auditRepo)
 
 	// querySvc gets nil engine — no /v1/query support unless WithDuckLake+engine
-	querySvc := service.NewQueryService(nil, auditRepo)
+	querySvc := service.NewQueryService(nil, auditRepo, nil)
 
 	var duckDB *sql.DB
 	var catalogSvc *service.CatalogService
@@ -935,7 +936,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		columnMaskSvc = service.NewColumnMaskService(columnMaskRepo, auditRepo)
 		introspectionSvc = service.NewIntrospectionService(introspectionRepo)
 		auditSvc = service.NewAuditService(auditRepo)
-		querySvc = service.NewQueryService(nil, auditRepo)
+		querySvc = service.NewQueryService(nil, auditRepo, nil)
 
 		authSvc := service.NewAuthorizationService(
 			principalRepo, groupRepo, grantRepo,
@@ -951,6 +952,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		querySvc, principalSvc, groupSvc, grantSvc,
 		rowFilterSvc, columnMaskSvc, introspectionSvc, auditSvc,
 		manifestSvc, catalogSvc,
+		nil, nil, nil, nil, nil, // queryHistory, lineage, search, tags, views
 	)
 	strictHandler := api.NewStrictHandler(handler, nil)
 
