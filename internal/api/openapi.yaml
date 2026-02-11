@@ -617,6 +617,9 @@ components:
           type: string
           format: date-time
           nullable: true
+        storage_path:
+          type: string
+          description: Resolved DuckLake data path for MANAGED tables.
         source_path:
           type: string
           description: S3/storage path for EXTERNAL tables.
@@ -636,6 +639,9 @@ components:
           type: string
         position:
           type: integer
+        nullable:
+          type: boolean
+          description: Whether the column allows NULL values.
         comment:
           type: string
         properties:

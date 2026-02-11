@@ -1406,6 +1406,9 @@ func tableDetailToAPI(t domain.TableDetail) TableDetail {
 	if t.Statistics != nil {
 		td.Statistics = tableStatisticsPtr(t.Statistics)
 	}
+	if t.StoragePath != "" {
+		td.StoragePath = &t.StoragePath
+	}
 	if t.SourcePath != "" {
 		td.SourcePath = &t.SourcePath
 	}
@@ -1423,6 +1426,7 @@ func columnDetailToAPI(c domain.ColumnDetail) ColumnDetail {
 		Name:       &c.Name,
 		Type:       &c.Type,
 		Position:   &c.Position,
+		Nullable:   &c.Nullable,
 		Comment:    &c.Comment,
 		Properties: &c.Properties,
 	}

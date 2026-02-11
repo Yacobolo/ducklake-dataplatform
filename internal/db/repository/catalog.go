@@ -407,11 +407,12 @@ func (r *CatalogRepo) CreateTable(ctx context.Context, schemaName string, req do
 // GetTable reads a table by schema and table name, including columns.
 // NOTE: ducklake_schema and ducklake_table are not managed by sqlc.
 func (r *CatalogRepo) GetTable(ctx context.Context, schemaName, tableName string) (*domain.TableDetail, error) {
-	// First get the schema_id
+	// First get the schema_id and schema path
 	var schemaID int64
+	var schemaPath sql.NullString
 	err := r.metaDB.QueryRowContext(ctx,
-		`SELECT schema_id FROM ducklake_schema WHERE schema_name = ? AND end_snapshot IS NULL`, schemaName).
-		Scan(&schemaID)
+		`SELECT schema_id, path FROM ducklake_schema WHERE schema_name = ? AND end_snapshot IS NULL`, schemaName).
+		Scan(&schemaID, &schemaPath)
 	if err == sql.ErrNoRows {
 		return nil, domain.ErrNotFound("schema %q not found", schemaName)
 	}
@@ -420,10 +421,12 @@ func (r *CatalogRepo) GetTable(ctx context.Context, schemaName, tableName string
 	}
 
 	var t domain.TableDetail
+	var tablePath sql.NullString
+	var tablePathIsRelative sql.NullInt64
 	err = r.metaDB.QueryRowContext(ctx,
-		`SELECT table_id, table_name FROM ducklake_table WHERE schema_id = ? AND table_name = ? AND end_snapshot IS NULL`,
+		`SELECT table_id, table_name, path, path_is_relative FROM ducklake_table WHERE schema_id = ? AND table_name = ? AND end_snapshot IS NULL`,
 		schemaID, tableName).
-		Scan(&t.TableID, &t.Name)
+		Scan(&t.TableID, &t.Name, &tablePath, &tablePathIsRelative)
 	if err == sql.ErrNoRows {
 		// Fall back to external tables
 		if r.extRepo != nil {
@@ -443,6 +446,9 @@ func (r *CatalogRepo) GetTable(ctx context.Context, schemaName, tableName string
 	t.SchemaName = schemaName
 	t.CatalogName = "lake"
 	t.TableType = "MANAGED"
+
+	// Resolve storage path for MANAGED tables
+	t.StoragePath = r.resolveStoragePath(ctx, schemaPath, tablePath, tablePathIsRelative)
 
 	// Load columns (ducklake_column — not managed by sqlc)
 	cols, err := r.loadColumns(ctx, t.TableID)
@@ -654,7 +660,7 @@ func (r *CatalogRepo) ListColumns(ctx context.Context, schemaName, tableName str
 	}
 
 	rows, err := r.metaDB.QueryContext(ctx,
-		`SELECT column_name, column_type, column_id FROM ducklake_column WHERE table_id = ? AND end_snapshot IS NULL ORDER BY column_id LIMIT ? OFFSET ?`,
+		`SELECT column_name, column_type, column_id, COALESCE(nulls_allowed, 1) FROM ducklake_column WHERE table_id = ? AND end_snapshot IS NULL ORDER BY column_id LIMIT ? OFFSET ?`,
 		tableID, page.Limit(), page.Offset())
 	if err != nil {
 		return nil, 0, err
@@ -666,10 +672,12 @@ func (r *CatalogRepo) ListColumns(ctx context.Context, schemaName, tableName str
 	for rows.Next() {
 		var c domain.ColumnDetail
 		var colID int64
-		if err := rows.Scan(&c.Name, &c.Type, &colID); err != nil {
+		var nullsAllowed int64
+		if err := rows.Scan(&c.Name, &c.Type, &colID, &nullsAllowed); err != nil {
 			return nil, 0, err
 		}
 		c.Position = pos
+		c.Nullable = nullsAllowed != 0
 		pos++
 		columns = append(columns, c)
 	}
@@ -978,10 +986,37 @@ func (r *CatalogRepo) discoverColumns(ctx context.Context, sourcePath, fileForma
 
 // --- helpers ---
 
+// resolveStoragePath computes the effective storage path for a MANAGED table
+// by combining the global data_path, optional schema path, and optional table path.
+// DuckLake path resolution: if table has its own path, use it (prepend data_path if relative).
+// If not, use the schema's path. If neither, use data_path directly.
+func (r *CatalogRepo) resolveStoragePath(ctx context.Context, schemaPath, tablePath sql.NullString, tablePathIsRelative sql.NullInt64) string {
+	// Read global data_path
+	var dataPath string
+	_ = r.metaDB.QueryRowContext(ctx,
+		`SELECT value FROM ducklake_metadata WHERE key = 'data_path'`).Scan(&dataPath)
+
+	// If table has its own path, use that
+	if tablePath.Valid && tablePath.String != "" {
+		if tablePathIsRelative.Valid && tablePathIsRelative.Int64 != 0 {
+			return dataPath + tablePath.String
+		}
+		return tablePath.String
+	}
+
+	// If schema has a path, use that
+	if schemaPath.Valid && schemaPath.String != "" {
+		return schemaPath.String
+	}
+
+	// Fall back to global data_path
+	return dataPath
+}
+
 // loadColumns reads columns from ducklake_column (not managed by sqlc).
 func (r *CatalogRepo) loadColumns(ctx context.Context, tableID int64) ([]domain.ColumnDetail, error) {
 	rows, err := r.metaDB.QueryContext(ctx,
-		`SELECT column_name, column_type, column_id FROM ducklake_column WHERE table_id = ? AND end_snapshot IS NULL ORDER BY column_id`,
+		`SELECT column_name, column_type, column_id, COALESCE(nulls_allowed, 1) FROM ducklake_column WHERE table_id = ? AND end_snapshot IS NULL ORDER BY column_id`,
 		tableID)
 	if err != nil {
 		return nil, err
@@ -993,10 +1028,12 @@ func (r *CatalogRepo) loadColumns(ctx context.Context, tableID int64) ([]domain.
 	for rows.Next() {
 		var c domain.ColumnDetail
 		var colID int64
-		if err := rows.Scan(&c.Name, &c.Type, &colID); err != nil {
+		var nullsAllowed int64
+		if err := rows.Scan(&c.Name, &c.Type, &colID, &nullsAllowed); err != nil {
 			return nil, err
 		}
 		c.Position = pos
+		c.Nullable = nullsAllowed != 0
 		pos++
 		cols = append(cols, c)
 	}

@@ -68,8 +68,11 @@ type CatalogInfo struct {
 
 // ColumnDetail defines model for ColumnDetail.
 type ColumnDetail struct {
-	Comment    *string            `json:"comment,omitempty"`
-	Name       *string            `json:"name,omitempty"`
+	Comment *string `json:"comment,omitempty"`
+	Name    *string `json:"name,omitempty"`
+
+	// Nullable Whether the column allows NULL values.
+	Nullable   *bool              `json:"nullable,omitempty"`
 	Position   *int               `json:"position,omitempty"`
 	Properties *map[string]string `json:"properties,omitempty"`
 	Type       *string            `json:"type,omitempty"`
@@ -613,10 +616,13 @@ type TableDetail struct {
 	// SourcePath S3/storage path for EXTERNAL tables.
 	SourcePath *string          `json:"source_path,omitempty"`
 	Statistics *TableStatistics `json:"statistics,omitempty"`
-	TableId    *int64           `json:"table_id,omitempty"`
-	TableType  *string          `json:"table_type,omitempty"`
-	Tags       *[]Tag           `json:"tags,omitempty"`
-	UpdatedAt  *time.Time       `json:"updated_at,omitempty"`
+
+	// StoragePath Resolved DuckLake data path for MANAGED tables.
+	StoragePath *string    `json:"storage_path,omitempty"`
+	TableId     *int64     `json:"table_id,omitempty"`
+	TableType   *string    `json:"table_type,omitempty"`
+	Tags        *[]Tag     `json:"tags,omitempty"`
+	UpdatedAt   *time.Time `json:"updated_at,omitempty"`
 }
 
 // TableStatistics defines model for TableStatistics.

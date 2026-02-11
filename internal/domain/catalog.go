@@ -40,6 +40,7 @@ type TableDetail struct {
 	Tags         []Tag
 	Statistics   *TableStatistics
 	DeletedAt    *time.Time
+	StoragePath  string // resolved DuckLake data path for MANAGED tables
 	SourcePath   string // populated for EXTERNAL tables
 	FileFormat   string // populated for EXTERNAL tables
 	LocationName string // populated for EXTERNAL tables
@@ -50,6 +51,7 @@ type ColumnDetail struct {
 	Name       string
 	Type       string
 	Position   int
+	Nullable   bool
 	Comment    string
 	Properties map[string]string
 }
