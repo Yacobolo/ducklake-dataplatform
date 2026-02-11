@@ -3,6 +3,7 @@ package config
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 )
@@ -63,9 +64,11 @@ func LoadFromEnv() (*Config, error) {
 	}
 	if cfg.JWTSecret == "" {
 		cfg.JWTSecret = "dev-secret-change-in-production"
+		log.Println("[WARNING] JWT_SECRET not set — using insecure default. Set JWT_SECRET in production!")
 	}
 	if cfg.EncryptionKey == "" {
 		cfg.EncryptionKey = "0000000000000000000000000000000000000000000000000000000000000000"
+		log.Println("[WARNING] ENCRYPTION_KEY not set — using insecure default. Set ENCRYPTION_KEY in production!")
 	}
 
 	return cfg, nil

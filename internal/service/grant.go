@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"duck-demo/internal/domain"
+	"duck-demo/internal/middleware"
 )
 
 type GrantService struct {
@@ -23,8 +24,9 @@ func (s *GrantService) Grant(ctx context.Context, g *domain.PrivilegeGrant) (*do
 	if err != nil {
 		return nil, err
 	}
+	principal, _ := middleware.PrincipalFromContext(ctx)
 	_ = s.audit.Insert(ctx, &domain.AuditEntry{
-		PrincipalName: "system",
+		PrincipalName: principal,
 		Action:        "GRANT",
 		Status:        "ALLOWED",
 	})
@@ -35,8 +37,9 @@ func (s *GrantService) Revoke(ctx context.Context, g *domain.PrivilegeGrant) err
 	if err := s.repo.Revoke(ctx, g); err != nil {
 		return err
 	}
+	principal, _ := middleware.PrincipalFromContext(ctx)
 	_ = s.audit.Insert(ctx, &domain.AuditEntry{
-		PrincipalName: "system",
+		PrincipalName: principal,
 		Action:        "REVOKE",
 		Status:        "ALLOWED",
 	})

@@ -3,7 +3,6 @@ package mapper
 import (
 	"database/sql"
 	"encoding/json"
-	"strings"
 	"time"
 
 	dbstore "duck-demo/internal/db/dbstore"
@@ -267,7 +266,10 @@ func AuditEntryFromDB(a dbstore.AuditLog) *domain.AuditEntry {
 func AuditEntriesToDBParams(e *domain.AuditEntry) dbstore.InsertAuditLogParams {
 	var tablesJSON string
 	if len(e.TablesAccessed) > 0 {
-		tablesJSON = `["` + strings.Join(e.TablesAccessed, `","`) + `"]`
+		b, err := json.Marshal(e.TablesAccessed)
+		if err == nil {
+			tablesJSON = string(b)
+		}
 	}
 	return dbstore.InsertAuditLogParams{
 		PrincipalName:  e.PrincipalName,
