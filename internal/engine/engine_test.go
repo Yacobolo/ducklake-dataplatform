@@ -21,22 +21,10 @@ import (
 func setupTestCatalog(t *testing.T) *service.AuthorizationService {
 	t.Helper()
 
-	tmpDir := t.TempDir()
-	metaPath := tmpDir + "/test_meta.sqlite"
-
-	metaDB, err := sql.Open("sqlite3", metaPath+"?_foreign_keys=on")
-	if err != nil {
-		t.Fatalf("open metastore: %v", err)
-	}
-	t.Cleanup(func() { metaDB.Close() })
-
-	// Run permission migrations
-	if err := internaldb.RunMigrations(metaDB); err != nil {
-		t.Fatalf("migrations: %v", err)
-	}
+	metaDB, _ := internaldb.OpenTestSQLite(t)
 
 	// Create mock DuckLake catalog tables that the service queries
-	_, err = metaDB.Exec(`
+	_, err := metaDB.Exec(`
 		CREATE TABLE IF NOT EXISTS ducklake_schema (
 			schema_id INTEGER PRIMARY KEY,
 			schema_uuid TEXT,

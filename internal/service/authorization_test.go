@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"database/sql"
 	"testing"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -18,19 +17,10 @@ import (
 func setupTestService(t *testing.T) (*AuthorizationService, *dbstore.Queries, context.Context) {
 	t.Helper()
 
-	tmpDir := t.TempDir()
-	db, err := sql.Open("sqlite3", tmpDir+"/test.sqlite?_foreign_keys=on")
-	if err != nil {
-		t.Fatalf("open sqlite: %v", err)
-	}
-	t.Cleanup(func() { db.Close() })
-
-	if err := internaldb.RunMigrations(db); err != nil {
-		t.Fatalf("migrations: %v", err)
-	}
+	db, _ := internaldb.OpenTestSQLite(t)
 
 	// Create mock DuckLake catalog tables
-	_, err = db.Exec(`
+	_, err := db.Exec(`
 		CREATE TABLE ducklake_schema (
 			schema_id INTEGER PRIMARY KEY,
 			schema_uuid TEXT,

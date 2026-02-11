@@ -45,17 +45,8 @@ func setupTestServer(t *testing.T, principalName string) *httptest.Server {
 		t.Fatalf("create table: %v", err)
 	}
 
-	// SQLite metastore
-	tmpDir := t.TempDir()
-	metaDB, err := sql.Open("sqlite3", tmpDir+"/test.sqlite?_foreign_keys=on")
-	if err != nil {
-		t.Fatalf("open sqlite: %v", err)
-	}
-	t.Cleanup(func() { metaDB.Close() })
-
-	if err := internaldb.RunMigrations(metaDB); err != nil {
-		t.Fatalf("migrations: %v", err)
-	}
+	// SQLite metastore (hardened write/read pools; tests use writeDB for everything)
+	metaDB, _ := internaldb.OpenTestSQLite(t)
 
 	// Create mock DuckLake tables
 	_, err = metaDB.Exec(`
@@ -329,17 +320,8 @@ func setupCatalogTestServer(t *testing.T, principalName string, mockRepo *mockCa
 		t.Fatalf("create table: %v", err)
 	}
 
-	// SQLite metastore
-	tmpDir := t.TempDir()
-	metaDB, err := sql.Open("sqlite3", tmpDir+"/test.sqlite?_foreign_keys=on")
-	if err != nil {
-		t.Fatalf("open sqlite: %v", err)
-	}
-	t.Cleanup(func() { metaDB.Close() })
-
-	if err := internaldb.RunMigrations(metaDB); err != nil {
-		t.Fatalf("migrations: %v", err)
-	}
+	// SQLite metastore (hardened write/read pools; tests use writeDB for everything)
+	metaDB, _ := internaldb.OpenTestSQLite(t)
 
 	// Create mock DuckLake tables (for introspection/authorization)
 	_, err = metaDB.Exec(`

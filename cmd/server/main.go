@@ -243,33 +243,38 @@ func main() {
 		}
 	}
 
-	// Open SQLite metastore for permission catalog
-	metaDB, err := sql.Open("sqlite3", metaDBPath+"?_foreign_keys=on")
+	// Open SQLite metastore with hardened connection settings.
+	// writeDB: single-connection pool for serialized writes (WAL + txlock=immediate).
+	// readDB:  4-connection pool for concurrent reads (WAL, no txlock).
+	writeDB, readDB, err := internaldb.OpenSQLitePair(metaDBPath, 4)
 	if err != nil {
 		log.Fatalf("failed to open metastore: %v", err)
 	}
-	defer metaDB.Close()
+	defer writeDB.Close()
+	defer readDB.Close()
 
-	// Run migrations
+	// Run migrations on the write pool (DDL requires write access)
 	fmt.Println("Running catalog migrations...")
-	if err := internaldb.RunMigrations(metaDB); err != nil {
+	if err := internaldb.RunMigrations(writeDB); err != nil {
 		log.Fatalf("migration failed: %v", err)
 	}
 
-	// Create repositories
-	principalRepo := repository.NewPrincipalRepo(metaDB)
-	groupRepo := repository.NewGroupRepo(metaDB)
-	grantRepo := repository.NewGrantRepo(metaDB)
-	rowFilterRepo := repository.NewRowFilterRepo(metaDB)
-	columnMaskRepo := repository.NewColumnMaskRepo(metaDB)
-	auditRepo := repository.NewAuditRepo(metaDB)
-	introspectionRepo := repository.NewIntrospectionRepo(metaDB)
-	catalogRepo := repository.NewCatalogRepo(metaDB, duckDB)
-	queryHistoryRepo := repository.NewQueryHistoryRepo(metaDB)
-	lineageRepo := repository.NewLineageRepo(metaDB)
-	searchRepo := repository.NewSearchRepo(metaDB)
-	tagRepo := repository.NewTagRepo(metaDB)
-	viewRepo := repository.NewViewRepo(metaDB)
+	// Create repositories — write-pool for repos that INSERT/UPDATE/DELETE,
+	// read-pool for repos that only SELECT.
+	principalRepo := repository.NewPrincipalRepo(writeDB)
+	groupRepo := repository.NewGroupRepo(writeDB)
+	grantRepo := repository.NewGrantRepo(writeDB)
+	rowFilterRepo := repository.NewRowFilterRepo(writeDB)
+	columnMaskRepo := repository.NewColumnMaskRepo(writeDB)
+	auditRepo := repository.NewAuditRepo(writeDB)
+	lineageRepo := repository.NewLineageRepo(writeDB)
+	tagRepo := repository.NewTagRepo(writeDB)
+	viewRepo := repository.NewViewRepo(writeDB)
+	catalogRepo := repository.NewCatalogRepo(writeDB, duckDB)
+
+	introspectionRepo := repository.NewIntrospectionRepo(readDB)
+	queryHistoryRepo := repository.NewQueryHistoryRepo(readDB)
+	searchRepo := repository.NewSearchRepo(readDB)
 
 	// Create authorization service
 	cat := service.NewAuthorizationService(
@@ -277,8 +282,8 @@ func main() {
 		rowFilterRepo, columnMaskRepo, introspectionRepo,
 	)
 
-	// Seed demo data
-	q := dbstore.New(metaDB)
+	// Seed demo data (writes, so use writeDB)
+	q := dbstore.New(writeDB)
 	if err := seedCatalog(ctx, cat, q); err != nil {
 		log.Fatalf("seed catalog: %v", err)
 	}
@@ -311,11 +316,11 @@ func main() {
 		if err != nil {
 			log.Printf("warning: could not create S3 presigner: %v", err)
 		} else {
-			manifestSvc = service.NewManifestService(metaDB, cat, presigner, introspectionRepo, auditRepo)
+			manifestSvc = service.NewManifestService(readDB, cat, presigner, introspectionRepo, auditRepo)
 			log.Println("Manifest service enabled (duck_access extension support)")
 
 			ingestionSvc = service.NewIngestionService(
-				duckDB, metaDB, cat, presigner, auditRepo, "lake", cfg.S3Bucket,
+				duckDB, readDB, cat, presigner, auditRepo, "lake", cfg.S3Bucket,
 			)
 			log.Println("Ingestion service enabled")
 		}
@@ -378,7 +383,7 @@ func main() {
 	})
 
 	// Authenticated API routes under /v1 prefix
-	apiKeyRepo := repository.NewAPIKeyRepo(metaDB)
+	apiKeyRepo := repository.NewAPIKeyRepo(readDB)
 	r.Route("/v1", func(r chi.Router) {
 		r.Use(middleware.AuthMiddleware(jwtSecret, apiKeyRepo))
 		api.HandlerFromMux(strictHandler, r)

@@ -92,8 +92,8 @@ func TestDuckLakeRBACIntegration(t *testing.T) {
 		t.Skipf("SetupDuckLake failed (S3 bucket may not exist): %v", err)
 	}
 
-	// Set up catalog using the DuckLake metastore
-	metaDB, err := sql.Open("sqlite3", cfg.MetaDBPath+"?_foreign_keys=on")
+	// Set up catalog using the DuckLake metastore (hardened pools)
+	metaDB, err := internaldb.OpenSQLite(cfg.MetaDBPath, "write", 0)
 	if err != nil {
 		t.Fatalf("open metastore: %v", err)
 	}

@@ -110,7 +110,7 @@ func setupSharedDuckLake() (*catalogTestEnv, func(), error) {
 		return nil, nil, fmt.Errorf("use lake: %w", err)
 	}
 
-	metaDB, err := sql.Open("sqlite3", metaPath+"?_foreign_keys=on")
+	metaDB, err := internaldb.OpenSQLite(metaPath, "write", 0)
 	if err != nil {
 		duckDB.Close()
 		os.RemoveAll(tmpDir)
@@ -526,19 +526,8 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 		t.Fatalf("load config: %v", err)
 	}
 
-	// Temp SQLite (shared between RBAC tables and DuckLake metadata)
-	tmpDir := t.TempDir()
-	metaDBPath := filepath.Join(tmpDir, "meta.sqlite")
-	metaDB, err := sql.Open("sqlite3", metaDBPath+"?_foreign_keys=on")
-	if err != nil {
-		t.Fatalf("open sqlite: %v", err)
-	}
-	t.Cleanup(func() { metaDB.Close() })
-
-	// Run RBAC migrations (creates principals, groups, grants, etc. tables)
-	if err := internaldb.RunMigrations(metaDB); err != nil {
-		t.Fatalf("migrations: %v", err)
-	}
+	// Temp SQLite with hardened connection (WAL, busy_timeout, etc.)
+	metaDB, _ := internaldb.OpenTestSQLite(t)
 
 	// Seed DuckLake catalog metadata + RBAC data
 	seedDuckLakeMetadata(t, metaDB)
@@ -775,8 +764,8 @@ func setupLocalDuckLake(t *testing.T) *catalogTestEnv {
 		t.Fatalf("use lake: %v", err)
 	}
 
-	// Open same SQLite for metaDB (CatalogRepo reads/writes catalog_metadata here)
-	metaDB, err := sql.Open("sqlite3", metaPath+"?_foreign_keys=on")
+	// Open same SQLite for metaDB with hardened connection settings
+	metaDB, err := internaldb.OpenSQLite(metaPath, "write", 0)
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
@@ -869,19 +858,8 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		jwtSecret = []byte("test-jwt-secret")
 	}
 
-	// Temp SQLite
-	tmpDir := t.TempDir()
-	metaDBPath := filepath.Join(tmpDir, "meta.sqlite")
-	metaDB, err := sql.Open("sqlite3", metaDBPath+"?_foreign_keys=on")
-	if err != nil {
-		t.Fatalf("open sqlite: %v", err)
-	}
-	t.Cleanup(func() { metaDB.Close() })
-
-	// Run RBAC migrations
-	if err := internaldb.RunMigrations(metaDB); err != nil {
-		t.Fatalf("migrations: %v", err)
-	}
+	// Temp SQLite with hardened connection (WAL, busy_timeout, etc.)
+	metaDB, _ := internaldb.OpenTestSQLite(t)
 
 	// Optionally seed DuckLake metadata (without DuckLake extensions)
 	if opts.SeedDuckLakeMetadata {
