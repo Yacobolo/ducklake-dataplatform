@@ -65,6 +65,10 @@ func (s *ViewService) CreateView(ctx context.Context, schemaName string, req dom
 		return nil, err
 	}
 
+	// Enrich with schema/catalog names (not stored in DB)
+	result.SchemaName = schemaName
+	result.CatalogName = schema.CatalogName
+
 	s.logAudit(ctx, principal, "CREATE_VIEW", fmt.Sprintf("Created view %q in schema %q", req.Name, schemaName))
 	return result, nil
 }
@@ -75,7 +79,13 @@ func (s *ViewService) GetView(ctx context.Context, schemaName, viewName string) 
 	if err != nil {
 		return nil, err
 	}
-	return s.repo.GetByName(ctx, schema.SchemaID, viewName)
+	result, err := s.repo.GetByName(ctx, schema.SchemaID, viewName)
+	if err != nil {
+		return nil, err
+	}
+	result.SchemaName = schemaName
+	result.CatalogName = schema.CatalogName
+	return result, nil
 }
 
 // ListViews returns a paginated list of views in a schema.
@@ -84,7 +94,15 @@ func (s *ViewService) ListViews(ctx context.Context, schemaName string, page dom
 	if err != nil {
 		return nil, 0, err
 	}
-	return s.repo.List(ctx, schema.SchemaID, page)
+	views, total, err := s.repo.List(ctx, schema.SchemaID, page)
+	if err != nil {
+		return nil, 0, err
+	}
+	for i := range views {
+		views[i].SchemaName = schemaName
+		views[i].CatalogName = schema.CatalogName
+	}
+	return views, total, nil
 }
 
 // DeleteView drops a view from the given schema.

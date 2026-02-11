@@ -553,6 +553,11 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 	auditRepo := repository.NewAuditRepo(metaDB)
 	introspectionRepo := repository.NewIntrospectionRepo(metaDB)
 	apiKeyRepo := repository.NewAPIKeyRepo(metaDB)
+	tagRepo := repository.NewTagRepo(metaDB)
+	lineageRepo := repository.NewLineageRepo(metaDB)
+	searchRepo := repository.NewSearchRepo(metaDB)
+	queryHistoryRepo := repository.NewQueryHistoryRepo(metaDB)
+	viewRepo := repository.NewViewRepo(metaDB)
 
 	// Build services
 	authSvc := service.NewAuthorizationService(
@@ -578,12 +583,18 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 	columnMaskSvc := service.NewColumnMaskService(columnMaskRepo, auditRepo)
 	introspectionSvc := service.NewIntrospectionService(introspectionRepo)
 	auditSvc := service.NewAuditService(auditRepo)
+	tagSvc := service.NewTagService(tagRepo, auditRepo)
+	lineageSvc := service.NewLineageService(lineageRepo)
+	searchSvc := service.NewSearchService(searchRepo)
+	queryHistorySvc := service.NewQueryHistoryService(queryHistoryRepo)
+	catalogRepo := repository.NewCatalogRepo(metaDB, nil)
+	viewSvc := service.NewViewService(viewRepo, catalogRepo, authSvc, auditRepo)
 
 	handler := api.NewHandler(
 		querySvc, principalSvc, groupSvc, grantSvc,
 		rowFilterSvc, columnMaskSvc, introspectionSvc, auditSvc,
 		manifestSvc, nil, // catalogSvc=nil — integration tests only hit /v1/manifest
-		nil, nil, nil, nil, nil, // queryHistory, lineage, search, tags, views
+		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
 	)
 	strictHandler := api.NewStrictHandler(handler, nil)
 
@@ -888,6 +899,17 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	auditRepo := repository.NewAuditRepo(metaDB)
 	introspectionRepo := repository.NewIntrospectionRepo(metaDB)
 	apiKeyRepo := repository.NewAPIKeyRepo(metaDB)
+	tagRepo := repository.NewTagRepo(metaDB)
+	lineageRepo := repository.NewLineageRepo(metaDB)
+	searchRepo := repository.NewSearchRepo(metaDB)
+	queryHistoryRepo := repository.NewQueryHistoryRepo(metaDB)
+	viewRepo := repository.NewViewRepo(metaDB)
+
+	// Build authorization service unconditionally (needed by viewSvc)
+	authSvc := service.NewAuthorizationService(
+		principalRepo, groupRepo, grantRepo,
+		rowFilterRepo, columnMaskRepo, introspectionRepo,
+	)
 
 	// Build services
 	principalSvc := service.NewPrincipalService(principalRepo, auditRepo)
@@ -897,9 +919,17 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	columnMaskSvc := service.NewColumnMaskService(columnMaskRepo, auditRepo)
 	introspectionSvc := service.NewIntrospectionService(introspectionRepo)
 	auditSvc := service.NewAuditService(auditRepo)
+	tagSvc := service.NewTagService(tagRepo, auditRepo)
+	lineageSvc := service.NewLineageService(lineageRepo)
+	searchSvc := service.NewSearchService(searchRepo)
+	queryHistorySvc := service.NewQueryHistoryService(queryHistoryRepo)
 
 	// querySvc gets nil engine — no /v1/query support unless WithDuckLake+engine
 	querySvc := service.NewQueryService(nil, auditRepo, nil)
+
+	// catalogRepo with duckDB=nil is safe — GetSchema only reads ducklake_schema from metaDB
+	catalogRepo := repository.NewCatalogRepo(metaDB, nil)
+	viewSvc := service.NewViewService(viewRepo, catalogRepo, authSvc, auditRepo)
 
 	var duckDB *sql.DB
 	var catalogSvc *service.CatalogService
@@ -927,8 +957,17 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		auditRepo = repository.NewAuditRepo(metaDB)
 		introspectionRepo = repository.NewIntrospectionRepo(metaDB)
 		apiKeyRepo = repository.NewAPIKeyRepo(metaDB)
+		tagRepo = repository.NewTagRepo(metaDB)
+		lineageRepo = repository.NewLineageRepo(metaDB)
+		searchRepo = repository.NewSearchRepo(metaDB)
+		queryHistoryRepo = repository.NewQueryHistoryRepo(metaDB)
+		viewRepo = repository.NewViewRepo(metaDB)
 
 		// Rebuild services on new repos
+		authSvc = service.NewAuthorizationService(
+			principalRepo, groupRepo, grantRepo,
+			rowFilterRepo, columnMaskRepo, introspectionRepo,
+		)
 		principalSvc = service.NewPrincipalService(principalRepo, auditRepo)
 		groupSvc = service.NewGroupService(groupRepo, auditRepo)
 		grantSvc = service.NewGrantService(grantRepo, auditRepo)
@@ -937,12 +976,13 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		introspectionSvc = service.NewIntrospectionService(introspectionRepo)
 		auditSvc = service.NewAuditService(auditRepo)
 		querySvc = service.NewQueryService(nil, auditRepo, nil)
+		tagSvc = service.NewTagService(tagRepo, auditRepo)
+		lineageSvc = service.NewLineageService(lineageRepo)
+		searchSvc = service.NewSearchService(searchRepo)
+		queryHistorySvc = service.NewQueryHistoryService(queryHistoryRepo)
 
-		authSvc := service.NewAuthorizationService(
-			principalRepo, groupRepo, grantRepo,
-			rowFilterRepo, columnMaskRepo, introspectionRepo,
-		)
-		catalogRepo := repository.NewCatalogRepo(metaDB, duckDB)
+		catalogRepo = repository.NewCatalogRepo(metaDB, duckDB)
+		viewSvc = service.NewViewService(viewRepo, catalogRepo, authSvc, auditRepo)
 		catalogSvc = service.NewCatalogService(catalogRepo, authSvc, auditRepo)
 
 		// manifestSvc needs S3 presigner — leave nil for non-S3 tests
@@ -952,7 +992,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		querySvc, principalSvc, groupSvc, grantSvc,
 		rowFilterSvc, columnMaskSvc, introspectionSvc, auditSvc,
 		manifestSvc, catalogSvc,
-		nil, nil, nil, nil, nil, // queryHistory, lineage, search, tags, views
+		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
 	)
 	strictHandler := api.NewStrictHandler(handler, nil)
 
