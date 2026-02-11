@@ -4,10 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"os"
+	"strings"
 	"testing"
 
 	_ "github.com/duckdb/duckdb-go/v2"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	internaldb "duck-demo/internal/db"
 	dbstore "duck-demo/internal/db/dbstore"
@@ -388,4 +391,27 @@ func TestMultiStatementBlocked(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestTablelessStatementRequiresAuth(t *testing.T) {
+	eng := setupEngine(t)
+	ctx := context.Background()
+
+	t.Run("admin_allowed", func(t *testing.T) {
+		rows, err := eng.Query(ctx, "admin", "SELECT 1 + 1")
+		require.NoError(t, err)
+		rows.Close()
+	})
+
+	t.Run("non_privileged_denied", func(t *testing.T) {
+		_, err := eng.Query(ctx, "first_class_analyst", "SELECT 1 + 1")
+		require.Error(t, err)
+		assert.True(t, strings.Contains(err.Error(), "access denied") || strings.Contains(err.Error(), "privilege"),
+			"expected access denied error, got: %v", err)
+	})
+
+	t.Run("no_access_denied", func(t *testing.T) {
+		_, err := eng.Query(ctx, "no_access", "SELECT 1 + 1")
+		require.Error(t, err)
+	})
 }
