@@ -236,6 +236,10 @@ func (m *mockCatalogRepo) CreateTable(_ context.Context, _ string, _ domain.Crea
 	panic("unexpected call to mockCatalogRepo.CreateTable")
 }
 
+func (m *mockCatalogRepo) CreateExternalTable(_ context.Context, _ string, _ domain.CreateTableRequest, _ string) (*domain.TableDetail, error) {
+	panic("unexpected call to mockCatalogRepo.CreateExternalTable")
+}
+
 func (m *mockCatalogRepo) GetTable(_ context.Context, _, _ string) (*domain.TableDetail, error) {
 	panic("unexpected call to mockCatalogRepo.GetTable")
 }
@@ -280,7 +284,7 @@ type mockAuthService struct {
 	checkPrivilegeFn func(ctx context.Context, principalName, securableType string, securableID int64, privilege string) (bool, error)
 }
 
-func (m *mockAuthService) LookupTableID(_ context.Context, _ string) (int64, int64, error) {
+func (m *mockAuthService) LookupTableID(_ context.Context, _ string) (int64, int64, bool, error) {
 	panic("unexpected call to mockAuthService.LookupTableID")
 }
 

@@ -327,6 +327,178 @@ func TestDropS3Secret(t *testing.T) {
 	}
 }
 
+func TestCreateExternalTableView(t *testing.T) {
+	tests := []struct {
+		name       string
+		schema     string
+		table      string
+		sourcePath string
+		fileFormat string
+		want       string
+		wantErr    string
+	}{
+		{
+			name:       "parquet",
+			schema:     "analytics",
+			table:      "events",
+			sourcePath: "s3://bucket/data/events.parquet",
+			fileFormat: "parquet",
+			want:       `CREATE VIEW lake."analytics"."events" AS SELECT * FROM read_parquet(['s3://bucket/data/events.parquet'])`,
+		},
+		{
+			name:       "csv",
+			schema:     "analytics",
+			table:      "logs",
+			sourcePath: "s3://bucket/data/logs.csv",
+			fileFormat: "csv",
+			want:       `CREATE VIEW lake."analytics"."logs" AS SELECT * FROM read_csv(['s3://bucket/data/logs.csv'])`,
+		},
+		{
+			name:       "default_format",
+			schema:     "analytics",
+			table:      "data",
+			sourcePath: "s3://bucket/data.parquet",
+			fileFormat: "",
+			want:       `CREATE VIEW lake."analytics"."data" AS SELECT * FROM read_parquet(['s3://bucket/data.parquet'])`,
+		},
+		{
+			name:       "invalid_format",
+			schema:     "analytics",
+			table:      "data",
+			sourcePath: "s3://bucket/data",
+			fileFormat: "json",
+			wantErr:    "unsupported file format",
+		},
+		{
+			name:       "missing_path",
+			schema:     "analytics",
+			table:      "data",
+			sourcePath: "",
+			fileFormat: "parquet",
+			wantErr:    "source path is required",
+		},
+		{
+			name:       "invalid_schema",
+			schema:     "",
+			table:      "data",
+			sourcePath: "s3://bucket/data.parquet",
+			fileFormat: "parquet",
+			wantErr:    "invalid schema name",
+		},
+		{
+			name:       "invalid_table",
+			schema:     "analytics",
+			table:      "",
+			sourcePath: "s3://bucket/data.parquet",
+			fileFormat: "parquet",
+			wantErr:    "invalid table name",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := CreateExternalTableView(tt.schema, tt.table, tt.sourcePath, tt.fileFormat)
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestDropView(t *testing.T) {
+	tests := []struct {
+		name    string
+		schema  string
+		table   string
+		want    string
+		wantErr string
+	}{
+		{
+			name:   "valid",
+			schema: "analytics",
+			table:  "events",
+			want:   `DROP VIEW IF EXISTS lake."analytics"."events"`,
+		},
+		{
+			name:    "empty_schema",
+			schema:  "",
+			table:   "events",
+			wantErr: "invalid schema name",
+		},
+		{
+			name:    "empty_table",
+			schema:  "analytics",
+			table:   "",
+			wantErr: "invalid table name",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := DropView(tt.schema, tt.table)
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestDiscoverColumnsSQL(t *testing.T) {
+	tests := []struct {
+		name       string
+		sourcePath string
+		fileFormat string
+		want       string
+		wantErr    string
+	}{
+		{
+			name:       "parquet",
+			sourcePath: "s3://bucket/data.parquet",
+			fileFormat: "parquet",
+			want:       `DESCRIBE SELECT * FROM read_parquet(['s3://bucket/data.parquet']) LIMIT 0`,
+		},
+		{
+			name:       "csv",
+			sourcePath: "s3://bucket/data.csv",
+			fileFormat: "csv",
+			want:       `DESCRIBE SELECT * FROM read_csv(['s3://bucket/data.csv']) LIMIT 0`,
+		},
+		{
+			name:       "invalid_format",
+			sourcePath: "s3://bucket/data",
+			fileFormat: "xml",
+			wantErr:    "unsupported file format",
+		},
+		{
+			name:       "empty_path",
+			sourcePath: "",
+			fileFormat: "parquet",
+			wantErr:    "source path is required",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := DiscoverColumnsSQL(tt.sourcePath, tt.fileFormat)
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestAttachDuckLake(t *testing.T) {
 	tests := []struct {
 		name       string

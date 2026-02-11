@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"duck-demo/internal/domain"
 	"duck-demo/internal/middleware"
@@ -172,6 +173,7 @@ func (s *CatalogService) ListTables(ctx context.Context, schemaName string, page
 }
 
 // CreateTable creates a new table, checking CREATE_TABLE privilege on the schema.
+// If req.TableType is "EXTERNAL", delegates to createExternalTable.
 func (s *CatalogService) CreateTable(ctx context.Context, schemaName string, req domain.CreateTableRequest) (*domain.TableDetail, error) {
 	principal, _ := middleware.PrincipalFromContext(ctx)
 
@@ -184,12 +186,50 @@ func (s *CatalogService) CreateTable(ctx context.Context, schemaName string, req
 		return nil, domain.ErrAccessDenied("%q lacks CREATE_TABLE privilege", principal)
 	}
 
-	result, err := s.repo.CreateTable(ctx, schemaName, req, principal)
+	switch req.TableType {
+	case "", domain.TableTypeManaged:
+		result, err := s.repo.CreateTable(ctx, schemaName, req, principal)
+		if err != nil {
+			return nil, err
+		}
+		s.logAudit(ctx, principal, "CREATE_TABLE", fmt.Sprintf("Created table %q in schema %q", req.Name, schemaName))
+		return result, nil
+
+	case domain.TableTypeExternal:
+		return s.createExternalTable(ctx, schemaName, req, principal)
+
+	default:
+		return nil, domain.ErrValidation("unsupported table_type: %q", req.TableType)
+	}
+}
+
+// createExternalTable creates an external table backed by a DuckDB VIEW.
+func (s *CatalogService) createExternalTable(ctx context.Context, schemaName string, req domain.CreateTableRequest, principal string) (*domain.TableDetail, error) {
+	if req.SourcePath == "" {
+		return nil, domain.ErrValidation("source_path is required for EXTERNAL tables")
+	}
+	if req.LocationName == "" {
+		return nil, domain.ErrValidation("location_name is required for EXTERNAL tables")
+	}
+
+	// Validate location exists and source path falls under it
+	if s.locations == nil {
+		return nil, domain.ErrValidation("external locations are not configured")
+	}
+	loc, err := s.locations.GetByName(ctx, req.LocationName)
+	if err != nil {
+		return nil, fmt.Errorf("lookup location %q: %w", req.LocationName, err)
+	}
+	if !strings.HasPrefix(req.SourcePath, loc.URL) {
+		return nil, domain.ErrValidation("source_path %q is not under location %q (URL: %s)", req.SourcePath, req.LocationName, loc.URL)
+	}
+
+	result, err := s.repo.CreateExternalTable(ctx, schemaName, req, principal)
 	if err != nil {
 		return nil, err
 	}
 
-	s.logAudit(ctx, principal, "CREATE_TABLE", fmt.Sprintf("Created table %q in schema %q", req.Name, schemaName))
+	s.logAudit(ctx, principal, "CREATE_EXTERNAL_TABLE", fmt.Sprintf("Created external table %q in schema %q", req.Name, schemaName))
 	return result, nil
 }
 

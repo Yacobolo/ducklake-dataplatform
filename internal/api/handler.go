@@ -677,9 +677,12 @@ func (h *APIHandler) ListCatalogTables(ctx context.Context, req ListCatalogTable
 }
 
 func (h *APIHandler) CreateCatalogTable(ctx context.Context, req CreateCatalogTableRequestObject) (CreateCatalogTableResponseObject, error) {
-	cols := make([]domain.CreateColumnDef, len(req.Body.Columns))
-	for i, c := range req.Body.Columns {
-		cols[i] = domain.CreateColumnDef{Name: c.Name, Type: c.Type}
+	var cols []domain.CreateColumnDef
+	if req.Body.Columns != nil {
+		cols = make([]domain.CreateColumnDef, len(*req.Body.Columns))
+		for i, c := range *req.Body.Columns {
+			cols[i] = domain.CreateColumnDef{Name: c.Name, Type: c.Type}
+		}
 	}
 	domReq := domain.CreateTableRequest{
 		Name:    req.Body.Name,
@@ -687,6 +690,18 @@ func (h *APIHandler) CreateCatalogTable(ctx context.Context, req CreateCatalogTa
 	}
 	if req.Body.Comment != nil {
 		domReq.Comment = *req.Body.Comment
+	}
+	if req.Body.TableType != nil {
+		domReq.TableType = string(*req.Body.TableType)
+	}
+	if req.Body.SourcePath != nil {
+		domReq.SourcePath = *req.Body.SourcePath
+	}
+	if req.Body.FileFormat != nil {
+		domReq.FileFormat = string(*req.Body.FileFormat)
+	}
+	if req.Body.LocationName != nil {
+		domReq.LocationName = *req.Body.LocationName
 	}
 
 	result, err := h.catalog.CreateTable(ctx, req.SchemaName, domReq)
@@ -1416,6 +1431,15 @@ func tableDetailToAPI(t domain.TableDetail) TableDetail {
 	}
 	if t.Statistics != nil {
 		td.Statistics = tableStatisticsPtr(t.Statistics)
+	}
+	if t.SourcePath != "" {
+		td.SourcePath = &t.SourcePath
+	}
+	if t.FileFormat != "" {
+		td.FileFormat = &t.FileFormat
+	}
+	if t.LocationName != "" {
+		td.LocationName = &t.LocationName
 	}
 	return td
 }

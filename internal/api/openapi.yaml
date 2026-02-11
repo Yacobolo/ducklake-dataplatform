@@ -663,6 +663,15 @@ components:
           type: string
           format: date-time
           nullable: true
+        source_path:
+          type: string
+          description: S3/storage path for EXTERNAL tables.
+        file_format:
+          type: string
+          description: File format for EXTERNAL tables (parquet or csv).
+        location_name:
+          type: string
+          description: External location name for EXTERNAL tables.
 
     ColumnDetail:
       type: object
@@ -682,7 +691,7 @@ components:
 
     CreateTableApiRequest:
       type: object
-      required: [name, columns]
+      required: [name]
       properties:
         name:
           type: string
@@ -690,8 +699,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CreateColumnDef'
+          description: Required for MANAGED tables; auto-discovered for EXTERNAL if omitted.
         comment:
           type: string
+        table_type:
+          type: string
+          enum: [MANAGED, EXTERNAL]
+          default: MANAGED
+          description: Type of table. MANAGED (default) or EXTERNAL.
+        source_path:
+          type: string
+          description: S3/storage path to the data file(s). Required for EXTERNAL tables.
+        file_format:
+          type: string
+          enum: [parquet, csv]
+          default: parquet
+          description: File format of the external data. Required for EXTERNAL tables.
+        location_name:
+          type: string
+          description: Name of the external location that owns the source path. Required for EXTERNAL tables.
 
     CreateColumnDef:
       type: object

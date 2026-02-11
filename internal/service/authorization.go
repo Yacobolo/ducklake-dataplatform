@@ -34,6 +34,7 @@ type AuthorizationService struct {
 	rowFilters    domain.RowFilterRepository
 	columnMasks   domain.ColumnMaskRepository
 	introspection domain.IntrospectionRepository
+	extTableRepo  domain.ExternalTableRepository
 }
 
 // NewAuthorizationService creates a new AuthorizationService backed by domain repositories.
@@ -53,6 +54,11 @@ func NewAuthorizationService(
 		columnMasks:   columnMasks,
 		introspection: introspection,
 	}
+}
+
+// SetExternalTableRepo sets the optional external table repository for resolving external table IDs.
+func (s *AuthorizationService) SetExternalTableRepo(repo domain.ExternalTableRepository) {
+	s.extTableRepo = repo
 }
 
 // resolveGroupIDs returns the set of group IDs a principal belongs to,
@@ -87,13 +93,32 @@ func (s *AuthorizationService) resolveGroupIDs(ctx context.Context, principalID 
 	return ids, nil
 }
 
-// LookupTableID resolves a table name to its DuckLake table_id and schema_id.
-func (s *AuthorizationService) LookupTableID(ctx context.Context, tableName string) (tableID, schemaID int64, err error) {
+// LookupTableID resolves a table name to its table_id and schema_id.
+// For external tables, the returned tableID is offset by ExternalTableIDOffset
+// and isExternal is true.
+func (s *AuthorizationService) LookupTableID(ctx context.Context, tableName string) (tableID, schemaID int64, isExternal bool, err error) {
+	// Try DuckLake first
 	t, err := s.introspection.GetTableByName(ctx, tableName)
-	if err != nil {
-		return 0, 0, fmt.Errorf("table %q not found in catalog", tableName)
+	if err == nil {
+		return t.ID, t.SchemaID, false, nil
 	}
-	return t.ID, t.SchemaID, nil
+
+	// Fall back to external tables
+	if s.extTableRepo != nil {
+		et, extErr := s.extTableRepo.GetByTableName(ctx, tableName)
+		if extErr == nil {
+			// Resolve schema ID via introspection
+			sch, schErr := s.introspection.GetSchemaByName(ctx, et.SchemaName)
+			if schErr == nil {
+				return et.EffectiveTableID(), sch.ID, true, nil
+			}
+			// Schema exists in external table metadata but not in DuckLake;
+			// return the external table ID with schema ID 0
+			return et.EffectiveTableID(), 0, true, nil
+		}
+	}
+
+	return 0, 0, false, fmt.Errorf("table %q not found in catalog", tableName)
 }
 
 // LookupSchemaID resolves a schema name to its DuckLake schema_id.
@@ -169,12 +194,30 @@ func (s *AuthorizationService) checkPrivilegeForIdentities(ctx context.Context, 
 }
 
 func (s *AuthorizationService) checkTablePrivilege(ctx context.Context, principalID int64, groupIDs []int64, tableID int64, privilege string) (bool, error) {
-	// Get schema_id for the table
-	table, err := s.introspection.GetTable(ctx, tableID)
-	if err != nil {
-		return false, fmt.Errorf("lookup schema for table %d: %w", tableID, err)
+	var schemaID int64
+
+	if domain.IsExternalTableID(tableID) {
+		// External table: resolve schema via external table repo
+		if s.extTableRepo == nil {
+			return false, fmt.Errorf("external table repository not configured")
+		}
+		et, err := s.extTableRepo.GetByID(ctx, domain.ExternalTableRawID(tableID))
+		if err != nil {
+			return false, fmt.Errorf("lookup external table %d: %w", tableID, err)
+		}
+		sch, err := s.introspection.GetSchemaByName(ctx, et.SchemaName)
+		if err != nil {
+			return false, fmt.Errorf("lookup schema %q for external table: %w", et.SchemaName, err)
+		}
+		schemaID = sch.ID
+	} else {
+		// Managed table: resolve via introspection
+		table, err := s.introspection.GetTable(ctx, tableID)
+		if err != nil {
+			return false, fmt.Errorf("lookup schema for table %d: %w", tableID, err)
+		}
+		schemaID = table.SchemaID
 	}
-	schemaID := table.SchemaID
 
 	// USAGE gate: must have USAGE on the schema
 	hasUsage, err := s.checkSchemaPrivilege(ctx, principalID, groupIDs, schemaID, domain.PrivUsage)

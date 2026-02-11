@@ -242,7 +242,7 @@ func (s *IngestionService) execAddDataFiles(
 
 // checkInsertPrivilege verifies the authenticated principal has INSERT on the table.
 func (s *IngestionService) checkInsertPrivilege(ctx context.Context, principal, tableName string) error {
-	tableID, _, err := s.authSvc.LookupTableID(ctx, tableName)
+	tableID, _, _, err := s.authSvc.LookupTableID(ctx, tableName)
 	if err != nil {
 		return domain.ErrNotFound("table %q not found", tableName)
 	}

@@ -78,9 +78,14 @@ func (e *SecureEngine) Query(ctx context.Context, principalName, sqlQuery string
 	// 3. Check privileges + collect filters/masks for each table
 	rewritten := sqlQuery
 	for _, tableName := range tables {
-		tableID, _, err := e.catalog.LookupTableID(ctx, tableName)
+		tableID, _, isExternal, err := e.catalog.LookupTableID(ctx, tableName)
 		if err != nil {
 			return nil, fmt.Errorf("catalog lookup: %w", err)
+		}
+
+		// Block DML on external (read-only) tables
+		if isExternal && stmtType != sqlrewrite.StmtSelect {
+			return nil, fmt.Errorf("access denied: table %q is read-only (EXTERNAL)", tableName)
 		}
 
 		// Check privilege
