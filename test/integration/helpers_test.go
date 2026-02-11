@@ -9,6 +9,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"net/http/httptest"
 	"os"
 	"os/exec"
@@ -213,6 +215,7 @@ type apiKeys struct {
 	Admin      string
 	Analyst    string
 	Researcher string
+	NoAccess   string
 }
 
 // seedRBAC creates principals, groups, grants, row filters, column masks,
@@ -243,6 +246,13 @@ func seedRBAC(t *testing.T, db *sql.DB) apiKeys {
 	})
 	if err != nil {
 		t.Fatalf("create researcher1: %v", err)
+	}
+
+	noAccessUser, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+		Name: "no_access_user", Type: "user", IsAdmin: 0,
+	})
+	if err != nil {
+		t.Fatalf("create no_access_user: %v", err)
 	}
 
 	// --- Groups ---
@@ -357,6 +367,7 @@ func seedRBAC(t *testing.T, db *sql.DB) apiKeys {
 		Admin:      "test-admin-key",
 		Analyst:    "test-analyst-key",
 		Researcher: "test-researcher-key",
+		NoAccess:   "test-noaccess-key",
 	}
 
 	if _, err := q.CreateAPIKey(ctx, dbstore.CreateAPIKeyParams{
@@ -373,6 +384,11 @@ func seedRBAC(t *testing.T, db *sql.DB) apiKeys {
 		KeyHash: sha256Hex(keys.Researcher), PrincipalID: researcher1.ID, Name: "researcher-test",
 	}); err != nil {
 		t.Fatalf("create researcher API key: %v", err)
+	}
+	if _, err := q.CreateAPIKey(ctx, dbstore.CreateAPIKeyParams{
+		KeyHash: sha256Hex(keys.NoAccess), PrincipalID: noAccessUser.ID, Name: "noaccess-test",
+	}); err != nil {
+		t.Fatalf("create noaccess API key: %v", err)
 	}
 
 	return keys
@@ -532,7 +548,8 @@ CREATE SECRET my_platform (TYPE duck_access, API_URL '%s/v1', API_KEY '%s');
 // extractLastJSONArray finds the last top-level [...] block in the output.
 // DuckDB -json may output multiple arrays (one per statement), potentially
 // spanning multiple lines for multi-row results. We scan backwards from the
-// end to find the last balanced [...] pair.
+// end to find the last balanced [...] pair, skipping brackets inside JSON
+// string literals to avoid being confused by values like "[a,b]".
 func extractLastJSONArray(s string) string {
 	// Find the last ']'
 	end := strings.LastIndex(s, "]")
@@ -540,10 +557,36 @@ func extractLastJSONArray(s string) string {
 		return ""
 	}
 
-	// Scan backwards to find the matching '['
+	// Scan backwards to find the matching '['.
+	// Track whether we're inside a JSON string to skip embedded brackets.
 	depth := 0
+	inString := false
 	for i := end; i >= 0; i-- {
-		switch s[i] {
+		ch := s[i]
+
+		// Detect string boundaries (scanning backwards).
+		// A '"' toggles inString unless it's escaped (preceded by '\').
+		if ch == '"' {
+			escaped := false
+			if i > 0 && s[i-1] == '\\' {
+				// Count consecutive backslashes before this quote
+				backslashes := 0
+				for j := i - 1; j >= 0 && s[j] == '\\'; j-- {
+					backslashes++
+				}
+				escaped = backslashes%2 == 1
+			}
+			if !escaped {
+				inString = !inString
+			}
+			continue
+		}
+
+		if inString {
+			continue
+		}
+
+		switch ch {
 		case ']':
 			depth++
 		case '[':
@@ -581,4 +624,52 @@ func getScalarInt(t *testing.T, result duckDBResult, column string) int {
 		t.Fatalf("column %q: expected number, got %T (%v)", column, v, v)
 		return 0
 	}
+}
+
+// containsAny returns true if s contains any of the substrings (case-insensitive).
+func containsAny(s string, subs ...string) bool {
+	lower := strings.ToLower(s)
+	for _, sub := range subs {
+		if strings.Contains(lower, strings.ToLower(sub)) {
+			return true
+		}
+	}
+	return false
+}
+
+// titanicColumns lists the expected column names in the titanic dataset.
+var titanicColumns = []string{
+	"PassengerId", "Survived", "Pclass", "Name", "Sex", "Age",
+	"SibSp", "Parch", "Ticket", "Fare", "Cabin", "Embarked",
+}
+
+// fetchAuditLogs calls GET /v1/audit-logs on the test server and returns
+// the parsed entries. Used to verify the manifest endpoint writes audit records.
+func fetchAuditLogs(t *testing.T, serverURL, apiKey string) []map[string]interface{} {
+	t.Helper()
+
+	req, err := http.NewRequest("GET", serverURL+"/v1/audit-logs", nil)
+	if err != nil {
+		t.Fatalf("create audit request: %v", err)
+	}
+	req.Header.Set("X-API-Key", apiKey)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("fetch audit logs: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		body, _ := io.ReadAll(resp.Body)
+		t.Fatalf("audit logs returned %d: %s", resp.StatusCode, body)
+	}
+
+	var parsed struct {
+		Data []map[string]interface{} `json:"data"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&parsed); err != nil {
+		t.Fatalf("decode audit response: %v", err)
+	}
+	return parsed.Data
 }
