@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
+	"log/slog"
 
 	"duck-demo/internal/db/repository"
 	"duck-demo/internal/ddl"
@@ -13,7 +13,7 @@ import (
 // restoreExternalTableViews recreates DuckDB VIEWs for all non-deleted external
 // tables. VIEWs are in-memory and lost on DuckDB restart, so this must run at startup.
 // Errors are logged but not fatal (best-effort).
-func restoreExternalTableViews(ctx context.Context, duckDB *sql.DB, repo *repository.ExternalTableRepo) error {
+func restoreExternalTableViews(ctx context.Context, duckDB *sql.DB, repo *repository.ExternalTableRepo, logger *slog.Logger) error {
 	tables, err := repo.ListAll(ctx)
 	if err != nil {
 		return fmt.Errorf("list external tables: %w", err)
@@ -26,17 +26,17 @@ func restoreExternalTableViews(ctx context.Context, duckDB *sql.DB, repo *reposi
 	for _, et := range tables {
 		viewSQL, err := ddl.CreateExternalTableView(et.SchemaName, et.TableName, et.SourcePath, et.FileFormat)
 		if err != nil {
-			log.Printf("warning: build external table view DDL for %s.%s: %v", et.SchemaName, et.TableName, err)
+			logger.Warn("build external table view DDL failed", "schema", et.SchemaName, "table", et.TableName, "error", err)
 			continue
 		}
 		if _, err := duckDB.ExecContext(ctx, viewSQL); err != nil {
-			log.Printf("warning: restore external table view %s.%s: %v", et.SchemaName, et.TableName, err)
+			logger.Warn("restore external table view failed", "schema", et.SchemaName, "table", et.TableName, "error", err)
 			continue
 		}
 		restored++
 	}
 	if restored > 0 {
-		log.Printf("Restored %d external table VIEW(s)", restored)
+		logger.Info("restored external table VIEWs", "count", restored)
 	}
 	return nil
 }

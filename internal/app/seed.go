@@ -184,6 +184,5 @@ func seedCatalog(ctx context.Context, cat *service.AuthorizationService, q *dbst
 		return fmt.Errorf("bind Name mask for researchers: %w", err)
 	}
 
-	fmt.Println("Catalog seeded with demo principals, groups, grants, row filters, and column masks.")
 	return nil
 }

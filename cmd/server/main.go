@@ -5,8 +5,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
 
 	_ "github.com/duckdb/duckdb-go/v2"
 	"github.com/go-chi/chi/v5"
@@ -26,34 +27,48 @@ func main() {
 
 	// Load .env file (if present)
 	if err := config.LoadDotEnv(".env"); err != nil {
-		log.Printf("warning: could not load .env: %v", err)
+		slog.Warn("could not load .env", "error", err)
 	}
 
 	cfg, err := config.LoadFromEnv()
 	if err != nil {
-		log.Fatalf("config: %v", err)
+		slog.Error("config", "error", err)
+		os.Exit(1)
+	}
+
+	// Create structured logger
+	logger := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{
+		Level: cfg.SlogLevel(),
+	}))
+	slog.SetDefault(logger)
+
+	// Replay config warnings (generated before logger existed)
+	for _, w := range cfg.Warnings {
+		logger.Warn(w)
 	}
 
 	// Open DuckDB (in-memory)
 	duckDB, err := sql.Open("duckdb", "")
 	if err != nil {
-		log.Fatalf("failed to open duckdb: %v", err)
+		logger.Error("failed to open duckdb", "error", err)
+		os.Exit(1)
 	}
 	defer duckDB.Close()
 
 	// Install DuckLake extensions (no credentials needed)
 	if err := engine.InstallExtensions(ctx, duckDB); err != nil {
-		log.Fatalf("install extensions: %v", err)
+		logger.Error("install extensions", "error", err)
+		os.Exit(1)
 	}
-	log.Println("DuckDB extensions installed (ducklake, sqlite, httpfs)")
+	logger.Info("DuckDB extensions installed", "extensions", "ducklake, sqlite, httpfs")
 
 	// If legacy S3 env vars are present, set up DuckLake for backward compat
 	catalogAttached := false
 	if cfg.HasS3Config() {
-		log.Println("Legacy S3 config detected, setting up DuckLake...")
+		logger.Info("legacy S3 config detected, setting up DuckLake")
 		if err := engine.CreateS3Secret(ctx, duckDB, "hetzner_s3",
 			*cfg.S3KeyID, *cfg.S3Secret, *cfg.S3Endpoint, *cfg.S3Region, "path"); err != nil {
-			log.Printf("warning: S3 secret creation failed: %v", err)
+			logger.Warn("S3 secret creation failed", "error", err)
 		} else {
 			bucket := "duck-demo"
 			if cfg.S3Bucket != nil {
@@ -61,14 +76,14 @@ func main() {
 			}
 			dataPath := fmt.Sprintf("s3://%s/lake_data/", bucket)
 			if err := engine.AttachDuckLake(ctx, duckDB, cfg.MetaDBPath, dataPath); err != nil {
-				log.Printf("warning: DuckLake attach failed: %v", err)
+				logger.Warn("DuckLake attach failed", "error", err)
 			} else {
 				catalogAttached = true
-				log.Println("DuckLake ready (legacy S3 mode)")
+				logger.Info("DuckLake ready", "mode", "legacy S3")
 			}
 		}
 	} else {
-		log.Println("No S3 config — running in local mode. Use External Locations API to add storage.")
+		logger.Info("no S3 config — running in local mode, use External Locations API to add storage")
 	}
 
 	// Open SQLite metastore with hardened connection settings.
@@ -76,15 +91,17 @@ func main() {
 	// readDB:  4-connection pool for concurrent reads (WAL, no txlock).
 	writeDB, readDB, err := internaldb.OpenSQLitePair(cfg.MetaDBPath, 4)
 	if err != nil {
-		log.Fatalf("failed to open metastore: %v", err)
+		logger.Error("failed to open metastore", "error", err)
+		os.Exit(1)
 	}
 	defer writeDB.Close()
 	defer readDB.Close()
 
 	// Run migrations on the write pool (DDL requires write access)
-	fmt.Println("Running catalog migrations...")
+	logger.Info("running catalog migrations")
 	if err := internaldb.RunMigrations(writeDB); err != nil {
-		log.Fatalf("migration failed: %v", err)
+		logger.Error("migration failed", "error", err)
+		os.Exit(1)
 	}
 
 	// Wire application dependencies
@@ -94,9 +111,11 @@ func main() {
 		WriteDB:         writeDB,
 		ReadDB:          readDB,
 		CatalogAttached: catalogAttached,
+		Logger:          logger,
 	})
 	if err != nil {
-		log.Fatalf("app init: %v", err)
+		logger.Error("app init", "error", err)
+		os.Exit(1)
 	}
 
 	// Create API handler
@@ -154,9 +173,10 @@ func main() {
 	})
 
 	// Start server
-	log.Printf("HTTP API listening on %s", cfg.ListenAddr)
-	log.Printf("Try: curl -H 'Authorization: Bearer <jwt>' http://localhost%s/v1/principals", cfg.ListenAddr)
+	logger.Info("HTTP API listening", "addr", cfg.ListenAddr)
+	logger.Info("try", "curl", fmt.Sprintf("curl -H 'Authorization: Bearer <jwt>' http://localhost%s/v1/principals", cfg.ListenAddr))
 	if err := http.ListenAndServe(cfg.ListenAddr, r); err != nil {
-		log.Fatalf("server error: %v", err)
+		logger.Error("server error", "error", err)
+		os.Exit(1)
 	}
 }

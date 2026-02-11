@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
+	"log/slog"
 	"sync"
 
 	"duck-demo/internal/domain"
@@ -20,6 +20,7 @@ type ExternalLocationService struct {
 	audit    domain.AuditRepository
 	duckDB   *sql.DB
 	metaPath string
+	logger   *slog.Logger
 
 	mu              sync.Mutex
 	catalogAttached bool
@@ -33,6 +34,7 @@ func NewExternalLocationService(
 	audit domain.AuditRepository,
 	duckDB *sql.DB,
 	metaPath string,
+	logger *slog.Logger,
 ) *ExternalLocationService {
 	return &ExternalLocationService{
 		locRepo:  locRepo,
@@ -41,6 +43,7 @@ func NewExternalLocationService(
 		audit:    audit,
 		duckDB:   duckDB,
 		metaPath: metaPath,
+		logger:   logger,
 	}
 }
 
@@ -165,7 +168,7 @@ func (s *ExternalLocationService) Delete(ctx context.Context, principal string, 
 	// Drop the DuckDB secret for this location's credential
 	secretName := "cred_" + existing.CredentialName
 	if err := engine.DropSecret(ctx, s.duckDB, secretName); err != nil {
-		log.Printf("warning: failed to drop secret %q: %v", secretName, err)
+		s.logger.Warn("failed to drop secret", "secret", secretName, "error", err)
 	}
 
 	if err := s.locRepo.Delete(ctx, existing.ID); err != nil {
@@ -197,7 +200,7 @@ func (s *ExternalLocationService) RestoreSecrets(ctx context.Context) error {
 	for _, cred := range creds {
 		secretName := "cred_" + cred.Name
 		if err := s.createDuckDBSecret(ctx, secretName, &cred); err != nil {
-			log.Printf("warning: failed to restore secret %q: %v", secretName, err)
+			s.logger.Warn("failed to restore secret", "secret", secretName, "error", err)
 		}
 	}
 
@@ -206,7 +209,7 @@ func (s *ExternalLocationService) RestoreSecrets(ctx context.Context) error {
 		return fmt.Errorf("attach catalog during restore: %w", err)
 	}
 
-	log.Printf("Restored %d credential secrets, catalog attached", len(creds))
+	s.logger.Info("restored credential secrets", "count", len(creds))
 	return nil
 }
 
@@ -224,7 +227,7 @@ func (s *ExternalLocationService) ensureCatalogAttached(ctx context.Context, dat
 	}
 
 	s.catalogAttached = true
-	log.Println("DuckLake catalog attached via External Locations API")
+	s.logger.Info("DuckLake catalog attached via External Locations API")
 	return nil
 }
 

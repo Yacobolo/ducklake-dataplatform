@@ -6,7 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
+	"log/slog"
 
 	"duck-demo/internal/config"
 	"duck-demo/internal/db/crypto"
@@ -25,6 +25,7 @@ type Deps struct {
 	WriteDB         *sql.DB
 	ReadDB          *sql.DB
 	CatalogAttached bool // true when legacy S3 DuckLake setup succeeded
+	Logger          *slog.Logger
 }
 
 // Services groups all service pointers that the API handler and router need.
@@ -74,7 +75,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	tagRepo := repository.NewTagRepo(deps.WriteDB)
 	viewRepo := repository.NewViewRepo(deps.WriteDB)
 	tableStatsRepo := repository.NewTableStatisticsRepo(deps.WriteDB)
-	catalogRepo := repository.NewCatalogRepo(deps.WriteDB, deps.DuckDB)
+	catalogRepo := repository.NewCatalogRepo(deps.WriteDB, deps.DuckDB, deps.Logger.With("component", "catalog-repo"))
 
 	// === Repositories (read-pool) ===
 	introspectionRepo := repository.NewIntrospectionRepo(deps.ReadDB)
@@ -91,12 +92,12 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	if deps.CatalogAttached {
 		q := dbstore.New(deps.WriteDB)
 		if err := seedCatalog(ctx, authSvc, q); err != nil {
-			log.Printf("warning: seed catalog: %v", err)
+			deps.Logger.Warn("seed catalog failed", "error", err)
 		}
 	}
 
 	// === Engine ===
-	eng := engine.NewSecureEngine(deps.DuckDB, authSvc)
+	eng := engine.NewSecureEngine(deps.DuckDB, authSvc, deps.Logger.With("component", "engine"))
 	eng.SetInformationSchemaProvider(engine.NewInformationSchemaProvider(catalogRepo))
 
 	// === Core services ===
@@ -119,10 +120,10 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	if cfg.HasS3Config() && deps.CatalogAttached {
 		presigner, err := service.NewS3Presigner(cfg)
 		if err != nil {
-			log.Printf("warning: could not create S3 presigner: %v", err)
+			deps.Logger.Warn("could not create S3 presigner", "error", err)
 		} else {
 			manifestSvc = service.NewManifestService(deps.ReadDB, authSvc, presigner, introspectionRepo, auditRepo)
-			log.Println("Manifest service enabled (duck_access extension support)")
+			deps.Logger.Info("manifest service enabled (duck_access extension support)")
 
 			bucket := "duck-demo"
 			if cfg.S3Bucket != nil {
@@ -131,7 +132,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 			ingestionSvc = service.NewIngestionService(
 				deps.DuckDB, deps.ReadDB, authSvc, presigner, auditRepo, "lake", bucket,
 			)
-			log.Println("Ingestion service enabled")
+			deps.Logger.Info("ingestion service enabled")
 		}
 	}
 
@@ -141,8 +142,8 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	authSvc.SetExternalTableRepo(extTableRepo)
 
 	// Restore external table VIEWs (best-effort)
-	if err := restoreExternalTableViews(ctx, deps.DuckDB, extTableRepo); err != nil {
-		log.Printf("warning: restore external table views: %v", err)
+	if err := restoreExternalTableViews(ctx, deps.DuckDB, extTableRepo, deps.Logger); err != nil {
+		deps.Logger.Warn("restore external table views failed", "error", err)
 	}
 
 	// === Catalog service ===
@@ -159,6 +160,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	storageCredSvc := service.NewStorageCredentialService(storageCredRepo, authSvc, auditRepo)
 	extLocationSvc := service.NewExternalLocationService(
 		externalLocRepo, storageCredRepo, authSvc, auditRepo, deps.DuckDB, cfg.MetaDBPath,
+		deps.Logger.With("component", "external-location"),
 	)
 
 	// === Volume ===
@@ -177,7 +179,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 		extLocationSvc.SetCatalogAttached(true)
 	}
 	if err := extLocationSvc.RestoreSecrets(ctx); err != nil {
-		log.Printf("warning: restore secrets: %v", err)
+		deps.Logger.Warn("restore secrets failed", "error", err)
 	}
 
 	// === APIKeyRepo (needed by router for auth middleware) ===
