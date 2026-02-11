@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 
 	"duck-demo/internal/domain"
 	"duck-demo/internal/middleware"
@@ -1590,12 +1591,15 @@ func (h *APIHandler) CreateStorageCredential(ctx context.Context, req CreateStor
 
 	result, err := h.storageCreds.Create(ctx, domReq)
 	if err != nil {
-		switch err.(type) {
-		case *domain.AccessDeniedError:
+		var accessErr *domain.AccessDeniedError
+		var validErr *domain.ValidationError
+		var conflictErr *domain.ConflictError
+		switch {
+		case errors.As(err, &accessErr):
 			return CreateStorageCredential403JSONResponse{Code: 403, Message: err.Error()}, nil
-		case *domain.ValidationError:
+		case errors.As(err, &validErr):
 			return CreateStorageCredential400JSONResponse{Code: 400, Message: err.Error()}, nil
-		case *domain.ConflictError:
+		case errors.As(err, &conflictErr):
 			return CreateStorageCredential409JSONResponse{Code: 409, Message: err.Error()}, nil
 		default:
 			return CreateStorageCredential400JSONResponse{Code: 400, Message: err.Error()}, nil
@@ -1693,13 +1697,20 @@ func (h *APIHandler) CreateExternalLocation(ctx context.Context, req CreateExter
 
 	result, err := h.externalLocations.Create(ctx, domReq)
 	if err != nil {
-		switch err.(type) {
-		case *domain.AccessDeniedError:
+		var accessErr *domain.AccessDeniedError
+		var validErr *domain.ValidationError
+		var conflictErr *domain.ConflictError
+		var notFoundErr *domain.NotFoundError
+		switch {
+		case errors.As(err, &accessErr):
 			return CreateExternalLocation403JSONResponse{Code: 403, Message: err.Error()}, nil
-		case *domain.ValidationError:
+		case errors.As(err, &validErr):
 			return CreateExternalLocation400JSONResponse{Code: 400, Message: err.Error()}, nil
-		case *domain.ConflictError:
+		case errors.As(err, &conflictErr):
 			return CreateExternalLocation409JSONResponse{Code: 409, Message: err.Error()}, nil
+		case errors.As(err, &notFoundErr):
+			// Referenced credential not found — report as 400 (bad request)
+			return CreateExternalLocation400JSONResponse{Code: 400, Message: err.Error()}, nil
 		default:
 			return CreateExternalLocation400JSONResponse{Code: 400, Message: err.Error()}, nil
 		}

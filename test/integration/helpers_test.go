@@ -29,6 +29,7 @@ import (
 	"duck-demo/internal/api"
 	"duck-demo/internal/config"
 	internaldb "duck-demo/internal/db"
+	"duck-demo/internal/db/crypto"
 	dbstore "duck-demo/internal/db/dbstore"
 	"duck-demo/internal/db/repository"
 	"duck-demo/internal/middleware"
@@ -839,14 +840,17 @@ type httpTestOpts struct {
 	SeedDuckLakeMetadata bool
 	// JWTSecret overrides the default "test-jwt-secret".
 	JWTSecret []byte
+	// WithStorageCredentials wires StorageCredentialService and ExternalLocationService.
+	WithStorageCredentials bool
 }
 
 // httpTestEnv bundles the test server, API keys, and direct DB access.
 type httpTestEnv struct {
-	Server *httptest.Server
-	Keys   apiKeys
-	MetaDB *sql.DB
-	DuckDB *sql.DB // nil unless WithDuckLake
+	Server         *httptest.Server
+	Keys           apiKeys
+	MetaDB         *sql.DB
+	DuckDB         *sql.DB                          // nil unless WithDuckLake
+	ExtLocationSvc *service.ExternalLocationService // nil unless WithStorageCredentials
 }
 
 // setupHTTPServer creates a fully-wired in-process HTTP server with real auth
@@ -968,13 +972,43 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		// manifestSvc needs S3 presigner — leave nil for non-S3 tests
 	}
 
+	// Optionally wire storage credential and external location services
+	var storageCredSvc *service.StorageCredentialService
+	var extLocationSvc *service.ExternalLocationService
+
+	if opts.WithStorageCredentials {
+		testEncKey := "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+		enc, err := crypto.NewEncryptor(testEncKey)
+		if err != nil {
+			t.Fatalf("create encryptor: %v", err)
+		}
+		storageCredRepo := repository.NewStorageCredentialRepo(metaDB, enc)
+		extLocationRepo := repository.NewExternalLocationRepo(metaDB)
+		storageCredSvc = service.NewStorageCredentialService(storageCredRepo, authSvc, auditRepo)
+
+		// ExternalLocationService needs a DuckDB for CREATE SECRET / DROP SECRET.
+		// If duckDB is nil (no WithDuckLake), open a plain in-memory DuckDB.
+		extDuckDB := duckDB
+		if extDuckDB == nil {
+			extDuckDB, err = sql.Open("duckdb", "")
+			if err != nil {
+				t.Fatalf("open duckdb for ext locations: %v", err)
+			}
+			t.Cleanup(func() { extDuckDB.Close() })
+		}
+		extLocationSvc = service.NewExternalLocationService(
+			extLocationRepo, storageCredRepo, authSvc, auditRepo,
+			extDuckDB, "",
+		)
+	}
+
 	handler := api.NewHandler(
 		querySvc, principalSvc, groupSvc, grantSvc,
 		rowFilterSvc, columnMaskSvc, introspectionSvc, auditSvc,
 		manifestSvc, catalogSvc,
 		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
-		nil,      // ingestionSvc
-		nil, nil, // storageCredSvc, extLocationSvc
+		nil, // ingestionSvc
+		storageCredSvc, extLocationSvc,
 	)
 	strictHandler := api.NewStrictHandler(handler, nil)
 
@@ -988,10 +1022,11 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	t.Cleanup(func() { srv.Close() })
 
 	return &httpTestEnv{
-		Server: srv,
-		Keys:   keys,
-		MetaDB: metaDB,
-		DuckDB: duckDB,
+		Server:         srv,
+		Keys:           keys,
+		MetaDB:         metaDB,
+		DuckDB:         duckDB,
+		ExtLocationSvc: extLocationSvc,
 	}
 }
 
