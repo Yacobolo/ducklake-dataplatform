@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"errors"
 	"strings"
 
 	"duck-demo/internal/domain"
@@ -18,7 +19,7 @@ func mapDBError(err error) error {
 	if err == nil {
 		return nil
 	}
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return &domain.NotFoundError{Message: "resource not found"}
 	}
 	if strings.Contains(err.Error(), "UNIQUE constraint failed") {
