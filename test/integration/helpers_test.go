@@ -24,6 +24,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	_ "github.com/mattn/go-sqlite3"
 
+	"github.com/golang-jwt/jwt/v5"
+
 	"duck-demo/internal/api"
 	"duck-demo/internal/config"
 	internaldb "duck-demo/internal/db"
@@ -817,6 +819,258 @@ func containsAny(s string, subs ...string) bool {
 var titanicColumns = []string{
 	"PassengerId", "Survived", "Pclass", "Name", "Sex", "Age",
 	"SibSp", "Parch", "Ticket", "Fare", "Cabin", "Embarked",
+}
+
+// ---------------------------------------------------------------------------
+// Generic HTTP test server setup (no S3 required)
+// ---------------------------------------------------------------------------
+
+// httpTestOpts configures which optional services to wire into the test server.
+type httpTestOpts struct {
+	// WithDuckLake wires a real CatalogService backed by local DuckLake.
+	// Requires ducklake+sqlite DuckDB extensions (test skips if unavailable).
+	WithDuckLake bool
+	// SeedDuckLakeMetadata seeds the ducklake_* tables in SQLite with hardcoded
+	// titanic dataset metadata. Use when DuckLake extensions are NOT available
+	// but you still need schema/table/column IDs for RBAC operations.
+	SeedDuckLakeMetadata bool
+	// JWTSecret overrides the default "test-jwt-secret".
+	JWTSecret []byte
+}
+
+// httpTestEnv bundles the test server, API keys, and direct DB access.
+type httpTestEnv struct {
+	Server *httptest.Server
+	Keys   apiKeys
+	MetaDB *sql.DB
+	DuckDB *sql.DB // nil unless WithDuckLake
+}
+
+// setupHTTPServer creates a fully-wired in-process HTTP server with real auth
+// middleware and real SQLite repositories. Does NOT require S3 credentials.
+func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
+	t.Helper()
+
+	jwtSecret := opts.JWTSecret
+	if jwtSecret == nil {
+		jwtSecret = []byte("test-jwt-secret")
+	}
+
+	// Temp SQLite
+	tmpDir := t.TempDir()
+	metaDBPath := filepath.Join(tmpDir, "meta.sqlite")
+	metaDB, err := sql.Open("sqlite3", metaDBPath+"?_foreign_keys=on")
+	if err != nil {
+		t.Fatalf("open sqlite: %v", err)
+	}
+	t.Cleanup(func() { metaDB.Close() })
+
+	// Run RBAC migrations
+	if err := internaldb.RunMigrations(metaDB); err != nil {
+		t.Fatalf("migrations: %v", err)
+	}
+
+	// Optionally seed DuckLake metadata (without DuckLake extensions)
+	if opts.SeedDuckLakeMetadata {
+		seedDuckLakeMetadata(t, metaDB)
+	}
+
+	// Seed RBAC data (principals, groups, grants, row filters, column masks, API keys)
+	keys := seedRBAC(t, metaDB)
+
+	// Build repositories
+	principalRepo := repository.NewPrincipalRepo(metaDB)
+	groupRepo := repository.NewGroupRepo(metaDB)
+	grantRepo := repository.NewGrantRepo(metaDB)
+	rowFilterRepo := repository.NewRowFilterRepo(metaDB)
+	columnMaskRepo := repository.NewColumnMaskRepo(metaDB)
+	auditRepo := repository.NewAuditRepo(metaDB)
+	introspectionRepo := repository.NewIntrospectionRepo(metaDB)
+	apiKeyRepo := repository.NewAPIKeyRepo(metaDB)
+
+	// Build services
+	principalSvc := service.NewPrincipalService(principalRepo, auditRepo)
+	groupSvc := service.NewGroupService(groupRepo, auditRepo)
+	grantSvc := service.NewGrantService(grantRepo, auditRepo)
+	rowFilterSvc := service.NewRowFilterService(rowFilterRepo, auditRepo)
+	columnMaskSvc := service.NewColumnMaskService(columnMaskRepo, auditRepo)
+	introspectionSvc := service.NewIntrospectionService(introspectionRepo)
+	auditSvc := service.NewAuditService(auditRepo)
+
+	// querySvc gets nil engine — no /v1/query support unless WithDuckLake+engine
+	querySvc := service.NewQueryService(nil, auditRepo)
+
+	var duckDB *sql.DB
+	var catalogSvc *service.CatalogService
+	var manifestSvc *service.ManifestService
+
+	if opts.WithDuckLake {
+		env := setupLocalDuckLake(t)
+		duckDB = env.DuckDB
+		// The local DuckLake setup creates its own SQLite; but we need RBAC in the
+		// same DB. Re-run migrations and re-seed into the DuckLake metaDB.
+		// Actually, we need to use the DuckLake metaDB for everything.
+		// Close the original metaDB and replace it.
+		metaDB.Close()
+		metaDB = env.MetaDB
+
+		// Re-seed RBAC data into the DuckLake metaDB (migrations already ran in setupLocalDuckLake)
+		keys = seedRBAC(t, metaDB)
+
+		// Rebuild repos on the new metaDB
+		principalRepo = repository.NewPrincipalRepo(metaDB)
+		groupRepo = repository.NewGroupRepo(metaDB)
+		grantRepo = repository.NewGrantRepo(metaDB)
+		rowFilterRepo = repository.NewRowFilterRepo(metaDB)
+		columnMaskRepo = repository.NewColumnMaskRepo(metaDB)
+		auditRepo = repository.NewAuditRepo(metaDB)
+		introspectionRepo = repository.NewIntrospectionRepo(metaDB)
+		apiKeyRepo = repository.NewAPIKeyRepo(metaDB)
+
+		// Rebuild services on new repos
+		principalSvc = service.NewPrincipalService(principalRepo, auditRepo)
+		groupSvc = service.NewGroupService(groupRepo, auditRepo)
+		grantSvc = service.NewGrantService(grantRepo, auditRepo)
+		rowFilterSvc = service.NewRowFilterService(rowFilterRepo, auditRepo)
+		columnMaskSvc = service.NewColumnMaskService(columnMaskRepo, auditRepo)
+		introspectionSvc = service.NewIntrospectionService(introspectionRepo)
+		auditSvc = service.NewAuditService(auditRepo)
+		querySvc = service.NewQueryService(nil, auditRepo)
+
+		authSvc := service.NewAuthorizationService(
+			principalRepo, groupRepo, grantRepo,
+			rowFilterRepo, columnMaskRepo, introspectionRepo,
+		)
+		catalogRepo := repository.NewCatalogRepo(metaDB, duckDB)
+		catalogSvc = service.NewCatalogService(catalogRepo, authSvc, auditRepo)
+
+		// manifestSvc needs S3 presigner — leave nil for non-S3 tests
+	}
+
+	handler := api.NewHandler(
+		querySvc, principalSvc, groupSvc, grantSvc,
+		rowFilterSvc, columnMaskSvc, introspectionSvc, auditSvc,
+		manifestSvc, catalogSvc,
+	)
+	strictHandler := api.NewStrictHandler(handler, nil)
+
+	r := chi.NewRouter()
+	r.Use(middleware.AuthMiddleware(jwtSecret, apiKeyRepo))
+	r.Route("/v1", func(r chi.Router) {
+		api.HandlerFromMux(strictHandler, r)
+	})
+
+	srv := httptest.NewServer(r)
+	t.Cleanup(func() { srv.Close() })
+
+	return &httpTestEnv{
+		Server: srv,
+		Keys:   keys,
+		MetaDB: metaDB,
+		DuckDB: duckDB,
+	}
+}
+
+// ---------------------------------------------------------------------------
+// HTTP request helpers
+// ---------------------------------------------------------------------------
+
+// doRequest makes an HTTP request with JSON body and optional API key header.
+func doRequest(t *testing.T, method, url, apiKey string, body interface{}) *http.Response {
+	t.Helper()
+
+	var bodyReader io.Reader
+	if body != nil {
+		b, err := json.Marshal(body)
+		if err != nil {
+			t.Fatalf("marshal request body: %v", err)
+		}
+		bodyReader = strings.NewReader(string(b))
+	}
+
+	req, err := http.NewRequest(method, url, bodyReader)
+	if err != nil {
+		t.Fatalf("create request: %v", err)
+	}
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	if apiKey != "" {
+		req.Header.Set("X-API-Key", apiKey)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("execute request: %v", err)
+	}
+	return resp
+}
+
+// doRequestWithBearer makes an HTTP request with Authorization: Bearer header.
+func doRequestWithBearer(t *testing.T, method, url, token string, body interface{}) *http.Response {
+	t.Helper()
+
+	var bodyReader io.Reader
+	if body != nil {
+		b, err := json.Marshal(body)
+		if err != nil {
+			t.Fatalf("marshal request body: %v", err)
+		}
+		bodyReader = strings.NewReader(string(b))
+	}
+
+	req, err := http.NewRequest(method, url, bodyReader)
+	if err != nil {
+		t.Fatalf("create request: %v", err)
+	}
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("execute request: %v", err)
+	}
+	return resp
+}
+
+// readBody reads and returns the response body, closing it afterwards.
+func readBody(t *testing.T, resp *http.Response) []byte {
+	t.Helper()
+	defer resp.Body.Close()
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("read response body: %v", err)
+	}
+	return b
+}
+
+// decodeJSON decodes a JSON response body into the given target.
+func decodeJSON(t *testing.T, resp *http.Response, target interface{}) {
+	t.Helper()
+	defer resp.Body.Close()
+	if err := json.NewDecoder(resp.Body).Decode(target); err != nil {
+		t.Fatalf("decode response JSON: %v", err)
+	}
+}
+
+// generateJWT creates a signed HS256 JWT token with the given subject and expiry.
+func generateJWT(t *testing.T, secret []byte, subject string, expiry time.Time) string {
+	t.Helper()
+	claims := jwt.MapClaims{
+		"sub": subject,
+		"exp": expiry.Unix(),
+		"iat": time.Now().Unix(),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signed, err := token.SignedString(secret)
+	if err != nil {
+		t.Fatalf("sign JWT: %v", err)
+	}
+	return signed
 }
 
 // fetchAuditLogs calls GET /v1/audit-logs on the test server and returns
