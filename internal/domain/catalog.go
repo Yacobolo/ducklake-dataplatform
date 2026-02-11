@@ -20,6 +20,8 @@ type SchemaDetail struct {
 	Owner       string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+	Tags        []Tag
+	DeletedAt   *time.Time
 }
 
 // TableDetail is an enriched table representation for the catalog API.
@@ -35,14 +37,18 @@ type TableDetail struct {
 	Owner       string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+	Tags        []Tag
+	Statistics  *TableStatistics
+	DeletedAt   *time.Time
 }
 
 // ColumnDetail represents a column with full metadata.
 type ColumnDetail struct {
-	Name     string
-	Type     string
-	Position int
-	Comment  string
+	Name       string
+	Type       string
+	Position   int
+	Comment    string
+	Properties map[string]string
 }
 
 // CreateSchemaRequest holds parameters for creating a new schema.
@@ -56,6 +62,33 @@ type CreateSchemaRequest struct {
 type UpdateSchemaRequest struct {
 	Comment    *string
 	Properties map[string]string
+}
+
+// UpdateTableRequest holds parameters for updating table metadata.
+type UpdateTableRequest struct {
+	Comment    *string
+	Properties map[string]string
+	Owner      *string
+}
+
+// UpdateColumnRequest holds parameters for updating column metadata.
+type UpdateColumnRequest struct {
+	Comment    *string
+	Properties map[string]string
+}
+
+// UpdateCatalogRequest holds parameters for updating catalog metadata.
+type UpdateCatalogRequest struct {
+	Comment *string
+}
+
+// TableStatistics holds profiling statistics for a table.
+type TableStatistics struct {
+	RowCount       *int64
+	SizeBytes      *int64
+	ColumnCount    *int64
+	LastProfiledAt *time.Time
+	ProfiledBy     string
 }
 
 // CreateTableRequest holds parameters for creating a new table.

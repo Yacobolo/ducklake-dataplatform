@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"time"
 
 	"duck-demo/internal/domain"
 )
@@ -46,4 +47,15 @@ func (s *LineageService) GetFullLineage(ctx context.Context, tableName string, p
 		Upstream:   upstream,
 		Downstream: downstream,
 	}, nil
+}
+
+// DeleteEdge removes a lineage edge by ID.
+func (s *LineageService) DeleteEdge(ctx context.Context, id int64) error {
+	return s.repo.DeleteEdge(ctx, id)
+}
+
+// PurgeOlderThan removes lineage edges older than the given duration.
+func (s *LineageService) PurgeOlderThan(ctx context.Context, olderThanDays int) (int64, error) {
+	before := time.Now().AddDate(0, 0, -olderThanDays)
+	return s.repo.PurgeOlderThan(ctx, before)
 }

@@ -122,7 +122,8 @@ func setupTestServer(t *testing.T, principalName string) *httptest.Server {
 	auditSvc := service.NewAuditService(auditRepo)
 
 	catalogRepo := repository.NewCatalogRepo(metaDB, duckDB)
-	catalogSvc := service.NewCatalogService(catalogRepo, cat, auditRepo)
+	tagRepo := repository.NewTagRepo(metaDB)
+	catalogSvc := service.NewCatalogService(catalogRepo, cat, auditRepo, tagRepo, nil)
 
 	queryHistorySvc := service.NewQueryHistoryService(repository.NewQueryHistoryRepo(metaDB))
 	lineageSvc := service.NewLineageService(lineageRepo)
@@ -393,7 +394,8 @@ func setupCatalogTestServer(t *testing.T, principalName string, mockRepo *mockCa
 	auditSvc := service.NewAuditService(auditRepo)
 
 	// Use the mock catalog repo instead of real DuckLake
-	catalogSvc := service.NewCatalogService(mockRepo, cat, auditRepo)
+	tagRepo2 := repository.NewTagRepo(metaDB)
+	catalogSvc := service.NewCatalogService(mockRepo, cat, auditRepo, tagRepo2, nil)
 
 	queryHistorySvc := service.NewQueryHistoryService(repository.NewQueryHistoryRepo(metaDB))
 	lineageSvc := service.NewLineageService(lineageRepo2)

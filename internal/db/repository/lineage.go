@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	dbstore "duck-demo/internal/db/dbstore"
 	"duck-demo/internal/db/mapper"
@@ -70,4 +71,26 @@ func (r *LineageRepo) GetDownstream(ctx context.Context, tableName string, page 
 		edges[i] = *mapper.LineageEdgeFromDownstreamDB(row)
 	}
 	return edges, total, nil
+}
+
+func (r *LineageRepo) DeleteEdge(ctx context.Context, id int64) error {
+	result, err := r.db.ExecContext(ctx, `DELETE FROM lineage_edges WHERE id = ?`, id)
+	if err != nil {
+		return err
+	}
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return domain.ErrNotFound("lineage edge %d not found", id)
+	}
+	return nil
+}
+
+func (r *LineageRepo) PurgeOlderThan(ctx context.Context, before time.Time) (int64, error) {
+	result, err := r.db.ExecContext(ctx,
+		`DELETE FROM lineage_edges WHERE created_at < ?`,
+		before.Format("2006-01-02 15:04:05"))
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }

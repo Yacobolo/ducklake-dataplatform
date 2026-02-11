@@ -130,6 +130,35 @@ func (s *ViewService) DeleteView(ctx context.Context, schemaName, viewName strin
 	return nil
 }
 
+// UpdateView updates a view's metadata.
+func (s *ViewService) UpdateView(ctx context.Context, schemaName, viewName string, req domain.UpdateViewRequest) (*domain.ViewDetail, error) {
+	principal, _ := middleware.PrincipalFromContext(ctx)
+
+	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateTable)
+	if err != nil {
+		return nil, fmt.Errorf("check privilege: %w", err)
+	}
+	if !allowed {
+		return nil, domain.ErrAccessDenied("%q lacks permission to update view %q.%q", principal, schemaName, viewName)
+	}
+
+	schema, err := s.catalog.GetSchema(ctx, schemaName)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := s.repo.Update(ctx, schema.SchemaID, viewName, req.Comment, req.Properties, req.ViewDefinition)
+	if err != nil {
+		return nil, err
+	}
+
+	result.SchemaName = schemaName
+	result.CatalogName = schema.CatalogName
+
+	s.logAudit(ctx, principal, "UPDATE_VIEW", fmt.Sprintf("Updated view %q.%q", schemaName, viewName))
+	return result, nil
+}
+
 func (s *ViewService) logAudit(ctx context.Context, principal, action, detail string) {
 	_ = s.audit.Insert(ctx, &domain.AuditEntry{
 		PrincipalName: principal,

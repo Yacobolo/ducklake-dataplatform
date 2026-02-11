@@ -76,6 +76,47 @@ func (r *ViewRepo) Delete(ctx context.Context, schemaID int64, viewName string) 
 	})
 }
 
+func (r *ViewRepo) Update(ctx context.Context, schemaID int64, viewName string, comment *string, props map[string]string, viewDef *string) (*domain.ViewDetail, error) {
+	// Verify view exists
+	existing, err := r.GetByName(ctx, schemaID, viewName)
+	if err != nil {
+		return nil, err
+	}
+
+	// Build partial update
+	newComment := existing.Comment
+	if comment != nil {
+		newComment = comment
+	}
+
+	newProps := existing.Properties
+	if props != nil {
+		newProps = props
+	}
+	propsJSON, _ := json.Marshal(newProps)
+
+	newViewDef := existing.ViewDefinition
+	if viewDef != nil {
+		newViewDef = *viewDef
+	}
+
+	// Also re-extract source tables if view definition changed
+	newSourceTables := existing.SourceTables
+	sourcesJSON, _ := json.Marshal(newSourceTables)
+
+	_, err = r.db.ExecContext(ctx,
+		`UPDATE views SET comment = ?, properties = ?, view_definition = ?, source_tables = ?, updated_at = datetime('now')
+		 WHERE schema_id = ? AND name = ?`,
+		sql.NullString{String: stringFromPtr(newComment), Valid: newComment != nil},
+		string(propsJSON), newViewDef, string(sourcesJSON),
+		schemaID, viewName)
+	if err != nil {
+		return nil, mapDBError(err)
+	}
+
+	return r.GetByName(ctx, schemaID, viewName)
+}
+
 func stringFromPtr(s *string) string {
 	if s == nil {
 		return ""

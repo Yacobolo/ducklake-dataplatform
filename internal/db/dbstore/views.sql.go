@@ -23,7 +23,7 @@ func (q *Queries) CountViews(ctx context.Context, schemaID int64) (int64, error)
 
 const createView = `-- name: CreateView :one
 INSERT INTO views (schema_id, name, view_definition, comment, properties, owner, source_tables)
-VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id, schema_id, name, view_definition, comment, properties, owner, source_tables, created_at, updated_at
+VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id, schema_id, name, view_definition, comment, properties, owner, source_tables, created_at, updated_at, deleted_at
 `
 
 type CreateViewParams struct {
@@ -58,6 +58,7 @@ func (q *Queries) CreateView(ctx context.Context, arg CreateViewParams) (View, e
 		&i.SourceTables,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -77,7 +78,7 @@ func (q *Queries) DeleteView(ctx context.Context, arg DeleteViewParams) error {
 }
 
 const getViewByName = `-- name: GetViewByName :one
-SELECT id, schema_id, name, view_definition, comment, properties, owner, source_tables, created_at, updated_at FROM views WHERE schema_id = ? AND name = ?
+SELECT id, schema_id, name, view_definition, comment, properties, owner, source_tables, created_at, updated_at, deleted_at FROM views WHERE schema_id = ? AND name = ?
 `
 
 type GetViewByNameParams struct {
@@ -99,12 +100,13 @@ func (q *Queries) GetViewByName(ctx context.Context, arg GetViewByNameParams) (V
 		&i.SourceTables,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const listViews = `-- name: ListViews :many
-SELECT id, schema_id, name, view_definition, comment, properties, owner, source_tables, created_at, updated_at FROM views WHERE schema_id = ? ORDER BY name LIMIT ? OFFSET ?
+SELECT id, schema_id, name, view_definition, comment, properties, owner, source_tables, created_at, updated_at, deleted_at FROM views WHERE schema_id = ? ORDER BY name LIMIT ? OFFSET ?
 `
 
 type ListViewsParams struct {
@@ -133,6 +135,7 @@ func (q *Queries) ListViews(ctx context.Context, arg ListViewsParams) ([]View, e
 			&i.SourceTables,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}

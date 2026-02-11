@@ -558,6 +558,14 @@ components:
         updated_at:
           type: string
           format: date-time
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
 
     CreateSchemaRequest:
       type: object
@@ -581,6 +589,24 @@ components:
           type: object
           additionalProperties:
             type: string
+
+    UpdateTableRequest:
+      type: object
+      properties:
+        comment:
+          type: string
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+        owner:
+          type: string
+
+    UpdateCatalogRequest:
+      type: object
+      properties:
+        comment:
+          type: string
 
     PaginatedSchemaDetails:
       type: object
@@ -624,6 +650,16 @@ components:
         updated_at:
           type: string
           format: date-time
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        statistics:
+          $ref: '#/components/schemas/TableStatistics'
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
 
     ColumnDetail:
       type: object
@@ -636,6 +672,10 @@ components:
           type: integer
         comment:
           type: string
+        properties:
+          type: object
+          additionalProperties:
+            type: string
 
     CreateTableApiRequest:
       type: object
@@ -659,6 +699,16 @@ components:
         type:
           type: string
 
+    UpdateColumnRequest:
+      type: object
+      properties:
+        comment:
+          type: string
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+
     PaginatedTableDetails:
       type: object
       properties:
@@ -677,6 +727,28 @@ components:
           items:
             $ref: '#/components/schemas/ColumnDetail'
         next_page_token:
+          type: string
+
+    TableStatistics:
+      type: object
+      properties:
+        row_count:
+          type: integer
+          format: int64
+          nullable: true
+        size_bytes:
+          type: integer
+          format: int64
+          nullable: true
+        column_count:
+          type: integer
+          format: int64
+          nullable: true
+        last_profiled_at:
+          type: string
+          format: date-time
+          nullable: true
+        profiled_by:
           type: string
 
     MetastoreSummary:
@@ -766,7 +838,7 @@ components:
           nullable: true
         match_field:
           type: string
-          description: "Field that matched: name, comment, or property"
+          description: "Field that matched: name, comment, property, or tag"
 
     PaginatedSearchResults:
       type: object
@@ -782,6 +854,9 @@ components:
     LineageEdge:
       type: object
       properties:
+        id:
+          type: integer
+          format: int64
         source_table:
           type: string
         target_table:
@@ -819,6 +894,21 @@ components:
             $ref: '#/components/schemas/LineageEdge'
         next_page_token:
           type: string
+
+    PurgeLineageRequest:
+      type: object
+      required: [older_than_days]
+      properties:
+        older_than_days:
+          type: integer
+          description: Delete lineage edges older than this many days.
+
+    PurgeLineageResponse:
+      type: object
+      properties:
+        deleted_count:
+          type: integer
+          format: int64
 
     # --- Tags ---
     Tag:
@@ -939,6 +1029,18 @@ components:
         view_definition:
           type: string
         comment:
+          type: string
+
+    UpdateViewRequest:
+      type: object
+      properties:
+        comment:
+          type: string
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+        view_definition:
           type: string
 
     PaginatedViewDetails:
@@ -1654,6 +1756,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CatalogInfo'
+    patch:
+      operationId: updateCatalog
+      summary: Update catalog metadata
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCatalogRequest'
+      responses:
+        '200':
+          description: Updated catalog
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogInfo'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /catalog/schemas:
     get:
@@ -1870,6 +1994,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+    patch:
+      operationId: updateTableMetadata
+      summary: Update table metadata (comment, properties, owner)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTableRequest'
+      responses:
+        '200':
+          description: Updated table
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableDetail'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     delete:
       operationId: dropTable
       summary: Delete a table
@@ -1914,6 +2066,88 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedColumnDetails'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /catalog/schemas/{schemaName}/tables/{tableName}/columns/{columnName}:
+    parameters:
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: tableName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: columnName
+        in: path
+        required: true
+        schema:
+          type: string
+    patch:
+      operationId: updateColumnMetadata
+      summary: Update column metadata (comment, properties)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateColumnRequest'
+      responses:
+        '200':
+          description: Updated column
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ColumnDetail'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /catalog/schemas/{schemaName}/tables/{tableName}/profile:
+    parameters:
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: tableName
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      operationId: profileTable
+      summary: Profile a table to collect statistics
+      description: Runs profiling queries and stores statistics (row count, column count, size).
+      responses:
+        '200':
+          description: Table statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableStatistics'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: Not found
           content:
@@ -2076,6 +2310,52 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedLineageEdges'
 
+  /lineage/edges/{edgeId}:
+    parameters:
+      - name: edgeId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    delete:
+      operationId: deleteLineageEdge
+      summary: Delete a lineage edge
+      responses:
+        '204':
+          description: Edge deleted
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /lineage/purge:
+    post:
+      operationId: purgeLineage
+      summary: Purge old lineage edges
+      description: Delete lineage edges older than the specified number of days.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurgeLineageRequest'
+      responses:
+        '200':
+          description: Purge result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurgeLineageResponse'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   # === Tags ===
   /tags:
     get:
@@ -2181,6 +2461,20 @@ paths:
         '204':
           description: Tag unassigned
 
+  # === Classifications ===
+  /classifications:
+    get:
+      operationId: listClassifications
+      summary: List classification and sensitivity tags
+      description: Returns all tags with governed classification/sensitivity prefixes.
+      responses:
+        '200':
+          description: Classification tags
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTags'
+
   # === Views ===
   /catalog/schemas/{schemaName}/views:
     parameters:
@@ -2265,6 +2559,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ViewDetail'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      operationId: updateView
+      summary: Update a view's metadata
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateViewRequest'
+      responses:
+        '200':
+          description: Updated view
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ViewDetail'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: Not found
           content:

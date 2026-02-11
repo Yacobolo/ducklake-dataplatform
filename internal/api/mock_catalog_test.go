@@ -350,6 +350,18 @@ func (m *mockCatalogRepo) ListColumns(_ context.Context, schemaName, tableName s
 	return cols[offset:end], total, nil
 }
 
+func (m *mockCatalogRepo) UpdateTable(_ context.Context, _, _ string, _ *string, _ map[string]string, _ *string) (*domain.TableDetail, error) {
+	panic("unexpected call to mockCatalogRepo.UpdateTable")
+}
+
+func (m *mockCatalogRepo) UpdateCatalog(_ context.Context, _ *string) (*domain.CatalogInfo, error) {
+	panic("unexpected call to mockCatalogRepo.UpdateCatalog")
+}
+
+func (m *mockCatalogRepo) UpdateColumn(_ context.Context, _, _, _ string, _ *string, _ map[string]string) (*domain.ColumnDetail, error) {
+	panic("unexpected call to mockCatalogRepo.UpdateColumn")
+}
+
 // addSchema is a test helper to prepopulate the mock with a schema.
 func (m *mockCatalogRepo) addSchema(name string) {
 	m.mu.Lock()

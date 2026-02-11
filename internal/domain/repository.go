@@ -99,6 +99,9 @@ type CatalogRepository interface {
 	GetTable(ctx context.Context, schemaName, tableName string) (*TableDetail, error)
 	ListTables(ctx context.Context, schemaName string, page PageRequest) ([]TableDetail, int64, error)
 	DeleteTable(ctx context.Context, schemaName, tableName string) error
+	UpdateTable(ctx context.Context, schemaName, tableName string, comment *string, props map[string]string, owner *string) (*TableDetail, error)
+	UpdateCatalog(ctx context.Context, comment *string) (*CatalogInfo, error)
+	UpdateColumn(ctx context.Context, schemaName, tableName, columnName string, comment *string, props map[string]string) (*ColumnDetail, error)
 	ListColumns(ctx context.Context, schemaName, tableName string, page PageRequest) ([]ColumnDetail, int64, error)
 }
 
@@ -112,6 +115,15 @@ type LineageRepository interface {
 	InsertEdge(ctx context.Context, edge *LineageEdge) error
 	GetUpstream(ctx context.Context, tableName string, page PageRequest) ([]LineageEdge, int64, error)
 	GetDownstream(ctx context.Context, tableName string, page PageRequest) ([]LineageEdge, int64, error)
+	DeleteEdge(ctx context.Context, id int64) error
+	PurgeOlderThan(ctx context.Context, before time.Time) (int64, error)
+}
+
+// TableStatisticsRepository provides operations for table statistics.
+type TableStatisticsRepository interface {
+	Upsert(ctx context.Context, securableName string, stats *TableStatistics) error
+	Get(ctx context.Context, securableName string) (*TableStatistics, error)
+	Delete(ctx context.Context, securableName string) error
 }
 
 // SearchRepository provides catalog search operations.
@@ -137,6 +149,7 @@ type ViewRepository interface {
 	GetByName(ctx context.Context, schemaID int64, viewName string) (*ViewDetail, error)
 	List(ctx context.Context, schemaID int64, page PageRequest) ([]ViewDetail, int64, error)
 	Delete(ctx context.Context, schemaID int64, viewName string) error
+	Update(ctx context.Context, schemaID int64, viewName string, comment *string, props map[string]string, viewDef *string) (*ViewDetail, error)
 }
 
 // AuthorizationService defines the interface for permission checking.

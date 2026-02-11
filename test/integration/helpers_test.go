@@ -962,7 +962,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 
 		catalogRepo = repository.NewCatalogRepo(metaDB, duckDB)
 		viewSvc = service.NewViewService(viewRepo, catalogRepo, authSvc, auditRepo)
-		catalogSvc = service.NewCatalogService(catalogRepo, authSvc, auditRepo)
+		catalogSvc = service.NewCatalogService(catalogRepo, authSvc, auditRepo, tagRepo, nil)
 
 		// manifestSvc needs S3 presigner — leave nil for non-S3 tests
 	}

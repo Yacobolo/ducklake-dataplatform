@@ -202,15 +202,32 @@ func (r *CatalogRepo) UpdateSchema(ctx context.Context, name string, comment *st
 	return r.GetSchema(ctx, name)
 }
 
-// DeleteSchema drops a schema via DuckDB DDL.
+// DeleteSchema drops a schema via DuckDB DDL and cascades governance cleanup.
 func (r *CatalogRepo) DeleteSchema(ctx context.Context, name string, force bool) error {
 	if err := validateIdentifier(name); err != nil {
 		return err
 	}
 
-	// Verify schema exists
-	if _, err := r.GetSchema(ctx, name); err != nil {
+	// Verify schema exists and capture schema ID
+	schema, err := r.GetSchema(ctx, name)
+	if err != nil {
 		return err
+	}
+
+	// If force, gather table IDs in this schema for governance cleanup before DDL
+	var tableIDs []int64
+	if force {
+		rows, err := r.metaDB.QueryContext(ctx,
+			`SELECT table_id FROM ducklake_table WHERE schema_id = ? AND end_snapshot IS NULL`, schema.SchemaID)
+		if err == nil {
+			defer rows.Close()
+			for rows.Next() {
+				var tid int64
+				if err := rows.Scan(&tid); err == nil {
+					tableIDs = append(tableIDs, tid)
+				}
+			}
+		}
 	}
 
 	ddl := fmt.Sprintf(`DROP SCHEMA lake."%s"`, name)
@@ -226,12 +243,37 @@ func (r *CatalogRepo) DeleteSchema(ctx context.Context, name string, force bool)
 		return fmt.Errorf("drop schema: %w", err)
 	}
 
-	// Clean up metadata
+	// Clean up schema metadata
 	_, _ = r.metaDB.ExecContext(ctx,
 		`DELETE FROM catalog_metadata WHERE securable_type = 'schema' AND securable_name = ?`, name)
-	// Also clean up table metadata for tables that were in this schema
+	// Clean up table metadata for tables that were in this schema
 	_, _ = r.metaDB.ExecContext(ctx,
 		`DELETE FROM catalog_metadata WHERE securable_type = 'table' AND securable_name LIKE ?`, name+".%")
+
+	// Cascade: remove tag assignments for the schema
+	_, _ = r.metaDB.ExecContext(ctx,
+		`DELETE FROM tag_assignments WHERE securable_type = 'schema' AND securable_id = ?`, schema.SchemaID)
+
+	// Cascade: clean up governance records for all tables in this schema
+	for _, tid := range tableIDs {
+		_, _ = r.metaDB.ExecContext(ctx, `DELETE FROM row_filters WHERE table_id = ?`, tid)
+		_, _ = r.metaDB.ExecContext(ctx, `DELETE FROM column_masks WHERE table_id = ?`, tid)
+		_, _ = r.metaDB.ExecContext(ctx, `DELETE FROM tag_assignments WHERE securable_type IN ('table', 'column') AND securable_id = ?`, tid)
+	}
+
+	// Cascade: remove column metadata and table statistics for tables in schema
+	_, _ = r.metaDB.ExecContext(ctx,
+		`DELETE FROM column_metadata WHERE table_securable_name LIKE ?`, name+".%")
+	_, _ = r.metaDB.ExecContext(ctx,
+		`DELETE FROM table_statistics WHERE table_securable_name LIKE ?`, name+".%")
+
+	// Cascade: remove lineage edges referencing tables in this schema
+	_, _ = r.metaDB.ExecContext(ctx,
+		`DELETE FROM lineage_edges WHERE source_table LIKE ? OR target_table LIKE ?`, name+".%", name+".%")
+
+	// Cascade: remove views in this schema
+	_, _ = r.metaDB.ExecContext(ctx,
+		`DELETE FROM views WHERE schema_id = ?`, schema.SchemaID)
 
 	return nil
 }
@@ -317,6 +359,12 @@ func (r *CatalogRepo) GetTable(ctx context.Context, schemaName, tableName string
 	}
 	t.Columns = cols
 
+	// Enrich columns with metadata
+	securableName := schemaName + "." + tableName
+	for i := range t.Columns {
+		r.enrichColumnMetadata(ctx, securableName, &t.Columns[i])
+	}
+
 	// Join with catalog_metadata
 	r.enrichTableMetadata(ctx, &t)
 
@@ -366,7 +414,7 @@ func (r *CatalogRepo) ListTables(ctx context.Context, schemaName string, page do
 	return tables, total, rows.Err()
 }
 
-// DeleteTable drops a table via DuckDB DDL.
+// DeleteTable drops a table via DuckDB DDL and cascades governance cleanup.
 func (r *CatalogRepo) DeleteTable(ctx context.Context, schemaName, tableName string) error {
 	if err := validateIdentifier(schemaName); err != nil {
 		return err
@@ -375,8 +423,9 @@ func (r *CatalogRepo) DeleteTable(ctx context.Context, schemaName, tableName str
 		return err
 	}
 
-	// Verify table exists
-	if _, err := r.GetTable(ctx, schemaName, tableName); err != nil {
+	// Verify table exists and capture table ID for governance cleanup
+	tbl, err := r.GetTable(ctx, schemaName, tableName)
+	if err != nil {
 		return err
 	}
 
@@ -389,6 +438,31 @@ func (r *CatalogRepo) DeleteTable(ctx context.Context, schemaName, tableName str
 	securableName := schemaName + "." + tableName
 	_, _ = r.metaDB.ExecContext(ctx,
 		`DELETE FROM catalog_metadata WHERE securable_type = 'table' AND securable_name = ?`, securableName)
+
+	// Cascade: remove row filters and their bindings (bindings cascade via FK)
+	_, _ = r.metaDB.ExecContext(ctx,
+		`DELETE FROM row_filters WHERE table_id = ?`, tbl.TableID)
+
+	// Cascade: remove column masks and their bindings (bindings cascade via FK)
+	_, _ = r.metaDB.ExecContext(ctx,
+		`DELETE FROM column_masks WHERE table_id = ?`, tbl.TableID)
+
+	// Cascade: remove tag assignments for this table and its columns
+	_, _ = r.metaDB.ExecContext(ctx,
+		`DELETE FROM tag_assignments WHERE securable_type IN ('table', 'column') AND securable_id = ?`, tbl.TableID)
+
+	// Cascade: remove column metadata
+	_, _ = r.metaDB.ExecContext(ctx,
+		`DELETE FROM column_metadata WHERE table_securable_name = ?`, securableName)
+
+	// Cascade: remove table statistics
+	_, _ = r.metaDB.ExecContext(ctx,
+		`DELETE FROM table_statistics WHERE table_securable_name = ?`, securableName)
+
+	// Cascade: remove lineage edges referencing this table
+	qualifiedName := schemaName + "." + tableName
+	_, _ = r.metaDB.ExecContext(ctx,
+		`DELETE FROM lineage_edges WHERE source_table = ? OR target_table = ?`, qualifiedName, qualifiedName)
 
 	return nil
 }
@@ -444,7 +518,108 @@ func (r *CatalogRepo) ListColumns(ctx context.Context, schemaName, tableName str
 		pos++
 		columns = append(columns, c)
 	}
+	securableName := schemaName + "." + tableName
+	for i := range columns {
+		r.enrichColumnMetadata(ctx, securableName, &columns[i])
+	}
 	return columns, total, rows.Err()
+}
+
+// UpdateTable updates table metadata (comment, properties, owner).
+func (r *CatalogRepo) UpdateTable(ctx context.Context, schemaName, tableName string, comment *string, props map[string]string, owner *string) (*domain.TableDetail, error) {
+	// Verify table exists
+	_, err := r.GetTable(ctx, schemaName, tableName)
+	if err != nil {
+		return nil, err
+	}
+
+	securableName := schemaName + "." + tableName
+	var propsJSON *string
+	if props != nil {
+		b, _ := json.Marshal(props)
+		s := string(b)
+		propsJSON = &s
+	}
+
+	_, err = r.metaDB.ExecContext(ctx,
+		`INSERT INTO catalog_metadata (securable_type, securable_name, comment, properties, owner)
+		 VALUES ('table', ?, ?, ?, ?)
+		 ON CONFLICT(securable_type, securable_name)
+		 DO UPDATE SET comment = COALESCE(excluded.comment, comment),
+		               properties = COALESCE(excluded.properties, properties),
+		               owner = COALESCE(excluded.owner, owner),
+		               updated_at = datetime('now')`,
+		securableName, comment, propsJSON, owner)
+	if err != nil {
+		return nil, fmt.Errorf("update table metadata: %w", err)
+	}
+
+	return r.GetTable(ctx, schemaName, tableName)
+}
+
+// UpdateCatalog updates catalog-level metadata (comment).
+func (r *CatalogRepo) UpdateCatalog(ctx context.Context, comment *string) (*domain.CatalogInfo, error) {
+	_, err := r.metaDB.ExecContext(ctx,
+		`INSERT INTO catalog_metadata (securable_type, securable_name, comment)
+		 VALUES ('catalog', 'lake', ?)
+		 ON CONFLICT(securable_type, securable_name)
+		 DO UPDATE SET comment = COALESCE(excluded.comment, comment),
+		               updated_at = datetime('now')`,
+		comment)
+	if err != nil {
+		return nil, fmt.Errorf("update catalog metadata: %w", err)
+	}
+	return r.GetCatalogInfo(ctx)
+}
+
+// UpdateColumn updates column metadata (comment, properties).
+func (r *CatalogRepo) UpdateColumn(ctx context.Context, schemaName, tableName, columnName string, comment *string, props map[string]string) (*domain.ColumnDetail, error) {
+	// Verify table exists
+	tbl, err := r.GetTable(ctx, schemaName, tableName)
+	if err != nil {
+		return nil, err
+	}
+
+	// Verify column exists
+	found := false
+	for _, c := range tbl.Columns {
+		if c.Name == columnName {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return nil, domain.ErrNotFound("column %q not found in table %q.%q", columnName, schemaName, tableName)
+	}
+
+	securableName := schemaName + "." + tableName
+	var propsJSON *string
+	if props != nil {
+		b, _ := json.Marshal(props)
+		s := string(b)
+		propsJSON = &s
+	}
+
+	_, err = r.metaDB.ExecContext(ctx,
+		`INSERT INTO column_metadata (table_securable_name, column_name, comment, properties)
+		 VALUES (?, ?, ?, ?)
+		 ON CONFLICT(table_securable_name, column_name)
+		 DO UPDATE SET comment = COALESCE(excluded.comment, comment),
+		               properties = COALESCE(excluded.properties, properties),
+		               updated_at = datetime('now')`,
+		securableName, columnName, comment, propsJSON)
+	if err != nil {
+		return nil, fmt.Errorf("update column metadata: %w", err)
+	}
+
+	// Return the updated column
+	for _, c := range tbl.Columns {
+		if c.Name == columnName {
+			r.enrichColumnMetadata(ctx, securableName, &c)
+			return &c, nil
+		}
+	}
+	return nil, domain.ErrNotFound("column %q not found", columnName)
 }
 
 // --- helpers ---
@@ -523,5 +698,21 @@ func (r *CatalogRepo) enrichTableMetadata(ctx context.Context, t *domain.TableDe
 	}
 	if updatedAt.Valid {
 		t.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt.String)
+	}
+}
+
+func (r *CatalogRepo) enrichColumnMetadata(ctx context.Context, tableSecurableName string, c *domain.ColumnDetail) {
+	var comment, properties sql.NullString
+	err := r.metaDB.QueryRowContext(ctx,
+		`SELECT comment, properties FROM column_metadata WHERE table_securable_name = ? AND column_name = ?`,
+		tableSecurableName, c.Name).Scan(&comment, &properties)
+	if err != nil {
+		return
+	}
+	if comment.Valid {
+		c.Comment = comment.String
+	}
+	if properties.Valid {
+		_ = json.Unmarshal([]byte(properties.String), &c.Properties)
 	}
 }

@@ -270,6 +270,7 @@ func main() {
 	lineageRepo := repository.NewLineageRepo(writeDB)
 	tagRepo := repository.NewTagRepo(writeDB)
 	viewRepo := repository.NewViewRepo(writeDB)
+	tableStatsRepo := repository.NewTableStatisticsRepo(writeDB)
 	catalogRepo := repository.NewCatalogRepo(writeDB, duckDB)
 
 	introspectionRepo := repository.NewIntrospectionRepo(readDB)
@@ -327,7 +328,7 @@ func main() {
 	}
 
 	// Create catalog service for UC-compatible catalog management
-	catalogSvc := service.NewCatalogService(catalogRepo, cat, auditRepo)
+	catalogSvc := service.NewCatalogService(catalogRepo, cat, auditRepo, tagRepo, tableStatsRepo)
 
 	// Create API handler
 	handler := api.NewHandler(

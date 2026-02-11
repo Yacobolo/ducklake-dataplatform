@@ -24,6 +24,11 @@ func (s *TagService) CreateTag(ctx context.Context, tag *domain.Tag) (*domain.Ta
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	tag.CreatedBy = principal
 
+	// Validate classification tag values
+	if err := validateClassificationTag(tag); err != nil {
+		return nil, err
+	}
+
 	result, err := s.repo.CreateTag(ctx, tag)
 	if err != nil {
 		return nil, err
@@ -89,6 +94,23 @@ func (s *TagService) ListTagsForSecurable(ctx context.Context, securableType str
 // ListAssignmentsForTag returns all assignments for a given tag.
 func (s *TagService) ListAssignmentsForTag(ctx context.Context, tagID int64) ([]domain.TagAssignment, error) {
 	return s.repo.ListAssignmentsForTag(ctx, tagID)
+}
+
+func validateClassificationTag(tag *domain.Tag) error {
+	for prefix, validValues := range domain.ValidClassifications {
+		if tag.Key == prefix {
+			if tag.Value == nil {
+				return domain.ErrValidation("tag key %q requires a value", prefix)
+			}
+			for _, v := range validValues {
+				if *tag.Value == v {
+					return nil
+				}
+			}
+			return domain.ErrValidation("invalid value %q for tag key %q; valid values: %v", *tag.Value, prefix, validValues)
+		}
+	}
+	return nil
 }
 
 func (s *TagService) logAudit(ctx context.Context, principal, action, detail string) {

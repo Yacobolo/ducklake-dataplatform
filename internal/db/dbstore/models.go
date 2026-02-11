@@ -40,6 +40,7 @@ type CatalogMetadatum struct {
 	Owner         sql.NullString
 	CreatedAt     string
 	UpdatedAt     string
+	DeletedAt     sql.NullString
 }
 
 type ColumnMask struct {
@@ -57,6 +58,14 @@ type ColumnMaskBinding struct {
 	PrincipalID   int64
 	PrincipalType string
 	SeeOriginal   int64
+}
+
+type ColumnMetadatum struct {
+	TableSecurableName string
+	ColumnName         string
+	Comment            sql.NullString
+	Properties         sql.NullString
+	UpdatedAt          sql.NullString
 }
 
 type Group struct {
@@ -80,6 +89,8 @@ type LineageEdge struct {
 	PrincipalName string
 	QueryHash     sql.NullString
 	CreatedAt     string
+	SourceSchema  sql.NullString
+	TargetSchema  sql.NullString
 }
 
 type Principal struct {
@@ -116,6 +127,15 @@ type RowFilterBinding struct {
 	PrincipalType string
 }
 
+type TableStatistic struct {
+	TableSecurableName string
+	RowCount           sql.NullInt64
+	SizeBytes          sql.NullInt64
+	ColumnCount        sql.NullInt64
+	LastProfiledAt     sql.NullString
+	ProfiledBy         sql.NullString
+}
+
 type Tag struct {
 	ID        int64
 	Key       string
@@ -145,4 +165,5 @@ type View struct {
 	SourceTables   sql.NullString
 	CreatedAt      string
 	UpdatedAt      string
+	DeletedAt      sql.NullString
 }

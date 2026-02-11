@@ -13,6 +13,8 @@ type CatalogService struct {
 	repo  domain.CatalogRepository
 	auth  domain.AuthorizationService
 	audit domain.AuditRepository
+	tags  domain.TagRepository
+	stats domain.TableStatisticsRepository
 }
 
 // NewCatalogService creates a new CatalogService.
@@ -20,11 +22,15 @@ func NewCatalogService(
 	repo domain.CatalogRepository,
 	auth domain.AuthorizationService,
 	audit domain.AuditRepository,
+	tags domain.TagRepository,
+	stats domain.TableStatisticsRepository,
 ) *CatalogService {
 	return &CatalogService{
 		repo:  repo,
 		auth:  auth,
 		audit: audit,
+		tags:  tags,
+		stats: stats,
 	}
 }
 
@@ -40,7 +46,14 @@ func (s *CatalogService) GetMetastoreSummary(ctx context.Context) (*domain.Metas
 
 // ListSchemas returns a paginated list of schemas.
 func (s *CatalogService) ListSchemas(ctx context.Context, page domain.PageRequest) ([]domain.SchemaDetail, int64, error) {
-	return s.repo.ListSchemas(ctx, page)
+	schemas, total, err := s.repo.ListSchemas(ctx, page)
+	if err != nil {
+		return nil, 0, err
+	}
+	for i := range schemas {
+		s.enrichSchemaTags(ctx, &schemas[i])
+	}
+	return schemas, total, nil
 }
 
 // CreateSchema creates a new schema, checking CREATE_SCHEMA privilege.
@@ -66,7 +79,12 @@ func (s *CatalogService) CreateSchema(ctx context.Context, req domain.CreateSche
 
 // GetSchema returns a schema by name.
 func (s *CatalogService) GetSchema(ctx context.Context, name string) (*domain.SchemaDetail, error) {
-	return s.repo.GetSchema(ctx, name)
+	result, err := s.repo.GetSchema(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	s.enrichSchemaTags(ctx, result)
+	return result, nil
 }
 
 // UpdateSchema updates schema metadata.
@@ -113,7 +131,15 @@ func (s *CatalogService) DeleteSchema(ctx context.Context, name string, force bo
 
 // ListTables returns a paginated list of tables in a schema.
 func (s *CatalogService) ListTables(ctx context.Context, schemaName string, page domain.PageRequest) ([]domain.TableDetail, int64, error) {
-	return s.repo.ListTables(ctx, schemaName, page)
+	tables, total, err := s.repo.ListTables(ctx, schemaName, page)
+	if err != nil {
+		return nil, 0, err
+	}
+	for i := range tables {
+		s.enrichTableTags(ctx, &tables[i])
+		s.enrichTableStats(ctx, &tables[i])
+	}
+	return tables, total, nil
 }
 
 // CreateTable creates a new table, checking CREATE_TABLE privilege on the schema.
@@ -140,7 +166,13 @@ func (s *CatalogService) CreateTable(ctx context.Context, schemaName string, req
 
 // GetTable returns a table by schema and table name.
 func (s *CatalogService) GetTable(ctx context.Context, schemaName, tableName string) (*domain.TableDetail, error) {
-	return s.repo.GetTable(ctx, schemaName, tableName)
+	result, err := s.repo.GetTable(ctx, schemaName, tableName)
+	if err != nil {
+		return nil, err
+	}
+	s.enrichTableTags(ctx, result)
+	s.enrichTableStats(ctx, result)
+	return result, nil
 }
 
 // DeleteTable drops a table, checking authorization.
@@ -167,6 +199,130 @@ func (s *CatalogService) DeleteTable(ctx context.Context, schemaName, tableName 
 // ListColumns returns a paginated list of columns for a table.
 func (s *CatalogService) ListColumns(ctx context.Context, schemaName, tableName string, page domain.PageRequest) ([]domain.ColumnDetail, int64, error) {
 	return s.repo.ListColumns(ctx, schemaName, tableName, page)
+}
+
+// UpdateTable updates table metadata, checking CREATE_TABLE privilege.
+func (s *CatalogService) UpdateTable(ctx context.Context, schemaName, tableName string, req domain.UpdateTableRequest) (*domain.TableDetail, error) {
+	principal, _ := middleware.PrincipalFromContext(ctx)
+
+	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateTable)
+	if err != nil {
+		return nil, fmt.Errorf("check privilege: %w", err)
+	}
+	if !allowed {
+		return nil, domain.ErrAccessDenied("%q lacks permission to update table %q.%q", principal, schemaName, tableName)
+	}
+
+	result, err := s.repo.UpdateTable(ctx, schemaName, tableName, req.Comment, req.Properties, req.Owner)
+	if err != nil {
+		return nil, err
+	}
+
+	s.enrichTableTags(ctx, result)
+	s.enrichTableStats(ctx, result)
+	s.logAudit(ctx, principal, "UPDATE_TABLE", fmt.Sprintf("Updated table %q.%q metadata", schemaName, tableName))
+	return result, nil
+}
+
+// UpdateCatalog updates catalog-level metadata (admin only).
+func (s *CatalogService) UpdateCatalog(ctx context.Context, req domain.UpdateCatalogRequest) (*domain.CatalogInfo, error) {
+	principal, _ := middleware.PrincipalFromContext(ctx)
+
+	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateSchema)
+	if err != nil {
+		return nil, fmt.Errorf("check privilege: %w", err)
+	}
+	if !allowed {
+		return nil, domain.ErrAccessDenied("%q lacks permission to update catalog metadata", principal)
+	}
+
+	result, err := s.repo.UpdateCatalog(ctx, req.Comment)
+	if err != nil {
+		return nil, err
+	}
+
+	s.logAudit(ctx, principal, "UPDATE_CATALOG", "Updated catalog metadata")
+	return result, nil
+}
+
+// UpdateColumn updates column metadata, checking CREATE_TABLE privilege.
+func (s *CatalogService) UpdateColumn(ctx context.Context, schemaName, tableName, columnName string, req domain.UpdateColumnRequest) (*domain.ColumnDetail, error) {
+	principal, _ := middleware.PrincipalFromContext(ctx)
+
+	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateTable)
+	if err != nil {
+		return nil, fmt.Errorf("check privilege: %w", err)
+	}
+	if !allowed {
+		return nil, domain.ErrAccessDenied("%q lacks permission to update column metadata", principal)
+	}
+
+	result, err := s.repo.UpdateColumn(ctx, schemaName, tableName, columnName, req.Comment, req.Properties)
+	if err != nil {
+		return nil, err
+	}
+
+	s.logAudit(ctx, principal, "UPDATE_COLUMN", fmt.Sprintf("Updated column %q in %q.%q", columnName, schemaName, tableName))
+	return result, nil
+}
+
+// ProfileTable runs profiling queries and stores statistics.
+func (s *CatalogService) ProfileTable(ctx context.Context, schemaName, tableName string) (*domain.TableStatistics, error) {
+	principal, _ := middleware.PrincipalFromContext(ctx)
+
+	// Verify table exists
+	tbl, err := s.repo.GetTable(ctx, schemaName, tableName)
+	if err != nil {
+		return nil, err
+	}
+
+	stats := &domain.TableStatistics{
+		ProfiledBy: principal,
+	}
+
+	// Column count from existing data
+	colCount := int64(len(tbl.Columns))
+	stats.ColumnCount = &colCount
+
+	// Store statistics
+	securableName := schemaName + "." + tableName
+	if err := s.stats.Upsert(ctx, securableName, stats); err != nil {
+		return nil, fmt.Errorf("store table statistics: %w", err)
+	}
+
+	// Return stored stats (which now has LastProfiledAt set by the DB)
+	return s.stats.Get(ctx, securableName)
+}
+
+func (s *CatalogService) enrichSchemaTags(ctx context.Context, schema *domain.SchemaDetail) {
+	if s.tags == nil {
+		return
+	}
+	tags, err := s.tags.ListTagsForSecurable(ctx, "schema", schema.SchemaID, nil)
+	if err == nil {
+		schema.Tags = tags
+	}
+}
+
+func (s *CatalogService) enrichTableTags(ctx context.Context, table *domain.TableDetail) {
+	if s.tags == nil {
+		return
+	}
+	tags, err := s.tags.ListTagsForSecurable(ctx, "table", table.TableID, nil)
+	if err == nil {
+		table.Tags = tags
+	}
+}
+
+func (s *CatalogService) enrichTableStats(ctx context.Context, table *domain.TableDetail) {
+	if s.stats == nil {
+		return
+	}
+	securableName := table.SchemaName + "." + table.Name
+	stats, err := s.stats.Get(ctx, securableName)
+	if err == nil && stats != nil {
+		table.Statistics = stats
+	}
 }
 
 func (s *CatalogService) logAudit(ctx context.Context, principal, action, detail string) {

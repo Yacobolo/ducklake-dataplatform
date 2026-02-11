@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"duck-demo/internal/domain"
 )
@@ -42,6 +43,10 @@ func (m *mockViewRepo) Delete(ctx context.Context, schemaID int64, viewName stri
 		return m.deleteFn(ctx, schemaID, viewName)
 	}
 	panic("unexpected call to mockViewRepo.Delete")
+}
+
+func (m *mockViewRepo) Update(_ context.Context, _ int64, _ string, _ *string, _ map[string]string, _ *string) (*domain.ViewDetail, error) {
+	panic("unexpected call to mockViewRepo.Update")
 }
 
 // === Tag Repository Mock ===
@@ -142,6 +147,14 @@ func (m *mockLineageRepo) GetDownstream(ctx context.Context, tableName string, p
 	panic("unexpected call to mockLineageRepo.GetDownstream")
 }
 
+func (m *mockLineageRepo) DeleteEdge(_ context.Context, _ int64) error {
+	panic("unexpected call to mockLineageRepo.DeleteEdge")
+}
+
+func (m *mockLineageRepo) PurgeOlderThan(_ context.Context, _ time.Time) (int64, error) {
+	panic("unexpected call to mockLineageRepo.PurgeOlderThan")
+}
+
 // === Query History Repository Mock ===
 
 type mockQueryHistoryRepo struct {
@@ -235,6 +248,18 @@ func (m *mockCatalogRepo) ListColumns(ctx context.Context, schemaName, tableName
 		return m.listColumnsFn(ctx, schemaName, tableName, page)
 	}
 	panic("unexpected call to mockCatalogRepo.ListColumns")
+}
+
+func (m *mockCatalogRepo) UpdateTable(_ context.Context, _, _ string, _ *string, _ map[string]string, _ *string) (*domain.TableDetail, error) {
+	panic("unexpected call to mockCatalogRepo.UpdateTable")
+}
+
+func (m *mockCatalogRepo) UpdateCatalog(_ context.Context, _ *string) (*domain.CatalogInfo, error) {
+	panic("unexpected call to mockCatalogRepo.UpdateCatalog")
+}
+
+func (m *mockCatalogRepo) UpdateColumn(_ context.Context, _, _, _ string, _ *string, _ map[string]string) (*domain.ColumnDetail, error) {
+	panic("unexpected call to mockCatalogRepo.UpdateColumn")
 }
 
 // === Authorization Service Mock ===

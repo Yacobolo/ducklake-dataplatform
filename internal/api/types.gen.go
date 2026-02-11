@@ -57,10 +57,11 @@ type Column struct {
 
 // ColumnDetail defines model for ColumnDetail.
 type ColumnDetail struct {
-	Comment  *string `json:"comment,omitempty"`
-	Name     *string `json:"name,omitempty"`
-	Position *int    `json:"position,omitempty"`
-	Type     *string `json:"type,omitempty"`
+	Comment    *string            `json:"comment,omitempty"`
+	Name       *string            `json:"name,omitempty"`
+	Position   *int               `json:"position,omitempty"`
+	Properties *map[string]string `json:"properties,omitempty"`
+	Type       *string            `json:"type,omitempty"`
 }
 
 // ColumnMask defines model for ColumnMask.
@@ -210,6 +211,7 @@ type LineageEdge struct {
 
 	// EdgeType Edge type: READ, WRITE, READ_WRITE
 	EdgeType      *string `json:"edge_type,omitempty"`
+	Id            *int64  `json:"id,omitempty"`
 	PrincipalName *string `json:"principal_name,omitempty"`
 	SourceTable   *string `json:"source_table,omitempty"`
 	TargetTable   *string `json:"target_table"`
@@ -392,6 +394,17 @@ type PrivilegeGrant struct {
 	SecurableType *string    `json:"securable_type,omitempty"`
 }
 
+// PurgeLineageRequest defines model for PurgeLineageRequest.
+type PurgeLineageRequest struct {
+	// OlderThanDays Delete lineage edges older than this many days.
+	OlderThanDays int `json:"older_than_days"`
+}
+
+// PurgeLineageResponse defines model for PurgeLineageResponse.
+type PurgeLineageResponse struct {
+	DeletedCount *int64 `json:"deleted_count,omitempty"`
+}
+
 // QueryHistoryEntry defines model for QueryHistoryEntry.
 type QueryHistoryEntry struct {
 	CreatedAt      *time.Time `json:"created_at,omitempty"`
@@ -448,10 +461,12 @@ type SchemaDetail struct {
 	CatalogName *string            `json:"catalog_name,omitempty"`
 	Comment     *string            `json:"comment,omitempty"`
 	CreatedAt   *time.Time         `json:"created_at,omitempty"`
+	DeletedAt   *time.Time         `json:"deleted_at"`
 	Name        *string            `json:"name,omitempty"`
 	Owner       *string            `json:"owner,omitempty"`
 	Properties  *map[string]string `json:"properties,omitempty"`
 	SchemaId    *int64             `json:"schema_id,omitempty"`
+	Tags        *[]Tag             `json:"tags,omitempty"`
 	UpdatedAt   *time.Time         `json:"updated_at,omitempty"`
 }
 
@@ -459,7 +474,7 @@ type SchemaDetail struct {
 type SearchResult struct {
 	Comment *string `json:"comment"`
 
-	// MatchField Field that matched: name, comment, or property
+	// MatchField Field that matched: name, comment, property, or tag
 	MatchField *string `json:"match_field,omitempty"`
 	Name       *string `json:"name,omitempty"`
 	SchemaName *string `json:"schema_name"`
@@ -487,13 +502,25 @@ type TableDetail struct {
 	Columns     *[]ColumnDetail    `json:"columns,omitempty"`
 	Comment     *string            `json:"comment,omitempty"`
 	CreatedAt   *time.Time         `json:"created_at,omitempty"`
+	DeletedAt   *time.Time         `json:"deleted_at"`
 	Name        *string            `json:"name,omitempty"`
 	Owner       *string            `json:"owner,omitempty"`
 	Properties  *map[string]string `json:"properties,omitempty"`
 	SchemaName  *string            `json:"schema_name,omitempty"`
+	Statistics  *TableStatistics   `json:"statistics,omitempty"`
 	TableId     *int64             `json:"table_id,omitempty"`
 	TableType   *string            `json:"table_type,omitempty"`
+	Tags        *[]Tag             `json:"tags,omitempty"`
 	UpdatedAt   *time.Time         `json:"updated_at,omitempty"`
+}
+
+// TableStatistics defines model for TableStatistics.
+type TableStatistics struct {
+	ColumnCount    *int64     `json:"column_count"`
+	LastProfiledAt *time.Time `json:"last_profiled_at"`
+	ProfiledBy     *string    `json:"profiled_by,omitempty"`
+	RowCount       *int64     `json:"row_count"`
+	SizeBytes      *int64     `json:"size_bytes"`
 }
 
 // Tag defines model for Tag.
@@ -516,10 +543,35 @@ type TagAssignment struct {
 	TagId         *int64     `json:"tag_id,omitempty"`
 }
 
+// UpdateCatalogRequest defines model for UpdateCatalogRequest.
+type UpdateCatalogRequest struct {
+	Comment *string `json:"comment,omitempty"`
+}
+
+// UpdateColumnRequest defines model for UpdateColumnRequest.
+type UpdateColumnRequest struct {
+	Comment    *string            `json:"comment,omitempty"`
+	Properties *map[string]string `json:"properties,omitempty"`
+}
+
 // UpdateSchemaRequest defines model for UpdateSchemaRequest.
 type UpdateSchemaRequest struct {
 	Comment    *string            `json:"comment,omitempty"`
 	Properties *map[string]string `json:"properties,omitempty"`
+}
+
+// UpdateTableRequest defines model for UpdateTableRequest.
+type UpdateTableRequest struct {
+	Comment    *string            `json:"comment,omitempty"`
+	Owner      *string            `json:"owner,omitempty"`
+	Properties *map[string]string `json:"properties,omitempty"`
+}
+
+// UpdateViewRequest defines model for UpdateViewRequest.
+type UpdateViewRequest struct {
+	Comment        *string            `json:"comment,omitempty"`
+	Properties     *map[string]string `json:"properties,omitempty"`
+	ViewDefinition *string            `json:"view_definition,omitempty"`
 }
 
 // UploadUrlRequest defines model for UploadUrlRequest.
@@ -767,6 +819,9 @@ type ListTagsParams struct {
 	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
 }
 
+// UpdateCatalogJSONRequestBody defines body for UpdateCatalog for application/json ContentType.
+type UpdateCatalogJSONRequestBody = UpdateCatalogRequest
+
 // CreateSchemaJSONRequestBody defines body for CreateSchema for application/json ContentType.
 type CreateSchemaJSONRequestBody = CreateSchemaRequest
 
@@ -775,6 +830,12 @@ type UpdateSchemaMetadataJSONRequestBody = UpdateSchemaRequest
 
 // CreateCatalogTableJSONRequestBody defines body for CreateCatalogTable for application/json ContentType.
 type CreateCatalogTableJSONRequestBody = CreateTableApiRequest
+
+// UpdateTableMetadataJSONRequestBody defines body for UpdateTableMetadata for application/json ContentType.
+type UpdateTableMetadataJSONRequestBody = UpdateTableRequest
+
+// UpdateColumnMetadataJSONRequestBody defines body for UpdateColumnMetadata for application/json ContentType.
+type UpdateColumnMetadataJSONRequestBody = UpdateColumnRequest
 
 // CommitIngestionJSONRequestBody defines body for CommitIngestion for application/json ContentType.
 type CommitIngestionJSONRequestBody = CommitIngestionRequest
@@ -787,6 +848,9 @@ type RequestUploadUrlJSONRequestBody = UploadUrlRequest
 
 // CreateViewJSONRequestBody defines body for CreateView for application/json ContentType.
 type CreateViewJSONRequestBody = CreateViewRequest
+
+// UpdateViewJSONRequestBody defines body for UpdateView for application/json ContentType.
+type UpdateViewJSONRequestBody = UpdateViewRequest
 
 // UnbindColumnMaskJSONRequestBody defines body for UnbindColumnMask for application/json ContentType.
 type UnbindColumnMaskJSONRequestBody = BindingRequest
@@ -808,6 +872,9 @@ type RemoveGroupMemberJSONRequestBody = AddGroupMemberRequest
 
 // AddGroupMemberJSONRequestBody defines body for AddGroupMember for application/json ContentType.
 type AddGroupMemberJSONRequestBody = AddGroupMemberRequest
+
+// PurgeLineageJSONRequestBody defines body for PurgeLineage for application/json ContentType.
+type PurgeLineageJSONRequestBody = PurgeLineageRequest
 
 // GetManifestJSONRequestBody defines body for GetManifest for application/json ContentType.
 type GetManifestJSONRequestBody = ManifestRequest

@@ -21,3 +21,15 @@ type TagAssignment struct {
 	AssignedBy    string
 	AssignedAt    time.Time
 }
+
+// Classification tag key prefixes for governed taxonomy.
+const (
+	ClassificationPrefix = "classification"
+	SensitivityPrefix    = "sensitivity"
+)
+
+// Well-known classification values.
+var ValidClassifications = map[string][]string{
+	ClassificationPrefix: {"pii", "sensitive", "confidential", "public", "personal_data"},
+	SensitivityPrefix:    {"high", "medium", "low"},
+}

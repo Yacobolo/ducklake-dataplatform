@@ -534,6 +534,24 @@ func (h *APIHandler) GetCatalog(ctx context.Context, _ GetCatalogRequestObject) 
 	return GetCatalog200JSONResponse(catalogInfoToAPI(*info)), nil
 }
 
+func (h *APIHandler) UpdateCatalog(ctx context.Context, req UpdateCatalogRequestObject) (UpdateCatalogResponseObject, error) {
+	domReq := domain.UpdateCatalogRequest{}
+	if req.Body.Comment != nil {
+		domReq.Comment = req.Body.Comment
+	}
+
+	result, err := h.catalog.UpdateCatalog(ctx, domReq)
+	if err != nil {
+		switch err.(type) {
+		case *domain.AccessDeniedError:
+			return UpdateCatalog403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return UpdateCatalog200JSONResponse(catalogInfoToAPI(*result)), nil
+}
+
 func (h *APIHandler) ListCatalogSchemas(ctx context.Context, req ListCatalogSchemasRequestObject) (ListCatalogSchemasResponseObject, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	schemas, total, err := h.catalog.ListSchemas(ctx, page)
@@ -692,6 +710,32 @@ func (h *APIHandler) GetTableByName(ctx context.Context, req GetTableByNameReque
 	return GetTableByName200JSONResponse(tableDetailToAPI(*result)), nil
 }
 
+func (h *APIHandler) UpdateTableMetadata(ctx context.Context, req UpdateTableMetadataRequestObject) (UpdateTableMetadataResponseObject, error) {
+	domReq := domain.UpdateTableRequest{}
+	if req.Body.Comment != nil {
+		domReq.Comment = req.Body.Comment
+	}
+	if req.Body.Properties != nil {
+		domReq.Properties = *req.Body.Properties
+	}
+	if req.Body.Owner != nil {
+		domReq.Owner = req.Body.Owner
+	}
+
+	result, err := h.catalog.UpdateTable(ctx, req.SchemaName, req.TableName, domReq)
+	if err != nil {
+		switch err.(type) {
+		case *domain.AccessDeniedError:
+			return UpdateTableMetadata403JSONResponse{Code: 403, Message: err.Error()}, nil
+		case *domain.NotFoundError:
+			return UpdateTableMetadata404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return UpdateTableMetadata200JSONResponse(tableDetailToAPI(*result)), nil
+}
+
 func (h *APIHandler) DropTable(ctx context.Context, req DropTableRequestObject) (DropTableResponseObject, error) {
 	if err := h.catalog.DeleteTable(ctx, req.SchemaName, req.TableName); err != nil {
 		switch err.(type) {
@@ -723,6 +767,44 @@ func (h *APIHandler) ListTableColumns(ctx context.Context, req ListTableColumnsR
 	}
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return ListTableColumns200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
+}
+
+func (h *APIHandler) UpdateColumnMetadata(ctx context.Context, req UpdateColumnMetadataRequestObject) (UpdateColumnMetadataResponseObject, error) {
+	domReq := domain.UpdateColumnRequest{}
+	if req.Body.Comment != nil {
+		domReq.Comment = req.Body.Comment
+	}
+	if req.Body.Properties != nil {
+		domReq.Properties = *req.Body.Properties
+	}
+
+	result, err := h.catalog.UpdateColumn(ctx, req.SchemaName, req.TableName, req.ColumnName, domReq)
+	if err != nil {
+		switch err.(type) {
+		case *domain.AccessDeniedError:
+			return UpdateColumnMetadata403JSONResponse{Code: 403, Message: err.Error()}, nil
+		case *domain.NotFoundError:
+			return UpdateColumnMetadata404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return UpdateColumnMetadata200JSONResponse(columnDetailToAPI(*result)), nil
+}
+
+func (h *APIHandler) ProfileTable(ctx context.Context, req ProfileTableRequestObject) (ProfileTableResponseObject, error) {
+	stats, err := h.catalog.ProfileTable(ctx, req.SchemaName, req.TableName)
+	if err != nil {
+		switch err.(type) {
+		case *domain.AccessDeniedError:
+			return ProfileTable403JSONResponse{Code: 403, Message: err.Error()}, nil
+		case *domain.NotFoundError:
+			return ProfileTable404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return ProfileTable200JSONResponse(tableStatisticsToAPI(stats)), nil
 }
 
 func (h *APIHandler) GetMetastoreSummary(ctx context.Context, _ GetMetastoreSummaryRequestObject) (GetMetastoreSummaryResponseObject, error) {
@@ -848,6 +930,26 @@ func (h *APIHandler) GetDownstreamLineage(ctx context.Context, req GetDownstream
 	return GetDownstreamLineage200JSONResponse{Data: &data, NextPageToken: optStr(npt)}, nil
 }
 
+func (h *APIHandler) DeleteLineageEdge(ctx context.Context, req DeleteLineageEdgeRequestObject) (DeleteLineageEdgeResponseObject, error) {
+	if err := h.lineage.DeleteEdge(ctx, req.EdgeId); err != nil {
+		switch err.(type) {
+		case *domain.NotFoundError:
+			return DeleteLineageEdge404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return DeleteLineageEdge204Response{}, nil
+}
+
+func (h *APIHandler) PurgeLineage(ctx context.Context, req PurgeLineageRequestObject) (PurgeLineageResponseObject, error) {
+	deleted, err := h.lineage.PurgeOlderThan(ctx, req.Body.OlderThanDays)
+	if err != nil {
+		return PurgeLineage403JSONResponse{Code: 403, Message: err.Error()}, nil
+	}
+	return PurgeLineage200JSONResponse{DeletedCount: &deleted}, nil
+}
+
 // === Tags ===
 
 func (h *APIHandler) ListTags(ctx context.Context, req ListTagsRequestObject) (ListTagsResponseObject, error) {
@@ -921,6 +1023,24 @@ func (h *APIHandler) UnassignTag(ctx context.Context, req UnassignTagRequestObje
 	return UnassignTag204Response{}, nil
 }
 
+func (h *APIHandler) ListClassifications(ctx context.Context, _ ListClassificationsRequestObject) (ListClassificationsResponseObject, error) {
+	page := domain.PageRequest{MaxResults: 100}
+	tags, _, err := h.tags.ListTags(ctx, page)
+	if err != nil {
+		return nil, err
+	}
+
+	// Filter to classification/sensitivity prefixes
+	var filtered []Tag
+	for _, t := range tags {
+		if t.Key == domain.ClassificationPrefix || t.Key == domain.SensitivityPrefix {
+			filtered = append(filtered, tagToAPI(t))
+		}
+	}
+
+	return ListClassifications200JSONResponse{Data: &filtered}, nil
+}
+
 // === Views ===
 
 func (h *APIHandler) ListViews(ctx context.Context, req ListViewsRequestObject) (ListViewsResponseObject, error) {
@@ -980,6 +1100,32 @@ func (h *APIHandler) GetView(ctx context.Context, req GetViewRequestObject) (Get
 		}
 	}
 	return GetView200JSONResponse(viewDetailToAPI(*result)), nil
+}
+
+func (h *APIHandler) UpdateView(ctx context.Context, req UpdateViewRequestObject) (UpdateViewResponseObject, error) {
+	domReq := domain.UpdateViewRequest{}
+	if req.Body.Comment != nil {
+		domReq.Comment = req.Body.Comment
+	}
+	if req.Body.Properties != nil {
+		domReq.Properties = *req.Body.Properties
+	}
+	if req.Body.ViewDefinition != nil {
+		domReq.ViewDefinition = req.Body.ViewDefinition
+	}
+
+	result, err := h.views.UpdateView(ctx, req.SchemaName, req.ViewName, domReq)
+	if err != nil {
+		switch err.(type) {
+		case *domain.AccessDeniedError:
+			return UpdateView403JSONResponse{Code: 403, Message: err.Error()}, nil
+		case *domain.NotFoundError:
+			return UpdateView404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return UpdateView200JSONResponse(viewDetailToAPI(*result)), nil
 }
 
 func (h *APIHandler) DropView(ctx context.Context, req DropViewRequestObject) (DropViewResponseObject, error) {
@@ -1216,6 +1362,10 @@ func catalogInfoToAPI(c domain.CatalogInfo) CatalogInfo {
 }
 
 func schemaDetailToAPI(s domain.SchemaDetail) SchemaDetail {
+	tags := make([]Tag, len(s.Tags))
+	for i, t := range s.Tags {
+		tags[i] = tagToAPI(t)
+	}
 	return SchemaDetail{
 		SchemaId:    &s.SchemaID,
 		Name:        &s.Name,
@@ -1225,6 +1375,8 @@ func schemaDetailToAPI(s domain.SchemaDetail) SchemaDetail {
 		Properties:  &s.Properties,
 		CreatedAt:   &s.CreatedAt,
 		UpdatedAt:   &s.UpdatedAt,
+		Tags:        &tags,
+		DeletedAt:   s.DeletedAt,
 	}
 }
 
@@ -1233,7 +1385,11 @@ func tableDetailToAPI(t domain.TableDetail) TableDetail {
 	for i, c := range t.Columns {
 		cols[i] = columnDetailToAPI(c)
 	}
-	return TableDetail{
+	tags := make([]Tag, len(t.Tags))
+	for i, tg := range t.Tags {
+		tags[i] = tagToAPI(tg)
+	}
+	td := TableDetail{
 		TableId:     &t.TableID,
 		Name:        &t.Name,
 		SchemaName:  &t.SchemaName,
@@ -1245,15 +1401,22 @@ func tableDetailToAPI(t domain.TableDetail) TableDetail {
 		Properties:  &t.Properties,
 		CreatedAt:   &t.CreatedAt,
 		UpdatedAt:   &t.UpdatedAt,
+		Tags:        &tags,
+		DeletedAt:   t.DeletedAt,
 	}
+	if t.Statistics != nil {
+		td.Statistics = tableStatisticsPtr(t.Statistics)
+	}
+	return td
 }
 
 func columnDetailToAPI(c domain.ColumnDetail) ColumnDetail {
 	return ColumnDetail{
-		Name:     &c.Name,
-		Type:     &c.Type,
-		Position: &c.Position,
-		Comment:  &c.Comment,
+		Name:       &c.Name,
+		Type:       &c.Type,
+		Position:   &c.Position,
+		Comment:    &c.Comment,
+		Properties: &c.Properties,
 	}
 }
 
@@ -1288,6 +1451,7 @@ func searchResultToAPI(r domain.SearchResult) SearchResult {
 func lineageEdgeToAPI(e domain.LineageEdge) LineageEdge {
 	t := e.CreatedAt
 	return LineageEdge{
+		Id:            &e.ID,
 		SourceTable:   &e.SourceTable,
 		TargetTable:   e.TargetTable,
 		EdgeType:      &e.EdgeType,
@@ -1337,6 +1501,27 @@ func viewDetailToAPI(v domain.ViewDetail) ViewDetail {
 		CreatedAt:      &ct,
 		UpdatedAt:      &ut,
 	}
+}
+
+func tableStatisticsToAPI(s *domain.TableStatistics) TableStatistics {
+	if s == nil {
+		return TableStatistics{}
+	}
+	return TableStatistics{
+		RowCount:       s.RowCount,
+		SizeBytes:      s.SizeBytes,
+		ColumnCount:    s.ColumnCount,
+		LastProfiledAt: s.LastProfiledAt,
+		ProfiledBy:     &s.ProfiledBy,
+	}
+}
+
+func tableStatisticsPtr(s *domain.TableStatistics) *TableStatistics {
+	if s == nil {
+		return nil
+	}
+	ts := tableStatisticsToAPI(s)
+	return &ts
 }
 
 // optStr returns a pointer to the string if non-empty, otherwise nil.

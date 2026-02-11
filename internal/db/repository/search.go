@@ -23,38 +23,82 @@ func (r *SearchRepo) Search(ctx context.Context, query string, objectType *strin
 	var unions []string
 	var args []interface{}
 
-	// Search schemas
+	// Search schemas by name
 	if objectType == nil || *objectType == "schema" {
 		unions = append(unions, `
 			SELECT 'schema' as type, ds.schema_name as name, NULL as schema_name, NULL as table_name,
 				cm.comment as comment, 'name' as match_field
 			FROM ducklake_schema ds
-			LEFT JOIN catalog_metadata cm ON cm.securable_type = 'schema' AND cm.securable_name = ds.schema_name
-			WHERE LOWER(ds.schema_name) LIKE ?`)
+			LEFT JOIN catalog_metadata cm ON cm.securable_type = 'schema' AND cm.securable_name = ds.schema_name AND cm.deleted_at IS NULL
+			WHERE ds.end_snapshot IS NULL AND LOWER(ds.schema_name) LIKE ?`)
 		args = append(args, likePattern)
+
+		// Search schemas by comment
+		unions = append(unions, `
+			SELECT 'schema' as type, ds.schema_name as name, NULL as schema_name, NULL as table_name,
+				cm.comment as comment, 'comment' as match_field
+			FROM ducklake_schema ds
+			JOIN catalog_metadata cm ON cm.securable_type = 'schema' AND cm.securable_name = ds.schema_name AND cm.deleted_at IS NULL
+			WHERE ds.end_snapshot IS NULL AND LOWER(cm.comment) LIKE ? AND LOWER(ds.schema_name) NOT LIKE ?`)
+		args = append(args, likePattern, likePattern)
+
+		// Search schemas by tag
+		unions = append(unions, `
+			SELECT 'schema' as type, ds.schema_name as name, NULL as schema_name, NULL as table_name,
+				cm.comment as comment, 'tag' as match_field
+			FROM ducklake_schema ds
+			JOIN tag_assignments ta ON ta.securable_type = 'schema' AND ta.securable_id = ds.schema_id
+			JOIN tags t ON t.id = ta.tag_id
+			LEFT JOIN catalog_metadata cm ON cm.securable_type = 'schema' AND cm.securable_name = ds.schema_name AND cm.deleted_at IS NULL
+			WHERE ds.end_snapshot IS NULL AND (LOWER(t.key) LIKE ? OR LOWER(COALESCE(t.value, '')) LIKE ?)
+			AND LOWER(ds.schema_name) NOT LIKE ?`)
+		args = append(args, likePattern, likePattern, likePattern)
 	}
 
-	// Search tables
+	// Search tables by name
 	if objectType == nil || *objectType == "table" {
 		unions = append(unions, `
 			SELECT 'table' as type, dt.table_name as name, ds.schema_name as schema_name, NULL as table_name,
 				cm.comment as comment, 'name' as match_field
 			FROM ducklake_table dt
-			JOIN ducklake_schema ds ON dt.schema_id = ds.schema_id
-			LEFT JOIN catalog_metadata cm ON cm.securable_type = 'table' AND cm.securable_name = ds.schema_name || '.' || dt.table_name
-			WHERE LOWER(dt.table_name) LIKE ?`)
+			JOIN ducklake_schema ds ON dt.schema_id = ds.schema_id AND ds.end_snapshot IS NULL
+			LEFT JOIN catalog_metadata cm ON cm.securable_type = 'table' AND cm.securable_name = ds.schema_name || '.' || dt.table_name AND cm.deleted_at IS NULL
+			WHERE dt.end_snapshot IS NULL AND LOWER(dt.table_name) LIKE ?`)
 		args = append(args, likePattern)
+
+		// Search tables by comment
+		unions = append(unions, `
+			SELECT 'table' as type, dt.table_name as name, ds.schema_name as schema_name, NULL as table_name,
+				cm.comment as comment, 'comment' as match_field
+			FROM ducklake_table dt
+			JOIN ducklake_schema ds ON dt.schema_id = ds.schema_id AND ds.end_snapshot IS NULL
+			JOIN catalog_metadata cm ON cm.securable_type = 'table' AND cm.securable_name = ds.schema_name || '.' || dt.table_name AND cm.deleted_at IS NULL
+			WHERE dt.end_snapshot IS NULL AND LOWER(cm.comment) LIKE ? AND LOWER(dt.table_name) NOT LIKE ?`)
+		args = append(args, likePattern, likePattern)
+
+		// Search tables by tag
+		unions = append(unions, `
+			SELECT 'table' as type, dt.table_name as name, ds.schema_name as schema_name, NULL as table_name,
+				cm.comment as comment, 'tag' as match_field
+			FROM ducklake_table dt
+			JOIN ducklake_schema ds ON dt.schema_id = ds.schema_id AND ds.end_snapshot IS NULL
+			JOIN tag_assignments ta ON ta.securable_type = 'table' AND ta.securable_id = dt.table_id
+			JOIN tags t ON t.id = ta.tag_id
+			LEFT JOIN catalog_metadata cm ON cm.securable_type = 'table' AND cm.securable_name = ds.schema_name || '.' || dt.table_name AND cm.deleted_at IS NULL
+			WHERE dt.end_snapshot IS NULL AND (LOWER(t.key) LIKE ? OR LOWER(COALESCE(t.value, '')) LIKE ?)
+			AND LOWER(dt.table_name) NOT LIKE ?`)
+		args = append(args, likePattern, likePattern, likePattern)
 	}
 
-	// Search columns
+	// Search columns by name
 	if objectType == nil || *objectType == "column" {
 		unions = append(unions, `
 			SELECT 'column' as type, dc.column_name as name, ds.schema_name as schema_name, dt.table_name as table_name,
 				NULL as comment, 'name' as match_field
 			FROM ducklake_column dc
-			JOIN ducklake_table dt ON dc.table_id = dt.table_id
-			JOIN ducklake_schema ds ON dt.schema_id = ds.schema_id
-			WHERE LOWER(dc.column_name) LIKE ?`)
+			JOIN ducklake_table dt ON dc.table_id = dt.table_id AND dt.end_snapshot IS NULL
+			JOIN ducklake_schema ds ON dt.schema_id = ds.schema_id AND ds.end_snapshot IS NULL
+			WHERE dc.end_snapshot IS NULL AND LOWER(dc.column_name) LIKE ?`)
 		args = append(args, likePattern)
 	}
 
