@@ -193,4 +193,5 @@ type AuthorizationService interface {
 	CheckPrivilege(ctx context.Context, principalName, securableType string, securableID int64, privilege string) (bool, error)
 	GetEffectiveRowFilters(ctx context.Context, principalName string, tableID int64) ([]string, error)
 	GetEffectiveColumnMasks(ctx context.Context, principalName string, tableID int64) (map[string]string, error)
+	GetTableColumnNames(ctx context.Context, tableID int64) ([]string, error)
 }

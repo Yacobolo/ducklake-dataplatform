@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"duck-demo/internal/domain"
+	"duck-demo/internal/middleware"
 )
 
 type RowFilterService struct {
@@ -23,8 +24,9 @@ func (s *RowFilterService) Create(ctx context.Context, f *domain.RowFilter) (*do
 	if err != nil {
 		return nil, err
 	}
+	principal, _ := middleware.PrincipalFromContext(ctx)
 	_ = s.audit.Insert(ctx, &domain.AuditEntry{
-		PrincipalName: "system",
+		PrincipalName: principal,
 		Action:        "CREATE_ROW_FILTER",
 		Status:        "ALLOWED",
 	})

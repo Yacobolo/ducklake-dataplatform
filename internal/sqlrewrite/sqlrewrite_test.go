@@ -471,6 +471,16 @@ func TestClassifyStatement_DDL_Drop(t *testing.T) {
 	}
 }
 
+func TestClassifyStatement_MultiStatement(t *testing.T) {
+	_, err := ClassifyStatement("SELECT 1; DROP TABLE titanic")
+	if err == nil {
+		t.Error("expected error for multi-statement SQL")
+	}
+	if err != nil && !strings.Contains(err.Error(), "multi-statement") {
+		t.Errorf("expected multi-statement error, got: %v", err)
+	}
+}
+
 func TestClassifyStatement_Invalid(t *testing.T) {
 	_, err := ClassifyStatement("SELEKT * FORM titanic")
 	if err == nil {
@@ -547,10 +557,12 @@ func TestInjectRowFilterSQL_EmptyFilter(t *testing.T) {
 // --- ApplyColumnMasks tests ---
 
 func TestApplyColumnMasks_Basic(t *testing.T) {
+	allCols := []string{"PassengerId", "Name", "Pclass"}
 	result, err := ApplyColumnMasks(
 		`SELECT "PassengerId", "Name", "Pclass" FROM titanic`,
 		"titanic",
 		map[string]string{"Name": "'***'"},
+		allCols,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -566,9 +578,59 @@ func TestApplyColumnMasks_Basic(t *testing.T) {
 	}
 }
 
+func TestApplyColumnMasks_SelectStar(t *testing.T) {
+	allCols := []string{"PassengerId", "Name", "Pclass"}
+	result, err := ApplyColumnMasks(
+		`SELECT * FROM titanic`,
+		"titanic",
+		map[string]string{"Name": "'***'"},
+		allCols,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("result: %s", result)
+
+	if !strings.Contains(result, "'***'") {
+		t.Error("expected mask expression in SELECT * result")
+	}
+	if !strings.Contains(result, "PassengerId") {
+		t.Error("expected non-masked columns to be expanded from *")
+	}
+	if !strings.Contains(result, "Pclass") {
+		t.Error("expected non-masked columns to be expanded from *")
+	}
+}
+
+func TestApplyColumnMasks_SelectStarNoColumns(t *testing.T) {
+	// SELECT * with masks but no column metadata should return an error
+	_, err := ApplyColumnMasks(
+		`SELECT * FROM titanic`,
+		"titanic",
+		map[string]string{"Name": "'***'"},
+		nil,
+	)
+	if err == nil {
+		t.Error("expected error when masking SELECT * without column metadata")
+	}
+}
+
+func TestApplyColumnMasks_UnparseableMask(t *testing.T) {
+	allCols := []string{"PassengerId", "Name"}
+	_, err := ApplyColumnMasks(
+		`SELECT "PassengerId", "Name" FROM titanic`,
+		"titanic",
+		map[string]string{"Name": "INVALID MASK ((("},
+		allCols,
+	)
+	if err == nil {
+		t.Error("expected error for unparseable mask expression")
+	}
+}
+
 func TestApplyColumnMasks_NoMasks(t *testing.T) {
 	sql := `SELECT "Name" FROM titanic`
-	result, err := ApplyColumnMasks(sql, "titanic", nil)
+	result, err := ApplyColumnMasks(sql, "titanic", nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -579,7 +641,7 @@ func TestApplyColumnMasks_NoMasks(t *testing.T) {
 
 func TestApplyColumnMasks_NoMatchingTable(t *testing.T) {
 	sql := `SELECT "Name" FROM other_table`
-	result, err := ApplyColumnMasks(sql, "titanic", map[string]string{"Name": "'***'"})
+	result, err := ApplyColumnMasks(sql, "titanic", map[string]string{"Name": "'***'"}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

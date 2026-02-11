@@ -3,7 +3,9 @@ package api
 import (
 	"context"
 	"errors"
+	"net/http"
 
+	"duck-demo/internal/db/mapper"
 	"duck-demo/internal/domain"
 	"duck-demo/internal/middleware"
 	"duck-demo/internal/service"
@@ -90,11 +92,30 @@ func pageFromParams(maxResults *MaxResults, pageToken *PageToken) domain.PageReq
 	return p
 }
 
+// httpStatusFromError returns the HTTP status code for a domain error using
+// the centralized mapper. Unknown errors return 500 Internal Server Error.
+func httpStatusFromError(err error) int {
+	return mapper.HTTPStatusFromDomainError(err)
+}
+
+// errorCodeFromError returns the HTTP status code for building error JSON responses.
+// This is a convenience alias for use in handler methods.
+func errorCodeFromError(err error) int {
+	return httpStatusFromError(err)
+}
+
+// isDomainError returns true if err is a known domain error type.
+func isDomainError(err error) bool {
+	code := httpStatusFromError(err)
+	return code != http.StatusInternalServerError
+}
+
 func (h *APIHandler) ExecuteQuery(ctx context.Context, req ExecuteQueryRequestObject) (ExecuteQueryResponseObject, error) {
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	result, err := h.query.Execute(ctx, principal, req.Body.Sql)
 	if err != nil {
-		return ExecuteQuery403JSONResponse{Code: 403, Message: err.Error()}, nil
+		code := errorCodeFromError(err)
+		return ExecuteQuery403JSONResponse{Code: code, Message: err.Error()}, nil
 	}
 
 	rows := make([][]interface{}, len(result.Rows))
@@ -119,13 +140,12 @@ func (h *APIHandler) GetManifest(ctx context.Context, req GetManifestRequestObje
 
 	result, err := h.manifest.GetManifest(ctx, principal, schemaName, req.Body.Table)
 	if err != nil {
-		switch err.(type) {
-		case *domain.NotFoundError:
-			return GetManifest404JSONResponse{Code: 404, Message: err.Error()}, nil
-		case *domain.AccessDeniedError:
-			return GetManifest403JSONResponse{Code: 403, Message: err.Error()}, nil
+		code := errorCodeFromError(err)
+		switch code {
+		case http.StatusNotFound:
+			return GetManifest404JSONResponse{Code: code, Message: err.Error()}, nil
 		default:
-			return GetManifest403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return GetManifest403JSONResponse{Code: code, Message: err.Error()}, nil
 		}
 	}
 
@@ -643,15 +663,16 @@ func (h *APIHandler) DeleteSchema(ctx context.Context, req DeleteSchemaRequestOb
 	}
 
 	if err := h.catalog.DeleteSchema(ctx, req.SchemaName, force); err != nil {
-		switch err.(type) {
-		case *domain.AccessDeniedError:
-			return DeleteSchema403JSONResponse{Code: 403, Message: err.Error()}, nil
-		case *domain.NotFoundError:
-			return DeleteSchema404JSONResponse{Code: 404, Message: err.Error()}, nil
-		case *domain.ConflictError:
-			return DeleteSchema403JSONResponse{Code: 403, Message: err.Error()}, nil
+		code := errorCodeFromError(err)
+		switch code {
+		case http.StatusForbidden:
+			return DeleteSchema403JSONResponse{Code: code, Message: err.Error()}, nil
+		case http.StatusNotFound:
+			return DeleteSchema404JSONResponse{Code: code, Message: err.Error()}, nil
 		default:
-			return nil, err
+			// ConflictError and other errors — return via 403 response with actual code.
+			// TODO: Add 409 response to OpenAPI spec for DeleteSchema.
+			return DeleteSchema403JSONResponse{Code: code, Message: err.Error()}, nil
 		}
 	}
 	return DeleteSchema204Response{}, nil
@@ -970,7 +991,8 @@ func (h *APIHandler) DeleteLineageEdge(ctx context.Context, req DeleteLineageEdg
 func (h *APIHandler) PurgeLineage(ctx context.Context, req PurgeLineageRequestObject) (PurgeLineageResponseObject, error) {
 	deleted, err := h.lineage.PurgeOlderThan(ctx, req.Body.OlderThanDays)
 	if err != nil {
-		return PurgeLineage403JSONResponse{Code: 403, Message: err.Error()}, nil
+		code := errorCodeFromError(err)
+		return PurgeLineage403JSONResponse{Code: code, Message: err.Error()}, nil
 	}
 	return PurgeLineage200JSONResponse{DeletedCount: &deleted}, nil
 }

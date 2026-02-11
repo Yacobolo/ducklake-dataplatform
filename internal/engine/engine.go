@@ -94,7 +94,7 @@ func (e *SecureEngine) Query(ctx context.Context, principalName, sqlQuery string
 			return nil, fmt.Errorf("privilege check: %w", err)
 		}
 		if !allowed {
-			return nil, fmt.Errorf("access denied: %q lacks %s on table %q", principalName, requiredPriv, tableName)
+			return nil, domain.ErrAccessDenied("principal %q lacks %s on table %q", principalName, requiredPriv, tableName)
 		}
 
 		// Get row filters (only for SELECT)
@@ -116,7 +116,12 @@ func (e *SecureEngine) Query(ctx context.Context, principalName, sqlQuery string
 				return nil, fmt.Errorf("column masks: %w", err)
 			}
 			if masks != nil {
-				rewritten, err = sqlrewrite.ApplyColumnMasks(rewritten, tableName, masks)
+				// Fetch column names so SELECT * can be expanded before masking.
+				colNames, err := e.catalog.GetTableColumnNames(ctx, tableID)
+				if err != nil {
+					return nil, fmt.Errorf("get column names for masking: %w", err)
+				}
+				rewritten, err = sqlrewrite.ApplyColumnMasks(rewritten, tableName, masks, colNames)
 				if err != nil {
 					return nil, fmt.Errorf("apply column masks: %w", err)
 				}

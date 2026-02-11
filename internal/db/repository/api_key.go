@@ -19,7 +19,7 @@ func NewAPIKeyRepo(db *sql.DB) *APIKeyRepo {
 func (r *APIKeyRepo) LookupPrincipalByAPIKeyHash(ctx context.Context, keyHash string) (string, error) {
 	row, err := r.q.GetAPIKeyByHash(ctx, keyHash)
 	if err != nil {
-		return "", err
+		return "", mapDBError(err)
 	}
 	return row.PrincipalName, nil
 }

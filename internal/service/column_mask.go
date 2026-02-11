@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"duck-demo/internal/domain"
+	"duck-demo/internal/middleware"
 )
 
 type ColumnMaskService struct {
@@ -26,8 +27,9 @@ func (s *ColumnMaskService) Create(ctx context.Context, m *domain.ColumnMask) (*
 	if err != nil {
 		return nil, err
 	}
+	principal, _ := middleware.PrincipalFromContext(ctx)
 	_ = s.audit.Insert(ctx, &domain.AuditEntry{
-		PrincipalName: "system",
+		PrincipalName: principal,
 		Action:        "CREATE_COLUMN_MASK",
 		Status:        "ALLOWED",
 	})

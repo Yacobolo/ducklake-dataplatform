@@ -356,3 +356,17 @@ func (s *AuthorizationService) GetEffectiveColumnMasks(ctx context.Context, prin
 	}
 	return masks, nil
 }
+
+// GetTableColumnNames returns the ordered list of column names for a table.
+// This is used by the engine to expand SELECT * before applying column masks.
+func (s *AuthorizationService) GetTableColumnNames(ctx context.Context, tableID int64) ([]string, error) {
+	cols, _, err := s.introspection.ListColumns(ctx, tableID, domain.PageRequest{MaxResults: 10000})
+	if err != nil {
+		return nil, fmt.Errorf("list columns for table %d: %w", tableID, err)
+	}
+	names := make([]string, len(cols))
+	for i, c := range cols {
+		names[i] = c.Name
+	}
+	return names, nil
+}

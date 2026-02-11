@@ -303,6 +303,10 @@ func (m *mockAuthService) GetEffectiveColumnMasks(_ context.Context, _ string, _
 	panic("unexpected call to mockAuthService.GetEffectiveColumnMasks")
 }
 
+func (m *mockAuthService) GetTableColumnNames(_ context.Context, _ int64) ([]string, error) {
+	panic("unexpected call to mockAuthService.GetTableColumnNames")
+}
+
 // === Audit Repository Mock ===
 
 type mockAuditRepo struct {
