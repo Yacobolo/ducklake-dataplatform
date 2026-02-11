@@ -370,3 +370,52 @@ func TestWorkflow_ColumnMask_Lifecycle(t *testing.T) {
 		t.Run(s.name, s.fn)
 	}
 }
+
+// TestWorkflow_ManagementEndpointsNoAuthz documents the design gap that management
+// endpoints (principals, grants, row filters, column masks) have no authorization
+// checks — any authenticated user can perform admin operations.
+func TestWorkflow_ManagementEndpointsNoAuthz(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
+
+	t.Run("analyst_creates_principal", func(t *testing.T) {
+		body := map[string]interface{}{"name": "analyst-created-user", "type": "user"}
+		resp := doRequest(t, "POST", env.Server.URL+"/v1/principals", env.Keys.Analyst, body)
+		// Documents gap: analyst can create principals (should be admin-only)
+		assert.Equal(t, 201, resp.StatusCode,
+			"expected 201 (documenting authz gap — any authenticated user can create principals)")
+		resp.Body.Close()
+	})
+
+	t.Run("analyst_grants_privilege", func(t *testing.T) {
+		// Look up the analyst principal to get their ID
+		ctx := context.Background()
+		q := dbstore.New(env.MetaDB)
+		analyst, err := q.GetPrincipalByName(ctx, "analyst1")
+		require.NoError(t, err)
+
+		body := map[string]interface{}{
+			"principal_id":   analyst.ID,
+			"principal_type": "user",
+			"securable_type": "catalog",
+			"securable_id":   0,
+			"privilege":      "ALL_PRIVILEGES",
+		}
+		resp := doRequest(t, "POST", env.Server.URL+"/v1/grants", env.Keys.Analyst, body)
+		// Documents gap: analyst can grant themselves ALL_PRIVILEGES
+		assert.Equal(t, 201, resp.StatusCode,
+			"expected 201 (documenting authz gap — any authenticated user can grant privileges)")
+		resp.Body.Close()
+	})
+
+	t.Run("analyst_creates_row_filter", func(t *testing.T) {
+		body := map[string]interface{}{
+			"table_id":   1,
+			"filter_sql": `"Pclass" = 99`,
+		}
+		resp := doRequest(t, "POST", env.Server.URL+"/v1/row-filters", env.Keys.Analyst, body)
+		// Documents gap: analyst can create row filters
+		assert.Equal(t, 201, resp.StatusCode,
+			"expected 201 (documenting authz gap — any authenticated user can create row filters)")
+		resp.Body.Close()
+	})
+}
