@@ -42,11 +42,20 @@ func (s *StorageCredentialService) Create(ctx context.Context, principal string,
 	cred := &domain.StorageCredential{
 		Name:           req.Name,
 		CredentialType: req.CredentialType,
-		KeyID:          req.KeyID,
-		Secret:         req.Secret,
-		Endpoint:       req.Endpoint,
-		Region:         req.Region,
-		URLStyle:       req.URLStyle,
+		// S3 fields
+		KeyID:    req.KeyID,
+		Secret:   req.Secret,
+		Endpoint: req.Endpoint,
+		Region:   req.Region,
+		URLStyle: req.URLStyle,
+		// Azure fields
+		AzureAccountName:  req.AzureAccountName,
+		AzureAccountKey:   req.AzureAccountKey,
+		AzureClientID:     req.AzureClientID,
+		AzureTenantID:     req.AzureTenantID,
+		AzureClientSecret: req.AzureClientSecret,
+		// GCS fields
+		GCSKeyFilePath: req.GCSKeyFilePath,
 		Comment:        req.Comment,
 		Owner:          principal,
 	}

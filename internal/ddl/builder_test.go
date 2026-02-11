@@ -289,6 +289,140 @@ func TestCreateS3Secret(t *testing.T) {
 	}
 }
 
+func TestCreateAzureSecret(t *testing.T) {
+	tests := []struct {
+		name             string
+		secName          string
+		accountName      string
+		accountKey       string
+		connectionString string
+		wantErr          string
+		contains         []string
+	}{
+		{
+			name:        "with_account_key",
+			secName:     "azure_cred",
+			accountName: "mystorageaccount",
+			accountKey:  "base64encodedkey==",
+			contains: []string{
+				`CREATE SECRET "azure_cred"`,
+				"TYPE AZURE",
+				`ACCOUNT_NAME 'mystorageaccount'`,
+				`ACCOUNT_KEY 'base64encodedkey=='`,
+			},
+		},
+		{
+			name:             "with_connection_string",
+			secName:          "azure_cred",
+			connectionString: "DefaultEndpointsProtocol=https;AccountName=myacct;AccountKey=mykey==;EndpointSuffix=core.windows.net",
+			contains: []string{
+				`CREATE SECRET "azure_cred"`,
+				"TYPE AZURE",
+				"CONNECTION_STRING",
+			},
+		},
+		{
+			name:    "empty_name",
+			secName: "",
+			wantErr: "secret name is required",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := CreateAzureSecret(tt.secName, tt.accountName, tt.accountKey, tt.connectionString)
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			for _, s := range tt.contains {
+				assert.Contains(t, got, s)
+			}
+		})
+	}
+}
+
+func TestCreateGCSSecret(t *testing.T) {
+	tests := []struct {
+		name        string
+		secName     string
+		keyFilePath string
+		wantErr     string
+		contains    []string
+	}{
+		{
+			name:        "valid",
+			secName:     "gcs_cred",
+			keyFilePath: "/path/to/keyfile.json",
+			contains: []string{
+				`CREATE SECRET "gcs_cred"`,
+				"TYPE GCS",
+				`KEY_FILE_PATH '/path/to/keyfile.json'`,
+			},
+		},
+		{
+			name:    "empty_name",
+			secName: "",
+			wantErr: "secret name is required",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := CreateGCSSecret(tt.secName, tt.keyFilePath)
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			for _, s := range tt.contains {
+				assert.Contains(t, got, s)
+			}
+		})
+	}
+}
+
+func TestDropSecret(t *testing.T) {
+	tests := []struct {
+		name    string
+		secName string
+		want    string
+		wantErr string
+	}{
+		{
+			name:    "valid",
+			secName: "my_secret",
+			want:    `DROP SECRET IF EXISTS "my_secret"`,
+		},
+		{
+			name:    "escapes_quotes",
+			secName: `sec"ret`,
+			want:    `DROP SECRET IF EXISTS "sec""ret"`,
+		},
+		{
+			name:    "empty_name",
+			secName: "",
+			wantErr: "secret name is required",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := DropSecret(tt.secName)
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestDropS3Secret(t *testing.T) {
 	tests := []struct {
 		name    string

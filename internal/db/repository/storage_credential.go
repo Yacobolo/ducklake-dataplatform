@@ -35,17 +35,31 @@ func (r *StorageCredentialRepo) Create(ctx context.Context, cred *domain.Storage
 	if err != nil {
 		return nil, fmt.Errorf("encrypt secret: %w", err)
 	}
+	encAzureAccountKey, err := r.enc.Encrypt(cred.AzureAccountKey)
+	if err != nil {
+		return nil, fmt.Errorf("encrypt azure_account_key: %w", err)
+	}
+	encAzureClientSecret, err := r.enc.Encrypt(cred.AzureClientSecret)
+	if err != nil {
+		return nil, fmt.Errorf("encrypt azure_client_secret: %w", err)
+	}
 
 	row, err := r.q.CreateStorageCredential(ctx, dbstore.CreateStorageCredentialParams{
-		Name:            cred.Name,
-		CredentialType:  string(cred.CredentialType),
-		KeyIDEncrypted:  encKeyID,
-		SecretEncrypted: encSecret,
-		Endpoint:        cred.Endpoint,
-		Region:          cred.Region,
-		UrlStyle:        cred.URLStyle,
-		Comment:         cred.Comment,
-		Owner:           cred.Owner,
+		Name:                       cred.Name,
+		CredentialType:             string(cred.CredentialType),
+		KeyIDEncrypted:             encKeyID,
+		SecretEncrypted:            encSecret,
+		Endpoint:                   cred.Endpoint,
+		Region:                     cred.Region,
+		UrlStyle:                   cred.URLStyle,
+		AzureAccountName:           cred.AzureAccountName,
+		AzureAccountKeyEncrypted:   encAzureAccountKey,
+		AzureClientID:              cred.AzureClientID,
+		AzureTenantID:              cred.AzureTenantID,
+		AzureClientSecretEncrypted: encAzureClientSecret,
+		GcsKeyFilePath:             cred.GCSKeyFilePath,
+		Comment:                    cred.Comment,
+		Owner:                      cred.Owner,
 	})
 	if err != nil {
 		return nil, mapDBError(err)
@@ -101,6 +115,7 @@ func (r *StorageCredentialRepo) Update(ctx context.Context, id int64, req domain
 		return nil, err
 	}
 
+	// S3 fields
 	keyIDEnc, err := r.enc.Encrypt(current.KeyID)
 	if err != nil {
 		return nil, fmt.Errorf("encrypt key_id: %w", err)
@@ -109,7 +124,6 @@ func (r *StorageCredentialRepo) Update(ctx context.Context, id int64, req domain
 	if err != nil {
 		return nil, fmt.Errorf("encrypt secret: %w", err)
 	}
-
 	if req.KeyID != nil {
 		keyIDEnc, err = r.enc.Encrypt(*req.KeyID)
 		if err != nil {
@@ -135,19 +149,66 @@ func (r *StorageCredentialRepo) Update(ctx context.Context, id int64, req domain
 	if req.URLStyle != nil {
 		urlStyle = *req.URLStyle
 	}
+
+	// Azure fields
+	azureAccountName := current.AzureAccountName
+	if req.AzureAccountName != nil {
+		azureAccountName = *req.AzureAccountName
+	}
+	azureAccountKeyEnc, err := r.enc.Encrypt(current.AzureAccountKey)
+	if err != nil {
+		return nil, fmt.Errorf("encrypt azure_account_key: %w", err)
+	}
+	if req.AzureAccountKey != nil {
+		azureAccountKeyEnc, err = r.enc.Encrypt(*req.AzureAccountKey)
+		if err != nil {
+			return nil, fmt.Errorf("encrypt azure_account_key: %w", err)
+		}
+	}
+	azureClientID := current.AzureClientID
+	if req.AzureClientID != nil {
+		azureClientID = *req.AzureClientID
+	}
+	azureTenantID := current.AzureTenantID
+	if req.AzureTenantID != nil {
+		azureTenantID = *req.AzureTenantID
+	}
+	azureClientSecretEnc, err := r.enc.Encrypt(current.AzureClientSecret)
+	if err != nil {
+		return nil, fmt.Errorf("encrypt azure_client_secret: %w", err)
+	}
+	if req.AzureClientSecret != nil {
+		azureClientSecretEnc, err = r.enc.Encrypt(*req.AzureClientSecret)
+		if err != nil {
+			return nil, fmt.Errorf("encrypt azure_client_secret: %w", err)
+		}
+	}
+
+	// GCS fields
+	gcsKeyFilePath := current.GCSKeyFilePath
+	if req.GCSKeyFilePath != nil {
+		gcsKeyFilePath = *req.GCSKeyFilePath
+	}
+
 	comment := current.Comment
 	if req.Comment != nil {
 		comment = *req.Comment
 	}
 
 	err = r.q.UpdateStorageCredential(ctx, dbstore.UpdateStorageCredentialParams{
-		KeyIDEncrypted:  keyIDEnc,
-		SecretEncrypted: secretEnc,
-		Endpoint:        endpoint,
-		Region:          region,
-		UrlStyle:        urlStyle,
-		Comment:         comment,
-		ID:              id,
+		KeyIDEncrypted:             keyIDEnc,
+		SecretEncrypted:            secretEnc,
+		Endpoint:                   endpoint,
+		Region:                     region,
+		UrlStyle:                   urlStyle,
+		AzureAccountName:           azureAccountName,
+		AzureAccountKeyEncrypted:   azureAccountKeyEnc,
+		AzureClientID:              azureClientID,
+		AzureTenantID:              azureTenantID,
+		AzureClientSecretEncrypted: azureClientSecretEnc,
+		GcsKeyFilePath:             gcsKeyFilePath,
+		Comment:                    comment,
+		ID:                         id,
 	})
 	if err != nil {
 		return nil, mapDBError(err)
@@ -169,20 +230,35 @@ func (r *StorageCredentialRepo) fromDB(row dbstore.StorageCredential) (*domain.S
 	if err != nil {
 		return nil, fmt.Errorf("decrypt secret: %w", err)
 	}
+	azureAccountKey, err := r.enc.Decrypt(row.AzureAccountKeyEncrypted)
+	if err != nil {
+		return nil, fmt.Errorf("decrypt azure_account_key: %w", err)
+	}
+	azureClientSecret, err := r.enc.Decrypt(row.AzureClientSecretEncrypted)
+	if err != nil {
+		return nil, fmt.Errorf("decrypt azure_client_secret: %w", err)
+	}
+
 	createdAt, _ := time.Parse("2006-01-02 15:04:05", row.CreatedAt)
 	updatedAt, _ := time.Parse("2006-01-02 15:04:05", row.UpdatedAt)
 	return &domain.StorageCredential{
-		ID:             row.ID,
-		Name:           row.Name,
-		CredentialType: domain.CredentialType(row.CredentialType),
-		KeyID:          keyID,
-		Secret:         secret,
-		Endpoint:       row.Endpoint,
-		Region:         row.Region,
-		URLStyle:       row.UrlStyle,
-		Comment:        row.Comment,
-		Owner:          row.Owner,
-		CreatedAt:      createdAt,
-		UpdatedAt:      updatedAt,
+		ID:                row.ID,
+		Name:              row.Name,
+		CredentialType:    domain.CredentialType(row.CredentialType),
+		KeyID:             keyID,
+		Secret:            secret,
+		Endpoint:          row.Endpoint,
+		Region:            row.Region,
+		URLStyle:          row.UrlStyle,
+		AzureAccountName:  row.AzureAccountName,
+		AzureAccountKey:   azureAccountKey,
+		AzureClientID:     row.AzureClientID,
+		AzureTenantID:     row.AzureTenantID,
+		AzureClientSecret: azureClientSecret,
+		GCSKeyFilePath:    row.GcsKeyFilePath,
+		Comment:           row.Comment,
+		Owner:             row.Owner,
+		CreatedAt:         createdAt,
+		UpdatedAt:         updatedAt,
 	}, nil
 }

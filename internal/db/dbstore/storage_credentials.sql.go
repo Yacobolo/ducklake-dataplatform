@@ -21,21 +21,32 @@ func (q *Queries) CountStorageCredentials(ctx context.Context) (int64, error) {
 }
 
 const createStorageCredential = `-- name: CreateStorageCredential :one
-INSERT INTO storage_credentials (name, credential_type, key_id_encrypted, secret_encrypted, endpoint, region, url_style, comment, owner)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, name, credential_type, key_id_encrypted, secret_encrypted, endpoint, region, url_style, comment, owner, created_at, updated_at
+INSERT INTO storage_credentials (
+    name, credential_type,
+    key_id_encrypted, secret_encrypted, endpoint, region, url_style,
+    azure_account_name, azure_account_key_encrypted, azure_client_id, azure_tenant_id, azure_client_secret_encrypted,
+    gcs_key_file_path,
+    comment, owner
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, name, credential_type, key_id_encrypted, secret_encrypted, endpoint, region, url_style, comment, owner, created_at, updated_at, azure_account_name, azure_account_key_encrypted, azure_client_id, azure_tenant_id, azure_client_secret_encrypted, gcs_key_file_path
 `
 
 type CreateStorageCredentialParams struct {
-	Name            string
-	CredentialType  string
-	KeyIDEncrypted  string
-	SecretEncrypted string
-	Endpoint        string
-	Region          string
-	UrlStyle        string
-	Comment         string
-	Owner           string
+	Name                       string
+	CredentialType             string
+	KeyIDEncrypted             string
+	SecretEncrypted            string
+	Endpoint                   string
+	Region                     string
+	UrlStyle                   string
+	AzureAccountName           string
+	AzureAccountKeyEncrypted   string
+	AzureClientID              string
+	AzureTenantID              string
+	AzureClientSecretEncrypted string
+	GcsKeyFilePath             string
+	Comment                    string
+	Owner                      string
 }
 
 func (q *Queries) CreateStorageCredential(ctx context.Context, arg CreateStorageCredentialParams) (StorageCredential, error) {
@@ -47,6 +58,12 @@ func (q *Queries) CreateStorageCredential(ctx context.Context, arg CreateStorage
 		arg.Endpoint,
 		arg.Region,
 		arg.UrlStyle,
+		arg.AzureAccountName,
+		arg.AzureAccountKeyEncrypted,
+		arg.AzureClientID,
+		arg.AzureTenantID,
+		arg.AzureClientSecretEncrypted,
+		arg.GcsKeyFilePath,
 		arg.Comment,
 		arg.Owner,
 	)
@@ -64,6 +81,12 @@ func (q *Queries) CreateStorageCredential(ctx context.Context, arg CreateStorage
 		&i.Owner,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.AzureAccountName,
+		&i.AzureAccountKeyEncrypted,
+		&i.AzureClientID,
+		&i.AzureTenantID,
+		&i.AzureClientSecretEncrypted,
+		&i.GcsKeyFilePath,
 	)
 	return i, err
 }
@@ -78,7 +101,7 @@ func (q *Queries) DeleteStorageCredential(ctx context.Context, id int64) error {
 }
 
 const getStorageCredential = `-- name: GetStorageCredential :one
-SELECT id, name, credential_type, key_id_encrypted, secret_encrypted, endpoint, region, url_style, comment, owner, created_at, updated_at FROM storage_credentials WHERE id = ?
+SELECT id, name, credential_type, key_id_encrypted, secret_encrypted, endpoint, region, url_style, comment, owner, created_at, updated_at, azure_account_name, azure_account_key_encrypted, azure_client_id, azure_tenant_id, azure_client_secret_encrypted, gcs_key_file_path FROM storage_credentials WHERE id = ?
 `
 
 func (q *Queries) GetStorageCredential(ctx context.Context, id int64) (StorageCredential, error) {
@@ -97,12 +120,18 @@ func (q *Queries) GetStorageCredential(ctx context.Context, id int64) (StorageCr
 		&i.Owner,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.AzureAccountName,
+		&i.AzureAccountKeyEncrypted,
+		&i.AzureClientID,
+		&i.AzureTenantID,
+		&i.AzureClientSecretEncrypted,
+		&i.GcsKeyFilePath,
 	)
 	return i, err
 }
 
 const getStorageCredentialByName = `-- name: GetStorageCredentialByName :one
-SELECT id, name, credential_type, key_id_encrypted, secret_encrypted, endpoint, region, url_style, comment, owner, created_at, updated_at FROM storage_credentials WHERE name = ?
+SELECT id, name, credential_type, key_id_encrypted, secret_encrypted, endpoint, region, url_style, comment, owner, created_at, updated_at, azure_account_name, azure_account_key_encrypted, azure_client_id, azure_tenant_id, azure_client_secret_encrypted, gcs_key_file_path FROM storage_credentials WHERE name = ?
 `
 
 func (q *Queries) GetStorageCredentialByName(ctx context.Context, name string) (StorageCredential, error) {
@@ -121,12 +150,18 @@ func (q *Queries) GetStorageCredentialByName(ctx context.Context, name string) (
 		&i.Owner,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.AzureAccountName,
+		&i.AzureAccountKeyEncrypted,
+		&i.AzureClientID,
+		&i.AzureTenantID,
+		&i.AzureClientSecretEncrypted,
+		&i.GcsKeyFilePath,
 	)
 	return i, err
 }
 
 const listStorageCredentials = `-- name: ListStorageCredentials :many
-SELECT id, name, credential_type, key_id_encrypted, secret_encrypted, endpoint, region, url_style, comment, owner, created_at, updated_at FROM storage_credentials ORDER BY name LIMIT ? OFFSET ?
+SELECT id, name, credential_type, key_id_encrypted, secret_encrypted, endpoint, region, url_style, comment, owner, created_at, updated_at, azure_account_name, azure_account_key_encrypted, azure_client_id, azure_tenant_id, azure_client_secret_encrypted, gcs_key_file_path FROM storage_credentials ORDER BY name LIMIT ? OFFSET ?
 `
 
 type ListStorageCredentialsParams struct {
@@ -156,6 +191,12 @@ func (q *Queries) ListStorageCredentials(ctx context.Context, arg ListStorageCre
 			&i.Owner,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.AzureAccountName,
+			&i.AzureAccountKeyEncrypted,
+			&i.AzureClientID,
+			&i.AzureTenantID,
+			&i.AzureClientSecretEncrypted,
+			&i.GcsKeyFilePath,
 		); err != nil {
 			return nil, err
 		}
@@ -177,19 +218,31 @@ SET key_id_encrypted = COALESCE(?, key_id_encrypted),
     endpoint = COALESCE(?, endpoint),
     region = COALESCE(?, region),
     url_style = COALESCE(?, url_style),
+    azure_account_name = COALESCE(?, azure_account_name),
+    azure_account_key_encrypted = COALESCE(?, azure_account_key_encrypted),
+    azure_client_id = COALESCE(?, azure_client_id),
+    azure_tenant_id = COALESCE(?, azure_tenant_id),
+    azure_client_secret_encrypted = COALESCE(?, azure_client_secret_encrypted),
+    gcs_key_file_path = COALESCE(?, gcs_key_file_path),
     comment = COALESCE(?, comment),
     updated_at = datetime('now')
 WHERE id = ?
 `
 
 type UpdateStorageCredentialParams struct {
-	KeyIDEncrypted  string
-	SecretEncrypted string
-	Endpoint        string
-	Region          string
-	UrlStyle        string
-	Comment         string
-	ID              int64
+	KeyIDEncrypted             string
+	SecretEncrypted            string
+	Endpoint                   string
+	Region                     string
+	UrlStyle                   string
+	AzureAccountName           string
+	AzureAccountKeyEncrypted   string
+	AzureClientID              string
+	AzureTenantID              string
+	AzureClientSecretEncrypted string
+	GcsKeyFilePath             string
+	Comment                    string
+	ID                         int64
 }
 
 func (q *Queries) UpdateStorageCredential(ctx context.Context, arg UpdateStorageCredentialParams) error {
@@ -199,6 +252,12 @@ func (q *Queries) UpdateStorageCredential(ctx context.Context, arg UpdateStorage
 		arg.Endpoint,
 		arg.Region,
 		arg.UrlStyle,
+		arg.AzureAccountName,
+		arg.AzureAccountKeyEncrypted,
+		arg.AzureClientID,
+		arg.AzureTenantID,
+		arg.AzureClientSecretEncrypted,
+		arg.GcsKeyFilePath,
 		arg.Comment,
 		arg.ID,
 	)

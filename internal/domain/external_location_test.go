@@ -45,7 +45,44 @@ func TestValidateStorageCredentialRequest(t *testing.T) {
 		},
 		{
 			name:    "unsupported type",
-			req:     CreateStorageCredentialRequest{Name: "c", CredentialType: "GCS", KeyID: "k", Secret: "s", Endpoint: "e", Region: "r"},
+			req:     CreateStorageCredentialRequest{Name: "c", CredentialType: "INVALID", KeyID: "k", Secret: "s", Endpoint: "e", Region: "r"},
+			wantErr: true,
+		},
+		// Azure credential tests
+		{
+			name:    "valid azure with account key",
+			req:     CreateStorageCredentialRequest{Name: "az_cred", CredentialType: CredentialTypeAzure, AzureAccountName: "myaccount", AzureAccountKey: "mykey=="},
+			wantErr: false,
+		},
+		{
+			name:    "valid azure with service principal",
+			req:     CreateStorageCredentialRequest{Name: "az_cred", CredentialType: CredentialTypeAzure, AzureAccountName: "myaccount", AzureClientID: "cid", AzureTenantID: "tid", AzureClientSecret: "csecret"},
+			wantErr: false,
+		},
+		{
+			name:    "azure missing account name",
+			req:     CreateStorageCredentialRequest{Name: "az_cred", CredentialType: CredentialTypeAzure, AzureAccountKey: "mykey=="},
+			wantErr: true,
+		},
+		{
+			name:    "azure missing both key and service principal",
+			req:     CreateStorageCredentialRequest{Name: "az_cred", CredentialType: CredentialTypeAzure, AzureAccountName: "myaccount"},
+			wantErr: true,
+		},
+		{
+			name:    "azure incomplete service principal",
+			req:     CreateStorageCredentialRequest{Name: "az_cred", CredentialType: CredentialTypeAzure, AzureAccountName: "myaccount", AzureClientID: "cid"},
+			wantErr: true,
+		},
+		// GCS credential tests
+		{
+			name:    "valid gcs",
+			req:     CreateStorageCredentialRequest{Name: "gcs_cred", CredentialType: CredentialTypeGCS, GCSKeyFilePath: "/path/to/key.json"},
+			wantErr: false,
+		},
+		{
+			name:    "gcs missing key file path",
+			req:     CreateStorageCredentialRequest{Name: "gcs_cred", CredentialType: CredentialTypeGCS},
 			wantErr: true,
 		},
 	}
@@ -95,8 +132,18 @@ func TestValidateExternalLocationRequest(t *testing.T) {
 		},
 		{
 			name:    "unsupported storage type",
-			req:     CreateExternalLocationRequest{Name: "my_loc", URL: "s3://b/", CredentialName: "c", StorageType: "GCS"},
+			req:     CreateExternalLocationRequest{Name: "my_loc", URL: "s3://b/", CredentialName: "c", StorageType: "INVALID"},
 			wantErr: true,
+		},
+		{
+			name:    "valid azure storage type",
+			req:     CreateExternalLocationRequest{Name: "az_loc", URL: "az://container/path/", CredentialName: "az_cred", StorageType: StorageTypeAzure},
+			wantErr: false,
+		},
+		{
+			name:    "valid gcs storage type",
+			req:     CreateExternalLocationRequest{Name: "gcs_loc", URL: "gs://bucket/path/", CredentialName: "gcs_cred", StorageType: StorageTypeGCS},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {

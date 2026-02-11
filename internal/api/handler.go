@@ -1573,15 +1573,44 @@ func (h *APIHandler) CreateStorageCredential(ctx context.Context, req CreateStor
 	domReq := domain.CreateStorageCredentialRequest{
 		Name:           req.Body.Name,
 		CredentialType: domain.CredentialType(req.Body.CredentialType),
-		KeyID:          req.Body.KeyId,
-		Secret:         req.Body.Secret,
-		Endpoint:       req.Body.Endpoint,
-		Region:         req.Body.Region,
+	}
+	// S3 fields
+	if req.Body.KeyId != nil {
+		domReq.KeyID = *req.Body.KeyId
+	}
+	if req.Body.Secret != nil {
+		domReq.Secret = *req.Body.Secret
+	}
+	if req.Body.Endpoint != nil {
+		domReq.Endpoint = *req.Body.Endpoint
+	}
+	if req.Body.Region != nil {
+		domReq.Region = *req.Body.Region
 	}
 	if req.Body.UrlStyle != nil {
 		domReq.URLStyle = *req.Body.UrlStyle
 	} else {
 		domReq.URLStyle = "path"
+	}
+	// Azure fields
+	if req.Body.AzureAccountName != nil {
+		domReq.AzureAccountName = *req.Body.AzureAccountName
+	}
+	if req.Body.AzureAccountKey != nil {
+		domReq.AzureAccountKey = *req.Body.AzureAccountKey
+	}
+	if req.Body.AzureClientId != nil {
+		domReq.AzureClientID = *req.Body.AzureClientId
+	}
+	if req.Body.AzureTenantId != nil {
+		domReq.AzureTenantID = *req.Body.AzureTenantId
+	}
+	if req.Body.AzureClientSecret != nil {
+		domReq.AzureClientSecret = *req.Body.AzureClientSecret
+	}
+	// GCS fields
+	if req.Body.GcsKeyFilePath != nil {
+		domReq.GCSKeyFilePath = *req.Body.GcsKeyFilePath
 	}
 	if req.Body.Comment != nil {
 		domReq.Comment = *req.Body.Comment
@@ -1622,12 +1651,21 @@ func (h *APIHandler) GetStorageCredential(ctx context.Context, req GetStorageCre
 
 func (h *APIHandler) UpdateStorageCredential(ctx context.Context, req UpdateStorageCredentialRequestObject) (UpdateStorageCredentialResponseObject, error) {
 	domReq := domain.UpdateStorageCredentialRequest{
+		// S3 fields
 		KeyID:    req.Body.KeyId,
 		Secret:   req.Body.Secret,
 		Endpoint: req.Body.Endpoint,
 		Region:   req.Body.Region,
 		URLStyle: req.Body.UrlStyle,
-		Comment:  req.Body.Comment,
+		// Azure fields
+		AzureAccountName:  req.Body.AzureAccountName,
+		AzureAccountKey:   req.Body.AzureAccountKey,
+		AzureClientID:     req.Body.AzureClientId,
+		AzureTenantID:     req.Body.AzureTenantId,
+		AzureClientSecret: req.Body.AzureClientSecret,
+		// GCS fields
+		GCSKeyFilePath: req.Body.GcsKeyFilePath,
+		Comment:        req.Body.Comment,
 	}
 
 	principal, _ := middleware.PrincipalFromContext(ctx)
@@ -1779,21 +1817,29 @@ func (h *APIHandler) DeleteExternalLocation(ctx context.Context, req DeleteExter
 // === API Mappers for Storage Credentials / External Locations ===
 
 // storageCredentialToAPI converts a domain StorageCredential to the API type.
-// IMPORTANT: Never expose key_id or secret in API responses.
+// IMPORTANT: Never expose key_id, secret, azure_account_key, or azure_client_secret in API responses.
 func storageCredentialToAPI(c domain.StorageCredential) StorageCredential {
-	ct := string(c.CredentialType)
-	return StorageCredential{
+	ct := StorageCredentialCredentialType(c.CredentialType)
+	resp := StorageCredential{
 		Id:             &c.ID,
 		Name:           &c.Name,
 		CredentialType: &ct,
-		Endpoint:       &c.Endpoint,
-		Region:         &c.Region,
-		UrlStyle:       &c.URLStyle,
+		// S3 fields (non-sensitive)
+		Endpoint: &c.Endpoint,
+		Region:   &c.Region,
+		UrlStyle: &c.URLStyle,
+		// Azure fields (non-sensitive only)
+		AzureAccountName: optStr(c.AzureAccountName),
+		AzureClientId:    optStr(c.AzureClientID),
+		AzureTenantId:    optStr(c.AzureTenantID),
+		// GCS fields
+		GcsKeyFilePath: optStr(c.GCSKeyFilePath),
 		Comment:        optStr(c.Comment),
 		Owner:          &c.Owner,
 		CreatedAt:      &c.CreatedAt,
 		UpdatedAt:      &c.UpdatedAt,
 	}
+	return resp
 }
 
 func externalLocationToAPI(l domain.ExternalLocation) ExternalLocation {

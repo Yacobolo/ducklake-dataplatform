@@ -38,13 +38,14 @@ func TestExternalLocationService_Create(t *testing.T) {
 	}
 
 	testCred := &domain.StorageCredential{
-		ID:       1,
-		Name:     "my-cred",
-		KeyID:    "AKID",
-		Secret:   "SECRET",
-		Endpoint: "s3.example.com",
-		Region:   "us-east-1",
-		URLStyle: "path",
+		ID:             1,
+		Name:           "my-cred",
+		CredentialType: domain.CredentialTypeS3,
+		KeyID:          "AKID",
+		Secret:         "SECRET",
+		Endpoint:       "s3.example.com",
+		Region:         "us-east-1",
+		URLStyle:       "path",
 	}
 
 	t.Run("happy_path", func(t *testing.T) {
@@ -325,7 +326,8 @@ func TestExternalLocationService_RestoreSecrets(t *testing.T) {
 			listFn: func(_ context.Context, _ domain.PageRequest) ([]domain.StorageCredential, int64, error) {
 				return []domain.StorageCredential{
 					{
-						Name: "cred-1", KeyID: "AKID", Secret: "SECRET",
+						Name: "cred-1", CredentialType: domain.CredentialTypeS3,
+						KeyID: "AKID", Secret: "SECRET",
 						Endpoint: "s3.example.com", Region: "us-east-1", URLStyle: "path",
 					},
 				}, 1, nil

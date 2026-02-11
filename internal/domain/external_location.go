@@ -6,31 +6,48 @@ import "time"
 type StorageType string
 
 const (
-	StorageTypeS3 StorageType = "S3"
+	StorageTypeS3    StorageType = "S3"
+	StorageTypeAzure StorageType = "AZURE"
+	StorageTypeGCS   StorageType = "GCS"
 )
 
 // CredentialType identifies the type of credential.
 type CredentialType string
 
 const (
-	CredentialTypeS3 CredentialType = "S3"
+	CredentialTypeS3    CredentialType = "S3"
+	CredentialTypeAzure CredentialType = "AZURE"
+	CredentialTypeGCS   CredentialType = "GCS"
 )
 
-// StorageCredential holds S3-compatible credentials.
-// KeyID and Secret are stored encrypted at rest and decrypted in memory.
+// StorageCredential holds cloud storage credentials.
+// Sensitive fields are stored encrypted at rest and decrypted in memory.
 type StorageCredential struct {
 	ID             int64
 	Name           string
 	CredentialType CredentialType
-	KeyID          string // plaintext after decryption
-	Secret         string // plaintext after decryption
-	Endpoint       string
-	Region         string
-	URLStyle       string // "path" or "vhost"
-	Comment        string
-	Owner          string
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
+
+	// S3 fields
+	KeyID    string // plaintext after decryption
+	Secret   string // plaintext after decryption
+	Endpoint string
+	Region   string
+	URLStyle string // "path" or "vhost"
+
+	// Azure fields
+	AzureAccountName  string
+	AzureAccountKey   string // plaintext after decryption
+	AzureClientID     string
+	AzureTenantID     string
+	AzureClientSecret string // plaintext after decryption
+
+	// GCS fields
+	GCSKeyFilePath string
+
+	Comment   string
+	Owner     string
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 // ExternalLocation represents a named storage location that can be referenced
@@ -52,22 +69,47 @@ type ExternalLocation struct {
 type CreateStorageCredentialRequest struct {
 	Name           string
 	CredentialType CredentialType
-	KeyID          string
-	Secret         string
-	Endpoint       string
-	Region         string
-	URLStyle       string
-	Comment        string
+
+	// S3 fields
+	KeyID    string
+	Secret   string
+	Endpoint string
+	Region   string
+	URLStyle string
+
+	// Azure fields
+	AzureAccountName  string
+	AzureAccountKey   string
+	AzureClientID     string
+	AzureTenantID     string
+	AzureClientSecret string
+
+	// GCS fields
+	GCSKeyFilePath string
+
+	Comment string
 }
 
 // UpdateStorageCredentialRequest holds parameters for updating a credential.
 type UpdateStorageCredentialRequest struct {
+	// S3 fields
 	KeyID    *string
 	Secret   *string
 	Endpoint *string
 	Region   *string
 	URLStyle *string
-	Comment  *string
+
+	// Azure fields
+	AzureAccountName  *string
+	AzureAccountKey   *string
+	AzureClientID     *string
+	AzureTenantID     *string
+	AzureClientSecret *string
+
+	// GCS fields
+	GCSKeyFilePath *string
+
+	Comment *string
 }
 
 // CreateExternalLocationRequest holds parameters for creating a location.
@@ -97,20 +139,37 @@ func ValidateStorageCredentialRequest(req CreateStorageCredentialRequest) error 
 	if len(req.Name) > 128 {
 		return ErrValidation("credential name must be at most 128 characters")
 	}
-	if req.CredentialType != CredentialTypeS3 {
-		return ErrValidation("unsupported credential type %q; supported: S3", string(req.CredentialType))
-	}
-	if req.KeyID == "" {
-		return ErrValidation("key_id is required")
-	}
-	if req.Secret == "" {
-		return ErrValidation("secret is required")
-	}
-	if req.Endpoint == "" {
-		return ErrValidation("endpoint is required")
-	}
-	if req.Region == "" {
-		return ErrValidation("region is required")
+
+	switch req.CredentialType {
+	case CredentialTypeS3:
+		if req.KeyID == "" {
+			return ErrValidation("key_id is required for S3 credentials")
+		}
+		if req.Secret == "" {
+			return ErrValidation("secret is required for S3 credentials")
+		}
+		if req.Endpoint == "" {
+			return ErrValidation("endpoint is required for S3 credentials")
+		}
+		if req.Region == "" {
+			return ErrValidation("region is required for S3 credentials")
+		}
+	case CredentialTypeAzure:
+		if req.AzureAccountName == "" {
+			return ErrValidation("azure_account_name is required for Azure credentials")
+		}
+		// Either account key or service principal (client_id + tenant_id + client_secret) must be provided
+		hasAccountKey := req.AzureAccountKey != ""
+		hasServicePrincipal := req.AzureClientID != "" && req.AzureTenantID != "" && req.AzureClientSecret != ""
+		if !hasAccountKey && !hasServicePrincipal {
+			return ErrValidation("azure_account_key or (azure_client_id + azure_tenant_id + azure_client_secret) is required for Azure credentials")
+		}
+	case CredentialTypeGCS:
+		if req.GCSKeyFilePath == "" {
+			return ErrValidation("gcs_key_file_path is required for GCS credentials")
+		}
+	default:
+		return ErrValidation("unsupported credential type %q; supported: S3, AZURE, GCS", string(req.CredentialType))
 	}
 	return nil
 }
@@ -129,8 +188,8 @@ func ValidateExternalLocationRequest(req CreateExternalLocationRequest) error {
 	if req.CredentialName == "" {
 		return ErrValidation("credential_name is required")
 	}
-	if req.StorageType != "" && req.StorageType != StorageTypeS3 {
-		return ErrValidation("unsupported storage type %q; supported: S3", string(req.StorageType))
+	if req.StorageType != "" && req.StorageType != StorageTypeS3 && req.StorageType != StorageTypeAzure && req.StorageType != StorageTypeGCS {
+		return ErrValidation("unsupported storage type %q; supported: S3, AZURE, GCS", string(req.StorageType))
 	}
 	return nil
 }

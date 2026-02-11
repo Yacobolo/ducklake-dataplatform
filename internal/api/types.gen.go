@@ -19,7 +19,9 @@ const (
 
 // Defines values for CreateStorageCredentialRequestCredentialType.
 const (
-	CreateStorageCredentialRequestCredentialTypeS3 CreateStorageCredentialRequestCredentialType = "S3"
+	CreateStorageCredentialRequestCredentialTypeAZURE CreateStorageCredentialRequestCredentialType = "AZURE"
+	CreateStorageCredentialRequestCredentialTypeGCS   CreateStorageCredentialRequestCredentialType = "GCS"
+	CreateStorageCredentialRequestCredentialTypeS3    CreateStorageCredentialRequestCredentialType = "S3"
 )
 
 // Defines values for CreateTableRequestFileFormat.
@@ -32,6 +34,13 @@ const (
 const (
 	EXTERNAL CreateTableRequestTableType = "EXTERNAL"
 	MANAGED  CreateTableRequestTableType = "MANAGED"
+)
+
+// Defines values for StorageCredentialCredentialType.
+const (
+	AZURE StorageCredentialCredentialType = "AZURE"
+	GCS   StorageCredentialCredentialType = "GCS"
+	S3    StorageCredentialCredentialType = "S3"
 )
 
 // AuditEntry defines model for AuditEntry.
@@ -163,14 +172,20 @@ type CreateSchemaRequest struct {
 
 // CreateStorageCredentialRequest defines model for CreateStorageCredentialRequest.
 type CreateStorageCredentialRequest struct {
-	Comment        *string                                      `json:"comment,omitempty"`
-	CredentialType CreateStorageCredentialRequestCredentialType `json:"credential_type"`
-	Endpoint       string                                       `json:"endpoint"`
-	KeyId          string                                       `json:"key_id"`
-	Name           string                                       `json:"name"`
-	Region         string                                       `json:"region"`
-	Secret         string                                       `json:"secret"`
-	UrlStyle       *string                                      `json:"url_style,omitempty"`
+	AzureAccountKey   *string                                      `json:"azure_account_key,omitempty"`
+	AzureAccountName  *string                                      `json:"azure_account_name,omitempty"`
+	AzureClientId     *string                                      `json:"azure_client_id,omitempty"`
+	AzureClientSecret *string                                      `json:"azure_client_secret,omitempty"`
+	AzureTenantId     *string                                      `json:"azure_tenant_id,omitempty"`
+	Comment           *string                                      `json:"comment,omitempty"`
+	CredentialType    CreateStorageCredentialRequestCredentialType `json:"credential_type"`
+	Endpoint          *string                                      `json:"endpoint,omitempty"`
+	GcsKeyFilePath    *string                                      `json:"gcs_key_file_path,omitempty"`
+	KeyId             *string                                      `json:"key_id,omitempty"`
+	Name              string                                       `json:"name"`
+	Region            *string                                      `json:"region,omitempty"`
+	Secret            *string                                      `json:"secret,omitempty"`
+	UrlStyle          *string                                      `json:"url_style,omitempty"`
 }
 
 // CreateStorageCredentialRequestCredentialType defines model for CreateStorageCredentialRequest.CredentialType.
@@ -558,17 +573,24 @@ type SearchResult struct {
 
 // StorageCredential defines model for StorageCredential.
 type StorageCredential struct {
-	Comment        *string    `json:"comment,omitempty"`
-	CreatedAt      *time.Time `json:"created_at,omitempty"`
-	CredentialType *string    `json:"credential_type,omitempty"`
-	Endpoint       *string    `json:"endpoint,omitempty"`
-	Id             *int64     `json:"id,omitempty"`
-	Name           *string    `json:"name,omitempty"`
-	Owner          *string    `json:"owner,omitempty"`
-	Region         *string    `json:"region,omitempty"`
-	UpdatedAt      *time.Time `json:"updated_at,omitempty"`
-	UrlStyle       *string    `json:"url_style,omitempty"`
+	AzureAccountName *string                          `json:"azure_account_name,omitempty"`
+	AzureClientId    *string                          `json:"azure_client_id,omitempty"`
+	AzureTenantId    *string                          `json:"azure_tenant_id,omitempty"`
+	Comment          *string                          `json:"comment,omitempty"`
+	CreatedAt        *time.Time                       `json:"created_at,omitempty"`
+	CredentialType   *StorageCredentialCredentialType `json:"credential_type,omitempty"`
+	Endpoint         *string                          `json:"endpoint,omitempty"`
+	GcsKeyFilePath   *string                          `json:"gcs_key_file_path,omitempty"`
+	Id               *int64                           `json:"id,omitempty"`
+	Name             *string                          `json:"name,omitempty"`
+	Owner            *string                          `json:"owner,omitempty"`
+	Region           *string                          `json:"region,omitempty"`
+	UpdatedAt        *time.Time                       `json:"updated_at,omitempty"`
+	UrlStyle         *string                          `json:"url_style,omitempty"`
 }
+
+// StorageCredentialCredentialType defines model for StorageCredential.CredentialType.
+type StorageCredentialCredentialType string
 
 // TableDetail defines model for TableDetail.
 type TableDetail struct {
@@ -659,12 +681,18 @@ type UpdateSchemaRequest struct {
 
 // UpdateStorageCredentialRequest defines model for UpdateStorageCredentialRequest.
 type UpdateStorageCredentialRequest struct {
-	Comment  *string `json:"comment,omitempty"`
-	Endpoint *string `json:"endpoint,omitempty"`
-	KeyId    *string `json:"key_id,omitempty"`
-	Region   *string `json:"region,omitempty"`
-	Secret   *string `json:"secret,omitempty"`
-	UrlStyle *string `json:"url_style,omitempty"`
+	AzureAccountKey   *string `json:"azure_account_key,omitempty"`
+	AzureAccountName  *string `json:"azure_account_name,omitempty"`
+	AzureClientId     *string `json:"azure_client_id,omitempty"`
+	AzureClientSecret *string `json:"azure_client_secret,omitempty"`
+	AzureTenantId     *string `json:"azure_tenant_id,omitempty"`
+	Comment           *string `json:"comment,omitempty"`
+	Endpoint          *string `json:"endpoint,omitempty"`
+	GcsKeyFilePath    *string `json:"gcs_key_file_path,omitempty"`
+	KeyId             *string `json:"key_id,omitempty"`
+	Region            *string `json:"region,omitempty"`
+	Secret            *string `json:"secret,omitempty"`
+	UrlStyle          *string `json:"url_style,omitempty"`
 }
 
 // UpdateTableRequest defines model for UpdateTableRequest.

@@ -98,12 +98,58 @@ func CreateS3Secret(name, keyID, secret, endpoint, region, urlStyle string) (str
 	), nil
 }
 
-// DropS3Secret returns a DuckDB DDL statement: DROP SECRET IF EXISTS "<name>".
-func DropS3Secret(name string) (string, error) {
+// CreateAzureSecret returns a DuckDB DDL statement to create an Azure secret.
+func CreateAzureSecret(name, accountName, accountKey, connectionString string) (string, error) {
+	if name == "" {
+		return "", fmt.Errorf("secret name is required")
+	}
+	if connectionString != "" {
+		return fmt.Sprintf(`CREATE SECRET %s (
+	TYPE AZURE,
+	CONNECTION_STRING %s
+)`,
+			QuoteIdentifier(name),
+			QuoteLiteral(connectionString),
+		), nil
+	}
+	return fmt.Sprintf(`CREATE SECRET %s (
+	TYPE AZURE,
+	ACCOUNT_NAME %s,
+	ACCOUNT_KEY %s
+)`,
+		QuoteIdentifier(name),
+		QuoteLiteral(accountName),
+		QuoteLiteral(accountKey),
+	), nil
+}
+
+// CreateGCSSecret returns a DuckDB DDL statement to create a GCS secret.
+func CreateGCSSecret(name, keyFilePath string) (string, error) {
+	if name == "" {
+		return "", fmt.Errorf("secret name is required")
+	}
+	return fmt.Sprintf(`CREATE SECRET %s (
+	TYPE GCS,
+	KEY_FILE_PATH %s
+)`,
+		QuoteIdentifier(name),
+		QuoteLiteral(keyFilePath),
+	), nil
+}
+
+// DropSecret returns a DuckDB DDL statement: DROP SECRET IF EXISTS "<name>".
+// Works for any secret type (S3, Azure, GCS).
+func DropSecret(name string) (string, error) {
 	if name == "" {
 		return "", fmt.Errorf("secret name is required")
 	}
 	return fmt.Sprintf("DROP SECRET IF EXISTS %s", QuoteIdentifier(name)), nil
+}
+
+// DropS3Secret returns a DuckDB DDL statement: DROP SECRET IF EXISTS "<name>".
+// Deprecated: Use DropSecret instead. Kept for backward compatibility.
+func DropS3Secret(name string) (string, error) {
+	return DropSecret(name)
 }
 
 // CreateExternalTableView generates a CREATE VIEW statement backed by read_parquet or read_csv.

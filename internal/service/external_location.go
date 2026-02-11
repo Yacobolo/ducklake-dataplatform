@@ -101,8 +101,7 @@ func (s *ExternalLocationService) Create(ctx context.Context, principal string, 
 
 	// Create DuckDB secret for the credential
 	secretName := "cred_" + cred.Name
-	if err := engine.CreateS3Secret(ctx, s.duckDB, secretName,
-		cred.KeyID, cred.Secret, cred.Endpoint, cred.Region, cred.URLStyle); err != nil {
+	if err := s.createDuckDBSecret(ctx, secretName, cred); err != nil {
 		// Rollback: delete the location we just persisted
 		_ = s.locRepo.Delete(ctx, result.ID)
 		return nil, fmt.Errorf("create DuckDB secret for credential %q: %w", cred.Name, err)
@@ -111,7 +110,7 @@ func (s *ExternalLocationService) Create(ctx context.Context, principal string, 
 	// Attach DuckLake catalog if not already attached
 	if err := s.ensureCatalogAttached(ctx, req.URL); err != nil {
 		// Best-effort cleanup: drop secret, delete location
-		_ = engine.DropS3Secret(ctx, s.duckDB, secretName)
+		_ = engine.DropSecret(ctx, s.duckDB, secretName)
 		_ = s.locRepo.Delete(ctx, result.ID)
 		return nil, fmt.Errorf("attach catalog: %w", err)
 	}
@@ -165,7 +164,7 @@ func (s *ExternalLocationService) Delete(ctx context.Context, principal string, 
 
 	// Drop the DuckDB secret for this location's credential
 	secretName := "cred_" + existing.CredentialName
-	if err := engine.DropS3Secret(ctx, s.duckDB, secretName); err != nil {
+	if err := engine.DropSecret(ctx, s.duckDB, secretName); err != nil {
 		log.Printf("warning: failed to drop secret %q: %v", secretName, err)
 	}
 
@@ -197,8 +196,7 @@ func (s *ExternalLocationService) RestoreSecrets(ctx context.Context) error {
 
 	for _, cred := range creds {
 		secretName := "cred_" + cred.Name
-		if err := engine.CreateS3Secret(ctx, s.duckDB, secretName,
-			cred.KeyID, cred.Secret, cred.Endpoint, cred.Region, cred.URLStyle); err != nil {
+		if err := s.createDuckDBSecret(ctx, secretName, &cred); err != nil {
 			log.Printf("warning: failed to restore secret %q: %v", secretName, err)
 		}
 	}
@@ -240,6 +238,28 @@ func (s *ExternalLocationService) requirePrivilege(ctx context.Context, principa
 		return domain.ErrAccessDenied("%q lacks %s on catalog", principal, privilege)
 	}
 	return nil
+}
+
+// createDuckDBSecret dispatches to the correct engine secret creator based on
+// the credential's type (S3, Azure, or GCS).
+func (s *ExternalLocationService) createDuckDBSecret(ctx context.Context, secretName string, cred *domain.StorageCredential) error {
+	switch cred.CredentialType {
+	case domain.CredentialTypeS3:
+		return engine.CreateS3Secret(ctx, s.duckDB, secretName,
+			cred.KeyID, cred.Secret, cred.Endpoint, cred.Region, cred.URLStyle)
+	case domain.CredentialTypeAzure:
+		// Build connection string if using account key (no service principal secret support in DuckDB yet)
+		connectionString := ""
+		if cred.AzureAccountKey != "" {
+			connectionString = fmt.Sprintf("AccountName=%s;AccountKey=%s", cred.AzureAccountName, cred.AzureAccountKey)
+		}
+		return engine.CreateAzureSecret(ctx, s.duckDB, secretName,
+			cred.AzureAccountName, cred.AzureAccountKey, connectionString)
+	case domain.CredentialTypeGCS:
+		return engine.CreateGCSSecret(ctx, s.duckDB, secretName, cred.GCSKeyFilePath)
+	default:
+		return fmt.Errorf("unsupported credential type %q", cred.CredentialType)
+	}
 }
 
 func (s *ExternalLocationService) logAudit(ctx context.Context, principal, action, detail string) {
