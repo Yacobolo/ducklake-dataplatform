@@ -661,3 +661,73 @@ func assertContains(t *testing.T, tables []string, want string) {
 	}
 	t.Errorf("expected tables to contain %q, got: %v", want, tables)
 }
+
+// --- ExtractTargetTable tests ---
+
+func TestExtractTargetTable(t *testing.T) {
+	tests := []struct {
+		name      string
+		sql       string
+		want      string
+		wantError bool
+	}{
+		{
+			name: "insert",
+			sql:  "INSERT INTO orders (id, amount) VALUES (1, 100)",
+			want: "orders",
+		},
+		{
+			name: "update",
+			sql:  "UPDATE users SET name = 'Alice' WHERE id = 1",
+			want: "users",
+		},
+		{
+			name: "delete",
+			sql:  "DELETE FROM logs WHERE ts < '2024-01-01'",
+			want: "logs",
+		},
+		{
+			name: "select_returns_empty",
+			sql:  "SELECT * FROM titanic",
+			want: "",
+		},
+		{
+			name: "create_table_returns_empty",
+			sql:  "CREATE TABLE foo (id INT)",
+			want: "",
+		},
+		{
+			name: "empty_sql",
+			sql:  "",
+			want: "",
+		},
+		{
+			name: "insert_with_schema_prefix",
+			sql:  "INSERT INTO main.orders (id) VALUES (1)",
+			want: "orders",
+		},
+		{
+			name: "update_with_subquery",
+			sql:  "UPDATE orders SET total = (SELECT SUM(amount) FROM items)",
+			want: "orders",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := ExtractTargetTable(tc.sql)
+			if tc.wantError {
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if got != tc.want {
+				t.Errorf("ExtractTargetTable(%q) = %q, want %q", tc.sql, got, tc.want)
+			}
+		})
+	}
+}
