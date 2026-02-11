@@ -107,6 +107,8 @@ func (t StatementType) String() string {
 }
 
 // ClassifyStatement parses the SQL and returns the statement type.
+// It rejects multi-statement input to prevent piggy-backed SQL injection
+// (e.g., "SELECT 1; DROP TABLE foo").
 func ClassifyStatement(sql string) (StatementType, error) {
 	result, err := pg_query.Parse(sql)
 	if err != nil {
@@ -115,6 +117,10 @@ func ClassifyStatement(sql string) (StatementType, error) {
 
 	if len(result.Stmts) == 0 {
 		return StmtOther, nil
+	}
+
+	if len(result.Stmts) > 1 {
+		return StmtOther, fmt.Errorf("multi-statement queries are not allowed")
 	}
 
 	switch result.Stmts[0].Stmt.Node.(type) {
@@ -266,8 +272,11 @@ func injectRawFilterIntoSelectStmt(sel *pg_query.SelectStmt, tableName string, f
 
 // ApplyColumnMasks rewrites SELECT target columns to apply mask expressions.
 // masks is a map of column_name → mask_expression (e.g., {"Name": "'***'"}).
-// Only top-level SELECT * or explicit column references are rewritten.
-func ApplyColumnMasks(sqlStr string, tableName string, masks map[string]string) (string, error) {
+// allColumns is the full list of column names for the table, used to expand
+// SELECT * into explicit column references so masks can be applied.
+// Returns an error if any mask expression cannot be parsed (to prevent
+// silent security degradation where a column is served unmasked).
+func ApplyColumnMasks(sqlStr string, tableName string, masks map[string]string, allColumns []string) (string, error) {
 	if len(masks) == 0 {
 		return sqlStr, nil
 	}
@@ -279,7 +288,9 @@ func ApplyColumnMasks(sqlStr string, tableName string, masks map[string]string) 
 
 	for _, stmt := range result.Stmts {
 		if n, ok := stmt.Stmt.Node.(*pg_query.Node_SelectStmt); ok {
-			applyMasksToSelectStmt(n.SelectStmt, tableName, masks)
+			if err := applyMasksToSelectStmt(n.SelectStmt, tableName, masks, allColumns); err != nil {
+				return "", err
+			}
 		}
 	}
 
@@ -291,18 +302,23 @@ func ApplyColumnMasks(sqlStr string, tableName string, masks map[string]string) 
 }
 
 // applyMasksToSelectStmt modifies the target list of a SELECT to replace
-// masked columns with their mask expressions.
-func applyMasksToSelectStmt(sel *pg_query.SelectStmt, tableName string, masks map[string]string) {
+// masked columns with their mask expressions. Returns an error if a mask
+// expression cannot be parsed (to prevent silent security degradation).
+func applyMasksToSelectStmt(sel *pg_query.SelectStmt, tableName string, masks map[string]string, allColumns []string) error {
 	if sel == nil {
-		return
+		return nil
 	}
 
 	// Recurse into UNION
 	if sel.Larg != nil {
-		applyMasksToSelectStmt(sel.Larg, tableName, masks)
+		if err := applyMasksToSelectStmt(sel.Larg, tableName, masks, allColumns); err != nil {
+			return err
+		}
 	}
 	if sel.Rarg != nil {
-		applyMasksToSelectStmt(sel.Rarg, tableName, masks)
+		if err := applyMasksToSelectStmt(sel.Rarg, tableName, masks, allColumns); err != nil {
+			return err
+		}
 	}
 
 	// Check if this SELECT references the target table
@@ -315,7 +331,12 @@ func applyMasksToSelectStmt(sel *pg_query.SelectStmt, tableName string, masks ma
 		}
 	}
 	if !found {
-		return
+		return nil
+	}
+
+	// Expand SELECT * into explicit column references before applying masks.
+	if err := expandStarTargets(sel, allColumns); err != nil {
+		return err
 	}
 
 	// Rewrite target list: replace column refs that match masked columns
@@ -335,16 +356,81 @@ func applyMasksToSelectStmt(sel *pg_query.SelectStmt, tableName string, masks ma
 			continue
 		}
 
-		// Parse the mask expression and replace the target value
+		// Parse the mask expression and replace the target value.
+		// We return an error rather than silently skipping, because a failed
+		// mask parse means the column would be served unmasked — a security risk.
 		maskResult, err := pg_query.Parse("SELECT " + maskExpr + " AS " + QuoteIdentifier(colName))
 		if err != nil {
-			continue // skip columns with unparseable mask expressions
+			return fmt.Errorf("parse column mask for %q: %w", colName, err)
 		}
 		maskSel := maskResult.Stmts[0].Stmt.GetSelectStmt()
 		if maskSel != nil && len(maskSel.TargetList) > 0 {
 			sel.TargetList[i] = maskSel.TargetList[0]
 		}
 	}
+	return nil
+}
+
+// expandStarTargets replaces SELECT * (A_Star nodes) in the target list with
+// explicit column references for all columns. This allows column masks to be
+// applied correctly even when the user writes SELECT *.
+func expandStarTargets(sel *pg_query.SelectStmt, allColumns []string) error {
+	if len(allColumns) == 0 {
+		// No column metadata available; cannot expand star.
+		// Check if there's a star that needs expansion.
+		for _, target := range sel.TargetList {
+			if rt, ok := target.Node.(*pg_query.Node_ResTarget); ok {
+				if rt.ResTarget.Val != nil {
+					if cr, ok := rt.ResTarget.Val.Node.(*pg_query.Node_ColumnRef); ok {
+						for _, f := range cr.ColumnRef.Fields {
+							if _, isStar := f.Node.(*pg_query.Node_AStar); isStar {
+								return fmt.Errorf("cannot apply column masks to SELECT * without column metadata")
+							}
+						}
+					}
+				}
+			}
+		}
+		return nil
+	}
+
+	var expanded []*pg_query.Node
+	needsExpansion := false
+	for _, target := range sel.TargetList {
+		isStar := false
+		if rt, ok := target.Node.(*pg_query.Node_ResTarget); ok {
+			if rt.ResTarget.Val != nil {
+				if cr, ok := rt.ResTarget.Val.Node.(*pg_query.Node_ColumnRef); ok {
+					for _, f := range cr.ColumnRef.Fields {
+						if _, ok := f.Node.(*pg_query.Node_AStar); ok {
+							isStar = true
+							break
+						}
+					}
+				}
+			}
+		}
+
+		if isStar {
+			needsExpansion = true
+			for _, colName := range allColumns {
+				expanded = append(expanded, &pg_query.Node{
+					Node: &pg_query.Node_ResTarget{
+						ResTarget: &pg_query.ResTarget{
+							Val: makeColumnRef(colName, ""),
+						},
+					},
+				})
+			}
+		} else {
+			expanded = append(expanded, target)
+		}
+	}
+
+	if needsExpansion {
+		sel.TargetList = expanded
+	}
+	return nil
 }
 
 // extractColumnName gets the column name from a node, handling ColumnRef.

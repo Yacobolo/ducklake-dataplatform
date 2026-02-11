@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"duck-demo/internal/domain"
@@ -163,10 +164,8 @@ func (p *InformationSchemaProvider) queryVirtualTable(ctx context.Context, db *s
 		}
 	}
 
-	// Rewrite the query to use the temp table
-	rewritten := strings.Replace(sqlQuery, "information_schema."+table, tempName, -1)
-	// Also handle case-insensitive replacement
-	rewritten = strings.Replace(rewritten, "INFORMATION_SCHEMA."+strings.ToUpper(table), tempName, -1)
+	// Rewrite the query to use the temp table (case-insensitive).
+	rewritten := replaceAllCaseInsensitive(sqlQuery, "information_schema."+table, tempName)
 
 	rows, err := db.QueryContext(ctx, rewritten)
 	if err != nil {
@@ -177,4 +176,12 @@ func (p *InformationSchemaProvider) queryVirtualTable(ctx context.Context, db *s
 	// This is best-effort — DuckDB will clean it up when the connection closes anyway
 
 	return rows, nil
+}
+
+// replaceAllCaseInsensitive replaces all occurrences of old (case-insensitive)
+// with the replacement string. This ensures mixed-case references like
+// "Information_Schema.Tables" are handled correctly.
+func replaceAllCaseInsensitive(s, old, replacement string) string {
+	re := regexp.MustCompile("(?i)" + regexp.QuoteMeta(old))
+	return re.ReplaceAllLiteralString(s, replacement)
 }
