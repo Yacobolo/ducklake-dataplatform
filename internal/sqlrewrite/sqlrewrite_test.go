@@ -574,6 +574,50 @@ func TestInjectRowFilterSQL_EmptyFilter(t *testing.T) {
 	}
 }
 
+func TestInjectRowFilterSQL_SelfJoin(t *testing.T) {
+	result, err := InjectRowFilterSQL(
+		`SELECT * FROM titanic t1 JOIN titanic t2 ON t1."PassengerId" = t2."PassengerId"`,
+		"titanic",
+		`"Pclass" = 1`,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("result: %s", result)
+
+	lower := strings.ToLower(result)
+	if !strings.Contains(lower, "where") {
+		t.Error("expected WHERE clause to be injected for self-join")
+	}
+	if !strings.Contains(result, "Pclass") {
+		t.Error("expected Pclass filter in self-join query")
+	}
+}
+
+func TestInjectMultipleRowFilters_ORComposition(t *testing.T) {
+	result, err := InjectMultipleRowFilters(
+		`SELECT * FROM titanic`,
+		"titanic",
+		[]string{`"Pclass" = 1`, `"Survived" = 1`},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("result: %s", result)
+
+	lower := strings.ToLower(result)
+	if !strings.Contains(lower, "pclass") {
+		t.Error("expected Pclass in OR-composed filter")
+	}
+	if !strings.Contains(lower, "survived") {
+		t.Error("expected Survived in OR-composed filter")
+	}
+	// Filters should be combined with OR, so both conditions should appear
+	if !strings.Contains(lower, "or") {
+		t.Error("expected OR in combined filter (two filters compose with OR)")
+	}
+}
+
 // --- ApplyColumnMasks tests ---
 
 func TestApplyColumnMasks_Basic(t *testing.T) {

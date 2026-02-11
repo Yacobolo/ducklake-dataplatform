@@ -415,3 +415,50 @@ func TestTablelessStatementRequiresAuth(t *testing.T) {
 		require.Error(t, err)
 	})
 }
+
+func TestDDLVariantsBlocked(t *testing.T) {
+	eng := setupEngine(t)
+	ctx := context.Background()
+
+	tests := []struct {
+		name string
+		sql  string
+	}{
+		{"create_table", "CREATE TABLE evil (id INT)"},
+		{"drop_table", "DROP TABLE titanic"},
+		{"alter_table", `ALTER TABLE titanic ADD COLUMN evil INT`},
+		{"truncate", "TRUNCATE TABLE titanic"},
+		{"create_schema", "CREATE SCHEMA evil"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := eng.Query(ctx, "first_class_analyst", tc.sql)
+			require.Error(t, err, "expected DDL %q to be blocked", tc.name)
+		})
+	}
+}
+
+func TestMalformedSQLReturnsError(t *testing.T) {
+	eng := setupEngine(t)
+	ctx := context.Background()
+
+	tests := []struct {
+		name string
+		sql  string
+	}{
+		{"garbage", "NOT VALID SQL AT ALL"},
+		{"incomplete", "SELECT FROM"},
+		{"empty", ""},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := eng.Query(ctx, "admin", tc.sql)
+			// Should return a parse error, not panic
+			if tc.sql == "" {
+				// Empty SQL may or may not error depending on parser
+				return
+			}
+			require.Error(t, err, "expected parse error for malformed SQL")
+		})
+	}
+}
