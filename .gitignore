@@ -35,5 +35,5 @@ go.work.sum
 ducklake_meta.sqlite*
 
 # Binaries
-server
-server_test
+/server
+/server_test
