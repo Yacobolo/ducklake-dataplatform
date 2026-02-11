@@ -106,6 +106,75 @@ func DropS3Secret(name string) (string, error) {
 	return fmt.Sprintf("DROP SECRET IF EXISTS %s", QuoteIdentifier(name)), nil
 }
 
+// CreateExternalTableView generates a CREATE VIEW statement backed by read_parquet or read_csv.
+//
+//	CREATE VIEW lake."schema"."table" AS SELECT * FROM read_parquet(['s3://...'])
+func CreateExternalTableView(schema, table, sourcePath, fileFormat string) (string, error) {
+	if err := ValidateIdentifier(schema); err != nil {
+		return "", fmt.Errorf("invalid schema name: %w", err)
+	}
+	if err := ValidateIdentifier(table); err != nil {
+		return "", fmt.Errorf("invalid table name: %w", err)
+	}
+	if sourcePath == "" {
+		return "", fmt.Errorf("source path is required")
+	}
+
+	var readFunc string
+	switch strings.ToLower(fileFormat) {
+	case "parquet", "":
+		readFunc = "read_parquet"
+	case "csv":
+		readFunc = "read_csv"
+	default:
+		return "", fmt.Errorf("unsupported file format: %q", fileFormat)
+	}
+
+	return fmt.Sprintf("CREATE VIEW lake.%s.%s AS SELECT * FROM %s([%s])",
+		QuoteIdentifier(schema),
+		QuoteIdentifier(table),
+		readFunc,
+		QuoteLiteral(sourcePath),
+	), nil
+}
+
+// DropView generates a DROP VIEW IF EXISTS statement.
+func DropView(schema, table string) (string, error) {
+	if err := ValidateIdentifier(schema); err != nil {
+		return "", fmt.Errorf("invalid schema name: %w", err)
+	}
+	if err := ValidateIdentifier(table); err != nil {
+		return "", fmt.Errorf("invalid table name: %w", err)
+	}
+	return fmt.Sprintf("DROP VIEW IF EXISTS lake.%s.%s",
+		QuoteIdentifier(schema),
+		QuoteIdentifier(table),
+	), nil
+}
+
+// DiscoverColumnsSQL generates a DESCRIBE statement to discover column metadata
+// from a Parquet or CSV file.
+func DiscoverColumnsSQL(sourcePath, fileFormat string) (string, error) {
+	if sourcePath == "" {
+		return "", fmt.Errorf("source path is required")
+	}
+
+	var readFunc string
+	switch strings.ToLower(fileFormat) {
+	case "parquet", "":
+		readFunc = "read_parquet"
+	case "csv":
+		readFunc = "read_csv"
+	default:
+		return "", fmt.Errorf("unsupported file format: %q", fileFormat)
+	}
+
+	return fmt.Sprintf("DESCRIBE SELECT * FROM %s([%s]) LIMIT 0",
+		readFunc,
+		QuoteLiteral(sourcePath),
+	), nil
+}
+
 // AttachDuckLake returns a DuckDB DDL statement to attach a DuckLake catalog.
 // Both metaDBPath and dataPath are properly escaped as SQL string literals.
 func AttachDuckLake(metaDBPath, dataPath string) (string, error) {

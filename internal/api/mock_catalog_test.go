@@ -406,6 +406,10 @@ func (m *mockCatalogRepo) SetSchemaStoragePath(_ context.Context, _ int64, _ str
 	return nil
 }
 
+func (m *mockCatalogRepo) CreateExternalTable(_ context.Context, _ string, _ domain.CreateTableRequest, _ string) (*domain.TableDetail, error) {
+	panic("unexpected call to mockCatalogRepo.CreateExternalTable")
+}
+
 // addSchema is a test helper to prepopulate the mock with a schema.
 func (m *mockCatalogRepo) addSchema(name string) {
 	m.mu.Lock()

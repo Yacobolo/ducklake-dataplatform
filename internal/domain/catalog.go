@@ -26,20 +26,23 @@ type SchemaDetail struct {
 
 // TableDetail is an enriched table representation for the catalog API.
 type TableDetail struct {
-	TableID     int64
-	Name        string
-	SchemaName  string
-	CatalogName string
-	TableType   string // "MANAGED"
-	Columns     []ColumnDetail
-	Comment     string
-	Properties  map[string]string
-	Owner       string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	Tags        []Tag
-	Statistics  *TableStatistics
-	DeletedAt   *time.Time
+	TableID      int64
+	Name         string
+	SchemaName   string
+	CatalogName  string
+	TableType    string // "MANAGED" or "EXTERNAL"
+	Columns      []ColumnDetail
+	Comment      string
+	Properties   map[string]string
+	Owner        string
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	Tags         []Tag
+	Statistics   *TableStatistics
+	DeletedAt    *time.Time
+	SourcePath   string // populated for EXTERNAL tables
+	FileFormat   string // populated for EXTERNAL tables
+	LocationName string // populated for EXTERNAL tables
 }
 
 // ColumnDetail represents a column with full metadata.
@@ -94,9 +97,13 @@ type TableStatistics struct {
 
 // CreateTableRequest holds parameters for creating a new table.
 type CreateTableRequest struct {
-	Name    string
-	Columns []CreateColumnDef
-	Comment string
+	Name         string
+	Columns      []CreateColumnDef
+	Comment      string
+	TableType    string // "MANAGED" (default) or "EXTERNAL"
+	SourcePath   string // required for EXTERNAL
+	FileFormat   string // "parquet" (default) or "csv"; only for EXTERNAL
+	LocationName string // required for EXTERNAL
 }
 
 // CreateColumnDef defines a column for table creation.

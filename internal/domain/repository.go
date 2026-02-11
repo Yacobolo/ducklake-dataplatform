@@ -96,6 +96,7 @@ type CatalogRepository interface {
 	DeleteSchema(ctx context.Context, name string, force bool) error
 
 	CreateTable(ctx context.Context, schemaName string, req CreateTableRequest, owner string) (*TableDetail, error)
+	CreateExternalTable(ctx context.Context, schemaName string, req CreateTableRequest, owner string) (*TableDetail, error)
 	GetTable(ctx context.Context, schemaName, tableName string) (*TableDetail, error)
 	ListTables(ctx context.Context, schemaName string, page PageRequest) ([]TableDetail, int64, error)
 	DeleteTable(ctx context.Context, schemaName, tableName string) error
@@ -173,10 +174,22 @@ type ExternalLocationRepository interface {
 	Delete(ctx context.Context, id int64) error
 }
 
+// ExternalTableRepository provides CRUD operations for external tables.
+type ExternalTableRepository interface {
+	Create(ctx context.Context, et *ExternalTableRecord) (*ExternalTableRecord, error)
+	GetByName(ctx context.Context, schemaName, tableName string) (*ExternalTableRecord, error)
+	GetByID(ctx context.Context, id int64) (*ExternalTableRecord, error)
+	GetByTableName(ctx context.Context, tableName string) (*ExternalTableRecord, error)
+	List(ctx context.Context, schemaName string, page PageRequest) ([]ExternalTableRecord, int64, error)
+	ListAll(ctx context.Context) ([]ExternalTableRecord, error)
+	Delete(ctx context.Context, schemaName, tableName string) error
+	DeleteBySchema(ctx context.Context, schemaName string) error
+}
+
 // AuthorizationService defines the interface for permission checking.
 // The engine depends on this interface rather than a concrete service type.
 type AuthorizationService interface {
-	LookupTableID(ctx context.Context, tableName string) (tableID, schemaID int64, err error)
+	LookupTableID(ctx context.Context, tableName string) (tableID, schemaID int64, isExternal bool, err error)
 	CheckPrivilege(ctx context.Context, principalName, securableType string, securableID int64, privilege string) (bool, error)
 	GetEffectiveRowFilters(ctx context.Context, principalName string, tableID int64) ([]string, error)
 	GetEffectiveColumnMasks(ctx context.Context, principalName string, tableID int64) (map[string]string, error)

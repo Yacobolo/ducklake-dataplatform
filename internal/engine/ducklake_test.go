@@ -170,7 +170,7 @@ func TestDuckLakeRBACIntegration(t *testing.T) {
 
 	// Lookup DuckLake IDs
 	schemaID, _ := cat.LookupSchemaID(ctx, "main")
-	titanicID, _, _ := cat.LookupTableID(ctx, "titanic")
+	titanicID, _, _, _ := cat.LookupTableID(ctx, "titanic")
 
 	// Create group for analysts
 	analystsGroup, _ := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "analysts"})

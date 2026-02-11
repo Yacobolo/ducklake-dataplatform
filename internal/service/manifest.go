@@ -82,7 +82,7 @@ func (s *ManifestService) GetManifest(
 	start := time.Now()
 
 	// 1. Resolve table name to DuckLake table ID
-	tableID, _, err := s.authSvc.LookupTableID(ctx, tableName)
+	tableID, _, _, err := s.authSvc.LookupTableID(ctx, tableName)
 	if err != nil {
 		s.logManifestAudit(ctx, principalName, tableName, "DENIED", err.Error(), time.Since(start))
 		return nil, domain.ErrNotFound("table %q not found", tableName)

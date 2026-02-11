@@ -81,6 +81,28 @@ type ExternalLocation struct {
 	UpdatedAt      string
 }
 
+type ExternalTable struct {
+	ID           int64
+	SchemaName   string
+	TableName    string
+	FileFormat   string
+	SourcePath   string
+	LocationName string
+	Comment      string
+	Owner        string
+	CreatedAt    string
+	UpdatedAt    string
+	DeletedAt    sql.NullString
+}
+
+type ExternalTableColumn struct {
+	ID              int64
+	ExternalTableID int64
+	ColumnName      string
+	ColumnType      string
+	Position        int64
+}
+
 type Group struct {
 	ID          int64
 	Name        string

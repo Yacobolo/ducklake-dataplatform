@@ -16,13 +16,19 @@ import (
 // CatalogRepo implements domain.CatalogRepository using the DuckLake SQLite
 // metastore (metaDB) for reads and the DuckDB connection (duckDB) for DDL.
 type CatalogRepo struct {
-	metaDB *sql.DB
-	duckDB *sql.DB
-	q      *dbstore.Queries // sqlc queries for application-owned tables
+	metaDB  *sql.DB
+	duckDB  *sql.DB
+	q       *dbstore.Queries // sqlc queries for application-owned tables
+	extRepo *ExternalTableRepo
 }
 
 func NewCatalogRepo(metaDB, duckDB *sql.DB) *CatalogRepo {
 	return &CatalogRepo{metaDB: metaDB, duckDB: duckDB, q: dbstore.New(metaDB)}
+}
+
+// SetExternalTableRepo sets the external table repository for external table support.
+func (r *CatalogRepo) SetExternalTableRepo(repo *ExternalTableRepo) {
+	r.extRepo = repo
 }
 
 // refreshMetaDB forces metaDB to see the latest WAL changes written by
@@ -242,6 +248,22 @@ func (r *CatalogRepo) DeleteSchema(ctx context.Context, name string, force bool)
 		}
 	}
 
+	// Drop external table VIEWs and soft-delete their metadata before schema DDL
+	if r.extRepo != nil {
+		extTables, extErr := r.extRepo.ListAll(ctx)
+		if extErr == nil {
+			for _, et := range extTables {
+				if et.SchemaName == name {
+					dropViewSQL, _ := ddl.DropView(et.SchemaName, et.TableName)
+					if dropViewSQL != "" {
+						_, _ = r.duckDB.ExecContext(ctx, dropViewSQL)
+					}
+				}
+			}
+		}
+		_ = r.extRepo.DeleteBySchema(ctx, name)
+	}
+
 	stmt, err := ddl.DropSchema(name, force)
 	if err != nil {
 		return fmt.Errorf("build DDL: %w", err)
@@ -369,6 +391,15 @@ func (r *CatalogRepo) GetTable(ctx context.Context, schemaName, tableName string
 		schemaID, tableName).
 		Scan(&t.TableID, &t.Name)
 	if err == sql.ErrNoRows {
+		// Fall back to external tables
+		if r.extRepo != nil {
+			et, extErr := r.extRepo.GetByName(ctx, schemaName, tableName)
+			if extErr == nil {
+				detail := r.externalTableToDetail(et, schemaName)
+				r.enrichTableMetadata(ctx, detail)
+				return detail, nil
+			}
+		}
 		return nil, domain.ErrNotFound("table %q not found in schema %q", tableName, schemaName)
 	}
 	if err != nil {
@@ -444,6 +475,20 @@ func (r *CatalogRepo) ListTables(ctx context.Context, schemaName string, page do
 	for i := range tables {
 		r.enrichTableMetadata(ctx, &tables[i])
 	}
+
+	// Append external tables (v1: simple append, not merged pagination)
+	if r.extRepo != nil {
+		extTables, extTotal, extErr := r.extRepo.List(ctx, schemaName, page)
+		if extErr == nil {
+			for _, et := range extTables {
+				detail := r.externalTableToDetail(&et, schemaName)
+				r.enrichTableMetadata(ctx, detail)
+				tables = append(tables, *detail)
+			}
+			total += extTotal
+		}
+	}
+
 	return tables, total, nil
 }
 
@@ -454,6 +499,14 @@ func (r *CatalogRepo) DeleteTable(ctx context.Context, schemaName, tableName str
 	}
 	if err := ddl.ValidateIdentifier(tableName); err != nil {
 		return domain.ErrValidation("%s", err.Error())
+	}
+
+	// Check if this is an external table first
+	if r.extRepo != nil {
+		et, extErr := r.extRepo.GetByName(ctx, schemaName, tableName)
+		if extErr == nil {
+			return r.deleteExternalTable(ctx, schemaName, tableName, et)
+		}
 	}
 
 	// Verify table exists and capture table ID for governance cleanup
@@ -668,6 +721,198 @@ func (r *CatalogRepo) SetSchemaStoragePath(ctx context.Context, schemaID int64, 
 		return fmt.Errorf("set schema storage path: %w", err)
 	}
 	return nil
+}
+
+// CreateExternalTable creates an external table backed by a DuckDB VIEW.
+func (r *CatalogRepo) CreateExternalTable(ctx context.Context, schemaName string, req domain.CreateTableRequest, owner string) (*domain.TableDetail, error) {
+	if err := ddl.ValidateIdentifier(schemaName); err != nil {
+		return nil, domain.ErrValidation("%s", err.Error())
+	}
+	if err := ddl.ValidateIdentifier(req.Name); err != nil {
+		return nil, domain.ErrValidation("%s", err.Error())
+	}
+	if req.SourcePath == "" {
+		return nil, domain.ErrValidation("source_path is required for external tables")
+	}
+
+	fileFormat := req.FileFormat
+	if fileFormat == "" {
+		fileFormat = "parquet"
+	}
+
+	// Discover columns if not provided
+	columns := req.Columns
+	if len(columns) == 0 {
+		discovered, err := r.discoverColumns(ctx, req.SourcePath, fileFormat)
+		if err != nil {
+			return nil, fmt.Errorf("discover columns: %w", err)
+		}
+		columns = discovered
+	}
+
+	// Create the VIEW on DuckDB
+	viewSQL, err := ddl.CreateExternalTableView(schemaName, req.Name, req.SourcePath, fileFormat)
+	if err != nil {
+		return nil, domain.ErrValidation("%s", err.Error())
+	}
+	if _, err := r.duckDB.ExecContext(ctx, viewSQL); err != nil {
+		errMsg := err.Error()
+		if strings.Contains(errMsg, "already exists") {
+			return nil, domain.ErrConflict("table %q already exists in schema %q", req.Name, schemaName)
+		}
+		return nil, fmt.Errorf("create external table view: %w", err)
+	}
+
+	// Build domain columns for persistence
+	domainCols := make([]domain.ExternalTableColumn, len(columns))
+	for i, c := range columns {
+		domainCols[i] = domain.ExternalTableColumn{
+			ColumnName: c.Name,
+			ColumnType: c.Type,
+			Position:   i,
+		}
+	}
+
+	// Persist metadata in SQLite
+	et, err := r.extRepo.Create(ctx, &domain.ExternalTableRecord{
+		SchemaName:   schemaName,
+		TableName:    req.Name,
+		FileFormat:   fileFormat,
+		SourcePath:   req.SourcePath,
+		LocationName: req.LocationName,
+		Comment:      req.Comment,
+		Owner:        owner,
+		Columns:      domainCols,
+	})
+	if err != nil {
+		// Best-effort: drop the VIEW we just created
+		dropSQL, _ := ddl.DropView(schemaName, req.Name)
+		if dropSQL != "" {
+			_, _ = r.duckDB.ExecContext(ctx, dropSQL)
+		}
+		return nil, err
+	}
+
+	// Store catalog metadata
+	securableName := schemaName + "." + req.Name
+	if req.Comment != "" || owner != "" {
+		_ = r.q.InsertOrReplaceCatalogMetadata(ctx, dbstore.InsertOrReplaceCatalogMetadataParams{
+			SecurableType: "table",
+			SecurableName: securableName,
+			Comment:       sql.NullString{String: req.Comment, Valid: req.Comment != ""},
+			Owner:         sql.NullString{String: owner, Valid: owner != ""},
+		})
+	}
+
+	return r.externalTableToDetail(et, schemaName), nil
+}
+
+// externalTableToDetail converts an ExternalTableRecord to a TableDetail.
+func (r *CatalogRepo) externalTableToDetail(et *domain.ExternalTableRecord, schemaName string) *domain.TableDetail {
+	cols := make([]domain.ColumnDetail, len(et.Columns))
+	for i, c := range et.Columns {
+		cols[i] = domain.ColumnDetail{
+			Name:     c.ColumnName,
+			Type:     c.ColumnType,
+			Position: c.Position,
+		}
+	}
+	return &domain.TableDetail{
+		TableID:      et.EffectiveTableID(),
+		Name:         et.TableName,
+		SchemaName:   schemaName,
+		CatalogName:  "lake",
+		TableType:    domain.TableTypeExternal,
+		Columns:      cols,
+		Comment:      et.Comment,
+		Owner:        et.Owner,
+		CreatedAt:    et.CreatedAt,
+		UpdatedAt:    et.UpdatedAt,
+		SourcePath:   et.SourcePath,
+		FileFormat:   et.FileFormat,
+		LocationName: et.LocationName,
+	}
+}
+
+// deleteExternalTable drops the VIEW and soft-deletes external table metadata.
+func (r *CatalogRepo) deleteExternalTable(ctx context.Context, schemaName, tableName string, et *domain.ExternalTableRecord) error {
+	// Drop the VIEW on DuckDB
+	dropSQL, err := ddl.DropView(schemaName, tableName)
+	if err != nil {
+		return fmt.Errorf("build DDL: %w", err)
+	}
+	if _, err := r.duckDB.ExecContext(ctx, dropSQL); err != nil {
+		return fmt.Errorf("drop external table view: %w", err)
+	}
+
+	// Soft-delete metadata
+	if err := r.extRepo.Delete(ctx, schemaName, tableName); err != nil {
+		return fmt.Errorf("soft-delete external table: %w", err)
+	}
+
+	// Soft-delete catalog metadata
+	securableName := schemaName + "." + tableName
+	_ = r.q.SoftDeleteCatalogMetadata(ctx, dbstore.SoftDeleteCatalogMetadataParams{
+		SecurableType: "table",
+		SecurableName: securableName,
+	})
+
+	// Cascade governance cleanup using effective table ID
+	tableID := et.EffectiveTableID()
+	_ = r.q.DeleteRowFiltersByTable(ctx, tableID)
+	_ = r.q.DeleteColumnMasksByTable(ctx, tableID)
+	_ = r.q.DeleteTagAssignmentsBySecurableTypes(ctx, dbstore.DeleteTagAssignmentsBySecurableTypesParams{
+		SecurableType:   "table",
+		SecurableType_2: "column",
+		SecurableID:     tableID,
+	})
+	_ = r.q.DeleteColumnMetadataByTable(ctx, securableName)
+	_ = r.q.DeleteTableStatistics(ctx, securableName)
+	_ = r.q.DeleteLineageByTable(ctx, dbstore.DeleteLineageByTableParams{
+		SourceTable: securableName,
+		TargetTable: sql.NullString{String: securableName, Valid: true},
+	})
+
+	return nil
+}
+
+// discoverColumns runs a DESCRIBE query on DuckDB to discover column metadata.
+func (r *CatalogRepo) discoverColumns(ctx context.Context, sourcePath, fileFormat string) ([]domain.CreateColumnDef, error) {
+	descSQL, err := ddl.DiscoverColumnsSQL(sourcePath, fileFormat)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := r.duckDB.QueryContext(ctx, descSQL)
+	if err != nil {
+		return nil, fmt.Errorf("discover columns: %w", err)
+	}
+	defer rows.Close()
+
+	var columns []domain.CreateColumnDef
+	colNames, _ := rows.Columns()
+	for rows.Next() {
+		// DESCRIBE returns: column_name, column_type, null, key, default, extra
+		vals := make([]interface{}, len(colNames))
+		ptrs := make([]interface{}, len(colNames))
+		for i := range vals {
+			ptrs[i] = &vals[i]
+		}
+		if err := rows.Scan(ptrs...); err != nil {
+			return nil, fmt.Errorf("scan describe row: %w", err)
+		}
+		// First two columns are column_name and column_type
+		name := fmt.Sprintf("%v", vals[0])
+		colType := fmt.Sprintf("%v", vals[1])
+		columns = append(columns, domain.CreateColumnDef{Name: name, Type: colType})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if len(columns) == 0 {
+		return nil, fmt.Errorf("no columns discovered from source")
+	}
+	return columns, nil
 }
 
 // --- helpers ---

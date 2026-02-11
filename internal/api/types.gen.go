@@ -22,6 +22,18 @@ const (
 	CreateStorageCredentialRequestCredentialTypeS3 CreateStorageCredentialRequestCredentialType = "S3"
 )
 
+// Defines values for CreateTableApiRequestFileFormat.
+const (
+	Csv     CreateTableApiRequestFileFormat = "csv"
+	Parquet CreateTableApiRequestFileFormat = "parquet"
+)
+
+// Defines values for CreateTableApiRequestTableType.
+const (
+	EXTERNAL CreateTableApiRequestTableType = "EXTERNAL"
+	MANAGED  CreateTableApiRequestTableType = "MANAGED"
+)
+
 // AddGroupMemberRequest defines model for AddGroupMemberRequest.
 type AddGroupMemberRequest struct {
 	MemberId   int64  `json:"member_id"`
@@ -171,10 +183,29 @@ type CreateStorageCredentialRequestCredentialType string
 
 // CreateTableApiRequest defines model for CreateTableApiRequest.
 type CreateTableApiRequest struct {
-	Columns []CreateColumnDef `json:"columns"`
-	Comment *string           `json:"comment,omitempty"`
-	Name    string            `json:"name"`
+	// Columns Required for MANAGED tables; auto-discovered for EXTERNAL if omitted.
+	Columns *[]CreateColumnDef `json:"columns,omitempty"`
+	Comment *string            `json:"comment,omitempty"`
+
+	// FileFormat File format of the external data. Required for EXTERNAL tables.
+	FileFormat *CreateTableApiRequestFileFormat `json:"file_format,omitempty"`
+
+	// LocationName Name of the external location that owns the source path. Required for EXTERNAL tables.
+	LocationName *string `json:"location_name,omitempty"`
+	Name         string  `json:"name"`
+
+	// SourcePath S3/storage path to the data file(s). Required for EXTERNAL tables.
+	SourcePath *string `json:"source_path,omitempty"`
+
+	// TableType Type of table. MANAGED (default) or EXTERNAL.
+	TableType *CreateTableApiRequestTableType `json:"table_type,omitempty"`
 }
+
+// CreateTableApiRequestFileFormat File format of the external data. Required for EXTERNAL tables.
+type CreateTableApiRequestFileFormat string
+
+// CreateTableApiRequestTableType Type of table. MANAGED (default) or EXTERNAL.
+type CreateTableApiRequestTableType string
 
 // CreateTagAssignmentRequest defines model for CreateTagAssignmentRequest.
 type CreateTagAssignmentRequest struct {
@@ -585,20 +616,29 @@ type Table struct {
 
 // TableDetail defines model for TableDetail.
 type TableDetail struct {
-	CatalogName *string            `json:"catalog_name,omitempty"`
-	Columns     *[]ColumnDetail    `json:"columns,omitempty"`
-	Comment     *string            `json:"comment,omitempty"`
-	CreatedAt   *time.Time         `json:"created_at,omitempty"`
-	DeletedAt   *time.Time         `json:"deleted_at"`
-	Name        *string            `json:"name,omitempty"`
-	Owner       *string            `json:"owner,omitempty"`
-	Properties  *map[string]string `json:"properties,omitempty"`
-	SchemaName  *string            `json:"schema_name,omitempty"`
-	Statistics  *TableStatistics   `json:"statistics,omitempty"`
-	TableId     *int64             `json:"table_id,omitempty"`
-	TableType   *string            `json:"table_type,omitempty"`
-	Tags        *[]Tag             `json:"tags,omitempty"`
-	UpdatedAt   *time.Time         `json:"updated_at,omitempty"`
+	CatalogName *string         `json:"catalog_name,omitempty"`
+	Columns     *[]ColumnDetail `json:"columns,omitempty"`
+	Comment     *string         `json:"comment,omitempty"`
+	CreatedAt   *time.Time      `json:"created_at,omitempty"`
+	DeletedAt   *time.Time      `json:"deleted_at"`
+
+	// FileFormat File format for EXTERNAL tables (parquet or csv).
+	FileFormat *string `json:"file_format,omitempty"`
+
+	// LocationName External location name for EXTERNAL tables.
+	LocationName *string            `json:"location_name,omitempty"`
+	Name         *string            `json:"name,omitempty"`
+	Owner        *string            `json:"owner,omitempty"`
+	Properties   *map[string]string `json:"properties,omitempty"`
+	SchemaName   *string            `json:"schema_name,omitempty"`
+
+	// SourcePath S3/storage path for EXTERNAL tables.
+	SourcePath *string          `json:"source_path,omitempty"`
+	Statistics *TableStatistics `json:"statistics,omitempty"`
+	TableId    *int64           `json:"table_id,omitempty"`
+	TableType  *string          `json:"table_type,omitempty"`
+	Tags       *[]Tag           `json:"tags,omitempty"`
+	UpdatedAt  *time.Time       `json:"updated_at,omitempty"`
 }
 
 // TableStatistics defines model for TableStatistics.
