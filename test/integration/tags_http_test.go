@@ -176,6 +176,48 @@ func TestHTTP_TagCRUD(t *testing.T) {
 	}
 }
 
+// TestHTTP_ListClassifications tests GET /v1/classifications.
+func TestHTTP_ListClassifications(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
+
+	t.Run("list_returns_seeded_classifications", func(t *testing.T) {
+		resp := doRequest(t, "GET", env.Server.URL+"/v1/classifications", env.Keys.Admin, nil)
+		require.Equal(t, 200, resp.StatusCode)
+
+		var result map[string]interface{}
+		decodeJSON(t, resp, &result)
+		data := result["data"].([]interface{})
+		assert.GreaterOrEqual(t, len(data), 8,
+			"expected at least 8 seeded classification/sensitivity tags")
+
+		// Verify at least one classification and one sensitivity tag exist
+		hasClassification := false
+		hasSensitivity := false
+		for _, item := range data {
+			tag := item.(map[string]interface{})
+			key := tag["key"].(string)
+			if key == "classification" {
+				hasClassification = true
+			}
+			if key == "sensitivity" {
+				hasSensitivity = true
+			}
+		}
+		assert.True(t, hasClassification, "expected at least one 'classification' tag")
+		assert.True(t, hasSensitivity, "expected at least one 'sensitivity' tag")
+	})
+
+	t.Run("any_user_can_list", func(t *testing.T) {
+		resp := doRequest(t, "GET", env.Server.URL+"/v1/classifications", env.Keys.Analyst, nil)
+		require.Equal(t, 200, resp.StatusCode)
+
+		var result map[string]interface{}
+		decodeJSON(t, resp, &result)
+		data := result["data"].([]interface{})
+		assert.GreaterOrEqual(t, len(data), 1)
+	})
+}
+
 // TestHTTP_TagAnyUserCanManage verifies that non-admin users can create and
 // delete tags (no privilege checks enforced).
 func TestHTTP_TagAnyUserCanManage(t *testing.T) {

@@ -916,8 +916,9 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	viewSvc := service.NewViewService(viewRepo, catalogRepo, authSvc, auditRepo)
 
 	var duckDB *sql.DB
-	var catalogSvc *service.CatalogService
 	var manifestSvc *service.ManifestService
+	tableStatsRepo := repository.NewTableStatisticsRepo(metaDB)
+	catalogSvc := service.NewCatalogService(catalogRepo, authSvc, auditRepo, tagRepo, tableStatsRepo)
 
 	if opts.WithDuckLake {
 		env := setupLocalDuckLake(t)
@@ -967,7 +968,8 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 
 		catalogRepo = repository.NewCatalogRepo(metaDB, duckDB)
 		viewSvc = service.NewViewService(viewRepo, catalogRepo, authSvc, auditRepo)
-		catalogSvc = service.NewCatalogService(catalogRepo, authSvc, auditRepo, tagRepo, nil)
+		tableStatsRepo = repository.NewTableStatisticsRepo(metaDB)
+		catalogSvc = service.NewCatalogService(catalogRepo, authSvc, auditRepo, tagRepo, tableStatsRepo)
 
 		// manifestSvc needs S3 presigner — leave nil for non-S3 tests
 	}

@@ -421,3 +421,482 @@ func TestHTTP_CatalogSchemaForceDelete(t *testing.T) {
 		resp2.Body.Close()
 	})
 }
+
+// TestHTTP_UpdateTable tests PATCH /v1/catalog/schemas/{schemaName}/tables/{tableName}.
+func TestHTTP_UpdateTable(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
+
+	tableURL := env.Server.URL + "/v1/catalog/schemas/main/tables/titanic"
+
+	type step struct {
+		name string
+		fn   func(t *testing.T)
+	}
+
+	steps := []step{
+		{"patch_comment_200", func(t *testing.T) {
+			body := map[string]interface{}{
+				"comment": "Titanic dataset",
+			}
+			resp := doRequest(t, "PATCH", tableURL, env.Keys.Admin, body)
+			require.Equal(t, 200, resp.StatusCode)
+
+			var result map[string]interface{}
+			decodeJSON(t, resp, &result)
+			assert.Equal(t, "Titanic dataset", result["comment"])
+		}},
+
+		{"patch_properties_200", func(t *testing.T) {
+			body := map[string]interface{}{
+				"properties": map[string]string{"source": "kaggle"},
+			}
+			resp := doRequest(t, "PATCH", tableURL, env.Keys.Admin, body)
+			require.Equal(t, 200, resp.StatusCode)
+
+			var result map[string]interface{}
+			decodeJSON(t, resp, &result)
+			props := result["properties"].(map[string]interface{})
+			assert.Equal(t, "kaggle", props["source"])
+			// Comment from previous step should be preserved
+			assert.Equal(t, "Titanic dataset", result["comment"])
+		}},
+
+		{"patch_owner_200", func(t *testing.T) {
+			body := map[string]interface{}{
+				"owner": "data_team",
+			}
+			resp := doRequest(t, "PATCH", tableURL, env.Keys.Admin, body)
+			require.Equal(t, 200, resp.StatusCode)
+
+			var result map[string]interface{}
+			decodeJSON(t, resp, &result)
+			assert.Equal(t, "data_team", result["owner"])
+		}},
+
+		{"get_verifies_update", func(t *testing.T) {
+			resp := doRequest(t, "GET", tableURL, env.Keys.Admin, nil)
+			require.Equal(t, 200, resp.StatusCode)
+
+			var result map[string]interface{}
+			decodeJSON(t, resp, &result)
+			assert.Equal(t, "Titanic dataset", result["comment"])
+			props := result["properties"].(map[string]interface{})
+			assert.Equal(t, "kaggle", props["source"])
+			assert.Equal(t, "data_team", result["owner"])
+		}},
+
+		{"patch_nonexistent_404", func(t *testing.T) {
+			body := map[string]interface{}{"comment": "nope"}
+			resp := doRequest(t, "PATCH",
+				env.Server.URL+"/v1/catalog/schemas/main/tables/nonexistent",
+				env.Keys.Admin, body)
+			assert.Equal(t, 404, resp.StatusCode)
+			resp.Body.Close()
+		}},
+
+		{"analyst_denied_403", func(t *testing.T) {
+			body := map[string]interface{}{"comment": "should fail"}
+			resp := doRequest(t, "PATCH", tableURL, env.Keys.Analyst, body)
+			assert.Equal(t, 403, resp.StatusCode)
+			resp.Body.Close()
+		}},
+	}
+
+	for _, s := range steps {
+		if !t.Run(s.name, s.fn) {
+			t.FailNow()
+		}
+	}
+}
+
+// TestHTTP_UpdateColumn tests PATCH /v1/catalog/schemas/{s}/tables/{t}/columns/{c}.
+func TestHTTP_UpdateColumn(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
+
+	columnURL := env.Server.URL + "/v1/catalog/schemas/main/tables/titanic/columns/Name"
+
+	type step struct {
+		name string
+		fn   func(t *testing.T)
+	}
+
+	steps := []step{
+		{"patch_comment_200", func(t *testing.T) {
+			body := map[string]interface{}{
+				"comment": "Passenger name",
+			}
+			resp := doRequest(t, "PATCH", columnURL, env.Keys.Admin, body)
+			require.Equal(t, 200, resp.StatusCode)
+
+			var result map[string]interface{}
+			decodeJSON(t, resp, &result)
+			assert.Equal(t, "Passenger name", result["comment"])
+		}},
+
+		{"get_table_verifies_column_comment", func(t *testing.T) {
+			resp := doRequest(t, "GET",
+				env.Server.URL+"/v1/catalog/schemas/main/tables/titanic",
+				env.Keys.Admin, nil)
+			require.Equal(t, 200, resp.StatusCode)
+
+			var result map[string]interface{}
+			decodeJSON(t, resp, &result)
+			cols := result["columns"].([]interface{})
+			found := false
+			for _, item := range cols {
+				c := item.(map[string]interface{})
+				if c["name"] == "Name" {
+					found = true
+					assert.Equal(t, "Passenger name", c["comment"])
+					break
+				}
+			}
+			assert.True(t, found, "expected to find column 'Name'")
+		}},
+
+		{"patch_nonexistent_column_404", func(t *testing.T) {
+			body := map[string]interface{}{"comment": "nope"}
+			resp := doRequest(t, "PATCH",
+				env.Server.URL+"/v1/catalog/schemas/main/tables/titanic/columns/DoesNotExist",
+				env.Keys.Admin, body)
+			assert.Equal(t, 404, resp.StatusCode)
+			resp.Body.Close()
+		}},
+	}
+
+	for _, s := range steps {
+		if !t.Run(s.name, s.fn) {
+			t.FailNow()
+		}
+	}
+}
+
+// TestHTTP_UpdateCatalog tests PATCH /v1/catalog.
+func TestHTTP_UpdateCatalog(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
+
+	catalogURL := env.Server.URL + "/v1/catalog"
+
+	type step struct {
+		name string
+		fn   func(t *testing.T)
+	}
+
+	steps := []step{
+		{"patch_comment_200", func(t *testing.T) {
+			body := map[string]interface{}{
+				"comment": "Production data lake",
+			}
+			resp := doRequest(t, "PATCH", catalogURL, env.Keys.Admin, body)
+			require.Equal(t, 200, resp.StatusCode)
+
+			var result map[string]interface{}
+			decodeJSON(t, resp, &result)
+			assert.Equal(t, "Production data lake", result["comment"])
+		}},
+
+		{"get_verifies", func(t *testing.T) {
+			resp := doRequest(t, "GET", catalogURL, env.Keys.Admin, nil)
+			require.Equal(t, 200, resp.StatusCode)
+
+			var result map[string]interface{}
+			decodeJSON(t, resp, &result)
+			assert.Equal(t, "Production data lake", result["comment"])
+		}},
+
+		{"analyst_denied_403", func(t *testing.T) {
+			body := map[string]interface{}{"comment": "should fail"}
+			resp := doRequest(t, "PATCH", catalogURL, env.Keys.Analyst, body)
+			assert.Equal(t, 403, resp.StatusCode)
+			resp.Body.Close()
+		}},
+	}
+
+	for _, s := range steps {
+		if !t.Run(s.name, s.fn) {
+			t.FailNow()
+		}
+	}
+}
+
+// TestHTTP_ProfileTable tests POST /v1/catalog/schemas/{s}/tables/{t}/profile.
+func TestHTTP_ProfileTable(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
+
+	profileURL := env.Server.URL + "/v1/catalog/schemas/main/tables/titanic/profile"
+	tableURL := env.Server.URL + "/v1/catalog/schemas/main/tables/titanic"
+
+	type step struct {
+		name string
+		fn   func(t *testing.T)
+	}
+
+	steps := []step{
+		{"profile_200", func(t *testing.T) {
+			resp := doRequest(t, "POST", profileURL, env.Keys.Admin, nil)
+			require.Equal(t, 200, resp.StatusCode)
+
+			var result map[string]interface{}
+			decodeJSON(t, resp, &result)
+			assert.Equal(t, float64(12), result["column_count"])
+			assert.NotNil(t, result["last_profiled_at"])
+		}},
+
+		{"get_table_has_stats", func(t *testing.T) {
+			resp := doRequest(t, "GET", tableURL, env.Keys.Admin, nil)
+			require.Equal(t, 200, resp.StatusCode)
+
+			var result map[string]interface{}
+			decodeJSON(t, resp, &result)
+			stats, ok := result["statistics"].(map[string]interface{})
+			require.True(t, ok, "expected statistics field in table response")
+			assert.Equal(t, float64(12), stats["column_count"])
+		}},
+
+		{"profile_nonexistent_404", func(t *testing.T) {
+			resp := doRequest(t, "POST",
+				env.Server.URL+"/v1/catalog/schemas/main/tables/nonexistent/profile",
+				env.Keys.Admin, nil)
+			assert.Equal(t, 404, resp.StatusCode)
+			resp.Body.Close()
+		}},
+	}
+
+	for _, s := range steps {
+		if !t.Run(s.name, s.fn) {
+			t.FailNow()
+		}
+	}
+}
+
+// TestHTTP_TagsInSchemaResponse tests that tags assigned to a schema appear in
+// the GET /v1/catalog/schemas/{name} response.
+func TestHTTP_TagsInSchemaResponse(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
+
+	var tagID int64
+
+	type step struct {
+		name string
+		fn   func(t *testing.T)
+	}
+
+	steps := []step{
+		{"create_tag", func(t *testing.T) {
+			resp := doRequest(t, "POST", env.Server.URL+"/v1/tags", env.Keys.Admin, map[string]interface{}{
+				"key":   "env",
+				"value": "production",
+			})
+			require.Equal(t, 201, resp.StatusCode)
+
+			var result map[string]interface{}
+			decodeJSON(t, resp, &result)
+			tagID = int64(result["id"].(float64))
+		}},
+
+		{"assign_tag_to_schema", func(t *testing.T) {
+			resp := doRequest(t, "POST",
+				fmt.Sprintf("%s/v1/tags/%d/assignments", env.Server.URL, tagID),
+				env.Keys.Admin, map[string]interface{}{
+					"securable_type": "schema",
+					"securable_id":   0, // schema_id=0 for "main"
+				})
+			require.Equal(t, 201, resp.StatusCode)
+			resp.Body.Close()
+		}},
+
+		{"get_schema_has_tags", func(t *testing.T) {
+			resp := doRequest(t, "GET",
+				env.Server.URL+"/v1/catalog/schemas/main",
+				env.Keys.Admin, nil)
+			require.Equal(t, 200, resp.StatusCode)
+
+			var result map[string]interface{}
+			decodeJSON(t, resp, &result)
+			tags, ok := result["tags"].([]interface{})
+			require.True(t, ok, "expected 'tags' array in schema response")
+			require.GreaterOrEqual(t, len(tags), 1)
+
+			found := false
+			for _, item := range tags {
+				tag := item.(map[string]interface{})
+				if tag["key"] == "env" && tag["value"] == "production" {
+					found = true
+					break
+				}
+			}
+			assert.True(t, found, "expected tag with key=env, value=production in schema response")
+		}},
+	}
+
+	for _, s := range steps {
+		if !t.Run(s.name, s.fn) {
+			t.FailNow()
+		}
+	}
+}
+
+// TestHTTP_TagsInTableResponse tests that tags assigned to a table appear in
+// the GET /v1/catalog/schemas/{s}/tables/{t} response.
+func TestHTTP_TagsInTableResponse(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
+
+	var tagID int64
+
+	type step struct {
+		name string
+		fn   func(t *testing.T)
+	}
+
+	steps := []step{
+		{"create_tag", func(t *testing.T) {
+			resp := doRequest(t, "POST", env.Server.URL+"/v1/tags", env.Keys.Admin, map[string]interface{}{
+				"key":   "domain",
+				"value": "maritime",
+			})
+			require.Equal(t, 201, resp.StatusCode)
+
+			var result map[string]interface{}
+			decodeJSON(t, resp, &result)
+			tagID = int64(result["id"].(float64))
+		}},
+
+		{"assign_tag_to_table", func(t *testing.T) {
+			resp := doRequest(t, "POST",
+				fmt.Sprintf("%s/v1/tags/%d/assignments", env.Server.URL, tagID),
+				env.Keys.Admin, map[string]interface{}{
+					"securable_type": "table",
+					"securable_id":   1, // table_id=1 for "titanic"
+				})
+			require.Equal(t, 201, resp.StatusCode)
+			resp.Body.Close()
+		}},
+
+		{"get_table_has_tags", func(t *testing.T) {
+			resp := doRequest(t, "GET",
+				env.Server.URL+"/v1/catalog/schemas/main/tables/titanic",
+				env.Keys.Admin, nil)
+			require.Equal(t, 200, resp.StatusCode)
+
+			var result map[string]interface{}
+			decodeJSON(t, resp, &result)
+			tags, ok := result["tags"].([]interface{})
+			require.True(t, ok, "expected 'tags' array in table response")
+			require.GreaterOrEqual(t, len(tags), 1)
+
+			found := false
+			for _, item := range tags {
+				tag := item.(map[string]interface{})
+				if tag["key"] == "domain" && tag["value"] == "maritime" {
+					found = true
+					break
+				}
+			}
+			assert.True(t, found, "expected tag with key=domain, value=maritime in table response")
+		}},
+	}
+
+	for _, s := range steps {
+		if !t.Run(s.name, s.fn) {
+			t.FailNow()
+		}
+	}
+}
+
+// TestHTTP_CascadeDeleteVerifiesGovernanceRecords tests that force-deleting a
+// schema removes all subsidiary governance records (row_filters, column_masks,
+// tag_assignments).
+func TestHTTP_CascadeDeleteVerifiesGovernanceRecords(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{WithDuckLake: true})
+
+	var tagID int64
+
+	type step struct {
+		name string
+		fn   func(t *testing.T)
+	}
+
+	steps := []step{
+		{"create_schema", func(t *testing.T) {
+			resp := doRequest(t, "POST", env.Server.URL+"/v1/catalog/schemas", env.Keys.Admin,
+				map[string]interface{}{"name": "cascade_test"})
+			require.Equal(t, 201, resp.StatusCode)
+			resp.Body.Close()
+		}},
+
+		{"create_table", func(t *testing.T) {
+			resp := doRequest(t, "POST",
+				env.Server.URL+"/v1/catalog/schemas/cascade_test/tables",
+				env.Keys.Admin, map[string]interface{}{
+					"name": "gov_table",
+					"columns": []map[string]interface{}{
+						{"name": "id", "type": "INTEGER"},
+						{"name": "secret", "type": "VARCHAR"},
+					},
+				})
+			require.Equal(t, 201, resp.StatusCode)
+			resp.Body.Close()
+		}},
+
+		{"create_and_assign_tag", func(t *testing.T) {
+			// Create a tag
+			resp := doRequest(t, "POST", env.Server.URL+"/v1/tags", env.Keys.Admin,
+				map[string]interface{}{"key": "cascade_tag", "value": "test"})
+			require.Equal(t, 201, resp.StatusCode)
+			var tag map[string]interface{}
+			decodeJSON(t, resp, &tag)
+			tagID = int64(tag["id"].(float64))
+
+			// Get the table to find its table_id
+			resp2 := doRequest(t, "GET",
+				env.Server.URL+"/v1/catalog/schemas/cascade_test/tables/gov_table",
+				env.Keys.Admin, nil)
+			require.Equal(t, 200, resp2.StatusCode)
+			var table map[string]interface{}
+			decodeJSON(t, resp2, &table)
+			tableID := int64(table["table_id"].(float64))
+
+			// Assign tag to table
+			resp3 := doRequest(t, "POST",
+				fmt.Sprintf("%s/v1/tags/%d/assignments", env.Server.URL, tagID),
+				env.Keys.Admin, map[string]interface{}{
+					"securable_type": "table",
+					"securable_id":   tableID,
+				})
+			require.Equal(t, 201, resp3.StatusCode)
+			resp3.Body.Close()
+		}},
+
+		{"force_delete_schema", func(t *testing.T) {
+			resp := doRequest(t, "DELETE",
+				fmt.Sprintf("%s/v1/catalog/schemas/cascade_test?force=true", env.Server.URL),
+				env.Keys.Admin, nil)
+			require.Equal(t, 204, resp.StatusCode)
+			resp.Body.Close()
+		}},
+
+		{"verify_schema_gone", func(t *testing.T) {
+			resp := doRequest(t, "GET",
+				env.Server.URL+"/v1/catalog/schemas/cascade_test",
+				env.Keys.Admin, nil)
+			assert.Equal(t, 404, resp.StatusCode)
+			resp.Body.Close()
+		}},
+
+		{"verify_tag_assignments_cleaned", func(t *testing.T) {
+			// Query MetaDB directly to check governance records
+			var count int
+			err := env.MetaDB.QueryRow(
+				`SELECT COUNT(*) FROM tag_assignments WHERE securable_type = 'table'
+				 AND tag_id = ?`, tagID).Scan(&count)
+			require.NoError(t, err)
+			assert.Equal(t, 0, count, "expected tag assignments to be cleaned up after cascade delete")
+		}},
+	}
+
+	for _, s := range steps {
+		if !t.Run(s.name, s.fn) {
+			t.FailNow()
+		}
+	}
+}

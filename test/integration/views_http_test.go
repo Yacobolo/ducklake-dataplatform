@@ -193,6 +193,86 @@ func TestHTTP_ViewAuthZ(t *testing.T) {
 	}
 }
 
+// TestHTTP_UpdateView tests PATCH /v1/catalog/schemas/{s}/views/{v}.
+func TestHTTP_UpdateView(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
+
+	base := env.Server.URL + "/v1/catalog/schemas/main/views"
+	viewName := "v_update_test"
+
+	type step struct {
+		name string
+		fn   func(t *testing.T)
+	}
+
+	steps := []step{
+		{"create_view", func(t *testing.T) {
+			resp := doRequest(t, "POST", base, env.Keys.Admin, map[string]interface{}{
+				"name":            viewName,
+				"view_definition": "SELECT 1 AS val",
+			})
+			require.Equal(t, 201, resp.StatusCode)
+			resp.Body.Close()
+		}},
+
+		{"patch_comment_200", func(t *testing.T) {
+			body := map[string]interface{}{
+				"comment": "Test view comment",
+			}
+			resp := doRequest(t, "PATCH", base+"/"+viewName, env.Keys.Admin, body)
+			require.Equal(t, 200, resp.StatusCode)
+
+			var result map[string]interface{}
+			decodeJSON(t, resp, &result)
+			assert.Equal(t, "Test view comment", result["comment"])
+		}},
+
+		{"patch_definition_200", func(t *testing.T) {
+			body := map[string]interface{}{
+				"view_definition": "SELECT 2 AS val",
+			}
+			resp := doRequest(t, "PATCH", base+"/"+viewName, env.Keys.Admin, body)
+			require.Equal(t, 200, resp.StatusCode)
+
+			var result map[string]interface{}
+			decodeJSON(t, resp, &result)
+			assert.Equal(t, "SELECT 2 AS val", result["view_definition"])
+			// Comment from previous step should be preserved
+			assert.Equal(t, "Test view comment", result["comment"])
+		}},
+
+		{"get_verifies", func(t *testing.T) {
+			resp := doRequest(t, "GET", base+"/"+viewName, env.Keys.Admin, nil)
+			require.Equal(t, 200, resp.StatusCode)
+
+			var result map[string]interface{}
+			decodeJSON(t, resp, &result)
+			assert.Equal(t, "Test view comment", result["comment"])
+			assert.Equal(t, "SELECT 2 AS val", result["view_definition"])
+		}},
+
+		{"patch_nonexistent_404", func(t *testing.T) {
+			body := map[string]interface{}{"comment": "nope"}
+			resp := doRequest(t, "PATCH", base+"/nonexistent", env.Keys.Admin, body)
+			assert.Equal(t, 404, resp.StatusCode)
+			resp.Body.Close()
+		}},
+
+		{"analyst_denied_403", func(t *testing.T) {
+			body := map[string]interface{}{"comment": "should fail"}
+			resp := doRequest(t, "PATCH", base+"/"+viewName, env.Keys.Analyst, body)
+			assert.Equal(t, 403, resp.StatusCode)
+			resp.Body.Close()
+		}},
+	}
+
+	for _, s := range steps {
+		if !t.Run(s.name, s.fn) {
+			t.FailNow()
+		}
+	}
+}
+
 // TestHTTP_ViewSchemaNotFound verifies that requesting views for a nonexistent
 // schema returns 404.
 func TestHTTP_ViewSchemaNotFound(t *testing.T) {

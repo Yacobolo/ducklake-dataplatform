@@ -4,6 +4,7 @@ package integration
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -137,6 +138,153 @@ func TestHTTP_LineageEndpoints(t *testing.T) {
 			decodeJSON(t, resp, &result)
 			data := result["data"].([]interface{})
 			assert.Empty(t, data, "leaf node should have no downstream edges")
+		}},
+	}
+
+	for _, s := range steps {
+		if !t.Run(s.name, s.fn) {
+			t.FailNow()
+		}
+	}
+}
+
+// TestHTTP_DeleteLineageEdge tests DELETE /v1/lineage/edges/{edgeId}.
+func TestHTTP_DeleteLineageEdge(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{})
+
+	type step struct {
+		name string
+		fn   func(t *testing.T)
+	}
+
+	var edgeID int64
+
+	steps := []step{
+		{"seed_and_capture_edge_id", func(t *testing.T) {
+			ctx := context.Background()
+			repo := repository.NewLineageRepo(env.MetaDB)
+
+			target := "main.del_target"
+			e := domain.LineageEdge{
+				SourceTable:   "main.del_source",
+				TargetTable:   &target,
+				EdgeType:      "READ",
+				PrincipalName: "admin_user",
+			}
+			require.NoError(t, repo.InsertEdge(ctx, &e))
+
+			// InsertEdge is :exec, so query the ID back
+			err := env.MetaDB.QueryRow(
+				`SELECT id FROM lineage_edges WHERE source_table = ? AND target_table = ?`,
+				"main.del_source", "main.del_target",
+			).Scan(&edgeID)
+			require.NoError(t, err)
+			require.NotZero(t, edgeID, "expected edge ID to be populated after insert")
+		}},
+
+		{"delete_edge_204", func(t *testing.T) {
+			resp := doRequest(t, "DELETE",
+				fmt.Sprintf("%s/v1/lineage/edges/%d", env.Server.URL, edgeID),
+				env.Keys.Admin, nil)
+			require.Equal(t, 204, resp.StatusCode)
+			resp.Body.Close()
+		}},
+
+		{"verify_edge_gone", func(t *testing.T) {
+			resp := doRequest(t, "GET",
+				env.Server.URL+"/v1/lineage/tables/main/del_target",
+				env.Keys.Admin, nil)
+			require.Equal(t, 200, resp.StatusCode)
+
+			var result map[string]interface{}
+			decodeJSON(t, resp, &result)
+			if up, ok := result["upstream"]; ok && up != nil {
+				edges := up.([]interface{})
+				for _, item := range edges {
+					edge := item.(map[string]interface{})
+					assert.NotEqual(t, float64(edgeID), edge["id"],
+						"deleted edge should not appear in upstream")
+				}
+			}
+		}},
+
+		{"delete_nonexistent_204_idempotent", func(t *testing.T) {
+			// Deleting a nonexistent edge returns 204 (idempotent — the SQL
+			// DELETE succeeds with 0 rows affected and no error).
+			resp := doRequest(t, "DELETE",
+				fmt.Sprintf("%s/v1/lineage/edges/%d", env.Server.URL, 99999),
+				env.Keys.Admin, nil)
+			assert.Equal(t, 204, resp.StatusCode)
+			resp.Body.Close()
+		}},
+	}
+
+	for _, s := range steps {
+		if !t.Run(s.name, s.fn) {
+			t.FailNow()
+		}
+	}
+}
+
+// TestHTTP_PurgeLineage tests POST /v1/lineage/purge.
+func TestHTTP_PurgeLineage(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{})
+
+	type step struct {
+		name string
+		fn   func(t *testing.T)
+	}
+
+	steps := []step{
+		{"seed_old_and_recent_edges", func(t *testing.T) {
+			// Insert an old edge (100 days ago) directly via SQL
+			_, err := env.MetaDB.Exec(
+				`INSERT INTO lineage_edges (source_table, target_table, edge_type, principal_name, created_at)
+				 VALUES (?, ?, ?, ?, datetime('now', '-100 days'))`,
+				"main.old_source", "main.old_target", "READ", "admin_user",
+			)
+			require.NoError(t, err)
+
+			// Insert a recent edge
+			ctx := context.Background()
+			repo := repository.NewLineageRepo(env.MetaDB)
+			target := "main.recent_target"
+			e := domain.LineageEdge{
+				SourceTable:   "main.recent_source",
+				TargetTable:   &target,
+				EdgeType:      "READ",
+				PrincipalName: "admin_user",
+			}
+			require.NoError(t, repo.InsertEdge(ctx, &e))
+		}},
+
+		{"purge_200", func(t *testing.T) {
+			body := map[string]interface{}{
+				"older_than_days": 30,
+			}
+			resp := doRequest(t, "POST",
+				env.Server.URL+"/v1/lineage/purge",
+				env.Keys.Admin, body)
+			require.Equal(t, 200, resp.StatusCode)
+
+			var result map[string]interface{}
+			decodeJSON(t, resp, &result)
+			deletedCount := result["deleted_count"].(float64)
+			assert.GreaterOrEqual(t, deletedCount, float64(1),
+				"expected at least 1 old edge to be purged")
+		}},
+
+		{"verify_recent_survives", func(t *testing.T) {
+			resp := doRequest(t, "GET",
+				env.Server.URL+"/v1/lineage/tables/main/recent_target",
+				env.Keys.Admin, nil)
+			require.Equal(t, 200, resp.StatusCode)
+
+			var result map[string]interface{}
+			decodeJSON(t, resp, &result)
+			upstream := result["upstream"].([]interface{})
+			assert.GreaterOrEqual(t, len(upstream), 1,
+				"recent edge should survive the purge")
 		}},
 	}
 
