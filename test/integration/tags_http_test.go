@@ -191,8 +191,8 @@ func TestHTTP_TagAnyUserCanManage(t *testing.T) {
 	steps := []step{
 		{"analyst_creates_tag", func(t *testing.T) {
 			resp := doRequest(t, "POST", env.Server.URL+"/v1/tags", env.Keys.Analyst, map[string]interface{}{
-				"key":   "sensitivity",
-				"value": "high",
+				"key":   "department",
+				"value": "engineering",
 			})
 			require.Equal(t, 201, resp.StatusCode)
 

@@ -48,9 +48,9 @@ tasks:
       - go build ./...
 
   test:
-    desc: Run tests with race detection
+    desc: Run all tests (package summary, shows failures inline)
     cmds:
-      - go test -race ./...
+      - gotestsum --format pkgname-and-test-fails -- -race ./...
 
   vet:
     desc: Run go vet
@@ -58,6 +58,6 @@ tasks:
       - go vet ./...
 
   integration-test:
-    desc: Run integration tests (requires extension build + S3 credentials)
+    desc: Run integration tests (package summary, shows failures inline)
     cmds:
-      - go test -tags integration -v -timeout 120s ./test/integration/...
+      - gotestsum --format pkgname-and-test-fails -- -tags integration -timeout 120s ./test/integration/...

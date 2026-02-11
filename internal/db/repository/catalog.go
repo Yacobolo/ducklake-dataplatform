@@ -25,6 +25,23 @@ func NewCatalogRepo(metaDB, duckDB *sql.DB) *CatalogRepo {
 	return &CatalogRepo{metaDB: metaDB, duckDB: duckDB, q: dbstore.New(metaDB)}
 }
 
+// refreshMetaDB forces metaDB to see the latest WAL changes written by
+// DuckLake's internal SQLite handle after DDL operations (CREATE/DROP
+// SCHEMA/TABLE). Without this, metaDB may read a stale WAL snapshot and
+// miss rows that DuckLake just inserted or updated.
+//
+// The approach: cycle the pool's idle connections so the next query opens a
+// fresh SQLite read snapshot that includes the DuckLake WAL entries.
+func (r *CatalogRepo) refreshMetaDB(_ context.Context) {
+	cur := r.metaDB.Stats().MaxOpenConnections
+	r.metaDB.SetMaxIdleConns(0)
+	if cur > 0 {
+		r.metaDB.SetMaxIdleConns(cur)
+	} else {
+		r.metaDB.SetMaxIdleConns(2) // Go default
+	}
+}
+
 // GetCatalogInfo returns information about the single "lake" catalog.
 func (r *CatalogRepo) GetCatalogInfo(ctx context.Context) (*domain.CatalogInfo, error) {
 	info := &domain.CatalogInfo{
@@ -97,6 +114,7 @@ func (r *CatalogRepo) CreateSchema(ctx context.Context, name, comment, owner str
 		}
 		return nil, fmt.Errorf("create schema: %w", err)
 	}
+	r.refreshMetaDB(ctx)
 
 	// Store metadata via sqlc
 	if comment != "" || owner != "" {
@@ -156,10 +174,15 @@ func (r *CatalogRepo) ListSchemas(ctx context.Context, page domain.PageRequest) 
 			return nil, 0, err
 		}
 		s.CatalogName = "lake"
-		r.enrichSchemaMetadata(ctx, &s)
 		schemas = append(schemas, s)
 	}
-	return schemas, total, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+	for i := range schemas {
+		r.enrichSchemaMetadata(ctx, &schemas[i])
+	}
+	return schemas, total, nil
 }
 
 // UpdateSchema updates schema metadata (comment, properties).
@@ -231,6 +254,7 @@ func (r *CatalogRepo) DeleteSchema(ctx context.Context, name string, force bool)
 		}
 		return fmt.Errorf("drop schema: %w", err)
 	}
+	r.refreshMetaDB(ctx)
 
 	// Soft-delete schema metadata via sqlc
 	_ = r.q.SoftDeleteCatalogMetadata(ctx, dbstore.SoftDeleteCatalogMetadataParams{
@@ -308,6 +332,7 @@ func (r *CatalogRepo) CreateTable(ctx context.Context, schemaName string, req do
 		}
 		return nil, fmt.Errorf("create table: %w", err)
 	}
+	r.refreshMetaDB(ctx)
 
 	// Store metadata via sqlc
 	securableName := schemaName + "." + req.Name
@@ -411,10 +436,15 @@ func (r *CatalogRepo) ListTables(ctx context.Context, schemaName string, page do
 		t.SchemaName = schemaName
 		t.CatalogName = "lake"
 		t.TableType = "MANAGED"
-		r.enrichTableMetadata(ctx, &t)
 		tables = append(tables, t)
 	}
-	return tables, total, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+	for i := range tables {
+		r.enrichTableMetadata(ctx, &tables[i])
+	}
+	return tables, total, nil
 }
 
 // DeleteTable drops a table via DuckDB DDL and cascades governance cleanup.
@@ -439,6 +469,7 @@ func (r *CatalogRepo) DeleteTable(ctx context.Context, schemaName, tableName str
 	if _, err := r.duckDB.ExecContext(ctx, stmt); err != nil {
 		return fmt.Errorf("drop table: %w", err)
 	}
+	r.refreshMetaDB(ctx)
 
 	// Soft-delete table metadata via sqlc
 	securableName := schemaName + "." + tableName
