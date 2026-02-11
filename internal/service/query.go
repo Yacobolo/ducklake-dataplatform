@@ -9,6 +9,7 @@ import (
 
 	"duck-demo/internal/domain"
 	"duck-demo/internal/engine"
+	"duck-demo/internal/sqlrewrite"
 )
 
 // QueryResult holds the structured output of a SQL query.
@@ -20,12 +21,13 @@ type QueryResult struct {
 
 // QueryService wraps the SecureEngine and records audit entries.
 type QueryService struct {
-	engine *engine.SecureEngine
-	audit  domain.AuditRepository
+	engine  *engine.SecureEngine
+	audit   domain.AuditRepository
+	lineage domain.LineageRepository
 }
 
-func NewQueryService(eng *engine.SecureEngine, audit domain.AuditRepository) *QueryService {
-	return &QueryService{engine: eng, audit: audit}
+func NewQueryService(eng *engine.SecureEngine, audit domain.AuditRepository, lineage domain.LineageRepository) *QueryService {
+	return &QueryService{engine: eng, audit: audit, lineage: lineage}
 }
 
 // Execute runs a SQL query as the given principal and returns structured results.
@@ -37,19 +39,62 @@ func (s *QueryService) Execute(ctx context.Context, principalName, sqlQuery stri
 
 	if err != nil {
 		// Log failed query
-		s.logAudit(ctx, principalName, "QUERY", &sqlQuery, nil, nil, "DENIED", err.Error(), duration)
+		s.logAudit(ctx, principalName, "QUERY", &sqlQuery, nil, nil, "DENIED", err.Error(), duration, nil)
 		return nil, err
 	}
 	defer rows.Close()
 
 	result, err := scanRows(rows)
 	if err != nil {
-		s.logAudit(ctx, principalName, "QUERY", &sqlQuery, nil, nil, "ERROR", err.Error(), duration)
+		s.logAudit(ctx, principalName, "QUERY", &sqlQuery, nil, nil, "ERROR", err.Error(), duration, nil)
 		return nil, fmt.Errorf("scan results: %w", err)
 	}
 
-	s.logAudit(ctx, principalName, "QUERY", &sqlQuery, nil, nil, "ALLOWED", "", duration)
+	rowCount := int64(result.RowCount)
+	s.logAudit(ctx, principalName, "QUERY", &sqlQuery, nil, nil, "ALLOWED", "", duration, &rowCount)
+
+	// Best-effort lineage emission
+	s.emitLineage(ctx, principalName, sqlQuery)
+
 	return result, nil
+}
+
+// emitLineage extracts table names and target table from the SQL to record lineage edges.
+func (s *QueryService) emitLineage(ctx context.Context, principalName, sqlQuery string) {
+	if s.lineage == nil {
+		return
+	}
+
+	tables, err := sqlrewrite.ExtractTableNames(sqlQuery)
+	if err != nil || len(tables) == 0 {
+		return
+	}
+
+	targetTable, _ := sqlrewrite.ExtractTargetTable(sqlQuery)
+
+	if targetTable != "" {
+		// DML statement (INSERT/UPDATE/DELETE) — source tables write into target
+		for _, src := range tables {
+			if src == targetTable {
+				continue
+			}
+			_ = s.lineage.InsertEdge(ctx, &domain.LineageEdge{
+				SourceTable:   src,
+				TargetTable:   &targetTable,
+				EdgeType:      "WRITE",
+				PrincipalName: principalName,
+			})
+		}
+	} else {
+		// SELECT — all tables are read sources
+		for _, src := range tables {
+			_ = s.lineage.InsertEdge(ctx, &domain.LineageEdge{
+				SourceTable:   src,
+				EdgeType:      "READ",
+				PrincipalName: principalName,
+			})
+		}
+	}
 }
 
 func scanRows(rows *sql.Rows) (*QueryResult, error) {
@@ -90,7 +135,7 @@ func scanRows(rows *sql.Rows) (*QueryResult, error) {
 	}, nil
 }
 
-func (s *QueryService) logAudit(ctx context.Context, principal, action string, originalSQL, rewrittenSQL *string, tables []string, status, errMsg string, durationMs int64) {
+func (s *QueryService) logAudit(ctx context.Context, principal, action string, originalSQL, rewrittenSQL *string, tables []string, status, errMsg string, durationMs int64, rowsReturned *int64) {
 	entry := &domain.AuditEntry{
 		PrincipalName:  principal,
 		Action:         action,
@@ -99,6 +144,7 @@ func (s *QueryService) logAudit(ctx context.Context, principal, action string, o
 		TablesAccessed: tables,
 		Status:         status,
 		DurationMs:     &durationMs,
+		RowsReturned:   rowsReturned,
 	}
 	if errMsg != "" {
 		entry.ErrorMessage = &errMsg

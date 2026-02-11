@@ -135,6 +135,36 @@ func ClassifyStatement(sql string) (StatementType, error) {
 	}
 }
 
+// ExtractTargetTable parses a SQL DML statement and returns the target table name
+// for INSERT, UPDATE, and DELETE statements. Returns empty string for SELECT/DDL/other.
+func ExtractTargetTable(sqlStr string) (string, error) {
+	result, err := pg_query.Parse(sqlStr)
+	if err != nil {
+		return "", fmt.Errorf("parse SQL: %w", err)
+	}
+
+	if len(result.Stmts) == 0 {
+		return "", nil
+	}
+
+	switch n := result.Stmts[0].Stmt.Node.(type) {
+	case *pg_query.Node_InsertStmt:
+		if n.InsertStmt.Relation != nil {
+			return n.InsertStmt.Relation.Relname, nil
+		}
+	case *pg_query.Node_UpdateStmt:
+		if n.UpdateStmt.Relation != nil {
+			return n.UpdateStmt.Relation.Relname, nil
+		}
+	case *pg_query.Node_DeleteStmt:
+		if n.DeleteStmt.Relation != nil {
+			return n.DeleteStmt.Relation.Relname, nil
+		}
+	}
+
+	return "", nil
+}
+
 // InjectRowFilterSQL injects a raw SQL WHERE clause expression into all SELECT
 // statements that reference the given table. The filterSQL is a raw expression
 // string like `"Pclass" = 1`.

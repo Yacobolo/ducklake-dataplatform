@@ -697,6 +697,260 @@ components:
           type: integer
           format: int64
 
+    # --- Query History ---
+    QueryHistoryEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        principal_name:
+          type: string
+        original_sql:
+          type: string
+          nullable: true
+        rewritten_sql:
+          type: string
+          nullable: true
+        statement_type:
+          type: string
+          nullable: true
+        tables_accessed:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+        error_message:
+          type: string
+          nullable: true
+        duration_ms:
+          type: integer
+          format: int64
+          nullable: true
+        rows_returned:
+          type: integer
+          format: int64
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    PaginatedQueryHistory:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/QueryHistoryEntry'
+        next_page_token:
+          type: string
+
+    # --- Search ---
+    SearchResult:
+      type: object
+      properties:
+        type:
+          type: string
+          description: "Object type: schema, table, or column"
+        name:
+          type: string
+        schema_name:
+          type: string
+          nullable: true
+        table_name:
+          type: string
+          nullable: true
+        comment:
+          type: string
+          nullable: true
+        match_field:
+          type: string
+          description: "Field that matched: name, comment, or property"
+
+    PaginatedSearchResults:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchResult'
+        next_page_token:
+          type: string
+
+    # --- Lineage ---
+    LineageEdge:
+      type: object
+      properties:
+        source_table:
+          type: string
+        target_table:
+          type: string
+          nullable: true
+        edge_type:
+          type: string
+          description: "Edge type: READ, WRITE, READ_WRITE"
+        principal_name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    LineageNode:
+      type: object
+      properties:
+        table_name:
+          type: string
+        upstream:
+          type: array
+          items:
+            $ref: '#/components/schemas/LineageEdge'
+        downstream:
+          type: array
+          items:
+            $ref: '#/components/schemas/LineageEdge'
+
+    PaginatedLineageEdges:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/LineageEdge'
+        next_page_token:
+          type: string
+
+    # --- Tags ---
+    Tag:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        key:
+          type: string
+        value:
+          type: string
+          nullable: true
+        created_by:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    CreateTagRequest:
+      type: object
+      required: [key]
+      properties:
+        key:
+          type: string
+        value:
+          type: string
+
+    TagAssignment:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        tag_id:
+          type: integer
+          format: int64
+        securable_type:
+          type: string
+        securable_id:
+          type: integer
+          format: int64
+        column_name:
+          type: string
+          nullable: true
+        assigned_by:
+          type: string
+        assigned_at:
+          type: string
+          format: date-time
+
+    CreateTagAssignmentRequest:
+      type: object
+      required: [securable_type, securable_id]
+      properties:
+        securable_type:
+          type: string
+        securable_id:
+          type: integer
+          format: int64
+        column_name:
+          type: string
+
+    PaginatedTags:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        next_page_token:
+          type: string
+
+    # --- Views ---
+    ViewDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        schema_id:
+          type: integer
+          format: int64
+        schema_name:
+          type: string
+        catalog_name:
+          type: string
+        name:
+          type: string
+        view_definition:
+          type: string
+        comment:
+          type: string
+          nullable: true
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+        owner:
+          type: string
+        source_tables:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateViewRequest:
+      type: object
+      required: [name, view_definition]
+      properties:
+        name:
+          type: string
+        view_definition:
+          type: string
+        comment:
+          type: string
+
+    PaginatedViewDetails:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ViewDetail'
+        next_page_token:
+          type: string
+
 paths:
   # === Query ===
   /query:
@@ -1608,3 +1862,358 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MetastoreSummary'
+
+  # === Query History ===
+  /query-history:
+    get:
+      operationId: listQueryHistory
+      summary: List query execution history
+      parameters:
+        - name: principal_name
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated query history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedQueryHistory'
+
+  # === Search ===
+  /search:
+    get:
+      operationId: searchCatalog
+      summary: Search catalog objects
+      description: Full-text search across schemas, tables, and columns.
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: type
+          in: query
+          description: "Filter by object type: schema, table, or column"
+          schema:
+            type: string
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSearchResults'
+
+  # === Lineage ===
+  /lineage/tables/{schemaName}/{tableName}:
+    parameters:
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: tableName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getTableLineage
+      summary: Get full lineage for a table
+      description: Returns both upstream and downstream lineage edges for a table.
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Table lineage
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LineageNode'
+
+  /lineage/tables/{schemaName}/{tableName}/upstream:
+    parameters:
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: tableName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getUpstreamLineage
+      summary: Get upstream lineage for a table
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Upstream lineage edges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLineageEdges'
+
+  /lineage/tables/{schemaName}/{tableName}/downstream:
+    parameters:
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: tableName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getDownstreamLineage
+      summary: Get downstream lineage for a table
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Downstream lineage edges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLineageEdges'
+
+  # === Tags ===
+  /tags:
+    get:
+      operationId: listTags
+      summary: List all tags
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of tags
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTags'
+    post:
+      operationId: createTag
+      summary: Create a tag
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTagRequest'
+      responses:
+        '201':
+          description: Created tag
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tag'
+        '409':
+          description: Tag already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tags/{tagId}:
+    parameters:
+      - name: tagId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    delete:
+      operationId: deleteTag
+      summary: Delete a tag
+      responses:
+        '204':
+          description: Tag deleted
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tags/{tagId}/assignments:
+    parameters:
+      - name: tagId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    post:
+      operationId: assignTag
+      summary: Assign a tag to a securable object
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTagAssignmentRequest'
+      responses:
+        '201':
+          description: Tag assigned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagAssignment'
+        '409':
+          description: Tag already assigned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tag-assignments/{assignmentId}:
+    parameters:
+      - name: assignmentId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    delete:
+      operationId: unassignTag
+      summary: Remove a tag assignment
+      responses:
+        '204':
+          description: Tag unassigned
+
+  # === Views ===
+  /catalog/schemas/{schemaName}/views:
+    parameters:
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: listViews
+      summary: List views in a schema
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of views
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedViewDetails'
+        '404':
+          description: Schema not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: createView
+      summary: Create a view in a schema
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateViewRequest'
+      responses:
+        '201':
+          description: View created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ViewDetail'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: View already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /catalog/schemas/{schemaName}/views/{viewName}:
+    parameters:
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: viewName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getView
+      summary: Get a view by name
+      responses:
+        '200':
+          description: View details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ViewDetail'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: dropView
+      summary: Delete a view
+      responses:
+        '204':
+          description: View deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

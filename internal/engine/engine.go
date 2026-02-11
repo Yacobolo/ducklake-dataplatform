@@ -14,14 +14,20 @@ import (
 // SecureEngine wraps a DuckDB connection and enforces RBAC + RLS + column masking
 // by intercepting queries through the catalog permission model and SQL-level rewriting.
 type SecureEngine struct {
-	db      *sql.DB
-	catalog domain.AuthorizationService
+	db         *sql.DB
+	catalog    domain.AuthorizationService
+	infoSchema *InformationSchemaProvider
 }
 
 // NewSecureEngine creates a SecureEngine with the given DuckDB connection
 // and authorization service (backed by the SQLite metastore).
 func NewSecureEngine(db *sql.DB, cat domain.AuthorizationService) *SecureEngine {
 	return &SecureEngine{db: db, catalog: cat}
+}
+
+// SetInformationSchemaProvider attaches an information_schema provider.
+func (e *SecureEngine) SetInformationSchemaProvider(p *InformationSchemaProvider) {
+	e.infoSchema = p
 }
 
 // Query executes a SQL query as the given principal, enforcing:
@@ -37,6 +43,11 @@ func NewSecureEngine(db *sql.DB, cat domain.AuthorizationService) *SecureEngine 
 //  4. Inject row filters and column masks into the SQL
 //  5. Execute the rewritten SQL against DuckDB
 func (e *SecureEngine) Query(ctx context.Context, principalName, sqlQuery string) (*sql.Rows, error) {
+	// Intercept information_schema queries
+	if e.infoSchema != nil && IsInformationSchemaQuery(sqlQuery) {
+		return e.infoSchema.HandleQuery(ctx, e.db, sqlQuery)
+	}
+
 	// 1. Classify statement type
 	stmtType, err := sqlrewrite.ClassifyStatement(sqlQuery)
 	if err != nil {

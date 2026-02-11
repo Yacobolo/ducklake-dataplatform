@@ -14,5 +14,6 @@ type AuditEntry struct {
 	Status         string // "ALLOWED", "DENIED", "ERROR"
 	ErrorMessage   *string
 	DurationMs     *int64
+	RowsReturned   *int64
 	CreatedAt      time.Time
 }

@@ -63,6 +63,25 @@ func ptrInt(ni sql.NullInt64) *int64 {
 	return &ni.Int64
 }
 
+// NullStrFromPtr converts a *string to sql.NullString.
+func NullStrFromPtr(s *string) sql.NullString {
+	return nullStr(s)
+}
+
+// InterfaceFromPtr converts a *string to interface{} (nil or the string value).
+// Useful for sqlc-generated nullable check parameters.
+func InterfaceFromPtr(s *string) interface{} {
+	if s == nil {
+		return nil
+	}
+	return *s
+}
+
+// StringFromPtr returns the dereferenced string or empty string if nil.
+func StringFromPtr(s *string) sql.NullString {
+	return nullStr(s)
+}
+
 // --- Principal ---
 
 func PrincipalFromDB(p dbstore.Principal) *domain.Principal {
@@ -235,6 +254,7 @@ func AuditEntryFromDB(a dbstore.AuditLog) *domain.AuditEntry {
 		Status:         a.Status,
 		ErrorMessage:   ptrStr(a.ErrorMessage),
 		DurationMs:     ptrInt(a.DurationMs),
+		RowsReturned:   ptrInt(a.RowsReturned),
 		CreatedAt:      parseTime(a.CreatedAt),
 	}
 }
@@ -254,5 +274,102 @@ func AuditEntriesToDBParams(e *domain.AuditEntry) dbstore.InsertAuditLogParams {
 		Status:         e.Status,
 		ErrorMessage:   nullStr(e.ErrorMessage),
 		DurationMs:     nullInt(e.DurationMs),
+		RowsReturned:   nullInt(e.RowsReturned),
+	}
+}
+
+// --- QueryHistory ---
+
+func QueryHistoryEntryFromDB(a dbstore.AuditLog) *domain.QueryHistoryEntry {
+	var tables []string
+	if a.TablesAccessed.Valid && a.TablesAccessed.String != "" {
+		json.Unmarshal([]byte(a.TablesAccessed.String), &tables)
+	}
+	return &domain.QueryHistoryEntry{
+		ID:             a.ID,
+		PrincipalName:  a.PrincipalName,
+		OriginalSQL:    ptrStr(a.OriginalSql),
+		RewrittenSQL:   ptrStr(a.RewrittenSql),
+		StatementType:  ptrStr(a.StatementType),
+		TablesAccessed: tables,
+		Status:         a.Status,
+		ErrorMessage:   ptrStr(a.ErrorMessage),
+		DurationMs:     ptrInt(a.DurationMs),
+		RowsReturned:   ptrInt(a.RowsReturned),
+		CreatedAt:      parseTime(a.CreatedAt),
+	}
+}
+
+// --- Lineage ---
+
+func LineageEdgeFromDB(e dbstore.GetUpstreamLineageRow) *domain.LineageEdge {
+	return &domain.LineageEdge{
+		SourceTable:   e.SourceTable,
+		TargetTable:   ptrStr(e.TargetTable),
+		EdgeType:      e.EdgeType,
+		PrincipalName: e.PrincipalName,
+		CreatedAt:     parseTime(e.CreatedAt),
+	}
+}
+
+func LineageEdgeFromDownstreamDB(e dbstore.GetDownstreamLineageRow) *domain.LineageEdge {
+	return &domain.LineageEdge{
+		SourceTable:   e.SourceTable,
+		TargetTable:   ptrStr(e.TargetTable),
+		EdgeType:      e.EdgeType,
+		PrincipalName: e.PrincipalName,
+		CreatedAt:     parseTime(e.CreatedAt),
+	}
+}
+
+// --- Tag ---
+
+func TagFromDB(t dbstore.Tag) *domain.Tag {
+	return &domain.Tag{
+		ID:        t.ID,
+		Key:       t.Key,
+		Value:     ptrStr(t.Value),
+		CreatedBy: t.CreatedBy,
+		CreatedAt: parseTime(t.CreatedAt),
+	}
+}
+
+func TagAssignmentFromDB(a dbstore.TagAssignment) *domain.TagAssignment {
+	return &domain.TagAssignment{
+		ID:            a.ID,
+		TagID:         a.TagID,
+		SecurableType: a.SecurableType,
+		SecurableID:   a.SecurableID,
+		ColumnName:    ptrStr(a.ColumnName),
+		AssignedBy:    a.AssignedBy,
+		AssignedAt:    parseTime(a.AssignedAt),
+	}
+}
+
+// --- View ---
+
+func ViewFromDB(v dbstore.View) *domain.ViewDetail {
+	var props map[string]string
+	if v.Properties.Valid && v.Properties.String != "" {
+		json.Unmarshal([]byte(v.Properties.String), &props)
+	}
+	if props == nil {
+		props = make(map[string]string)
+	}
+	var sources []string
+	if v.SourceTables.Valid && v.SourceTables.String != "" {
+		json.Unmarshal([]byte(v.SourceTables.String), &sources)
+	}
+	return &domain.ViewDetail{
+		ID:             v.ID,
+		SchemaID:       v.SchemaID,
+		Name:           v.Name,
+		ViewDefinition: v.ViewDefinition,
+		Comment:        ptrStr(v.Comment),
+		Properties:     props,
+		Owner:          v.Owner,
+		SourceTables:   sources,
+		CreatedAt:      parseTime(v.CreatedAt),
+		UpdatedAt:      parseTime(v.UpdatedAt),
 	}
 }

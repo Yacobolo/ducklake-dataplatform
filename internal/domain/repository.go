@@ -102,6 +102,43 @@ type CatalogRepository interface {
 	ListColumns(ctx context.Context, schemaName, tableName string, page PageRequest) ([]ColumnDetail, int64, error)
 }
 
+// QueryHistoryRepository provides query history operations.
+type QueryHistoryRepository interface {
+	List(ctx context.Context, filter QueryHistoryFilter) ([]QueryHistoryEntry, int64, error)
+}
+
+// LineageRepository provides operations for lineage edges.
+type LineageRepository interface {
+	InsertEdge(ctx context.Context, edge *LineageEdge) error
+	GetUpstream(ctx context.Context, tableName string, page PageRequest) ([]LineageEdge, int64, error)
+	GetDownstream(ctx context.Context, tableName string, page PageRequest) ([]LineageEdge, int64, error)
+}
+
+// SearchRepository provides catalog search operations.
+type SearchRepository interface {
+	Search(ctx context.Context, query string, objectType *string, maxResults int, offset int) ([]SearchResult, int64, error)
+}
+
+// TagRepository provides CRUD operations for tags and assignments.
+type TagRepository interface {
+	CreateTag(ctx context.Context, tag *Tag) (*Tag, error)
+	GetTag(ctx context.Context, id int64) (*Tag, error)
+	ListTags(ctx context.Context, page PageRequest) ([]Tag, int64, error)
+	DeleteTag(ctx context.Context, id int64) error
+	AssignTag(ctx context.Context, assignment *TagAssignment) (*TagAssignment, error)
+	UnassignTag(ctx context.Context, id int64) error
+	ListTagsForSecurable(ctx context.Context, securableType string, securableID int64, columnName *string) ([]Tag, error)
+	ListAssignmentsForTag(ctx context.Context, tagID int64) ([]TagAssignment, error)
+}
+
+// ViewRepository provides CRUD operations for views.
+type ViewRepository interface {
+	Create(ctx context.Context, view *ViewDetail) (*ViewDetail, error)
+	GetByName(ctx context.Context, schemaID int64, viewName string) (*ViewDetail, error)
+	List(ctx context.Context, schemaID int64, page PageRequest) ([]ViewDetail, int64, error)
+	Delete(ctx context.Context, schemaID int64, viewName string) error
+}
+
 // AuthorizationService defines the interface for permission checking.
 // The engine depends on this interface rather than a concrete service type.
 type AuthorizationService interface {

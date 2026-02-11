@@ -265,6 +265,11 @@ func main() {
 	auditRepo := repository.NewAuditRepo(metaDB)
 	introspectionRepo := repository.NewIntrospectionRepo(metaDB)
 	catalogRepo := repository.NewCatalogRepo(metaDB, duckDB)
+	queryHistoryRepo := repository.NewQueryHistoryRepo(metaDB)
+	lineageRepo := repository.NewLineageRepo(metaDB)
+	searchRepo := repository.NewSearchRepo(metaDB)
+	tagRepo := repository.NewTagRepo(metaDB)
+	viewRepo := repository.NewViewRepo(metaDB)
 
 	// Create authorization service
 	cat := service.NewAuthorizationService(
@@ -280,9 +285,10 @@ func main() {
 
 	// Create secure engine
 	eng := engine.NewSecureEngine(duckDB, cat)
+	eng.SetInformationSchemaProvider(engine.NewInformationSchemaProvider(catalogRepo))
 
 	// Create services
-	querySvc := service.NewQueryService(eng, auditRepo)
+	querySvc := service.NewQueryService(eng, auditRepo, lineageRepo)
 	principalSvc := service.NewPrincipalService(principalRepo, auditRepo)
 	groupSvc := service.NewGroupService(groupRepo, auditRepo)
 	grantSvc := service.NewGrantService(grantRepo, auditRepo)
@@ -290,6 +296,11 @@ func main() {
 	columnMaskSvc := service.NewColumnMaskService(columnMaskRepo, auditRepo)
 	introspectionSvc := service.NewIntrospectionService(introspectionRepo)
 	auditSvc := service.NewAuditService(auditRepo)
+	queryHistorySvc := service.NewQueryHistoryService(queryHistoryRepo)
+	lineageSvc := service.NewLineageService(lineageRepo)
+	searchSvc := service.NewSearchService(searchRepo)
+	tagSvc := service.NewTagService(tagRepo, auditRepo)
+	viewSvc := service.NewViewService(viewRepo, catalogRepo, cat, auditRepo)
 
 	// Create manifest service for duck_access extension support.
 	// Only available when S3 credentials are configured (DuckLake mode).
@@ -312,6 +323,7 @@ func main() {
 		querySvc, principalSvc, groupSvc, grantSvc,
 		rowFilterSvc, columnMaskSvc, introspectionSvc, auditSvc,
 		manifestSvc, catalogSvc,
+		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
 	)
 
 	// Create strict handler wrapper

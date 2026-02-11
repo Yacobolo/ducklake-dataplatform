@@ -40,9 +40,45 @@ func (q *Queries) CountAuditLogs(ctx context.Context, arg CountAuditLogsParams) 
 	return cnt, err
 }
 
+const countQueryHistory = `-- name: CountQueryHistory :one
+SELECT COUNT(*) as cnt FROM audit_log
+WHERE action = 'QUERY'
+  AND (? IS NULL OR principal_name = ?)
+  AND (? IS NULL OR status = ?)
+  AND (? IS NULL OR created_at >= ?)
+  AND (? IS NULL OR created_at <= ?)
+`
+
+type CountQueryHistoryParams struct {
+	Column1       interface{}
+	PrincipalName string
+	Column3       interface{}
+	Status        string
+	Column5       interface{}
+	CreatedAt     string
+	Column7       interface{}
+	CreatedAt_2   string
+}
+
+func (q *Queries) CountQueryHistory(ctx context.Context, arg CountQueryHistoryParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countQueryHistory,
+		arg.Column1,
+		arg.PrincipalName,
+		arg.Column3,
+		arg.Status,
+		arg.Column5,
+		arg.CreatedAt,
+		arg.Column7,
+		arg.CreatedAt_2,
+	)
+	var cnt int64
+	err := row.Scan(&cnt)
+	return cnt, err
+}
+
 const insertAuditLog = `-- name: InsertAuditLog :exec
-INSERT INTO audit_log (principal_name, action, statement_type, original_sql, rewritten_sql, tables_accessed, status, error_message, duration_ms)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO audit_log (principal_name, action, statement_type, original_sql, rewritten_sql, tables_accessed, status, error_message, duration_ms, rows_returned)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type InsertAuditLogParams struct {
@@ -55,6 +91,7 @@ type InsertAuditLogParams struct {
 	Status         string
 	ErrorMessage   sql.NullString
 	DurationMs     sql.NullInt64
+	RowsReturned   sql.NullInt64
 }
 
 func (q *Queries) InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error {
@@ -68,12 +105,13 @@ func (q *Queries) InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) 
 		arg.Status,
 		arg.ErrorMessage,
 		arg.DurationMs,
+		arg.RowsReturned,
 	)
 	return err
 }
 
 const listAuditLogs = `-- name: ListAuditLogs :many
-SELECT id, principal_name, "action", statement_type, original_sql, rewritten_sql, tables_accessed, status, error_message, duration_ms, created_at FROM audit_log
+SELECT id, principal_name, "action", statement_type, original_sql, rewritten_sql, tables_accessed, status, error_message, duration_ms, created_at, rows_returned FROM audit_log
 WHERE (? IS NULL OR principal_name = ?)
   AND (? IS NULL OR action = ?)
   AND (? IS NULL OR status = ?)
@@ -122,6 +160,78 @@ func (q *Queries) ListAuditLogs(ctx context.Context, arg ListAuditLogsParams) ([
 			&i.ErrorMessage,
 			&i.DurationMs,
 			&i.CreatedAt,
+			&i.RowsReturned,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listQueryHistory = `-- name: ListQueryHistory :many
+SELECT id, principal_name, "action", statement_type, original_sql, rewritten_sql, tables_accessed, status, error_message, duration_ms, created_at, rows_returned FROM audit_log
+WHERE action = 'QUERY'
+  AND (? IS NULL OR principal_name = ?)
+  AND (? IS NULL OR status = ?)
+  AND (? IS NULL OR created_at >= ?)
+  AND (? IS NULL OR created_at <= ?)
+ORDER BY created_at DESC
+LIMIT ? OFFSET ?
+`
+
+type ListQueryHistoryParams struct {
+	Column1       interface{}
+	PrincipalName string
+	Column3       interface{}
+	Status        string
+	Column5       interface{}
+	CreatedAt     string
+	Column7       interface{}
+	CreatedAt_2   string
+	Limit         int64
+	Offset        int64
+}
+
+func (q *Queries) ListQueryHistory(ctx context.Context, arg ListQueryHistoryParams) ([]AuditLog, error) {
+	rows, err := q.db.QueryContext(ctx, listQueryHistory,
+		arg.Column1,
+		arg.PrincipalName,
+		arg.Column3,
+		arg.Status,
+		arg.Column5,
+		arg.CreatedAt,
+		arg.Column7,
+		arg.CreatedAt_2,
+		arg.Limit,
+		arg.Offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AuditLog
+	for rows.Next() {
+		var i AuditLog
+		if err := rows.Scan(
+			&i.ID,
+			&i.PrincipalName,
+			&i.Action,
+			&i.StatementType,
+			&i.OriginalSql,
+			&i.RewrittenSql,
+			&i.TablesAccessed,
+			&i.Status,
+			&i.ErrorMessage,
+			&i.DurationMs,
+			&i.CreatedAt,
+			&i.RowsReturned,
 		); err != nil {
 			return nil, err
 		}

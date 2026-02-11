@@ -20,6 +20,11 @@ type APIHandler struct {
 	audit         *service.AuditService
 	manifest      *service.ManifestService
 	catalog       *service.CatalogService
+	queryHistory  *service.QueryHistoryService
+	lineage       *service.LineageService
+	search        *service.SearchService
+	tags          *service.TagService
+	views         *service.ViewService
 }
 
 func NewHandler(
@@ -33,6 +38,11 @@ func NewHandler(
 	audit *service.AuditService,
 	manifest *service.ManifestService,
 	catalog *service.CatalogService,
+	queryHistory *service.QueryHistoryService,
+	lineage *service.LineageService,
+	search *service.SearchService,
+	tags *service.TagService,
+	views *service.ViewService,
 ) *APIHandler {
 	return &APIHandler{
 		query:         query,
@@ -45,6 +55,11 @@ func NewHandler(
 		audit:         audit,
 		manifest:      manifest,
 		catalog:       catalog,
+		queryHistory:  queryHistory,
+		lineage:       lineage,
+		search:        search,
+		tags:          tags,
+		views:         views,
 	}
 }
 
@@ -722,6 +737,262 @@ func (h *APIHandler) GetMetastoreSummary(ctx context.Context, _ GetMetastoreSumm
 	}, nil
 }
 
+// === Query History ===
+
+func (h *APIHandler) ListQueryHistory(ctx context.Context, req ListQueryHistoryRequestObject) (ListQueryHistoryResponseObject, error) {
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	filter := domain.QueryHistoryFilter{
+		PrincipalName: req.Params.PrincipalName,
+		Status:        req.Params.Status,
+		From:          req.Params.From,
+		To:            req.Params.To,
+		Page:          page,
+	}
+
+	entries, total, err := h.queryHistory.List(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	data := make([]QueryHistoryEntry, len(entries))
+	for i, e := range entries {
+		data[i] = queryHistoryEntryToAPI(e)
+	}
+
+	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return ListQueryHistory200JSONResponse{Data: &data, NextPageToken: optStr(npt)}, nil
+}
+
+// === Search ===
+
+func (h *APIHandler) SearchCatalog(ctx context.Context, req SearchCatalogRequestObject) (SearchCatalogResponseObject, error) {
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+
+	results, total, err := h.search.Search(ctx, req.Params.Query, req.Params.Type, page)
+	if err != nil {
+		return nil, err
+	}
+
+	data := make([]SearchResult, len(results))
+	for i, r := range results {
+		data[i] = searchResultToAPI(r)
+	}
+
+	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return SearchCatalog200JSONResponse{Data: &data, NextPageToken: optStr(npt)}, nil
+}
+
+// === Lineage ===
+
+func (h *APIHandler) GetTableLineage(ctx context.Context, req GetTableLineageRequestObject) (GetTableLineageResponseObject, error) {
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	tableName := req.SchemaName + "." + req.TableName
+
+	node, err := h.lineage.GetFullLineage(ctx, tableName, page)
+	if err != nil {
+		return nil, err
+	}
+
+	upstream := make([]LineageEdge, len(node.Upstream))
+	for i, e := range node.Upstream {
+		upstream[i] = lineageEdgeToAPI(e)
+	}
+	downstream := make([]LineageEdge, len(node.Downstream))
+	for i, e := range node.Downstream {
+		downstream[i] = lineageEdgeToAPI(e)
+	}
+
+	return GetTableLineage200JSONResponse{
+		TableName:  &node.TableName,
+		Upstream:   &upstream,
+		Downstream: &downstream,
+	}, nil
+}
+
+func (h *APIHandler) GetUpstreamLineage(ctx context.Context, req GetUpstreamLineageRequestObject) (GetUpstreamLineageResponseObject, error) {
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	tableName := req.SchemaName + "." + req.TableName
+
+	edges, total, err := h.lineage.GetUpstream(ctx, tableName, page)
+	if err != nil {
+		return nil, err
+	}
+
+	data := make([]LineageEdge, len(edges))
+	for i, e := range edges {
+		data[i] = lineageEdgeToAPI(e)
+	}
+
+	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return GetUpstreamLineage200JSONResponse{Data: &data, NextPageToken: optStr(npt)}, nil
+}
+
+func (h *APIHandler) GetDownstreamLineage(ctx context.Context, req GetDownstreamLineageRequestObject) (GetDownstreamLineageResponseObject, error) {
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	tableName := req.SchemaName + "." + req.TableName
+
+	edges, total, err := h.lineage.GetDownstream(ctx, tableName, page)
+	if err != nil {
+		return nil, err
+	}
+
+	data := make([]LineageEdge, len(edges))
+	for i, e := range edges {
+		data[i] = lineageEdgeToAPI(e)
+	}
+
+	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return GetDownstreamLineage200JSONResponse{Data: &data, NextPageToken: optStr(npt)}, nil
+}
+
+// === Tags ===
+
+func (h *APIHandler) ListTags(ctx context.Context, req ListTagsRequestObject) (ListTagsResponseObject, error) {
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	tags, total, err := h.tags.ListTags(ctx, page)
+	if err != nil {
+		return nil, err
+	}
+
+	data := make([]Tag, len(tags))
+	for i, t := range tags {
+		data[i] = tagToAPI(t)
+	}
+
+	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return ListTags200JSONResponse{Data: &data, NextPageToken: optStr(npt)}, nil
+}
+
+func (h *APIHandler) CreateTag(ctx context.Context, req CreateTagRequestObject) (CreateTagResponseObject, error) {
+	tag := &domain.Tag{
+		Key:   req.Body.Key,
+		Value: req.Body.Value,
+	}
+	result, err := h.tags.CreateTag(ctx, tag)
+	if err != nil {
+		switch err.(type) {
+		case *domain.ConflictError:
+			return CreateTag409JSONResponse{Code: 409, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return CreateTag201JSONResponse(tagToAPI(*result)), nil
+}
+
+func (h *APIHandler) DeleteTag(ctx context.Context, req DeleteTagRequestObject) (DeleteTagResponseObject, error) {
+	if err := h.tags.DeleteTag(ctx, req.TagId); err != nil {
+		switch err.(type) {
+		case *domain.NotFoundError:
+			return DeleteTag404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return DeleteTag204Response{}, nil
+}
+
+func (h *APIHandler) AssignTag(ctx context.Context, req AssignTagRequestObject) (AssignTagResponseObject, error) {
+	assignment := &domain.TagAssignment{
+		TagID:         req.TagId,
+		SecurableType: req.Body.SecurableType,
+		SecurableID:   req.Body.SecurableId,
+		ColumnName:    req.Body.ColumnName,
+	}
+	result, err := h.tags.AssignTag(ctx, assignment)
+	if err != nil {
+		switch err.(type) {
+		case *domain.ConflictError:
+			return AssignTag409JSONResponse{Code: 409, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return AssignTag201JSONResponse(tagAssignmentToAPI(*result)), nil
+}
+
+func (h *APIHandler) UnassignTag(ctx context.Context, req UnassignTagRequestObject) (UnassignTagResponseObject, error) {
+	if err := h.tags.UnassignTag(ctx, req.AssignmentId); err != nil {
+		return nil, err
+	}
+	return UnassignTag204Response{}, nil
+}
+
+// === Views ===
+
+func (h *APIHandler) ListViews(ctx context.Context, req ListViewsRequestObject) (ListViewsResponseObject, error) {
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	views, total, err := h.views.ListViews(ctx, req.SchemaName, page)
+	if err != nil {
+		switch err.(type) {
+		case *domain.NotFoundError:
+			return ListViews404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+
+	data := make([]ViewDetail, len(views))
+	for i, v := range views {
+		data[i] = viewDetailToAPI(v)
+	}
+
+	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return ListViews200JSONResponse{Data: &data, NextPageToken: optStr(npt)}, nil
+}
+
+func (h *APIHandler) CreateView(ctx context.Context, req CreateViewRequestObject) (CreateViewResponseObject, error) {
+	domReq := domain.CreateViewRequest{
+		Name:           req.Body.Name,
+		ViewDefinition: req.Body.ViewDefinition,
+	}
+	if req.Body.Comment != nil {
+		domReq.Comment = *req.Body.Comment
+	}
+
+	result, err := h.views.CreateView(ctx, req.SchemaName, domReq)
+	if err != nil {
+		switch err.(type) {
+		case *domain.AccessDeniedError:
+			return CreateView403JSONResponse{Code: 403, Message: err.Error()}, nil
+		case *domain.ValidationError:
+			return CreateView400JSONResponse{Code: 400, Message: err.Error()}, nil
+		case *domain.ConflictError:
+			return CreateView409JSONResponse{Code: 409, Message: err.Error()}, nil
+		default:
+			return CreateView400JSONResponse{Code: 400, Message: err.Error()}, nil
+		}
+	}
+	return CreateView201JSONResponse(viewDetailToAPI(*result)), nil
+}
+
+func (h *APIHandler) GetView(ctx context.Context, req GetViewRequestObject) (GetViewResponseObject, error) {
+	result, err := h.views.GetView(ctx, req.SchemaName, req.ViewName)
+	if err != nil {
+		switch err.(type) {
+		case *domain.NotFoundError:
+			return GetView404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return GetView200JSONResponse(viewDetailToAPI(*result)), nil
+}
+
+func (h *APIHandler) DropView(ctx context.Context, req DropViewRequestObject) (DropViewResponseObject, error) {
+	if err := h.views.DeleteView(ctx, req.SchemaName, req.ViewName); err != nil {
+		switch err.(type) {
+		case *domain.AccessDeniedError:
+			return DropView403JSONResponse{Code: 403, Message: err.Error()}, nil
+		case *domain.NotFoundError:
+			return DropView404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return DropView204Response{}, nil
+}
+
 // === Mapping helpers ===
 
 func principalToAPI(p domain.Principal) Principal {
@@ -879,6 +1150,88 @@ func columnDetailToAPI(c domain.ColumnDetail) ColumnDetail {
 		Type:     &c.Type,
 		Position: &c.Position,
 		Comment:  &c.Comment,
+	}
+}
+
+func queryHistoryEntryToAPI(e domain.QueryHistoryEntry) QueryHistoryEntry {
+	t := e.CreatedAt
+	return QueryHistoryEntry{
+		Id:             &e.ID,
+		PrincipalName:  &e.PrincipalName,
+		OriginalSql:    e.OriginalSQL,
+		RewrittenSql:   e.RewrittenSQL,
+		StatementType:  e.StatementType,
+		TablesAccessed: &e.TablesAccessed,
+		Status:         &e.Status,
+		ErrorMessage:   e.ErrorMessage,
+		DurationMs:     e.DurationMs,
+		RowsReturned:   e.RowsReturned,
+		CreatedAt:      &t,
+	}
+}
+
+func searchResultToAPI(r domain.SearchResult) SearchResult {
+	return SearchResult{
+		Type:       &r.Type,
+		Name:       &r.Name,
+		SchemaName: r.SchemaName,
+		TableName:  r.TableName,
+		Comment:    r.Comment,
+		MatchField: &r.MatchField,
+	}
+}
+
+func lineageEdgeToAPI(e domain.LineageEdge) LineageEdge {
+	t := e.CreatedAt
+	return LineageEdge{
+		SourceTable:   &e.SourceTable,
+		TargetTable:   e.TargetTable,
+		EdgeType:      &e.EdgeType,
+		PrincipalName: &e.PrincipalName,
+		CreatedAt:     &t,
+	}
+}
+
+func tagToAPI(t domain.Tag) Tag {
+	ct := t.CreatedAt
+	return Tag{
+		Id:        &t.ID,
+		Key:       &t.Key,
+		Value:     t.Value,
+		CreatedBy: &t.CreatedBy,
+		CreatedAt: &ct,
+	}
+}
+
+func tagAssignmentToAPI(a domain.TagAssignment) TagAssignment {
+	t := a.AssignedAt
+	return TagAssignment{
+		Id:            &a.ID,
+		TagId:         &a.TagID,
+		SecurableType: &a.SecurableType,
+		SecurableId:   &a.SecurableID,
+		ColumnName:    a.ColumnName,
+		AssignedBy:    &a.AssignedBy,
+		AssignedAt:    &t,
+	}
+}
+
+func viewDetailToAPI(v domain.ViewDetail) ViewDetail {
+	ct := v.CreatedAt
+	ut := v.UpdatedAt
+	return ViewDetail{
+		Id:             &v.ID,
+		SchemaId:       &v.SchemaID,
+		SchemaName:     &v.SchemaName,
+		CatalogName:    &v.CatalogName,
+		Name:           &v.Name,
+		ViewDefinition: &v.ViewDefinition,
+		Comment:        v.Comment,
+		Properties:     &v.Properties,
+		Owner:          &v.Owner,
+		SourceTables:   &v.SourceTables,
+		CreatedAt:      &ct,
+		UpdatedAt:      &ut,
 	}
 }
 

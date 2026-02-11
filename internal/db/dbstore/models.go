@@ -29,6 +29,17 @@ type AuditLog struct {
 	ErrorMessage   sql.NullString
 	DurationMs     sql.NullInt64
 	CreatedAt      string
+	RowsReturned   sql.NullInt64
+}
+
+type CatalogMetadatum struct {
+	SecurableType string
+	SecurableName string
+	Comment       sql.NullString
+	Properties    sql.NullString
+	Owner         sql.NullString
+	CreatedAt     string
+	UpdatedAt     string
 }
 
 type ColumnMask struct {
@@ -59,6 +70,16 @@ type GroupMember struct {
 	GroupID    int64
 	MemberType string
 	MemberID   int64
+}
+
+type LineageEdge struct {
+	ID            int64
+	SourceTable   string
+	TargetTable   sql.NullString
+	EdgeType      string
+	PrincipalName string
+	QueryHash     sql.NullString
+	CreatedAt     string
 }
 
 type Principal struct {
@@ -93,4 +114,35 @@ type RowFilterBinding struct {
 	RowFilterID   int64
 	PrincipalID   int64
 	PrincipalType string
+}
+
+type Tag struct {
+	ID        int64
+	Key       string
+	Value     sql.NullString
+	CreatedBy string
+	CreatedAt string
+}
+
+type TagAssignment struct {
+	ID            int64
+	TagID         int64
+	SecurableType string
+	SecurableID   int64
+	ColumnName    sql.NullString
+	AssignedBy    string
+	AssignedAt    string
+}
+
+type View struct {
+	ID             int64
+	SchemaID       int64
+	Name           string
+	ViewDefinition string
+	Comment        sql.NullString
+	Properties     sql.NullString
+	Owner          string
+	SourceTables   sql.NullString
+	CreatedAt      string
+	UpdatedAt      string
 }
