@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"strings"
 
-	"duck-demo/internal/config"
 	"duck-demo/internal/domain"
 	"duck-demo/internal/sqlrewrite"
 )
@@ -147,10 +147,11 @@ func privilegeForStatement(t sqlrewrite.StatementType) (string, error) {
 	}
 }
 
-// SetupDuckLake initializes DuckDB with DuckLake extension, S3 credentials,
-// and attaches the lake. On first run, it loads titanic.parquet into the lake.
-func SetupDuckLake(ctx context.Context, db *sql.DB, cfg *config.Config) error {
-	// 1. Install and load required extensions
+// === DuckLake Setup Functions ===
+
+// InstallExtensions installs and loads DuckDB extensions needed for DuckLake.
+// Safe to call without S3 credentials — just makes the extensions available.
+func InstallExtensions(ctx context.Context, db *sql.DB) error {
 	extensions := []string{
 		"INSTALL ducklake; LOAD ducklake;",
 		"INSTALL sqlite; LOAD sqlite;",
@@ -161,41 +162,62 @@ func SetupDuckLake(ctx context.Context, db *sql.DB, cfg *config.Config) error {
 			return fmt.Errorf("extension setup (%s): %w", ext, err)
 		}
 	}
+	return nil
+}
 
-	// 2. Create S3 secret for Hetzner
-	secretSQL := fmt.Sprintf(`CREATE SECRET hetzner_s3 (
+// CreateS3Secret creates a named DuckDB secret for S3-compatible storage.
+func CreateS3Secret(ctx context.Context, db *sql.DB, name, keyID, secret, endpoint, region, urlStyle string) error {
+	secretSQL := fmt.Sprintf(`CREATE SECRET "%s" (
 		TYPE S3,
 		KEY_ID '%s',
 		SECRET '%s',
 		ENDPOINT '%s',
 		REGION '%s',
-		URL_STYLE 'path'
-	)`, cfg.S3KeyID, cfg.S3Secret, cfg.S3Endpoint, cfg.S3Region)
-
+		URL_STYLE '%s'
+	)`,
+		strings.ReplaceAll(name, `"`, `""`),
+		strings.ReplaceAll(keyID, "'", "''"),
+		strings.ReplaceAll(secret, "'", "''"),
+		strings.ReplaceAll(endpoint, "'", "''"),
+		strings.ReplaceAll(region, "'", "''"),
+		strings.ReplaceAll(urlStyle, "'", "''"),
+	)
 	if _, err := db.ExecContext(ctx, secretSQL); err != nil {
-		return fmt.Errorf("create S3 secret: %w", err)
+		return fmt.Errorf("create S3 secret %q: %w", name, err)
 	}
+	return nil
+}
 
-	// 3. Attach DuckLake with SQLite metastore + Hetzner data path
+// DropS3Secret removes a named DuckDB secret.
+func DropS3Secret(ctx context.Context, db *sql.DB, name string) error {
+	dropSQL := fmt.Sprintf(`DROP SECRET IF EXISTS "%s"`, strings.ReplaceAll(name, `"`, `""`))
+	if _, err := db.ExecContext(ctx, dropSQL); err != nil {
+		return fmt.Errorf("drop S3 secret %q: %w", name, err)
+	}
+	return nil
+}
+
+// AttachDuckLake attaches the DuckLake catalog with the given metastore and data path.
+func AttachDuckLake(ctx context.Context, db *sql.DB, metaDBPath, dataPath string) error {
 	attachSQL := fmt.Sprintf(`ATTACH 'ducklake:sqlite:%s' AS lake (
-		DATA_PATH 's3://%s/lake_data/'
-	)`, cfg.MetaDBPath, cfg.S3Bucket)
+		DATA_PATH '%s'
+	)`, metaDBPath, strings.ReplaceAll(dataPath, "'", "''"))
 
 	if _, err := db.ExecContext(ctx, attachSQL); err != nil {
 		return fmt.Errorf("attach ducklake: %w", err)
 	}
-
-	// 4. Set the lake as the default catalog
 	if _, err := db.ExecContext(ctx, "USE lake"); err != nil {
 		return fmt.Errorf("use lake: %w", err)
 	}
-
-	// 5. On first run, load parquet data into the lake
-	// CREATE TABLE IF NOT EXISTS ensures idempotency
-	createSQL := fmt.Sprintf("CREATE TABLE IF NOT EXISTS lake.main.titanic AS SELECT * FROM '%s'", cfg.ParquetPath)
-	if _, err := db.ExecContext(ctx, createSQL); err != nil {
-		return fmt.Errorf("create titanic table: %w", err)
-	}
-
 	return nil
+}
+
+// IsCatalogAttached checks if the "lake" catalog is already attached to DuckDB.
+func IsCatalogAttached(ctx context.Context, db *sql.DB) bool {
+	rows, err := db.QueryContext(ctx, "SELECT catalog_name FROM information_schema.schemata WHERE catalog_name = 'lake'")
+	if err != nil {
+		return false
+	}
+	defer rows.Close()
+	return rows.Next()
 }

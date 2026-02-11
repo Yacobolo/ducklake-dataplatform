@@ -4,10 +4,12 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestLoadFromEnv_AllVarsSet(t *testing.T) {
-	// Set all required env vars
 	t.Setenv("KEY_ID", "testkey")
 	t.Setenv("SECRET", "testsecret")
 	t.Setenv("ENDPOINT", "s3.example.com")
@@ -16,86 +18,72 @@ func TestLoadFromEnv_AllVarsSet(t *testing.T) {
 	t.Setenv("META_DB_PATH", "/tmp/test.sqlite")
 
 	cfg, err := LoadFromEnv()
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	require.NoError(t, err)
 
-	if cfg.S3KeyID != "testkey" {
-		t.Errorf("S3KeyID = %q, want %q", cfg.S3KeyID, "testkey")
-	}
-	if cfg.S3Bucket != "test-bucket" {
-		t.Errorf("S3Bucket = %q, want %q", cfg.S3Bucket, "test-bucket")
-	}
-	if cfg.MetaDBPath != "/tmp/test.sqlite" {
-		t.Errorf("MetaDBPath = %q, want %q", cfg.MetaDBPath, "/tmp/test.sqlite")
-	}
+	require.NotNil(t, cfg.S3KeyID)
+	assert.Equal(t, "testkey", *cfg.S3KeyID)
+	require.NotNil(t, cfg.S3Bucket)
+	assert.Equal(t, "test-bucket", *cfg.S3Bucket)
+	assert.Equal(t, "/tmp/test.sqlite", cfg.MetaDBPath)
 }
 
 func TestLoadFromEnv_Defaults(t *testing.T) {
-	t.Setenv("KEY_ID", "testkey")
-	t.Setenv("SECRET", "testsecret")
-	t.Setenv("ENDPOINT", "s3.example.com")
-	t.Setenv("REGION", "us-east-1")
-	// Don't set BUCKET, META_DB_PATH, PARQUET_PATH
+	// Clear all S3 vars
+	t.Setenv("KEY_ID", "")
+	t.Setenv("SECRET", "")
+	t.Setenv("ENDPOINT", "")
+	t.Setenv("REGION", "")
+	t.Setenv("BUCKET", "")
+	t.Setenv("META_DB_PATH", "")
 
 	cfg, err := LoadFromEnv()
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	require.NoError(t, err)
 
-	if cfg.S3Bucket != "duck-demo" {
-		t.Errorf("S3Bucket default = %q, want %q", cfg.S3Bucket, "duck-demo")
-	}
-	if cfg.MetaDBPath != "ducklake_meta.sqlite" {
-		t.Errorf("MetaDBPath default = %q, want %q", cfg.MetaDBPath, "ducklake_meta.sqlite")
-	}
-	if cfg.ParquetPath != "titanic.parquet" {
-		t.Errorf("ParquetPath default = %q, want %q", cfg.ParquetPath, "titanic.parquet")
-	}
+	assert.Nil(t, cfg.S3KeyID)
+	assert.Nil(t, cfg.S3Bucket)
+	assert.Equal(t, "ducklake_meta.sqlite", cfg.MetaDBPath)
+	assert.Equal(t, ":8080", cfg.ListenAddr)
+	assert.Equal(t, "dev-secret-change-in-production", cfg.JWTSecret)
+	assert.Equal(t, "0000000000000000000000000000000000000000000000000000000000000000", cfg.EncryptionKey)
 }
 
-func TestLoadFromEnv_MissingKeyID(t *testing.T) {
+func TestLoadFromEnv_NoS3(t *testing.T) {
+	t.Setenv("KEY_ID", "")
+	t.Setenv("SECRET", "")
+	t.Setenv("ENDPOINT", "")
+	t.Setenv("REGION", "")
+
+	cfg, err := LoadFromEnv()
+	require.NoError(t, err)
+	assert.Nil(t, cfg.S3KeyID)
+	assert.Nil(t, cfg.S3Secret)
+	assert.Nil(t, cfg.S3Endpoint)
+	assert.Nil(t, cfg.S3Region)
+	assert.False(t, cfg.HasS3Config())
+}
+
+func TestLoadFromEnv_WithS3(t *testing.T) {
+	t.Setenv("KEY_ID", "testkey")
 	t.Setenv("SECRET", "testsecret")
 	t.Setenv("ENDPOINT", "s3.example.com")
 	t.Setenv("REGION", "us-east-1")
 
-	_, err := LoadFromEnv()
-	if err == nil {
-		t.Error("expected error for missing KEY_ID")
-	}
+	cfg, err := LoadFromEnv()
+	require.NoError(t, err)
+	assert.True(t, cfg.HasS3Config())
+	require.NotNil(t, cfg.S3KeyID)
+	assert.Equal(t, "testkey", *cfg.S3KeyID)
 }
 
-func TestLoadFromEnv_MissingSecret(t *testing.T) {
+func TestHasS3Config_PartialConfig(t *testing.T) {
 	t.Setenv("KEY_ID", "testkey")
+	t.Setenv("SECRET", "")
 	t.Setenv("ENDPOINT", "s3.example.com")
-	t.Setenv("REGION", "us-east-1")
+	t.Setenv("REGION", "")
 
-	_, err := LoadFromEnv()
-	if err == nil {
-		t.Error("expected error for missing SECRET")
-	}
-}
-
-func TestLoadFromEnv_MissingEndpoint(t *testing.T) {
-	t.Setenv("KEY_ID", "testkey")
-	t.Setenv("SECRET", "testsecret")
-	t.Setenv("REGION", "us-east-1")
-
-	_, err := LoadFromEnv()
-	if err == nil {
-		t.Error("expected error for missing ENDPOINT")
-	}
-}
-
-func TestLoadFromEnv_MissingRegion(t *testing.T) {
-	t.Setenv("KEY_ID", "testkey")
-	t.Setenv("SECRET", "testsecret")
-	t.Setenv("ENDPOINT", "s3.example.com")
-
-	_, err := LoadFromEnv()
-	if err == nil {
-		t.Error("expected error for missing REGION")
-	}
+	cfg, err := LoadFromEnv()
+	require.NoError(t, err)
+	assert.False(t, cfg.HasS3Config(), "partial S3 config should return false")
 }
 
 func TestLoadDotEnv_FileNotFound(t *testing.T) {
@@ -121,7 +109,6 @@ func TestLoadDotEnv_ParsesKeyValue(t *testing.T) {
 	if val := os.Getenv("TEST_KEY"); val != "test_value" {
 		t.Errorf("TEST_KEY = %q, want %q", val, "test_value")
 	}
-	// Clean up
 	os.Unsetenv("TEST_KEY")
 }
 
@@ -145,7 +132,6 @@ func TestLoadDotEnv_SkipsComments(t *testing.T) {
 }
 
 func TestLoadDotEnv_EnvVarPrecedence(t *testing.T) {
-	// Set env var first
 	t.Setenv("TEST_PRECEDENCE_KEY", "from_env")
 
 	tmpDir := t.TempDir()
@@ -160,7 +146,6 @@ func TestLoadDotEnv_EnvVarPrecedence(t *testing.T) {
 		t.Fatalf("LoadDotEnv: %v", err)
 	}
 
-	// Env var should take precedence over .env file
 	if val := os.Getenv("TEST_PRECEDENCE_KEY"); val != "from_env" {
 		t.Errorf("TEST_PRECEDENCE_KEY = %q, want %q (env precedence)", val, "from_env")
 	}

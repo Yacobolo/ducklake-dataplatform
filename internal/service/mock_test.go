@@ -262,6 +262,10 @@ func (m *mockCatalogRepo) UpdateColumn(_ context.Context, _, _, _ string, _ *str
 	panic("unexpected call to mockCatalogRepo.UpdateColumn")
 }
 
+func (m *mockCatalogRepo) SetSchemaStoragePath(_ context.Context, _ int64, _ string) error {
+	panic("unexpected call to mockCatalogRepo.SetSchemaStoragePath")
+}
+
 // === Authorization Service Mock ===
 
 type mockAuthService struct {
@@ -322,6 +326,112 @@ func (m *mockAuditRepo) hasAction(action string) bool {
 	return false
 }
 
+// === Storage Credential Repository Mock ===
+
+type mockStorageCredentialRepo struct {
+	createFn    func(ctx context.Context, cred *domain.StorageCredential) (*domain.StorageCredential, error)
+	getByIDFn   func(ctx context.Context, id int64) (*domain.StorageCredential, error)
+	getByNameFn func(ctx context.Context, name string) (*domain.StorageCredential, error)
+	listFn      func(ctx context.Context, page domain.PageRequest) ([]domain.StorageCredential, int64, error)
+	updateFn    func(ctx context.Context, id int64, req domain.UpdateStorageCredentialRequest) (*domain.StorageCredential, error)
+	deleteFn    func(ctx context.Context, id int64) error
+}
+
+func (m *mockStorageCredentialRepo) Create(ctx context.Context, cred *domain.StorageCredential) (*domain.StorageCredential, error) {
+	if m.createFn != nil {
+		return m.createFn(ctx, cred)
+	}
+	panic("unexpected call to mockStorageCredentialRepo.Create")
+}
+
+func (m *mockStorageCredentialRepo) GetByID(ctx context.Context, id int64) (*domain.StorageCredential, error) {
+	if m.getByIDFn != nil {
+		return m.getByIDFn(ctx, id)
+	}
+	panic("unexpected call to mockStorageCredentialRepo.GetByID")
+}
+
+func (m *mockStorageCredentialRepo) GetByName(ctx context.Context, name string) (*domain.StorageCredential, error) {
+	if m.getByNameFn != nil {
+		return m.getByNameFn(ctx, name)
+	}
+	panic("unexpected call to mockStorageCredentialRepo.GetByName")
+}
+
+func (m *mockStorageCredentialRepo) List(ctx context.Context, page domain.PageRequest) ([]domain.StorageCredential, int64, error) {
+	if m.listFn != nil {
+		return m.listFn(ctx, page)
+	}
+	panic("unexpected call to mockStorageCredentialRepo.List")
+}
+
+func (m *mockStorageCredentialRepo) Update(ctx context.Context, id int64, req domain.UpdateStorageCredentialRequest) (*domain.StorageCredential, error) {
+	if m.updateFn != nil {
+		return m.updateFn(ctx, id, req)
+	}
+	panic("unexpected call to mockStorageCredentialRepo.Update")
+}
+
+func (m *mockStorageCredentialRepo) Delete(ctx context.Context, id int64) error {
+	if m.deleteFn != nil {
+		return m.deleteFn(ctx, id)
+	}
+	panic("unexpected call to mockStorageCredentialRepo.Delete")
+}
+
+// === External Location Repository Mock ===
+
+type mockExternalLocationRepo struct {
+	createFn    func(ctx context.Context, loc *domain.ExternalLocation) (*domain.ExternalLocation, error)
+	getByIDFn   func(ctx context.Context, id int64) (*domain.ExternalLocation, error)
+	getByNameFn func(ctx context.Context, name string) (*domain.ExternalLocation, error)
+	listFn      func(ctx context.Context, page domain.PageRequest) ([]domain.ExternalLocation, int64, error)
+	updateFn    func(ctx context.Context, id int64, req domain.UpdateExternalLocationRequest) (*domain.ExternalLocation, error)
+	deleteFn    func(ctx context.Context, id int64) error
+}
+
+func (m *mockExternalLocationRepo) Create(ctx context.Context, loc *domain.ExternalLocation) (*domain.ExternalLocation, error) {
+	if m.createFn != nil {
+		return m.createFn(ctx, loc)
+	}
+	panic("unexpected call to mockExternalLocationRepo.Create")
+}
+
+func (m *mockExternalLocationRepo) GetByID(ctx context.Context, id int64) (*domain.ExternalLocation, error) {
+	if m.getByIDFn != nil {
+		return m.getByIDFn(ctx, id)
+	}
+	panic("unexpected call to mockExternalLocationRepo.GetByID")
+}
+
+func (m *mockExternalLocationRepo) GetByName(ctx context.Context, name string) (*domain.ExternalLocation, error) {
+	if m.getByNameFn != nil {
+		return m.getByNameFn(ctx, name)
+	}
+	panic("unexpected call to mockExternalLocationRepo.GetByName")
+}
+
+func (m *mockExternalLocationRepo) List(ctx context.Context, page domain.PageRequest) ([]domain.ExternalLocation, int64, error) {
+	if m.listFn != nil {
+		return m.listFn(ctx, page)
+	}
+	panic("unexpected call to mockExternalLocationRepo.List")
+}
+
+func (m *mockExternalLocationRepo) Update(ctx context.Context, id int64, req domain.UpdateExternalLocationRequest) (*domain.ExternalLocation, error) {
+	if m.updateFn != nil {
+		return m.updateFn(ctx, id, req)
+	}
+	panic("unexpected call to mockExternalLocationRepo.Update")
+}
+
+func (m *mockExternalLocationRepo) Delete(ctx context.Context, id int64) error {
+	if m.deleteFn != nil {
+		return m.deleteFn(ctx, id)
+	}
+	panic("unexpected call to mockExternalLocationRepo.Delete")
+}
+
 // === Compile-time interface checks ===
 
 var _ domain.ViewRepository = (*mockViewRepo)(nil)
@@ -332,6 +442,8 @@ var _ domain.SearchRepository = (*mockSearchRepo)(nil)
 var _ domain.CatalogRepository = (*mockCatalogRepo)(nil)
 var _ domain.AuthorizationService = (*mockAuthService)(nil)
 var _ domain.AuditRepository = (*mockAuditRepo)(nil)
+var _ domain.StorageCredentialRepository = (*mockStorageCredentialRepo)(nil)
+var _ domain.ExternalLocationRepository = (*mockExternalLocationRepo)(nil)
 
 // === Test Helpers ===
 

@@ -7,41 +7,56 @@ import (
 	"strings"
 )
 
-// Config holds the configuration for DuckLake + S3 storage and the HTTP API.
+// Config holds the configuration for the HTTP API and optional S3/DuckLake storage.
 type Config struct {
-	S3KeyID     string
-	S3Secret    string
-	S3Endpoint  string
-	S3Region    string
-	S3Bucket    string
-	MetaDBPath  string // path to SQLite metadata file
-	ParquetPath string // path to local parquet file for initial data load
-	JWTSecret   string // secret key for JWT token validation
-	ListenAddr  string // HTTP listen address (default ":8080")
+	// S3 fields are optional — nil when not configured.
+	S3KeyID       *string
+	S3Secret      *string
+	S3Endpoint    *string
+	S3Region      *string
+	S3Bucket      *string
+	MetaDBPath    string // path to SQLite metadata file
+	JWTSecret     string // secret key for JWT token validation
+	ListenAddr    string // HTTP listen address (default ":8080")
+	EncryptionKey string // 64-char hex string (32-byte AES key) for encrypting stored credentials
+}
+
+// HasS3Config returns true if all required S3 fields are set.
+func (c *Config) HasS3Config() bool {
+	return c.S3KeyID != nil && c.S3Secret != nil &&
+		c.S3Endpoint != nil && c.S3Region != nil
 }
 
 // LoadFromEnv loads configuration from environment variables.
-// Expected env vars: KEY_ID, SECRET, ENDPOINT, REGION, BUCKET, META_DB_PATH.
+// S3 variables are optional — the app can start without them.
 func LoadFromEnv() (*Config, error) {
 	cfg := &Config{
-		S3KeyID:    os.Getenv("KEY_ID"),
-		S3Secret:   os.Getenv("SECRET"),
-		S3Endpoint: os.Getenv("ENDPOINT"),
-		S3Region:   os.Getenv("REGION"),
-		S3Bucket:   os.Getenv("BUCKET"),
-		MetaDBPath: os.Getenv("META_DB_PATH"),
-		JWTSecret:  os.Getenv("JWT_SECRET"),
-		ListenAddr: os.Getenv("LISTEN_ADDR"),
+		MetaDBPath:    os.Getenv("META_DB_PATH"),
+		JWTSecret:     os.Getenv("JWT_SECRET"),
+		ListenAddr:    os.Getenv("LISTEN_ADDR"),
+		EncryptionKey: os.Getenv("ENCRYPTION_KEY"),
 	}
 
-	if cfg.S3Bucket == "" {
-		cfg.S3Bucket = "duck-demo"
+	// S3 fields are optional — only set if present
+	if v := os.Getenv("KEY_ID"); v != "" {
+		cfg.S3KeyID = &v
 	}
+	if v := os.Getenv("SECRET"); v != "" {
+		cfg.S3Secret = &v
+	}
+	if v := os.Getenv("ENDPOINT"); v != "" {
+		cfg.S3Endpoint = &v
+	}
+	if v := os.Getenv("REGION"); v != "" {
+		cfg.S3Region = &v
+	}
+	if v := os.Getenv("BUCKET"); v != "" {
+		cfg.S3Bucket = &v
+	}
+
+	// Defaults
 	if cfg.MetaDBPath == "" {
 		cfg.MetaDBPath = "ducklake_meta.sqlite"
-	}
-	if cfg.ParquetPath == "" {
-		cfg.ParquetPath = "titanic.parquet"
 	}
 	if cfg.ListenAddr == "" {
 		cfg.ListenAddr = ":8080"
@@ -49,18 +64,8 @@ func LoadFromEnv() (*Config, error) {
 	if cfg.JWTSecret == "" {
 		cfg.JWTSecret = "dev-secret-change-in-production"
 	}
-
-	if cfg.S3KeyID == "" {
-		return nil, fmt.Errorf("KEY_ID environment variable is required")
-	}
-	if cfg.S3Secret == "" {
-		return nil, fmt.Errorf("SECRET environment variable is required")
-	}
-	if cfg.S3Endpoint == "" {
-		return nil, fmt.Errorf("ENDPOINT environment variable is required")
-	}
-	if cfg.S3Region == "" {
-		return nil, fmt.Errorf("REGION environment variable is required")
+	if cfg.EncryptionKey == "" {
+		cfg.EncryptionKey = "0000000000000000000000000000000000000000000000000000000000000000"
 	}
 
 	return cfg, nil

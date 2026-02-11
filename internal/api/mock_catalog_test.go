@@ -362,6 +362,10 @@ func (m *mockCatalogRepo) UpdateColumn(_ context.Context, _, _, _ string, _ *str
 	panic("unexpected call to mockCatalogRepo.UpdateColumn")
 }
 
+func (m *mockCatalogRepo) SetSchemaStoragePath(_ context.Context, _ int64, _ string) error {
+	return nil
+}
+
 // addSchema is a test helper to prepopulate the mock with a schema.
 func (m *mockCatalogRepo) addSchema(name string) {
 	m.mu.Lock()

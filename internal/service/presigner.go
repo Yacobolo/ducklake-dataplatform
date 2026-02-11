@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 
 	"duck-demo/internal/config"
+	"duck-demo/internal/domain"
 )
 
 // S3Presigner generates presigned S3 URLs for Hetzner-compatible object storage.
@@ -23,20 +24,29 @@ type S3Presigner struct {
 
 // NewS3Presigner creates a presigner configured for Hetzner S3-compatible storage.
 func NewS3Presigner(cfg *config.Config) (*S3Presigner, error) {
-	endpoint := fmt.Sprintf("https://%s", cfg.S3Endpoint)
+	if !cfg.HasS3Config() {
+		return nil, fmt.Errorf("S3 config is incomplete")
+	}
+
+	endpoint := fmt.Sprintf("https://%s", *cfg.S3Endpoint)
 
 	s3Client := s3.New(s3.Options{
-		Region: cfg.S3Region,
+		Region: *cfg.S3Region,
 		Credentials: credentials.NewStaticCredentialsProvider(
-			cfg.S3KeyID, cfg.S3Secret, "",
+			*cfg.S3KeyID, *cfg.S3Secret, "",
 		),
 		BaseEndpoint: aws.String(endpoint),
 		UsePathStyle: true, // Hetzner requires path-style URLs
 	})
 
+	bucket := "duck-demo"
+	if cfg.S3Bucket != nil {
+		bucket = *cfg.S3Bucket
+	}
+
 	return &S3Presigner{
 		presignClient: s3.NewPresignClient(s3Client),
-		bucket:        cfg.S3Bucket,
+		bucket:        bucket,
 	}, nil
 }
 
@@ -80,6 +90,31 @@ func (p *S3Presigner) PresignPutObject(ctx context.Context, bucket, key string, 
 // Bucket returns the configured S3 bucket name.
 func (p *S3Presigner) Bucket() string {
 	return p.bucket
+}
+
+// NewS3PresignerFromCredential creates a presigner from a stored StorageCredential.
+// This is used when schemas have per-schema external locations with their own credentials.
+func NewS3PresignerFromCredential(cred *domain.StorageCredential, bucket string) (*S3Presigner, error) {
+	if cred == nil {
+		return nil, fmt.Errorf("credential is nil")
+	}
+
+	endpoint := fmt.Sprintf("https://%s", cred.Endpoint)
+	usePathStyle := cred.URLStyle != "vhost"
+
+	s3Client := s3.New(s3.Options{
+		Region: cred.Region,
+		Credentials: credentials.NewStaticCredentialsProvider(
+			cred.KeyID, cred.Secret, "",
+		),
+		BaseEndpoint: aws.String(endpoint),
+		UsePathStyle: usePathStyle,
+	})
+
+	return &S3Presigner{
+		presignClient: s3.NewPresignClient(s3Client),
+		bucket:        bucket,
+	}, nil
 }
 
 // parseS3Path extracts bucket and key from an "s3://bucket/path/to/file" URI.

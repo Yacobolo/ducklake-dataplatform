@@ -579,6 +579,9 @@ components:
           type: object
           additionalProperties:
             type: string
+        location_name:
+          type: string
+          description: Optional external location name to use for schema storage path.
 
     UpdateSchemaRequest:
       type: object
@@ -1050,6 +1053,155 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ViewDetail'
+        next_page_token:
+          type: string
+
+    # --- Storage Credentials ---
+    StorageCredential:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        credential_type:
+          type: string
+        endpoint:
+          type: string
+        region:
+          type: string
+        url_style:
+          type: string
+        comment:
+          type: string
+        owner:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateStorageCredentialRequest:
+      type: object
+      required: [name, credential_type, key_id, secret, endpoint, region]
+      properties:
+        name:
+          type: string
+        credential_type:
+          type: string
+          enum: [S3]
+        key_id:
+          type: string
+        secret:
+          type: string
+        endpoint:
+          type: string
+        region:
+          type: string
+        url_style:
+          type: string
+          default: path
+        comment:
+          type: string
+
+    UpdateStorageCredentialRequest:
+      type: object
+      properties:
+        key_id:
+          type: string
+        secret:
+          type: string
+        endpoint:
+          type: string
+        region:
+          type: string
+        url_style:
+          type: string
+        comment:
+          type: string
+
+    PaginatedStorageCredentials:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/StorageCredential'
+        next_page_token:
+          type: string
+
+    # --- External Locations ---
+    ExternalLocation:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        url:
+          type: string
+        credential_name:
+          type: string
+        storage_type:
+          type: string
+        comment:
+          type: string
+        owner:
+          type: string
+        read_only:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateExternalLocationRequest:
+      type: object
+      required: [name, url, credential_name]
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+        credential_name:
+          type: string
+        storage_type:
+          type: string
+          enum: [S3]
+          default: S3
+        comment:
+          type: string
+        read_only:
+          type: boolean
+          default: false
+
+    UpdateExternalLocationRequest:
+      type: object
+      properties:
+        url:
+          type: string
+        credential_name:
+          type: string
+        comment:
+          type: string
+        read_only:
+          type: boolean
+        owner:
+          type: string
+
+    PaginatedExternalLocations:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExternalLocation'
         next_page_token:
           type: string
 
@@ -2762,6 +2914,257 @@ paths:
                 $ref: '#/components/schemas/Error'
         '404':
           description: Table not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # === Storage Credentials ===
+  /storage-credentials:
+    get:
+      operationId: listStorageCredentials
+      summary: List storage credentials
+      description: Returns a paginated list of storage credentials. Sensitive fields (key_id, secret) are never returned.
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of storage credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedStorageCredentials'
+    post:
+      operationId: createStorageCredential
+      summary: Create a storage credential
+      description: Creates a new storage credential. Requires ALL_PRIVILEGES on catalog.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateStorageCredentialRequest'
+      responses:
+        '201':
+          description: Created credential (sensitive fields omitted)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StorageCredential'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Credential already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /storage-credentials/{credentialName}:
+    parameters:
+      - name: credentialName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getStorageCredential
+      summary: Get a storage credential by name
+      description: Returns credential metadata. Sensitive fields (key_id, secret) are never returned.
+      responses:
+        '200':
+          description: Credential details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StorageCredential'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      operationId: updateStorageCredential
+      summary: Update a storage credential
+      description: Updates credential fields. Requires ALL_PRIVILEGES on catalog.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateStorageCredentialRequest'
+      responses:
+        '200':
+          description: Updated credential
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StorageCredential'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: deleteStorageCredential
+      summary: Delete a storage credential
+      description: Deletes a credential. Requires ALL_PRIVILEGES on catalog.
+      responses:
+        '204':
+          description: Credential deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # === External Locations ===
+  /external-locations:
+    get:
+      operationId: listExternalLocations
+      summary: List external locations
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of external locations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedExternalLocations'
+    post:
+      operationId: createExternalLocation
+      summary: Create an external location
+      description: >
+        Creates a new external location and configures DuckDB with the associated
+        credential. If this is the first location, the DuckLake catalog is attached.
+        Requires ALL_PRIVILEGES on catalog.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateExternalLocationRequest'
+      responses:
+        '201':
+          description: Created location
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalLocation'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Location already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /external-locations/{locationName}:
+    parameters:
+      - name: locationName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getExternalLocation
+      summary: Get an external location by name
+      responses:
+        '200':
+          description: Location details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalLocation'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      operationId: updateExternalLocation
+      summary: Update an external location
+      description: Updates location fields. Requires ALL_PRIVILEGES on catalog.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateExternalLocationRequest'
+      responses:
+        '200':
+          description: Updated location
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalLocation'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: deleteExternalLocation
+      summary: Delete an external location
+      description: Deletes a location and drops the associated DuckDB secret. Requires ALL_PRIVILEGES on catalog.
+      responses:
+        '204':
+          description: Location deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
           content:
             application/json:
               schema:

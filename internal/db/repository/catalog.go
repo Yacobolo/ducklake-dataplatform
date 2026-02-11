@@ -622,6 +622,18 @@ func (r *CatalogRepo) UpdateColumn(ctx context.Context, schemaName, tableName, c
 	return nil, domain.ErrNotFound("column %q not found", columnName)
 }
 
+// SetSchemaStoragePath sets the storage path for a schema in DuckLake's metadata.
+// This allows per-schema data paths pointing to different external locations.
+func (r *CatalogRepo) SetSchemaStoragePath(ctx context.Context, schemaID int64, path string) error {
+	_, err := r.metaDB.ExecContext(ctx,
+		`UPDATE ducklake_schema SET path = ?, path_is_relative = 0 WHERE schema_id = ?`,
+		path, schemaID)
+	if err != nil {
+		return fmt.Errorf("set schema storage path: %w", err)
+	}
+	return nil
+}
+
 // --- helpers ---
 
 func (r *CatalogRepo) loadColumns(ctx context.Context, tableID int64) ([]domain.ColumnDetail, error) {

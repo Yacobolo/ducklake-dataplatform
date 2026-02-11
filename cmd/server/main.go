@@ -16,6 +16,7 @@ import (
 	"duck-demo/internal/api"
 	"duck-demo/internal/config"
 	internaldb "duck-demo/internal/db"
+	"duck-demo/internal/db/crypto"
 	dbstore "duck-demo/internal/db/dbstore"
 	"duck-demo/internal/db/repository"
 	"duck-demo/internal/domain"
@@ -210,43 +211,52 @@ func main() {
 		log.Printf("warning: could not load .env: %v", err)
 	}
 
-	cfg, cfgErr := config.LoadFromEnv()
-
-	// Determine metastore path
-	metaDBPath := "ducklake_meta.sqlite"
-	if cfgErr == nil {
-		metaDBPath = cfg.MetaDBPath
+	cfg, err := config.LoadFromEnv()
+	if err != nil {
+		log.Fatalf("config: %v", err)
 	}
 
-	// Open DuckDB
+	// Open DuckDB (in-memory)
 	duckDB, err := sql.Open("duckdb", "")
 	if err != nil {
 		log.Fatalf("failed to open duckdb: %v", err)
 	}
 	defer duckDB.Close()
 
-	// Try DuckLake setup
-	if cfgErr == nil {
-		fmt.Println("Setting up DuckLake with Hetzner S3...")
-		if err := engine.SetupDuckLake(ctx, duckDB, cfg); err != nil {
-			log.Printf("DuckLake setup failed, falling back to local parquet: %v", err)
-			if _, err := duckDB.Exec("CREATE TABLE titanic AS SELECT * FROM 'titanic.parquet'"); err != nil {
-				log.Fatalf("failed to create table: %v", err)
-			}
+	// Install DuckLake extensions (no credentials needed)
+	if err := engine.InstallExtensions(ctx, duckDB); err != nil {
+		log.Fatalf("install extensions: %v", err)
+	}
+	log.Println("DuckDB extensions installed (ducklake, sqlite, httpfs)")
+
+	// If legacy S3 env vars are present, set up DuckLake for backward compat
+	catalogAttached := false
+	if cfg.HasS3Config() {
+		log.Println("Legacy S3 config detected, setting up DuckLake...")
+		if err := engine.CreateS3Secret(ctx, duckDB, "hetzner_s3",
+			*cfg.S3KeyID, *cfg.S3Secret, *cfg.S3Endpoint, *cfg.S3Region, "path"); err != nil {
+			log.Printf("warning: S3 secret creation failed: %v", err)
 		} else {
-			fmt.Println("DuckLake ready (data on Hetzner S3, metadata in SQLite)")
+			bucket := "duck-demo"
+			if cfg.S3Bucket != nil {
+				bucket = *cfg.S3Bucket
+			}
+			dataPath := fmt.Sprintf("s3://%s/lake_data/", bucket)
+			if err := engine.AttachDuckLake(ctx, duckDB, cfg.MetaDBPath, dataPath); err != nil {
+				log.Printf("warning: DuckLake attach failed: %v", err)
+			} else {
+				catalogAttached = true
+				log.Println("DuckLake ready (legacy S3 mode)")
+			}
 		}
 	} else {
-		fmt.Println("No S3 config found, using local parquet file...")
-		if _, err := duckDB.Exec("CREATE TABLE titanic AS SELECT * FROM 'titanic.parquet'"); err != nil {
-			log.Fatalf("failed to create table: %v", err)
-		}
+		log.Println("No S3 config — running in local mode. Use External Locations API to add storage.")
 	}
 
 	// Open SQLite metastore with hardened connection settings.
 	// writeDB: single-connection pool for serialized writes (WAL + txlock=immediate).
 	// readDB:  4-connection pool for concurrent reads (WAL, no txlock).
-	writeDB, readDB, err := internaldb.OpenSQLitePair(metaDBPath, 4)
+	writeDB, readDB, err := internaldb.OpenSQLitePair(cfg.MetaDBPath, 4)
 	if err != nil {
 		log.Fatalf("failed to open metastore: %v", err)
 	}
@@ -283,10 +293,12 @@ func main() {
 		rowFilterRepo, columnMaskRepo, introspectionRepo,
 	)
 
-	// Seed demo data (writes, so use writeDB)
-	q := dbstore.New(writeDB)
-	if err := seedCatalog(ctx, cat, q); err != nil {
-		log.Fatalf("seed catalog: %v", err)
+	// Seed demo data only when catalog is attached (DuckLake tables exist)
+	if catalogAttached {
+		q := dbstore.New(writeDB)
+		if err := seedCatalog(ctx, cat, q); err != nil {
+			log.Printf("warning: seed catalog: %v", err)
+		}
 	}
 
 	// Create secure engine
@@ -312,7 +324,7 @@ func main() {
 	// Only available when S3 credentials are configured (DuckLake mode).
 	var manifestSvc *service.ManifestService
 	var ingestionSvc *service.IngestionService
-	if cfgErr == nil {
+	if cfg.HasS3Config() && catalogAttached {
 		presigner, err := service.NewS3Presigner(cfg)
 		if err != nil {
 			log.Printf("warning: could not create S3 presigner: %v", err)
@@ -320,8 +332,12 @@ func main() {
 			manifestSvc = service.NewManifestService(readDB, cat, presigner, introspectionRepo, auditRepo)
 			log.Println("Manifest service enabled (duck_access extension support)")
 
+			bucket := "duck-demo"
+			if cfg.S3Bucket != nil {
+				bucket = *cfg.S3Bucket
+			}
 			ingestionSvc = service.NewIngestionService(
-				duckDB, readDB, cat, presigner, auditRepo, "lake", cfg.S3Bucket,
+				duckDB, readDB, cat, presigner, auditRepo, "lake", bucket,
 			)
 			log.Println("Ingestion service enabled")
 		}
@@ -330,6 +346,39 @@ func main() {
 	// Create catalog service for UC-compatible catalog management
 	catalogSvc := service.NewCatalogService(catalogRepo, cat, auditRepo, tagRepo, tableStatsRepo)
 
+	// Create credential encryptor and storage credential / external location repos + services
+	// (externalLocRepo is also wired into catalogSvc for location-aware schema creation)
+	encryptor, err := crypto.NewEncryptor(cfg.EncryptionKey)
+	if err != nil {
+		log.Fatalf("encryption key: %v", err)
+	}
+	storageCredRepo := repository.NewStorageCredentialRepo(writeDB, encryptor)
+	externalLocRepo := repository.NewExternalLocationRepo(writeDB)
+
+	storageCredSvc := service.NewStorageCredentialService(storageCredRepo, cat, auditRepo)
+	extLocationSvc := service.NewExternalLocationService(externalLocRepo, storageCredRepo, cat, auditRepo, duckDB, cfg.MetaDBPath)
+
+	// Wire location repo into catalog service for location-aware schema creation
+	catalogSvc.SetExternalLocationRepo(externalLocRepo)
+
+	// Wire credential repos into manifest and ingestion services for per-schema credential resolution
+	if manifestSvc != nil {
+		manifestSvc.SetCredentialRepos(storageCredRepo, externalLocRepo)
+	}
+	if ingestionSvc != nil {
+		ingestionSvc.SetCredentialRepos(storageCredRepo, externalLocRepo)
+	}
+
+	// If legacy S3 config set up the catalog, mark it as attached
+	if catalogAttached {
+		extLocationSvc.SetCatalogAttached(true)
+	}
+
+	// Restore DuckDB secrets for any persisted credentials/locations from a prior run
+	if err := extLocationSvc.RestoreSecrets(ctx); err != nil {
+		log.Printf("warning: restore secrets: %v", err)
+	}
+
 	// Create API handler
 	handler := api.NewHandler(
 		querySvc, principalSvc, groupSvc, grantSvc,
@@ -337,6 +386,7 @@ func main() {
 		manifestSvc, catalogSvc,
 		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
 		ingestionSvc,
+		storageCredSvc, extLocationSvc,
 	)
 
 	// Create strict handler wrapper
@@ -346,14 +396,6 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(chimw.Logger)
 	r.Use(chimw.Recoverer)
-
-	// Determine JWT secret and listen address
-	jwtSecret := []byte("dev-secret-change-in-production")
-	listenAddr := ":8080"
-	if cfgErr == nil {
-		jwtSecret = []byte(cfg.JWTSecret)
-		listenAddr = cfg.ListenAddr
-	}
 
 	// Public endpoints — no auth required
 	r.Get("/openapi.json", func(w http.ResponseWriter, r *http.Request) {
@@ -386,14 +428,14 @@ func main() {
 	// Authenticated API routes under /v1 prefix
 	apiKeyRepo := repository.NewAPIKeyRepo(readDB)
 	r.Route("/v1", func(r chi.Router) {
-		r.Use(middleware.AuthMiddleware(jwtSecret, apiKeyRepo))
+		r.Use(middleware.AuthMiddleware([]byte(cfg.JWTSecret), apiKeyRepo))
 		api.HandlerFromMux(strictHandler, r)
 	})
 
 	// Start server
-	log.Printf("HTTP API listening on %s", listenAddr)
-	log.Printf("Try: curl -H 'Authorization: Bearer <jwt>' http://localhost%s/v1/principals", listenAddr)
-	if err := http.ListenAndServe(listenAddr, r); err != nil {
+	log.Printf("HTTP API listening on %s", cfg.ListenAddr)
+	log.Printf("Try: curl -H 'Authorization: Bearer <jwt>' http://localhost%s/v1/principals", cfg.ListenAddr)
+	if err := http.ListenAndServe(cfg.ListenAddr, r); err != nil {
 		log.Fatalf("server error: %v", err)
 	}
 }

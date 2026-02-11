@@ -19,10 +19,12 @@ type IngestionService struct {
 	duckDB      *sql.DB
 	metaDB      *sql.DB
 	authSvc     domain.AuthorizationService
-	presigner   *S3Presigner
+	presigner   *S3Presigner // legacy presigner (from env config), may be nil
 	auditRepo   domain.AuditRepository
-	catalogName string // attached catalog name (e.g., "lake")
-	bucket      string // S3 bucket name
+	credRepo    domain.StorageCredentialRepository // for credential-aware presigning
+	locRepo     domain.ExternalLocationRepository  // for resolving schema locations
+	catalogName string                             // attached catalog name (e.g., "lake")
+	bucket      string                             // S3 bucket name (legacy default)
 }
 
 // NewIngestionService creates a new IngestionService.
@@ -46,6 +48,16 @@ func NewIngestionService(
 	}
 }
 
+// SetCredentialRepos sets the credential and location repositories for
+// resolving per-schema storage credentials at runtime.
+func (s *IngestionService) SetCredentialRepos(
+	credRepo domain.StorageCredentialRepository,
+	locRepo domain.ExternalLocationRepository,
+) {
+	s.credRepo = credRepo
+	s.locRepo = locRepo
+}
+
 // RequestUploadURL generates a presigned PUT URL for uploading a Parquet file.
 // The caller must have INSERT privilege on the target table.
 func (s *IngestionService) RequestUploadURL(
@@ -60,7 +72,12 @@ func (s *IngestionService) RequestUploadURL(
 		return nil, err
 	}
 
-	if s.presigner == nil {
+	// Resolve presigner and bucket: prefer per-schema location, fall back to legacy
+	presigner, bucket, err := s.resolvePresigner(ctx, schemaName)
+	if err != nil {
+		return nil, err
+	}
+	if presigner == nil {
 		return nil, domain.ErrValidation("upload not available: S3 presigner not configured")
 	}
 
@@ -74,7 +91,7 @@ func (s *IngestionService) RequestUploadURL(
 
 	// Generate presigned PUT URL
 	expiry := 1 * time.Hour
-	url, err := s.presigner.PresignPutObject(ctx, s.bucket, key, expiry)
+	url, err := presigner.PresignPutObject(ctx, bucket, key, expiry)
 	if err != nil {
 		return nil, fmt.Errorf("generate upload URL: %w", err)
 	}
@@ -108,10 +125,16 @@ func (s *IngestionService) CommitIngestion(
 		return nil, err
 	}
 
+	// Resolve the bucket for this schema
+	_, bucket, err := s.resolvePresigner(ctx, schemaName)
+	if err != nil {
+		return nil, err
+	}
+
 	// Convert keys to full S3 URIs
 	paths := make([]string, len(s3Keys))
 	for i, key := range s3Keys {
-		paths[i] = fmt.Sprintf("s3://%s/%s", s.bucket, key)
+		paths[i] = fmt.Sprintf("s3://%s/%s", bucket, key)
 	}
 
 	// Execute ducklake_add_data_files
@@ -270,6 +293,45 @@ func sanitizeFilename(name string) string {
 		name += ".parquet"
 	}
 	return name
+}
+
+// resolvePresigner returns the appropriate presigner and bucket for a schema.
+// If the schema has a per-schema external location with a stored credential,
+// a dynamic presigner is created from that credential. Otherwise, the legacy
+// presigner and bucket are returned.
+func (s *IngestionService) resolvePresigner(ctx context.Context, schemaName string) (*S3Presigner, string, error) {
+	// Try per-schema resolution via schema path in ducklake_schema
+	if s.metaDB != nil && s.credRepo != nil && s.locRepo != nil {
+		var schemaPath string
+		err := s.metaDB.QueryRowContext(ctx,
+			`SELECT path FROM ducklake_schema WHERE schema_name = ? AND path IS NOT NULL AND path != ''`,
+			schemaName).Scan(&schemaPath)
+		if err == nil && schemaPath != "" {
+			// Schema has a custom path — find the location that matches this URL
+			locations, _, err := s.locRepo.List(ctx, domain.PageRequest{MaxResults: 1000})
+			if err == nil {
+				for _, loc := range locations {
+					if strings.HasPrefix(schemaPath, loc.URL) || schemaPath == loc.URL {
+						// Found the matching location, look up its credential
+						cred, err := s.credRepo.GetByName(ctx, loc.CredentialName)
+						if err == nil {
+							bucket, _, _ := parseS3Path(schemaPath)
+							if bucket == "" {
+								bucket = s.bucket // fallback
+							}
+							presigner, err := NewS3PresignerFromCredential(cred, bucket)
+							if err == nil {
+								return presigner, bucket, nil
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Fall back to legacy presigner
+	return s.presigner, s.bucket, nil
 }
 
 func (s *IngestionService) logAudit(ctx context.Context, principal, action, detail string) {

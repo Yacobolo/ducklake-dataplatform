@@ -10,11 +10,12 @@ import (
 
 // CatalogService provides catalog management operations with authorization.
 type CatalogService struct {
-	repo  domain.CatalogRepository
-	auth  domain.AuthorizationService
-	audit domain.AuditRepository
-	tags  domain.TagRepository
-	stats domain.TableStatisticsRepository
+	repo      domain.CatalogRepository
+	auth      domain.AuthorizationService
+	audit     domain.AuditRepository
+	tags      domain.TagRepository
+	stats     domain.TableStatisticsRepository
+	locations domain.ExternalLocationRepository // optional, nil when not configured
 }
 
 // NewCatalogService creates a new CatalogService.
@@ -32,6 +33,12 @@ func NewCatalogService(
 		tags:  tags,
 		stats: stats,
 	}
+}
+
+// SetExternalLocationRepo sets the optional external location repository.
+// When set, CreateSchema can use LocationName to set a per-schema storage path.
+func (s *CatalogService) SetExternalLocationRepo(repo domain.ExternalLocationRepository) {
+	s.locations = repo
 }
 
 // GetCatalogInfo returns information about the single catalog.
@@ -57,6 +64,8 @@ func (s *CatalogService) ListSchemas(ctx context.Context, page domain.PageReques
 }
 
 // CreateSchema creates a new schema, checking CREATE_SCHEMA privilege.
+// If LocationName is specified, the schema's storage path is set to the
+// external location's URL, enabling per-schema data paths in DuckLake.
 func (s *CatalogService) CreateSchema(ctx context.Context, req domain.CreateSchemaRequest) (*domain.SchemaDetail, error) {
 	principal, _ := middleware.PrincipalFromContext(ctx)
 
@@ -68,9 +77,29 @@ func (s *CatalogService) CreateSchema(ctx context.Context, req domain.CreateSche
 		return nil, domain.ErrAccessDenied("%q lacks CREATE_SCHEMA on catalog", principal)
 	}
 
+	// If a location is specified, validate it exists before creating the schema
+	var locationURL string
+	if req.LocationName != "" {
+		if s.locations == nil {
+			return nil, domain.ErrValidation("external locations are not configured")
+		}
+		loc, err := s.locations.GetByName(ctx, req.LocationName)
+		if err != nil {
+			return nil, fmt.Errorf("lookup location %q: %w", req.LocationName, err)
+		}
+		locationURL = loc.URL
+	}
+
 	result, err := s.repo.CreateSchema(ctx, req.Name, req.Comment, principal)
 	if err != nil {
 		return nil, err
+	}
+
+	// Set the schema storage path if a location was specified
+	if locationURL != "" {
+		if err := s.repo.SetSchemaStoragePath(ctx, result.SchemaID, locationURL); err != nil {
+			return nil, fmt.Errorf("set schema storage path: %w", err)
+		}
 	}
 
 	s.logAudit(ctx, principal, "CREATE_SCHEMA", fmt.Sprintf("Created schema %q", req.Name))

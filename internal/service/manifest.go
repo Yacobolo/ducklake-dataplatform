@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"duck-demo/internal/domain"
@@ -35,9 +36,11 @@ type ManifestResult struct {
 type ManifestService struct {
 	metaDB    *sql.DB // DuckLake SQLite metastore (same DB as permissions)
 	authSvc   domain.AuthorizationService
-	presigner *S3Presigner
+	presigner *S3Presigner // legacy presigner (from env config), may be nil
 	introRepo domain.IntrospectionRepository
 	auditRepo domain.AuditRepository
+	credRepo  domain.StorageCredentialRepository // for credential-aware presigning
+	locRepo   domain.ExternalLocationRepository  // for resolving schema locations
 }
 
 // NewManifestService creates a ManifestService backed by the given dependencies.
@@ -55,6 +58,16 @@ func NewManifestService(
 		introRepo: introRepo,
 		auditRepo: auditRepo,
 	}
+}
+
+// SetCredentialRepos sets the credential and location repositories for
+// resolving per-schema storage credentials at runtime.
+func (s *ManifestService) SetCredentialRepos(
+	credRepo domain.StorageCredentialRepository,
+	locRepo domain.ExternalLocationRepository,
+) {
+	s.credRepo = credRepo
+	s.locRepo = locRepo
 }
 
 // GetManifest resolves a table name for a principal, returning presigned URLs,
@@ -110,16 +123,22 @@ func (s *ManifestService) GetManifest(
 	}
 
 	// 6. Resolve Parquet file paths from DuckLake metastore
-	s3Paths, err := s.resolveDataFiles(ctx, tableID)
+	s3Paths, schemaPath, err := s.resolveDataFiles(ctx, tableID, schemaName)
 	if err != nil {
 		return nil, fmt.Errorf("resolve files: %w", err)
 	}
 
-	// 7. Generate presigned URLs
+	// 7. Resolve the presigner — prefer per-schema credential, fall back to legacy
+	presigner, err := s.resolvePresigner(ctx, schemaPath)
+	if err != nil {
+		return nil, fmt.Errorf("resolve presigner: %w", err)
+	}
+
+	// 8. Generate presigned URLs
 	expiry := 1 * time.Hour // 1 hour to handle long-running queries
 	presignedURLs := make([]string, len(s3Paths))
 	for i, path := range s3Paths {
-		presignedURL, err := s.presigner.PresignGetObject(ctx, path, expiry)
+		presignedURL, err := presigner.PresignGetObject(ctx, path, expiry)
 		if err != nil {
 			return nil, fmt.Errorf("presign %q: %w", path, err)
 		}
@@ -148,22 +167,29 @@ func (s *ManifestService) GetManifest(
 }
 
 // resolveDataFiles queries the DuckLake SQLite metastore for Parquet file
-// paths backing the given table. Returns fully-qualified S3 paths.
-func (s *ManifestService) resolveDataFiles(ctx context.Context, tableID int64) ([]string, error) {
+// paths backing the given table. Returns fully-qualified S3 paths and the
+// schema-level storage path (if set), which is used to resolve the presigner.
+func (s *ManifestService) resolveDataFiles(ctx context.Context, tableID int64, schemaName string) ([]string, string, error) {
 	// Get the global data_path from ducklake_metadata
 	var dataPath string
 	err := s.metaDB.QueryRowContext(ctx,
 		`SELECT value FROM ducklake_metadata WHERE key = 'data_path'`).Scan(&dataPath)
 	if err != nil {
-		return nil, fmt.Errorf("read data_path from ducklake_metadata: %w", err)
+		return nil, "", fmt.Errorf("read data_path from ducklake_metadata: %w", err)
 	}
+
+	// Check for per-schema storage path
+	var schemaPath string
+	_ = s.metaDB.QueryRowContext(ctx,
+		`SELECT path FROM ducklake_schema WHERE schema_name = ? AND path IS NOT NULL AND path != ''`,
+		schemaName).Scan(&schemaPath)
 
 	// Query active data files for this table
 	rows, err := s.metaDB.QueryContext(ctx,
 		`SELECT path, path_is_relative FROM ducklake_data_file
 		 WHERE table_id = ? AND end_snapshot IS NULL`, tableID)
 	if err != nil {
-		return nil, fmt.Errorf("query ducklake_data_file: %w", err)
+		return nil, "", fmt.Errorf("query ducklake_data_file: %w", err)
 	}
 	defer rows.Close()
 
@@ -172,7 +198,7 @@ func (s *ManifestService) resolveDataFiles(ctx context.Context, tableID int64) (
 		var path string
 		var isRelative bool
 		if err := rows.Scan(&path, &isRelative); err != nil {
-			return nil, err
+			return nil, "", err
 		}
 		if isRelative {
 			path = dataPath + path
@@ -180,14 +206,44 @@ func (s *ManifestService) resolveDataFiles(ctx context.Context, tableID int64) (
 		paths = append(paths, path)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	if len(paths) == 0 {
-		return nil, fmt.Errorf("no data files found for table_id=%d", tableID)
+		return nil, "", fmt.Errorf("no data files found for table_id=%d", tableID)
 	}
 
-	return paths, nil
+	return paths, schemaPath, nil
+}
+
+// resolvePresigner returns the appropriate presigner for the given schema path.
+// If the schema has a per-schema external location with stored credentials,
+// a dynamic presigner is created. Otherwise, the legacy presigner is returned.
+func (s *ManifestService) resolvePresigner(ctx context.Context, schemaPath string) (*S3Presigner, error) {
+	if schemaPath != "" && s.credRepo != nil && s.locRepo != nil {
+		// Find the external location matching this schema path
+		locations, _, err := s.locRepo.List(ctx, domain.PageRequest{MaxResults: 1000})
+		if err == nil {
+			for _, loc := range locations {
+				if strings.HasPrefix(schemaPath, loc.URL) || schemaPath == loc.URL {
+					cred, err := s.credRepo.GetByName(ctx, loc.CredentialName)
+					if err == nil {
+						bucket, _, _ := parseS3Path(schemaPath)
+						if bucket == "" {
+							bucket = s.presigner.Bucket()
+						}
+						presigner, err := NewS3PresignerFromCredential(cred, bucket)
+						if err == nil {
+							return presigner, nil
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Fall back to legacy presigner
+	return s.presigner, nil
 }
 
 // logManifestAudit records a manifest request in the audit log.

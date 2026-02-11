@@ -10,22 +10,24 @@ import (
 
 // APIHandler implements the StrictServerInterface.
 type APIHandler struct {
-	query         *service.QueryService
-	principals    *service.PrincipalService
-	groups        *service.GroupService
-	grants        *service.GrantService
-	rowFilters    *service.RowFilterService
-	columnMasks   *service.ColumnMaskService
-	introspection *service.IntrospectionService
-	audit         *service.AuditService
-	manifest      *service.ManifestService
-	catalog       *service.CatalogService
-	queryHistory  *service.QueryHistoryService
-	lineage       *service.LineageService
-	search        *service.SearchService
-	tags          *service.TagService
-	views         *service.ViewService
-	ingestion     *service.IngestionService
+	query             *service.QueryService
+	principals        *service.PrincipalService
+	groups            *service.GroupService
+	grants            *service.GrantService
+	rowFilters        *service.RowFilterService
+	columnMasks       *service.ColumnMaskService
+	introspection     *service.IntrospectionService
+	audit             *service.AuditService
+	manifest          *service.ManifestService
+	catalog           *service.CatalogService
+	queryHistory      *service.QueryHistoryService
+	lineage           *service.LineageService
+	search            *service.SearchService
+	tags              *service.TagService
+	views             *service.ViewService
+	ingestion         *service.IngestionService
+	storageCreds      *service.StorageCredentialService
+	externalLocations *service.ExternalLocationService
 }
 
 func NewHandler(
@@ -45,24 +47,28 @@ func NewHandler(
 	tags *service.TagService,
 	views *service.ViewService,
 	ingestion *service.IngestionService,
+	storageCreds *service.StorageCredentialService,
+	externalLocations *service.ExternalLocationService,
 ) *APIHandler {
 	return &APIHandler{
-		query:         query,
-		principals:    principals,
-		groups:        groups,
-		grants:        grants,
-		rowFilters:    rowFilters,
-		columnMasks:   columnMasks,
-		introspection: introspection,
-		audit:         audit,
-		manifest:      manifest,
-		catalog:       catalog,
-		queryHistory:  queryHistory,
-		lineage:       lineage,
-		search:        search,
-		tags:          tags,
-		views:         views,
-		ingestion:     ingestion,
+		query:             query,
+		principals:        principals,
+		groups:            groups,
+		grants:            grants,
+		rowFilters:        rowFilters,
+		columnMasks:       columnMasks,
+		introspection:     introspection,
+		audit:             audit,
+		manifest:          manifest,
+		catalog:           catalog,
+		queryHistory:      queryHistory,
+		lineage:           lineage,
+		search:            search,
+		tags:              tags,
+		views:             views,
+		ingestion:         ingestion,
+		storageCreds:      storageCreds,
+		externalLocations: externalLocations,
 	}
 }
 
@@ -575,6 +581,9 @@ func (h *APIHandler) CreateSchema(ctx context.Context, req CreateSchemaRequestOb
 	}
 	if req.Body.Properties != nil {
 		domReq.Properties = *req.Body.Properties
+	}
+	if req.Body.LocationName != nil {
+		domReq.LocationName = *req.Body.LocationName
 	}
 
 	result, err := h.catalog.CreateSchema(ctx, domReq)
@@ -1530,4 +1539,251 @@ func optStr(s string) *string {
 		return nil
 	}
 	return &s
+}
+
+// === Storage Credentials ===
+
+func (h *APIHandler) ListStorageCredentials(ctx context.Context, req ListStorageCredentialsRequestObject) (ListStorageCredentialsResponseObject, error) {
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	creds, total, err := h.storageCreds.List(ctx, page)
+	if err != nil {
+		return nil, err
+	}
+
+	data := make([]StorageCredential, len(creds))
+	for i, c := range creds {
+		data[i] = storageCredentialToAPI(c)
+	}
+	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return ListStorageCredentials200JSONResponse{
+		Data:          &data,
+		NextPageToken: optStr(nextToken),
+	}, nil
+}
+
+func (h *APIHandler) CreateStorageCredential(ctx context.Context, req CreateStorageCredentialRequestObject) (CreateStorageCredentialResponseObject, error) {
+	domReq := domain.CreateStorageCredentialRequest{
+		Name:           req.Body.Name,
+		CredentialType: domain.CredentialType(req.Body.CredentialType),
+		KeyID:          req.Body.KeyId,
+		Secret:         req.Body.Secret,
+		Endpoint:       req.Body.Endpoint,
+		Region:         req.Body.Region,
+	}
+	if req.Body.UrlStyle != nil {
+		domReq.URLStyle = *req.Body.UrlStyle
+	} else {
+		domReq.URLStyle = "path"
+	}
+	if req.Body.Comment != nil {
+		domReq.Comment = *req.Body.Comment
+	}
+
+	result, err := h.storageCreds.Create(ctx, domReq)
+	if err != nil {
+		switch err.(type) {
+		case *domain.AccessDeniedError:
+			return CreateStorageCredential403JSONResponse{Code: 403, Message: err.Error()}, nil
+		case *domain.ValidationError:
+			return CreateStorageCredential400JSONResponse{Code: 400, Message: err.Error()}, nil
+		case *domain.ConflictError:
+			return CreateStorageCredential409JSONResponse{Code: 409, Message: err.Error()}, nil
+		default:
+			return CreateStorageCredential400JSONResponse{Code: 400, Message: err.Error()}, nil
+		}
+	}
+	return CreateStorageCredential201JSONResponse(storageCredentialToAPI(*result)), nil
+}
+
+func (h *APIHandler) GetStorageCredential(ctx context.Context, req GetStorageCredentialRequestObject) (GetStorageCredentialResponseObject, error) {
+	result, err := h.storageCreds.GetByName(ctx, req.CredentialName)
+	if err != nil {
+		switch err.(type) {
+		case *domain.NotFoundError:
+			return GetStorageCredential404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return GetStorageCredential200JSONResponse(storageCredentialToAPI(*result)), nil
+}
+
+func (h *APIHandler) UpdateStorageCredential(ctx context.Context, req UpdateStorageCredentialRequestObject) (UpdateStorageCredentialResponseObject, error) {
+	domReq := domain.UpdateStorageCredentialRequest{
+		KeyID:    req.Body.KeyId,
+		Secret:   req.Body.Secret,
+		Endpoint: req.Body.Endpoint,
+		Region:   req.Body.Region,
+		URLStyle: req.Body.UrlStyle,
+		Comment:  req.Body.Comment,
+	}
+
+	result, err := h.storageCreds.Update(ctx, req.CredentialName, domReq)
+	if err != nil {
+		switch err.(type) {
+		case *domain.AccessDeniedError:
+			return UpdateStorageCredential403JSONResponse{Code: 403, Message: err.Error()}, nil
+		case *domain.NotFoundError:
+			return UpdateStorageCredential404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return UpdateStorageCredential200JSONResponse(storageCredentialToAPI(*result)), nil
+}
+
+func (h *APIHandler) DeleteStorageCredential(ctx context.Context, req DeleteStorageCredentialRequestObject) (DeleteStorageCredentialResponseObject, error) {
+	if err := h.storageCreds.Delete(ctx, req.CredentialName); err != nil {
+		switch err.(type) {
+		case *domain.AccessDeniedError:
+			return DeleteStorageCredential403JSONResponse{Code: 403, Message: err.Error()}, nil
+		case *domain.NotFoundError:
+			return DeleteStorageCredential404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return DeleteStorageCredential204Response{}, nil
+}
+
+// === External Locations ===
+
+func (h *APIHandler) ListExternalLocations(ctx context.Context, req ListExternalLocationsRequestObject) (ListExternalLocationsResponseObject, error) {
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	locs, total, err := h.externalLocations.List(ctx, page)
+	if err != nil {
+		return nil, err
+	}
+
+	data := make([]ExternalLocation, len(locs))
+	for i, l := range locs {
+		data[i] = externalLocationToAPI(l)
+	}
+	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return ListExternalLocations200JSONResponse{
+		Data:          &data,
+		NextPageToken: optStr(nextToken),
+	}, nil
+}
+
+func (h *APIHandler) CreateExternalLocation(ctx context.Context, req CreateExternalLocationRequestObject) (CreateExternalLocationResponseObject, error) {
+	domReq := domain.CreateExternalLocationRequest{
+		Name:           req.Body.Name,
+		URL:            req.Body.Url,
+		CredentialName: req.Body.CredentialName,
+	}
+	if req.Body.StorageType != nil {
+		domReq.StorageType = domain.StorageType(*req.Body.StorageType)
+	}
+	if req.Body.Comment != nil {
+		domReq.Comment = *req.Body.Comment
+	}
+	if req.Body.ReadOnly != nil {
+		domReq.ReadOnly = *req.Body.ReadOnly
+	}
+
+	result, err := h.externalLocations.Create(ctx, domReq)
+	if err != nil {
+		switch err.(type) {
+		case *domain.AccessDeniedError:
+			return CreateExternalLocation403JSONResponse{Code: 403, Message: err.Error()}, nil
+		case *domain.ValidationError:
+			return CreateExternalLocation400JSONResponse{Code: 400, Message: err.Error()}, nil
+		case *domain.ConflictError:
+			return CreateExternalLocation409JSONResponse{Code: 409, Message: err.Error()}, nil
+		default:
+			return CreateExternalLocation400JSONResponse{Code: 400, Message: err.Error()}, nil
+		}
+	}
+	return CreateExternalLocation201JSONResponse(externalLocationToAPI(*result)), nil
+}
+
+func (h *APIHandler) GetExternalLocation(ctx context.Context, req GetExternalLocationRequestObject) (GetExternalLocationResponseObject, error) {
+	result, err := h.externalLocations.GetByName(ctx, req.LocationName)
+	if err != nil {
+		switch err.(type) {
+		case *domain.NotFoundError:
+			return GetExternalLocation404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return GetExternalLocation200JSONResponse(externalLocationToAPI(*result)), nil
+}
+
+func (h *APIHandler) UpdateExternalLocation(ctx context.Context, req UpdateExternalLocationRequestObject) (UpdateExternalLocationResponseObject, error) {
+	domReq := domain.UpdateExternalLocationRequest{
+		URL:     req.Body.Url,
+		Comment: req.Body.Comment,
+		Owner:   req.Body.Owner,
+	}
+	if req.Body.CredentialName != nil {
+		domReq.CredentialName = req.Body.CredentialName
+	}
+	if req.Body.ReadOnly != nil {
+		domReq.ReadOnly = req.Body.ReadOnly
+	}
+
+	result, err := h.externalLocations.Update(ctx, req.LocationName, domReq)
+	if err != nil {
+		switch err.(type) {
+		case *domain.AccessDeniedError:
+			return UpdateExternalLocation403JSONResponse{Code: 403, Message: err.Error()}, nil
+		case *domain.NotFoundError:
+			return UpdateExternalLocation404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return UpdateExternalLocation200JSONResponse(externalLocationToAPI(*result)), nil
+}
+
+func (h *APIHandler) DeleteExternalLocation(ctx context.Context, req DeleteExternalLocationRequestObject) (DeleteExternalLocationResponseObject, error) {
+	if err := h.externalLocations.Delete(ctx, req.LocationName); err != nil {
+		switch err.(type) {
+		case *domain.AccessDeniedError:
+			return DeleteExternalLocation403JSONResponse{Code: 403, Message: err.Error()}, nil
+		case *domain.NotFoundError:
+			return DeleteExternalLocation404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return DeleteExternalLocation204Response{}, nil
+}
+
+// === API Mappers for Storage Credentials / External Locations ===
+
+// storageCredentialToAPI converts a domain StorageCredential to the API type.
+// IMPORTANT: Never expose key_id or secret in API responses.
+func storageCredentialToAPI(c domain.StorageCredential) StorageCredential {
+	ct := string(c.CredentialType)
+	return StorageCredential{
+		Id:             &c.ID,
+		Name:           &c.Name,
+		CredentialType: &ct,
+		Endpoint:       &c.Endpoint,
+		Region:         &c.Region,
+		UrlStyle:       &c.URLStyle,
+		Comment:        optStr(c.Comment),
+		Owner:          &c.Owner,
+		CreatedAt:      &c.CreatedAt,
+		UpdatedAt:      &c.UpdatedAt,
+	}
+}
+
+func externalLocationToAPI(l domain.ExternalLocation) ExternalLocation {
+	st := string(l.StorageType)
+	return ExternalLocation{
+		Id:             &l.ID,
+		Name:           &l.Name,
+		Url:            &l.URL,
+		CredentialName: &l.CredentialName,
+		StorageType:    &st,
+		Comment:        optStr(l.Comment),
+		Owner:          &l.Owner,
+		ReadOnly:       &l.ReadOnly,
+		CreatedAt:      &l.CreatedAt,
+		UpdatedAt:      &l.UpdatedAt,
+	}
 }

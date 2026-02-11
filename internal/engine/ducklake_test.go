@@ -17,7 +17,7 @@ import (
 	"duck-demo/internal/service"
 )
 
-// TestDuckLakeWithHetznerSetup tests the full SetupDuckLake flow with real
+// TestDuckLakeWithHetznerSetup tests the full DuckLake setup flow with real
 // Hetzner S3 credentials. Skipped if .env is not present or credentials are missing.
 func TestDuckLakeWithHetznerSetup(t *testing.T) {
 	if err := config.LoadDotEnv("../../.env"); err != nil {
@@ -26,7 +26,10 @@ func TestDuckLakeWithHetznerSetup(t *testing.T) {
 
 	cfg, err := config.LoadFromEnv()
 	if err != nil {
-		t.Skipf("missing config: %v", err)
+		t.Skipf("config load failed: %v", err)
+	}
+	if !cfg.HasS3Config() {
+		t.Skip("S3 config not available, skipping")
 	}
 
 	if _, err := os.Stat("../../titanic.parquet"); os.IsNotExist(err) {
@@ -35,7 +38,6 @@ func TestDuckLakeWithHetznerSetup(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	cfg.MetaDBPath = tmpDir + "/test_meta.sqlite"
-	cfg.ParquetPath = "../../titanic.parquet"
 
 	db, err := sql.Open("duckdb", "")
 	if err != nil {
@@ -45,8 +47,27 @@ func TestDuckLakeWithHetznerSetup(t *testing.T) {
 
 	ctx := context.Background()
 
-	if err := engine.SetupDuckLake(ctx, db, cfg); err != nil {
-		t.Skipf("SetupDuckLake failed (S3 bucket may not exist): %v", err)
+	// Use the new split functions
+	if err := engine.InstallExtensions(ctx, db); err != nil {
+		t.Fatalf("install extensions: %v", err)
+	}
+	if err := engine.CreateS3Secret(ctx, db, "hetzner_s3",
+		*cfg.S3KeyID, *cfg.S3Secret, *cfg.S3Endpoint, *cfg.S3Region, "path"); err != nil {
+		t.Fatalf("create S3 secret: %v", err)
+	}
+	bucket := "duck-demo"
+	if cfg.S3Bucket != nil {
+		bucket = *cfg.S3Bucket
+	}
+	dataPath := "s3://" + bucket + "/lake_data/"
+	if err := engine.AttachDuckLake(ctx, db, cfg.MetaDBPath, dataPath); err != nil {
+		t.Skipf("AttachDuckLake failed (S3 bucket may not exist): %v", err)
+	}
+
+	// Seed titanic data
+	createSQL := "CREATE TABLE IF NOT EXISTS lake.main.titanic AS SELECT * FROM '../../titanic.parquet'"
+	if _, err := db.ExecContext(ctx, createSQL); err != nil {
+		t.Fatalf("create titanic table: %v", err)
 	}
 
 	var rowCount int64
@@ -69,7 +90,10 @@ func TestDuckLakeRBACIntegration(t *testing.T) {
 
 	cfg, err := config.LoadFromEnv()
 	if err != nil {
-		t.Skipf("missing config: %v", err)
+		t.Skipf("config load failed: %v", err)
+	}
+	if !cfg.HasS3Config() {
+		t.Skip("S3 config not available, skipping")
 	}
 
 	if _, err := os.Stat("../../titanic.parquet"); os.IsNotExist(err) {
@@ -78,7 +102,6 @@ func TestDuckLakeRBACIntegration(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	cfg.MetaDBPath = tmpDir + "/test_meta.sqlite"
-	cfg.ParquetPath = "../../titanic.parquet"
 
 	db, err := sql.Open("duckdb", "")
 	if err != nil {
@@ -88,8 +111,27 @@ func TestDuckLakeRBACIntegration(t *testing.T) {
 
 	ctx := context.Background()
 
-	if err := engine.SetupDuckLake(ctx, db, cfg); err != nil {
-		t.Skipf("SetupDuckLake failed (S3 bucket may not exist): %v", err)
+	// Use the new split functions
+	if err := engine.InstallExtensions(ctx, db); err != nil {
+		t.Fatalf("install extensions: %v", err)
+	}
+	if err := engine.CreateS3Secret(ctx, db, "hetzner_s3",
+		*cfg.S3KeyID, *cfg.S3Secret, *cfg.S3Endpoint, *cfg.S3Region, "path"); err != nil {
+		t.Fatalf("create S3 secret: %v", err)
+	}
+	bucket := "duck-demo"
+	if cfg.S3Bucket != nil {
+		bucket = *cfg.S3Bucket
+	}
+	dataPath := "s3://" + bucket + "/lake_data/"
+	if err := engine.AttachDuckLake(ctx, db, cfg.MetaDBPath, dataPath); err != nil {
+		t.Skipf("AttachDuckLake failed (S3 bucket may not exist): %v", err)
+	}
+
+	// Seed titanic data
+	createSQL := "CREATE TABLE IF NOT EXISTS lake.main.titanic AS SELECT * FROM '../../titanic.parquet'"
+	if _, err := db.ExecContext(ctx, createSQL); err != nil {
+		t.Fatalf("create titanic table: %v", err)
 	}
 
 	// Set up catalog using the DuckLake metastore (hardened pools)

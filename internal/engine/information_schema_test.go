@@ -72,6 +72,9 @@ func (m *mockEngineCatalog) UpdateCatalog(_ context.Context, _ *string) (*domain
 func (m *mockEngineCatalog) UpdateColumn(_ context.Context, _, _, _ string, _ *string, _ map[string]string) (*domain.ColumnDetail, error) {
 	panic("unexpected call")
 }
+func (m *mockEngineCatalog) SetSchemaStoragePath(_ context.Context, _ int64, _ string) error {
+	return nil
+}
 
 var _ domain.CatalogRepository = (*mockEngineCatalog)(nil)
 

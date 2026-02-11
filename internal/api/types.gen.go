@@ -12,6 +12,16 @@ const (
 	BearerAuthScopes = "BearerAuth.Scopes"
 )
 
+// Defines values for CreateExternalLocationRequestStorageType.
+const (
+	CreateExternalLocationRequestStorageTypeS3 CreateExternalLocationRequestStorageType = "S3"
+)
+
+// Defines values for CreateStorageCredentialRequestCredentialType.
+const (
+	CreateStorageCredentialRequestCredentialTypeS3 CreateStorageCredentialRequestCredentialType = "S3"
+)
+
 // AddGroupMemberRequest defines model for AddGroupMemberRequest.
 type AddGroupMemberRequest struct {
 	MemberId   int64  `json:"member_id"`
@@ -102,6 +112,19 @@ type CreateColumnMaskRequest struct {
 	MaskExpression string  `json:"mask_expression"`
 }
 
+// CreateExternalLocationRequest defines model for CreateExternalLocationRequest.
+type CreateExternalLocationRequest struct {
+	Comment        *string                                   `json:"comment,omitempty"`
+	CredentialName string                                    `json:"credential_name"`
+	Name           string                                    `json:"name"`
+	ReadOnly       *bool                                     `json:"read_only,omitempty"`
+	StorageType    *CreateExternalLocationRequestStorageType `json:"storage_type,omitempty"`
+	Url            string                                    `json:"url"`
+}
+
+// CreateExternalLocationRequestStorageType defines model for CreateExternalLocationRequest.StorageType.
+type CreateExternalLocationRequestStorageType string
+
 // CreateGroupRequest defines model for CreateGroupRequest.
 type CreateGroupRequest struct {
 	Description *string `json:"description,omitempty"`
@@ -123,10 +146,28 @@ type CreateRowFilterRequest struct {
 
 // CreateSchemaRequest defines model for CreateSchemaRequest.
 type CreateSchemaRequest struct {
-	Comment    *string            `json:"comment,omitempty"`
-	Name       string             `json:"name"`
-	Properties *map[string]string `json:"properties,omitempty"`
+	Comment *string `json:"comment,omitempty"`
+
+	// LocationName Optional external location name to use for schema storage path.
+	LocationName *string            `json:"location_name,omitempty"`
+	Name         string             `json:"name"`
+	Properties   *map[string]string `json:"properties,omitempty"`
 }
+
+// CreateStorageCredentialRequest defines model for CreateStorageCredentialRequest.
+type CreateStorageCredentialRequest struct {
+	Comment        *string                                      `json:"comment,omitempty"`
+	CredentialType CreateStorageCredentialRequestCredentialType `json:"credential_type"`
+	Endpoint       string                                       `json:"endpoint"`
+	KeyId          string                                       `json:"key_id"`
+	Name           string                                       `json:"name"`
+	Region         string                                       `json:"region"`
+	Secret         string                                       `json:"secret"`
+	UrlStyle       *string                                      `json:"url_style,omitempty"`
+}
+
+// CreateStorageCredentialRequestCredentialType defines model for CreateStorageCredentialRequest.CredentialType.
+type CreateStorageCredentialRequestCredentialType string
 
 // CreateTableApiRequest defines model for CreateTableApiRequest.
 type CreateTableApiRequest struct {
@@ -159,6 +200,20 @@ type CreateViewRequest struct {
 type Error struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
+}
+
+// ExternalLocation defines model for ExternalLocation.
+type ExternalLocation struct {
+	Comment        *string    `json:"comment,omitempty"`
+	CreatedAt      *time.Time `json:"created_at,omitempty"`
+	CredentialName *string    `json:"credential_name,omitempty"`
+	Id             *int64     `json:"id,omitempty"`
+	Name           *string    `json:"name,omitempty"`
+	Owner          *string    `json:"owner,omitempty"`
+	ReadOnly       *bool      `json:"read_only,omitempty"`
+	StorageType    *string    `json:"storage_type,omitempty"`
+	UpdatedAt      *time.Time `json:"updated_at,omitempty"`
+	Url            *string    `json:"url,omitempty"`
 }
 
 // GrantRequest defines model for GrantRequest.
@@ -289,6 +344,12 @@ type PaginatedColumns struct {
 	NextPageToken *string   `json:"next_page_token,omitempty"`
 }
 
+// PaginatedExternalLocations defines model for PaginatedExternalLocations.
+type PaginatedExternalLocations struct {
+	Data          *[]ExternalLocation `json:"data,omitempty"`
+	NextPageToken *string             `json:"next_page_token,omitempty"`
+}
+
 // PaginatedGrants defines model for PaginatedGrants.
 type PaginatedGrants struct {
 	Data          *[]PrivilegeGrant `json:"data,omitempty"`
@@ -347,6 +408,12 @@ type PaginatedSchemas struct {
 type PaginatedSearchResults struct {
 	Data          *[]SearchResult `json:"data,omitempty"`
 	NextPageToken *string         `json:"next_page_token,omitempty"`
+}
+
+// PaginatedStorageCredentials defines model for PaginatedStorageCredentials.
+type PaginatedStorageCredentials struct {
+	Data          *[]StorageCredential `json:"data,omitempty"`
+	NextPageToken *string              `json:"next_page_token,omitempty"`
 }
 
 // PaginatedTableDetails defines model for PaginatedTableDetails.
@@ -489,6 +556,20 @@ type SetAdminRequest struct {
 	IsAdmin bool `json:"is_admin"`
 }
 
+// StorageCredential defines model for StorageCredential.
+type StorageCredential struct {
+	Comment        *string    `json:"comment,omitempty"`
+	CreatedAt      *time.Time `json:"created_at,omitempty"`
+	CredentialType *string    `json:"credential_type,omitempty"`
+	Endpoint       *string    `json:"endpoint,omitempty"`
+	Id             *int64     `json:"id,omitempty"`
+	Name           *string    `json:"name,omitempty"`
+	Owner          *string    `json:"owner,omitempty"`
+	Region         *string    `json:"region,omitempty"`
+	UpdatedAt      *time.Time `json:"updated_at,omitempty"`
+	UrlStyle       *string    `json:"url_style,omitempty"`
+}
+
 // Table defines model for Table.
 type Table struct {
 	Id       *int64  `json:"id,omitempty"`
@@ -554,10 +635,29 @@ type UpdateColumnRequest struct {
 	Properties *map[string]string `json:"properties,omitempty"`
 }
 
+// UpdateExternalLocationRequest defines model for UpdateExternalLocationRequest.
+type UpdateExternalLocationRequest struct {
+	Comment        *string `json:"comment,omitempty"`
+	CredentialName *string `json:"credential_name,omitempty"`
+	Owner          *string `json:"owner,omitempty"`
+	ReadOnly       *bool   `json:"read_only,omitempty"`
+	Url            *string `json:"url,omitempty"`
+}
+
 // UpdateSchemaRequest defines model for UpdateSchemaRequest.
 type UpdateSchemaRequest struct {
 	Comment    *string            `json:"comment,omitempty"`
 	Properties *map[string]string `json:"properties,omitempty"`
+}
+
+// UpdateStorageCredentialRequest defines model for UpdateStorageCredentialRequest.
+type UpdateStorageCredentialRequest struct {
+	Comment  *string `json:"comment,omitempty"`
+	Endpoint *string `json:"endpoint,omitempty"`
+	KeyId    *string `json:"key_id,omitempty"`
+	Region   *string `json:"region,omitempty"`
+	Secret   *string `json:"secret,omitempty"`
+	UrlStyle *string `json:"url_style,omitempty"`
 }
 
 // UpdateTableRequest defines model for UpdateTableRequest.
@@ -662,6 +762,15 @@ type ListTableColumnsParams struct {
 
 // ListViewsParams defines parameters for ListViews.
 type ListViewsParams struct {
+	// MaxResults Maximum number of results to return per page.
+	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
+
+	// PageToken Opaque pagination token from a previous response.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// ListExternalLocationsParams defines parameters for ListExternalLocations.
+type ListExternalLocationsParams struct {
 	// MaxResults Maximum number of results to return per page.
 	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
 
@@ -783,6 +892,15 @@ type SearchCatalogParams struct {
 	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
 }
 
+// ListStorageCredentialsParams defines parameters for ListStorageCredentials.
+type ListStorageCredentialsParams struct {
+	// MaxResults Maximum number of results to return per page.
+	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
+
+	// PageToken Opaque pagination token from a previous response.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
 // ListColumnsParams defines parameters for ListColumns.
 type ListColumnsParams struct {
 	// MaxResults Maximum number of results to return per page.
@@ -858,6 +976,12 @@ type UnbindColumnMaskJSONRequestBody = BindingRequest
 // BindColumnMaskJSONRequestBody defines body for BindColumnMask for application/json ContentType.
 type BindColumnMaskJSONRequestBody = ColumnMaskBindingRequest
 
+// CreateExternalLocationJSONRequestBody defines body for CreateExternalLocation for application/json ContentType.
+type CreateExternalLocationJSONRequestBody = CreateExternalLocationRequest
+
+// UpdateExternalLocationJSONRequestBody defines body for UpdateExternalLocation for application/json ContentType.
+type UpdateExternalLocationJSONRequestBody = UpdateExternalLocationRequest
+
 // RevokePrivilegeJSONRequestBody defines body for RevokePrivilege for application/json ContentType.
 type RevokePrivilegeJSONRequestBody = RevokeRequest
 
@@ -893,6 +1017,12 @@ type UnbindRowFilterJSONRequestBody = BindingRequest
 
 // BindRowFilterJSONRequestBody defines body for BindRowFilter for application/json ContentType.
 type BindRowFilterJSONRequestBody = BindingRequest
+
+// CreateStorageCredentialJSONRequestBody defines body for CreateStorageCredential for application/json ContentType.
+type CreateStorageCredentialJSONRequestBody = CreateStorageCredentialRequest
+
+// UpdateStorageCredentialJSONRequestBody defines body for UpdateStorageCredential for application/json ContentType.
+type UpdateStorageCredentialJSONRequestBody = UpdateStorageCredentialRequest
 
 // CreateColumnMaskJSONRequestBody defines body for CreateColumnMask for application/json ContentType.
 type CreateColumnMaskJSONRequestBody = CreateColumnMaskRequest

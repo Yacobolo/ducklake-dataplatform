@@ -107,6 +107,21 @@ type ServerInterface interface {
 	// Bind mask to principal
 	// (POST /column-masks/{id}/bindings)
 	BindColumnMask(w http.ResponseWriter, r *http.Request, id int64)
+	// List external locations
+	// (GET /external-locations)
+	ListExternalLocations(w http.ResponseWriter, r *http.Request, params ListExternalLocationsParams)
+	// Create an external location
+	// (POST /external-locations)
+	CreateExternalLocation(w http.ResponseWriter, r *http.Request)
+	// Delete an external location
+	// (DELETE /external-locations/{locationName})
+	DeleteExternalLocation(w http.ResponseWriter, r *http.Request, locationName string)
+	// Get an external location by name
+	// (GET /external-locations/{locationName})
+	GetExternalLocation(w http.ResponseWriter, r *http.Request, locationName string)
+	// Update an external location
+	// (PATCH /external-locations/{locationName})
+	UpdateExternalLocation(w http.ResponseWriter, r *http.Request, locationName string)
 	// Revoke a privilege
 	// (DELETE /grants)
 	RevokePrivilege(w http.ResponseWriter, r *http.Request)
@@ -197,6 +212,21 @@ type ServerInterface interface {
 	// Search catalog objects
 	// (GET /search)
 	SearchCatalog(w http.ResponseWriter, r *http.Request, params SearchCatalogParams)
+	// List storage credentials
+	// (GET /storage-credentials)
+	ListStorageCredentials(w http.ResponseWriter, r *http.Request, params ListStorageCredentialsParams)
+	// Create a storage credential
+	// (POST /storage-credentials)
+	CreateStorageCredential(w http.ResponseWriter, r *http.Request)
+	// Delete a storage credential
+	// (DELETE /storage-credentials/{credentialName})
+	DeleteStorageCredential(w http.ResponseWriter, r *http.Request, credentialName string)
+	// Get a storage credential by name
+	// (GET /storage-credentials/{credentialName})
+	GetStorageCredential(w http.ResponseWriter, r *http.Request, credentialName string)
+	// Update a storage credential
+	// (PATCH /storage-credentials/{credentialName})
+	UpdateStorageCredential(w http.ResponseWriter, r *http.Request, credentialName string)
 	// List columns in table (deprecated, use /catalog/schemas/{name}/tables/{name}/columns)
 	// (GET /tables/{id}/columns)
 	ListColumns(w http.ResponseWriter, r *http.Request, id int64, params ListColumnsParams)
@@ -401,6 +431,36 @@ func (_ Unimplemented) BindColumnMask(w http.ResponseWriter, r *http.Request, id
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// List external locations
+// (GET /external-locations)
+func (_ Unimplemented) ListExternalLocations(w http.ResponseWriter, r *http.Request, params ListExternalLocationsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create an external location
+// (POST /external-locations)
+func (_ Unimplemented) CreateExternalLocation(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Delete an external location
+// (DELETE /external-locations/{locationName})
+func (_ Unimplemented) DeleteExternalLocation(w http.ResponseWriter, r *http.Request, locationName string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get an external location by name
+// (GET /external-locations/{locationName})
+func (_ Unimplemented) GetExternalLocation(w http.ResponseWriter, r *http.Request, locationName string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update an external location
+// (PATCH /external-locations/{locationName})
+func (_ Unimplemented) UpdateExternalLocation(w http.ResponseWriter, r *http.Request, locationName string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Revoke a privilege
 // (DELETE /grants)
 func (_ Unimplemented) RevokePrivilege(w http.ResponseWriter, r *http.Request) {
@@ -578,6 +638,36 @@ func (_ Unimplemented) ListTables(w http.ResponseWriter, r *http.Request, id int
 // Search catalog objects
 // (GET /search)
 func (_ Unimplemented) SearchCatalog(w http.ResponseWriter, r *http.Request, params SearchCatalogParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List storage credentials
+// (GET /storage-credentials)
+func (_ Unimplemented) ListStorageCredentials(w http.ResponseWriter, r *http.Request, params ListStorageCredentialsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create a storage credential
+// (POST /storage-credentials)
+func (_ Unimplemented) CreateStorageCredential(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Delete a storage credential
+// (DELETE /storage-credentials/{credentialName})
+func (_ Unimplemented) DeleteStorageCredential(w http.ResponseWriter, r *http.Request, credentialName string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get a storage credential by name
+// (GET /storage-credentials/{credentialName})
+func (_ Unimplemented) GetStorageCredential(w http.ResponseWriter, r *http.Request, credentialName string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update a storage credential
+// (PATCH /storage-credentials/{credentialName})
+func (_ Unimplemented) UpdateStorageCredential(w http.ResponseWriter, r *http.Request, credentialName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1759,6 +1849,170 @@ func (siw *ServerInterfaceWrapper) BindColumnMask(w http.ResponseWriter, r *http
 	handler.ServeHTTP(w, r)
 }
 
+// ListExternalLocations operation middleware
+func (siw *ServerInterfaceWrapper) ListExternalLocations(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListExternalLocationsParams
+
+	// ------------- Optional query parameter "max_results" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListExternalLocations(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateExternalLocation operation middleware
+func (siw *ServerInterfaceWrapper) CreateExternalLocation(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateExternalLocation(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteExternalLocation operation middleware
+func (siw *ServerInterfaceWrapper) DeleteExternalLocation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "locationName" -------------
+	var locationName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "locationName", chi.URLParam(r, "locationName"), &locationName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "locationName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteExternalLocation(w, r, locationName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetExternalLocation operation middleware
+func (siw *ServerInterfaceWrapper) GetExternalLocation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "locationName" -------------
+	var locationName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "locationName", chi.URLParam(r, "locationName"), &locationName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "locationName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetExternalLocation(w, r, locationName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateExternalLocation operation middleware
+func (siw *ServerInterfaceWrapper) UpdateExternalLocation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "locationName" -------------
+	var locationName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "locationName", chi.URLParam(r, "locationName"), &locationName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "locationName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateExternalLocation(w, r, locationName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // RevokePrivilege operation middleware
 func (siw *ServerInterfaceWrapper) RevokePrivilege(w http.ResponseWriter, r *http.Request) {
 
@@ -2930,6 +3184,170 @@ func (siw *ServerInterfaceWrapper) SearchCatalog(w http.ResponseWriter, r *http.
 	handler.ServeHTTP(w, r)
 }
 
+// ListStorageCredentials operation middleware
+func (siw *ServerInterfaceWrapper) ListStorageCredentials(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListStorageCredentialsParams
+
+	// ------------- Optional query parameter "max_results" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListStorageCredentials(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateStorageCredential operation middleware
+func (siw *ServerInterfaceWrapper) CreateStorageCredential(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateStorageCredential(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteStorageCredential operation middleware
+func (siw *ServerInterfaceWrapper) DeleteStorageCredential(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "credentialName" -------------
+	var credentialName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "credentialName", chi.URLParam(r, "credentialName"), &credentialName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "credentialName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteStorageCredential(w, r, credentialName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetStorageCredential operation middleware
+func (siw *ServerInterfaceWrapper) GetStorageCredential(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "credentialName" -------------
+	var credentialName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "credentialName", chi.URLParam(r, "credentialName"), &credentialName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "credentialName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetStorageCredential(w, r, credentialName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateStorageCredential operation middleware
+func (siw *ServerInterfaceWrapper) UpdateStorageCredential(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "credentialName" -------------
+	var credentialName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "credentialName", chi.URLParam(r, "credentialName"), &credentialName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "credentialName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateStorageCredential(w, r, credentialName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListColumns operation middleware
 func (siw *ServerInterfaceWrapper) ListColumns(w http.ResponseWriter, r *http.Request) {
 
@@ -3514,6 +3932,21 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/column-masks/{id}/bindings", wrapper.BindColumnMask)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/external-locations", wrapper.ListExternalLocations)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/external-locations", wrapper.CreateExternalLocation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/external-locations/{locationName}", wrapper.DeleteExternalLocation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/external-locations/{locationName}", wrapper.GetExternalLocation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/external-locations/{locationName}", wrapper.UpdateExternalLocation)
+	})
+	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/grants", wrapper.RevokePrivilege)
 	})
 	r.Group(func(r chi.Router) {
@@ -3602,6 +4035,21 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/search", wrapper.SearchCatalog)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/storage-credentials", wrapper.ListStorageCredentials)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/storage-credentials", wrapper.CreateStorageCredential)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/storage-credentials/{credentialName}", wrapper.DeleteStorageCredential)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/storage-credentials/{credentialName}", wrapper.GetStorageCredential)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/storage-credentials/{credentialName}", wrapper.UpdateStorageCredential)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/tables/{id}/columns", wrapper.ListColumns)
@@ -4502,6 +4950,163 @@ func (response BindColumnMask204Response) VisitBindColumnMaskResponse(w http.Res
 	return nil
 }
 
+type ListExternalLocationsRequestObject struct {
+	Params ListExternalLocationsParams
+}
+
+type ListExternalLocationsResponseObject interface {
+	VisitListExternalLocationsResponse(w http.ResponseWriter) error
+}
+
+type ListExternalLocations200JSONResponse PaginatedExternalLocations
+
+func (response ListExternalLocations200JSONResponse) VisitListExternalLocationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateExternalLocationRequestObject struct {
+	Body *CreateExternalLocationJSONRequestBody
+}
+
+type CreateExternalLocationResponseObject interface {
+	VisitCreateExternalLocationResponse(w http.ResponseWriter) error
+}
+
+type CreateExternalLocation201JSONResponse ExternalLocation
+
+func (response CreateExternalLocation201JSONResponse) VisitCreateExternalLocationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateExternalLocation400JSONResponse Error
+
+func (response CreateExternalLocation400JSONResponse) VisitCreateExternalLocationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateExternalLocation403JSONResponse Error
+
+func (response CreateExternalLocation403JSONResponse) VisitCreateExternalLocationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateExternalLocation409JSONResponse Error
+
+func (response CreateExternalLocation409JSONResponse) VisitCreateExternalLocationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteExternalLocationRequestObject struct {
+	LocationName string `json:"locationName"`
+}
+
+type DeleteExternalLocationResponseObject interface {
+	VisitDeleteExternalLocationResponse(w http.ResponseWriter) error
+}
+
+type DeleteExternalLocation204Response struct {
+}
+
+func (response DeleteExternalLocation204Response) VisitDeleteExternalLocationResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteExternalLocation403JSONResponse Error
+
+func (response DeleteExternalLocation403JSONResponse) VisitDeleteExternalLocationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteExternalLocation404JSONResponse Error
+
+func (response DeleteExternalLocation404JSONResponse) VisitDeleteExternalLocationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetExternalLocationRequestObject struct {
+	LocationName string `json:"locationName"`
+}
+
+type GetExternalLocationResponseObject interface {
+	VisitGetExternalLocationResponse(w http.ResponseWriter) error
+}
+
+type GetExternalLocation200JSONResponse ExternalLocation
+
+func (response GetExternalLocation200JSONResponse) VisitGetExternalLocationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetExternalLocation404JSONResponse Error
+
+func (response GetExternalLocation404JSONResponse) VisitGetExternalLocationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateExternalLocationRequestObject struct {
+	LocationName string `json:"locationName"`
+	Body         *UpdateExternalLocationJSONRequestBody
+}
+
+type UpdateExternalLocationResponseObject interface {
+	VisitUpdateExternalLocationResponse(w http.ResponseWriter) error
+}
+
+type UpdateExternalLocation200JSONResponse ExternalLocation
+
+func (response UpdateExternalLocation200JSONResponse) VisitUpdateExternalLocationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateExternalLocation403JSONResponse Error
+
+func (response UpdateExternalLocation403JSONResponse) VisitUpdateExternalLocationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateExternalLocation404JSONResponse Error
+
+func (response UpdateExternalLocation404JSONResponse) VisitUpdateExternalLocationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type RevokePrivilegeRequestObject struct {
 	Body *RevokePrivilegeJSONRequestBody
 }
@@ -5131,6 +5736,163 @@ func (response SearchCatalog200JSONResponse) VisitSearchCatalogResponse(w http.R
 	return json.NewEncoder(w).Encode(response)
 }
 
+type ListStorageCredentialsRequestObject struct {
+	Params ListStorageCredentialsParams
+}
+
+type ListStorageCredentialsResponseObject interface {
+	VisitListStorageCredentialsResponse(w http.ResponseWriter) error
+}
+
+type ListStorageCredentials200JSONResponse PaginatedStorageCredentials
+
+func (response ListStorageCredentials200JSONResponse) VisitListStorageCredentialsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateStorageCredentialRequestObject struct {
+	Body *CreateStorageCredentialJSONRequestBody
+}
+
+type CreateStorageCredentialResponseObject interface {
+	VisitCreateStorageCredentialResponse(w http.ResponseWriter) error
+}
+
+type CreateStorageCredential201JSONResponse StorageCredential
+
+func (response CreateStorageCredential201JSONResponse) VisitCreateStorageCredentialResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateStorageCredential400JSONResponse Error
+
+func (response CreateStorageCredential400JSONResponse) VisitCreateStorageCredentialResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateStorageCredential403JSONResponse Error
+
+func (response CreateStorageCredential403JSONResponse) VisitCreateStorageCredentialResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateStorageCredential409JSONResponse Error
+
+func (response CreateStorageCredential409JSONResponse) VisitCreateStorageCredentialResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteStorageCredentialRequestObject struct {
+	CredentialName string `json:"credentialName"`
+}
+
+type DeleteStorageCredentialResponseObject interface {
+	VisitDeleteStorageCredentialResponse(w http.ResponseWriter) error
+}
+
+type DeleteStorageCredential204Response struct {
+}
+
+func (response DeleteStorageCredential204Response) VisitDeleteStorageCredentialResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteStorageCredential403JSONResponse Error
+
+func (response DeleteStorageCredential403JSONResponse) VisitDeleteStorageCredentialResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteStorageCredential404JSONResponse Error
+
+func (response DeleteStorageCredential404JSONResponse) VisitDeleteStorageCredentialResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStorageCredentialRequestObject struct {
+	CredentialName string `json:"credentialName"`
+}
+
+type GetStorageCredentialResponseObject interface {
+	VisitGetStorageCredentialResponse(w http.ResponseWriter) error
+}
+
+type GetStorageCredential200JSONResponse StorageCredential
+
+func (response GetStorageCredential200JSONResponse) VisitGetStorageCredentialResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStorageCredential404JSONResponse Error
+
+func (response GetStorageCredential404JSONResponse) VisitGetStorageCredentialResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateStorageCredentialRequestObject struct {
+	CredentialName string `json:"credentialName"`
+	Body           *UpdateStorageCredentialJSONRequestBody
+}
+
+type UpdateStorageCredentialResponseObject interface {
+	VisitUpdateStorageCredentialResponse(w http.ResponseWriter) error
+}
+
+type UpdateStorageCredential200JSONResponse StorageCredential
+
+func (response UpdateStorageCredential200JSONResponse) VisitUpdateStorageCredentialResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateStorageCredential403JSONResponse Error
+
+func (response UpdateStorageCredential403JSONResponse) VisitUpdateStorageCredentialResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateStorageCredential404JSONResponse Error
+
+func (response UpdateStorageCredential404JSONResponse) VisitUpdateStorageCredentialResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type ListColumnsRequestObject struct {
 	Id     int64 `json:"id"`
 	Params ListColumnsParams
@@ -5418,6 +6180,21 @@ type StrictServerInterface interface {
 	// Bind mask to principal
 	// (POST /column-masks/{id}/bindings)
 	BindColumnMask(ctx context.Context, request BindColumnMaskRequestObject) (BindColumnMaskResponseObject, error)
+	// List external locations
+	// (GET /external-locations)
+	ListExternalLocations(ctx context.Context, request ListExternalLocationsRequestObject) (ListExternalLocationsResponseObject, error)
+	// Create an external location
+	// (POST /external-locations)
+	CreateExternalLocation(ctx context.Context, request CreateExternalLocationRequestObject) (CreateExternalLocationResponseObject, error)
+	// Delete an external location
+	// (DELETE /external-locations/{locationName})
+	DeleteExternalLocation(ctx context.Context, request DeleteExternalLocationRequestObject) (DeleteExternalLocationResponseObject, error)
+	// Get an external location by name
+	// (GET /external-locations/{locationName})
+	GetExternalLocation(ctx context.Context, request GetExternalLocationRequestObject) (GetExternalLocationResponseObject, error)
+	// Update an external location
+	// (PATCH /external-locations/{locationName})
+	UpdateExternalLocation(ctx context.Context, request UpdateExternalLocationRequestObject) (UpdateExternalLocationResponseObject, error)
 	// Revoke a privilege
 	// (DELETE /grants)
 	RevokePrivilege(ctx context.Context, request RevokePrivilegeRequestObject) (RevokePrivilegeResponseObject, error)
@@ -5508,6 +6285,21 @@ type StrictServerInterface interface {
 	// Search catalog objects
 	// (GET /search)
 	SearchCatalog(ctx context.Context, request SearchCatalogRequestObject) (SearchCatalogResponseObject, error)
+	// List storage credentials
+	// (GET /storage-credentials)
+	ListStorageCredentials(ctx context.Context, request ListStorageCredentialsRequestObject) (ListStorageCredentialsResponseObject, error)
+	// Create a storage credential
+	// (POST /storage-credentials)
+	CreateStorageCredential(ctx context.Context, request CreateStorageCredentialRequestObject) (CreateStorageCredentialResponseObject, error)
+	// Delete a storage credential
+	// (DELETE /storage-credentials/{credentialName})
+	DeleteStorageCredential(ctx context.Context, request DeleteStorageCredentialRequestObject) (DeleteStorageCredentialResponseObject, error)
+	// Get a storage credential by name
+	// (GET /storage-credentials/{credentialName})
+	GetStorageCredential(ctx context.Context, request GetStorageCredentialRequestObject) (GetStorageCredentialResponseObject, error)
+	// Update a storage credential
+	// (PATCH /storage-credentials/{credentialName})
+	UpdateStorageCredential(ctx context.Context, request UpdateStorageCredentialRequestObject) (UpdateStorageCredentialResponseObject, error)
 	// List columns in table (deprecated, use /catalog/schemas/{name}/tables/{name}/columns)
 	// (GET /tables/{id}/columns)
 	ListColumns(ctx context.Context, request ListColumnsRequestObject) (ListColumnsResponseObject, error)
@@ -6397,6 +7189,148 @@ func (sh *strictHandler) BindColumnMask(w http.ResponseWriter, r *http.Request, 
 	}
 }
 
+// ListExternalLocations operation middleware
+func (sh *strictHandler) ListExternalLocations(w http.ResponseWriter, r *http.Request, params ListExternalLocationsParams) {
+	var request ListExternalLocationsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListExternalLocations(ctx, request.(ListExternalLocationsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListExternalLocations")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListExternalLocationsResponseObject); ok {
+		if err := validResponse.VisitListExternalLocationsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateExternalLocation operation middleware
+func (sh *strictHandler) CreateExternalLocation(w http.ResponseWriter, r *http.Request) {
+	var request CreateExternalLocationRequestObject
+
+	var body CreateExternalLocationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateExternalLocation(ctx, request.(CreateExternalLocationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateExternalLocation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateExternalLocationResponseObject); ok {
+		if err := validResponse.VisitCreateExternalLocationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteExternalLocation operation middleware
+func (sh *strictHandler) DeleteExternalLocation(w http.ResponseWriter, r *http.Request, locationName string) {
+	var request DeleteExternalLocationRequestObject
+
+	request.LocationName = locationName
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteExternalLocation(ctx, request.(DeleteExternalLocationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteExternalLocation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteExternalLocationResponseObject); ok {
+		if err := validResponse.VisitDeleteExternalLocationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetExternalLocation operation middleware
+func (sh *strictHandler) GetExternalLocation(w http.ResponseWriter, r *http.Request, locationName string) {
+	var request GetExternalLocationRequestObject
+
+	request.LocationName = locationName
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetExternalLocation(ctx, request.(GetExternalLocationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetExternalLocation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetExternalLocationResponseObject); ok {
+		if err := validResponse.VisitGetExternalLocationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateExternalLocation operation middleware
+func (sh *strictHandler) UpdateExternalLocation(w http.ResponseWriter, r *http.Request, locationName string) {
+	var request UpdateExternalLocationRequestObject
+
+	request.LocationName = locationName
+
+	var body UpdateExternalLocationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateExternalLocation(ctx, request.(UpdateExternalLocationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateExternalLocation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateExternalLocationResponseObject); ok {
+		if err := validResponse.VisitUpdateExternalLocationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // RevokePrivilege operation middleware
 func (sh *strictHandler) RevokePrivilege(w http.ResponseWriter, r *http.Request) {
 	var request RevokePrivilegeRequestObject
@@ -7253,6 +8187,148 @@ func (sh *strictHandler) SearchCatalog(w http.ResponseWriter, r *http.Request, p
 	}
 }
 
+// ListStorageCredentials operation middleware
+func (sh *strictHandler) ListStorageCredentials(w http.ResponseWriter, r *http.Request, params ListStorageCredentialsParams) {
+	var request ListStorageCredentialsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListStorageCredentials(ctx, request.(ListStorageCredentialsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListStorageCredentials")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListStorageCredentialsResponseObject); ok {
+		if err := validResponse.VisitListStorageCredentialsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateStorageCredential operation middleware
+func (sh *strictHandler) CreateStorageCredential(w http.ResponseWriter, r *http.Request) {
+	var request CreateStorageCredentialRequestObject
+
+	var body CreateStorageCredentialJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateStorageCredential(ctx, request.(CreateStorageCredentialRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateStorageCredential")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateStorageCredentialResponseObject); ok {
+		if err := validResponse.VisitCreateStorageCredentialResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteStorageCredential operation middleware
+func (sh *strictHandler) DeleteStorageCredential(w http.ResponseWriter, r *http.Request, credentialName string) {
+	var request DeleteStorageCredentialRequestObject
+
+	request.CredentialName = credentialName
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteStorageCredential(ctx, request.(DeleteStorageCredentialRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteStorageCredential")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteStorageCredentialResponseObject); ok {
+		if err := validResponse.VisitDeleteStorageCredentialResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetStorageCredential operation middleware
+func (sh *strictHandler) GetStorageCredential(w http.ResponseWriter, r *http.Request, credentialName string) {
+	var request GetStorageCredentialRequestObject
+
+	request.CredentialName = credentialName
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetStorageCredential(ctx, request.(GetStorageCredentialRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetStorageCredential")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetStorageCredentialResponseObject); ok {
+		if err := validResponse.VisitGetStorageCredentialResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateStorageCredential operation middleware
+func (sh *strictHandler) UpdateStorageCredential(w http.ResponseWriter, r *http.Request, credentialName string) {
+	var request UpdateStorageCredentialRequestObject
+
+	request.CredentialName = credentialName
+
+	var body UpdateStorageCredentialJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateStorageCredential(ctx, request.(UpdateStorageCredentialRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateStorageCredential")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateStorageCredentialResponseObject); ok {
+		if err := validResponse.VisitUpdateStorageCredentialResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListColumns operation middleware
 func (sh *strictHandler) ListColumns(w http.ResponseWriter, r *http.Request, id int64, params ListColumnsParams) {
 	var request ListColumnsRequestObject
@@ -7545,103 +8621,116 @@ func (sh *strictHandler) AssignTag(w http.ResponseWriter, r *http.Request, tagId
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
-	"3uPXx/8PAAD//8m3x988zAAA",
+	"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",
+	"AAD//3bfsYSO7QAA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

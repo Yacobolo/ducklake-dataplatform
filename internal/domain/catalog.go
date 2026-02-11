@@ -53,9 +53,10 @@ type ColumnDetail struct {
 
 // CreateSchemaRequest holds parameters for creating a new schema.
 type CreateSchemaRequest struct {
-	Name       string
-	Comment    string
-	Properties map[string]string
+	Name         string
+	Comment      string
+	Properties   map[string]string
+	LocationName string // optional: external location to use for schema storage path
 }
 
 // UpdateSchemaRequest holds parameters for updating schema metadata.

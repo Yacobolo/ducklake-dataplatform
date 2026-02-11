@@ -68,6 +68,19 @@ type ColumnMetadatum struct {
 	UpdatedAt          sql.NullString
 }
 
+type ExternalLocation struct {
+	ID             int64
+	Name           string
+	Url            string
+	CredentialName string
+	StorageType    string
+	Comment        string
+	Owner          string
+	ReadOnly       int64
+	CreatedAt      string
+	UpdatedAt      string
+}
+
 type Group struct {
 	ID          int64
 	Name        string
@@ -125,6 +138,21 @@ type RowFilterBinding struct {
 	RowFilterID   int64
 	PrincipalID   int64
 	PrincipalType string
+}
+
+type StorageCredential struct {
+	ID              int64
+	Name            string
+	CredentialType  string
+	KeyIDEncrypted  string
+	SecretEncrypted string
+	Endpoint        string
+	Region          string
+	UrlStyle        string
+	Comment         string
+	Owner           string
+	CreatedAt       string
+	UpdatedAt       string
 }
 
 type TableStatistic struct {

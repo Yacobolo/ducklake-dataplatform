@@ -103,6 +103,7 @@ type CatalogRepository interface {
 	UpdateCatalog(ctx context.Context, comment *string) (*CatalogInfo, error)
 	UpdateColumn(ctx context.Context, schemaName, tableName, columnName string, comment *string, props map[string]string) (*ColumnDetail, error)
 	ListColumns(ctx context.Context, schemaName, tableName string, page PageRequest) ([]ColumnDetail, int64, error)
+	SetSchemaStoragePath(ctx context.Context, schemaID int64, path string) error
 }
 
 // QueryHistoryRepository provides query history operations.
@@ -150,6 +151,26 @@ type ViewRepository interface {
 	List(ctx context.Context, schemaID int64, page PageRequest) ([]ViewDetail, int64, error)
 	Delete(ctx context.Context, schemaID int64, viewName string) error
 	Update(ctx context.Context, schemaID int64, viewName string, comment *string, props map[string]string, viewDef *string) (*ViewDetail, error)
+}
+
+// StorageCredentialRepository provides CRUD operations for storage credentials.
+type StorageCredentialRepository interface {
+	Create(ctx context.Context, cred *StorageCredential) (*StorageCredential, error)
+	GetByID(ctx context.Context, id int64) (*StorageCredential, error)
+	GetByName(ctx context.Context, name string) (*StorageCredential, error)
+	List(ctx context.Context, page PageRequest) ([]StorageCredential, int64, error)
+	Update(ctx context.Context, id int64, req UpdateStorageCredentialRequest) (*StorageCredential, error)
+	Delete(ctx context.Context, id int64) error
+}
+
+// ExternalLocationRepository provides CRUD operations for external locations.
+type ExternalLocationRepository interface {
+	Create(ctx context.Context, loc *ExternalLocation) (*ExternalLocation, error)
+	GetByID(ctx context.Context, id int64) (*ExternalLocation, error)
+	GetByName(ctx context.Context, name string) (*ExternalLocation, error)
+	List(ctx context.Context, page PageRequest) ([]ExternalLocation, int64, error)
+	Update(ctx context.Context, id int64, req UpdateExternalLocationRequest) (*ExternalLocation, error)
+	Delete(ctx context.Context, id int64) error
 }
 
 // AuthorizationService defines the interface for permission checking.
