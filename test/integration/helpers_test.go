@@ -565,6 +565,7 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 	authSvc := security.NewAuthorizationService(
 		principalRepo, groupRepo, grantRepo,
 		rowFilterRepo, columnMaskRepo, introspectionRepo,
+		nil,
 	)
 
 	presigner, err := query.NewS3Presigner(cfg)
@@ -575,6 +576,7 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 	metastoreRepo := repository.NewMetastoreRepo(metaDB)
 	manifestSvc := query.NewManifestService(
 		metastoreRepo, authSvc, presigner, introspectionRepo, auditRepo,
+		nil, nil,
 	)
 
 	// Remaining services (querySvc gets nil engine — we never hit /v1/query)
@@ -589,7 +591,7 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 	lineageSvc := governance.NewLineageService(lineageRepo)
 	searchSvc := catalog.NewSearchService(searchRepo)
 	queryHistorySvc := governance.NewQueryHistoryService(queryHistoryRepo)
-	catalogRepo := repository.NewCatalogRepo(metaDB, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	catalogRepo := repository.NewCatalogRepo(metaDB, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	viewSvc := catalog.NewViewService(viewRepo, catalogRepo, authSvc, auditRepo)
 
 	handler := api.NewHandler(
@@ -857,6 +859,9 @@ type httpTestOpts struct {
 	// WithComputeEndpoints wires ComputeEndpointService, a full resolver, and a
 	// SecureEngine so that /v1/query routes through the compute resolver.
 	WithComputeEndpoints bool
+	// CatalogAttached marks the DuckLake catalog as attached at construction time.
+	// Used when tests need the catalog to be attached without going through full setup.
+	CatalogAttached bool
 }
 
 // httpTestEnv bundles the test server, API keys, and direct DB access.
@@ -908,6 +913,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	authSvc := security.NewAuthorizationService(
 		principalRepo, groupRepo, grantRepo,
 		rowFilterRepo, columnMaskRepo, introspectionRepo,
+		nil,
 	)
 
 	// Build services
@@ -926,13 +932,13 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	querySvc := query.NewQueryService(nil, auditRepo, nil)
 
 	// catalogRepo with duckDB=nil is safe — GetSchema only reads ducklake_schema from metaDB
-	catalogRepo := repository.NewCatalogRepo(metaDB, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	catalogRepo := repository.NewCatalogRepo(metaDB, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	viewSvc := catalog.NewViewService(viewRepo, catalogRepo, authSvc, auditRepo)
 
 	var duckDB *sql.DB
 	var manifestSvc *query.ManifestService
 	tableStatsRepo := repository.NewTableStatisticsRepo(metaDB)
-	catalogSvc := catalog.NewCatalogService(catalogRepo, authSvc, auditRepo, tagRepo, tableStatsRepo)
+	catalogSvc := catalog.NewCatalogService(catalogRepo, authSvc, auditRepo, tagRepo, tableStatsRepo, nil)
 
 	if opts.WithDuckLake {
 		env := setupLocalDuckLake(t)
@@ -966,6 +972,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		authSvc = security.NewAuthorizationService(
 			principalRepo, groupRepo, grantRepo,
 			rowFilterRepo, columnMaskRepo, introspectionRepo,
+			nil,
 		)
 		principalSvc = security.NewPrincipalService(principalRepo, auditRepo)
 		groupSvc = security.NewGroupService(groupRepo, auditRepo)
@@ -979,10 +986,10 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		searchSvc = catalog.NewSearchService(searchRepo)
 		queryHistorySvc = governance.NewQueryHistoryService(queryHistoryRepo)
 
-		catalogRepo = repository.NewCatalogRepo(metaDB, duckDB, slog.New(slog.NewTextHandler(io.Discard, nil)))
+		catalogRepo = repository.NewCatalogRepo(metaDB, duckDB, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 		viewSvc = catalog.NewViewService(viewRepo, catalogRepo, authSvc, auditRepo)
 		tableStatsRepo = repository.NewTableStatisticsRepo(metaDB)
-		catalogSvc = catalog.NewCatalogService(catalogRepo, authSvc, auditRepo, tagRepo, tableStatsRepo)
+		catalogSvc = catalog.NewCatalogService(catalogRepo, authSvc, auditRepo, tagRepo, tableStatsRepo, nil)
 
 		// manifestSvc needs S3 presigner — leave nil for non-S3 tests
 	}
@@ -1011,9 +1018,10 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 			}
 			t.Cleanup(func() { _ = extDuckDB.Close() })
 		}
+		secretMgr := engine.NewDuckDBSecretManager(extDuckDB)
 		extLocationSvc = storage.NewExternalLocationService(
 			extLocationRepo, storageCredRepo, authSvc, auditRepo,
-			extDuckDB, "", slog.New(slog.NewTextHandler(io.Discard, nil)),
+			secretMgr, secretMgr, "", opts.CatalogAttached, slog.New(slog.NewTextHandler(io.Discard, nil)),
 		)
 	}
 
@@ -1051,7 +1059,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		)
 
 		// Build SecureEngine with the resolver
-		eng := engine.NewSecureEngine(engineDuckDB, authSvc, resolver,
+		eng := engine.NewSecureEngine(engineDuckDB, authSvc, resolver, nil,
 			slog.New(slog.NewTextHandler(io.Discard, nil)))
 
 		// Rebuild querySvc with the real engine

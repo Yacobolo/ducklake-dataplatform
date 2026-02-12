@@ -9,6 +9,26 @@ import (
 	"duck-demo/internal/middleware"
 )
 
+// catalogService defines the catalog operations used by the API handler.
+type catalogService interface {
+	GetCatalogInfo(ctx context.Context) (*domain.CatalogInfo, error)
+	UpdateCatalog(ctx context.Context, principal string, req domain.UpdateCatalogRequest) (*domain.CatalogInfo, error)
+	ListSchemas(ctx context.Context, page domain.PageRequest) ([]domain.SchemaDetail, int64, error)
+	CreateSchema(ctx context.Context, principal string, req domain.CreateSchemaRequest) (*domain.SchemaDetail, error)
+	GetSchema(ctx context.Context, name string) (*domain.SchemaDetail, error)
+	UpdateSchema(ctx context.Context, principal string, name string, comment *string, props map[string]string) (*domain.SchemaDetail, error)
+	DeleteSchema(ctx context.Context, principal string, name string, force bool) error
+	ListTables(ctx context.Context, schemaName string, page domain.PageRequest) ([]domain.TableDetail, int64, error)
+	CreateTable(ctx context.Context, principal string, schemaName string, req domain.CreateTableRequest) (*domain.TableDetail, error)
+	GetTable(ctx context.Context, schemaName, tableName string) (*domain.TableDetail, error)
+	UpdateTable(ctx context.Context, principal string, schemaName, tableName string, req domain.UpdateTableRequest) (*domain.TableDetail, error)
+	DeleteTable(ctx context.Context, principal string, schemaName, tableName string) error
+	ListColumns(ctx context.Context, schemaName, tableName string, page domain.PageRequest) ([]domain.ColumnDetail, int64, error)
+	UpdateColumn(ctx context.Context, principal string, schemaName, tableName, columnName string, req domain.UpdateColumnRequest) (*domain.ColumnDetail, error)
+	ProfileTable(ctx context.Context, principal string, schemaName, tableName string) (*domain.TableStatistics, error)
+	GetMetastoreSummary(ctx context.Context) (*domain.MetastoreSummary, error)
+}
+
 // === Catalog Management ===
 
 func (h *APIHandler) GetCatalog(ctx context.Context, _ GetCatalogRequestObject) (GetCatalogResponseObject, error) {

@@ -9,6 +9,33 @@ import (
 	"duck-demo/internal/middleware"
 )
 
+// storageCredentialService defines the storage credential operations used by the API handler.
+type storageCredentialService interface {
+	List(ctx context.Context, page domain.PageRequest) ([]domain.StorageCredential, int64, error)
+	Create(ctx context.Context, principal string, req domain.CreateStorageCredentialRequest) (*domain.StorageCredential, error)
+	GetByName(ctx context.Context, name string) (*domain.StorageCredential, error)
+	Update(ctx context.Context, principal string, name string, req domain.UpdateStorageCredentialRequest) (*domain.StorageCredential, error)
+	Delete(ctx context.Context, principal string, name string) error
+}
+
+// externalLocationService defines the external location operations used by the API handler.
+type externalLocationService interface {
+	List(ctx context.Context, page domain.PageRequest) ([]domain.ExternalLocation, int64, error)
+	Create(ctx context.Context, principal string, req domain.CreateExternalLocationRequest) (*domain.ExternalLocation, error)
+	GetByName(ctx context.Context, name string) (*domain.ExternalLocation, error)
+	Update(ctx context.Context, principal string, name string, req domain.UpdateExternalLocationRequest) (*domain.ExternalLocation, error)
+	Delete(ctx context.Context, principal string, name string) error
+}
+
+// volumeService defines the volume operations used by the API handler.
+type volumeService interface {
+	List(ctx context.Context, schemaName string, page domain.PageRequest) ([]domain.Volume, int64, error)
+	Create(ctx context.Context, principal, schemaName string, req domain.CreateVolumeRequest) (*domain.Volume, error)
+	GetByName(ctx context.Context, schemaName, name string) (*domain.Volume, error)
+	Update(ctx context.Context, principal, schemaName, name string, req domain.UpdateVolumeRequest) (*domain.Volume, error)
+	Delete(ctx context.Context, principal, schemaName, name string) error
+}
+
 // === Storage Credentials ===
 
 func (h *APIHandler) ListStorageCredentials(ctx context.Context, req ListStorageCredentialsRequestObject) (ListStorageCredentialsResponseObject, error) {

@@ -8,6 +8,39 @@ import (
 	"duck-demo/internal/middleware"
 )
 
+// auditService defines the audit operations used by the API handler.
+type auditService interface {
+	List(ctx context.Context, filter domain.AuditFilter) ([]domain.AuditEntry, int64, error)
+}
+
+// queryHistoryService defines the query history operations used by the API handler.
+type queryHistoryService interface {
+	List(ctx context.Context, filter domain.QueryHistoryFilter) ([]domain.QueryHistoryEntry, int64, error)
+}
+
+// searchService defines the search operations used by the API handler.
+type searchService interface {
+	Search(ctx context.Context, query string, objectType *string, page domain.PageRequest) ([]domain.SearchResult, int64, error)
+}
+
+// lineageService defines the lineage operations used by the API handler.
+type lineageService interface {
+	GetFullLineage(ctx context.Context, tableName string, page domain.PageRequest) (*domain.LineageNode, error)
+	GetUpstream(ctx context.Context, tableName string, page domain.PageRequest) ([]domain.LineageEdge, int64, error)
+	GetDownstream(ctx context.Context, tableName string, page domain.PageRequest) ([]domain.LineageEdge, int64, error)
+	DeleteEdge(ctx context.Context, id int64) error
+	PurgeOlderThan(ctx context.Context, olderThanDays int) (int64, error)
+}
+
+// tagService defines the tag operations used by the API handler.
+type tagService interface {
+	ListTags(ctx context.Context, page domain.PageRequest) ([]domain.Tag, int64, error)
+	CreateTag(ctx context.Context, principal string, tag *domain.Tag) (*domain.Tag, error)
+	DeleteTag(ctx context.Context, principal string, id int64) error
+	AssignTag(ctx context.Context, principal string, assignment *domain.TagAssignment) (*domain.TagAssignment, error)
+	UnassignTag(ctx context.Context, principal string, id int64) error
+}
+
 // === Audit Logs ===
 
 func (h *APIHandler) ListAuditLogs(ctx context.Context, req ListAuditLogsRequestObject) (ListAuditLogsResponseObject, error) {

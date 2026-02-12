@@ -25,20 +25,16 @@ func NewCatalogService(
 	audit domain.AuditRepository,
 	tags domain.TagRepository,
 	stats domain.TableStatisticsRepository,
+	locations domain.ExternalLocationRepository,
 ) *CatalogService {
 	return &CatalogService{
-		repo:  repo,
-		auth:  auth,
-		audit: audit,
-		tags:  tags,
-		stats: stats,
+		repo:      repo,
+		auth:      auth,
+		audit:     audit,
+		tags:      tags,
+		stats:     stats,
+		locations: locations,
 	}
-}
-
-// SetExternalLocationRepo sets the optional external location repository.
-// When set, CreateSchema can use LocationName to set a per-schema storage path.
-func (s *CatalogService) SetExternalLocationRepo(repo domain.ExternalLocationRepository) {
-	s.locations = repo
 }
 
 // GetCatalogInfo returns information about the single catalog.

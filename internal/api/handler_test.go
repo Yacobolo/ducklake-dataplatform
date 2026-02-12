@@ -128,8 +128,8 @@ func setupTestServer(t *testing.T, principalName string) *httptest.Server {
 	columnMaskRepo := repository.NewColumnMaskRepo(metaDB)
 	introspectionRepo := repository.NewIntrospectionRepo(metaDB)
 
-	cat := security.NewAuthorizationService(principalRepo, groupRepo, grantRepo, rowFilterRepo, columnMaskRepo, introspectionRepo)
-	eng := engine.NewSecureEngine(duckDB, cat, nil, slog.New(slog.DiscardHandler))
+	cat := security.NewAuthorizationService(principalRepo, groupRepo, grantRepo, rowFilterRepo, columnMaskRepo, introspectionRepo, nil)
+	eng := engine.NewSecureEngine(duckDB, cat, nil, nil, slog.New(slog.DiscardHandler))
 
 	lineageRepo := repository.NewLineageRepo(metaDB)
 	querySvc := query.NewQueryService(eng, auditRepo, lineageRepo)
@@ -140,9 +140,9 @@ func setupTestServer(t *testing.T, principalName string) *httptest.Server {
 	columnMaskSvc := security.NewColumnMaskService(columnMaskRepo, auditRepo)
 	auditSvc := governance.NewAuditService(auditRepo)
 
-	catalogRepo := repository.NewCatalogRepo(metaDB, duckDB, slog.New(slog.DiscardHandler))
+	catalogRepo := repository.NewCatalogRepo(metaDB, duckDB, nil, slog.New(slog.DiscardHandler))
 	tagRepo := repository.NewTagRepo(metaDB)
-	catalogSvc := catalog.NewCatalogService(catalogRepo, cat, auditRepo, tagRepo, nil)
+	catalogSvc := catalog.NewCatalogService(catalogRepo, cat, auditRepo, tagRepo, nil, nil)
 
 	queryHistorySvc := governance.NewQueryHistoryService(repository.NewQueryHistoryRepo(metaDB))
 	lineageSvc := governance.NewLineageService(lineageRepo)
@@ -402,8 +402,8 @@ func setupCatalogTestServer(t *testing.T, principalName string, mockRepo *mockCa
 	columnMaskRepo := repository.NewColumnMaskRepo(metaDB)
 	introspectionRepo := repository.NewIntrospectionRepo(metaDB)
 
-	cat := security.NewAuthorizationService(principalRepo, groupRepo, grantRepo, rowFilterRepo, columnMaskRepo, introspectionRepo)
-	eng := engine.NewSecureEngine(duckDB, cat, nil, slog.New(slog.DiscardHandler))
+	cat := security.NewAuthorizationService(principalRepo, groupRepo, grantRepo, rowFilterRepo, columnMaskRepo, introspectionRepo, nil)
+	eng := engine.NewSecureEngine(duckDB, cat, nil, nil, slog.New(slog.DiscardHandler))
 
 	lineageRepo2 := repository.NewLineageRepo(metaDB)
 	querySvc := query.NewQueryService(eng, auditRepo, lineageRepo2)
@@ -416,7 +416,7 @@ func setupCatalogTestServer(t *testing.T, principalName string, mockRepo *mockCa
 
 	// Use the mock catalog repo instead of real DuckLake
 	tagRepo2 := repository.NewTagRepo(metaDB)
-	catalogSvc := catalog.NewCatalogService(mockRepo, cat, auditRepo, tagRepo2, nil)
+	catalogSvc := catalog.NewCatalogService(mockRepo, cat, auditRepo, tagRepo2, nil, nil)
 
 	queryHistorySvc := governance.NewQueryHistoryService(repository.NewQueryHistoryRepo(metaDB))
 	lineageSvc := governance.NewLineageService(lineageRepo2)

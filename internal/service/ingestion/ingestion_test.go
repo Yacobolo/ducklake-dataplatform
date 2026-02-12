@@ -66,6 +66,7 @@ func setupTestService(t *testing.T) (*security.AuthorizationService, *dbstore.Qu
 	svc := security.NewAuthorizationService(
 		principalRepo, groupRepo, grantRepo,
 		rowFilterRepo, columnMaskRepo, introspectionRepo,
+		nil,
 	)
 
 	q := dbstore.New(db)

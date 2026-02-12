@@ -36,6 +36,8 @@ func NewIngestionService(
 	auditRepo domain.AuditRepository,
 	catalogName string,
 	bucket string,
+	credRepo domain.StorageCredentialRepository,
+	locRepo domain.ExternalLocationRepository,
 ) *IngestionService {
 	return &IngestionService{
 		duckDB:      duckDB,
@@ -45,17 +47,9 @@ func NewIngestionService(
 		auditRepo:   auditRepo,
 		catalogName: catalogName,
 		bucket:      bucket,
+		credRepo:    credRepo,
+		locRepo:     locRepo,
 	}
-}
-
-// SetCredentialRepos sets the credential and location repositories for
-// resolving per-schema storage credentials at runtime.
-func (s *IngestionService) SetCredentialRepos(
-	credRepo domain.StorageCredentialRepository,
-	locRepo domain.ExternalLocationRepository,
-) {
-	s.credRepo = credRepo
-	s.locRepo = locRepo
 }
 
 // RequestUploadURL generates a presigned PUT URL for uploading a Parquet file.

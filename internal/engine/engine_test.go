@@ -67,6 +67,7 @@ func setupTestCatalog(t *testing.T) *security.AuthorizationService {
 		repository.NewRowFilterRepo(metaDB),
 		repository.NewColumnMaskRepo(metaDB),
 		repository.NewIntrospectionRepo(metaDB),
+		nil,
 	)
 	setupCtx := context.Background()
 	q := dbstore.New(metaDB)
@@ -181,7 +182,7 @@ func setupEngine(t *testing.T) *engine.SecureEngine {
 	}
 
 	cat := setupTestCatalog(t)
-	return engine.NewSecureEngine(db, cat, nil, slog.New(slog.DiscardHandler))
+	return engine.NewSecureEngine(db, cat, nil, nil, slog.New(slog.DiscardHandler))
 }
 
 func TestAdminSeesAllRows(t *testing.T) {

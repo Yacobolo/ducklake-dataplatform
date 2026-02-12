@@ -26,13 +26,8 @@ type CatalogRepo struct {
 }
 
 // NewCatalogRepo creates a new CatalogRepo.
-func NewCatalogRepo(metaDB, duckDB *sql.DB, logger *slog.Logger) *CatalogRepo {
-	return &CatalogRepo{metaDB: metaDB, duckDB: duckDB, q: dbstore.New(metaDB), logger: logger}
-}
-
-// SetExternalTableRepo sets the external table repository for external table support.
-func (r *CatalogRepo) SetExternalTableRepo(repo *ExternalTableRepo) {
-	r.extRepo = repo
+func NewCatalogRepo(metaDB, duckDB *sql.DB, extRepo *ExternalTableRepo, logger *slog.Logger) *CatalogRepo {
+	return &CatalogRepo{metaDB: metaDB, duckDB: duckDB, q: dbstore.New(metaDB), extRepo: extRepo, logger: logger}
 }
 
 // refreshMetaDB forces metaDB to see the latest WAL changes written by

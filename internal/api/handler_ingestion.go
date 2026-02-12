@@ -8,6 +8,18 @@ import (
 	"duck-demo/internal/middleware"
 )
 
+// IngestionService defines the ingestion operations used by the API handler.
+// Exported because callers need to handle nil-to-interface conversion for
+// this optional service.
+type IngestionService = ingestionService
+
+// ingestionService defines the ingestion operations used by the API handler.
+type ingestionService interface {
+	RequestUploadURL(ctx context.Context, principal string, schemaName, tableName string, filename *string) (*domain.UploadURLResult, error)
+	CommitIngestion(ctx context.Context, principal string, schemaName, tableName string, s3Keys []string, opts domain.IngestionOptions) (*domain.IngestionResult, error)
+	LoadExternalFiles(ctx context.Context, principal string, schemaName, tableName string, paths []string, opts domain.IngestionOptions) (*domain.IngestionResult, error)
+}
+
 // === Ingestion ===
 
 func (h *APIHandler) CreateUploadUrl(ctx context.Context, req CreateUploadUrlRequestObject) (CreateUploadUrlResponseObject, error) {

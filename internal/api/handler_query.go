@@ -4,8 +4,25 @@ import (
 	"context"
 	"net/http"
 
+	"duck-demo/internal/service/query"
+
 	"duck-demo/internal/middleware"
 )
+
+// queryService defines the query operations used by the API handler.
+type queryService interface {
+	Execute(ctx context.Context, principalName, sqlQuery string) (*query.QueryResult, error)
+}
+
+// ManifestService defines the manifest operations used by the API handler.
+// Exported because callers need to handle nil-to-interface conversion for
+// this optional service.
+type ManifestService = manifestService
+
+// manifestService defines the manifest operations used by the API handler.
+type manifestService interface {
+	GetManifest(ctx context.Context, principalName, schemaName, tableName string) (*query.ManifestResult, error)
+}
 
 func (h *APIHandler) ExecuteQuery(ctx context.Context, req ExecuteQueryRequestObject) (ExecuteQueryResponseObject, error) {
 	principal, _ := middleware.PrincipalFromContext(ctx)

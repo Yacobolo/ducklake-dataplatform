@@ -56,6 +56,7 @@ func NewAuthorizationService(
 	rowFilters domain.RowFilterRepository,
 	columnMasks domain.ColumnMaskRepository,
 	introspection domain.IntrospectionRepository,
+	extTableRepo domain.ExternalTableRepository,
 ) *AuthorizationService {
 	return &AuthorizationService{
 		principals:    principals,
@@ -64,12 +65,8 @@ func NewAuthorizationService(
 		rowFilters:    rowFilters,
 		columnMasks:   columnMasks,
 		introspection: introspection,
+		extTableRepo:  extTableRepo,
 	}
-}
-
-// SetExternalTableRepo sets the optional external table repository for resolving external table IDs.
-func (s *AuthorizationService) SetExternalTableRepo(repo domain.ExternalTableRepository) {
-	s.extTableRepo = repo
 }
 
 // resolveGroupIDs returns the set of group IDs a principal belongs to,

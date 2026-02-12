@@ -49,6 +49,8 @@ func NewManifestService(
 	presigner *S3Presigner,
 	introRepo domain.IntrospectionRepository,
 	auditRepo domain.AuditRepository,
+	credRepo domain.StorageCredentialRepository,
+	locRepo domain.ExternalLocationRepository,
 ) *ManifestService {
 	return &ManifestService{
 		metastore: metastore,
@@ -56,17 +58,9 @@ func NewManifestService(
 		presigner: presigner,
 		introRepo: introRepo,
 		auditRepo: auditRepo,
+		credRepo:  credRepo,
+		locRepo:   locRepo,
 	}
-}
-
-// SetCredentialRepos sets the credential and location repositories for
-// resolving per-schema storage credentials at runtime.
-func (s *ManifestService) SetCredentialRepos(
-	credRepo domain.StorageCredentialRepository,
-	locRepo domain.ExternalLocationRepository,
-) {
-	s.credRepo = credRepo
-	s.locRepo = locRepo
 }
 
 // GetManifest resolves a table name for a principal, returning presigned URLs,

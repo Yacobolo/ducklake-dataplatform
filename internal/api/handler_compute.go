@@ -10,6 +10,19 @@ import (
 	"duck-demo/internal/middleware"
 )
 
+// computeEndpointService defines the compute endpoint operations used by the API handler.
+type computeEndpointService interface {
+	List(ctx context.Context, page domain.PageRequest) ([]domain.ComputeEndpoint, int64, error)
+	Create(ctx context.Context, principal string, req domain.CreateComputeEndpointRequest) (*domain.ComputeEndpoint, error)
+	GetByName(ctx context.Context, name string) (*domain.ComputeEndpoint, error)
+	Update(ctx context.Context, principal string, name string, req domain.UpdateComputeEndpointRequest) (*domain.ComputeEndpoint, error)
+	Delete(ctx context.Context, principal string, name string) error
+	ListAssignments(ctx context.Context, endpointName string, page domain.PageRequest) ([]domain.ComputeAssignment, int64, error)
+	Assign(ctx context.Context, principal string, endpointName string, req domain.CreateComputeAssignmentRequest) (*domain.ComputeAssignment, error)
+	Unassign(ctx context.Context, principal string, assignmentID int64) error
+	HealthCheck(ctx context.Context, principal string, endpointName string) (*domain.ComputeEndpointHealthResult, error)
+}
+
 // === Compute Endpoints ===
 
 func (h *APIHandler) ListComputeEndpoints(ctx context.Context, req ListComputeEndpointsRequestObject) (ListComputeEndpointsResponseObject, error) {

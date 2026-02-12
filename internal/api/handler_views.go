@@ -8,6 +8,15 @@ import (
 	"duck-demo/internal/middleware"
 )
 
+// viewService defines the view operations used by the API handler.
+type viewService interface {
+	ListViews(ctx context.Context, schemaName string, page domain.PageRequest) ([]domain.ViewDetail, int64, error)
+	CreateView(ctx context.Context, principal string, schemaName string, req domain.CreateViewRequest) (*domain.ViewDetail, error)
+	GetView(ctx context.Context, schemaName, viewName string) (*domain.ViewDetail, error)
+	UpdateView(ctx context.Context, principal string, schemaName, viewName string, req domain.UpdateViewRequest) (*domain.ViewDetail, error)
+	DeleteView(ctx context.Context, principal string, schemaName, viewName string) error
+}
+
 // === Views ===
 
 func (h *APIHandler) ListViews(ctx context.Context, req ListViewsRequestObject) (ListViewsResponseObject, error) {

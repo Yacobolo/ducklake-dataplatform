@@ -34,26 +34,20 @@ func NewExternalLocationService(
 	secrets domain.SecretManager,
 	attacher domain.CatalogAttacher,
 	metaPath string,
+	catalogAttached bool,
 	logger *slog.Logger,
 ) *ExternalLocationService {
 	return &ExternalLocationService{
-		locRepo:  locRepo,
-		credRepo: credRepo,
-		auth:     auth,
-		audit:    audit,
-		secrets:  secrets,
-		attacher: attacher,
-		metaPath: metaPath,
-		logger:   logger,
+		locRepo:         locRepo,
+		credRepo:        credRepo,
+		auth:            auth,
+		audit:           audit,
+		secrets:         secrets,
+		attacher:        attacher,
+		metaPath:        metaPath,
+		catalogAttached: catalogAttached,
+		logger:          logger,
 	}
-}
-
-// SetCatalogAttached marks the catalog as already attached.
-// Used when legacy S3 env vars configure the catalog at startup.
-func (s *ExternalLocationService) SetCatalogAttached(attached bool) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.catalogAttached = attached
 }
 
 // IsCatalogAttached returns whether the DuckLake catalog is attached.

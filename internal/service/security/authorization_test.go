@@ -66,6 +66,7 @@ func setupTestService(t *testing.T) (*AuthorizationService, *dbstore.Queries, co
 	svc := NewAuthorizationService(
 		principalRepo, groupRepo, grantRepo,
 		rowFilterRepo, columnMaskRepo, introspectionRepo,
+		nil,
 	)
 
 	// Return dbstore.Queries for test data seeding
