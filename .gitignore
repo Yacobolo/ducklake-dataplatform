@@ -35,6 +35,8 @@ go.work.sum
 .opencode/plans
 ducklake_meta.sqlite*
 
+*PLAN.md
+
 # Binaries
 /server
 /server_test
