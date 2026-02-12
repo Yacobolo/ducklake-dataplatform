@@ -95,7 +95,7 @@ func TestParse_CoverageCheck(t *testing.T) {
 	spec := buildMinimalSpec("listSchemas", "GET", "/catalog/schemas")
 
 	t.Run("missing operation in config", func(t *testing.T) {
-		cfg := &CLIConfig{
+		cfg := &Config{
 			Groups: map[string]GroupConfig{},
 		}
 		_, err := Parse(spec, cfg)
@@ -105,7 +105,7 @@ func TestParse_CoverageCheck(t *testing.T) {
 	})
 
 	t.Run("operation in skip_operations", func(t *testing.T) {
-		cfg := &CLIConfig{
+		cfg := &Config{
 			Groups:         map[string]GroupConfig{},
 			SkipOperations: []string{"listSchemas"},
 		}
@@ -115,7 +115,7 @@ func TestParse_CoverageCheck(t *testing.T) {
 	})
 
 	t.Run("config references nonexistent operation", func(t *testing.T) {
-		cfg := &CLIConfig{
+		cfg := &Config{
 			Groups: map[string]GroupConfig{
 				"catalog": {
 					Short: "Catalog",

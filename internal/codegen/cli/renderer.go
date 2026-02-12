@@ -17,8 +17,8 @@ import (
 var templateFS embed.FS
 
 // Render generates all Go source files from the model into outDir.
-func Render(groups []GroupModel, cfg *CLIConfig, outDir string) error {
-	if err := os.MkdirAll(outDir, 0o755); err != nil {
+func Render(groups []GroupModel, cfg *Config, outDir string) error {
+	if err := os.MkdirAll(outDir, 0o750); err != nil {
 		return fmt.Errorf("create output dir: %w", err)
 	}
 
@@ -157,12 +157,12 @@ func Render(groups []GroupModel, cfg *CLIConfig, outDir string) error {
 		if err != nil {
 			// Write unformatted for debugging
 			outPath := filepath.Join(outDir, job.fileName)
-			_ = os.WriteFile(outPath, buf.Bytes(), 0o644)
+			_ = os.WriteFile(outPath, buf.Bytes(), 0o600)
 			return fmt.Errorf("goimports %s: %w", job.fileName, err)
 		}
 
 		outPath := filepath.Join(outDir, job.fileName)
-		if err := os.WriteFile(outPath, formatted, 0o644); err != nil {
+		if err := os.WriteFile(outPath, formatted, 0o600); err != nil {
 			return fmt.Errorf("write %s: %w", outPath, err)
 		}
 	}

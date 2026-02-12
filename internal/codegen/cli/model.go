@@ -3,11 +3,12 @@ package cli
 // ResponsePattern classifies the response of an operation.
 type ResponsePattern int
 
+// Response pattern constants for classifying API responses.
 const (
-	PaginatedList ResponsePattern = iota
-	SingleResource
-	NoContent
-	CustomResult
+	PaginatedList  ResponsePattern = iota // data array + next_page_token
+	SingleResource                        // 200/201 with named $ref
+	NoContent                             // 204 only
+	CustomResult                          // fallback
 )
 
 func (p ResponsePattern) String() string {

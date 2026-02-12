@@ -1,3 +1,5 @@
+// Package cli implements the CLI code generator that produces Cobra commands
+// from an OpenAPI spec and a cli-config.yaml file.
 package cli
 
 import (
@@ -7,23 +9,26 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// CLIConfig is the top-level cli-config.yaml structure.
-type CLIConfig struct {
+// Config is the top-level cli-config.yaml structure.
+type Config struct {
 	Global         GlobalConfig           `yaml:"global"`
 	Groups         map[string]GroupConfig `yaml:"groups"`
 	SkipOperations []string               `yaml:"skip_operations"`
 }
 
+// GlobalConfig holds global CLI settings.
 type GlobalConfig struct {
 	DefaultOutput      string `yaml:"default_output"`
 	ConfirmDestructive bool   `yaml:"confirm_destructive"`
 }
 
+// GroupConfig represents a top-level CLI command group in the config.
 type GroupConfig struct {
 	Short    string                   `yaml:"short"`
 	Commands map[string]CommandConfig `yaml:"commands"`
 }
 
+// CommandConfig represents a single CLI command in the config.
 type CommandConfig struct {
 	OperationID         string                          `yaml:"operation_id"`
 	CommandPath         []string                        `yaml:"command_path"`
@@ -38,27 +43,30 @@ type CommandConfig struct {
 	ConditionalRequires map[string][]ConditionalRequire `yaml:"conditional_requires"`
 }
 
+// FlagAliasConfig holds a short alias for a flag.
 type FlagAliasConfig struct {
 	Short string `yaml:"short"`
 }
 
+// CompoundFlagConfig defines a compound repeatable flag (e.g., --column name:type).
 type CompoundFlagConfig struct {
 	Fields    []string `yaml:"fields"`
 	Separator string   `yaml:"separator"`
 }
 
+// ConditionalRequire defines flags required when a discriminator has a specific value.
 type ConditionalRequire struct {
 	Value    string   `yaml:"value"`
 	Required []string `yaml:"required"`
 }
 
 // LoadConfig reads and parses a cli-config.yaml file.
-func LoadConfig(path string) (*CLIConfig, error) {
-	data, err := os.ReadFile(path)
+func LoadConfig(path string) (*Config, error) {
+	data, err := os.ReadFile(path) //nolint:gosec // path is from CLI flag, not user input
 	if err != nil {
 		return nil, fmt.Errorf("read cli config: %w", err)
 	}
-	var cfg CLIConfig
+	var cfg Config
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return nil, fmt.Errorf("parse cli config: %w", err)
 	}

@@ -1,3 +1,4 @@
+// Package main is the entry point for the CLI code generator.
 package main
 
 import (

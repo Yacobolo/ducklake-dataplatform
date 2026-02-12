@@ -14,7 +14,7 @@ func TestLoadConfig(t *testing.T) {
 		name    string
 		yaml    string
 		wantErr bool
-		check   func(t *testing.T, cfg *CLIConfig)
+		check   func(t *testing.T, cfg *Config)
 	}{
 		{
 			name: "minimal config",
@@ -31,7 +31,7 @@ groups:
         verb: list
         table_columns: [name, owner]
 `,
-			check: func(t *testing.T, cfg *CLIConfig) {
+			check: func(t *testing.T, cfg *Config) {
 				t.Helper()
 				assert.Equal(t, "table", cfg.Global.DefaultOutput)
 				require.Contains(t, cfg.Groups, "catalog")
@@ -60,7 +60,7 @@ groups:
         examples:
           - "duck catalog schemas create test"
 `,
-			check: func(t *testing.T, cfg *CLIConfig) {
+			check: func(t *testing.T, cfg *Config) {
 				t.Helper()
 				cmd := cfg.Groups["catalog"].Commands["create-schema"]
 				assert.Equal(t, []string{"name"}, cmd.PositionalArgs)
@@ -76,7 +76,7 @@ groups: {}
 skip_operations:
   - createRowFilterTopLevel
 `,
-			check: func(t *testing.T, cfg *CLIConfig) {
+			check: func(t *testing.T, cfg *Config) {
 				t.Helper()
 				assert.Equal(t, []string{"createRowFilterTopLevel"}, cfg.SkipOperations)
 			},
@@ -98,7 +98,7 @@ groups:
           sql:
             short: s
 `,
-			check: func(t *testing.T, cfg *CLIConfig) {
+			check: func(t *testing.T, cfg *Config) {
 				t.Helper()
 				cmd := cfg.Groups["query"].Commands["execute"]
 				require.Contains(t, cmd.FlagAliases, "sql")
@@ -122,7 +122,7 @@ groups:
         positional_args: [schemaName]
         confirm: true
 `,
-			check: func(t *testing.T, cfg *CLIConfig) {
+			check: func(t *testing.T, cfg *Config) {
 				t.Helper()
 				assert.True(t, cfg.Global.ConfirmDestructive)
 				cmd := cfg.Groups["catalog"].Commands["delete-schema"]
@@ -150,7 +150,7 @@ groups:
         positional_args: [schemaName, tableName]
         flatten_fields: [options]
 `,
-			check: func(t *testing.T, cfg *CLIConfig) {
+			check: func(t *testing.T, cfg *Config) {
 				t.Helper()
 				cmd := cfg.Groups["ingestion"].Commands["commit"]
 				assert.Equal(t, []string{"options"}, cmd.FlattenFields)
@@ -175,7 +175,7 @@ groups:
             fields: [name, type]
             separator: ":"
 `,
-			check: func(t *testing.T, cfg *CLIConfig) {
+			check: func(t *testing.T, cfg *Config) {
 				t.Helper()
 				cmd := cfg.Groups["catalog"].Commands["create-table"]
 				require.Contains(t, cmd.CompoundFlags, "columns")

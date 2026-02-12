@@ -39,7 +39,7 @@ func newRootCmd() *cobra.Command {
 		Long:          "Command-line interface for the DuckDB Data Platform API.",
 		SilenceUsage:  true,
 		SilenceErrors: true,
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			// Load config from profile if flags/env not set
 			cfg, err := LoadUserConfig()
 			if err != nil {

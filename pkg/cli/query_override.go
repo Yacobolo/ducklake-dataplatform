@@ -15,7 +15,7 @@ import (
 
 func init() {
 	gen.RegisterRunOverride("executeQuery", func(client *gen.Client) func(*cobra.Command, []string) error {
-		return func(cmd *cobra.Command, args []string) error {
+		return func(cmd *cobra.Command, _ []string) error {
 			sql, _ := cmd.Flags().GetString("sql")
 
 			// Read from stdin if no --sql flag
@@ -59,7 +59,7 @@ func init() {
 
 			quiet, _ := cmd.Root().PersistentFlags().GetBool("quiet")
 			if quiet {
-				fmt.Fprintln(os.Stdout, result.RowCount)
+				_, _ = fmt.Fprintln(os.Stdout, result.RowCount)
 				return nil
 			}
 
@@ -67,17 +67,19 @@ func init() {
 			switch gen.OutputFormat(outputFlag) {
 			case gen.OutputJSON:
 				var pretty interface{}
-				json.Unmarshal(respBody, &pretty)
+				if err := json.Unmarshal(respBody, &pretty); err != nil {
+					return fmt.Errorf("parse JSON: %w", err)
+				}
 				return gen.PrintJSON(os.Stdout, pretty)
 			case gen.OutputCSV:
 				w := csv.NewWriter(os.Stdout)
-				w.Write(result.Columns)
+				_ = w.Write(result.Columns)
 				for _, row := range result.Rows {
 					record := make([]string, len(row))
 					for i, v := range row {
 						record[i] = fmt.Sprintf("%v", v)
 					}
-					w.Write(record)
+					_ = w.Write(record)
 				}
 				w.Flush()
 				return w.Error()

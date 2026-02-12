@@ -51,7 +51,7 @@ func ConfigPath() string {
 // LoadUserConfig reads ~/.duck/config.yaml.
 func LoadUserConfig() (*UserConfig, error) {
 	path := ConfigPath()
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) //nolint:gosec // path is derived from home dir, not user input
 	if err != nil {
 		return nil, fmt.Errorf("read config: %w", err)
 	}

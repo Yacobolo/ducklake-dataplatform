@@ -10,7 +10,7 @@ import (
 )
 
 // Parse reads the OpenAPI spec and CLI config, validates coverage, and builds the model.
-func Parse(spec *openapi3.T, cfg *CLIConfig) ([]GroupModel, error) {
+func Parse(spec *openapi3.T, cfg *Config) ([]GroupModel, error) {
 	// Build a map of operationId -> operation info from spec
 	specOps := map[string]*opInfo{}
 	for urlPath, pathItem := range spec.Paths.Map() {
@@ -88,7 +88,7 @@ type opInfo struct {
 	params  []*openapi3.ParameterRef
 }
 
-func buildCommandModel(groupName, cmdName string, cmdCfg CommandConfig, info *opInfo, cfg *CLIConfig) (*CommandModel, error) {
+func buildCommandModel(groupName, _ string, cmdCfg CommandConfig, info *opInfo, _ *Config) (*CommandModel, error) {
 	positionalSet := toSet(cmdCfg.PositionalArgs)
 
 	cm := &CommandModel{
@@ -392,15 +392,16 @@ func fieldToFlag(name string, schema *openapi3.Schema, required bool, aliases ma
 		IsBody:    true,
 	}
 
-	if isMapType(schema) {
+	switch {
+	case isMapType(schema):
 		fm.GoType = "[]string"
 		fm.CobraType = "StringSlice"
 		fm.Usage = fmt.Sprintf("%s (key=value pairs)", name)
-	} else if isArrayType(schema) {
+	case isArrayType(schema):
 		fm.GoType = "[]string"
 		fm.CobraType = "StringSlice"
 		fm.Usage = schema.Description
-	} else {
+	default:
 		fm.GoType = schemaGoType(schema)
 		fm.CobraType = goTypeToCobraType(fm.GoType)
 		fm.Usage = schema.Description

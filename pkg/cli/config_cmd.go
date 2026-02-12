@@ -26,17 +26,17 @@ func newConfigShowCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "show",
 		Short: "Display current configuration",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			cfg, err := LoadUserConfig()
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "No configuration found at %s\n", ConfigPath())
-				return nil
+				_, _ = fmt.Fprintf(os.Stderr, "No configuration found at %s\n", ConfigPath())
+				return err
 			}
 			data, err := yaml.Marshal(cfg)
 			if err != nil {
 				return fmt.Errorf("marshal config: %w", err)
 			}
-			fmt.Fprint(os.Stdout, string(data))
+			_, _ = fmt.Fprint(os.Stdout, string(data))
 			return nil
 		},
 	}
@@ -54,7 +54,7 @@ func newConfigSetProfileCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "set-profile",
 		Short: "Create or update a configuration profile",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			if name == "" {
 				return fmt.Errorf("--name is required")
 			}
@@ -85,7 +85,7 @@ func newConfigSetProfileCmd() *cobra.Command {
 			if err := SaveUserConfig(cfg); err != nil {
 				return err
 			}
-			fmt.Fprintf(os.Stdout, "Profile %q saved to %s\n", name, ConfigPath())
+			_, _ = fmt.Fprintf(os.Stdout, "Profile %q saved to %s\n", name, ConfigPath())
 			return nil
 		},
 	}
@@ -105,7 +105,7 @@ func newConfigUseProfileCmd() *cobra.Command {
 		Use:   "use-profile <name>",
 		Short: "Set the active configuration profile",
 		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			cfg, err := LoadUserConfig()
 			if err != nil {
 				return fmt.Errorf("no config found: %w", err)
@@ -118,7 +118,7 @@ func newConfigUseProfileCmd() *cobra.Command {
 			if err := SaveUserConfig(cfg); err != nil {
 				return err
 			}
-			fmt.Fprintf(os.Stdout, "Active profile set to %q\n", name)
+			_, _ = fmt.Fprintf(os.Stdout, "Active profile set to %q\n", name)
 			return nil
 		},
 	}
