@@ -36,6 +36,7 @@ type APIHandler struct {
 	externalLocations *service.ExternalLocationService
 	volumes           *service.VolumeService
 	computeEndpoints  *service.ComputeEndpointService
+	apiKeys           *service.APIKeyService
 }
 
 // NewHandler creates a new APIHandler with all required service dependencies.
@@ -59,6 +60,7 @@ func NewHandler(
 	externalLocations *service.ExternalLocationService,
 	volumes *service.VolumeService,
 	computeEndpoints *service.ComputeEndpointService,
+	apiKeys *service.APIKeyService,
 ) *APIHandler {
 	return &APIHandler{
 		query:             query,
@@ -80,6 +82,7 @@ func NewHandler(
 		externalLocations: externalLocations,
 		volumes:           volumes,
 		computeEndpoints:  computeEndpoints,
+		apiKeys:           apiKeys,
 	}
 }
 
@@ -196,6 +199,8 @@ func (h *APIHandler) CreatePrincipal(ctx context.Context, req CreatePrincipalReq
 	result, err := h.principals.Create(ctx, p)
 	if err != nil {
 		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return CreatePrincipal403JSONResponse{Code: 403, Message: err.Error()}, nil
 		case errors.As(err, new(*domain.ValidationError)):
 			return CreatePrincipal400JSONResponse{Code: 400, Message: err.Error()}, nil
 		case errors.As(err, new(*domain.ConflictError)):
@@ -223,6 +228,8 @@ func (h *APIHandler) GetPrincipal(ctx context.Context, req GetPrincipalRequestOb
 func (h *APIHandler) DeletePrincipal(ctx context.Context, req DeletePrincipalRequestObject) (DeletePrincipalResponseObject, error) {
 	if err := h.principals.Delete(ctx, req.PrincipalId); err != nil {
 		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return DeletePrincipal403JSONResponse{Code: 403, Message: err.Error()}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
 			return DeletePrincipal404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
@@ -235,6 +242,8 @@ func (h *APIHandler) DeletePrincipal(ctx context.Context, req DeletePrincipalReq
 func (h *APIHandler) UpdatePrincipalAdmin(ctx context.Context, req UpdatePrincipalAdminRequestObject) (UpdatePrincipalAdminResponseObject, error) {
 	if err := h.principals.SetAdmin(ctx, req.PrincipalId, req.Body.IsAdmin); err != nil {
 		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return UpdatePrincipalAdmin403JSONResponse{Code: 403, Message: err.Error()}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
 			return UpdatePrincipalAdmin404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
@@ -267,7 +276,14 @@ func (h *APIHandler) CreateGroup(ctx context.Context, req CreateGroupRequestObje
 	}
 	result, err := h.groups.Create(ctx, g)
 	if err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return CreateGroup403JSONResponse{Code: 403, Message: err.Error()}, nil
+		case errors.As(err, new(*domain.ValidationError)):
+			return CreateGroup400JSONResponse{Code: 400, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return CreateGroup201JSONResponse(groupToAPI(*result)), nil
 }
@@ -287,7 +303,12 @@ func (h *APIHandler) GetGroup(ctx context.Context, req GetGroupRequestObject) (G
 
 func (h *APIHandler) DeleteGroup(ctx context.Context, req DeleteGroupRequestObject) (DeleteGroupResponseObject, error) {
 	if err := h.groups.Delete(ctx, req.GroupId); err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return DeleteGroup403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return DeleteGroup204Response{}, nil
 }
@@ -312,7 +333,12 @@ func (h *APIHandler) CreateGroupMember(ctx context.Context, req CreateGroupMembe
 		MemberType: req.Body.MemberType,
 		MemberID:   req.Body.MemberId,
 	}); err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return CreateGroupMember403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return CreateGroupMember204Response{}, nil
 }
@@ -323,7 +349,12 @@ func (h *APIHandler) DeleteGroupMember(ctx context.Context, req DeleteGroupMembe
 		MemberType: req.Body.MemberType,
 		MemberID:   req.Body.MemberId,
 	}); err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return DeleteGroupMember403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return DeleteGroupMember204Response{}, nil
 }
@@ -367,7 +398,14 @@ func (h *APIHandler) CreateGrant(ctx context.Context, req CreateGrantRequestObje
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	result, err := h.grants.Grant(ctx, principal, g)
 	if err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return CreateGrant403JSONResponse{Code: 403, Message: err.Error()}, nil
+		case errors.As(err, new(*domain.ValidationError)):
+			return CreateGrant400JSONResponse{Code: 400, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return CreateGrant201JSONResponse(grantToAPI(*result)), nil
 }
@@ -381,7 +419,12 @@ func (h *APIHandler) DeleteGrant(ctx context.Context, req DeleteGrantRequestObje
 		SecurableID:   req.Body.SecurableId,
 		Privilege:     req.Body.Privilege,
 	}); err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return DeleteGrant403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return DeleteGrant204Response{}, nil
 }
@@ -413,14 +456,24 @@ func (h *APIHandler) CreateRowFilter(ctx context.Context, req CreateRowFilterReq
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	result, err := h.rowFilters.Create(ctx, principal, f)
 	if err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return CreateRowFilter403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return CreateRowFilter201JSONResponse(rowFilterToAPI(*result)), nil
 }
 
 func (h *APIHandler) DeleteRowFilter(ctx context.Context, req DeleteRowFilterRequestObject) (DeleteRowFilterResponseObject, error) {
 	if err := h.rowFilters.Delete(ctx, req.RowFilterId); err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return DeleteRowFilter403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return DeleteRowFilter204Response{}, nil
 }
@@ -431,7 +484,12 @@ func (h *APIHandler) BindRowFilter(ctx context.Context, req BindRowFilterRequest
 		PrincipalID:   req.Body.PrincipalId,
 		PrincipalType: req.Body.PrincipalType,
 	}); err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return BindRowFilter403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return BindRowFilter204Response{}, nil
 }
@@ -442,7 +500,12 @@ func (h *APIHandler) UnbindRowFilter(ctx context.Context, req UnbindRowFilterReq
 		PrincipalID:   req.Body.PrincipalId,
 		PrincipalType: req.Body.PrincipalType,
 	}); err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return UnbindRowFilter403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return UnbindRowFilter204Response{}, nil
 }
@@ -461,7 +524,12 @@ func (h *APIHandler) CreateRowFilterTopLevel(ctx context.Context, req CreateRowF
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	result, err := h.rowFilters.Create(ctx, principal, f)
 	if err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return CreateRowFilterTopLevel403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return CreateRowFilterTopLevel201JSONResponse(rowFilterToAPI(*result)), nil
 }
@@ -494,14 +562,24 @@ func (h *APIHandler) CreateColumnMask(ctx context.Context, req CreateColumnMaskR
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	result, err := h.columnMasks.Create(ctx, principal, m)
 	if err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return CreateColumnMask403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return CreateColumnMask201JSONResponse(columnMaskToAPI(*result)), nil
 }
 
 func (h *APIHandler) DeleteColumnMask(ctx context.Context, req DeleteColumnMaskRequestObject) (DeleteColumnMaskResponseObject, error) {
 	if err := h.columnMasks.Delete(ctx, req.ColumnMaskId); err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return DeleteColumnMask403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return DeleteColumnMask204Response{}, nil
 }
@@ -517,7 +595,12 @@ func (h *APIHandler) BindColumnMask(ctx context.Context, req BindColumnMaskReque
 		PrincipalType: req.Body.PrincipalType,
 		SeeOriginal:   seeOriginal,
 	}); err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return BindColumnMask403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return BindColumnMask204Response{}, nil
 }
@@ -528,9 +611,89 @@ func (h *APIHandler) UnbindColumnMask(ctx context.Context, req UnbindColumnMaskR
 		PrincipalID:   req.Body.PrincipalId,
 		PrincipalType: req.Body.PrincipalType,
 	}); err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return UnbindColumnMask403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return UnbindColumnMask204Response{}, nil
+}
+
+// === API Keys ===
+
+func (h *APIHandler) CreateAPIKey(ctx context.Context, req CreateAPIKeyRequestObject) (CreateAPIKeyResponseObject, error) {
+	rawKey, key, err := h.apiKeys.Create(ctx, req.Body.PrincipalId, req.Body.Name, req.Body.ExpiresAt)
+	if err != nil {
+		switch {
+		case errors.As(err, new(*domain.ValidationError)):
+			return CreateAPIKey400JSONResponse{Code: 400, Message: err.Error()}, nil
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return CreateAPIKey403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return CreateAPIKey201JSONResponse{
+		Id:        &key.ID,
+		Key:       &rawKey,
+		Name:      &key.Name,
+		KeyPrefix: &key.KeyPrefix,
+		ExpiresAt: key.ExpiresAt,
+		CreatedAt: &key.CreatedAt,
+	}, nil
+}
+
+func (h *APIHandler) ListAPIKeys(ctx context.Context, req ListAPIKeysRequestObject) (ListAPIKeysResponseObject, error) {
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	keys, total, err := h.apiKeys.List(ctx, req.Params.PrincipalId, page)
+	if err != nil {
+		return nil, err
+	}
+	data := make([]APIKeyInfo, len(keys))
+	for i, k := range keys {
+		data[i] = apiKeyToAPI(k)
+	}
+	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return ListAPIKeys200JSONResponse{Data: &data, NextPageToken: optStr(npt)}, nil
+}
+
+func (h *APIHandler) DeleteAPIKey(ctx context.Context, req DeleteAPIKeyRequestObject) (DeleteAPIKeyResponseObject, error) {
+	if err := h.apiKeys.Delete(ctx, req.ApiKeyId); err != nil {
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
+			return DeleteAPIKey404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return DeleteAPIKey204Response{}, nil
+}
+
+func (h *APIHandler) CleanupExpiredAPIKeys(ctx context.Context, _ CleanupExpiredAPIKeysRequestObject) (CleanupExpiredAPIKeysResponseObject, error) {
+	count, err := h.apiKeys.CleanupExpired(ctx)
+	if err != nil {
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return CleanupExpiredAPIKeys403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return CleanupExpiredAPIKeys200JSONResponse{DeletedCount: &count}, nil
+}
+
+// apiKeyToAPI converts a domain APIKey to the API representation.
+func apiKeyToAPI(k domain.APIKey) APIKeyInfo {
+	return APIKeyInfo{
+		Id:          &k.ID,
+		PrincipalId: &k.PrincipalID,
+		Name:        &k.Name,
+		KeyPrefix:   &k.KeyPrefix,
+		ExpiresAt:   k.ExpiresAt,
+		CreatedAt:   &k.CreatedAt,
+	}
 }
 
 // === Audit Logs ===

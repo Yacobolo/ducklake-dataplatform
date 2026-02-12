@@ -281,6 +281,72 @@ components:
         next_page_token:
           type: string
 
+    # --- API Keys ---
+    APIKeyInfo:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        principal_id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        key_prefix:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    CreateAPIKeyRequest:
+      type: object
+      required: [principal_id, name]
+      properties:
+        principal_id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+
+    CreateAPIKeyResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        key:
+          type: string
+          description: Raw API key (shown only once)
+        name:
+          type: string
+        key_prefix:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    PaginatedAPIKeys:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/APIKeyInfo'
+        next_page_token:
+          type: string
+
     # --- Row Filters ---
     RowFilter:
       type: object
@@ -1610,6 +1676,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '409':
           description: Conflict
           content:
@@ -1649,6 +1721,12 @@ paths:
       responses:
         '204':
           description: Deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: Not found
           content:
@@ -1677,6 +1755,12 @@ paths:
       responses:
         '204':
           description: Updated
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: Not found
           content:
@@ -1723,6 +1807,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '409':
           description: Conflict
           content:
@@ -1762,6 +1852,12 @@ paths:
       responses:
         '204':
           description: Deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: Not found
           content:
@@ -1816,6 +1912,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: Group not found
           content:
@@ -1837,6 +1939,12 @@ paths:
           description: Member removed
         '400':
           description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
           content:
             application/json:
               schema:
@@ -1936,8 +2044,111 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: Grant not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # === API Keys ===
+  /api-keys:
+    post:
+      operationId: createAPIKey
+      summary: Create a new API key
+      tags: [Security]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAPIKeyRequest'
+      responses:
+        '201':
+          description: API key created (raw key shown only once)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateAPIKeyResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      operationId: listAPIKeys
+      summary: List API keys for a principal
+      tags: [Security]
+      parameters:
+        - name: principal_id
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of API keys (no raw key values)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAPIKeys'
+
+  /api-keys/{apiKeyId}:
+    parameters:
+      - name: apiKeyId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    delete:
+      operationId: deleteAPIKey
+      summary: Delete an API key
+      tags: [Security]
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api-keys/cleanup:
+    post:
+      operationId: cleanupExpiredAPIKeys
+      summary: Delete all expired API keys (admin only)
+      tags: [Security]
+      responses:
+        '200':
+          description: Number of keys deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted_count:
+                    type: integer
+                    format: int64
+        '403':
+          description: Access denied
           content:
             application/json:
               schema:
@@ -1995,6 +2206,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: Table not found
           content:
@@ -2017,6 +2234,12 @@ paths:
       responses:
         '204':
           description: Deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: Not found
           content:
@@ -2051,6 +2274,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: Row filter not found
           content:
@@ -2072,6 +2301,12 @@ paths:
           description: Unbound
         '400':
           description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
           content:
             application/json:
               schema:
@@ -2103,6 +2338,12 @@ paths:
                 $ref: '#/components/schemas/RowFilter'
         '400':
           description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
           content:
             application/json:
               schema:
@@ -2166,6 +2407,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: Table not found
           content:
@@ -2188,6 +2435,12 @@ paths:
       responses:
         '204':
           description: Deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: Not found
           content:
@@ -2222,6 +2475,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: Column mask not found
           content:
@@ -2243,6 +2502,12 @@ paths:
           description: Unbound
         '400':
           description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
           content:
             application/json:
               schema:

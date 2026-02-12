@@ -591,8 +591,8 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 		rowFilterSvc, columnMaskSvc, auditSvc,
 		manifestSvc, nil, // catalogSvc=nil — integration tests only hit /v1/manifest
 		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
-		nil,                // ingestionSvc
-		nil, nil, nil, nil, // storageCredSvc, extLocationSvc, volumeSvc, computeEndpointSvc
+		nil,                     // ingestionSvc
+		nil, nil, nil, nil, nil, // storageCredSvc, extLocationSvc, volumeSvc, computeEndpointSvc, apiKeySvc
 	)
 	strictHandler := api.NewStrictHandler(handler, nil)
 
@@ -851,6 +851,18 @@ type httpTestOpts struct {
 	// WithComputeEndpoints wires ComputeEndpointService, a full resolver, and a
 	// SecureEngine so that /v1/query routes through the compute resolver.
 	WithComputeEndpoints bool
+	// WithAuthenticator uses the full Authenticator struct with JIT provisioning
+	// instead of the legacy AuthMiddleware wrapper.
+	WithAuthenticator bool
+	// BootstrapAdmin is the external ID (sub) of the bootstrap admin user.
+	// Only used when WithAuthenticator is true.
+	BootstrapAdmin string
+	// NameClaim overrides the JWT claim used for principal name resolution.
+	// Only used when WithAuthenticator is true.
+	NameClaim string
+	// WithAPIKeyService wires the APIKeyService into the handler (enables API key
+	// management endpoints). When false, the handler gets nil for apiKeySvc.
+	WithAPIKeyService bool
 }
 
 // httpTestEnv bundles the test server, API keys, and direct DB access.
@@ -1052,6 +1064,12 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		querySvc = service.NewQueryService(eng, auditRepo, lineageRepo)
 	}
 
+	// Optionally wire APIKeyService
+	var apiKeySvc *service.APIKeyService
+	if opts.WithAPIKeyService {
+		apiKeySvc = service.NewAPIKeyService(apiKeyRepo, auditRepo)
+	}
+
 	handler := api.NewHandler(
 		querySvc, principalSvc, groupSvc, grantSvc,
 		rowFilterSvc, columnMaskSvc, auditSvc,
@@ -1060,11 +1078,39 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		nil,                                 // ingestionSvc
 		storageCredSvc, extLocationSvc, nil, // volumeSvc
 		computeEndpointSvc,
+		apiKeySvc,
 	)
 	strictHandler := api.NewStrictHandler(handler, nil)
 
 	r := chi.NewRouter()
-	r.Use(middleware.AuthMiddleware(jwtSecret, apiKeyRepo))
+
+	// Always use the full Authenticator for correct IsAdmin resolution.
+	// JIT provisioning is enabled when WithAuthenticator is set.
+	nameClaim := opts.NameClaim
+	if nameClaim == "" {
+		nameClaim = "sub"
+	}
+	authCfg := config.AuthConfig{
+		SharedSecret:   string(jwtSecret),
+		APIKeyEnabled:  true,
+		APIKeyHeader:   "X-API-Key",
+		NameClaim:      nameClaim,
+		BootstrapAdmin: opts.BootstrapAdmin,
+	}
+	validator := middleware.NewSharedSecretValidator(string(jwtSecret))
+	var provisioner middleware.PrincipalProvisioner
+	if opts.WithAuthenticator {
+		provisioner = principalSvc
+	}
+	authenticator := middleware.NewAuthenticator(
+		validator,
+		apiKeyRepo,
+		principalRepo,
+		provisioner,
+		authCfg,
+		nil, // logger
+	)
+	r.Use(authenticator.Middleware())
 	r.Route("/v1", func(r chi.Router) {
 		api.HandlerFromMux(strictHandler, r)
 	})
@@ -1168,10 +1214,14 @@ func decodeJSON(t *testing.T, resp *http.Response, target interface{}) {
 }
 
 // generateJWT creates a signed HS256 JWT token with the given subject and expiry.
+// Includes an "iss" claim for compatibility with JIT provisioning (which looks
+// up by (issuer, external_id) — without iss, the issuer is stored as NULL
+// and SQL NULL=NULL comparisons fail on subsequent lookups).
 func generateJWT(t *testing.T, secret []byte, subject string, expiry time.Time) string {
 	t.Helper()
 	claims := jwt.MapClaims{
 		"sub": subject,
+		"iss": "test-issuer",
 		"exp": expiry.Unix(),
 		"iat": time.Now().Unix(),
 	}

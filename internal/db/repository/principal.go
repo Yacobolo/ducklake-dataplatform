@@ -21,6 +21,19 @@ func NewPrincipalRepo(db *sql.DB) *PrincipalRepo {
 
 // Create inserts a new principal into the database.
 func (r *PrincipalRepo) Create(ctx context.Context, p *domain.Principal) (*domain.Principal, error) {
+	if p.ExternalID != nil {
+		row, err := r.q.CreatePrincipalWithExternalID(ctx, dbstore.CreatePrincipalWithExternalIDParams{
+			Name:           p.Name,
+			Type:           p.Type,
+			IsAdmin:        boolToInt(p.IsAdmin),
+			ExternalID:     mapper.NullStrFromPtr(p.ExternalID),
+			ExternalIssuer: mapper.NullStrFromPtr(p.ExternalIssuer),
+		})
+		if err != nil {
+			return nil, mapDBError(err)
+		}
+		return mapper.PrincipalFromDB(row), nil
+	}
 	row, err := r.q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name:    p.Name,
 		Type:    p.Type,
@@ -44,6 +57,18 @@ func (r *PrincipalRepo) GetByID(ctx context.Context, id int64) (*domain.Principa
 // GetByName returns a principal by its name.
 func (r *PrincipalRepo) GetByName(ctx context.Context, name string) (*domain.Principal, error) {
 	row, err := r.q.GetPrincipalByName(ctx, name)
+	if err != nil {
+		return nil, mapDBError(err)
+	}
+	return mapper.PrincipalFromDB(row), nil
+}
+
+// GetByExternalID returns a principal by its external identity provider mapping.
+func (r *PrincipalRepo) GetByExternalID(ctx context.Context, issuer, externalID string) (*domain.Principal, error) {
+	row, err := r.q.GetPrincipalByExternalID(ctx, dbstore.GetPrincipalByExternalIDParams{
+		ExternalIssuer: mapper.NullStrFromStr(issuer),
+		ExternalID:     mapper.NullStrFromStr(externalID),
+	})
 	if err != nil {
 		return nil, mapDBError(err)
 	}

@@ -17,8 +17,11 @@ func NewRowFilterService(repo domain.RowFilterRepository, audit domain.AuditRepo
 	return &RowFilterService{repo: repo, audit: audit}
 }
 
-// Create validates and persists a new row filter.
-func (s *RowFilterService) Create(ctx context.Context, principal string, f *domain.RowFilter) (*domain.RowFilter, error) {
+// Create validates and persists a new row filter. Requires admin privileges.
+func (s *RowFilterService) Create(ctx context.Context, _ string, f *domain.RowFilter) (*domain.RowFilter, error) {
+	if err := requireAdmin(ctx); err != nil {
+		return nil, err
+	}
 	if f.FilterSQL == "" {
 		return nil, domain.ErrValidation("filter_sql is required")
 	}
@@ -27,7 +30,7 @@ func (s *RowFilterService) Create(ctx context.Context, principal string, f *doma
 		return nil, err
 	}
 	_ = s.audit.Insert(ctx, &domain.AuditEntry{
-		PrincipalName: principal,
+		PrincipalName: callerName(ctx),
 		Action:        "CREATE_ROW_FILTER",
 		Status:        "ALLOWED",
 	})
@@ -39,18 +42,27 @@ func (s *RowFilterService) GetForTable(ctx context.Context, tableID int64, page 
 	return s.repo.GetForTable(ctx, tableID, page)
 }
 
-// Delete removes a row filter by ID.
+// Delete removes a row filter by ID. Requires admin privileges.
 func (s *RowFilterService) Delete(ctx context.Context, id int64) error {
+	if err := requireAdmin(ctx); err != nil {
+		return err
+	}
 	return s.repo.Delete(ctx, id)
 }
 
-// Bind associates a row filter with a principal or group.
+// Bind associates a row filter with a principal or group. Requires admin privileges.
 func (s *RowFilterService) Bind(ctx context.Context, b *domain.RowFilterBinding) error {
+	if err := requireAdmin(ctx); err != nil {
+		return err
+	}
 	return s.repo.Bind(ctx, b)
 }
 
-// Unbind removes a row filter binding from a principal or group.
+// Unbind removes a row filter binding from a principal or group. Requires admin privileges.
 func (s *RowFilterService) Unbind(ctx context.Context, b *domain.RowFilterBinding) error {
+	if err := requireAdmin(ctx); err != nil {
+		return err
+	}
 	return s.repo.Unbind(ctx, b)
 }
 

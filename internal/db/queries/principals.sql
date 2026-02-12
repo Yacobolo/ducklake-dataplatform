@@ -3,11 +3,21 @@ INSERT INTO principals (name, type, is_admin)
 VALUES (?, ?, ?)
 RETURNING *;
 
+-- name: CreatePrincipalWithExternalID :one
+INSERT INTO principals (name, type, is_admin, external_id, external_issuer)
+VALUES (?, ?, ?, ?, ?)
+RETURNING *;
+
 -- name: GetPrincipal :one
 SELECT * FROM principals WHERE id = ?;
 
 -- name: GetPrincipalByName :one
 SELECT * FROM principals WHERE name = ?;
+
+-- name: GetPrincipalByExternalID :one
+SELECT * FROM principals
+WHERE external_issuer = ? AND external_id = ?
+LIMIT 1;
 
 -- name: ListPrincipals :many
 SELECT * FROM principals ORDER BY name;

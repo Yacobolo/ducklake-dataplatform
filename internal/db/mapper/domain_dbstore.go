@@ -80,11 +80,13 @@ func StringFromPtr(s *string) sql.NullString {
 // PrincipalFromDB converts a dbstore.Principal to a domain.Principal.
 func PrincipalFromDB(p dbstore.Principal) *domain.Principal {
 	return &domain.Principal{
-		ID:        p.ID,
-		Name:      p.Name,
-		Type:      p.Type,
-		IsAdmin:   p.IsAdmin != 0,
-		CreatedAt: parseTime(p.CreatedAt),
+		ID:             p.ID,
+		Name:           p.Name,
+		Type:           p.Type,
+		IsAdmin:        p.IsAdmin != 0,
+		ExternalID:     ptrStr(p.ExternalID),
+		ExternalIssuer: ptrStr(p.ExternalIssuer),
+		CreatedAt:      parseTime(p.CreatedAt),
 	}
 }
 
