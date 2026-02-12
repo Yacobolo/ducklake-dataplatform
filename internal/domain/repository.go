@@ -10,6 +10,7 @@ type PrincipalRepository interface {
 	Create(ctx context.Context, p *Principal) (*Principal, error)
 	GetByID(ctx context.Context, id int64) (*Principal, error)
 	GetByName(ctx context.Context, name string) (*Principal, error)
+	GetByExternalID(ctx context.Context, issuer, externalID string) (*Principal, error)
 	List(ctx context.Context, page PageRequest) ([]Principal, int64, error)
 	Delete(ctx context.Context, id int64) error
 	SetAdmin(ctx context.Context, id int64, isAdmin bool) error
@@ -57,6 +58,15 @@ type ColumnMaskRepository interface {
 	Unbind(ctx context.Context, b *ColumnMaskBinding) error
 	ListBindings(ctx context.Context, maskID int64) ([]ColumnMaskBinding, error)
 	GetForTableAndPrincipal(ctx context.Context, tableID, principalID int64, principalType string) ([]ColumnMaskWithBinding, error)
+}
+
+// APIKeyRepository provides CRUD operations for API keys.
+type APIKeyRepository interface {
+	Create(ctx context.Context, key *APIKey) error
+	GetByHash(ctx context.Context, hash string) (*APIKey, *Principal, error)
+	ListByPrincipal(ctx context.Context, principalID int64, page PageRequest) ([]APIKey, int64, error)
+	Delete(ctx context.Context, id int64) error
+	DeleteExpired(ctx context.Context) (int64, error)
 }
 
 // AuditFilter holds filter parameters for querying audit logs.

@@ -7,7 +7,45 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+	"time"
 )
+
+// AuthConfig holds authentication and identity provider configuration.
+type AuthConfig struct {
+	// OIDC / JWKS configuration
+	IssuerURL      string        // OIDC issuer URL (e.g., https://login.microsoftonline.com/{tenant}/v2.0)
+	JWKSURL        string        // Override JWKS URL (if no .well-known discovery)
+	Audience       string        // Required JWT audience claim
+	AllowedIssuers []string      // Accepted issuers (defaults to [IssuerURL])
+	JWKSCacheTTL   time.Duration // JWKS cache duration (default: 1h)
+
+	// Legacy shared-secret JWT (for backward compat / dev)
+	SharedSecret string // HS256 shared secret; disabled when OIDC is configured
+
+	// API key settings
+	APIKeyEnabled bool   // Enable API key auth (default: true)
+	APIKeyHeader  string // Header name for API keys (default: X-API-Key)
+
+	// JIT provisioning
+	NameClaim      string // JWT claim for principal name (default: "email")
+	BootstrapAdmin string // External ID (sub) of the bootstrap admin user
+}
+
+// OIDCEnabled returns true when an external identity provider is configured.
+func (a *AuthConfig) OIDCEnabled() bool {
+	return a.IssuerURL != "" || a.JWKSURL != ""
+}
+
+// Validate checks that the auth configuration is internally consistent.
+func (a *AuthConfig) Validate() error {
+	if a.IssuerURL == "" && a.JWKSURL == "" && a.SharedSecret == "" {
+		return fmt.Errorf("at least one of AUTH_ISSUER_URL, AUTH_JWKS_URL, or JWT_SECRET must be set")
+	}
+	if a.IssuerURL != "" && a.Audience == "" {
+		return fmt.Errorf("AUTH_AUDIENCE is required when AUTH_ISSUER_URL is set")
+	}
+	return nil
+}
 
 // Config holds the configuration for the HTTP API and optional S3/DuckLake storage.
 type Config struct {
@@ -18,12 +56,15 @@ type Config struct {
 	S3Region      *string
 	S3Bucket      *string
 	MetaDBPath    string // path to SQLite metadata file
-	JWTSecret     string // secret key for JWT token validation
+	JWTSecret     string // secret key for JWT token validation (legacy, prefer AuthConfig)
 	ListenAddr    string // HTTP listen address (default ":8080")
 	EncryptionKey string // 64-char hex string (32-byte AES key) for encrypting stored credentials
 	LogLevel      string // log level: debug, info, warn, error (default "info")
 	CatalogDBType string // "sqlite" (default) or "postgres"
 	CatalogDSN    string // PostgreSQL connection string (used when CatalogDBType is "postgres")
+
+	// Auth holds identity provider and authentication configuration.
+	Auth AuthConfig
 
 	// Warnings collects non-fatal warnings generated during config loading.
 	// These are logged by the caller after the logger is initialised.
@@ -80,6 +121,41 @@ func LoadFromEnv() (*Config, error) {
 		cfg.S3Bucket = &v
 	}
 
+	// Auth config
+	cfg.Auth = AuthConfig{
+		IssuerURL:      os.Getenv("AUTH_ISSUER_URL"),
+		JWKSURL:        os.Getenv("AUTH_JWKS_URL"),
+		Audience:       os.Getenv("AUTH_AUDIENCE"),
+		SharedSecret:   cfg.JWTSecret,
+		APIKeyEnabled:  true,
+		APIKeyHeader:   os.Getenv("AUTH_API_KEY_HEADER"),
+		NameClaim:      os.Getenv("AUTH_NAME_CLAIM"),
+		BootstrapAdmin: os.Getenv("AUTH_BOOTSTRAP_ADMIN"),
+	}
+
+	if v := os.Getenv("AUTH_ALLOWED_ISSUERS"); v != "" {
+		cfg.Auth.AllowedIssuers = strings.Split(v, ",")
+	}
+	if v := os.Getenv("AUTH_JWKS_CACHE_TTL"); v != "" {
+		if d, err := time.ParseDuration(v); err == nil {
+			cfg.Auth.JWKSCacheTTL = d
+		}
+	}
+	if os.Getenv("AUTH_API_KEY_ENABLED") == "false" {
+		cfg.Auth.APIKeyEnabled = false
+	}
+
+	// Auth config defaults
+	if cfg.Auth.JWKSCacheTTL == 0 {
+		cfg.Auth.JWKSCacheTTL = time.Hour
+	}
+	if cfg.Auth.APIKeyHeader == "" {
+		cfg.Auth.APIKeyHeader = "X-API-Key"
+	}
+	if cfg.Auth.NameClaim == "" {
+		cfg.Auth.NameClaim = "email"
+	}
+
 	// Defaults
 	if cfg.MetaDBPath == "" {
 		cfg.MetaDBPath = "ducklake_meta.sqlite"
@@ -89,7 +165,12 @@ func LoadFromEnv() (*Config, error) {
 	}
 	if cfg.JWTSecret == "" {
 		cfg.JWTSecret = "dev-secret-change-in-production"
+		cfg.Auth.SharedSecret = cfg.JWTSecret
 		cfg.Warnings = append(cfg.Warnings, "JWT_SECRET not set — using insecure default. Set JWT_SECRET in production!")
+	}
+	if cfg.Auth.OIDCEnabled() {
+		cfg.Auth.SharedSecret = "" // disable HS256 when OIDC is configured
+		cfg.Warnings = append(cfg.Warnings, "OIDC configured — HS256 shared-secret authentication is disabled")
 	}
 	if cfg.EncryptionKey == "" {
 		cfg.EncryptionKey = "0000000000000000000000000000000000000000000000000000000000000000"

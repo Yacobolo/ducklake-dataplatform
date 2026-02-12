@@ -4,11 +4,13 @@ import "time"
 
 // Principal represents a user or service principal in the system.
 type Principal struct {
-	ID        int64
-	Name      string
-	Type      string // "user" or "service_principal"
-	IsAdmin   bool
-	CreatedAt time.Time
+	ID             int64
+	Name           string
+	Type           string // "user" or "service_principal"
+	IsAdmin        bool
+	ExternalID     *string // IdP subject identifier (JWT `sub` claim)
+	ExternalIssuer *string // Issuer URL that owns this external ID
+	CreatedAt      time.Time
 }
 
 // Group represents a named collection of principals.
