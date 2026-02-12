@@ -12,7 +12,7 @@ import (
 )
 
 func newTestViewService(viewRepo *mockViewRepo, catalog *mockCatalogRepo, auth *mockAuthService, audit *mockAuditRepo) *ViewService {
-	return NewViewService(viewRepo, catalog, auth, audit)
+	return NewViewService(viewRepo, &mockCatalogRepoFactory{repo: catalog}, auth, audit)
 }
 
 // === CreateView ===
@@ -56,7 +56,7 @@ func TestViewService_CreateView(t *testing.T) {
 		audit := &mockAuditRepo{}
 
 		svc := newTestViewService(viewRepo, catalog, auth, audit)
-		result, err := svc.CreateView(ctxWithPrincipal("alice"), "alice", "main", req)
+		result, err := svc.CreateView(ctxWithPrincipal("alice"), "lake", "alice", "main", req)
 
 		require.NoError(t, err)
 		assert.Equal(t, "v_test", result.Name)
@@ -86,7 +86,7 @@ func TestViewService_CreateView(t *testing.T) {
 		audit := &mockAuditRepo{}
 
 		svc := newTestViewService(viewRepo, catalog, auth, audit)
-		_, err := svc.CreateView(ctxWithPrincipal("bob"), "bob", "main", req)
+		_, err := svc.CreateView(ctxWithPrincipal("bob"), "lake", "bob", "main", req)
 
 		require.NoError(t, err)
 		require.NotNil(t, captured)
@@ -103,7 +103,7 @@ func TestViewService_CreateView(t *testing.T) {
 		audit := &mockAuditRepo{}
 
 		svc := newTestViewService(&mockViewRepo{}, catalog, auth, audit)
-		_, err := svc.CreateView(ctxWithPrincipal("analyst"), "analyst", "main", req)
+		_, err := svc.CreateView(ctxWithPrincipal("analyst"), "lake", "analyst", "main", req)
 
 		require.Error(t, err)
 		var accessErr *domain.AccessDeniedError
@@ -120,7 +120,7 @@ func TestViewService_CreateView(t *testing.T) {
 		audit := &mockAuditRepo{}
 
 		svc := newTestViewService(&mockViewRepo{}, catalog, auth, audit)
-		_, err := svc.CreateView(ctxWithPrincipal("alice"), "alice", "main", req)
+		_, err := svc.CreateView(ctxWithPrincipal("alice"), "lake", "alice", "main", req)
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "check privilege:")
@@ -140,7 +140,7 @@ func TestViewService_CreateView(t *testing.T) {
 		audit := &mockAuditRepo{}
 
 		svc := newTestViewService(&mockViewRepo{}, catalog, auth, audit)
-		_, err := svc.CreateView(ctxWithPrincipal("alice"), "alice", "bad", req)
+		_, err := svc.CreateView(ctxWithPrincipal("alice"), "lake", "alice", "bad", req)
 
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
@@ -166,7 +166,7 @@ func TestViewService_CreateView(t *testing.T) {
 		audit := &mockAuditRepo{}
 
 		svc := newTestViewService(viewRepo, catalog, auth, audit)
-		_, err := svc.CreateView(ctxWithPrincipal("alice"), "alice", "main", req)
+		_, err := svc.CreateView(ctxWithPrincipal("alice"), "lake", "alice", "main", req)
 
 		require.Error(t, err)
 		assert.ErrorIs(t, err, errTest)
@@ -191,7 +191,7 @@ func TestViewService_CreateView(t *testing.T) {
 		audit := &mockAuditRepo{}
 
 		svc := newTestViewService(viewRepo, catalog, auth, audit)
-		_, err := svc.CreateView(ctxWithPrincipal("alice"), "alice", "main", req)
+		_, err := svc.CreateView(ctxWithPrincipal("alice"), "lake", "alice", "main", req)
 
 		require.NoError(t, err)
 		require.NotNil(t, audit.LastEntry())
@@ -221,8 +221,8 @@ func TestViewService_GetView(t *testing.T) {
 			},
 		}
 
-		svc := NewViewService(viewRepo, catalog, &mockAuthService{}, &mockAuditRepo{})
-		result, err := svc.GetView(context.Background(), "main", "v_test")
+		svc := NewViewService(viewRepo, &mockCatalogRepoFactory{repo: catalog}, &mockAuthService{}, &mockAuditRepo{})
+		result, err := svc.GetView(context.Background(), "lake", "main", "v_test")
 
 		require.NoError(t, err)
 		assert.Equal(t, "v_test", result.Name)
@@ -237,8 +237,8 @@ func TestViewService_GetView(t *testing.T) {
 			},
 		}
 
-		svc := NewViewService(&mockViewRepo{}, catalog, &mockAuthService{}, &mockAuditRepo{})
-		_, err := svc.GetView(context.Background(), "bad", "v_test")
+		svc := NewViewService(&mockViewRepo{}, &mockCatalogRepoFactory{repo: catalog}, &mockAuthService{}, &mockAuditRepo{})
+		_, err := svc.GetView(context.Background(), "lake", "bad", "v_test")
 
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
@@ -257,8 +257,8 @@ func TestViewService_GetView(t *testing.T) {
 			},
 		}
 
-		svc := NewViewService(viewRepo, catalog, &mockAuthService{}, &mockAuditRepo{})
-		_, err := svc.GetView(context.Background(), "main", "nonexistent")
+		svc := NewViewService(viewRepo, &mockCatalogRepoFactory{repo: catalog}, &mockAuthService{}, &mockAuditRepo{})
+		_, err := svc.GetView(context.Background(), "lake", "main", "nonexistent")
 
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
@@ -291,8 +291,8 @@ func TestViewService_ListViews(t *testing.T) {
 			},
 		}
 
-		svc := NewViewService(viewRepo, catalog, &mockAuthService{}, &mockAuditRepo{})
-		views, total, err := svc.ListViews(context.Background(), "main", page)
+		svc := NewViewService(viewRepo, &mockCatalogRepoFactory{repo: catalog}, &mockAuthService{}, &mockAuditRepo{})
+		views, total, err := svc.ListViews(context.Background(), "lake", "main", page)
 
 		require.NoError(t, err)
 		assert.Equal(t, int64(2), total)
@@ -315,8 +315,8 @@ func TestViewService_ListViews(t *testing.T) {
 			},
 		}
 
-		svc := NewViewService(viewRepo, catalog, &mockAuthService{}, &mockAuditRepo{})
-		views, total, err := svc.ListViews(context.Background(), "main", page)
+		svc := NewViewService(viewRepo, &mockCatalogRepoFactory{repo: catalog}, &mockAuthService{}, &mockAuditRepo{})
+		views, total, err := svc.ListViews(context.Background(), "lake", "main", page)
 
 		require.NoError(t, err)
 		assert.Equal(t, int64(0), total)
@@ -330,8 +330,8 @@ func TestViewService_ListViews(t *testing.T) {
 			},
 		}
 
-		svc := NewViewService(&mockViewRepo{}, catalog, &mockAuthService{}, &mockAuditRepo{})
-		_, _, err := svc.ListViews(context.Background(), "bad", page)
+		svc := NewViewService(&mockViewRepo{}, &mockCatalogRepoFactory{repo: catalog}, &mockAuthService{}, &mockAuditRepo{})
+		_, _, err := svc.ListViews(context.Background(), "lake", "bad", page)
 
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
@@ -367,7 +367,7 @@ func TestViewService_DeleteView(t *testing.T) {
 		audit := &mockAuditRepo{}
 
 		svc := newTestViewService(viewRepo, catalog, auth, audit)
-		err := svc.DeleteView(ctxWithPrincipal("alice"), "alice", "main", "v_test")
+		err := svc.DeleteView(ctxWithPrincipal("alice"), "lake", "alice", "main", "v_test")
 
 		require.NoError(t, err)
 		require.NotNil(t, audit.LastEntry())
@@ -382,7 +382,7 @@ func TestViewService_DeleteView(t *testing.T) {
 		}
 
 		svc := newTestViewService(&mockViewRepo{}, &mockCatalogRepo{}, auth, &mockAuditRepo{})
-		err := svc.DeleteView(ctxWithPrincipal("analyst"), "analyst", "main", "v_test")
+		err := svc.DeleteView(ctxWithPrincipal("analyst"), "lake", "analyst", "main", "v_test")
 
 		require.Error(t, err)
 		var accessErr *domain.AccessDeniedError
@@ -402,7 +402,7 @@ func TestViewService_DeleteView(t *testing.T) {
 		}
 
 		svc := newTestViewService(&mockViewRepo{}, catalog, auth, &mockAuditRepo{})
-		err := svc.DeleteView(ctxWithPrincipal("alice"), "alice", "bad", "v_test")
+		err := svc.DeleteView(ctxWithPrincipal("alice"), "lake", "alice", "bad", "v_test")
 
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
@@ -427,7 +427,7 @@ func TestViewService_DeleteView(t *testing.T) {
 		}
 
 		svc := newTestViewService(viewRepo, catalog, auth, &mockAuditRepo{})
-		err := svc.DeleteView(ctxWithPrincipal("alice"), "alice", "main", "v_test")
+		err := svc.DeleteView(ctxWithPrincipal("alice"), "lake", "alice", "main", "v_test")
 
 		require.Error(t, err)
 		assert.ErrorIs(t, err, errTest)

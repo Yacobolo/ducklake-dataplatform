@@ -62,9 +62,10 @@ func TestDuckLakeWithHetznerSetup(t *testing.T) {
 		bucket = *cfg.S3Bucket
 	}
 	dataPath := "s3://" + bucket + "/lake_data/"
-	if err := engine.AttachDuckLake(ctx, db, cfg.MetaDBPath, dataPath); err != nil {
+	if err := engine.AttachDuckLake(ctx, db, "lake", cfg.MetaDBPath, dataPath); err != nil {
 		t.Skipf("AttachDuckLake failed (S3 bucket may not exist): %v", err)
 	}
+	_ = engine.SetDefaultCatalog(ctx, db, "lake")
 
 	// Seed titanic data
 	createSQL := "CREATE TABLE IF NOT EXISTS lake.main.titanic AS SELECT * FROM '../../titanic.parquet'"
@@ -126,9 +127,10 @@ func TestDuckLakeRBACIntegration(t *testing.T) {
 		bucket = *cfg.S3Bucket
 	}
 	dataPath := "s3://" + bucket + "/lake_data/"
-	if err := engine.AttachDuckLake(ctx, db, cfg.MetaDBPath, dataPath); err != nil {
+	if err := engine.AttachDuckLake(ctx, db, "lake", cfg.MetaDBPath, dataPath); err != nil {
 		t.Skipf("AttachDuckLake failed (S3 bucket may not exist): %v", err)
 	}
+	_ = engine.SetDefaultCatalog(ctx, db, "lake")
 
 	// Seed titanic data
 	createSQL := "CREATE TABLE IF NOT EXISTS lake.main.titanic AS SELECT * FROM '../../titanic.parquet'"

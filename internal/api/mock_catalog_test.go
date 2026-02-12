@@ -410,6 +410,15 @@ func (m *mockCatalogRepo) CreateExternalTable(_ context.Context, _ string, _ dom
 	panic("unexpected call to mockCatalogRepo.CreateExternalTable")
 }
 
+// mockCatalogRepoFactory wraps a mockCatalogRepo to implement catalog.CatalogRepoFactory.
+type mockCatalogRepoFactory struct {
+	repo *mockCatalogRepo
+}
+
+func (f *mockCatalogRepoFactory) ForCatalog(_ string) domain.CatalogRepository {
+	return f.repo
+}
+
 // addSchema is a test helper to prepopulate the mock with a schema.
 func (m *mockCatalogRepo) addSchema(name string) {
 	m.mu.Lock()
