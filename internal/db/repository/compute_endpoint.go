@@ -204,6 +204,27 @@ func (r *ComputeEndpointRepo) GetDefaultForPrincipal(ctx context.Context, princi
 	return r.endpointFromDB(row)
 }
 
+// GetAssignmentsForPrincipal returns all compute endpoints assigned to a principal.
+func (r *ComputeEndpointRepo) GetAssignmentsForPrincipal(ctx context.Context, principalID int64, principalType string) ([]domain.ComputeEndpoint, error) {
+	rows, err := r.q.GetAssignmentsForPrincipal(ctx, dbstore.GetAssignmentsForPrincipalParams{
+		PrincipalID:   principalID,
+		PrincipalType: principalType,
+	})
+	if err != nil {
+		return nil, mapDBError(err)
+	}
+
+	eps := make([]domain.ComputeEndpoint, 0, len(rows))
+	for _, row := range rows {
+		ep, err := r.endpointFromDB(row)
+		if err != nil {
+			return nil, err
+		}
+		eps = append(eps, *ep)
+	}
+	return eps, nil
+}
+
 // endpointFromDB decrypts the DB row into a domain ComputeEndpoint.
 func (r *ComputeEndpointRepo) endpointFromDB(row dbstore.ComputeEndpoint) (*domain.ComputeEndpoint, error) {
 	authToken, err := r.enc.Decrypt(row.AuthToken)

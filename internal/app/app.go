@@ -98,10 +98,10 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 		}
 	}
 
-	// === Engine ===
+	// === Engine (resolver wired below after compute repo is created) ===
 	localExec := compute.NewLocalExecutor(deps.DuckDB)
-	resolver := compute.NewDefaultResolver(localExec)
-	eng := engine.NewSecureEngine(deps.DuckDB, authSvc, resolver, deps.Logger.With("component", "engine"))
+	placeholderResolver := compute.NewDefaultResolver(localExec)
+	eng := engine.NewSecureEngine(deps.DuckDB, authSvc, placeholderResolver, deps.Logger.With("component", "engine"))
 	eng.SetInformationSchemaProvider(engine.NewInformationSchemaProvider(catalogRepo))
 
 	// === Core services ===
@@ -160,6 +160,14 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	}
 	storageCredRepo := repository.NewStorageCredentialRepo(deps.WriteDB, encryptor)
 	computeEndpointRepo := repository.NewComputeEndpointRepo(deps.WriteDB, encryptor)
+
+	// Wire the full resolver now that compute repo is available
+	remoteCache := compute.NewRemoteCache(deps.DuckDB)
+	fullResolver := compute.NewResolver(
+		localExec, computeEndpointRepo, principalRepo, groupRepo,
+		remoteCache, deps.Logger.With("component", "compute-resolver"),
+	)
+	eng.SetResolver(fullResolver)
 	externalLocRepo := repository.NewExternalLocationRepo(deps.WriteDB)
 
 	storageCredSvc := service.NewStorageCredentialService(storageCredRepo, authSvc, auditRepo)

@@ -210,6 +210,27 @@ type ComputeEndpointStatus string
 // ComputeEndpointType defines model for ComputeEndpoint.Type.
 type ComputeEndpointType string
 
+// ComputeEndpointHealth defines model for ComputeEndpointHealth.
+type ComputeEndpointHealth struct {
+	// DuckdbVersion DuckDB version running on the agent
+	DuckdbVersion *string `json:"duckdb_version,omitempty"`
+
+	// EndpointName Name of the compute endpoint
+	EndpointName *string `json:"endpoint_name,omitempty"`
+
+	// MaxMemoryGb Maximum memory limit in GB
+	MaxMemoryGb *int `json:"max_memory_gb,omitempty"`
+
+	// MemoryUsedMb Current memory usage in MB
+	MemoryUsedMb *int `json:"memory_used_mb,omitempty"`
+
+	// Status Health status (e.g. "ok")
+	Status *string `json:"status,omitempty"`
+
+	// UptimeSeconds Agent uptime in seconds
+	UptimeSeconds *int `json:"uptime_seconds,omitempty"`
+}
+
 // CreateColumnMaskRequest defines model for CreateColumnMaskRequest.
 type CreateColumnMaskRequest struct {
 	ColumnName     string  `json:"column_name"`

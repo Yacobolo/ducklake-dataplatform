@@ -2194,6 +2194,31 @@ func (h *APIHandler) CreateComputeAssignment(ctx context.Context, req CreateComp
 	return CreateComputeAssignment201JSONResponse(computeAssignmentToAPI(*result)), nil
 }
 
+func (h *APIHandler) GetComputeEndpointHealth(ctx context.Context, req GetComputeEndpointHealthRequestObject) (GetComputeEndpointHealthResponseObject, error) {
+	principal, _ := middleware.PrincipalFromContext(ctx)
+
+	result, err := h.computeEndpoints.HealthCheck(ctx, principal, req.EndpointName)
+	if err != nil {
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return GetComputeEndpointHealth403JSONResponse{Code: 403, Message: err.Error()}, nil
+		case errors.As(err, new(*domain.NotFoundError)):
+			return GetComputeEndpointHealth404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return GetComputeEndpointHealth502JSONResponse{Code: 502, Message: err.Error()}, nil
+		}
+	}
+
+	return GetComputeEndpointHealth200JSONResponse{
+		Status:        result.Status,
+		UptimeSeconds: result.UptimeSeconds,
+		DuckdbVersion: result.DuckdbVersion,
+		MemoryUsedMb:  result.MemoryUsedMb,
+		MaxMemoryGb:   result.MaxMemoryGb,
+		EndpointName:  &req.EndpointName,
+	}, nil
+}
+
 func (h *APIHandler) DeleteComputeAssignment(ctx context.Context, req DeleteComputeAssignmentRequestObject) (DeleteComputeAssignmentResponseObject, error) {
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	if err := h.computeEndpoints.Unassign(ctx, principal, req.AssignmentId); err != nil {

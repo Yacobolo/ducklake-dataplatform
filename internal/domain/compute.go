@@ -103,6 +103,15 @@ func ValidateCreateComputeAssignmentRequest(r CreateComputeAssignmentRequest) er
 	return nil
 }
 
+// ComputeEndpointHealthResult holds the health status returned from a remote agent.
+type ComputeEndpointHealthResult struct {
+	Status        *string
+	UptimeSeconds *int
+	DuckdbVersion *string
+	MemoryUsedMb  *int
+	MaxMemoryGb   *int
+}
+
 // ComputeExecutor executes pre-secured SQL on a compute resource.
 type ComputeExecutor interface {
 	QueryContext(ctx context.Context, query string) (*sql.Rows, error)

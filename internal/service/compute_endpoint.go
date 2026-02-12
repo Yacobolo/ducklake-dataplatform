@@ -2,7 +2,12 @@ package service
 
 import (
 	"context"
+	"crypto/tls"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"strings"
+	"time"
 
 	"duck-demo/internal/domain"
 )
@@ -195,6 +200,70 @@ func (s *ComputeEndpointService) ListAssignments(ctx context.Context, endpointNa
 		return nil, 0, err
 	}
 	return s.repo.ListAssignments(ctx, ep.ID, page)
+}
+
+// HealthCheck proxies a health check to the remote compute agent.
+// Requires MANAGE_COMPUTE on catalog.
+func (s *ComputeEndpointService) HealthCheck(ctx context.Context, principal string, endpointName string) (*domain.ComputeEndpointHealthResult, error) {
+	if err := s.requirePrivilege(ctx, principal, domain.PrivManageCompute); err != nil {
+		return nil, err
+	}
+
+	ep, err := s.repo.GetByName(ctx, endpointName)
+	if err != nil {
+		return nil, err
+	}
+
+	if ep.Type == "LOCAL" {
+		status := "ok"
+		return &domain.ComputeEndpointHealthResult{Status: &status}, nil
+	}
+
+	// Proxy health check to remote agent
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				MinVersion: tls.VersionTLS12,
+			},
+		},
+	}
+
+	url := strings.TrimRight(ep.URL, "/") + "/health"
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("create health request: %w", err)
+	}
+	req.Header.Set("X-Agent-Token", ep.AuthToken)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("health check failed: %w", err)
+	}
+	defer resp.Body.Close() //nolint:errcheck
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("agent returned status %d", resp.StatusCode)
+	}
+
+	var body struct {
+		Status        string `json:"status"`
+		UptimeSeconds int    `json:"uptime_seconds"`
+		DuckdbVersion string `json:"duckdb_version"`
+		MemoryUsedMb  int    `json:"memory_used_mb"`
+		MaxMemoryGb   int    `json:"max_memory_gb"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		return nil, fmt.Errorf("decode health response: %w", err)
+	}
+
+	return &domain.ComputeEndpointHealthResult{
+		Status:        &body.Status,
+		UptimeSeconds: &body.UptimeSeconds,
+		DuckdbVersion: &body.DuckdbVersion,
+		MemoryUsedMb:  &body.MemoryUsedMb,
+		MaxMemoryGb:   &body.MaxMemoryGb,
+	}, nil
 }
 
 // requirePrivilege checks that the principal has the given privilege on the catalog.

@@ -59,6 +59,14 @@ WHERE ca.principal_id = ?
   AND ce.status = 'ACTIVE'
 LIMIT 1;
 
+-- name: GetAssignmentsForPrincipal :many
+SELECT ce.*
+FROM compute_endpoints ce
+JOIN compute_assignments ca ON ca.endpoint_id = ce.id
+WHERE ca.principal_id = ?
+  AND ca.principal_type = ?
+ORDER BY ca.is_default DESC, ce.name;
+
 -- name: ResolveEndpointForPrincipalByName :one
 SELECT ce.*
 FROM compute_endpoints ce

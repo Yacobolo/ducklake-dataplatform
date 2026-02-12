@@ -208,6 +208,7 @@ type ComputeEndpointRepository interface {
 	Unassign(ctx context.Context, id int64) error
 	ListAssignments(ctx context.Context, endpointID int64, page PageRequest) ([]ComputeAssignment, int64, error)
 	GetDefaultForPrincipal(ctx context.Context, principalID int64, principalType string) (*ComputeEndpoint, error)
+	GetAssignmentsForPrincipal(ctx context.Context, principalID int64, principalType string) ([]ComputeEndpoint, error)
 }
 
 // AuthorizationService defines the interface for permission checking.

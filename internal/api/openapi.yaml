@@ -1513,6 +1513,28 @@ components:
         next_page_token:
           type: string
 
+    ComputeEndpointHealth:
+      type: object
+      properties:
+        status:
+          type: string
+          description: Health status (e.g. "ok")
+        uptime_seconds:
+          type: integer
+          description: Agent uptime in seconds
+        duckdb_version:
+          type: string
+          description: DuckDB version running on the agent
+        memory_used_mb:
+          type: integer
+          description: Current memory usage in MB
+        max_memory_gb:
+          type: integer
+          description: Maximum memory limit in GB
+        endpoint_name:
+          type: string
+          description: Name of the compute endpoint
+
 paths:
   # === Query ===
   /query:
@@ -3966,6 +3988,44 @@ paths:
                 $ref: '#/components/schemas/Error'
         '409':
           description: Assignment already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /compute-endpoints/{endpointName}/health:
+    parameters:
+      - name: endpointName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getComputeEndpointHealth
+      summary: Check health of a compute endpoint
+      tags: [Compute]
+      description: Proxies a health check to the remote compute agent. Requires MANAGE_COMPUTE on catalog.
+      responses:
+        '200':
+          description: Health check result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComputeEndpointHealth'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '502':
+          description: Agent unreachable
           content:
             application/json:
               schema:

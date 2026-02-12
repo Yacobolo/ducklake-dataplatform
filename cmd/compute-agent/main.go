@@ -42,7 +42,7 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("open duckdb: %w", err)
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 
 	// Set memory limit if configured
 	if cfg.MaxMemoryGB > 0 {
@@ -135,7 +135,7 @@ func run() error {
 			})
 			return
 		}
-		defer rows.Close()
+		defer rows.Close() //nolint:errcheck
 
 		cols, err := rows.Columns()
 		if err != nil {
@@ -188,10 +188,17 @@ func run() error {
 		row := db.QueryRowContext(r.Context(), "SELECT version()")
 		_ = row.Scan(&version)
 
+		// Query memory usage from DuckDB
+		var memUsedBytes int64
+		memRow := db.QueryRowContext(r.Context(), "SELECT memory_usage FROM duckdb_memory()")
+		_ = memRow.Scan(&memUsedBytes)
+		memUsedMB := memUsedBytes / (1024 * 1024)
+
 		writeJSON(w, http.StatusOK, map[string]interface{}{
 			"status":         "ok",
 			"uptime_seconds": int(time.Since(startTime).Seconds()),
 			"duckdb_version": version,
+			"memory_used_mb": memUsedMB,
 			"max_memory_gb":  cfg.MaxMemoryGB,
 		})
 	})

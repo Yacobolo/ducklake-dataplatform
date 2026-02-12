@@ -44,6 +44,12 @@ func (e *SecureEngine) execQuery(ctx context.Context, principalName, query strin
 	return e.db.QueryContext(ctx, query)
 }
 
+// SetResolver replaces the compute resolver. Used during late wiring when the
+// compute endpoint repository is created after the engine.
+func (e *SecureEngine) SetResolver(r domain.ComputeResolver) {
+	e.resolver = r
+}
+
 // SetInformationSchemaProvider attaches an information_schema provider.
 func (e *SecureEngine) SetInformationSchemaProvider(p *InformationSchemaProvider) {
 	e.infoSchema = p

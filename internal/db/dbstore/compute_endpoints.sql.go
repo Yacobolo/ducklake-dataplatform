@@ -133,6 +133,56 @@ func (q *Queries) DeleteComputeEndpoint(ctx context.Context, id int64) error {
 	return err
 }
 
+const getAssignmentsForPrincipal = `-- name: GetAssignmentsForPrincipal :many
+SELECT ce.id, ce.external_id, ce.name, ce.url, ce.type, ce.status, ce.size, ce.max_memory_gb, ce.auth_token, ce.owner, ce.created_at, ce.updated_at
+FROM compute_endpoints ce
+JOIN compute_assignments ca ON ca.endpoint_id = ce.id
+WHERE ca.principal_id = ?
+  AND ca.principal_type = ?
+ORDER BY ca.is_default DESC, ce.name
+`
+
+type GetAssignmentsForPrincipalParams struct {
+	PrincipalID   int64
+	PrincipalType string
+}
+
+func (q *Queries) GetAssignmentsForPrincipal(ctx context.Context, arg GetAssignmentsForPrincipalParams) ([]ComputeEndpoint, error) {
+	rows, err := q.db.QueryContext(ctx, getAssignmentsForPrincipal, arg.PrincipalID, arg.PrincipalType)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ComputeEndpoint
+	for rows.Next() {
+		var i ComputeEndpoint
+		if err := rows.Scan(
+			&i.ID,
+			&i.ExternalID,
+			&i.Name,
+			&i.Url,
+			&i.Type,
+			&i.Status,
+			&i.Size,
+			&i.MaxMemoryGb,
+			&i.AuthToken,
+			&i.Owner,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getComputeEndpoint = `-- name: GetComputeEndpoint :one
 SELECT id, external_id, name, url, type, status, size, max_memory_gb, auth_token, owner, created_at, updated_at FROM compute_endpoints WHERE id = ?
 `
