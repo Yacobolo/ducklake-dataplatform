@@ -10,109 +10,6 @@ import (
 	"duck-demo/internal/domain"
 )
 
-// === Compute Endpoint Repository Mock ===
-
-type mockComputeEndpointRepo struct {
-	createFn                     func(ctx context.Context, ep *domain.ComputeEndpoint) (*domain.ComputeEndpoint, error)
-	getByIDFn                    func(ctx context.Context, id int64) (*domain.ComputeEndpoint, error)
-	getByNameFn                  func(ctx context.Context, name string) (*domain.ComputeEndpoint, error)
-	listFn                       func(ctx context.Context, page domain.PageRequest) ([]domain.ComputeEndpoint, int64, error)
-	updateFn                     func(ctx context.Context, id int64, req domain.UpdateComputeEndpointRequest) (*domain.ComputeEndpoint, error)
-	deleteFn                     func(ctx context.Context, id int64) error
-	updateStatusFn               func(ctx context.Context, id int64, status string) error
-	assignFn                     func(ctx context.Context, a *domain.ComputeAssignment) (*domain.ComputeAssignment, error)
-	unassignFn                   func(ctx context.Context, id int64) error
-	listAssignmentsFn            func(ctx context.Context, endpointID int64, page domain.PageRequest) ([]domain.ComputeAssignment, int64, error)
-	getDefaultForPrincipalFn     func(ctx context.Context, principalID int64, principalType string) (*domain.ComputeEndpoint, error)
-	getAssignmentsForPrincipalFn func(ctx context.Context, principalID int64, principalType string) ([]domain.ComputeEndpoint, error)
-}
-
-func (m *mockComputeEndpointRepo) Create(ctx context.Context, ep *domain.ComputeEndpoint) (*domain.ComputeEndpoint, error) {
-	if m.createFn != nil {
-		return m.createFn(ctx, ep)
-	}
-	panic("unexpected call to mockComputeEndpointRepo.Create")
-}
-
-func (m *mockComputeEndpointRepo) GetByID(ctx context.Context, id int64) (*domain.ComputeEndpoint, error) {
-	if m.getByIDFn != nil {
-		return m.getByIDFn(ctx, id)
-	}
-	panic("unexpected call to mockComputeEndpointRepo.GetByID")
-}
-
-func (m *mockComputeEndpointRepo) GetByName(ctx context.Context, name string) (*domain.ComputeEndpoint, error) {
-	if m.getByNameFn != nil {
-		return m.getByNameFn(ctx, name)
-	}
-	panic("unexpected call to mockComputeEndpointRepo.GetByName")
-}
-
-func (m *mockComputeEndpointRepo) List(ctx context.Context, page domain.PageRequest) ([]domain.ComputeEndpoint, int64, error) {
-	if m.listFn != nil {
-		return m.listFn(ctx, page)
-	}
-	panic("unexpected call to mockComputeEndpointRepo.List")
-}
-
-func (m *mockComputeEndpointRepo) Update(ctx context.Context, id int64, req domain.UpdateComputeEndpointRequest) (*domain.ComputeEndpoint, error) {
-	if m.updateFn != nil {
-		return m.updateFn(ctx, id, req)
-	}
-	panic("unexpected call to mockComputeEndpointRepo.Update")
-}
-
-func (m *mockComputeEndpointRepo) Delete(ctx context.Context, id int64) error {
-	if m.deleteFn != nil {
-		return m.deleteFn(ctx, id)
-	}
-	panic("unexpected call to mockComputeEndpointRepo.Delete")
-}
-
-func (m *mockComputeEndpointRepo) UpdateStatus(ctx context.Context, id int64, status string) error {
-	if m.updateStatusFn != nil {
-		return m.updateStatusFn(ctx, id, status)
-	}
-	panic("unexpected call to mockComputeEndpointRepo.UpdateStatus")
-}
-
-func (m *mockComputeEndpointRepo) Assign(ctx context.Context, a *domain.ComputeAssignment) (*domain.ComputeAssignment, error) {
-	if m.assignFn != nil {
-		return m.assignFn(ctx, a)
-	}
-	panic("unexpected call to mockComputeEndpointRepo.Assign")
-}
-
-func (m *mockComputeEndpointRepo) Unassign(ctx context.Context, id int64) error {
-	if m.unassignFn != nil {
-		return m.unassignFn(ctx, id)
-	}
-	panic("unexpected call to mockComputeEndpointRepo.Unassign")
-}
-
-func (m *mockComputeEndpointRepo) ListAssignments(ctx context.Context, endpointID int64, page domain.PageRequest) ([]domain.ComputeAssignment, int64, error) {
-	if m.listAssignmentsFn != nil {
-		return m.listAssignmentsFn(ctx, endpointID, page)
-	}
-	panic("unexpected call to mockComputeEndpointRepo.ListAssignments")
-}
-
-func (m *mockComputeEndpointRepo) GetDefaultForPrincipal(ctx context.Context, principalID int64, principalType string) (*domain.ComputeEndpoint, error) {
-	if m.getDefaultForPrincipalFn != nil {
-		return m.getDefaultForPrincipalFn(ctx, principalID, principalType)
-	}
-	panic("unexpected call to mockComputeEndpointRepo.GetDefaultForPrincipal")
-}
-
-func (m *mockComputeEndpointRepo) GetAssignmentsForPrincipal(ctx context.Context, principalID int64, principalType string) ([]domain.ComputeEndpoint, error) {
-	if m.getAssignmentsForPrincipalFn != nil {
-		return m.getAssignmentsForPrincipalFn(ctx, principalID, principalType)
-	}
-	panic("unexpected call to mockComputeEndpointRepo.GetAssignmentsForPrincipal")
-}
-
-var _ domain.ComputeEndpointRepository = (*mockComputeEndpointRepo)(nil)
-
 // === Test Helpers ===
 
 func newTestComputeEndpointService(repo *mockComputeEndpointRepo, auth *mockAuthService, audit *mockAuditRepo) *ComputeEndpointService {
@@ -121,7 +18,7 @@ func newTestComputeEndpointService(repo *mockComputeEndpointRepo, auth *mockAuth
 
 func allowManageCompute() *mockAuthService {
 	return &mockAuthService{
-		checkPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+		CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
 			return true, nil
 		},
 	}
@@ -129,7 +26,7 @@ func allowManageCompute() *mockAuthService {
 
 func denyManageCompute() *mockAuthService {
 	return &mockAuthService{
-		checkPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+		CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
 			return false, nil
 		},
 	}
@@ -140,7 +37,7 @@ func denyManageCompute() *mockAuthService {
 func TestComputeEndpointService_Create(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockComputeEndpointRepo{
-			createFn: func(_ context.Context, ep *domain.ComputeEndpoint) (*domain.ComputeEndpoint, error) {
+			CreateFn: func(_ context.Context, ep *domain.ComputeEndpoint) (*domain.ComputeEndpoint, error) {
 				ep.ID = 1
 				ep.ExternalID = "uuid-123"
 				ep.Status = "INACTIVE"
@@ -156,7 +53,7 @@ func TestComputeEndpointService_Create(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "test-ep", result.Name)
 		assert.Equal(t, "admin", result.Owner)
-		assert.True(t, audit.hasAction("CREATE_COMPUTE_ENDPOINT"))
+		assert.True(t, audit.HasAction("CREATE_COMPUTE_ENDPOINT"))
 	})
 
 	t.Run("access_denied", func(t *testing.T) {
@@ -183,7 +80,7 @@ func TestComputeEndpointService_Create(t *testing.T) {
 
 	t.Run("repo_error", func(t *testing.T) {
 		repo := &mockComputeEndpointRepo{
-			createFn: func(_ context.Context, _ *domain.ComputeEndpoint) (*domain.ComputeEndpoint, error) {
+			CreateFn: func(_ context.Context, _ *domain.ComputeEndpoint) (*domain.ComputeEndpoint, error) {
 				return nil, errTest
 			},
 		}
@@ -202,7 +99,7 @@ func TestComputeEndpointService_Create(t *testing.T) {
 func TestComputeEndpointService_GetByName(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockComputeEndpointRepo{
-			getByNameFn: func(_ context.Context, name string) (*domain.ComputeEndpoint, error) {
+			GetByNameFn: func(_ context.Context, name string) (*domain.ComputeEndpoint, error) {
 				return &domain.ComputeEndpoint{ID: 1, Name: name, Type: "REMOTE"}, nil
 			},
 		}
@@ -215,7 +112,7 @@ func TestComputeEndpointService_GetByName(t *testing.T) {
 
 	t.Run("not_found", func(t *testing.T) {
 		repo := &mockComputeEndpointRepo{
-			getByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
+			GetByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
 				return nil, domain.ErrNotFound("not found")
 			},
 		}
@@ -232,7 +129,7 @@ func TestComputeEndpointService_GetByName(t *testing.T) {
 
 func TestComputeEndpointService_List(t *testing.T) {
 	repo := &mockComputeEndpointRepo{
-		listFn: func(_ context.Context, _ domain.PageRequest) ([]domain.ComputeEndpoint, int64, error) {
+		ListFn: func(_ context.Context, _ domain.PageRequest) ([]domain.ComputeEndpoint, int64, error) {
 			return []domain.ComputeEndpoint{
 				{ID: 1, Name: "ep1"},
 				{ID: 2, Name: "ep2"},
@@ -253,10 +150,10 @@ func TestComputeEndpointService_Update(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		newURL := "https://new.example.com"
 		repo := &mockComputeEndpointRepo{
-			getByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
+			GetByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
 				return &domain.ComputeEndpoint{ID: 1, Name: "ep1"}, nil
 			},
-			updateFn: func(_ context.Context, id int64, req domain.UpdateComputeEndpointRequest) (*domain.ComputeEndpoint, error) {
+			UpdateFn: func(_ context.Context, id int64, req domain.UpdateComputeEndpointRequest) (*domain.ComputeEndpoint, error) {
 				return &domain.ComputeEndpoint{ID: id, Name: "ep1", URL: *req.URL}, nil
 			},
 		}
@@ -266,7 +163,7 @@ func TestComputeEndpointService_Update(t *testing.T) {
 		result, err := svc.Update(context.Background(), "admin", "ep1", domain.UpdateComputeEndpointRequest{URL: &newURL})
 		require.NoError(t, err)
 		assert.Equal(t, "https://new.example.com", result.URL)
-		assert.True(t, audit.hasAction("UPDATE_COMPUTE_ENDPOINT"))
+		assert.True(t, audit.HasAction("UPDATE_COMPUTE_ENDPOINT"))
 	})
 
 	t.Run("access_denied", func(t *testing.T) {
@@ -280,7 +177,7 @@ func TestComputeEndpointService_Update(t *testing.T) {
 
 	t.Run("not_found", func(t *testing.T) {
 		repo := &mockComputeEndpointRepo{
-			getByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
+			GetByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
 				return nil, domain.ErrNotFound("not found")
 			},
 		}
@@ -298,10 +195,10 @@ func TestComputeEndpointService_Update(t *testing.T) {
 func TestComputeEndpointService_Delete(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockComputeEndpointRepo{
-			getByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
+			GetByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
 				return &domain.ComputeEndpoint{ID: 1, Name: "ep1"}, nil
 			},
-			deleteFn: func(_ context.Context, _ int64) error {
+			DeleteFn: func(_ context.Context, _ int64) error {
 				return nil
 			},
 		}
@@ -310,7 +207,7 @@ func TestComputeEndpointService_Delete(t *testing.T) {
 
 		err := svc.Delete(context.Background(), "admin", "ep1")
 		require.NoError(t, err)
-		assert.True(t, audit.hasAction("DELETE_COMPUTE_ENDPOINT"))
+		assert.True(t, audit.HasAction("DELETE_COMPUTE_ENDPOINT"))
 	})
 
 	t.Run("access_denied", func(t *testing.T) {
@@ -327,10 +224,10 @@ func TestComputeEndpointService_Delete(t *testing.T) {
 func TestComputeEndpointService_UpdateStatus(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockComputeEndpointRepo{
-			getByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
+			GetByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
 				return &domain.ComputeEndpoint{ID: 1, Name: "ep1", Status: "INACTIVE"}, nil
 			},
-			updateStatusFn: func(_ context.Context, _ int64, _ string) error {
+			UpdateStatusFn: func(_ context.Context, _ int64, _ string) error {
 				return nil
 			},
 		}
@@ -339,12 +236,12 @@ func TestComputeEndpointService_UpdateStatus(t *testing.T) {
 
 		err := svc.UpdateStatus(context.Background(), "admin", "ep1", "ACTIVE")
 		require.NoError(t, err)
-		assert.True(t, audit.hasAction("UPDATE_COMPUTE_ENDPOINT_STATUS"))
+		assert.True(t, audit.HasAction("UPDATE_COMPUTE_ENDPOINT_STATUS"))
 	})
 
 	t.Run("invalid_status", func(t *testing.T) {
 		repo := &mockComputeEndpointRepo{
-			getByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
+			GetByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
 				return &domain.ComputeEndpoint{ID: 1, Name: "ep1"}, nil
 			},
 		}
@@ -360,10 +257,10 @@ func TestComputeEndpointService_UpdateStatus(t *testing.T) {
 		for _, status := range []string{"ACTIVE", "INACTIVE", "STARTING", "STOPPING", "ERROR"} {
 			t.Run(status, func(t *testing.T) {
 				repo := &mockComputeEndpointRepo{
-					getByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
+					GetByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
 						return &domain.ComputeEndpoint{ID: 1, Name: "ep1"}, nil
 					},
-					updateStatusFn: func(_ context.Context, _ int64, _ string) error {
+					UpdateStatusFn: func(_ context.Context, _ int64, _ string) error {
 						return nil
 					},
 				}
@@ -380,10 +277,10 @@ func TestComputeEndpointService_UpdateStatus(t *testing.T) {
 func TestComputeEndpointService_Assign(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockComputeEndpointRepo{
-			getByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
+			GetByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
 				return &domain.ComputeEndpoint{ID: 1, Name: "ep1"}, nil
 			},
-			assignFn: func(_ context.Context, a *domain.ComputeAssignment) (*domain.ComputeAssignment, error) {
+			AssignFn: func(_ context.Context, a *domain.ComputeAssignment) (*domain.ComputeAssignment, error) {
 				a.ID = 10
 				return a, nil
 			},
@@ -399,7 +296,7 @@ func TestComputeEndpointService_Assign(t *testing.T) {
 		assert.Equal(t, int64(1), result.EndpointID)
 		assert.True(t, result.IsDefault)
 		assert.True(t, result.FallbackLocal)
-		assert.True(t, audit.hasAction("ASSIGN_COMPUTE_ENDPOINT"))
+		assert.True(t, audit.HasAction("ASSIGN_COMPUTE_ENDPOINT"))
 	})
 
 	t.Run("validation_error", func(t *testing.T) {
@@ -430,7 +327,7 @@ func TestComputeEndpointService_Assign(t *testing.T) {
 func TestComputeEndpointService_Unassign(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockComputeEndpointRepo{
-			unassignFn: func(_ context.Context, _ int64) error {
+			UnassignFn: func(_ context.Context, _ int64) error {
 				return nil
 			},
 		}
@@ -439,7 +336,7 @@ func TestComputeEndpointService_Unassign(t *testing.T) {
 
 		err := svc.Unassign(context.Background(), "admin", 10)
 		require.NoError(t, err)
-		assert.True(t, audit.hasAction("UNASSIGN_COMPUTE_ENDPOINT"))
+		assert.True(t, audit.HasAction("UNASSIGN_COMPUTE_ENDPOINT"))
 	})
 
 	t.Run("access_denied", func(t *testing.T) {
@@ -456,10 +353,10 @@ func TestComputeEndpointService_Unassign(t *testing.T) {
 func TestComputeEndpointService_ListAssignments(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockComputeEndpointRepo{
-			getByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
+			GetByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
 				return &domain.ComputeEndpoint{ID: 1, Name: "ep1"}, nil
 			},
-			listAssignmentsFn: func(_ context.Context, _ int64, _ domain.PageRequest) ([]domain.ComputeAssignment, int64, error) {
+			ListAssignmentsFn: func(_ context.Context, _ int64, _ domain.PageRequest) ([]domain.ComputeAssignment, int64, error) {
 				return []domain.ComputeAssignment{
 					{ID: 1, PrincipalID: 5, PrincipalType: "user", EndpointID: 1},
 				}, 1, nil
@@ -475,7 +372,7 @@ func TestComputeEndpointService_ListAssignments(t *testing.T) {
 
 	t.Run("endpoint_not_found", func(t *testing.T) {
 		repo := &mockComputeEndpointRepo{
-			getByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
+			GetByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
 				return nil, domain.ErrNotFound("not found")
 			},
 		}
@@ -493,7 +390,7 @@ func TestComputeEndpointService_ListAssignments(t *testing.T) {
 func TestComputeEndpointService_HealthCheck(t *testing.T) {
 	t.Run("local_endpoint_always_ok", func(t *testing.T) {
 		repo := &mockComputeEndpointRepo{
-			getByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
+			GetByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
 				return &domain.ComputeEndpoint{ID: 1, Name: "local-ep", Type: "LOCAL"}, nil
 			},
 		}
@@ -516,7 +413,7 @@ func TestComputeEndpointService_HealthCheck(t *testing.T) {
 
 	t.Run("not_found", func(t *testing.T) {
 		repo := &mockComputeEndpointRepo{
-			getByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
+			GetByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
 				return nil, domain.ErrNotFound("not found")
 			},
 		}
@@ -530,7 +427,7 @@ func TestComputeEndpointService_HealthCheck(t *testing.T) {
 
 	t.Run("remote_endpoint_unreachable", func(t *testing.T) {
 		repo := &mockComputeEndpointRepo{
-			getByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
+			GetByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
 				return &domain.ComputeEndpoint{
 					ID: 1, Name: "remote-ep", Type: "REMOTE",
 					URL: "https://127.0.0.1:1", AuthToken: "tok",

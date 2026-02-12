@@ -31,7 +31,7 @@ func TestViewService_CreateView(t *testing.T) {
 
 	t.Run("happy_path", func(t *testing.T) {
 		viewRepo := &mockViewRepo{
-			createFn: func(_ context.Context, v *domain.ViewDetail) (*domain.ViewDetail, error) {
+			CreateFn: func(_ context.Context, v *domain.ViewDetail) (*domain.ViewDetail, error) {
 				return &domain.ViewDetail{
 					ID:             1,
 					SchemaID:       v.SchemaID,
@@ -44,12 +44,12 @@ func TestViewService_CreateView(t *testing.T) {
 			},
 		}
 		catalog := &mockCatalogRepo{
-			getSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
+			GetSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
 				return schema, nil
 			},
 		}
 		auth := &mockAuthService{
-			checkPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
 				return true, nil
 			},
 		}
@@ -68,18 +68,18 @@ func TestViewService_CreateView(t *testing.T) {
 	t.Run("sets_owner_from_principal", func(t *testing.T) {
 		var captured *domain.ViewDetail
 		viewRepo := &mockViewRepo{
-			createFn: func(_ context.Context, v *domain.ViewDetail) (*domain.ViewDetail, error) {
+			CreateFn: func(_ context.Context, v *domain.ViewDetail) (*domain.ViewDetail, error) {
 				captured = v
 				return &domain.ViewDetail{ID: 1, Name: v.Name, Owner: v.Owner}, nil
 			},
 		}
 		catalog := &mockCatalogRepo{
-			getSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
+			GetSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
 				return schema, nil
 			},
 		}
 		auth := &mockAuthService{
-			checkPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
 				return true, nil
 			},
 		}
@@ -96,7 +96,7 @@ func TestViewService_CreateView(t *testing.T) {
 	t.Run("access_denied", func(t *testing.T) {
 		catalog := &mockCatalogRepo{}
 		auth := &mockAuthService{
-			checkPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
 				return false, nil
 			},
 		}
@@ -113,7 +113,7 @@ func TestViewService_CreateView(t *testing.T) {
 	t.Run("auth_check_error", func(t *testing.T) {
 		catalog := &mockCatalogRepo{}
 		auth := &mockAuthService{
-			checkPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
 				return false, errTest
 			},
 		}
@@ -128,12 +128,12 @@ func TestViewService_CreateView(t *testing.T) {
 
 	t.Run("schema_not_found", func(t *testing.T) {
 		catalog := &mockCatalogRepo{
-			getSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
+			GetSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
 				return nil, domain.ErrNotFound("schema %q not found", "bad")
 			},
 		}
 		auth := &mockAuthService{
-			checkPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
 				return true, nil
 			},
 		}
@@ -149,17 +149,17 @@ func TestViewService_CreateView(t *testing.T) {
 
 	t.Run("repo_create_error", func(t *testing.T) {
 		viewRepo := &mockViewRepo{
-			createFn: func(_ context.Context, _ *domain.ViewDetail) (*domain.ViewDetail, error) {
+			CreateFn: func(_ context.Context, _ *domain.ViewDetail) (*domain.ViewDetail, error) {
 				return nil, errTest
 			},
 		}
 		catalog := &mockCatalogRepo{
-			getSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
+			GetSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
 				return schema, nil
 			},
 		}
 		auth := &mockAuthService{
-			checkPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
 				return true, nil
 			},
 		}
@@ -174,17 +174,17 @@ func TestViewService_CreateView(t *testing.T) {
 
 	t.Run("audit_logged", func(t *testing.T) {
 		viewRepo := &mockViewRepo{
-			createFn: func(_ context.Context, v *domain.ViewDetail) (*domain.ViewDetail, error) {
+			CreateFn: func(_ context.Context, v *domain.ViewDetail) (*domain.ViewDetail, error) {
 				return &domain.ViewDetail{ID: 1, Name: v.Name, Owner: v.Owner}, nil
 			},
 		}
 		catalog := &mockCatalogRepo{
-			getSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
+			GetSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
 				return schema, nil
 			},
 		}
 		auth := &mockAuthService{
-			checkPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
 				return true, nil
 			},
 		}
@@ -194,9 +194,9 @@ func TestViewService_CreateView(t *testing.T) {
 		_, err := svc.CreateView(ctxWithPrincipal("alice"), "alice", "main", req)
 
 		require.NoError(t, err)
-		require.NotNil(t, audit.lastEntry())
-		assert.Equal(t, "CREATE_VIEW", audit.lastEntry().Action)
-		assert.Equal(t, "alice", audit.lastEntry().PrincipalName)
+		require.NotNil(t, audit.LastEntry())
+		assert.Equal(t, "CREATE_VIEW", audit.LastEntry().Action)
+		assert.Equal(t, "alice", audit.LastEntry().PrincipalName)
 	})
 }
 
@@ -211,12 +211,12 @@ func TestViewService_GetView(t *testing.T) {
 
 	t.Run("happy_path", func(t *testing.T) {
 		viewRepo := &mockViewRepo{
-			getByNameFn: func(_ context.Context, _ int64, _ string) (*domain.ViewDetail, error) {
+			GetByNameFn: func(_ context.Context, _ int64, _ string) (*domain.ViewDetail, error) {
 				return &domain.ViewDetail{ID: 1, Name: "v_test"}, nil
 			},
 		}
 		catalog := &mockCatalogRepo{
-			getSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
+			GetSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
 				return schema, nil
 			},
 		}
@@ -232,7 +232,7 @@ func TestViewService_GetView(t *testing.T) {
 
 	t.Run("schema_not_found", func(t *testing.T) {
 		catalog := &mockCatalogRepo{
-			getSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
+			GetSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
 				return nil, domain.ErrNotFound("schema not found")
 			},
 		}
@@ -247,12 +247,12 @@ func TestViewService_GetView(t *testing.T) {
 
 	t.Run("view_not_found", func(t *testing.T) {
 		viewRepo := &mockViewRepo{
-			getByNameFn: func(_ context.Context, _ int64, _ string) (*domain.ViewDetail, error) {
+			GetByNameFn: func(_ context.Context, _ int64, _ string) (*domain.ViewDetail, error) {
 				return nil, domain.ErrNotFound("view not found")
 			},
 		}
 		catalog := &mockCatalogRepo{
-			getSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
+			GetSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
 				return schema, nil
 			},
 		}
@@ -278,7 +278,7 @@ func TestViewService_ListViews(t *testing.T) {
 
 	t.Run("happy_path", func(t *testing.T) {
 		viewRepo := &mockViewRepo{
-			listFn: func(_ context.Context, _ int64, _ domain.PageRequest) ([]domain.ViewDetail, int64, error) {
+			ListFn: func(_ context.Context, _ int64, _ domain.PageRequest) ([]domain.ViewDetail, int64, error) {
 				return []domain.ViewDetail{
 					{ID: 1, Name: "v1"},
 					{ID: 2, Name: "v2"},
@@ -286,7 +286,7 @@ func TestViewService_ListViews(t *testing.T) {
 			},
 		}
 		catalog := &mockCatalogRepo{
-			getSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
+			GetSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
 				return schema, nil
 			},
 		}
@@ -305,12 +305,12 @@ func TestViewService_ListViews(t *testing.T) {
 
 	t.Run("empty_result", func(t *testing.T) {
 		viewRepo := &mockViewRepo{
-			listFn: func(_ context.Context, _ int64, _ domain.PageRequest) ([]domain.ViewDetail, int64, error) {
+			ListFn: func(_ context.Context, _ int64, _ domain.PageRequest) ([]domain.ViewDetail, int64, error) {
 				return []domain.ViewDetail{}, 0, nil
 			},
 		}
 		catalog := &mockCatalogRepo{
-			getSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
+			GetSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
 				return schema, nil
 			},
 		}
@@ -325,7 +325,7 @@ func TestViewService_ListViews(t *testing.T) {
 
 	t.Run("schema_not_found", func(t *testing.T) {
 		catalog := &mockCatalogRepo{
-			getSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
+			GetSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
 				return nil, domain.ErrNotFound("schema not found")
 			},
 		}
@@ -350,17 +350,17 @@ func TestViewService_DeleteView(t *testing.T) {
 
 	t.Run("happy_path", func(t *testing.T) {
 		viewRepo := &mockViewRepo{
-			deleteFn: func(_ context.Context, _ int64, _ string) error {
+			DeleteFn: func(_ context.Context, _ int64, _ string) error {
 				return nil
 			},
 		}
 		catalog := &mockCatalogRepo{
-			getSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
+			GetSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
 				return schema, nil
 			},
 		}
 		auth := &mockAuthService{
-			checkPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
 				return true, nil
 			},
 		}
@@ -370,13 +370,13 @@ func TestViewService_DeleteView(t *testing.T) {
 		err := svc.DeleteView(ctxWithPrincipal("alice"), "alice", "main", "v_test")
 
 		require.NoError(t, err)
-		require.NotNil(t, audit.lastEntry())
-		assert.Equal(t, "DROP_VIEW", audit.lastEntry().Action)
+		require.NotNil(t, audit.LastEntry())
+		assert.Equal(t, "DROP_VIEW", audit.LastEntry().Action)
 	})
 
 	t.Run("access_denied", func(t *testing.T) {
 		auth := &mockAuthService{
-			checkPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
 				return false, nil
 			},
 		}
@@ -391,12 +391,12 @@ func TestViewService_DeleteView(t *testing.T) {
 
 	t.Run("schema_not_found", func(t *testing.T) {
 		catalog := &mockCatalogRepo{
-			getSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
+			GetSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
 				return nil, domain.ErrNotFound("schema not found")
 			},
 		}
 		auth := &mockAuthService{
-			checkPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
 				return true, nil
 			},
 		}
@@ -411,17 +411,17 @@ func TestViewService_DeleteView(t *testing.T) {
 
 	t.Run("repo_delete_error", func(t *testing.T) {
 		viewRepo := &mockViewRepo{
-			deleteFn: func(_ context.Context, _ int64, _ string) error {
+			DeleteFn: func(_ context.Context, _ int64, _ string) error {
 				return errTest
 			},
 		}
 		catalog := &mockCatalogRepo{
-			getSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
+			GetSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
 				return schema, nil
 			},
 		}
 		auth := &mockAuthService{
-			checkPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
 				return true, nil
 			},
 		}

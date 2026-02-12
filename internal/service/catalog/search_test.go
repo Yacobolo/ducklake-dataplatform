@@ -14,7 +14,7 @@ func TestSearchService_Search(t *testing.T) {
 	t.Run("delegates_with_pagination", func(t *testing.T) {
 		var capturedMaxResults, capturedOffset int
 		repo := &mockSearchRepo{
-			searchFn: func(_ context.Context, _ string, _ *string, maxResults int, offset int) ([]domain.SearchResult, int64, error) {
+			SearchFn: func(_ context.Context, _ string, _ *string, maxResults int, offset int) ([]domain.SearchResult, int64, error) {
 				capturedMaxResults = maxResults
 				capturedOffset = offset
 				return []domain.SearchResult{
@@ -36,7 +36,7 @@ func TestSearchService_Search(t *testing.T) {
 	t.Run("default_pagination", func(t *testing.T) {
 		var capturedMaxResults int
 		repo := &mockSearchRepo{
-			searchFn: func(_ context.Context, _ string, _ *string, maxResults int, _ int) ([]domain.SearchResult, int64, error) {
+			SearchFn: func(_ context.Context, _ string, _ *string, maxResults int, _ int) ([]domain.SearchResult, int64, error) {
 				capturedMaxResults = maxResults
 				return []domain.SearchResult{}, 0, nil
 			},
@@ -51,7 +51,7 @@ func TestSearchService_Search(t *testing.T) {
 
 	t.Run("repo_error", func(t *testing.T) {
 		repo := &mockSearchRepo{
-			searchFn: func(_ context.Context, _ string, _ *string, _ int, _ int) ([]domain.SearchResult, int64, error) {
+			SearchFn: func(_ context.Context, _ string, _ *string, _ int, _ int) ([]domain.SearchResult, int64, error) {
 				return nil, 0, errTest
 			},
 		}

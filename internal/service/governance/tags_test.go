@@ -16,7 +16,7 @@ import (
 func TestTagService_CreateTag(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockTagRepo{
-			createTagFn: func(_ context.Context, tag *domain.Tag) (*domain.Tag, error) {
+			CreateTagFn: func(_ context.Context, tag *domain.Tag) (*domain.Tag, error) {
 				return &domain.Tag{
 					ID:        1,
 					Key:       tag.Key,
@@ -35,12 +35,12 @@ func TestTagService_CreateTag(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "env", result.Key)
 		assert.Equal(t, "alice", result.CreatedBy)
-		assert.True(t, audit.hasAction("CREATE_TAG"))
+		assert.True(t, audit.HasAction("CREATE_TAG"))
 	})
 
 	t.Run("repo_error", func(t *testing.T) {
 		repo := &mockTagRepo{
-			createTagFn: func(_ context.Context, _ *domain.Tag) (*domain.Tag, error) {
+			CreateTagFn: func(_ context.Context, _ *domain.Tag) (*domain.Tag, error) {
 				return nil, errTest
 			},
 		}
@@ -51,7 +51,7 @@ func TestTagService_CreateTag(t *testing.T) {
 
 		require.Error(t, err)
 		require.ErrorIs(t, err, errTest)
-		assert.Empty(t, audit.entries, "audit should not be logged on error")
+		assert.Empty(t, audit.Entries, "audit should not be logged on error")
 	})
 }
 
@@ -60,7 +60,7 @@ func TestTagService_CreateTag(t *testing.T) {
 func TestTagService_GetTag(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockTagRepo{
-			getTagFn: func(_ context.Context, id int64) (*domain.Tag, error) {
+			GetTagFn: func(_ context.Context, id int64) (*domain.Tag, error) {
 				return &domain.Tag{ID: id, Key: "env"}, nil
 			},
 		}
@@ -74,7 +74,7 @@ func TestTagService_GetTag(t *testing.T) {
 
 	t.Run("not_found", func(t *testing.T) {
 		repo := &mockTagRepo{
-			getTagFn: func(_ context.Context, _ int64) (*domain.Tag, error) {
+			GetTagFn: func(_ context.Context, _ int64) (*domain.Tag, error) {
 				return nil, domain.ErrNotFound("tag not found")
 			},
 		}
@@ -93,7 +93,7 @@ func TestTagService_GetTag(t *testing.T) {
 func TestTagService_ListTags(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockTagRepo{
-			listTagsFn: func(_ context.Context, _ domain.PageRequest) ([]domain.Tag, int64, error) {
+			ListTagsFn: func(_ context.Context, _ domain.PageRequest) ([]domain.Tag, int64, error) {
 				return []domain.Tag{{ID: 1, Key: "env"}, {ID: 2, Key: "pii"}}, 2, nil
 			},
 		}
@@ -108,7 +108,7 @@ func TestTagService_ListTags(t *testing.T) {
 
 	t.Run("empty", func(t *testing.T) {
 		repo := &mockTagRepo{
-			listTagsFn: func(_ context.Context, _ domain.PageRequest) ([]domain.Tag, int64, error) {
+			ListTagsFn: func(_ context.Context, _ domain.PageRequest) ([]domain.Tag, int64, error) {
 				return []domain.Tag{}, 0, nil
 			},
 		}
@@ -127,7 +127,7 @@ func TestTagService_ListTags(t *testing.T) {
 func TestTagService_DeleteTag(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockTagRepo{
-			deleteTagFn: func(_ context.Context, _ int64) error {
+			DeleteTagFn: func(_ context.Context, _ int64) error {
 				return nil
 			},
 		}
@@ -137,12 +137,12 @@ func TestTagService_DeleteTag(t *testing.T) {
 		err := svc.DeleteTag(ctxWithPrincipal("alice"), "alice", 1)
 
 		require.NoError(t, err)
-		assert.True(t, audit.hasAction("DELETE_TAG"))
+		assert.True(t, audit.HasAction("DELETE_TAG"))
 	})
 
 	t.Run("repo_error", func(t *testing.T) {
 		repo := &mockTagRepo{
-			deleteTagFn: func(_ context.Context, _ int64) error {
+			DeleteTagFn: func(_ context.Context, _ int64) error {
 				return errTest
 			},
 		}
@@ -153,7 +153,7 @@ func TestTagService_DeleteTag(t *testing.T) {
 
 		require.Error(t, err)
 		require.ErrorIs(t, err, errTest)
-		assert.Empty(t, audit.entries, "audit should not be logged on error")
+		assert.Empty(t, audit.Entries, "audit should not be logged on error")
 	})
 }
 
@@ -163,7 +163,7 @@ func TestTagService_AssignTag(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		var captured *domain.TagAssignment
 		repo := &mockTagRepo{
-			assignTagFn: func(_ context.Context, a *domain.TagAssignment) (*domain.TagAssignment, error) {
+			AssignTagFn: func(_ context.Context, a *domain.TagAssignment) (*domain.TagAssignment, error) {
 				captured = a
 				return &domain.TagAssignment{
 					ID:            1,
@@ -187,12 +187,12 @@ func TestTagService_AssignTag(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "bob", captured.AssignedBy)
 		assert.Equal(t, "bob", result.AssignedBy)
-		assert.True(t, audit.hasAction("ASSIGN_TAG"))
+		assert.True(t, audit.HasAction("ASSIGN_TAG"))
 	})
 
 	t.Run("repo_error", func(t *testing.T) {
 		repo := &mockTagRepo{
-			assignTagFn: func(_ context.Context, _ *domain.TagAssignment) (*domain.TagAssignment, error) {
+			AssignTagFn: func(_ context.Context, _ *domain.TagAssignment) (*domain.TagAssignment, error) {
 				return nil, errTest
 			},
 		}
@@ -203,7 +203,7 @@ func TestTagService_AssignTag(t *testing.T) {
 
 		require.Error(t, err)
 		require.ErrorIs(t, err, errTest)
-		assert.Empty(t, audit.entries)
+		assert.Empty(t, audit.Entries)
 	})
 }
 
@@ -212,7 +212,7 @@ func TestTagService_AssignTag(t *testing.T) {
 func TestTagService_UnassignTag(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockTagRepo{
-			unassignTagFn: func(_ context.Context, _ int64) error {
+			UnassignTagFn: func(_ context.Context, _ int64) error {
 				return nil
 			},
 		}
@@ -222,12 +222,12 @@ func TestTagService_UnassignTag(t *testing.T) {
 		err := svc.UnassignTag(ctxWithPrincipal("alice"), "alice", 1)
 
 		require.NoError(t, err)
-		assert.True(t, audit.hasAction("UNASSIGN_TAG"))
+		assert.True(t, audit.HasAction("UNASSIGN_TAG"))
 	})
 
 	t.Run("repo_error", func(t *testing.T) {
 		repo := &mockTagRepo{
-			unassignTagFn: func(_ context.Context, _ int64) error {
+			UnassignTagFn: func(_ context.Context, _ int64) error {
 				return errTest
 			},
 		}
@@ -238,7 +238,7 @@ func TestTagService_UnassignTag(t *testing.T) {
 
 		require.Error(t, err)
 		require.ErrorIs(t, err, errTest)
-		assert.Empty(t, audit.entries)
+		assert.Empty(t, audit.Entries)
 	})
 }
 
@@ -246,7 +246,7 @@ func TestTagService_UnassignTag(t *testing.T) {
 
 func TestTagService_ListTagsForSecurable(t *testing.T) {
 	repo := &mockTagRepo{
-		listTagsForSecurableFn: func(_ context.Context, _ string, _ int64, _ *string) ([]domain.Tag, error) {
+		ListTagsForSecurableFn: func(_ context.Context, _ string, _ int64, _ *string) ([]domain.Tag, error) {
 			return []domain.Tag{{ID: 1, Key: "env"}}, nil
 		},
 	}
@@ -262,7 +262,7 @@ func TestTagService_ListTagsForSecurable(t *testing.T) {
 
 func TestTagService_ListAssignmentsForTag(t *testing.T) {
 	repo := &mockTagRepo{
-		listAssignmentsForTagFn: func(_ context.Context, _ int64) ([]domain.TagAssignment, error) {
+		ListAssignmentsForTagFn: func(_ context.Context, _ int64) ([]domain.TagAssignment, error) {
 			return []domain.TagAssignment{{ID: 1, TagID: 1, SecurableType: "table"}}, nil
 		},
 	}
@@ -319,7 +319,7 @@ func TestValidateClassificationTag(t *testing.T) {
 func TestTagService_CreateTag_ClassificationValidation(t *testing.T) {
 	t.Run("valid classification passes", func(t *testing.T) {
 		repo := &mockTagRepo{
-			createTagFn: func(_ context.Context, tag *domain.Tag) (*domain.Tag, error) {
+			CreateTagFn: func(_ context.Context, tag *domain.Tag) (*domain.Tag, error) {
 				return &domain.Tag{ID: 1, Key: tag.Key, Value: tag.Value, CreatedBy: tag.CreatedBy, CreatedAt: time.Now()}, nil
 			},
 		}
@@ -335,7 +335,7 @@ func TestTagService_CreateTag_ClassificationValidation(t *testing.T) {
 
 	t.Run("invalid classification rejected", func(t *testing.T) {
 		repo := &mockTagRepo{
-			// createTagFn should NOT be called
+			// CreateTagFn should NOT be called
 		}
 		audit := &mockAuditRepo{}
 		svc := NewTagService(repo, audit)
@@ -346,6 +346,6 @@ func TestTagService_CreateTag_ClassificationValidation(t *testing.T) {
 		require.Error(t, err)
 		var validationErr *domain.ValidationError
 		require.ErrorAs(t, err, &validationErr)
-		assert.Empty(t, audit.entries, "audit should not be logged on validation error")
+		assert.Empty(t, audit.Entries, "audit should not be logged on validation error")
 	})
 }

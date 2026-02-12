@@ -27,7 +27,7 @@ func TestStorageCredentialService_Create(t *testing.T) {
 
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockStorageCredentialRepo{
-			createFn: func(_ context.Context, cred *domain.StorageCredential) (*domain.StorageCredential, error) {
+			CreateFn: func(_ context.Context, cred *domain.StorageCredential) (*domain.StorageCredential, error) {
 				return &domain.StorageCredential{
 					ID:             1,
 					Name:           cred.Name,
@@ -45,7 +45,7 @@ func TestStorageCredentialService_Create(t *testing.T) {
 			},
 		}
 		auth := &mockAuthService{
-			checkPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
 				return true, nil
 			},
 		}
@@ -57,12 +57,12 @@ func TestStorageCredentialService_Create(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "my-cred", result.Name)
 		assert.Equal(t, "admin_user", result.Owner)
-		assert.True(t, audit.hasAction("CREATE_STORAGE_CREDENTIAL"))
+		assert.True(t, audit.HasAction("CREATE_STORAGE_CREDENTIAL"))
 	})
 
 	t.Run("access_denied", func(t *testing.T) {
 		auth := &mockAuthService{
-			checkPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
 				return false, nil
 			},
 		}
@@ -74,12 +74,12 @@ func TestStorageCredentialService_Create(t *testing.T) {
 		require.Error(t, err)
 		var denied *domain.AccessDeniedError
 		require.ErrorAs(t, err, &denied)
-		assert.Empty(t, audit.entries)
+		assert.Empty(t, audit.Entries)
 	})
 
 	t.Run("validation_error", func(t *testing.T) {
 		auth := &mockAuthService{
-			checkPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
 				return true, nil
 			},
 		}
@@ -95,12 +95,12 @@ func TestStorageCredentialService_Create(t *testing.T) {
 
 	t.Run("repo_error", func(t *testing.T) {
 		repo := &mockStorageCredentialRepo{
-			createFn: func(_ context.Context, _ *domain.StorageCredential) (*domain.StorageCredential, error) {
+			CreateFn: func(_ context.Context, _ *domain.StorageCredential) (*domain.StorageCredential, error) {
 				return nil, errTest
 			},
 		}
 		auth := &mockAuthService{
-			checkPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
 				return true, nil
 			},
 		}
@@ -110,7 +110,7 @@ func TestStorageCredentialService_Create(t *testing.T) {
 		_, err := svc.Create(ctxWithPrincipal("admin_user"), "admin_user", validReq)
 
 		require.Error(t, err)
-		assert.Empty(t, audit.entries)
+		assert.Empty(t, audit.Entries)
 	})
 }
 
@@ -119,7 +119,7 @@ func TestStorageCredentialService_Create(t *testing.T) {
 func TestStorageCredentialService_GetByName(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockStorageCredentialRepo{
-			getByNameFn: func(_ context.Context, name string) (*domain.StorageCredential, error) {
+			GetByNameFn: func(_ context.Context, name string) (*domain.StorageCredential, error) {
 				return &domain.StorageCredential{ID: 1, Name: name}, nil
 			},
 		}
@@ -133,7 +133,7 @@ func TestStorageCredentialService_GetByName(t *testing.T) {
 
 	t.Run("not_found", func(t *testing.T) {
 		repo := &mockStorageCredentialRepo{
-			getByNameFn: func(_ context.Context, _ string) (*domain.StorageCredential, error) {
+			GetByNameFn: func(_ context.Context, _ string) (*domain.StorageCredential, error) {
 				return nil, domain.ErrNotFound("credential not found")
 			},
 		}
@@ -152,7 +152,7 @@ func TestStorageCredentialService_GetByName(t *testing.T) {
 func TestStorageCredentialService_List(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockStorageCredentialRepo{
-			listFn: func(_ context.Context, _ domain.PageRequest) ([]domain.StorageCredential, int64, error) {
+			ListFn: func(_ context.Context, _ domain.PageRequest) ([]domain.StorageCredential, int64, error) {
 				return []domain.StorageCredential{
 					{ID: 1, Name: "cred-1"},
 					{ID: 2, Name: "cred-2"},
@@ -170,7 +170,7 @@ func TestStorageCredentialService_List(t *testing.T) {
 
 	t.Run("empty", func(t *testing.T) {
 		repo := &mockStorageCredentialRepo{
-			listFn: func(_ context.Context, _ domain.PageRequest) ([]domain.StorageCredential, int64, error) {
+			ListFn: func(_ context.Context, _ domain.PageRequest) ([]domain.StorageCredential, int64, error) {
 				return nil, 0, nil
 			},
 		}
@@ -189,15 +189,15 @@ func TestStorageCredentialService_List(t *testing.T) {
 func TestStorageCredentialService_Delete(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockStorageCredentialRepo{
-			getByNameFn: func(_ context.Context, _ string) (*domain.StorageCredential, error) {
+			GetByNameFn: func(_ context.Context, _ string) (*domain.StorageCredential, error) {
 				return &domain.StorageCredential{ID: 1, Name: "my-cred"}, nil
 			},
-			deleteFn: func(_ context.Context, _ int64) error {
+			DeleteFn: func(_ context.Context, _ int64) error {
 				return nil
 			},
 		}
 		auth := &mockAuthService{
-			checkPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
 				return true, nil
 			},
 		}
@@ -207,12 +207,12 @@ func TestStorageCredentialService_Delete(t *testing.T) {
 		err := svc.Delete(ctxWithPrincipal("admin_user"), "admin_user", "my-cred")
 
 		require.NoError(t, err)
-		assert.True(t, audit.hasAction("DELETE_STORAGE_CREDENTIAL"))
+		assert.True(t, audit.HasAction("DELETE_STORAGE_CREDENTIAL"))
 	})
 
 	t.Run("access_denied", func(t *testing.T) {
 		auth := &mockAuthService{
-			checkPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
 				return false, nil
 			},
 		}
@@ -224,17 +224,17 @@ func TestStorageCredentialService_Delete(t *testing.T) {
 		require.Error(t, err)
 		var denied *domain.AccessDeniedError
 		require.ErrorAs(t, err, &denied)
-		assert.Empty(t, audit.entries)
+		assert.Empty(t, audit.Entries)
 	})
 
 	t.Run("not_found", func(t *testing.T) {
 		repo := &mockStorageCredentialRepo{
-			getByNameFn: func(_ context.Context, _ string) (*domain.StorageCredential, error) {
+			GetByNameFn: func(_ context.Context, _ string) (*domain.StorageCredential, error) {
 				return nil, domain.ErrNotFound("not found")
 			},
 		}
 		auth := &mockAuthService{
-			checkPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
 				return true, nil
 			},
 		}
@@ -258,15 +258,15 @@ func TestStorageCredentialService_Update(t *testing.T) {
 
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockStorageCredentialRepo{
-			getByNameFn: func(_ context.Context, _ string) (*domain.StorageCredential, error) {
+			GetByNameFn: func(_ context.Context, _ string) (*domain.StorageCredential, error) {
 				return &domain.StorageCredential{ID: 1, Name: "my-cred", Endpoint: "s3.example.com"}, nil
 			},
-			updateFn: func(_ context.Context, _ int64, _ domain.UpdateStorageCredentialRequest) (*domain.StorageCredential, error) {
+			UpdateFn: func(_ context.Context, _ int64, _ domain.UpdateStorageCredentialRequest) (*domain.StorageCredential, error) {
 				return &domain.StorageCredential{ID: 1, Name: "my-cred", Endpoint: "s3-new.example.com"}, nil
 			},
 		}
 		auth := &mockAuthService{
-			checkPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
 				return true, nil
 			},
 		}
@@ -277,12 +277,12 @@ func TestStorageCredentialService_Update(t *testing.T) {
 
 		require.NoError(t, err)
 		assert.Equal(t, "s3-new.example.com", result.Endpoint)
-		assert.True(t, audit.hasAction("UPDATE_STORAGE_CREDENTIAL"))
+		assert.True(t, audit.HasAction("UPDATE_STORAGE_CREDENTIAL"))
 	})
 
 	t.Run("access_denied", func(t *testing.T) {
 		auth := &mockAuthService{
-			checkPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
 				return false, nil
 			},
 		}

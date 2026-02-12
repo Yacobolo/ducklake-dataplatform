@@ -24,7 +24,7 @@ func TestQueryHistoryService_List(t *testing.T) {
 
 		var capturedFilter domain.QueryHistoryFilter
 		repo := &mockQueryHistoryRepo{
-			listFn: func(_ context.Context, f domain.QueryHistoryFilter) ([]domain.QueryHistoryEntry, int64, error) {
+			ListFn: func(_ context.Context, f domain.QueryHistoryFilter) ([]domain.QueryHistoryEntry, int64, error) {
 				capturedFilter = f
 				return expected, 1, nil
 			},
@@ -41,7 +41,7 @@ func TestQueryHistoryService_List(t *testing.T) {
 
 	t.Run("repo_error", func(t *testing.T) {
 		repo := &mockQueryHistoryRepo{
-			listFn: func(_ context.Context, _ domain.QueryHistoryFilter) ([]domain.QueryHistoryEntry, int64, error) {
+			ListFn: func(_ context.Context, _ domain.QueryHistoryFilter) ([]domain.QueryHistoryEntry, int64, error) {
 				return nil, 0, errTest
 			},
 		}

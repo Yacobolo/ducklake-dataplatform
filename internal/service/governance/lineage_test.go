@@ -16,7 +16,7 @@ import (
 func TestLineageService_InsertEdge(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockLineageRepo{
-			insertEdgeFn: func(_ context.Context, _ *domain.LineageEdge) error {
+			InsertEdgeFn: func(_ context.Context, _ *domain.LineageEdge) error {
 				return nil
 			},
 		}
@@ -32,7 +32,7 @@ func TestLineageService_InsertEdge(t *testing.T) {
 
 	t.Run("repo_error", func(t *testing.T) {
 		repo := &mockLineageRepo{
-			insertEdgeFn: func(_ context.Context, _ *domain.LineageEdge) error {
+			InsertEdgeFn: func(_ context.Context, _ *domain.LineageEdge) error {
 				return errTest
 			},
 		}
@@ -50,7 +50,7 @@ func TestLineageService_InsertEdge(t *testing.T) {
 func TestLineageService_GetUpstream(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockLineageRepo{
-			getUpstreamFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
+			GetUpstreamFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
 				return []domain.LineageEdge{
 					{ID: 1, SourceTable: "orders", EdgeType: "READ"},
 				}, 1, nil
@@ -67,7 +67,7 @@ func TestLineageService_GetUpstream(t *testing.T) {
 
 	t.Run("repo_error", func(t *testing.T) {
 		repo := &mockLineageRepo{
-			getUpstreamFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
+			GetUpstreamFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
 				return nil, 0, errTest
 			},
 		}
@@ -85,7 +85,7 @@ func TestLineageService_GetUpstream(t *testing.T) {
 func TestLineageService_GetDownstream(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockLineageRepo{
-			getDownstreamFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
+			GetDownstreamFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
 				return []domain.LineageEdge{
 					{ID: 2, SourceTable: "revenue_summary", EdgeType: "READ"},
 				}, 1, nil
@@ -102,7 +102,7 @@ func TestLineageService_GetDownstream(t *testing.T) {
 
 	t.Run("repo_error", func(t *testing.T) {
 		repo := &mockLineageRepo{
-			getDownstreamFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
+			GetDownstreamFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
 				return nil, 0, errTest
 			},
 		}
@@ -121,13 +121,13 @@ func TestLineageService_GetFullLineage(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		target := "main.revenue_summary"
 		repo := &mockLineageRepo{
-			getUpstreamFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
+			GetUpstreamFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
 				return []domain.LineageEdge{
 					{ID: 1, SourceTable: "main.orders", EdgeType: "READ"},
 					{ID: 2, SourceTable: "main.customers", EdgeType: "READ"},
 				}, 2, nil
 			},
-			getDownstreamFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
+			GetDownstreamFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
 				return []domain.LineageEdge{
 					{ID: 3, SourceTable: "main.revenue_summary", EdgeType: "READ"},
 				}, 1, nil
@@ -146,10 +146,10 @@ func TestLineageService_GetFullLineage(t *testing.T) {
 	t.Run("upstream_error", func(t *testing.T) {
 		downstreamCalled := false
 		repo := &mockLineageRepo{
-			getUpstreamFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
+			GetUpstreamFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
 				return nil, 0, errTest
 			},
-			getDownstreamFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
+			GetDownstreamFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
 				downstreamCalled = true
 				return nil, 0, nil
 			},
@@ -165,10 +165,10 @@ func TestLineageService_GetFullLineage(t *testing.T) {
 
 	t.Run("downstream_error", func(t *testing.T) {
 		repo := &mockLineageRepo{
-			getUpstreamFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
+			GetUpstreamFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
 				return []domain.LineageEdge{{ID: 1}}, 1, nil
 			},
-			getDownstreamFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
+			GetDownstreamFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
 				return nil, 0, errTest
 			},
 		}
@@ -182,10 +182,10 @@ func TestLineageService_GetFullLineage(t *testing.T) {
 
 	t.Run("both_empty", func(t *testing.T) {
 		repo := &mockLineageRepo{
-			getUpstreamFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
+			GetUpstreamFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
 				return []domain.LineageEdge{}, 0, nil
 			},
-			getDownstreamFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
+			GetDownstreamFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
 				return []domain.LineageEdge{}, 0, nil
 			},
 		}
@@ -205,7 +205,7 @@ func TestLineageService_GetFullLineage(t *testing.T) {
 func TestLineageService_DeleteEdge(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockLineageRepo{
-			deleteEdgeFn: func(_ context.Context, id int64) error {
+			DeleteEdgeFn: func(_ context.Context, id int64) error {
 				assert.Equal(t, int64(42), id)
 				return nil
 			},
@@ -219,7 +219,7 @@ func TestLineageService_DeleteEdge(t *testing.T) {
 
 	t.Run("not_found", func(t *testing.T) {
 		repo := &mockLineageRepo{
-			deleteEdgeFn: func(_ context.Context, _ int64) error {
+			DeleteEdgeFn: func(_ context.Context, _ int64) error {
 				return domain.ErrNotFound("edge not found")
 			},
 		}
@@ -234,7 +234,7 @@ func TestLineageService_DeleteEdge(t *testing.T) {
 
 	t.Run("repo_error", func(t *testing.T) {
 		repo := &mockLineageRepo{
-			deleteEdgeFn: func(_ context.Context, _ int64) error {
+			DeleteEdgeFn: func(_ context.Context, _ int64) error {
 				return errTest
 			},
 		}
@@ -252,7 +252,7 @@ func TestLineageService_DeleteEdge(t *testing.T) {
 func TestLineageService_PurgeOlderThan(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockLineageRepo{
-			purgeOlderThanFn: func(_ context.Context, before time.Time) (int64, error) {
+			PurgeOlderThanFn: func(_ context.Context, before time.Time) (int64, error) {
 				// Should be approximately 90 days ago
 				assert.True(t, before.Before(time.Now().AddDate(0, 0, -89)))
 				return 5, nil
@@ -268,7 +268,7 @@ func TestLineageService_PurgeOlderThan(t *testing.T) {
 
 	t.Run("repo_error", func(t *testing.T) {
 		repo := &mockLineageRepo{
-			purgeOlderThanFn: func(_ context.Context, _ time.Time) (int64, error) {
+			PurgeOlderThanFn: func(_ context.Context, _ time.Time) (int64, error) {
 				return 0, errTest
 			},
 		}
@@ -282,7 +282,7 @@ func TestLineageService_PurgeOlderThan(t *testing.T) {
 
 	t.Run("zero_deleted", func(t *testing.T) {
 		repo := &mockLineageRepo{
-			purgeOlderThanFn: func(_ context.Context, _ time.Time) (int64, error) {
+			PurgeOlderThanFn: func(_ context.Context, _ time.Time) (int64, error) {
 				return 0, nil
 			},
 		}
