@@ -1516,6 +1516,432 @@ func setupRemoteEndpoint(t *testing.T, env *httpTestEnv, agentEnv *agentTestEnv,
 	_ = resp.Body.Close()
 }
 
+// ---------------------------------------------------------------------------
+// Multi-table test infrastructure
+// ---------------------------------------------------------------------------
+
+// ducklakeDeptDataFileName is the parquet file name for the departments table.
+const ducklakeDeptDataFileName = "ducklake-departments-test-fixture.parquet"
+
+// multiTableKeys extends apiKeys with additional test principals.
+type multiTableKeys struct {
+	apiKeys
+	DeptViewer      string
+	USOnlyViewer    string
+	MaskedViewer    string
+	MultiFilterUser string
+}
+
+// multiTableTestEnv bundles the test server and multi-table API keys.
+type multiTableTestEnv struct {
+	Server *httptest.Server
+	Keys   multiTableKeys
+}
+
+// seedMultiTableMetadata seeds both the titanic and departments tables.
+func seedMultiTableMetadata(t *testing.T, db *sql.DB, dataPath string) {
+	t.Helper()
+	seedDuckLakeMetadata(t, db, dataPath)
+
+	const deptData = `
+	INSERT INTO ducklake_table VALUES (
+		2, 'dept-test-uuid', 1, NULL,
+		0, 'departments', 'departments/', 1
+	);
+	INSERT INTO ducklake_column VALUES (13, 1, NULL, 2, 1, 'dept_id',     'int64',   NULL, NULL, 1, NULL);
+	INSERT INTO ducklake_column VALUES (14, 1, NULL, 2, 2, 'dept_name',   'varchar', NULL, NULL, 1, NULL);
+	INSERT INTO ducklake_column VALUES (15, 1, NULL, 2, 3, 'region',      'varchar', NULL, NULL, 1, NULL);
+	INSERT INTO ducklake_column VALUES (16, 1, NULL, 2, 4, 'avg_salary',  'int64',   NULL, NULL, 1, NULL);
+	INSERT INTO ducklake_column VALUES (17, 1, NULL, 2, 5, 'headcount',   'int64',   NULL, NULL, 1, NULL);
+
+	INSERT INTO ducklake_data_file VALUES (
+		1, 2, 1, NULL, NULL,
+		'ducklake-departments-test-fixture.parquet',
+		1, 'parquet', 10, 2048, 512, 0, NULL, NULL, NULL, NULL
+	);`
+
+	if _, err := db.ExecContext(ctx, deptData); err != nil {
+		t.Fatalf("seed department metadata: %v", err)
+	}
+}
+
+// seedMultiTableRBAC seeds base RBAC plus 4 additional principals with
+// table-specific grants, row filters, and column masks.
+func seedMultiTableRBAC(t *testing.T, db *sql.DB) multiTableKeys {
+	t.Helper()
+	base := seedRBAC(t, db)
+	q := dbstore.New(db)
+
+	// --- dept_viewer: SELECT on departments only ---
+	deptViewer, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+		Name: "dept_viewer", Type: "user", IsAdmin: 0,
+	})
+	if err != nil {
+		t.Fatalf("create dept_viewer: %v", err)
+	}
+	deptViewerGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "dept_viewers"})
+	if err != nil {
+		t.Fatalf("create dept_viewers group: %v", err)
+	}
+	if err := q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{
+		GroupID: deptViewerGroup.ID, MemberType: "user", MemberID: deptViewer.ID,
+	}); err != nil {
+		t.Fatalf("add dept_viewer to group: %v", err)
+	}
+	// USAGE on schema + SELECT on departments (table_id=2) only
+	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		PrincipalID: deptViewerGroup.ID, PrincipalType: "group",
+		SecurableType: "schema", SecurableID: 0, Privilege: "USAGE",
+	}); err != nil {
+		t.Fatalf("grant dept_viewers USAGE: %v", err)
+	}
+	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		PrincipalID: deptViewerGroup.ID, PrincipalType: "group",
+		SecurableType: "table", SecurableID: 2, Privilege: "SELECT",
+	}); err != nil {
+		t.Fatalf("grant dept_viewers SELECT on departments: %v", err)
+	}
+
+	// --- us_only_viewer: SELECT on both tables, RLS region='US' on departments, "Embarked"='S' on titanic ---
+	usOnlyViewer, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+		Name: "us_only_viewer", Type: "user", IsAdmin: 0,
+	})
+	if err != nil {
+		t.Fatalf("create us_only_viewer: %v", err)
+	}
+	usGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "us_only"})
+	if err != nil {
+		t.Fatalf("create us_only group: %v", err)
+	}
+	if err := q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{
+		GroupID: usGroup.ID, MemberType: "user", MemberID: usOnlyViewer.ID,
+	}); err != nil {
+		t.Fatalf("add us_only_viewer to group: %v", err)
+	}
+	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		PrincipalID: usGroup.ID, PrincipalType: "group",
+		SecurableType: "schema", SecurableID: 0, Privilege: "USAGE",
+	}); err != nil {
+		t.Fatalf("grant us_only USAGE: %v", err)
+	}
+	// SELECT on both tables
+	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		PrincipalID: usGroup.ID, PrincipalType: "group",
+		SecurableType: "table", SecurableID: 1, Privilege: "SELECT",
+	}); err != nil {
+		t.Fatalf("grant us_only SELECT titanic: %v", err)
+	}
+	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		PrincipalID: usGroup.ID, PrincipalType: "group",
+		SecurableType: "table", SecurableID: 2, Privilege: "SELECT",
+	}); err != nil {
+		t.Fatalf("grant us_only SELECT departments: %v", err)
+	}
+	// RLS: region = 'US' on departments (table_id=2)
+	deptFilter, err := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
+		TableID: 2, FilterSql: `"region" = 'US'`,
+	})
+	if err != nil {
+		t.Fatalf("create dept region filter: %v", err)
+	}
+	if err := q.BindRowFilter(ctx, dbstore.BindRowFilterParams{
+		RowFilterID: deptFilter.ID, PrincipalID: usGroup.ID, PrincipalType: "group",
+	}); err != nil {
+		t.Fatalf("bind dept filter to us_only: %v", err)
+	}
+	// RLS: "Embarked" = 'S' on titanic (table_id=1)
+	titanicFilter, err := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
+		TableID: 1, FilterSql: `"Embarked" = 'S'`,
+	})
+	if err != nil {
+		t.Fatalf("create titanic embarked filter: %v", err)
+	}
+	if err := q.BindRowFilter(ctx, dbstore.BindRowFilterParams{
+		RowFilterID: titanicFilter.ID, PrincipalID: usGroup.ID, PrincipalType: "group",
+	}); err != nil {
+		t.Fatalf("bind titanic filter to us_only: %v", err)
+	}
+
+	// --- masked_viewer: SELECT on both, column masks on titanic + departments ---
+	maskedViewer, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+		Name: "masked_viewer", Type: "user", IsAdmin: 0,
+	})
+	if err != nil {
+		t.Fatalf("create masked_viewer: %v", err)
+	}
+	maskedGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "masked_viewers"})
+	if err != nil {
+		t.Fatalf("create masked_viewers group: %v", err)
+	}
+	if err := q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{
+		GroupID: maskedGroup.ID, MemberType: "user", MemberID: maskedViewer.ID,
+	}); err != nil {
+		t.Fatalf("add masked_viewer to group: %v", err)
+	}
+	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		PrincipalID: maskedGroup.ID, PrincipalType: "group",
+		SecurableType: "schema", SecurableID: 0, Privilege: "USAGE",
+	}); err != nil {
+		t.Fatalf("grant masked_viewers USAGE: %v", err)
+	}
+	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		PrincipalID: maskedGroup.ID, PrincipalType: "group",
+		SecurableType: "table", SecurableID: 1, Privilege: "SELECT",
+	}); err != nil {
+		t.Fatalf("grant masked_viewers SELECT titanic: %v", err)
+	}
+	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		PrincipalID: maskedGroup.ID, PrincipalType: "group",
+		SecurableType: "table", SecurableID: 2, Privilege: "SELECT",
+	}); err != nil {
+		t.Fatalf("grant masked_viewers SELECT departments: %v", err)
+	}
+	// Column mask: Fare → ROUND("Fare"/10)*10 on titanic
+	fareMask, err := q.CreateColumnMask(ctx, dbstore.CreateColumnMaskParams{
+		TableID: 1, ColumnName: "Fare", MaskExpression: `ROUND("Fare"/10)*10`,
+	})
+	if err != nil {
+		t.Fatalf("create fare mask: %v", err)
+	}
+	if err := q.BindColumnMask(ctx, dbstore.BindColumnMaskParams{
+		ColumnMaskID: fareMask.ID, PrincipalID: maskedGroup.ID,
+		PrincipalType: "group", SeeOriginal: 0,
+	}); err != nil {
+		t.Fatalf("bind fare mask to masked_viewers: %v", err)
+	}
+	// Column mask: Name → '***' on titanic
+	nameMaskForMasked, err := q.CreateColumnMask(ctx, dbstore.CreateColumnMaskParams{
+		TableID: 1, ColumnName: "Name", MaskExpression: `'***'`,
+	})
+	if err != nil {
+		t.Fatalf("create name mask for masked_viewers: %v", err)
+	}
+	if err := q.BindColumnMask(ctx, dbstore.BindColumnMaskParams{
+		ColumnMaskID: nameMaskForMasked.ID, PrincipalID: maskedGroup.ID,
+		PrincipalType: "group", SeeOriginal: 0,
+	}); err != nil {
+		t.Fatalf("bind name mask to masked_viewers: %v", err)
+	}
+	// Column mask: avg_salary → 0 on departments
+	salaryMask, err := q.CreateColumnMask(ctx, dbstore.CreateColumnMaskParams{
+		TableID: 2, ColumnName: "avg_salary", MaskExpression: `0`,
+	})
+	if err != nil {
+		t.Fatalf("create salary mask: %v", err)
+	}
+	if err := q.BindColumnMask(ctx, dbstore.BindColumnMaskParams{
+		ColumnMaskID: salaryMask.ID, PrincipalID: maskedGroup.ID,
+		PrincipalType: "group", SeeOriginal: 0,
+	}); err != nil {
+		t.Fatalf("bind salary mask to masked_viewers: %v", err)
+	}
+
+	// --- multi_filter_user: SELECT on titanic, TWO RLS filters (Pclass=1 AND Survived=1) ---
+	multiFilterUser, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+		Name: "multi_filter_user", Type: "user", IsAdmin: 0,
+	})
+	if err != nil {
+		t.Fatalf("create multi_filter_user: %v", err)
+	}
+	multiFilterGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "multi_filter"})
+	if err != nil {
+		t.Fatalf("create multi_filter group: %v", err)
+	}
+	if err := q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{
+		GroupID: multiFilterGroup.ID, MemberType: "user", MemberID: multiFilterUser.ID,
+	}); err != nil {
+		t.Fatalf("add multi_filter_user to group: %v", err)
+	}
+	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		PrincipalID: multiFilterGroup.ID, PrincipalType: "group",
+		SecurableType: "schema", SecurableID: 0, Privilege: "USAGE",
+	}); err != nil {
+		t.Fatalf("grant multi_filter USAGE: %v", err)
+	}
+	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		PrincipalID: multiFilterGroup.ID, PrincipalType: "group",
+		SecurableType: "table", SecurableID: 1, Privilege: "SELECT",
+	}); err != nil {
+		t.Fatalf("grant multi_filter SELECT titanic: %v", err)
+	}
+	// Two RLS filters on titanic
+	pclassFilter, err := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
+		TableID: 1, FilterSql: `"Pclass" = 1`,
+	})
+	if err != nil {
+		t.Fatalf("create pclass filter: %v", err)
+	}
+	if err := q.BindRowFilter(ctx, dbstore.BindRowFilterParams{
+		RowFilterID: pclassFilter.ID, PrincipalID: multiFilterGroup.ID, PrincipalType: "group",
+	}); err != nil {
+		t.Fatalf("bind pclass filter to multi_filter: %v", err)
+	}
+	survivedFilter, err := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
+		TableID: 1, FilterSql: `"Survived" = 1`,
+	})
+	if err != nil {
+		t.Fatalf("create survived filter: %v", err)
+	}
+	if err := q.BindRowFilter(ctx, dbstore.BindRowFilterParams{
+		RowFilterID: survivedFilter.ID, PrincipalID: multiFilterGroup.ID, PrincipalType: "group",
+	}); err != nil {
+		t.Fatalf("bind survived filter to multi_filter: %v", err)
+	}
+
+	// --- API Keys for new principals ---
+	deptViewerKey := "test-deptviewer-key"
+	usOnlyKey := "test-usonly-key"
+	maskedKey := "test-masked-key"
+	multiFilterKey := "test-multifilter-key"
+
+	if _, err := q.CreateAPIKey(ctx, dbstore.CreateAPIKeyParams{
+		KeyHash: sha256Hex(deptViewerKey), PrincipalID: deptViewer.ID, Name: "deptviewer-test",
+	}); err != nil {
+		t.Fatalf("create dept_viewer API key: %v", err)
+	}
+	if _, err := q.CreateAPIKey(ctx, dbstore.CreateAPIKeyParams{
+		KeyHash: sha256Hex(usOnlyKey), PrincipalID: usOnlyViewer.ID, Name: "usonly-test",
+	}); err != nil {
+		t.Fatalf("create us_only_viewer API key: %v", err)
+	}
+	if _, err := q.CreateAPIKey(ctx, dbstore.CreateAPIKeyParams{
+		KeyHash: sha256Hex(maskedKey), PrincipalID: maskedViewer.ID, Name: "masked-test",
+	}); err != nil {
+		t.Fatalf("create masked_viewer API key: %v", err)
+	}
+	if _, err := q.CreateAPIKey(ctx, dbstore.CreateAPIKeyParams{
+		KeyHash: sha256Hex(multiFilterKey), PrincipalID: multiFilterUser.ID, Name: "multifilter-test",
+	}); err != nil {
+		t.Fatalf("create multi_filter_user API key: %v", err)
+	}
+
+	return multiTableKeys{
+		apiKeys:         base,
+		DeptViewer:      deptViewerKey,
+		USOnlyViewer:    usOnlyKey,
+		MaskedViewer:    maskedKey,
+		MultiFilterUser: multiFilterKey,
+	}
+}
+
+// generateDepartmentsParquet creates a 10-row departments parquet file using
+// an in-memory DuckDB instance.
+func generateDepartmentsParquet(t *testing.T, destPath string) {
+	t.Helper()
+
+	// Open a separate in-memory DuckDB to generate test data
+	duckDB, err := sql.Open("duckdb", "")
+	if err != nil {
+		t.Fatalf("open duckdb for parquet gen: %v", err)
+	}
+	defer duckDB.Close()
+
+	query := fmt.Sprintf(`COPY (
+		SELECT * FROM (VALUES
+			(1, 'Engineering', 'US', 150000, 50),
+			(2, 'Engineering', 'UK', 120000, 30),
+			(3, 'Sales', 'US', 100000, 40),
+			(4, 'Sales', 'EU', 95000, 25),
+			(5, 'HR', 'US', 90000, 15),
+			(6, 'HR', 'EU', 85000, 10),
+			(7, 'Finance', 'US', 130000, 20),
+			(8, 'Finance', 'UK', 125000, 12),
+			(9, 'Legal', 'US', 140000, 8),
+			(10, 'Legal', 'EU', 135000, 6)
+		) AS t(dept_id, dept_name, region, avg_salary, headcount)
+	) TO '%s' (FORMAT PARQUET)`, strings.ReplaceAll(destPath, "'", "''"))
+
+	if _, err := duckDB.ExecContext(ctx, query); err != nil {
+		t.Fatalf("generate departments parquet: %v", err)
+	}
+}
+
+// setupMultiTableLocalServer creates a fully-wired in-process Go API server
+// with two tables (titanic + departments), extended RBAC, and local filesystem
+// storage. Similar to setupLocalExtensionServer but with multi-table data.
+func setupMultiTableLocalServer(t *testing.T) *multiTableTestEnv {
+	t.Helper()
+
+	tmpDir := t.TempDir()
+	dataPath := filepath.Join(tmpDir, "lake_data") + "/"
+	if err := os.MkdirAll(filepath.Join(tmpDir, "lake_data"), 0o755); err != nil {
+		t.Fatalf("mkdir lake_data: %v", err)
+	}
+
+	// Copy titanic parquet
+	copyFile(t,
+		testdataPath("titanic.parquet"),
+		filepath.Join(tmpDir, "lake_data", ducklakeDataFileName),
+	)
+
+	// Generate departments parquet inline
+	generateDepartmentsParquet(t, filepath.Join(tmpDir, "lake_data", ducklakeDeptDataFileName))
+
+	// SQLite + metadata + RBAC
+	metaDB, _ := internaldb.OpenTestSQLite(t)
+	seedMultiTableMetadata(t, metaDB, dataPath)
+	keys := seedMultiTableRBAC(t, metaDB)
+
+	// Build repos and services (same pattern as setupLocalExtensionServer)
+	principalRepo := repository.NewPrincipalRepo(metaDB)
+	groupRepo := repository.NewGroupRepo(metaDB)
+	grantRepo := repository.NewGrantRepo(metaDB)
+	rowFilterRepo := repository.NewRowFilterRepo(metaDB)
+	columnMaskRepo := repository.NewColumnMaskRepo(metaDB)
+	auditRepo := repository.NewAuditRepo(metaDB)
+	introspectionRepo := repository.NewIntrospectionRepo(metaDB)
+	apiKeyRepo := repository.NewAPIKeyRepo(metaDB)
+	tagRepo := repository.NewTagRepo(metaDB)
+	lineageRepo := repository.NewLineageRepo(metaDB)
+	searchRepo := repository.NewSearchRepo(metaDB)
+	queryHistoryRepo := repository.NewQueryHistoryRepo(metaDB)
+	viewRepo := repository.NewViewRepo(metaDB)
+
+	authSvc := service.NewAuthorizationService(
+		principalRepo, groupRepo, grantRepo,
+		rowFilterRepo, columnMaskRepo, introspectionRepo,
+	)
+
+	manifestSvc := service.NewManifestService(
+		metaDB, authSvc, &localPresigner{}, introspectionRepo, auditRepo,
+	)
+
+	querySvc := service.NewQueryService(nil, auditRepo, nil)
+	principalSvc := service.NewPrincipalService(principalRepo, auditRepo)
+	groupSvc := service.NewGroupService(groupRepo, auditRepo)
+	grantSvc := service.NewGrantService(grantRepo, auditRepo)
+	rowFilterSvc := service.NewRowFilterService(rowFilterRepo, auditRepo)
+	columnMaskSvc := service.NewColumnMaskService(columnMaskRepo, auditRepo)
+	auditSvc := service.NewAuditService(auditRepo)
+	tagSvc := service.NewTagService(tagRepo, auditRepo)
+	lineageSvc := service.NewLineageService(lineageRepo)
+	searchSvc := service.NewSearchService(searchRepo)
+	queryHistorySvc := service.NewQueryHistoryService(queryHistoryRepo)
+	catalogRepo := repository.NewCatalogRepo(metaDB, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	viewSvc := service.NewViewService(viewRepo, catalogRepo, authSvc, auditRepo)
+
+	handler := api.NewHandler(
+		querySvc, principalSvc, groupSvc, grantSvc,
+		rowFilterSvc, columnMaskSvc, auditSvc,
+		manifestSvc, nil,
+		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
+		nil,
+		nil, nil, nil, nil, nil,
+	)
+	strictHandler := api.NewStrictHandler(handler, nil)
+
+	r := chi.NewRouter()
+	r.Use(middleware.AuthMiddleware([]byte("test-jwt-secret"), apiKeyRepo))
+	r.Route("/v1", func(r chi.Router) {
+		api.HandlerFromMux(strictHandler, r)
+	})
+
+	srv := httptest.NewServer(r)
+	t.Cleanup(srv.Close)
+
+	return &multiTableTestEnv{Server: srv, Keys: keys}
+}
+
 // assignToEndpoint creates a default compute assignment for the given principal
 // to the named endpoint. Uses the admin API key.
 func assignToEndpoint(t *testing.T, env *httpTestEnv, endpointName string, principalID float64, principalType string) {
