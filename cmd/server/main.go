@@ -115,7 +115,7 @@ func run() error {
 	handler := api.NewHandler(
 		svc.Query, svc.Principal, svc.Group, svc.Grant,
 		svc.RowFilter, svc.ColumnMask, svc.Audit,
-		svc.Manifest, svc.Catalog,
+		svc.Manifest, svc.Catalog, svc.CatalogRegistration,
 		svc.QueryHistory, svc.Lineage, svc.Search, svc.Tag, svc.View,
 		svc.Ingestion,
 		svc.StorageCredential, svc.ExternalLocation,

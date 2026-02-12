@@ -21,7 +21,7 @@ type ManifestService = manifestService
 
 // manifestService defines the manifest operations used by the API handler.
 type manifestService interface {
-	GetManifest(ctx context.Context, principalName, schemaName, tableName string) (*query.ManifestResult, error)
+	GetManifest(ctx context.Context, principalName, catalogName, schemaName, tableName string) (*query.ManifestResult, error)
 }
 
 // ExecuteQuery implements the endpoint for executing a SQL query.
@@ -52,7 +52,9 @@ func (h *APIHandler) CreateManifest(ctx context.Context, req CreateManifestReque
 		schemaName = *req.Body.Schema
 	}
 
-	result, err := h.manifest.GetManifest(ctx, principal, schemaName, req.Body.Table)
+	// The manifest endpoint is not catalog-scoped in the URL; use empty string
+	// to let the service resolve the default catalog.
+	result, err := h.manifest.GetManifest(ctx, principal, "", schemaName, req.Body.Table)
 	if err != nil {
 		code := errorCodeFromError(err)
 		switch code {

@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"duck-demo/internal/domain"
-	"duck-demo/internal/middleware"
 )
 
 // IngestionService defines the ingestion operations used by the API handler.
@@ -15,21 +14,21 @@ type IngestionService = ingestionService
 
 // ingestionService defines the ingestion operations used by the API handler.
 type ingestionService interface {
-	RequestUploadURL(ctx context.Context, principal string, schemaName, tableName string, filename *string) (*domain.UploadURLResult, error)
-	CommitIngestion(ctx context.Context, principal string, schemaName, tableName string, s3Keys []string, opts domain.IngestionOptions) (*domain.IngestionResult, error)
-	LoadExternalFiles(ctx context.Context, principal string, schemaName, tableName string, paths []string, opts domain.IngestionOptions) (*domain.IngestionResult, error)
+	RequestUploadURL(ctx context.Context, principal string, catalogName string, schemaName, tableName string, filename *string) (*domain.UploadURLResult, error)
+	CommitIngestion(ctx context.Context, principal string, catalogName string, schemaName, tableName string, s3Keys []string, opts domain.IngestionOptions) (*domain.IngestionResult, error)
+	LoadExternalFiles(ctx context.Context, principal string, catalogName string, schemaName, tableName string, paths []string, opts domain.IngestionOptions) (*domain.IngestionResult, error)
 }
 
 // === Ingestion ===
 
 // CreateUploadUrl implements the endpoint for generating a pre-signed upload URL.
-func (h *APIHandler) CreateUploadUrl(ctx context.Context, req CreateUploadUrlRequestObject) (CreateUploadUrlResponseObject, error) {
+func (h *APIHandler) CreateUploadUrl(ctx context.Context, request CreateUploadUrlRequestObject) (CreateUploadUrlResponseObject, error) {
 	if h.ingestion == nil {
 		return CreateUploadUrl400JSONResponse{Code: 400, Message: "ingestion not available (S3 not configured)"}, nil
 	}
 
-	principal, _ := middleware.PrincipalFromContext(ctx)
-	result, err := h.ingestion.RequestUploadURL(ctx, principal, req.SchemaName, req.TableName, req.Body.Filename)
+	principal := principalFromCtx(ctx)
+	result, err := h.ingestion.RequestUploadURL(ctx, principal, string(request.CatalogName), request.SchemaName, request.TableName, request.Body.Filename)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
@@ -50,23 +49,23 @@ func (h *APIHandler) CreateUploadUrl(ctx context.Context, req CreateUploadUrlReq
 }
 
 // CommitTableIngestion implements the endpoint for committing uploaded files to a table.
-func (h *APIHandler) CommitTableIngestion(ctx context.Context, req CommitTableIngestionRequestObject) (CommitTableIngestionResponseObject, error) {
+func (h *APIHandler) CommitTableIngestion(ctx context.Context, request CommitTableIngestionRequestObject) (CommitTableIngestionResponseObject, error) {
 	if h.ingestion == nil {
 		return CommitTableIngestion400JSONResponse{Code: 400, Message: "ingestion not available (S3 not configured)"}, nil
 	}
 
 	opts := domain.IngestionOptions{}
-	if req.Body.Options != nil {
-		if req.Body.Options.AllowMissingColumns != nil {
-			opts.AllowMissingColumns = *req.Body.Options.AllowMissingColumns
+	if request.Body.Options != nil {
+		if request.Body.Options.AllowMissingColumns != nil {
+			opts.AllowMissingColumns = *request.Body.Options.AllowMissingColumns
 		}
-		if req.Body.Options.IgnoreExtraColumns != nil {
-			opts.IgnoreExtraColumns = *req.Body.Options.IgnoreExtraColumns
+		if request.Body.Options.IgnoreExtraColumns != nil {
+			opts.IgnoreExtraColumns = *request.Body.Options.IgnoreExtraColumns
 		}
 	}
 
-	principal, _ := middleware.PrincipalFromContext(ctx)
-	result, err := h.ingestion.CommitIngestion(ctx, principal, req.SchemaName, req.TableName, req.Body.S3Keys, opts)
+	principal := principalFromCtx(ctx)
+	result, err := h.ingestion.CommitIngestion(ctx, principal, string(request.CatalogName), request.SchemaName, request.TableName, request.Body.S3Keys, opts)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
@@ -89,23 +88,23 @@ func (h *APIHandler) CommitTableIngestion(ctx context.Context, req CommitTableIn
 }
 
 // LoadTableExternalFiles implements the endpoint for loading external files into a table.
-func (h *APIHandler) LoadTableExternalFiles(ctx context.Context, req LoadTableExternalFilesRequestObject) (LoadTableExternalFilesResponseObject, error) {
+func (h *APIHandler) LoadTableExternalFiles(ctx context.Context, request LoadTableExternalFilesRequestObject) (LoadTableExternalFilesResponseObject, error) {
 	if h.ingestion == nil {
 		return LoadTableExternalFiles400JSONResponse{Code: 400, Message: "ingestion not available (S3 not configured)"}, nil
 	}
 
 	opts := domain.IngestionOptions{}
-	if req.Body.Options != nil {
-		if req.Body.Options.AllowMissingColumns != nil {
-			opts.AllowMissingColumns = *req.Body.Options.AllowMissingColumns
+	if request.Body.Options != nil {
+		if request.Body.Options.AllowMissingColumns != nil {
+			opts.AllowMissingColumns = *request.Body.Options.AllowMissingColumns
 		}
-		if req.Body.Options.IgnoreExtraColumns != nil {
-			opts.IgnoreExtraColumns = *req.Body.Options.IgnoreExtraColumns
+		if request.Body.Options.IgnoreExtraColumns != nil {
+			opts.IgnoreExtraColumns = *request.Body.Options.IgnoreExtraColumns
 		}
 	}
 
-	principal, _ := middleware.PrincipalFromContext(ctx)
-	result, err := h.ingestion.LoadExternalFiles(ctx, principal, req.SchemaName, req.TableName, req.Body.Paths, opts)
+	principal := principalFromCtx(ctx)
+	result, err := h.ingestion.LoadExternalFiles(ctx, principal, string(request.CatalogName), request.SchemaName, request.TableName, request.Body.Paths, opts)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
