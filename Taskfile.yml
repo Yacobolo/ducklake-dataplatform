@@ -67,6 +67,11 @@ tasks:
     cmds:
       - golangci-lint run
 
+  lint-api:
+    desc: Lint the OpenAPI spec for consistency
+    cmds:
+      - go run ./cmd/lint-api internal/api/openapi.yaml
+
   integration-test:
     desc: Run integration tests (package summary, shows failures inline)
     cmds:

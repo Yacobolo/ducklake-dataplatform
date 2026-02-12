@@ -37,12 +37,12 @@ func (s *GrantService) Grant(ctx context.Context, _ string, g *domain.PrivilegeG
 	return result, nil
 }
 
-// Revoke removes a privilege grant. Requires admin privileges.
-func (s *GrantService) Revoke(ctx context.Context, _ string, g *domain.PrivilegeGrant) error {
+// Revoke removes a privilege grant by ID. Requires admin privileges.
+func (s *GrantService) Revoke(ctx context.Context, _ string, grantID int64) error {
 	if err := requireAdmin(ctx); err != nil {
 		return err
 	}
-	if err := s.repo.Revoke(ctx, g); err != nil {
+	if err := s.repo.RevokeByID(ctx, grantID); err != nil {
 		return err
 	}
 	_ = s.audit.Insert(ctx, &domain.AuditEntry{

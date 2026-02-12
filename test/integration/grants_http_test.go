@@ -89,14 +89,8 @@ func TestHTTP_GrantRevoke(t *testing.T) {
 			assert.GreaterOrEqual(t, len(data), 1)
 		}},
 		{"revoke", func(t *testing.T) {
-			body := map[string]interface{}{
-				"principal_id":   userID,
-				"principal_type": "user",
-				"securable_type": "table",
-				"securable_id":   1,
-				"privilege":      "SELECT",
-			}
-			resp := doRequest(t, "DELETE", env.Server.URL+"/v1/grants", env.Keys.Admin, body)
+			url := fmt.Sprintf("%s/v1/grants/%d", env.Server.URL, int64(grantID))
+			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()
 		}},
@@ -113,7 +107,6 @@ func TestHTTP_GrantRevoke(t *testing.T) {
 			assert.Empty(t, data)
 		}},
 	}
-	_ = grantID // used indirectly via the grant_to_user step
 	for _, s := range steps {
 		t.Run(s.name, s.fn)
 	}

@@ -39,7 +39,7 @@ func (r *GrantRepo) Grant(ctx context.Context, g *domain.PrivilegeGrant) (*domai
 	return mapper.GrantFromDB(row), nil
 }
 
-// Revoke removes a privilege grant.
+// Revoke removes a privilege grant by compound key.
 func (r *GrantRepo) Revoke(ctx context.Context, g *domain.PrivilegeGrant) error {
 	return r.q.RevokePrivilege(ctx, dbstore.RevokePrivilegeParams{
 		PrincipalID:   g.PrincipalID,
@@ -48,6 +48,11 @@ func (r *GrantRepo) Revoke(ctx context.Context, g *domain.PrivilegeGrant) error 
 		SecurableID:   g.SecurableID,
 		Privilege:     g.Privilege,
 	})
+}
+
+// RevokeByID removes a privilege grant by its ID.
+func (r *GrantRepo) RevokeByID(ctx context.Context, id int64) error {
+	return r.q.RevokePrivilegeByID(ctx, id)
 }
 
 // ListForPrincipal returns a paginated list of grants for a specific principal.

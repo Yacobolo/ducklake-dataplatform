@@ -79,22 +79,16 @@ func TestHTTP_ColumnMaskCRUD(t *testing.T) {
 			_ = resp.Body.Close()
 		}},
 		{"unbind_analyst", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/column-masks/%d/bindings", env.Server.URL, int64(maskID))
-			body := map[string]interface{}{
-				"principal_id":   analyst.ID,
-				"principal_type": "user",
-			}
-			resp := doRequest(t, "DELETE", url, env.Keys.Admin, body)
+			url := fmt.Sprintf("%s/v1/column-masks/%d/bindings?principal_id=%d&principal_type=user",
+				env.Server.URL, int64(maskID), analyst.ID)
+			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()
 		}},
 		{"unbind_researcher", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/column-masks/%d/bindings", env.Server.URL, int64(maskID))
-			body := map[string]interface{}{
-				"principal_id":   researcher.ID,
-				"principal_type": "user",
-			}
-			resp := doRequest(t, "DELETE", url, env.Keys.Admin, body)
+			url := fmt.Sprintf("%s/v1/column-masks/%d/bindings?principal_id=%d&principal_type=user",
+				env.Server.URL, int64(maskID), researcher.ID)
+			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()
 		}},

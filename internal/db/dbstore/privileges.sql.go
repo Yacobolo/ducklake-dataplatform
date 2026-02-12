@@ -436,3 +436,12 @@ func (q *Queries) RevokePrivilege(ctx context.Context, arg RevokePrivilegeParams
 	)
 	return err
 }
+
+const revokePrivilegeByID = `-- name: RevokePrivilegeByID :exec
+DELETE FROM privilege_grants WHERE id = ?
+`
+
+func (q *Queries) RevokePrivilegeByID(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, revokePrivilegeByID, id)
+	return err
+}

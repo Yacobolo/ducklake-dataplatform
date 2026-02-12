@@ -60,16 +60,29 @@ func TestGrantService_Grant_AdminAllowed(t *testing.T) {
 func TestGrantService_Revoke_AdminRequired(t *testing.T) {
 	svc, _ := setupGrantService(t)
 
-	err := svc.Revoke(nonAdminCtx(), "user", &domain.PrivilegeGrant{
-		PrincipalID:   1,
+	err := svc.Revoke(nonAdminCtx(), "user", 1)
+	require.Error(t, err)
+	var accessDenied *domain.AccessDeniedError
+	assert.ErrorAs(t, err, &accessDenied)
+}
+
+func TestGrantService_Revoke_AdminAllowed(t *testing.T) {
+	svc, principalSvc := setupGrantService(t)
+
+	p, err := principalSvc.Create(adminCtx(), &domain.Principal{Name: "grantee", Type: "user"})
+	require.NoError(t, err)
+
+	grant, err := svc.Grant(adminCtx(), "admin-user", &domain.PrivilegeGrant{
+		PrincipalID:   p.ID,
 		PrincipalType: "user",
 		Privilege:     "SELECT",
 		SecurableType: "table",
 		SecurableID:   1,
 	})
-	require.Error(t, err)
-	var accessDenied *domain.AccessDeniedError
-	assert.ErrorAs(t, err, &accessDenied)
+	require.NoError(t, err)
+
+	err = svc.Revoke(adminCtx(), "admin-user", grant.ID)
+	require.NoError(t, err)
 }
 
 func TestGrantService_List_NoAdminRequired(t *testing.T) {

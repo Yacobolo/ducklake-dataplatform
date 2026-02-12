@@ -298,10 +298,7 @@ func TestAdminGuard_NonAdminBlocked(t *testing.T) {
 			"principal_id": 1, "principal_type": "user",
 			"securable_type": "catalog", "securable_id": 0, "privilege": "ALL_PRIVILEGES",
 		}},
-		{"revoke_grant", "DELETE", "/v1/grants", map[string]interface{}{
-			"principal_id": 1, "principal_type": "user",
-			"securable_type": "catalog", "securable_id": 0, "privilege": "ALL_PRIVILEGES",
-		}},
+		{"revoke_grant", "DELETE", "/v1/grants/1", nil},
 	}
 
 	for _, tc := range tests {
