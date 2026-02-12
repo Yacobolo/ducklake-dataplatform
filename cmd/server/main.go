@@ -78,7 +78,8 @@ func run() error {
 
 	// If legacy S3 env vars are present, set up DuckLake for backward compat
 	catalogAttached := false
-	if cfg.HasS3Config() {
+	switch {
+	case cfg.HasS3Config():
 		logger.Info("legacy S3 config detected, setting up DuckLake")
 		if err := engine.CreateS3Secret(ctx, duckDB, "hetzner_s3",
 			*cfg.S3KeyID, *cfg.S3Secret, *cfg.S3Endpoint, *cfg.S3Region, "path"); err != nil {
@@ -96,7 +97,7 @@ func run() error {
 				logger.Info("DuckLake ready", "mode", "legacy S3")
 			}
 		}
-	} else if cfg.CatalogDBType == "postgres" && cfg.CatalogDSN != "" {
+	case cfg.CatalogDBType == "postgres" && cfg.CatalogDSN != "":
 		// PostgreSQL-based DuckLake catalog
 		bucket := "duck-demo"
 		if cfg.S3Bucket != nil {
@@ -109,7 +110,7 @@ func run() error {
 			catalogAttached = true
 			logger.Info("DuckLake ready", "mode", "PostgreSQL catalog")
 		}
-	} else {
+	default:
 		logger.Info("no S3 config — running in local mode, use External Locations API to add storage")
 	}
 

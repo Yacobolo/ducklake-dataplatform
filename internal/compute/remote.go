@@ -2,11 +2,12 @@ package compute
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/tls"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"strings"
 	"time"
@@ -83,7 +84,7 @@ func (e *RemoteExecutor) QueryContext(ctx context.Context, query string) (*sql.R
 	if err != nil {
 		return nil, fmt.Errorf("remote execute: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	var result executeResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -99,7 +100,7 @@ func (e *RemoteExecutor) QueryContext(ctx context.Context, query string) (*sql.R
 	}
 
 	// 2. Materialize into temp table for *sql.Rows return
-	return e.materialize(ctx, result)
+	return e.materialize(ctx, result) //nolint:sqlclosecheck // rows are returned to caller
 }
 
 // materialize creates a DuckDB temp table from the remote response and returns
@@ -111,7 +112,7 @@ func (e *RemoteExecutor) materialize(ctx context.Context, result executeResponse
 	}
 
 	suffix := randomSuffix()
-	tableName := fmt.Sprintf("_remote_result_%s", suffix)
+	tableName := "_remote_result_" + suffix
 
 	// Use a pinned connection for temp table visibility
 	conn, err := e.localDB.Conn(ctx)
@@ -124,19 +125,19 @@ func (e *RemoteExecutor) materialize(ctx context.Context, result executeResponse
 	for _, col := range result.Columns {
 		colDefs = append(colDefs, fmt.Sprintf("%q VARCHAR", col))
 	}
-	createSQL := fmt.Sprintf("CREATE TEMP TABLE %s (%s)", tableName, strings.Join(colDefs, ", "))
+	createSQL := fmt.Sprintf("CREATE TEMP TABLE %q (%s)", tableName, strings.Join(colDefs, ", "))
 	if _, err := conn.ExecContext(ctx, createSQL); err != nil {
-		conn.Close()
+		_ = conn.Close()
 		return nil, fmt.Errorf("create temp table: %w", err)
 	}
 
-	// Insert rows
+	// Insert rows using parameterized queries
 	if len(result.Rows) > 0 {
 		placeholders := make([]string, len(result.Columns))
 		for i := range placeholders {
 			placeholders[i] = "?"
 		}
-		insertSQL := fmt.Sprintf("INSERT INTO %s VALUES (%s)", tableName, strings.Join(placeholders, ", "))
+		insertSQL := fmt.Sprintf("INSERT INTO %q VALUES (%s)", tableName, strings.Join(placeholders, ", ")) //nolint:gosec // tableName is generated internally
 		for _, row := range result.Rows {
 			args := make([]interface{}, len(row))
 			for i, v := range row {
@@ -147,16 +148,17 @@ func (e *RemoteExecutor) materialize(ctx context.Context, result executeResponse
 				}
 			}
 			if _, err := conn.ExecContext(ctx, insertSQL, args...); err != nil {
-				conn.Close()
+				_ = conn.Close()
 				return nil, fmt.Errorf("insert row: %w", err)
 			}
 		}
 	}
 
 	// Query the temp table — rows.Close() will handle the connection lifecycle
-	rows, err := conn.QueryContext(ctx, fmt.Sprintf("SELECT * FROM %s", tableName))
+	selectSQL := fmt.Sprintf("SELECT * FROM %q", tableName) //nolint:gosec // tableName is generated internally, not user input
+	rows, err := conn.QueryContext(ctx, selectSQL)
 	if err != nil {
-		conn.Close()
+		_ = conn.Close()
 		return nil, fmt.Errorf("select from temp: %w", err)
 	}
 
@@ -175,7 +177,7 @@ func (e *RemoteExecutor) Ping(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("health check: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("unhealthy: status %d", resp.StatusCode)
@@ -183,11 +185,12 @@ func (e *RemoteExecutor) Ping(ctx context.Context) error {
 	return nil
 }
 
+// randomSuffix generates a cryptographically random hex suffix for temp table names.
 func randomSuffix() string {
-	const letters = "abcdefghijklmnopqrstuvwxyz0123456789"
-	b := make([]byte, 8)
-	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
+	b := make([]byte, 4)
+	if _, err := rand.Read(b); err != nil {
+		// Fallback to a fixed suffix (should never happen)
+		return "fallback"
 	}
-	return string(b)
+	return hex.EncodeToString(b)
 }

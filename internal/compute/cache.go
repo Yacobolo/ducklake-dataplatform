@@ -1,3 +1,4 @@
+// Package compute provides compute endpoint resolution and remote query execution.
 package compute
 
 import (
