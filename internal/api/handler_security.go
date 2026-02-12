@@ -1,0 +1,375 @@
+package api
+
+import (
+	"context"
+	"errors"
+
+	"duck-demo/internal/domain"
+	"duck-demo/internal/middleware"
+)
+
+// === Principals ===
+
+func (h *APIHandler) ListPrincipals(ctx context.Context, req ListPrincipalsRequestObject) (ListPrincipalsResponseObject, error) {
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	ps, total, err := h.principals.List(ctx, page)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]Principal, len(ps))
+	for i, p := range ps {
+		out[i] = principalToAPI(p)
+	}
+	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return ListPrincipals200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
+}
+
+func (h *APIHandler) CreatePrincipal(ctx context.Context, req CreatePrincipalRequestObject) (CreatePrincipalResponseObject, error) {
+	p := &domain.Principal{
+		Name: req.Body.Name,
+	}
+	if req.Body.Type != nil {
+		p.Type = *req.Body.Type
+	}
+	if req.Body.IsAdmin != nil {
+		p.IsAdmin = *req.Body.IsAdmin
+	}
+	result, err := h.principals.Create(ctx, p)
+	if err != nil {
+		switch {
+		case errors.As(err, new(*domain.ValidationError)):
+			return CreatePrincipal400JSONResponse{Code: 400, Message: err.Error()}, nil
+		case errors.As(err, new(*domain.ConflictError)):
+			return CreatePrincipal400JSONResponse{Code: 400, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return CreatePrincipal201JSONResponse(principalToAPI(*result)), nil
+}
+
+func (h *APIHandler) GetPrincipal(ctx context.Context, req GetPrincipalRequestObject) (GetPrincipalResponseObject, error) {
+	p, err := h.principals.GetByID(ctx, req.PrincipalId)
+	if err != nil {
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
+			return GetPrincipal404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return GetPrincipal200JSONResponse(principalToAPI(*p)), nil
+}
+
+func (h *APIHandler) DeletePrincipal(ctx context.Context, req DeletePrincipalRequestObject) (DeletePrincipalResponseObject, error) {
+	if err := h.principals.Delete(ctx, req.PrincipalId); err != nil {
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
+			return DeletePrincipal404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return DeletePrincipal204Response{}, nil
+}
+
+func (h *APIHandler) UpdatePrincipalAdmin(ctx context.Context, req UpdatePrincipalAdminRequestObject) (UpdatePrincipalAdminResponseObject, error) {
+	if err := h.principals.SetAdmin(ctx, req.PrincipalId, req.Body.IsAdmin); err != nil {
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
+			return UpdatePrincipalAdmin404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return UpdatePrincipalAdmin204Response{}, nil
+}
+
+// === Groups ===
+
+func (h *APIHandler) ListGroups(ctx context.Context, req ListGroupsRequestObject) (ListGroupsResponseObject, error) {
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	gs, total, err := h.groups.List(ctx, page)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]Group, len(gs))
+	for i, g := range gs {
+		out[i] = groupToAPI(g)
+	}
+	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return ListGroups200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
+}
+
+func (h *APIHandler) CreateGroup(ctx context.Context, req CreateGroupRequestObject) (CreateGroupResponseObject, error) {
+	g := &domain.Group{Name: req.Body.Name}
+	if req.Body.Description != nil {
+		g.Description = *req.Body.Description
+	}
+	result, err := h.groups.Create(ctx, g)
+	if err != nil {
+		return nil, err
+	}
+	return CreateGroup201JSONResponse(groupToAPI(*result)), nil
+}
+
+func (h *APIHandler) GetGroup(ctx context.Context, req GetGroupRequestObject) (GetGroupResponseObject, error) {
+	g, err := h.groups.GetByID(ctx, req.GroupId)
+	if err != nil {
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
+			return GetGroup404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return GetGroup200JSONResponse(groupToAPI(*g)), nil
+}
+
+func (h *APIHandler) DeleteGroup(ctx context.Context, req DeleteGroupRequestObject) (DeleteGroupResponseObject, error) {
+	if err := h.groups.Delete(ctx, req.GroupId); err != nil {
+		return nil, err
+	}
+	return DeleteGroup204Response{}, nil
+}
+
+func (h *APIHandler) ListGroupMembers(ctx context.Context, req ListGroupMembersRequestObject) (ListGroupMembersResponseObject, error) {
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	ms, total, err := h.groups.ListMembers(ctx, req.GroupId, page)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]GroupMember, len(ms))
+	for i, m := range ms {
+		out[i] = groupMemberToAPI(m, req.GroupId)
+	}
+	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return ListGroupMembers200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
+}
+
+func (h *APIHandler) CreateGroupMember(ctx context.Context, req CreateGroupMemberRequestObject) (CreateGroupMemberResponseObject, error) {
+	if err := h.groups.AddMember(ctx, &domain.GroupMember{
+		GroupID:    req.GroupId,
+		MemberType: req.Body.MemberType,
+		MemberID:   req.Body.MemberId,
+	}); err != nil {
+		return nil, err
+	}
+	return CreateGroupMember204Response{}, nil
+}
+
+func (h *APIHandler) DeleteGroupMember(ctx context.Context, req DeleteGroupMemberRequestObject) (DeleteGroupMemberResponseObject, error) {
+	if err := h.groups.RemoveMember(ctx, &domain.GroupMember{
+		GroupID:    req.GroupId,
+		MemberType: req.Body.MemberType,
+		MemberID:   req.Body.MemberId,
+	}); err != nil {
+		return nil, err
+	}
+	return DeleteGroupMember204Response{}, nil
+}
+
+// === Grants ===
+
+func (h *APIHandler) ListGrants(ctx context.Context, req ListGrantsRequestObject) (ListGrantsResponseObject, error) {
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	var grants []domain.PrivilegeGrant
+	var total int64
+	var err error
+
+	switch {
+	case req.Params.PrincipalId != nil && req.Params.PrincipalType != nil:
+		grants, total, err = h.grants.ListForPrincipal(ctx, *req.Params.PrincipalId, *req.Params.PrincipalType, page)
+	case req.Params.SecurableType != nil && req.Params.SecurableId != nil:
+		grants, total, err = h.grants.ListForSecurable(ctx, *req.Params.SecurableType, *req.Params.SecurableId, page)
+	default:
+		grants = []domain.PrivilegeGrant{}
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]PrivilegeGrant, len(grants))
+	for i, g := range grants {
+		out[i] = grantToAPI(g)
+	}
+	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return ListGrants200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
+}
+
+func (h *APIHandler) CreateGrant(ctx context.Context, req CreateGrantRequestObject) (CreateGrantResponseObject, error) {
+	g := &domain.PrivilegeGrant{
+		PrincipalID:   req.Body.PrincipalId,
+		PrincipalType: req.Body.PrincipalType,
+		SecurableType: req.Body.SecurableType,
+		SecurableID:   req.Body.SecurableId,
+		Privilege:     req.Body.Privilege,
+	}
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	result, err := h.grants.Grant(ctx, principal, g)
+	if err != nil {
+		return nil, err
+	}
+	return CreateGrant201JSONResponse(grantToAPI(*result)), nil
+}
+
+func (h *APIHandler) DeleteGrant(ctx context.Context, req DeleteGrantRequestObject) (DeleteGrantResponseObject, error) {
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	if err := h.grants.Revoke(ctx, principal, &domain.PrivilegeGrant{
+		PrincipalID:   req.Body.PrincipalId,
+		PrincipalType: req.Body.PrincipalType,
+		SecurableType: req.Body.SecurableType,
+		SecurableID:   req.Body.SecurableId,
+		Privilege:     req.Body.Privilege,
+	}); err != nil {
+		return nil, err
+	}
+	return DeleteGrant204Response{}, nil
+}
+
+// === Row Filters ===
+
+func (h *APIHandler) ListRowFilters(ctx context.Context, req ListRowFiltersRequestObject) (ListRowFiltersResponseObject, error) {
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	fs, total, err := h.rowFilters.GetForTable(ctx, req.TableId, page)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]RowFilter, len(fs))
+	for i, f := range fs {
+		out[i] = rowFilterToAPI(f)
+	}
+	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return ListRowFilters200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
+}
+
+func (h *APIHandler) CreateRowFilter(ctx context.Context, req CreateRowFilterRequestObject) (CreateRowFilterResponseObject, error) {
+	f := &domain.RowFilter{
+		TableID:   req.TableId,
+		FilterSQL: req.Body.FilterSql,
+	}
+	if req.Body.Description != nil {
+		f.Description = *req.Body.Description
+	}
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	result, err := h.rowFilters.Create(ctx, principal, f)
+	if err != nil {
+		return nil, err
+	}
+	return CreateRowFilter201JSONResponse(rowFilterToAPI(*result)), nil
+}
+
+func (h *APIHandler) DeleteRowFilter(ctx context.Context, req DeleteRowFilterRequestObject) (DeleteRowFilterResponseObject, error) {
+	if err := h.rowFilters.Delete(ctx, req.RowFilterId); err != nil {
+		return nil, err
+	}
+	return DeleteRowFilter204Response{}, nil
+}
+
+func (h *APIHandler) BindRowFilter(ctx context.Context, req BindRowFilterRequestObject) (BindRowFilterResponseObject, error) {
+	if err := h.rowFilters.Bind(ctx, &domain.RowFilterBinding{
+		RowFilterID:   req.RowFilterId,
+		PrincipalID:   req.Body.PrincipalId,
+		PrincipalType: req.Body.PrincipalType,
+	}); err != nil {
+		return nil, err
+	}
+	return BindRowFilter204Response{}, nil
+}
+
+func (h *APIHandler) UnbindRowFilter(ctx context.Context, req UnbindRowFilterRequestObject) (UnbindRowFilterResponseObject, error) {
+	if err := h.rowFilters.Unbind(ctx, &domain.RowFilterBinding{
+		RowFilterID:   req.RowFilterId,
+		PrincipalID:   req.Body.PrincipalId,
+		PrincipalType: req.Body.PrincipalType,
+	}); err != nil {
+		return nil, err
+	}
+	return UnbindRowFilter204Response{}, nil
+}
+
+func (h *APIHandler) CreateRowFilterTopLevel(ctx context.Context, req CreateRowFilterTopLevelRequestObject) (CreateRowFilterTopLevelResponseObject, error) {
+	if req.Body.TableId == nil {
+		return CreateRowFilterTopLevel400JSONResponse{Code: 400, Message: "table_id is required"}, nil
+	}
+	f := &domain.RowFilter{
+		TableID:   *req.Body.TableId,
+		FilterSQL: req.Body.FilterSql,
+	}
+	if req.Body.Description != nil {
+		f.Description = *req.Body.Description
+	}
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	result, err := h.rowFilters.Create(ctx, principal, f)
+	if err != nil {
+		return nil, err
+	}
+	return CreateRowFilterTopLevel201JSONResponse(rowFilterToAPI(*result)), nil
+}
+
+// === Column Masks ===
+
+func (h *APIHandler) ListColumnMasks(ctx context.Context, req ListColumnMasksRequestObject) (ListColumnMasksResponseObject, error) {
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	ms, total, err := h.columnMasks.GetForTable(ctx, req.TableId, page)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]ColumnMask, len(ms))
+	for i, m := range ms {
+		out[i] = columnMaskToAPI(m)
+	}
+	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return ListColumnMasks200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
+}
+
+func (h *APIHandler) CreateColumnMask(ctx context.Context, req CreateColumnMaskRequestObject) (CreateColumnMaskResponseObject, error) {
+	m := &domain.ColumnMask{
+		TableID:        req.TableId,
+		ColumnName:     req.Body.ColumnName,
+		MaskExpression: req.Body.MaskExpression,
+	}
+	if req.Body.Description != nil {
+		m.Description = *req.Body.Description
+	}
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	result, err := h.columnMasks.Create(ctx, principal, m)
+	if err != nil {
+		return nil, err
+	}
+	return CreateColumnMask201JSONResponse(columnMaskToAPI(*result)), nil
+}
+
+func (h *APIHandler) DeleteColumnMask(ctx context.Context, req DeleteColumnMaskRequestObject) (DeleteColumnMaskResponseObject, error) {
+	if err := h.columnMasks.Delete(ctx, req.ColumnMaskId); err != nil {
+		return nil, err
+	}
+	return DeleteColumnMask204Response{}, nil
+}
+
+func (h *APIHandler) BindColumnMask(ctx context.Context, req BindColumnMaskRequestObject) (BindColumnMaskResponseObject, error) {
+	seeOriginal := false
+	if req.Body.SeeOriginal != nil {
+		seeOriginal = *req.Body.SeeOriginal
+	}
+	if err := h.columnMasks.Bind(ctx, &domain.ColumnMaskBinding{
+		ColumnMaskID:  req.ColumnMaskId,
+		PrincipalID:   req.Body.PrincipalId,
+		PrincipalType: req.Body.PrincipalType,
+		SeeOriginal:   seeOriginal,
+	}); err != nil {
+		return nil, err
+	}
+	return BindColumnMask204Response{}, nil
+}
+
+func (h *APIHandler) UnbindColumnMask(ctx context.Context, req UnbindColumnMaskRequestObject) (UnbindColumnMaskResponseObject, error) {
+	if err := h.columnMasks.Unbind(ctx, &domain.ColumnMaskBinding{
+		ColumnMaskID:  req.ColumnMaskId,
+		PrincipalID:   req.Body.PrincipalId,
+		PrincipalType: req.Body.PrincipalType,
+	}); err != nil {
+		return nil, err
+	}
+	return UnbindColumnMask204Response{}, nil
+}

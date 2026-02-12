@@ -1,0 +1,113 @@
+package api
+
+import (
+	"context"
+	"errors"
+
+	"duck-demo/internal/domain"
+	"duck-demo/internal/middleware"
+)
+
+// === Ingestion ===
+
+func (h *APIHandler) CreateUploadUrl(ctx context.Context, req CreateUploadUrlRequestObject) (CreateUploadUrlResponseObject, error) {
+	if h.ingestion == nil {
+		return CreateUploadUrl400JSONResponse{Code: 400, Message: "ingestion not available (S3 not configured)"}, nil
+	}
+
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	result, err := h.ingestion.RequestUploadURL(ctx, principal, req.SchemaName, req.TableName, req.Body.Filename)
+	if err != nil {
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
+			return CreateUploadUrl404JSONResponse{Code: 404, Message: err.Error()}, nil
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return CreateUploadUrl403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return CreateUploadUrl400JSONResponse{Code: 400, Message: err.Error()}, nil
+		}
+	}
+
+	t := result.ExpiresAt
+	return CreateUploadUrl200JSONResponse{
+		UploadUrl: &result.UploadURL,
+		S3Key:     &result.S3Key,
+		ExpiresAt: &t,
+	}, nil
+}
+
+func (h *APIHandler) CommitTableIngestion(ctx context.Context, req CommitTableIngestionRequestObject) (CommitTableIngestionResponseObject, error) {
+	if h.ingestion == nil {
+		return CommitTableIngestion400JSONResponse{Code: 400, Message: "ingestion not available (S3 not configured)"}, nil
+	}
+
+	opts := domain.IngestionOptions{}
+	if req.Body.Options != nil {
+		if req.Body.Options.AllowMissingColumns != nil {
+			opts.AllowMissingColumns = *req.Body.Options.AllowMissingColumns
+		}
+		if req.Body.Options.IgnoreExtraColumns != nil {
+			opts.IgnoreExtraColumns = *req.Body.Options.IgnoreExtraColumns
+		}
+	}
+
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	result, err := h.ingestion.CommitIngestion(ctx, principal, req.SchemaName, req.TableName, req.Body.S3Keys, opts)
+	if err != nil {
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
+			return CommitTableIngestion404JSONResponse{Code: 404, Message: err.Error()}, nil
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return CommitTableIngestion403JSONResponse{Code: 403, Message: err.Error()}, nil
+		case errors.As(err, new(*domain.ValidationError)):
+			return CommitTableIngestion400JSONResponse{Code: 400, Message: err.Error()}, nil
+		default:
+			return CommitTableIngestion400JSONResponse{Code: 400, Message: err.Error()}, nil
+		}
+	}
+
+	return CommitTableIngestion200JSONResponse{
+		FilesRegistered: &result.FilesRegistered,
+		FilesSkipped:    &result.FilesSkipped,
+		Schema:          &result.Schema,
+		Table:           &result.Table,
+	}, nil
+}
+
+func (h *APIHandler) LoadTableExternalFiles(ctx context.Context, req LoadTableExternalFilesRequestObject) (LoadTableExternalFilesResponseObject, error) {
+	if h.ingestion == nil {
+		return LoadTableExternalFiles400JSONResponse{Code: 400, Message: "ingestion not available (S3 not configured)"}, nil
+	}
+
+	opts := domain.IngestionOptions{}
+	if req.Body.Options != nil {
+		if req.Body.Options.AllowMissingColumns != nil {
+			opts.AllowMissingColumns = *req.Body.Options.AllowMissingColumns
+		}
+		if req.Body.Options.IgnoreExtraColumns != nil {
+			opts.IgnoreExtraColumns = *req.Body.Options.IgnoreExtraColumns
+		}
+	}
+
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	result, err := h.ingestion.LoadExternalFiles(ctx, principal, req.SchemaName, req.TableName, req.Body.Paths, opts)
+	if err != nil {
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
+			return LoadTableExternalFiles404JSONResponse{Code: 404, Message: err.Error()}, nil
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return LoadTableExternalFiles403JSONResponse{Code: 403, Message: err.Error()}, nil
+		case errors.As(err, new(*domain.ValidationError)):
+			return LoadTableExternalFiles400JSONResponse{Code: 400, Message: err.Error()}, nil
+		default:
+			return LoadTableExternalFiles400JSONResponse{Code: 400, Message: err.Error()}, nil
+		}
+	}
+
+	return LoadTableExternalFiles200JSONResponse{
+		FilesRegistered: &result.FilesRegistered,
+		FilesSkipped:    &result.FilesSkipped,
+		Schema:          &result.Schema,
+		Table:           &result.Table,
+	}, nil
+}
