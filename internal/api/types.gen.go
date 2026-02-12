@@ -173,6 +173,9 @@ type CreatePrincipalRequest struct {
 type CreateRowFilterRequest struct {
 	Description *string `json:"description,omitempty"`
 	FilterSql   string  `json:"filter_sql"`
+
+	// TableId Table ID (required when creating via top-level POST /row-filters)
+	TableId *int64 `json:"table_id,omitempty"`
 }
 
 // CreateSchemaRequest defines model for CreateSchemaRequest.
@@ -856,33 +859,6 @@ type ListTableColumnsParams struct {
 	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
 }
 
-// GetTableLineageParams defines parameters for GetTableLineage.
-type GetTableLineageParams struct {
-	// MaxResults Maximum number of results to return per page.
-	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
-
-	// PageToken Opaque pagination token from a previous response.
-	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
-}
-
-// GetDownstreamLineageParams defines parameters for GetDownstreamLineage.
-type GetDownstreamLineageParams struct {
-	// MaxResults Maximum number of results to return per page.
-	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
-
-	// PageToken Opaque pagination token from a previous response.
-	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
-}
-
-// GetUpstreamLineageParams defines parameters for GetUpstreamLineage.
-type GetUpstreamLineageParams struct {
-	// MaxResults Maximum number of results to return per page.
-	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
-
-	// PageToken Opaque pagination token from a previous response.
-	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
-}
-
 // ListViewsParams defines parameters for ListViews.
 type ListViewsParams struct {
 	// MaxResults Maximum number of results to return per page.
@@ -935,6 +911,33 @@ type ListGroupsParams struct {
 
 // ListGroupMembersParams defines parameters for ListGroupMembers.
 type ListGroupMembersParams struct {
+	// MaxResults Maximum number of results to return per page.
+	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
+
+	// PageToken Opaque pagination token from a previous response.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// GetTableLineageParams defines parameters for GetTableLineage.
+type GetTableLineageParams struct {
+	// MaxResults Maximum number of results to return per page.
+	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
+
+	// PageToken Opaque pagination token from a previous response.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// GetDownstreamLineageParams defines parameters for GetDownstreamLineage.
+type GetDownstreamLineageParams struct {
+	// MaxResults Maximum number of results to return per page.
+	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
+
+	// PageToken Opaque pagination token from a previous response.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// GetUpstreamLineageParams defines parameters for GetUpstreamLineage.
+type GetUpstreamLineageParams struct {
 	// MaxResults Maximum number of results to return per page.
 	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
 
@@ -1054,11 +1057,11 @@ type CreateVolumeJSONRequestBody = CreateVolumeRequest
 // UpdateVolumeJSONRequestBody defines body for UpdateVolume for application/json ContentType.
 type UpdateVolumeJSONRequestBody = UpdateVolumeRequest
 
-// BindColumnMaskJSONRequestBody defines body for BindColumnMask for application/json ContentType.
-type BindColumnMaskJSONRequestBody = ColumnMaskBindingRequest
-
 // UnbindColumnMaskJSONRequestBody defines body for UnbindColumnMask for application/json ContentType.
 type UnbindColumnMaskJSONRequestBody = RowFilterBindingRequest
+
+// BindColumnMaskJSONRequestBody defines body for BindColumnMask for application/json ContentType.
+type BindColumnMaskJSONRequestBody = ColumnMaskBindingRequest
 
 // CreateExternalLocationJSONRequestBody defines body for CreateExternalLocation for application/json ContentType.
 type CreateExternalLocationJSONRequestBody = CreateExternalLocationRequest
@@ -1066,20 +1069,20 @@ type CreateExternalLocationJSONRequestBody = CreateExternalLocationRequest
 // UpdateExternalLocationJSONRequestBody defines body for UpdateExternalLocation for application/json ContentType.
 type UpdateExternalLocationJSONRequestBody = UpdateExternalLocationRequest
 
-// CreateGrantJSONRequestBody defines body for CreateGrant for application/json ContentType.
-type CreateGrantJSONRequestBody = CreateGrantRequest
-
 // DeleteGrantJSONRequestBody defines body for DeleteGrant for application/json ContentType.
 type DeleteGrantJSONRequestBody = DeleteGrantRequest
+
+// CreateGrantJSONRequestBody defines body for CreateGrant for application/json ContentType.
+type CreateGrantJSONRequestBody = CreateGrantRequest
 
 // CreateGroupJSONRequestBody defines body for CreateGroup for application/json ContentType.
 type CreateGroupJSONRequestBody = CreateGroupRequest
 
-// CreateGroupMemberJSONRequestBody defines body for CreateGroupMember for application/json ContentType.
-type CreateGroupMemberJSONRequestBody = CreateGroupMemberRequest
-
 // DeleteGroupMemberJSONRequestBody defines body for DeleteGroupMember for application/json ContentType.
 type DeleteGroupMemberJSONRequestBody = CreateGroupMemberRequest
+
+// CreateGroupMemberJSONRequestBody defines body for CreateGroupMember for application/json ContentType.
+type CreateGroupMemberJSONRequestBody = CreateGroupMemberRequest
 
 // PurgeLineageJSONRequestBody defines body for PurgeLineage for application/json ContentType.
 type PurgeLineageJSONRequestBody = PurgeLineageRequest
@@ -1096,11 +1099,14 @@ type UpdatePrincipalAdminJSONRequestBody = UpdatePrincipalAdminRequest
 // ExecuteQueryJSONRequestBody defines body for ExecuteQuery for application/json ContentType.
 type ExecuteQueryJSONRequestBody = QueryRequest
 
-// BindRowFilterJSONRequestBody defines body for BindRowFilter for application/json ContentType.
-type BindRowFilterJSONRequestBody = RowFilterBindingRequest
+// CreateRowFilterTopLevelJSONRequestBody defines body for CreateRowFilterTopLevel for application/json ContentType.
+type CreateRowFilterTopLevelJSONRequestBody = CreateRowFilterRequest
 
 // UnbindRowFilterJSONRequestBody defines body for UnbindRowFilter for application/json ContentType.
 type UnbindRowFilterJSONRequestBody = RowFilterBindingRequest
+
+// BindRowFilterJSONRequestBody defines body for BindRowFilter for application/json ContentType.
+type BindRowFilterJSONRequestBody = RowFilterBindingRequest
 
 // CreateStorageCredentialJSONRequestBody defines body for CreateStorageCredential for application/json ContentType.
 type CreateStorageCredentialJSONRequestBody = CreateStorageCredentialRequest

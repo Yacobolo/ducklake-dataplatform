@@ -4,6 +4,7 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"duck-demo/internal/db/mapper"
@@ -439,6 +440,25 @@ func (h *APIHandler) UnbindRowFilter(ctx context.Context, req UnbindRowFilterReq
 		return nil, err
 	}
 	return UnbindRowFilter204Response{}, nil
+}
+
+func (h *APIHandler) CreateRowFilterTopLevel(ctx context.Context, req CreateRowFilterTopLevelRequestObject) (CreateRowFilterTopLevelResponseObject, error) {
+	if req.Body.TableId == nil {
+		return CreateRowFilterTopLevel400JSONResponse{Code: 400, Message: "table_id is required"}, nil
+	}
+	f := &domain.RowFilter{
+		TableID:   *req.Body.TableId,
+		FilterSQL: req.Body.FilterSql,
+	}
+	if req.Body.Description != nil {
+		f.Description = *req.Body.Description
+	}
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	result, err := h.rowFilters.Create(ctx, principal, f)
+	if err != nil {
+		return nil, err
+	}
+	return CreateRowFilterTopLevel201JSONResponse(rowFilterToAPI(*result)), nil
 }
 
 // === Column Masks ===
@@ -1754,6 +1774,11 @@ func (h *APIHandler) CreateExternalLocation(ctx context.Context, req CreateExter
 		CredentialName: req.Body.CredentialName,
 	}
 	if req.Body.StorageType != nil {
+		if *req.Body.StorageType != CreateExternalLocationRequestStorageTypeS3 {
+			return CreateExternalLocation400JSONResponse{
+				Code: 400, Message: fmt.Sprintf("unsupported storage type %q; supported: S3", string(*req.Body.StorageType)),
+			}, nil
+		}
 		domReq.StorageType = domain.StorageType(*req.Body.StorageType)
 	}
 	if req.Body.Comment != nil {
