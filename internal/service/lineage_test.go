@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"testing"
 	"time"
 
@@ -122,13 +121,13 @@ func TestLineageService_GetFullLineage(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		target := "main.revenue_summary"
 		repo := &mockLineageRepo{
-			getUpstreamFn: func(_ context.Context, tableName string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
+			getUpstreamFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
 				return []domain.LineageEdge{
 					{ID: 1, SourceTable: "main.orders", EdgeType: "READ"},
 					{ID: 2, SourceTable: "main.customers", EdgeType: "READ"},
 				}, 2, nil
 			},
-			getDownstreamFn: func(_ context.Context, tableName string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
+			getDownstreamFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
 				return []domain.LineageEdge{
 					{ID: 3, SourceTable: "main.revenue_summary", EdgeType: "READ"},
 				}, 1, nil
@@ -160,7 +159,7 @@ func TestLineageService_GetFullLineage(t *testing.T) {
 		_, err := svc.GetFullLineage(context.Background(), "t", domain.PageRequest{})
 
 		require.Error(t, err)
-		assert.ErrorIs(t, err, errTest)
+		require.ErrorIs(t, err, errTest)
 		assert.False(t, downstreamCalled, "downstream should not be called when upstream fails")
 	})
 
@@ -230,7 +229,7 @@ func TestLineageService_DeleteEdge(t *testing.T) {
 
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
-		assert.True(t, errors.As(err, &notFound))
+		require.ErrorAs(t, err, &notFound)
 	})
 
 	t.Run("repo_error", func(t *testing.T) {

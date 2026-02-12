@@ -85,7 +85,8 @@ func TestValidateCreateVolumeRequest(t *testing.T) {
 			} else {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tt.wantErr)
-				assert.IsType(t, &ValidationError{}, err)
+				var validationErr *ValidationError
+				assert.ErrorAs(t, err, &validationErr)
 			}
 		})
 	}

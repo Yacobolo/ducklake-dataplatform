@@ -109,7 +109,7 @@ func TestLoadDotEnv_ParsesKeyValue(t *testing.T) {
 	if val := os.Getenv("TEST_KEY"); val != "test_value" {
 		t.Errorf("TEST_KEY = %q, want %q", val, "test_value")
 	}
-	os.Unsetenv("TEST_KEY")
+	_ = os.Unsetenv("TEST_KEY")
 }
 
 func TestLoadDotEnv_SkipsComments(t *testing.T) {
@@ -128,7 +128,7 @@ func TestLoadDotEnv_SkipsComments(t *testing.T) {
 	if val := os.Getenv("TEST_COMMENT_KEY"); val != "value" {
 		t.Errorf("TEST_COMMENT_KEY = %q, want %q", val, "value")
 	}
-	os.Unsetenv("TEST_COMMENT_KEY")
+	_ = os.Unsetenv("TEST_COMMENT_KEY")
 }
 
 func TestLoadDotEnv_EnvVarPrecedence(t *testing.T) {

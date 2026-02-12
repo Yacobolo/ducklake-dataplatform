@@ -28,7 +28,7 @@ func createCredentialForLocation(t *testing.T, serverURL, apiKey, name string) {
 	body := validCredBody(name)
 	resp := doRequest(t, "POST", serverURL+"/v1/storage-credentials", apiKey, body)
 	require.Equal(t, 201, resp.StatusCode, "pre-create credential %s", name)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 }
 
 // TestHTTP_ExternalLocationCRUD tests the full CRUD lifecycle for external locations.
@@ -129,12 +129,12 @@ func TestHTTP_ExternalLocationCRUD(t *testing.T) {
 		{"delete", func(t *testing.T) {
 			resp := doRequest(t, "DELETE", env.Server.URL+"/v1/external-locations/test-loc", env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 		{"get_after_delete_404", func(t *testing.T) {
 			resp := doRequest(t, "GET", env.Server.URL+"/v1/external-locations/test-loc", env.Keys.Admin, nil)
 			assert.Equal(t, 404, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 	}
 
@@ -155,7 +155,7 @@ func TestHTTP_ExternalLocationAuthorization(t *testing.T) {
 	body := validLocationBody("auth-test-loc", credName)
 	resp := doRequest(t, "POST", env.Server.URL+"/v1/external-locations", env.Keys.Admin, body)
 	require.Equal(t, 201, resp.StatusCode)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	// Need a second credential for the analyst create attempt
 	credName2 := "auth-loc-cred2"
@@ -186,7 +186,7 @@ func TestHTTP_ExternalLocationAuthorization(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			resp := doRequest(t, tc.method, env.Server.URL+tc.path, tc.apiKey, tc.body)
 			assert.Equal(t, tc.wantStatus, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		})
 	}
 }
@@ -224,7 +224,7 @@ func TestHTTP_ExternalLocationValidation(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			resp := doRequest(t, tc.method, env.Server.URL+tc.path, env.Keys.Admin, tc.body)
 			assert.Equal(t, tc.wantStatus, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		})
 	}
 }
@@ -241,11 +241,11 @@ func TestHTTP_ExternalLocationDuplicate(t *testing.T) {
 
 	resp := doRequest(t, "POST", env.Server.URL+"/v1/external-locations", env.Keys.Admin, body)
 	require.Equal(t, 201, resp.StatusCode)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	resp = doRequest(t, "POST", env.Server.URL+"/v1/external-locations", env.Keys.Admin, body)
 	assert.Equal(t, 409, resp.StatusCode)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 }
 
 // TestHTTP_ExternalLocationPagination verifies pagination works correctly.
@@ -262,7 +262,7 @@ func TestHTTP_ExternalLocationPagination(t *testing.T) {
 		body := validLocationBody(name, credName)
 		resp := doRequest(t, "POST", env.Server.URL+"/v1/external-locations", env.Keys.Admin, body)
 		require.Equal(t, 201, resp.StatusCode, "create location %s", name)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	}
 
 	var allNames []string
@@ -294,6 +294,6 @@ func TestHTTP_ExternalLocationPagination(t *testing.T) {
 		}
 	}
 
-	assert.Equal(t, 5, len(allNames), "should collect all 5 locations")
+	assert.Len(t, allNames, 5, "should collect all 5 locations")
 	assert.GreaterOrEqual(t, pages, 3, "should take at least 3 pages with max_results=2")
 }

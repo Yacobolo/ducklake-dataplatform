@@ -57,6 +57,11 @@ tasks:
     cmds:
       - go vet ./...
 
+  lint:
+    desc: Run Go linters
+    cmds:
+      - golangci-lint run
+
   integration-test:
     desc: Run integration tests (package summary, shows failures inline)
     cmds:

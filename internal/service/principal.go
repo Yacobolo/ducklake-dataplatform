@@ -6,15 +6,18 @@ import (
 	"duck-demo/internal/domain"
 )
 
+// PrincipalService provides principal management operations.
 type PrincipalService struct {
 	repo  domain.PrincipalRepository
 	audit domain.AuditRepository
 }
 
+// NewPrincipalService creates a new PrincipalService.
 func NewPrincipalService(repo domain.PrincipalRepository, audit domain.AuditRepository) *PrincipalService {
 	return &PrincipalService{repo: repo, audit: audit}
 }
 
+// Create validates and persists a new principal.
 func (s *PrincipalService) Create(ctx context.Context, p *domain.Principal) (*domain.Principal, error) {
 	if p.Name == "" {
 		return nil, domain.ErrValidation("principal name is required")
@@ -33,14 +36,17 @@ func (s *PrincipalService) Create(ctx context.Context, p *domain.Principal) (*do
 	return result, nil
 }
 
+// GetByID returns a principal by ID.
 func (s *PrincipalService) GetByID(ctx context.Context, id int64) (*domain.Principal, error) {
 	return s.repo.GetByID(ctx, id)
 }
 
+// List returns a paginated list of principals.
 func (s *PrincipalService) List(ctx context.Context, page domain.PageRequest) ([]domain.Principal, int64, error) {
 	return s.repo.List(ctx, page)
 }
 
+// Delete removes a principal by ID.
 func (s *PrincipalService) Delete(ctx context.Context, id int64) error {
 	p, err := s.repo.GetByID(ctx, id)
 	if err != nil {
@@ -53,6 +59,7 @@ func (s *PrincipalService) Delete(ctx context.Context, id int64) error {
 	return nil
 }
 
+// SetAdmin updates the admin status of a principal.
 func (s *PrincipalService) SetAdmin(ctx context.Context, id int64, isAdmin bool) error {
 	if err := s.repo.SetAdmin(ctx, id, isAdmin); err != nil {
 		return err

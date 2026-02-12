@@ -28,7 +28,7 @@ func TestAuth_APIKey(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			resp := doRequest(t, "GET", env.Server.URL+"/v1/principals", tc.apiKey, nil)
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			assert.Equal(t, tc.wantStatus, resp.StatusCode)
 		})
 	}
@@ -42,21 +42,21 @@ func TestAuth_JWT(t *testing.T) {
 	t.Run("valid_token_200", func(t *testing.T) {
 		token := generateJWT(t, secret, "admin_user", time.Now().Add(time.Hour))
 		resp := doRequestWithBearer(t, "GET", env.Server.URL+"/v1/principals", token, nil)
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck
 		require.Equal(t, 200, resp.StatusCode)
 	})
 
 	t.Run("expired_token_401", func(t *testing.T) {
 		token := generateJWT(t, secret, "admin_user", time.Now().Add(-time.Hour))
 		resp := doRequestWithBearer(t, "GET", env.Server.URL+"/v1/principals", token, nil)
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck
 		assert.Equal(t, 401, resp.StatusCode)
 	})
 
 	t.Run("wrong_signature_401", func(t *testing.T) {
 		token := generateJWT(t, []byte("wrong-secret"), "admin_user", time.Now().Add(time.Hour))
 		resp := doRequestWithBearer(t, "GET", env.Server.URL+"/v1/principals", token, nil)
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck
 		assert.Equal(t, 401, resp.StatusCode)
 	})
 
@@ -71,7 +71,7 @@ func TestAuth_JWT(t *testing.T) {
 		require.NoError(t, err)
 
 		resp := doRequestWithBearer(t, "GET", env.Server.URL+"/v1/principals", signed, nil)
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck
 		assert.Equal(t, 401, resp.StatusCode)
 	})
 
@@ -84,7 +84,7 @@ func TestAuth_JWT(t *testing.T) {
 		require.NoError(t, err)
 
 		resp := doRequestWithBearer(t, "GET", env.Server.URL+"/v1/principals", signed, nil)
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck
 		assert.Equal(t, 401, resp.StatusCode)
 	})
 
@@ -98,7 +98,7 @@ func TestAuth_JWT(t *testing.T) {
 		require.NoError(t, err)
 
 		resp := doRequestWithBearer(t, "GET", env.Server.URL+"/v1/principals", signed, nil)
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck
 		assert.Equal(t, 401, resp.StatusCode)
 	})
 }
@@ -136,7 +136,7 @@ func TestAuth_PrincipalIdentity(t *testing.T) {
 		// checking that the analyst key works too.
 		resp2 := doRequest(t, "GET", env.Server.URL+"/v1/principals", env.Keys.Analyst, nil)
 		require.Equal(t, 200, resp2.StatusCode)
-		resp2.Body.Close()
+		_ = resp2.Body.Close()
 	})
 
 	t.Run("jwt_sets_principal", func(t *testing.T) {
@@ -146,6 +146,6 @@ func TestAuth_PrincipalIdentity(t *testing.T) {
 		body := map[string]interface{}{"name": "auth-identity-jwt-test", "type": "user"}
 		resp := doRequestWithBearer(t, "POST", env.Server.URL+"/v1/principals", token, body)
 		require.Equal(t, 201, resp.StatusCode)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	})
 }

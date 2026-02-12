@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"time"
 
 	dbstore "duck-demo/internal/db/dbstore"
@@ -14,10 +15,12 @@ type TableStatisticsRepo struct {
 	q *dbstore.Queries
 }
 
+// NewTableStatisticsRepo creates a new TableStatisticsRepo.
 func NewTableStatisticsRepo(db *sql.DB) *TableStatisticsRepo {
 	return &TableStatisticsRepo{q: dbstore.New(db)}
 }
 
+// Upsert creates or updates table statistics for a securable.
 func (r *TableStatisticsRepo) Upsert(ctx context.Context, securableName string, stats *domain.TableStatistics) error {
 	return r.q.UpsertTableStatistics(ctx, dbstore.UpsertTableStatisticsParams{
 		TableSecurableName: securableName,
@@ -28,9 +31,10 @@ func (r *TableStatisticsRepo) Upsert(ctx context.Context, securableName string, 
 	})
 }
 
+// Get returns table statistics for a securable, or nil if none exist.
 func (r *TableStatisticsRepo) Get(ctx context.Context, securableName string) (*domain.TableStatistics, error) {
 	row, err := r.q.GetTableStatistics(ctx, securableName)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil // No stats yet, not an error
 	}
 	if err != nil {
@@ -58,6 +62,7 @@ func (r *TableStatisticsRepo) Get(ctx context.Context, securableName string) (*d
 	return &stats, nil
 }
 
+// Delete removes table statistics for a securable.
 func (r *TableStatisticsRepo) Delete(ctx context.Context, securableName string) error {
 	return r.q.DeleteTableStatistics(ctx, securableName)
 }

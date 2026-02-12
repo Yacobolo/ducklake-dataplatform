@@ -133,7 +133,7 @@ func TestHTTP_SearchByComment(t *testing.T) {
 				env.Server.URL+"/v1/catalog/schemas/main/tables/titanic",
 				env.Keys.Admin, body)
 			require.Equal(t, 200, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 
 		{"search_by_comment", func(t *testing.T) {
@@ -201,7 +201,7 @@ func TestHTTP_SearchByTag(t *testing.T) {
 					"securable_id":   1, // titanic table_id
 				})
 			require.Equal(t, 201, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 
 		{"search_by_tag", func(t *testing.T) {

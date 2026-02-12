@@ -9,14 +9,17 @@ import (
 	"duck-demo/internal/domain"
 )
 
+// ColumnMaskRepo implements domain.ColumnMaskRepository using SQLite.
 type ColumnMaskRepo struct {
 	q *dbstore.Queries
 }
 
+// NewColumnMaskRepo creates a new ColumnMaskRepo.
 func NewColumnMaskRepo(db *sql.DB) *ColumnMaskRepo {
 	return &ColumnMaskRepo{q: dbstore.New(db)}
 }
 
+// Create inserts a new column mask into the database.
 func (r *ColumnMaskRepo) Create(ctx context.Context, m *domain.ColumnMask) (*domain.ColumnMask, error) {
 	row, err := r.q.CreateColumnMask(ctx, dbstore.CreateColumnMaskParams{
 		TableID:        m.TableID,
@@ -30,6 +33,7 @@ func (r *ColumnMaskRepo) Create(ctx context.Context, m *domain.ColumnMask) (*dom
 	return mapper.ColumnMaskFromDB(row), nil
 }
 
+// GetForTable returns a paginated list of column masks for a table.
 func (r *ColumnMaskRepo) GetForTable(ctx context.Context, tableID int64, page domain.PageRequest) ([]domain.ColumnMask, int64, error) {
 	total, err := r.q.CountColumnMasksForTable(ctx, tableID)
 	if err != nil {
@@ -48,10 +52,12 @@ func (r *ColumnMaskRepo) GetForTable(ctx context.Context, tableID int64, page do
 	return mapper.ColumnMasksFromDB(rows), total, nil
 }
 
+// Delete removes a column mask by ID.
 func (r *ColumnMaskRepo) Delete(ctx context.Context, id int64) error {
 	return r.q.DeleteColumnMask(ctx, id)
 }
 
+// Bind associates a column mask with a principal or group.
 func (r *ColumnMaskRepo) Bind(ctx context.Context, b *domain.ColumnMaskBinding) error {
 	return r.q.BindColumnMask(ctx, dbstore.BindColumnMaskParams{
 		ColumnMaskID:  b.ColumnMaskID,
@@ -61,6 +67,7 @@ func (r *ColumnMaskRepo) Bind(ctx context.Context, b *domain.ColumnMaskBinding) 
 	})
 }
 
+// Unbind removes a column mask binding from a principal or group.
 func (r *ColumnMaskRepo) Unbind(ctx context.Context, b *domain.ColumnMaskBinding) error {
 	return r.q.UnbindColumnMask(ctx, dbstore.UnbindColumnMaskParams{
 		ColumnMaskID:  b.ColumnMaskID,
@@ -69,6 +76,7 @@ func (r *ColumnMaskRepo) Unbind(ctx context.Context, b *domain.ColumnMaskBinding
 	})
 }
 
+// ListBindings returns all bindings for a column mask.
 func (r *ColumnMaskRepo) ListBindings(ctx context.Context, maskID int64) ([]domain.ColumnMaskBinding, error) {
 	rows, err := r.q.GetColumnMaskBindingsForMask(ctx, maskID)
 	if err != nil {
@@ -77,6 +85,7 @@ func (r *ColumnMaskRepo) ListBindings(ctx context.Context, maskID int64) ([]doma
 	return mapper.ColumnMaskBindingsFromDB(rows), nil
 }
 
+// GetForTableAndPrincipal returns column masks with bindings for a specific table and principal.
 func (r *ColumnMaskRepo) GetForTableAndPrincipal(ctx context.Context, tableID, principalID int64, principalType string) ([]domain.ColumnMaskWithBinding, error) {
 	rows, err := r.q.GetColumnMaskForTableAndPrincipal(ctx, dbstore.GetColumnMaskForTableAndPrincipalParams{
 		TableID:       tableID,

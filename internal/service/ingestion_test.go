@@ -121,10 +121,10 @@ func TestIngestion_ClassifyDuckDBError(t *testing.T) {
 			switch tt.expectType {
 			case "NotFoundError":
 				var notFound *domain.NotFoundError
-				assert.ErrorAs(t, err, &notFound)
+				require.ErrorAs(t, err, &notFound)
 			case "ValidationError":
 				var validationErr *domain.ValidationError
-				assert.ErrorAs(t, err, &validationErr)
+				require.ErrorAs(t, err, &validationErr)
 			}
 		})
 	}
@@ -139,32 +139,34 @@ func (e *testError) Error() string { return e.msg }
 func TestIngestion_CommitEmptyKeys(t *testing.T) {
 	svc, _, q, ctx := setupIngestionTest(t)
 
-	q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	_, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "writer", Type: "user", IsAdmin: 1,
 	})
+	require.NoError(t, err)
 
 	ctx = middleware.WithPrincipal(ctx, "writer")
-	_, err := svc.CommitIngestion(ctx, "writer", "main", "titanic", []string{}, domain.IngestionOptions{})
+	_, err = svc.CommitIngestion(ctx, "writer", "main", "titanic", []string{}, domain.IngestionOptions{})
 	require.Error(t, err)
 
 	var validationErr *domain.ValidationError
-	assert.ErrorAs(t, err, &validationErr)
+	require.ErrorAs(t, err, &validationErr)
 	assert.Contains(t, err.Error(), "s3_keys must not be empty")
 }
 
 func TestIngestion_LoadEmptyPaths(t *testing.T) {
 	svc, _, q, ctx := setupIngestionTest(t)
 
-	q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	_, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "writer", Type: "user", IsAdmin: 1,
 	})
+	require.NoError(t, err)
 
 	ctx = middleware.WithPrincipal(ctx, "writer")
-	_, err := svc.LoadExternalFiles(ctx, "writer", "main", "titanic", []string{}, domain.IngestionOptions{})
+	_, err = svc.LoadExternalFiles(ctx, "writer", "main", "titanic", []string{}, domain.IngestionOptions{})
 	require.Error(t, err)
 
 	var validationErr *domain.ValidationError
-	assert.ErrorAs(t, err, &validationErr)
+	require.ErrorAs(t, err, &validationErr)
 	assert.Contains(t, err.Error(), "paths must not be empty")
 }
 
@@ -172,9 +174,10 @@ func TestIngestion_AccessDenied(t *testing.T) {
 	svc, _, q, ctx := setupIngestionTest(t)
 
 	// Create a user with NO grants
-	q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	_, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "no_access", Type: "user", IsAdmin: 0,
 	})
+	require.NoError(t, err)
 
 	ctx = middleware.WithPrincipal(ctx, "no_access")
 
@@ -183,7 +186,7 @@ func TestIngestion_AccessDenied(t *testing.T) {
 		require.Error(t, err)
 
 		var accessDenied *domain.AccessDeniedError
-		assert.ErrorAs(t, err, &accessDenied)
+		require.ErrorAs(t, err, &accessDenied)
 	})
 
 	t.Run("commit denied", func(t *testing.T) {
@@ -193,7 +196,7 @@ func TestIngestion_AccessDenied(t *testing.T) {
 		require.Error(t, err)
 
 		var accessDenied *domain.AccessDeniedError
-		assert.ErrorAs(t, err, &accessDenied)
+		require.ErrorAs(t, err, &accessDenied)
 	})
 
 	t.Run("load denied", func(t *testing.T) {
@@ -203,68 +206,73 @@ func TestIngestion_AccessDenied(t *testing.T) {
 		require.Error(t, err)
 
 		var accessDenied *domain.AccessDeniedError
-		assert.ErrorAs(t, err, &accessDenied)
+		require.ErrorAs(t, err, &accessDenied)
 	})
 }
 
 func TestIngestion_TableNotFound(t *testing.T) {
 	svc, _, q, ctx := setupIngestionTest(t)
 
-	q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	_, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "writer", Type: "user", IsAdmin: 1,
 	})
+	require.NoError(t, err)
 
 	ctx = middleware.WithPrincipal(ctx, "writer")
 
-	_, err := svc.RequestUploadURL(ctx, "writer", "main", "nonexistent_table", nil)
+	_, err = svc.RequestUploadURL(ctx, "writer", "main", "nonexistent_table", nil)
 	require.Error(t, err)
 
 	var notFoundErr *domain.NotFoundError
-	assert.ErrorAs(t, err, &notFoundErr)
+	require.ErrorAs(t, err, &notFoundErr)
 }
 
 func TestIngestion_AdminPassesAuthCheck(t *testing.T) {
 	svc, _, q, ctx := setupIngestionTest(t)
 
-	q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	_, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "admin", Type: "user", IsAdmin: 1,
 	})
+	require.NoError(t, err)
 
 	ctx = middleware.WithPrincipal(ctx, "admin")
 
 	// Admin should pass the auth check for commit, but fail on validation (empty keys).
 	// This verifies auth is not the blocker.
-	_, err := svc.CommitIngestion(ctx, "admin", "main", "titanic", []string{}, domain.IngestionOptions{})
+	_, err = svc.CommitIngestion(ctx, "admin", "main", "titanic", []string{}, domain.IngestionOptions{})
 	require.Error(t, err)
 	// Should be validation error, not access denied
 	var validationErr *domain.ValidationError
-	assert.ErrorAs(t, err, &validationErr)
+	require.ErrorAs(t, err, &validationErr)
 }
 
 func TestIngestion_UserWithInsertGrant(t *testing.T) {
 	svc, _, q, ctx := setupIngestionTest(t)
 
-	user, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	user, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "inserter", Type: "user", IsAdmin: 0,
 	})
+	require.NoError(t, err)
 
 	// Grant USAGE on schema + INSERT on table
-	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		PrincipalID: user.ID, PrincipalType: "user",
 		SecurableType: SecurableSchema, SecurableID: 0,
 		Privilege: PrivUsage,
 	})
-	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+	require.NoError(t, err)
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		PrincipalID: user.ID, PrincipalType: "user",
 		SecurableType: SecurableTable, SecurableID: 1, // titanic
 		Privilege: PrivInsert,
 	})
+	require.NoError(t, err)
 
 	ctx = middleware.WithPrincipal(ctx, "inserter")
 
 	// Should pass auth, but fail on validation (empty keys) — NOT AccessDenied.
-	_, err := svc.CommitIngestion(ctx, "inserter", "main", "titanic", []string{}, domain.IngestionOptions{})
+	_, err = svc.CommitIngestion(ctx, "inserter", "main", "titanic", []string{}, domain.IngestionOptions{})
 	require.Error(t, err)
 	var validationErr *domain.ValidationError
-	assert.ErrorAs(t, err, &validationErr, "user with INSERT should pass auth, fail on validation")
+	require.ErrorAs(t, err, &validationErr, "user with INSERT should pass auth, fail on validation")
 }

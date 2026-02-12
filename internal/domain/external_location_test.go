@@ -91,7 +91,8 @@ func TestValidateStorageCredentialRequest(t *testing.T) {
 			err := ValidateStorageCredentialRequest(tt.req)
 			if tt.wantErr {
 				require.Error(t, err)
-				assert.IsType(t, &ValidationError{}, err)
+				var validationErr *ValidationError
+				assert.ErrorAs(t, err, &validationErr)
 			} else {
 				require.NoError(t, err)
 			}

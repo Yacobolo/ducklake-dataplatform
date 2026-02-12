@@ -38,7 +38,7 @@ func TestExternalTable_CreateAndGet(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.NotNil(t, et)
-	assert.Greater(t, et.ID, int64(0))
+	assert.Positive(t, et.ID)
 	assert.Equal(t, "analytics", et.SchemaName)
 	assert.Equal(t, "events", et.TableName)
 	assert.Equal(t, "parquet", et.FileFormat)
@@ -126,7 +126,8 @@ func TestExternalTable_Delete(t *testing.T) {
 	// Should not be found anymore
 	_, err = repo.GetByName(ctx, "analytics", "events")
 	require.Error(t, err)
-	assert.IsType(t, &domain.NotFoundError{}, err)
+	var notFound *domain.NotFoundError
+	assert.ErrorAs(t, err, &notFound)
 }
 
 func TestExternalTable_DeleteBySchema(t *testing.T) {
@@ -150,7 +151,7 @@ func TestExternalTable_DeleteBySchema(t *testing.T) {
 	tables, total, err := repo.List(ctx, "analytics", domain.PageRequest{})
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), total)
-	assert.Len(t, tables, 0)
+	assert.Empty(t, tables)
 }
 
 func TestExternalTable_UniqueConstraint(t *testing.T) {
@@ -175,7 +176,8 @@ func TestExternalTable_UniqueConstraint(t *testing.T) {
 		LocationName: "loc",
 	})
 	require.Error(t, err)
-	assert.IsType(t, &domain.ConflictError{}, err)
+	var conflict *domain.ConflictError
+	assert.ErrorAs(t, err, &conflict)
 }
 
 func TestExternalTable_EffectiveTableID(t *testing.T) {

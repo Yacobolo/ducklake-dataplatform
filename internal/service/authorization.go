@@ -7,7 +7,7 @@ import (
 	"duck-demo/internal/domain"
 )
 
-// Re-export domain constants for backward compatibility during migration.
+// Privilege constants re-exported from domain for backward compatibility.
 const (
 	PrivSelect        = domain.PrivSelect
 	PrivInsert        = domain.PrivInsert

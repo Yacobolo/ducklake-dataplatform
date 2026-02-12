@@ -28,7 +28,7 @@ const (
 	SensitivityPrefix    = "sensitivity"
 )
 
-// Well-known classification values.
+// ValidClassifications maps classification tag keys to their allowed values.
 var ValidClassifications = map[string][]string{
 	ClassificationPrefix: {"pii", "sensitive", "confidential", "public", "personal_data"},
 	SensitivityPrefix:    {"high", "medium", "low"},

@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/stretchr/testify/require"
 
 	_ "github.com/duckdb/duckdb-go/v2"
 	_ "github.com/mattn/go-sqlite3"
@@ -27,6 +28,9 @@ import (
 	"duck-demo/internal/middleware"
 	"duck-demo/internal/service"
 )
+
+// ctx is a package-level background context used by setup helpers.
+var ctx = context.Background()
 
 // setupTestServer creates a fully wired test HTTP server with real DuckDB + SQLite.
 func setupTestServer(t *testing.T, principalName string) *httptest.Server {
@@ -41,9 +45,9 @@ func setupTestServer(t *testing.T, principalName string) *httptest.Server {
 	if err != nil {
 		t.Fatalf("open duckdb: %v", err)
 	}
-	t.Cleanup(func() { duckDB.Close() })
+	t.Cleanup(func() { _ = duckDB.Close() })
 
-	if _, err := duckDB.Exec("CREATE TABLE titanic AS SELECT * FROM '../../titanic.parquet'"); err != nil {
+	if _, err := duckDB.ExecContext(ctx, "CREATE TABLE titanic AS SELECT * FROM '../../titanic.parquet'"); err != nil {
 		t.Fatalf("create table: %v", err)
 	}
 
@@ -51,7 +55,7 @@ func setupTestServer(t *testing.T, principalName string) *httptest.Server {
 	metaDB, _ := internaldb.OpenTestSQLite(t)
 
 	// Create mock DuckLake tables
-	_, err = metaDB.Exec(`
+	_, err = metaDB.ExecContext(ctx, `
 		CREATE TABLE IF NOT EXISTS ducklake_schema (
 			schema_id INTEGER PRIMARY KEY, schema_uuid TEXT,
 			begin_snapshot INTEGER, end_snapshot INTEGER,
@@ -74,32 +78,44 @@ func setupTestServer(t *testing.T, principalName string) *httptest.Server {
 	ctx := context.Background()
 	q := dbstore.New(metaDB)
 
-	adminUser, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{Name: "admin_user", Type: "user", IsAdmin: 1})
-	analyst, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{Name: "analyst1", Type: "user", IsAdmin: 0})
-	q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{Name: "no_access_user", Type: "user", IsAdmin: 0})
+	adminUser, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{Name: "admin_user", Type: "user", IsAdmin: 1})
+	require.NoError(t, err)
+	analyst, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{Name: "analyst1", Type: "user", IsAdmin: 0})
+	require.NoError(t, err)
+	_, err = q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{Name: "no_access_user", Type: "user", IsAdmin: 0})
+	require.NoError(t, err)
 
-	adminsGroup, _ := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "admins"})
-	analystsGroup, _ := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "analysts"})
+	adminsGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "admins"})
+	require.NoError(t, err)
+	analystsGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "analysts"})
+	require.NoError(t, err)
 
-	q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{GroupID: adminsGroup.ID, MemberType: "user", MemberID: adminUser.ID})
-	q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{GroupID: analystsGroup.ID, MemberType: "user", MemberID: analyst.ID})
+	err = q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{GroupID: adminsGroup.ID, MemberType: "user", MemberID: adminUser.ID})
+	require.NoError(t, err)
+	err = q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{GroupID: analystsGroup.ID, MemberType: "user", MemberID: analyst.ID})
+	require.NoError(t, err)
 
-	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		PrincipalID: adminsGroup.ID, PrincipalType: "group",
 		SecurableType: "catalog", SecurableID: 0, Privilege: "ALL_PRIVILEGES",
 	})
-	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+	require.NoError(t, err)
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		PrincipalID: analystsGroup.ID, PrincipalType: "group",
 		SecurableType: "schema", SecurableID: 0, Privilege: "USAGE",
 	})
-	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+	require.NoError(t, err)
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		PrincipalID: analystsGroup.ID, PrincipalType: "group",
 		SecurableType: "table", SecurableID: 1, Privilege: "SELECT",
 	})
+	require.NoError(t, err)
 
 	// Row filter for analysts
-	filter, _ := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{TableID: 1, FilterSql: `"Pclass" = 1`})
-	q.BindRowFilter(ctx, dbstore.BindRowFilterParams{RowFilterID: filter.ID, PrincipalID: analystsGroup.ID, PrincipalType: "group"})
+	filter, err := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{TableID: 1, FilterSql: `"Pclass" = 1`})
+	require.NoError(t, err)
+	err = q.BindRowFilter(ctx, dbstore.BindRowFilterParams{RowFilterID: filter.ID, PrincipalID: analystsGroup.ID, PrincipalType: "group"})
+	require.NoError(t, err)
 
 	// Build repositories and services
 	auditRepo := repository.NewAuditRepo(metaDB)
@@ -152,20 +168,20 @@ func TestAPI_ListPrincipals(t *testing.T) {
 	srv := setupTestServer(t, "admin_user")
 	defer srv.Close()
 
-	resp, err := http.Get(srv.URL + "/principals")
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, srv.URL+"/principals", nil)
+	require.NoError(t, err)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	if resp.StatusCode != 200 {
 		t.Errorf("expected 200, got %d", resp.StatusCode)
 	}
 
 	var result PaginatedPrincipals
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&result))
 	if result.Data == nil || len(*result.Data) < 2 {
 		t.Errorf("expected at least 2 principals, got %v", result.Data)
 	}
@@ -177,20 +193,21 @@ func TestAPI_ExecuteQuery_Admin(t *testing.T) {
 	defer srv.Close()
 
 	body := `{"sql": "SELECT count(*) FROM titanic"}`
-	resp, err := http.Post(srv.URL+"/query", "application/json", bytes.NewBufferString(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, srv.URL+"/query", bytes.NewBufferString(body))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	if resp.StatusCode != 200 {
 		t.Errorf("expected 200, got %d", resp.StatusCode)
 	}
 
 	var result QueryResult
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&result))
 	if result.RowCount == nil || *result.RowCount == 0 {
 		t.Error("expected non-zero row count")
 	}
@@ -202,11 +219,14 @@ func TestAPI_ExecuteQuery_NoAccess(t *testing.T) {
 	defer srv.Close()
 
 	body := `{"sql": "SELECT * FROM titanic LIMIT 5"}`
-	resp, err := http.Post(srv.URL+"/query", "application/json", bytes.NewBufferString(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, srv.URL+"/query", bytes.NewBufferString(body))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	if resp.StatusCode != 403 {
 		t.Errorf("expected 403 for no_access_user, got %d", resp.StatusCode)
@@ -219,29 +239,33 @@ func TestAPI_CreateAndDeletePrincipal(t *testing.T) {
 
 	// Create
 	body := `{"name": "test_user", "type": "user"}`
-	resp, err := http.Post(srv.URL+"/principals", "application/json", bytes.NewBufferString(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, srv.URL+"/principals", bytes.NewBufferString(body))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	if resp.StatusCode != 201 {
 		t.Errorf("expected 201, got %d", resp.StatusCode)
 	}
 
 	var p Principal
-	json.NewDecoder(resp.Body).Decode(&p)
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&p))
 	if p.Name == nil || *p.Name != "test_user" {
 		t.Errorf("expected name=test_user, got %v", p.Name)
 	}
 
 	// Delete
-	req, _ := http.NewRequest("DELETE", srv.URL+"/principals/"+itoa(*p.Id), nil)
+	req, err = http.NewRequestWithContext(ctx, "DELETE", srv.URL+"/principals/"+itoa(*p.Id), nil)
+	require.NoError(t, err)
 	resp2, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer resp2.Body.Close()
+	defer resp2.Body.Close() //nolint:errcheck
 
 	if resp2.StatusCode != 204 {
 		t.Errorf("expected 204, got %d", resp2.StatusCode)
@@ -254,21 +278,28 @@ func TestAPI_AuditLogs(t *testing.T) {
 
 	// Execute a query first to generate audit entries
 	body := `{"sql": "SELECT 1"}`
-	http.Post(srv.URL+"/query", "application/json", bytes.NewBufferString(body))
+	postReq, err := http.NewRequestWithContext(ctx, http.MethodPost, srv.URL+"/query", bytes.NewBufferString(body))
+	require.NoError(t, err)
+	postReq.Header.Set("Content-Type", "application/json")
+	postResp, err := http.DefaultClient.Do(postReq)
+	require.NoError(t, err)
+	_ = postResp.Body.Close()
 
 	// List audit logs
-	resp, err := http.Get(srv.URL + "/audit-logs")
+	getReq, err := http.NewRequestWithContext(ctx, http.MethodGet, srv.URL+"/audit-logs", nil)
+	require.NoError(t, err)
+	resp, err := http.DefaultClient.Do(getReq)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	if resp.StatusCode != 200 {
 		t.Errorf("expected 200, got %d", resp.StatusCode)
 	}
 
 	var auditResult PaginatedAuditLogs
-	json.NewDecoder(resp.Body).Decode(&auditResult)
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&auditResult))
 	if auditResult.Data != nil {
 		t.Logf("got %d audit entries", len(*auditResult.Data))
 	}
@@ -294,9 +325,9 @@ func setupCatalogTestServer(t *testing.T, principalName string, mockRepo *mockCa
 	if err != nil {
 		t.Fatalf("open duckdb: %v", err)
 	}
-	t.Cleanup(func() { duckDB.Close() })
+	t.Cleanup(func() { _ = duckDB.Close() })
 
-	if _, err := duckDB.Exec("CREATE TABLE titanic AS SELECT * FROM '../../titanic.parquet'"); err != nil {
+	if _, err := duckDB.ExecContext(ctx, "CREATE TABLE titanic AS SELECT * FROM '../../titanic.parquet'"); err != nil {
 		t.Fatalf("create table: %v", err)
 	}
 
@@ -304,7 +335,7 @@ func setupCatalogTestServer(t *testing.T, principalName string, mockRepo *mockCa
 	metaDB, _ := internaldb.OpenTestSQLite(t)
 
 	// Create mock DuckLake tables (for introspection/authorization)
-	_, err = metaDB.Exec(`
+	_, err = metaDB.ExecContext(ctx, `
 		CREATE TABLE IF NOT EXISTS ducklake_schema (
 			schema_id INTEGER PRIMARY KEY, schema_uuid TEXT,
 			begin_snapshot INTEGER, end_snapshot INTEGER,
@@ -327,28 +358,38 @@ func setupCatalogTestServer(t *testing.T, principalName string, mockRepo *mockCa
 	ctx := context.Background()
 	q := dbstore.New(metaDB)
 
-	adminUser, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{Name: "admin_user", Type: "user", IsAdmin: 1})
-	analyst, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{Name: "analyst1", Type: "user", IsAdmin: 0})
-	q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{Name: "no_access_user", Type: "user", IsAdmin: 0})
+	adminUser, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{Name: "admin_user", Type: "user", IsAdmin: 1})
+	require.NoError(t, err)
+	analyst, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{Name: "analyst1", Type: "user", IsAdmin: 0})
+	require.NoError(t, err)
+	_, err = q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{Name: "no_access_user", Type: "user", IsAdmin: 0})
+	require.NoError(t, err)
 
-	adminsGroup, _ := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "admins"})
-	analystsGroup, _ := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "analysts"})
+	adminsGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "admins"})
+	require.NoError(t, err)
+	analystsGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "analysts"})
+	require.NoError(t, err)
 
-	q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{GroupID: adminsGroup.ID, MemberType: "user", MemberID: adminUser.ID})
-	q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{GroupID: analystsGroup.ID, MemberType: "user", MemberID: analyst.ID})
+	err = q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{GroupID: adminsGroup.ID, MemberType: "user", MemberID: adminUser.ID})
+	require.NoError(t, err)
+	err = q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{GroupID: analystsGroup.ID, MemberType: "user", MemberID: analyst.ID})
+	require.NoError(t, err)
 
-	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		PrincipalID: adminsGroup.ID, PrincipalType: "group",
 		SecurableType: "catalog", SecurableID: 0, Privilege: "ALL_PRIVILEGES",
 	})
-	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+	require.NoError(t, err)
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		PrincipalID: analystsGroup.ID, PrincipalType: "group",
 		SecurableType: "schema", SecurableID: 0, Privilege: "USAGE",
 	})
-	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+	require.NoError(t, err)
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		PrincipalID: analystsGroup.ID, PrincipalType: "group",
 		SecurableType: "table", SecurableID: 1, Privilege: "SELECT",
 	})
+	require.NoError(t, err)
 
 	// Build repositories and services
 	auditRepo := repository.NewAuditRepo(metaDB)
@@ -405,7 +446,7 @@ func doRequest(t *testing.T, method, url string, body string) *http.Response {
 	} else {
 		reqBody = bytes.NewBuffer(nil)
 	}
-	req, err := http.NewRequest(method, url, reqBody)
+	req, err := http.NewRequestWithContext(ctx, method, url, reqBody)
 	if err != nil {
 		t.Fatalf("create request: %v", err)
 	}
@@ -422,7 +463,7 @@ func doRequest(t *testing.T, method, url string, body string) *http.Response {
 // decodeJSON is a test helper that decodes a JSON response body.
 func decodeJSON[T any](t *testing.T, resp *http.Response) T {
 	t.Helper()
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 	var result T
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		t.Fatalf("decode response: %v", err)
@@ -578,7 +619,7 @@ func TestAPI_SchemaCRUD(t *testing.T) {
 			if s.check != nil {
 				s.check(t, resp)
 			} else {
-				resp.Body.Close()
+				_ = resp.Body.Close()
 			}
 		})
 	}
@@ -707,7 +748,7 @@ func TestAPI_TableCRUD(t *testing.T) {
 			if s.check != nil {
 				s.check(t, resp)
 			} else {
-				resp.Body.Close()
+				_ = resp.Body.Close()
 			}
 		})
 	}
@@ -745,7 +786,7 @@ func TestAPI_Schema_Authorization(t *testing.T) {
 			defer srv.Close()
 
 			resp := doRequest(t, tt.method, srv.URL+tt.path, tt.body)
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			if resp.StatusCode != tt.wantStatus {
 				t.Errorf("status: got %d, want %d", resp.StatusCode, tt.wantStatus)
 			}
@@ -781,7 +822,7 @@ func TestAPI_Table_Authorization(t *testing.T) {
 			defer srv.Close()
 
 			resp := doRequest(t, tt.method, srv.URL+tt.path, tt.body)
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			if resp.StatusCode != tt.wantStatus {
 				t.Errorf("status: got %d, want %d", resp.StatusCode, tt.wantStatus)
 			}
@@ -817,7 +858,7 @@ func TestAPI_Schema_Validation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			resp := doRequest(t, tt.method, srv.URL+tt.path, tt.body)
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			if resp.StatusCode != tt.wantStatus {
 				t.Errorf("status: got %d, want %d", resp.StatusCode, tt.wantStatus)
 			}
@@ -850,7 +891,7 @@ func TestAPI_Schema_Conflict(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			resp := doRequest(t, tt.method, srv.URL+tt.path, tt.body)
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			if resp.StatusCode != tt.wantStatus {
 				t.Errorf("status: got %d, want %d", resp.StatusCode, tt.wantStatus)
 			}
@@ -995,7 +1036,7 @@ func TestAPI_ExistingPagination(t *testing.T) {
 
 			resp := doRequest(t, "GET", srv.URL+path, "")
 			if resp.StatusCode != 200 {
-				resp.Body.Close()
+				_ = resp.Body.Close()
 				t.Fatalf("page %d: expected 200, got %d for path %s", pages, resp.StatusCode, path)
 			}
 			r := decodeJSON[PaginatedGroups](t, resp)
@@ -1064,7 +1105,7 @@ func TestAPI_UpdateTable(t *testing.T) {
 
 	t.Run("not found", func(t *testing.T) {
 		resp := doRequest(t, "PATCH", srv.URL+"/catalog/schemas/main/tables/nonexistent", `{"comment":"nope"}`)
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck
 		if resp.StatusCode != 404 {
 			t.Errorf("status: got %d, want 404", resp.StatusCode)
 		}
@@ -1115,7 +1156,7 @@ func TestAPI_UpdateColumn(t *testing.T) {
 
 	t.Run("column not found", func(t *testing.T) {
 		resp := doRequest(t, "PATCH", srv.URL+"/catalog/schemas/main/tables/users/columns/nonexistent", `{"comment":"nope"}`)
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck
 		if resp.StatusCode != 404 {
 			t.Errorf("status: got %d, want 404", resp.StatusCode)
 		}
@@ -1150,7 +1191,7 @@ func TestAPI_UpdateEndpoints_Authorization(t *testing.T) {
 			defer srv.Close()
 
 			resp := doRequest(t, tt.method, srv.URL+tt.path, tt.body)
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			if resp.StatusCode != tt.wantStatus {
 				t.Errorf("status: got %d, want %d", resp.StatusCode, tt.wantStatus)
 			}
@@ -1169,7 +1210,7 @@ func TestAPI_ColumnNullable(t *testing.T) {
 	defer srv.Close()
 
 	resp := doRequest(t, "GET", srv.URL+"/catalog/schemas/main/tables/events", "")
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 	if resp.StatusCode != 200 {
 		t.Fatalf("status: got %d, want 200", resp.StatusCode)
 	}

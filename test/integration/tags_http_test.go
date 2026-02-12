@@ -61,7 +61,7 @@ func TestHTTP_TagCRUD(t *testing.T) {
 				"key":   "env",
 				"value": "production",
 			})
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			require.Equal(t, 409, resp.StatusCode)
 		}},
 
@@ -86,9 +86,9 @@ func TestHTTP_TagCRUD(t *testing.T) {
 
 			var result map[string]interface{}
 			decodeJSON(t, resp, &result)
-			assert.Equal(t, float64(tagID), result["tag_id"])
+			assert.InDelta(t, float64(tagID), result["tag_id"], 0)
 			assert.Equal(t, "table", result["securable_type"])
-			assert.Equal(t, float64(1), result["securable_id"])
+			assert.InDelta(t, float64(1), result["securable_id"], 0)
 			assignmentID = int64(result["id"].(float64))
 		}},
 
@@ -118,7 +118,7 @@ func TestHTTP_TagCRUD(t *testing.T) {
 					"securable_id":   1,
 					"column_name":    "Name",
 				})
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			require.Equal(t, 409, resp.StatusCode)
 		}},
 
@@ -126,7 +126,7 @@ func TestHTTP_TagCRUD(t *testing.T) {
 			resp := doRequest(t, "DELETE",
 				fmt.Sprintf("%s/v1/tag-assignments/%d", env.Server.URL, assignmentID),
 				env.Keys.Admin, nil)
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			require.Equal(t, 204, resp.StatusCode)
 		}},
 
@@ -134,7 +134,7 @@ func TestHTTP_TagCRUD(t *testing.T) {
 			resp := doRequest(t, "DELETE",
 				fmt.Sprintf("%s/v1/tags/%d", env.Server.URL, tagID),
 				env.Keys.Admin, nil)
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			require.Equal(t, 204, resp.StatusCode)
 		}},
 
@@ -144,7 +144,7 @@ func TestHTTP_TagCRUD(t *testing.T) {
 			resp := doRequest(t, "DELETE",
 				fmt.Sprintf("%s/v1/tags/%d", env.Server.URL, tagID),
 				env.Keys.Admin, nil)
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			require.Equal(t, 204, resp.StatusCode)
 		}},
 
@@ -247,7 +247,7 @@ func TestHTTP_TagAnyUserCanManage(t *testing.T) {
 			resp := doRequest(t, "DELETE",
 				fmt.Sprintf("%s/v1/tags/%d", env.Server.URL, tagID),
 				env.Keys.Analyst, nil)
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			require.Equal(t, 204, resp.StatusCode)
 		}},
 	}

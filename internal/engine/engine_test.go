@@ -21,6 +21,9 @@ import (
 	"duck-demo/internal/service"
 )
 
+// ctx is a package-level background context used by setup helpers.
+var ctx = context.Background()
+
 // setupTestCatalog creates a temporary SQLite metastore with demo permissions.
 // It also creates the DuckLake-like metadata tables that the catalog service queries.
 func setupTestCatalog(t *testing.T) *service.AuthorizationService {
@@ -29,7 +32,7 @@ func setupTestCatalog(t *testing.T) *service.AuthorizationService {
 	metaDB, _ := internaldb.OpenTestSQLite(t)
 
 	// Create mock DuckLake catalog tables that the service queries
-	_, err := metaDB.Exec(`
+	_, err := metaDB.ExecContext(ctx, `
 		CREATE TABLE IF NOT EXISTS ducklake_schema (
 			schema_id INTEGER PRIMARY KEY,
 			schema_uuid TEXT,
@@ -66,72 +69,98 @@ func setupTestCatalog(t *testing.T) *service.AuthorizationService {
 		repository.NewColumnMaskRepo(metaDB),
 		repository.NewIntrospectionRepo(metaDB),
 	)
-	ctx := context.Background()
+	setupCtx := context.Background()
 	q := dbstore.New(metaDB)
 
 	// Create principals
-	adminUser, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	adminUser, err := q.CreatePrincipal(setupCtx, dbstore.CreatePrincipalParams{
 		Name: "admin", Type: "user", IsAdmin: 1,
 	})
-	analyst, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	require.NoError(t, err)
+	analyst, err := q.CreatePrincipal(setupCtx, dbstore.CreatePrincipalParams{
 		Name: "first_class_analyst", Type: "user", IsAdmin: 0,
 	})
-	survivor, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	require.NoError(t, err)
+	survivor, err := q.CreatePrincipal(setupCtx, dbstore.CreatePrincipalParams{
 		Name: "survivor_researcher", Type: "user", IsAdmin: 0,
 	})
-	_, _ = q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	require.NoError(t, err)
+	_, err = q.CreatePrincipal(setupCtx, dbstore.CreatePrincipalParams{
 		Name: "no_access", Type: "user", IsAdmin: 0,
 	})
+	require.NoError(t, err)
 
 	// Create groups
-	analystsGroup, _ := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "analysts"})
-	survivorGroup, _ := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "survivors"})
+	analystsGroup, err := q.CreateGroup(setupCtx, dbstore.CreateGroupParams{Name: "analysts"})
+	require.NoError(t, err)
+	survivorGroup, err := q.CreateGroup(setupCtx, dbstore.CreateGroupParams{Name: "survivors"})
+	require.NoError(t, err)
 
 	// Add members to groups
-	q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{
+	err = q.AddGroupMember(setupCtx, dbstore.AddGroupMemberParams{
 		GroupID: analystsGroup.ID, MemberType: "user", MemberID: analyst.ID,
 	})
-	q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{
+	require.NoError(t, err)
+	err = q.AddGroupMember(setupCtx, dbstore.AddGroupMemberParams{
 		GroupID: survivorGroup.ID, MemberType: "user", MemberID: survivor.ID,
 	})
+	require.NoError(t, err)
 
 	// Grant privileges
-	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+	_, err = q.GrantPrivilege(setupCtx, dbstore.GrantPrivilegeParams{
 		PrincipalID: adminUser.ID, PrincipalType: "user",
 		SecurableType: "catalog", SecurableID: 0,
 		Privilege: "ALL_PRIVILEGES",
 	})
-	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+	require.NoError(t, err)
+	_, err = q.GrantPrivilege(setupCtx, dbstore.GrantPrivilegeParams{
 		PrincipalID: analystsGroup.ID, PrincipalType: "group",
 		SecurableType: "schema", SecurableID: 0,
 		Privilege: "USAGE",
 	})
-	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+	require.NoError(t, err)
+	_, err = q.GrantPrivilege(setupCtx, dbstore.GrantPrivilegeParams{
 		PrincipalID: analystsGroup.ID, PrincipalType: "group",
 		SecurableType: "table", SecurableID: 1,
 		Privilege: "SELECT",
 	})
-	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+	require.NoError(t, err)
+	_, err = q.GrantPrivilege(setupCtx, dbstore.GrantPrivilegeParams{
 		PrincipalID: survivorGroup.ID, PrincipalType: "group",
 		SecurableType: "schema", SecurableID: 0,
 		Privilege: "USAGE",
 	})
-	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+	require.NoError(t, err)
+	_, err = q.GrantPrivilege(setupCtx, dbstore.GrantPrivilegeParams{
 		PrincipalID: survivorGroup.ID, PrincipalType: "group",
 		SecurableType: "table", SecurableID: 1,
 		Privilege: "SELECT",
 	})
+	require.NoError(t, err)
 
 	// Row filter: Pclass = 1 for analysts
-	firstClassFilter, _ := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
+	firstClassFilter, err := q.CreateRowFilter(setupCtx, dbstore.CreateRowFilterParams{
 		TableID:   1,
 		FilterSql: `"Pclass" = 1`,
 	})
-	q.BindRowFilter(ctx, dbstore.BindRowFilterParams{
+	require.NoError(t, err)
+	err = q.BindRowFilter(setupCtx, dbstore.BindRowFilterParams{
 		RowFilterID: firstClassFilter.ID, PrincipalID: analystsGroup.ID, PrincipalType: "group",
 	})
+	require.NoError(t, err)
 
 	return cat
+}
+
+// queryAndClose calls eng.Query and closes the returned rows. It is a helper
+// for tests that only care about the error, not the result set.
+func queryAndClose(t *testing.T, eng *engine.SecureEngine, principal, sqlStr string) error {
+	t.Helper()
+	r, err := eng.Query(ctx, principal, sqlStr) //nolint:rowserrcheck // closes rows immediately; no iteration
+	if r != nil {
+		r.Close() //nolint:errcheck,sqlclosecheck
+	}
+	return err
 }
 
 // setupEngine creates a SecureEngine with a real DuckDB connection and test catalog.
@@ -146,9 +175,9 @@ func setupEngine(t *testing.T) *engine.SecureEngine {
 	if err != nil {
 		t.Fatalf("open duckdb: %v", err)
 	}
-	t.Cleanup(func() { db.Close() })
+	t.Cleanup(func() { _ = db.Close() })
 
-	if _, err := db.Exec("CREATE TABLE titanic AS SELECT * FROM '../../titanic.parquet'"); err != nil {
+	if _, err := db.ExecContext(ctx, "CREATE TABLE titanic AS SELECT * FROM '../../titanic.parquet'"); err != nil {
 		t.Fatalf("create table: %v", err)
 	}
 
@@ -164,12 +193,13 @@ func TestAdminSeesAllRows(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	count := 0
 	for rows.Next() {
 		count++
 	}
+	require.NoError(t, rows.Err())
 	if count != 10 {
 		t.Errorf("admin should see 10 rows, got %d", count)
 	}
@@ -183,7 +213,7 @@ func TestFirstClassAnalystOnlySeesClass1(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	count := 0
 	for rows.Next() {
@@ -196,6 +226,7 @@ func TestFirstClassAnalystOnlySeesClass1(t *testing.T) {
 		}
 		count++
 	}
+	require.NoError(t, rows.Err())
 	if count == 0 {
 		t.Error("expected at least one row")
 	}
@@ -210,12 +241,13 @@ func TestSurvivorResearcherSeesAll(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	count := 0
 	for rows.Next() {
 		count++
 	}
+	require.NoError(t, rows.Err())
 	if count == 0 {
 		t.Error("expected at least one row")
 	}
@@ -224,9 +256,8 @@ func TestSurvivorResearcherSeesAll(t *testing.T) {
 
 func TestNoAccessRoleDenied(t *testing.T) {
 	eng := setupEngine(t)
-	ctx := context.Background()
 
-	_, err := eng.Query(ctx, "no_access", "SELECT * FROM titanic LIMIT 10")
+	err := queryAndClose(t, eng, "no_access", "SELECT * FROM titanic LIMIT 10")
 	if err == nil {
 		t.Error("expected access denied error for no_access user")
 	}
@@ -235,9 +266,8 @@ func TestNoAccessRoleDenied(t *testing.T) {
 
 func TestAccessToDeniedTableFails(t *testing.T) {
 	eng := setupEngine(t)
-	ctx := context.Background()
 
-	_, err := eng.Query(ctx, "first_class_analyst", "SELECT * FROM secret_data LIMIT 10")
+	err := queryAndClose(t, eng, "first_class_analyst", "SELECT * FROM secret_data LIMIT 10")
 	if err == nil {
 		t.Error("expected error when accessing unauthorized table")
 	}
@@ -252,7 +282,7 @@ func TestModifiedPlanExecutesCorrectly(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	cols, err := rows.Columns()
 	if err != nil {
@@ -274,6 +304,7 @@ func TestModifiedPlanExecutesCorrectly(t *testing.T) {
 		t.Logf("  row: id=%d name=%q pclass=%d", id, name, pclass)
 		count++
 	}
+	require.NoError(t, rows.Err())
 	if count == 0 {
 		t.Error("expected at least one row")
 	}
@@ -287,6 +318,7 @@ func TestRowCountReducedByRLS(t *testing.T) {
 	if err != nil {
 		t.Fatalf("admin query: %v", err)
 	}
+	defer adminRows.Close() //nolint:errcheck
 	var adminCount int64
 	if !adminRows.Next() {
 		t.Fatal("expected a row from admin count query")
@@ -294,12 +326,13 @@ func TestRowCountReducedByRLS(t *testing.T) {
 	if err := adminRows.Scan(&adminCount); err != nil {
 		t.Fatalf("admin scan: %v", err)
 	}
-	adminRows.Close()
+	require.NoError(t, adminRows.Err())
 
 	fcRows, err := eng.Query(ctx, "first_class_analyst", "SELECT count(*) FROM titanic")
 	if err != nil {
 		t.Fatalf("first_class query: %v", err)
 	}
+	defer fcRows.Close() //nolint:errcheck
 	var fcCount int64
 	if !fcRows.Next() {
 		t.Fatal("expected a row from first_class count query")
@@ -307,7 +340,7 @@ func TestRowCountReducedByRLS(t *testing.T) {
 	if err := fcRows.Scan(&fcCount); err != nil {
 		t.Fatalf("first_class scan: %v", err)
 	}
-	fcRows.Close()
+	require.NoError(t, fcRows.Err())
 
 	t.Logf("admin sees %d rows, first_class_analyst sees %d rows", adminCount, fcCount)
 
@@ -321,9 +354,8 @@ func TestRowCountReducedByRLS(t *testing.T) {
 
 func TestUnknownRoleReturnsError(t *testing.T) {
 	eng := setupEngine(t)
-	ctx := context.Background()
 
-	_, err := eng.Query(ctx, "nonexistent_role", "SELECT * FROM titanic LIMIT 10")
+	err := queryAndClose(t, eng, "nonexistent_role", "SELECT * FROM titanic LIMIT 10")
 	if err == nil {
 		t.Error("expected error for unknown role")
 	}
@@ -331,9 +363,8 @@ func TestUnknownRoleReturnsError(t *testing.T) {
 
 func TestDDLBlocked(t *testing.T) {
 	eng := setupEngine(t)
-	ctx := context.Background()
 
-	_, err := eng.Query(ctx, "first_class_analyst", "DROP TABLE titanic")
+	err := queryAndClose(t, eng, "first_class_analyst", "DROP TABLE titanic")
 	if err == nil {
 		t.Error("expected DDL to be blocked")
 	}
@@ -342,9 +373,8 @@ func TestDDLBlocked(t *testing.T) {
 
 func TestInsertRequiresPrivilege(t *testing.T) {
 	eng := setupEngine(t)
-	ctx := context.Background()
 
-	_, err := eng.Query(ctx, "first_class_analyst", `INSERT INTO titanic ("PassengerId") VALUES (9999)`)
+	err := queryAndClose(t, eng, "first_class_analyst", `INSERT INTO titanic ("PassengerId") VALUES (9999)`)
 	if err == nil {
 		t.Error("expected INSERT to be denied for user without INSERT privilege")
 	}
@@ -353,9 +383,8 @@ func TestInsertRequiresPrivilege(t *testing.T) {
 
 func TestUpdateRequiresPrivilege(t *testing.T) {
 	eng := setupEngine(t)
-	ctx := context.Background()
 
-	_, err := eng.Query(ctx, "first_class_analyst", `UPDATE titanic SET "Name" = 'test' WHERE "PassengerId" = 1`)
+	err := queryAndClose(t, eng, "first_class_analyst", `UPDATE titanic SET "Name" = 'test' WHERE "PassengerId" = 1`)
 	if err == nil {
 		t.Error("expected UPDATE to be denied for user without UPDATE privilege")
 	}
@@ -364,9 +393,8 @@ func TestUpdateRequiresPrivilege(t *testing.T) {
 
 func TestDeleteRequiresPrivilege(t *testing.T) {
 	eng := setupEngine(t)
-	ctx := context.Background()
 
-	_, err := eng.Query(ctx, "first_class_analyst", `DELETE FROM titanic WHERE "PassengerId" = 1`)
+	err := queryAndClose(t, eng, "first_class_analyst", `DELETE FROM titanic WHERE "PassengerId" = 1`)
 	if err == nil {
 		t.Error("expected DELETE to be denied for user without DELETE privilege")
 	}
@@ -375,7 +403,6 @@ func TestDeleteRequiresPrivilege(t *testing.T) {
 
 func TestMultiStatementBlocked(t *testing.T) {
 	eng := setupEngine(t)
-	ctx := context.Background()
 
 	tests := []struct {
 		name string
@@ -387,7 +414,7 @@ func TestMultiStatementBlocked(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := eng.Query(ctx, "admin", tc.sql)
+			err := queryAndClose(t, eng, "admin", tc.sql)
 			if err == nil {
 				t.Error("expected multi-statement query to be blocked")
 			}
@@ -402,25 +429,25 @@ func TestTablelessStatementRequiresAuth(t *testing.T) {
 	t.Run("admin_allowed", func(t *testing.T) {
 		rows, err := eng.Query(ctx, "admin", "SELECT 1 + 1")
 		require.NoError(t, err)
-		rows.Close()
+		defer rows.Close() //nolint:errcheck
+		require.NoError(t, rows.Err())
 	})
 
 	t.Run("non_privileged_denied", func(t *testing.T) {
-		_, err := eng.Query(ctx, "first_class_analyst", "SELECT 1 + 1")
+		err := queryAndClose(t, eng, "first_class_analyst", "SELECT 1 + 1")
 		require.Error(t, err)
 		assert.True(t, strings.Contains(err.Error(), "access denied") || strings.Contains(err.Error(), "privilege"),
 			"expected access denied error, got: %v", err)
 	})
 
 	t.Run("no_access_denied", func(t *testing.T) {
-		_, err := eng.Query(ctx, "no_access", "SELECT 1 + 1")
+		err := queryAndClose(t, eng, "no_access", "SELECT 1 + 1")
 		require.Error(t, err)
 	})
 }
 
 func TestDDLVariantsBlocked(t *testing.T) {
 	eng := setupEngine(t)
-	ctx := context.Background()
 
 	tests := []struct {
 		name string
@@ -434,7 +461,7 @@ func TestDDLVariantsBlocked(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := eng.Query(ctx, "first_class_analyst", tc.sql)
+			err := queryAndClose(t, eng, "first_class_analyst", tc.sql)
 			require.Error(t, err, "expected DDL %q to be blocked", tc.name)
 		})
 	}
@@ -442,7 +469,6 @@ func TestDDLVariantsBlocked(t *testing.T) {
 
 func TestMalformedSQLReturnsError(t *testing.T) {
 	eng := setupEngine(t)
-	ctx := context.Background()
 
 	tests := []struct {
 		name string
@@ -454,7 +480,7 @@ func TestMalformedSQLReturnsError(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := eng.Query(ctx, "admin", tc.sql)
+			err := queryAndClose(t, eng, "admin", tc.sql)
 			// Should return a parse error, not panic
 			if tc.sql == "" {
 				// Empty SQL may or may not error depending on parser

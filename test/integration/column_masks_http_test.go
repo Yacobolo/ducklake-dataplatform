@@ -65,7 +65,7 @@ func TestHTTP_ColumnMaskCRUD(t *testing.T) {
 			}
 			resp := doRequest(t, "POST", url, env.Keys.Admin, body)
 			require.Equal(t, 204, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 		{"bind_see_original_true", func(t *testing.T) {
 			url := fmt.Sprintf("%s/v1/column-masks/%d/bindings", env.Server.URL, int64(maskID))
@@ -76,7 +76,7 @@ func TestHTTP_ColumnMaskCRUD(t *testing.T) {
 			}
 			resp := doRequest(t, "POST", url, env.Keys.Admin, body)
 			require.Equal(t, 204, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 		{"unbind_analyst", func(t *testing.T) {
 			url := fmt.Sprintf("%s/v1/column-masks/%d/bindings", env.Server.URL, int64(maskID))
@@ -86,7 +86,7 @@ func TestHTTP_ColumnMaskCRUD(t *testing.T) {
 			}
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, body)
 			require.Equal(t, 204, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 		{"unbind_researcher", func(t *testing.T) {
 			url := fmt.Sprintf("%s/v1/column-masks/%d/bindings", env.Server.URL, int64(maskID))
@@ -96,13 +96,13 @@ func TestHTTP_ColumnMaskCRUD(t *testing.T) {
 			}
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, body)
 			require.Equal(t, 204, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 		{"delete", func(t *testing.T) {
 			url := fmt.Sprintf("%s/v1/column-masks/%d", env.Server.URL, int64(maskID))
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 		{"list_after_delete", func(t *testing.T) {
 			resp := doRequest(t, "GET", env.Server.URL+"/v1/tables/1/column-masks", env.Keys.Admin, nil)

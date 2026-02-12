@@ -9,15 +9,18 @@ import (
 	"duck-demo/internal/domain"
 )
 
+// QueryHistoryRepo implements domain.QueryHistoryRepository using SQLite.
 type QueryHistoryRepo struct {
 	q  *dbstore.Queries
 	db *sql.DB
 }
 
+// NewQueryHistoryRepo creates a new QueryHistoryRepo.
 func NewQueryHistoryRepo(db *sql.DB) *QueryHistoryRepo {
 	return &QueryHistoryRepo{q: dbstore.New(db), db: db}
 }
 
+// List returns a filtered, paginated list of query history entries.
 func (r *QueryHistoryRepo) List(ctx context.Context, filter domain.QueryHistoryFilter) ([]domain.QueryHistoryEntry, int64, error) {
 	var principalFilter interface{}
 	var principalName string

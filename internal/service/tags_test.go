@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"testing"
 	"time"
 
@@ -51,7 +50,7 @@ func TestTagService_CreateTag(t *testing.T) {
 		_, err := svc.CreateTag(ctxWithPrincipal("alice"), "alice", &domain.Tag{Key: "env"})
 
 		require.Error(t, err)
-		assert.ErrorIs(t, err, errTest)
+		require.ErrorIs(t, err, errTest)
 		assert.Empty(t, audit.entries, "audit should not be logged on error")
 	})
 }
@@ -85,7 +84,7 @@ func TestTagService_GetTag(t *testing.T) {
 
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
-		assert.True(t, errors.As(err, &notFound))
+		require.ErrorAs(t, err, &notFound)
 	})
 }
 
@@ -153,7 +152,7 @@ func TestTagService_DeleteTag(t *testing.T) {
 		err := svc.DeleteTag(ctxWithPrincipal("alice"), "alice", 1)
 
 		require.Error(t, err)
-		assert.ErrorIs(t, err, errTest)
+		require.ErrorIs(t, err, errTest)
 		assert.Empty(t, audit.entries, "audit should not be logged on error")
 	})
 }
@@ -203,7 +202,7 @@ func TestTagService_AssignTag(t *testing.T) {
 		_, err := svc.AssignTag(ctxWithPrincipal("bob"), "bob", &domain.TagAssignment{TagID: 1})
 
 		require.Error(t, err)
-		assert.ErrorIs(t, err, errTest)
+		require.ErrorIs(t, err, errTest)
 		assert.Empty(t, audit.entries)
 	})
 }
@@ -238,7 +237,7 @@ func TestTagService_UnassignTag(t *testing.T) {
 		err := svc.UnassignTag(ctxWithPrincipal("alice"), "alice", 1)
 
 		require.Error(t, err)
-		assert.ErrorIs(t, err, errTest)
+		require.ErrorIs(t, err, errTest)
 		assert.Empty(t, audit.entries)
 	})
 }
@@ -307,7 +306,7 @@ func TestValidateClassificationTag(t *testing.T) {
 			if tt.wantErr {
 				require.Error(t, err)
 				var validationErr *domain.ValidationError
-				assert.True(t, errors.As(err, &validationErr))
+				require.ErrorAs(t, err, &validationErr)
 			} else {
 				require.NoError(t, err)
 			}
@@ -346,7 +345,7 @@ func TestTagService_CreateTag_ClassificationValidation(t *testing.T) {
 
 		require.Error(t, err)
 		var validationErr *domain.ValidationError
-		assert.True(t, errors.As(err, &validationErr))
+		require.ErrorAs(t, err, &validationErr)
 		assert.Empty(t, audit.entries, "audit should not be logged on validation error")
 	})
 }

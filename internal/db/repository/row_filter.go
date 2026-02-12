@@ -9,14 +9,17 @@ import (
 	"duck-demo/internal/domain"
 )
 
+// RowFilterRepo implements domain.RowFilterRepository using SQLite.
 type RowFilterRepo struct {
 	q *dbstore.Queries
 }
 
+// NewRowFilterRepo creates a new RowFilterRepo.
 func NewRowFilterRepo(db *sql.DB) *RowFilterRepo {
 	return &RowFilterRepo{q: dbstore.New(db)}
 }
 
+// Create inserts a new row filter into the database.
 func (r *RowFilterRepo) Create(ctx context.Context, f *domain.RowFilter) (*domain.RowFilter, error) {
 	row, err := r.q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
 		TableID:     f.TableID,
@@ -29,6 +32,7 @@ func (r *RowFilterRepo) Create(ctx context.Context, f *domain.RowFilter) (*domai
 	return mapper.RowFilterFromDB(row), nil
 }
 
+// GetForTable returns a paginated list of row filters for a table.
 func (r *RowFilterRepo) GetForTable(ctx context.Context, tableID int64, page domain.PageRequest) ([]domain.RowFilter, int64, error) {
 	total, err := r.q.CountRowFiltersForTable(ctx, tableID)
 	if err != nil {
@@ -47,10 +51,12 @@ func (r *RowFilterRepo) GetForTable(ctx context.Context, tableID int64, page dom
 	return mapper.RowFiltersFromDB(rows), total, nil
 }
 
+// Delete removes a row filter by ID.
 func (r *RowFilterRepo) Delete(ctx context.Context, id int64) error {
 	return r.q.DeleteRowFilter(ctx, id)
 }
 
+// Bind associates a row filter with a principal or group.
 func (r *RowFilterRepo) Bind(ctx context.Context, b *domain.RowFilterBinding) error {
 	return r.q.BindRowFilter(ctx, dbstore.BindRowFilterParams{
 		RowFilterID:   b.RowFilterID,
@@ -59,6 +65,7 @@ func (r *RowFilterRepo) Bind(ctx context.Context, b *domain.RowFilterBinding) er
 	})
 }
 
+// Unbind removes a row filter binding from a principal or group.
 func (r *RowFilterRepo) Unbind(ctx context.Context, b *domain.RowFilterBinding) error {
 	return r.q.UnbindRowFilter(ctx, dbstore.UnbindRowFilterParams{
 		RowFilterID:   b.RowFilterID,
@@ -67,6 +74,7 @@ func (r *RowFilterRepo) Unbind(ctx context.Context, b *domain.RowFilterBinding) 
 	})
 }
 
+// ListBindings returns all bindings for a row filter.
 func (r *RowFilterRepo) ListBindings(ctx context.Context, filterID int64) ([]domain.RowFilterBinding, error) {
 	rows, err := r.q.GetRowFilterBindingsForFilter(ctx, filterID)
 	if err != nil {
@@ -75,6 +83,7 @@ func (r *RowFilterRepo) ListBindings(ctx context.Context, filterID int64) ([]dom
 	return mapper.RowFilterBindingsFromDB(rows), nil
 }
 
+// GetForTableAndPrincipal returns row filters bound to a specific table and principal.
 func (r *RowFilterRepo) GetForTableAndPrincipal(ctx context.Context, tableID, principalID int64, principalType string) ([]domain.RowFilter, error) {
 	rows, err := r.q.GetRowFiltersForTableAndPrincipal(ctx, dbstore.GetRowFiltersForTableAndPrincipalParams{
 		TableID:       tableID,

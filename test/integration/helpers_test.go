@@ -1,5 +1,6 @@
 //go:build integration
 
+// Package integration contains end-to-end HTTP integration tests.
 package integration
 
 import (
@@ -36,6 +37,9 @@ import (
 	"duck-demo/internal/middleware"
 	"duck-demo/internal/service"
 )
+
+// ctx is a package-level background context used by setup helpers.
+var ctx = context.Background()
 
 // ---------------------------------------------------------------------------
 // TestMain — shared setup for all integration tests
@@ -76,13 +80,13 @@ func setupSharedDuckLake() (*catalogTestEnv, func(), error) {
 	metaPath := filepath.Join(tmpDir, "meta.sqlite")
 	dataPath := filepath.Join(tmpDir, "lake_data") + "/"
 	if err := os.MkdirAll(dataPath, 0o755); err != nil {
-		os.RemoveAll(tmpDir)
+		_ = os.RemoveAll(tmpDir)
 		return nil, nil, err
 	}
 
 	duckDB, err := sql.Open("duckdb", "")
 	if err != nil {
-		os.RemoveAll(tmpDir)
+		_ = os.RemoveAll(tmpDir)
 		return nil, nil, err
 	}
 
@@ -90,9 +94,9 @@ func setupSharedDuckLake() (*catalogTestEnv, func(), error) {
 		"INSTALL ducklake", "LOAD ducklake",
 		"INSTALL sqlite", "LOAD sqlite",
 	} {
-		if _, err := duckDB.Exec(stmt); err != nil {
-			duckDB.Close()
-			os.RemoveAll(tmpDir)
+		if _, err := duckDB.ExecContext(ctx, stmt); err != nil {
+			_ = duckDB.Close()
+			_ = os.RemoveAll(tmpDir)
 			return nil, nil, fmt.Errorf("%s: %w", stmt, err)
 		}
 	}
@@ -101,35 +105,35 @@ func setupSharedDuckLake() (*catalogTestEnv, func(), error) {
 		`ATTACH 'ducklake:sqlite:%s' AS lake (DATA_PATH '%s')`,
 		metaPath, dataPath,
 	)
-	if _, err := duckDB.Exec(attachSQL); err != nil {
-		duckDB.Close()
-		os.RemoveAll(tmpDir)
+	if _, err := duckDB.ExecContext(ctx, attachSQL); err != nil {
+		_ = duckDB.Close()
+		_ = os.RemoveAll(tmpDir)
 		return nil, nil, fmt.Errorf("attach ducklake: %w", err)
 	}
-	if _, err := duckDB.Exec("USE lake"); err != nil {
-		duckDB.Close()
-		os.RemoveAll(tmpDir)
+	if _, err := duckDB.ExecContext(ctx, "USE lake"); err != nil {
+		_ = duckDB.Close()
+		_ = os.RemoveAll(tmpDir)
 		return nil, nil, fmt.Errorf("use lake: %w", err)
 	}
 
 	metaDB, err := internaldb.OpenSQLite(metaPath, "write", 0)
 	if err != nil {
-		duckDB.Close()
-		os.RemoveAll(tmpDir)
+		_ = duckDB.Close()
+		_ = os.RemoveAll(tmpDir)
 		return nil, nil, err
 	}
 
 	if err := internaldb.RunMigrations(metaDB); err != nil {
-		metaDB.Close()
-		duckDB.Close()
-		os.RemoveAll(tmpDir)
+		_ = metaDB.Close()
+		_ = duckDB.Close()
+		_ = os.RemoveAll(tmpDir)
 		return nil, nil, fmt.Errorf("migrations: %w", err)
 	}
 
 	cleanup := func() {
-		metaDB.Close()
-		duckDB.Close()
-		os.RemoveAll(tmpDir)
+		_ = metaDB.Close()
+		_ = duckDB.Close()
+		_ = os.RemoveAll(tmpDir)
 	}
 
 	return &catalogTestEnv{DuckDB: duckDB, MetaDB: metaDB}, cleanup, nil
@@ -185,7 +189,7 @@ func checkPrerequisites(t *testing.T) {
 	}
 
 	// Load .env and check S3 credentials
-	config.LoadDotEnv(dotEnvPath())
+	_ = config.LoadDotEnv(dotEnvPath())
 	for _, envVar := range []string{"KEY_ID", "SECRET", "ENDPOINT", "REGION"} {
 		if os.Getenv(envVar) == "" {
 			t.Skipf("required env var %s not set (check .env)", envVar)
@@ -310,10 +314,10 @@ func seedDuckLakeMetadata(t *testing.T, db *sql.DB) {
 		1, 'parquet', 891, 36014, 1332, 0, NULL, NULL, NULL, NULL
 	);`
 
-	if _, err := db.Exec(ddl); err != nil {
+	if _, err := db.ExecContext(ctx, ddl); err != nil {
 		t.Fatalf("create ducklake DDL: %v", err)
 	}
-	if _, err := db.Exec(data); err != nil {
+	if _, err := db.ExecContext(ctx, data); err != nil {
 		t.Fatalf("seed ducklake data: %v", err)
 	}
 }
@@ -335,7 +339,6 @@ type apiKeys struct {
 func seedRBAC(t *testing.T, db *sql.DB) apiKeys {
 	t.Helper()
 
-	ctx := context.Background()
 	q := dbstore.New(db)
 
 	// --- Principals ---
@@ -522,7 +525,7 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 	t.Helper()
 
 	// Load S3 config from .env
-	config.LoadDotEnv(dotEnvPath())
+	_ = config.LoadDotEnv(dotEnvPath())
 	cfg, err := config.LoadFromEnv()
 	if err != nil {
 		t.Fatalf("load config: %v", err)
@@ -585,8 +588,8 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 		rowFilterSvc, columnMaskSvc, auditSvc,
 		manifestSvc, nil, // catalogSvc=nil — integration tests only hit /v1/manifest
 		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
-		nil,      // ingestionSvc
-		nil, nil, // storageCredSvc, extLocationSvc
+		nil,           // ingestionSvc
+		nil, nil, nil, // storageCredSvc, extLocationSvc, volumeSvc
 	)
 	strictHandler := api.NewStrictHandler(handler, nil)
 
@@ -598,7 +601,7 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 	})
 
 	srv := httptest.NewServer(r)
-	t.Cleanup(func() { srv.Close() })
+	t.Cleanup(srv.Close)
 
 	return &testEnv{Server: srv, Keys: keys}
 }
@@ -742,14 +745,14 @@ func setupLocalDuckLake(t *testing.T) *catalogTestEnv {
 	if err != nil {
 		t.Fatalf("open duckdb: %v", err)
 	}
-	t.Cleanup(func() { duckDB.Close() })
+	t.Cleanup(func() { _ = duckDB.Close() })
 
 	// Install and load DuckLake + SQLite extensions (fail if unavailable)
 	for _, stmt := range []string{
 		"INSTALL ducklake", "LOAD ducklake",
 		"INSTALL sqlite", "LOAD sqlite",
 	} {
-		if _, err := duckDB.Exec(stmt); err != nil {
+		if _, err := duckDB.ExecContext(ctx, stmt); err != nil {
 			t.Fatalf("%s failed (extension not available): %v", stmt, err)
 		}
 	}
@@ -759,10 +762,10 @@ func setupLocalDuckLake(t *testing.T) *catalogTestEnv {
 		`ATTACH 'ducklake:sqlite:%s' AS lake (DATA_PATH '%s')`,
 		metaPath, dataPath,
 	)
-	if _, err := duckDB.Exec(attachSQL); err != nil {
+	if _, err := duckDB.ExecContext(ctx, attachSQL); err != nil {
 		t.Fatalf("attach ducklake: %v", err)
 	}
-	if _, err := duckDB.Exec("USE lake"); err != nil {
+	if _, err := duckDB.ExecContext(ctx, "USE lake"); err != nil {
 		t.Fatalf("use lake: %v", err)
 	}
 
@@ -771,7 +774,7 @@ func setupLocalDuckLake(t *testing.T) *catalogTestEnv {
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	t.Cleanup(func() { metaDB.Close() })
+	t.Cleanup(func() { _ = metaDB.Close() })
 
 	// Run app migrations (creates catalog_metadata table)
 	if err := internaldb.RunMigrations(metaDB); err != nil {
@@ -926,7 +929,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		// same DB. Re-run migrations and re-seed into the DuckLake metaDB.
 		// Actually, we need to use the DuckLake metaDB for everything.
 		// Close the original metaDB and replace it.
-		metaDB.Close()
+		_ = metaDB.Close()
 		metaDB = env.MetaDB
 
 		// Re-seed RBAC data into the DuckLake metaDB (migrations already ran in setupLocalDuckLake)
@@ -994,7 +997,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 			if err != nil {
 				t.Fatalf("open duckdb for ext locations: %v", err)
 			}
-			t.Cleanup(func() { extDuckDB.Close() })
+			t.Cleanup(func() { _ = extDuckDB.Close() })
 		}
 		extLocationSvc = service.NewExternalLocationService(
 			extLocationRepo, storageCredRepo, authSvc, auditRepo,
@@ -1007,8 +1010,8 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		rowFilterSvc, columnMaskSvc, auditSvc,
 		manifestSvc, catalogSvc,
 		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
-		nil, // ingestionSvc
-		storageCredSvc, extLocationSvc,
+		nil,                                 // ingestionSvc
+		storageCredSvc, extLocationSvc, nil, // volumeSvc
 	)
 	strictHandler := api.NewStrictHandler(handler, nil)
 
@@ -1019,7 +1022,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	})
 
 	srv := httptest.NewServer(r)
-	t.Cleanup(func() { srv.Close() })
+	t.Cleanup(srv.Close)
 
 	return &httpTestEnv{
 		Server:         srv,
@@ -1047,7 +1050,7 @@ func doRequest(t *testing.T, method, url, apiKey string, body interface{}) *http
 		bodyReader = strings.NewReader(string(b))
 	}
 
-	req, err := http.NewRequest(method, url, bodyReader)
+	req, err := http.NewRequestWithContext(ctx, method, url, bodyReader)
 	if err != nil {
 		t.Fatalf("create request: %v", err)
 	}
@@ -1078,7 +1081,7 @@ func doRequestWithBearer(t *testing.T, method, url, token string, body interface
 		bodyReader = strings.NewReader(string(b))
 	}
 
-	req, err := http.NewRequest(method, url, bodyReader)
+	req, err := http.NewRequestWithContext(ctx, method, url, bodyReader)
 	if err != nil {
 		t.Fatalf("create request: %v", err)
 	}
@@ -1099,7 +1102,7 @@ func doRequestWithBearer(t *testing.T, method, url, token string, body interface
 // readBody reads and returns the response body, closing it afterwards.
 func readBody(t *testing.T, resp *http.Response) []byte {
 	t.Helper()
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatalf("read response body: %v", err)
@@ -1110,7 +1113,7 @@ func readBody(t *testing.T, resp *http.Response) []byte {
 // decodeJSON decodes a JSON response body into the given target.
 func decodeJSON(t *testing.T, resp *http.Response, target interface{}) {
 	t.Helper()
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 	if err := json.NewDecoder(resp.Body).Decode(target); err != nil {
 		t.Fatalf("decode response JSON: %v", err)
 	}
@@ -1137,7 +1140,7 @@ func generateJWT(t *testing.T, secret []byte, subject string, expiry time.Time) 
 func fetchAuditLogs(t *testing.T, serverURL, apiKey string) []map[string]interface{} {
 	t.Helper()
 
-	req, err := http.NewRequest("GET", serverURL+"/v1/audit-logs", nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", serverURL+"/v1/audit-logs", nil)
 	if err != nil {
 		t.Fatalf("create audit request: %v", err)
 	}
@@ -1147,7 +1150,7 @@ func fetchAuditLogs(t *testing.T, serverURL, apiKey string) []map[string]interfa
 	if err != nil {
 		t.Fatalf("fetch audit logs: %v", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)

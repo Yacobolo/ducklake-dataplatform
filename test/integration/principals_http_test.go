@@ -67,7 +67,7 @@ func TestHTTP_PrincipalCRUD(t *testing.T) {
 			body := map[string]interface{}{"is_admin": true}
 			resp := doRequest(t, "PUT", url, env.Keys.Admin, body)
 			require.Equal(t, 204, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 
 			// Verify by fetching the principal
 			getURL := fmt.Sprintf("%s/v1/principals/%d", env.Server.URL, int64(createdID))
@@ -83,19 +83,19 @@ func TestHTTP_PrincipalCRUD(t *testing.T) {
 			body := map[string]interface{}{"is_admin": false}
 			resp := doRequest(t, "PUT", url, env.Keys.Admin, body)
 			require.Equal(t, 204, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 		{"delete", func(t *testing.T) {
 			url := fmt.Sprintf("%s/v1/principals/%d", env.Server.URL, int64(createdID))
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 		{"get_after_delete_404", func(t *testing.T) {
 			url := fmt.Sprintf("%s/v1/principals/%d", env.Server.URL, int64(createdID))
 			resp := doRequest(t, "GET", url, env.Keys.Admin, nil)
 			assert.Equal(t, 404, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 	}
 	for _, s := range steps {
@@ -120,20 +120,20 @@ func TestHTTP_PrincipalErrors(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			resp := doRequest(t, "POST", env.Server.URL+"/v1/principals", env.Keys.Admin, tc.body)
 			assert.Equal(t, tc.wantStatus, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		})
 	}
 
 	t.Run("get_nonexistent_404", func(t *testing.T) {
 		resp := doRequest(t, "GET", env.Server.URL+"/v1/principals/99999", env.Keys.Admin, nil)
 		assert.Equal(t, 404, resp.StatusCode)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	})
 
 	t.Run("delete_nonexistent_404", func(t *testing.T) {
 		resp := doRequest(t, "DELETE", env.Server.URL+"/v1/principals/99999", env.Keys.Admin, nil)
 		assert.Equal(t, 404, resp.StatusCode)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	})
 }
 
@@ -146,7 +146,7 @@ func TestHTTP_PrincipalPagination(t *testing.T) {
 		body := map[string]interface{}{"name": fmt.Sprintf("page-user-%d", i), "type": "user"}
 		resp := doRequest(t, "POST", env.Server.URL+"/v1/principals", env.Keys.Admin, body)
 		require.Equal(t, 201, resp.StatusCode)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	}
 
 	// Paginate with page_size=3

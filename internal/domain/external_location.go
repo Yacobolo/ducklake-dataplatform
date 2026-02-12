@@ -5,6 +5,7 @@ import "time"
 // StorageType identifies the type of cloud storage.
 type StorageType string
 
+// Supported storage types for external locations.
 const (
 	StorageTypeS3    StorageType = "S3"
 	StorageTypeAzure StorageType = "AZURE"
@@ -14,6 +15,7 @@ const (
 // CredentialType identifies the type of credential.
 type CredentialType string
 
+// Supported credential types for storage access.
 const (
 	CredentialTypeS3    CredentialType = "S3"
 	CredentialTypeAzure CredentialType = "AZURE"

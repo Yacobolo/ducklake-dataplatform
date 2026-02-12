@@ -1,3 +1,4 @@
+// Package crypto provides encryption utilities for sensitive data at rest.
 package crypto
 
 import (

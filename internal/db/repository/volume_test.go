@@ -34,7 +34,7 @@ func TestVolume_CreateAndGet(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.NotNil(t, vol)
-	assert.Greater(t, vol.ID, int64(0))
+	assert.Positive(t, vol.ID)
 	assert.Equal(t, "my_volume", vol.Name)
 	assert.Equal(t, "analytics", vol.SchemaName)
 	assert.Equal(t, "lake", vol.CatalogName)
@@ -59,7 +59,8 @@ func TestVolume_GetByName_NotFound(t *testing.T) {
 
 	_, err := repo.GetByName(ctx, "analytics", "nonexistent")
 	require.Error(t, err)
-	assert.IsType(t, &domain.NotFoundError{}, err)
+	var notFound *domain.NotFoundError
+	assert.ErrorAs(t, err, &notFound)
 }
 
 func TestVolume_List(t *testing.T) {
@@ -106,7 +107,7 @@ func TestVolume_List(t *testing.T) {
 	vols, total, err = repo.List(ctx, "empty", domain.PageRequest{})
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), total)
-	assert.Len(t, vols, 0)
+	assert.Empty(t, vols)
 }
 
 func TestVolume_Update(t *testing.T) {
@@ -183,7 +184,8 @@ func TestVolume_Delete(t *testing.T) {
 
 	_, err = repo.GetByName(ctx, "analytics", "to_delete")
 	require.Error(t, err)
-	assert.IsType(t, &domain.NotFoundError{}, err)
+	var notFound *domain.NotFoundError
+	assert.ErrorAs(t, err, &notFound)
 }
 
 func TestVolume_UniqueConstraint(t *testing.T) {
@@ -209,7 +211,8 @@ func TestVolume_UniqueConstraint(t *testing.T) {
 		Owner:           "admin",
 	})
 	require.Error(t, err)
-	assert.IsType(t, &domain.ConflictError{}, err)
+	var conflict *domain.ConflictError
+	assert.ErrorAs(t, err, &conflict)
 }
 
 func TestVolume_SameNameDifferentSchema(t *testing.T) {

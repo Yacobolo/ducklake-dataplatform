@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"path/filepath"
 	"strings"
@@ -12,6 +13,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// ctx is a package-level background context used by all tests in this file.
+var ctx = context.Background()
 
 func TestBuildDSN_Write(t *testing.T) {
 	dsn := buildDSN("/tmp/test.sqlite", "write")
@@ -43,17 +47,17 @@ func TestOpenSQLite_InvalidMode(t *testing.T) {
 func TestOpenSQLite_Write(t *testing.T) {
 	db, err := OpenSQLite(filepath.Join(t.TempDir(), "test.db"), "write", 0)
 	require.NoError(t, err)
-	t.Cleanup(func() { db.Close() })
+	t.Cleanup(func() { _ = db.Close() })
 
 	// Verify WAL mode
 	var journalMode string
-	err = db.QueryRow("PRAGMA journal_mode").Scan(&journalMode)
+	err = db.QueryRowContext(ctx, "PRAGMA journal_mode").Scan(&journalMode)
 	require.NoError(t, err)
 	assert.Equal(t, "wal", strings.ToLower(journalMode))
 
 	// Verify busy_timeout
 	var busyTimeout int
-	err = db.QueryRow("PRAGMA busy_timeout").Scan(&busyTimeout)
+	err = db.QueryRowContext(ctx, "PRAGMA busy_timeout").Scan(&busyTimeout)
 	require.NoError(t, err)
 	assert.Equal(t, 5000, busyTimeout)
 
@@ -66,14 +70,14 @@ func TestOpenSQLite_Read(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "test.db")
 	wdb, err := OpenSQLite(path, "write", 0)
 	require.NoError(t, err)
-	wdb.Close()
+	_ = wdb.Close()
 
 	db, err := OpenSQLite(path, "read", 4)
 	require.NoError(t, err)
-	t.Cleanup(func() { db.Close() })
+	t.Cleanup(func() { _ = db.Close() })
 
 	var journalMode string
-	err = db.QueryRow("PRAGMA journal_mode").Scan(&journalMode)
+	err = db.QueryRowContext(ctx, "PRAGMA journal_mode").Scan(&journalMode)
 	require.NoError(t, err)
 	assert.Equal(t, "wal", strings.ToLower(journalMode))
 
@@ -84,7 +88,7 @@ func TestOpenSQLite_ReadDefaultMaxOpen(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "test.db")
 	db, err := OpenSQLite(path, "read", 0)
 	require.NoError(t, err)
-	t.Cleanup(func() { db.Close() })
+	t.Cleanup(func() { _ = db.Close() })
 
 	assert.Equal(t, 4, db.Stats().MaxOpenConnections)
 }
@@ -95,8 +99,8 @@ func TestOpenSQLitePair(t *testing.T) {
 	writeDB, readDB, err := OpenSQLitePair(path, 4)
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		writeDB.Close()
-		readDB.Close()
+		_ = writeDB.Close()
+		_ = readDB.Close()
 	})
 
 	// Write pool should have 1 connection
@@ -105,14 +109,14 @@ func TestOpenSQLitePair(t *testing.T) {
 	assert.Equal(t, 4, readDB.Stats().MaxOpenConnections)
 
 	// Write through write pool, read through read pool
-	_, err = writeDB.Exec("CREATE TABLE test (id INTEGER PRIMARY KEY, val TEXT)")
+	_, err = writeDB.ExecContext(ctx, "CREATE TABLE test (id INTEGER PRIMARY KEY, val TEXT)")
 	require.NoError(t, err)
 
-	_, err = writeDB.Exec("INSERT INTO test (val) VALUES ('hello')")
+	_, err = writeDB.ExecContext(ctx, "INSERT INTO test (val) VALUES ('hello')")
 	require.NoError(t, err)
 
 	var val string
-	err = readDB.QueryRow("SELECT val FROM test WHERE id = 1").Scan(&val)
+	err = readDB.QueryRowContext(ctx, "SELECT val FROM test WHERE id = 1").Scan(&val)
 	require.NoError(t, err)
 	assert.Equal(t, "hello", val)
 }
@@ -123,15 +127,15 @@ func TestOpenSQLitePair_ConcurrentReads(t *testing.T) {
 	writeDB, readDB, err := OpenSQLitePair(path, 4)
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		writeDB.Close()
-		readDB.Close()
+		_ = writeDB.Close()
+		_ = readDB.Close()
 	})
 
 	// Seed some data
-	_, err = writeDB.Exec("CREATE TABLE nums (n INTEGER)")
+	_, err = writeDB.ExecContext(ctx, "CREATE TABLE nums (n INTEGER)")
 	require.NoError(t, err)
 	for i := 0; i < 100; i++ {
-		_, err = writeDB.Exec("INSERT INTO nums (n) VALUES (?)", i)
+		_, err = writeDB.ExecContext(ctx, "INSERT INTO nums (n) VALUES (?)", i)
 		require.NoError(t, err)
 	}
 
@@ -143,7 +147,7 @@ func TestOpenSQLitePair_ConcurrentReads(t *testing.T) {
 		go func(idx int) {
 			defer wg.Done()
 			var count int
-			errs[idx] = readDB.QueryRow("SELECT count(*) FROM nums").Scan(&count)
+			errs[idx] = readDB.QueryRowContext(ctx, "SELECT count(*) FROM nums").Scan(&count)
 		}(i)
 	}
 	wg.Wait()
@@ -157,10 +161,10 @@ func TestOpenSQLite_ForeignKeysEnabled(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "test.db")
 	db, err := OpenSQLite(path, "write", 0)
 	require.NoError(t, err)
-	t.Cleanup(func() { db.Close() })
+	t.Cleanup(func() { _ = db.Close() })
 
 	var fk int
-	err = db.QueryRow("PRAGMA foreign_keys").Scan(&fk)
+	err = db.QueryRowContext(ctx, "PRAGMA foreign_keys").Scan(&fk)
 	require.NoError(t, err)
 	assert.Equal(t, 1, fk)
 }
@@ -186,13 +190,13 @@ func TestOpenSQLite_BusyTimeoutPreventsErrors(t *testing.T) {
 	writeDB, readDB, err := OpenSQLitePair(path, 4)
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		writeDB.Close()
-		readDB.Close()
+		_ = writeDB.Close()
+		_ = readDB.Close()
 	})
 
-	_, err = writeDB.Exec("CREATE TABLE counter (id INTEGER PRIMARY KEY, n INTEGER)")
+	_, err = writeDB.ExecContext(ctx, "CREATE TABLE counter (id INTEGER PRIMARY KEY, n INTEGER)")
 	require.NoError(t, err)
-	_, err = writeDB.Exec("INSERT INTO counter (id, n) VALUES (1, 0)")
+	_, err = writeDB.ExecContext(ctx, "INSERT INTO counter (id, n) VALUES (1, 0)")
 	require.NoError(t, err)
 
 	// Run concurrent writes and reads
@@ -204,26 +208,26 @@ func TestOpenSQLite_BusyTimeoutPreventsErrors(t *testing.T) {
 		wg.Add(2)
 		go func(idx int) {
 			defer wg.Done()
-			_, writeErrs[idx] = writeDB.Exec("UPDATE counter SET n = n + 1 WHERE id = 1")
+			_, writeErrs[idx] = writeDB.ExecContext(ctx, "UPDATE counter SET n = n + 1 WHERE id = 1")
 		}(i)
 		go func(idx int) {
 			defer wg.Done()
 			var n int
-			readErrs[idx] = readDB.QueryRow("SELECT n FROM counter WHERE id = 1").Scan(&n)
+			readErrs[idx] = readDB.QueryRowContext(ctx, "SELECT n FROM counter WHERE id = 1").Scan(&n)
 		}(i)
 	}
 	wg.Wait()
 
 	for i, e := range writeErrs {
-		assert.NoError(t, e, "writer %d failed", i)
+		require.NoError(t, e, "writer %d failed", i)
 	}
 	for i, e := range readErrs {
-		assert.NoError(t, e, "reader %d failed", i)
+		require.NoError(t, e, "reader %d failed", i)
 	}
 
 	// Verify final count
 	var n int
-	err = readDB.QueryRow("SELECT n FROM counter WHERE id = 1").Scan(&n)
+	err = readDB.QueryRowContext(ctx, "SELECT n FROM counter WHERE id = 1").Scan(&n)
 	require.NoError(t, err)
 	assert.Equal(t, 20, n)
 }

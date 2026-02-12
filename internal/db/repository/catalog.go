@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -24,6 +25,7 @@ type CatalogRepo struct {
 	logger  *slog.Logger
 }
 
+// NewCatalogRepo creates a new CatalogRepo.
 func NewCatalogRepo(metaDB, duckDB *sql.DB, logger *slog.Logger) *CatalogRepo {
 	return &CatalogRepo{metaDB: metaDB, duckDB: duckDB, q: dbstore.New(metaDB), logger: logger}
 }
@@ -144,7 +146,7 @@ func (r *CatalogRepo) GetSchema(ctx context.Context, name string) (*domain.Schem
 	err := r.metaDB.QueryRowContext(ctx,
 		`SELECT schema_id, schema_name FROM ducklake_schema WHERE schema_name = ? AND end_snapshot IS NULL`, name).
 		Scan(&s.SchemaID, &s.Name)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, domain.ErrNotFound("schema %q not found", name)
 	}
 	if err != nil {
@@ -173,7 +175,7 @@ func (r *CatalogRepo) ListSchemas(ctx context.Context, page domain.PageRequest) 
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	var schemas []domain.SchemaDetail
 	for rows.Next() {
@@ -240,13 +242,14 @@ func (r *CatalogRepo) DeleteSchema(ctx context.Context, name string, force bool)
 		rows, err := r.metaDB.QueryContext(ctx,
 			`SELECT table_id FROM ducklake_table WHERE schema_id = ? AND end_snapshot IS NULL`, schema.SchemaID)
 		if err == nil {
-			defer rows.Close()
+			defer rows.Close() //nolint:errcheck
 			for rows.Next() {
 				var tid int64
 				if err := rows.Scan(&tid); err == nil {
 					tableIDs = append(tableIDs, tid)
 				}
 			}
+			_ = rows.Err() // best-effort scan for cascade cleanup
 		}
 	}
 
@@ -414,7 +417,7 @@ func (r *CatalogRepo) GetTable(ctx context.Context, schemaName, tableName string
 	err := r.metaDB.QueryRowContext(ctx,
 		`SELECT schema_id, path FROM ducklake_schema WHERE schema_name = ? AND end_snapshot IS NULL`, schemaName).
 		Scan(&schemaID, &schemaPath)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, domain.ErrNotFound("schema %q not found", schemaName)
 	}
 	if err != nil {
@@ -428,7 +431,7 @@ func (r *CatalogRepo) GetTable(ctx context.Context, schemaName, tableName string
 		`SELECT table_id, table_name, path, path_is_relative FROM ducklake_table WHERE schema_id = ? AND table_name = ? AND end_snapshot IS NULL`,
 		schemaID, tableName).
 		Scan(&t.TableID, &t.Name, &tablePath, &tablePathIsRelative)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		// Fall back to external tables
 		if r.extRepo != nil {
 			et, extErr := r.extRepo.GetByName(ctx, schemaName, tableName)
@@ -478,7 +481,7 @@ func (r *CatalogRepo) ListTables(ctx context.Context, schemaName string, page do
 	err := r.metaDB.QueryRowContext(ctx,
 		`SELECT schema_id FROM ducklake_schema WHERE schema_name = ? AND end_snapshot IS NULL`, schemaName).
 		Scan(&schemaID)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, 0, domain.ErrNotFound("schema %q not found", schemaName)
 	}
 	if err != nil {
@@ -497,7 +500,7 @@ func (r *CatalogRepo) ListTables(ctx context.Context, schemaName string, page do
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	var tables []domain.TableDetail
 	for rows.Next() {
@@ -636,7 +639,7 @@ func (r *CatalogRepo) ListColumns(ctx context.Context, schemaName, tableName str
 	err := r.metaDB.QueryRowContext(ctx,
 		`SELECT schema_id FROM ducklake_schema WHERE schema_name = ? AND end_snapshot IS NULL`, schemaName).
 		Scan(&schemaID)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, 0, domain.ErrNotFound("schema %q not found", schemaName)
 	}
 	if err != nil {
@@ -647,7 +650,7 @@ func (r *CatalogRepo) ListColumns(ctx context.Context, schemaName, tableName str
 	err = r.metaDB.QueryRowContext(ctx,
 		`SELECT table_id FROM ducklake_table WHERE schema_id = ? AND table_name = ? AND end_snapshot IS NULL`,
 		schemaID, tableName).Scan(&tableID)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, 0, domain.ErrNotFound("table %q not found in schema %q", tableName, schemaName)
 	}
 	if err != nil {
@@ -666,7 +669,7 @@ func (r *CatalogRepo) ListColumns(ctx context.Context, schemaName, tableName str
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	var columns []domain.ColumnDetail
 	pos := page.Offset()
@@ -957,7 +960,7 @@ func (r *CatalogRepo) discoverColumns(ctx context.Context, sourcePath, fileForma
 	if err != nil {
 		return nil, fmt.Errorf("discover columns: %w", err)
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	var columns []domain.CreateColumnDef
 	colNames, _ := rows.Columns()
@@ -1022,7 +1025,7 @@ func (r *CatalogRepo) loadColumns(ctx context.Context, tableID int64) ([]domain.
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	var cols []domain.ColumnDetail
 	pos := 0

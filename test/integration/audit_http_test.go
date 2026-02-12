@@ -24,7 +24,7 @@ func TestHTTP_AuditLogs_Operations(t *testing.T) {
 			body := map[string]interface{}{"name": "audit-test-principal", "type": "user"}
 			resp := doRequest(t, "POST", env.Server.URL+"/v1/principals", env.Keys.Admin, body)
 			require.Equal(t, 201, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 
 			logs := fetchAuditLogs(t, env.Server.URL, env.Keys.Admin)
 			found := false
@@ -61,7 +61,7 @@ func TestHTTP_AuditLogs_Operations(t *testing.T) {
 			body := map[string]interface{}{"is_admin": true}
 			resp2 := doRequest(t, "PUT", url, env.Keys.Admin, body)
 			require.Equal(t, 204, resp2.StatusCode)
-			resp2.Body.Close()
+			_ = resp2.Body.Close()
 
 			logs := fetchAuditLogs(t, env.Server.URL, env.Keys.Admin)
 			found := false
@@ -94,7 +94,7 @@ func TestHTTP_AuditLogs_Operations(t *testing.T) {
 			url := fmt.Sprintf("%s/v1/principals/%d", env.Server.URL, principalID)
 			resp2 := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp2.StatusCode)
-			resp2.Body.Close()
+			_ = resp2.Body.Close()
 
 			logs := fetchAuditLogs(t, env.Server.URL, env.Keys.Admin)
 			found := false
@@ -124,7 +124,7 @@ func TestHTTP_AuditLogs_Filtering(t *testing.T) {
 		}
 		resp := doRequest(t, "POST", env.Server.URL+"/v1/principals", env.Keys.Admin, body)
 		require.Equal(t, 201, resp.StatusCode)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	}
 
 	t.Run("filter_by_action", func(t *testing.T) {
@@ -187,7 +187,7 @@ func TestHTTP_AuditLogs_Pagination(t *testing.T) {
 		}
 		resp := doRequest(t, "POST", env.Server.URL+"/v1/principals", env.Keys.Admin, body)
 		require.Equal(t, 201, resp.StatusCode)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	}
 
 	// Paginate with page_size=2

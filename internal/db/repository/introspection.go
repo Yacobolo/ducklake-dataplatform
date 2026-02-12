@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	"duck-demo/internal/domain"
 )
@@ -12,10 +13,12 @@ type IntrospectionRepo struct {
 	db *sql.DB
 }
 
+// NewIntrospectionRepo creates a new IntrospectionRepo.
 func NewIntrospectionRepo(db *sql.DB) *IntrospectionRepo {
 	return &IntrospectionRepo{db: db}
 }
 
+// ListSchemas returns a paginated list of schemas from the DuckLake metastore.
 func (r *IntrospectionRepo) ListSchemas(ctx context.Context, page domain.PageRequest) ([]domain.Schema, int64, error) {
 	var total int64
 	if err := r.db.QueryRowContext(ctx,
@@ -29,7 +32,7 @@ func (r *IntrospectionRepo) ListSchemas(ctx context.Context, page domain.PageReq
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	var schemas []domain.Schema
 	for rows.Next() {
@@ -42,6 +45,7 @@ func (r *IntrospectionRepo) ListSchemas(ctx context.Context, page domain.PageReq
 	return schemas, total, rows.Err()
 }
 
+// ListTables returns a paginated list of tables in a schema.
 func (r *IntrospectionRepo) ListTables(ctx context.Context, schemaID int64, page domain.PageRequest) ([]domain.Table, int64, error) {
 	var total int64
 	if err := r.db.QueryRowContext(ctx,
@@ -56,7 +60,7 @@ func (r *IntrospectionRepo) ListTables(ctx context.Context, schemaID int64, page
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	var tables []domain.Table
 	for rows.Next() {
@@ -69,12 +73,13 @@ func (r *IntrospectionRepo) ListTables(ctx context.Context, schemaID int64, page
 	return tables, total, rows.Err()
 }
 
+// GetTable returns a table by its ID.
 func (r *IntrospectionRepo) GetTable(ctx context.Context, tableID int64) (*domain.Table, error) {
 	var t domain.Table
 	err := r.db.QueryRowContext(ctx,
 		`SELECT table_id, schema_id, table_name FROM ducklake_table WHERE table_id = ? AND end_snapshot IS NULL`, tableID).
 		Scan(&t.ID, &t.SchemaID, &t.Name)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, &domain.NotFoundError{Message: "table not found"}
 	}
 	if err != nil {
@@ -83,6 +88,7 @@ func (r *IntrospectionRepo) GetTable(ctx context.Context, tableID int64) (*domai
 	return &t, nil
 }
 
+// ListColumns returns a paginated list of columns for a table.
 func (r *IntrospectionRepo) ListColumns(ctx context.Context, tableID int64, page domain.PageRequest) ([]domain.Column, int64, error) {
 	var total int64
 	if err := r.db.QueryRowContext(ctx,
@@ -97,7 +103,7 @@ func (r *IntrospectionRepo) ListColumns(ctx context.Context, tableID int64, page
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	var columns []domain.Column
 	for rows.Next() {
@@ -110,12 +116,13 @@ func (r *IntrospectionRepo) ListColumns(ctx context.Context, tableID int64, page
 	return columns, total, rows.Err()
 }
 
+// GetTableByName returns a table by its name.
 func (r *IntrospectionRepo) GetTableByName(ctx context.Context, tableName string) (*domain.Table, error) {
 	var t domain.Table
 	err := r.db.QueryRowContext(ctx,
 		`SELECT table_id, schema_id, table_name FROM ducklake_table WHERE table_name = ? AND end_snapshot IS NULL`, tableName).
 		Scan(&t.ID, &t.SchemaID, &t.Name)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, &domain.NotFoundError{Message: "table not found"}
 	}
 	if err != nil {
@@ -124,12 +131,13 @@ func (r *IntrospectionRepo) GetTableByName(ctx context.Context, tableName string
 	return &t, nil
 }
 
+// GetSchemaByName returns a schema by its name.
 func (r *IntrospectionRepo) GetSchemaByName(ctx context.Context, schemaName string) (*domain.Schema, error) {
 	var s domain.Schema
 	err := r.db.QueryRowContext(ctx,
 		`SELECT schema_id, schema_name FROM ducklake_schema WHERE schema_name = ? AND end_snapshot IS NULL`, schemaName).
 		Scan(&s.ID, &s.Name)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, &domain.NotFoundError{Message: "schema not found"}
 	}
 	if err != nil {

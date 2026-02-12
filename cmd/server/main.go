@@ -1,3 +1,4 @@
+// Package main is the entry point for the data platform server.
 package main
 
 import (
@@ -8,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	_ "github.com/duckdb/duckdb-go/v2"
 	"github.com/go-chi/chi/v5"
@@ -23,6 +25,13 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		fmt.Fprintf(os.Stderr, "fatal: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
 	ctx := context.Background()
 
 	// Load .env file (if present)
@@ -32,8 +41,7 @@ func main() {
 
 	cfg, err := config.LoadFromEnv()
 	if err != nil {
-		slog.Error("config", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("config: %w", err)
 	}
 
 	// Create structured logger
@@ -50,15 +58,13 @@ func main() {
 	// Open DuckDB (in-memory)
 	duckDB, err := sql.Open("duckdb", "")
 	if err != nil {
-		logger.Error("failed to open duckdb", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("open duckdb: %w", err)
 	}
-	defer duckDB.Close()
+	defer duckDB.Close() //nolint:errcheck
 
 	// Install DuckLake extensions (no credentials needed)
 	if err := engine.InstallExtensions(ctx, duckDB); err != nil {
-		logger.Error("install extensions", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("install extensions: %w", err)
 	}
 	logger.Info("DuckDB extensions installed", "extensions", "ducklake, sqlite, httpfs")
 
@@ -91,17 +97,15 @@ func main() {
 	// readDB:  4-connection pool for concurrent reads (WAL, no txlock).
 	writeDB, readDB, err := internaldb.OpenSQLitePair(cfg.MetaDBPath, 4)
 	if err != nil {
-		logger.Error("failed to open metastore", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("open metastore: %w", err)
 	}
-	defer writeDB.Close()
-	defer readDB.Close()
+	defer writeDB.Close() //nolint:errcheck
+	defer readDB.Close()  //nolint:errcheck
 
 	// Run migrations on the write pool (DDL requires write access)
 	logger.Info("running catalog migrations")
 	if err := internaldb.RunMigrations(writeDB); err != nil {
-		logger.Error("migration failed", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("migration: %w", err)
 	}
 
 	// Wire application dependencies
@@ -114,8 +118,7 @@ func main() {
 		Logger:          logger,
 	})
 	if err != nil {
-		logger.Error("app init", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("app init: %w", err)
 	}
 
 	// Create API handler
@@ -139,7 +142,7 @@ func main() {
 	r.Use(chimw.Recoverer)
 
 	// Public endpoints — no auth required
-	r.Get("/openapi.json", func(w http.ResponseWriter, r *http.Request) {
+	r.Get("/openapi.json", func(w http.ResponseWriter, _ *http.Request) {
 		swagger, err := api.GetSwagger()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -149,9 +152,9 @@ func main() {
 		_ = json.NewEncoder(w).Encode(swagger)
 	})
 
-	r.Get("/docs", func(w http.ResponseWriter, r *http.Request) {
+	r.Get("/docs", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
-		fmt.Fprint(w, `<!DOCTYPE html>
+		_, _ = fmt.Fprint(w, `<!DOCTYPE html>
 <html>
 <head>
     <title>DuckDB Data Platform API</title>
@@ -175,8 +178,15 @@ func main() {
 	// Start server
 	logger.Info("HTTP API listening", "addr", cfg.ListenAddr)
 	logger.Info("try", "curl", fmt.Sprintf("curl -H 'Authorization: Bearer <jwt>' http://localhost%s/v1/principals", cfg.ListenAddr))
-	if err := http.ListenAndServe(cfg.ListenAddr, r); err != nil {
-		logger.Error("server error", "error", err)
-		os.Exit(1)
+	srv := &http.Server{
+		Addr:         cfg.ListenAddr,
+		Handler:      r,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 60 * time.Second,
+		IdleTimeout:  120 * time.Second,
 	}
+	if err := srv.ListenAndServe(); err != nil {
+		return fmt.Errorf("server: %w", err)
+	}
+	return nil
 }

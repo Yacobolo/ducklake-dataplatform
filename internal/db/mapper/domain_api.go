@@ -1,3 +1,4 @@
+// Package mapper converts between domain, database, and API layer types.
 package mapper
 
 import (
