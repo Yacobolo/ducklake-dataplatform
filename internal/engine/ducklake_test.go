@@ -3,6 +3,8 @@ package engine_test
 import (
 	"context"
 	"database/sql"
+	"io"
+	"log/slog"
 	"os"
 	"testing"
 
@@ -206,7 +208,7 @@ func TestDuckLakeRBACIntegration(t *testing.T) {
 		RowFilterID: filter.ID, PrincipalID: analystsGroup.ID, PrincipalType: "group",
 	})
 
-	eng := engine.NewSecureEngine(db, cat)
+	eng := engine.NewSecureEngine(db, cat, slog.New(slog.NewTextHandler(io.Discard, nil)))
 
 	t.Run("AdminAccess", func(t *testing.T) {
 		rows, err := eng.Query(ctx, "admin", "SELECT * FROM titanic LIMIT 10")

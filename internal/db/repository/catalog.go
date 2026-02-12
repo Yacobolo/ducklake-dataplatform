@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -21,10 +21,11 @@ type CatalogRepo struct {
 	duckDB  *sql.DB
 	q       *dbstore.Queries // sqlc queries for application-owned tables
 	extRepo *ExternalTableRepo
+	logger  *slog.Logger
 }
 
-func NewCatalogRepo(metaDB, duckDB *sql.DB) *CatalogRepo {
-	return &CatalogRepo{metaDB: metaDB, duckDB: duckDB, q: dbstore.New(metaDB)}
+func NewCatalogRepo(metaDB, duckDB *sql.DB, logger *slog.Logger) *CatalogRepo {
+	return &CatalogRepo{metaDB: metaDB, duckDB: duckDB, q: dbstore.New(metaDB), logger: logger}
 }
 
 // SetExternalTableRepo sets the external table repository for external table support.
@@ -293,14 +294,14 @@ func (r *CatalogRepo) DeleteSchema(ctx context.Context, name string, force bool)
 		SecurableType: "schema",
 		SecurableName: name,
 	}); err != nil {
-		log.Printf("[WARN] cascade cleanup: soft-delete schema metadata: %v", err)
+		r.logger.Warn("cascade cleanup: soft-delete schema metadata", "schema", name, "error", err)
 	}
 	// Soft-delete table metadata for tables in this schema
 	if err := qtx.SoftDeleteCatalogMetadataByPattern(ctx, dbstore.SoftDeleteCatalogMetadataByPatternParams{
 		SecurableType: "table",
 		SecurableName: name + ".%",
 	}); err != nil {
-		log.Printf("[WARN] cascade cleanup: soft-delete table metadata: %v", err)
+		r.logger.Warn("cascade cleanup: soft-delete table metadata", "schema", name, "error", err)
 	}
 
 	// Cascade: remove tag assignments for the schema
@@ -308,32 +309,32 @@ func (r *CatalogRepo) DeleteSchema(ctx context.Context, name string, force bool)
 		SecurableType: "schema",
 		SecurableID:   schema.SchemaID,
 	}); err != nil {
-		log.Printf("[WARN] cascade cleanup: delete schema tag assignments: %v", err)
+		r.logger.Warn("cascade cleanup: delete schema tag assignments", "schema", name, "error", err)
 	}
 
 	// Cascade: clean up governance records for all tables in this schema
 	for _, tid := range tableIDs {
 		if err := qtx.DeleteRowFiltersByTable(ctx, tid); err != nil {
-			log.Printf("[WARN] cascade cleanup: delete row filters for table %d: %v", tid, err)
+			r.logger.Warn("cascade cleanup: delete row filters", "table_id", tid, "error", err)
 		}
 		if err := qtx.DeleteColumnMasksByTable(ctx, tid); err != nil {
-			log.Printf("[WARN] cascade cleanup: delete column masks for table %d: %v", tid, err)
+			r.logger.Warn("cascade cleanup: delete column masks", "table_id", tid, "error", err)
 		}
 		if err := qtx.DeleteTagAssignmentsBySecurableTypes(ctx, dbstore.DeleteTagAssignmentsBySecurableTypesParams{
 			SecurableType:   "table",
 			SecurableType_2: "column",
 			SecurableID:     tid,
 		}); err != nil {
-			log.Printf("[WARN] cascade cleanup: delete table tag assignments for %d: %v", tid, err)
+			r.logger.Warn("cascade cleanup: delete tag assignments", "table_id", tid, "error", err)
 		}
 	}
 
 	// Cascade: remove column metadata and table statistics
 	if err := qtx.DeleteColumnMetadataByTablePattern(ctx, name+".%"); err != nil {
-		log.Printf("[WARN] cascade cleanup: delete column metadata: %v", err)
+		r.logger.Warn("cascade cleanup: delete column metadata", "schema", name, "error", err)
 	}
 	if err := qtx.DeleteTableStatisticsByPattern(ctx, name+".%"); err != nil {
-		log.Printf("[WARN] cascade cleanup: delete table statistics: %v", err)
+		r.logger.Warn("cascade cleanup: delete table statistics", "schema", name, "error", err)
 	}
 
 	// Cascade: remove lineage edges referencing tables in this schema
@@ -341,12 +342,12 @@ func (r *CatalogRepo) DeleteSchema(ctx context.Context, name string, force bool)
 		SourceTable: name + ".%",
 		TargetTable: sql.NullString{String: name + ".%", Valid: true},
 	}); err != nil {
-		log.Printf("[WARN] cascade cleanup: delete lineage: %v", err)
+		r.logger.Warn("cascade cleanup: delete lineage", "schema", name, "error", err)
 	}
 
 	// Cascade: remove views in this schema
 	if err := qtx.DeleteViewsBySchema(ctx, schema.SchemaID); err != nil {
-		log.Printf("[WARN] cascade cleanup: delete views: %v", err)
+		r.logger.Warn("cascade cleanup: delete views", "schema", name, "error", err)
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -579,17 +580,17 @@ func (r *CatalogRepo) DeleteTable(ctx context.Context, schemaName, tableName str
 		SecurableType: "table",
 		SecurableName: securableName,
 	}); err != nil {
-		log.Printf("[WARN] cascade cleanup: soft-delete table metadata: %v", err)
+		r.logger.Warn("cascade cleanup: soft-delete table metadata", "table", securableName, "error", err)
 	}
 
 	// Cascade: remove row filters and their bindings
 	if err := qtx.DeleteRowFiltersByTable(ctx, tbl.TableID); err != nil {
-		log.Printf("[WARN] cascade cleanup: delete row filters: %v", err)
+		r.logger.Warn("cascade cleanup: delete row filters", "table", securableName, "error", err)
 	}
 
 	// Cascade: remove column masks and their bindings
 	if err := qtx.DeleteColumnMasksByTable(ctx, tbl.TableID); err != nil {
-		log.Printf("[WARN] cascade cleanup: delete column masks: %v", err)
+		r.logger.Warn("cascade cleanup: delete column masks", "table", securableName, "error", err)
 	}
 
 	// Cascade: remove tag assignments for this table and its columns
@@ -598,17 +599,17 @@ func (r *CatalogRepo) DeleteTable(ctx context.Context, schemaName, tableName str
 		SecurableType_2: "column",
 		SecurableID:     tbl.TableID,
 	}); err != nil {
-		log.Printf("[WARN] cascade cleanup: delete tag assignments: %v", err)
+		r.logger.Warn("cascade cleanup: delete tag assignments", "table", securableName, "error", err)
 	}
 
 	// Cascade: remove column metadata
 	if err := qtx.DeleteColumnMetadataByTable(ctx, securableName); err != nil {
-		log.Printf("[WARN] cascade cleanup: delete column metadata: %v", err)
+		r.logger.Warn("cascade cleanup: delete column metadata", "table", securableName, "error", err)
 	}
 
 	// Cascade: remove table statistics
 	if err := qtx.DeleteTableStatistics(ctx, securableName); err != nil {
-		log.Printf("[WARN] cascade cleanup: delete table statistics: %v", err)
+		r.logger.Warn("cascade cleanup: delete table statistics", "table", securableName, "error", err)
 	}
 
 	// Cascade: remove lineage edges referencing this table
@@ -617,7 +618,7 @@ func (r *CatalogRepo) DeleteTable(ctx context.Context, schemaName, tableName str
 		SourceTable: qualifiedName,
 		TargetTable: sql.NullString{String: qualifiedName, Valid: true},
 	}); err != nil {
-		log.Printf("[WARN] cascade cleanup: delete lineage: %v", err)
+		r.logger.Warn("cascade cleanup: delete lineage", "table", securableName, "error", err)
 	}
 
 	if err := tx.Commit(); err != nil {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
+	"log/slog"
 
 	"duck-demo/internal/ddl"
 	"duck-demo/internal/domain"
@@ -17,12 +17,13 @@ type SecureEngine struct {
 	db         *sql.DB
 	catalog    domain.AuthorizationService
 	infoSchema *InformationSchemaProvider
+	logger     *slog.Logger
 }
 
 // NewSecureEngine creates a SecureEngine with the given DuckDB connection
 // and authorization service (backed by the SQLite metastore).
-func NewSecureEngine(db *sql.DB, cat domain.AuthorizationService) *SecureEngine {
-	return &SecureEngine{db: db, catalog: cat}
+func NewSecureEngine(db *sql.DB, cat domain.AuthorizationService, logger *slog.Logger) *SecureEngine {
+	return &SecureEngine{db: db, catalog: cat, logger: logger}
 }
 
 // SetInformationSchemaProvider attaches an information_schema provider.
@@ -137,7 +138,7 @@ func (e *SecureEngine) Query(ctx context.Context, principalName, sqlQuery string
 		}
 	}
 
-	log.Printf("[audit] principal=%q stmt=%s tables=%v sql=%q", principalName, stmtType, tables, rewritten)
+	e.logger.Info("query executed", "principal", principalName, "statement", stmtType, "tables", tables, "sql", rewritten)
 
 	// 5. Execute
 	rows, err := e.db.QueryContext(ctx, rewritten)

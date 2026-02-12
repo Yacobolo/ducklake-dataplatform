@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -576,7 +577,7 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 	lineageSvc := service.NewLineageService(lineageRepo)
 	searchSvc := service.NewSearchService(searchRepo)
 	queryHistorySvc := service.NewQueryHistoryService(queryHistoryRepo)
-	catalogRepo := repository.NewCatalogRepo(metaDB, nil)
+	catalogRepo := repository.NewCatalogRepo(metaDB, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	viewSvc := service.NewViewService(viewRepo, catalogRepo, authSvc, auditRepo)
 
 	handler := api.NewHandler(
@@ -910,7 +911,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	querySvc := service.NewQueryService(nil, auditRepo, nil)
 
 	// catalogRepo with duckDB=nil is safe — GetSchema only reads ducklake_schema from metaDB
-	catalogRepo := repository.NewCatalogRepo(metaDB, nil)
+	catalogRepo := repository.NewCatalogRepo(metaDB, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	viewSvc := service.NewViewService(viewRepo, catalogRepo, authSvc, auditRepo)
 
 	var duckDB *sql.DB
@@ -963,7 +964,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		searchSvc = service.NewSearchService(searchRepo)
 		queryHistorySvc = service.NewQueryHistoryService(queryHistoryRepo)
 
-		catalogRepo = repository.NewCatalogRepo(metaDB, duckDB)
+		catalogRepo = repository.NewCatalogRepo(metaDB, duckDB, slog.New(slog.NewTextHandler(io.Discard, nil)))
 		viewSvc = service.NewViewService(viewRepo, catalogRepo, authSvc, auditRepo)
 		tableStatsRepo = repository.NewTableStatisticsRepo(metaDB)
 		catalogSvc = service.NewCatalogService(catalogRepo, authSvc, auditRepo, tagRepo, tableStatsRepo)
@@ -997,7 +998,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		}
 		extLocationSvc = service.NewExternalLocationService(
 			extLocationRepo, storageCredRepo, authSvc, auditRepo,
-			extDuckDB, "",
+			extDuckDB, "", slog.New(slog.NewTextHandler(io.Discard, nil)),
 		)
 	}
 

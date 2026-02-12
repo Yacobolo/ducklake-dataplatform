@@ -3,7 +3,7 @@ package config
 import (
 	"bufio"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"strings"
 )
@@ -20,6 +20,25 @@ type Config struct {
 	JWTSecret     string // secret key for JWT token validation
 	ListenAddr    string // HTTP listen address (default ":8080")
 	EncryptionKey string // 64-char hex string (32-byte AES key) for encrypting stored credentials
+	LogLevel      string // log level: debug, info, warn, error (default "info")
+
+	// Warnings collects non-fatal warnings generated during config loading.
+	// These are logged by the caller after the logger is initialised.
+	Warnings []string
+}
+
+// SlogLevel maps the LogLevel string to an slog.Level.
+func (c *Config) SlogLevel() slog.Level {
+	switch strings.ToLower(c.LogLevel) {
+	case "debug":
+		return slog.LevelDebug
+	case "warn", "warning":
+		return slog.LevelWarn
+	case "error":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
+	}
 }
 
 // HasS3Config returns true if all required S3 fields are set.
@@ -36,6 +55,7 @@ func LoadFromEnv() (*Config, error) {
 		JWTSecret:     os.Getenv("JWT_SECRET"),
 		ListenAddr:    os.Getenv("LISTEN_ADDR"),
 		EncryptionKey: os.Getenv("ENCRYPTION_KEY"),
+		LogLevel:      os.Getenv("LOG_LEVEL"),
 	}
 
 	// S3 fields are optional — only set if present
@@ -64,11 +84,14 @@ func LoadFromEnv() (*Config, error) {
 	}
 	if cfg.JWTSecret == "" {
 		cfg.JWTSecret = "dev-secret-change-in-production"
-		log.Println("[WARNING] JWT_SECRET not set — using insecure default. Set JWT_SECRET in production!")
+		cfg.Warnings = append(cfg.Warnings, "JWT_SECRET not set — using insecure default. Set JWT_SECRET in production!")
 	}
 	if cfg.EncryptionKey == "" {
 		cfg.EncryptionKey = "0000000000000000000000000000000000000000000000000000000000000000"
-		log.Println("[WARNING] ENCRYPTION_KEY not set — using insecure default. Set ENCRYPTION_KEY in production!")
+		cfg.Warnings = append(cfg.Warnings, "ENCRYPTION_KEY not set — using insecure default. Set ENCRYPTION_KEY in production!")
+	}
+	if cfg.LogLevel == "" {
+		cfg.LogLevel = "info"
 	}
 
 	return cfg, nil
