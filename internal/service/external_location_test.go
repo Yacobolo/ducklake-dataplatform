@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"database/sql"
-	"io"
 	"log/slog"
 	"testing"
 	"time"
@@ -17,7 +16,7 @@ import (
 )
 
 func discardLogger() *slog.Logger {
-	return slog.New(slog.NewTextHandler(io.Discard, nil))
+	return slog.New(slog.DiscardHandler)
 }
 
 // testDuckDB opens a fresh in-memory DuckDB with extensions installed.

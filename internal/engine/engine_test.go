@@ -3,7 +3,6 @@ package engine_test
 import (
 	"context"
 	"database/sql"
-	"io"
 	"log/slog"
 	"os"
 	"strings"
@@ -182,7 +181,7 @@ func setupEngine(t *testing.T) *engine.SecureEngine {
 	}
 
 	cat := setupTestCatalog(t)
-	return engine.NewSecureEngine(db, cat, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	return engine.NewSecureEngine(db, cat, slog.New(slog.DiscardHandler))
 }
 
 func TestAdminSeesAllRows(t *testing.T) {
