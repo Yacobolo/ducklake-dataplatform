@@ -24,6 +24,7 @@ type manifestService interface {
 	GetManifest(ctx context.Context, principalName, schemaName, tableName string) (*query.ManifestResult, error)
 }
 
+// ExecuteQuery implements the endpoint for executing a SQL query.
 func (h *APIHandler) ExecuteQuery(ctx context.Context, req ExecuteQueryRequestObject) (ExecuteQueryResponseObject, error) {
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	result, err := h.query.Execute(ctx, principal, req.Body.Sql)
@@ -42,6 +43,7 @@ func (h *APIHandler) ExecuteQuery(ctx context.Context, req ExecuteQueryRequestOb
 	}, nil
 }
 
+// CreateManifest implements the endpoint for generating a table read manifest.
 func (h *APIHandler) CreateManifest(ctx context.Context, req CreateManifestRequestObject) (CreateManifestResponseObject, error) {
 	principal, _ := middleware.PrincipalFromContext(ctx)
 

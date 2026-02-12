@@ -1,3 +1,4 @@
+// Package storage implements storage credential and location services.
 package storage
 
 import (
@@ -9,6 +10,8 @@ import (
 
 // StorageCredentialService provides CRUD operations for storage credentials
 // with RBAC enforcement and audit logging.
+//
+//nolint:revive // Name chosen for clarity across package boundaries
 type StorageCredentialService struct {
 	repo  domain.StorageCredentialRepository
 	auth  domain.AuthorizationService

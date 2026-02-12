@@ -56,6 +56,7 @@ type columnMaskService interface {
 
 // === Principals ===
 
+// ListPrincipals implements the endpoint for listing all principals.
 func (h *APIHandler) ListPrincipals(ctx context.Context, req ListPrincipalsRequestObject) (ListPrincipalsResponseObject, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	ps, total, err := h.principals.List(ctx, page)
@@ -70,6 +71,7 @@ func (h *APIHandler) ListPrincipals(ctx context.Context, req ListPrincipalsReque
 	return ListPrincipals200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
 }
 
+// CreatePrincipal implements the endpoint for creating a new principal.
 func (h *APIHandler) CreatePrincipal(ctx context.Context, req CreatePrincipalRequestObject) (CreatePrincipalResponseObject, error) {
 	p := &domain.Principal{
 		Name: req.Body.Name,
@@ -96,6 +98,7 @@ func (h *APIHandler) CreatePrincipal(ctx context.Context, req CreatePrincipalReq
 	return CreatePrincipal201JSONResponse(principalToAPI(*result)), nil
 }
 
+// GetPrincipal implements the endpoint for retrieving a principal by ID.
 func (h *APIHandler) GetPrincipal(ctx context.Context, req GetPrincipalRequestObject) (GetPrincipalResponseObject, error) {
 	p, err := h.principals.GetByID(ctx, req.PrincipalId)
 	if err != nil {
@@ -109,6 +112,7 @@ func (h *APIHandler) GetPrincipal(ctx context.Context, req GetPrincipalRequestOb
 	return GetPrincipal200JSONResponse(principalToAPI(*p)), nil
 }
 
+// DeletePrincipal implements the endpoint for deleting a principal by ID.
 func (h *APIHandler) DeletePrincipal(ctx context.Context, req DeletePrincipalRequestObject) (DeletePrincipalResponseObject, error) {
 	if err := h.principals.Delete(ctx, req.PrincipalId); err != nil {
 		switch {
@@ -123,6 +127,7 @@ func (h *APIHandler) DeletePrincipal(ctx context.Context, req DeletePrincipalReq
 	return DeletePrincipal204Response{}, nil
 }
 
+// UpdatePrincipalAdmin implements the endpoint for updating a principal's admin status.
 func (h *APIHandler) UpdatePrincipalAdmin(ctx context.Context, req UpdatePrincipalAdminRequestObject) (UpdatePrincipalAdminResponseObject, error) {
 	if err := h.principals.SetAdmin(ctx, req.PrincipalId, req.Body.IsAdmin); err != nil {
 		switch {
@@ -139,6 +144,7 @@ func (h *APIHandler) UpdatePrincipalAdmin(ctx context.Context, req UpdatePrincip
 
 // === Groups ===
 
+// ListGroups implements the endpoint for listing all groups.
 func (h *APIHandler) ListGroups(ctx context.Context, req ListGroupsRequestObject) (ListGroupsResponseObject, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	gs, total, err := h.groups.List(ctx, page)
@@ -153,6 +159,7 @@ func (h *APIHandler) ListGroups(ctx context.Context, req ListGroupsRequestObject
 	return ListGroups200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
 }
 
+// CreateGroup implements the endpoint for creating a new group.
 func (h *APIHandler) CreateGroup(ctx context.Context, req CreateGroupRequestObject) (CreateGroupResponseObject, error) {
 	g := &domain.Group{Name: req.Body.Name}
 	if req.Body.Description != nil {
@@ -170,6 +177,7 @@ func (h *APIHandler) CreateGroup(ctx context.Context, req CreateGroupRequestObje
 	return CreateGroup201JSONResponse(groupToAPI(*result)), nil
 }
 
+// GetGroup implements the endpoint for retrieving a group by ID.
 func (h *APIHandler) GetGroup(ctx context.Context, req GetGroupRequestObject) (GetGroupResponseObject, error) {
 	g, err := h.groups.GetByID(ctx, req.GroupId)
 	if err != nil {
@@ -183,6 +191,7 @@ func (h *APIHandler) GetGroup(ctx context.Context, req GetGroupRequestObject) (G
 	return GetGroup200JSONResponse(groupToAPI(*g)), nil
 }
 
+// DeleteGroup implements the endpoint for deleting a group by ID.
 func (h *APIHandler) DeleteGroup(ctx context.Context, req DeleteGroupRequestObject) (DeleteGroupResponseObject, error) {
 	if err := h.groups.Delete(ctx, req.GroupId); err != nil {
 		switch {
@@ -195,6 +204,7 @@ func (h *APIHandler) DeleteGroup(ctx context.Context, req DeleteGroupRequestObje
 	return DeleteGroup204Response{}, nil
 }
 
+// ListGroupMembers implements the endpoint for listing members of a group.
 func (h *APIHandler) ListGroupMembers(ctx context.Context, req ListGroupMembersRequestObject) (ListGroupMembersResponseObject, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	ms, total, err := h.groups.ListMembers(ctx, req.GroupId, page)
@@ -209,6 +219,7 @@ func (h *APIHandler) ListGroupMembers(ctx context.Context, req ListGroupMembersR
 	return ListGroupMembers200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
 }
 
+// CreateGroupMember implements the endpoint for adding a member to a group.
 func (h *APIHandler) CreateGroupMember(ctx context.Context, req CreateGroupMemberRequestObject) (CreateGroupMemberResponseObject, error) {
 	if err := h.groups.AddMember(ctx, &domain.GroupMember{
 		GroupID:    req.GroupId,
@@ -225,6 +236,7 @@ func (h *APIHandler) CreateGroupMember(ctx context.Context, req CreateGroupMembe
 	return CreateGroupMember204Response{}, nil
 }
 
+// DeleteGroupMember implements the endpoint for removing a member from a group.
 func (h *APIHandler) DeleteGroupMember(ctx context.Context, req DeleteGroupMemberRequestObject) (DeleteGroupMemberResponseObject, error) {
 	if err := h.groups.RemoveMember(ctx, &domain.GroupMember{
 		GroupID:    req.GroupId,
@@ -243,6 +255,7 @@ func (h *APIHandler) DeleteGroupMember(ctx context.Context, req DeleteGroupMembe
 
 // === Grants ===
 
+// ListGrants implements the endpoint for listing privilege grants filtered by principal or securable.
 func (h *APIHandler) ListGrants(ctx context.Context, req ListGrantsRequestObject) (ListGrantsResponseObject, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	var grants []domain.PrivilegeGrant
@@ -269,6 +282,7 @@ func (h *APIHandler) ListGrants(ctx context.Context, req ListGrantsRequestObject
 	return ListGrants200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
 }
 
+// CreateGrant implements the endpoint for granting a privilege to a principal.
 func (h *APIHandler) CreateGrant(ctx context.Context, req CreateGrantRequestObject) (CreateGrantResponseObject, error) {
 	g := &domain.PrivilegeGrant{
 		PrincipalID:   req.Body.PrincipalId,
@@ -290,6 +304,7 @@ func (h *APIHandler) CreateGrant(ctx context.Context, req CreateGrantRequestObje
 	return CreateGrant201JSONResponse(grantToAPI(*result)), nil
 }
 
+// DeleteGrant implements the endpoint for revoking a privilege from a principal.
 func (h *APIHandler) DeleteGrant(ctx context.Context, req DeleteGrantRequestObject) (DeleteGrantResponseObject, error) {
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	if err := h.grants.Revoke(ctx, principal, &domain.PrivilegeGrant{
@@ -311,6 +326,7 @@ func (h *APIHandler) DeleteGrant(ctx context.Context, req DeleteGrantRequestObje
 
 // === Row Filters ===
 
+// ListRowFilters implements the endpoint for listing row filters for a table.
 func (h *APIHandler) ListRowFilters(ctx context.Context, req ListRowFiltersRequestObject) (ListRowFiltersResponseObject, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	fs, total, err := h.rowFilters.GetForTable(ctx, req.TableId, page)
@@ -325,6 +341,7 @@ func (h *APIHandler) ListRowFilters(ctx context.Context, req ListRowFiltersReque
 	return ListRowFilters200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
 }
 
+// CreateRowFilter implements the endpoint for creating a row filter on a table.
 func (h *APIHandler) CreateRowFilter(ctx context.Context, req CreateRowFilterRequestObject) (CreateRowFilterResponseObject, error) {
 	f := &domain.RowFilter{
 		TableID:   req.TableId,
@@ -341,6 +358,7 @@ func (h *APIHandler) CreateRowFilter(ctx context.Context, req CreateRowFilterReq
 	return CreateRowFilter201JSONResponse(rowFilterToAPI(*result)), nil
 }
 
+// DeleteRowFilter implements the endpoint for deleting a row filter.
 func (h *APIHandler) DeleteRowFilter(ctx context.Context, req DeleteRowFilterRequestObject) (DeleteRowFilterResponseObject, error) {
 	if err := h.rowFilters.Delete(ctx, req.RowFilterId); err != nil {
 		return nil, err
@@ -348,6 +366,7 @@ func (h *APIHandler) DeleteRowFilter(ctx context.Context, req DeleteRowFilterReq
 	return DeleteRowFilter204Response{}, nil
 }
 
+// BindRowFilter implements the endpoint for binding a row filter to a principal.
 func (h *APIHandler) BindRowFilter(ctx context.Context, req BindRowFilterRequestObject) (BindRowFilterResponseObject, error) {
 	if err := h.rowFilters.Bind(ctx, &domain.RowFilterBinding{
 		RowFilterID:   req.RowFilterId,
@@ -359,6 +378,7 @@ func (h *APIHandler) BindRowFilter(ctx context.Context, req BindRowFilterRequest
 	return BindRowFilter204Response{}, nil
 }
 
+// UnbindRowFilter implements the endpoint for unbinding a row filter from a principal.
 func (h *APIHandler) UnbindRowFilter(ctx context.Context, req UnbindRowFilterRequestObject) (UnbindRowFilterResponseObject, error) {
 	if err := h.rowFilters.Unbind(ctx, &domain.RowFilterBinding{
 		RowFilterID:   req.RowFilterId,
@@ -370,6 +390,7 @@ func (h *APIHandler) UnbindRowFilter(ctx context.Context, req UnbindRowFilterReq
 	return UnbindRowFilter204Response{}, nil
 }
 
+// CreateRowFilterTopLevel implements the endpoint for creating a row filter without a table path parameter.
 func (h *APIHandler) CreateRowFilterTopLevel(ctx context.Context, req CreateRowFilterTopLevelRequestObject) (CreateRowFilterTopLevelResponseObject, error) {
 	if req.Body.TableId == nil {
 		return CreateRowFilterTopLevel400JSONResponse{Code: 400, Message: "table_id is required"}, nil
@@ -391,6 +412,7 @@ func (h *APIHandler) CreateRowFilterTopLevel(ctx context.Context, req CreateRowF
 
 // === Column Masks ===
 
+// ListColumnMasks implements the endpoint for listing column masks for a table.
 func (h *APIHandler) ListColumnMasks(ctx context.Context, req ListColumnMasksRequestObject) (ListColumnMasksResponseObject, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	ms, total, err := h.columnMasks.GetForTable(ctx, req.TableId, page)
@@ -405,6 +427,7 @@ func (h *APIHandler) ListColumnMasks(ctx context.Context, req ListColumnMasksReq
 	return ListColumnMasks200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
 }
 
+// CreateColumnMask implements the endpoint for creating a column mask on a table.
 func (h *APIHandler) CreateColumnMask(ctx context.Context, req CreateColumnMaskRequestObject) (CreateColumnMaskResponseObject, error) {
 	m := &domain.ColumnMask{
 		TableID:        req.TableId,
@@ -422,6 +445,7 @@ func (h *APIHandler) CreateColumnMask(ctx context.Context, req CreateColumnMaskR
 	return CreateColumnMask201JSONResponse(columnMaskToAPI(*result)), nil
 }
 
+// DeleteColumnMask implements the endpoint for deleting a column mask.
 func (h *APIHandler) DeleteColumnMask(ctx context.Context, req DeleteColumnMaskRequestObject) (DeleteColumnMaskResponseObject, error) {
 	if err := h.columnMasks.Delete(ctx, req.ColumnMaskId); err != nil {
 		return nil, err
@@ -429,6 +453,7 @@ func (h *APIHandler) DeleteColumnMask(ctx context.Context, req DeleteColumnMaskR
 	return DeleteColumnMask204Response{}, nil
 }
 
+// BindColumnMask implements the endpoint for binding a column mask to a principal.
 func (h *APIHandler) BindColumnMask(ctx context.Context, req BindColumnMaskRequestObject) (BindColumnMaskResponseObject, error) {
 	seeOriginal := false
 	if req.Body.SeeOriginal != nil {
@@ -445,6 +470,7 @@ func (h *APIHandler) BindColumnMask(ctx context.Context, req BindColumnMaskReque
 	return BindColumnMask204Response{}, nil
 }
 
+// UnbindColumnMask implements the endpoint for unbinding a column mask from a principal.
 func (h *APIHandler) UnbindColumnMask(ctx context.Context, req UnbindColumnMaskRequestObject) (UnbindColumnMaskResponseObject, error) {
 	if err := h.columnMasks.Unbind(ctx, &domain.ColumnMaskBinding{
 		ColumnMaskID:  req.ColumnMaskId,

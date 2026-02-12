@@ -1,4 +1,4 @@
-// Package service implements business logic for the data platform.
+// Package governance implements governance and audit services.
 package governance
 
 import (

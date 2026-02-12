@@ -43,6 +43,7 @@ type tagService interface {
 
 // === Audit Logs ===
 
+// ListAuditLogs implements the endpoint for listing audit log entries.
 func (h *APIHandler) ListAuditLogs(ctx context.Context, req ListAuditLogsRequestObject) (ListAuditLogsResponseObject, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	filter := domain.AuditFilter{
@@ -68,6 +69,7 @@ func (h *APIHandler) ListAuditLogs(ctx context.Context, req ListAuditLogsRequest
 
 // === Query History ===
 
+// ListQueryHistory implements the endpoint for listing query history entries.
 func (h *APIHandler) ListQueryHistory(ctx context.Context, req ListQueryHistoryRequestObject) (ListQueryHistoryResponseObject, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	filter := domain.QueryHistoryFilter{
@@ -94,6 +96,7 @@ func (h *APIHandler) ListQueryHistory(ctx context.Context, req ListQueryHistoryR
 
 // === Search ===
 
+// SearchCatalog implements the endpoint for searching catalog objects.
 func (h *APIHandler) SearchCatalog(ctx context.Context, req SearchCatalogRequestObject) (SearchCatalogResponseObject, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 
@@ -113,6 +116,7 @@ func (h *APIHandler) SearchCatalog(ctx context.Context, req SearchCatalogRequest
 
 // === Lineage ===
 
+// GetTableLineage implements the endpoint for retrieving full lineage of a table.
 func (h *APIHandler) GetTableLineage(ctx context.Context, req GetTableLineageRequestObject) (GetTableLineageResponseObject, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	tableName := req.SchemaName + "." + req.TableName
@@ -138,6 +142,7 @@ func (h *APIHandler) GetTableLineage(ctx context.Context, req GetTableLineageReq
 	}, nil
 }
 
+// GetUpstreamLineage implements the endpoint for retrieving upstream lineage edges.
 func (h *APIHandler) GetUpstreamLineage(ctx context.Context, req GetUpstreamLineageRequestObject) (GetUpstreamLineageResponseObject, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	tableName := req.SchemaName + "." + req.TableName
@@ -156,6 +161,7 @@ func (h *APIHandler) GetUpstreamLineage(ctx context.Context, req GetUpstreamLine
 	return GetUpstreamLineage200JSONResponse{Data: &data, NextPageToken: optStr(npt)}, nil
 }
 
+// GetDownstreamLineage implements the endpoint for retrieving downstream lineage edges.
 func (h *APIHandler) GetDownstreamLineage(ctx context.Context, req GetDownstreamLineageRequestObject) (GetDownstreamLineageResponseObject, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	tableName := req.SchemaName + "." + req.TableName
@@ -174,6 +180,7 @@ func (h *APIHandler) GetDownstreamLineage(ctx context.Context, req GetDownstream
 	return GetDownstreamLineage200JSONResponse{Data: &data, NextPageToken: optStr(npt)}, nil
 }
 
+// DeleteLineageEdge implements the endpoint for deleting a lineage edge by ID.
 func (h *APIHandler) DeleteLineageEdge(ctx context.Context, req DeleteLineageEdgeRequestObject) (DeleteLineageEdgeResponseObject, error) {
 	if err := h.lineage.DeleteEdge(ctx, req.EdgeId); err != nil {
 		switch {
@@ -186,6 +193,7 @@ func (h *APIHandler) DeleteLineageEdge(ctx context.Context, req DeleteLineageEdg
 	return DeleteLineageEdge204Response{}, nil
 }
 
+// PurgeLineage implements the endpoint for purging lineage data older than a threshold.
 func (h *APIHandler) PurgeLineage(ctx context.Context, req PurgeLineageRequestObject) (PurgeLineageResponseObject, error) {
 	deleted, err := h.lineage.PurgeOlderThan(ctx, req.Body.OlderThanDays)
 	if err != nil {
@@ -197,6 +205,7 @@ func (h *APIHandler) PurgeLineage(ctx context.Context, req PurgeLineageRequestOb
 
 // === Tags ===
 
+// ListTags implements the endpoint for listing all tags.
 func (h *APIHandler) ListTags(ctx context.Context, req ListTagsRequestObject) (ListTagsResponseObject, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	tags, total, err := h.tags.ListTags(ctx, page)
@@ -213,6 +222,7 @@ func (h *APIHandler) ListTags(ctx context.Context, req ListTagsRequestObject) (L
 	return ListTags200JSONResponse{Data: &data, NextPageToken: optStr(npt)}, nil
 }
 
+// CreateTag implements the endpoint for creating a new tag.
 func (h *APIHandler) CreateTag(ctx context.Context, req CreateTagRequestObject) (CreateTagResponseObject, error) {
 	tag := &domain.Tag{
 		Key:   req.Body.Key,
@@ -231,6 +241,7 @@ func (h *APIHandler) CreateTag(ctx context.Context, req CreateTagRequestObject) 
 	return CreateTag201JSONResponse(tagToAPI(*result)), nil
 }
 
+// DeleteTag implements the endpoint for deleting a tag by ID.
 func (h *APIHandler) DeleteTag(ctx context.Context, req DeleteTagRequestObject) (DeleteTagResponseObject, error) {
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	if err := h.tags.DeleteTag(ctx, principal, req.TagId); err != nil {
@@ -244,6 +255,7 @@ func (h *APIHandler) DeleteTag(ctx context.Context, req DeleteTagRequestObject) 
 	return DeleteTag204Response{}, nil
 }
 
+// CreateTagAssignment implements the endpoint for assigning a tag to a securable object.
 func (h *APIHandler) CreateTagAssignment(ctx context.Context, req CreateTagAssignmentRequestObject) (CreateTagAssignmentResponseObject, error) {
 	assignment := &domain.TagAssignment{
 		TagID:         req.TagId,
@@ -264,6 +276,7 @@ func (h *APIHandler) CreateTagAssignment(ctx context.Context, req CreateTagAssig
 	return CreateTagAssignment201JSONResponse(tagAssignmentToAPI(*result)), nil
 }
 
+// DeleteTagAssignment implements the endpoint for removing a tag assignment.
 func (h *APIHandler) DeleteTagAssignment(ctx context.Context, req DeleteTagAssignmentRequestObject) (DeleteTagAssignmentResponseObject, error) {
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	if err := h.tags.UnassignTag(ctx, principal, req.AssignmentId); err != nil {
@@ -272,6 +285,7 @@ func (h *APIHandler) DeleteTagAssignment(ctx context.Context, req DeleteTagAssig
 	return DeleteTagAssignment204Response{}, nil
 }
 
+// ListClassifications implements the endpoint for listing classification and sensitivity tags.
 func (h *APIHandler) ListClassifications(ctx context.Context, _ ListClassificationsRequestObject) (ListClassificationsResponseObject, error) {
 	page := domain.PageRequest{MaxResults: 100}
 	tags, _, err := h.tags.ListTags(ctx, page)

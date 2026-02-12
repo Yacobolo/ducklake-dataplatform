@@ -21,6 +21,7 @@ func NewMetastoreRepo(db *sql.DB) *MetastoreRepo {
 
 var _ domain.MetastoreQuerier = (*MetastoreRepo)(nil)
 
+// ReadDataPath returns the data_path value from the DuckLake metadata table.
 func (r *MetastoreRepo) ReadDataPath(ctx context.Context) (string, error) {
 	var dataPath string
 	err := r.db.QueryRowContext(ctx,
@@ -31,6 +32,7 @@ func (r *MetastoreRepo) ReadDataPath(ctx context.Context) (string, error) {
 	return dataPath, nil
 }
 
+// ReadSchemaPath returns the storage path for the given schema, or empty if none is set.
 func (r *MetastoreRepo) ReadSchemaPath(ctx context.Context, schemaName string) (string, error) {
 	var schemaPath string
 	err := r.db.QueryRowContext(ctx,
@@ -45,6 +47,7 @@ func (r *MetastoreRepo) ReadSchemaPath(ctx context.Context, schemaName string) (
 	return schemaPath, nil
 }
 
+// ListDataFiles returns the file paths and relative flags for active data files of the given table.
 func (r *MetastoreRepo) ListDataFiles(ctx context.Context, tableID int64) ([]string, []bool, error) {
 	rows, err := r.db.QueryContext(ctx,
 		`SELECT path, path_is_relative FROM ducklake_data_file
@@ -52,7 +55,7 @@ func (r *MetastoreRepo) ListDataFiles(ctx context.Context, tableID int64) ([]str
 	if err != nil {
 		return nil, nil, fmt.Errorf("query ducklake_data_file: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var paths []string
 	var isRelative []bool

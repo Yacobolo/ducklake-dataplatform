@@ -1,3 +1,4 @@
+// Package ingestion implements data ingestion services.
 package ingestion
 
 import (
@@ -15,6 +16,8 @@ import (
 
 // IngestionService handles Parquet file ingestion into DuckLake tables
 // via the ducklake_add_data_files() function.
+//
+//nolint:revive // Name chosen for clarity across package boundaries
 type IngestionService struct {
 	duckDB      *sql.DB
 	metastore   domain.MetastoreQuerier

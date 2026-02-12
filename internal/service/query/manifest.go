@@ -1,3 +1,4 @@
+// Package query implements query execution and manifest services.
 package query
 
 import (

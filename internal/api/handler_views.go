@@ -19,6 +19,7 @@ type viewService interface {
 
 // === Views ===
 
+// ListViews implements the endpoint for listing views in a schema.
 func (h *APIHandler) ListViews(ctx context.Context, req ListViewsRequestObject) (ListViewsResponseObject, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	views, total, err := h.views.ListViews(ctx, req.SchemaName, page)
@@ -40,6 +41,7 @@ func (h *APIHandler) ListViews(ctx context.Context, req ListViewsRequestObject) 
 	return ListViews200JSONResponse{Data: &data, NextPageToken: optStr(npt)}, nil
 }
 
+// CreateView implements the endpoint for creating a new view in a schema.
 func (h *APIHandler) CreateView(ctx context.Context, req CreateViewRequestObject) (CreateViewResponseObject, error) {
 	domReq := domain.CreateViewRequest{
 		Name:           req.Body.Name,
@@ -66,6 +68,7 @@ func (h *APIHandler) CreateView(ctx context.Context, req CreateViewRequestObject
 	return CreateView201JSONResponse(viewDetailToAPI(*result)), nil
 }
 
+// GetView implements the endpoint for retrieving a view by name.
 func (h *APIHandler) GetView(ctx context.Context, req GetViewRequestObject) (GetViewResponseObject, error) {
 	result, err := h.views.GetView(ctx, req.SchemaName, req.ViewName)
 	if err != nil {
@@ -79,6 +82,7 @@ func (h *APIHandler) GetView(ctx context.Context, req GetViewRequestObject) (Get
 	return GetView200JSONResponse(viewDetailToAPI(*result)), nil
 }
 
+// UpdateView implements the endpoint for updating a view by name.
 func (h *APIHandler) UpdateView(ctx context.Context, req UpdateViewRequestObject) (UpdateViewResponseObject, error) {
 	domReq := domain.UpdateViewRequest{}
 	if req.Body.Comment != nil {
@@ -106,6 +110,7 @@ func (h *APIHandler) UpdateView(ctx context.Context, req UpdateViewRequestObject
 	return UpdateView200JSONResponse(viewDetailToAPI(*result)), nil
 }
 
+// DeleteView implements the endpoint for deleting a view by name.
 func (h *APIHandler) DeleteView(ctx context.Context, req DeleteViewRequestObject) (DeleteViewResponseObject, error) {
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	if err := h.views.DeleteView(ctx, principal, req.SchemaName, req.ViewName); err != nil {

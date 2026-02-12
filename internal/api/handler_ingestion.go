@@ -22,6 +22,7 @@ type ingestionService interface {
 
 // === Ingestion ===
 
+// CreateUploadUrl implements the endpoint for generating a pre-signed upload URL.
 func (h *APIHandler) CreateUploadUrl(ctx context.Context, req CreateUploadUrlRequestObject) (CreateUploadUrlResponseObject, error) {
 	if h.ingestion == nil {
 		return CreateUploadUrl400JSONResponse{Code: 400, Message: "ingestion not available (S3 not configured)"}, nil
@@ -48,6 +49,7 @@ func (h *APIHandler) CreateUploadUrl(ctx context.Context, req CreateUploadUrlReq
 	}, nil
 }
 
+// CommitTableIngestion implements the endpoint for committing uploaded files to a table.
 func (h *APIHandler) CommitTableIngestion(ctx context.Context, req CommitTableIngestionRequestObject) (CommitTableIngestionResponseObject, error) {
 	if h.ingestion == nil {
 		return CommitTableIngestion400JSONResponse{Code: 400, Message: "ingestion not available (S3 not configured)"}, nil
@@ -86,6 +88,7 @@ func (h *APIHandler) CommitTableIngestion(ctx context.Context, req CommitTableIn
 	}, nil
 }
 
+// LoadTableExternalFiles implements the endpoint for loading external files into a table.
 func (h *APIHandler) LoadTableExternalFiles(ctx context.Context, req LoadTableExternalFilesRequestObject) (LoadTableExternalFilesResponseObject, error) {
 	if h.ingestion == nil {
 		return LoadTableExternalFiles400JSONResponse{Code: 400, Message: "ingestion not available (S3 not configured)"}, nil

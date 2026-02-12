@@ -19,6 +19,7 @@ type MockAuditRepo struct {
 	Entries  []*domain.AuditEntry // collected entries for assertions
 }
 
+// Insert implements the interface method for testing.
 func (m *MockAuditRepo) Insert(ctx context.Context, e *domain.AuditEntry) error {
 	if m.InsertFn != nil {
 		err := m.InsertFn(ctx, e)
@@ -32,6 +33,7 @@ func (m *MockAuditRepo) Insert(ctx context.Context, e *domain.AuditEntry) error 
 	return nil
 }
 
+// List implements the interface method for testing.
 func (m *MockAuditRepo) List(ctx context.Context, filter domain.AuditFilter) ([]domain.AuditEntry, int64, error) {
 	if m.ListFn != nil {
 		return m.ListFn(ctx, filter)
@@ -70,6 +72,7 @@ type MockAuthService struct {
 	GetTableColumnNamesFn     func(ctx context.Context, tableID int64) ([]string, error)
 }
 
+// LookupTableID implements the interface method for testing.
 func (m *MockAuthService) LookupTableID(ctx context.Context, tableName string) (int64, int64, bool, error) {
 	if m.LookupTableIDFn != nil {
 		return m.LookupTableIDFn(ctx, tableName)
@@ -77,6 +80,7 @@ func (m *MockAuthService) LookupTableID(ctx context.Context, tableName string) (
 	panic("unexpected call to MockAuthService.LookupTableID")
 }
 
+// CheckPrivilege implements the interface method for testing.
 func (m *MockAuthService) CheckPrivilege(ctx context.Context, principalName, securableType string, securableID int64, privilege string) (bool, error) {
 	if m.CheckPrivilegeFn != nil {
 		return m.CheckPrivilegeFn(ctx, principalName, securableType, securableID, privilege)
@@ -84,6 +88,7 @@ func (m *MockAuthService) CheckPrivilege(ctx context.Context, principalName, sec
 	panic("unexpected call to MockAuthService.CheckPrivilege")
 }
 
+// GetEffectiveRowFilters implements the interface method for testing.
 func (m *MockAuthService) GetEffectiveRowFilters(ctx context.Context, principalName string, tableID int64) ([]string, error) {
 	if m.GetEffectiveRowFiltersFn != nil {
 		return m.GetEffectiveRowFiltersFn(ctx, principalName, tableID)
@@ -91,6 +96,7 @@ func (m *MockAuthService) GetEffectiveRowFilters(ctx context.Context, principalN
 	panic("unexpected call to MockAuthService.GetEffectiveRowFilters")
 }
 
+// GetEffectiveColumnMasks implements the interface method for testing.
 func (m *MockAuthService) GetEffectiveColumnMasks(ctx context.Context, principalName string, tableID int64) (map[string]string, error) {
 	if m.GetEffectiveColumnMasksFn != nil {
 		return m.GetEffectiveColumnMasksFn(ctx, principalName, tableID)
@@ -98,6 +104,7 @@ func (m *MockAuthService) GetEffectiveColumnMasks(ctx context.Context, principal
 	panic("unexpected call to MockAuthService.GetEffectiveColumnMasks")
 }
 
+// GetTableColumnNames implements the interface method for testing.
 func (m *MockAuthService) GetTableColumnNames(ctx context.Context, tableID int64) ([]string, error) {
 	if m.GetTableColumnNamesFn != nil {
 		return m.GetTableColumnNamesFn(ctx, tableID)
@@ -121,6 +128,7 @@ type MockTagRepo struct {
 	ListAssignmentsForTagFn func(ctx context.Context, tagID int64) ([]domain.TagAssignment, error)
 }
 
+// CreateTag implements the interface method for testing.
 func (m *MockTagRepo) CreateTag(ctx context.Context, tag *domain.Tag) (*domain.Tag, error) {
 	if m.CreateTagFn != nil {
 		return m.CreateTagFn(ctx, tag)
@@ -128,6 +136,7 @@ func (m *MockTagRepo) CreateTag(ctx context.Context, tag *domain.Tag) (*domain.T
 	panic("unexpected call to MockTagRepo.CreateTag")
 }
 
+// GetTag implements the interface method for testing.
 func (m *MockTagRepo) GetTag(ctx context.Context, id int64) (*domain.Tag, error) {
 	if m.GetTagFn != nil {
 		return m.GetTagFn(ctx, id)
@@ -135,6 +144,7 @@ func (m *MockTagRepo) GetTag(ctx context.Context, id int64) (*domain.Tag, error)
 	panic("unexpected call to MockTagRepo.GetTag")
 }
 
+// ListTags implements the interface method for testing.
 func (m *MockTagRepo) ListTags(ctx context.Context, page domain.PageRequest) ([]domain.Tag, int64, error) {
 	if m.ListTagsFn != nil {
 		return m.ListTagsFn(ctx, page)
@@ -142,6 +152,7 @@ func (m *MockTagRepo) ListTags(ctx context.Context, page domain.PageRequest) ([]
 	panic("unexpected call to MockTagRepo.ListTags")
 }
 
+// DeleteTag implements the interface method for testing.
 func (m *MockTagRepo) DeleteTag(ctx context.Context, id int64) error {
 	if m.DeleteTagFn != nil {
 		return m.DeleteTagFn(ctx, id)
@@ -149,6 +160,7 @@ func (m *MockTagRepo) DeleteTag(ctx context.Context, id int64) error {
 	panic("unexpected call to MockTagRepo.DeleteTag")
 }
 
+// AssignTag implements the interface method for testing.
 func (m *MockTagRepo) AssignTag(ctx context.Context, assignment *domain.TagAssignment) (*domain.TagAssignment, error) {
 	if m.AssignTagFn != nil {
 		return m.AssignTagFn(ctx, assignment)
@@ -156,6 +168,7 @@ func (m *MockTagRepo) AssignTag(ctx context.Context, assignment *domain.TagAssig
 	panic("unexpected call to MockTagRepo.AssignTag")
 }
 
+// UnassignTag implements the interface method for testing.
 func (m *MockTagRepo) UnassignTag(ctx context.Context, id int64) error {
 	if m.UnassignTagFn != nil {
 		return m.UnassignTagFn(ctx, id)
@@ -163,6 +176,7 @@ func (m *MockTagRepo) UnassignTag(ctx context.Context, id int64) error {
 	panic("unexpected call to MockTagRepo.UnassignTag")
 }
 
+// ListTagsForSecurable implements the interface method for testing.
 func (m *MockTagRepo) ListTagsForSecurable(ctx context.Context, securableType string, securableID int64, columnName *string) ([]domain.Tag, error) {
 	if m.ListTagsForSecurableFn != nil {
 		return m.ListTagsForSecurableFn(ctx, securableType, securableID, columnName)
@@ -170,6 +184,7 @@ func (m *MockTagRepo) ListTagsForSecurable(ctx context.Context, securableType st
 	panic("unexpected call to MockTagRepo.ListTagsForSecurable")
 }
 
+// ListAssignmentsForTag implements the interface method for testing.
 func (m *MockTagRepo) ListAssignmentsForTag(ctx context.Context, tagID int64) ([]domain.TagAssignment, error) {
 	if m.ListAssignmentsForTagFn != nil {
 		return m.ListAssignmentsForTagFn(ctx, tagID)
@@ -190,6 +205,7 @@ type MockLineageRepo struct {
 	PurgeOlderThanFn func(ctx context.Context, before time.Time) (int64, error)
 }
 
+// InsertEdge implements the interface method for testing.
 func (m *MockLineageRepo) InsertEdge(ctx context.Context, edge *domain.LineageEdge) error {
 	if m.InsertEdgeFn != nil {
 		return m.InsertEdgeFn(ctx, edge)
@@ -197,6 +213,7 @@ func (m *MockLineageRepo) InsertEdge(ctx context.Context, edge *domain.LineageEd
 	panic("unexpected call to MockLineageRepo.InsertEdge")
 }
 
+// GetUpstream implements the interface method for testing.
 func (m *MockLineageRepo) GetUpstream(ctx context.Context, tableName string, page domain.PageRequest) ([]domain.LineageEdge, int64, error) {
 	if m.GetUpstreamFn != nil {
 		return m.GetUpstreamFn(ctx, tableName, page)
@@ -204,6 +221,7 @@ func (m *MockLineageRepo) GetUpstream(ctx context.Context, tableName string, pag
 	panic("unexpected call to MockLineageRepo.GetUpstream")
 }
 
+// GetDownstream implements the interface method for testing.
 func (m *MockLineageRepo) GetDownstream(ctx context.Context, tableName string, page domain.PageRequest) ([]domain.LineageEdge, int64, error) {
 	if m.GetDownstreamFn != nil {
 		return m.GetDownstreamFn(ctx, tableName, page)
@@ -211,6 +229,7 @@ func (m *MockLineageRepo) GetDownstream(ctx context.Context, tableName string, p
 	panic("unexpected call to MockLineageRepo.GetDownstream")
 }
 
+// DeleteEdge implements the interface method for testing.
 func (m *MockLineageRepo) DeleteEdge(ctx context.Context, id int64) error {
 	if m.DeleteEdgeFn != nil {
 		return m.DeleteEdgeFn(ctx, id)
@@ -218,6 +237,7 @@ func (m *MockLineageRepo) DeleteEdge(ctx context.Context, id int64) error {
 	panic("unexpected call to MockLineageRepo.DeleteEdge")
 }
 
+// PurgeOlderThan implements the interface method for testing.
 func (m *MockLineageRepo) PurgeOlderThan(ctx context.Context, before time.Time) (int64, error) {
 	if m.PurgeOlderThanFn != nil {
 		return m.PurgeOlderThanFn(ctx, before)
@@ -234,6 +254,7 @@ type MockQueryHistoryRepo struct {
 	ListFn func(ctx context.Context, filter domain.QueryHistoryFilter) ([]domain.QueryHistoryEntry, int64, error)
 }
 
+// List implements the interface method for testing.
 func (m *MockQueryHistoryRepo) List(ctx context.Context, filter domain.QueryHistoryFilter) ([]domain.QueryHistoryEntry, int64, error) {
 	if m.ListFn != nil {
 		return m.ListFn(ctx, filter)
@@ -254,6 +275,7 @@ type MockViewRepo struct {
 	UpdateFn    func(ctx context.Context, schemaID int64, viewName string, comment *string, props map[string]string, viewDef *string) (*domain.ViewDetail, error)
 }
 
+// Create implements the interface method for testing.
 func (m *MockViewRepo) Create(ctx context.Context, view *domain.ViewDetail) (*domain.ViewDetail, error) {
 	if m.CreateFn != nil {
 		return m.CreateFn(ctx, view)
@@ -261,6 +283,7 @@ func (m *MockViewRepo) Create(ctx context.Context, view *domain.ViewDetail) (*do
 	panic("unexpected call to MockViewRepo.Create")
 }
 
+// GetByName implements the interface method for testing.
 func (m *MockViewRepo) GetByName(ctx context.Context, schemaID int64, viewName string) (*domain.ViewDetail, error) {
 	if m.GetByNameFn != nil {
 		return m.GetByNameFn(ctx, schemaID, viewName)
@@ -268,6 +291,7 @@ func (m *MockViewRepo) GetByName(ctx context.Context, schemaID int64, viewName s
 	panic("unexpected call to MockViewRepo.GetByName")
 }
 
+// List implements the interface method for testing.
 func (m *MockViewRepo) List(ctx context.Context, schemaID int64, page domain.PageRequest) ([]domain.ViewDetail, int64, error) {
 	if m.ListFn != nil {
 		return m.ListFn(ctx, schemaID, page)
@@ -275,6 +299,7 @@ func (m *MockViewRepo) List(ctx context.Context, schemaID int64, page domain.Pag
 	panic("unexpected call to MockViewRepo.List")
 }
 
+// Delete implements the interface method for testing.
 func (m *MockViewRepo) Delete(ctx context.Context, schemaID int64, viewName string) error {
 	if m.DeleteFn != nil {
 		return m.DeleteFn(ctx, schemaID, viewName)
@@ -282,6 +307,7 @@ func (m *MockViewRepo) Delete(ctx context.Context, schemaID int64, viewName stri
 	panic("unexpected call to MockViewRepo.Delete")
 }
 
+// Update implements the interface method for testing.
 func (m *MockViewRepo) Update(ctx context.Context, schemaID int64, viewName string, comment *string, props map[string]string, viewDef *string) (*domain.ViewDetail, error) {
 	if m.UpdateFn != nil {
 		return m.UpdateFn(ctx, schemaID, viewName, comment, props, viewDef)
@@ -298,6 +324,7 @@ type MockSearchRepo struct {
 	SearchFn func(ctx context.Context, query string, objectType *string, maxResults int, offset int) ([]domain.SearchResult, int64, error)
 }
 
+// Search implements the interface method for testing.
 func (m *MockSearchRepo) Search(ctx context.Context, query string, objectType *string, maxResults int, offset int) ([]domain.SearchResult, int64, error) {
 	if m.SearchFn != nil {
 		return m.SearchFn(ctx, query, objectType, maxResults, offset)
@@ -331,6 +358,7 @@ type MockCatalogRepo struct {
 	SetSchemaStoragePathFn func(ctx context.Context, schemaID int64, path string) error
 }
 
+// GetCatalogInfo implements the interface method for testing.
 func (m *MockCatalogRepo) GetCatalogInfo(ctx context.Context) (*domain.CatalogInfo, error) {
 	if m.GetCatalogInfoFn != nil {
 		return m.GetCatalogInfoFn(ctx)
@@ -338,6 +366,7 @@ func (m *MockCatalogRepo) GetCatalogInfo(ctx context.Context) (*domain.CatalogIn
 	panic("unexpected call to MockCatalogRepo.GetCatalogInfo")
 }
 
+// GetMetastoreSummary implements the interface method for testing.
 func (m *MockCatalogRepo) GetMetastoreSummary(ctx context.Context) (*domain.MetastoreSummary, error) {
 	if m.GetMetastoreSummaryFn != nil {
 		return m.GetMetastoreSummaryFn(ctx)
@@ -345,6 +374,7 @@ func (m *MockCatalogRepo) GetMetastoreSummary(ctx context.Context) (*domain.Meta
 	panic("unexpected call to MockCatalogRepo.GetMetastoreSummary")
 }
 
+// CreateSchema implements the interface method for testing.
 func (m *MockCatalogRepo) CreateSchema(ctx context.Context, name, comment, owner string) (*domain.SchemaDetail, error) {
 	if m.CreateSchemaFn != nil {
 		return m.CreateSchemaFn(ctx, name, comment, owner)
@@ -352,6 +382,7 @@ func (m *MockCatalogRepo) CreateSchema(ctx context.Context, name, comment, owner
 	panic("unexpected call to MockCatalogRepo.CreateSchema")
 }
 
+// GetSchema implements the interface method for testing.
 func (m *MockCatalogRepo) GetSchema(ctx context.Context, name string) (*domain.SchemaDetail, error) {
 	if m.GetSchemaFn != nil {
 		return m.GetSchemaFn(ctx, name)
@@ -359,6 +390,7 @@ func (m *MockCatalogRepo) GetSchema(ctx context.Context, name string) (*domain.S
 	panic("unexpected call to MockCatalogRepo.GetSchema")
 }
 
+// ListSchemas implements the interface method for testing.
 func (m *MockCatalogRepo) ListSchemas(ctx context.Context, page domain.PageRequest) ([]domain.SchemaDetail, int64, error) {
 	if m.ListSchemasFn != nil {
 		return m.ListSchemasFn(ctx, page)
@@ -366,6 +398,7 @@ func (m *MockCatalogRepo) ListSchemas(ctx context.Context, page domain.PageReque
 	panic("unexpected call to MockCatalogRepo.ListSchemas")
 }
 
+// UpdateSchema implements the interface method for testing.
 func (m *MockCatalogRepo) UpdateSchema(ctx context.Context, name string, comment *string, props map[string]string) (*domain.SchemaDetail, error) {
 	if m.UpdateSchemaFn != nil {
 		return m.UpdateSchemaFn(ctx, name, comment, props)
@@ -373,6 +406,7 @@ func (m *MockCatalogRepo) UpdateSchema(ctx context.Context, name string, comment
 	panic("unexpected call to MockCatalogRepo.UpdateSchema")
 }
 
+// DeleteSchema implements the interface method for testing.
 func (m *MockCatalogRepo) DeleteSchema(ctx context.Context, name string, force bool) error {
 	if m.DeleteSchemaFn != nil {
 		return m.DeleteSchemaFn(ctx, name, force)
@@ -380,6 +414,7 @@ func (m *MockCatalogRepo) DeleteSchema(ctx context.Context, name string, force b
 	panic("unexpected call to MockCatalogRepo.DeleteSchema")
 }
 
+// CreateTable implements the interface method for testing.
 func (m *MockCatalogRepo) CreateTable(ctx context.Context, schemaName string, req domain.CreateTableRequest, owner string) (*domain.TableDetail, error) {
 	if m.CreateTableFn != nil {
 		return m.CreateTableFn(ctx, schemaName, req, owner)
@@ -387,6 +422,7 @@ func (m *MockCatalogRepo) CreateTable(ctx context.Context, schemaName string, re
 	panic("unexpected call to MockCatalogRepo.CreateTable")
 }
 
+// CreateExternalTable implements the interface method for testing.
 func (m *MockCatalogRepo) CreateExternalTable(ctx context.Context, schemaName string, req domain.CreateTableRequest, owner string) (*domain.TableDetail, error) {
 	if m.CreateExternalTableFn != nil {
 		return m.CreateExternalTableFn(ctx, schemaName, req, owner)
@@ -394,6 +430,7 @@ func (m *MockCatalogRepo) CreateExternalTable(ctx context.Context, schemaName st
 	panic("unexpected call to MockCatalogRepo.CreateExternalTable")
 }
 
+// GetTable implements the interface method for testing.
 func (m *MockCatalogRepo) GetTable(ctx context.Context, schemaName, tableName string) (*domain.TableDetail, error) {
 	if m.GetTableFn != nil {
 		return m.GetTableFn(ctx, schemaName, tableName)
@@ -401,6 +438,7 @@ func (m *MockCatalogRepo) GetTable(ctx context.Context, schemaName, tableName st
 	panic("unexpected call to MockCatalogRepo.GetTable")
 }
 
+// ListTables implements the interface method for testing.
 func (m *MockCatalogRepo) ListTables(ctx context.Context, schemaName string, page domain.PageRequest) ([]domain.TableDetail, int64, error) {
 	if m.ListTablesFn != nil {
 		return m.ListTablesFn(ctx, schemaName, page)
@@ -408,6 +446,7 @@ func (m *MockCatalogRepo) ListTables(ctx context.Context, schemaName string, pag
 	panic("unexpected call to MockCatalogRepo.ListTables")
 }
 
+// DeleteTable implements the interface method for testing.
 func (m *MockCatalogRepo) DeleteTable(ctx context.Context, schemaName, tableName string) error {
 	if m.DeleteTableFn != nil {
 		return m.DeleteTableFn(ctx, schemaName, tableName)
@@ -415,6 +454,7 @@ func (m *MockCatalogRepo) DeleteTable(ctx context.Context, schemaName, tableName
 	panic("unexpected call to MockCatalogRepo.DeleteTable")
 }
 
+// UpdateTable implements the interface method for testing.
 func (m *MockCatalogRepo) UpdateTable(ctx context.Context, schemaName, tableName string, comment *string, props map[string]string, owner *string) (*domain.TableDetail, error) {
 	if m.UpdateTableFn != nil {
 		return m.UpdateTableFn(ctx, schemaName, tableName, comment, props, owner)
@@ -422,6 +462,7 @@ func (m *MockCatalogRepo) UpdateTable(ctx context.Context, schemaName, tableName
 	panic("unexpected call to MockCatalogRepo.UpdateTable")
 }
 
+// UpdateCatalog implements the interface method for testing.
 func (m *MockCatalogRepo) UpdateCatalog(ctx context.Context, comment *string) (*domain.CatalogInfo, error) {
 	if m.UpdateCatalogFn != nil {
 		return m.UpdateCatalogFn(ctx, comment)
@@ -429,6 +470,7 @@ func (m *MockCatalogRepo) UpdateCatalog(ctx context.Context, comment *string) (*
 	panic("unexpected call to MockCatalogRepo.UpdateCatalog")
 }
 
+// UpdateColumn implements the interface method for testing.
 func (m *MockCatalogRepo) UpdateColumn(ctx context.Context, schemaName, tableName, columnName string, comment *string, props map[string]string) (*domain.ColumnDetail, error) {
 	if m.UpdateColumnFn != nil {
 		return m.UpdateColumnFn(ctx, schemaName, tableName, columnName, comment, props)
@@ -436,6 +478,7 @@ func (m *MockCatalogRepo) UpdateColumn(ctx context.Context, schemaName, tableNam
 	panic("unexpected call to MockCatalogRepo.UpdateColumn")
 }
 
+// ListColumns implements the interface method for testing.
 func (m *MockCatalogRepo) ListColumns(ctx context.Context, schemaName, tableName string, page domain.PageRequest) ([]domain.ColumnDetail, int64, error) {
 	if m.ListColumnsFn != nil {
 		return m.ListColumnsFn(ctx, schemaName, tableName, page)
@@ -443,6 +486,7 @@ func (m *MockCatalogRepo) ListColumns(ctx context.Context, schemaName, tableName
 	panic("unexpected call to MockCatalogRepo.ListColumns")
 }
 
+// SetSchemaStoragePath implements the interface method for testing.
 func (m *MockCatalogRepo) SetSchemaStoragePath(ctx context.Context, schemaID int64, path string) error {
 	if m.SetSchemaStoragePathFn != nil {
 		return m.SetSchemaStoragePathFn(ctx, schemaID, path)
@@ -464,6 +508,7 @@ type MockStorageCredentialRepo struct {
 	DeleteFn    func(ctx context.Context, id int64) error
 }
 
+// Create implements the interface method for testing.
 func (m *MockStorageCredentialRepo) Create(ctx context.Context, cred *domain.StorageCredential) (*domain.StorageCredential, error) {
 	if m.CreateFn != nil {
 		return m.CreateFn(ctx, cred)
@@ -471,6 +516,7 @@ func (m *MockStorageCredentialRepo) Create(ctx context.Context, cred *domain.Sto
 	panic("unexpected call to MockStorageCredentialRepo.Create")
 }
 
+// GetByID implements the interface method for testing.
 func (m *MockStorageCredentialRepo) GetByID(ctx context.Context, id int64) (*domain.StorageCredential, error) {
 	if m.GetByIDFn != nil {
 		return m.GetByIDFn(ctx, id)
@@ -478,6 +524,7 @@ func (m *MockStorageCredentialRepo) GetByID(ctx context.Context, id int64) (*dom
 	panic("unexpected call to MockStorageCredentialRepo.GetByID")
 }
 
+// GetByName implements the interface method for testing.
 func (m *MockStorageCredentialRepo) GetByName(ctx context.Context, name string) (*domain.StorageCredential, error) {
 	if m.GetByNameFn != nil {
 		return m.GetByNameFn(ctx, name)
@@ -485,6 +532,7 @@ func (m *MockStorageCredentialRepo) GetByName(ctx context.Context, name string) 
 	panic("unexpected call to MockStorageCredentialRepo.GetByName")
 }
 
+// List implements the interface method for testing.
 func (m *MockStorageCredentialRepo) List(ctx context.Context, page domain.PageRequest) ([]domain.StorageCredential, int64, error) {
 	if m.ListFn != nil {
 		return m.ListFn(ctx, page)
@@ -492,6 +540,7 @@ func (m *MockStorageCredentialRepo) List(ctx context.Context, page domain.PageRe
 	panic("unexpected call to MockStorageCredentialRepo.List")
 }
 
+// Update implements the interface method for testing.
 func (m *MockStorageCredentialRepo) Update(ctx context.Context, id int64, req domain.UpdateStorageCredentialRequest) (*domain.StorageCredential, error) {
 	if m.UpdateFn != nil {
 		return m.UpdateFn(ctx, id, req)
@@ -499,6 +548,7 @@ func (m *MockStorageCredentialRepo) Update(ctx context.Context, id int64, req do
 	panic("unexpected call to MockStorageCredentialRepo.Update")
 }
 
+// Delete implements the interface method for testing.
 func (m *MockStorageCredentialRepo) Delete(ctx context.Context, id int64) error {
 	if m.DeleteFn != nil {
 		return m.DeleteFn(ctx, id)
@@ -520,6 +570,7 @@ type MockExternalLocationRepo struct {
 	DeleteFn    func(ctx context.Context, id int64) error
 }
 
+// Create implements the interface method for testing.
 func (m *MockExternalLocationRepo) Create(ctx context.Context, loc *domain.ExternalLocation) (*domain.ExternalLocation, error) {
 	if m.CreateFn != nil {
 		return m.CreateFn(ctx, loc)
@@ -527,6 +578,7 @@ func (m *MockExternalLocationRepo) Create(ctx context.Context, loc *domain.Exter
 	panic("unexpected call to MockExternalLocationRepo.Create")
 }
 
+// GetByID implements the interface method for testing.
 func (m *MockExternalLocationRepo) GetByID(ctx context.Context, id int64) (*domain.ExternalLocation, error) {
 	if m.GetByIDFn != nil {
 		return m.GetByIDFn(ctx, id)
@@ -534,6 +586,7 @@ func (m *MockExternalLocationRepo) GetByID(ctx context.Context, id int64) (*doma
 	panic("unexpected call to MockExternalLocationRepo.GetByID")
 }
 
+// GetByName implements the interface method for testing.
 func (m *MockExternalLocationRepo) GetByName(ctx context.Context, name string) (*domain.ExternalLocation, error) {
 	if m.GetByNameFn != nil {
 		return m.GetByNameFn(ctx, name)
@@ -541,6 +594,7 @@ func (m *MockExternalLocationRepo) GetByName(ctx context.Context, name string) (
 	panic("unexpected call to MockExternalLocationRepo.GetByName")
 }
 
+// List implements the interface method for testing.
 func (m *MockExternalLocationRepo) List(ctx context.Context, page domain.PageRequest) ([]domain.ExternalLocation, int64, error) {
 	if m.ListFn != nil {
 		return m.ListFn(ctx, page)
@@ -548,6 +602,7 @@ func (m *MockExternalLocationRepo) List(ctx context.Context, page domain.PageReq
 	panic("unexpected call to MockExternalLocationRepo.List")
 }
 
+// Update implements the interface method for testing.
 func (m *MockExternalLocationRepo) Update(ctx context.Context, id int64, req domain.UpdateExternalLocationRequest) (*domain.ExternalLocation, error) {
 	if m.UpdateFn != nil {
 		return m.UpdateFn(ctx, id, req)
@@ -555,6 +610,7 @@ func (m *MockExternalLocationRepo) Update(ctx context.Context, id int64, req dom
 	panic("unexpected call to MockExternalLocationRepo.Update")
 }
 
+// Delete implements the interface method for testing.
 func (m *MockExternalLocationRepo) Delete(ctx context.Context, id int64) error {
 	if m.DeleteFn != nil {
 		return m.DeleteFn(ctx, id)
@@ -582,6 +638,7 @@ type MockComputeEndpointRepo struct {
 	GetAssignmentsForPrincipalFn func(ctx context.Context, principalID int64, principalType string) ([]domain.ComputeEndpoint, error)
 }
 
+// Create implements the interface method for testing.
 func (m *MockComputeEndpointRepo) Create(ctx context.Context, ep *domain.ComputeEndpoint) (*domain.ComputeEndpoint, error) {
 	if m.CreateFn != nil {
 		return m.CreateFn(ctx, ep)
@@ -589,6 +646,7 @@ func (m *MockComputeEndpointRepo) Create(ctx context.Context, ep *domain.Compute
 	panic("unexpected call to MockComputeEndpointRepo.Create")
 }
 
+// GetByID implements the interface method for testing.
 func (m *MockComputeEndpointRepo) GetByID(ctx context.Context, id int64) (*domain.ComputeEndpoint, error) {
 	if m.GetByIDFn != nil {
 		return m.GetByIDFn(ctx, id)
@@ -596,6 +654,7 @@ func (m *MockComputeEndpointRepo) GetByID(ctx context.Context, id int64) (*domai
 	panic("unexpected call to MockComputeEndpointRepo.GetByID")
 }
 
+// GetByName implements the interface method for testing.
 func (m *MockComputeEndpointRepo) GetByName(ctx context.Context, name string) (*domain.ComputeEndpoint, error) {
 	if m.GetByNameFn != nil {
 		return m.GetByNameFn(ctx, name)
@@ -603,6 +662,7 @@ func (m *MockComputeEndpointRepo) GetByName(ctx context.Context, name string) (*
 	panic("unexpected call to MockComputeEndpointRepo.GetByName")
 }
 
+// List implements the interface method for testing.
 func (m *MockComputeEndpointRepo) List(ctx context.Context, page domain.PageRequest) ([]domain.ComputeEndpoint, int64, error) {
 	if m.ListFn != nil {
 		return m.ListFn(ctx, page)
@@ -610,6 +670,7 @@ func (m *MockComputeEndpointRepo) List(ctx context.Context, page domain.PageRequ
 	panic("unexpected call to MockComputeEndpointRepo.List")
 }
 
+// Update implements the interface method for testing.
 func (m *MockComputeEndpointRepo) Update(ctx context.Context, id int64, req domain.UpdateComputeEndpointRequest) (*domain.ComputeEndpoint, error) {
 	if m.UpdateFn != nil {
 		return m.UpdateFn(ctx, id, req)
@@ -617,6 +678,7 @@ func (m *MockComputeEndpointRepo) Update(ctx context.Context, id int64, req doma
 	panic("unexpected call to MockComputeEndpointRepo.Update")
 }
 
+// Delete implements the interface method for testing.
 func (m *MockComputeEndpointRepo) Delete(ctx context.Context, id int64) error {
 	if m.DeleteFn != nil {
 		return m.DeleteFn(ctx, id)
@@ -624,6 +686,7 @@ func (m *MockComputeEndpointRepo) Delete(ctx context.Context, id int64) error {
 	panic("unexpected call to MockComputeEndpointRepo.Delete")
 }
 
+// UpdateStatus implements the interface method for testing.
 func (m *MockComputeEndpointRepo) UpdateStatus(ctx context.Context, id int64, status string) error {
 	if m.UpdateStatusFn != nil {
 		return m.UpdateStatusFn(ctx, id, status)
@@ -631,6 +694,7 @@ func (m *MockComputeEndpointRepo) UpdateStatus(ctx context.Context, id int64, st
 	panic("unexpected call to MockComputeEndpointRepo.UpdateStatus")
 }
 
+// Assign implements the interface method for testing.
 func (m *MockComputeEndpointRepo) Assign(ctx context.Context, a *domain.ComputeAssignment) (*domain.ComputeAssignment, error) {
 	if m.AssignFn != nil {
 		return m.AssignFn(ctx, a)
@@ -638,6 +702,7 @@ func (m *MockComputeEndpointRepo) Assign(ctx context.Context, a *domain.ComputeA
 	panic("unexpected call to MockComputeEndpointRepo.Assign")
 }
 
+// Unassign implements the interface method for testing.
 func (m *MockComputeEndpointRepo) Unassign(ctx context.Context, id int64) error {
 	if m.UnassignFn != nil {
 		return m.UnassignFn(ctx, id)
@@ -645,6 +710,7 @@ func (m *MockComputeEndpointRepo) Unassign(ctx context.Context, id int64) error 
 	panic("unexpected call to MockComputeEndpointRepo.Unassign")
 }
 
+// ListAssignments implements the interface method for testing.
 func (m *MockComputeEndpointRepo) ListAssignments(ctx context.Context, endpointID int64, page domain.PageRequest) ([]domain.ComputeAssignment, int64, error) {
 	if m.ListAssignmentsFn != nil {
 		return m.ListAssignmentsFn(ctx, endpointID, page)
@@ -652,6 +718,7 @@ func (m *MockComputeEndpointRepo) ListAssignments(ctx context.Context, endpointI
 	panic("unexpected call to MockComputeEndpointRepo.ListAssignments")
 }
 
+// GetDefaultForPrincipal implements the interface method for testing.
 func (m *MockComputeEndpointRepo) GetDefaultForPrincipal(ctx context.Context, principalID int64, principalType string) (*domain.ComputeEndpoint, error) {
 	if m.GetDefaultForPrincipalFn != nil {
 		return m.GetDefaultForPrincipalFn(ctx, principalID, principalType)
@@ -659,6 +726,7 @@ func (m *MockComputeEndpointRepo) GetDefaultForPrincipal(ctx context.Context, pr
 	panic("unexpected call to MockComputeEndpointRepo.GetDefaultForPrincipal")
 }
 
+// GetAssignmentsForPrincipal implements the interface method for testing.
 func (m *MockComputeEndpointRepo) GetAssignmentsForPrincipal(ctx context.Context, principalID int64, principalType string) ([]domain.ComputeEndpoint, error) {
 	if m.GetAssignmentsForPrincipalFn != nil {
 		return m.GetAssignmentsForPrincipalFn(ctx, principalID, principalType)

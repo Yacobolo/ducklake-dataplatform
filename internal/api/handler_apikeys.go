@@ -18,6 +18,7 @@ type apiKeyService interface {
 
 // === API Keys ===
 
+// CreateAPIKey implements the endpoint for creating a new API key.
 func (h *APIHandler) CreateAPIKey(ctx context.Context, req CreateAPIKeyRequestObject) (CreateAPIKeyResponseObject, error) {
 	rawKey, key, err := h.apiKeys.Create(ctx, req.Body.PrincipalId, req.Body.Name, req.Body.ExpiresAt)
 	if err != nil {
@@ -40,6 +41,7 @@ func (h *APIHandler) CreateAPIKey(ctx context.Context, req CreateAPIKeyRequestOb
 	}, nil
 }
 
+// ListAPIKeys implements the endpoint for listing API keys for a principal.
 func (h *APIHandler) ListAPIKeys(ctx context.Context, req ListAPIKeysRequestObject) (ListAPIKeysResponseObject, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	keys, total, err := h.apiKeys.List(ctx, req.Params.PrincipalId, page)
@@ -54,6 +56,7 @@ func (h *APIHandler) ListAPIKeys(ctx context.Context, req ListAPIKeysRequestObje
 	return ListAPIKeys200JSONResponse{Data: &data, NextPageToken: optStr(npt)}, nil
 }
 
+// DeleteAPIKey implements the endpoint for deleting an API key by ID.
 func (h *APIHandler) DeleteAPIKey(ctx context.Context, req DeleteAPIKeyRequestObject) (DeleteAPIKeyResponseObject, error) {
 	if err := h.apiKeys.Delete(ctx, req.ApiKeyId); err != nil {
 		switch {
@@ -66,6 +69,7 @@ func (h *APIHandler) DeleteAPIKey(ctx context.Context, req DeleteAPIKeyRequestOb
 	return DeleteAPIKey204Response{}, nil
 }
 
+// CleanupExpiredAPIKeys implements the endpoint for removing expired API keys.
 func (h *APIHandler) CleanupExpiredAPIKeys(ctx context.Context, _ CleanupExpiredAPIKeysRequestObject) (CleanupExpiredAPIKeysResponseObject, error) {
 	count, err := h.apiKeys.CleanupExpired(ctx)
 	if err != nil {

@@ -1,3 +1,4 @@
+// Package security implements authentication, authorization, and access control services.
 package security
 
 import (

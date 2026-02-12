@@ -1,3 +1,4 @@
+// Package catalog implements catalog and metadata services.
 package catalog
 
 import (
@@ -9,6 +10,8 @@ import (
 )
 
 // CatalogService provides catalog management operations with authorization.
+//
+//nolint:revive // Name chosen for clarity across package boundaries
 type CatalogService struct {
 	repo      domain.CatalogRepository
 	auth      domain.AuthorizationService

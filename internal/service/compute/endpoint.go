@@ -1,3 +1,4 @@
+// Package compute implements compute endpoint management services.
 package compute
 
 import (
@@ -14,6 +15,8 @@ import (
 
 // ComputeEndpointService provides CRUD operations for compute endpoints
 // and assignments with RBAC enforcement and audit logging.
+//
+//nolint:revive // Name chosen for clarity across package boundaries
 type ComputeEndpointService struct {
 	repo  domain.ComputeEndpointRepository
 	auth  domain.AuthorizationService

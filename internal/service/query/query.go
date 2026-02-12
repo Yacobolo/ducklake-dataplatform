@@ -12,6 +12,8 @@ import (
 )
 
 // QueryResult holds the structured output of a SQL query.
+//
+//nolint:revive // Name chosen for clarity across package boundaries
 type QueryResult struct {
 	Columns  []string
 	Rows     [][]interface{}
@@ -19,6 +21,8 @@ type QueryResult struct {
 }
 
 // QueryService wraps the QueryEngine and records audit entries.
+//
+//nolint:revive // Name chosen for clarity across package boundaries
 type QueryService struct {
 	engine  domain.QueryEngine
 	audit   domain.AuditRepository

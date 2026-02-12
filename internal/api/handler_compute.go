@@ -25,6 +25,7 @@ type computeEndpointService interface {
 
 // === Compute Endpoints ===
 
+// ListComputeEndpoints implements the endpoint for listing all compute endpoints.
 func (h *APIHandler) ListComputeEndpoints(ctx context.Context, req ListComputeEndpointsRequestObject) (ListComputeEndpointsResponseObject, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	eps, total, err := h.computeEndpoints.List(ctx, page)
@@ -43,6 +44,7 @@ func (h *APIHandler) ListComputeEndpoints(ctx context.Context, req ListComputeEn
 	}, nil
 }
 
+// CreateComputeEndpoint implements the endpoint for creating a new compute endpoint.
 func (h *APIHandler) CreateComputeEndpoint(ctx context.Context, req CreateComputeEndpointRequestObject) (CreateComputeEndpointResponseObject, error) {
 	domReq := domain.CreateComputeEndpointRequest{
 		Name: req.Body.Name,
@@ -76,6 +78,7 @@ func (h *APIHandler) CreateComputeEndpoint(ctx context.Context, req CreateComput
 	return CreateComputeEndpoint201JSONResponse(computeEndpointToAPI(*result)), nil
 }
 
+// GetComputeEndpoint implements the endpoint for retrieving a compute endpoint by name.
 func (h *APIHandler) GetComputeEndpoint(ctx context.Context, req GetComputeEndpointRequestObject) (GetComputeEndpointResponseObject, error) {
 	result, err := h.computeEndpoints.GetByName(ctx, req.EndpointName)
 	if err != nil {
@@ -89,6 +92,7 @@ func (h *APIHandler) GetComputeEndpoint(ctx context.Context, req GetComputeEndpo
 	return GetComputeEndpoint200JSONResponse(computeEndpointToAPI(*result)), nil
 }
 
+// UpdateComputeEndpoint implements the endpoint for updating a compute endpoint.
 func (h *APIHandler) UpdateComputeEndpoint(ctx context.Context, req UpdateComputeEndpointRequestObject) (UpdateComputeEndpointResponseObject, error) {
 	domReq := domain.UpdateComputeEndpointRequest{
 		URL:         req.Body.Url,
@@ -119,6 +123,7 @@ func (h *APIHandler) UpdateComputeEndpoint(ctx context.Context, req UpdateComput
 	return UpdateComputeEndpoint200JSONResponse(computeEndpointToAPI(*result)), nil
 }
 
+// DeleteComputeEndpoint implements the endpoint for deleting a compute endpoint.
 func (h *APIHandler) DeleteComputeEndpoint(ctx context.Context, req DeleteComputeEndpointRequestObject) (DeleteComputeEndpointResponseObject, error) {
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	if err := h.computeEndpoints.Delete(ctx, principal, req.EndpointName); err != nil {
@@ -134,6 +139,7 @@ func (h *APIHandler) DeleteComputeEndpoint(ctx context.Context, req DeleteComput
 	return DeleteComputeEndpoint204Response{}, nil
 }
 
+// ListComputeAssignments implements the endpoint for listing assignments for a compute endpoint.
 func (h *APIHandler) ListComputeAssignments(ctx context.Context, req ListComputeAssignmentsRequestObject) (ListComputeAssignmentsResponseObject, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	assignments, total, err := h.computeEndpoints.ListAssignments(ctx, req.EndpointName, page)
@@ -157,6 +163,7 @@ func (h *APIHandler) ListComputeAssignments(ctx context.Context, req ListCompute
 	}, nil
 }
 
+// CreateComputeAssignment implements the endpoint for assigning a principal to a compute endpoint.
 func (h *APIHandler) CreateComputeAssignment(ctx context.Context, req CreateComputeAssignmentRequestObject) (CreateComputeAssignmentResponseObject, error) {
 	domReq := domain.CreateComputeAssignmentRequest{
 		PrincipalID:   req.Body.PrincipalId,
@@ -188,6 +195,7 @@ func (h *APIHandler) CreateComputeAssignment(ctx context.Context, req CreateComp
 	return CreateComputeAssignment201JSONResponse(computeAssignmentToAPI(*result)), nil
 }
 
+// GetComputeEndpointHealth implements the endpoint for checking compute endpoint health.
 func (h *APIHandler) GetComputeEndpointHealth(ctx context.Context, req GetComputeEndpointHealthRequestObject) (GetComputeEndpointHealthResponseObject, error) {
 	principal, _ := middleware.PrincipalFromContext(ctx)
 
@@ -213,6 +221,7 @@ func (h *APIHandler) GetComputeEndpointHealth(ctx context.Context, req GetComput
 	}, nil
 }
 
+// DeleteComputeAssignment implements the endpoint for removing a compute assignment.
 func (h *APIHandler) DeleteComputeAssignment(ctx context.Context, req DeleteComputeAssignmentRequestObject) (DeleteComputeAssignmentResponseObject, error) {
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	if err := h.computeEndpoints.Unassign(ctx, principal, req.AssignmentId); err != nil {

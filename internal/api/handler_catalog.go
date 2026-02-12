@@ -31,6 +31,7 @@ type catalogService interface {
 
 // === Catalog Management ===
 
+// GetCatalog implements the endpoint for retrieving catalog information.
 func (h *APIHandler) GetCatalog(ctx context.Context, _ GetCatalogRequestObject) (GetCatalogResponseObject, error) {
 	info, err := h.catalog.GetCatalogInfo(ctx)
 	if err != nil {
@@ -39,6 +40,7 @@ func (h *APIHandler) GetCatalog(ctx context.Context, _ GetCatalogRequestObject) 
 	return GetCatalog200JSONResponse(catalogInfoToAPI(*info)), nil
 }
 
+// UpdateCatalog implements the endpoint for updating catalog metadata.
 func (h *APIHandler) UpdateCatalog(ctx context.Context, req UpdateCatalogRequestObject) (UpdateCatalogResponseObject, error) {
 	domReq := domain.UpdateCatalogRequest{}
 	if req.Body.Comment != nil {
@@ -58,6 +60,7 @@ func (h *APIHandler) UpdateCatalog(ctx context.Context, req UpdateCatalogRequest
 	return UpdateCatalog200JSONResponse(catalogInfoToAPI(*result)), nil
 }
 
+// ListSchemas implements the endpoint for listing schemas in the catalog.
 func (h *APIHandler) ListSchemas(ctx context.Context, req ListSchemasRequestObject) (ListSchemasResponseObject, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	schemas, total, err := h.catalog.ListSchemas(ctx, page)
@@ -72,6 +75,7 @@ func (h *APIHandler) ListSchemas(ctx context.Context, req ListSchemasRequestObje
 	return ListSchemas200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
 }
 
+// CreateSchema implements the endpoint for creating a new schema.
 func (h *APIHandler) CreateSchema(ctx context.Context, req CreateSchemaRequestObject) (CreateSchemaResponseObject, error) {
 	domReq := domain.CreateSchemaRequest{
 		Name: req.Body.Name,
@@ -103,6 +107,7 @@ func (h *APIHandler) CreateSchema(ctx context.Context, req CreateSchemaRequestOb
 	return CreateSchema201JSONResponse(schemaDetailToAPI(*result)), nil
 }
 
+// GetSchema implements the endpoint for retrieving a schema by name.
 func (h *APIHandler) GetSchema(ctx context.Context, req GetSchemaRequestObject) (GetSchemaResponseObject, error) {
 	result, err := h.catalog.GetSchema(ctx, req.SchemaName)
 	if err != nil {
@@ -116,6 +121,7 @@ func (h *APIHandler) GetSchema(ctx context.Context, req GetSchemaRequestObject) 
 	return GetSchema200JSONResponse(schemaDetailToAPI(*result)), nil
 }
 
+// UpdateSchema implements the endpoint for updating schema metadata.
 func (h *APIHandler) UpdateSchema(ctx context.Context, req UpdateSchemaRequestObject) (UpdateSchemaResponseObject, error) {
 	var props map[string]string
 	if req.Body.Properties != nil {
@@ -137,6 +143,7 @@ func (h *APIHandler) UpdateSchema(ctx context.Context, req UpdateSchemaRequestOb
 	return UpdateSchema200JSONResponse(schemaDetailToAPI(*result)), nil
 }
 
+// DeleteSchema implements the endpoint for deleting a schema by name.
 func (h *APIHandler) DeleteSchema(ctx context.Context, req DeleteSchemaRequestObject) (DeleteSchemaResponseObject, error) {
 	force := false
 	if req.Params.Force != nil {
@@ -160,6 +167,7 @@ func (h *APIHandler) DeleteSchema(ctx context.Context, req DeleteSchemaRequestOb
 	return DeleteSchema204Response{}, nil
 }
 
+// ListTables implements the endpoint for listing tables in a schema.
 func (h *APIHandler) ListTables(ctx context.Context, req ListTablesRequestObject) (ListTablesResponseObject, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	tables, total, err := h.catalog.ListTables(ctx, req.SchemaName, page)
@@ -179,6 +187,7 @@ func (h *APIHandler) ListTables(ctx context.Context, req ListTablesRequestObject
 	return ListTables200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
 }
 
+// CreateTable implements the endpoint for creating a new table in a schema.
 func (h *APIHandler) CreateTable(ctx context.Context, req CreateTableRequestObject) (CreateTableResponseObject, error) {
 	var cols []domain.CreateColumnDef
 	if req.Body.Columns != nil {
@@ -226,6 +235,7 @@ func (h *APIHandler) CreateTable(ctx context.Context, req CreateTableRequestObje
 	return CreateTable201JSONResponse(tableDetailToAPI(*result)), nil
 }
 
+// GetTable implements the endpoint for retrieving a table by name.
 func (h *APIHandler) GetTable(ctx context.Context, req GetTableRequestObject) (GetTableResponseObject, error) {
 	result, err := h.catalog.GetTable(ctx, req.SchemaName, req.TableName)
 	if err != nil {
@@ -239,6 +249,7 @@ func (h *APIHandler) GetTable(ctx context.Context, req GetTableRequestObject) (G
 	return GetTable200JSONResponse(tableDetailToAPI(*result)), nil
 }
 
+// UpdateTable implements the endpoint for updating table metadata.
 func (h *APIHandler) UpdateTable(ctx context.Context, req UpdateTableRequestObject) (UpdateTableResponseObject, error) {
 	domReq := domain.UpdateTableRequest{}
 	if req.Body.Comment != nil {
@@ -266,6 +277,7 @@ func (h *APIHandler) UpdateTable(ctx context.Context, req UpdateTableRequestObje
 	return UpdateTable200JSONResponse(tableDetailToAPI(*result)), nil
 }
 
+// DeleteTable implements the endpoint for deleting a table by name.
 func (h *APIHandler) DeleteTable(ctx context.Context, req DeleteTableRequestObject) (DeleteTableResponseObject, error) {
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	if err := h.catalog.DeleteTable(ctx, principal, req.SchemaName, req.TableName); err != nil {
@@ -281,6 +293,7 @@ func (h *APIHandler) DeleteTable(ctx context.Context, req DeleteTableRequestObje
 	return DeleteTable204Response{}, nil
 }
 
+// ListTableColumns implements the endpoint for listing columns of a table.
 func (h *APIHandler) ListTableColumns(ctx context.Context, req ListTableColumnsRequestObject) (ListTableColumnsResponseObject, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	cols, total, err := h.catalog.ListColumns(ctx, req.SchemaName, req.TableName, page)
@@ -300,6 +313,7 @@ func (h *APIHandler) ListTableColumns(ctx context.Context, req ListTableColumnsR
 	return ListTableColumns200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
 }
 
+// UpdateColumn implements the endpoint for updating column metadata.
 func (h *APIHandler) UpdateColumn(ctx context.Context, req UpdateColumnRequestObject) (UpdateColumnResponseObject, error) {
 	domReq := domain.UpdateColumnRequest{}
 	if req.Body.Comment != nil {
@@ -324,6 +338,7 @@ func (h *APIHandler) UpdateColumn(ctx context.Context, req UpdateColumnRequestOb
 	return UpdateColumn200JSONResponse(columnDetailToAPI(*result)), nil
 }
 
+// ProfileTable implements the endpoint for profiling table statistics.
 func (h *APIHandler) ProfileTable(ctx context.Context, req ProfileTableRequestObject) (ProfileTableResponseObject, error) {
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	stats, err := h.catalog.ProfileTable(ctx, principal, req.SchemaName, req.TableName)
@@ -340,6 +355,7 @@ func (h *APIHandler) ProfileTable(ctx context.Context, req ProfileTableRequestOb
 	return ProfileTable200JSONResponse(tableStatisticsToAPI(stats)), nil
 }
 
+// GetMetastoreSummary implements the endpoint for retrieving the metastore summary.
 func (h *APIHandler) GetMetastoreSummary(ctx context.Context, _ GetMetastoreSummaryRequestObject) (GetMetastoreSummaryResponseObject, error) {
 	summary, err := h.catalog.GetMetastoreSummary(ctx)
 	if err != nil {
