@@ -401,8 +401,8 @@ func TestHTTP_CatalogSchemaForceDelete(t *testing.T) {
 		resp := doRequest(t, "DELETE",
 			env.Server.URL+"/v1/catalog/schemas/force_del_schema",
 			env.Keys.Admin, nil)
-		// Should fail because schema has children (returns 403 for ConflictError)
-		assert.Equal(t, 403, resp.StatusCode)
+		// Should fail because schema has children (returns 409 Conflict)
+		assert.Equal(t, 409, resp.StatusCode)
 		_ = resp.Body.Close()
 	})
 
