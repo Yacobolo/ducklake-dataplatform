@@ -29,11 +29,11 @@ const (
 
 // Defines values for ComputeEndpointStatus.
 const (
-	ACTIVE   ComputeEndpointStatus = "ACTIVE"
-	ERROR    ComputeEndpointStatus = "ERROR"
-	INACTIVE ComputeEndpointStatus = "INACTIVE"
-	STARTING ComputeEndpointStatus = "STARTING"
-	STOPPING ComputeEndpointStatus = "STOPPING"
+	ComputeEndpointStatusACTIVE   ComputeEndpointStatus = "ACTIVE"
+	ComputeEndpointStatusERROR    ComputeEndpointStatus = "ERROR"
+	ComputeEndpointStatusINACTIVE ComputeEndpointStatus = "INACTIVE"
+	ComputeEndpointStatusSTARTING ComputeEndpointStatus = "STARTING"
+	ComputeEndpointStatusSTOPPING ComputeEndpointStatus = "STOPPING"
 )
 
 // Defines values for ComputeEndpointType.
@@ -103,6 +103,15 @@ const (
 	LARGE  UpdateComputeEndpointRequestSize = "LARGE"
 	MEDIUM UpdateComputeEndpointRequestSize = "MEDIUM"
 	SMALL  UpdateComputeEndpointRequestSize = "SMALL"
+)
+
+// Defines values for UpdateComputeEndpointRequestStatus.
+const (
+	UpdateComputeEndpointRequestStatusACTIVE   UpdateComputeEndpointRequestStatus = "ACTIVE"
+	UpdateComputeEndpointRequestStatusERROR    UpdateComputeEndpointRequestStatus = "ERROR"
+	UpdateComputeEndpointRequestStatusINACTIVE UpdateComputeEndpointRequestStatus = "INACTIVE"
+	UpdateComputeEndpointRequestStatusSTARTING UpdateComputeEndpointRequestStatus = "STARTING"
+	UpdateComputeEndpointRequestStatusSTOPPING UpdateComputeEndpointRequestStatus = "STOPPING"
 )
 
 // Defines values for VolumeDetailVolumeType.
@@ -857,14 +866,18 @@ type UpdateColumnRequest struct {
 
 // UpdateComputeEndpointRequest defines model for UpdateComputeEndpointRequest.
 type UpdateComputeEndpointRequest struct {
-	AuthToken   *string                           `json:"auth_token,omitempty"`
-	MaxMemoryGb *int64                            `json:"max_memory_gb,omitempty"`
-	Size        *UpdateComputeEndpointRequestSize `json:"size,omitempty"`
-	Url         *string                           `json:"url,omitempty"`
+	AuthToken   *string                             `json:"auth_token,omitempty"`
+	MaxMemoryGb *int64                              `json:"max_memory_gb,omitempty"`
+	Size        *UpdateComputeEndpointRequestSize   `json:"size,omitempty"`
+	Status      *UpdateComputeEndpointRequestStatus `json:"status,omitempty"`
+	Url         *string                             `json:"url,omitempty"`
 }
 
 // UpdateComputeEndpointRequestSize defines model for UpdateComputeEndpointRequest.Size.
 type UpdateComputeEndpointRequestSize string
+
+// UpdateComputeEndpointRequestStatus defines model for UpdateComputeEndpointRequest.Status.
+type UpdateComputeEndpointRequestStatus string
 
 // UpdateExternalLocationRequest defines model for UpdateExternalLocationRequest.
 type UpdateExternalLocationRequest struct {

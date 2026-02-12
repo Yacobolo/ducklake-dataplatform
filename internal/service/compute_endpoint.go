@@ -85,6 +85,19 @@ func (s *ComputeEndpointService) Update(ctx context.Context, principal string, n
 		return nil, err
 	}
 
+	// Handle status update if provided
+	if req.Status != nil {
+		switch *req.Status {
+		case "ACTIVE", "INACTIVE", "STARTING", "STOPPING", "ERROR":
+			// valid
+		default:
+			return nil, domain.ErrValidation("invalid status %q", *req.Status)
+		}
+		if err := s.repo.UpdateStatus(ctx, existing.ID, *req.Status); err != nil {
+			return nil, fmt.Errorf("update compute endpoint status: %w", err)
+		}
+	}
+
 	result, err := s.repo.Update(ctx, existing.ID, req)
 	if err != nil {
 		return nil, fmt.Errorf("update compute endpoint: %w", err)

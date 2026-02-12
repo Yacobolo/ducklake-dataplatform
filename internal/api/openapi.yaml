@@ -1450,6 +1450,9 @@ components:
           format: int64
         auth_token:
           type: string
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE, STARTING, STOPPING, ERROR]
 
     PaginatedComputeEndpoints:
       type: object

@@ -50,6 +50,7 @@ type UpdateComputeEndpointRequest struct {
 	Size        *string
 	MaxMemoryGB *int64
 	AuthToken   *string
+	Status      *string
 }
 
 // ValidateCreateComputeEndpointRequest validates the create request.

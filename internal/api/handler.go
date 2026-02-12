@@ -2109,6 +2109,10 @@ func (h *APIHandler) UpdateComputeEndpoint(ctx context.Context, req UpdateComput
 		s := string(*req.Body.Size)
 		domReq.Size = &s
 	}
+	if req.Body.Status != nil {
+		s := string(*req.Body.Status)
+		domReq.Status = &s
+	}
 
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	result, err := h.computeEndpoints.Update(ctx, principal, req.EndpointName, domReq)

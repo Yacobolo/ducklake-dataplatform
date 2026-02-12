@@ -6,7 +6,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -16,6 +15,8 @@ import (
 	"time"
 
 	_ "github.com/duckdb/duckdb-go/v2"
+
+	"duck-demo/internal/agent"
 )
 
 func main() {
@@ -89,123 +90,17 @@ func run() error {
 		logger.Info("DuckLake attached via PostgreSQL", "catalog_dsn", "[redacted]", "data_path", dataPath)
 	}
 
-	startTime := time.Now()
-
-	// HTTP server
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("POST /execute", func(w http.ResponseWriter, r *http.Request) {
-		requestID := r.Header.Get("X-Request-ID")
-
-		// Validate token
-		if r.Header.Get("X-Agent-Token") != cfg.AgentToken {
-			writeJSON(w, http.StatusUnauthorized, map[string]interface{}{
-				"error":      "unauthorized",
-				"code":       "AUTH_ERROR",
-				"request_id": requestID,
-			})
-			return
-		}
-
-		var req struct {
-			SQL       string `json:"sql"`
-			RequestID string `json:"request_id"`
-		}
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeJSON(w, http.StatusBadRequest, map[string]interface{}{
-				"error":      "invalid request body",
-				"code":       "PARSE_ERROR",
-				"request_id": requestID,
-			})
-			return
-		}
-		if requestID == "" {
-			requestID = req.RequestID
-		}
-
-		logger.Info("executing query", "request_id", requestID)
-
-		rows, err := db.QueryContext(r.Context(), req.SQL)
-		if err != nil {
-			logger.Error("query execution failed", "request_id", requestID, "error", err)
-			writeJSON(w, http.StatusInternalServerError, map[string]interface{}{
-				"error":      err.Error(),
-				"code":       "EXECUTION_ERROR",
-				"request_id": requestID,
-			})
-			return
-		}
-		defer rows.Close() //nolint:errcheck
-
-		cols, err := rows.Columns()
-		if err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]interface{}{
-				"error":      err.Error(),
-				"code":       "EXECUTION_ERROR",
-				"request_id": requestID,
-			})
-			return
-		}
-
-		var resultRows [][]interface{}
-		for rows.Next() {
-			values := make([]interface{}, len(cols))
-			ptrs := make([]interface{}, len(cols))
-			for i := range values {
-				ptrs[i] = &values[i]
-			}
-			if err := rows.Scan(ptrs...); err != nil {
-				writeJSON(w, http.StatusInternalServerError, map[string]interface{}{
-					"error":      err.Error(),
-					"code":       "SCAN_ERROR",
-					"request_id": requestID,
-				})
-				return
-			}
-			resultRows = append(resultRows, values)
-		}
-		if err := rows.Err(); err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]interface{}{
-				"error":      err.Error(),
-				"code":       "EXECUTION_ERROR",
-				"request_id": requestID,
-			})
-			return
-		}
-
-		logger.Info("query completed", "request_id", requestID, "row_count", len(resultRows))
-
-		writeJSON(w, http.StatusOK, map[string]interface{}{
-			"columns":    cols,
-			"rows":       resultRows,
-			"row_count":  len(resultRows),
-			"request_id": requestID,
-		})
-	})
-
-	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
-		var version string
-		row := db.QueryRowContext(r.Context(), "SELECT version()")
-		_ = row.Scan(&version)
-
-		// Query memory usage from DuckDB
-		var memUsedBytes int64
-		memRow := db.QueryRowContext(r.Context(), "SELECT memory_usage FROM duckdb_memory()")
-		_ = memRow.Scan(&memUsedBytes)
-		memUsedMB := memUsedBytes / (1024 * 1024)
-
-		writeJSON(w, http.StatusOK, map[string]interface{}{
-			"status":         "ok",
-			"uptime_seconds": int(time.Since(startTime).Seconds()),
-			"duckdb_version": version,
-			"memory_used_mb": memUsedMB,
-			"max_memory_gb":  cfg.MaxMemoryGB,
-		})
+	handler := agent.NewHandler(agent.HandlerConfig{
+		DB:          db,
+		AgentToken:  cfg.AgentToken,
+		StartTime:   time.Now(),
+		MaxMemoryGB: cfg.MaxMemoryGB,
+		Logger:      logger,
 	})
 
 	srv := &http.Server{
 		Addr:         cfg.ListenAddr,
-		Handler:      mux,
+		Handler:      handler,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 5 * time.Minute,
 		IdleTimeout:  120 * time.Second,
@@ -225,10 +120,4 @@ func run() error {
 		return fmt.Errorf("server: %w", err)
 	}
 	return nil
-}
-
-func writeJSON(w http.ResponseWriter, status int, v interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(v)
 }
