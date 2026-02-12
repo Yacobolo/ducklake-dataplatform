@@ -20,10 +20,11 @@ type SecretManager interface {
 	DropSecret(ctx context.Context, name string) error
 }
 
-// CatalogAttacher manages DuckLake catalog attachment.
-// Implemented by engine.DuckDBSecretManager.
+// CatalogAttacher manages DuckLake catalog attachment and detachment.
+// The implementation switches on reg.MetastoreType internally.
 type CatalogAttacher interface {
-	AttachDuckLake(ctx context.Context, metaDBPath, dataPath string) error
+	Attach(ctx context.Context, reg CatalogRegistration) error
+	Detach(ctx context.Context, catalogName string) error
 }
 
 // AuthorizationService defines the interface for permission checking.
@@ -40,6 +41,12 @@ type AuthorizationService interface {
 // Used for CALL statements that bypass the SQL parser (e.g. ducklake_add_data_files).
 type DuckDBExecutor interface {
 	ExecContext(ctx context.Context, query string) error
+}
+
+// MetastoreQuerierFactory creates per-catalog MetastoreQuerier instances.
+type MetastoreQuerierFactory interface {
+	ForCatalog(ctx context.Context, catalogName string) (MetastoreQuerier, error)
+	Close(catalogName string) error // release pooled connections on catalog deletion
 }
 
 // MetastoreQuerier provides read-only access to the DuckLake metastore.

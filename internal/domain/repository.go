@@ -206,6 +206,19 @@ type ExternalTableRepository interface {
 	DeleteBySchema(ctx context.Context, schemaName string) error
 }
 
+// CatalogRegistrationRepository provides CRUD operations for catalog registrations.
+type CatalogRegistrationRepository interface {
+	Create(ctx context.Context, reg *CatalogRegistration) (*CatalogRegistration, error)
+	GetByID(ctx context.Context, id int64) (*CatalogRegistration, error)
+	GetByName(ctx context.Context, name string) (*CatalogRegistration, error)
+	List(ctx context.Context, page PageRequest) ([]CatalogRegistration, int64, error)
+	Update(ctx context.Context, id int64, req UpdateCatalogRegistrationRequest) (*CatalogRegistration, error)
+	Delete(ctx context.Context, id int64) error
+	UpdateStatus(ctx context.Context, id int64, status CatalogStatus, message string) error
+	GetDefault(ctx context.Context) (*CatalogRegistration, error)
+	SetDefault(ctx context.Context, id int64) error
+}
+
 // ComputeEndpointRepository provides CRUD operations for compute endpoints and assignments.
 type ComputeEndpointRepository interface {
 	Create(ctx context.Context, ep *ComputeEndpoint) (*ComputeEndpoint, error)
