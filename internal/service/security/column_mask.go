@@ -17,8 +17,11 @@ func NewColumnMaskService(repo domain.ColumnMaskRepository, audit domain.AuditRe
 	return &ColumnMaskService{repo: repo, audit: audit}
 }
 
-// Create validates and persists a new column mask.
-func (s *ColumnMaskService) Create(ctx context.Context, principal string, m *domain.ColumnMask) (*domain.ColumnMask, error) {
+// Create validates and persists a new column mask. Requires admin privileges.
+func (s *ColumnMaskService) Create(ctx context.Context, _ string, m *domain.ColumnMask) (*domain.ColumnMask, error) {
+	if err := requireAdmin(ctx); err != nil {
+		return nil, err
+	}
 	if m.ColumnName == "" {
 		return nil, domain.ErrValidation("column_name is required")
 	}
@@ -30,7 +33,7 @@ func (s *ColumnMaskService) Create(ctx context.Context, principal string, m *dom
 		return nil, err
 	}
 	_ = s.audit.Insert(ctx, &domain.AuditEntry{
-		PrincipalName: principal,
+		PrincipalName: callerName(ctx),
 		Action:        "CREATE_COLUMN_MASK",
 		Status:        "ALLOWED",
 	})
@@ -42,18 +45,27 @@ func (s *ColumnMaskService) GetForTable(ctx context.Context, tableID int64, page
 	return s.repo.GetForTable(ctx, tableID, page)
 }
 
-// Delete removes a column mask by ID.
+// Delete removes a column mask by ID. Requires admin privileges.
 func (s *ColumnMaskService) Delete(ctx context.Context, id int64) error {
+	if err := requireAdmin(ctx); err != nil {
+		return err
+	}
 	return s.repo.Delete(ctx, id)
 }
 
-// Bind associates a column mask with a principal or group.
+// Bind associates a column mask with a principal or group. Requires admin privileges.
 func (s *ColumnMaskService) Bind(ctx context.Context, b *domain.ColumnMaskBinding) error {
+	if err := requireAdmin(ctx); err != nil {
+		return err
+	}
 	return s.repo.Bind(ctx, b)
 }
 
-// Unbind removes a column mask binding from a principal or group.
+// Unbind removes a column mask binding from a principal or group. Requires admin privileges.
 func (s *ColumnMaskService) Unbind(ctx context.Context, b *domain.ColumnMaskBinding) error {
+	if err := requireAdmin(ctx); err != nil {
+		return err
+	}
 	return s.repo.Unbind(ctx, b)
 }
 

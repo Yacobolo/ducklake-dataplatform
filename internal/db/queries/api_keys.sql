@@ -11,8 +11,17 @@ WHERE ak.key_hash = ? AND (ak.expires_at IS NULL OR ak.expires_at > datetime('no
 -- name: ListAPIKeysForPrincipal :many
 SELECT * FROM api_keys WHERE principal_id = ? ORDER BY created_at DESC;
 
+-- name: CountAPIKeysForPrincipal :one
+SELECT COUNT(*) as cnt FROM api_keys WHERE principal_id = ?;
+
+-- name: ListAPIKeysForPrincipalPaginated :many
+SELECT * FROM api_keys WHERE principal_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?;
+
 -- name: DeleteAPIKey :exec
 DELETE FROM api_keys WHERE id = ?;
 
--- name: DeleteExpiredKeys :exec
+-- name: GetAPIKeyByID :one
+SELECT * FROM api_keys WHERE id = ?;
+
+-- name: DeleteExpiredKeys :execresult
 DELETE FROM api_keys WHERE expires_at IS NOT NULL AND expires_at <= datetime('now');

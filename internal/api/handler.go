@@ -22,6 +22,7 @@ type APIHandler struct {
 	externalLocations externalLocationService
 	volumes           volumeService
 	computeEndpoints  computeEndpointService
+	apiKeys           apiKeyService
 }
 
 // NewHandler creates a new APIHandler with all required service dependencies.
@@ -45,6 +46,7 @@ func NewHandler(
 	externalLocations externalLocationService,
 	volumes volumeService,
 	computeEndpoints computeEndpointService,
+	apiKeys apiKeyService,
 ) *APIHandler {
 	return &APIHandler{
 		query:             query,
@@ -66,6 +68,7 @@ func NewHandler(
 		externalLocations: externalLocations,
 		volumes:           volumes,
 		computeEndpoints:  computeEndpoints,
+		apiKeys:           apiKeys,
 	}
 }
 

@@ -186,7 +186,9 @@ func dotEnvPath() string {
 // Prerequisites
 // ---------------------------------------------------------------------------
 
-func checkPrerequisites(t *testing.T) {
+// checkExtensionBinaries skips the test if the DuckDB CLI or duck_access
+// extension binary are not present on disk. Does NOT check S3 credentials.
+func checkExtensionBinaries(t *testing.T) {
 	t.Helper()
 
 	if _, err := os.Stat(extensionPath()); err != nil {
@@ -195,6 +197,14 @@ func checkPrerequisites(t *testing.T) {
 	if _, err := os.Stat(duckdbCLIPath()); err != nil {
 		t.Skipf("DuckDB CLI not found at %s", duckdbCLIPath())
 	}
+}
+
+// checkPrerequisites skips the test if the extension binary, DuckDB CLI, or
+// S3 credentials are missing. Use for tests that require real S3 connectivity.
+func checkPrerequisites(t *testing.T) {
+	t.Helper()
+
+	checkExtensionBinaries(t)
 
 	// Load .env and check S3 credentials
 	_ = config.LoadDotEnv(dotEnvPath())
@@ -218,10 +228,16 @@ func sha256Hex(s string) string {
 // DuckLake metadata seeding
 // ---------------------------------------------------------------------------
 
+// ducklakeDataFileName is the parquet file name used in seeded DuckLake metadata.
+// This must match the name used by setupLocalExtensionServer when copying the
+// testdata/titanic.parquet fixture into the local data directory.
+const ducklakeDataFileName = "ducklake-019c4727-c55c-7e4d-ab38-e01a2920253c.parquet"
+
 // seedDuckLakeMetadata creates the DuckLake catalog tables in the temp SQLite
-// and inserts hardcoded production values. This makes tests self-documenting
-// and avoids any dependency on the production ducklake_meta.sqlite file state.
-func seedDuckLakeMetadata(t *testing.T, db *sql.DB) {
+// and inserts hardcoded production values. The dataPath parameter controls the
+// data_path metadata value (e.g., "s3://yacobolo/lake_data/" for S3 tests or a
+// local temp directory path for local tests).
+func seedDuckLakeMetadata(t *testing.T, db *sql.DB, dataPath string) {
 	t.Helper()
 
 	const ddl = `
@@ -282,11 +298,10 @@ func seedDuckLakeMetadata(t *testing.T, db *sql.DB) {
 		mapping_id BIGINT
 	);`
 
-	const data = `
-	-- ducklake_metadata
+	const staticData = `
+	-- ducklake_metadata (excluding data_path — inserted separately)
 	INSERT INTO ducklake_metadata("key", "value") VALUES ('version', '0.3');
 	INSERT INTO ducklake_metadata("key", "value") VALUES ('created_by', 'DuckDB 6ddac802ff');
-	INSERT INTO ducklake_metadata("key", "value") VALUES ('data_path', 's3://yacobolo/lake_data/');
 	INSERT INTO ducklake_metadata("key", "value") VALUES ('encrypted', 'false');
 
 	-- ducklake_schema (main)
@@ -325,8 +340,15 @@ func seedDuckLakeMetadata(t *testing.T, db *sql.DB) {
 	if _, err := db.ExecContext(ctx, ddl); err != nil {
 		t.Fatalf("create ducklake DDL: %v", err)
 	}
-	if _, err := db.ExecContext(ctx, data); err != nil {
-		t.Fatalf("seed ducklake data: %v", err)
+	if _, err := db.ExecContext(ctx, staticData); err != nil {
+		t.Fatalf("seed ducklake static data: %v", err)
+	}
+	dataPathSQL := fmt.Sprintf(
+		`INSERT INTO ducklake_metadata("key", "value") VALUES ('data_path', '%s');`,
+		dataPath,
+	)
+	if _, err := db.ExecContext(ctx, dataPathSQL); err != nil {
+		t.Fatalf("seed ducklake data_path: %v", err)
 	}
 }
 
@@ -543,7 +565,7 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 	metaDB, _ := internaldb.OpenTestSQLite(t)
 
 	// Seed DuckLake catalog metadata + RBAC data
-	seedDuckLakeMetadata(t, metaDB)
+	seedDuckLakeMetadata(t, metaDB, "s3://yacobolo/lake_data/")
 	keys := seedRBAC(t, metaDB)
 
 	// Build repositories
@@ -599,8 +621,133 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 		rowFilterSvc, columnMaskSvc, auditSvc,
 		manifestSvc, nil, // catalogSvc=nil — integration tests only hit /v1/manifest
 		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
-		nil,                // ingestionSvc
-		nil, nil, nil, nil, // storageCredSvc, extLocationSvc, volumeSvc, computeEndpointSvc
+		nil,                     // ingestionSvc
+		nil, nil, nil, nil, nil, // storageCredSvc, extLocationSvc, volumeSvc, computeEndpointSvc, apiKeySvc
+	)
+	strictHandler := api.NewStrictHandler(handler, nil)
+
+	// Router with REAL auth middleware (API key via SHA-256 hash lookup)
+	r := chi.NewRouter()
+	r.Use(middleware.AuthMiddleware([]byte("test-jwt-secret"), apiKeyRepo))
+	r.Route("/v1", func(r chi.Router) {
+		api.HandlerFromMux(strictHandler, r)
+	})
+
+	srv := httptest.NewServer(r)
+	t.Cleanup(srv.Close)
+
+	return &testEnv{Server: srv, Keys: keys}
+}
+
+// ---------------------------------------------------------------------------
+// Local extension server setup (no S3 — uses local parquet files)
+// ---------------------------------------------------------------------------
+
+// localPresigner returns file paths as-is (no S3 presigning).
+// Used by extension tests that run against local parquet files.
+type localPresigner struct{}
+
+func (p *localPresigner) PresignGetObject(_ context.Context, path string, _ time.Duration) (string, error) {
+	return path, nil
+}
+
+// copyFile copies a file from src to dst. Fails the test on error.
+func copyFile(t *testing.T, src, dst string) {
+	t.Helper()
+	data, err := os.ReadFile(src)
+	if err != nil {
+		t.Fatalf("read %s: %v", src, err)
+	}
+	if err := os.WriteFile(dst, data, 0o644); err != nil {
+		t.Fatalf("write %s: %v", dst, err)
+	}
+}
+
+// testdataPath returns the path to a file in the test/integration/testdata directory.
+func testdataPath(name string) string {
+	_, thisFile, _, _ := runtime.Caller(0)
+	return filepath.Join(filepath.Dir(thisFile), "testdata", name)
+}
+
+// setupLocalExtensionServer creates a fully-wired in-process Go API server for
+// extension tests using local filesystem instead of S3. The manifest endpoint
+// returns local file paths to parquet files, which DuckDB's read_parquet() reads
+// directly. Requires extension binary + DuckDB CLI, but NOT S3 credentials.
+func setupLocalExtensionServer(t *testing.T) *testEnv {
+	t.Helper()
+
+	// Create temp directory for local data files
+	tmpDir := t.TempDir()
+	dataPath := filepath.Join(tmpDir, "lake_data") + "/"
+	if err := os.MkdirAll(filepath.Join(tmpDir, "lake_data"), 0o755); err != nil {
+		t.Fatalf("mkdir lake_data: %v", err)
+	}
+
+	// Copy testdata/titanic.parquet into the expected ducklake data file location.
+	// The seed metadata references this filename as a relative path under data_path.
+	copyFile(t,
+		testdataPath("titanic.parquet"),
+		filepath.Join(tmpDir, "lake_data", ducklakeDataFileName),
+	)
+
+	// Temp SQLite with hardened connection (WAL, busy_timeout, etc.)
+	metaDB, _ := internaldb.OpenTestSQLite(t)
+
+	// Seed DuckLake metadata with LOCAL data_path
+	seedDuckLakeMetadata(t, metaDB, dataPath)
+	keys := seedRBAC(t, metaDB)
+
+	// Build repositories
+	principalRepo := repository.NewPrincipalRepo(metaDB)
+	groupRepo := repository.NewGroupRepo(metaDB)
+	grantRepo := repository.NewGrantRepo(metaDB)
+	rowFilterRepo := repository.NewRowFilterRepo(metaDB)
+	columnMaskRepo := repository.NewColumnMaskRepo(metaDB)
+	auditRepo := repository.NewAuditRepo(metaDB)
+	introspectionRepo := repository.NewIntrospectionRepo(metaDB)
+	apiKeyRepo := repository.NewAPIKeyRepo(metaDB)
+	tagRepo := repository.NewTagRepo(metaDB)
+	lineageRepo := repository.NewLineageRepo(metaDB)
+	searchRepo := repository.NewSearchRepo(metaDB)
+	queryHistoryRepo := repository.NewQueryHistoryRepo(metaDB)
+	viewRepo := repository.NewViewRepo(metaDB)
+
+	// Build services
+	authSvc := security.NewAuthorizationService(
+		principalRepo, groupRepo, grantRepo,
+		rowFilterRepo, columnMaskRepo, introspectionRepo,
+		nil,
+	)
+
+	// LOCAL presigner — returns paths as-is (no S3 presigning)
+	metastoreRepo := repository.NewMetastoreRepo(metaDB)
+	manifestSvc := query.NewManifestService(
+		metastoreRepo, authSvc, &localPresigner{}, introspectionRepo, auditRepo,
+		nil, nil,
+	)
+
+	// Remaining services (querySvc gets nil engine — we never hit /v1/query)
+	querySvc := query.NewQueryService(nil, auditRepo, nil)
+	principalSvc := security.NewPrincipalService(principalRepo, auditRepo)
+	groupSvc := security.NewGroupService(groupRepo, auditRepo)
+	grantSvc := security.NewGrantService(grantRepo, auditRepo)
+	rowFilterSvc := security.NewRowFilterService(rowFilterRepo, auditRepo)
+	columnMaskSvc := security.NewColumnMaskService(columnMaskRepo, auditRepo)
+	auditSvc := governance.NewAuditService(auditRepo)
+	tagSvc := governance.NewTagService(tagRepo, auditRepo)
+	lineageSvc := governance.NewLineageService(lineageRepo)
+	searchSvc := catalog.NewSearchService(searchRepo)
+	queryHistorySvc := governance.NewQueryHistoryService(queryHistoryRepo)
+	catalogRepo := repository.NewCatalogRepo(metaDB, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	viewSvc := catalog.NewViewService(viewRepo, catalogRepo, authSvc, auditRepo)
+
+	handler := api.NewHandler(
+		querySvc, principalSvc, groupSvc, grantSvc,
+		rowFilterSvc, columnMaskSvc, auditSvc,
+		manifestSvc, nil, // catalogSvc=nil — extension tests only hit /v1/manifest
+		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
+		nil,                     // ingestionSvc
+		nil, nil, nil, nil, nil, // storageCredSvc, extLocationSvc, volumeSvc, computeEndpointSvc, apiKeySvc
 	)
 	strictHandler := api.NewStrictHandler(handler, nil)
 
@@ -862,6 +1009,18 @@ type httpTestOpts struct {
 	// CatalogAttached marks the DuckLake catalog as attached at construction time.
 	// Used when tests need the catalog to be attached without going through full setup.
 	CatalogAttached bool
+	// WithAuthenticator uses the full Authenticator struct with JIT provisioning
+	// instead of the legacy AuthMiddleware wrapper.
+	WithAuthenticator bool
+	// BootstrapAdmin is the external ID (sub) of the bootstrap admin user.
+	// Only used when WithAuthenticator is true.
+	BootstrapAdmin string
+	// NameClaim overrides the JWT claim used for principal name resolution.
+	// Only used when WithAuthenticator is true.
+	NameClaim string
+	// WithAPIKeyService wires the APIKeyService into the handler (enables API key
+	// management endpoints). When false, the handler gets nil for apiKeySvc.
+	WithAPIKeyService bool
 }
 
 // httpTestEnv bundles the test server, API keys, and direct DB access.
@@ -888,7 +1047,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 
 	// Optionally seed DuckLake metadata (without DuckLake extensions)
 	if opts.SeedDuckLakeMetadata {
-		seedDuckLakeMetadata(t, metaDB)
+		seedDuckLakeMetadata(t, metaDB, "s3://yacobolo/lake_data/")
 	}
 
 	// Seed RBAC data (principals, groups, grants, row filters, column masks, API keys)
@@ -1066,6 +1225,12 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		querySvc = query.NewQueryService(eng, auditRepo, lineageRepo)
 	}
 
+	// Optionally wire APIKeyService
+	var apiKeySvc *security.APIKeyService
+	if opts.WithAPIKeyService {
+		apiKeySvc = security.NewAPIKeyService(apiKeyRepo, auditRepo)
+	}
+
 	handler := api.NewHandler(
 		querySvc, principalSvc, groupSvc, grantSvc,
 		rowFilterSvc, columnMaskSvc, auditSvc,
@@ -1074,11 +1239,39 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		nil,                                 // ingestionSvc
 		storageCredSvc, extLocationSvc, nil, // volumeSvc
 		computeEndpointSvc,
+		apiKeySvc,
 	)
 	strictHandler := api.NewStrictHandler(handler, nil)
 
 	r := chi.NewRouter()
-	r.Use(middleware.AuthMiddleware(jwtSecret, apiKeyRepo))
+
+	// Always use the full Authenticator for correct IsAdmin resolution.
+	// JIT provisioning is enabled when WithAuthenticator is set.
+	nameClaim := opts.NameClaim
+	if nameClaim == "" {
+		nameClaim = "sub"
+	}
+	authCfg := config.AuthConfig{
+		SharedSecret:   string(jwtSecret),
+		APIKeyEnabled:  true,
+		APIKeyHeader:   "X-API-Key",
+		NameClaim:      nameClaim,
+		BootstrapAdmin: opts.BootstrapAdmin,
+	}
+	validator := middleware.NewSharedSecretValidator(string(jwtSecret))
+	var provisioner middleware.PrincipalProvisioner
+	if opts.WithAuthenticator {
+		provisioner = principalSvc
+	}
+	authenticator := middleware.NewAuthenticator(
+		validator,
+		apiKeyRepo,
+		principalRepo,
+		provisioner,
+		authCfg,
+		nil, // logger
+	)
+	r.Use(authenticator.Middleware())
 	r.Route("/v1", func(r chi.Router) {
 		api.HandlerFromMux(strictHandler, r)
 	})
@@ -1182,10 +1375,14 @@ func decodeJSON(t *testing.T, resp *http.Response, target interface{}) {
 }
 
 // generateJWT creates a signed HS256 JWT token with the given subject and expiry.
+// Includes an "iss" claim for compatibility with JIT provisioning (which looks
+// up by (issuer, external_id) — without iss, the issuer is stored as NULL
+// and SQL NULL=NULL comparisons fail on subsequent lookups).
 func generateJWT(t *testing.T, secret []byte, subject string, expiry time.Time) string {
 	t.Helper()
 	claims := jwt.MapClaims{
 		"sub": subject,
+		"iss": "test-issuer",
 		"exp": expiry.Unix(),
 		"iat": time.Now().Unix(),
 	}

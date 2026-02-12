@@ -7,6 +7,7 @@ package dbstore
 
 import (
 	"context"
+	"database/sql"
 )
 
 const countPrincipals = `-- name: CountPrincipals :one
@@ -23,7 +24,7 @@ func (q *Queries) CountPrincipals(ctx context.Context) (int64, error) {
 const createPrincipal = `-- name: CreatePrincipal :one
 INSERT INTO principals (name, type, is_admin)
 VALUES (?, ?, ?)
-RETURNING id, name, type, is_admin, created_at
+RETURNING id, name, type, is_admin, created_at, external_id, external_issuer
 `
 
 type CreatePrincipalParams struct {
@@ -41,6 +42,43 @@ func (q *Queries) CreatePrincipal(ctx context.Context, arg CreatePrincipalParams
 		&i.Type,
 		&i.IsAdmin,
 		&i.CreatedAt,
+		&i.ExternalID,
+		&i.ExternalIssuer,
+	)
+	return i, err
+}
+
+const createPrincipalWithExternalID = `-- name: CreatePrincipalWithExternalID :one
+INSERT INTO principals (name, type, is_admin, external_id, external_issuer)
+VALUES (?, ?, ?, ?, ?)
+RETURNING id, name, type, is_admin, created_at, external_id, external_issuer
+`
+
+type CreatePrincipalWithExternalIDParams struct {
+	Name           string
+	Type           string
+	IsAdmin        int64
+	ExternalID     sql.NullString
+	ExternalIssuer sql.NullString
+}
+
+func (q *Queries) CreatePrincipalWithExternalID(ctx context.Context, arg CreatePrincipalWithExternalIDParams) (Principal, error) {
+	row := q.db.QueryRowContext(ctx, createPrincipalWithExternalID,
+		arg.Name,
+		arg.Type,
+		arg.IsAdmin,
+		arg.ExternalID,
+		arg.ExternalIssuer,
+	)
+	var i Principal
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Type,
+		&i.IsAdmin,
+		&i.CreatedAt,
+		&i.ExternalID,
+		&i.ExternalIssuer,
 	)
 	return i, err
 }
@@ -55,7 +93,7 @@ func (q *Queries) DeletePrincipal(ctx context.Context, id int64) error {
 }
 
 const getPrincipal = `-- name: GetPrincipal :one
-SELECT id, name, type, is_admin, created_at FROM principals WHERE id = ?
+SELECT id, name, type, is_admin, created_at, external_id, external_issuer FROM principals WHERE id = ?
 `
 
 func (q *Queries) GetPrincipal(ctx context.Context, id int64) (Principal, error) {
@@ -67,12 +105,40 @@ func (q *Queries) GetPrincipal(ctx context.Context, id int64) (Principal, error)
 		&i.Type,
 		&i.IsAdmin,
 		&i.CreatedAt,
+		&i.ExternalID,
+		&i.ExternalIssuer,
+	)
+	return i, err
+}
+
+const getPrincipalByExternalID = `-- name: GetPrincipalByExternalID :one
+SELECT id, name, type, is_admin, created_at, external_id, external_issuer FROM principals
+WHERE external_issuer = ? AND external_id = ?
+LIMIT 1
+`
+
+type GetPrincipalByExternalIDParams struct {
+	ExternalIssuer sql.NullString
+	ExternalID     sql.NullString
+}
+
+func (q *Queries) GetPrincipalByExternalID(ctx context.Context, arg GetPrincipalByExternalIDParams) (Principal, error) {
+	row := q.db.QueryRowContext(ctx, getPrincipalByExternalID, arg.ExternalIssuer, arg.ExternalID)
+	var i Principal
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Type,
+		&i.IsAdmin,
+		&i.CreatedAt,
+		&i.ExternalID,
+		&i.ExternalIssuer,
 	)
 	return i, err
 }
 
 const getPrincipalByName = `-- name: GetPrincipalByName :one
-SELECT id, name, type, is_admin, created_at FROM principals WHERE name = ?
+SELECT id, name, type, is_admin, created_at, external_id, external_issuer FROM principals WHERE name = ?
 `
 
 func (q *Queries) GetPrincipalByName(ctx context.Context, name string) (Principal, error) {
@@ -84,12 +150,14 @@ func (q *Queries) GetPrincipalByName(ctx context.Context, name string) (Principa
 		&i.Type,
 		&i.IsAdmin,
 		&i.CreatedAt,
+		&i.ExternalID,
+		&i.ExternalIssuer,
 	)
 	return i, err
 }
 
 const listPrincipals = `-- name: ListPrincipals :many
-SELECT id, name, type, is_admin, created_at FROM principals ORDER BY name
+SELECT id, name, type, is_admin, created_at, external_id, external_issuer FROM principals ORDER BY name
 `
 
 func (q *Queries) ListPrincipals(ctx context.Context) ([]Principal, error) {
@@ -107,6 +175,8 @@ func (q *Queries) ListPrincipals(ctx context.Context) ([]Principal, error) {
 			&i.Type,
 			&i.IsAdmin,
 			&i.CreatedAt,
+			&i.ExternalID,
+			&i.ExternalIssuer,
 		); err != nil {
 			return nil, err
 		}
@@ -122,7 +192,7 @@ func (q *Queries) ListPrincipals(ctx context.Context) ([]Principal, error) {
 }
 
 const listPrincipalsPaginated = `-- name: ListPrincipalsPaginated :many
-SELECT id, name, type, is_admin, created_at FROM principals ORDER BY id LIMIT ? OFFSET ?
+SELECT id, name, type, is_admin, created_at, external_id, external_issuer FROM principals ORDER BY id LIMIT ? OFFSET ?
 `
 
 type ListPrincipalsPaginatedParams struct {
@@ -145,6 +215,8 @@ func (q *Queries) ListPrincipalsPaginated(ctx context.Context, arg ListPrincipal
 			&i.Type,
 			&i.IsAdmin,
 			&i.CreatedAt,
+			&i.ExternalID,
+			&i.ExternalIssuer,
 		); err != nil {
 			return nil, err
 		}

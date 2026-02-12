@@ -25,6 +25,15 @@ import (
 )
 
 func main() {
+	// Handle admin subcommands before starting the server.
+	if len(os.Args) >= 2 && os.Args[1] == "admin" {
+		if err := runAdmin(os.Args[2:]); err != nil {
+			fmt.Fprintf(os.Stderr, "fatal: %v\n", err)
+			os.Exit(1)
+		}
+		return
+	}
+
 	if err := run(); err != nil {
 		fmt.Fprintf(os.Stderr, "fatal: %v\n", err)
 		os.Exit(1)
@@ -165,6 +174,7 @@ func run() error {
 		svc.StorageCredential, svc.ExternalLocation,
 		svc.Volume,
 		svc.ComputeEndpoint,
+		svc.APIKey,
 	)
 
 	// Create strict handler wrapper
@@ -222,5 +232,71 @@ func run() error {
 	if err := srv.ListenAndServe(); err != nil {
 		return fmt.Errorf("server: %w", err)
 	}
+	return nil
+}
+
+// runAdmin handles "admin promote" and "admin demote" subcommands.
+// These operate directly on the SQLite metastore without starting the server.
+//
+// Usage:
+//
+//	go run ./cmd/server admin promote --principal=<name>
+//	go run ./cmd/server admin demote  --principal=<name>
+func runAdmin(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: server admin <promote|demote> --principal=<name>")
+	}
+	action := args[0]
+	if action != "promote" && action != "demote" {
+		return fmt.Errorf("unknown admin action %q; use 'promote' or 'demote'", action)
+	}
+
+	var principalName string
+	for _, arg := range args[1:] {
+		if len(arg) > len("--principal=") && arg[:len("--principal=")] == "--principal=" {
+			principalName = arg[len("--principal="):]
+		}
+	}
+	if principalName == "" {
+		return fmt.Errorf("--principal=<name> is required")
+	}
+
+	// Load config for MetaDBPath.
+	if err := config.LoadDotEnv(".env"); err != nil {
+		// Non-fatal; .env may not exist.
+		fmt.Fprintf(os.Stderr, "warn: could not load .env: %v\n", err)
+	}
+	cfg, err := config.LoadFromEnv()
+	if err != nil {
+		return fmt.Errorf("config: %w", err)
+	}
+
+	// Open SQLite directly (single connection is fine for a one-shot CLI).
+	db, err := sql.Open("sqlite3", cfg.MetaDBPath+"?_journal_mode=WAL&_busy_timeout=5000")
+	if err != nil {
+		return fmt.Errorf("open metastore: %w", err)
+	}
+	defer db.Close() //nolint:errcheck
+
+	isAdmin := int64(1)
+	if action == "demote" {
+		isAdmin = 0
+	}
+
+	result, err := db.ExecContext(context.Background(),
+		"UPDATE principals SET is_admin = ? WHERE name = ?",
+		isAdmin, principalName)
+	if err != nil {
+		return fmt.Errorf("update principal: %w", err)
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("check result: %w", err)
+	}
+	if rows == 0 {
+		return fmt.Errorf("principal %q not found", principalName)
+	}
+
+	fmt.Printf("principal %q %sd successfully\n", principalName, action)
 	return nil
 }

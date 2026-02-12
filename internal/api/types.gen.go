@@ -120,6 +120,16 @@ const (
 	MANAGED  VolumeDetailVolumeType = "MANAGED"
 )
 
+// APIKeyInfo defines model for APIKeyInfo.
+type APIKeyInfo struct {
+	CreatedAt   *time.Time `json:"created_at,omitempty"`
+	ExpiresAt   *time.Time `json:"expires_at"`
+	Id          *int64     `json:"id,omitempty"`
+	KeyPrefix   *string    `json:"key_prefix,omitempty"`
+	Name        *string    `json:"name,omitempty"`
+	PrincipalId *int64     `json:"principal_id,omitempty"`
+}
+
 // AuditEntry defines model for AuditEntry.
 type AuditEntry struct {
 	Action         *string    `json:"action,omitempty"`
@@ -238,6 +248,25 @@ type ComputeEndpointHealth struct {
 
 	// UptimeSeconds Agent uptime in seconds
 	UptimeSeconds *int `json:"uptime_seconds,omitempty"`
+}
+
+// CreateAPIKeyRequest defines model for CreateAPIKeyRequest.
+type CreateAPIKeyRequest struct {
+	ExpiresAt   *time.Time `json:"expires_at,omitempty"`
+	Name        string     `json:"name"`
+	PrincipalId int64      `json:"principal_id"`
+}
+
+// CreateAPIKeyResponse defines model for CreateAPIKeyResponse.
+type CreateAPIKeyResponse struct {
+	CreatedAt *time.Time `json:"created_at,omitempty"`
+	ExpiresAt *time.Time `json:"expires_at"`
+	Id        *int64     `json:"id,omitempty"`
+
+	// Key Raw API key (shown only once)
+	Key       *string `json:"key,omitempty"`
+	KeyPrefix *string `json:"key_prefix,omitempty"`
+	Name      *string `json:"name,omitempty"`
 }
 
 // CreateColumnMaskRequest defines model for CreateColumnMaskRequest.
@@ -549,6 +578,12 @@ type MetastoreSummary struct {
 	SchemaCount    *int64  `json:"schema_count,omitempty"`
 	StorageBackend *string `json:"storage_backend,omitempty"`
 	TableCount     *int64  `json:"table_count,omitempty"`
+}
+
+// PaginatedAPIKeys defines model for PaginatedAPIKeys.
+type PaginatedAPIKeys struct {
+	Data          *[]APIKeyInfo `json:"data,omitempty"`
+	NextPageToken *string       `json:"next_page_token,omitempty"`
 }
 
 // PaginatedAuditLogs defines model for PaginatedAuditLogs.
@@ -993,6 +1028,17 @@ type MaxResults = int
 // PageToken defines model for PageToken.
 type PageToken = string
 
+// ListAPIKeysParams defines parameters for ListAPIKeys.
+type ListAPIKeysParams struct {
+	PrincipalId int64 `form:"principal_id" json:"principal_id"`
+
+	// MaxResults Maximum number of results to return per page.
+	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
+
+	// PageToken Opaque pagination token from a previous response.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
 // ListAuditLogsParams defines parameters for ListAuditLogs.
 type ListAuditLogsParams struct {
 	PrincipalName *string `form:"principal_name,omitempty" json:"principal_name,omitempty"`
@@ -1215,6 +1261,9 @@ type ListTagsParams struct {
 	// PageToken Opaque pagination token from a previous response.
 	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
 }
+
+// CreateAPIKeyJSONRequestBody defines body for CreateAPIKey for application/json ContentType.
+type CreateAPIKeyJSONRequestBody = CreateAPIKeyRequest
 
 // UpdateCatalogJSONRequestBody defines body for UpdateCatalog for application/json ContentType.
 type UpdateCatalogJSONRequestBody = UpdateCatalogRequest

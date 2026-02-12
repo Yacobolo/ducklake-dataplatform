@@ -155,11 +155,13 @@ type LineageEdge struct {
 }
 
 type Principal struct {
-	ID        int64
-	Name      string
-	Type      string
-	IsAdmin   int64
-	CreatedAt string
+	ID             int64
+	Name           string
+	Type           string
+	IsAdmin        int64
+	CreatedAt      string
+	ExternalID     sql.NullString
+	ExternalIssuer sql.NullString
 }
 
 type PrivilegeGrant struct {

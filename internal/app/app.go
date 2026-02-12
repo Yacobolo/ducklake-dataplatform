@@ -57,6 +57,7 @@ type Services struct {
 	ExternalLocation  *storage.ExternalLocationService
 	Volume            *storage.VolumeService
 	ComputeEndpoint   *svccompute.ComputeEndpointService
+	APIKey            *security.APIKeyService
 }
 
 // App holds the fully-wired application: engine, services, and the
@@ -192,8 +193,9 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 		deps.Logger.Warn("restore secrets failed", "error", err)
 	}
 
-	// === APIKeyRepo (needed by router for auth middleware) ===
+	// === API Key ===
 	apiKeyRepo := repository.NewAPIKeyRepo(deps.ReadDB)
+	apiKeySvc := security.NewAPIKeyService(apiKeyRepo, auditRepo)
 
 	return &App{
 		Services: Services{
@@ -216,6 +218,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 			ExternalLocation:  extLocationSvc,
 			Volume:            volumeSvc,
 			ComputeEndpoint:   computeEndpointSvc,
+			APIKey:            apiKeySvc,
 		},
 		Engine:     eng,
 		APIKeyRepo: apiKeyRepo,

@@ -15,6 +15,9 @@ import (
 	"duck-demo/internal/domain"
 )
 
+// Compile-time check: S3Presigner implements FilePresigner.
+var _ FilePresigner = (*S3Presigner)(nil)
+
 // S3Presigner generates presigned S3 URLs for Hetzner-compatible object storage.
 // It uses the AWS SDK v2, configured with path-style addressing for Hetzner.
 type S3Presigner struct {

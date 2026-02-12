@@ -6,10 +6,31 @@ import (
 	"testing"
 )
 
-func TestExtension(t *testing.T) {
-	checkPrerequisites(t)
+// TestExtension_Local runs the full extension test suite against local files.
+// No S3 credentials required — uses local parquet files via localPresigner.
+// Requires only the DuckDB CLI and duck_access extension binary.
+func TestExtension_Local(t *testing.T) {
+	checkExtensionBinaries(t)
+
+	env := setupLocalExtensionServer(t)
+	runExtensionTestCases(t, env)
+}
+
+// TestExtension_S3 runs the extension tests against real S3 storage.
+// Skipped unless S3 env vars (KEY_ID, SECRET, ENDPOINT, REGION) are set.
+// This validates the full production path (presigned URLs, HTTPS, S3-compatible storage).
+func TestExtension_S3(t *testing.T) {
+	checkPrerequisites(t) // Skips if no S3 creds, no extension binary, no CLI
 
 	env := setupIntegrationServer(t)
+	runExtensionTestCases(t, env)
+}
+
+// runExtensionTestCases contains the shared table-driven test cases for the
+// duck_access DuckDB extension. Both local and S3 variants run identical assertions
+// covering RBAC, RLS, column masking, auth errors, and audit logging.
+func runExtensionTestCases(t *testing.T, env *testEnv) {
+	t.Helper()
 
 	cases := []struct {
 		name    string
