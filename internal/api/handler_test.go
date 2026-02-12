@@ -126,7 +126,7 @@ func setupTestServer(t *testing.T, principalName string) *httptest.Server {
 	introspectionRepo := repository.NewIntrospectionRepo(metaDB)
 
 	cat := service.NewAuthorizationService(principalRepo, groupRepo, grantRepo, rowFilterRepo, columnMaskRepo, introspectionRepo)
-	eng := engine.NewSecureEngine(duckDB, cat, slog.New(slog.DiscardHandler))
+	eng := engine.NewSecureEngine(duckDB, cat, nil, slog.New(slog.DiscardHandler))
 
 	lineageRepo := repository.NewLineageRepo(metaDB)
 	querySvc := service.NewQueryService(eng, auditRepo, lineageRepo)
@@ -147,7 +147,7 @@ func setupTestServer(t *testing.T, principalName string) *httptest.Server {
 	tagSvc := service.NewTagService(repository.NewTagRepo(metaDB), auditRepo)
 	viewSvc := service.NewViewService(repository.NewViewRepo(metaDB), catalogRepo, cat, auditRepo)
 
-	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, auditSvc, nil, catalogSvc, queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc, nil, nil, nil, nil)
+	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, auditSvc, nil, catalogSvc, queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc, nil, nil, nil, nil, nil)
 	strictHandler := NewStrictHandler(handler, nil)
 
 	// Setup router with fixed auth (test principal)
@@ -400,7 +400,7 @@ func setupCatalogTestServer(t *testing.T, principalName string, mockRepo *mockCa
 	introspectionRepo := repository.NewIntrospectionRepo(metaDB)
 
 	cat := service.NewAuthorizationService(principalRepo, groupRepo, grantRepo, rowFilterRepo, columnMaskRepo, introspectionRepo)
-	eng := engine.NewSecureEngine(duckDB, cat, slog.New(slog.DiscardHandler))
+	eng := engine.NewSecureEngine(duckDB, cat, nil, slog.New(slog.DiscardHandler))
 
 	lineageRepo2 := repository.NewLineageRepo(metaDB)
 	querySvc := service.NewQueryService(eng, auditRepo, lineageRepo2)
@@ -421,7 +421,7 @@ func setupCatalogTestServer(t *testing.T, principalName string, mockRepo *mockCa
 	tagSvc := service.NewTagService(repository.NewTagRepo(metaDB), auditRepo)
 	viewSvc := service.NewViewService(repository.NewViewRepo(metaDB), mockRepo, cat, auditRepo)
 
-	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, auditSvc, nil, catalogSvc, queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc, nil, nil, nil, nil)
+	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, auditSvc, nil, catalogSvc, queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc, nil, nil, nil, nil, nil)
 	strictHandler := NewStrictHandler(handler, nil)
 
 	r := chi.NewRouter()

@@ -6,6 +6,7 @@ package dbstore
 
 import (
 	"database/sql"
+	"time"
 )
 
 type ApiKey struct {
@@ -66,6 +67,31 @@ type ColumnMetadatum struct {
 	Comment            sql.NullString
 	Properties         sql.NullString
 	UpdatedAt          sql.NullString
+}
+
+type ComputeAssignment struct {
+	ID            int64
+	PrincipalID   int64
+	PrincipalType string
+	EndpointID    int64
+	IsDefault     int64
+	FallbackLocal int64
+	CreatedAt     time.Time
+}
+
+type ComputeEndpoint struct {
+	ID          int64
+	ExternalID  string
+	Name        string
+	Url         string
+	Type        string
+	Status      string
+	Size        string
+	MaxMemoryGb sql.NullInt64
+	AuthToken   string
+	Owner       string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 type ExternalLocation struct {

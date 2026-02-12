@@ -32,6 +32,8 @@ tags:
     description: Storage credentials and external locations.
   - name: Manifest
     description: Client-side query manifest with presigned URLs.
+  - name: Compute
+    description: Compute endpoint and assignment management.
 
 components:
   securitySchemes:
@@ -1378,6 +1380,163 @@ components:
           type: string
         table:
           type: string
+
+    # --- Compute Endpoints ---
+    ComputeEndpoint:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        external_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        url:
+          type: string
+        type:
+          type: string
+          enum: [LOCAL, REMOTE]
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE, STARTING, STOPPING, ERROR]
+        size:
+          type: string
+          enum: [SMALL, MEDIUM, LARGE]
+        max_memory_gb:
+          type: integer
+          format: int64
+        owner:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateComputeEndpointRequest:
+      type: object
+      required: [name, url, type]
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+        type:
+          type: string
+          enum: [LOCAL, REMOTE]
+        size:
+          type: string
+          enum: [SMALL, MEDIUM, LARGE]
+        max_memory_gb:
+          type: integer
+          format: int64
+        auth_token:
+          type: string
+          description: Pre-shared secret for remote agent authentication.
+
+    UpdateComputeEndpointRequest:
+      type: object
+      properties:
+        url:
+          type: string
+        size:
+          type: string
+          enum: [SMALL, MEDIUM, LARGE]
+        max_memory_gb:
+          type: integer
+          format: int64
+        auth_token:
+          type: string
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE, STARTING, STOPPING, ERROR]
+
+    PaginatedComputeEndpoints:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComputeEndpoint'
+        next_page_token:
+          type: string
+
+    ComputeAssignment:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        principal_id:
+          type: integer
+          format: int64
+        principal_type:
+          type: string
+          enum: [user, group]
+        endpoint_id:
+          type: integer
+          format: int64
+        endpoint_name:
+          type: string
+        is_default:
+          type: boolean
+        fallback_local:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    CreateComputeAssignmentRequest:
+      type: object
+      required: [principal_id, principal_type]
+      properties:
+        principal_id:
+          type: integer
+          format: int64
+        principal_type:
+          type: string
+          enum: [user, group]
+        is_default:
+          type: boolean
+          default: true
+        fallback_local:
+          type: boolean
+          default: false
+
+    PaginatedComputeAssignments:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComputeAssignment'
+        next_page_token:
+          type: string
+
+    ComputeEndpointHealth:
+      type: object
+      properties:
+        status:
+          type: string
+          description: Health status (e.g. "ok")
+        uptime_seconds:
+          type: integer
+          description: Agent uptime in seconds
+        duckdb_version:
+          type: string
+          description: DuckDB version running on the agent
+        memory_used_mb:
+          type: integer
+          description: Current memory usage in MB
+        max_memory_gb:
+          type: integer
+          description: Maximum memory limit in GB
+        endpoint_name:
+          type: string
+          description: Name of the compute endpoint
 
 paths:
   # === Query ===
@@ -3631,6 +3790,271 @@ paths:
       responses:
         '204':
           description: Volume deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # === Compute Endpoints ===
+  /compute-endpoints:
+    get:
+      operationId: listComputeEndpoints
+      summary: List compute endpoints
+      tags: [Compute]
+      description: Returns a paginated list of compute endpoints.
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of compute endpoints
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedComputeEndpoints'
+    post:
+      operationId: createComputeEndpoint
+      summary: Create a compute endpoint
+      tags: [Compute]
+      description: Creates a new compute endpoint. Requires MANAGE_COMPUTE on catalog.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateComputeEndpointRequest'
+      responses:
+        '201':
+          description: Created compute endpoint
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComputeEndpoint'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Endpoint already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /compute-endpoints/{endpointName}:
+    parameters:
+      - name: endpointName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getComputeEndpoint
+      summary: Get a compute endpoint by name
+      tags: [Compute]
+      responses:
+        '200':
+          description: Compute endpoint details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComputeEndpoint'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      operationId: updateComputeEndpoint
+      summary: Update a compute endpoint
+      tags: [Compute]
+      description: Updates compute endpoint fields. Requires MANAGE_COMPUTE on catalog.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateComputeEndpointRequest'
+      responses:
+        '200':
+          description: Updated compute endpoint
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComputeEndpoint'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: deleteComputeEndpoint
+      summary: Delete a compute endpoint
+      tags: [Compute]
+      description: Deletes a compute endpoint. Requires MANAGE_COMPUTE on catalog.
+      responses:
+        '204':
+          description: Compute endpoint deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /compute-endpoints/{endpointName}/assignments:
+    parameters:
+      - name: endpointName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: listComputeAssignments
+      summary: List assignments for a compute endpoint
+      tags: [Compute]
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of compute assignments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedComputeAssignments'
+        '404':
+          description: Endpoint not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: createComputeAssignment
+      summary: Assign a principal to a compute endpoint
+      tags: [Compute]
+      description: Creates a compute assignment. Requires MANAGE_COMPUTE on catalog.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateComputeAssignmentRequest'
+      responses:
+        '201':
+          description: Created compute assignment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComputeAssignment'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Assignment already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /compute-endpoints/{endpointName}/health:
+    parameters:
+      - name: endpointName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getComputeEndpointHealth
+      summary: Check health of a compute endpoint
+      tags: [Compute]
+      description: Proxies a health check to the remote compute agent. Requires MANAGE_COMPUTE on catalog.
+      responses:
+        '200':
+          description: Health check result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComputeEndpointHealth'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '502':
+          description: Agent unreachable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /compute-endpoints/{endpointName}/assignments/{assignmentId}:
+    parameters:
+      - name: endpointName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: assignmentId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    delete:
+      operationId: deleteComputeAssignment
+      summary: Remove a compute assignment
+      tags: [Compute]
+      description: Removes a compute assignment. Requires MANAGE_COMPUTE on catalog.
+      responses:
+        '204':
+          description: Assignment deleted
         '403':
           description: Access denied
           content:

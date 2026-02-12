@@ -68,9 +68,18 @@ func run() error {
 	}
 	logger.Info("DuckDB extensions installed", "extensions", "ducklake, sqlite, httpfs")
 
+	// Install postgres extension if using PostgreSQL catalog
+	if cfg.CatalogDBType == "postgres" {
+		if err := engine.InstallPostgresExtension(ctx, duckDB); err != nil {
+			return fmt.Errorf("install postgres extension: %w", err)
+		}
+		logger.Info("PostgreSQL extension installed")
+	}
+
 	// If legacy S3 env vars are present, set up DuckLake for backward compat
 	catalogAttached := false
-	if cfg.HasS3Config() {
+	switch {
+	case cfg.HasS3Config():
 		logger.Info("legacy S3 config detected, setting up DuckLake")
 		if err := engine.CreateS3Secret(ctx, duckDB, "hetzner_s3",
 			*cfg.S3KeyID, *cfg.S3Secret, *cfg.S3Endpoint, *cfg.S3Region, "path"); err != nil {
@@ -88,7 +97,20 @@ func run() error {
 				logger.Info("DuckLake ready", "mode", "legacy S3")
 			}
 		}
-	} else {
+	case cfg.CatalogDBType == "postgres" && cfg.CatalogDSN != "":
+		// PostgreSQL-based DuckLake catalog
+		bucket := "duck-demo"
+		if cfg.S3Bucket != nil {
+			bucket = *cfg.S3Bucket
+		}
+		dataPath := fmt.Sprintf("s3://%s/lake_data/", bucket)
+		if err := engine.AttachDuckLakePostgres(ctx, duckDB, cfg.CatalogDSN, dataPath); err != nil {
+			logger.Warn("DuckLake PostgreSQL attach failed", "error", err)
+		} else {
+			catalogAttached = true
+			logger.Info("DuckLake ready", "mode", "PostgreSQL catalog")
+		}
+	default:
 		logger.Info("no S3 config — running in local mode, use External Locations API to add storage")
 	}
 
@@ -131,6 +153,7 @@ func run() error {
 		svc.Ingestion,
 		svc.StorageCredential, svc.ExternalLocation,
 		svc.Volume,
+		svc.ComputeEndpoint,
 	)
 
 	// Create strict handler wrapper

@@ -122,6 +122,33 @@ type ServerInterface interface {
 	// Bind mask to principal
 	// (POST /column-masks/{columnMaskId}/bindings)
 	BindColumnMask(w http.ResponseWriter, r *http.Request, columnMaskId int64)
+	// List compute endpoints
+	// (GET /compute-endpoints)
+	ListComputeEndpoints(w http.ResponseWriter, r *http.Request, params ListComputeEndpointsParams)
+	// Create a compute endpoint
+	// (POST /compute-endpoints)
+	CreateComputeEndpoint(w http.ResponseWriter, r *http.Request)
+	// Delete a compute endpoint
+	// (DELETE /compute-endpoints/{endpointName})
+	DeleteComputeEndpoint(w http.ResponseWriter, r *http.Request, endpointName string)
+	// Get a compute endpoint by name
+	// (GET /compute-endpoints/{endpointName})
+	GetComputeEndpoint(w http.ResponseWriter, r *http.Request, endpointName string)
+	// Update a compute endpoint
+	// (PATCH /compute-endpoints/{endpointName})
+	UpdateComputeEndpoint(w http.ResponseWriter, r *http.Request, endpointName string)
+	// List assignments for a compute endpoint
+	// (GET /compute-endpoints/{endpointName}/assignments)
+	ListComputeAssignments(w http.ResponseWriter, r *http.Request, endpointName string, params ListComputeAssignmentsParams)
+	// Assign a principal to a compute endpoint
+	// (POST /compute-endpoints/{endpointName}/assignments)
+	CreateComputeAssignment(w http.ResponseWriter, r *http.Request, endpointName string)
+	// Remove a compute assignment
+	// (DELETE /compute-endpoints/{endpointName}/assignments/{assignmentId})
+	DeleteComputeAssignment(w http.ResponseWriter, r *http.Request, endpointName string, assignmentId int64)
+	// Check health of a compute endpoint
+	// (GET /compute-endpoints/{endpointName}/health)
+	GetComputeEndpointHealth(w http.ResponseWriter, r *http.Request, endpointName string)
 	// List external locations
 	// (GET /external-locations)
 	ListExternalLocations(w http.ResponseWriter, r *http.Request, params ListExternalLocationsParams)
@@ -467,6 +494,60 @@ func (_ Unimplemented) UnbindColumnMask(w http.ResponseWriter, r *http.Request, 
 // Bind mask to principal
 // (POST /column-masks/{columnMaskId}/bindings)
 func (_ Unimplemented) BindColumnMask(w http.ResponseWriter, r *http.Request, columnMaskId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List compute endpoints
+// (GET /compute-endpoints)
+func (_ Unimplemented) ListComputeEndpoints(w http.ResponseWriter, r *http.Request, params ListComputeEndpointsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create a compute endpoint
+// (POST /compute-endpoints)
+func (_ Unimplemented) CreateComputeEndpoint(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Delete a compute endpoint
+// (DELETE /compute-endpoints/{endpointName})
+func (_ Unimplemented) DeleteComputeEndpoint(w http.ResponseWriter, r *http.Request, endpointName string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get a compute endpoint by name
+// (GET /compute-endpoints/{endpointName})
+func (_ Unimplemented) GetComputeEndpoint(w http.ResponseWriter, r *http.Request, endpointName string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update a compute endpoint
+// (PATCH /compute-endpoints/{endpointName})
+func (_ Unimplemented) UpdateComputeEndpoint(w http.ResponseWriter, r *http.Request, endpointName string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List assignments for a compute endpoint
+// (GET /compute-endpoints/{endpointName}/assignments)
+func (_ Unimplemented) ListComputeAssignments(w http.ResponseWriter, r *http.Request, endpointName string, params ListComputeAssignmentsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Assign a principal to a compute endpoint
+// (POST /compute-endpoints/{endpointName}/assignments)
+func (_ Unimplemented) CreateComputeAssignment(w http.ResponseWriter, r *http.Request, endpointName string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Remove a compute assignment
+// (DELETE /compute-endpoints/{endpointName}/assignments/{assignmentId})
+func (_ Unimplemented) DeleteComputeAssignment(w http.ResponseWriter, r *http.Request, endpointName string, assignmentId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Check health of a compute endpoint
+// (GET /compute-endpoints/{endpointName}/health)
+func (_ Unimplemented) GetComputeEndpointHealth(w http.ResponseWriter, r *http.Request, endpointName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2078,6 +2159,330 @@ func (siw *ServerInterfaceWrapper) BindColumnMask(w http.ResponseWriter, r *http
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.BindColumnMask(w, r, columnMaskId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListComputeEndpoints operation middleware
+func (siw *ServerInterfaceWrapper) ListComputeEndpoints(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListComputeEndpointsParams
+
+	// ------------- Optional query parameter "max_results" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListComputeEndpoints(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateComputeEndpoint operation middleware
+func (siw *ServerInterfaceWrapper) CreateComputeEndpoint(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateComputeEndpoint(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteComputeEndpoint operation middleware
+func (siw *ServerInterfaceWrapper) DeleteComputeEndpoint(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "endpointName" -------------
+	var endpointName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "endpointName", chi.URLParam(r, "endpointName"), &endpointName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "endpointName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteComputeEndpoint(w, r, endpointName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetComputeEndpoint operation middleware
+func (siw *ServerInterfaceWrapper) GetComputeEndpoint(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "endpointName" -------------
+	var endpointName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "endpointName", chi.URLParam(r, "endpointName"), &endpointName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "endpointName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetComputeEndpoint(w, r, endpointName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateComputeEndpoint operation middleware
+func (siw *ServerInterfaceWrapper) UpdateComputeEndpoint(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "endpointName" -------------
+	var endpointName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "endpointName", chi.URLParam(r, "endpointName"), &endpointName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "endpointName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateComputeEndpoint(w, r, endpointName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListComputeAssignments operation middleware
+func (siw *ServerInterfaceWrapper) ListComputeAssignments(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "endpointName" -------------
+	var endpointName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "endpointName", chi.URLParam(r, "endpointName"), &endpointName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "endpointName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListComputeAssignmentsParams
+
+	// ------------- Optional query parameter "max_results" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListComputeAssignments(w, r, endpointName, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateComputeAssignment operation middleware
+func (siw *ServerInterfaceWrapper) CreateComputeAssignment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "endpointName" -------------
+	var endpointName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "endpointName", chi.URLParam(r, "endpointName"), &endpointName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "endpointName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateComputeAssignment(w, r, endpointName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteComputeAssignment operation middleware
+func (siw *ServerInterfaceWrapper) DeleteComputeAssignment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "endpointName" -------------
+	var endpointName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "endpointName", chi.URLParam(r, "endpointName"), &endpointName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "endpointName", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "assignmentId" -------------
+	var assignmentId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "assignmentId", chi.URLParam(r, "assignmentId"), &assignmentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "assignmentId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteComputeAssignment(w, r, endpointName, assignmentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetComputeEndpointHealth operation middleware
+func (siw *ServerInterfaceWrapper) GetComputeEndpointHealth(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "endpointName" -------------
+	var endpointName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "endpointName", chi.URLParam(r, "endpointName"), &endpointName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "endpointName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetComputeEndpointHealth(w, r, endpointName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4060,6 +4465,33 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/column-masks/{columnMaskId}/bindings", wrapper.BindColumnMask)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/compute-endpoints", wrapper.ListComputeEndpoints)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/compute-endpoints", wrapper.CreateComputeEndpoint)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/compute-endpoints/{endpointName}", wrapper.DeleteComputeEndpoint)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/compute-endpoints/{endpointName}", wrapper.GetComputeEndpoint)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/compute-endpoints/{endpointName}", wrapper.UpdateComputeEndpoint)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/compute-endpoints/{endpointName}/assignments", wrapper.ListComputeAssignments)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/compute-endpoints/{endpointName}/assignments", wrapper.CreateComputeAssignment)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/compute-endpoints/{endpointName}/assignments/{assignmentId}", wrapper.DeleteComputeAssignment)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/compute-endpoints/{endpointName}/health", wrapper.GetComputeEndpointHealth)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/external-locations", wrapper.ListExternalLocations)
 	})
 	r.Group(func(r chi.Router) {
@@ -5284,6 +5716,314 @@ type BindColumnMask404JSONResponse Error
 func (response BindColumnMask404JSONResponse) VisitBindColumnMaskResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListComputeEndpointsRequestObject struct {
+	Params ListComputeEndpointsParams
+}
+
+type ListComputeEndpointsResponseObject interface {
+	VisitListComputeEndpointsResponse(w http.ResponseWriter) error
+}
+
+type ListComputeEndpoints200JSONResponse PaginatedComputeEndpoints
+
+func (response ListComputeEndpoints200JSONResponse) VisitListComputeEndpointsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateComputeEndpointRequestObject struct {
+	Body *CreateComputeEndpointJSONRequestBody
+}
+
+type CreateComputeEndpointResponseObject interface {
+	VisitCreateComputeEndpointResponse(w http.ResponseWriter) error
+}
+
+type CreateComputeEndpoint201JSONResponse ComputeEndpoint
+
+func (response CreateComputeEndpoint201JSONResponse) VisitCreateComputeEndpointResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateComputeEndpoint400JSONResponse Error
+
+func (response CreateComputeEndpoint400JSONResponse) VisitCreateComputeEndpointResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateComputeEndpoint403JSONResponse Error
+
+func (response CreateComputeEndpoint403JSONResponse) VisitCreateComputeEndpointResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateComputeEndpoint409JSONResponse Error
+
+func (response CreateComputeEndpoint409JSONResponse) VisitCreateComputeEndpointResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteComputeEndpointRequestObject struct {
+	EndpointName string `json:"endpointName"`
+}
+
+type DeleteComputeEndpointResponseObject interface {
+	VisitDeleteComputeEndpointResponse(w http.ResponseWriter) error
+}
+
+type DeleteComputeEndpoint204Response struct {
+}
+
+func (response DeleteComputeEndpoint204Response) VisitDeleteComputeEndpointResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteComputeEndpoint403JSONResponse Error
+
+func (response DeleteComputeEndpoint403JSONResponse) VisitDeleteComputeEndpointResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteComputeEndpoint404JSONResponse Error
+
+func (response DeleteComputeEndpoint404JSONResponse) VisitDeleteComputeEndpointResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetComputeEndpointRequestObject struct {
+	EndpointName string `json:"endpointName"`
+}
+
+type GetComputeEndpointResponseObject interface {
+	VisitGetComputeEndpointResponse(w http.ResponseWriter) error
+}
+
+type GetComputeEndpoint200JSONResponse ComputeEndpoint
+
+func (response GetComputeEndpoint200JSONResponse) VisitGetComputeEndpointResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetComputeEndpoint404JSONResponse Error
+
+func (response GetComputeEndpoint404JSONResponse) VisitGetComputeEndpointResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateComputeEndpointRequestObject struct {
+	EndpointName string `json:"endpointName"`
+	Body         *UpdateComputeEndpointJSONRequestBody
+}
+
+type UpdateComputeEndpointResponseObject interface {
+	VisitUpdateComputeEndpointResponse(w http.ResponseWriter) error
+}
+
+type UpdateComputeEndpoint200JSONResponse ComputeEndpoint
+
+func (response UpdateComputeEndpoint200JSONResponse) VisitUpdateComputeEndpointResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateComputeEndpoint403JSONResponse Error
+
+func (response UpdateComputeEndpoint403JSONResponse) VisitUpdateComputeEndpointResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateComputeEndpoint404JSONResponse Error
+
+func (response UpdateComputeEndpoint404JSONResponse) VisitUpdateComputeEndpointResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListComputeAssignmentsRequestObject struct {
+	EndpointName string `json:"endpointName"`
+	Params       ListComputeAssignmentsParams
+}
+
+type ListComputeAssignmentsResponseObject interface {
+	VisitListComputeAssignmentsResponse(w http.ResponseWriter) error
+}
+
+type ListComputeAssignments200JSONResponse PaginatedComputeAssignments
+
+func (response ListComputeAssignments200JSONResponse) VisitListComputeAssignmentsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListComputeAssignments404JSONResponse Error
+
+func (response ListComputeAssignments404JSONResponse) VisitListComputeAssignmentsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateComputeAssignmentRequestObject struct {
+	EndpointName string `json:"endpointName"`
+	Body         *CreateComputeAssignmentJSONRequestBody
+}
+
+type CreateComputeAssignmentResponseObject interface {
+	VisitCreateComputeAssignmentResponse(w http.ResponseWriter) error
+}
+
+type CreateComputeAssignment201JSONResponse ComputeAssignment
+
+func (response CreateComputeAssignment201JSONResponse) VisitCreateComputeAssignmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateComputeAssignment400JSONResponse Error
+
+func (response CreateComputeAssignment400JSONResponse) VisitCreateComputeAssignmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateComputeAssignment403JSONResponse Error
+
+func (response CreateComputeAssignment403JSONResponse) VisitCreateComputeAssignmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateComputeAssignment409JSONResponse Error
+
+func (response CreateComputeAssignment409JSONResponse) VisitCreateComputeAssignmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteComputeAssignmentRequestObject struct {
+	EndpointName string `json:"endpointName"`
+	AssignmentId int64  `json:"assignmentId"`
+}
+
+type DeleteComputeAssignmentResponseObject interface {
+	VisitDeleteComputeAssignmentResponse(w http.ResponseWriter) error
+}
+
+type DeleteComputeAssignment204Response struct {
+}
+
+func (response DeleteComputeAssignment204Response) VisitDeleteComputeAssignmentResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteComputeAssignment403JSONResponse Error
+
+func (response DeleteComputeAssignment403JSONResponse) VisitDeleteComputeAssignmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteComputeAssignment404JSONResponse Error
+
+func (response DeleteComputeAssignment404JSONResponse) VisitDeleteComputeAssignmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetComputeEndpointHealthRequestObject struct {
+	EndpointName string `json:"endpointName"`
+}
+
+type GetComputeEndpointHealthResponseObject interface {
+	VisitGetComputeEndpointHealthResponse(w http.ResponseWriter) error
+}
+
+type GetComputeEndpointHealth200JSONResponse ComputeEndpointHealth
+
+func (response GetComputeEndpointHealth200JSONResponse) VisitGetComputeEndpointHealthResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetComputeEndpointHealth403JSONResponse Error
+
+func (response GetComputeEndpointHealth403JSONResponse) VisitGetComputeEndpointHealthResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetComputeEndpointHealth404JSONResponse Error
+
+func (response GetComputeEndpointHealth404JSONResponse) VisitGetComputeEndpointHealthResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetComputeEndpointHealth502JSONResponse Error
+
+func (response GetComputeEndpointHealth502JSONResponse) VisitGetComputeEndpointHealthResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(502)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -6749,6 +7489,33 @@ type StrictServerInterface interface {
 	// Bind mask to principal
 	// (POST /column-masks/{columnMaskId}/bindings)
 	BindColumnMask(ctx context.Context, request BindColumnMaskRequestObject) (BindColumnMaskResponseObject, error)
+	// List compute endpoints
+	// (GET /compute-endpoints)
+	ListComputeEndpoints(ctx context.Context, request ListComputeEndpointsRequestObject) (ListComputeEndpointsResponseObject, error)
+	// Create a compute endpoint
+	// (POST /compute-endpoints)
+	CreateComputeEndpoint(ctx context.Context, request CreateComputeEndpointRequestObject) (CreateComputeEndpointResponseObject, error)
+	// Delete a compute endpoint
+	// (DELETE /compute-endpoints/{endpointName})
+	DeleteComputeEndpoint(ctx context.Context, request DeleteComputeEndpointRequestObject) (DeleteComputeEndpointResponseObject, error)
+	// Get a compute endpoint by name
+	// (GET /compute-endpoints/{endpointName})
+	GetComputeEndpoint(ctx context.Context, request GetComputeEndpointRequestObject) (GetComputeEndpointResponseObject, error)
+	// Update a compute endpoint
+	// (PATCH /compute-endpoints/{endpointName})
+	UpdateComputeEndpoint(ctx context.Context, request UpdateComputeEndpointRequestObject) (UpdateComputeEndpointResponseObject, error)
+	// List assignments for a compute endpoint
+	// (GET /compute-endpoints/{endpointName}/assignments)
+	ListComputeAssignments(ctx context.Context, request ListComputeAssignmentsRequestObject) (ListComputeAssignmentsResponseObject, error)
+	// Assign a principal to a compute endpoint
+	// (POST /compute-endpoints/{endpointName}/assignments)
+	CreateComputeAssignment(ctx context.Context, request CreateComputeAssignmentRequestObject) (CreateComputeAssignmentResponseObject, error)
+	// Remove a compute assignment
+	// (DELETE /compute-endpoints/{endpointName}/assignments/{assignmentId})
+	DeleteComputeAssignment(ctx context.Context, request DeleteComputeAssignmentRequestObject) (DeleteComputeAssignmentResponseObject, error)
+	// Check health of a compute endpoint
+	// (GET /compute-endpoints/{endpointName}/health)
+	GetComputeEndpointHealth(ctx context.Context, request GetComputeEndpointHealthRequestObject) (GetComputeEndpointHealthResponseObject, error)
 	// List external locations
 	// (GET /external-locations)
 	ListExternalLocations(ctx context.Context, request ListExternalLocationsRequestObject) (ListExternalLocationsResponseObject, error)
@@ -7893,6 +8660,261 @@ func (sh *strictHandler) BindColumnMask(w http.ResponseWriter, r *http.Request, 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(BindColumnMaskResponseObject); ok {
 		if err := validResponse.VisitBindColumnMaskResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListComputeEndpoints operation middleware
+func (sh *strictHandler) ListComputeEndpoints(w http.ResponseWriter, r *http.Request, params ListComputeEndpointsParams) {
+	var request ListComputeEndpointsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListComputeEndpoints(ctx, request.(ListComputeEndpointsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListComputeEndpoints")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListComputeEndpointsResponseObject); ok {
+		if err := validResponse.VisitListComputeEndpointsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateComputeEndpoint operation middleware
+func (sh *strictHandler) CreateComputeEndpoint(w http.ResponseWriter, r *http.Request) {
+	var request CreateComputeEndpointRequestObject
+
+	var body CreateComputeEndpointJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateComputeEndpoint(ctx, request.(CreateComputeEndpointRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateComputeEndpoint")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateComputeEndpointResponseObject); ok {
+		if err := validResponse.VisitCreateComputeEndpointResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteComputeEndpoint operation middleware
+func (sh *strictHandler) DeleteComputeEndpoint(w http.ResponseWriter, r *http.Request, endpointName string) {
+	var request DeleteComputeEndpointRequestObject
+
+	request.EndpointName = endpointName
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteComputeEndpoint(ctx, request.(DeleteComputeEndpointRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteComputeEndpoint")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteComputeEndpointResponseObject); ok {
+		if err := validResponse.VisitDeleteComputeEndpointResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetComputeEndpoint operation middleware
+func (sh *strictHandler) GetComputeEndpoint(w http.ResponseWriter, r *http.Request, endpointName string) {
+	var request GetComputeEndpointRequestObject
+
+	request.EndpointName = endpointName
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetComputeEndpoint(ctx, request.(GetComputeEndpointRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetComputeEndpoint")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetComputeEndpointResponseObject); ok {
+		if err := validResponse.VisitGetComputeEndpointResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateComputeEndpoint operation middleware
+func (sh *strictHandler) UpdateComputeEndpoint(w http.ResponseWriter, r *http.Request, endpointName string) {
+	var request UpdateComputeEndpointRequestObject
+
+	request.EndpointName = endpointName
+
+	var body UpdateComputeEndpointJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateComputeEndpoint(ctx, request.(UpdateComputeEndpointRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateComputeEndpoint")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateComputeEndpointResponseObject); ok {
+		if err := validResponse.VisitUpdateComputeEndpointResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListComputeAssignments operation middleware
+func (sh *strictHandler) ListComputeAssignments(w http.ResponseWriter, r *http.Request, endpointName string, params ListComputeAssignmentsParams) {
+	var request ListComputeAssignmentsRequestObject
+
+	request.EndpointName = endpointName
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListComputeAssignments(ctx, request.(ListComputeAssignmentsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListComputeAssignments")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListComputeAssignmentsResponseObject); ok {
+		if err := validResponse.VisitListComputeAssignmentsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateComputeAssignment operation middleware
+func (sh *strictHandler) CreateComputeAssignment(w http.ResponseWriter, r *http.Request, endpointName string) {
+	var request CreateComputeAssignmentRequestObject
+
+	request.EndpointName = endpointName
+
+	var body CreateComputeAssignmentJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateComputeAssignment(ctx, request.(CreateComputeAssignmentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateComputeAssignment")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateComputeAssignmentResponseObject); ok {
+		if err := validResponse.VisitCreateComputeAssignmentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteComputeAssignment operation middleware
+func (sh *strictHandler) DeleteComputeAssignment(w http.ResponseWriter, r *http.Request, endpointName string, assignmentId int64) {
+	var request DeleteComputeAssignmentRequestObject
+
+	request.EndpointName = endpointName
+	request.AssignmentId = assignmentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteComputeAssignment(ctx, request.(DeleteComputeAssignmentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteComputeAssignment")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteComputeAssignmentResponseObject); ok {
+		if err := validResponse.VisitDeleteComputeAssignmentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetComputeEndpointHealth operation middleware
+func (sh *strictHandler) GetComputeEndpointHealth(w http.ResponseWriter, r *http.Request, endpointName string) {
+	var request GetComputeEndpointHealthRequestObject
+
+	request.EndpointName = endpointName
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetComputeEndpointHealth(ctx, request.(GetComputeEndpointHealthRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetComputeEndpointHealth")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetComputeEndpointHealthResponseObject); ok {
+		if err := validResponse.VisitGetComputeEndpointHealthResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -9283,132 +10305,147 @@ func (sh *strictHandler) CreateTagAssignment(w http.ResponseWriter, r *http.Requ
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

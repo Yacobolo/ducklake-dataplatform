@@ -181,7 +181,7 @@ func setupEngine(t *testing.T) *engine.SecureEngine {
 	}
 
 	cat := setupTestCatalog(t)
-	return engine.NewSecureEngine(db, cat, slog.New(slog.DiscardHandler))
+	return engine.NewSecureEngine(db, cat, nil, slog.New(slog.DiscardHandler))
 }
 
 func TestAdminSeesAllRows(t *testing.T) {

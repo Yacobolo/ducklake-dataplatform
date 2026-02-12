@@ -195,6 +195,22 @@ type ExternalTableRepository interface {
 	DeleteBySchema(ctx context.Context, schemaName string) error
 }
 
+// ComputeEndpointRepository provides CRUD operations for compute endpoints and assignments.
+type ComputeEndpointRepository interface {
+	Create(ctx context.Context, ep *ComputeEndpoint) (*ComputeEndpoint, error)
+	GetByID(ctx context.Context, id int64) (*ComputeEndpoint, error)
+	GetByName(ctx context.Context, name string) (*ComputeEndpoint, error)
+	List(ctx context.Context, page PageRequest) ([]ComputeEndpoint, int64, error)
+	Update(ctx context.Context, id int64, req UpdateComputeEndpointRequest) (*ComputeEndpoint, error)
+	Delete(ctx context.Context, id int64) error
+	UpdateStatus(ctx context.Context, id int64, status string) error
+	Assign(ctx context.Context, a *ComputeAssignment) (*ComputeAssignment, error)
+	Unassign(ctx context.Context, id int64) error
+	ListAssignments(ctx context.Context, endpointID int64, page PageRequest) ([]ComputeAssignment, int64, error)
+	GetDefaultForPrincipal(ctx context.Context, principalID int64, principalType string) (*ComputeEndpoint, error)
+	GetAssignmentsForPrincipal(ctx context.Context, principalID int64, principalType string) ([]ComputeEndpoint, error)
+}
+
 // AuthorizationService defines the interface for permission checking.
 // The engine depends on this interface rather than a concrete service type.
 type AuthorizationService interface {

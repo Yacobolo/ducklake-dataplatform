@@ -5,11 +5,60 @@ package api
 
 import (
 	"time"
+
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 const (
 	ApiKeyAuthScopes = "ApiKeyAuth.Scopes"
 	BearerAuthScopes = "BearerAuth.Scopes"
+)
+
+// Defines values for ComputeAssignmentPrincipalType.
+const (
+	ComputeAssignmentPrincipalTypeGroup ComputeAssignmentPrincipalType = "group"
+	ComputeAssignmentPrincipalTypeUser  ComputeAssignmentPrincipalType = "user"
+)
+
+// Defines values for ComputeEndpointSize.
+const (
+	ComputeEndpointSizeLARGE  ComputeEndpointSize = "LARGE"
+	ComputeEndpointSizeMEDIUM ComputeEndpointSize = "MEDIUM"
+	ComputeEndpointSizeSMALL  ComputeEndpointSize = "SMALL"
+)
+
+// Defines values for ComputeEndpointStatus.
+const (
+	ComputeEndpointStatusACTIVE   ComputeEndpointStatus = "ACTIVE"
+	ComputeEndpointStatusERROR    ComputeEndpointStatus = "ERROR"
+	ComputeEndpointStatusINACTIVE ComputeEndpointStatus = "INACTIVE"
+	ComputeEndpointStatusSTARTING ComputeEndpointStatus = "STARTING"
+	ComputeEndpointStatusSTOPPING ComputeEndpointStatus = "STOPPING"
+)
+
+// Defines values for ComputeEndpointType.
+const (
+	ComputeEndpointTypeLOCAL  ComputeEndpointType = "LOCAL"
+	ComputeEndpointTypeREMOTE ComputeEndpointType = "REMOTE"
+)
+
+// Defines values for CreateComputeAssignmentRequestPrincipalType.
+const (
+	CreateComputeAssignmentRequestPrincipalTypeGroup CreateComputeAssignmentRequestPrincipalType = "group"
+	CreateComputeAssignmentRequestPrincipalTypeUser  CreateComputeAssignmentRequestPrincipalType = "user"
+)
+
+// Defines values for CreateComputeEndpointRequestSize.
+const (
+	CreateComputeEndpointRequestSizeLARGE  CreateComputeEndpointRequestSize = "LARGE"
+	CreateComputeEndpointRequestSizeMEDIUM CreateComputeEndpointRequestSize = "MEDIUM"
+	CreateComputeEndpointRequestSizeSMALL  CreateComputeEndpointRequestSize = "SMALL"
+)
+
+// Defines values for CreateComputeEndpointRequestType.
+const (
+	CreateComputeEndpointRequestTypeLOCAL  CreateComputeEndpointRequestType = "LOCAL"
+	CreateComputeEndpointRequestTypeREMOTE CreateComputeEndpointRequestType = "REMOTE"
 )
 
 // Defines values for CreateExternalLocationRequestStorageType.
@@ -47,6 +96,22 @@ const (
 	AZURE StorageCredentialCredentialType = "AZURE"
 	GCS   StorageCredentialCredentialType = "GCS"
 	S3    StorageCredentialCredentialType = "S3"
+)
+
+// Defines values for UpdateComputeEndpointRequestSize.
+const (
+	LARGE  UpdateComputeEndpointRequestSize = "LARGE"
+	MEDIUM UpdateComputeEndpointRequestSize = "MEDIUM"
+	SMALL  UpdateComputeEndpointRequestSize = "SMALL"
+)
+
+// Defines values for UpdateComputeEndpointRequestStatus.
+const (
+	UpdateComputeEndpointRequestStatusACTIVE   UpdateComputeEndpointRequestStatus = "ACTIVE"
+	UpdateComputeEndpointRequestStatusERROR    UpdateComputeEndpointRequestStatus = "ERROR"
+	UpdateComputeEndpointRequestStatusINACTIVE UpdateComputeEndpointRequestStatus = "INACTIVE"
+	UpdateComputeEndpointRequestStatusSTARTING UpdateComputeEndpointRequestStatus = "STARTING"
+	UpdateComputeEndpointRequestStatusSTOPPING UpdateComputeEndpointRequestStatus = "STOPPING"
 )
 
 // Defines values for VolumeDetailVolumeType.
@@ -115,6 +180,66 @@ type CommitIngestionRequest struct {
 	S3Keys []string `json:"s3_keys"`
 }
 
+// ComputeAssignment defines model for ComputeAssignment.
+type ComputeAssignment struct {
+	CreatedAt     *time.Time                      `json:"created_at,omitempty"`
+	EndpointId    *int64                          `json:"endpoint_id,omitempty"`
+	EndpointName  *string                         `json:"endpoint_name,omitempty"`
+	FallbackLocal *bool                           `json:"fallback_local,omitempty"`
+	Id            *int64                          `json:"id,omitempty"`
+	IsDefault     *bool                           `json:"is_default,omitempty"`
+	PrincipalId   *int64                          `json:"principal_id,omitempty"`
+	PrincipalType *ComputeAssignmentPrincipalType `json:"principal_type,omitempty"`
+}
+
+// ComputeAssignmentPrincipalType defines model for ComputeAssignment.PrincipalType.
+type ComputeAssignmentPrincipalType string
+
+// ComputeEndpoint defines model for ComputeEndpoint.
+type ComputeEndpoint struct {
+	CreatedAt   *time.Time             `json:"created_at,omitempty"`
+	ExternalId  *openapi_types.UUID    `json:"external_id,omitempty"`
+	Id          *int64                 `json:"id,omitempty"`
+	MaxMemoryGb *int64                 `json:"max_memory_gb,omitempty"`
+	Name        *string                `json:"name,omitempty"`
+	Owner       *string                `json:"owner,omitempty"`
+	Size        *ComputeEndpointSize   `json:"size,omitempty"`
+	Status      *ComputeEndpointStatus `json:"status,omitempty"`
+	Type        *ComputeEndpointType   `json:"type,omitempty"`
+	UpdatedAt   *time.Time             `json:"updated_at,omitempty"`
+	Url         *string                `json:"url,omitempty"`
+}
+
+// ComputeEndpointSize defines model for ComputeEndpoint.Size.
+type ComputeEndpointSize string
+
+// ComputeEndpointStatus defines model for ComputeEndpoint.Status.
+type ComputeEndpointStatus string
+
+// ComputeEndpointType defines model for ComputeEndpoint.Type.
+type ComputeEndpointType string
+
+// ComputeEndpointHealth defines model for ComputeEndpointHealth.
+type ComputeEndpointHealth struct {
+	// DuckdbVersion DuckDB version running on the agent
+	DuckdbVersion *string `json:"duckdb_version,omitempty"`
+
+	// EndpointName Name of the compute endpoint
+	EndpointName *string `json:"endpoint_name,omitempty"`
+
+	// MaxMemoryGb Maximum memory limit in GB
+	MaxMemoryGb *int `json:"max_memory_gb,omitempty"`
+
+	// MemoryUsedMb Current memory usage in MB
+	MemoryUsedMb *int `json:"memory_used_mb,omitempty"`
+
+	// Status Health status (e.g. "ok")
+	Status *string `json:"status,omitempty"`
+
+	// UptimeSeconds Agent uptime in seconds
+	UptimeSeconds *int `json:"uptime_seconds,omitempty"`
+}
+
 // CreateColumnMaskRequest defines model for CreateColumnMaskRequest.
 type CreateColumnMaskRequest struct {
 	ColumnName     string  `json:"column_name"`
@@ -127,6 +252,34 @@ type CreateColumnRequest struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
 }
+
+// CreateComputeAssignmentRequest defines model for CreateComputeAssignmentRequest.
+type CreateComputeAssignmentRequest struct {
+	FallbackLocal *bool                                       `json:"fallback_local,omitempty"`
+	IsDefault     *bool                                       `json:"is_default,omitempty"`
+	PrincipalId   int64                                       `json:"principal_id"`
+	PrincipalType CreateComputeAssignmentRequestPrincipalType `json:"principal_type"`
+}
+
+// CreateComputeAssignmentRequestPrincipalType defines model for CreateComputeAssignmentRequest.PrincipalType.
+type CreateComputeAssignmentRequestPrincipalType string
+
+// CreateComputeEndpointRequest defines model for CreateComputeEndpointRequest.
+type CreateComputeEndpointRequest struct {
+	// AuthToken Pre-shared secret for remote agent authentication.
+	AuthToken   *string                           `json:"auth_token,omitempty"`
+	MaxMemoryGb *int64                            `json:"max_memory_gb,omitempty"`
+	Name        string                            `json:"name"`
+	Size        *CreateComputeEndpointRequestSize `json:"size,omitempty"`
+	Type        CreateComputeEndpointRequestType  `json:"type"`
+	Url         string                            `json:"url"`
+}
+
+// CreateComputeEndpointRequestSize defines model for CreateComputeEndpointRequest.Size.
+type CreateComputeEndpointRequestSize string
+
+// CreateComputeEndpointRequestType defines model for CreateComputeEndpointRequest.Type.
+type CreateComputeEndpointRequestType string
 
 // CreateExternalLocationRequest defines model for CreateExternalLocationRequest.
 type CreateExternalLocationRequest struct {
@@ -416,6 +569,18 @@ type PaginatedColumnMasks struct {
 	NextPageToken *string       `json:"next_page_token,omitempty"`
 }
 
+// PaginatedComputeAssignments defines model for PaginatedComputeAssignments.
+type PaginatedComputeAssignments struct {
+	Data          *[]ComputeAssignment `json:"data,omitempty"`
+	NextPageToken *string              `json:"next_page_token,omitempty"`
+}
+
+// PaginatedComputeEndpoints defines model for PaginatedComputeEndpoints.
+type PaginatedComputeEndpoints struct {
+	Data          *[]ComputeEndpoint `json:"data,omitempty"`
+	NextPageToken *string            `json:"next_page_token,omitempty"`
+}
+
 // PaginatedExternalLocations defines model for PaginatedExternalLocations.
 type PaginatedExternalLocations struct {
 	Data          *[]ExternalLocation `json:"data,omitempty"`
@@ -699,6 +864,21 @@ type UpdateColumnRequest struct {
 	Properties *map[string]string `json:"properties,omitempty"`
 }
 
+// UpdateComputeEndpointRequest defines model for UpdateComputeEndpointRequest.
+type UpdateComputeEndpointRequest struct {
+	AuthToken   *string                             `json:"auth_token,omitempty"`
+	MaxMemoryGb *int64                              `json:"max_memory_gb,omitempty"`
+	Size        *UpdateComputeEndpointRequestSize   `json:"size,omitempty"`
+	Status      *UpdateComputeEndpointRequestStatus `json:"status,omitempty"`
+	Url         *string                             `json:"url,omitempty"`
+}
+
+// UpdateComputeEndpointRequestSize defines model for UpdateComputeEndpointRequest.Size.
+type UpdateComputeEndpointRequestSize string
+
+// UpdateComputeEndpointRequestStatus defines model for UpdateComputeEndpointRequest.Status.
+type UpdateComputeEndpointRequestStatus string
+
 // UpdateExternalLocationRequest defines model for UpdateExternalLocationRequest.
 type UpdateExternalLocationRequest struct {
 	Comment        *string `json:"comment,omitempty"`
@@ -870,6 +1050,24 @@ type ListViewsParams struct {
 
 // ListVolumesParams defines parameters for ListVolumes.
 type ListVolumesParams struct {
+	// MaxResults Maximum number of results to return per page.
+	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
+
+	// PageToken Opaque pagination token from a previous response.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// ListComputeEndpointsParams defines parameters for ListComputeEndpoints.
+type ListComputeEndpointsParams struct {
+	// MaxResults Maximum number of results to return per page.
+	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
+
+	// PageToken Opaque pagination token from a previous response.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// ListComputeAssignmentsParams defines parameters for ListComputeAssignments.
+type ListComputeAssignmentsParams struct {
 	// MaxResults Maximum number of results to return per page.
 	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
 
@@ -1062,6 +1260,15 @@ type UnbindColumnMaskJSONRequestBody = RowFilterBindingRequest
 
 // BindColumnMaskJSONRequestBody defines body for BindColumnMask for application/json ContentType.
 type BindColumnMaskJSONRequestBody = ColumnMaskBindingRequest
+
+// CreateComputeEndpointJSONRequestBody defines body for CreateComputeEndpoint for application/json ContentType.
+type CreateComputeEndpointJSONRequestBody = CreateComputeEndpointRequest
+
+// UpdateComputeEndpointJSONRequestBody defines body for UpdateComputeEndpoint for application/json ContentType.
+type UpdateComputeEndpointJSONRequestBody = UpdateComputeEndpointRequest
+
+// CreateComputeAssignmentJSONRequestBody defines body for CreateComputeAssignment for application/json ContentType.
+type CreateComputeAssignmentJSONRequestBody = CreateComputeAssignmentRequest
 
 // CreateExternalLocationJSONRequestBody defines body for CreateExternalLocation for application/json ContentType.
 type CreateExternalLocationJSONRequestBody = CreateExternalLocationRequest
