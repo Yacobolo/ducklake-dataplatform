@@ -3,6 +3,8 @@ module duck-demo
 go 1.25.7
 
 require (
+	cloud.google.com/go/storage v1.60.0
+	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.4
 	github.com/aws/aws-sdk-go-v2 v1.41.1
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.7
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.96.0
@@ -16,7 +18,12 @@ require (
 	github.com/oapi-codegen/runtime v1.1.2
 	github.com/pganalyze/pg_query_go/v6 v6.2.2
 	github.com/pressly/goose/v3 v3.26.0
+	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
+	golang.org/x/term v0.39.0
+	golang.org/x/tools v0.41.0
+	google.golang.org/api v0.266.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -27,10 +34,8 @@ require (
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
 	cloud.google.com/go/iam v1.5.3 // indirect
 	cloud.google.com/go/monitoring v1.24.3 // indirect
-	cloud.google.com/go/storage v1.60.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.20.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.11.2 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.4 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.30.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.55.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.55.0 // indirect
@@ -68,6 +73,7 @@ require (
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.11 // indirect
 	github.com/googleapis/gax-go/v2 v2.17.0 // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/klauspost/compress v1.18.3 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
@@ -81,6 +87,7 @@ require (
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
+	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.6.0 // indirect
 	github.com/woodsbury/decimal128 v1.3.0 // indirect
 	github.com/zeebo/xxh3 v1.1.0 // indirect
@@ -104,13 +111,10 @@ require (
 	golang.org/x/telemetry v0.0.0-20260116145544-c6413dc483f5 // indirect
 	golang.org/x/text v0.33.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
-	golang.org/x/tools v0.41.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
-	google.golang.org/api v0.266.0 // indirect
 	google.golang.org/genproto v0.0.0-20260128011058-8636f8732409 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260203192932-546029d2fa20 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260203192932-546029d2fa20 // indirect
 	google.golang.org/grpc v1.78.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

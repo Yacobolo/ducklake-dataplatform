@@ -38,14 +38,31 @@ tasks:
       - oapi-codegen -generate models -package api -o internal/api/types.gen.go internal/api/openapi.yaml
       - oapi-codegen -generate chi-server,strict-server,spec -package api -o internal/api/server.gen.go internal/api/openapi.yaml
 
+  generate-cli:
+    desc: Generate CLI commands from OpenAPI spec
+    cmds:
+      - go run ./cmd/cli-gen -spec internal/api/openapi.yaml -config cli-config.yaml -out pkg/cli/gen/
+    sources:
+      - internal/api/openapi.yaml
+      - cli-config.yaml
+      - internal/codegen/cli/**/*.go
+      - internal/codegen/cli/templates/*.tmpl
+    generates:
+      - pkg/cli/gen/*.gen.go
+
   generate:
     desc: Run all code generation
-    deps: [generate-api, sqlc]
+    deps: [generate-api, sqlc, generate-cli]
 
   build:
     desc: Build all packages
     cmds:
       - go build ./...
+
+  build-cli:
+    desc: Build the CLI binary
+    cmds:
+      - go build -ldflags "-X main.version={{.GIT_TAG}}" -o bin/duck ./cmd/cli
 
   build-agent:
     desc: Build the compute agent binary
@@ -71,6 +88,17 @@ tasks:
     desc: Lint the OpenAPI spec for consistency
     cmds:
       - go run ./cmd/lint-api internal/api/openapi.yaml
+
+  test-cli:
+    desc: Run CLI tests
+    cmds:
+      - gotestsum --format pkgname-and-test-fails -- -race ./pkg/cli/... ./internal/codegen/cli/...
+
+  check-generated:
+    desc: Verify all generated files are up to date
+    cmds:
+      - task generate
+      - git diff --exit-code pkg/cli/gen/ internal/api/types.gen.go internal/api/server.gen.go
 
   integration-test:
     desc: Run integration tests (package summary, shows failures inline)
