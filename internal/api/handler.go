@@ -199,6 +199,8 @@ func (h *APIHandler) CreatePrincipal(ctx context.Context, req CreatePrincipalReq
 	result, err := h.principals.Create(ctx, p)
 	if err != nil {
 		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return CreatePrincipal403JSONResponse{Code: 403, Message: err.Error()}, nil
 		case errors.As(err, new(*domain.ValidationError)):
 			return CreatePrincipal400JSONResponse{Code: 400, Message: err.Error()}, nil
 		case errors.As(err, new(*domain.ConflictError)):
@@ -226,6 +228,8 @@ func (h *APIHandler) GetPrincipal(ctx context.Context, req GetPrincipalRequestOb
 func (h *APIHandler) DeletePrincipal(ctx context.Context, req DeletePrincipalRequestObject) (DeletePrincipalResponseObject, error) {
 	if err := h.principals.Delete(ctx, req.PrincipalId); err != nil {
 		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return DeletePrincipal403JSONResponse{Code: 403, Message: err.Error()}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
 			return DeletePrincipal404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
@@ -238,6 +242,8 @@ func (h *APIHandler) DeletePrincipal(ctx context.Context, req DeletePrincipalReq
 func (h *APIHandler) UpdatePrincipalAdmin(ctx context.Context, req UpdatePrincipalAdminRequestObject) (UpdatePrincipalAdminResponseObject, error) {
 	if err := h.principals.SetAdmin(ctx, req.PrincipalId, req.Body.IsAdmin); err != nil {
 		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return UpdatePrincipalAdmin403JSONResponse{Code: 403, Message: err.Error()}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
 			return UpdatePrincipalAdmin404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
@@ -270,7 +276,14 @@ func (h *APIHandler) CreateGroup(ctx context.Context, req CreateGroupRequestObje
 	}
 	result, err := h.groups.Create(ctx, g)
 	if err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return CreateGroup403JSONResponse{Code: 403, Message: err.Error()}, nil
+		case errors.As(err, new(*domain.ValidationError)):
+			return CreateGroup400JSONResponse{Code: 400, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return CreateGroup201JSONResponse(groupToAPI(*result)), nil
 }
@@ -290,7 +303,12 @@ func (h *APIHandler) GetGroup(ctx context.Context, req GetGroupRequestObject) (G
 
 func (h *APIHandler) DeleteGroup(ctx context.Context, req DeleteGroupRequestObject) (DeleteGroupResponseObject, error) {
 	if err := h.groups.Delete(ctx, req.GroupId); err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return DeleteGroup403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return DeleteGroup204Response{}, nil
 }
@@ -315,7 +333,12 @@ func (h *APIHandler) CreateGroupMember(ctx context.Context, req CreateGroupMembe
 		MemberType: req.Body.MemberType,
 		MemberID:   req.Body.MemberId,
 	}); err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return CreateGroupMember403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return CreateGroupMember204Response{}, nil
 }
@@ -326,7 +349,12 @@ func (h *APIHandler) DeleteGroupMember(ctx context.Context, req DeleteGroupMembe
 		MemberType: req.Body.MemberType,
 		MemberID:   req.Body.MemberId,
 	}); err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return DeleteGroupMember403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return DeleteGroupMember204Response{}, nil
 }
@@ -370,7 +398,14 @@ func (h *APIHandler) CreateGrant(ctx context.Context, req CreateGrantRequestObje
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	result, err := h.grants.Grant(ctx, principal, g)
 	if err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return CreateGrant403JSONResponse{Code: 403, Message: err.Error()}, nil
+		case errors.As(err, new(*domain.ValidationError)):
+			return CreateGrant400JSONResponse{Code: 400, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return CreateGrant201JSONResponse(grantToAPI(*result)), nil
 }
@@ -384,7 +419,12 @@ func (h *APIHandler) DeleteGrant(ctx context.Context, req DeleteGrantRequestObje
 		SecurableID:   req.Body.SecurableId,
 		Privilege:     req.Body.Privilege,
 	}); err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return DeleteGrant403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return DeleteGrant204Response{}, nil
 }
