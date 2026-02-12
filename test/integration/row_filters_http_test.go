@@ -65,12 +65,9 @@ func TestHTTP_RowFilterCRUD(t *testing.T) {
 			_ = resp.Body.Close()
 		}},
 		{"unbind", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/row-filters/%d/bindings", env.Server.URL, int64(filterID))
-			body := map[string]interface{}{
-				"principal_id":   analyst.ID,
-				"principal_type": "user",
-			}
-			resp := doRequest(t, "DELETE", url, env.Keys.Admin, body)
+			url := fmt.Sprintf("%s/v1/row-filters/%d/bindings?principal_id=%d&principal_type=user",
+				env.Server.URL, int64(filterID), analyst.ID)
+			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()
 		}},

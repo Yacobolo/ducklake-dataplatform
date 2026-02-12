@@ -7,6 +7,9 @@ RETURNING *;
 DELETE FROM privilege_grants
 WHERE principal_id = ? AND principal_type = ? AND securable_type = ? AND securable_id = ? AND privilege = ?;
 
+-- name: RevokePrivilegeByID :exec
+DELETE FROM privilege_grants WHERE id = ?;
+
 -- name: ListGrantsForPrincipal :many
 SELECT * FROM privilege_grants
 WHERE principal_id = ? AND principal_type = ?;

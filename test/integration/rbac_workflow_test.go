@@ -18,7 +18,7 @@ import (
 func TestWorkflow_RBAC_FullCycle(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
 
-	var principalID, groupID float64
+	var principalID, groupID, grantID float64
 
 	type step struct {
 		name string
@@ -63,7 +63,9 @@ func TestWorkflow_RBAC_FullCycle(t *testing.T) {
 			}
 			resp := doRequest(t, "POST", env.Server.URL+"/v1/grants", env.Keys.Admin, body)
 			require.Equal(t, 201, resp.StatusCode)
-			_ = resp.Body.Close()
+			var result map[string]interface{}
+			decodeJSON(t, resp, &result)
+			grantID = result["id"].(float64)
 		}},
 		{"verify_grant_listed", func(t *testing.T) {
 			url := fmt.Sprintf("%s/v1/grants?principal_id=%d&principal_type=group",
@@ -87,14 +89,8 @@ func TestWorkflow_RBAC_FullCycle(t *testing.T) {
 			assert.True(t, found, "expected SELECT grant on table")
 		}},
 		{"revoke_select_from_group", func(t *testing.T) {
-			body := map[string]interface{}{
-				"principal_id":   int64(groupID),
-				"principal_type": "group",
-				"securable_type": "table",
-				"securable_id":   1,
-				"privilege":      "SELECT",
-			}
-			resp := doRequest(t, "DELETE", env.Server.URL+"/v1/grants", env.Keys.Admin, body)
+			url := fmt.Sprintf("%s/v1/grants/%d", env.Server.URL, int64(grantID))
+			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()
 		}},
@@ -248,12 +244,9 @@ func TestWorkflow_RLS_Lifecycle(t *testing.T) {
 			assert.True(t, found, "new filter should appear in list")
 		}},
 		{"unbind_from_group", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/row-filters/%d/bindings", env.Server.URL, int64(filterID))
-			body := map[string]interface{}{
-				"principal_id":   analystsGroup.ID,
-				"principal_type": "group",
-			}
-			resp := doRequest(t, "DELETE", url, env.Keys.Admin, body)
+			url := fmt.Sprintf("%s/v1/row-filters/%d/bindings?principal_id=%d&principal_type=group",
+				env.Server.URL, int64(filterID), analystsGroup.ID)
+			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()
 		}},
@@ -340,22 +333,16 @@ func TestWorkflow_ColumnMask_Lifecycle(t *testing.T) {
 			assert.True(t, found, "new mask should appear in list")
 		}},
 		{"cleanup_unbind_analyst", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/column-masks/%d/bindings", env.Server.URL, int64(maskID))
-			body := map[string]interface{}{
-				"principal_id":   analyst.ID,
-				"principal_type": "user",
-			}
-			resp := doRequest(t, "DELETE", url, env.Keys.Admin, body)
+			url := fmt.Sprintf("%s/v1/column-masks/%d/bindings?principal_id=%d&principal_type=user",
+				env.Server.URL, int64(maskID), analyst.ID)
+			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()
 		}},
 		{"cleanup_unbind_researcher", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/column-masks/%d/bindings", env.Server.URL, int64(maskID))
-			body := map[string]interface{}{
-				"principal_id":   researcher.ID,
-				"principal_type": "user",
-			}
-			resp := doRequest(t, "DELETE", url, env.Keys.Admin, body)
+			url := fmt.Sprintf("%s/v1/column-masks/%d/bindings?principal_id=%d&principal_type=user",
+				env.Server.URL, int64(maskID), researcher.ID)
+			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()
 		}},

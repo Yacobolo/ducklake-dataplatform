@@ -33,6 +33,7 @@ type GroupRepository interface {
 type GrantRepository interface {
 	Grant(ctx context.Context, g *PrivilegeGrant) (*PrivilegeGrant, error)
 	Revoke(ctx context.Context, g *PrivilegeGrant) error
+	RevokeByID(ctx context.Context, id int64) error
 	ListForPrincipal(ctx context.Context, principalID int64, principalType string, page PageRequest) ([]PrivilegeGrant, int64, error)
 	ListForSecurable(ctx context.Context, securableType string, securableID int64, page PageRequest) ([]PrivilegeGrant, int64, error)
 	HasPrivilege(ctx context.Context, principalID int64, principalType, securableType string, securableID int64, privilege string) (bool, error)

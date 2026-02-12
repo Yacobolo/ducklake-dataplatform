@@ -254,23 +254,6 @@ components:
         privilege:
           type: string
 
-    DeleteGrantRequest:
-      type: object
-      required: [principal_id, principal_type, securable_type, securable_id, privilege]
-      properties:
-        principal_id:
-          type: integer
-          format: int64
-        principal_type:
-          type: string
-        securable_type:
-          type: string
-        securable_id:
-          type: integer
-          format: int64
-        privilege:
-          type: string
-
     PaginatedGrants:
       type: object
       properties:
@@ -346,6 +329,13 @@ components:
             $ref: '#/components/schemas/APIKeyInfo'
         next_page_token:
           type: string
+
+    CleanupAPIKeysResponse:
+      type: object
+      properties:
+        deleted_count:
+          type: integer
+          format: int64
 
     # --- Row Filters ---
     RowFilter:
@@ -1928,12 +1918,18 @@ paths:
       operationId: deleteGroupMember
       summary: Remove member from group
       tags: [Security]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateGroupMemberRequest'
+      parameters:
+        - name: member_type
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: member_id
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
       responses:
         '204':
           description: Member removed
@@ -2025,25 +2021,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+
+  /grants/{grantId}:
+    parameters:
+      - name: grantId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
     delete:
       operationId: deleteGrant
       summary: Revoke a privilege
       tags: [Security]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DeleteGrantRequest'
       responses:
         '204':
           description: Revoked
-        '400':
-          description: Validation error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
         '403':
           description: Access denied
           content:
@@ -2059,6 +2052,26 @@ paths:
 
   # === API Keys ===
   /api-keys:
+    get:
+      operationId: listAPIKeys
+      summary: List API keys for a principal
+      tags: [Security]
+      parameters:
+        - name: principal_id
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of API keys (no raw key values)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAPIKeys'
     post:
       operationId: createAPIKey
       summary: Create a new API key
@@ -2088,26 +2101,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-    get:
-      operationId: listAPIKeys
-      summary: List API keys for a principal
-      tags: [Security]
-      parameters:
-        - name: principal_id
-          in: query
-          required: true
-          schema:
-            type: integer
-            format: int64
-        - $ref: '#/components/parameters/MaxResults'
-        - $ref: '#/components/parameters/PageToken'
-      responses:
-        '200':
-          description: Paginated list of API keys (no raw key values)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedAPIKeys'
 
   /api-keys/{apiKeyId}:
     parameters:
@@ -2142,11 +2135,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  deleted_count:
-                    type: integer
-                    format: int64
+                $ref: '#/components/schemas/CleanupAPIKeysResponse'
         '403':
           description: Access denied
           content:
@@ -2290,12 +2279,18 @@ paths:
       operationId: unbindRowFilter
       summary: Unbind filter from principal
       tags: [Security]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RowFilterBindingRequest'
+      parameters:
+        - name: principal_id
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: principal_type
+          in: query
+          required: true
+          schema:
+            type: string
       responses:
         '204':
           description: Unbound
@@ -2491,12 +2486,18 @@ paths:
       operationId: unbindColumnMask
       summary: Unbind mask from principal
       tags: [Security]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RowFilterBindingRequest'
+      parameters:
+        - name: principal_id
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: principal_type
+          in: query
+          required: true
+          schema:
+            type: string
       responses:
         '204':
           description: Unbound
@@ -3362,6 +3363,9 @@ paths:
       summary: List classification and sensitivity tags
       tags: [Governance]
       description: Returns all tags with governed classification/sensitivity prefixes.
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
       responses:
         '200':
           description: Classification tags
@@ -3942,6 +3946,7 @@ paths:
     get:
       operationId: listVolumes
       summary: List volumes in a schema
+      tags: [Catalog]
       parameters:
         - $ref: '#/components/parameters/MaxResults'
         - $ref: '#/components/parameters/PageToken'
@@ -3955,6 +3960,7 @@ paths:
     post:
       operationId: createVolume
       summary: Create a volume in a schema
+      tags: [Catalog]
       description: >
         Creates a new volume. EXTERNAL volumes require a storage_location.
         MANAGED volumes auto-generate a storage location.
@@ -4006,6 +4012,7 @@ paths:
     get:
       operationId: getVolume
       summary: Get a volume by name
+      tags: [Catalog]
       responses:
         '200':
           description: Volume details
@@ -4022,6 +4029,7 @@ paths:
     patch:
       operationId: updateVolume
       summary: Update a volume
+      tags: [Catalog]
       description: Updates volume fields. Requires CREATE_VOLUME on catalog.
       requestBody:
         required: true
@@ -4051,6 +4059,7 @@ paths:
     delete:
       operationId: deleteVolume
       summary: Delete a volume
+      tags: [Catalog]
       description: Deletes a volume. Requires CREATE_VOLUME on catalog.
       responses:
         '204':

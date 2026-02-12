@@ -153,6 +153,11 @@ type CatalogInfo struct {
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 }
 
+// CleanupAPIKeysResponse defines model for CleanupAPIKeysResponse.
+type CleanupAPIKeysResponse struct {
+	DeletedCount *int64 `json:"deleted_count,omitempty"`
+}
+
 // ColumnDetail defines model for ColumnDetail.
 type ColumnDetail struct {
 	Comment *string `json:"comment,omitempty"`
@@ -449,15 +454,6 @@ type CreateVolumeRequest struct {
 
 // CreateVolumeRequestVolumeType defines model for CreateVolumeRequest.VolumeType.
 type CreateVolumeRequestVolumeType string
-
-// DeleteGrantRequest defines model for DeleteGrantRequest.
-type DeleteGrantRequest struct {
-	PrincipalId   int64  `json:"principal_id"`
-	PrincipalType string `json:"principal_type"`
-	Privilege     string `json:"privilege"`
-	SecurableId   int64  `json:"securable_id"`
-	SecurableType string `json:"securable_type"`
-}
 
 // Error defines model for Error.
 type Error struct {
@@ -1103,6 +1099,21 @@ type ListVolumesParams struct {
 	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
 }
 
+// ListClassificationsParams defines parameters for ListClassifications.
+type ListClassificationsParams struct {
+	// MaxResults Maximum number of results to return per page.
+	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
+
+	// PageToken Opaque pagination token from a previous response.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// UnbindColumnMaskParams defines parameters for UnbindColumnMask.
+type UnbindColumnMaskParams struct {
+	PrincipalId   int64  `form:"principal_id" json:"principal_id"`
+	PrincipalType string `form:"principal_type" json:"principal_type"`
+}
+
 // ListComputeEndpointsParams defines parameters for ListComputeEndpoints.
 type ListComputeEndpointsParams struct {
 	// MaxResults Maximum number of results to return per page.
@@ -1151,6 +1162,12 @@ type ListGroupsParams struct {
 
 	// PageToken Opaque pagination token from a previous response.
 	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// DeleteGroupMemberParams defines parameters for DeleteGroupMember.
+type DeleteGroupMemberParams struct {
+	MemberType string `form:"member_type" json:"member_type"`
+	MemberId   int64  `form:"member_id" json:"member_id"`
 }
 
 // ListGroupMembersParams defines parameters for ListGroupMembers.
@@ -1210,6 +1227,12 @@ type ListQueryHistoryParams struct {
 
 	// PageToken Opaque pagination token from a previous response.
 	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// UnbindRowFilterParams defines parameters for UnbindRowFilter.
+type UnbindRowFilterParams struct {
+	PrincipalId   int64  `form:"principal_id" json:"principal_id"`
+	PrincipalType string `form:"principal_type" json:"principal_type"`
 }
 
 // SearchCatalogParams defines parameters for SearchCatalog.
@@ -1304,9 +1327,6 @@ type CreateVolumeJSONRequestBody = CreateVolumeRequest
 // UpdateVolumeJSONRequestBody defines body for UpdateVolume for application/json ContentType.
 type UpdateVolumeJSONRequestBody = UpdateVolumeRequest
 
-// UnbindColumnMaskJSONRequestBody defines body for UnbindColumnMask for application/json ContentType.
-type UnbindColumnMaskJSONRequestBody = RowFilterBindingRequest
-
 // BindColumnMaskJSONRequestBody defines body for BindColumnMask for application/json ContentType.
 type BindColumnMaskJSONRequestBody = ColumnMaskBindingRequest
 
@@ -1325,17 +1345,11 @@ type CreateExternalLocationJSONRequestBody = CreateExternalLocationRequest
 // UpdateExternalLocationJSONRequestBody defines body for UpdateExternalLocation for application/json ContentType.
 type UpdateExternalLocationJSONRequestBody = UpdateExternalLocationRequest
 
-// DeleteGrantJSONRequestBody defines body for DeleteGrant for application/json ContentType.
-type DeleteGrantJSONRequestBody = DeleteGrantRequest
-
 // CreateGrantJSONRequestBody defines body for CreateGrant for application/json ContentType.
 type CreateGrantJSONRequestBody = CreateGrantRequest
 
 // CreateGroupJSONRequestBody defines body for CreateGroup for application/json ContentType.
 type CreateGroupJSONRequestBody = CreateGroupRequest
-
-// DeleteGroupMemberJSONRequestBody defines body for DeleteGroupMember for application/json ContentType.
-type DeleteGroupMemberJSONRequestBody = CreateGroupMemberRequest
 
 // CreateGroupMemberJSONRequestBody defines body for CreateGroupMember for application/json ContentType.
 type CreateGroupMemberJSONRequestBody = CreateGroupMemberRequest
@@ -1357,9 +1371,6 @@ type ExecuteQueryJSONRequestBody = QueryRequest
 
 // CreateRowFilterTopLevelJSONRequestBody defines body for CreateRowFilterTopLevel for application/json ContentType.
 type CreateRowFilterTopLevelJSONRequestBody = CreateRowFilterRequest
-
-// UnbindRowFilterJSONRequestBody defines body for UnbindRowFilter for application/json ContentType.
-type UnbindRowFilterJSONRequestBody = RowFilterBindingRequest
 
 // BindRowFilterJSONRequestBody defines body for BindRowFilter for application/json ContentType.
 type BindRowFilterJSONRequestBody = RowFilterBindingRequest

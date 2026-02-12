@@ -33,7 +33,7 @@ type grantService interface {
 	ListForPrincipal(ctx context.Context, principalID int64, principalType string, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error)
 	ListForSecurable(ctx context.Context, securableType string, securableID int64, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error)
 	Grant(ctx context.Context, principal string, g *domain.PrivilegeGrant) (*domain.PrivilegeGrant, error)
-	Revoke(ctx context.Context, principal string, g *domain.PrivilegeGrant) error
+	Revoke(ctx context.Context, principal string, grantID int64) error
 }
 
 // rowFilterService defines the row filter operations used by the API handler.
@@ -240,8 +240,8 @@ func (h *APIHandler) CreateGroupMember(ctx context.Context, req CreateGroupMembe
 func (h *APIHandler) DeleteGroupMember(ctx context.Context, req DeleteGroupMemberRequestObject) (DeleteGroupMemberResponseObject, error) {
 	if err := h.groups.RemoveMember(ctx, &domain.GroupMember{
 		GroupID:    req.GroupId,
-		MemberType: req.Body.MemberType,
-		MemberID:   req.Body.MemberId,
+		MemberType: req.Params.MemberType,
+		MemberID:   req.Params.MemberId,
 	}); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
@@ -307,16 +307,12 @@ func (h *APIHandler) CreateGrant(ctx context.Context, req CreateGrantRequestObje
 // DeleteGrant implements the endpoint for revoking a privilege from a principal.
 func (h *APIHandler) DeleteGrant(ctx context.Context, req DeleteGrantRequestObject) (DeleteGrantResponseObject, error) {
 	principal, _ := middleware.PrincipalFromContext(ctx)
-	if err := h.grants.Revoke(ctx, principal, &domain.PrivilegeGrant{
-		PrincipalID:   req.Body.PrincipalId,
-		PrincipalType: req.Body.PrincipalType,
-		SecurableType: req.Body.SecurableType,
-		SecurableID:   req.Body.SecurableId,
-		Privilege:     req.Body.Privilege,
-	}); err != nil {
+	if err := h.grants.Revoke(ctx, principal, req.GrantId); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
 			return DeleteGrant403JSONResponse{Code: 403, Message: err.Error()}, nil
+		case errors.As(err, new(*domain.NotFoundError)):
+			return DeleteGrant404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
 			return nil, err
 		}
@@ -397,8 +393,8 @@ func (h *APIHandler) BindRowFilter(ctx context.Context, req BindRowFilterRequest
 func (h *APIHandler) UnbindRowFilter(ctx context.Context, req UnbindRowFilterRequestObject) (UnbindRowFilterResponseObject, error) {
 	if err := h.rowFilters.Unbind(ctx, &domain.RowFilterBinding{
 		RowFilterID:   req.RowFilterId,
-		PrincipalID:   req.Body.PrincipalId,
-		PrincipalType: req.Body.PrincipalType,
+		PrincipalID:   req.Params.PrincipalId,
+		PrincipalType: req.Params.PrincipalType,
 	}); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
@@ -514,8 +510,8 @@ func (h *APIHandler) BindColumnMask(ctx context.Context, req BindColumnMaskReque
 func (h *APIHandler) UnbindColumnMask(ctx context.Context, req UnbindColumnMaskRequestObject) (UnbindColumnMaskResponseObject, error) {
 	if err := h.columnMasks.Unbind(ctx, &domain.ColumnMaskBinding{
 		ColumnMaskID:  req.ColumnMaskId,
-		PrincipalID:   req.Body.PrincipalId,
-		PrincipalType: req.Body.PrincipalType,
+		PrincipalID:   req.Params.PrincipalId,
+		PrincipalType: req.Params.PrincipalType,
 	}); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
