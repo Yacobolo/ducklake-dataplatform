@@ -21,7 +21,7 @@ type IngestionService struct {
 	executor    domain.DuckDBExecutor
 	metastore   domain.MetastoreQuerier
 	authSvc     domain.AuthorizationService
-	presigner   *query.S3Presigner // legacy presigner (from env config), may be nil
+	presigner   query.FileUploadPresigner // legacy presigner (from env config), may be nil
 	auditRepo   domain.AuditRepository
 	credRepo    domain.StorageCredentialRepository // for credential-aware presigning
 	locRepo     domain.ExternalLocationRepository  // for resolving schema locations
@@ -34,7 +34,7 @@ func NewIngestionService(
 	executor domain.DuckDBExecutor,
 	metastore domain.MetastoreQuerier,
 	authSvc domain.AuthorizationService,
-	presigner *query.S3Presigner,
+	presigner query.FileUploadPresigner,
 	auditRepo domain.AuditRepository,
 	catalogName string,
 	bucket string,
@@ -289,7 +289,7 @@ func sanitizeFilename(name string) string {
 // If the schema has a per-schema external location with a stored credential,
 // a dynamic presigner is created from that credential. Otherwise, the legacy
 // presigner and bucket are returned.
-func (s *IngestionService) resolvePresigner(ctx context.Context, schemaName string) (*query.S3Presigner, string, error) {
+func (s *IngestionService) resolvePresigner(ctx context.Context, schemaName string) (query.FileUploadPresigner, string, error) {
 	// Try per-schema resolution via schema path in ducklake_schema
 	if s.metastore != nil && s.credRepo != nil && s.locRepo != nil {
 		schemaPath, err := s.metastore.ReadSchemaPath(ctx, schemaName)
@@ -302,12 +302,12 @@ func (s *IngestionService) resolvePresigner(ctx context.Context, schemaName stri
 						// Found the matching location, look up its credential
 						cred, err := s.credRepo.GetByName(ctx, loc.CredentialName)
 						if err == nil {
-							bucket, _, _ := query.ParseS3Path(schemaPath)
-							if bucket == "" {
-								bucket = s.bucket // fallback
-							}
-							presigner, err := query.NewS3PresignerFromCredential(cred, bucket)
+							presigner, err := query.NewUploadPresignerFromCredential(cred, schemaPath)
 							if err == nil {
+								bucket := presigner.Bucket()
+								if bucket == "" {
+									bucket = s.bucket // fallback
+								}
 								return presigner, bucket, nil
 							}
 						}

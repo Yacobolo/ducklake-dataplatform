@@ -146,12 +146,12 @@ func ParseS3Path(s3Path string) (bucket, key string, err error) {
 	return bucket, key, nil
 }
 
-// newPresignerFromCredential creates a FilePresigner based on credential type.
+// NewPresignerFromCredential creates a FilePresigner based on credential type.
 // It dispatches to the appropriate cloud-specific constructor.
-func newPresignerFromCredential(cred *domain.StorageCredential, storagePath string) (FilePresigner, error) {
+func NewPresignerFromCredential(cred *domain.StorageCredential, storagePath string) (FilePresigner, error) {
 	switch cred.CredentialType {
 	case domain.CredentialTypeS3:
-		bucket, _, _ := parseS3Path(storagePath)
+		bucket, _, _ := ParseS3Path(storagePath)
 		return NewS3PresignerFromCredential(cred, bucket)
 	case domain.CredentialTypeAzure:
 		return NewAzurePresignerFromCredential(cred, storagePath)
@@ -162,12 +162,12 @@ func newPresignerFromCredential(cred *domain.StorageCredential, storagePath stri
 	}
 }
 
-// newUploadPresignerFromCredential creates a FileUploadPresigner based on credential type.
+// NewUploadPresignerFromCredential creates a FileUploadPresigner based on credential type.
 // All three implementations (S3, Azure, GCS) implement FileUploadPresigner.
-func newUploadPresignerFromCredential(cred *domain.StorageCredential, storagePath string) (FileUploadPresigner, error) {
+func NewUploadPresignerFromCredential(cred *domain.StorageCredential, storagePath string) (FileUploadPresigner, error) {
 	switch cred.CredentialType {
 	case domain.CredentialTypeS3:
-		bucket, _, _ := parseS3Path(storagePath)
+		bucket, _, _ := ParseS3Path(storagePath)
 		return NewS3PresignerFromCredential(cred, bucket)
 	case domain.CredentialTypeAzure:
 		return NewAzurePresignerFromCredential(cred, storagePath)

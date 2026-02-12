@@ -1,4 +1,4 @@
-package service
+package query
 
 import (
 	"testing"
@@ -46,7 +46,7 @@ func TestParseS3Path(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			bucket, key, err := parseS3Path(tt.input)
+			bucket, key, err := ParseS3Path(tt.input)
 			if tt.wantErr {
 				require.Error(t, err)
 				return

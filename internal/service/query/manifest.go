@@ -209,13 +209,7 @@ func (s *ManifestService) resolvePresigner(ctx context.Context, schemaPath strin
 				if strings.HasPrefix(schemaPath, loc.URL) || schemaPath == loc.URL {
 					cred, err := s.credRepo.GetByName(ctx, loc.CredentialName)
 					if err == nil {
-						bucket, _, _ := ParseS3Path(schemaPath)
-						if bucket == "" {
-							if bp, ok := s.presigner.(interface{ Bucket() string }); ok {
-								bucket = bp.Bucket()
-							}
-						}
-						presigner, err := NewS3PresignerFromCredential(cred, bucket)
+						presigner, err := NewPresignerFromCredential(cred, schemaPath)
 						if err == nil {
 							return presigner, nil
 						}
