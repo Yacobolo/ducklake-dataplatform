@@ -24,7 +24,6 @@ import (
 	"duck-demo/internal/db/repository"
 	"duck-demo/internal/domain"
 	"duck-demo/internal/engine"
-	"duck-demo/internal/middleware"
 	"duck-demo/internal/service"
 )
 
@@ -150,11 +149,22 @@ func setupTestServer(t *testing.T, principalName string) *httptest.Server {
 	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, auditSvc, nil, catalogSvc, queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc, nil, nil, nil, nil, nil)
 	strictHandler := NewStrictHandler(handler, nil)
 
+	// Lookup principal to get admin status for context injection
+	p, err := principalRepo.GetByName(context.Background(), principalName)
+	isAdmin := false
+	if err == nil {
+		isAdmin = p.IsAdmin
+	}
+
 	// Setup router with fixed auth (test principal)
 	r := chi.NewRouter()
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			ctx := middleware.WithPrincipal(req.Context(), principalName)
+			ctx := domain.WithPrincipal(req.Context(), domain.ContextPrincipal{
+				Name:    principalName,
+				IsAdmin: isAdmin,
+				Type:    "user",
+			})
 			next.ServeHTTP(w, req.WithContext(ctx))
 		})
 	})
@@ -424,10 +434,21 @@ func setupCatalogTestServer(t *testing.T, principalName string, mockRepo *mockCa
 	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, auditSvc, nil, catalogSvc, queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc, nil, nil, nil, nil, nil)
 	strictHandler := NewStrictHandler(handler, nil)
 
+	// Lookup principal to get admin status for context injection
+	p2, err := principalRepo.GetByName(context.Background(), principalName)
+	isAdmin2 := false
+	if err == nil {
+		isAdmin2 = p2.IsAdmin
+	}
+
 	r := chi.NewRouter()
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			ctx := middleware.WithPrincipal(req.Context(), principalName)
+			ctx := domain.WithPrincipal(req.Context(), domain.ContextPrincipal{
+				Name:    principalName,
+				IsAdmin: isAdmin2,
+				Type:    "user",
+			})
 			next.ServeHTTP(w, req.WithContext(ctx))
 		})
 	})

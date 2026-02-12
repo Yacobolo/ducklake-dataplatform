@@ -17,8 +17,11 @@ func NewGrantService(repo domain.GrantRepository, audit domain.AuditRepository) 
 	return &GrantService{repo: repo, audit: audit}
 }
 
-// Grant creates a new privilege grant.
+// Grant creates a new privilege grant. Requires admin privileges.
 func (s *GrantService) Grant(ctx context.Context, principal string, g *domain.PrivilegeGrant) (*domain.PrivilegeGrant, error) {
+	if err := requireAdmin(ctx); err != nil {
+		return nil, err
+	}
 	if g.Privilege == "" {
 		return nil, domain.ErrValidation("privilege is required")
 	}
@@ -27,20 +30,23 @@ func (s *GrantService) Grant(ctx context.Context, principal string, g *domain.Pr
 		return nil, err
 	}
 	_ = s.audit.Insert(ctx, &domain.AuditEntry{
-		PrincipalName: principal,
+		PrincipalName: callerName(ctx),
 		Action:        "GRANT",
 		Status:        "ALLOWED",
 	})
 	return result, nil
 }
 
-// Revoke removes a privilege grant.
+// Revoke removes a privilege grant. Requires admin privileges.
 func (s *GrantService) Revoke(ctx context.Context, principal string, g *domain.PrivilegeGrant) error {
+	if err := requireAdmin(ctx); err != nil {
+		return err
+	}
 	if err := s.repo.Revoke(ctx, g); err != nil {
 		return err
 	}
 	_ = s.audit.Insert(ctx, &domain.AuditEntry{
-		PrincipalName: principal,
+		PrincipalName: callerName(ctx),
 		Action:        "REVOKE",
 		Status:        "ALLOWED",
 	})
