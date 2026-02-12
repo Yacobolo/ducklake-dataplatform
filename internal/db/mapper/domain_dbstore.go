@@ -372,6 +372,25 @@ func TagAssignmentFromDB(a dbstore.TagAssignment) *domain.TagAssignment {
 	}
 }
 
+// --- CatalogRegistration ---
+
+// CatalogRegistrationFromDB converts a dbstore.Catalog to a domain.CatalogRegistration.
+func CatalogRegistrationFromDB(c dbstore.Catalog) *domain.CatalogRegistration {
+	return &domain.CatalogRegistration{
+		ID:            c.ID,
+		Name:          c.Name,
+		MetastoreType: domain.MetastoreType(c.MetastoreType),
+		DSN:           c.Dsn,
+		DataPath:      c.DataPath,
+		Status:        domain.CatalogStatus(c.Status),
+		StatusMessage: c.StatusMessage.String,
+		IsDefault:     c.IsDefault != 0,
+		Comment:       c.Comment.String,
+		CreatedAt:     parseTime(c.CreatedAt),
+		UpdatedAt:     parseTime(c.UpdatedAt),
+	}
+}
+
 // --- View ---
 
 // ViewFromDB converts a dbstore.View to a domain.ViewDetail.
