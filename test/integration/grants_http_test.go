@@ -63,7 +63,7 @@ func TestHTTP_GrantRevoke(t *testing.T) {
 			}
 			resp := doRequest(t, "POST", env.Server.URL+"/v1/grants", env.Keys.Admin, body)
 			require.Equal(t, 201, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 		{"list_by_principal", func(t *testing.T) {
 			url := fmt.Sprintf("%s/v1/grants?principal_id=%d&principal_type=user",
@@ -98,7 +98,7 @@ func TestHTTP_GrantRevoke(t *testing.T) {
 			}
 			resp := doRequest(t, "DELETE", env.Server.URL+"/v1/grants", env.Keys.Admin, body)
 			require.Equal(t, 204, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 		{"list_after_revoke", func(t *testing.T) {
 			url := fmt.Sprintf("%s/v1/grants?principal_id=%d&principal_type=user",
@@ -110,7 +110,7 @@ func TestHTTP_GrantRevoke(t *testing.T) {
 			decodeJSON(t, resp, &result)
 			data := result["data"].([]interface{})
 			// User should have 0 grants left
-			assert.Len(t, data, 0)
+			assert.Empty(t, data)
 		}},
 	}
 	_ = grantID // used indirectly via the grant_to_user step
@@ -141,7 +141,7 @@ func TestHTTP_GrantAllPrivileges(t *testing.T) {
 	}
 	resp := doRequest(t, "POST", env.Server.URL+"/v1/grants", env.Keys.Admin, body)
 	require.Equal(t, 201, resp.StatusCode)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	// Verify the grant appears in list
 	url := fmt.Sprintf("%s/v1/grants?principal_id=%d&principal_type=user", env.Server.URL, userID)

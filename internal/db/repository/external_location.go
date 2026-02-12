@@ -23,6 +23,7 @@ func NewExternalLocationRepo(db *sql.DB) *ExternalLocationRepo {
 	return &ExternalLocationRepo{q: dbstore.New(db), db: db}
 }
 
+// Create inserts a new external location into the database.
 func (r *ExternalLocationRepo) Create(ctx context.Context, loc *domain.ExternalLocation) (*domain.ExternalLocation, error) {
 	row, err := r.q.CreateExternalLocation(ctx, dbstore.CreateExternalLocationParams{
 		Name:           loc.Name,
@@ -39,6 +40,7 @@ func (r *ExternalLocationRepo) Create(ctx context.Context, loc *domain.ExternalL
 	return fromDBLocation(row), nil
 }
 
+// GetByID returns an external location by its ID.
 func (r *ExternalLocationRepo) GetByID(ctx context.Context, id int64) (*domain.ExternalLocation, error) {
 	row, err := r.q.GetExternalLocation(ctx, id)
 	if err != nil {
@@ -47,6 +49,7 @@ func (r *ExternalLocationRepo) GetByID(ctx context.Context, id int64) (*domain.E
 	return fromDBLocation(row), nil
 }
 
+// GetByName returns an external location by its name.
 func (r *ExternalLocationRepo) GetByName(ctx context.Context, name string) (*domain.ExternalLocation, error) {
 	row, err := r.q.GetExternalLocationByName(ctx, name)
 	if err != nil {
@@ -55,6 +58,7 @@ func (r *ExternalLocationRepo) GetByName(ctx context.Context, name string) (*dom
 	return fromDBLocation(row), nil
 }
 
+// List returns a paginated list of external locations.
 func (r *ExternalLocationRepo) List(ctx context.Context, page domain.PageRequest) ([]domain.ExternalLocation, int64, error) {
 	total, err := r.q.CountExternalLocations(ctx)
 	if err != nil {
@@ -76,6 +80,7 @@ func (r *ExternalLocationRepo) List(ctx context.Context, page domain.PageRequest
 	return locs, total, nil
 }
 
+// Update applies partial updates to an external location by ID.
 func (r *ExternalLocationRepo) Update(ctx context.Context, id int64, req domain.UpdateExternalLocationRequest) (*domain.ExternalLocation, error) {
 	// Fetch current to fill in defaults for COALESCE
 	current, err := r.GetByID(ctx, id)
@@ -118,6 +123,7 @@ func (r *ExternalLocationRepo) Update(ctx context.Context, id int64, req domain.
 	return r.GetByID(ctx, id)
 }
 
+// Delete removes an external location by ID.
 func (r *ExternalLocationRepo) Delete(ctx context.Context, id int64) error {
 	return mapDBError(r.q.DeleteExternalLocation(ctx, id))
 }

@@ -80,6 +80,7 @@ func RewriteQuery(sql string, rulesByTable map[string][]RLSRule) (string, error)
 // StatementType represents the kind of SQL statement.
 type StatementType int
 
+// SQL statement types identified during query classification.
 const (
 	StmtSelect StatementType = iota
 	StmtInsert
@@ -625,8 +626,7 @@ func injectFiltersIntoNode(node *pg_query.Node, rulesByTable map[string][]RLSRul
 		return nil
 	}
 
-	switch n := node.Node.(type) {
-	case *pg_query.Node_SelectStmt:
+	if n, ok := node.Node.(*pg_query.Node_SelectStmt); ok {
 		return injectFiltersIntoSelectStmt(n.SelectStmt, rulesByTable)
 	}
 	return nil
@@ -984,7 +984,7 @@ func makeAndExpr(left, right *pg_query.Node) *pg_query.Node {
 func QuoteIdentifier(s string) string {
 	// Simple check: if it's all lowercase alphanumeric + underscore, no quoting needed
 	for _, c := range s {
-		if !((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_') {
+		if (c < 'a' || c > 'z') && (c < '0' || c > '9') && c != '_' {
 			return `"` + strings.ReplaceAll(s, `"`, `""`) + `"`
 		}
 	}

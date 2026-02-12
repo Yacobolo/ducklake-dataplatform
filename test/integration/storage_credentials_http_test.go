@@ -141,12 +141,12 @@ func TestHTTP_StorageCredentialCRUD(t *testing.T) {
 		{"delete", func(t *testing.T) {
 			resp := doRequest(t, "DELETE", env.Server.URL+"/v1/storage-credentials/test-cred", env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 		{"get_after_delete_404", func(t *testing.T) {
 			resp := doRequest(t, "GET", env.Server.URL+"/v1/storage-credentials/test-cred", env.Keys.Admin, nil)
 			assert.Equal(t, 404, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 	}
 
@@ -163,7 +163,7 @@ func TestHTTP_StorageCredentialAuthorization(t *testing.T) {
 	body := validCredBody("auth-test-cred")
 	resp := doRequest(t, "POST", env.Server.URL+"/v1/storage-credentials", env.Keys.Admin, body)
 	require.Equal(t, 201, resp.StatusCode)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	createBody := validCredBody("new-cred")
 
@@ -193,7 +193,7 @@ func TestHTTP_StorageCredentialAuthorization(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			resp := doRequest(t, tc.method, env.Server.URL+tc.path, tc.apiKey, tc.body)
 			assert.Equal(t, tc.wantStatus, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		})
 	}
 }
@@ -227,7 +227,7 @@ func TestHTTP_StorageCredentialValidation(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			resp := doRequest(t, tc.method, env.Server.URL+tc.path, env.Keys.Admin, tc.body)
 			assert.Equal(t, tc.wantStatus, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		})
 	}
 }
@@ -240,11 +240,11 @@ func TestHTTP_StorageCredentialDuplicate(t *testing.T) {
 
 	resp := doRequest(t, "POST", env.Server.URL+"/v1/storage-credentials", env.Keys.Admin, body)
 	require.Equal(t, 201, resp.StatusCode)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	resp = doRequest(t, "POST", env.Server.URL+"/v1/storage-credentials", env.Keys.Admin, body)
 	assert.Equal(t, 409, resp.StatusCode)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 }
 
 // TestHTTP_StorageCredentialPagination verifies pagination works correctly.
@@ -255,7 +255,7 @@ func TestHTTP_StorageCredentialPagination(t *testing.T) {
 	for _, name := range names {
 		resp := doRequest(t, "POST", env.Server.URL+"/v1/storage-credentials", env.Keys.Admin, validCredBody(name))
 		require.Equal(t, 201, resp.StatusCode)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	}
 
 	var allNames []string
@@ -287,7 +287,7 @@ func TestHTTP_StorageCredentialPagination(t *testing.T) {
 		}
 	}
 
-	assert.Equal(t, 5, len(allNames), "should collect all 5 credentials")
+	assert.Len(t, allNames, 5, "should collect all 5 credentials")
 	assert.GreaterOrEqual(t, pages, 3, "should take at least 3 pages with max_results=2")
 }
 

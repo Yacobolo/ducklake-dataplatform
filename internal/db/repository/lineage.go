@@ -10,14 +10,17 @@ import (
 	"duck-demo/internal/domain"
 )
 
+// LineageRepo implements domain.LineageRepository using SQLite.
 type LineageRepo struct {
 	q *dbstore.Queries
 }
 
+// NewLineageRepo creates a new LineageRepo.
 func NewLineageRepo(db *sql.DB) *LineageRepo {
 	return &LineageRepo{q: dbstore.New(db)}
 }
 
+// InsertEdge records a new lineage edge between tables.
 func (r *LineageRepo) InsertEdge(ctx context.Context, edge *domain.LineageEdge) error {
 	return r.q.InsertLineageEdge(ctx, dbstore.InsertLineageEdgeParams{
 		SourceTable:   edge.SourceTable,
@@ -30,6 +33,7 @@ func (r *LineageRepo) InsertEdge(ctx context.Context, edge *domain.LineageEdge) 
 	})
 }
 
+// GetUpstream returns a paginated list of upstream lineage edges for a table.
 func (r *LineageRepo) GetUpstream(ctx context.Context, tableName string, page domain.PageRequest) ([]domain.LineageEdge, int64, error) {
 	total, err := r.q.CountUpstreamLineage(ctx, sql.NullString{String: tableName, Valid: true})
 	if err != nil {
@@ -52,6 +56,7 @@ func (r *LineageRepo) GetUpstream(ctx context.Context, tableName string, page do
 	return edges, total, nil
 }
 
+// GetDownstream returns a paginated list of downstream lineage edges for a table.
 func (r *LineageRepo) GetDownstream(ctx context.Context, tableName string, page domain.PageRequest) ([]domain.LineageEdge, int64, error) {
 	total, err := r.q.CountDownstreamLineage(ctx, tableName)
 	if err != nil {
@@ -74,11 +79,13 @@ func (r *LineageRepo) GetDownstream(ctx context.Context, tableName string, page 
 	return edges, total, nil
 }
 
+// DeleteEdge removes a lineage edge by ID.
 func (r *LineageRepo) DeleteEdge(ctx context.Context, id int64) error {
 	// sqlc DeleteLineageEdge doesn't return rows affected, so we need to check existence
 	return r.q.DeleteLineageEdge(ctx, id)
 }
 
+// PurgeOlderThan removes lineage edges created before the given time.
 func (r *LineageRepo) PurgeOlderThan(ctx context.Context, before time.Time) (int64, error) {
 	return r.q.PurgeLineageOlderThan(ctx, before.Format("2006-01-02 15:04:05"))
 }

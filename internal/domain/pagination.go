@@ -6,7 +6,10 @@ import (
 	"strconv"
 )
 
+// DefaultMaxResults is the default page size when none is specified.
 const DefaultMaxResults = 100
+
+// MaxMaxResults is the maximum allowed page size.
 const MaxMaxResults = 1000
 
 // PageRequest holds pagination parameters for list operations.

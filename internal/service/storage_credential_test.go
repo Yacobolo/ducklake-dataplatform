@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"testing"
 	"time"
 
@@ -74,7 +73,7 @@ func TestStorageCredentialService_Create(t *testing.T) {
 
 		require.Error(t, err)
 		var denied *domain.AccessDeniedError
-		assert.True(t, errors.As(err, &denied))
+		require.ErrorAs(t, err, &denied)
 		assert.Empty(t, audit.entries)
 	})
 
@@ -91,7 +90,7 @@ func TestStorageCredentialService_Create(t *testing.T) {
 
 		require.Error(t, err)
 		var valErr *domain.ValidationError
-		assert.True(t, errors.As(err, &valErr))
+		require.ErrorAs(t, err, &valErr)
 	})
 
 	t.Run("repo_error", func(t *testing.T) {
@@ -144,7 +143,7 @@ func TestStorageCredentialService_GetByName(t *testing.T) {
 
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
-		assert.True(t, errors.As(err, &notFound))
+		require.ErrorAs(t, err, &notFound)
 	})
 }
 
@@ -224,7 +223,7 @@ func TestStorageCredentialService_Delete(t *testing.T) {
 
 		require.Error(t, err)
 		var denied *domain.AccessDeniedError
-		assert.True(t, errors.As(err, &denied))
+		require.ErrorAs(t, err, &denied)
 		assert.Empty(t, audit.entries)
 	})
 
@@ -245,7 +244,7 @@ func TestStorageCredentialService_Delete(t *testing.T) {
 
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
-		assert.True(t, errors.As(err, &notFound))
+		require.ErrorAs(t, err, &notFound)
 	})
 }
 
@@ -293,6 +292,6 @@ func TestStorageCredentialService_Update(t *testing.T) {
 
 		require.Error(t, err)
 		var denied *domain.AccessDeniedError
-		assert.True(t, errors.As(err, &denied))
+		require.ErrorAs(t, err, &denied)
 	})
 }

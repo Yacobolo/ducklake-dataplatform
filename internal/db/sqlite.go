@@ -1,3 +1,4 @@
+// Package db provides database connectivity helpers and migration support.
 package db
 
 import (
@@ -52,7 +53,7 @@ func OpenSQLite(path string, mode string, maxOpen int) (*sql.DB, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := db.PingContext(ctx); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, fmt.Errorf("ping sqlite (%s): %w", mode, err)
 	}
 
@@ -72,7 +73,7 @@ func OpenSQLitePair(path string, readMaxOpen int) (writeDB, readDB *sql.DB, err 
 
 	readDB, err = OpenSQLite(path, "read", readMaxOpen)
 	if err != nil {
-		writeDB.Close()
+		_ = writeDB.Close()
 		return nil, nil, err
 	}
 

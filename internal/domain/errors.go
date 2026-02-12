@@ -1,3 +1,4 @@
+// Package domain defines core types, interfaces, and errors for the data platform.
 package domain
 
 import "fmt"

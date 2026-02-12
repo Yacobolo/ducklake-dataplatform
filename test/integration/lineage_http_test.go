@@ -174,7 +174,7 @@ func TestHTTP_DeleteLineageEdge(t *testing.T) {
 			require.NoError(t, repo.InsertEdge(ctx, &e))
 
 			// InsertEdge is :exec, so query the ID back
-			err := env.MetaDB.QueryRow(
+			err := env.MetaDB.QueryRowContext(ctx,
 				`SELECT id FROM lineage_edges WHERE source_table = ? AND target_table = ?`,
 				"main.del_source", "main.del_target",
 			).Scan(&edgeID)
@@ -187,7 +187,7 @@ func TestHTTP_DeleteLineageEdge(t *testing.T) {
 				fmt.Sprintf("%s/v1/lineage/edges/%d", env.Server.URL, edgeID),
 				env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 
 		{"verify_edge_gone", func(t *testing.T) {
@@ -215,7 +215,7 @@ func TestHTTP_DeleteLineageEdge(t *testing.T) {
 				fmt.Sprintf("%s/v1/lineage/edges/%d", env.Server.URL, 99999),
 				env.Keys.Admin, nil)
 			assert.Equal(t, 204, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 	}
 
@@ -238,7 +238,7 @@ func TestHTTP_PurgeLineage(t *testing.T) {
 	steps := []step{
 		{"seed_old_and_recent_edges", func(t *testing.T) {
 			// Insert an old edge (100 days ago) directly via SQL
-			_, err := env.MetaDB.Exec(
+			_, err := env.MetaDB.ExecContext(ctx,
 				`INSERT INTO lineage_edges (source_table, target_table, edge_type, principal_name, created_at)
 				 VALUES (?, ?, ?, ?, datetime('now', '-100 days'))`,
 				"main.old_source", "main.old_target", "READ", "admin_user",

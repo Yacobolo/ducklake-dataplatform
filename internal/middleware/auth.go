@@ -1,3 +1,4 @@
+// Package middleware provides HTTP middleware for JWT and API key authentication.
 package middleware
 
 import (
@@ -37,7 +38,7 @@ func AuthMiddleware(jwtSecret []byte, apiKeys APIKeyLookup) func(http.Handler) h
 			// Try JWT Bearer token
 			if auth := r.Header.Get("Authorization"); strings.HasPrefix(auth, "Bearer ") {
 				tokenStr := strings.TrimPrefix(auth, "Bearer ")
-				token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
+				token, err := jwt.Parse(tokenStr, func(_ *jwt.Token) (interface{}, error) {
 					return jwtSecret, nil
 				}, jwt.WithValidMethods([]string{"HS256"}))
 
@@ -68,7 +69,7 @@ func AuthMiddleware(jwtSecret []byte, apiKeys APIKeyLookup) func(http.Handler) h
 			// Both methods failed
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"code":    401,
 				"message": "unauthorized: provide a valid JWT Bearer token or API key",
 			})

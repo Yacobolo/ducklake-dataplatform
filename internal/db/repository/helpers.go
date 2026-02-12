@@ -1,3 +1,4 @@
+// Package repository implements domain repository interfaces using SQLite.
 package repository
 
 import (

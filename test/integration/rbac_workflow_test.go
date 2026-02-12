@@ -51,7 +51,7 @@ func TestWorkflow_RBAC_FullCycle(t *testing.T) {
 			}
 			resp := doRequest(t, "POST", url, env.Keys.Admin, body)
 			require.Equal(t, 204, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 		{"grant_select_to_group", func(t *testing.T) {
 			body := map[string]interface{}{
@@ -63,7 +63,7 @@ func TestWorkflow_RBAC_FullCycle(t *testing.T) {
 			}
 			resp := doRequest(t, "POST", env.Server.URL+"/v1/grants", env.Keys.Admin, body)
 			require.Equal(t, 201, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 		{"verify_grant_listed", func(t *testing.T) {
 			url := fmt.Sprintf("%s/v1/grants?principal_id=%d&principal_type=group",
@@ -96,7 +96,7 @@ func TestWorkflow_RBAC_FullCycle(t *testing.T) {
 			}
 			resp := doRequest(t, "DELETE", env.Server.URL+"/v1/grants", env.Keys.Admin, body)
 			require.Equal(t, 204, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 		{"verify_grant_revoked", func(t *testing.T) {
 			url := fmt.Sprintf("%s/v1/grants?principal_id=%d&principal_type=group",
@@ -150,14 +150,14 @@ func TestWorkflow_GroupInheritance(t *testing.T) {
 			"privilege":      "ALL_PRIVILEGES",
 		})
 	require.Equal(t, 201, resp.StatusCode)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	t.Run("add_to_group", func(t *testing.T) {
 		url := fmt.Sprintf("%s/v1/groups/%d/members", env.Server.URL, groupID)
 		body := map[string]interface{}{"member_type": "user", "member_id": userID}
 		resp := doRequest(t, "POST", url, env.Keys.Admin, body)
 		require.Equal(t, 204, resp.StatusCode)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	})
 
 	t.Run("verify_membership", func(t *testing.T) {
@@ -170,7 +170,7 @@ func TestWorkflow_GroupInheritance(t *testing.T) {
 		data := result["data"].([]interface{})
 		require.Len(t, data, 1)
 		member := data[0].(map[string]interface{})
-		assert.Equal(t, float64(userID), member["member_id"])
+		assert.InDelta(t, float64(userID), member["member_id"], 0)
 	})
 
 	t.Run("remove_from_group", func(t *testing.T) {
@@ -178,7 +178,7 @@ func TestWorkflow_GroupInheritance(t *testing.T) {
 		body := map[string]interface{}{"member_type": "user", "member_id": userID}
 		resp := doRequest(t, "DELETE", url, env.Keys.Admin, body)
 		require.Equal(t, 204, resp.StatusCode)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	})
 
 	t.Run("verify_no_members", func(t *testing.T) {
@@ -189,7 +189,7 @@ func TestWorkflow_GroupInheritance(t *testing.T) {
 		var result map[string]interface{}
 		decodeJSON(t, resp, &result)
 		data := result["data"].([]interface{})
-		assert.Len(t, data, 0)
+		assert.Empty(t, data)
 	})
 }
 
@@ -228,7 +228,7 @@ func TestWorkflow_RLS_Lifecycle(t *testing.T) {
 			}
 			resp := doRequest(t, "POST", url, env.Keys.Admin, body)
 			require.Equal(t, 204, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 		{"list_filters_shows_new", func(t *testing.T) {
 			resp := doRequest(t, "GET", env.Server.URL+"/v1/tables/1/row-filters", env.Keys.Admin, nil)
@@ -255,13 +255,13 @@ func TestWorkflow_RLS_Lifecycle(t *testing.T) {
 			}
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, body)
 			require.Equal(t, 204, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 		{"delete_filter", func(t *testing.T) {
 			url := fmt.Sprintf("%s/v1/row-filters/%d", env.Server.URL, int64(filterID))
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 	}
 	for _, s := range steps {
@@ -308,7 +308,7 @@ func TestWorkflow_ColumnMask_Lifecycle(t *testing.T) {
 			}
 			resp := doRequest(t, "POST", url, env.Keys.Admin, body)
 			require.Equal(t, 204, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 		{"bind_researcher_see_original_true", func(t *testing.T) {
 			url := fmt.Sprintf("%s/v1/column-masks/%d/bindings", env.Server.URL, int64(maskID))
@@ -319,7 +319,7 @@ func TestWorkflow_ColumnMask_Lifecycle(t *testing.T) {
 			}
 			resp := doRequest(t, "POST", url, env.Keys.Admin, body)
 			require.Equal(t, 204, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 		{"list_masks_shows_new", func(t *testing.T) {
 			resp := doRequest(t, "GET", env.Server.URL+"/v1/tables/1/column-masks", env.Keys.Admin, nil)
@@ -347,7 +347,7 @@ func TestWorkflow_ColumnMask_Lifecycle(t *testing.T) {
 			}
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, body)
 			require.Equal(t, 204, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 		{"cleanup_unbind_researcher", func(t *testing.T) {
 			url := fmt.Sprintf("%s/v1/column-masks/%d/bindings", env.Server.URL, int64(maskID))
@@ -357,13 +357,13 @@ func TestWorkflow_ColumnMask_Lifecycle(t *testing.T) {
 			}
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, body)
 			require.Equal(t, 204, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 		{"cleanup_delete_mask", func(t *testing.T) {
 			url := fmt.Sprintf("%s/v1/column-masks/%d", env.Server.URL, int64(maskID))
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 	}
 	for _, s := range steps {
@@ -383,7 +383,7 @@ func TestWorkflow_ManagementEndpointsNoAuthz(t *testing.T) {
 		// Documents gap: analyst can create principals (should be admin-only)
 		assert.Equal(t, 201, resp.StatusCode,
 			"expected 201 (documenting authz gap — any authenticated user can create principals)")
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	})
 
 	t.Run("analyst_grants_privilege", func(t *testing.T) {
@@ -404,7 +404,7 @@ func TestWorkflow_ManagementEndpointsNoAuthz(t *testing.T) {
 		// Documents gap: analyst can grant themselves ALL_PRIVILEGES
 		assert.Equal(t, 201, resp.StatusCode,
 			"expected 201 (documenting authz gap — any authenticated user can grant privileges)")
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	})
 
 	t.Run("analyst_creates_row_filter", func(t *testing.T) {
@@ -416,6 +416,6 @@ func TestWorkflow_ManagementEndpointsNoAuthz(t *testing.T) {
 		// Documents gap: analyst can create row filters
 		assert.Equal(t, 201, resp.StatusCode,
 			"expected 201 (documenting authz gap — any authenticated user can create row filters)")
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	})
 }

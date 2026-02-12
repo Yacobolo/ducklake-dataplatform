@@ -16,17 +16,6 @@ func parseTime(s string) time.Time {
 	return t
 }
 
-func formatTime(t time.Time) string {
-	return t.Format(timeLayout)
-}
-
-func boolToInt(b bool) int64 {
-	if b {
-		return 1
-	}
-	return 0
-}
-
 func nullStr(s *string) sql.NullString {
 	if s == nil {
 		return sql.NullString{}
@@ -88,6 +77,7 @@ func StringFromPtr(s *string) sql.NullString {
 
 // --- Principal ---
 
+// PrincipalFromDB converts a dbstore.Principal to a domain.Principal.
 func PrincipalFromDB(p dbstore.Principal) *domain.Principal {
 	return &domain.Principal{
 		ID:        p.ID,
@@ -98,6 +88,7 @@ func PrincipalFromDB(p dbstore.Principal) *domain.Principal {
 	}
 }
 
+// PrincipalsFromDB converts a slice of dbstore.Principal to a slice of domain.Principal.
 func PrincipalsFromDB(ps []dbstore.Principal) []domain.Principal {
 	out := make([]domain.Principal, len(ps))
 	for i, p := range ps {
@@ -108,6 +99,7 @@ func PrincipalsFromDB(ps []dbstore.Principal) []domain.Principal {
 
 // --- Group ---
 
+// GroupFromDB converts a dbstore.Group to a domain.Group.
 func GroupFromDB(g dbstore.Group) *domain.Group {
 	return &domain.Group{
 		ID:          g.ID,
@@ -117,6 +109,7 @@ func GroupFromDB(g dbstore.Group) *domain.Group {
 	}
 }
 
+// GroupsFromDB converts a slice of dbstore.Group to a slice of domain.Group.
 func GroupsFromDB(gs []dbstore.Group) []domain.Group {
 	out := make([]domain.Group, len(gs))
 	for i, g := range gs {
@@ -125,6 +118,7 @@ func GroupsFromDB(gs []dbstore.Group) []domain.Group {
 	return out
 }
 
+// GroupMemberFromDB converts a dbstore.GroupMember to a domain.GroupMember.
 func GroupMemberFromDB(m dbstore.GroupMember) domain.GroupMember {
 	return domain.GroupMember{
 		GroupID:    m.GroupID,
@@ -133,6 +127,7 @@ func GroupMemberFromDB(m dbstore.GroupMember) domain.GroupMember {
 	}
 }
 
+// GroupMembersFromDB converts a slice of dbstore.GroupMember to a slice of domain.GroupMember.
 func GroupMembersFromDB(ms []dbstore.GroupMember) []domain.GroupMember {
 	out := make([]domain.GroupMember, len(ms))
 	for i, m := range ms {
@@ -143,6 +138,7 @@ func GroupMembersFromDB(ms []dbstore.GroupMember) []domain.GroupMember {
 
 // --- PrivilegeGrant ---
 
+// GrantFromDB converts a dbstore.PrivilegeGrant to a domain.PrivilegeGrant.
 func GrantFromDB(g dbstore.PrivilegeGrant) *domain.PrivilegeGrant {
 	return &domain.PrivilegeGrant{
 		ID:            g.ID,
@@ -156,6 +152,7 @@ func GrantFromDB(g dbstore.PrivilegeGrant) *domain.PrivilegeGrant {
 	}
 }
 
+// GrantsFromDB converts a slice of dbstore.PrivilegeGrant to a slice of domain.PrivilegeGrant.
 func GrantsFromDB(gs []dbstore.PrivilegeGrant) []domain.PrivilegeGrant {
 	out := make([]domain.PrivilegeGrant, len(gs))
 	for i, g := range gs {
@@ -166,6 +163,7 @@ func GrantsFromDB(gs []dbstore.PrivilegeGrant) []domain.PrivilegeGrant {
 
 // --- RowFilter ---
 
+// RowFilterFromDB converts a dbstore.RowFilter to a domain.RowFilter.
 func RowFilterFromDB(f dbstore.RowFilter) *domain.RowFilter {
 	return &domain.RowFilter{
 		ID:          f.ID,
@@ -176,6 +174,7 @@ func RowFilterFromDB(f dbstore.RowFilter) *domain.RowFilter {
 	}
 }
 
+// RowFiltersFromDB converts a slice of dbstore.RowFilter to a slice of domain.RowFilter.
 func RowFiltersFromDB(fs []dbstore.RowFilter) []domain.RowFilter {
 	out := make([]domain.RowFilter, len(fs))
 	for i, f := range fs {
@@ -184,6 +183,7 @@ func RowFiltersFromDB(fs []dbstore.RowFilter) []domain.RowFilter {
 	return out
 }
 
+// RowFilterBindingFromDB converts a dbstore.RowFilterBinding to a domain.RowFilterBinding.
 func RowFilterBindingFromDB(b dbstore.RowFilterBinding) domain.RowFilterBinding {
 	return domain.RowFilterBinding{
 		ID:            b.ID,
@@ -193,6 +193,7 @@ func RowFilterBindingFromDB(b dbstore.RowFilterBinding) domain.RowFilterBinding 
 	}
 }
 
+// RowFilterBindingsFromDB converts a slice of dbstore.RowFilterBinding to a slice of domain.RowFilterBinding.
 func RowFilterBindingsFromDB(bs []dbstore.RowFilterBinding) []domain.RowFilterBinding {
 	out := make([]domain.RowFilterBinding, len(bs))
 	for i, b := range bs {
@@ -203,6 +204,7 @@ func RowFilterBindingsFromDB(bs []dbstore.RowFilterBinding) []domain.RowFilterBi
 
 // --- ColumnMask ---
 
+// ColumnMaskFromDB converts a dbstore.ColumnMask to a domain.ColumnMask.
 func ColumnMaskFromDB(m dbstore.ColumnMask) *domain.ColumnMask {
 	return &domain.ColumnMask{
 		ID:             m.ID,
@@ -214,6 +216,7 @@ func ColumnMaskFromDB(m dbstore.ColumnMask) *domain.ColumnMask {
 	}
 }
 
+// ColumnMasksFromDB converts a slice of dbstore.ColumnMask to a slice of domain.ColumnMask.
 func ColumnMasksFromDB(ms []dbstore.ColumnMask) []domain.ColumnMask {
 	out := make([]domain.ColumnMask, len(ms))
 	for i, m := range ms {
@@ -222,6 +225,7 @@ func ColumnMasksFromDB(ms []dbstore.ColumnMask) []domain.ColumnMask {
 	return out
 }
 
+// ColumnMaskBindingFromDB converts a dbstore.ColumnMaskBinding to a domain.ColumnMaskBinding.
 func ColumnMaskBindingFromDB(b dbstore.ColumnMaskBinding) domain.ColumnMaskBinding {
 	return domain.ColumnMaskBinding{
 		ID:            b.ID,
@@ -232,6 +236,7 @@ func ColumnMaskBindingFromDB(b dbstore.ColumnMaskBinding) domain.ColumnMaskBindi
 	}
 }
 
+// ColumnMaskBindingsFromDB converts a slice of dbstore.ColumnMaskBinding to a slice of domain.ColumnMaskBinding.
 func ColumnMaskBindingsFromDB(bs []dbstore.ColumnMaskBinding) []domain.ColumnMaskBinding {
 	out := make([]domain.ColumnMaskBinding, len(bs))
 	for i, b := range bs {
@@ -242,10 +247,11 @@ func ColumnMaskBindingsFromDB(bs []dbstore.ColumnMaskBinding) []domain.ColumnMas
 
 // --- AuditEntry ---
 
+// AuditEntryFromDB converts a dbstore.AuditLog to a domain.AuditEntry.
 func AuditEntryFromDB(a dbstore.AuditLog) *domain.AuditEntry {
 	var tables []string
 	if a.TablesAccessed.Valid && a.TablesAccessed.String != "" {
-		json.Unmarshal([]byte(a.TablesAccessed.String), &tables)
+		_ = json.Unmarshal([]byte(a.TablesAccessed.String), &tables)
 	}
 	return &domain.AuditEntry{
 		ID:             a.ID,
@@ -263,6 +269,7 @@ func AuditEntryFromDB(a dbstore.AuditLog) *domain.AuditEntry {
 	}
 }
 
+// AuditEntriesToDBParams converts a domain.AuditEntry to dbstore.InsertAuditLogParams for insertion.
 func AuditEntriesToDBParams(e *domain.AuditEntry) dbstore.InsertAuditLogParams {
 	var tablesJSON string
 	if len(e.TablesAccessed) > 0 {
@@ -287,10 +294,11 @@ func AuditEntriesToDBParams(e *domain.AuditEntry) dbstore.InsertAuditLogParams {
 
 // --- QueryHistory ---
 
+// QueryHistoryEntryFromDB converts a dbstore.AuditLog to a domain.QueryHistoryEntry.
 func QueryHistoryEntryFromDB(a dbstore.AuditLog) *domain.QueryHistoryEntry {
 	var tables []string
 	if a.TablesAccessed.Valid && a.TablesAccessed.String != "" {
-		json.Unmarshal([]byte(a.TablesAccessed.String), &tables)
+		_ = json.Unmarshal([]byte(a.TablesAccessed.String), &tables)
 	}
 	return &domain.QueryHistoryEntry{
 		ID:             a.ID,
@@ -309,6 +317,7 @@ func QueryHistoryEntryFromDB(a dbstore.AuditLog) *domain.QueryHistoryEntry {
 
 // --- Lineage ---
 
+// LineageEdgeFromDB converts a dbstore.GetUpstreamLineageRow to a domain.LineageEdge.
 func LineageEdgeFromDB(e dbstore.GetUpstreamLineageRow) *domain.LineageEdge {
 	return &domain.LineageEdge{
 		SourceTable:   e.SourceTable,
@@ -321,6 +330,7 @@ func LineageEdgeFromDB(e dbstore.GetUpstreamLineageRow) *domain.LineageEdge {
 	}
 }
 
+// LineageEdgeFromDownstreamDB converts a dbstore.GetDownstreamLineageRow to a domain.LineageEdge.
 func LineageEdgeFromDownstreamDB(e dbstore.GetDownstreamLineageRow) *domain.LineageEdge {
 	return &domain.LineageEdge{
 		SourceTable:   e.SourceTable,
@@ -335,6 +345,7 @@ func LineageEdgeFromDownstreamDB(e dbstore.GetDownstreamLineageRow) *domain.Line
 
 // --- Tag ---
 
+// TagFromDB converts a dbstore.Tag to a domain.Tag.
 func TagFromDB(t dbstore.Tag) *domain.Tag {
 	return &domain.Tag{
 		ID:        t.ID,
@@ -345,6 +356,7 @@ func TagFromDB(t dbstore.Tag) *domain.Tag {
 	}
 }
 
+// TagAssignmentFromDB converts a dbstore.TagAssignment to a domain.TagAssignment.
 func TagAssignmentFromDB(a dbstore.TagAssignment) *domain.TagAssignment {
 	return &domain.TagAssignment{
 		ID:            a.ID,
@@ -359,17 +371,18 @@ func TagAssignmentFromDB(a dbstore.TagAssignment) *domain.TagAssignment {
 
 // --- View ---
 
+// ViewFromDB converts a dbstore.View to a domain.ViewDetail.
 func ViewFromDB(v dbstore.View) *domain.ViewDetail {
 	var props map[string]string
 	if v.Properties.Valid && v.Properties.String != "" {
-		json.Unmarshal([]byte(v.Properties.String), &props)
+		_ = json.Unmarshal([]byte(v.Properties.String), &props)
 	}
 	if props == nil {
 		props = make(map[string]string)
 	}
 	var sources []string
 	if v.SourceTables.Valid && v.SourceTables.String != "" {
-		json.Unmarshal([]byte(v.SourceTables.String), &sources)
+		_ = json.Unmarshal([]byte(v.SourceTables.String), &sources)
 	}
 	vd := &domain.ViewDetail{
 		ID:             v.ID,

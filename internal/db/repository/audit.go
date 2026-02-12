@@ -9,20 +9,24 @@ import (
 	"duck-demo/internal/domain"
 )
 
+// AuditRepo implements domain.AuditRepository using SQLite.
 type AuditRepo struct {
 	q  *dbstore.Queries
 	db *sql.DB
 }
 
+// NewAuditRepo creates a new AuditRepo.
 func NewAuditRepo(db *sql.DB) *AuditRepo {
 	return &AuditRepo{q: dbstore.New(db), db: db}
 }
 
+// Insert persists a new audit log entry.
 func (r *AuditRepo) Insert(ctx context.Context, e *domain.AuditEntry) error {
 	params := mapper.AuditEntriesToDBParams(e)
 	return r.q.InsertAuditLog(ctx, params)
 }
 
+// List returns a filtered, paginated list of audit log entries.
 func (r *AuditRepo) List(ctx context.Context, filter domain.AuditFilter) ([]domain.AuditEntry, int64, error) {
 	// Build filter params — use nil for "no filter" column
 	var principalFilter interface{}

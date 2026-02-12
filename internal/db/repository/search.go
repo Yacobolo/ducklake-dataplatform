@@ -9,14 +9,17 @@ import (
 	"duck-demo/internal/domain"
 )
 
+// SearchRepo implements domain.SearchRepository using SQLite.
 type SearchRepo struct {
 	db *sql.DB
 }
 
+// NewSearchRepo creates a new SearchRepo.
 func NewSearchRepo(db *sql.DB) *SearchRepo {
 	return &SearchRepo{db: db}
 }
 
+// Search performs a full-text search across schemas, tables, and columns.
 func (r *SearchRepo) Search(ctx context.Context, query string, objectType *string, maxResults int, offset int) ([]domain.SearchResult, int64, error) {
 	likePattern := "%" + strings.ToLower(query) + "%"
 
@@ -159,7 +162,7 @@ func (r *SearchRepo) Search(ctx context.Context, query string, objectType *strin
 	if err != nil {
 		return nil, 0, fmt.Errorf("search query: %w", err)
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	var results []domain.SearchResult
 	for rows.Next() {
@@ -178,6 +181,9 @@ func (r *SearchRepo) Search(ctx context.Context, query string, objectType *strin
 			sr.Comment = &comment.String
 		}
 		results = append(results, sr)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("iterate search results: %w", err)
 	}
 
 	// Count query

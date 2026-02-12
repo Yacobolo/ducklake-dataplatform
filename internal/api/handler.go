@@ -1,3 +1,4 @@
+// Package api provides HTTP handlers for the data platform REST API.
 package api
 
 import (
@@ -33,6 +34,7 @@ type APIHandler struct {
 	volumes           *service.VolumeService
 }
 
+// NewHandler creates a new APIHandler with all required service dependencies.
 func NewHandler(
 	query *service.QueryService,
 	principals *service.PrincipalService,
@@ -104,12 +106,6 @@ func errorCodeFromError(err error) int {
 	return httpStatusFromError(err)
 }
 
-// isDomainError returns true if err is a known domain error type.
-func isDomainError(err error) bool {
-	code := httpStatusFromError(err)
-	return code != http.StatusInternalServerError
-}
-
 func (h *APIHandler) ExecuteQuery(ctx context.Context, req ExecuteQueryRequestObject) (ExecuteQueryResponseObject, error) {
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	result, err := h.query.Execute(ctx, principal, req.Body.Sql)
@@ -119,9 +115,7 @@ func (h *APIHandler) ExecuteQuery(ctx context.Context, req ExecuteQueryRequestOb
 	}
 
 	rows := make([][]interface{}, len(result.Rows))
-	for i, r := range result.Rows {
-		rows[i] = r
-	}
+	copy(rows, result.Rows)
 
 	return ExecuteQuery200JSONResponse{
 		Columns:  &result.Columns,
@@ -195,7 +189,14 @@ func (h *APIHandler) CreatePrincipal(ctx context.Context, req CreatePrincipalReq
 	}
 	result, err := h.principals.Create(ctx, p)
 	if err != nil {
-		return CreatePrincipal400JSONResponse{Code: 400, Message: err.Error()}, nil
+		switch {
+		case errors.As(err, new(*domain.ValidationError)):
+			return CreatePrincipal400JSONResponse{Code: 400, Message: err.Error()}, nil
+		case errors.As(err, new(*domain.ConflictError)):
+			return CreatePrincipal400JSONResponse{Code: 400, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return CreatePrincipal201JSONResponse(principalToAPI(*result)), nil
 }
@@ -203,21 +204,36 @@ func (h *APIHandler) CreatePrincipal(ctx context.Context, req CreatePrincipalReq
 func (h *APIHandler) GetPrincipal(ctx context.Context, req GetPrincipalRequestObject) (GetPrincipalResponseObject, error) {
 	p, err := h.principals.GetByID(ctx, req.PrincipalId)
 	if err != nil {
-		return GetPrincipal404JSONResponse{Code: 404, Message: err.Error()}, nil
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
+			return GetPrincipal404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return GetPrincipal200JSONResponse(principalToAPI(*p)), nil
 }
 
 func (h *APIHandler) DeletePrincipal(ctx context.Context, req DeletePrincipalRequestObject) (DeletePrincipalResponseObject, error) {
 	if err := h.principals.Delete(ctx, req.PrincipalId); err != nil {
-		return DeletePrincipal404JSONResponse{Code: 404, Message: err.Error()}, nil
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
+			return DeletePrincipal404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return DeletePrincipal204Response{}, nil
 }
 
 func (h *APIHandler) UpdatePrincipalAdmin(ctx context.Context, req UpdatePrincipalAdminRequestObject) (UpdatePrincipalAdminResponseObject, error) {
 	if err := h.principals.SetAdmin(ctx, req.PrincipalId, req.Body.IsAdmin); err != nil {
-		return UpdatePrincipalAdmin404JSONResponse{Code: 404, Message: err.Error()}, nil
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
+			return UpdatePrincipalAdmin404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return UpdatePrincipalAdmin204Response{}, nil
 }
@@ -253,7 +269,12 @@ func (h *APIHandler) CreateGroup(ctx context.Context, req CreateGroupRequestObje
 func (h *APIHandler) GetGroup(ctx context.Context, req GetGroupRequestObject) (GetGroupResponseObject, error) {
 	g, err := h.groups.GetByID(ctx, req.GroupId)
 	if err != nil {
-		return GetGroup404JSONResponse{Code: 404, Message: err.Error()}, nil
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
+			return GetGroup404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return GetGroup200JSONResponse(groupToAPI(*g)), nil
 }
@@ -309,11 +330,12 @@ func (h *APIHandler) ListGrants(ctx context.Context, req ListGrantsRequestObject
 	var total int64
 	var err error
 
-	if req.Params.PrincipalId != nil && req.Params.PrincipalType != nil {
+	switch {
+	case req.Params.PrincipalId != nil && req.Params.PrincipalType != nil:
 		grants, total, err = h.grants.ListForPrincipal(ctx, *req.Params.PrincipalId, *req.Params.PrincipalType, page)
-	} else if req.Params.SecurableType != nil && req.Params.SecurableId != nil {
+	case req.Params.SecurableType != nil && req.Params.SecurableId != nil:
 		grants, total, err = h.grants.ListForSecurable(ctx, *req.Params.SecurableType, *req.Params.SecurableId, page)
-	} else {
+	default:
 		grants = []domain.PrivilegeGrant{}
 	}
 	if err != nil {
@@ -530,8 +552,8 @@ func (h *APIHandler) UpdateCatalog(ctx context.Context, req UpdateCatalogRequest
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	result, err := h.catalog.UpdateCatalog(ctx, principal, domReq)
 	if err != nil {
-		switch err.(type) {
-		case *domain.AccessDeniedError:
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
 			return UpdateCatalog403JSONResponse{Code: 403, Message: err.Error()}, nil
 		default:
 			return nil, err
@@ -571,12 +593,12 @@ func (h *APIHandler) CreateSchema(ctx context.Context, req CreateSchemaRequestOb
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	result, err := h.catalog.CreateSchema(ctx, principal, domReq)
 	if err != nil {
-		switch err.(type) {
-		case *domain.AccessDeniedError:
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
 			return CreateSchema403JSONResponse{Code: 403, Message: err.Error()}, nil
-		case *domain.ValidationError:
+		case errors.As(err, new(*domain.ValidationError)):
 			return CreateSchema400JSONResponse{Code: 400, Message: err.Error()}, nil
-		case *domain.ConflictError:
+		case errors.As(err, new(*domain.ConflictError)):
 			return CreateSchema409JSONResponse{Code: 409, Message: err.Error()}, nil
 		default:
 			return CreateSchema400JSONResponse{Code: 400, Message: err.Error()}, nil
@@ -588,8 +610,8 @@ func (h *APIHandler) CreateSchema(ctx context.Context, req CreateSchemaRequestOb
 func (h *APIHandler) GetSchema(ctx context.Context, req GetSchemaRequestObject) (GetSchemaResponseObject, error) {
 	result, err := h.catalog.GetSchema(ctx, req.SchemaName)
 	if err != nil {
-		switch err.(type) {
-		case *domain.NotFoundError:
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
 			return GetSchema404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
 			return nil, err
@@ -607,10 +629,10 @@ func (h *APIHandler) UpdateSchema(ctx context.Context, req UpdateSchemaRequestOb
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	result, err := h.catalog.UpdateSchema(ctx, principal, req.SchemaName, req.Body.Comment, props)
 	if err != nil {
-		switch err.(type) {
-		case *domain.AccessDeniedError:
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
 			return UpdateSchema403JSONResponse{Code: 403, Message: err.Error()}, nil
-		case *domain.NotFoundError:
+		case errors.As(err, new(*domain.NotFoundError)):
 			return UpdateSchema404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
 			return nil, err
@@ -646,8 +668,8 @@ func (h *APIHandler) ListTables(ctx context.Context, req ListTablesRequestObject
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	tables, total, err := h.catalog.ListTables(ctx, req.SchemaName, page)
 	if err != nil {
-		switch err.(type) {
-		case *domain.NotFoundError:
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
 			return ListTables404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
 			return nil, err
@@ -692,14 +714,14 @@ func (h *APIHandler) CreateTable(ctx context.Context, req CreateTableRequestObje
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	result, err := h.catalog.CreateTable(ctx, principal, req.SchemaName, domReq)
 	if err != nil {
-		switch err.(type) {
-		case *domain.AccessDeniedError:
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
 			return CreateTable403JSONResponse{Code: 403, Message: err.Error()}, nil
-		case *domain.ValidationError:
+		case errors.As(err, new(*domain.ValidationError)):
 			return CreateTable400JSONResponse{Code: 400, Message: err.Error()}, nil
-		case *domain.ConflictError:
+		case errors.As(err, new(*domain.ConflictError)):
 			return CreateTable409JSONResponse{Code: 409, Message: err.Error()}, nil
-		case *domain.NotFoundError:
+		case errors.As(err, new(*domain.NotFoundError)):
 			return CreateTable400JSONResponse{Code: 400, Message: err.Error()}, nil
 		default:
 			return CreateTable400JSONResponse{Code: 400, Message: err.Error()}, nil
@@ -711,8 +733,8 @@ func (h *APIHandler) CreateTable(ctx context.Context, req CreateTableRequestObje
 func (h *APIHandler) GetTable(ctx context.Context, req GetTableRequestObject) (GetTableResponseObject, error) {
 	result, err := h.catalog.GetTable(ctx, req.SchemaName, req.TableName)
 	if err != nil {
-		switch err.(type) {
-		case *domain.NotFoundError:
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
 			return GetTable404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
 			return nil, err
@@ -736,10 +758,10 @@ func (h *APIHandler) UpdateTable(ctx context.Context, req UpdateTableRequestObje
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	result, err := h.catalog.UpdateTable(ctx, principal, req.SchemaName, req.TableName, domReq)
 	if err != nil {
-		switch err.(type) {
-		case *domain.AccessDeniedError:
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
 			return UpdateTable403JSONResponse{Code: 403, Message: err.Error()}, nil
-		case *domain.NotFoundError:
+		case errors.As(err, new(*domain.NotFoundError)):
 			return UpdateTable404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
 			return nil, err
@@ -751,10 +773,10 @@ func (h *APIHandler) UpdateTable(ctx context.Context, req UpdateTableRequestObje
 func (h *APIHandler) DeleteTable(ctx context.Context, req DeleteTableRequestObject) (DeleteTableResponseObject, error) {
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	if err := h.catalog.DeleteTable(ctx, principal, req.SchemaName, req.TableName); err != nil {
-		switch err.(type) {
-		case *domain.AccessDeniedError:
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
 			return DeleteTable403JSONResponse{Code: 403, Message: err.Error()}, nil
-		case *domain.NotFoundError:
+		case errors.As(err, new(*domain.NotFoundError)):
 			return DeleteTable404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
 			return nil, err
@@ -767,8 +789,8 @@ func (h *APIHandler) ListTableColumns(ctx context.Context, req ListTableColumnsR
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	cols, total, err := h.catalog.ListColumns(ctx, req.SchemaName, req.TableName, page)
 	if err != nil {
-		switch err.(type) {
-		case *domain.NotFoundError:
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
 			return ListTableColumns404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
 			return nil, err
@@ -794,10 +816,10 @@ func (h *APIHandler) UpdateColumn(ctx context.Context, req UpdateColumnRequestOb
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	result, err := h.catalog.UpdateColumn(ctx, principal, req.SchemaName, req.TableName, req.ColumnName, domReq)
 	if err != nil {
-		switch err.(type) {
-		case *domain.AccessDeniedError:
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
 			return UpdateColumn403JSONResponse{Code: 403, Message: err.Error()}, nil
-		case *domain.NotFoundError:
+		case errors.As(err, new(*domain.NotFoundError)):
 			return UpdateColumn404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
 			return nil, err
@@ -810,10 +832,10 @@ func (h *APIHandler) ProfileTable(ctx context.Context, req ProfileTableRequestOb
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	stats, err := h.catalog.ProfileTable(ctx, principal, req.SchemaName, req.TableName)
 	if err != nil {
-		switch err.(type) {
-		case *domain.AccessDeniedError:
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
 			return ProfileTable403JSONResponse{Code: 403, Message: err.Error()}, nil
-		case *domain.NotFoundError:
+		case errors.As(err, new(*domain.NotFoundError)):
 			return ProfileTable404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
 			return nil, err
@@ -947,8 +969,8 @@ func (h *APIHandler) GetDownstreamLineage(ctx context.Context, req GetDownstream
 
 func (h *APIHandler) DeleteLineageEdge(ctx context.Context, req DeleteLineageEdgeRequestObject) (DeleteLineageEdgeResponseObject, error) {
 	if err := h.lineage.DeleteEdge(ctx, req.EdgeId); err != nil {
-		switch err.(type) {
-		case *domain.NotFoundError:
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
 			return DeleteLineageEdge404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
 			return nil, err
@@ -992,8 +1014,8 @@ func (h *APIHandler) CreateTag(ctx context.Context, req CreateTagRequestObject) 
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	result, err := h.tags.CreateTag(ctx, principal, tag)
 	if err != nil {
-		switch err.(type) {
-		case *domain.ConflictError:
+		switch {
+		case errors.As(err, new(*domain.ConflictError)):
 			return CreateTag409JSONResponse{Code: 409, Message: err.Error()}, nil
 		default:
 			return nil, err
@@ -1005,8 +1027,8 @@ func (h *APIHandler) CreateTag(ctx context.Context, req CreateTagRequestObject) 
 func (h *APIHandler) DeleteTag(ctx context.Context, req DeleteTagRequestObject) (DeleteTagResponseObject, error) {
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	if err := h.tags.DeleteTag(ctx, principal, req.TagId); err != nil {
-		switch err.(type) {
-		case *domain.NotFoundError:
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
 			return DeleteTag404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
 			return nil, err
@@ -1025,8 +1047,8 @@ func (h *APIHandler) CreateTagAssignment(ctx context.Context, req CreateTagAssig
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	result, err := h.tags.AssignTag(ctx, principal, assignment)
 	if err != nil {
-		switch err.(type) {
-		case *domain.ConflictError:
+		switch {
+		case errors.As(err, new(*domain.ConflictError)):
 			return CreateTagAssignment409JSONResponse{Code: 409, Message: err.Error()}, nil
 		default:
 			return nil, err
@@ -1067,8 +1089,8 @@ func (h *APIHandler) ListViews(ctx context.Context, req ListViewsRequestObject) 
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	views, total, err := h.views.ListViews(ctx, req.SchemaName, page)
 	if err != nil {
-		switch err.(type) {
-		case *domain.NotFoundError:
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
 			return ListViews404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
 			return nil, err
@@ -1096,12 +1118,12 @@ func (h *APIHandler) CreateView(ctx context.Context, req CreateViewRequestObject
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	result, err := h.views.CreateView(ctx, principal, req.SchemaName, domReq)
 	if err != nil {
-		switch err.(type) {
-		case *domain.AccessDeniedError:
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
 			return CreateView403JSONResponse{Code: 403, Message: err.Error()}, nil
-		case *domain.ValidationError:
+		case errors.As(err, new(*domain.ValidationError)):
 			return CreateView400JSONResponse{Code: 400, Message: err.Error()}, nil
-		case *domain.ConflictError:
+		case errors.As(err, new(*domain.ConflictError)):
 			return CreateView409JSONResponse{Code: 409, Message: err.Error()}, nil
 		default:
 			return CreateView400JSONResponse{Code: 400, Message: err.Error()}, nil
@@ -1113,8 +1135,8 @@ func (h *APIHandler) CreateView(ctx context.Context, req CreateViewRequestObject
 func (h *APIHandler) GetView(ctx context.Context, req GetViewRequestObject) (GetViewResponseObject, error) {
 	result, err := h.views.GetView(ctx, req.SchemaName, req.ViewName)
 	if err != nil {
-		switch err.(type) {
-		case *domain.NotFoundError:
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
 			return GetView404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
 			return nil, err
@@ -1138,10 +1160,10 @@ func (h *APIHandler) UpdateView(ctx context.Context, req UpdateViewRequestObject
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	result, err := h.views.UpdateView(ctx, principal, req.SchemaName, req.ViewName, domReq)
 	if err != nil {
-		switch err.(type) {
-		case *domain.AccessDeniedError:
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
 			return UpdateView403JSONResponse{Code: 403, Message: err.Error()}, nil
-		case *domain.NotFoundError:
+		case errors.As(err, new(*domain.NotFoundError)):
 			return UpdateView404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
 			return nil, err
@@ -1153,10 +1175,10 @@ func (h *APIHandler) UpdateView(ctx context.Context, req UpdateViewRequestObject
 func (h *APIHandler) DeleteView(ctx context.Context, req DeleteViewRequestObject) (DeleteViewResponseObject, error) {
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	if err := h.views.DeleteView(ctx, principal, req.SchemaName, req.ViewName); err != nil {
-		switch err.(type) {
-		case *domain.AccessDeniedError:
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
 			return DeleteView403JSONResponse{Code: 403, Message: err.Error()}, nil
-		case *domain.NotFoundError:
+		case errors.As(err, new(*domain.NotFoundError)):
 			return DeleteView404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
 			return nil, err
@@ -1175,10 +1197,10 @@ func (h *APIHandler) CreateUploadUrl(ctx context.Context, req CreateUploadUrlReq
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	result, err := h.ingestion.RequestUploadURL(ctx, principal, req.SchemaName, req.TableName, req.Body.Filename)
 	if err != nil {
-		switch err.(type) {
-		case *domain.NotFoundError:
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
 			return CreateUploadUrl404JSONResponse{Code: 404, Message: err.Error()}, nil
-		case *domain.AccessDeniedError:
+		case errors.As(err, new(*domain.AccessDeniedError)):
 			return CreateUploadUrl403JSONResponse{Code: 403, Message: err.Error()}, nil
 		default:
 			return CreateUploadUrl400JSONResponse{Code: 400, Message: err.Error()}, nil
@@ -1211,12 +1233,12 @@ func (h *APIHandler) CommitTableIngestion(ctx context.Context, req CommitTableIn
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	result, err := h.ingestion.CommitIngestion(ctx, principal, req.SchemaName, req.TableName, req.Body.S3Keys, opts)
 	if err != nil {
-		switch err.(type) {
-		case *domain.NotFoundError:
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
 			return CommitTableIngestion404JSONResponse{Code: 404, Message: err.Error()}, nil
-		case *domain.AccessDeniedError:
+		case errors.As(err, new(*domain.AccessDeniedError)):
 			return CommitTableIngestion403JSONResponse{Code: 403, Message: err.Error()}, nil
-		case *domain.ValidationError:
+		case errors.As(err, new(*domain.ValidationError)):
 			return CommitTableIngestion400JSONResponse{Code: 400, Message: err.Error()}, nil
 		default:
 			return CommitTableIngestion400JSONResponse{Code: 400, Message: err.Error()}, nil
@@ -1249,12 +1271,12 @@ func (h *APIHandler) LoadTableExternalFiles(ctx context.Context, req LoadTableEx
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	result, err := h.ingestion.LoadExternalFiles(ctx, principal, req.SchemaName, req.TableName, req.Body.Paths, opts)
 	if err != nil {
-		switch err.(type) {
-		case *domain.NotFoundError:
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
 			return LoadTableExternalFiles404JSONResponse{Code: 404, Message: err.Error()}, nil
-		case *domain.AccessDeniedError:
+		case errors.As(err, new(*domain.AccessDeniedError)):
 			return LoadTableExternalFiles403JSONResponse{Code: 403, Message: err.Error()}, nil
-		case *domain.ValidationError:
+		case errors.As(err, new(*domain.ValidationError)):
 			return LoadTableExternalFiles400JSONResponse{Code: 400, Message: err.Error()}, nil
 		default:
 			return LoadTableExternalFiles400JSONResponse{Code: 400, Message: err.Error()}, nil
@@ -1646,8 +1668,8 @@ func (h *APIHandler) CreateStorageCredential(ctx context.Context, req CreateStor
 func (h *APIHandler) GetStorageCredential(ctx context.Context, req GetStorageCredentialRequestObject) (GetStorageCredentialResponseObject, error) {
 	result, err := h.storageCreds.GetByName(ctx, req.CredentialName)
 	if err != nil {
-		switch err.(type) {
-		case *domain.NotFoundError:
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
 			return GetStorageCredential404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
 			return nil, err
@@ -1678,10 +1700,10 @@ func (h *APIHandler) UpdateStorageCredential(ctx context.Context, req UpdateStor
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	result, err := h.storageCreds.Update(ctx, principal, req.CredentialName, domReq)
 	if err != nil {
-		switch err.(type) {
-		case *domain.AccessDeniedError:
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
 			return UpdateStorageCredential403JSONResponse{Code: 403, Message: err.Error()}, nil
-		case *domain.NotFoundError:
+		case errors.As(err, new(*domain.NotFoundError)):
 			return UpdateStorageCredential404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
 			return nil, err
@@ -1693,10 +1715,10 @@ func (h *APIHandler) UpdateStorageCredential(ctx context.Context, req UpdateStor
 func (h *APIHandler) DeleteStorageCredential(ctx context.Context, req DeleteStorageCredentialRequestObject) (DeleteStorageCredentialResponseObject, error) {
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	if err := h.storageCreds.Delete(ctx, principal, req.CredentialName); err != nil {
-		switch err.(type) {
-		case *domain.AccessDeniedError:
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
 			return DeleteStorageCredential403JSONResponse{Code: 403, Message: err.Error()}, nil
-		case *domain.NotFoundError:
+		case errors.As(err, new(*domain.NotFoundError)):
 			return DeleteStorageCredential404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
 			return nil, err
@@ -1768,8 +1790,8 @@ func (h *APIHandler) CreateExternalLocation(ctx context.Context, req CreateExter
 func (h *APIHandler) GetExternalLocation(ctx context.Context, req GetExternalLocationRequestObject) (GetExternalLocationResponseObject, error) {
 	result, err := h.externalLocations.GetByName(ctx, req.LocationName)
 	if err != nil {
-		switch err.(type) {
-		case *domain.NotFoundError:
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
 			return GetExternalLocation404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
 			return nil, err
@@ -1794,10 +1816,10 @@ func (h *APIHandler) UpdateExternalLocation(ctx context.Context, req UpdateExter
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	result, err := h.externalLocations.Update(ctx, principal, req.LocationName, domReq)
 	if err != nil {
-		switch err.(type) {
-		case *domain.AccessDeniedError:
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
 			return UpdateExternalLocation403JSONResponse{Code: 403, Message: err.Error()}, nil
-		case *domain.NotFoundError:
+		case errors.As(err, new(*domain.NotFoundError)):
 			return UpdateExternalLocation404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
 			return nil, err
@@ -1809,10 +1831,10 @@ func (h *APIHandler) UpdateExternalLocation(ctx context.Context, req UpdateExter
 func (h *APIHandler) DeleteExternalLocation(ctx context.Context, req DeleteExternalLocationRequestObject) (DeleteExternalLocationResponseObject, error) {
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	if err := h.externalLocations.Delete(ctx, principal, req.LocationName); err != nil {
-		switch err.(type) {
-		case *domain.AccessDeniedError:
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
 			return DeleteExternalLocation403JSONResponse{Code: 403, Message: err.Error()}, nil
-		case *domain.NotFoundError:
+		case errors.As(err, new(*domain.NotFoundError)):
 			return DeleteExternalLocation404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
 			return nil, err
@@ -1919,8 +1941,8 @@ func (h *APIHandler) CreateVolume(ctx context.Context, req CreateVolumeRequestOb
 func (h *APIHandler) GetVolume(ctx context.Context, req GetVolumeRequestObject) (GetVolumeResponseObject, error) {
 	result, err := h.volumes.GetByName(ctx, req.SchemaName, req.VolumeName)
 	if err != nil {
-		switch err.(type) {
-		case *domain.NotFoundError:
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
 			return GetVolume404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
 			return nil, err
@@ -1938,10 +1960,10 @@ func (h *APIHandler) UpdateVolume(ctx context.Context, req UpdateVolumeRequestOb
 
 	result, err := h.volumes.Update(ctx, req.SchemaName, req.VolumeName, domReq)
 	if err != nil {
-		switch err.(type) {
-		case *domain.AccessDeniedError:
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
 			return UpdateVolume403JSONResponse{Code: 403, Message: err.Error()}, nil
-		case *domain.NotFoundError:
+		case errors.As(err, new(*domain.NotFoundError)):
 			return UpdateVolume404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
 			return nil, err
@@ -1952,10 +1974,10 @@ func (h *APIHandler) UpdateVolume(ctx context.Context, req UpdateVolumeRequestOb
 
 func (h *APIHandler) DeleteVolume(ctx context.Context, req DeleteVolumeRequestObject) (DeleteVolumeResponseObject, error) {
 	if err := h.volumes.Delete(ctx, req.SchemaName, req.VolumeName); err != nil {
-		switch err.(type) {
-		case *domain.AccessDeniedError:
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
 			return DeleteVolume403JSONResponse{Code: 403, Message: err.Error()}, nil
-		case *domain.NotFoundError:
+		case errors.As(err, new(*domain.NotFoundError)):
 			return DeleteVolume404JSONResponse{Code: 404, Message: err.Error()}, nil
 		default:
 			return nil, err

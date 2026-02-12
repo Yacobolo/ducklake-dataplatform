@@ -1,0 +1,88 @@
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+
+output:
+  show-stats: true
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+linters:
+  disable-all: true
+  enable:
+    # --- Default & Critical ---
+    - errcheck
+    - govet
+    - staticcheck
+    - unused
+
+    # --- Error Handling & Naming ---
+    - errname # Enforces "Err" prefix and "Error" suffix
+    - errorlint # Enforces Go 1.13+ error wrapping (%w)
+    - nilerr # Finds code that returns nil even if checks fail
+
+    # --- Database & Logging ---
+    - sqlclosecheck # Prevents connection leaks (vital for SQLite)
+    - rowserrcheck # Ensures rows.Err() is checked after iteration
+    - sloglint # Ensures structured logging consistency
+    - depguard # Enforces allowed/denied dependencies
+    - decorder # Ensures correct order
+
+    # --- Quality & Security ---
+    - revive # General Go style
+    - gosec # Security (SQL Injection, file permissions)
+    - gocritic # Catches subtle bugs and performance issues
+    - misspell # Fixes typos
+    - nolintlint # Ensures //nolint comments are actually needed
+    - testifylint # Ensures correct testify usage
+    - noctx # Prevents zombie requests
+
+  settings:
+    sloglint:
+      no-global: "all"
+      key-naming-case: snake
+      static-msg: true
+      no-mixed-args: true
+
+    testifylint:
+      enable-all: true
+
+    depguard:
+      rules:
+        Main: # Capitalized "Main" to ensure we overwrite the default rule
+          deny:
+            - pkg: "github.com/sirupsen/logrus"
+              desc: "We use log/slog only."
+            - pkg: "go.uber.org/zap"
+              desc: "We use log/slog only."
+            - pkg: "^log$"
+              desc: "Use log/slog. For fatal errors, return them or use os.Exit only in main."
+
+  exclusions:
+    paths:
+      - vendor
+      - context
+
+    rules:
+      - path: _test\.go
+        linters:
+          - gosec
+      - path: internal/api/handler\.go
+        linters:
+          - revive
+        text: "exported:"
+      - path: cmd/server/main\.go
+        linters:
+          - revive
+        text: "unused-parameter"
+      - linters:
+          - revive
+        text: "var-naming"
+      - path: _test\.go
+        linters:
+          - revive
+        text: "unused-parameter"

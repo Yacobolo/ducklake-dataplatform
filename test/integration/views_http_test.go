@@ -3,7 +3,6 @@
 package integration
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -47,7 +46,7 @@ func TestHTTP_ViewCRUD(t *testing.T) {
 				"name":            viewName,
 				"view_definition": "SELECT 2",
 			})
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			require.Equal(t, 409, resp.StatusCode)
 		}},
 
@@ -84,13 +83,13 @@ func TestHTTP_ViewCRUD(t *testing.T) {
 
 		{"get_view_not_found", func(t *testing.T) {
 			resp := doRequest(t, "GET", base+"/nonexistent", env.Keys.Admin, nil)
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			require.Equal(t, 404, resp.StatusCode)
 		}},
 
 		{"drop_view", func(t *testing.T) {
 			resp := doRequest(t, "DELETE", base+"/"+viewName, env.Keys.Admin, nil)
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			require.Equal(t, 204, resp.StatusCode)
 		}},
 
@@ -98,7 +97,7 @@ func TestHTTP_ViewCRUD(t *testing.T) {
 			// Dropping an already-dropped view returns 204 (idempotent — the SQL
 			// DELETE succeeds with 0 rows affected and no error).
 			resp := doRequest(t, "DELETE", base+"/"+viewName, env.Keys.Admin, nil)
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			require.Equal(t, 204, resp.StatusCode)
 		}},
 
@@ -148,7 +147,7 @@ func TestHTTP_ViewAuthZ(t *testing.T) {
 				"view_definition": "SELECT 1",
 			})
 			require.Equal(t, 201, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 
 		{"analyst_create_403", func(t *testing.T) {
@@ -156,7 +155,7 @@ func TestHTTP_ViewAuthZ(t *testing.T) {
 				"name":            "v_analyst_attempt",
 				"view_definition": "SELECT 1",
 			})
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			require.Equal(t, 403, resp.StatusCode)
 		}},
 
@@ -181,7 +180,7 @@ func TestHTTP_ViewAuthZ(t *testing.T) {
 
 		{"analyst_drop_403", func(t *testing.T) {
 			resp := doRequest(t, "DELETE", base+"/"+viewName, env.Keys.Analyst, nil)
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			require.Equal(t, 403, resp.StatusCode)
 		}},
 	}
@@ -212,7 +211,7 @@ func TestHTTP_UpdateView(t *testing.T) {
 				"view_definition": "SELECT 1 AS val",
 			})
 			require.Equal(t, 201, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 
 		{"patch_comment_200", func(t *testing.T) {
@@ -255,14 +254,14 @@ func TestHTTP_UpdateView(t *testing.T) {
 			body := map[string]interface{}{"comment": "nope"}
 			resp := doRequest(t, "PATCH", base+"/nonexistent", env.Keys.Admin, body)
 			assert.Equal(t, 404, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 
 		{"analyst_denied_403", func(t *testing.T) {
 			body := map[string]interface{}{"comment": "should fail"}
 			resp := doRequest(t, "PATCH", base+"/"+viewName, env.Keys.Analyst, body)
 			assert.Equal(t, 403, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 	}
 
@@ -282,7 +281,7 @@ func TestHTTP_ViewSchemaNotFound(t *testing.T) {
 
 	t.Run("list_bad_schema_404", func(t *testing.T) {
 		resp := doRequest(t, "GET", base, env.Keys.Admin, nil)
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck
 		require.Equal(t, 404, resp.StatusCode)
 	})
 
@@ -291,9 +290,9 @@ func TestHTTP_ViewSchemaNotFound(t *testing.T) {
 			"name":            "v_bad",
 			"view_definition": "SELECT 1",
 		})
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck
 		// Schema not found should return 404 (or possibly 400)
 		assert.Contains(t, []int{400, 404}, resp.StatusCode,
-			fmt.Sprintf("expected 400 or 404, got %d", resp.StatusCode))
+			"expected 400 or 404, got %d", resp.StatusCode)
 	})
 }

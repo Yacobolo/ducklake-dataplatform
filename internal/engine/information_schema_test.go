@@ -321,7 +321,7 @@ func TestInformationSchema_ConcurrentQueries(t *testing.T) {
 
 	db, err := sql.Open("duckdb", "")
 	require.NoError(t, err)
-	t.Cleanup(func() { db.Close() })
+	t.Cleanup(func() { _ = db.Close() })
 
 	const goroutines = 10
 	errs := make(chan error, goroutines)
@@ -333,7 +333,7 @@ func TestInformationSchema_ConcurrentQueries(t *testing.T) {
 				errs <- err
 				return
 			}
-			defer rows.Close()
+			defer rows.Close() //nolint:errcheck
 
 			count := 0
 			for rows.Next() {

@@ -26,6 +26,7 @@ type QueryService struct {
 	lineage domain.LineageRepository
 }
 
+// NewQueryService creates a new QueryService.
 func NewQueryService(eng *engine.SecureEngine, audit domain.AuditRepository, lineage domain.LineageRepository) *QueryService {
 	return &QueryService{engine: eng, audit: audit, lineage: lineage}
 }
@@ -42,7 +43,7 @@ func (s *QueryService) Execute(ctx context.Context, principalName, sqlQuery stri
 		s.logAudit(ctx, principalName, "QUERY", &sqlQuery, nil, nil, "DENIED", err.Error(), duration, nil)
 		return nil, err
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	result, err := scanRows(rows)
 	if err != nil {

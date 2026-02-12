@@ -95,12 +95,12 @@ func TestHTTP_SchemaCRUD(t *testing.T) {
 		{"delete_204", func(t *testing.T) {
 			resp := doRequest(t, "DELETE", env.Server.URL+"/v1/catalog/schemas/test_schema", env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 		{"get_after_delete_404", func(t *testing.T) {
 			resp := doRequest(t, "GET", env.Server.URL+"/v1/catalog/schemas/test_schema", env.Keys.Admin, nil)
 			assert.Equal(t, 404, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 	}
 	for _, s := range steps {
@@ -115,24 +115,24 @@ func TestHTTP_SchemaErrors(t *testing.T) {
 	t.Run("get_nonexistent_404", func(t *testing.T) {
 		resp := doRequest(t, "GET", env.Server.URL+"/v1/catalog/schemas/nonexistent_schema", env.Keys.Admin, nil)
 		assert.Equal(t, 404, resp.StatusCode)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	})
 
 	t.Run("create_duplicate_409", func(t *testing.T) {
 		body := map[string]interface{}{"name": "dup_schema"}
 		resp := doRequest(t, "POST", env.Server.URL+"/v1/catalog/schemas", env.Keys.Admin, body)
 		require.Equal(t, 201, resp.StatusCode)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 
 		resp2 := doRequest(t, "POST", env.Server.URL+"/v1/catalog/schemas", env.Keys.Admin, body)
 		assert.Equal(t, 409, resp2.StatusCode)
-		resp2.Body.Close()
+		_ = resp2.Body.Close()
 	})
 
 	t.Run("delete_nonexistent_404", func(t *testing.T) {
 		resp := doRequest(t, "DELETE", env.Server.URL+"/v1/catalog/schemas/nonexistent_schema", env.Keys.Admin, nil)
 		assert.Equal(t, 404, resp.StatusCode)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	})
 }
 
@@ -144,7 +144,7 @@ func TestHTTP_TableCRUD(t *testing.T) {
 	schemaBody := map[string]interface{}{"name": "table_test_schema"}
 	resp := doRequest(t, "POST", env.Server.URL+"/v1/catalog/schemas", env.Keys.Admin, schemaBody)
 	require.Equal(t, 201, resp.StatusCode)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	type step struct {
 		name string
@@ -217,14 +217,14 @@ func TestHTTP_TableCRUD(t *testing.T) {
 				env.Server.URL+"/v1/catalog/schemas/table_test_schema/tables/test_table",
 				env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 		{"get_after_drop_404", func(t *testing.T) {
 			resp := doRequest(t, "GET",
 				env.Server.URL+"/v1/catalog/schemas/table_test_schema/tables/test_table",
 				env.Keys.Admin, nil)
 			assert.Equal(t, 404, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 	}
 	for _, s := range steps {
@@ -247,7 +247,7 @@ func TestHTTP_TableErrors(t *testing.T) {
 			env.Server.URL+"/v1/catalog/schemas/does_not_exist/tables",
 			env.Keys.Admin, body)
 		assert.Equal(t, 400, resp.StatusCode)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	})
 
 	t.Run("drop_nonexistent_404", func(t *testing.T) {
@@ -255,7 +255,7 @@ func TestHTTP_TableErrors(t *testing.T) {
 			env.Server.URL+"/v1/catalog/schemas/main/tables/does_not_exist",
 			env.Keys.Admin, nil)
 		assert.Equal(t, 404, resp.StatusCode)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	})
 }
 
@@ -286,7 +286,7 @@ func TestHTTP_MetastoreSummary(t *testing.T) {
 		resp2 := doRequest(t, "POST", env.Server.URL+"/v1/catalog/schemas", env.Keys.Admin,
 			map[string]interface{}{"name": "summary_test"})
 		require.Equal(t, 201, resp2.StatusCode)
-		resp2.Body.Close()
+		_ = resp2.Body.Close()
 
 		resp3 := doRequest(t, "POST", env.Server.URL+"/v1/catalog/schemas/summary_test/tables", env.Keys.Admin,
 			map[string]interface{}{
@@ -294,7 +294,7 @@ func TestHTTP_MetastoreSummary(t *testing.T) {
 				"columns": []map[string]interface{}{{"name": "x", "type": "INTEGER"}},
 			})
 		require.Equal(t, 201, resp3.StatusCode)
-		resp3.Body.Close()
+		_ = resp3.Body.Close()
 
 		// Check updated counts
 		resp4 := doRequest(t, "GET", env.Server.URL+"/v1/metastore/summary", env.Keys.Admin, nil)
@@ -317,34 +317,34 @@ func TestHTTP_CatalogAuthorization(t *testing.T) {
 		body := map[string]interface{}{"name": "unauthorized_schema"}
 		resp := doRequest(t, "POST", env.Server.URL+"/v1/catalog/schemas", env.Keys.NoAccess, body)
 		assert.Equal(t, 403, resp.StatusCode)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	})
 
 	t.Run("create_schema_denied_for_analyst", func(t *testing.T) {
 		body := map[string]interface{}{"name": "unauthorized_schema_2"}
 		resp := doRequest(t, "POST", env.Server.URL+"/v1/catalog/schemas", env.Keys.Analyst, body)
 		assert.Equal(t, 403, resp.StatusCode)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	})
 
 	t.Run("admin_can_create_schema", func(t *testing.T) {
 		body := map[string]interface{}{"name": "admin_allowed_schema"}
 		resp := doRequest(t, "POST", env.Server.URL+"/v1/catalog/schemas", env.Keys.Admin, body)
 		require.Equal(t, 201, resp.StatusCode)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	})
 
 	t.Run("update_schema_denied_for_analyst", func(t *testing.T) {
 		body := map[string]interface{}{"comment": "should fail"}
 		resp := doRequest(t, "PATCH", env.Server.URL+"/v1/catalog/schemas/admin_allowed_schema", env.Keys.Analyst, body)
 		assert.Equal(t, 403, resp.StatusCode)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	})
 
 	t.Run("delete_schema_denied_for_analyst", func(t *testing.T) {
 		resp := doRequest(t, "DELETE", env.Server.URL+"/v1/catalog/schemas/admin_allowed_schema", env.Keys.Analyst, nil)
 		assert.Equal(t, 403, resp.StatusCode)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	})
 
 	t.Run("create_table_denied_for_analyst", func(t *testing.T) {
@@ -358,7 +358,7 @@ func TestHTTP_CatalogAuthorization(t *testing.T) {
 			env.Server.URL+"/v1/catalog/schemas/admin_allowed_schema/tables",
 			env.Keys.Analyst, body)
 		assert.Equal(t, 403, resp.StatusCode)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	})
 
 	t.Run("read_operations_allowed_for_all_authenticated", func(t *testing.T) {
@@ -373,7 +373,7 @@ func TestHTTP_CatalogAuthorization(t *testing.T) {
 			t.Run(ep, func(t *testing.T) {
 				resp := doRequest(t, "GET", env.Server.URL+ep, env.Keys.Analyst, nil)
 				assert.Equal(t, 200, resp.StatusCode, "endpoint %s should be readable", ep)
-				resp.Body.Close()
+				_ = resp.Body.Close()
 			})
 		}
 	})
@@ -387,7 +387,7 @@ func TestHTTP_CatalogSchemaForceDelete(t *testing.T) {
 	resp := doRequest(t, "POST", env.Server.URL+"/v1/catalog/schemas", env.Keys.Admin,
 		map[string]interface{}{"name": "force_del_schema"})
 	require.Equal(t, 201, resp.StatusCode)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	resp2 := doRequest(t, "POST", env.Server.URL+"/v1/catalog/schemas/force_del_schema/tables", env.Keys.Admin,
 		map[string]interface{}{
@@ -395,7 +395,7 @@ func TestHTTP_CatalogSchemaForceDelete(t *testing.T) {
 			"columns": []map[string]interface{}{{"name": "id", "type": "INTEGER"}},
 		})
 	require.Equal(t, 201, resp2.StatusCode)
-	resp2.Body.Close()
+	_ = resp2.Body.Close()
 
 	t.Run("delete_non_empty_without_force_fails", func(t *testing.T) {
 		resp := doRequest(t, "DELETE",
@@ -403,7 +403,7 @@ func TestHTTP_CatalogSchemaForceDelete(t *testing.T) {
 			env.Keys.Admin, nil)
 		// Should fail because schema has children (returns 403 for ConflictError)
 		assert.Equal(t, 403, resp.StatusCode)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	})
 
 	t.Run("delete_non_empty_with_force_succeeds", func(t *testing.T) {
@@ -411,14 +411,14 @@ func TestHTTP_CatalogSchemaForceDelete(t *testing.T) {
 			fmt.Sprintf("%s/v1/catalog/schemas/force_del_schema?force=true", env.Server.URL),
 			env.Keys.Admin, nil)
 		require.Equal(t, 204, resp.StatusCode)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 
 		// Verify schema is gone
 		resp2 := doRequest(t, "GET",
 			env.Server.URL+"/v1/catalog/schemas/force_del_schema",
 			env.Keys.Admin, nil)
 		assert.Equal(t, 404, resp2.StatusCode)
-		resp2.Body.Close()
+		_ = resp2.Body.Close()
 	})
 }
 
@@ -491,14 +491,14 @@ func TestHTTP_UpdateTable(t *testing.T) {
 				env.Server.URL+"/v1/catalog/schemas/main/tables/nonexistent",
 				env.Keys.Admin, body)
 			assert.Equal(t, 404, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 
 		{"analyst_denied_403", func(t *testing.T) {
 			body := map[string]interface{}{"comment": "should fail"}
 			resp := doRequest(t, "PATCH", tableURL, env.Keys.Analyst, body)
 			assert.Equal(t, 403, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 	}
 
@@ -560,7 +560,7 @@ func TestHTTP_UpdateColumn(t *testing.T) {
 				env.Server.URL+"/v1/catalog/schemas/main/tables/titanic/columns/DoesNotExist",
 				env.Keys.Admin, body)
 			assert.Equal(t, 404, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 	}
 
@@ -608,7 +608,7 @@ func TestHTTP_UpdateCatalog(t *testing.T) {
 			body := map[string]interface{}{"comment": "should fail"}
 			resp := doRequest(t, "PATCH", catalogURL, env.Keys.Analyst, body)
 			assert.Equal(t, 403, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 	}
 
@@ -638,7 +638,7 @@ func TestHTTP_ProfileTable(t *testing.T) {
 
 			var result map[string]interface{}
 			decodeJSON(t, resp, &result)
-			assert.Equal(t, float64(12), result["column_count"])
+			assert.InDelta(t, float64(12), result["column_count"], 0)
 			assert.NotNil(t, result["last_profiled_at"])
 		}},
 
@@ -650,7 +650,7 @@ func TestHTTP_ProfileTable(t *testing.T) {
 			decodeJSON(t, resp, &result)
 			stats, ok := result["statistics"].(map[string]interface{})
 			require.True(t, ok, "expected statistics field in table response")
-			assert.Equal(t, float64(12), stats["column_count"])
+			assert.InDelta(t, float64(12), stats["column_count"], 0)
 		}},
 
 		{"profile_nonexistent_404", func(t *testing.T) {
@@ -658,7 +658,7 @@ func TestHTTP_ProfileTable(t *testing.T) {
 				env.Server.URL+"/v1/catalog/schemas/main/tables/nonexistent/profile",
 				env.Keys.Admin, nil)
 			assert.Equal(t, 404, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 	}
 
@@ -702,7 +702,7 @@ func TestHTTP_TagsInSchemaResponse(t *testing.T) {
 					"securable_id":   0, // schema_id=0 for "main"
 				})
 			require.Equal(t, 201, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 
 		{"get_schema_has_tags", func(t *testing.T) {
@@ -769,7 +769,7 @@ func TestHTTP_TagsInTableResponse(t *testing.T) {
 					"securable_id":   1, // table_id=1 for "titanic"
 				})
 			require.Equal(t, 201, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 
 		{"get_table_has_tags", func(t *testing.T) {
@@ -821,7 +821,7 @@ func TestHTTP_CascadeDeleteVerifiesGovernanceRecords(t *testing.T) {
 			resp := doRequest(t, "POST", env.Server.URL+"/v1/catalog/schemas", env.Keys.Admin,
 				map[string]interface{}{"name": "cascade_test"})
 			require.Equal(t, 201, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 
 		{"create_table", func(t *testing.T) {
@@ -835,7 +835,7 @@ func TestHTTP_CascadeDeleteVerifiesGovernanceRecords(t *testing.T) {
 					},
 				})
 			require.Equal(t, 201, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 
 		{"create_and_assign_tag", func(t *testing.T) {
@@ -864,7 +864,7 @@ func TestHTTP_CascadeDeleteVerifiesGovernanceRecords(t *testing.T) {
 					"securable_id":   tableID,
 				})
 			require.Equal(t, 201, resp3.StatusCode)
-			resp3.Body.Close()
+			_ = resp3.Body.Close()
 		}},
 
 		{"force_delete_schema", func(t *testing.T) {
@@ -872,7 +872,7 @@ func TestHTTP_CascadeDeleteVerifiesGovernanceRecords(t *testing.T) {
 				fmt.Sprintf("%s/v1/catalog/schemas/cascade_test?force=true", env.Server.URL),
 				env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 
 		{"verify_schema_gone", func(t *testing.T) {
@@ -880,13 +880,13 @@ func TestHTTP_CascadeDeleteVerifiesGovernanceRecords(t *testing.T) {
 				env.Server.URL+"/v1/catalog/schemas/cascade_test",
 				env.Keys.Admin, nil)
 			assert.Equal(t, 404, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 
 		{"verify_tag_assignments_cleaned", func(t *testing.T) {
 			// Query MetaDB directly to check governance records
 			var count int
-			err := env.MetaDB.QueryRow(
+			err := env.MetaDB.QueryRowContext(ctx,
 				`SELECT COUNT(*) FROM tag_assignments WHERE securable_type = 'table'
 				 AND tag_id = ?`, tagID).Scan(&count)
 			require.NoError(t, err)
@@ -911,7 +911,7 @@ func TestHTTP_TableProfileAuthorization(t *testing.T) {
 		resp := doRequest(t, "POST", profileURL, env.Keys.NoAccess, nil)
 		assert.Equal(t, 403, resp.StatusCode,
 			"expected no_access user to be denied profile access")
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	})
 
 	t.Run("analyst_allowed", func(t *testing.T) {
@@ -919,6 +919,6 @@ func TestHTTP_TableProfileAuthorization(t *testing.T) {
 		// Analyst has SELECT on titanic table — should be able to profile it
 		assert.Equal(t, 200, resp.StatusCode,
 			"expected analyst with SELECT to be able to profile table")
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	})
 }

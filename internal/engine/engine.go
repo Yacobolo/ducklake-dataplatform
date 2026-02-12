@@ -1,3 +1,4 @@
+// Package engine provides the DuckDB execution engine with RBAC, RLS, and column masking.
 package engine
 
 import (
@@ -233,6 +234,7 @@ func DropSecret(ctx context.Context, db *sql.DB, name string) error {
 }
 
 // DropS3Secret removes a named DuckDB secret.
+//
 // Deprecated: Use DropSecret instead. Kept for backward compatibility.
 func DropS3Secret(ctx context.Context, db *sql.DB, name string) error {
 	return DropSecret(ctx, db, name)
@@ -260,6 +262,10 @@ func IsCatalogAttached(ctx context.Context, db *sql.DB) bool {
 	if err != nil {
 		return false
 	}
-	defer rows.Close()
-	return rows.Next()
+	defer rows.Close() //nolint:errcheck
+	found := rows.Next()
+	if err := rows.Err(); err != nil {
+		return false
+	}
+	return found
 }

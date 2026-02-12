@@ -5,11 +5,15 @@ import (
 	"testing"
 
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/stretchr/testify/require"
 
 	internaldb "duck-demo/internal/db"
 	dbstore "duck-demo/internal/db/dbstore"
 	"duck-demo/internal/db/repository"
 )
+
+// ctx is a package-level background context used by setup helpers.
+var ctx = context.Background()
 
 // setupTestService creates an AuthorizationService with a temporary SQLite DB,
 // runs migrations, and creates mock DuckLake metadata tables.
@@ -20,7 +24,7 @@ func setupTestService(t *testing.T) (*AuthorizationService, *dbstore.Queries, co
 	db, _ := internaldb.OpenTestSQLite(t)
 
 	// Create mock DuckLake catalog tables
-	_, err := db.Exec(`
+	_, err := db.ExecContext(ctx, `
 		CREATE TABLE ducklake_schema (
 			schema_id INTEGER PRIMARY KEY,
 			schema_uuid TEXT,
@@ -112,23 +116,26 @@ func TestUserWithNoGrantsDenied(t *testing.T) {
 func TestDirectTableGrant(t *testing.T) {
 	cat, q, ctx := setupTestService(t)
 
-	user, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	user, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "analyst", Type: "user", IsAdmin: 0,
 	})
+	require.NoError(t, err)
 
 	// Grant USAGE on schema (required gate)
-	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		PrincipalID: user.ID, PrincipalType: "user",
 		SecurableType: SecurableSchema, SecurableID: 0,
 		Privilege: PrivUsage,
 	})
+	require.NoError(t, err)
 
 	// Grant SELECT on table
-	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		PrincipalID: user.ID, PrincipalType: "user",
 		SecurableType: SecurableTable, SecurableID: 1,
 		Privilege: PrivSelect,
 	})
+	require.NoError(t, err)
 
 	ok, err := cat.CheckPrivilege(ctx, "analyst", SecurableTable, 1, PrivSelect)
 	if err != nil {
@@ -142,16 +149,18 @@ func TestDirectTableGrant(t *testing.T) {
 func TestUsageGateRequired(t *testing.T) {
 	cat, q, ctx := setupTestService(t)
 
-	user, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	user, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "analyst", Type: "user", IsAdmin: 0,
 	})
+	require.NoError(t, err)
 
 	// Grant SELECT on table but NOT USAGE on schema
-	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		PrincipalID: user.ID, PrincipalType: "user",
 		SecurableType: SecurableTable, SecurableID: 1,
 		Privilege: PrivSelect,
 	})
+	require.NoError(t, err)
 
 	ok, err := cat.CheckPrivilege(ctx, "analyst", SecurableTable, 1, PrivSelect)
 	if err != nil {
@@ -165,21 +174,24 @@ func TestUsageGateRequired(t *testing.T) {
 func TestSchemaLevelInheritance(t *testing.T) {
 	cat, q, ctx := setupTestService(t)
 
-	user, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	user, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "analyst", Type: "user", IsAdmin: 0,
 	})
+	require.NoError(t, err)
 
 	// Grant USAGE + SELECT on schema (should cascade to tables)
-	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		PrincipalID: user.ID, PrincipalType: "user",
 		SecurableType: SecurableSchema, SecurableID: 0,
 		Privilege: PrivUsage,
 	})
-	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+	require.NoError(t, err)
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		PrincipalID: user.ID, PrincipalType: "user",
 		SecurableType: SecurableSchema, SecurableID: 0,
 		Privilege: PrivSelect,
 	})
+	require.NoError(t, err)
 
 	// Should inherit SELECT on any table within the schema
 	ok, err := cat.CheckPrivilege(ctx, "analyst", SecurableTable, 1, PrivSelect)
@@ -203,16 +215,18 @@ func TestSchemaLevelInheritance(t *testing.T) {
 func TestCatalogLevelInheritance(t *testing.T) {
 	cat, q, ctx := setupTestService(t)
 
-	user, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	user, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "superuser", Type: "user", IsAdmin: 0,
 	})
+	require.NoError(t, err)
 
 	// Grant ALL_PRIVILEGES at catalog level
-	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		PrincipalID: user.ID, PrincipalType: "user",
 		SecurableType: SecurableCatalog, SecurableID: CatalogID,
 		Privilege: PrivAllPrivileges,
 	})
+	require.NoError(t, err)
 
 	// Should inherit to schema USAGE and table SELECT
 	ok, err := cat.CheckPrivilege(ctx, "superuser", SecurableTable, 1, PrivSelect)
@@ -227,26 +241,31 @@ func TestCatalogLevelInheritance(t *testing.T) {
 func TestGroupMembership(t *testing.T) {
 	cat, q, ctx := setupTestService(t)
 
-	user, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	user, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "analyst", Type: "user", IsAdmin: 0,
 	})
+	require.NoError(t, err)
 
-	group, _ := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "analysts"})
-	q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{
+	group, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "analysts"})
+	require.NoError(t, err)
+	err = q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{
 		GroupID: group.ID, MemberType: "user", MemberID: user.ID,
 	})
+	require.NoError(t, err)
 
 	// Grant to group
-	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		PrincipalID: group.ID, PrincipalType: "group",
 		SecurableType: SecurableSchema, SecurableID: 0,
 		Privilege: PrivUsage,
 	})
-	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+	require.NoError(t, err)
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		PrincipalID: group.ID, PrincipalType: "group",
 		SecurableType: SecurableTable, SecurableID: 1,
 		Privilege: PrivSelect,
 	})
+	require.NoError(t, err)
 
 	ok, err := cat.CheckPrivilege(ctx, "analyst", SecurableTable, 1, PrivSelect)
 	if err != nil {
@@ -260,27 +279,33 @@ func TestGroupMembership(t *testing.T) {
 func TestNestedGroupMembership(t *testing.T) {
 	cat, q, ctx := setupTestService(t)
 
-	user, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	user, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "analyst", Type: "user", IsAdmin: 0,
 	})
+	require.NoError(t, err)
 
-	innerGroup, _ := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "analysts"})
-	outerGroup, _ := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "data_team"})
+	innerGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "analysts"})
+	require.NoError(t, err)
+	outerGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "data_team"})
+	require.NoError(t, err)
 
 	// user -> analysts -> data_team
-	q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{
+	err = q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{
 		GroupID: innerGroup.ID, MemberType: "user", MemberID: user.ID,
 	})
-	q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{
+	require.NoError(t, err)
+	err = q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{
 		GroupID: outerGroup.ID, MemberType: "group", MemberID: innerGroup.ID,
 	})
+	require.NoError(t, err)
 
 	// Grant to outer group
-	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		PrincipalID: outerGroup.ID, PrincipalType: "group",
 		SecurableType: SecurableCatalog, SecurableID: CatalogID,
 		Privilege: PrivAllPrivileges,
 	})
+	require.NoError(t, err)
 
 	ok, err := cat.CheckPrivilege(ctx, "analyst", SecurableTable, 1, PrivSelect)
 	if err != nil {
@@ -294,18 +319,21 @@ func TestNestedGroupMembership(t *testing.T) {
 func TestRowFilterForPrincipal(t *testing.T) {
 	cat, q, ctx := setupTestService(t)
 
-	user, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	user, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "analyst", Type: "user", IsAdmin: 0,
 	})
+	require.NoError(t, err)
 
 	// Create and bind row filter
-	filter, _ := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
+	filter, err := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
 		TableID:   1,
 		FilterSql: `"Pclass" = 1`,
 	})
-	q.BindRowFilter(ctx, dbstore.BindRowFilterParams{
+	require.NoError(t, err)
+	err = q.BindRowFilter(ctx, dbstore.BindRowFilterParams{
 		RowFilterID: filter.ID, PrincipalID: user.ID, PrincipalType: "user",
 	})
+	require.NoError(t, err)
 
 	results, err := cat.GetEffectiveRowFilters(ctx, "analyst", 1)
 	if err != nil {
@@ -322,21 +350,26 @@ func TestRowFilterForPrincipal(t *testing.T) {
 func TestRowFilterForGroupMember(t *testing.T) {
 	cat, q, ctx := setupTestService(t)
 
-	user, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	user, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "analyst", Type: "user", IsAdmin: 0,
 	})
-	group, _ := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "analysts"})
-	q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{
+	require.NoError(t, err)
+	group, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "analysts"})
+	require.NoError(t, err)
+	err = q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{
 		GroupID: group.ID, MemberType: "user", MemberID: user.ID,
 	})
+	require.NoError(t, err)
 
-	filter, _ := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
+	filter, err := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
 		TableID:   1,
 		FilterSql: `"Pclass" = 1`,
 	})
-	q.BindRowFilter(ctx, dbstore.BindRowFilterParams{
+	require.NoError(t, err)
+	err = q.BindRowFilter(ctx, dbstore.BindRowFilterParams{
 		RowFilterID: filter.ID, PrincipalID: group.ID, PrincipalType: "group",
 	})
+	require.NoError(t, err)
 
 	results, err := cat.GetEffectiveRowFilters(ctx, "analyst", 1)
 	if err != nil {
@@ -350,18 +383,21 @@ func TestRowFilterForGroupMember(t *testing.T) {
 func TestAdminNoRowFilter(t *testing.T) {
 	cat, q, ctx := setupTestService(t)
 
-	_, _ = q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	_, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "admin", Type: "user", IsAdmin: 1,
 	})
+	require.NoError(t, err)
 
 	// Even if there's a filter, admin should bypass
-	filter, _ := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
+	filter, err := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
 		TableID:   1,
 		FilterSql: `"Pclass" = 1`,
 	})
-	q.BindRowFilter(ctx, dbstore.BindRowFilterParams{
+	require.NoError(t, err)
+	err = q.BindRowFilter(ctx, dbstore.BindRowFilterParams{
 		RowFilterID: filter.ID, PrincipalID: 1, PrincipalType: "user",
 	})
+	require.NoError(t, err)
 
 	results, err := cat.GetEffectiveRowFilters(ctx, "admin", 1)
 	if err != nil {
@@ -375,19 +411,22 @@ func TestAdminNoRowFilter(t *testing.T) {
 func TestColumnMaskForPrincipal(t *testing.T) {
 	cat, q, ctx := setupTestService(t)
 
-	user, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	user, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "analyst", Type: "user", IsAdmin: 0,
 	})
+	require.NoError(t, err)
 
-	mask, _ := q.CreateColumnMask(ctx, dbstore.CreateColumnMaskParams{
+	mask, err := q.CreateColumnMask(ctx, dbstore.CreateColumnMaskParams{
 		TableID:        1,
 		ColumnName:     "Name",
 		MaskExpression: "'***'",
 	})
-	q.BindColumnMask(ctx, dbstore.BindColumnMaskParams{
+	require.NoError(t, err)
+	err = q.BindColumnMask(ctx, dbstore.BindColumnMaskParams{
 		ColumnMaskID: mask.ID, PrincipalID: user.ID,
 		PrincipalType: "user", SeeOriginal: 0,
 	})
+	require.NoError(t, err)
 
 	masks, err := cat.GetEffectiveColumnMasks(ctx, "analyst", 1)
 	if err != nil {
@@ -404,20 +443,23 @@ func TestColumnMaskForPrincipal(t *testing.T) {
 func TestColumnMaskSeeOriginal(t *testing.T) {
 	cat, q, ctx := setupTestService(t)
 
-	user, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	user, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "analyst", Type: "user", IsAdmin: 0,
 	})
+	require.NoError(t, err)
 
-	mask, _ := q.CreateColumnMask(ctx, dbstore.CreateColumnMaskParams{
+	mask, err := q.CreateColumnMask(ctx, dbstore.CreateColumnMaskParams{
 		TableID:        1,
 		ColumnName:     "Name",
 		MaskExpression: "'***'",
 	})
+	require.NoError(t, err)
 	// see_original = 1 means user sees the real value
-	q.BindColumnMask(ctx, dbstore.BindColumnMaskParams{
+	err = q.BindColumnMask(ctx, dbstore.BindColumnMaskParams{
 		ColumnMaskID: mask.ID, PrincipalID: user.ID,
 		PrincipalType: "user", SeeOriginal: 1,
 	})
+	require.NoError(t, err)
 
 	masks, err := cat.GetEffectiveColumnMasks(ctx, "analyst", 1)
 	if err != nil {
@@ -431,19 +473,22 @@ func TestColumnMaskSeeOriginal(t *testing.T) {
 func TestAdminNoColumnMasks(t *testing.T) {
 	cat, q, ctx := setupTestService(t)
 
-	_, _ = q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	_, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "admin", Type: "user", IsAdmin: 1,
 	})
+	require.NoError(t, err)
 
-	mask, _ := q.CreateColumnMask(ctx, dbstore.CreateColumnMaskParams{
+	mask, err := q.CreateColumnMask(ctx, dbstore.CreateColumnMaskParams{
 		TableID:        1,
 		ColumnName:     "Name",
 		MaskExpression: "'***'",
 	})
-	q.BindColumnMask(ctx, dbstore.BindColumnMaskParams{
+	require.NoError(t, err)
+	err = q.BindColumnMask(ctx, dbstore.BindColumnMaskParams{
 		ColumnMaskID: mask.ID, PrincipalID: 1,
 		PrincipalType: "user", SeeOriginal: 0,
 	})
+	require.NoError(t, err)
 
 	masks, err := cat.GetEffectiveColumnMasks(ctx, "admin", 1)
 	if err != nil {
@@ -518,18 +563,20 @@ func TestCatalogScopedPrivilege_DirectGrant(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			svc, q, ctx := setupTestService(t)
 
-			user, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+			user, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 				Name: "user1", Type: "user", IsAdmin: 0,
 			})
+			require.NoError(t, err)
 
 			// Grant the specific privilege on the securable
-			q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+			_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 				PrincipalID:   user.ID,
 				PrincipalType: "user",
 				SecurableType: tt.securableType,
 				SecurableID:   42, // arbitrary securable ID
 				Privilege:     tt.privilege,
 			})
+			require.NoError(t, err)
 
 			ok, err := svc.CheckPrivilege(ctx, "user1", tt.securableType, 42, tt.privilege)
 			if err != nil {
@@ -557,18 +604,20 @@ func TestCatalogScopedPrivilege_InheritFromCatalog(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			svc, q, ctx := setupTestService(t)
 
-			user, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+			user, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 				Name: "user1", Type: "user", IsAdmin: 0,
 			})
+			require.NoError(t, err)
 
 			// Grant ALL_PRIVILEGES at catalog level (should inherit to catalog-scoped securables)
-			q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+			_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 				PrincipalID:   user.ID,
 				PrincipalType: "user",
 				SecurableType: SecurableCatalog,
 				SecurableID:   CatalogID,
 				Privilege:     PrivAllPrivileges,
 			})
+			require.NoError(t, err)
 
 			ok, err := svc.CheckPrivilege(ctx, "user1", tt.securableType, 99, tt.privilege)
 			if err != nil {
@@ -584,9 +633,10 @@ func TestCatalogScopedPrivilege_InheritFromCatalog(t *testing.T) {
 func TestCatalogScopedPrivilege_Denied(t *testing.T) {
 	svc, q, ctx := setupTestService(t)
 
-	_, _ = q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	_, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "nobody", Type: "user", IsAdmin: 0,
 	})
+	require.NoError(t, err)
 
 	// No grants at all -- should be denied on all new securable types
 	for _, tt := range []struct {
@@ -612,9 +662,10 @@ func TestCatalogScopedPrivilege_Denied(t *testing.T) {
 func TestCatalogScopedPrivilege_AdminBypass(t *testing.T) {
 	svc, q, ctx := setupTestService(t)
 
-	_, _ = q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	_, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "admin", Type: "user", IsAdmin: 1,
 	})
+	require.NoError(t, err)
 
 	// Admin should bypass all catalog-scoped privilege checks
 	for _, tt := range []struct {
@@ -639,23 +690,27 @@ func TestCatalogScopedPrivilege_AdminBypass(t *testing.T) {
 func TestCatalogScopedPrivilege_GroupInheritance(t *testing.T) {
 	svc, q, ctx := setupTestService(t)
 
-	user, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	user, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "user1", Type: "user", IsAdmin: 0,
 	})
+	require.NoError(t, err)
 
-	group, _ := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "admins"})
-	q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{
+	group, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "admins"})
+	require.NoError(t, err)
+	err = q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{
 		GroupID: group.ID, MemberType: "user", MemberID: user.ID,
 	})
+	require.NoError(t, err)
 
 	// Grant CREATE_EXTERNAL_LOCATION to the group on a specific external location
-	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		PrincipalID:   group.ID,
 		PrincipalType: "group",
 		SecurableType: SecurableExternalLocation,
 		SecurableID:   10,
 		Privilege:     PrivCreateExternalLocation,
 	})
+	require.NoError(t, err)
 
 	ok, err := svc.CheckPrivilege(ctx, "user1", SecurableExternalLocation, 10, PrivCreateExternalLocation)
 	if err != nil {

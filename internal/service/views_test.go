@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"testing"
 	"time"
 
@@ -113,7 +112,7 @@ func TestViewService_CreateView(t *testing.T) {
 
 		require.Error(t, err)
 		var accessErr *domain.AccessDeniedError
-		assert.True(t, errors.As(err, &accessErr))
+		require.ErrorAs(t, err, &accessErr)
 	})
 
 	t.Run("auth_check_error", func(t *testing.T) {
@@ -150,7 +149,7 @@ func TestViewService_CreateView(t *testing.T) {
 
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
-		assert.True(t, errors.As(err, &notFound))
+		require.ErrorAs(t, err, &notFound)
 	})
 
 	t.Run("repo_create_error", func(t *testing.T) {
@@ -248,7 +247,7 @@ func TestViewService_GetView(t *testing.T) {
 
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
-		assert.True(t, errors.As(err, &notFound))
+		require.ErrorAs(t, err, &notFound)
 	})
 
 	t.Run("view_not_found", func(t *testing.T) {
@@ -268,7 +267,7 @@ func TestViewService_GetView(t *testing.T) {
 
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
-		assert.True(t, errors.As(err, &notFound))
+		require.ErrorAs(t, err, &notFound)
 	})
 }
 
@@ -341,7 +340,7 @@ func TestViewService_ListViews(t *testing.T) {
 
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
-		assert.True(t, errors.As(err, &notFound))
+		require.ErrorAs(t, err, &notFound)
 	})
 }
 
@@ -392,7 +391,7 @@ func TestViewService_DeleteView(t *testing.T) {
 
 		require.Error(t, err)
 		var accessErr *domain.AccessDeniedError
-		assert.True(t, errors.As(err, &accessErr))
+		require.ErrorAs(t, err, &accessErr)
 	})
 
 	t.Run("schema_not_found", func(t *testing.T) {
@@ -412,7 +411,7 @@ func TestViewService_DeleteView(t *testing.T) {
 
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
-		assert.True(t, errors.As(err, &notFound))
+		require.ErrorAs(t, err, &notFound)
 	})
 
 	t.Run("repo_delete_error", func(t *testing.T) {

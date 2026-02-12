@@ -1,3 +1,4 @@
+// Package ddl builds DuckDB DDL statements for secrets, extensions, and catalog operations.
 package ddl
 
 import (
@@ -147,6 +148,7 @@ func DropSecret(name string) (string, error) {
 }
 
 // DropS3Secret returns a DuckDB DDL statement: DROP SECRET IF EXISTS "<name>".
+//
 // Deprecated: Use DropSecret instead. Kept for backward compatibility.
 func DropS3Secret(name string) (string, error) {
 	return DropSecret(name)

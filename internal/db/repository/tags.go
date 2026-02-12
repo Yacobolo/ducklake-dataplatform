@@ -9,15 +9,18 @@ import (
 	"duck-demo/internal/domain"
 )
 
+// TagRepo implements domain.TagRepository using SQLite.
 type TagRepo struct {
 	q  *dbstore.Queries
 	db *sql.DB
 }
 
+// NewTagRepo creates a new TagRepo.
 func NewTagRepo(db *sql.DB) *TagRepo {
 	return &TagRepo{q: dbstore.New(db), db: db}
 }
 
+// CreateTag inserts a new tag definition into the database.
 func (r *TagRepo) CreateTag(ctx context.Context, tag *domain.Tag) (*domain.Tag, error) {
 	row, err := r.q.CreateTag(ctx, dbstore.CreateTagParams{
 		Key:       tag.Key,
@@ -30,6 +33,7 @@ func (r *TagRepo) CreateTag(ctx context.Context, tag *domain.Tag) (*domain.Tag, 
 	return mapper.TagFromDB(row), nil
 }
 
+// GetTag returns a tag by its ID.
 func (r *TagRepo) GetTag(ctx context.Context, id int64) (*domain.Tag, error) {
 	row, err := r.q.GetTag(ctx, id)
 	if err != nil {
@@ -38,6 +42,7 @@ func (r *TagRepo) GetTag(ctx context.Context, id int64) (*domain.Tag, error) {
 	return mapper.TagFromDB(row), nil
 }
 
+// ListTags returns a paginated list of tags.
 func (r *TagRepo) ListTags(ctx context.Context, page domain.PageRequest) ([]domain.Tag, int64, error) {
 	total, err := r.q.CountTags(ctx)
 	if err != nil {
@@ -57,10 +62,12 @@ func (r *TagRepo) ListTags(ctx context.Context, page domain.PageRequest) ([]doma
 	return tags, total, nil
 }
 
+// DeleteTag removes a tag by ID.
 func (r *TagRepo) DeleteTag(ctx context.Context, id int64) error {
 	return r.q.DeleteTag(ctx, id)
 }
 
+// AssignTag assigns a tag to a securable object.
 func (r *TagRepo) AssignTag(ctx context.Context, assignment *domain.TagAssignment) (*domain.TagAssignment, error) {
 	row, err := r.q.CreateTagAssignment(ctx, dbstore.CreateTagAssignmentParams{
 		TagID:         assignment.TagID,
@@ -75,10 +82,12 @@ func (r *TagRepo) AssignTag(ctx context.Context, assignment *domain.TagAssignmen
 	return mapper.TagAssignmentFromDB(row), nil
 }
 
+// UnassignTag removes a tag assignment by ID.
 func (r *TagRepo) UnassignTag(ctx context.Context, id int64) error {
 	return r.q.DeleteTagAssignment(ctx, id)
 }
 
+// ListTagsForSecurable returns all tags assigned to a securable object.
 func (r *TagRepo) ListTagsForSecurable(ctx context.Context, securableType string, securableID int64, columnName *string) ([]domain.Tag, error) {
 	rows, err := r.q.ListTagsForSecurable(ctx, dbstore.ListTagsForSecurableParams{
 		SecurableType: securableType,
@@ -96,6 +105,7 @@ func (r *TagRepo) ListTagsForSecurable(ctx context.Context, securableType string
 	return tags, nil
 }
 
+// ListAssignmentsForTag returns all assignments for a given tag.
 func (r *TagRepo) ListAssignmentsForTag(ctx context.Context, tagID int64) ([]domain.TagAssignment, error) {
 	rows, err := r.q.ListAssignmentsForTag(ctx, tagID)
 	if err != nil {

@@ -1,3 +1,4 @@
+// Package config handles application configuration and environment loading.
 package config
 
 import (
@@ -100,14 +101,14 @@ func LoadFromEnv() (*Config, error) {
 // LoadDotEnv reads a .env file and sets any variables not already in the environment.
 // Lines must be in KEY=VALUE format. Comments (#) and blank lines are skipped.
 func LoadDotEnv(path string) error {
-	f, err := os.Open(path)
+	f, err := os.Open(path) //nolint:gosec // path is caller-controlled
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil // .env not found is not an error
 		}
 		return fmt.Errorf("open %s: %w", path, err)
 	}
-	defer f.Close()
+	defer f.Close() //nolint:errcheck
 
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
@@ -123,7 +124,9 @@ func LoadDotEnv(path string) error {
 		value = strings.TrimSpace(value)
 		// Only set if not already in the environment (env vars take precedence)
 		if os.Getenv(key) == "" {
-			os.Setenv(key, value)
+			if err := os.Setenv(key, value); err != nil {
+				return fmt.Errorf("setenv %s: %w", key, err)
+			}
 		}
 	}
 	return scanner.Err()

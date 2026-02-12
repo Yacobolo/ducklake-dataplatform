@@ -24,6 +24,7 @@ func NewVolumeRepo(db *sql.DB) *VolumeRepo {
 	return &VolumeRepo{q: dbstore.New(db), db: db}
 }
 
+// Create inserts a new volume into the database.
 func (r *VolumeRepo) Create(ctx context.Context, vol *domain.Volume) (*domain.Volume, error) {
 	row, err := r.q.CreateVolume(ctx, dbstore.CreateVolumeParams{
 		Name:            vol.Name,
@@ -40,6 +41,7 @@ func (r *VolumeRepo) Create(ctx context.Context, vol *domain.Volume) (*domain.Vo
 	return volumeFromDB(row), nil
 }
 
+// GetByName returns a volume by schema and name.
 func (r *VolumeRepo) GetByName(ctx context.Context, schemaName, name string) (*domain.Volume, error) {
 	row, err := r.q.GetVolumeByName(ctx, dbstore.GetVolumeByNameParams{
 		SchemaName: schemaName,
@@ -51,6 +53,7 @@ func (r *VolumeRepo) GetByName(ctx context.Context, schemaName, name string) (*d
 	return volumeFromDB(row), nil
 }
 
+// List returns a paginated list of volumes in a schema.
 func (r *VolumeRepo) List(ctx context.Context, schemaName string, page domain.PageRequest) ([]domain.Volume, int64, error) {
 	total, err := r.q.CountVolumes(ctx, schemaName)
 	if err != nil {
@@ -73,6 +76,7 @@ func (r *VolumeRepo) List(ctx context.Context, schemaName string, page domain.Pa
 	return vols, total, nil
 }
 
+// Update applies partial updates to a volume by ID.
 func (r *VolumeRepo) Update(ctx context.Context, id int64, req domain.UpdateVolumeRequest) (*domain.Volume, error) {
 	// Fetch current to merge fields.
 	var current dbstore.Volume
@@ -118,6 +122,7 @@ func (r *VolumeRepo) Update(ctx context.Context, id int64, req domain.UpdateVolu
 	return volumeFromDB(updated), nil
 }
 
+// Delete removes a volume by ID.
 func (r *VolumeRepo) Delete(ctx context.Context, id int64) error {
 	return mapDBError(r.q.DeleteVolume(ctx, id))
 }

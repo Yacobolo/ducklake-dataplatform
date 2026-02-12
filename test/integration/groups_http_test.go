@@ -59,13 +59,13 @@ func TestHTTP_GroupCRUD(t *testing.T) {
 			url := fmt.Sprintf("%s/v1/groups/%d", env.Server.URL, int64(groupID))
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 		{"get_after_delete_404", func(t *testing.T) {
 			url := fmt.Sprintf("%s/v1/groups/%d", env.Server.URL, int64(groupID))
 			resp := doRequest(t, "GET", url, env.Keys.Admin, nil)
 			assert.Equal(t, 404, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 	}
 	for _, s := range steps {
@@ -109,7 +109,7 @@ func TestHTTP_GroupMembership(t *testing.T) {
 			}
 			resp := doRequest(t, "POST", url, env.Keys.Admin, body)
 			require.Equal(t, 204, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 		{"add_second_member", func(t *testing.T) {
 			url := fmt.Sprintf("%s/v1/groups/%d/members", env.Server.URL, groupID)
@@ -119,7 +119,7 @@ func TestHTTP_GroupMembership(t *testing.T) {
 			}
 			resp := doRequest(t, "POST", url, env.Keys.Admin, body)
 			require.Equal(t, 204, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 		{"list_members_both", func(t *testing.T) {
 			url := fmt.Sprintf("%s/v1/groups/%d/members", env.Server.URL, groupID)
@@ -139,7 +139,7 @@ func TestHTTP_GroupMembership(t *testing.T) {
 			}
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, body)
 			require.Equal(t, 204, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 		{"list_members_one", func(t *testing.T) {
 			url := fmt.Sprintf("%s/v1/groups/%d/members", env.Server.URL, groupID)
@@ -164,6 +164,6 @@ func TestHTTP_GroupErrors(t *testing.T) {
 	t.Run("get_nonexistent_404", func(t *testing.T) {
 		resp := doRequest(t, "GET", env.Server.URL+"/v1/groups/99999", env.Keys.Admin, nil)
 		assert.Equal(t, 404, resp.StatusCode)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	})
 }

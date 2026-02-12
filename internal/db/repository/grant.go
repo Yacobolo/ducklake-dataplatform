@@ -9,14 +9,17 @@ import (
 	"duck-demo/internal/domain"
 )
 
+// GrantRepo implements domain.GrantRepository using SQLite.
 type GrantRepo struct {
 	q *dbstore.Queries
 }
 
+// NewGrantRepo creates a new GrantRepo.
 func NewGrantRepo(db *sql.DB) *GrantRepo {
 	return &GrantRepo{q: dbstore.New(db)}
 }
 
+// Grant creates a new privilege grant.
 func (r *GrantRepo) Grant(ctx context.Context, g *domain.PrivilegeGrant) (*domain.PrivilegeGrant, error) {
 	grantedBy := sql.NullInt64{}
 	if g.GrantedBy != nil {
@@ -36,6 +39,7 @@ func (r *GrantRepo) Grant(ctx context.Context, g *domain.PrivilegeGrant) (*domai
 	return mapper.GrantFromDB(row), nil
 }
 
+// Revoke removes a privilege grant.
 func (r *GrantRepo) Revoke(ctx context.Context, g *domain.PrivilegeGrant) error {
 	return r.q.RevokePrivilege(ctx, dbstore.RevokePrivilegeParams{
 		PrincipalID:   g.PrincipalID,
@@ -46,6 +50,7 @@ func (r *GrantRepo) Revoke(ctx context.Context, g *domain.PrivilegeGrant) error 
 	})
 }
 
+// ListForPrincipal returns a paginated list of grants for a specific principal.
 func (r *GrantRepo) ListForPrincipal(ctx context.Context, principalID int64, principalType string, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error) {
 	total, err := r.q.CountGrantsForPrincipal(ctx, dbstore.CountGrantsForPrincipalParams{
 		PrincipalID:   principalID,
@@ -68,6 +73,7 @@ func (r *GrantRepo) ListForPrincipal(ctx context.Context, principalID int64, pri
 	return mapper.GrantsFromDB(rows), total, nil
 }
 
+// ListForSecurable returns a paginated list of grants on a specific securable object.
 func (r *GrantRepo) ListForSecurable(ctx context.Context, securableType string, securableID int64, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error) {
 	total, err := r.q.CountGrantsForSecurable(ctx, dbstore.CountGrantsForSecurableParams{
 		SecurableType: securableType,
@@ -90,6 +96,7 @@ func (r *GrantRepo) ListForSecurable(ctx context.Context, securableType string, 
 	return mapper.GrantsFromDB(rows), total, nil
 }
 
+// HasPrivilege checks whether a principal has a specific privilege on a securable.
 func (r *GrantRepo) HasPrivilege(ctx context.Context, principalID int64, principalType, securableType string, securableID int64, privilege string) (bool, error) {
 	cnt, err := r.q.CheckDirectGrantAny(ctx, dbstore.CheckDirectGrantAnyParams{
 		PrincipalID:   principalID,

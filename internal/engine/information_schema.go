@@ -153,7 +153,7 @@ func (p *InformationSchemaProvider) queryVirtualTable(ctx context.Context, db *s
 	}
 	createSQL := fmt.Sprintf("CREATE TEMPORARY TABLE %s (%s)", tempName, strings.Join(colDefs, ", "))
 	if _, err := conn.ExecContext(ctx, createSQL); err != nil {
-		conn.Close()
+		_ = conn.Close()
 		return nil, fmt.Errorf("create temp table: %w", err)
 	}
 
@@ -163,10 +163,10 @@ func (p *InformationSchemaProvider) queryVirtualTable(ctx context.Context, db *s
 		for i := range placeholders {
 			placeholders[i] = "?"
 		}
-		insertSQL := fmt.Sprintf("INSERT INTO %s VALUES (%s)", tempName, strings.Join(placeholders, ", "))
+		insertSQL := fmt.Sprintf("INSERT INTO %s VALUES (%s)", tempName, strings.Join(placeholders, ", ")) //nolint:gosec // tempName and placeholders are internally generated
 		for _, row := range dataRows {
 			if _, err := conn.ExecContext(ctx, insertSQL, row...); err != nil {
-				conn.Close()
+				_ = conn.Close()
 				return nil, fmt.Errorf("insert row: %w", err)
 			}
 		}
@@ -177,7 +177,7 @@ func (p *InformationSchemaProvider) queryVirtualTable(ctx context.Context, db *s
 
 	rows, err := conn.QueryContext(ctx, rewritten)
 	if err != nil {
-		conn.Close()
+		_ = conn.Close()
 		return nil, fmt.Errorf("execute information_schema query: %w", err)
 	}
 

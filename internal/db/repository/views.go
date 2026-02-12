@@ -10,14 +10,17 @@ import (
 	"duck-demo/internal/domain"
 )
 
+// ViewRepo implements domain.ViewRepository using SQLite.
 type ViewRepo struct {
 	q *dbstore.Queries
 }
 
+// NewViewRepo creates a new ViewRepo.
 func NewViewRepo(db *sql.DB) *ViewRepo {
 	return &ViewRepo{q: dbstore.New(db)}
 }
 
+// Create inserts a new view into the database.
 func (r *ViewRepo) Create(ctx context.Context, view *domain.ViewDetail) (*domain.ViewDetail, error) {
 	propsJSON, _ := json.Marshal(view.Properties)
 	sourcesJSON, _ := json.Marshal(view.SourceTables)
@@ -37,6 +40,7 @@ func (r *ViewRepo) Create(ctx context.Context, view *domain.ViewDetail) (*domain
 	return mapper.ViewFromDB(row), nil
 }
 
+// GetByName returns a view by schema ID and name.
 func (r *ViewRepo) GetByName(ctx context.Context, schemaID int64, viewName string) (*domain.ViewDetail, error) {
 	row, err := r.q.GetViewByName(ctx, dbstore.GetViewByNameParams{
 		SchemaID: schemaID,
@@ -48,6 +52,7 @@ func (r *ViewRepo) GetByName(ctx context.Context, schemaID int64, viewName strin
 	return mapper.ViewFromDB(row), nil
 }
 
+// List returns a paginated list of views in a schema.
 func (r *ViewRepo) List(ctx context.Context, schemaID int64, page domain.PageRequest) ([]domain.ViewDetail, int64, error) {
 	total, err := r.q.CountViews(ctx, schemaID)
 	if err != nil {
@@ -68,6 +73,7 @@ func (r *ViewRepo) List(ctx context.Context, schemaID int64, page domain.PageReq
 	return views, total, nil
 }
 
+// Delete removes a view by schema ID and name.
 func (r *ViewRepo) Delete(ctx context.Context, schemaID int64, viewName string) error {
 	return r.q.DeleteView(ctx, dbstore.DeleteViewParams{
 		SchemaID: schemaID,
@@ -75,6 +81,7 @@ func (r *ViewRepo) Delete(ctx context.Context, schemaID int64, viewName string) 
 	})
 }
 
+// Update applies partial updates to a view's metadata and definition.
 func (r *ViewRepo) Update(ctx context.Context, schemaID int64, viewName string, comment *string, props map[string]string, viewDef *string) (*domain.ViewDetail, error) {
 	// Verify view exists
 	existing, err := r.GetByName(ctx, schemaID, viewName)

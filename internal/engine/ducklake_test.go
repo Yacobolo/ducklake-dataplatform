@@ -10,6 +10,7 @@ import (
 
 	_ "github.com/duckdb/duckdb-go/v2"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/stretchr/testify/require"
 
 	"duck-demo/internal/config"
 	internaldb "duck-demo/internal/db"
@@ -45,7 +46,7 @@ func TestDuckLakeWithHetznerSetup(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open duckdb: %v", err)
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 
 	ctx := context.Background()
 
@@ -109,7 +110,7 @@ func TestDuckLakeRBACIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open duckdb: %v", err)
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 
 	ctx := context.Background()
 
@@ -141,7 +142,7 @@ func TestDuckLakeRBACIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open metastore: %v", err)
 	}
-	defer metaDB.Close()
+	defer metaDB.Close() //nolint:errcheck
 
 	if err := internaldb.RunMigrations(metaDB); err != nil {
 		t.Fatalf("migrations: %v", err)
@@ -158,55 +159,90 @@ func TestDuckLakeRBACIntegration(t *testing.T) {
 	q := dbstore.New(metaDB)
 
 	// Seed principals and grants
-	adminUser, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	adminUser, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "admin", Type: "user", IsAdmin: 1,
 	})
-	_ = adminUser
+	if err != nil {
+		t.Fatalf("create admin: %v", err)
+	}
 
-	analyst, _ := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	analyst, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "first_class_analyst", Type: "user", IsAdmin: 0,
 	})
-	_, _ = q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	if err != nil {
+		t.Fatalf("create analyst: %v", err)
+	}
+	_, err = q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		Name: "no_access", Type: "user", IsAdmin: 0,
 	})
+	if err != nil {
+		t.Fatalf("create no_access: %v", err)
+	}
 
 	// Lookup DuckLake IDs
-	schemaID, _ := cat.LookupSchemaID(ctx, "main")
-	titanicID, _, _, _ := cat.LookupTableID(ctx, "titanic")
+	schemaID, err := cat.LookupSchemaID(ctx, "main")
+	if err != nil {
+		t.Fatalf("lookup schema: %v", err)
+	}
+	titanicID, _, _, err := cat.LookupTableID(ctx, "titanic")
+	if err != nil {
+		t.Fatalf("lookup table: %v", err)
+	}
 
 	// Create group for analysts
-	analystsGroup, _ := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "analysts"})
-	q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{
+	analystsGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "analysts"})
+	if err != nil {
+		t.Fatalf("create group: %v", err)
+	}
+	err = q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{
 		GroupID: analystsGroup.ID, MemberType: "user", MemberID: analyst.ID,
 	})
+	if err != nil {
+		t.Fatalf("add group member: %v", err)
+	}
 
 	// Grant admin ALL_PRIVILEGES on catalog
-	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		PrincipalID: adminUser.ID, PrincipalType: "user",
 		SecurableType: "catalog", SecurableID: 0,
 		Privilege: "ALL_PRIVILEGES",
 	})
+	if err != nil {
+		t.Fatalf("grant admin: %v", err)
+	}
 
 	// Grant analysts USAGE + SELECT
-	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		PrincipalID: analystsGroup.ID, PrincipalType: "group",
 		SecurableType: "schema", SecurableID: schemaID,
 		Privilege: "USAGE",
 	})
-	q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+	if err != nil {
+		t.Fatalf("grant usage: %v", err)
+	}
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		PrincipalID: analystsGroup.ID, PrincipalType: "group",
 		SecurableType: "table", SecurableID: titanicID,
 		Privilege: "SELECT",
 	})
+	if err != nil {
+		t.Fatalf("grant select: %v", err)
+	}
 
 	// Row filter
-	filter, _ := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
+	filter, err := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
 		TableID:   titanicID,
 		FilterSql: `"Pclass" = 1`,
 	})
-	q.BindRowFilter(ctx, dbstore.BindRowFilterParams{
+	if err != nil {
+		t.Fatalf("create row filter: %v", err)
+	}
+	err = q.BindRowFilter(ctx, dbstore.BindRowFilterParams{
 		RowFilterID: filter.ID, PrincipalID: analystsGroup.ID, PrincipalType: "group",
 	})
+	if err != nil {
+		t.Fatalf("bind row filter: %v", err)
+	}
 
 	eng := engine.NewSecureEngine(db, cat, slog.New(slog.NewTextHandler(io.Discard, nil)))
 
@@ -215,12 +251,13 @@ func TestDuckLakeRBACIntegration(t *testing.T) {
 		if err != nil {
 			t.Fatalf("admin query: %v", err)
 		}
-		defer rows.Close()
+		defer rows.Close() //nolint:errcheck
 
 		count := 0
 		for rows.Next() {
 			count++
 		}
+		require.NoError(t, rows.Err())
 		if count != 10 {
 			t.Errorf("admin should see 10 rows, got %d", count)
 		}
@@ -232,7 +269,7 @@ func TestDuckLakeRBACIntegration(t *testing.T) {
 		if err != nil {
 			t.Fatalf("first_class query: %v", err)
 		}
-		defer rows.Close()
+		defer rows.Close() //nolint:errcheck
 
 		count := 0
 		for rows.Next() {
@@ -245,6 +282,7 @@ func TestDuckLakeRBACIntegration(t *testing.T) {
 			}
 			count++
 		}
+		require.NoError(t, rows.Err())
 		if count == 0 {
 			t.Error("expected at least one row")
 		}
@@ -252,7 +290,7 @@ func TestDuckLakeRBACIntegration(t *testing.T) {
 	})
 
 	t.Run("NoAccessDenied", func(t *testing.T) {
-		_, err := eng.Query(ctx, "no_access", "SELECT * FROM titanic LIMIT 10")
+		err := queryAndClose(t, eng, "no_access", "SELECT * FROM titanic LIMIT 10")
 		if err == nil {
 			t.Error("expected access denied error for no_access user")
 		}

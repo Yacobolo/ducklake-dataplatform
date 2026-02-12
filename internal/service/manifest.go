@@ -191,7 +191,7 @@ func (s *ManifestService) resolveDataFiles(ctx context.Context, tableID int64, s
 	if err != nil {
 		return nil, "", fmt.Errorf("query ducklake_data_file: %w", err)
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	var paths []string
 	for rows.Next() {

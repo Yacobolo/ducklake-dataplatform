@@ -62,7 +62,7 @@ func TestHTTP_RowFilterCRUD(t *testing.T) {
 			}
 			resp := doRequest(t, "POST", url, env.Keys.Admin, body)
 			require.Equal(t, 204, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 		{"unbind", func(t *testing.T) {
 			url := fmt.Sprintf("%s/v1/row-filters/%d/bindings", env.Server.URL, int64(filterID))
@@ -72,13 +72,13 @@ func TestHTTP_RowFilterCRUD(t *testing.T) {
 			}
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, body)
 			require.Equal(t, 204, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 		{"delete", func(t *testing.T) {
 			url := fmt.Sprintf("%s/v1/row-filters/%d", env.Server.URL, int64(filterID))
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}},
 		{"list_after_delete", func(t *testing.T) {
 			resp := doRequest(t, "GET", env.Server.URL+"/v1/tables/1/row-filters", env.Keys.Admin, nil)
@@ -115,7 +115,7 @@ func TestHTTP_RowFilterMultiple(t *testing.T) {
 		}
 		resp := doRequest(t, "POST", env.Server.URL+"/v1/tables/1/row-filters", env.Keys.Admin, body)
 		require.Equal(t, 201, resp.StatusCode, "creating filter %d", i)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	}
 
 	// List all filters for the table

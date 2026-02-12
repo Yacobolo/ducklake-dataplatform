@@ -20,8 +20,8 @@ func OpenTestSQLite(t *testing.T) (writeDB, readDB *sql.DB) {
 		t.Fatalf("open test sqlite: %v", err)
 	}
 	t.Cleanup(func() {
-		readDB.Close()
-		writeDB.Close()
+		_ = readDB.Close()
+		_ = writeDB.Close()
 	})
 
 	if err := RunMigrations(writeDB); err != nil {

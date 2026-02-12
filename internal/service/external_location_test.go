@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"io"
 	"log/slog"
 	"testing"
@@ -26,7 +25,7 @@ func testDuckDB(t *testing.T) *sql.DB {
 	t.Helper()
 	db, err := sql.Open("duckdb", "")
 	require.NoError(t, err)
-	t.Cleanup(func() { db.Close() })
+	t.Cleanup(func() { _ = db.Close() })
 
 	require.NoError(t, engine.InstallExtensions(context.Background(), db))
 	return db
@@ -111,7 +110,7 @@ func TestExternalLocationService_Create(t *testing.T) {
 
 		require.Error(t, err)
 		var denied *domain.AccessDeniedError
-		assert.True(t, errors.As(err, &denied))
+		require.ErrorAs(t, err, &denied)
 	})
 
 	t.Run("validation_error", func(t *testing.T) {
@@ -129,7 +128,7 @@ func TestExternalLocationService_Create(t *testing.T) {
 
 		require.Error(t, err)
 		var valErr *domain.ValidationError
-		assert.True(t, errors.As(err, &valErr))
+		require.ErrorAs(t, err, &valErr)
 	})
 
 	t.Run("credential_not_found", func(t *testing.T) {
@@ -207,7 +206,7 @@ func TestExternalLocationService_GetByName(t *testing.T) {
 
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
-		assert.True(t, errors.As(err, &notFound))
+		require.ErrorAs(t, err, &notFound)
 	})
 }
 
@@ -280,7 +279,7 @@ func TestExternalLocationService_Delete(t *testing.T) {
 
 		require.Error(t, err)
 		var denied *domain.AccessDeniedError
-		assert.True(t, errors.As(err, &denied))
+		require.ErrorAs(t, err, &denied)
 	})
 }
 
