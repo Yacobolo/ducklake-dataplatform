@@ -3,13 +3,16 @@ package engine
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"sync"
 
 	"duck-demo/internal/domain"
 )
 
 // DuckDBSecretManager wraps a DuckDB connection to manage secrets and catalog attachment.
 type DuckDBSecretManager struct {
-	db *sql.DB
+	db           *sql.DB
+	postgresOnce sync.Once
 }
 
 // NewDuckDBSecretManager creates a new DuckDBSecretManager.
@@ -41,7 +44,27 @@ func (m *DuckDBSecretManager) DropSecret(ctx context.Context, name string) error
 	return DropSecret(ctx, m.db, name)
 }
 
-// AttachDuckLake attaches a DuckLake catalog to DuckDB using the given metastore and data paths.
-func (m *DuckDBSecretManager) AttachDuckLake(ctx context.Context, metaDBPath, dataPath string) error {
-	return AttachDuckLake(ctx, m.db, metaDBPath, dataPath)
+// Attach inspects reg.MetastoreType and dispatches to the right DDL.
+func (m *DuckDBSecretManager) Attach(ctx context.Context, reg domain.CatalogRegistration) error {
+	switch reg.MetastoreType {
+	case domain.MetastoreTypeSQLite:
+		return AttachDuckLake(ctx, m.db, reg.Name, reg.DSN, reg.DataPath)
+	case domain.MetastoreTypePostgres:
+		// Install postgres extension if not yet loaded (once per process)
+		var installErr error
+		m.postgresOnce.Do(func() {
+			installErr = InstallPostgresExtension(ctx, m.db)
+		})
+		if installErr != nil {
+			return fmt.Errorf("install postgres extension: %w", installErr)
+		}
+		return AttachDuckLakePostgres(ctx, m.db, reg.Name, reg.DSN, reg.DataPath)
+	default:
+		return fmt.Errorf("unsupported metastore type: %q", reg.MetastoreType)
+	}
+}
+
+// Detach detaches a named catalog from DuckDB.
+func (m *DuckDBSecretManager) Detach(ctx context.Context, catalogName string) error {
+	return DetachCatalog(ctx, m.db, catalogName)
 }

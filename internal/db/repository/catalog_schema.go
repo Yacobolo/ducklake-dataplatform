@@ -24,7 +24,7 @@ func (r *CatalogRepo) CreateSchema(ctx context.Context, name, comment, owner str
 		return nil, domain.ErrConflict("schema %q already exists", name)
 	}
 
-	stmt, err := ddl.CreateSchema(name)
+	stmt, err := ddl.CreateSchema(r.catalogName, name)
 	if err != nil {
 		return nil, fmt.Errorf("build DDL: %w", err)
 	}
@@ -63,7 +63,7 @@ func (r *CatalogRepo) GetSchema(ctx context.Context, name string) (*domain.Schem
 	if err != nil {
 		return nil, err
 	}
-	s.CatalogName = "lake"
+	s.CatalogName = r.catalogName
 
 	// Join with catalog_metadata via sqlc
 	r.enrichSchemaMetadata(ctx, &s)
@@ -94,7 +94,7 @@ func (r *CatalogRepo) ListSchemas(ctx context.Context, page domain.PageRequest) 
 		if err := rows.Scan(&s.SchemaID, &s.Name); err != nil {
 			return nil, 0, err
 		}
-		s.CatalogName = "lake"
+		s.CatalogName = r.catalogName
 		schemas = append(schemas, s)
 	}
 	if err := rows.Err(); err != nil {
@@ -170,7 +170,7 @@ func (r *CatalogRepo) DeleteSchema(ctx context.Context, name string, force bool)
 		if extErr == nil {
 			for _, et := range extTables {
 				if et.SchemaName == name {
-					dropViewSQL, _ := ddl.DropView(et.SchemaName, et.TableName)
+					dropViewSQL, _ := ddl.DropView(r.catalogName, et.SchemaName, et.TableName)
 					if dropViewSQL != "" {
 						_, _ = r.duckDB.ExecContext(ctx, dropViewSQL)
 					}
@@ -180,7 +180,7 @@ func (r *CatalogRepo) DeleteSchema(ctx context.Context, name string, force bool)
 		_ = r.extRepo.DeleteBySchema(ctx, name)
 	}
 
-	stmt, err := ddl.DropSchema(name, force)
+	stmt, err := ddl.DropSchema(r.catalogName, name, force)
 	if err != nil {
 		return fmt.Errorf("build DDL: %w", err)
 	}

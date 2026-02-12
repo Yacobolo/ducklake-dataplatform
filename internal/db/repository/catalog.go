@@ -13,16 +13,17 @@ import (
 // CatalogRepo implements domain.CatalogRepository using the DuckLake SQLite
 // metastore (metaDB) for reads and the DuckDB connection (duckDB) for DDL.
 type CatalogRepo struct {
-	metaDB  *sql.DB
-	duckDB  *sql.DB
-	q       *dbstore.Queries // sqlc queries for application-owned tables
-	extRepo *ExternalTableRepo
-	logger  *slog.Logger
+	metaDB      *sql.DB
+	duckDB      *sql.DB
+	q           *dbstore.Queries // sqlc queries for application-owned tables
+	extRepo     *ExternalTableRepo
+	catalogName string // DuckDB catalog alias (e.g., "lake")
+	logger      *slog.Logger
 }
 
 // NewCatalogRepo creates a new CatalogRepo.
-func NewCatalogRepo(metaDB, duckDB *sql.DB, extRepo *ExternalTableRepo, logger *slog.Logger) *CatalogRepo {
-	return &CatalogRepo{metaDB: metaDB, duckDB: duckDB, q: dbstore.New(metaDB), extRepo: extRepo, logger: logger}
+func NewCatalogRepo(metaDB, duckDB *sql.DB, catalogName string, extRepo *ExternalTableRepo, logger *slog.Logger) *CatalogRepo {
+	return &CatalogRepo{metaDB: metaDB, duckDB: duckDB, catalogName: catalogName, q: dbstore.New(metaDB), extRepo: extRepo, logger: logger}
 }
 
 // refreshMetaDB forces metaDB to see the latest WAL changes written by
@@ -45,13 +46,13 @@ func (r *CatalogRepo) refreshMetaDB(_ context.Context) {
 // GetCatalogInfo returns information about the single "lake" catalog.
 func (r *CatalogRepo) GetCatalogInfo(ctx context.Context) (*domain.CatalogInfo, error) {
 	info := &domain.CatalogInfo{
-		Name: "lake",
+		Name: r.catalogName,
 	}
 
 	// Try to read comment from catalog_metadata via sqlc
 	row, err := r.q.GetCatalogMetadata(ctx, dbstore.GetCatalogMetadataParams{
 		SecurableType: "catalog",
-		SecurableName: "lake",
+		SecurableName: r.catalogName,
 	})
 	if err == nil {
 		if row.Comment.Valid {
@@ -68,7 +69,7 @@ func (r *CatalogRepo) GetCatalogInfo(ctx context.Context) (*domain.CatalogInfo, 
 // NOTE: These queries hit ducklake_* tables (not managed by sqlc).
 func (r *CatalogRepo) GetMetastoreSummary(ctx context.Context) (*domain.MetastoreSummary, error) {
 	summary := &domain.MetastoreSummary{
-		CatalogName:    "lake",
+		CatalogName:    r.catalogName,
 		MetastoreType:  "DuckLake (SQLite)",
 		StorageBackend: "S3",
 	}

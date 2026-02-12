@@ -98,7 +98,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	volumeRepo := repository.NewVolumeRepo(deps.WriteDB)
 	storageCredRepo := repository.NewStorageCredentialRepo(deps.WriteDB, encryptor)
 	computeEndpointRepo := repository.NewComputeEndpointRepo(deps.WriteDB, encryptor)
-	catalogRepo := repository.NewCatalogRepo(deps.WriteDB, deps.DuckDB, extTableRepo, deps.Logger.With("component", "catalog-repo"))
+	catalogRepo := repository.NewCatalogRepo(deps.WriteDB, deps.DuckDB, "lake", extTableRepo, deps.Logger.With("component", "catalog-repo"))
 
 	// === 3. Repositories (read-pool) ===
 	introspectionRepo := repository.NewIntrospectionRepo(deps.ReadDB)

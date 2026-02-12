@@ -217,7 +217,12 @@ func (s *ExternalLocationService) ensureCatalogAttached(ctx context.Context, dat
 		return nil
 	}
 
-	if err := s.attacher.AttachDuckLake(ctx, s.metaPath, dataPath); err != nil {
+	if err := s.attacher.Attach(ctx, domain.CatalogRegistration{
+		Name:          "lake",
+		MetastoreType: domain.MetastoreTypeSQLite,
+		DSN:           s.metaPath,
+		DataPath:      dataPath,
+	}); err != nil {
 		return err
 	}
 

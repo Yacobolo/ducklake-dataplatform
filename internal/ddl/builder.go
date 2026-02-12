@@ -12,20 +12,26 @@ type ColumnDef struct {
 	Type string
 }
 
-// CreateSchema returns a DuckDB DDL statement: CREATE SCHEMA lake."<name>".
-func CreateSchema(name string) (string, error) {
+// CreateSchema returns a DuckDB DDL statement: CREATE SCHEMA <catalog>."<name>".
+func CreateSchema(catalog, name string) (string, error) {
+	if err := ValidateIdentifier(catalog); err != nil {
+		return "", fmt.Errorf("invalid catalog name: %w", err)
+	}
 	if err := ValidateIdentifier(name); err != nil {
 		return "", fmt.Errorf("invalid schema name: %w", err)
 	}
-	return fmt.Sprintf("CREATE SCHEMA lake.%s", QuoteIdentifier(name)), nil
+	return fmt.Sprintf("CREATE SCHEMA %s.%s", QuoteIdentifier(catalog), QuoteIdentifier(name)), nil
 }
 
-// DropSchema returns a DuckDB DDL statement: DROP SCHEMA lake."<name>" [CASCADE].
-func DropSchema(name string, cascade bool) (string, error) {
+// DropSchema returns a DuckDB DDL statement: DROP SCHEMA <catalog>."<name>" [CASCADE].
+func DropSchema(catalog, name string, cascade bool) (string, error) {
+	if err := ValidateIdentifier(catalog); err != nil {
+		return "", fmt.Errorf("invalid catalog name: %w", err)
+	}
 	if err := ValidateIdentifier(name); err != nil {
 		return "", fmt.Errorf("invalid schema name: %w", err)
 	}
-	stmt := fmt.Sprintf("DROP SCHEMA lake.%s", QuoteIdentifier(name))
+	stmt := fmt.Sprintf("DROP SCHEMA %s.%s", QuoteIdentifier(catalog), QuoteIdentifier(name))
 	if cascade {
 		stmt += " CASCADE"
 	}
@@ -33,8 +39,11 @@ func DropSchema(name string, cascade bool) (string, error) {
 }
 
 // CreateTable returns a DuckDB DDL statement:
-// CREATE TABLE lake."<schema>"."<table>" ("<col1>" TYPE1, "<col2>" TYPE2, ...).
-func CreateTable(schema, table string, columns []ColumnDef) (string, error) {
+// CREATE TABLE <catalog>."<schema>"."<table>" ("<col1>" TYPE1, "<col2>" TYPE2, ...).
+func CreateTable(catalog, schema, table string, columns []ColumnDef) (string, error) {
+	if err := ValidateIdentifier(catalog); err != nil {
+		return "", fmt.Errorf("invalid catalog name: %w", err)
+	}
 	if err := ValidateIdentifier(schema); err != nil {
 		return "", fmt.Errorf("invalid schema name: %w", err)
 	}
@@ -56,22 +65,27 @@ func CreateTable(schema, table string, columns []ColumnDef) (string, error) {
 		colDefs = append(colDefs, fmt.Sprintf("%s %s", QuoteIdentifier(c.Name), c.Type))
 	}
 
-	return fmt.Sprintf("CREATE TABLE lake.%s.%s (%s)",
+	return fmt.Sprintf("CREATE TABLE %s.%s.%s (%s)",
+		QuoteIdentifier(catalog),
 		QuoteIdentifier(schema),
 		QuoteIdentifier(table),
 		strings.Join(colDefs, ", "),
 	), nil
 }
 
-// DropTable returns a DuckDB DDL statement: DROP TABLE lake."<schema>"."<table>".
-func DropTable(schema, table string) (string, error) {
+// DropTable returns a DuckDB DDL statement: DROP TABLE <catalog>."<schema>"."<table>".
+func DropTable(catalog, schema, table string) (string, error) {
+	if err := ValidateIdentifier(catalog); err != nil {
+		return "", fmt.Errorf("invalid catalog name: %w", err)
+	}
 	if err := ValidateIdentifier(schema); err != nil {
 		return "", fmt.Errorf("invalid schema name: %w", err)
 	}
 	if err := ValidateIdentifier(table); err != nil {
 		return "", fmt.Errorf("invalid table name: %w", err)
 	}
-	return fmt.Sprintf("DROP TABLE lake.%s.%s",
+	return fmt.Sprintf("DROP TABLE %s.%s.%s",
+		QuoteIdentifier(catalog),
 		QuoteIdentifier(schema),
 		QuoteIdentifier(table),
 	), nil
@@ -156,8 +170,11 @@ func DropS3Secret(name string) (string, error) {
 
 // CreateExternalTableView generates a CREATE VIEW statement backed by read_parquet or read_csv.
 //
-//	CREATE VIEW lake."schema"."table" AS SELECT * FROM read_parquet(['s3://...'])
-func CreateExternalTableView(schema, table, sourcePath, fileFormat string) (string, error) {
+//	CREATE VIEW <catalog>."schema"."table" AS SELECT * FROM read_parquet(['s3://...'])
+func CreateExternalTableView(catalog, schema, table, sourcePath, fileFormat string) (string, error) {
+	if err := ValidateIdentifier(catalog); err != nil {
+		return "", fmt.Errorf("invalid catalog name: %w", err)
+	}
 	if err := ValidateIdentifier(schema); err != nil {
 		return "", fmt.Errorf("invalid schema name: %w", err)
 	}
@@ -178,7 +195,8 @@ func CreateExternalTableView(schema, table, sourcePath, fileFormat string) (stri
 		return "", fmt.Errorf("unsupported file format: %q", fileFormat)
 	}
 
-	return fmt.Sprintf("CREATE VIEW lake.%s.%s AS SELECT * FROM %s([%s])",
+	return fmt.Sprintf("CREATE VIEW %s.%s.%s AS SELECT * FROM %s([%s])",
+		QuoteIdentifier(catalog),
 		QuoteIdentifier(schema),
 		QuoteIdentifier(table),
 		readFunc,
@@ -187,14 +205,18 @@ func CreateExternalTableView(schema, table, sourcePath, fileFormat string) (stri
 }
 
 // DropView generates a DROP VIEW IF EXISTS statement.
-func DropView(schema, table string) (string, error) {
+func DropView(catalog, schema, table string) (string, error) {
+	if err := ValidateIdentifier(catalog); err != nil {
+		return "", fmt.Errorf("invalid catalog name: %w", err)
+	}
 	if err := ValidateIdentifier(schema); err != nil {
 		return "", fmt.Errorf("invalid schema name: %w", err)
 	}
 	if err := ValidateIdentifier(table); err != nil {
 		return "", fmt.Errorf("invalid table name: %w", err)
 	}
-	return fmt.Sprintf("DROP VIEW IF EXISTS lake.%s.%s",
+	return fmt.Sprintf("DROP VIEW IF EXISTS %s.%s.%s",
+		QuoteIdentifier(catalog),
 		QuoteIdentifier(schema),
 		QuoteIdentifier(table),
 	), nil
@@ -225,7 +247,10 @@ func DiscoverColumnsSQL(sourcePath, fileFormat string) (string, error) {
 
 // AttachDuckLakePostgres returns a DuckDB DDL statement to attach a DuckLake catalog
 // using a PostgreSQL metastore instead of SQLite.
-func AttachDuckLakePostgres(dsn, dataPath string) (string, error) {
+func AttachDuckLakePostgres(catalogName, dsn, dataPath string) (string, error) {
+	if err := ValidateIdentifier(catalogName); err != nil {
+		return "", fmt.Errorf("invalid catalog name: %w", err)
+	}
 	if dsn == "" {
 		return "", fmt.Errorf("postgres DSN is required")
 	}
@@ -233,15 +258,19 @@ func AttachDuckLakePostgres(dsn, dataPath string) (string, error) {
 		return "", fmt.Errorf("data path is required")
 	}
 	connStr := QuoteLiteral("ducklake:postgres:" + dsn)
-	return fmt.Sprintf("ATTACH %s AS lake (\n\tDATA_PATH %s\n)",
+	return fmt.Sprintf("ATTACH %s AS %s (\n\tDATA_PATH %s\n)",
 		connStr,
+		QuoteIdentifier(catalogName),
 		QuoteLiteral(dataPath),
 	), nil
 }
 
 // AttachDuckLake returns a DuckDB DDL statement to attach a DuckLake catalog.
 // Both metaDBPath and dataPath are properly escaped as SQL string literals.
-func AttachDuckLake(metaDBPath, dataPath string) (string, error) {
+func AttachDuckLake(catalogName, metaDBPath, dataPath string) (string, error) {
+	if err := ValidateIdentifier(catalogName); err != nil {
+		return "", fmt.Errorf("invalid catalog name: %w", err)
+	}
 	if metaDBPath == "" {
 		return "", fmt.Errorf("metastore path is required")
 	}
@@ -251,8 +280,25 @@ func AttachDuckLake(metaDBPath, dataPath string) (string, error) {
 	// The ATTACH connection string format is: 'ducklake:sqlite:<path>'
 	// Both the metaDBPath and dataPath need proper escaping within single-quoted literals.
 	connStr := QuoteLiteral("ducklake:sqlite:" + metaDBPath)
-	return fmt.Sprintf("ATTACH %s AS lake (\n\tDATA_PATH %s\n)",
+	return fmt.Sprintf("ATTACH %s AS %s (\n\tDATA_PATH %s\n)",
 		connStr,
+		QuoteIdentifier(catalogName),
 		QuoteLiteral(dataPath),
 	), nil
+}
+
+// DetachCatalog returns a DuckDB DDL statement to detach a catalog.
+func DetachCatalog(catalogName string) (string, error) {
+	if err := ValidateIdentifier(catalogName); err != nil {
+		return "", fmt.Errorf("invalid catalog name: %w", err)
+	}
+	return fmt.Sprintf("DETACH %s", QuoteIdentifier(catalogName)), nil
+}
+
+// SetDefaultCatalog returns a DuckDB USE statement to set the default catalog.
+func SetDefaultCatalog(catalogName string) (string, error) {
+	if err := ValidateIdentifier(catalogName); err != nil {
+		return "", fmt.Errorf("invalid catalog name: %w", err)
+	}
+	return fmt.Sprintf("USE %s", QuoteIdentifier(catalogName)), nil
 }

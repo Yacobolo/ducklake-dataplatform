@@ -99,9 +99,10 @@ func run() error {
 				bucket = *cfg.S3Bucket
 			}
 			dataPath := fmt.Sprintf("s3://%s/lake_data/", bucket)
-			if err := engine.AttachDuckLake(ctx, duckDB, cfg.MetaDBPath, dataPath); err != nil {
+			if err := engine.AttachDuckLake(ctx, duckDB, "lake", cfg.MetaDBPath, dataPath); err != nil {
 				logger.Warn("DuckLake attach failed", "error", err)
 			} else {
+				_ = engine.SetDefaultCatalog(ctx, duckDB, "lake")
 				catalogAttached = true
 				logger.Info("DuckLake ready", "mode", "legacy S3")
 			}
@@ -113,9 +114,10 @@ func run() error {
 			bucket = *cfg.S3Bucket
 		}
 		dataPath := fmt.Sprintf("s3://%s/lake_data/", bucket)
-		if err := engine.AttachDuckLakePostgres(ctx, duckDB, cfg.CatalogDSN, dataPath); err != nil {
+		if err := engine.AttachDuckLakePostgres(ctx, duckDB, "lake", cfg.CatalogDSN, dataPath); err != nil {
 			logger.Warn("DuckLake PostgreSQL attach failed", "error", err)
 		} else {
+			_ = engine.SetDefaultCatalog(ctx, duckDB, "lake")
 			catalogAttached = true
 			logger.Info("DuckLake ready", "mode", "PostgreSQL catalog")
 		}
