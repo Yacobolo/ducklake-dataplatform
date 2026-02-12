@@ -1,0 +1,882 @@
+paths:
+  /catalog:
+    get:
+      operationId: getCatalog
+      summary: Get catalog info
+      tags: [Catalog]
+      description: Returns information about the single DuckLake catalog.
+      responses:
+        '200':
+          description: Catalog information
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/CatalogInfo'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+    patch:
+      operationId: updateCatalog
+      summary: Update catalog metadata
+      tags: [Catalog]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/UpdateCatalogRequest'
+      responses:
+        '200':
+          description: Updated catalog
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/CatalogInfo'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /catalog/schemas:
+    get:
+      operationId: listSchemas
+      summary: List schemas in the catalog
+      tags: [Catalog]
+      parameters:
+        - $ref: '../openapi.yaml#/components/parameters/MaxResults'
+        - $ref: '../openapi.yaml#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of schemas
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/PaginatedSchemaDetails'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+    post:
+      operationId: createSchema
+      summary: Create a new schema
+      tags: [Catalog]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/CreateSchemaRequest'
+      responses:
+        '201':
+          description: Schema created
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/SchemaDetail'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '409':
+          description: Schema already exists
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /catalog/schemas/{schemaName}:
+    parameters:
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getSchema
+      summary: Get a schema by name
+      tags: [Catalog]
+      responses:
+        '200':
+          description: Schema details
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/SchemaDetail'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+    patch:
+      operationId: updateSchema
+      summary: Update schema metadata
+      tags: [Catalog]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/UpdateSchemaRequest'
+      responses:
+        '200':
+          description: Updated schema
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/SchemaDetail'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+    delete:
+      operationId: deleteSchema
+      summary: Delete a schema
+      tags: [Catalog]
+      parameters:
+        - name: force
+          in: query
+          description: Force deletion even if the schema contains tables.
+          required: false
+          schema:
+            type: boolean
+      responses:
+        '204':
+          description: Schema deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '409':
+          description: Schema not empty
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /catalog/schemas/{schemaName}/tables:
+    parameters:
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: listTables
+      summary: List tables in a schema
+      tags: [Catalog]
+      parameters:
+        - $ref: '../openapi.yaml#/components/parameters/MaxResults'
+        - $ref: '../openapi.yaml#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of tables
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/PaginatedTableDetails'
+        '404':
+          description: Schema not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+    post:
+      operationId: createTable
+      summary: Create a new table in a schema
+      tags: [Catalog]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/CreateTableRequest'
+      responses:
+        '201':
+          description: Table created
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/TableDetail'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '409':
+          description: Table already exists
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /catalog/schemas/{schemaName}/tables/{tableName}:
+    parameters:
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: tableName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getTable
+      summary: Get a table by name
+      tags: [Catalog]
+      responses:
+        '200':
+          description: Table details including columns
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/TableDetail'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+    patch:
+      operationId: updateTable
+      summary: Update table metadata
+      tags: [Catalog]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/UpdateTableRequest'
+      responses:
+        '200':
+          description: Updated table
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/TableDetail'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+    delete:
+      operationId: deleteTable
+      summary: Delete a table
+      tags: [Catalog]
+      responses:
+        '204':
+          description: Table deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /catalog/schemas/{schemaName}/tables/{tableName}/columns:
+    parameters:
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: tableName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: listTableColumns
+      summary: List columns of a table
+      tags: [Catalog]
+      parameters:
+        - $ref: '../openapi.yaml#/components/parameters/MaxResults'
+        - $ref: '../openapi.yaml#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of columns
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/PaginatedColumnDetails'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /catalog/schemas/{schemaName}/tables/{tableName}/columns/{columnName}:
+    parameters:
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: tableName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: columnName
+        in: path
+        required: true
+        schema:
+          type: string
+    patch:
+      operationId: updateColumn
+      summary: Update column metadata
+      tags: [Catalog]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/UpdateColumnRequest'
+      responses:
+        '200':
+          description: Updated column
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/ColumnDetail'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /catalog/schemas/{schemaName}/tables/{tableName}/profile:
+    parameters:
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: tableName
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      operationId: profileTable
+      summary: Profile a table to collect statistics
+      tags: [Catalog]
+      description: Runs profiling queries and stores statistics (row count, column count, size).
+      responses:
+        '200':
+          description: Table statistics
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/TableStatistics'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /catalog/schemas/{schemaName}/views:
+    parameters:
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: listViews
+      summary: List views in a schema
+      tags: [Catalog]
+      parameters:
+        - $ref: '../openapi.yaml#/components/parameters/MaxResults'
+        - $ref: '../openapi.yaml#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of views
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/PaginatedViewDetails'
+        '404':
+          description: Schema not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+    post:
+      operationId: createView
+      summary: Create a view in a schema
+      tags: [Catalog]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/CreateViewRequest'
+      responses:
+        '201':
+          description: View created
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/ViewDetail'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '409':
+          description: View already exists
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /catalog/schemas/{schemaName}/views/{viewName}:
+    parameters:
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: viewName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getView
+      summary: Get a view by name
+      tags: [Catalog]
+      responses:
+        '200':
+          description: View details
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/ViewDetail'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+    patch:
+      operationId: updateView
+      summary: Update a view's metadata
+      tags: [Catalog]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/UpdateViewRequest'
+      responses:
+        '200':
+          description: Updated view
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/ViewDetail'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+    delete:
+      operationId: deleteView
+      summary: Delete a view
+      tags: [Catalog]
+      responses:
+        '204':
+          description: View deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /catalog/schemas/{schemaName}/volumes:
+    parameters:
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: listVolumes
+      summary: List volumes in a schema
+      tags: [Catalog]
+      parameters:
+        - $ref: '../openapi.yaml#/components/parameters/MaxResults'
+        - $ref: '../openapi.yaml#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of volumes
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/PaginatedVolumes'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+    post:
+      operationId: createVolume
+      summary: Create a volume in a schema
+      tags: [Catalog]
+      description: >
+        Creates a new volume. EXTERNAL volumes require a storage_location.
+        MANAGED volumes auto-generate a storage location.
+        Requires CREATE_VOLUME on catalog.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/CreateVolumeRequest'
+      responses:
+        '201':
+          description: Volume created
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/VolumeDetail'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '409':
+          description: Volume already exists
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /catalog/schemas/{schemaName}/volumes/{volumeName}:
+    parameters:
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: volumeName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getVolume
+      summary: Get a volume by name
+      tags: [Catalog]
+      responses:
+        '200':
+          description: Volume details
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/VolumeDetail'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+    patch:
+      operationId: updateVolume
+      summary: Update a volume
+      tags: [Catalog]
+      description: Updates volume fields. Requires CREATE_VOLUME on catalog.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/UpdateVolumeRequest'
+      responses:
+        '200':
+          description: Updated volume
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/VolumeDetail'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+    delete:
+      operationId: deleteVolume
+      summary: Delete a volume
+      tags: [Catalog]
+      description: Deletes a volume. Requires CREATE_VOLUME on catalog.
+      responses:
+        '204':
+          description: Volume deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'

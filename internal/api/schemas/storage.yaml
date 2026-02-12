@@ -1,0 +1,188 @@
+StorageCredential:
+  type: object
+  properties:
+    id:
+      type: integer
+      format: int64
+    name:
+      type: string
+    credential_type:
+      type: string
+      enum: [S3, AZURE, GCS]
+    # S3 fields (write-only: key_id and secret are never returned)
+    endpoint:
+      type: string
+    region:
+      type: string
+    url_style:
+      type: string
+    # Azure fields (write-only: account_key and client_secret are never returned)
+    azure_account_name:
+      type: string
+    azure_client_id:
+      type: string
+    azure_tenant_id:
+      type: string
+    # GCS fields
+    gcs_key_file_path:
+      type: string
+    comment:
+      type: string
+    owner:
+      type: string
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+
+CreateStorageCredentialRequest:
+  type: object
+  required: [name, credential_type]
+  properties:
+    name:
+      type: string
+    credential_type:
+      type: string
+      enum: [S3, AZURE, GCS]
+    # S3 fields (required when credential_type = S3)
+    key_id:
+      type: string
+    secret:
+      type: string
+    endpoint:
+      type: string
+    region:
+      type: string
+    url_style:
+      type: string
+      default: path
+    # Azure fields (required when credential_type = AZURE)
+    azure_account_name:
+      type: string
+    azure_account_key:
+      type: string
+    azure_client_id:
+      type: string
+    azure_tenant_id:
+      type: string
+    azure_client_secret:
+      type: string
+    # GCS fields (required when credential_type = GCS)
+    gcs_key_file_path:
+      type: string
+    comment:
+      type: string
+
+UpdateStorageCredentialRequest:
+  type: object
+  properties:
+    # S3 fields
+    key_id:
+      type: string
+    secret:
+      type: string
+    endpoint:
+      type: string
+    region:
+      type: string
+    url_style:
+      type: string
+    # Azure fields
+    azure_account_name:
+      type: string
+    azure_account_key:
+      type: string
+    azure_client_id:
+      type: string
+    azure_tenant_id:
+      type: string
+    azure_client_secret:
+      type: string
+    # GCS fields
+    gcs_key_file_path:
+      type: string
+    comment:
+      type: string
+
+PaginatedStorageCredentials:
+  type: object
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/StorageCredential'
+    next_page_token:
+      type: string
+
+ExternalLocation:
+  type: object
+  properties:
+    id:
+      type: integer
+      format: int64
+    name:
+      type: string
+    url:
+      type: string
+    credential_name:
+      type: string
+    storage_type:
+      type: string
+    comment:
+      type: string
+    owner:
+      type: string
+    read_only:
+      type: boolean
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+
+CreateExternalLocationRequest:
+  type: object
+  required: [name, url, credential_name]
+  properties:
+    name:
+      type: string
+    url:
+      type: string
+    credential_name:
+      type: string
+    storage_type:
+      type: string
+      enum: [S3]
+      default: S3
+    comment:
+      type: string
+    read_only:
+      type: boolean
+      default: false
+
+UpdateExternalLocationRequest:
+  type: object
+  properties:
+    url:
+      type: string
+    credential_name:
+      type: string
+    comment:
+      type: string
+    read_only:
+      type: boolean
+    owner:
+      type: string
+
+PaginatedExternalLocations:
+  type: object
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/ExternalLocation'
+    next_page_token:
+      type: string

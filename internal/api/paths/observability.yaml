@@ -1,0 +1,145 @@
+paths:
+  /manifest:
+    post:
+      operationId: createManifest
+      summary: Create table manifest with presigned URLs and security policies
+      tags: [Manifest]
+      description: >
+        Returns presigned S3 URLs for the Parquet files backing a table,
+        along with RLS row filters and column masks for the authenticated
+        principal. Used by the duck_access DuckDB extension for secure
+        client-side querying.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/ManifestRequest'
+      responses:
+        '200':
+          description: Manifest with presigned URLs and security policies
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/ManifestResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '404':
+          description: Table not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /audit-logs:
+    get:
+      operationId: listAuditLogs
+      summary: Query audit logs
+      tags: [Observability]
+      parameters:
+        - name: principal_name
+          in: query
+          schema:
+            type: string
+        - name: action
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - $ref: '../openapi.yaml#/components/parameters/MaxResults'
+        - $ref: '../openapi.yaml#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated audit log entries
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/PaginatedAuditLogs'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /metastore/summary:
+    get:
+      operationId: getMetastoreSummary
+      summary: Get metastore summary
+      tags: [Observability]
+      description: Returns high-level information about the DuckLake metastore.
+      responses:
+        '200':
+          description: Metastore summary
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/MetastoreSummary'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /query-history:
+    get:
+      operationId: listQueryHistory
+      summary: List query execution history
+      tags: [Observability]
+      parameters:
+        - name: principal_name
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - $ref: '../openapi.yaml#/components/parameters/MaxResults'
+        - $ref: '../openapi.yaml#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated query history
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/PaginatedQueryHistoryEntries'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'

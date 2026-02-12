@@ -1,0 +1,64 @@
+LineageEdge:
+  type: object
+  properties:
+    id:
+      type: integer
+      format: int64
+    source_table:
+      type: string
+    target_table:
+      type: string
+      nullable: true
+    source_schema:
+      type: string
+      description: Schema of the source table
+    target_schema:
+      type: string
+      description: Schema of the target table
+    edge_type:
+      type: string
+      description: "Edge type: READ, WRITE, READ_WRITE"
+    principal_name:
+      type: string
+    created_at:
+      type: string
+      format: date-time
+
+LineageNode:
+  type: object
+  properties:
+    table_name:
+      type: string
+    upstream:
+      type: array
+      items:
+        $ref: '#/LineageEdge'
+    downstream:
+      type: array
+      items:
+        $ref: '#/LineageEdge'
+
+PaginatedLineageEdges:
+  type: object
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/LineageEdge'
+    next_page_token:
+      type: string
+
+PurgeLineageRequest:
+  type: object
+  required: [older_than_days]
+  properties:
+    older_than_days:
+      type: integer
+      description: Delete lineage edges older than this many days.
+
+PurgeLineageResponse:
+  type: object
+  properties:
+    deleted_count:
+      type: integer
+      format: int64

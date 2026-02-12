@@ -1,0 +1,323 @@
+paths:
+  /compute-endpoints:
+    get:
+      operationId: listComputeEndpoints
+      summary: List compute endpoints
+      tags: [Compute]
+      description: Returns a paginated list of compute endpoints.
+      parameters:
+        - $ref: '../openapi.yaml#/components/parameters/MaxResults'
+        - $ref: '../openapi.yaml#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of compute endpoints
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/PaginatedComputeEndpoints'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+    post:
+      operationId: createComputeEndpoint
+      summary: Create a compute endpoint
+      tags: [Compute]
+      description: Creates a new compute endpoint. Requires MANAGE_COMPUTE on catalog.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/CreateComputeEndpointRequest'
+      responses:
+        '201':
+          description: Created compute endpoint
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/ComputeEndpoint'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '409':
+          description: Endpoint already exists
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /compute-endpoints/{endpointName}:
+    parameters:
+      - name: endpointName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getComputeEndpoint
+      summary: Get a compute endpoint by name
+      tags: [Compute]
+      responses:
+        '200':
+          description: Compute endpoint details
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/ComputeEndpoint'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+    patch:
+      operationId: updateComputeEndpoint
+      summary: Update a compute endpoint
+      tags: [Compute]
+      description: Updates compute endpoint fields. Requires MANAGE_COMPUTE on catalog.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/UpdateComputeEndpointRequest'
+      responses:
+        '200':
+          description: Updated compute endpoint
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/ComputeEndpoint'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+    delete:
+      operationId: deleteComputeEndpoint
+      summary: Delete a compute endpoint
+      tags: [Compute]
+      description: Deletes a compute endpoint. Requires MANAGE_COMPUTE on catalog.
+      responses:
+        '204':
+          description: Compute endpoint deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /compute-endpoints/{endpointName}/assignments:
+    parameters:
+      - name: endpointName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: listComputeAssignments
+      summary: List assignments for a compute endpoint
+      tags: [Compute]
+      parameters:
+        - $ref: '../openapi.yaml#/components/parameters/MaxResults'
+        - $ref: '../openapi.yaml#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of compute assignments
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/PaginatedComputeAssignments'
+        '404':
+          description: Endpoint not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+    post:
+      operationId: createComputeAssignment
+      summary: Assign a principal to a compute endpoint
+      tags: [Compute]
+      description: Creates a compute assignment. Requires MANAGE_COMPUTE on catalog.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/CreateComputeAssignmentRequest'
+      responses:
+        '201':
+          description: Created compute assignment
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/ComputeAssignment'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '409':
+          description: Assignment already exists
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /compute-endpoints/{endpointName}/health:
+    parameters:
+      - name: endpointName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getComputeEndpointHealth
+      summary: Check health of a compute endpoint
+      tags: [Compute]
+      description: Proxies a health check to the remote compute agent. Requires MANAGE_COMPUTE on catalog.
+      responses:
+        '200':
+          description: Health check result
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/ComputeEndpointHealth'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '502':
+          description: Agent unreachable
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /compute-endpoints/{endpointName}/assignments/{assignmentId}:
+    parameters:
+      - name: endpointName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: assignmentId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    delete:
+      operationId: deleteComputeAssignment
+      summary: Remove a compute assignment
+      tags: [Compute]
+      description: Removes a compute assignment. Requires MANAGE_COMPUTE on catalog.
+      responses:
+        '204':
+          description: Assignment deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'

@@ -1,0 +1,101 @@
+SearchResult:
+  type: object
+  properties:
+    type:
+      type: string
+      description: "Object type: schema, table, or column"
+    name:
+      type: string
+    schema_name:
+      type: string
+      nullable: true
+    table_name:
+      type: string
+      nullable: true
+    comment:
+      type: string
+      nullable: true
+    match_field:
+      type: string
+      description: "Field that matched: name, comment, property, or tag"
+
+PaginatedSearchResults:
+  type: object
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/SearchResult'
+    next_page_token:
+      type: string
+
+Tag:
+  type: object
+  properties:
+    id:
+      type: integer
+      format: int64
+    key:
+      type: string
+    value:
+      type: string
+      nullable: true
+    created_by:
+      type: string
+    created_at:
+      type: string
+      format: date-time
+
+CreateTagRequest:
+  type: object
+  required: [key]
+  properties:
+    key:
+      type: string
+    value:
+      type: string
+
+TagAssignment:
+  type: object
+  properties:
+    id:
+      type: integer
+      format: int64
+    tag_id:
+      type: integer
+      format: int64
+    securable_type:
+      type: string
+    securable_id:
+      type: integer
+      format: int64
+    column_name:
+      type: string
+      nullable: true
+    assigned_by:
+      type: string
+    assigned_at:
+      type: string
+      format: date-time
+
+CreateTagAssignmentRequest:
+  type: object
+  required: [securable_type, securable_id]
+  properties:
+    securable_type:
+      type: string
+    securable_id:
+      type: integer
+      format: int64
+    column_name:
+      type: string
+
+PaginatedTags:
+  type: object
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/Tag'
+    next_page_token:
+      type: string

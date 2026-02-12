@@ -1,0 +1,1091 @@
+paths:
+  /principals:
+    get:
+      operationId: listPrincipals
+      summary: List all principals
+      tags: [Security]
+      parameters:
+        - $ref: '../openapi.yaml#/components/parameters/MaxResults'
+        - $ref: '../openapi.yaml#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of principals
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/PaginatedPrincipals'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+    post:
+      operationId: createPrincipal
+      summary: Create a principal
+      tags: [Security]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/CreatePrincipalRequest'
+      responses:
+        '201':
+          description: Created principal
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Principal'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /principals/{principalId}:
+    parameters:
+      - name: principalId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    get:
+      operationId: getPrincipal
+      summary: Get principal by ID
+      tags: [Security]
+      responses:
+        '200':
+          description: Principal details
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Principal'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+    delete:
+      operationId: deletePrincipal
+      summary: Delete a principal
+      tags: [Security]
+      responses:
+        '204':
+          description: Deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /principals/{principalId}/admin:
+    parameters:
+      - name: principalId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    put:
+      operationId: updatePrincipalAdmin
+      summary: Set or unset admin flag
+      tags: [Security]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/UpdatePrincipalAdminRequest'
+      responses:
+        '204':
+          description: Updated
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /groups:
+    get:
+      operationId: listGroups
+      summary: List all groups
+      tags: [Security]
+      parameters:
+        - $ref: '../openapi.yaml#/components/parameters/MaxResults'
+        - $ref: '../openapi.yaml#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of groups
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/PaginatedGroups'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+    post:
+      operationId: createGroup
+      summary: Create a group
+      tags: [Security]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/CreateGroupRequest'
+      responses:
+        '201':
+          description: Created group
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Group'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /groups/{groupId}:
+    parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    get:
+      operationId: getGroup
+      summary: Get group by ID
+      tags: [Security]
+      responses:
+        '200':
+          description: Group details
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Group'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+    delete:
+      operationId: deleteGroup
+      summary: Delete a group
+      tags: [Security]
+      responses:
+        '204':
+          description: Deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /groups/{groupId}/members:
+    parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    get:
+      operationId: listGroupMembers
+      summary: List group members
+      tags: [Security]
+      parameters:
+        - $ref: '../openapi.yaml#/components/parameters/MaxResults'
+        - $ref: '../openapi.yaml#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of members
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/PaginatedGroupMembers'
+        '404':
+          description: Group not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+    post:
+      operationId: createGroupMember
+      summary: Add member to group
+      tags: [Security]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/CreateGroupMemberRequest'
+      responses:
+        '204':
+          description: Member added
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '404':
+          description: Group not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+    delete:
+      operationId: deleteGroupMember
+      summary: Remove member from group
+      tags: [Security]
+      parameters:
+        - name: member_type
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: member_id
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Member removed
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '404':
+          description: Group or member not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /grants:
+    get:
+      operationId: listGrants
+      summary: List grants
+      tags: [Security]
+      parameters:
+        - name: principal_id
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: principal_type
+          in: query
+          schema:
+            type: string
+        - name: securable_type
+          in: query
+          schema:
+            type: string
+        - name: securable_id
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - $ref: '../openapi.yaml#/components/parameters/MaxResults'
+        - $ref: '../openapi.yaml#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of grants
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/PaginatedGrants'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+    post:
+      operationId: createGrant
+      summary: Grant a privilege
+      tags: [Security]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/CreateGrantRequest'
+      responses:
+        '201':
+          description: Granted
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/PrivilegeGrant'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '409':
+          description: Grant already exists
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /grants/{grantId}:
+    parameters:
+      - name: grantId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    delete:
+      operationId: deleteGrant
+      summary: Revoke a privilege
+      tags: [Security]
+      responses:
+        '204':
+          description: Revoked
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '404':
+          description: Grant not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /api-keys:
+    get:
+      operationId: listAPIKeys
+      summary: List API keys for a principal
+      tags: [Security]
+      parameters:
+        - name: principal_id
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - $ref: '../openapi.yaml#/components/parameters/MaxResults'
+        - $ref: '../openapi.yaml#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of API keys (no raw key values)
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/PaginatedAPIKeys'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+    post:
+      operationId: createAPIKey
+      summary: Create a new API key
+      tags: [Security]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/CreateAPIKeyRequest'
+      responses:
+        '201':
+          description: API key created (raw key shown only once)
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/CreateAPIKeyResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /api-keys/{apiKeyId}:
+    parameters:
+      - name: apiKeyId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    delete:
+      operationId: deleteAPIKey
+      summary: Delete an API key
+      tags: [Security]
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /api-keys/cleanup:
+    post:
+      operationId: cleanupExpiredAPIKeys
+      summary: Delete all expired API keys (admin only)
+      tags: [Security]
+      responses:
+        '200':
+          description: Number of keys deleted
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/CleanupAPIKeysResponse'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /tables/{tableId}/row-filters:
+    parameters:
+      - name: tableId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    get:
+      operationId: listRowFilters
+      summary: List row filters for table
+      tags: [Security]
+      parameters:
+        - $ref: '../openapi.yaml#/components/parameters/MaxResults'
+        - $ref: '../openapi.yaml#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of filters
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/PaginatedRowFilters'
+        '404':
+          description: Table not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+    post:
+      operationId: createRowFilter
+      summary: Create row filter
+      tags: [Security]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/CreateRowFilterRequest'
+      responses:
+        '201':
+          description: Created filter
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/RowFilter'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '404':
+          description: Table not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /row-filters/{rowFilterId}:
+    parameters:
+      - name: rowFilterId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    delete:
+      operationId: deleteRowFilter
+      summary: Delete row filter
+      tags: [Security]
+      responses:
+        '204':
+          description: Deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /row-filters/{rowFilterId}/bindings:
+    parameters:
+      - name: rowFilterId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    post:
+      operationId: bindRowFilter
+      summary: Bind filter to principal
+      tags: [Security]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/RowFilterBindingRequest'
+      responses:
+        '204':
+          description: Bound
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '404':
+          description: Row filter not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+    delete:
+      operationId: unbindRowFilter
+      summary: Unbind filter from principal
+      tags: [Security]
+      parameters:
+        - name: principal_id
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: principal_type
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Unbound
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '404':
+          description: Row filter not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /row-filters:
+    post:
+      operationId: createRowFilterTopLevel
+      summary: Create row filter (top-level)
+      tags: [Security]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/CreateRowFilterRequest'
+      responses:
+        '201':
+          description: Created filter
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/RowFilter'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '404':
+          description: Table not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /tables/{tableId}/column-masks:
+    parameters:
+      - name: tableId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    get:
+      operationId: listColumnMasks
+      summary: List column masks
+      tags: [Security]
+      parameters:
+        - $ref: '../openapi.yaml#/components/parameters/MaxResults'
+        - $ref: '../openapi.yaml#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of masks
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/PaginatedColumnMasks'
+        '404':
+          description: Table not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+    post:
+      operationId: createColumnMask
+      summary: Create column mask
+      tags: [Security]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/CreateColumnMaskRequest'
+      responses:
+        '201':
+          description: Created mask
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/ColumnMask'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '404':
+          description: Table not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /column-masks/{columnMaskId}:
+    parameters:
+      - name: columnMaskId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    delete:
+      operationId: deleteColumnMask
+      summary: Delete column mask
+      tags: [Security]
+      responses:
+        '204':
+          description: Deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+  /column-masks/{columnMaskId}/bindings:
+    parameters:
+      - name: columnMaskId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    post:
+      operationId: bindColumnMask
+      summary: Bind mask to principal
+      tags: [Security]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/ColumnMaskBindingRequest'
+      responses:
+        '204':
+          description: Bound
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '404':
+          description: Column mask not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+    delete:
+      operationId: unbindColumnMask
+      summary: Unbind mask from principal
+      tags: [Security]
+      parameters:
+        - name: principal_id
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: principal_type
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Unbound
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+        '404':
+          description: Column mask not found
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Error'
