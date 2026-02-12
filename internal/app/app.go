@@ -27,37 +27,36 @@ import (
 // These are things the app package cannot (or should not) create itself:
 // database handles, config, and the DuckDB connection.
 type Deps struct {
-	Cfg             *config.Config
-	DuckDB          *sql.DB
-	WriteDB         *sql.DB
-	ReadDB          *sql.DB
-	CatalogAttached bool // true when legacy S3 DuckLake setup succeeded
-	Logger          *slog.Logger
+	Cfg     *config.Config
+	DuckDB  *sql.DB
+	WriteDB *sql.DB
+	ReadDB  *sql.DB
+	Logger  *slog.Logger
 }
 
 // Services groups all service pointers that the API handler and router need.
-// Conditional services (Manifest, Ingestion) are nil when S3 is not configured.
 type Services struct {
-	Query             *query.QueryService
-	Principal         *security.PrincipalService
-	Group             *security.GroupService
-	Grant             *security.GrantService
-	RowFilter         *security.RowFilterService
-	ColumnMask        *security.ColumnMaskService
-	Audit             *governance.AuditService
-	QueryHistory      *governance.QueryHistoryService
-	Lineage           *governance.LineageService
-	Search            *catalog.SearchService
-	Tag               *governance.TagService
-	View              *catalog.ViewService
-	Catalog           *catalog.CatalogService
-	Manifest          *query.ManifestService      // nil when S3 not configured
-	Ingestion         *ingestion.IngestionService // nil when S3 not configured
-	StorageCredential *storage.StorageCredentialService
-	ExternalLocation  *storage.ExternalLocationService
-	Volume            *storage.VolumeService
-	ComputeEndpoint   *svccompute.ComputeEndpointService
-	APIKey            *security.APIKeyService
+	Query               *query.QueryService
+	Principal           *security.PrincipalService
+	Group               *security.GroupService
+	Grant               *security.GrantService
+	RowFilter           *security.RowFilterService
+	ColumnMask          *security.ColumnMaskService
+	Audit               *governance.AuditService
+	QueryHistory        *governance.QueryHistoryService
+	Lineage             *governance.LineageService
+	Search              *catalog.SearchService
+	Tag                 *governance.TagService
+	View                *catalog.ViewService
+	Catalog             *catalog.CatalogService
+	CatalogRegistration *catalog.CatalogRegistrationService
+	Manifest            *query.ManifestService
+	Ingestion           *ingestion.IngestionService
+	StorageCredential   *storage.StorageCredentialService
+	ExternalLocation    *storage.ExternalLocationService
+	Volume              *storage.VolumeService
+	ComputeEndpoint     *svccompute.ComputeEndpointService
+	APIKey              *security.APIKeyService
 }
 
 // App holds the fully-wired application: engine, services, and the
@@ -98,14 +97,22 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	volumeRepo := repository.NewVolumeRepo(deps.WriteDB)
 	storageCredRepo := repository.NewStorageCredentialRepo(deps.WriteDB, encryptor)
 	computeEndpointRepo := repository.NewComputeEndpointRepo(deps.WriteDB, encryptor)
-	catalogRepo := repository.NewCatalogRepo(deps.WriteDB, deps.DuckDB, "lake", extTableRepo, deps.Logger.With("component", "catalog-repo"))
+	catalogRegRepo := repository.NewCatalogRegistrationRepo(deps.WriteDB)
 
-	// === 3. Repositories (read-pool) ===
+	// === 3. Factories (multi-catalog) ===
+	catalogRepoFactory := repository.NewCatalogRepoFactory(
+		deps.WriteDB, deps.DuckDB, extTableRepo,
+		deps.Logger.With("component", "catalog-repo"),
+	)
+	introspectionFactory := repository.NewIntrospectionRepoFactory(catalogRegRepo)
+	metastoreFactory := repository.NewMetastoreRepoFactory(catalogRegRepo)
+
+	// === 4. Repositories (read-pool) ===
 	introspectionRepo := repository.NewIntrospectionRepo(deps.ReadDB)
 	queryHistoryRepo := repository.NewQueryHistoryRepo(deps.ReadDB)
 	searchRepo := repository.NewSearchRepo(deps.ReadDB)
 
-	// === 4. Compute resolver (needs endpoint repo, principal repo, group repo) ===
+	// === 5. Compute resolver (needs endpoint repo, principal repo, group repo) ===
 	localExec := compute.NewLocalExecutor(deps.DuckDB)
 	remoteCache := compute.NewRemoteCache(deps.DuckDB)
 	fullResolver := compute.NewResolver(
@@ -113,23 +120,24 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 		remoteCache, deps.Logger.With("component", "compute-resolver"),
 	)
 
-	// === 5. Authorization (needs all security repos + extTableRepo) ===
+	// === 6. Authorization (needs all security repos + extTableRepo) ===
 	authSvc := security.NewAuthorizationService(
 		principalRepo, groupRepo, grantRepo,
 		rowFilterRepo, columnMaskRepo, introspectionRepo,
 		extTableRepo,
 	)
 
-	// === Seed demo data (only when catalog attached) ===
-	if deps.CatalogAttached {
-		q := dbstore.New(deps.WriteDB)
-		if err := seedCatalog(ctx, authSvc, q); err != nil {
-			deps.Logger.Warn("seed catalog failed", "error", err)
-		}
+	// === Seed demo data ===
+	q := dbstore.New(deps.WriteDB)
+	if err := seedCatalog(ctx, authSvc, q); err != nil {
+		deps.Logger.Warn("seed catalog failed", "error", err)
 	}
 
-	// === 6. Engine (needs auth + resolver + infoSchema provider) ===
-	infoSchema := engine.NewInformationSchemaProvider(catalogRepo)
+	// === 7. Engine (needs auth + resolver + infoSchema provider) ===
+	// Use the factory's ForCatalog to get a default catalog repo for info schema
+	// (this creates a "lake" instance, but any ACTIVE catalog could work)
+	defaultCatalogRepo := catalogRepoFactory.ForCatalog("lake")
+	infoSchema := engine.NewInformationSchemaProvider(defaultCatalogRepo)
 	eng := engine.NewSecureEngine(deps.DuckDB, authSvc, fullResolver, infoSchema, deps.Logger.With("component", "engine"))
 
 	// Restore external table VIEWs (best-effort)
@@ -137,7 +145,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 		deps.Logger.Warn("restore external table views failed", "error", err)
 	}
 
-	// === 7. All services (all deps available at construction) ===
+	// === 8. All services (all deps available at construction) ===
 	querySvc := query.NewQueryService(eng, auditRepo, lineageRepo)
 	principalSvc := security.NewPrincipalService(principalRepo, auditRepo)
 	groupSvc := security.NewGroupService(groupRepo, auditRepo)
@@ -149,55 +157,57 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	lineageSvc := governance.NewLineageService(lineageRepo)
 	searchSvc := catalog.NewSearchService(searchRepo)
 	tagSvc := governance.NewTagService(tagRepo, auditRepo)
-	viewSvc := catalog.NewViewService(viewRepo, catalogRepo, authSvc, auditRepo)
-	catalogSvc := catalog.NewCatalogService(catalogRepo, authSvc, auditRepo, tagRepo, tableStatsRepo, externalLocRepo)
+	viewSvc := catalog.NewViewService(viewRepo, catalogRepoFactory, authSvc, auditRepo)
+	catalogSvc := catalog.NewCatalogService(catalogRepoFactory, authSvc, auditRepo, tagRepo, tableStatsRepo, externalLocRepo)
 	storageCredSvc := storage.NewStorageCredentialService(storageCredRepo, authSvc, auditRepo)
 	computeEndpointSvc := svccompute.NewComputeEndpointService(computeEndpointRepo, authSvc, auditRepo)
 	volumeSvc := storage.NewVolumeService(volumeRepo, authSvc, auditRepo)
 
 	secretMgr := engine.NewDuckDBSecretManager(deps.DuckDB)
 	extLocationSvc := storage.NewExternalLocationService(
-		externalLocRepo, storageCredRepo, authSvc, auditRepo, secretMgr, secretMgr, cfg.MetaDBPath,
-		deps.CatalogAttached, deps.Logger.With("component", "external-location"),
+		externalLocRepo, storageCredRepo, authSvc, auditRepo, secretMgr,
+		deps.Logger.With("component", "external-location"),
 	)
 
-	// === Conditional manifest/ingestion services ===
-	// Enabled whenever the DuckLake catalog is attached. A legacy S3 presigner
-	// is created when env-level S3 credentials exist; otherwise, services rely
-	// on per-schema credential resolution (S3, Azure, or GCS).
-	var manifestSvc *query.ManifestService
-	var ingestionSvc *ingestion.IngestionService
-	if deps.CatalogAttached {
-		var legacyGetPresigner query.FilePresigner
-		var legacyUploadPresigner query.FileUploadPresigner
-		bucket := "duck-demo"
+	// === CatalogRegistrationService ===
+	catalogRegSvc := catalog.NewCatalogRegistrationService(catalog.RegistrationServiceDeps{
+		Repo:               catalogRegRepo,
+		Attacher:           secretMgr,
+		ControlPlaneDBPath: cfg.MetaDBPath,
+		DuckDB:             deps.DuckDB,
+		Logger:             deps.Logger.With("component", "catalog-registration"),
+		MetastoreFactory:   metastoreFactory,
+		IntrospectionClose: introspectionFactory.Close,
+		CatalogRepoEvict:   catalogRepoFactory.Evict,
+	})
 
-		if cfg.HasS3Config() {
-			s3p, err := query.NewS3Presigner(cfg)
-			if err != nil {
-				deps.Logger.Warn("could not create legacy S3 presigner", "error", err)
-			} else {
-				legacyGetPresigner = s3p
-				legacyUploadPresigner = s3p
-				bucket = s3p.Bucket()
-				deps.Logger.Info("legacy S3 presigner configured")
-			}
+	// === Manifest and Ingestion services (always available, use factory-based metastore) ===
+	var legacyGetPresigner query.FilePresigner
+	var legacyUploadPresigner query.FileUploadPresigner
+	bucket := "duck-demo"
+
+	if cfg.HasS3Config() {
+		s3p, err := query.NewS3Presigner(cfg)
+		if err != nil {
+			deps.Logger.Warn("could not create legacy S3 presigner", "error", err)
+		} else {
+			legacyGetPresigner = s3p
+			legacyUploadPresigner = s3p
+			bucket = s3p.Bucket()
+			deps.Logger.Info("legacy S3 presigner configured")
 		}
-
-		metastoreRepo := repository.NewMetastoreRepo(deps.ReadDB)
-		manifestSvc = query.NewManifestService(
-			metastoreRepo, authSvc, legacyGetPresigner, introspectionRepo, auditRepo,
-			storageCredRepo, externalLocRepo,
-		)
-		deps.Logger.Info("manifest service enabled (duck_access extension support)")
-
-		duckExec := engine.NewDuckDBExecAdapter(deps.DuckDB)
-		ingestionSvc = ingestion.NewIngestionService(
-			duckExec, metastoreRepo, authSvc, legacyUploadPresigner, auditRepo, "lake", bucket,
-			storageCredRepo, externalLocRepo,
-		)
-		deps.Logger.Info("ingestion service enabled")
 	}
+
+	manifestSvc := query.NewManifestService(
+		metastoreFactory, authSvc, legacyGetPresigner, introspectionRepo, auditRepo,
+		storageCredRepo, externalLocRepo,
+	)
+
+	duckExec := engine.NewDuckDBExecAdapter(deps.DuckDB)
+	ingestionSvc := ingestion.NewIngestionService(
+		duckExec, metastoreFactory, authSvc, legacyUploadPresigner, auditRepo, bucket,
+		storageCredRepo, externalLocRepo,
+	)
 
 	// === Restore secrets (best-effort) ===
 	if err := extLocationSvc.RestoreSecrets(ctx); err != nil {
@@ -210,26 +220,27 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 
 	return &App{
 		Services: Services{
-			Query:             querySvc,
-			Principal:         principalSvc,
-			Group:             groupSvc,
-			Grant:             grantSvc,
-			RowFilter:         rowFilterSvc,
-			ColumnMask:        columnMaskSvc,
-			Audit:             auditSvc,
-			QueryHistory:      queryHistorySvc,
-			Lineage:           lineageSvc,
-			Search:            searchSvc,
-			Tag:               tagSvc,
-			View:              viewSvc,
-			Catalog:           catalogSvc,
-			Manifest:          manifestSvc,
-			Ingestion:         ingestionSvc,
-			StorageCredential: storageCredSvc,
-			ExternalLocation:  extLocationSvc,
-			Volume:            volumeSvc,
-			ComputeEndpoint:   computeEndpointSvc,
-			APIKey:            apiKeySvc,
+			Query:               querySvc,
+			Principal:           principalSvc,
+			Group:               groupSvc,
+			Grant:               grantSvc,
+			RowFilter:           rowFilterSvc,
+			ColumnMask:          columnMaskSvc,
+			Audit:               auditSvc,
+			QueryHistory:        queryHistorySvc,
+			Lineage:             lineageSvc,
+			Search:              searchSvc,
+			Tag:                 tagSvc,
+			View:                viewSvc,
+			Catalog:             catalogSvc,
+			CatalogRegistration: catalogRegSvc,
+			Manifest:            manifestSvc,
+			Ingestion:           ingestionSvc,
+			StorageCredential:   storageCredSvc,
+			ExternalLocation:    extLocationSvc,
+			Volume:              volumeSvc,
+			ComputeEndpoint:     computeEndpointSvc,
+			APIKey:              apiKeySvc,
 		},
 		Engine:     eng,
 		APIKeyRepo: apiKeyRepo,
