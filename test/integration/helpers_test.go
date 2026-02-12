@@ -567,8 +567,9 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 		t.Fatalf("create presigner: %v", err)
 	}
 
+	metastoreRepo := repository.NewMetastoreRepo(metaDB)
 	manifestSvc := service.NewManifestService(
-		metaDB, authSvc, presigner, introspectionRepo, auditRepo,
+		metastoreRepo, authSvc, presigner, introspectionRepo, auditRepo,
 	)
 
 	// Remaining services (querySvc gets nil engine — we never hit /v1/query)

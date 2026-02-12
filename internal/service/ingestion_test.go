@@ -24,7 +24,7 @@ func setupIngestionTest(t *testing.T) (*IngestionService, *AuthorizationService,
 
 	svc := &IngestionService{
 		duckDB:      nil, // CALL statements can't be tested in unit tests
-		metaDB:      nil, // metaDB only needed for readDataPath
+		metastore:   nil, // metastore only needed for readDataPath
 		authSvc:     authSvc,
 		presigner:   nil, // presigner requires real S3 credentials
 		auditRepo:   auditRepo,

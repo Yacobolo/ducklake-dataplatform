@@ -16,7 +16,7 @@ import (
 // via the ducklake_add_data_files() function.
 type IngestionService struct {
 	duckDB      *sql.DB
-	metaDB      *sql.DB
+	metastore   domain.MetastoreQuerier
 	authSvc     domain.AuthorizationService
 	presigner   *S3Presigner // legacy presigner (from env config), may be nil
 	auditRepo   domain.AuditRepository
@@ -29,7 +29,7 @@ type IngestionService struct {
 // NewIngestionService creates a new IngestionService.
 func NewIngestionService(
 	duckDB *sql.DB,
-	metaDB *sql.DB,
+	metastore domain.MetastoreQuerier,
 	authSvc domain.AuthorizationService,
 	presigner *S3Presigner,
 	auditRepo domain.AuditRepository,
@@ -38,7 +38,7 @@ func NewIngestionService(
 ) *IngestionService {
 	return &IngestionService{
 		duckDB:      duckDB,
-		metaDB:      metaDB,
+		metastore:   metastore,
 		authSvc:     authSvc,
 		presigner:   presigner,
 		auditRepo:   auditRepo,
@@ -258,13 +258,7 @@ func (s *IngestionService) checkInsertPrivilege(ctx context.Context, principal, 
 
 // readDataPath reads the data_path from the DuckLake metadata table.
 func (s *IngestionService) readDataPath(ctx context.Context) (string, error) {
-	var dataPath string
-	err := s.metaDB.QueryRowContext(ctx,
-		`SELECT value FROM ducklake_metadata WHERE key = 'data_path'`).Scan(&dataPath)
-	if err != nil {
-		return "", fmt.Errorf("read data_path from ducklake_metadata: %w", err)
-	}
-	return dataPath, nil
+	return s.metastore.ReadDataPath(ctx)
 }
 
 // classifyDuckDBError maps DuckDB errors from ducklake_add_data_files into domain errors.
@@ -300,11 +294,8 @@ func sanitizeFilename(name string) string {
 // presigner and bucket are returned.
 func (s *IngestionService) resolvePresigner(ctx context.Context, schemaName string) (*S3Presigner, string, error) {
 	// Try per-schema resolution via schema path in ducklake_schema
-	if s.metaDB != nil && s.credRepo != nil && s.locRepo != nil {
-		var schemaPath string
-		err := s.metaDB.QueryRowContext(ctx,
-			`SELECT path FROM ducklake_schema WHERE schema_name = ? AND path IS NOT NULL AND path != ''`,
-			schemaName).Scan(&schemaPath)
+	if s.metastore != nil && s.credRepo != nil && s.locRepo != nil {
+		schemaPath, err := s.metastore.ReadSchemaPath(ctx, schemaName)
 		if err == nil && schemaPath != "" {
 			// Schema has a custom path — find the location that matches this URL
 			locations, _, err := s.locRepo.List(ctx, domain.PageRequest{MaxResults: 1000})

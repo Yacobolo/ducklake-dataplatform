@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 	"time"
@@ -34,7 +33,7 @@ type ManifestResult struct {
 // the bridge between the client-side DuckDB extension and the server-side
 // security model.
 type ManifestService struct {
-	metaDB    *sql.DB // DuckLake SQLite metastore (same DB as permissions)
+	metastore domain.MetastoreQuerier // DuckLake metastore (read-only queries)
 	authSvc   domain.AuthorizationService
 	presigner *S3Presigner // legacy presigner (from env config), may be nil
 	introRepo domain.IntrospectionRepository
@@ -45,14 +44,14 @@ type ManifestService struct {
 
 // NewManifestService creates a ManifestService backed by the given dependencies.
 func NewManifestService(
-	metaDB *sql.DB,
+	metastore domain.MetastoreQuerier,
 	authSvc domain.AuthorizationService,
 	presigner *S3Presigner,
 	introRepo domain.IntrospectionRepository,
 	auditRepo domain.AuditRepository,
 ) *ManifestService {
 	return &ManifestService{
-		metaDB:    metaDB,
+		metastore: metastore,
 		authSvc:   authSvc,
 		presigner: presigner,
 		introRepo: introRepo,
@@ -166,47 +165,28 @@ func (s *ManifestService) GetManifest(
 	}, nil
 }
 
-// resolveDataFiles queries the DuckLake SQLite metastore for Parquet file
+// resolveDataFiles queries the DuckLake metastore for Parquet file
 // paths backing the given table. Returns fully-qualified S3 paths and the
 // schema-level storage path (if set), which is used to resolve the presigner.
 func (s *ManifestService) resolveDataFiles(ctx context.Context, tableID int64, schemaName string) ([]string, string, error) {
-	// Get the global data_path from ducklake_metadata
-	var dataPath string
-	err := s.metaDB.QueryRowContext(ctx,
-		`SELECT value FROM ducklake_metadata WHERE key = 'data_path'`).Scan(&dataPath)
+	dataPath, err := s.metastore.ReadDataPath(ctx)
 	if err != nil {
-		return nil, "", fmt.Errorf("read data_path from ducklake_metadata: %w", err)
+		return nil, "", err
 	}
 
-	// Check for per-schema storage path
-	var schemaPath string
-	_ = s.metaDB.QueryRowContext(ctx,
-		`SELECT path FROM ducklake_schema WHERE schema_name = ? AND path IS NOT NULL AND path != ''`,
-		schemaName).Scan(&schemaPath)
+	schemaPath, _ := s.metastore.ReadSchemaPath(ctx, schemaName)
 
-	// Query active data files for this table
-	rows, err := s.metaDB.QueryContext(ctx,
-		`SELECT path, path_is_relative FROM ducklake_data_file
-		 WHERE table_id = ? AND end_snapshot IS NULL`, tableID)
+	filePaths, isRelative, err := s.metastore.ListDataFiles(ctx, tableID)
 	if err != nil {
-		return nil, "", fmt.Errorf("query ducklake_data_file: %w", err)
+		return nil, "", err
 	}
-	defer rows.Close() //nolint:errcheck
 
 	var paths []string
-	for rows.Next() {
-		var path string
-		var isRelative bool
-		if err := rows.Scan(&path, &isRelative); err != nil {
-			return nil, "", err
-		}
-		if isRelative {
+	for i, path := range filePaths {
+		if isRelative[i] {
 			path = dataPath + path
 		}
 		paths = append(paths, path)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, "", err
 	}
 
 	if len(paths) == 0 {

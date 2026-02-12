@@ -126,7 +126,8 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 		if err != nil {
 			deps.Logger.Warn("could not create S3 presigner", "error", err)
 		} else {
-			manifestSvc = service.NewManifestService(deps.ReadDB, authSvc, presigner, introspectionRepo, auditRepo)
+			metastoreRepo := repository.NewMetastoreRepo(deps.ReadDB)
+			manifestSvc = service.NewManifestService(metastoreRepo, authSvc, presigner, introspectionRepo, auditRepo)
 			deps.Logger.Info("manifest service enabled (duck_access extension support)")
 
 			bucket := "duck-demo"
@@ -134,7 +135,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 				bucket = *cfg.S3Bucket
 			}
 			ingestionSvc = service.NewIngestionService(
-				deps.DuckDB, deps.ReadDB, authSvc, presigner, auditRepo, "lake", bucket,
+				deps.DuckDB, metastoreRepo, authSvc, presigner, auditRepo, "lake", bucket,
 			)
 			deps.Logger.Info("ingestion service enabled")
 		}
