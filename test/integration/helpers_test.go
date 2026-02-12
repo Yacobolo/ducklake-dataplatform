@@ -24,9 +24,8 @@ import (
 
 	_ "github.com/duckdb/duckdb-go/v2"
 	"github.com/go-chi/chi/v5"
-	_ "github.com/mattn/go-sqlite3"
-
 	"github.com/golang-jwt/jwt/v5"
+	_ "github.com/mattn/go-sqlite3"
 
 	"duck-demo/internal/agent"
 	"duck-demo/internal/api"
@@ -540,8 +539,104 @@ func seedRBAC(t *testing.T, db *sql.DB) apiKeys {
 }
 
 // ---------------------------------------------------------------------------
-// Server setup
+// Shared repo & service construction helpers
 // ---------------------------------------------------------------------------
+
+// repoBundle groups all repository instances built from a single metaDB.
+type repoBundle struct {
+	principal     *repository.PrincipalRepo
+	group         *repository.GroupRepo
+	grant         *repository.GrantRepo
+	rowFilter     *repository.RowFilterRepo
+	columnMask    *repository.ColumnMaskRepo
+	audit         *repository.AuditRepo
+	introspection *repository.IntrospectionRepo
+	apiKey        *repository.APIKeyRepo
+	tag           *repository.TagRepo
+	lineage       *repository.LineageRepo
+	search        *repository.SearchRepo
+	queryHistory  *repository.QueryHistoryRepo
+	view          *repository.ViewRepo
+}
+
+// buildAllRepos constructs every repository from the given metaDB.
+func buildAllRepos(metaDB *sql.DB) repoBundle {
+	return repoBundle{
+		principal:     repository.NewPrincipalRepo(metaDB),
+		group:         repository.NewGroupRepo(metaDB),
+		grant:         repository.NewGrantRepo(metaDB),
+		rowFilter:     repository.NewRowFilterRepo(metaDB),
+		columnMask:    repository.NewColumnMaskRepo(metaDB),
+		audit:         repository.NewAuditRepo(metaDB),
+		introspection: repository.NewIntrospectionRepo(metaDB),
+		apiKey:        repository.NewAPIKeyRepo(metaDB),
+		tag:           repository.NewTagRepo(metaDB),
+		lineage:       repository.NewLineageRepo(metaDB),
+		search:        repository.NewSearchRepo(metaDB),
+		queryHistory:  repository.NewQueryHistoryRepo(metaDB),
+		view:          repository.NewViewRepo(metaDB),
+	}
+}
+
+// serviceBundle groups the core services that are identically constructed across
+// setupIntegrationServer, setupLocalExtensionServer, and setupMultiTableLocalServer.
+type serviceBundle struct {
+	auth         *security.AuthorizationService
+	query        *query.QueryService
+	principal    *security.PrincipalService
+	group        *security.GroupService
+	grant        *security.GrantService
+	rowFilter    *security.RowFilterService
+	columnMask   *security.ColumnMaskService
+	audit        *governance.AuditService
+	tag          *governance.TagService
+	lineage      *governance.LineageService
+	search       *catalog.SearchService
+	queryHistory *governance.QueryHistoryService
+	view         *catalog.ViewService
+}
+
+// buildCoreServices constructs the common set of services used by the manifest
+// server setup functions. The metaDB + duckDB parameters are passed through to
+// NewCatalogRepo; duckDB may be nil when DuckLake is not needed.
+func buildCoreServices(repos repoBundle, metaDB *sql.DB, duckDB *sql.DB) serviceBundle {
+	authSvc := security.NewAuthorizationService(
+		repos.principal, repos.group, repos.grant,
+		repos.rowFilter, repos.columnMask, repos.introspection,
+		nil,
+	)
+
+	discardLogger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	catalogRepo := repository.NewCatalogRepo(metaDB, duckDB, nil, discardLogger)
+
+	return serviceBundle{
+		auth:         authSvc,
+		query:        query.NewQueryService(nil, repos.audit, nil),
+		principal:    security.NewPrincipalService(repos.principal, repos.audit),
+		group:        security.NewGroupService(repos.group, repos.audit),
+		grant:        security.NewGrantService(repos.grant, repos.audit),
+		rowFilter:    security.NewRowFilterService(repos.rowFilter, repos.audit),
+		columnMask:   security.NewColumnMaskService(repos.columnMask, repos.audit),
+		audit:        governance.NewAuditService(repos.audit),
+		tag:          governance.NewTagService(repos.tag, repos.audit),
+		lineage:      governance.NewLineageService(repos.lineage),
+		search:       catalog.NewSearchService(repos.search),
+		queryHistory: governance.NewQueryHistoryService(repos.queryHistory),
+		view:         catalog.NewViewService(repos.view, catalogRepo, authSvc, repos.audit),
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Manifest server setup (unified S3 / local)
+// ---------------------------------------------------------------------------
+
+// serverMode selects the data source for setupManifestServer.
+type serverMode int
+
+const (
+	modeS3    serverMode = iota // Real S3 presigner (requires credentials)
+	modeLocal                   // Local filesystem presigner
+)
 
 // testEnv bundles the shared test server and API keys.
 type testEnv struct {
@@ -549,78 +644,68 @@ type testEnv struct {
 	Keys   apiKeys
 }
 
-// setupIntegrationServer creates a fully-wired in-process Go API server with
-// real auth middleware, real S3 presigner, and seeded RBAC + DuckLake metadata.
-func setupIntegrationServer(t *testing.T) *testEnv {
+// setupManifestServer creates a fully-wired in-process Go API server with real
+// auth middleware, seeded RBAC + DuckLake metadata, and a manifest endpoint.
+//
+//   - modeS3: loads S3 config from .env, uses a real S3 presigner.
+//   - modeLocal: copies testdata/titanic.parquet to a temp dir, uses a local
+//     presigner that returns file paths as-is.
+func setupManifestServer(t *testing.T, mode serverMode) *testEnv {
 	t.Helper()
 
-	// Load S3 config from .env
-	_ = config.LoadDotEnv(dotEnvPath())
-	cfg, err := config.LoadFromEnv()
-	if err != nil {
-		t.Fatalf("load config: %v", err)
+	var (
+		dataPath  string
+		presigner query.FilePresigner
+	)
+
+	switch mode {
+	case modeS3:
+		// Load S3 config from .env
+		_ = config.LoadDotEnv(dotEnvPath())
+		cfg, err := config.LoadFromEnv()
+		if err != nil {
+			t.Fatalf("load config: %v", err)
+		}
+		dataPath = "s3://yacobolo/lake_data/"
+		presigner, err = query.NewS3Presigner(cfg)
+		if err != nil {
+			t.Fatalf("create presigner: %v", err)
+		}
+
+	case modeLocal:
+		tmpDir := t.TempDir()
+		dataPath = filepath.Join(tmpDir, "lake_data") + "/"
+		if err := os.MkdirAll(filepath.Join(tmpDir, "lake_data"), 0o755); err != nil {
+			t.Fatalf("mkdir lake_data: %v", err)
+		}
+		copyFile(t,
+			testdataPath("titanic.parquet"),
+			filepath.Join(tmpDir, "lake_data", ducklakeDataFileName),
+		)
+		presigner = &localPresigner{}
 	}
 
 	// Temp SQLite with hardened connection (WAL, busy_timeout, etc.)
 	metaDB, _ := internaldb.OpenTestSQLite(t)
 
 	// Seed DuckLake catalog metadata + RBAC data
-	seedDuckLakeMetadata(t, metaDB, "s3://yacobolo/lake_data/")
+	seedDuckLakeMetadata(t, metaDB, dataPath)
 	keys := seedRBAC(t, metaDB)
 
-	// Build repositories
-	principalRepo := repository.NewPrincipalRepo(metaDB)
-	groupRepo := repository.NewGroupRepo(metaDB)
-	grantRepo := repository.NewGrantRepo(metaDB)
-	rowFilterRepo := repository.NewRowFilterRepo(metaDB)
-	columnMaskRepo := repository.NewColumnMaskRepo(metaDB)
-	auditRepo := repository.NewAuditRepo(metaDB)
-	introspectionRepo := repository.NewIntrospectionRepo(metaDB)
-	apiKeyRepo := repository.NewAPIKeyRepo(metaDB)
-	tagRepo := repository.NewTagRepo(metaDB)
-	lineageRepo := repository.NewLineageRepo(metaDB)
-	searchRepo := repository.NewSearchRepo(metaDB)
-	queryHistoryRepo := repository.NewQueryHistoryRepo(metaDB)
-	viewRepo := repository.NewViewRepo(metaDB)
-
-	// Build services
-	authSvc := security.NewAuthorizationService(
-		principalRepo, groupRepo, grantRepo,
-		rowFilterRepo, columnMaskRepo, introspectionRepo,
-		nil,
-	)
-
-	presigner, err := query.NewS3Presigner(cfg)
-	if err != nil {
-		t.Fatalf("create presigner: %v", err)
-	}
+	repos := buildAllRepos(metaDB)
+	svcs := buildCoreServices(repos, metaDB, nil)
 
 	metastoreRepo := repository.NewMetastoreRepo(metaDB)
 	manifestSvc := query.NewManifestService(
-		metastoreRepo, authSvc, presigner, introspectionRepo, auditRepo,
+		metastoreRepo, svcs.auth, presigner, repos.introspection, repos.audit,
 		nil, nil,
 	)
 
-	// Remaining services (querySvc gets nil engine — we never hit /v1/query)
-	querySvc := query.NewQueryService(nil, auditRepo, nil)
-	principalSvc := security.NewPrincipalService(principalRepo, auditRepo)
-	groupSvc := security.NewGroupService(groupRepo, auditRepo)
-	grantSvc := security.NewGrantService(grantRepo, auditRepo)
-	rowFilterSvc := security.NewRowFilterService(rowFilterRepo, auditRepo)
-	columnMaskSvc := security.NewColumnMaskService(columnMaskRepo, auditRepo)
-	auditSvc := governance.NewAuditService(auditRepo)
-	tagSvc := governance.NewTagService(tagRepo, auditRepo)
-	lineageSvc := governance.NewLineageService(lineageRepo)
-	searchSvc := catalog.NewSearchService(searchRepo)
-	queryHistorySvc := governance.NewQueryHistoryService(queryHistoryRepo)
-	catalogRepo := repository.NewCatalogRepo(metaDB, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
-	viewSvc := catalog.NewViewService(viewRepo, catalogRepo, authSvc, auditRepo)
-
 	handler := api.NewHandler(
-		querySvc, principalSvc, groupSvc, grantSvc,
-		rowFilterSvc, columnMaskSvc, auditSvc,
+		svcs.query, svcs.principal, svcs.group, svcs.grant,
+		svcs.rowFilter, svcs.columnMask, svcs.audit,
 		manifestSvc, nil, // catalogSvc=nil — integration tests only hit /v1/manifest
-		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
+		svcs.queryHistory, svcs.lineage, svcs.search, svcs.tag, svcs.view,
 		nil,                     // ingestionSvc
 		nil, nil, nil, nil, nil, // storageCredSvc, extLocationSvc, volumeSvc, computeEndpointSvc, apiKeySvc
 	)
@@ -628,7 +713,7 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 
 	// Router with REAL auth middleware (API key via SHA-256 hash lookup)
 	r := chi.NewRouter()
-	r.Use(middleware.AuthMiddleware([]byte("test-jwt-secret"), apiKeyRepo))
+	r.Use(middleware.AuthMiddleware([]byte("test-jwt-secret"), repos.apiKey))
 	r.Route("/v1", func(r chi.Router) {
 		api.HandlerFromMux(strictHandler, r)
 	})
@@ -637,6 +722,13 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 	t.Cleanup(srv.Close)
 
 	return &testEnv{Server: srv, Keys: keys}
+}
+
+// setupIntegrationServer creates a fully-wired in-process Go API server with
+// real auth middleware, real S3 presigner, and seeded RBAC + DuckLake metadata.
+func setupIntegrationServer(t *testing.T) *testEnv {
+	t.Helper()
+	return setupManifestServer(t, modeS3)
 }
 
 // ---------------------------------------------------------------------------
@@ -675,93 +767,7 @@ func testdataPath(name string) string {
 // directly. Requires extension binary + DuckDB CLI, but NOT S3 credentials.
 func setupLocalExtensionServer(t *testing.T) *testEnv {
 	t.Helper()
-
-	// Create temp directory for local data files
-	tmpDir := t.TempDir()
-	dataPath := filepath.Join(tmpDir, "lake_data") + "/"
-	if err := os.MkdirAll(filepath.Join(tmpDir, "lake_data"), 0o755); err != nil {
-		t.Fatalf("mkdir lake_data: %v", err)
-	}
-
-	// Copy testdata/titanic.parquet into the expected ducklake data file location.
-	// The seed metadata references this filename as a relative path under data_path.
-	copyFile(t,
-		testdataPath("titanic.parquet"),
-		filepath.Join(tmpDir, "lake_data", ducklakeDataFileName),
-	)
-
-	// Temp SQLite with hardened connection (WAL, busy_timeout, etc.)
-	metaDB, _ := internaldb.OpenTestSQLite(t)
-
-	// Seed DuckLake metadata with LOCAL data_path
-	seedDuckLakeMetadata(t, metaDB, dataPath)
-	keys := seedRBAC(t, metaDB)
-
-	// Build repositories
-	principalRepo := repository.NewPrincipalRepo(metaDB)
-	groupRepo := repository.NewGroupRepo(metaDB)
-	grantRepo := repository.NewGrantRepo(metaDB)
-	rowFilterRepo := repository.NewRowFilterRepo(metaDB)
-	columnMaskRepo := repository.NewColumnMaskRepo(metaDB)
-	auditRepo := repository.NewAuditRepo(metaDB)
-	introspectionRepo := repository.NewIntrospectionRepo(metaDB)
-	apiKeyRepo := repository.NewAPIKeyRepo(metaDB)
-	tagRepo := repository.NewTagRepo(metaDB)
-	lineageRepo := repository.NewLineageRepo(metaDB)
-	searchRepo := repository.NewSearchRepo(metaDB)
-	queryHistoryRepo := repository.NewQueryHistoryRepo(metaDB)
-	viewRepo := repository.NewViewRepo(metaDB)
-
-	// Build services
-	authSvc := security.NewAuthorizationService(
-		principalRepo, groupRepo, grantRepo,
-		rowFilterRepo, columnMaskRepo, introspectionRepo,
-		nil,
-	)
-
-	// LOCAL presigner — returns paths as-is (no S3 presigning)
-	metastoreRepo := repository.NewMetastoreRepo(metaDB)
-	manifestSvc := query.NewManifestService(
-		metastoreRepo, authSvc, &localPresigner{}, introspectionRepo, auditRepo,
-		nil, nil,
-	)
-
-	// Remaining services (querySvc gets nil engine — we never hit /v1/query)
-	querySvc := query.NewQueryService(nil, auditRepo, nil)
-	principalSvc := security.NewPrincipalService(principalRepo, auditRepo)
-	groupSvc := security.NewGroupService(groupRepo, auditRepo)
-	grantSvc := security.NewGrantService(grantRepo, auditRepo)
-	rowFilterSvc := security.NewRowFilterService(rowFilterRepo, auditRepo)
-	columnMaskSvc := security.NewColumnMaskService(columnMaskRepo, auditRepo)
-	auditSvc := governance.NewAuditService(auditRepo)
-	tagSvc := governance.NewTagService(tagRepo, auditRepo)
-	lineageSvc := governance.NewLineageService(lineageRepo)
-	searchSvc := catalog.NewSearchService(searchRepo)
-	queryHistorySvc := governance.NewQueryHistoryService(queryHistoryRepo)
-	catalogRepo := repository.NewCatalogRepo(metaDB, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
-	viewSvc := catalog.NewViewService(viewRepo, catalogRepo, authSvc, auditRepo)
-
-	handler := api.NewHandler(
-		querySvc, principalSvc, groupSvc, grantSvc,
-		rowFilterSvc, columnMaskSvc, auditSvc,
-		manifestSvc, nil, // catalogSvc=nil — extension tests only hit /v1/manifest
-		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
-		nil,                     // ingestionSvc
-		nil, nil, nil, nil, nil, // storageCredSvc, extLocationSvc, volumeSvc, computeEndpointSvc, apiKeySvc
-	)
-	strictHandler := api.NewStrictHandler(handler, nil)
-
-	// Router with REAL auth middleware (API key via SHA-256 hash lookup)
-	r := chi.NewRouter()
-	r.Use(middleware.AuthMiddleware([]byte("test-jwt-secret"), apiKeyRepo))
-	r.Route("/v1", func(r chi.Router) {
-		api.HandlerFromMux(strictHandler, r)
-	})
-
-	srv := httptest.NewServer(r)
-	t.Cleanup(srv.Close)
-
-	return &testEnv{Server: srv, Keys: keys}
+	return setupManifestServer(t, modeLocal)
 }
 
 // ---------------------------------------------------------------------------
@@ -1053,51 +1059,39 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	// Seed RBAC data (principals, groups, grants, row filters, column masks, API keys)
 	keys := seedRBAC(t, metaDB)
 
-	// Build repositories
-	principalRepo := repository.NewPrincipalRepo(metaDB)
-	groupRepo := repository.NewGroupRepo(metaDB)
-	grantRepo := repository.NewGrantRepo(metaDB)
-	rowFilterRepo := repository.NewRowFilterRepo(metaDB)
-	columnMaskRepo := repository.NewColumnMaskRepo(metaDB)
-	auditRepo := repository.NewAuditRepo(metaDB)
-	introspectionRepo := repository.NewIntrospectionRepo(metaDB)
-	apiKeyRepo := repository.NewAPIKeyRepo(metaDB)
-	tagRepo := repository.NewTagRepo(metaDB)
-	lineageRepo := repository.NewLineageRepo(metaDB)
-	searchRepo := repository.NewSearchRepo(metaDB)
-	queryHistoryRepo := repository.NewQueryHistoryRepo(metaDB)
-	viewRepo := repository.NewViewRepo(metaDB)
+	repos := buildAllRepos(metaDB)
 
 	// Build authorization service unconditionally (needed by viewSvc)
 	authSvc := security.NewAuthorizationService(
-		principalRepo, groupRepo, grantRepo,
-		rowFilterRepo, columnMaskRepo, introspectionRepo,
+		repos.principal, repos.group, repos.grant,
+		repos.rowFilter, repos.columnMask, repos.introspection,
 		nil,
 	)
 
 	// Build services
-	principalSvc := security.NewPrincipalService(principalRepo, auditRepo)
-	groupSvc := security.NewGroupService(groupRepo, auditRepo)
-	grantSvc := security.NewGrantService(grantRepo, auditRepo)
-	rowFilterSvc := security.NewRowFilterService(rowFilterRepo, auditRepo)
-	columnMaskSvc := security.NewColumnMaskService(columnMaskRepo, auditRepo)
-	auditSvc := governance.NewAuditService(auditRepo)
-	tagSvc := governance.NewTagService(tagRepo, auditRepo)
-	lineageSvc := governance.NewLineageService(lineageRepo)
-	searchSvc := catalog.NewSearchService(searchRepo)
-	queryHistorySvc := governance.NewQueryHistoryService(queryHistoryRepo)
+	principalSvc := security.NewPrincipalService(repos.principal, repos.audit)
+	groupSvc := security.NewGroupService(repos.group, repos.audit)
+	grantSvc := security.NewGrantService(repos.grant, repos.audit)
+	rowFilterSvc := security.NewRowFilterService(repos.rowFilter, repos.audit)
+	columnMaskSvc := security.NewColumnMaskService(repos.columnMask, repos.audit)
+	auditSvc := governance.NewAuditService(repos.audit)
+	tagSvc := governance.NewTagService(repos.tag, repos.audit)
+	lineageSvc := governance.NewLineageService(repos.lineage)
+	searchSvc := catalog.NewSearchService(repos.search)
+	queryHistorySvc := governance.NewQueryHistoryService(repos.queryHistory)
 
 	// querySvc gets nil engine — no /v1/query support unless WithDuckLake+engine
-	querySvc := query.NewQueryService(nil, auditRepo, nil)
+	querySvc := query.NewQueryService(nil, repos.audit, nil)
 
 	// catalogRepo with duckDB=nil is safe — GetSchema only reads ducklake_schema from metaDB
-	catalogRepo := repository.NewCatalogRepo(metaDB, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
-	viewSvc := catalog.NewViewService(viewRepo, catalogRepo, authSvc, auditRepo)
+	discardLogger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	catalogRepo := repository.NewCatalogRepo(metaDB, nil, nil, discardLogger)
+	viewSvc := catalog.NewViewService(repos.view, catalogRepo, authSvc, repos.audit)
 
 	var duckDB *sql.DB
 	var manifestSvc *query.ManifestService
 	tableStatsRepo := repository.NewTableStatisticsRepo(metaDB)
-	catalogSvc := catalog.NewCatalogService(catalogRepo, authSvc, auditRepo, tagRepo, tableStatsRepo, nil)
+	catalogSvc := catalog.NewCatalogService(catalogRepo, authSvc, repos.audit, repos.tag, tableStatsRepo, nil)
 
 	if opts.WithDuckLake {
 		env := setupLocalDuckLake(t)
@@ -1113,42 +1107,30 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		keys = seedRBAC(t, metaDB)
 
 		// Rebuild repos on the new metaDB
-		principalRepo = repository.NewPrincipalRepo(metaDB)
-		groupRepo = repository.NewGroupRepo(metaDB)
-		grantRepo = repository.NewGrantRepo(metaDB)
-		rowFilterRepo = repository.NewRowFilterRepo(metaDB)
-		columnMaskRepo = repository.NewColumnMaskRepo(metaDB)
-		auditRepo = repository.NewAuditRepo(metaDB)
-		introspectionRepo = repository.NewIntrospectionRepo(metaDB)
-		apiKeyRepo = repository.NewAPIKeyRepo(metaDB)
-		tagRepo = repository.NewTagRepo(metaDB)
-		lineageRepo = repository.NewLineageRepo(metaDB)
-		searchRepo = repository.NewSearchRepo(metaDB)
-		queryHistoryRepo = repository.NewQueryHistoryRepo(metaDB)
-		viewRepo = repository.NewViewRepo(metaDB)
+		repos = buildAllRepos(metaDB)
 
 		// Rebuild services on new repos
 		authSvc = security.NewAuthorizationService(
-			principalRepo, groupRepo, grantRepo,
-			rowFilterRepo, columnMaskRepo, introspectionRepo,
+			repos.principal, repos.group, repos.grant,
+			repos.rowFilter, repos.columnMask, repos.introspection,
 			nil,
 		)
-		principalSvc = security.NewPrincipalService(principalRepo, auditRepo)
-		groupSvc = security.NewGroupService(groupRepo, auditRepo)
-		grantSvc = security.NewGrantService(grantRepo, auditRepo)
-		rowFilterSvc = security.NewRowFilterService(rowFilterRepo, auditRepo)
-		columnMaskSvc = security.NewColumnMaskService(columnMaskRepo, auditRepo)
-		auditSvc = governance.NewAuditService(auditRepo)
-		querySvc = query.NewQueryService(nil, auditRepo, nil)
-		tagSvc = governance.NewTagService(tagRepo, auditRepo)
-		lineageSvc = governance.NewLineageService(lineageRepo)
-		searchSvc = catalog.NewSearchService(searchRepo)
-		queryHistorySvc = governance.NewQueryHistoryService(queryHistoryRepo)
+		principalSvc = security.NewPrincipalService(repos.principal, repos.audit)
+		groupSvc = security.NewGroupService(repos.group, repos.audit)
+		grantSvc = security.NewGrantService(repos.grant, repos.audit)
+		rowFilterSvc = security.NewRowFilterService(repos.rowFilter, repos.audit)
+		columnMaskSvc = security.NewColumnMaskService(repos.columnMask, repos.audit)
+		auditSvc = governance.NewAuditService(repos.audit)
+		querySvc = query.NewQueryService(nil, repos.audit, nil)
+		tagSvc = governance.NewTagService(repos.tag, repos.audit)
+		lineageSvc = governance.NewLineageService(repos.lineage)
+		searchSvc = catalog.NewSearchService(repos.search)
+		queryHistorySvc = governance.NewQueryHistoryService(repos.queryHistory)
 
-		catalogRepo = repository.NewCatalogRepo(metaDB, duckDB, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
-		viewSvc = catalog.NewViewService(viewRepo, catalogRepo, authSvc, auditRepo)
+		catalogRepo = repository.NewCatalogRepo(metaDB, duckDB, nil, discardLogger)
+		viewSvc = catalog.NewViewService(repos.view, catalogRepo, authSvc, repos.audit)
 		tableStatsRepo = repository.NewTableStatisticsRepo(metaDB)
-		catalogSvc = catalog.NewCatalogService(catalogRepo, authSvc, auditRepo, tagRepo, tableStatsRepo, nil)
+		catalogSvc = catalog.NewCatalogService(catalogRepo, authSvc, repos.audit, repos.tag, tableStatsRepo, nil)
 
 		// manifestSvc needs S3 presigner — leave nil for non-S3 tests
 	}
@@ -1165,7 +1147,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		}
 		storageCredRepo := repository.NewStorageCredentialRepo(metaDB, enc)
 		extLocationRepo := repository.NewExternalLocationRepo(metaDB)
-		storageCredSvc = storage.NewStorageCredentialService(storageCredRepo, authSvc, auditRepo)
+		storageCredSvc = storage.NewStorageCredentialService(storageCredRepo, authSvc, repos.audit)
 
 		// ExternalLocationService needs a DuckDB for CREATE SECRET / DROP SECRET.
 		// If duckDB is nil (no WithDuckLake), open a plain in-memory DuckDB.
@@ -1179,8 +1161,8 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		}
 		secretMgr := engine.NewDuckDBSecretManager(extDuckDB)
 		extLocationSvc = storage.NewExternalLocationService(
-			extLocationRepo, storageCredRepo, authSvc, auditRepo,
-			secretMgr, secretMgr, "", opts.CatalogAttached, slog.New(slog.NewTextHandler(io.Discard, nil)),
+			extLocationRepo, storageCredRepo, authSvc, repos.audit,
+			secretMgr, secretMgr, "", opts.CatalogAttached, discardLogger,
 		)
 	}
 
@@ -1207,28 +1189,27 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		}
 
 		computeEndpointRepo := repository.NewComputeEndpointRepo(metaDB, enc)
-		computeEndpointSvc = svccompute.NewComputeEndpointService(computeEndpointRepo, authSvc, auditRepo)
+		computeEndpointSvc = svccompute.NewComputeEndpointService(computeEndpointRepo, authSvc, repos.audit)
 
 		// Build full resolver: local executor + compute repo + principal/group repos
 		localExec := compute.NewLocalExecutor(engineDuckDB)
 		remoteCache := compute.NewRemoteCache(engineDuckDB)
 		resolver := compute.NewResolver(
-			localExec, computeEndpointRepo, principalRepo, groupRepo,
-			remoteCache, slog.New(slog.NewTextHandler(io.Discard, nil)),
+			localExec, computeEndpointRepo, repos.principal, repos.group,
+			remoteCache, discardLogger,
 		)
 
 		// Build SecureEngine with the resolver
-		eng := engine.NewSecureEngine(engineDuckDB, authSvc, resolver, nil,
-			slog.New(slog.NewTextHandler(io.Discard, nil)))
+		eng := engine.NewSecureEngine(engineDuckDB, authSvc, resolver, nil, discardLogger)
 
 		// Rebuild querySvc with the real engine
-		querySvc = query.NewQueryService(eng, auditRepo, lineageRepo)
+		querySvc = query.NewQueryService(eng, repos.audit, repos.lineage)
 	}
 
 	// Optionally wire APIKeyService
 	var apiKeySvc *security.APIKeyService
 	if opts.WithAPIKeyService {
-		apiKeySvc = security.NewAPIKeyService(apiKeyRepo, auditRepo)
+		apiKeySvc = security.NewAPIKeyService(repos.apiKey, repos.audit)
 	}
 
 	handler := api.NewHandler(
@@ -1265,8 +1246,8 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	}
 	authenticator := middleware.NewAuthenticator(
 		validator,
-		apiKeyRepo,
-		principalRepo,
+		repos.apiKey,
+		repos.principal,
 		provisioner,
 		authCfg,
 		nil, // logger
@@ -1565,6 +1546,117 @@ func seedMultiTableMetadata(t *testing.T, db *sql.DB, dataPath string) {
 	}
 }
 
+// ---------------------------------------------------------------------------
+// Seeding helper: seedPrincipalWithAccess
+// ---------------------------------------------------------------------------
+
+// principalAccessOpts describes how to seed a single principal with group,
+// grants, optional row filters, optional column masks, and an API key.
+type principalAccessOpts struct {
+	PrincipalName string
+	GroupName     string
+	APIKeyPlain   string
+	APIKeyLabel   string
+
+	// Grants is a list of (securableType, securableID, privilege) tuples.
+	Grants []grantSpec
+
+	// RowFilters is a list of (tableID, filterSQL) to create and bind.
+	RowFilters []rowFilterSpec
+
+	// ColumnMasks is a list of (tableID, columnName, maskExpr, seeOriginal) to create and bind.
+	ColumnMasks []columnMaskSpec
+}
+
+type grantSpec struct {
+	SecurableType string
+	SecurableID   int64
+	Privilege     string
+}
+
+type rowFilterSpec struct {
+	TableID   int64
+	FilterSQL string
+}
+
+type columnMaskSpec struct {
+	TableID        int64
+	ColumnName     string
+	MaskExpression string
+	SeeOriginal    int64
+}
+
+// seedPrincipalWithAccess creates a principal, group, membership, grants,
+// row filters, column masks, and an API key in one call. Returns the group ID
+// for further composition if needed.
+func seedPrincipalWithAccess(t *testing.T, q *dbstore.Queries, opts principalAccessOpts) int64 {
+	t.Helper()
+
+	principal, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+		Name: opts.PrincipalName, Type: "user", IsAdmin: 0,
+	})
+	if err != nil {
+		t.Fatalf("create %s: %v", opts.PrincipalName, err)
+	}
+
+	group, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: opts.GroupName})
+	if err != nil {
+		t.Fatalf("create %s group: %v", opts.GroupName, err)
+	}
+
+	if err := q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{
+		GroupID: group.ID, MemberType: "user", MemberID: principal.ID,
+	}); err != nil {
+		t.Fatalf("add %s to %s: %v", opts.PrincipalName, opts.GroupName, err)
+	}
+
+	for _, g := range opts.Grants {
+		if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+			PrincipalID: group.ID, PrincipalType: "group",
+			SecurableType: g.SecurableType, SecurableID: g.SecurableID, Privilege: g.Privilege,
+		}); err != nil {
+			t.Fatalf("grant %s %s on %s(%d): %v", opts.GroupName, g.Privilege, g.SecurableType, g.SecurableID, err)
+		}
+	}
+
+	for _, rf := range opts.RowFilters {
+		filter, err := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
+			TableID: rf.TableID, FilterSql: rf.FilterSQL,
+		})
+		if err != nil {
+			t.Fatalf("create row filter %q: %v", rf.FilterSQL, err)
+		}
+		if err := q.BindRowFilter(ctx, dbstore.BindRowFilterParams{
+			RowFilterID: filter.ID, PrincipalID: group.ID, PrincipalType: "group",
+		}); err != nil {
+			t.Fatalf("bind row filter %q to %s: %v", rf.FilterSQL, opts.GroupName, err)
+		}
+	}
+
+	for _, cm := range opts.ColumnMasks {
+		mask, err := q.CreateColumnMask(ctx, dbstore.CreateColumnMaskParams{
+			TableID: cm.TableID, ColumnName: cm.ColumnName, MaskExpression: cm.MaskExpression,
+		})
+		if err != nil {
+			t.Fatalf("create column mask %s.%s: %v", cm.ColumnName, cm.MaskExpression, err)
+		}
+		if err := q.BindColumnMask(ctx, dbstore.BindColumnMaskParams{
+			ColumnMaskID: mask.ID, PrincipalID: group.ID,
+			PrincipalType: "group", SeeOriginal: cm.SeeOriginal,
+		}); err != nil {
+			t.Fatalf("bind column mask %s to %s: %v", cm.ColumnName, opts.GroupName, err)
+		}
+	}
+
+	if _, err := q.CreateAPIKey(ctx, dbstore.CreateAPIKeyParams{
+		KeyHash: sha256Hex(opts.APIKeyPlain), PrincipalID: principal.ID, Name: opts.APIKeyLabel,
+	}); err != nil {
+		t.Fatalf("create %s API key: %v", opts.PrincipalName, err)
+	}
+
+	return group.ID
+}
+
 // seedMultiTableRBAC seeds base RBAC plus 4 additional principals with
 // table-specific grants, row filters, and column masks.
 func seedMultiTableRBAC(t *testing.T, db *sql.DB) multiTableKeys {
@@ -1572,248 +1664,73 @@ func seedMultiTableRBAC(t *testing.T, db *sql.DB) multiTableKeys {
 	base := seedRBAC(t, db)
 	q := dbstore.New(db)
 
-	// --- dept_viewer: SELECT on departments only ---
-	deptViewer, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
-		Name: "dept_viewer", Type: "user", IsAdmin: 0,
-	})
-	if err != nil {
-		t.Fatalf("create dept_viewer: %v", err)
-	}
-	deptViewerGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "dept_viewers"})
-	if err != nil {
-		t.Fatalf("create dept_viewers group: %v", err)
-	}
-	if err := q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{
-		GroupID: deptViewerGroup.ID, MemberType: "user", MemberID: deptViewer.ID,
-	}); err != nil {
-		t.Fatalf("add dept_viewer to group: %v", err)
-	}
-	// USAGE on schema + SELECT on departments (table_id=2) only
-	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: deptViewerGroup.ID, PrincipalType: "group",
-		SecurableType: "schema", SecurableID: 0, Privilege: "USAGE",
-	}); err != nil {
-		t.Fatalf("grant dept_viewers USAGE: %v", err)
-	}
-	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: deptViewerGroup.ID, PrincipalType: "group",
-		SecurableType: "table", SecurableID: 2, Privilege: "SELECT",
-	}); err != nil {
-		t.Fatalf("grant dept_viewers SELECT on departments: %v", err)
-	}
-
-	// --- us_only_viewer: SELECT on both tables, RLS region='US' on departments, "Embarked"='S' on titanic ---
-	usOnlyViewer, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
-		Name: "us_only_viewer", Type: "user", IsAdmin: 0,
-	})
-	if err != nil {
-		t.Fatalf("create us_only_viewer: %v", err)
-	}
-	usGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "us_only"})
-	if err != nil {
-		t.Fatalf("create us_only group: %v", err)
-	}
-	if err := q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{
-		GroupID: usGroup.ID, MemberType: "user", MemberID: usOnlyViewer.ID,
-	}); err != nil {
-		t.Fatalf("add us_only_viewer to group: %v", err)
-	}
-	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: usGroup.ID, PrincipalType: "group",
-		SecurableType: "schema", SecurableID: 0, Privilege: "USAGE",
-	}); err != nil {
-		t.Fatalf("grant us_only USAGE: %v", err)
-	}
-	// SELECT on both tables
-	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: usGroup.ID, PrincipalType: "group",
-		SecurableType: "table", SecurableID: 1, Privilege: "SELECT",
-	}); err != nil {
-		t.Fatalf("grant us_only SELECT titanic: %v", err)
-	}
-	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: usGroup.ID, PrincipalType: "group",
-		SecurableType: "table", SecurableID: 2, Privilege: "SELECT",
-	}); err != nil {
-		t.Fatalf("grant us_only SELECT departments: %v", err)
-	}
-	// RLS: region = 'US' on departments (table_id=2)
-	deptFilter, err := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
-		TableID: 2, FilterSql: `"region" = 'US'`,
-	})
-	if err != nil {
-		t.Fatalf("create dept region filter: %v", err)
-	}
-	if err := q.BindRowFilter(ctx, dbstore.BindRowFilterParams{
-		RowFilterID: deptFilter.ID, PrincipalID: usGroup.ID, PrincipalType: "group",
-	}); err != nil {
-		t.Fatalf("bind dept filter to us_only: %v", err)
-	}
-	// RLS: "Embarked" = 'S' on titanic (table_id=1)
-	titanicFilter, err := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
-		TableID: 1, FilterSql: `"Embarked" = 'S'`,
-	})
-	if err != nil {
-		t.Fatalf("create titanic embarked filter: %v", err)
-	}
-	if err := q.BindRowFilter(ctx, dbstore.BindRowFilterParams{
-		RowFilterID: titanicFilter.ID, PrincipalID: usGroup.ID, PrincipalType: "group",
-	}); err != nil {
-		t.Fatalf("bind titanic filter to us_only: %v", err)
-	}
-
-	// --- masked_viewer: SELECT on both, column masks on titanic + departments ---
-	maskedViewer, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
-		Name: "masked_viewer", Type: "user", IsAdmin: 0,
-	})
-	if err != nil {
-		t.Fatalf("create masked_viewer: %v", err)
-	}
-	maskedGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "masked_viewers"})
-	if err != nil {
-		t.Fatalf("create masked_viewers group: %v", err)
-	}
-	if err := q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{
-		GroupID: maskedGroup.ID, MemberType: "user", MemberID: maskedViewer.ID,
-	}); err != nil {
-		t.Fatalf("add masked_viewer to group: %v", err)
-	}
-	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: maskedGroup.ID, PrincipalType: "group",
-		SecurableType: "schema", SecurableID: 0, Privilege: "USAGE",
-	}); err != nil {
-		t.Fatalf("grant masked_viewers USAGE: %v", err)
-	}
-	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: maskedGroup.ID, PrincipalType: "group",
-		SecurableType: "table", SecurableID: 1, Privilege: "SELECT",
-	}); err != nil {
-		t.Fatalf("grant masked_viewers SELECT titanic: %v", err)
-	}
-	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: maskedGroup.ID, PrincipalType: "group",
-		SecurableType: "table", SecurableID: 2, Privilege: "SELECT",
-	}); err != nil {
-		t.Fatalf("grant masked_viewers SELECT departments: %v", err)
-	}
-	// Column mask: Fare → ROUND("Fare"/10)*10 on titanic
-	fareMask, err := q.CreateColumnMask(ctx, dbstore.CreateColumnMaskParams{
-		TableID: 1, ColumnName: "Fare", MaskExpression: `ROUND("Fare"/10)*10`,
-	})
-	if err != nil {
-		t.Fatalf("create fare mask: %v", err)
-	}
-	if err := q.BindColumnMask(ctx, dbstore.BindColumnMaskParams{
-		ColumnMaskID: fareMask.ID, PrincipalID: maskedGroup.ID,
-		PrincipalType: "group", SeeOriginal: 0,
-	}); err != nil {
-		t.Fatalf("bind fare mask to masked_viewers: %v", err)
-	}
-	// Column mask: Name → '***' on titanic
-	nameMaskForMasked, err := q.CreateColumnMask(ctx, dbstore.CreateColumnMaskParams{
-		TableID: 1, ColumnName: "Name", MaskExpression: `'***'`,
-	})
-	if err != nil {
-		t.Fatalf("create name mask for masked_viewers: %v", err)
-	}
-	if err := q.BindColumnMask(ctx, dbstore.BindColumnMaskParams{
-		ColumnMaskID: nameMaskForMasked.ID, PrincipalID: maskedGroup.ID,
-		PrincipalType: "group", SeeOriginal: 0,
-	}); err != nil {
-		t.Fatalf("bind name mask to masked_viewers: %v", err)
-	}
-	// Column mask: avg_salary → 0 on departments
-	salaryMask, err := q.CreateColumnMask(ctx, dbstore.CreateColumnMaskParams{
-		TableID: 2, ColumnName: "avg_salary", MaskExpression: `0`,
-	})
-	if err != nil {
-		t.Fatalf("create salary mask: %v", err)
-	}
-	if err := q.BindColumnMask(ctx, dbstore.BindColumnMaskParams{
-		ColumnMaskID: salaryMask.ID, PrincipalID: maskedGroup.ID,
-		PrincipalType: "group", SeeOriginal: 0,
-	}); err != nil {
-		t.Fatalf("bind salary mask to masked_viewers: %v", err)
-	}
-
-	// --- multi_filter_user: SELECT on titanic, TWO RLS filters (Pclass=1 AND Survived=1) ---
-	multiFilterUser, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
-		Name: "multi_filter_user", Type: "user", IsAdmin: 0,
-	})
-	if err != nil {
-		t.Fatalf("create multi_filter_user: %v", err)
-	}
-	multiFilterGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "multi_filter"})
-	if err != nil {
-		t.Fatalf("create multi_filter group: %v", err)
-	}
-	if err := q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{
-		GroupID: multiFilterGroup.ID, MemberType: "user", MemberID: multiFilterUser.ID,
-	}); err != nil {
-		t.Fatalf("add multi_filter_user to group: %v", err)
-	}
-	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: multiFilterGroup.ID, PrincipalType: "group",
-		SecurableType: "schema", SecurableID: 0, Privilege: "USAGE",
-	}); err != nil {
-		t.Fatalf("grant multi_filter USAGE: %v", err)
-	}
-	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: multiFilterGroup.ID, PrincipalType: "group",
-		SecurableType: "table", SecurableID: 1, Privilege: "SELECT",
-	}); err != nil {
-		t.Fatalf("grant multi_filter SELECT titanic: %v", err)
-	}
-	// Two RLS filters on titanic
-	pclassFilter, err := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
-		TableID: 1, FilterSql: `"Pclass" = 1`,
-	})
-	if err != nil {
-		t.Fatalf("create pclass filter: %v", err)
-	}
-	if err := q.BindRowFilter(ctx, dbstore.BindRowFilterParams{
-		RowFilterID: pclassFilter.ID, PrincipalID: multiFilterGroup.ID, PrincipalType: "group",
-	}); err != nil {
-		t.Fatalf("bind pclass filter to multi_filter: %v", err)
-	}
-	survivedFilter, err := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
-		TableID: 1, FilterSql: `"Survived" = 1`,
-	})
-	if err != nil {
-		t.Fatalf("create survived filter: %v", err)
-	}
-	if err := q.BindRowFilter(ctx, dbstore.BindRowFilterParams{
-		RowFilterID: survivedFilter.ID, PrincipalID: multiFilterGroup.ID, PrincipalType: "group",
-	}); err != nil {
-		t.Fatalf("bind survived filter to multi_filter: %v", err)
-	}
-
-	// --- API Keys for new principals ---
 	deptViewerKey := "test-deptviewer-key"
 	usOnlyKey := "test-usonly-key"
 	maskedKey := "test-masked-key"
 	multiFilterKey := "test-multifilter-key"
 
-	if _, err := q.CreateAPIKey(ctx, dbstore.CreateAPIKeyParams{
-		KeyHash: sha256Hex(deptViewerKey), PrincipalID: deptViewer.ID, Name: "deptviewer-test",
-	}); err != nil {
-		t.Fatalf("create dept_viewer API key: %v", err)
-	}
-	if _, err := q.CreateAPIKey(ctx, dbstore.CreateAPIKeyParams{
-		KeyHash: sha256Hex(usOnlyKey), PrincipalID: usOnlyViewer.ID, Name: "usonly-test",
-	}); err != nil {
-		t.Fatalf("create us_only_viewer API key: %v", err)
-	}
-	if _, err := q.CreateAPIKey(ctx, dbstore.CreateAPIKeyParams{
-		KeyHash: sha256Hex(maskedKey), PrincipalID: maskedViewer.ID, Name: "masked-test",
-	}); err != nil {
-		t.Fatalf("create masked_viewer API key: %v", err)
-	}
-	if _, err := q.CreateAPIKey(ctx, dbstore.CreateAPIKeyParams{
-		KeyHash: sha256Hex(multiFilterKey), PrincipalID: multiFilterUser.ID, Name: "multifilter-test",
-	}); err != nil {
-		t.Fatalf("create multi_filter_user API key: %v", err)
-	}
+	// --- dept_viewer: SELECT on departments only ---
+	seedPrincipalWithAccess(t, q, principalAccessOpts{
+		PrincipalName: "dept_viewer",
+		GroupName:     "dept_viewers",
+		APIKeyPlain:   deptViewerKey,
+		APIKeyLabel:   "deptviewer-test",
+		Grants: []grantSpec{
+			{"schema", 0, "USAGE"},
+			{"table", 2, "SELECT"},
+		},
+	})
+
+	// --- us_only_viewer: SELECT on both tables, RLS on departments + titanic ---
+	seedPrincipalWithAccess(t, q, principalAccessOpts{
+		PrincipalName: "us_only_viewer",
+		GroupName:     "us_only",
+		APIKeyPlain:   usOnlyKey,
+		APIKeyLabel:   "usonly-test",
+		Grants: []grantSpec{
+			{"schema", 0, "USAGE"},
+			{"table", 1, "SELECT"},
+			{"table", 2, "SELECT"},
+		},
+		RowFilters: []rowFilterSpec{
+			{TableID: 2, FilterSQL: `"region" = 'US'`},
+			{TableID: 1, FilterSQL: `"Embarked" = 'S'`},
+		},
+	})
+
+	// --- masked_viewer: SELECT on both, column masks on titanic + departments ---
+	seedPrincipalWithAccess(t, q, principalAccessOpts{
+		PrincipalName: "masked_viewer",
+		GroupName:     "masked_viewers",
+		APIKeyPlain:   maskedKey,
+		APIKeyLabel:   "masked-test",
+		Grants: []grantSpec{
+			{"schema", 0, "USAGE"},
+			{"table", 1, "SELECT"},
+			{"table", 2, "SELECT"},
+		},
+		ColumnMasks: []columnMaskSpec{
+			{TableID: 1, ColumnName: "Fare", MaskExpression: `ROUND("Fare"/10)*10`, SeeOriginal: 0},
+			{TableID: 1, ColumnName: "Name", MaskExpression: `'***'`, SeeOriginal: 0},
+			{TableID: 2, ColumnName: "avg_salary", MaskExpression: `0`, SeeOriginal: 0},
+		},
+	})
+
+	// --- multi_filter_user: SELECT on titanic, TWO RLS filters (Pclass=1 AND Survived=1) ---
+	seedPrincipalWithAccess(t, q, principalAccessOpts{
+		PrincipalName: "multi_filter_user",
+		GroupName:     "multi_filter",
+		APIKeyPlain:   multiFilterKey,
+		APIKeyLabel:   "multifilter-test",
+		Grants: []grantSpec{
+			{"schema", 0, "USAGE"},
+			{"table", 1, "SELECT"},
+		},
+		RowFilters: []rowFilterSpec{
+			{TableID: 1, FilterSQL: `"Pclass" = 1`},
+			{TableID: 1, FilterSQL: `"Survived" = 1`},
+		},
+	})
 
 	return multiTableKeys{
 		apiKeys:         base,
@@ -1882,56 +1799,28 @@ func setupMultiTableLocalServer(t *testing.T) *multiTableTestEnv {
 	seedMultiTableMetadata(t, metaDB, dataPath)
 	keys := seedMultiTableRBAC(t, metaDB)
 
-	// Build repos and services (same pattern as setupLocalExtensionServer)
-	principalRepo := repository.NewPrincipalRepo(metaDB)
-	groupRepo := repository.NewGroupRepo(metaDB)
-	grantRepo := repository.NewGrantRepo(metaDB)
-	rowFilterRepo := repository.NewRowFilterRepo(metaDB)
-	columnMaskRepo := repository.NewColumnMaskRepo(metaDB)
-	auditRepo := repository.NewAuditRepo(metaDB)
-	introspectionRepo := repository.NewIntrospectionRepo(metaDB)
-	apiKeyRepo := repository.NewAPIKeyRepo(metaDB)
-	tagRepo := repository.NewTagRepo(metaDB)
-	lineageRepo := repository.NewLineageRepo(metaDB)
-	searchRepo := repository.NewSearchRepo(metaDB)
-	queryHistoryRepo := repository.NewQueryHistoryRepo(metaDB)
-	viewRepo := repository.NewViewRepo(metaDB)
+	// Build repos and services
+	repos := buildAllRepos(metaDB)
+	svcs := buildCoreServices(repos, metaDB, nil)
 
-	authSvc := service.NewAuthorizationService(
-		principalRepo, groupRepo, grantRepo,
-		rowFilterRepo, columnMaskRepo, introspectionRepo,
+	metastoreRepo := repository.NewMetastoreRepo(metaDB)
+	manifestSvc := query.NewManifestService(
+		metastoreRepo, svcs.auth, &localPresigner{}, repos.introspection, repos.audit,
+		nil, nil,
 	)
-
-	manifestSvc := service.NewManifestService(
-		metaDB, authSvc, &localPresigner{}, introspectionRepo, auditRepo,
-	)
-
-	querySvc := service.NewQueryService(nil, auditRepo, nil)
-	principalSvc := service.NewPrincipalService(principalRepo, auditRepo)
-	groupSvc := service.NewGroupService(groupRepo, auditRepo)
-	grantSvc := service.NewGrantService(grantRepo, auditRepo)
-	rowFilterSvc := service.NewRowFilterService(rowFilterRepo, auditRepo)
-	columnMaskSvc := service.NewColumnMaskService(columnMaskRepo, auditRepo)
-	auditSvc := service.NewAuditService(auditRepo)
-	tagSvc := service.NewTagService(tagRepo, auditRepo)
-	lineageSvc := service.NewLineageService(lineageRepo)
-	searchSvc := service.NewSearchService(searchRepo)
-	queryHistorySvc := service.NewQueryHistoryService(queryHistoryRepo)
-	catalogRepo := repository.NewCatalogRepo(metaDB, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
-	viewSvc := service.NewViewService(viewRepo, catalogRepo, authSvc, auditRepo)
 
 	handler := api.NewHandler(
-		querySvc, principalSvc, groupSvc, grantSvc,
-		rowFilterSvc, columnMaskSvc, auditSvc,
+		svcs.query, svcs.principal, svcs.group, svcs.grant,
+		svcs.rowFilter, svcs.columnMask, svcs.audit,
 		manifestSvc, nil,
-		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
+		svcs.queryHistory, svcs.lineage, svcs.search, svcs.tag, svcs.view,
 		nil,
 		nil, nil, nil, nil, nil,
 	)
 	strictHandler := api.NewStrictHandler(handler, nil)
 
 	r := chi.NewRouter()
-	r.Use(middleware.AuthMiddleware([]byte("test-jwt-secret"), apiKeyRepo))
+	r.Use(middleware.AuthMiddleware([]byte("test-jwt-secret"), repos.apiKey))
 	r.Route("/v1", func(r chi.Router) {
 		api.HandlerFromMux(strictHandler, r)
 	})
