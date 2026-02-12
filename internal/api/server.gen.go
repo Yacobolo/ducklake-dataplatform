@@ -38,90 +38,108 @@ type ServerInterface interface {
 	// Query audit logs
 	// (GET /audit-logs)
 	ListAuditLogs(w http.ResponseWriter, r *http.Request, params ListAuditLogsParams)
+	// List registered catalogs
+	// (GET /catalogs)
+	ListCatalogs(w http.ResponseWriter, r *http.Request, params ListCatalogsParams)
+	// Register a new catalog
+	// (POST /catalogs)
+	RegisterCatalog(w http.ResponseWriter, r *http.Request)
+	// Delete a catalog registration
+	// (DELETE /catalogs/{catalogName})
+	DeleteCatalogRegistration(w http.ResponseWriter, r *http.Request, catalogName CatalogName)
+	// Get a catalog registration by name
+	// (GET /catalogs/{catalogName})
+	GetCatalogRegistration(w http.ResponseWriter, r *http.Request, catalogName CatalogName)
+	// Update a catalog registration
+	// (PATCH /catalogs/{catalogName})
+	UpdateCatalogRegistration(w http.ResponseWriter, r *http.Request, catalogName CatalogName)
 	// Get catalog info
-	// (GET /catalog)
-	GetCatalog(w http.ResponseWriter, r *http.Request)
-	// Update catalog metadata
-	// (PATCH /catalog)
-	UpdateCatalog(w http.ResponseWriter, r *http.Request)
+	// (GET /catalogs/{catalogName}/info)
+	GetCatalog(w http.ResponseWriter, r *http.Request, catalogName CatalogName)
+	// Get metastore summary
+	// (GET /catalogs/{catalogName}/metastore/summary)
+	GetMetastoreSummary(w http.ResponseWriter, r *http.Request, catalogName CatalogName)
 	// List schemas in the catalog
-	// (GET /catalog/schemas)
-	ListSchemas(w http.ResponseWriter, r *http.Request, params ListSchemasParams)
+	// (GET /catalogs/{catalogName}/schemas)
+	ListSchemas(w http.ResponseWriter, r *http.Request, catalogName CatalogName, params ListSchemasParams)
 	// Create a new schema
-	// (POST /catalog/schemas)
-	CreateSchema(w http.ResponseWriter, r *http.Request)
+	// (POST /catalogs/{catalogName}/schemas)
+	CreateSchema(w http.ResponseWriter, r *http.Request, catalogName CatalogName)
 	// Delete a schema
-	// (DELETE /catalog/schemas/{schemaName})
-	DeleteSchema(w http.ResponseWriter, r *http.Request, schemaName string, params DeleteSchemaParams)
+	// (DELETE /catalogs/{catalogName}/schemas/{schemaName})
+	DeleteSchema(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, params DeleteSchemaParams)
 	// Get a schema by name
-	// (GET /catalog/schemas/{schemaName})
-	GetSchema(w http.ResponseWriter, r *http.Request, schemaName string)
+	// (GET /catalogs/{catalogName}/schemas/{schemaName})
+	GetSchema(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string)
 	// Update schema metadata
-	// (PATCH /catalog/schemas/{schemaName})
-	UpdateSchema(w http.ResponseWriter, r *http.Request, schemaName string)
+	// (PATCH /catalogs/{catalogName}/schemas/{schemaName})
+	UpdateSchema(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string)
 	// List tables in a schema
-	// (GET /catalog/schemas/{schemaName}/tables)
-	ListTables(w http.ResponseWriter, r *http.Request, schemaName string, params ListTablesParams)
+	// (GET /catalogs/{catalogName}/schemas/{schemaName}/tables)
+	ListTables(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, params ListTablesParams)
 	// Create a new table in a schema
-	// (POST /catalog/schemas/{schemaName}/tables)
-	CreateTable(w http.ResponseWriter, r *http.Request, schemaName string)
+	// (POST /catalogs/{catalogName}/schemas/{schemaName}/tables)
+	CreateTable(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string)
 	// Delete a table
-	// (DELETE /catalog/schemas/{schemaName}/tables/{tableName})
-	DeleteTable(w http.ResponseWriter, r *http.Request, schemaName string, tableName string)
+	// (DELETE /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName})
+	DeleteTable(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string)
 	// Get a table by name
-	// (GET /catalog/schemas/{schemaName}/tables/{tableName})
-	GetTable(w http.ResponseWriter, r *http.Request, schemaName string, tableName string)
+	// (GET /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName})
+	GetTable(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string)
 	// Update table metadata
-	// (PATCH /catalog/schemas/{schemaName}/tables/{tableName})
-	UpdateTable(w http.ResponseWriter, r *http.Request, schemaName string, tableName string)
+	// (PATCH /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName})
+	UpdateTable(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string)
 	// List columns of a table
-	// (GET /catalog/schemas/{schemaName}/tables/{tableName}/columns)
-	ListTableColumns(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params ListTableColumnsParams)
+	// (GET /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns)
+	ListTableColumns(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string, params ListTableColumnsParams)
 	// Update column metadata
-	// (PATCH /catalog/schemas/{schemaName}/tables/{tableName}/columns/{columnName})
-	UpdateColumn(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, columnName string)
+	// (PATCH /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns/{columnName})
+	UpdateColumn(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string, columnName string)
 	// Register uploaded Parquet files in DuckLake
-	// (POST /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/commit)
-	CommitTableIngestion(w http.ResponseWriter, r *http.Request, schemaName string, tableName string)
+	// (POST /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/commit)
+	CommitTableIngestion(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string)
 	// Register existing S3 files in DuckLake
-	// (POST /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/load)
-	LoadTableExternalFiles(w http.ResponseWriter, r *http.Request, schemaName string, tableName string)
+	// (POST /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/load)
+	LoadTableExternalFiles(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string)
 	// Get a presigned URL for uploading a Parquet file
-	// (POST /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url)
-	CreateUploadUrl(w http.ResponseWriter, r *http.Request, schemaName string, tableName string)
+	// (POST /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url)
+	CreateUploadUrl(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string)
 	// Profile a table to collect statistics
-	// (POST /catalog/schemas/{schemaName}/tables/{tableName}/profile)
-	ProfileTable(w http.ResponseWriter, r *http.Request, schemaName string, tableName string)
+	// (POST /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/profile)
+	ProfileTable(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string)
 	// List views in a schema
-	// (GET /catalog/schemas/{schemaName}/views)
-	ListViews(w http.ResponseWriter, r *http.Request, schemaName string, params ListViewsParams)
+	// (GET /catalogs/{catalogName}/schemas/{schemaName}/views)
+	ListViews(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, params ListViewsParams)
 	// Create a view in a schema
-	// (POST /catalog/schemas/{schemaName}/views)
-	CreateView(w http.ResponseWriter, r *http.Request, schemaName string)
+	// (POST /catalogs/{catalogName}/schemas/{schemaName}/views)
+	CreateView(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string)
 	// Delete a view
-	// (DELETE /catalog/schemas/{schemaName}/views/{viewName})
-	DeleteView(w http.ResponseWriter, r *http.Request, schemaName string, viewName string)
+	// (DELETE /catalogs/{catalogName}/schemas/{schemaName}/views/{viewName})
+	DeleteView(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, viewName string)
 	// Get a view by name
-	// (GET /catalog/schemas/{schemaName}/views/{viewName})
-	GetView(w http.ResponseWriter, r *http.Request, schemaName string, viewName string)
+	// (GET /catalogs/{catalogName}/schemas/{schemaName}/views/{viewName})
+	GetView(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, viewName string)
 	// Update a view's metadata
-	// (PATCH /catalog/schemas/{schemaName}/views/{viewName})
-	UpdateView(w http.ResponseWriter, r *http.Request, schemaName string, viewName string)
+	// (PATCH /catalogs/{catalogName}/schemas/{schemaName}/views/{viewName})
+	UpdateView(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, viewName string)
 	// List volumes in a schema
-	// (GET /catalog/schemas/{schemaName}/volumes)
-	ListVolumes(w http.ResponseWriter, r *http.Request, schemaName string, params ListVolumesParams)
+	// (GET /catalogs/{catalogName}/schemas/{schemaName}/volumes)
+	ListVolumes(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, params ListVolumesParams)
 	// Create a volume in a schema
-	// (POST /catalog/schemas/{schemaName}/volumes)
-	CreateVolume(w http.ResponseWriter, r *http.Request, schemaName string)
+	// (POST /catalogs/{catalogName}/schemas/{schemaName}/volumes)
+	CreateVolume(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string)
 	// Delete a volume
-	// (DELETE /catalog/schemas/{schemaName}/volumes/{volumeName})
-	DeleteVolume(w http.ResponseWriter, r *http.Request, schemaName string, volumeName string)
+	// (DELETE /catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName})
+	DeleteVolume(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, volumeName string)
 	// Get a volume by name
-	// (GET /catalog/schemas/{schemaName}/volumes/{volumeName})
-	GetVolume(w http.ResponseWriter, r *http.Request, schemaName string, volumeName string)
+	// (GET /catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName})
+	GetVolume(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, volumeName string)
 	// Update a volume
-	// (PATCH /catalog/schemas/{schemaName}/volumes/{volumeName})
-	UpdateVolume(w http.ResponseWriter, r *http.Request, schemaName string, volumeName string)
+	// (PATCH /catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName})
+	UpdateVolume(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, volumeName string)
+	// Set a catalog as the default
+	// (POST /catalogs/{catalogName}/set-default)
+	SetDefaultCatalog(w http.ResponseWriter, r *http.Request, catalogName CatalogName)
 	// List classification and sensitivity tags
 	// (GET /classifications)
 	ListClassifications(w http.ResponseWriter, r *http.Request, params ListClassificationsParams)
@@ -224,9 +242,6 @@ type ServerInterface interface {
 	// Create table manifest with presigned URLs and security policies
 	// (POST /manifest)
 	CreateManifest(w http.ResponseWriter, r *http.Request)
-	// Get metastore summary
-	// (GET /metastore/summary)
-	GetMetastoreSummary(w http.ResponseWriter, r *http.Request)
 	// List all principals
 	// (GET /principals)
 	ListPrincipals(w http.ResponseWriter, r *http.Request, params ListPrincipalsParams)
@@ -341,171 +356,207 @@ func (_ Unimplemented) ListAuditLogs(w http.ResponseWriter, r *http.Request, par
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Get catalog info
-// (GET /catalog)
-func (_ Unimplemented) GetCatalog(w http.ResponseWriter, r *http.Request) {
+// List registered catalogs
+// (GET /catalogs)
+func (_ Unimplemented) ListCatalogs(w http.ResponseWriter, r *http.Request, params ListCatalogsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Update catalog metadata
-// (PATCH /catalog)
-func (_ Unimplemented) UpdateCatalog(w http.ResponseWriter, r *http.Request) {
+// Register a new catalog
+// (POST /catalogs)
+func (_ Unimplemented) RegisterCatalog(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Delete a catalog registration
+// (DELETE /catalogs/{catalogName})
+func (_ Unimplemented) DeleteCatalogRegistration(w http.ResponseWriter, r *http.Request, catalogName CatalogName) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get a catalog registration by name
+// (GET /catalogs/{catalogName})
+func (_ Unimplemented) GetCatalogRegistration(w http.ResponseWriter, r *http.Request, catalogName CatalogName) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update a catalog registration
+// (PATCH /catalogs/{catalogName})
+func (_ Unimplemented) UpdateCatalogRegistration(w http.ResponseWriter, r *http.Request, catalogName CatalogName) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get catalog info
+// (GET /catalogs/{catalogName}/info)
+func (_ Unimplemented) GetCatalog(w http.ResponseWriter, r *http.Request, catalogName CatalogName) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get metastore summary
+// (GET /catalogs/{catalogName}/metastore/summary)
+func (_ Unimplemented) GetMetastoreSummary(w http.ResponseWriter, r *http.Request, catalogName CatalogName) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // List schemas in the catalog
-// (GET /catalog/schemas)
-func (_ Unimplemented) ListSchemas(w http.ResponseWriter, r *http.Request, params ListSchemasParams) {
+// (GET /catalogs/{catalogName}/schemas)
+func (_ Unimplemented) ListSchemas(w http.ResponseWriter, r *http.Request, catalogName CatalogName, params ListSchemasParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Create a new schema
-// (POST /catalog/schemas)
-func (_ Unimplemented) CreateSchema(w http.ResponseWriter, r *http.Request) {
+// (POST /catalogs/{catalogName}/schemas)
+func (_ Unimplemented) CreateSchema(w http.ResponseWriter, r *http.Request, catalogName CatalogName) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Delete a schema
-// (DELETE /catalog/schemas/{schemaName})
-func (_ Unimplemented) DeleteSchema(w http.ResponseWriter, r *http.Request, schemaName string, params DeleteSchemaParams) {
+// (DELETE /catalogs/{catalogName}/schemas/{schemaName})
+func (_ Unimplemented) DeleteSchema(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, params DeleteSchemaParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Get a schema by name
-// (GET /catalog/schemas/{schemaName})
-func (_ Unimplemented) GetSchema(w http.ResponseWriter, r *http.Request, schemaName string) {
+// (GET /catalogs/{catalogName}/schemas/{schemaName})
+func (_ Unimplemented) GetSchema(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Update schema metadata
-// (PATCH /catalog/schemas/{schemaName})
-func (_ Unimplemented) UpdateSchema(w http.ResponseWriter, r *http.Request, schemaName string) {
+// (PATCH /catalogs/{catalogName}/schemas/{schemaName})
+func (_ Unimplemented) UpdateSchema(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // List tables in a schema
-// (GET /catalog/schemas/{schemaName}/tables)
-func (_ Unimplemented) ListTables(w http.ResponseWriter, r *http.Request, schemaName string, params ListTablesParams) {
+// (GET /catalogs/{catalogName}/schemas/{schemaName}/tables)
+func (_ Unimplemented) ListTables(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, params ListTablesParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Create a new table in a schema
-// (POST /catalog/schemas/{schemaName}/tables)
-func (_ Unimplemented) CreateTable(w http.ResponseWriter, r *http.Request, schemaName string) {
+// (POST /catalogs/{catalogName}/schemas/{schemaName}/tables)
+func (_ Unimplemented) CreateTable(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Delete a table
-// (DELETE /catalog/schemas/{schemaName}/tables/{tableName})
-func (_ Unimplemented) DeleteTable(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
+// (DELETE /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName})
+func (_ Unimplemented) DeleteTable(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Get a table by name
-// (GET /catalog/schemas/{schemaName}/tables/{tableName})
-func (_ Unimplemented) GetTable(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
+// (GET /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName})
+func (_ Unimplemented) GetTable(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Update table metadata
-// (PATCH /catalog/schemas/{schemaName}/tables/{tableName})
-func (_ Unimplemented) UpdateTable(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
+// (PATCH /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName})
+func (_ Unimplemented) UpdateTable(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // List columns of a table
-// (GET /catalog/schemas/{schemaName}/tables/{tableName}/columns)
-func (_ Unimplemented) ListTableColumns(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params ListTableColumnsParams) {
+// (GET /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns)
+func (_ Unimplemented) ListTableColumns(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string, params ListTableColumnsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Update column metadata
-// (PATCH /catalog/schemas/{schemaName}/tables/{tableName}/columns/{columnName})
-func (_ Unimplemented) UpdateColumn(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, columnName string) {
+// (PATCH /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns/{columnName})
+func (_ Unimplemented) UpdateColumn(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string, columnName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Register uploaded Parquet files in DuckLake
-// (POST /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/commit)
-func (_ Unimplemented) CommitTableIngestion(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
+// (POST /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/commit)
+func (_ Unimplemented) CommitTableIngestion(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Register existing S3 files in DuckLake
-// (POST /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/load)
-func (_ Unimplemented) LoadTableExternalFiles(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
+// (POST /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/load)
+func (_ Unimplemented) LoadTableExternalFiles(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Get a presigned URL for uploading a Parquet file
-// (POST /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url)
-func (_ Unimplemented) CreateUploadUrl(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
+// (POST /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url)
+func (_ Unimplemented) CreateUploadUrl(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Profile a table to collect statistics
-// (POST /catalog/schemas/{schemaName}/tables/{tableName}/profile)
-func (_ Unimplemented) ProfileTable(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
+// (POST /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/profile)
+func (_ Unimplemented) ProfileTable(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // List views in a schema
-// (GET /catalog/schemas/{schemaName}/views)
-func (_ Unimplemented) ListViews(w http.ResponseWriter, r *http.Request, schemaName string, params ListViewsParams) {
+// (GET /catalogs/{catalogName}/schemas/{schemaName}/views)
+func (_ Unimplemented) ListViews(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, params ListViewsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Create a view in a schema
-// (POST /catalog/schemas/{schemaName}/views)
-func (_ Unimplemented) CreateView(w http.ResponseWriter, r *http.Request, schemaName string) {
+// (POST /catalogs/{catalogName}/schemas/{schemaName}/views)
+func (_ Unimplemented) CreateView(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Delete a view
-// (DELETE /catalog/schemas/{schemaName}/views/{viewName})
-func (_ Unimplemented) DeleteView(w http.ResponseWriter, r *http.Request, schemaName string, viewName string) {
+// (DELETE /catalogs/{catalogName}/schemas/{schemaName}/views/{viewName})
+func (_ Unimplemented) DeleteView(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, viewName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Get a view by name
-// (GET /catalog/schemas/{schemaName}/views/{viewName})
-func (_ Unimplemented) GetView(w http.ResponseWriter, r *http.Request, schemaName string, viewName string) {
+// (GET /catalogs/{catalogName}/schemas/{schemaName}/views/{viewName})
+func (_ Unimplemented) GetView(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, viewName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Update a view's metadata
-// (PATCH /catalog/schemas/{schemaName}/views/{viewName})
-func (_ Unimplemented) UpdateView(w http.ResponseWriter, r *http.Request, schemaName string, viewName string) {
+// (PATCH /catalogs/{catalogName}/schemas/{schemaName}/views/{viewName})
+func (_ Unimplemented) UpdateView(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, viewName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // List volumes in a schema
-// (GET /catalog/schemas/{schemaName}/volumes)
-func (_ Unimplemented) ListVolumes(w http.ResponseWriter, r *http.Request, schemaName string, params ListVolumesParams) {
+// (GET /catalogs/{catalogName}/schemas/{schemaName}/volumes)
+func (_ Unimplemented) ListVolumes(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, params ListVolumesParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Create a volume in a schema
-// (POST /catalog/schemas/{schemaName}/volumes)
-func (_ Unimplemented) CreateVolume(w http.ResponseWriter, r *http.Request, schemaName string) {
+// (POST /catalogs/{catalogName}/schemas/{schemaName}/volumes)
+func (_ Unimplemented) CreateVolume(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Delete a volume
-// (DELETE /catalog/schemas/{schemaName}/volumes/{volumeName})
-func (_ Unimplemented) DeleteVolume(w http.ResponseWriter, r *http.Request, schemaName string, volumeName string) {
+// (DELETE /catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName})
+func (_ Unimplemented) DeleteVolume(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, volumeName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Get a volume by name
-// (GET /catalog/schemas/{schemaName}/volumes/{volumeName})
-func (_ Unimplemented) GetVolume(w http.ResponseWriter, r *http.Request, schemaName string, volumeName string) {
+// (GET /catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName})
+func (_ Unimplemented) GetVolume(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, volumeName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Update a volume
-// (PATCH /catalog/schemas/{schemaName}/volumes/{volumeName})
-func (_ Unimplemented) UpdateVolume(w http.ResponseWriter, r *http.Request, schemaName string, volumeName string) {
+// (PATCH /catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName})
+func (_ Unimplemented) UpdateVolume(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, volumeName string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Set a catalog as the default
+// (POST /catalogs/{catalogName}/set-default)
+func (_ Unimplemented) SetDefaultCatalog(w http.ResponseWriter, r *http.Request, catalogName CatalogName) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -710,12 +761,6 @@ func (_ Unimplemented) GetUpstreamLineage(w http.ResponseWriter, r *http.Request
 // Create table manifest with presigned URLs and security policies
 // (POST /manifest)
 func (_ Unimplemented) CreateManifest(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// Get metastore summary
-// (GET /metastore/summary)
-func (_ Unimplemented) GetMetastoreSummary(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1086,8 +1131,10 @@ func (siw *ServerInterfaceWrapper) ListAuditLogs(w http.ResponseWriter, r *http.
 	handler.ServeHTTP(w, r)
 }
 
-// GetCatalog operation middleware
-func (siw *ServerInterfaceWrapper) GetCatalog(w http.ResponseWriter, r *http.Request) {
+// ListCatalogs operation middleware
+func (siw *ServerInterfaceWrapper) ListCatalogs(w http.ResponseWriter, r *http.Request) {
+
+	var err error
 
 	ctx := r.Context()
 
@@ -1097,8 +1144,27 @@ func (siw *ServerInterfaceWrapper) GetCatalog(w http.ResponseWriter, r *http.Req
 
 	r = r.WithContext(ctx)
 
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListCatalogsParams
+
+	// ------------- Optional query parameter "max_results" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetCatalog(w, r)
+		siw.Handler.ListCatalogs(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1108,8 +1174,8 @@ func (siw *ServerInterfaceWrapper) GetCatalog(w http.ResponseWriter, r *http.Req
 	handler.ServeHTTP(w, r)
 }
 
-// UpdateCatalog operation middleware
-func (siw *ServerInterfaceWrapper) UpdateCatalog(w http.ResponseWriter, r *http.Request) {
+// RegisterCatalog operation middleware
+func (siw *ServerInterfaceWrapper) RegisterCatalog(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
@@ -1120,7 +1186,172 @@ func (siw *ServerInterfaceWrapper) UpdateCatalog(w http.ResponseWriter, r *http.
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.UpdateCatalog(w, r)
+		siw.Handler.RegisterCatalog(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteCatalogRegistration operation middleware
+func (siw *ServerInterfaceWrapper) DeleteCatalogRegistration(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "catalogName" -------------
+	var catalogName CatalogName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "catalogName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteCatalogRegistration(w, r, catalogName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCatalogRegistration operation middleware
+func (siw *ServerInterfaceWrapper) GetCatalogRegistration(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "catalogName" -------------
+	var catalogName CatalogName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "catalogName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCatalogRegistration(w, r, catalogName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateCatalogRegistration operation middleware
+func (siw *ServerInterfaceWrapper) UpdateCatalogRegistration(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "catalogName" -------------
+	var catalogName CatalogName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "catalogName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateCatalogRegistration(w, r, catalogName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCatalog operation middleware
+func (siw *ServerInterfaceWrapper) GetCatalog(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "catalogName" -------------
+	var catalogName CatalogName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "catalogName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCatalog(w, r, catalogName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMetastoreSummary operation middleware
+func (siw *ServerInterfaceWrapper) GetMetastoreSummary(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "catalogName" -------------
+	var catalogName CatalogName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "catalogName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMetastoreSummary(w, r, catalogName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1134,6 +1365,15 @@ func (siw *ServerInterfaceWrapper) UpdateCatalog(w http.ResponseWriter, r *http.
 func (siw *ServerInterfaceWrapper) ListSchemas(w http.ResponseWriter, r *http.Request) {
 
 	var err error
+
+	// ------------- Path parameter "catalogName" -------------
+	var catalogName CatalogName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "catalogName", Err: err})
+		return
+	}
 
 	ctx := r.Context()
 
@@ -1163,7 +1403,7 @@ func (siw *ServerInterfaceWrapper) ListSchemas(w http.ResponseWriter, r *http.Re
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListSchemas(w, r, params)
+		siw.Handler.ListSchemas(w, r, catalogName, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1176,6 +1416,17 @@ func (siw *ServerInterfaceWrapper) ListSchemas(w http.ResponseWriter, r *http.Re
 // CreateSchema operation middleware
 func (siw *ServerInterfaceWrapper) CreateSchema(w http.ResponseWriter, r *http.Request) {
 
+	var err error
+
+	// ------------- Path parameter "catalogName" -------------
+	var catalogName CatalogName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "catalogName", Err: err})
+		return
+	}
+
 	ctx := r.Context()
 
 	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
@@ -1185,7 +1436,7 @@ func (siw *ServerInterfaceWrapper) CreateSchema(w http.ResponseWriter, r *http.R
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.CreateSchema(w, r)
+		siw.Handler.CreateSchema(w, r, catalogName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1199,6 +1450,15 @@ func (siw *ServerInterfaceWrapper) CreateSchema(w http.ResponseWriter, r *http.R
 func (siw *ServerInterfaceWrapper) DeleteSchema(w http.ResponseWriter, r *http.Request) {
 
 	var err error
+
+	// ------------- Path parameter "catalogName" -------------
+	var catalogName CatalogName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "catalogName", Err: err})
+		return
+	}
 
 	// ------------- Path parameter "schemaName" -------------
 	var schemaName string
@@ -1229,7 +1489,7 @@ func (siw *ServerInterfaceWrapper) DeleteSchema(w http.ResponseWriter, r *http.R
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.DeleteSchema(w, r, schemaName, params)
+		siw.Handler.DeleteSchema(w, r, catalogName, schemaName, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1244,6 +1504,15 @@ func (siw *ServerInterfaceWrapper) GetSchema(w http.ResponseWriter, r *http.Requ
 
 	var err error
 
+	// ------------- Path parameter "catalogName" -------------
+	var catalogName CatalogName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "catalogName", Err: err})
+		return
+	}
+
 	// ------------- Path parameter "schemaName" -------------
 	var schemaName string
 
@@ -1262,7 +1531,7 @@ func (siw *ServerInterfaceWrapper) GetSchema(w http.ResponseWriter, r *http.Requ
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetSchema(w, r, schemaName)
+		siw.Handler.GetSchema(w, r, catalogName, schemaName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1277,6 +1546,15 @@ func (siw *ServerInterfaceWrapper) UpdateSchema(w http.ResponseWriter, r *http.R
 
 	var err error
 
+	// ------------- Path parameter "catalogName" -------------
+	var catalogName CatalogName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "catalogName", Err: err})
+		return
+	}
+
 	// ------------- Path parameter "schemaName" -------------
 	var schemaName string
 
@@ -1295,7 +1573,7 @@ func (siw *ServerInterfaceWrapper) UpdateSchema(w http.ResponseWriter, r *http.R
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.UpdateSchema(w, r, schemaName)
+		siw.Handler.UpdateSchema(w, r, catalogName, schemaName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1309,6 +1587,15 @@ func (siw *ServerInterfaceWrapper) UpdateSchema(w http.ResponseWriter, r *http.R
 func (siw *ServerInterfaceWrapper) ListTables(w http.ResponseWriter, r *http.Request) {
 
 	var err error
+
+	// ------------- Path parameter "catalogName" -------------
+	var catalogName CatalogName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "catalogName", Err: err})
+		return
+	}
 
 	// ------------- Path parameter "schemaName" -------------
 	var schemaName string
@@ -1347,7 +1634,7 @@ func (siw *ServerInterfaceWrapper) ListTables(w http.ResponseWriter, r *http.Req
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListTables(w, r, schemaName, params)
+		siw.Handler.ListTables(w, r, catalogName, schemaName, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1362,6 +1649,15 @@ func (siw *ServerInterfaceWrapper) CreateTable(w http.ResponseWriter, r *http.Re
 
 	var err error
 
+	// ------------- Path parameter "catalogName" -------------
+	var catalogName CatalogName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "catalogName", Err: err})
+		return
+	}
+
 	// ------------- Path parameter "schemaName" -------------
 	var schemaName string
 
@@ -1380,7 +1676,7 @@ func (siw *ServerInterfaceWrapper) CreateTable(w http.ResponseWriter, r *http.Re
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.CreateTable(w, r, schemaName)
+		siw.Handler.CreateTable(w, r, catalogName, schemaName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1395,6 +1691,15 @@ func (siw *ServerInterfaceWrapper) DeleteTable(w http.ResponseWriter, r *http.Re
 
 	var err error
 
+	// ------------- Path parameter "catalogName" -------------
+	var catalogName CatalogName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "catalogName", Err: err})
+		return
+	}
+
 	// ------------- Path parameter "schemaName" -------------
 	var schemaName string
 
@@ -1422,7 +1727,7 @@ func (siw *ServerInterfaceWrapper) DeleteTable(w http.ResponseWriter, r *http.Re
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.DeleteTable(w, r, schemaName, tableName)
+		siw.Handler.DeleteTable(w, r, catalogName, schemaName, tableName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1437,6 +1742,15 @@ func (siw *ServerInterfaceWrapper) GetTable(w http.ResponseWriter, r *http.Reque
 
 	var err error
 
+	// ------------- Path parameter "catalogName" -------------
+	var catalogName CatalogName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "catalogName", Err: err})
+		return
+	}
+
 	// ------------- Path parameter "schemaName" -------------
 	var schemaName string
 
@@ -1464,7 +1778,7 @@ func (siw *ServerInterfaceWrapper) GetTable(w http.ResponseWriter, r *http.Reque
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetTable(w, r, schemaName, tableName)
+		siw.Handler.GetTable(w, r, catalogName, schemaName, tableName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1479,6 +1793,15 @@ func (siw *ServerInterfaceWrapper) UpdateTable(w http.ResponseWriter, r *http.Re
 
 	var err error
 
+	// ------------- Path parameter "catalogName" -------------
+	var catalogName CatalogName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "catalogName", Err: err})
+		return
+	}
+
 	// ------------- Path parameter "schemaName" -------------
 	var schemaName string
 
@@ -1506,7 +1829,7 @@ func (siw *ServerInterfaceWrapper) UpdateTable(w http.ResponseWriter, r *http.Re
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.UpdateTable(w, r, schemaName, tableName)
+		siw.Handler.UpdateTable(w, r, catalogName, schemaName, tableName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1520,6 +1843,15 @@ func (siw *ServerInterfaceWrapper) UpdateTable(w http.ResponseWriter, r *http.Re
 func (siw *ServerInterfaceWrapper) ListTableColumns(w http.ResponseWriter, r *http.Request) {
 
 	var err error
+
+	// ------------- Path parameter "catalogName" -------------
+	var catalogName CatalogName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "catalogName", Err: err})
+		return
+	}
 
 	// ------------- Path parameter "schemaName" -------------
 	var schemaName string
@@ -1567,7 +1899,7 @@ func (siw *ServerInterfaceWrapper) ListTableColumns(w http.ResponseWriter, r *ht
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListTableColumns(w, r, schemaName, tableName, params)
+		siw.Handler.ListTableColumns(w, r, catalogName, schemaName, tableName, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1581,6 +1913,15 @@ func (siw *ServerInterfaceWrapper) ListTableColumns(w http.ResponseWriter, r *ht
 func (siw *ServerInterfaceWrapper) UpdateColumn(w http.ResponseWriter, r *http.Request) {
 
 	var err error
+
+	// ------------- Path parameter "catalogName" -------------
+	var catalogName CatalogName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "catalogName", Err: err})
+		return
+	}
 
 	// ------------- Path parameter "schemaName" -------------
 	var schemaName string
@@ -1618,7 +1959,7 @@ func (siw *ServerInterfaceWrapper) UpdateColumn(w http.ResponseWriter, r *http.R
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.UpdateColumn(w, r, schemaName, tableName, columnName)
+		siw.Handler.UpdateColumn(w, r, catalogName, schemaName, tableName, columnName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1633,6 +1974,15 @@ func (siw *ServerInterfaceWrapper) CommitTableIngestion(w http.ResponseWriter, r
 
 	var err error
 
+	// ------------- Path parameter "catalogName" -------------
+	var catalogName CatalogName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "catalogName", Err: err})
+		return
+	}
+
 	// ------------- Path parameter "schemaName" -------------
 	var schemaName string
 
@@ -1660,7 +2010,7 @@ func (siw *ServerInterfaceWrapper) CommitTableIngestion(w http.ResponseWriter, r
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.CommitTableIngestion(w, r, schemaName, tableName)
+		siw.Handler.CommitTableIngestion(w, r, catalogName, schemaName, tableName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1675,6 +2025,15 @@ func (siw *ServerInterfaceWrapper) LoadTableExternalFiles(w http.ResponseWriter,
 
 	var err error
 
+	// ------------- Path parameter "catalogName" -------------
+	var catalogName CatalogName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "catalogName", Err: err})
+		return
+	}
+
 	// ------------- Path parameter "schemaName" -------------
 	var schemaName string
 
@@ -1702,7 +2061,7 @@ func (siw *ServerInterfaceWrapper) LoadTableExternalFiles(w http.ResponseWriter,
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.LoadTableExternalFiles(w, r, schemaName, tableName)
+		siw.Handler.LoadTableExternalFiles(w, r, catalogName, schemaName, tableName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1717,6 +2076,15 @@ func (siw *ServerInterfaceWrapper) CreateUploadUrl(w http.ResponseWriter, r *htt
 
 	var err error
 
+	// ------------- Path parameter "catalogName" -------------
+	var catalogName CatalogName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "catalogName", Err: err})
+		return
+	}
+
 	// ------------- Path parameter "schemaName" -------------
 	var schemaName string
 
@@ -1744,7 +2112,7 @@ func (siw *ServerInterfaceWrapper) CreateUploadUrl(w http.ResponseWriter, r *htt
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.CreateUploadUrl(w, r, schemaName, tableName)
+		siw.Handler.CreateUploadUrl(w, r, catalogName, schemaName, tableName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1759,6 +2127,15 @@ func (siw *ServerInterfaceWrapper) ProfileTable(w http.ResponseWriter, r *http.R
 
 	var err error
 
+	// ------------- Path parameter "catalogName" -------------
+	var catalogName CatalogName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "catalogName", Err: err})
+		return
+	}
+
 	// ------------- Path parameter "schemaName" -------------
 	var schemaName string
 
@@ -1786,7 +2163,7 @@ func (siw *ServerInterfaceWrapper) ProfileTable(w http.ResponseWriter, r *http.R
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ProfileTable(w, r, schemaName, tableName)
+		siw.Handler.ProfileTable(w, r, catalogName, schemaName, tableName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1800,6 +2177,15 @@ func (siw *ServerInterfaceWrapper) ProfileTable(w http.ResponseWriter, r *http.R
 func (siw *ServerInterfaceWrapper) ListViews(w http.ResponseWriter, r *http.Request) {
 
 	var err error
+
+	// ------------- Path parameter "catalogName" -------------
+	var catalogName CatalogName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "catalogName", Err: err})
+		return
+	}
 
 	// ------------- Path parameter "schemaName" -------------
 	var schemaName string
@@ -1838,7 +2224,7 @@ func (siw *ServerInterfaceWrapper) ListViews(w http.ResponseWriter, r *http.Requ
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListViews(w, r, schemaName, params)
+		siw.Handler.ListViews(w, r, catalogName, schemaName, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1853,6 +2239,15 @@ func (siw *ServerInterfaceWrapper) CreateView(w http.ResponseWriter, r *http.Req
 
 	var err error
 
+	// ------------- Path parameter "catalogName" -------------
+	var catalogName CatalogName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "catalogName", Err: err})
+		return
+	}
+
 	// ------------- Path parameter "schemaName" -------------
 	var schemaName string
 
@@ -1871,7 +2266,7 @@ func (siw *ServerInterfaceWrapper) CreateView(w http.ResponseWriter, r *http.Req
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.CreateView(w, r, schemaName)
+		siw.Handler.CreateView(w, r, catalogName, schemaName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1886,6 +2281,15 @@ func (siw *ServerInterfaceWrapper) DeleteView(w http.ResponseWriter, r *http.Req
 
 	var err error
 
+	// ------------- Path parameter "catalogName" -------------
+	var catalogName CatalogName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "catalogName", Err: err})
+		return
+	}
+
 	// ------------- Path parameter "schemaName" -------------
 	var schemaName string
 
@@ -1913,7 +2317,7 @@ func (siw *ServerInterfaceWrapper) DeleteView(w http.ResponseWriter, r *http.Req
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.DeleteView(w, r, schemaName, viewName)
+		siw.Handler.DeleteView(w, r, catalogName, schemaName, viewName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1928,6 +2332,15 @@ func (siw *ServerInterfaceWrapper) GetView(w http.ResponseWriter, r *http.Reques
 
 	var err error
 
+	// ------------- Path parameter "catalogName" -------------
+	var catalogName CatalogName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "catalogName", Err: err})
+		return
+	}
+
 	// ------------- Path parameter "schemaName" -------------
 	var schemaName string
 
@@ -1955,7 +2368,7 @@ func (siw *ServerInterfaceWrapper) GetView(w http.ResponseWriter, r *http.Reques
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetView(w, r, schemaName, viewName)
+		siw.Handler.GetView(w, r, catalogName, schemaName, viewName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1970,6 +2383,15 @@ func (siw *ServerInterfaceWrapper) UpdateView(w http.ResponseWriter, r *http.Req
 
 	var err error
 
+	// ------------- Path parameter "catalogName" -------------
+	var catalogName CatalogName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "catalogName", Err: err})
+		return
+	}
+
 	// ------------- Path parameter "schemaName" -------------
 	var schemaName string
 
@@ -1997,7 +2419,7 @@ func (siw *ServerInterfaceWrapper) UpdateView(w http.ResponseWriter, r *http.Req
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.UpdateView(w, r, schemaName, viewName)
+		siw.Handler.UpdateView(w, r, catalogName, schemaName, viewName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2011,6 +2433,15 @@ func (siw *ServerInterfaceWrapper) UpdateView(w http.ResponseWriter, r *http.Req
 func (siw *ServerInterfaceWrapper) ListVolumes(w http.ResponseWriter, r *http.Request) {
 
 	var err error
+
+	// ------------- Path parameter "catalogName" -------------
+	var catalogName CatalogName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "catalogName", Err: err})
+		return
+	}
 
 	// ------------- Path parameter "schemaName" -------------
 	var schemaName string
@@ -2049,7 +2480,7 @@ func (siw *ServerInterfaceWrapper) ListVolumes(w http.ResponseWriter, r *http.Re
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListVolumes(w, r, schemaName, params)
+		siw.Handler.ListVolumes(w, r, catalogName, schemaName, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2064,6 +2495,15 @@ func (siw *ServerInterfaceWrapper) CreateVolume(w http.ResponseWriter, r *http.R
 
 	var err error
 
+	// ------------- Path parameter "catalogName" -------------
+	var catalogName CatalogName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "catalogName", Err: err})
+		return
+	}
+
 	// ------------- Path parameter "schemaName" -------------
 	var schemaName string
 
@@ -2082,7 +2522,7 @@ func (siw *ServerInterfaceWrapper) CreateVolume(w http.ResponseWriter, r *http.R
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.CreateVolume(w, r, schemaName)
+		siw.Handler.CreateVolume(w, r, catalogName, schemaName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2097,6 +2537,15 @@ func (siw *ServerInterfaceWrapper) DeleteVolume(w http.ResponseWriter, r *http.R
 
 	var err error
 
+	// ------------- Path parameter "catalogName" -------------
+	var catalogName CatalogName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "catalogName", Err: err})
+		return
+	}
+
 	// ------------- Path parameter "schemaName" -------------
 	var schemaName string
 
@@ -2124,7 +2573,7 @@ func (siw *ServerInterfaceWrapper) DeleteVolume(w http.ResponseWriter, r *http.R
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.DeleteVolume(w, r, schemaName, volumeName)
+		siw.Handler.DeleteVolume(w, r, catalogName, schemaName, volumeName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2139,6 +2588,15 @@ func (siw *ServerInterfaceWrapper) GetVolume(w http.ResponseWriter, r *http.Requ
 
 	var err error
 
+	// ------------- Path parameter "catalogName" -------------
+	var catalogName CatalogName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "catalogName", Err: err})
+		return
+	}
+
 	// ------------- Path parameter "schemaName" -------------
 	var schemaName string
 
@@ -2166,7 +2624,7 @@ func (siw *ServerInterfaceWrapper) GetVolume(w http.ResponseWriter, r *http.Requ
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetVolume(w, r, schemaName, volumeName)
+		siw.Handler.GetVolume(w, r, catalogName, schemaName, volumeName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2181,6 +2639,15 @@ func (siw *ServerInterfaceWrapper) UpdateVolume(w http.ResponseWriter, r *http.R
 
 	var err error
 
+	// ------------- Path parameter "catalogName" -------------
+	var catalogName CatalogName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "catalogName", Err: err})
+		return
+	}
+
 	// ------------- Path parameter "schemaName" -------------
 	var schemaName string
 
@@ -2208,7 +2675,40 @@ func (siw *ServerInterfaceWrapper) UpdateVolume(w http.ResponseWriter, r *http.R
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.UpdateVolume(w, r, schemaName, volumeName)
+		siw.Handler.UpdateVolume(w, r, catalogName, schemaName, volumeName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetDefaultCatalog operation middleware
+func (siw *ServerInterfaceWrapper) SetDefaultCatalog(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "catalogName" -------------
+	var catalogName CatalogName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "catalogName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetDefaultCatalog(w, r, catalogName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3553,28 +4053,6 @@ func (siw *ServerInterfaceWrapper) CreateManifest(w http.ResponseWriter, r *http
 	handler.ServeHTTP(w, r)
 }
 
-// GetMetastoreSummary operation middleware
-func (siw *ServerInterfaceWrapper) GetMetastoreSummary(w http.ResponseWriter, r *http.Request) {
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetMetastoreSummary(w, r)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
 // ListPrincipals operation middleware
 func (siw *ServerInterfaceWrapper) ListPrincipals(w http.ResponseWriter, r *http.Request) {
 
@@ -4683,88 +5161,106 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/audit-logs", wrapper.ListAuditLogs)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/catalog", wrapper.GetCatalog)
+		r.Get(options.BaseURL+"/catalogs", wrapper.ListCatalogs)
 	})
 	r.Group(func(r chi.Router) {
-		r.Patch(options.BaseURL+"/catalog", wrapper.UpdateCatalog)
+		r.Post(options.BaseURL+"/catalogs", wrapper.RegisterCatalog)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/catalog/schemas", wrapper.ListSchemas)
+		r.Delete(options.BaseURL+"/catalogs/{catalogName}", wrapper.DeleteCatalogRegistration)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/catalog/schemas", wrapper.CreateSchema)
+		r.Get(options.BaseURL+"/catalogs/{catalogName}", wrapper.GetCatalogRegistration)
 	})
 	r.Group(func(r chi.Router) {
-		r.Delete(options.BaseURL+"/catalog/schemas/{schemaName}", wrapper.DeleteSchema)
+		r.Patch(options.BaseURL+"/catalogs/{catalogName}", wrapper.UpdateCatalogRegistration)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/catalog/schemas/{schemaName}", wrapper.GetSchema)
+		r.Get(options.BaseURL+"/catalogs/{catalogName}/info", wrapper.GetCatalog)
 	})
 	r.Group(func(r chi.Router) {
-		r.Patch(options.BaseURL+"/catalog/schemas/{schemaName}", wrapper.UpdateSchema)
+		r.Get(options.BaseURL+"/catalogs/{catalogName}/metastore/summary", wrapper.GetMetastoreSummary)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/catalog/schemas/{schemaName}/tables", wrapper.ListTables)
+		r.Get(options.BaseURL+"/catalogs/{catalogName}/schemas", wrapper.ListSchemas)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/catalog/schemas/{schemaName}/tables", wrapper.CreateTable)
+		r.Post(options.BaseURL+"/catalogs/{catalogName}/schemas", wrapper.CreateSchema)
 	})
 	r.Group(func(r chi.Router) {
-		r.Delete(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}", wrapper.DeleteTable)
+		r.Delete(options.BaseURL+"/catalogs/{catalogName}/schemas/{schemaName}", wrapper.DeleteSchema)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}", wrapper.GetTable)
+		r.Get(options.BaseURL+"/catalogs/{catalogName}/schemas/{schemaName}", wrapper.GetSchema)
 	})
 	r.Group(func(r chi.Router) {
-		r.Patch(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}", wrapper.UpdateTable)
+		r.Patch(options.BaseURL+"/catalogs/{catalogName}/schemas/{schemaName}", wrapper.UpdateSchema)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}/columns", wrapper.ListTableColumns)
+		r.Get(options.BaseURL+"/catalogs/{catalogName}/schemas/{schemaName}/tables", wrapper.ListTables)
 	})
 	r.Group(func(r chi.Router) {
-		r.Patch(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}/columns/{columnName}", wrapper.UpdateColumn)
+		r.Post(options.BaseURL+"/catalogs/{catalogName}/schemas/{schemaName}/tables", wrapper.CreateTable)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}/ingestion/commit", wrapper.CommitTableIngestion)
+		r.Delete(options.BaseURL+"/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}", wrapper.DeleteTable)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}/ingestion/load", wrapper.LoadTableExternalFiles)
+		r.Get(options.BaseURL+"/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}", wrapper.GetTable)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url", wrapper.CreateUploadUrl)
+		r.Patch(options.BaseURL+"/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}", wrapper.UpdateTable)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}/profile", wrapper.ProfileTable)
+		r.Get(options.BaseURL+"/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns", wrapper.ListTableColumns)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/catalog/schemas/{schemaName}/views", wrapper.ListViews)
+		r.Patch(options.BaseURL+"/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns/{columnName}", wrapper.UpdateColumn)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/catalog/schemas/{schemaName}/views", wrapper.CreateView)
+		r.Post(options.BaseURL+"/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/commit", wrapper.CommitTableIngestion)
 	})
 	r.Group(func(r chi.Router) {
-		r.Delete(options.BaseURL+"/catalog/schemas/{schemaName}/views/{viewName}", wrapper.DeleteView)
+		r.Post(options.BaseURL+"/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/load", wrapper.LoadTableExternalFiles)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/catalog/schemas/{schemaName}/views/{viewName}", wrapper.GetView)
+		r.Post(options.BaseURL+"/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url", wrapper.CreateUploadUrl)
 	})
 	r.Group(func(r chi.Router) {
-		r.Patch(options.BaseURL+"/catalog/schemas/{schemaName}/views/{viewName}", wrapper.UpdateView)
+		r.Post(options.BaseURL+"/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/profile", wrapper.ProfileTable)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/catalog/schemas/{schemaName}/volumes", wrapper.ListVolumes)
+		r.Get(options.BaseURL+"/catalogs/{catalogName}/schemas/{schemaName}/views", wrapper.ListViews)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/catalog/schemas/{schemaName}/volumes", wrapper.CreateVolume)
+		r.Post(options.BaseURL+"/catalogs/{catalogName}/schemas/{schemaName}/views", wrapper.CreateView)
 	})
 	r.Group(func(r chi.Router) {
-		r.Delete(options.BaseURL+"/catalog/schemas/{schemaName}/volumes/{volumeName}", wrapper.DeleteVolume)
+		r.Delete(options.BaseURL+"/catalogs/{catalogName}/schemas/{schemaName}/views/{viewName}", wrapper.DeleteView)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/catalog/schemas/{schemaName}/volumes/{volumeName}", wrapper.GetVolume)
+		r.Get(options.BaseURL+"/catalogs/{catalogName}/schemas/{schemaName}/views/{viewName}", wrapper.GetView)
 	})
 	r.Group(func(r chi.Router) {
-		r.Patch(options.BaseURL+"/catalog/schemas/{schemaName}/volumes/{volumeName}", wrapper.UpdateVolume)
+		r.Patch(options.BaseURL+"/catalogs/{catalogName}/schemas/{schemaName}/views/{viewName}", wrapper.UpdateView)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/catalogs/{catalogName}/schemas/{schemaName}/volumes", wrapper.ListVolumes)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/catalogs/{catalogName}/schemas/{schemaName}/volumes", wrapper.CreateVolume)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}", wrapper.DeleteVolume)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}", wrapper.GetVolume)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}", wrapper.UpdateVolume)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/catalogs/{catalogName}/set-default", wrapper.SetDefaultCatalog)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/classifications", wrapper.ListClassifications)
@@ -4867,9 +5363,6 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/manifest", wrapper.CreateManifest)
-	})
-	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/metastore/summary", wrapper.GetMetastoreSummary)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/principals", wrapper.ListPrincipals)
@@ -5126,7 +5619,210 @@ func (response ListAuditLogs401JSONResponse) VisitListAuditLogsResponse(w http.R
 	return json.NewEncoder(w).Encode(response)
 }
 
+type ListCatalogsRequestObject struct {
+	Params ListCatalogsParams
+}
+
+type ListCatalogsResponseObject interface {
+	VisitListCatalogsResponse(w http.ResponseWriter) error
+}
+
+type ListCatalogs200JSONResponse CatalogRegistrationList
+
+func (response ListCatalogs200JSONResponse) VisitListCatalogsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCatalogs401JSONResponse Error
+
+func (response ListCatalogs401JSONResponse) VisitListCatalogsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RegisterCatalogRequestObject struct {
+	Body *RegisterCatalogJSONRequestBody
+}
+
+type RegisterCatalogResponseObject interface {
+	VisitRegisterCatalogResponse(w http.ResponseWriter) error
+}
+
+type RegisterCatalog201JSONResponse CatalogRegistration
+
+func (response RegisterCatalog201JSONResponse) VisitRegisterCatalogResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RegisterCatalog400JSONResponse Error
+
+func (response RegisterCatalog400JSONResponse) VisitRegisterCatalogResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RegisterCatalog401JSONResponse Error
+
+func (response RegisterCatalog401JSONResponse) VisitRegisterCatalogResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RegisterCatalog403JSONResponse Error
+
+func (response RegisterCatalog403JSONResponse) VisitRegisterCatalogResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RegisterCatalog409JSONResponse Error
+
+func (response RegisterCatalog409JSONResponse) VisitRegisterCatalogResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteCatalogRegistrationRequestObject struct {
+	CatalogName CatalogName `json:"catalogName"`
+}
+
+type DeleteCatalogRegistrationResponseObject interface {
+	VisitDeleteCatalogRegistrationResponse(w http.ResponseWriter) error
+}
+
+type DeleteCatalogRegistration204Response struct {
+}
+
+func (response DeleteCatalogRegistration204Response) VisitDeleteCatalogRegistrationResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteCatalogRegistration401JSONResponse Error
+
+func (response DeleteCatalogRegistration401JSONResponse) VisitDeleteCatalogRegistrationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteCatalogRegistration403JSONResponse Error
+
+func (response DeleteCatalogRegistration403JSONResponse) VisitDeleteCatalogRegistrationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteCatalogRegistration404JSONResponse Error
+
+func (response DeleteCatalogRegistration404JSONResponse) VisitDeleteCatalogRegistrationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCatalogRegistrationRequestObject struct {
+	CatalogName CatalogName `json:"catalogName"`
+}
+
+type GetCatalogRegistrationResponseObject interface {
+	VisitGetCatalogRegistrationResponse(w http.ResponseWriter) error
+}
+
+type GetCatalogRegistration200JSONResponse CatalogRegistration
+
+func (response GetCatalogRegistration200JSONResponse) VisitGetCatalogRegistrationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCatalogRegistration401JSONResponse Error
+
+func (response GetCatalogRegistration401JSONResponse) VisitGetCatalogRegistrationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCatalogRegistration404JSONResponse Error
+
+func (response GetCatalogRegistration404JSONResponse) VisitGetCatalogRegistrationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateCatalogRegistrationRequestObject struct {
+	CatalogName CatalogName `json:"catalogName"`
+	Body        *UpdateCatalogRegistrationJSONRequestBody
+}
+
+type UpdateCatalogRegistrationResponseObject interface {
+	VisitUpdateCatalogRegistrationResponse(w http.ResponseWriter) error
+}
+
+type UpdateCatalogRegistration200JSONResponse CatalogRegistration
+
+func (response UpdateCatalogRegistration200JSONResponse) VisitUpdateCatalogRegistrationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateCatalogRegistration401JSONResponse Error
+
+func (response UpdateCatalogRegistration401JSONResponse) VisitUpdateCatalogRegistrationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateCatalogRegistration403JSONResponse Error
+
+func (response UpdateCatalogRegistration403JSONResponse) VisitUpdateCatalogRegistrationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateCatalogRegistration404JSONResponse Error
+
+func (response UpdateCatalogRegistration404JSONResponse) VisitUpdateCatalogRegistrationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetCatalogRequestObject struct {
+	CatalogName CatalogName `json:"catalogName"`
 }
 
 type GetCatalogResponseObject interface {
@@ -5151,43 +5847,44 @@ func (response GetCatalog401JSONResponse) VisitGetCatalogResponse(w http.Respons
 	return json.NewEncoder(w).Encode(response)
 }
 
-type UpdateCatalogRequestObject struct {
-	Body *UpdateCatalogJSONRequestBody
+type GetCatalog404JSONResponse Error
+
+func (response GetCatalog404JSONResponse) VisitGetCatalogResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-type UpdateCatalogResponseObject interface {
-	VisitUpdateCatalogResponse(w http.ResponseWriter) error
+type GetMetastoreSummaryRequestObject struct {
+	CatalogName CatalogName `json:"catalogName"`
 }
 
-type UpdateCatalog200JSONResponse CatalogInfo
+type GetMetastoreSummaryResponseObject interface {
+	VisitGetMetastoreSummaryResponse(w http.ResponseWriter) error
+}
 
-func (response UpdateCatalog200JSONResponse) VisitUpdateCatalogResponse(w http.ResponseWriter) error {
+type GetMetastoreSummary200JSONResponse MetastoreSummary
+
+func (response GetMetastoreSummary200JSONResponse) VisitGetMetastoreSummaryResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type UpdateCatalog401JSONResponse Error
+type GetMetastoreSummary401JSONResponse Error
 
-func (response UpdateCatalog401JSONResponse) VisitUpdateCatalogResponse(w http.ResponseWriter) error {
+func (response GetMetastoreSummary401JSONResponse) VisitGetMetastoreSummaryResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(401)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type UpdateCatalog403JSONResponse Error
-
-func (response UpdateCatalog403JSONResponse) VisitUpdateCatalogResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(403)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
 type ListSchemasRequestObject struct {
-	Params ListSchemasParams
+	CatalogName CatalogName `json:"catalogName"`
+	Params      ListSchemasParams
 }
 
 type ListSchemasResponseObject interface {
@@ -5213,7 +5910,8 @@ func (response ListSchemas401JSONResponse) VisitListSchemasResponse(w http.Respo
 }
 
 type CreateSchemaRequestObject struct {
-	Body *CreateSchemaJSONRequestBody
+	CatalogName CatalogName `json:"catalogName"`
+	Body        *CreateSchemaJSONRequestBody
 }
 
 type CreateSchemaResponseObject interface {
@@ -5266,8 +5964,9 @@ func (response CreateSchema409JSONResponse) VisitCreateSchemaResponse(w http.Res
 }
 
 type DeleteSchemaRequestObject struct {
-	SchemaName string `json:"schemaName"`
-	Params     DeleteSchemaParams
+	CatalogName CatalogName `json:"catalogName"`
+	SchemaName  string      `json:"schemaName"`
+	Params      DeleteSchemaParams
 }
 
 type DeleteSchemaResponseObject interface {
@@ -5319,7 +6018,8 @@ func (response DeleteSchema409JSONResponse) VisitDeleteSchemaResponse(w http.Res
 }
 
 type GetSchemaRequestObject struct {
-	SchemaName string `json:"schemaName"`
+	CatalogName CatalogName `json:"catalogName"`
+	SchemaName  string      `json:"schemaName"`
 }
 
 type GetSchemaResponseObject interface {
@@ -5354,8 +6054,9 @@ func (response GetSchema404JSONResponse) VisitGetSchemaResponse(w http.ResponseW
 }
 
 type UpdateSchemaRequestObject struct {
-	SchemaName string `json:"schemaName"`
-	Body       *UpdateSchemaJSONRequestBody
+	CatalogName CatalogName `json:"catalogName"`
+	SchemaName  string      `json:"schemaName"`
+	Body        *UpdateSchemaJSONRequestBody
 }
 
 type UpdateSchemaResponseObject interface {
@@ -5399,8 +6100,9 @@ func (response UpdateSchema404JSONResponse) VisitUpdateSchemaResponse(w http.Res
 }
 
 type ListTablesRequestObject struct {
-	SchemaName string `json:"schemaName"`
-	Params     ListTablesParams
+	CatalogName CatalogName `json:"catalogName"`
+	SchemaName  string      `json:"schemaName"`
+	Params      ListTablesParams
 }
 
 type ListTablesResponseObject interface {
@@ -5435,8 +6137,9 @@ func (response ListTables404JSONResponse) VisitListTablesResponse(w http.Respons
 }
 
 type CreateTableRequestObject struct {
-	SchemaName string `json:"schemaName"`
-	Body       *CreateTableJSONRequestBody
+	CatalogName CatalogName `json:"catalogName"`
+	SchemaName  string      `json:"schemaName"`
+	Body        *CreateTableJSONRequestBody
 }
 
 type CreateTableResponseObject interface {
@@ -5489,8 +6192,9 @@ func (response CreateTable409JSONResponse) VisitCreateTableResponse(w http.Respo
 }
 
 type DeleteTableRequestObject struct {
-	SchemaName string `json:"schemaName"`
-	TableName  string `json:"tableName"`
+	CatalogName CatalogName `json:"catalogName"`
+	SchemaName  string      `json:"schemaName"`
+	TableName   string      `json:"tableName"`
 }
 
 type DeleteTableResponseObject interface {
@@ -5533,8 +6237,9 @@ func (response DeleteTable404JSONResponse) VisitDeleteTableResponse(w http.Respo
 }
 
 type GetTableRequestObject struct {
-	SchemaName string `json:"schemaName"`
-	TableName  string `json:"tableName"`
+	CatalogName CatalogName `json:"catalogName"`
+	SchemaName  string      `json:"schemaName"`
+	TableName   string      `json:"tableName"`
 }
 
 type GetTableResponseObject interface {
@@ -5569,9 +6274,10 @@ func (response GetTable404JSONResponse) VisitGetTableResponse(w http.ResponseWri
 }
 
 type UpdateTableRequestObject struct {
-	SchemaName string `json:"schemaName"`
-	TableName  string `json:"tableName"`
-	Body       *UpdateTableJSONRequestBody
+	CatalogName CatalogName `json:"catalogName"`
+	SchemaName  string      `json:"schemaName"`
+	TableName   string      `json:"tableName"`
+	Body        *UpdateTableJSONRequestBody
 }
 
 type UpdateTableResponseObject interface {
@@ -5615,9 +6321,10 @@ func (response UpdateTable404JSONResponse) VisitUpdateTableResponse(w http.Respo
 }
 
 type ListTableColumnsRequestObject struct {
-	SchemaName string `json:"schemaName"`
-	TableName  string `json:"tableName"`
-	Params     ListTableColumnsParams
+	CatalogName CatalogName `json:"catalogName"`
+	SchemaName  string      `json:"schemaName"`
+	TableName   string      `json:"tableName"`
+	Params      ListTableColumnsParams
 }
 
 type ListTableColumnsResponseObject interface {
@@ -5652,10 +6359,11 @@ func (response ListTableColumns404JSONResponse) VisitListTableColumnsResponse(w 
 }
 
 type UpdateColumnRequestObject struct {
-	SchemaName string `json:"schemaName"`
-	TableName  string `json:"tableName"`
-	ColumnName string `json:"columnName"`
-	Body       *UpdateColumnJSONRequestBody
+	CatalogName CatalogName `json:"catalogName"`
+	SchemaName  string      `json:"schemaName"`
+	TableName   string      `json:"tableName"`
+	ColumnName  string      `json:"columnName"`
+	Body        *UpdateColumnJSONRequestBody
 }
 
 type UpdateColumnResponseObject interface {
@@ -5699,9 +6407,10 @@ func (response UpdateColumn404JSONResponse) VisitUpdateColumnResponse(w http.Res
 }
 
 type CommitTableIngestionRequestObject struct {
-	SchemaName string `json:"schemaName"`
-	TableName  string `json:"tableName"`
-	Body       *CommitTableIngestionJSONRequestBody
+	CatalogName CatalogName `json:"catalogName"`
+	SchemaName  string      `json:"schemaName"`
+	TableName   string      `json:"tableName"`
+	Body        *CommitTableIngestionJSONRequestBody
 }
 
 type CommitTableIngestionResponseObject interface {
@@ -5754,9 +6463,10 @@ func (response CommitTableIngestion404JSONResponse) VisitCommitTableIngestionRes
 }
 
 type LoadTableExternalFilesRequestObject struct {
-	SchemaName string `json:"schemaName"`
-	TableName  string `json:"tableName"`
-	Body       *LoadTableExternalFilesJSONRequestBody
+	CatalogName CatalogName `json:"catalogName"`
+	SchemaName  string      `json:"schemaName"`
+	TableName   string      `json:"tableName"`
+	Body        *LoadTableExternalFilesJSONRequestBody
 }
 
 type LoadTableExternalFilesResponseObject interface {
@@ -5809,9 +6519,10 @@ func (response LoadTableExternalFiles404JSONResponse) VisitLoadTableExternalFile
 }
 
 type CreateUploadUrlRequestObject struct {
-	SchemaName string `json:"schemaName"`
-	TableName  string `json:"tableName"`
-	Body       *CreateUploadUrlJSONRequestBody
+	CatalogName CatalogName `json:"catalogName"`
+	SchemaName  string      `json:"schemaName"`
+	TableName   string      `json:"tableName"`
+	Body        *CreateUploadUrlJSONRequestBody
 }
 
 type CreateUploadUrlResponseObject interface {
@@ -5864,8 +6575,9 @@ func (response CreateUploadUrl404JSONResponse) VisitCreateUploadUrlResponse(w ht
 }
 
 type ProfileTableRequestObject struct {
-	SchemaName string `json:"schemaName"`
-	TableName  string `json:"tableName"`
+	CatalogName CatalogName `json:"catalogName"`
+	SchemaName  string      `json:"schemaName"`
+	TableName   string      `json:"tableName"`
 }
 
 type ProfileTableResponseObject interface {
@@ -5909,8 +6621,9 @@ func (response ProfileTable404JSONResponse) VisitProfileTableResponse(w http.Res
 }
 
 type ListViewsRequestObject struct {
-	SchemaName string `json:"schemaName"`
-	Params     ListViewsParams
+	CatalogName CatalogName `json:"catalogName"`
+	SchemaName  string      `json:"schemaName"`
+	Params      ListViewsParams
 }
 
 type ListViewsResponseObject interface {
@@ -5945,8 +6658,9 @@ func (response ListViews404JSONResponse) VisitListViewsResponse(w http.ResponseW
 }
 
 type CreateViewRequestObject struct {
-	SchemaName string `json:"schemaName"`
-	Body       *CreateViewJSONRequestBody
+	CatalogName CatalogName `json:"catalogName"`
+	SchemaName  string      `json:"schemaName"`
+	Body        *CreateViewJSONRequestBody
 }
 
 type CreateViewResponseObject interface {
@@ -5999,8 +6713,9 @@ func (response CreateView409JSONResponse) VisitCreateViewResponse(w http.Respons
 }
 
 type DeleteViewRequestObject struct {
-	SchemaName string `json:"schemaName"`
-	ViewName   string `json:"viewName"`
+	CatalogName CatalogName `json:"catalogName"`
+	SchemaName  string      `json:"schemaName"`
+	ViewName    string      `json:"viewName"`
 }
 
 type DeleteViewResponseObject interface {
@@ -6043,8 +6758,9 @@ func (response DeleteView404JSONResponse) VisitDeleteViewResponse(w http.Respons
 }
 
 type GetViewRequestObject struct {
-	SchemaName string `json:"schemaName"`
-	ViewName   string `json:"viewName"`
+	CatalogName CatalogName `json:"catalogName"`
+	SchemaName  string      `json:"schemaName"`
+	ViewName    string      `json:"viewName"`
 }
 
 type GetViewResponseObject interface {
@@ -6079,9 +6795,10 @@ func (response GetView404JSONResponse) VisitGetViewResponse(w http.ResponseWrite
 }
 
 type UpdateViewRequestObject struct {
-	SchemaName string `json:"schemaName"`
-	ViewName   string `json:"viewName"`
-	Body       *UpdateViewJSONRequestBody
+	CatalogName CatalogName `json:"catalogName"`
+	SchemaName  string      `json:"schemaName"`
+	ViewName    string      `json:"viewName"`
+	Body        *UpdateViewJSONRequestBody
 }
 
 type UpdateViewResponseObject interface {
@@ -6125,8 +6842,9 @@ func (response UpdateView404JSONResponse) VisitUpdateViewResponse(w http.Respons
 }
 
 type ListVolumesRequestObject struct {
-	SchemaName string `json:"schemaName"`
-	Params     ListVolumesParams
+	CatalogName CatalogName `json:"catalogName"`
+	SchemaName  string      `json:"schemaName"`
+	Params      ListVolumesParams
 }
 
 type ListVolumesResponseObject interface {
@@ -6161,8 +6879,9 @@ func (response ListVolumes404JSONResponse) VisitListVolumesResponse(w http.Respo
 }
 
 type CreateVolumeRequestObject struct {
-	SchemaName string `json:"schemaName"`
-	Body       *CreateVolumeJSONRequestBody
+	CatalogName CatalogName `json:"catalogName"`
+	SchemaName  string      `json:"schemaName"`
+	Body        *CreateVolumeJSONRequestBody
 }
 
 type CreateVolumeResponseObject interface {
@@ -6215,8 +6934,9 @@ func (response CreateVolume409JSONResponse) VisitCreateVolumeResponse(w http.Res
 }
 
 type DeleteVolumeRequestObject struct {
-	SchemaName string `json:"schemaName"`
-	VolumeName string `json:"volumeName"`
+	CatalogName CatalogName `json:"catalogName"`
+	SchemaName  string      `json:"schemaName"`
+	VolumeName  string      `json:"volumeName"`
 }
 
 type DeleteVolumeResponseObject interface {
@@ -6259,8 +6979,9 @@ func (response DeleteVolume404JSONResponse) VisitDeleteVolumeResponse(w http.Res
 }
 
 type GetVolumeRequestObject struct {
-	SchemaName string `json:"schemaName"`
-	VolumeName string `json:"volumeName"`
+	CatalogName CatalogName `json:"catalogName"`
+	SchemaName  string      `json:"schemaName"`
+	VolumeName  string      `json:"volumeName"`
 }
 
 type GetVolumeResponseObject interface {
@@ -6295,9 +7016,10 @@ func (response GetVolume404JSONResponse) VisitGetVolumeResponse(w http.ResponseW
 }
 
 type UpdateVolumeRequestObject struct {
-	SchemaName string `json:"schemaName"`
-	VolumeName string `json:"volumeName"`
-	Body       *UpdateVolumeJSONRequestBody
+	CatalogName CatalogName `json:"catalogName"`
+	SchemaName  string      `json:"schemaName"`
+	VolumeName  string      `json:"volumeName"`
+	Body        *UpdateVolumeJSONRequestBody
 }
 
 type UpdateVolumeResponseObject interface {
@@ -6334,6 +7056,51 @@ func (response UpdateVolume403JSONResponse) VisitUpdateVolumeResponse(w http.Res
 type UpdateVolume404JSONResponse Error
 
 func (response UpdateVolume404JSONResponse) VisitUpdateVolumeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetDefaultCatalogRequestObject struct {
+	CatalogName CatalogName `json:"catalogName"`
+	Body        *SetDefaultCatalogJSONRequestBody
+}
+
+type SetDefaultCatalogResponseObject interface {
+	VisitSetDefaultCatalogResponse(w http.ResponseWriter) error
+}
+
+type SetDefaultCatalog200JSONResponse CatalogRegistration
+
+func (response SetDefaultCatalog200JSONResponse) VisitSetDefaultCatalogResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetDefaultCatalog401JSONResponse Error
+
+func (response SetDefaultCatalog401JSONResponse) VisitSetDefaultCatalogResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetDefaultCatalog403JSONResponse Error
+
+func (response SetDefaultCatalog403JSONResponse) VisitSetDefaultCatalogResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetDefaultCatalog404JSONResponse Error
+
+func (response SetDefaultCatalog404JSONResponse) VisitSetDefaultCatalogResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
 
@@ -7769,31 +8536,6 @@ func (response CreateManifest404JSONResponse) VisitCreateManifestResponse(w http
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetMetastoreSummaryRequestObject struct {
-}
-
-type GetMetastoreSummaryResponseObject interface {
-	VisitGetMetastoreSummaryResponse(w http.ResponseWriter) error
-}
-
-type GetMetastoreSummary200JSONResponse MetastoreSummary
-
-func (response GetMetastoreSummary200JSONResponse) VisitGetMetastoreSummaryResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GetMetastoreSummary401JSONResponse Error
-
-func (response GetMetastoreSummary401JSONResponse) VisitGetMetastoreSummaryResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(401)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
 type ListPrincipalsRequestObject struct {
 	Params ListPrincipalsParams
 }
@@ -8893,90 +9635,108 @@ type StrictServerInterface interface {
 	// Query audit logs
 	// (GET /audit-logs)
 	ListAuditLogs(ctx context.Context, request ListAuditLogsRequestObject) (ListAuditLogsResponseObject, error)
+	// List registered catalogs
+	// (GET /catalogs)
+	ListCatalogs(ctx context.Context, request ListCatalogsRequestObject) (ListCatalogsResponseObject, error)
+	// Register a new catalog
+	// (POST /catalogs)
+	RegisterCatalog(ctx context.Context, request RegisterCatalogRequestObject) (RegisterCatalogResponseObject, error)
+	// Delete a catalog registration
+	// (DELETE /catalogs/{catalogName})
+	DeleteCatalogRegistration(ctx context.Context, request DeleteCatalogRegistrationRequestObject) (DeleteCatalogRegistrationResponseObject, error)
+	// Get a catalog registration by name
+	// (GET /catalogs/{catalogName})
+	GetCatalogRegistration(ctx context.Context, request GetCatalogRegistrationRequestObject) (GetCatalogRegistrationResponseObject, error)
+	// Update a catalog registration
+	// (PATCH /catalogs/{catalogName})
+	UpdateCatalogRegistration(ctx context.Context, request UpdateCatalogRegistrationRequestObject) (UpdateCatalogRegistrationResponseObject, error)
 	// Get catalog info
-	// (GET /catalog)
+	// (GET /catalogs/{catalogName}/info)
 	GetCatalog(ctx context.Context, request GetCatalogRequestObject) (GetCatalogResponseObject, error)
-	// Update catalog metadata
-	// (PATCH /catalog)
-	UpdateCatalog(ctx context.Context, request UpdateCatalogRequestObject) (UpdateCatalogResponseObject, error)
+	// Get metastore summary
+	// (GET /catalogs/{catalogName}/metastore/summary)
+	GetMetastoreSummary(ctx context.Context, request GetMetastoreSummaryRequestObject) (GetMetastoreSummaryResponseObject, error)
 	// List schemas in the catalog
-	// (GET /catalog/schemas)
+	// (GET /catalogs/{catalogName}/schemas)
 	ListSchemas(ctx context.Context, request ListSchemasRequestObject) (ListSchemasResponseObject, error)
 	// Create a new schema
-	// (POST /catalog/schemas)
+	// (POST /catalogs/{catalogName}/schemas)
 	CreateSchema(ctx context.Context, request CreateSchemaRequestObject) (CreateSchemaResponseObject, error)
 	// Delete a schema
-	// (DELETE /catalog/schemas/{schemaName})
+	// (DELETE /catalogs/{catalogName}/schemas/{schemaName})
 	DeleteSchema(ctx context.Context, request DeleteSchemaRequestObject) (DeleteSchemaResponseObject, error)
 	// Get a schema by name
-	// (GET /catalog/schemas/{schemaName})
+	// (GET /catalogs/{catalogName}/schemas/{schemaName})
 	GetSchema(ctx context.Context, request GetSchemaRequestObject) (GetSchemaResponseObject, error)
 	// Update schema metadata
-	// (PATCH /catalog/schemas/{schemaName})
+	// (PATCH /catalogs/{catalogName}/schemas/{schemaName})
 	UpdateSchema(ctx context.Context, request UpdateSchemaRequestObject) (UpdateSchemaResponseObject, error)
 	// List tables in a schema
-	// (GET /catalog/schemas/{schemaName}/tables)
+	// (GET /catalogs/{catalogName}/schemas/{schemaName}/tables)
 	ListTables(ctx context.Context, request ListTablesRequestObject) (ListTablesResponseObject, error)
 	// Create a new table in a schema
-	// (POST /catalog/schemas/{schemaName}/tables)
+	// (POST /catalogs/{catalogName}/schemas/{schemaName}/tables)
 	CreateTable(ctx context.Context, request CreateTableRequestObject) (CreateTableResponseObject, error)
 	// Delete a table
-	// (DELETE /catalog/schemas/{schemaName}/tables/{tableName})
+	// (DELETE /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName})
 	DeleteTable(ctx context.Context, request DeleteTableRequestObject) (DeleteTableResponseObject, error)
 	// Get a table by name
-	// (GET /catalog/schemas/{schemaName}/tables/{tableName})
+	// (GET /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName})
 	GetTable(ctx context.Context, request GetTableRequestObject) (GetTableResponseObject, error)
 	// Update table metadata
-	// (PATCH /catalog/schemas/{schemaName}/tables/{tableName})
+	// (PATCH /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName})
 	UpdateTable(ctx context.Context, request UpdateTableRequestObject) (UpdateTableResponseObject, error)
 	// List columns of a table
-	// (GET /catalog/schemas/{schemaName}/tables/{tableName}/columns)
+	// (GET /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns)
 	ListTableColumns(ctx context.Context, request ListTableColumnsRequestObject) (ListTableColumnsResponseObject, error)
 	// Update column metadata
-	// (PATCH /catalog/schemas/{schemaName}/tables/{tableName}/columns/{columnName})
+	// (PATCH /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns/{columnName})
 	UpdateColumn(ctx context.Context, request UpdateColumnRequestObject) (UpdateColumnResponseObject, error)
 	// Register uploaded Parquet files in DuckLake
-	// (POST /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/commit)
+	// (POST /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/commit)
 	CommitTableIngestion(ctx context.Context, request CommitTableIngestionRequestObject) (CommitTableIngestionResponseObject, error)
 	// Register existing S3 files in DuckLake
-	// (POST /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/load)
+	// (POST /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/load)
 	LoadTableExternalFiles(ctx context.Context, request LoadTableExternalFilesRequestObject) (LoadTableExternalFilesResponseObject, error)
 	// Get a presigned URL for uploading a Parquet file
-	// (POST /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url)
+	// (POST /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url)
 	CreateUploadUrl(ctx context.Context, request CreateUploadUrlRequestObject) (CreateUploadUrlResponseObject, error)
 	// Profile a table to collect statistics
-	// (POST /catalog/schemas/{schemaName}/tables/{tableName}/profile)
+	// (POST /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/profile)
 	ProfileTable(ctx context.Context, request ProfileTableRequestObject) (ProfileTableResponseObject, error)
 	// List views in a schema
-	// (GET /catalog/schemas/{schemaName}/views)
+	// (GET /catalogs/{catalogName}/schemas/{schemaName}/views)
 	ListViews(ctx context.Context, request ListViewsRequestObject) (ListViewsResponseObject, error)
 	// Create a view in a schema
-	// (POST /catalog/schemas/{schemaName}/views)
+	// (POST /catalogs/{catalogName}/schemas/{schemaName}/views)
 	CreateView(ctx context.Context, request CreateViewRequestObject) (CreateViewResponseObject, error)
 	// Delete a view
-	// (DELETE /catalog/schemas/{schemaName}/views/{viewName})
+	// (DELETE /catalogs/{catalogName}/schemas/{schemaName}/views/{viewName})
 	DeleteView(ctx context.Context, request DeleteViewRequestObject) (DeleteViewResponseObject, error)
 	// Get a view by name
-	// (GET /catalog/schemas/{schemaName}/views/{viewName})
+	// (GET /catalogs/{catalogName}/schemas/{schemaName}/views/{viewName})
 	GetView(ctx context.Context, request GetViewRequestObject) (GetViewResponseObject, error)
 	// Update a view's metadata
-	// (PATCH /catalog/schemas/{schemaName}/views/{viewName})
+	// (PATCH /catalogs/{catalogName}/schemas/{schemaName}/views/{viewName})
 	UpdateView(ctx context.Context, request UpdateViewRequestObject) (UpdateViewResponseObject, error)
 	// List volumes in a schema
-	// (GET /catalog/schemas/{schemaName}/volumes)
+	// (GET /catalogs/{catalogName}/schemas/{schemaName}/volumes)
 	ListVolumes(ctx context.Context, request ListVolumesRequestObject) (ListVolumesResponseObject, error)
 	// Create a volume in a schema
-	// (POST /catalog/schemas/{schemaName}/volumes)
+	// (POST /catalogs/{catalogName}/schemas/{schemaName}/volumes)
 	CreateVolume(ctx context.Context, request CreateVolumeRequestObject) (CreateVolumeResponseObject, error)
 	// Delete a volume
-	// (DELETE /catalog/schemas/{schemaName}/volumes/{volumeName})
+	// (DELETE /catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName})
 	DeleteVolume(ctx context.Context, request DeleteVolumeRequestObject) (DeleteVolumeResponseObject, error)
 	// Get a volume by name
-	// (GET /catalog/schemas/{schemaName}/volumes/{volumeName})
+	// (GET /catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName})
 	GetVolume(ctx context.Context, request GetVolumeRequestObject) (GetVolumeResponseObject, error)
 	// Update a volume
-	// (PATCH /catalog/schemas/{schemaName}/volumes/{volumeName})
+	// (PATCH /catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName})
 	UpdateVolume(ctx context.Context, request UpdateVolumeRequestObject) (UpdateVolumeResponseObject, error)
+	// Set a catalog as the default
+	// (POST /catalogs/{catalogName}/set-default)
+	SetDefaultCatalog(ctx context.Context, request SetDefaultCatalogRequestObject) (SetDefaultCatalogResponseObject, error)
 	// List classification and sensitivity tags
 	// (GET /classifications)
 	ListClassifications(ctx context.Context, request ListClassificationsRequestObject) (ListClassificationsResponseObject, error)
@@ -9079,9 +9839,6 @@ type StrictServerInterface interface {
 	// Create table manifest with presigned URLs and security policies
 	// (POST /manifest)
 	CreateManifest(ctx context.Context, request CreateManifestRequestObject) (CreateManifestResponseObject, error)
-	// Get metastore summary
-	// (GET /metastore/summary)
-	GetMetastoreSummary(ctx context.Context, request GetMetastoreSummaryRequestObject) (GetMetastoreSummaryResponseObject, error)
 	// List all principals
 	// (GET /principals)
 	ListPrincipals(ctx context.Context, request ListPrincipalsRequestObject) (ListPrincipalsResponseObject, error)
@@ -9324,9 +10081,153 @@ func (sh *strictHandler) ListAuditLogs(w http.ResponseWriter, r *http.Request, p
 	}
 }
 
+// ListCatalogs operation middleware
+func (sh *strictHandler) ListCatalogs(w http.ResponseWriter, r *http.Request, params ListCatalogsParams) {
+	var request ListCatalogsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCatalogs(ctx, request.(ListCatalogsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCatalogs")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListCatalogsResponseObject); ok {
+		if err := validResponse.VisitListCatalogsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RegisterCatalog operation middleware
+func (sh *strictHandler) RegisterCatalog(w http.ResponseWriter, r *http.Request) {
+	var request RegisterCatalogRequestObject
+
+	var body RegisterCatalogJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RegisterCatalog(ctx, request.(RegisterCatalogRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RegisterCatalog")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RegisterCatalogResponseObject); ok {
+		if err := validResponse.VisitRegisterCatalogResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteCatalogRegistration operation middleware
+func (sh *strictHandler) DeleteCatalogRegistration(w http.ResponseWriter, r *http.Request, catalogName CatalogName) {
+	var request DeleteCatalogRegistrationRequestObject
+
+	request.CatalogName = catalogName
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteCatalogRegistration(ctx, request.(DeleteCatalogRegistrationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteCatalogRegistration")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteCatalogRegistrationResponseObject); ok {
+		if err := validResponse.VisitDeleteCatalogRegistrationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCatalogRegistration operation middleware
+func (sh *strictHandler) GetCatalogRegistration(w http.ResponseWriter, r *http.Request, catalogName CatalogName) {
+	var request GetCatalogRegistrationRequestObject
+
+	request.CatalogName = catalogName
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCatalogRegistration(ctx, request.(GetCatalogRegistrationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCatalogRegistration")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCatalogRegistrationResponseObject); ok {
+		if err := validResponse.VisitGetCatalogRegistrationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateCatalogRegistration operation middleware
+func (sh *strictHandler) UpdateCatalogRegistration(w http.ResponseWriter, r *http.Request, catalogName CatalogName) {
+	var request UpdateCatalogRegistrationRequestObject
+
+	request.CatalogName = catalogName
+
+	var body UpdateCatalogRegistrationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateCatalogRegistration(ctx, request.(UpdateCatalogRegistrationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateCatalogRegistration")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateCatalogRegistrationResponseObject); ok {
+		if err := validResponse.VisitUpdateCatalogRegistrationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetCatalog operation middleware
-func (sh *strictHandler) GetCatalog(w http.ResponseWriter, r *http.Request) {
+func (sh *strictHandler) GetCatalog(w http.ResponseWriter, r *http.Request, catalogName CatalogName) {
 	var request GetCatalogRequestObject
+
+	request.CatalogName = catalogName
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.GetCatalog(ctx, request.(GetCatalogRequestObject))
@@ -9348,30 +10249,25 @@ func (sh *strictHandler) GetCatalog(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// UpdateCatalog operation middleware
-func (sh *strictHandler) UpdateCatalog(w http.ResponseWriter, r *http.Request) {
-	var request UpdateCatalogRequestObject
+// GetMetastoreSummary operation middleware
+func (sh *strictHandler) GetMetastoreSummary(w http.ResponseWriter, r *http.Request, catalogName CatalogName) {
+	var request GetMetastoreSummaryRequestObject
 
-	var body UpdateCatalogJSONRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
-		return
-	}
-	request.Body = &body
+	request.CatalogName = catalogName
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.UpdateCatalog(ctx, request.(UpdateCatalogRequestObject))
+		return sh.ssi.GetMetastoreSummary(ctx, request.(GetMetastoreSummaryRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "UpdateCatalog")
+		handler = middleware(handler, "GetMetastoreSummary")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(UpdateCatalogResponseObject); ok {
-		if err := validResponse.VisitUpdateCatalogResponse(w); err != nil {
+	} else if validResponse, ok := response.(GetMetastoreSummaryResponseObject); ok {
+		if err := validResponse.VisitGetMetastoreSummaryResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -9380,9 +10276,10 @@ func (sh *strictHandler) UpdateCatalog(w http.ResponseWriter, r *http.Request) {
 }
 
 // ListSchemas operation middleware
-func (sh *strictHandler) ListSchemas(w http.ResponseWriter, r *http.Request, params ListSchemasParams) {
+func (sh *strictHandler) ListSchemas(w http.ResponseWriter, r *http.Request, catalogName CatalogName, params ListSchemasParams) {
 	var request ListSchemasRequestObject
 
+	request.CatalogName = catalogName
 	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
@@ -9406,8 +10303,10 @@ func (sh *strictHandler) ListSchemas(w http.ResponseWriter, r *http.Request, par
 }
 
 // CreateSchema operation middleware
-func (sh *strictHandler) CreateSchema(w http.ResponseWriter, r *http.Request) {
+func (sh *strictHandler) CreateSchema(w http.ResponseWriter, r *http.Request, catalogName CatalogName) {
 	var request CreateSchemaRequestObject
+
+	request.CatalogName = catalogName
 
 	var body CreateSchemaJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -9437,9 +10336,10 @@ func (sh *strictHandler) CreateSchema(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteSchema operation middleware
-func (sh *strictHandler) DeleteSchema(w http.ResponseWriter, r *http.Request, schemaName string, params DeleteSchemaParams) {
+func (sh *strictHandler) DeleteSchema(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, params DeleteSchemaParams) {
 	var request DeleteSchemaRequestObject
 
+	request.CatalogName = catalogName
 	request.SchemaName = schemaName
 	request.Params = params
 
@@ -9464,9 +10364,10 @@ func (sh *strictHandler) DeleteSchema(w http.ResponseWriter, r *http.Request, sc
 }
 
 // GetSchema operation middleware
-func (sh *strictHandler) GetSchema(w http.ResponseWriter, r *http.Request, schemaName string) {
+func (sh *strictHandler) GetSchema(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string) {
 	var request GetSchemaRequestObject
 
+	request.CatalogName = catalogName
 	request.SchemaName = schemaName
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
@@ -9490,9 +10391,10 @@ func (sh *strictHandler) GetSchema(w http.ResponseWriter, r *http.Request, schem
 }
 
 // UpdateSchema operation middleware
-func (sh *strictHandler) UpdateSchema(w http.ResponseWriter, r *http.Request, schemaName string) {
+func (sh *strictHandler) UpdateSchema(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string) {
 	var request UpdateSchemaRequestObject
 
+	request.CatalogName = catalogName
 	request.SchemaName = schemaName
 
 	var body UpdateSchemaJSONRequestBody
@@ -9523,9 +10425,10 @@ func (sh *strictHandler) UpdateSchema(w http.ResponseWriter, r *http.Request, sc
 }
 
 // ListTables operation middleware
-func (sh *strictHandler) ListTables(w http.ResponseWriter, r *http.Request, schemaName string, params ListTablesParams) {
+func (sh *strictHandler) ListTables(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, params ListTablesParams) {
 	var request ListTablesRequestObject
 
+	request.CatalogName = catalogName
 	request.SchemaName = schemaName
 	request.Params = params
 
@@ -9550,9 +10453,10 @@ func (sh *strictHandler) ListTables(w http.ResponseWriter, r *http.Request, sche
 }
 
 // CreateTable operation middleware
-func (sh *strictHandler) CreateTable(w http.ResponseWriter, r *http.Request, schemaName string) {
+func (sh *strictHandler) CreateTable(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string) {
 	var request CreateTableRequestObject
 
+	request.CatalogName = catalogName
 	request.SchemaName = schemaName
 
 	var body CreateTableJSONRequestBody
@@ -9583,9 +10487,10 @@ func (sh *strictHandler) CreateTable(w http.ResponseWriter, r *http.Request, sch
 }
 
 // DeleteTable operation middleware
-func (sh *strictHandler) DeleteTable(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
+func (sh *strictHandler) DeleteTable(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string) {
 	var request DeleteTableRequestObject
 
+	request.CatalogName = catalogName
 	request.SchemaName = schemaName
 	request.TableName = tableName
 
@@ -9610,9 +10515,10 @@ func (sh *strictHandler) DeleteTable(w http.ResponseWriter, r *http.Request, sch
 }
 
 // GetTable operation middleware
-func (sh *strictHandler) GetTable(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
+func (sh *strictHandler) GetTable(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string) {
 	var request GetTableRequestObject
 
+	request.CatalogName = catalogName
 	request.SchemaName = schemaName
 	request.TableName = tableName
 
@@ -9637,9 +10543,10 @@ func (sh *strictHandler) GetTable(w http.ResponseWriter, r *http.Request, schema
 }
 
 // UpdateTable operation middleware
-func (sh *strictHandler) UpdateTable(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
+func (sh *strictHandler) UpdateTable(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string) {
 	var request UpdateTableRequestObject
 
+	request.CatalogName = catalogName
 	request.SchemaName = schemaName
 	request.TableName = tableName
 
@@ -9671,9 +10578,10 @@ func (sh *strictHandler) UpdateTable(w http.ResponseWriter, r *http.Request, sch
 }
 
 // ListTableColumns operation middleware
-func (sh *strictHandler) ListTableColumns(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params ListTableColumnsParams) {
+func (sh *strictHandler) ListTableColumns(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string, params ListTableColumnsParams) {
 	var request ListTableColumnsRequestObject
 
+	request.CatalogName = catalogName
 	request.SchemaName = schemaName
 	request.TableName = tableName
 	request.Params = params
@@ -9699,9 +10607,10 @@ func (sh *strictHandler) ListTableColumns(w http.ResponseWriter, r *http.Request
 }
 
 // UpdateColumn operation middleware
-func (sh *strictHandler) UpdateColumn(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, columnName string) {
+func (sh *strictHandler) UpdateColumn(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string, columnName string) {
 	var request UpdateColumnRequestObject
 
+	request.CatalogName = catalogName
 	request.SchemaName = schemaName
 	request.TableName = tableName
 	request.ColumnName = columnName
@@ -9734,9 +10643,10 @@ func (sh *strictHandler) UpdateColumn(w http.ResponseWriter, r *http.Request, sc
 }
 
 // CommitTableIngestion operation middleware
-func (sh *strictHandler) CommitTableIngestion(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
+func (sh *strictHandler) CommitTableIngestion(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string) {
 	var request CommitTableIngestionRequestObject
 
+	request.CatalogName = catalogName
 	request.SchemaName = schemaName
 	request.TableName = tableName
 
@@ -9768,9 +10678,10 @@ func (sh *strictHandler) CommitTableIngestion(w http.ResponseWriter, r *http.Req
 }
 
 // LoadTableExternalFiles operation middleware
-func (sh *strictHandler) LoadTableExternalFiles(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
+func (sh *strictHandler) LoadTableExternalFiles(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string) {
 	var request LoadTableExternalFilesRequestObject
 
+	request.CatalogName = catalogName
 	request.SchemaName = schemaName
 	request.TableName = tableName
 
@@ -9802,9 +10713,10 @@ func (sh *strictHandler) LoadTableExternalFiles(w http.ResponseWriter, r *http.R
 }
 
 // CreateUploadUrl operation middleware
-func (sh *strictHandler) CreateUploadUrl(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
+func (sh *strictHandler) CreateUploadUrl(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string) {
 	var request CreateUploadUrlRequestObject
 
+	request.CatalogName = catalogName
 	request.SchemaName = schemaName
 	request.TableName = tableName
 
@@ -9836,9 +10748,10 @@ func (sh *strictHandler) CreateUploadUrl(w http.ResponseWriter, r *http.Request,
 }
 
 // ProfileTable operation middleware
-func (sh *strictHandler) ProfileTable(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
+func (sh *strictHandler) ProfileTable(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string) {
 	var request ProfileTableRequestObject
 
+	request.CatalogName = catalogName
 	request.SchemaName = schemaName
 	request.TableName = tableName
 
@@ -9863,9 +10776,10 @@ func (sh *strictHandler) ProfileTable(w http.ResponseWriter, r *http.Request, sc
 }
 
 // ListViews operation middleware
-func (sh *strictHandler) ListViews(w http.ResponseWriter, r *http.Request, schemaName string, params ListViewsParams) {
+func (sh *strictHandler) ListViews(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, params ListViewsParams) {
 	var request ListViewsRequestObject
 
+	request.CatalogName = catalogName
 	request.SchemaName = schemaName
 	request.Params = params
 
@@ -9890,9 +10804,10 @@ func (sh *strictHandler) ListViews(w http.ResponseWriter, r *http.Request, schem
 }
 
 // CreateView operation middleware
-func (sh *strictHandler) CreateView(w http.ResponseWriter, r *http.Request, schemaName string) {
+func (sh *strictHandler) CreateView(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string) {
 	var request CreateViewRequestObject
 
+	request.CatalogName = catalogName
 	request.SchemaName = schemaName
 
 	var body CreateViewJSONRequestBody
@@ -9923,9 +10838,10 @@ func (sh *strictHandler) CreateView(w http.ResponseWriter, r *http.Request, sche
 }
 
 // DeleteView operation middleware
-func (sh *strictHandler) DeleteView(w http.ResponseWriter, r *http.Request, schemaName string, viewName string) {
+func (sh *strictHandler) DeleteView(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, viewName string) {
 	var request DeleteViewRequestObject
 
+	request.CatalogName = catalogName
 	request.SchemaName = schemaName
 	request.ViewName = viewName
 
@@ -9950,9 +10866,10 @@ func (sh *strictHandler) DeleteView(w http.ResponseWriter, r *http.Request, sche
 }
 
 // GetView operation middleware
-func (sh *strictHandler) GetView(w http.ResponseWriter, r *http.Request, schemaName string, viewName string) {
+func (sh *strictHandler) GetView(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, viewName string) {
 	var request GetViewRequestObject
 
+	request.CatalogName = catalogName
 	request.SchemaName = schemaName
 	request.ViewName = viewName
 
@@ -9977,9 +10894,10 @@ func (sh *strictHandler) GetView(w http.ResponseWriter, r *http.Request, schemaN
 }
 
 // UpdateView operation middleware
-func (sh *strictHandler) UpdateView(w http.ResponseWriter, r *http.Request, schemaName string, viewName string) {
+func (sh *strictHandler) UpdateView(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, viewName string) {
 	var request UpdateViewRequestObject
 
+	request.CatalogName = catalogName
 	request.SchemaName = schemaName
 	request.ViewName = viewName
 
@@ -10011,9 +10929,10 @@ func (sh *strictHandler) UpdateView(w http.ResponseWriter, r *http.Request, sche
 }
 
 // ListVolumes operation middleware
-func (sh *strictHandler) ListVolumes(w http.ResponseWriter, r *http.Request, schemaName string, params ListVolumesParams) {
+func (sh *strictHandler) ListVolumes(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, params ListVolumesParams) {
 	var request ListVolumesRequestObject
 
+	request.CatalogName = catalogName
 	request.SchemaName = schemaName
 	request.Params = params
 
@@ -10038,9 +10957,10 @@ func (sh *strictHandler) ListVolumes(w http.ResponseWriter, r *http.Request, sch
 }
 
 // CreateVolume operation middleware
-func (sh *strictHandler) CreateVolume(w http.ResponseWriter, r *http.Request, schemaName string) {
+func (sh *strictHandler) CreateVolume(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string) {
 	var request CreateVolumeRequestObject
 
+	request.CatalogName = catalogName
 	request.SchemaName = schemaName
 
 	var body CreateVolumeJSONRequestBody
@@ -10071,9 +10991,10 @@ func (sh *strictHandler) CreateVolume(w http.ResponseWriter, r *http.Request, sc
 }
 
 // DeleteVolume operation middleware
-func (sh *strictHandler) DeleteVolume(w http.ResponseWriter, r *http.Request, schemaName string, volumeName string) {
+func (sh *strictHandler) DeleteVolume(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, volumeName string) {
 	var request DeleteVolumeRequestObject
 
+	request.CatalogName = catalogName
 	request.SchemaName = schemaName
 	request.VolumeName = volumeName
 
@@ -10098,9 +11019,10 @@ func (sh *strictHandler) DeleteVolume(w http.ResponseWriter, r *http.Request, sc
 }
 
 // GetVolume operation middleware
-func (sh *strictHandler) GetVolume(w http.ResponseWriter, r *http.Request, schemaName string, volumeName string) {
+func (sh *strictHandler) GetVolume(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, volumeName string) {
 	var request GetVolumeRequestObject
 
+	request.CatalogName = catalogName
 	request.SchemaName = schemaName
 	request.VolumeName = volumeName
 
@@ -10125,9 +11047,10 @@ func (sh *strictHandler) GetVolume(w http.ResponseWriter, r *http.Request, schem
 }
 
 // UpdateVolume operation middleware
-func (sh *strictHandler) UpdateVolume(w http.ResponseWriter, r *http.Request, schemaName string, volumeName string) {
+func (sh *strictHandler) UpdateVolume(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, volumeName string) {
 	var request UpdateVolumeRequestObject
 
+	request.CatalogName = catalogName
 	request.SchemaName = schemaName
 	request.VolumeName = volumeName
 
@@ -10151,6 +11074,39 @@ func (sh *strictHandler) UpdateVolume(w http.ResponseWriter, r *http.Request, sc
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateVolumeResponseObject); ok {
 		if err := validResponse.VisitUpdateVolumeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetDefaultCatalog operation middleware
+func (sh *strictHandler) SetDefaultCatalog(w http.ResponseWriter, r *http.Request, catalogName CatalogName) {
+	var request SetDefaultCatalogRequestObject
+
+	request.CatalogName = catalogName
+
+	var body SetDefaultCatalogJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetDefaultCatalog(ctx, request.(SetDefaultCatalogRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetDefaultCatalog")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetDefaultCatalogResponseObject); ok {
+		if err := validResponse.VisitSetDefaultCatalogResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -11118,30 +12074,6 @@ func (sh *strictHandler) CreateManifest(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-// GetMetastoreSummary operation middleware
-func (sh *strictHandler) GetMetastoreSummary(w http.ResponseWriter, r *http.Request) {
-	var request GetMetastoreSummaryRequestObject
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.GetMetastoreSummary(ctx, request.(GetMetastoreSummaryRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetMetastoreSummary")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetMetastoreSummaryResponseObject); ok {
-		if err := validResponse.VisitGetMetastoreSummaryResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
 // ListPrincipals operation middleware
 func (sh *strictHandler) ListPrincipals(w http.ResponseWriter, r *http.Request, params ListPrincipalsParams) {
 	var request ListPrincipalsRequestObject
@@ -11891,157 +12823,165 @@ func (sh *strictHandler) CreateTagAssignment(w http.ResponseWriter, r *http.Requ
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
-	"hC8/2GooVXUa/fj64/8HAAD//3+PyLo3fQEA",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

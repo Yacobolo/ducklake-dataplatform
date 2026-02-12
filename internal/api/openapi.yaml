@@ -16,8 +16,8 @@ security:
 tags:
   - name: Query
     description: Execute SQL queries against the platform.
-  - name: Catalog
-    description: Catalog, schema, table, column, and view management.
+  - name: Catalogs
+    description: Catalog registration, schema, table, column, and view management.
   - name: Ingestion
     description: Data ingestion via upload, commit, and external file loading.
   - name: Security
@@ -48,314 +48,5181 @@ components:
 
   parameters:
     MaxResults:
-      $ref: 'schemas/common.yaml#/parameters/MaxResults'
+      name: max_results
+      in: query
+      description: Maximum number of results to return per page.
+      required: false
+      schema:
+        type: integer
+        default: 100
+        maximum: 1000
     PageToken:
-      $ref: 'schemas/common.yaml#/parameters/PageToken'
+      name: page_token
+      in: query
+      description: Opaque pagination token from a previous response.
+      required: false
+      schema:
+        type: string
+    catalogName:
+      name: catalogName
+      in: path
+      required: true
+      description: Name of the catalog
+      schema:
+        type: string
 
   schemas:
     Error:
-      $ref: 'schemas/common.yaml#/Error'
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+
+    # --- Query ---
     QueryRequest:
-      $ref: 'schemas/common.yaml#/QueryRequest'
+      type: object
+      required: [sql]
+      properties:
+        sql:
+          type: string
+
     QueryResult:
-      $ref: 'schemas/common.yaml#/QueryResult'
+      type: object
+      properties:
+        columns:
+          type: array
+          items:
+            type: string
+        rows:
+          type: array
+          items:
+            type: array
+            items: {}
+        row_count:
+          type: integer
+
+    # --- Principals ---
     Principal:
-      $ref: 'schemas/security.yaml#/Principal'
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        type:
+          type: string
+        is_admin:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
     CreatePrincipalRequest:
-      $ref: 'schemas/security.yaml#/CreatePrincipalRequest'
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          default: user
+        is_admin:
+          type: boolean
+          default: false
+
     UpdatePrincipalAdminRequest:
-      $ref: 'schemas/security.yaml#/UpdatePrincipalAdminRequest'
+      type: object
+      required: [is_admin]
+      properties:
+        is_admin:
+          type: boolean
+
     PaginatedPrincipals:
-      $ref: 'schemas/security.yaml#/PaginatedPrincipals'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Principal'
+        next_page_token:
+          type: string
+
+    # --- Groups ---
     Group:
-      $ref: 'schemas/security.yaml#/Group'
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
     CreateGroupRequest:
-      $ref: 'schemas/security.yaml#/CreateGroupRequest'
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+
     GroupMember:
-      $ref: 'schemas/security.yaml#/GroupMember'
+      type: object
+      properties:
+        group_id:
+          type: integer
+          format: int64
+        member_type:
+          type: string
+        member_id:
+          type: integer
+          format: int64
+
     CreateGroupMemberRequest:
-      $ref: 'schemas/security.yaml#/CreateGroupMemberRequest'
+      type: object
+      required: [member_type, member_id]
+      properties:
+        member_type:
+          type: string
+        member_id:
+          type: integer
+          format: int64
+
     PaginatedGroups:
-      $ref: 'schemas/security.yaml#/PaginatedGroups'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Group'
+        next_page_token:
+          type: string
+
     PaginatedGroupMembers:
-      $ref: 'schemas/security.yaml#/PaginatedGroupMembers'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupMember'
+        next_page_token:
+          type: string
+
+    # --- Grants ---
     PrivilegeGrant:
-      $ref: 'schemas/security.yaml#/PrivilegeGrant'
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        principal_id:
+          type: integer
+          format: int64
+        principal_type:
+          type: string
+        securable_type:
+          type: string
+        securable_id:
+          type: integer
+          format: int64
+        privilege:
+          type: string
+        granted_by:
+          type: integer
+          format: int64
+          nullable: true
+        granted_at:
+          type: string
+          format: date-time
+
     CreateGrantRequest:
-      $ref: 'schemas/security.yaml#/CreateGrantRequest'
+      type: object
+      required: [principal_id, principal_type, securable_type, securable_id, privilege]
+      properties:
+        principal_id:
+          type: integer
+          format: int64
+        principal_type:
+          type: string
+        securable_type:
+          type: string
+        securable_id:
+          type: integer
+          format: int64
+        privilege:
+          type: string
+
     PaginatedGrants:
-      $ref: 'schemas/security.yaml#/PaginatedGrants'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrivilegeGrant'
+        next_page_token:
+          type: string
+
+    # --- API Keys ---
     APIKeyInfo:
-      $ref: 'schemas/security.yaml#/APIKeyInfo'
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        principal_id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        key_prefix:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
     CreateAPIKeyRequest:
-      $ref: 'schemas/security.yaml#/CreateAPIKeyRequest'
+      type: object
+      required: [principal_id, name]
+      properties:
+        principal_id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+
     CreateAPIKeyResponse:
-      $ref: 'schemas/security.yaml#/CreateAPIKeyResponse'
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        key:
+          type: string
+          description: Raw API key (shown only once)
+        name:
+          type: string
+        key_prefix:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
     PaginatedAPIKeys:
-      $ref: 'schemas/security.yaml#/PaginatedAPIKeys'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/APIKeyInfo'
+        next_page_token:
+          type: string
+
     CleanupAPIKeysResponse:
-      $ref: 'schemas/security.yaml#/CleanupAPIKeysResponse'
+      type: object
+      properties:
+        deleted_count:
+          type: integer
+          format: int64
+
+    # --- Row Filters ---
     RowFilter:
-      $ref: 'schemas/security.yaml#/RowFilter'
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        table_id:
+          type: integer
+          format: int64
+        filter_sql:
+          type: string
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
     CreateRowFilterRequest:
-      $ref: 'schemas/security.yaml#/CreateRowFilterRequest'
+      type: object
+      required: [filter_sql]
+      properties:
+        table_id:
+          type: integer
+          format: int64
+          description: Table ID (required when creating via top-level POST /row-filters)
+        filter_sql:
+          type: string
+        description:
+          type: string
+
     RowFilterBindingRequest:
-      $ref: 'schemas/security.yaml#/RowFilterBindingRequest'
+      type: object
+      required: [principal_id, principal_type]
+      properties:
+        principal_id:
+          type: integer
+          format: int64
+        principal_type:
+          type: string
+
     PaginatedRowFilters:
-      $ref: 'schemas/security.yaml#/PaginatedRowFilters'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/RowFilter'
+        next_page_token:
+          type: string
+
+    # --- Column Masks ---
     ColumnMask:
-      $ref: 'schemas/security.yaml#/ColumnMask'
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        table_id:
+          type: integer
+          format: int64
+        column_name:
+          type: string
+        mask_expression:
+          type: string
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
     CreateColumnMaskRequest:
-      $ref: 'schemas/security.yaml#/CreateColumnMaskRequest'
+      type: object
+      required: [column_name, mask_expression]
+      properties:
+        column_name:
+          type: string
+        mask_expression:
+          type: string
+        description:
+          type: string
+
     ColumnMaskBindingRequest:
-      $ref: 'schemas/security.yaml#/ColumnMaskBindingRequest'
+      type: object
+      required: [principal_id, principal_type]
+      properties:
+        principal_id:
+          type: integer
+          format: int64
+        principal_type:
+          type: string
+        see_original:
+          type: boolean
+          default: false
+
     PaginatedColumnMasks:
-      $ref: 'schemas/security.yaml#/PaginatedColumnMasks'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ColumnMask'
+        next_page_token:
+          type: string
+
+    # --- Audit ---
     AuditEntry:
-      $ref: 'schemas/observability.yaml#/AuditEntry'
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        principal_name:
+          type: string
+        action:
+          type: string
+        statement_type:
+          type: string
+          nullable: true
+        original_sql:
+          type: string
+          nullable: true
+        rewritten_sql:
+          type: string
+          nullable: true
+        tables_accessed:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+        error_message:
+          type: string
+          nullable: true
+        duration_ms:
+          type: integer
+          format: int64
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
     PaginatedAuditLogs:
-      $ref: 'schemas/observability.yaml#/PaginatedAuditLogs'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditEntry'
+        next_page_token:
+          type: string
+
+    # --- Manifest ---
     ManifestRequest:
-      $ref: 'schemas/observability.yaml#/ManifestRequest'
+      type: object
+      required: [table]
+      properties:
+        table:
+          type: string
+        schema:
+          type: string
+          default: main
+
     ManifestColumn:
-      $ref: 'schemas/observability.yaml#/ManifestColumn'
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+
     ManifestResponse:
-      $ref: 'schemas/observability.yaml#/ManifestResponse'
+      type: object
+      properties:
+        table:
+          type: string
+        schema:
+          type: string
+        columns:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManifestColumn'
+        files:
+          type: array
+          items:
+            type: string
+        row_filters:
+          type: array
+          items:
+            type: string
+        column_masks:
+          type: object
+          additionalProperties:
+            type: string
+        expires_at:
+          type: string
+          format: date-time
+
+    # --- Catalog Management ---
     CatalogInfo:
-      $ref: 'schemas/catalog.yaml#/CatalogInfo'
+      type: object
+      properties:
+        name:
+          type: string
+        comment:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CatalogRegistration:
+      type: object
+      required: [name, metastore_type, dsn, data_path, status]
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+          description: DuckDB catalog alias, used in SQL as catalog.schema.table
+        metastore_type:
+          type: string
+          enum: [sqlite, postgres]
+          description: Type of metastore backend
+        dsn:
+          type: string
+          description: File path (sqlite) or connection string (postgres)
+        data_path:
+          type: string
+          description: Data path (s3://bucket/path/ or local path)
+        status:
+          type: string
+          enum: [ACTIVE, ERROR, DETACHED]
+        status_message:
+          type: string
+        is_default:
+          type: boolean
+        comment:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    CreateCatalogRequest:
+      type: object
+      required: [name, metastore_type, dsn, data_path]
+      properties:
+        name:
+          type: string
+        metastore_type:
+          type: string
+          enum: [sqlite, postgres]
+        dsn:
+          type: string
+        data_path:
+          type: string
+        comment:
+          type: string
+    UpdateCatalogRegistrationRequest:
+      type: object
+      properties:
+        comment:
+          type: string
+        data_path:
+          type: string
+        dsn:
+          type: string
+    CatalogRegistrationList:
+      type: object
+      properties:
+        catalogs:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogRegistration'
+        next_page_token:
+          type: string
+        total_count:
+          type: integer
+          format: int64
+    SetDefaultCatalogRequest:
+      type: object
+      description: Empty object, the catalog name is in the URL path
+
     SchemaDetail:
-      $ref: 'schemas/catalog.yaml#/SchemaDetail'
+      type: object
+      properties:
+        schema_id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        catalog_name:
+          type: string
+        comment:
+          type: string
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+        owner:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+
     CreateSchemaRequest:
-      $ref: 'schemas/catalog.yaml#/CreateSchemaRequest'
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        comment:
+          type: string
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+        location_name:
+          type: string
+          description: Optional external location name to use for schema storage path.
+
     UpdateSchemaRequest:
-      $ref: 'schemas/catalog.yaml#/UpdateSchemaRequest'
+      type: object
+      properties:
+        comment:
+          type: string
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+
     UpdateTableRequest:
-      $ref: 'schemas/catalog.yaml#/UpdateTableRequest'
+      type: object
+      properties:
+        comment:
+          type: string
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+        owner:
+          type: string
+
     UpdateCatalogRequest:
-      $ref: 'schemas/catalog.yaml#/UpdateCatalogRequest'
+      type: object
+      properties:
+        comment:
+          type: string
+
     PaginatedSchemaDetails:
-      $ref: 'schemas/catalog.yaml#/PaginatedSchemaDetails'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SchemaDetail'
+        next_page_token:
+          type: string
+
     TableDetail:
-      $ref: 'schemas/catalog.yaml#/TableDetail'
+      type: object
+      properties:
+        table_id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        schema_name:
+          type: string
+        catalog_name:
+          type: string
+        table_type:
+          type: string
+        columns:
+          type: array
+          items:
+            $ref: '#/components/schemas/ColumnDetail'
+        comment:
+          type: string
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+        owner:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        statistics:
+          $ref: '#/components/schemas/TableStatistics'
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+        storage_path:
+          type: string
+          description: Resolved DuckLake data path for MANAGED tables.
+        source_path:
+          type: string
+          description: S3/storage path for EXTERNAL tables.
+        file_format:
+          type: string
+          description: File format for EXTERNAL tables (parquet or csv).
+        location_name:
+          type: string
+          description: External location name for EXTERNAL tables.
+
     ColumnDetail:
-      $ref: 'schemas/catalog.yaml#/ColumnDetail'
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        position:
+          type: integer
+        nullable:
+          type: boolean
+          description: Whether the column allows NULL values.
+        comment:
+          type: string
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+
     CreateTableRequest:
-      $ref: 'schemas/catalog.yaml#/CreateTableRequest'
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        columns:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreateColumnRequest'
+          description: Required for MANAGED tables; auto-discovered for EXTERNAL if omitted.
+        comment:
+          type: string
+        table_type:
+          type: string
+          enum: [MANAGED, EXTERNAL]
+          default: MANAGED
+          description: Type of table. MANAGED (default) or EXTERNAL.
+        source_path:
+          type: string
+          description: S3/storage path to the data file(s). Required for EXTERNAL tables.
+        file_format:
+          type: string
+          enum: [parquet, csv]
+          default: parquet
+          description: File format of the external data. Required for EXTERNAL tables.
+        location_name:
+          type: string
+          description: Name of the external location that owns the source path. Required for EXTERNAL tables.
+
     CreateColumnRequest:
-      $ref: 'schemas/catalog.yaml#/CreateColumnRequest'
+      type: object
+      required: [name, type]
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+
     UpdateColumnRequest:
-      $ref: 'schemas/catalog.yaml#/UpdateColumnRequest'
+      type: object
+      properties:
+        comment:
+          type: string
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+
     PaginatedTableDetails:
-      $ref: 'schemas/catalog.yaml#/PaginatedTableDetails'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TableDetail'
+        next_page_token:
+          type: string
+
     PaginatedColumnDetails:
-      $ref: 'schemas/catalog.yaml#/PaginatedColumnDetails'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ColumnDetail'
+        next_page_token:
+          type: string
+
     TableStatistics:
-      $ref: 'schemas/catalog.yaml#/TableStatistics'
+      type: object
+      properties:
+        row_count:
+          type: integer
+          format: int64
+          nullable: true
+        size_bytes:
+          type: integer
+          format: int64
+          nullable: true
+        column_count:
+          type: integer
+          format: int64
+          nullable: true
+        last_profiled_at:
+          type: string
+          format: date-time
+          nullable: true
+        profiled_by:
+          type: string
+
     MetastoreSummary:
-      $ref: 'schemas/catalog.yaml#/MetastoreSummary'
+      type: object
+      properties:
+        catalog_name:
+          type: string
+        metastore_type:
+          type: string
+        storage_backend:
+          type: string
+        data_path:
+          type: string
+        schema_count:
+          type: integer
+          format: int64
+        table_count:
+          type: integer
+          format: int64
+
+    # --- Query History ---
     QueryHistoryEntry:
-      $ref: 'schemas/observability.yaml#/QueryHistoryEntry'
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        principal_name:
+          type: string
+        original_sql:
+          type: string
+          nullable: true
+        rewritten_sql:
+          type: string
+          nullable: true
+        statement_type:
+          type: string
+          nullable: true
+        tables_accessed:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+        error_message:
+          type: string
+          nullable: true
+        duration_ms:
+          type: integer
+          format: int64
+          nullable: true
+        rows_returned:
+          type: integer
+          format: int64
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
     PaginatedQueryHistoryEntries:
-      $ref: 'schemas/observability.yaml#/PaginatedQueryHistoryEntries'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/QueryHistoryEntry'
+        next_page_token:
+          type: string
+
+    # --- Search ---
     SearchResult:
-      $ref: 'schemas/governance.yaml#/SearchResult'
+      type: object
+      properties:
+        type:
+          type: string
+          description: "Object type: schema, table, or column"
+        name:
+          type: string
+        schema_name:
+          type: string
+          nullable: true
+        table_name:
+          type: string
+          nullable: true
+        comment:
+          type: string
+          nullable: true
+        match_field:
+          type: string
+          description: "Field that matched: name, comment, property, or tag"
+
     PaginatedSearchResults:
-      $ref: 'schemas/governance.yaml#/PaginatedSearchResults'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchResult'
+        next_page_token:
+          type: string
+
+    # --- Lineage ---
     LineageEdge:
-      $ref: 'schemas/lineage.yaml#/LineageEdge'
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        source_table:
+          type: string
+        target_table:
+          type: string
+          nullable: true
+        source_schema:
+          type: string
+          description: Schema of the source table
+        target_schema:
+          type: string
+          description: Schema of the target table
+        edge_type:
+          type: string
+          description: "Edge type: READ, WRITE, READ_WRITE"
+        principal_name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
     LineageNode:
-      $ref: 'schemas/lineage.yaml#/LineageNode'
+      type: object
+      properties:
+        table_name:
+          type: string
+        upstream:
+          type: array
+          items:
+            $ref: '#/components/schemas/LineageEdge'
+        downstream:
+          type: array
+          items:
+            $ref: '#/components/schemas/LineageEdge'
+
     PaginatedLineageEdges:
-      $ref: 'schemas/lineage.yaml#/PaginatedLineageEdges'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/LineageEdge'
+        next_page_token:
+          type: string
+
     PurgeLineageRequest:
-      $ref: 'schemas/lineage.yaml#/PurgeLineageRequest'
+      type: object
+      required: [older_than_days]
+      properties:
+        older_than_days:
+          type: integer
+          description: Delete lineage edges older than this many days.
+
     PurgeLineageResponse:
-      $ref: 'schemas/lineage.yaml#/PurgeLineageResponse'
+      type: object
+      properties:
+        deleted_count:
+          type: integer
+          format: int64
+
+    # --- Tags ---
     Tag:
-      $ref: 'schemas/governance.yaml#/Tag'
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        key:
+          type: string
+        value:
+          type: string
+          nullable: true
+        created_by:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
     CreateTagRequest:
-      $ref: 'schemas/governance.yaml#/CreateTagRequest'
+      type: object
+      required: [key]
+      properties:
+        key:
+          type: string
+        value:
+          type: string
+
     TagAssignment:
-      $ref: 'schemas/governance.yaml#/TagAssignment'
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        tag_id:
+          type: integer
+          format: int64
+        securable_type:
+          type: string
+        securable_id:
+          type: integer
+          format: int64
+        column_name:
+          type: string
+          nullable: true
+        assigned_by:
+          type: string
+        assigned_at:
+          type: string
+          format: date-time
+
     CreateTagAssignmentRequest:
-      $ref: 'schemas/governance.yaml#/CreateTagAssignmentRequest'
+      type: object
+      required: [securable_type, securable_id]
+      properties:
+        securable_type:
+          type: string
+        securable_id:
+          type: integer
+          format: int64
+        column_name:
+          type: string
+
     PaginatedTags:
-      $ref: 'schemas/governance.yaml#/PaginatedTags'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        next_page_token:
+          type: string
+
+    # --- Views ---
     ViewDetail:
-      $ref: 'schemas/catalog.yaml#/ViewDetail'
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        schema_id:
+          type: integer
+          format: int64
+        schema_name:
+          type: string
+        catalog_name:
+          type: string
+        name:
+          type: string
+        view_definition:
+          type: string
+        comment:
+          type: string
+          nullable: true
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+        owner:
+          type: string
+        source_tables:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
     CreateViewRequest:
-      $ref: 'schemas/catalog.yaml#/CreateViewRequest'
+      type: object
+      required: [name, view_definition]
+      properties:
+        name:
+          type: string
+        view_definition:
+          type: string
+        comment:
+          type: string
+
     UpdateViewRequest:
-      $ref: 'schemas/catalog.yaml#/UpdateViewRequest'
+      type: object
+      properties:
+        comment:
+          type: string
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+        view_definition:
+          type: string
+
     PaginatedViewDetails:
-      $ref: 'schemas/catalog.yaml#/PaginatedViewDetails'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ViewDetail'
+        next_page_token:
+          type: string
+
+    # --- Storage Credentials ---
     StorageCredential:
-      $ref: 'schemas/storage.yaml#/StorageCredential'
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        credential_type:
+          type: string
+          enum: [S3, AZURE, GCS]
+        # S3 fields (write-only: key_id and secret are never returned)
+        endpoint:
+          type: string
+        region:
+          type: string
+        url_style:
+          type: string
+        # Azure fields (write-only: account_key and client_secret are never returned)
+        azure_account_name:
+          type: string
+        azure_client_id:
+          type: string
+        azure_tenant_id:
+          type: string
+        # GCS fields
+        gcs_key_file_path:
+          type: string
+        comment:
+          type: string
+        owner:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
     CreateStorageCredentialRequest:
-      $ref: 'schemas/storage.yaml#/CreateStorageCredentialRequest'
+      type: object
+      required: [name, credential_type]
+      properties:
+        name:
+          type: string
+        credential_type:
+          type: string
+          enum: [S3, AZURE, GCS]
+        # S3 fields (required when credential_type = S3)
+        key_id:
+          type: string
+        secret:
+          type: string
+        endpoint:
+          type: string
+        region:
+          type: string
+        url_style:
+          type: string
+          default: path
+        # Azure fields (required when credential_type = AZURE)
+        azure_account_name:
+          type: string
+        azure_account_key:
+          type: string
+        azure_client_id:
+          type: string
+        azure_tenant_id:
+          type: string
+        azure_client_secret:
+          type: string
+        # GCS fields (required when credential_type = GCS)
+        gcs_key_file_path:
+          type: string
+        comment:
+          type: string
+
     UpdateStorageCredentialRequest:
-      $ref: 'schemas/storage.yaml#/UpdateStorageCredentialRequest'
+      type: object
+      properties:
+        # S3 fields
+        key_id:
+          type: string
+        secret:
+          type: string
+        endpoint:
+          type: string
+        region:
+          type: string
+        url_style:
+          type: string
+        # Azure fields
+        azure_account_name:
+          type: string
+        azure_account_key:
+          type: string
+        azure_client_id:
+          type: string
+        azure_tenant_id:
+          type: string
+        azure_client_secret:
+          type: string
+        # GCS fields
+        gcs_key_file_path:
+          type: string
+        comment:
+          type: string
+
     PaginatedStorageCredentials:
-      $ref: 'schemas/storage.yaml#/PaginatedStorageCredentials'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/StorageCredential'
+        next_page_token:
+          type: string
+
+    # --- External Locations ---
     ExternalLocation:
-      $ref: 'schemas/storage.yaml#/ExternalLocation'
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        url:
+          type: string
+        credential_name:
+          type: string
+        storage_type:
+          type: string
+        comment:
+          type: string
+        owner:
+          type: string
+        read_only:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
     CreateExternalLocationRequest:
-      $ref: 'schemas/storage.yaml#/CreateExternalLocationRequest'
+      type: object
+      required: [name, url, credential_name]
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+        credential_name:
+          type: string
+        storage_type:
+          type: string
+          enum: [S3]
+          default: S3
+        comment:
+          type: string
+        read_only:
+          type: boolean
+          default: false
+
     UpdateExternalLocationRequest:
-      $ref: 'schemas/storage.yaml#/UpdateExternalLocationRequest'
+      type: object
+      properties:
+        url:
+          type: string
+        credential_name:
+          type: string
+        comment:
+          type: string
+        read_only:
+          type: boolean
+        owner:
+          type: string
+
     PaginatedExternalLocations:
-      $ref: 'schemas/storage.yaml#/PaginatedExternalLocations'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExternalLocation'
+        next_page_token:
+          type: string
+
+    # --- Volumes ---
     VolumeDetail:
-      $ref: 'schemas/catalog.yaml#/VolumeDetail'
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        schema_name:
+          type: string
+        catalog_name:
+          type: string
+        volume_type:
+          type: string
+          enum: [MANAGED, EXTERNAL]
+        storage_location:
+          type: string
+        comment:
+          type: string
+        owner:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
     CreateVolumeRequest:
-      $ref: 'schemas/catalog.yaml#/CreateVolumeRequest'
+      type: object
+      required: [name, volume_type]
+      properties:
+        name:
+          type: string
+        volume_type:
+          type: string
+          enum: [MANAGED, EXTERNAL]
+        storage_location:
+          type: string
+          description: Required for EXTERNAL volumes. Ignored for MANAGED.
+        comment:
+          type: string
+
     UpdateVolumeRequest:
-      $ref: 'schemas/catalog.yaml#/UpdateVolumeRequest'
+      type: object
+      properties:
+        new_name:
+          type: string
+        comment:
+          type: string
+        owner:
+          type: string
+
     PaginatedVolumes:
-      $ref: 'schemas/catalog.yaml#/PaginatedVolumes'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/VolumeDetail'
+        next_page_token:
+          type: string
+
+    # --- Ingestion ---
     UploadUrlRequest:
-      $ref: 'schemas/ingestion.yaml#/UploadUrlRequest'
+      type: object
+      properties:
+        filename:
+          type: string
+          description: Optional filename hint for the uploaded file.
+
     UploadUrlResponse:
-      $ref: 'schemas/ingestion.yaml#/UploadUrlResponse'
+      type: object
+      properties:
+        upload_url:
+          type: string
+          description: Presigned PUT URL for uploading the Parquet file.
+        s3_key:
+          type: string
+          description: The S3 key where the file will be stored.
+        expires_at:
+          type: string
+          format: date-time
+          description: When the presigned URL expires.
+
     IngestionOptions:
-      $ref: 'schemas/ingestion.yaml#/IngestionOptions'
+      type: object
+      properties:
+        allow_missing_columns:
+          type: boolean
+          default: false
+          description: Allow columns in the table that are missing from the Parquet file.
+        ignore_extra_columns:
+          type: boolean
+          default: false
+          description: Ignore columns in the Parquet file not present in the table.
+
     CommitIngestionRequest:
-      $ref: 'schemas/ingestion.yaml#/CommitIngestionRequest'
+      type: object
+      required: [s3_keys]
+      properties:
+        s3_keys:
+          type: array
+          items:
+            type: string
+          description: S3 keys returned from upload-url to register.
+        options:
+          $ref: '#/components/schemas/IngestionOptions'
+
     LoadExternalRequest:
-      $ref: 'schemas/ingestion.yaml#/LoadExternalRequest'
+      type: object
+      required: [paths]
+      properties:
+        paths:
+          type: array
+          items:
+            type: string
+          description: S3 paths or globs to register.
+        options:
+          $ref: '#/components/schemas/IngestionOptions'
+
     IngestionResult:
-      $ref: 'schemas/ingestion.yaml#/IngestionResult'
+      type: object
+      properties:
+        files_registered:
+          type: integer
+          description: Number of files successfully registered.
+        files_skipped:
+          type: integer
+          description: Number of files skipped (e.g., empty files).
+        schema:
+          type: string
+        table:
+          type: string
+
+    # --- Compute Endpoints ---
     ComputeEndpoint:
-      $ref: 'schemas/compute.yaml#/ComputeEndpoint'
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        external_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        url:
+          type: string
+        type:
+          type: string
+          enum: [LOCAL, REMOTE]
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE, STARTING, STOPPING, ERROR]
+        size:
+          type: string
+          enum: [SMALL, MEDIUM, LARGE]
+        max_memory_gb:
+          type: integer
+          format: int64
+        owner:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
     CreateComputeEndpointRequest:
-      $ref: 'schemas/compute.yaml#/CreateComputeEndpointRequest'
+      type: object
+      required: [name, url, type]
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+        type:
+          type: string
+          enum: [LOCAL, REMOTE]
+        size:
+          type: string
+          enum: [SMALL, MEDIUM, LARGE]
+        max_memory_gb:
+          type: integer
+          format: int64
+        auth_token:
+          type: string
+          description: Pre-shared secret for remote agent authentication.
+
     UpdateComputeEndpointRequest:
-      $ref: 'schemas/compute.yaml#/UpdateComputeEndpointRequest'
+      type: object
+      properties:
+        url:
+          type: string
+        size:
+          type: string
+          enum: [SMALL, MEDIUM, LARGE]
+        max_memory_gb:
+          type: integer
+          format: int64
+        auth_token:
+          type: string
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE, STARTING, STOPPING, ERROR]
+
     PaginatedComputeEndpoints:
-      $ref: 'schemas/compute.yaml#/PaginatedComputeEndpoints'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComputeEndpoint'
+        next_page_token:
+          type: string
+
     ComputeAssignment:
-      $ref: 'schemas/compute.yaml#/ComputeAssignment'
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        principal_id:
+          type: integer
+          format: int64
+        principal_type:
+          type: string
+          enum: [user, group]
+        endpoint_id:
+          type: integer
+          format: int64
+        endpoint_name:
+          type: string
+        is_default:
+          type: boolean
+        fallback_local:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
     CreateComputeAssignmentRequest:
-      $ref: 'schemas/compute.yaml#/CreateComputeAssignmentRequest'
+      type: object
+      required: [principal_id, principal_type]
+      properties:
+        principal_id:
+          type: integer
+          format: int64
+        principal_type:
+          type: string
+          enum: [user, group]
+        is_default:
+          type: boolean
+          default: true
+        fallback_local:
+          type: boolean
+          default: false
+
     PaginatedComputeAssignments:
-      $ref: 'schemas/compute.yaml#/PaginatedComputeAssignments'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComputeAssignment'
+        next_page_token:
+          type: string
+
     ComputeEndpointHealth:
-      $ref: 'schemas/compute.yaml#/ComputeEndpointHealth'
+      type: object
+      properties:
+        status:
+          type: string
+          description: Health status (e.g. "ok")
+        uptime_seconds:
+          type: integer
+          description: Agent uptime in seconds
+        duckdb_version:
+          type: string
+          description: DuckDB version running on the agent
+        memory_used_mb:
+          type: integer
+          description: Current memory usage in MB
+        max_memory_gb:
+          type: integer
+          description: Maximum memory limit in GB
+        endpoint_name:
+          type: string
+          description: Name of the compute endpoint
 
 paths:
+  # === Query ===
   /query:
-    $ref: 'paths/query.yaml#/paths/~1query'
+    post:
+      operationId: executeQuery
+      summary: Execute SQL as authenticated principal
+      tags: [Query]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueryRequest'
+      responses:
+        '200':
+          description: Query result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryResult'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  # === Principals ===
   /principals:
-    $ref: 'paths/security.yaml#/paths/~1principals'
+    get:
+      operationId: listPrincipals
+      summary: List all principals
+      tags: [Security]
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of principals
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPrincipals'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: createPrincipal
+      summary: Create a principal
+      tags: [Security]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePrincipalRequest'
+      responses:
+        '201':
+          description: Created principal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Principal'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /principals/{principalId}:
-    $ref: 'paths/security.yaml#/paths/~1principals~1{principalId}'
+    parameters:
+      - name: principalId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    get:
+      operationId: getPrincipal
+      summary: Get principal by ID
+      tags: [Security]
+      responses:
+        '200':
+          description: Principal details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Principal'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: deletePrincipal
+      summary: Delete a principal
+      tags: [Security]
+      responses:
+        '204':
+          description: Deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /principals/{principalId}/admin:
-    $ref: 'paths/security.yaml#/paths/~1principals~1{principalId}~1admin'
+    parameters:
+      - name: principalId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    put:
+      operationId: updatePrincipalAdmin
+      summary: Set or unset admin flag
+      tags: [Security]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePrincipalAdminRequest'
+      responses:
+        '204':
+          description: Updated
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  # === Groups ===
   /groups:
-    $ref: 'paths/security.yaml#/paths/~1groups'
+    get:
+      operationId: listGroups
+      summary: List all groups
+      tags: [Security]
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of groups
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGroups'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: createGroup
+      summary: Create a group
+      tags: [Security]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGroupRequest'
+      responses:
+        '201':
+          description: Created group
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /groups/{groupId}:
-    $ref: 'paths/security.yaml#/paths/~1groups~1{groupId}'
+    parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    get:
+      operationId: getGroup
+      summary: Get group by ID
+      tags: [Security]
+      responses:
+        '200':
+          description: Group details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: deleteGroup
+      summary: Delete a group
+      tags: [Security]
+      responses:
+        '204':
+          description: Deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /groups/{groupId}/members:
-    $ref: 'paths/security.yaml#/paths/~1groups~1{groupId}~1members'
+    parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    get:
+      operationId: listGroupMembers
+      summary: List group members
+      tags: [Security]
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of members
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGroupMembers'
+        '404':
+          description: Group not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: createGroupMember
+      summary: Add member to group
+      tags: [Security]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGroupMemberRequest'
+      responses:
+        '204':
+          description: Member added
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Group not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: deleteGroupMember
+      summary: Remove member from group
+      tags: [Security]
+      parameters:
+        - name: member_type
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: member_id
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Member removed
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Group or member not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  # === Grants ===
   /grants:
-    $ref: 'paths/security.yaml#/paths/~1grants'
+    get:
+      operationId: listGrants
+      summary: List grants
+      tags: [Security]
+      parameters:
+        - name: principal_id
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: principal_type
+          in: query
+          schema:
+            type: string
+        - name: securable_type
+          in: query
+          schema:
+            type: string
+        - name: securable_id
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of grants
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGrants'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: createGrant
+      summary: Grant a privilege
+      tags: [Security]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGrantRequest'
+      responses:
+        '201':
+          description: Granted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivilegeGrant'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Grant already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /grants/{grantId}:
-    $ref: 'paths/security.yaml#/paths/~1grants~1{grantId}'
+    parameters:
+      - name: grantId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    delete:
+      operationId: deleteGrant
+      summary: Revoke a privilege
+      tags: [Security]
+      responses:
+        '204':
+          description: Revoked
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Grant not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  # === API Keys ===
   /api-keys:
-    $ref: 'paths/security.yaml#/paths/~1api-keys'
+    get:
+      operationId: listAPIKeys
+      summary: List API keys for a principal
+      tags: [Security]
+      parameters:
+        - name: principal_id
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of API keys (no raw key values)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAPIKeys'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: createAPIKey
+      summary: Create a new API key
+      tags: [Security]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAPIKeyRequest'
+      responses:
+        '201':
+          description: API key created (raw key shown only once)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateAPIKeyResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /api-keys/{apiKeyId}:
-    $ref: 'paths/security.yaml#/paths/~1api-keys~1{apiKeyId}'
+    parameters:
+      - name: apiKeyId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    delete:
+      operationId: deleteAPIKey
+      summary: Delete an API key
+      tags: [Security]
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /api-keys/cleanup:
-    $ref: 'paths/security.yaml#/paths/~1api-keys~1cleanup'
+    post:
+      operationId: cleanupExpiredAPIKeys
+      summary: Delete all expired API keys (admin only)
+      tags: [Security]
+      responses:
+        '200':
+          description: Number of keys deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CleanupAPIKeysResponse'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  # === Row Filters ===
   /tables/{tableId}/row-filters:
-    $ref: 'paths/security.yaml#/paths/~1tables~1{tableId}~1row-filters'
+    parameters:
+      - name: tableId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    get:
+      operationId: listRowFilters
+      summary: List row filters for table
+      tags: [Security]
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of filters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRowFilters'
+        '404':
+          description: Table not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: createRowFilter
+      summary: Create row filter
+      tags: [Security]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRowFilterRequest'
+      responses:
+        '201':
+          description: Created filter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RowFilter'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Table not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /row-filters/{rowFilterId}:
-    $ref: 'paths/security.yaml#/paths/~1row-filters~1{rowFilterId}'
+    parameters:
+      - name: rowFilterId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    delete:
+      operationId: deleteRowFilter
+      summary: Delete row filter
+      tags: [Security]
+      responses:
+        '204':
+          description: Deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /row-filters/{rowFilterId}/bindings:
-    $ref: 'paths/security.yaml#/paths/~1row-filters~1{rowFilterId}~1bindings'
+    parameters:
+      - name: rowFilterId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    post:
+      operationId: bindRowFilter
+      summary: Bind filter to principal
+      tags: [Security]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RowFilterBindingRequest'
+      responses:
+        '204':
+          description: Bound
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Row filter not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: unbindRowFilter
+      summary: Unbind filter from principal
+      tags: [Security]
+      parameters:
+        - name: principal_id
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: principal_type
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Unbound
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Row filter not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /row-filters:
-    $ref: 'paths/security.yaml#/paths/~1row-filters'
+    post:
+      operationId: createRowFilterTopLevel
+      summary: Create row filter (top-level)
+      tags: [Security]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRowFilterRequest'
+      responses:
+        '201':
+          description: Created filter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RowFilter'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Table not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  # === Column Masks ===
   /tables/{tableId}/column-masks:
-    $ref: 'paths/security.yaml#/paths/~1tables~1{tableId}~1column-masks'
+    parameters:
+      - name: tableId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    get:
+      operationId: listColumnMasks
+      summary: List column masks
+      tags: [Security]
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of masks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedColumnMasks'
+        '404':
+          description: Table not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: createColumnMask
+      summary: Create column mask
+      tags: [Security]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateColumnMaskRequest'
+      responses:
+        '201':
+          description: Created mask
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ColumnMask'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Table not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /column-masks/{columnMaskId}:
-    $ref: 'paths/security.yaml#/paths/~1column-masks~1{columnMaskId}'
+    parameters:
+      - name: columnMaskId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    delete:
+      operationId: deleteColumnMask
+      summary: Delete column mask
+      tags: [Security]
+      responses:
+        '204':
+          description: Deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /column-masks/{columnMaskId}/bindings:
-    $ref: 'paths/security.yaml#/paths/~1column-masks~1{columnMaskId}~1bindings'
+    parameters:
+      - name: columnMaskId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    post:
+      operationId: bindColumnMask
+      summary: Bind mask to principal
+      tags: [Security]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ColumnMaskBindingRequest'
+      responses:
+        '204':
+          description: Bound
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Column mask not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: unbindColumnMask
+      summary: Unbind mask from principal
+      tags: [Security]
+      parameters:
+        - name: principal_id
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: principal_type
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Unbound
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Column mask not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  # === Manifest ===
   /manifest:
-    $ref: 'paths/observability.yaml#/paths/~1manifest'
+    post:
+      operationId: createManifest
+      summary: Create table manifest with presigned URLs and security policies
+      tags: [Manifest]
+      description: >
+        Returns presigned S3 URLs for the Parquet files backing a table,
+        along with RLS row filters and column masks for the authenticated
+        principal. Used by the duck_access DuckDB extension for secure
+        client-side querying.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ManifestRequest'
+      responses:
+        '200':
+          description: Manifest with presigned URLs and security policies
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManifestResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Table not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # === Audit Logs ===
   /audit-logs:
-    $ref: 'paths/observability.yaml#/paths/~1audit-logs'
-  /catalog:
-    $ref: 'paths/catalog.yaml#/paths/~1catalog'
-  /catalog/schemas:
-    $ref: 'paths/catalog.yaml#/paths/~1catalog~1schemas'
-  /catalog/schemas/{schemaName}:
-    $ref: 'paths/catalog.yaml#/paths/~1catalog~1schemas~1{schemaName}'
-  /catalog/schemas/{schemaName}/tables:
-    $ref: 'paths/catalog.yaml#/paths/~1catalog~1schemas~1{schemaName}~1tables'
-  /catalog/schemas/{schemaName}/tables/{tableName}:
-    $ref: 'paths/catalog.yaml#/paths/~1catalog~1schemas~1{schemaName}~1tables~1{tableName}'
-  /catalog/schemas/{schemaName}/tables/{tableName}/columns:
-    $ref: 'paths/catalog.yaml#/paths/~1catalog~1schemas~1{schemaName}~1tables~1{tableName}~1columns'
-  /catalog/schemas/{schemaName}/tables/{tableName}/columns/{columnName}:
-    $ref: 'paths/catalog.yaml#/paths/~1catalog~1schemas~1{schemaName}~1tables~1{tableName}~1columns~1{columnName}'
-  /catalog/schemas/{schemaName}/tables/{tableName}/profile:
-    $ref: 'paths/catalog.yaml#/paths/~1catalog~1schemas~1{schemaName}~1tables~1{tableName}~1profile'
-  /metastore/summary:
-    $ref: 'paths/observability.yaml#/paths/~1metastore~1summary'
+    get:
+      operationId: listAuditLogs
+      summary: Query audit logs
+      tags: [Observability]
+      parameters:
+        - name: principal_name
+          in: query
+          schema:
+            type: string
+        - name: action
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated audit log entries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAuditLogs'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  # === Catalog Registration ===
+  /catalogs:
+    post:
+      operationId: registerCatalog
+      summary: Register a new catalog
+      tags: [Catalogs]
+      description: Registers a new DuckLake catalog with the platform.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCatalogRequest'
+      responses:
+        '201':
+          description: Catalog registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogRegistration'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Catalog already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      operationId: listCatalogs
+      summary: List registered catalogs
+      tags: [Catalogs]
+      description: Returns a paginated list of registered catalogs.
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of catalogs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogRegistrationList'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /catalogs/{catalogName}:
+    parameters:
+      - $ref: '#/components/parameters/catalogName'
+    get:
+      operationId: getCatalogRegistration
+      summary: Get a catalog registration by name
+      tags: [Catalogs]
+      responses:
+        '200':
+          description: Catalog registration details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogRegistration'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      operationId: updateCatalogRegistration
+      summary: Update a catalog registration
+      tags: [Catalogs]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCatalogRegistrationRequest'
+      responses:
+        '200':
+          description: Updated catalog registration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogRegistration'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: deleteCatalogRegistration
+      summary: Delete a catalog registration
+      tags: [Catalogs]
+      responses:
+        '204':
+          description: Catalog deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /catalogs/{catalogName}/set-default:
+    parameters:
+      - $ref: '#/components/parameters/catalogName'
+    post:
+      operationId: setDefaultCatalog
+      summary: Set a catalog as the default
+      tags: [Catalogs]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetDefaultCatalogRequest'
+      responses:
+        '200':
+          description: Catalog set as default
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogRegistration'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /catalogs/{catalogName}/info:
+    parameters:
+      - $ref: '#/components/parameters/catalogName'
+    get:
+      operationId: getCatalog
+      summary: Get catalog info
+      tags: [Catalogs]
+      description: Returns information about a DuckLake catalog.
+      responses:
+        '200':
+          description: Catalog information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogInfo'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  # === Catalog Schemas, Tables, Columns, Views, Volumes, Ingestion ===
+  /catalogs/{catalogName}/schemas:
+    parameters:
+      - $ref: '#/components/parameters/catalogName'
+    get:
+      operationId: listSchemas
+      summary: List schemas in the catalog
+      tags: [Catalogs]
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of schemas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSchemaDetails'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: createSchema
+      summary: Create a new schema
+      tags: [Catalogs]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSchemaRequest'
+      responses:
+        '201':
+          description: Schema created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaDetail'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Schema already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /catalogs/{catalogName}/schemas/{schemaName}:
+    parameters:
+      - $ref: '#/components/parameters/catalogName'
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getSchema
+      summary: Get a schema by name
+      tags: [Catalogs]
+      responses:
+        '200':
+          description: Schema details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaDetail'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      operationId: updateSchema
+      summary: Update schema metadata
+      tags: [Catalogs]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSchemaRequest'
+      responses:
+        '200':
+          description: Updated schema
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaDetail'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: deleteSchema
+      summary: Delete a schema
+      tags: [Catalogs]
+      parameters:
+        - name: force
+          in: query
+          description: Force deletion even if the schema contains tables.
+          required: false
+          schema:
+            type: boolean
+      responses:
+        '204':
+          description: Schema deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Schema not empty
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /catalogs/{catalogName}/schemas/{schemaName}/tables:
+    parameters:
+      - $ref: '#/components/parameters/catalogName'
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: listTables
+      summary: List tables in a schema
+      tags: [Catalogs]
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of tables
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTableDetails'
+        '404':
+          description: Schema not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: createTable
+      summary: Create a new table in a schema
+      tags: [Catalogs]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTableRequest'
+      responses:
+        '201':
+          description: Table created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableDetail'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Table already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}:
+    parameters:
+      - $ref: '#/components/parameters/catalogName'
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: tableName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getTable
+      summary: Get a table by name
+      tags: [Catalogs]
+      responses:
+        '200':
+          description: Table details including columns
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableDetail'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      operationId: updateTable
+      summary: Update table metadata
+      tags: [Catalogs]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTableRequest'
+      responses:
+        '200':
+          description: Updated table
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableDetail'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: deleteTable
+      summary: Delete a table
+      tags: [Catalogs]
+      responses:
+        '204':
+          description: Table deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns:
+    parameters:
+      - $ref: '#/components/parameters/catalogName'
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: tableName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: listTableColumns
+      summary: List columns of a table
+      tags: [Catalogs]
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of columns
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedColumnDetails'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns/{columnName}:
+    parameters:
+      - $ref: '#/components/parameters/catalogName'
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: tableName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: columnName
+        in: path
+        required: true
+        schema:
+          type: string
+    patch:
+      operationId: updateColumn
+      summary: Update column metadata
+      tags: [Catalogs]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateColumnRequest'
+      responses:
+        '200':
+          description: Updated column
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ColumnDetail'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/profile:
+    parameters:
+      - $ref: '#/components/parameters/catalogName'
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: tableName
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      operationId: profileTable
+      summary: Profile a table to collect statistics
+      tags: [Catalogs]
+      description: Runs profiling queries and stores statistics (row count, column count, size).
+      responses:
+        '200':
+          description: Table statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableStatistics'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  # === Metastore ===
+  /catalogs/{catalogName}/metastore/summary:
+    parameters:
+      - $ref: '#/components/parameters/catalogName'
+    get:
+      operationId: getMetastoreSummary
+      summary: Get metastore summary
+      tags: [Observability]
+      description: Returns high-level information about the DuckLake metastore for a specific catalog.
+      responses:
+        '200':
+          description: Metastore summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetastoreSummary'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  # === Query History ===
   /query-history:
-    $ref: 'paths/observability.yaml#/paths/~1query-history'
+    get:
+      operationId: listQueryHistory
+      summary: List query execution history
+      tags: [Observability]
+      parameters:
+        - name: principal_name
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated query history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedQueryHistoryEntries'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  # === Search ===
   /search:
-    $ref: 'paths/governance.yaml#/paths/~1search'
+    get:
+      operationId: searchCatalog
+      summary: Search catalog objects
+      tags: [Governance]
+      description: Full-text search across schemas, tables, and columns.
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: type
+          in: query
+          description: "Filter by object type: schema, table, or column"
+          schema:
+            type: string
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSearchResults'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  # === Lineage ===
   /lineage/tables/{schemaName}/{tableName}:
-    $ref: 'paths/lineage.yaml#/paths/~1lineage~1tables~1{schemaName}~1{tableName}'
+    parameters:
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: tableName
+        in: path
+        required: true
+        schema:
+          type: string
+    get: # apilint:ignore OAL025
+      operationId: getTableLineage
+      summary: Get full lineage for a table
+      tags: [Lineage]
+      description: Returns both upstream and downstream lineage edges for a table. Pagination params control edge depth, not list pagination.
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Table lineage
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LineageNode'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /lineage/tables/{schemaName}/{tableName}/upstream:
-    $ref: 'paths/lineage.yaml#/paths/~1lineage~1tables~1{schemaName}~1{tableName}~1upstream'
+    parameters:
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: tableName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getUpstreamLineage
+      summary: Get upstream lineage for a table
+      tags: [Lineage]
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Upstream lineage edges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLineageEdges'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /lineage/tables/{schemaName}/{tableName}/downstream:
-    $ref: 'paths/lineage.yaml#/paths/~1lineage~1tables~1{schemaName}~1{tableName}~1downstream'
+    parameters:
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: tableName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getDownstreamLineage
+      summary: Get downstream lineage for a table
+      tags: [Lineage]
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Downstream lineage edges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLineageEdges'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /lineage/edges/{edgeId}:
-    $ref: 'paths/lineage.yaml#/paths/~1lineage~1edges~1{edgeId}'
+    parameters:
+      - name: edgeId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    delete:
+      operationId: deleteLineageEdge
+      summary: Delete a lineage edge
+      tags: [Lineage]
+      responses:
+        '204':
+          description: Edge deleted
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /lineage/purge:
-    $ref: 'paths/lineage.yaml#/paths/~1lineage~1purge'
+    post:
+      operationId: purgeLineage
+      summary: Purge old lineage edges
+      tags: [Lineage]
+      description: Delete lineage edges older than the specified number of days.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurgeLineageRequest'
+      responses:
+        '200':
+          description: Purge result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurgeLineageResponse'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  # === Tags ===
   /tags:
-    $ref: 'paths/governance.yaml#/paths/~1tags'
+    get:
+      operationId: listTags
+      summary: List all tags
+      tags: [Governance]
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of tags
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTags'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: createTag
+      summary: Create a tag
+      tags: [Governance]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTagRequest'
+      responses:
+        '201':
+          description: Created tag
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tag'
+        '409':
+          description: Tag already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /tags/{tagId}:
-    $ref: 'paths/governance.yaml#/paths/~1tags~1{tagId}'
+    parameters:
+      - name: tagId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    delete:
+      operationId: deleteTag
+      summary: Delete a tag
+      tags: [Governance]
+      responses:
+        '204':
+          description: Tag deleted
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /tags/{tagId}/assignments:
-    $ref: 'paths/governance.yaml#/paths/~1tags~1{tagId}~1assignments'
+    parameters:
+      - name: tagId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    post:
+      operationId: createTagAssignment
+      summary: Assign a tag to a securable object
+      tags: [Governance]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTagAssignmentRequest'
+      responses:
+        '201':
+          description: Tag assigned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagAssignment'
+        '409':
+          description: Tag already assigned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /tag-assignments/{assignmentId}:
-    $ref: 'paths/governance.yaml#/paths/~1tag-assignments~1{assignmentId}'
+    parameters:
+      - name: assignmentId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    delete:
+      operationId: deleteTagAssignment
+      summary: Remove a tag assignment
+      tags: [Governance]
+      responses:
+        '204':
+          description: Tag unassigned
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  # === Classifications ===
   /classifications:
-    $ref: 'paths/governance.yaml#/paths/~1classifications'
-  /catalog/schemas/{schemaName}/views:
-    $ref: 'paths/catalog.yaml#/paths/~1catalog~1schemas~1{schemaName}~1views'
-  /catalog/schemas/{schemaName}/views/{viewName}:
-    $ref: 'paths/catalog.yaml#/paths/~1catalog~1schemas~1{schemaName}~1views~1{viewName}'
-  /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url:
-    $ref: 'paths/ingestion.yaml#/paths/~1catalog~1schemas~1{schemaName}~1tables~1{tableName}~1ingestion~1upload-url'
-  /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/commit:
-    $ref: 'paths/ingestion.yaml#/paths/~1catalog~1schemas~1{schemaName}~1tables~1{tableName}~1ingestion~1commit'
-  /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/load:
-    $ref: 'paths/ingestion.yaml#/paths/~1catalog~1schemas~1{schemaName}~1tables~1{tableName}~1ingestion~1load'
+    get:
+      operationId: listClassifications
+      summary: List classification and sensitivity tags
+      tags: [Governance]
+      description: Returns all tags with governed classification/sensitivity prefixes.
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Classification tags
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTags'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  # === Views ===
+  /catalogs/{catalogName}/schemas/{schemaName}/views:
+    parameters:
+      - $ref: '#/components/parameters/catalogName'
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: listViews
+      summary: List views in a schema
+      tags: [Catalogs]
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of views
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedViewDetails'
+        '404':
+          description: Schema not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: createView
+      summary: Create a view in a schema
+      tags: [Catalogs]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateViewRequest'
+      responses:
+        '201':
+          description: View created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ViewDetail'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: View already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /catalogs/{catalogName}/schemas/{schemaName}/views/{viewName}:
+    parameters:
+      - $ref: '#/components/parameters/catalogName'
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: viewName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getView
+      summary: Get a view by name
+      tags: [Catalogs]
+      responses:
+        '200':
+          description: View details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ViewDetail'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      operationId: updateView
+      summary: Update a view's metadata
+      tags: [Catalogs]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateViewRequest'
+      responses:
+        '200':
+          description: Updated view
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ViewDetail'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: deleteView
+      summary: Delete a view
+      tags: [Catalogs]
+      responses:
+        '204':
+          description: View deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  # === Ingestion ===
+  /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url:
+    parameters:
+      - $ref: '#/components/parameters/catalogName'
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: tableName
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      operationId: createUploadUrl
+      summary: Get a presigned URL for uploading a Parquet file
+      tags: [Ingestion]
+      description: >
+        Returns a presigned PUT URL that the client can use to upload a Parquet file
+        directly to S3. The file can then be registered via the commit endpoint.
+        Requires INSERT privilege on the target table.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadUrlRequest'
+      responses:
+        '200':
+          description: Presigned upload URL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadUrlResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Table not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/commit:
+    parameters:
+      - $ref: '#/components/parameters/catalogName'
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: tableName
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      operationId: commitTableIngestion
+      summary: Register uploaded Parquet files in DuckLake
+      tags: [Ingestion]
+      description: >
+        Registers previously uploaded files (from upload-url) in the DuckLake catalog.
+        DuckLake validates schema compatibility, extracts column statistics, and
+        registers files atomically. Requires INSERT privilege on the target table.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommitIngestionRequest'
+      responses:
+        '200':
+          description: Ingestion result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestionResult'
+        '400':
+          description: Validation error (schema mismatch, missing files, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Table not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/load:
+    parameters:
+      - $ref: '#/components/parameters/catalogName'
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: tableName
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      operationId: loadTableExternalFiles
+      summary: Register existing S3 files in DuckLake
+      tags: [Ingestion]
+      description: >
+        Registers existing S3 files or globs in the DuckLake catalog. Paths without
+        an s3:// prefix are treated as relative to the lake data path. DuckLake validates
+        schema compatibility, extracts column statistics, and registers files atomically.
+        Requires INSERT privilege on the target table.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoadExternalRequest'
+      responses:
+        '200':
+          description: Ingestion result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestionResult'
+        '400':
+          description: Validation error (schema mismatch, missing files, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Table not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  # === Storage Credentials ===
   /storage-credentials:
-    $ref: 'paths/storage.yaml#/paths/~1storage-credentials'
+    get:
+      operationId: listStorageCredentials
+      summary: List storage credentials
+      tags: [Storage]
+      description: Returns a paginated list of storage credentials. Sensitive fields (key_id, secret) are never returned.
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of storage credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedStorageCredentials'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: createStorageCredential
+      summary: Create a storage credential
+      tags: [Storage]
+      description: Creates a new storage credential. Requires ALL_PRIVILEGES on catalog.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateStorageCredentialRequest'
+      responses:
+        '201':
+          description: Created credential (sensitive fields omitted)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StorageCredential'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Credential already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /storage-credentials/{credentialName}:
-    $ref: 'paths/storage.yaml#/paths/~1storage-credentials~1{credentialName}'
+    parameters:
+      - name: credentialName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getStorageCredential
+      summary: Get a storage credential by name
+      tags: [Storage]
+      description: Returns credential metadata. Sensitive fields (key_id, secret) are never returned.
+      responses:
+        '200':
+          description: Credential details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StorageCredential'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      operationId: updateStorageCredential
+      summary: Update a storage credential
+      tags: [Storage]
+      description: Updates credential fields. Requires ALL_PRIVILEGES on catalog.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateStorageCredentialRequest'
+      responses:
+        '200':
+          description: Updated credential
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StorageCredential'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: deleteStorageCredential
+      summary: Delete a storage credential
+      tags: [Storage]
+      description: Deletes a credential. Requires ALL_PRIVILEGES on catalog.
+      responses:
+        '204':
+          description: Credential deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  # === External Locations ===
   /external-locations:
-    $ref: 'paths/storage.yaml#/paths/~1external-locations'
+    get:
+      operationId: listExternalLocations
+      summary: List external locations
+      tags: [Storage]
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of external locations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedExternalLocations'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: createExternalLocation
+      summary: Create an external location
+      tags: [Storage]
+      description: >
+        Creates a new external location and configures DuckDB with the associated
+        credential. If this is the first location, the DuckLake catalog is attached.
+        Requires ALL_PRIVILEGES on catalog.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateExternalLocationRequest'
+      responses:
+        '201':
+          description: Created location
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalLocation'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Location already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /external-locations/{locationName}:
-    $ref: 'paths/storage.yaml#/paths/~1external-locations~1{locationName}'
-  /catalog/schemas/{schemaName}/volumes:
-    $ref: 'paths/catalog.yaml#/paths/~1catalog~1schemas~1{schemaName}~1volumes'
-  /catalog/schemas/{schemaName}/volumes/{volumeName}:
-    $ref: 'paths/catalog.yaml#/paths/~1catalog~1schemas~1{schemaName}~1volumes~1{volumeName}'
+    parameters:
+      - name: locationName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getExternalLocation
+      summary: Get an external location by name
+      tags: [Storage]
+      responses:
+        '200':
+          description: Location details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalLocation'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      operationId: updateExternalLocation
+      summary: Update an external location
+      tags: [Storage]
+      description: Updates location fields. Requires ALL_PRIVILEGES on catalog.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateExternalLocationRequest'
+      responses:
+        '200':
+          description: Updated location
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalLocation'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: deleteExternalLocation
+      summary: Delete an external location
+      tags: [Storage]
+      description: Deletes a location and drops the associated DuckDB secret. Requires ALL_PRIVILEGES on catalog.
+      responses:
+        '204':
+          description: Location deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  # === Volumes ===
+  /catalogs/{catalogName}/schemas/{schemaName}/volumes:
+    parameters:
+      - $ref: '#/components/parameters/catalogName'
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: listVolumes
+      summary: List volumes in a schema
+      tags: [Catalogs]
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of volumes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedVolumes'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: createVolume
+      summary: Create a volume in a schema
+      tags: [Catalogs]
+      description: >
+        Creates a new volume. EXTERNAL volumes require a storage_location.
+        MANAGED volumes auto-generate a storage location.
+        Requires CREATE_VOLUME on catalog.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateVolumeRequest'
+      responses:
+        '201':
+          description: Volume created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VolumeDetail'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Volume already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}:
+    parameters:
+      - $ref: '#/components/parameters/catalogName'
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: volumeName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getVolume
+      summary: Get a volume by name
+      tags: [Catalogs]
+      responses:
+        '200':
+          description: Volume details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VolumeDetail'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      operationId: updateVolume
+      summary: Update a volume
+      tags: [Catalogs]
+      description: Updates volume fields. Requires CREATE_VOLUME on catalog.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateVolumeRequest'
+      responses:
+        '200':
+          description: Updated volume
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VolumeDetail'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: deleteVolume
+      summary: Delete a volume
+      tags: [Catalogs]
+      description: Deletes a volume. Requires CREATE_VOLUME on catalog.
+      responses:
+        '204':
+          description: Volume deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  # === Compute Endpoints ===
   /compute-endpoints:
-    $ref: 'paths/compute.yaml#/paths/~1compute-endpoints'
+    get:
+      operationId: listComputeEndpoints
+      summary: List compute endpoints
+      tags: [Compute]
+      description: Returns a paginated list of compute endpoints.
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of compute endpoints
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedComputeEndpoints'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: createComputeEndpoint
+      summary: Create a compute endpoint
+      tags: [Compute]
+      description: Creates a new compute endpoint. Requires MANAGE_COMPUTE on catalog.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateComputeEndpointRequest'
+      responses:
+        '201':
+          description: Created compute endpoint
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComputeEndpoint'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Endpoint already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /compute-endpoints/{endpointName}:
-    $ref: 'paths/compute.yaml#/paths/~1compute-endpoints~1{endpointName}'
+    parameters:
+      - name: endpointName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getComputeEndpoint
+      summary: Get a compute endpoint by name
+      tags: [Compute]
+      responses:
+        '200':
+          description: Compute endpoint details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComputeEndpoint'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      operationId: updateComputeEndpoint
+      summary: Update a compute endpoint
+      tags: [Compute]
+      description: Updates compute endpoint fields. Requires MANAGE_COMPUTE on catalog.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateComputeEndpointRequest'
+      responses:
+        '200':
+          description: Updated compute endpoint
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComputeEndpoint'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: deleteComputeEndpoint
+      summary: Delete a compute endpoint
+      tags: [Compute]
+      description: Deletes a compute endpoint. Requires MANAGE_COMPUTE on catalog.
+      responses:
+        '204':
+          description: Compute endpoint deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /compute-endpoints/{endpointName}/assignments:
-    $ref: 'paths/compute.yaml#/paths/~1compute-endpoints~1{endpointName}~1assignments'
+    parameters:
+      - name: endpointName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: listComputeAssignments
+      summary: List assignments for a compute endpoint
+      tags: [Compute]
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of compute assignments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedComputeAssignments'
+        '404':
+          description: Endpoint not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: createComputeAssignment
+      summary: Assign a principal to a compute endpoint
+      tags: [Compute]
+      description: Creates a compute assignment. Requires MANAGE_COMPUTE on catalog.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateComputeAssignmentRequest'
+      responses:
+        '201':
+          description: Created compute assignment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComputeAssignment'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Assignment already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /compute-endpoints/{endpointName}/health:
-    $ref: 'paths/compute.yaml#/paths/~1compute-endpoints~1{endpointName}~1health'
+    parameters:
+      - name: endpointName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getComputeEndpointHealth
+      summary: Check health of a compute endpoint
+      tags: [Compute]
+      description: Proxies a health check to the remote compute agent. Requires MANAGE_COMPUTE on catalog.
+      responses:
+        '200':
+          description: Health check result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComputeEndpointHealth'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '502':
+          description: Agent unreachable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /compute-endpoints/{endpointName}/assignments/{assignmentId}:
-    $ref: 'paths/compute.yaml#/paths/~1compute-endpoints~1{endpointName}~1assignments~1{assignmentId}'
+    parameters:
+      - name: endpointName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: assignmentId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    delete:
+      operationId: deleteComputeAssignment
+      summary: Remove a compute assignment
+      tags: [Compute]
+      description: Removes a compute assignment. Requires MANAGE_COMPUTE on catalog.
+      responses:
+        '204':
+          description: Assignment deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
