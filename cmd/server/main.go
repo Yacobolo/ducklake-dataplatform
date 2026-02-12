@@ -131,6 +131,7 @@ func run() error {
 		svc.Ingestion,
 		svc.StorageCredential, svc.ExternalLocation,
 		svc.Volume,
+		svc.ComputeEndpoint,
 	)
 
 	// Create strict handler wrapper

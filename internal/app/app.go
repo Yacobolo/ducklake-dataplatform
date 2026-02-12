@@ -49,6 +49,7 @@ type Services struct {
 	StorageCredential *service.StorageCredentialService
 	ExternalLocation  *service.ExternalLocationService
 	Volume            *service.VolumeService
+	ComputeEndpoint   *service.ComputeEndpointService
 }
 
 // App holds the fully-wired application: engine, services, and the
@@ -155,9 +156,11 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 		return nil, fmt.Errorf("encryption key: %w", err)
 	}
 	storageCredRepo := repository.NewStorageCredentialRepo(deps.WriteDB, encryptor)
+	computeEndpointRepo := repository.NewComputeEndpointRepo(deps.WriteDB, encryptor)
 	externalLocRepo := repository.NewExternalLocationRepo(deps.WriteDB)
 
 	storageCredSvc := service.NewStorageCredentialService(storageCredRepo, authSvc, auditRepo)
+	computeEndpointSvc := service.NewComputeEndpointService(computeEndpointRepo, authSvc, auditRepo)
 	extLocationSvc := service.NewExternalLocationService(
 		externalLocRepo, storageCredRepo, authSvc, auditRepo, deps.DuckDB, cfg.MetaDBPath,
 		deps.Logger.With("component", "external-location"),
@@ -205,6 +208,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 			StorageCredential: storageCredSvc,
 			ExternalLocation:  extLocationSvc,
 			Volume:            volumeSvc,
+			ComputeEndpoint:   computeEndpointSvc,
 		},
 		Engine:     eng,
 		APIKeyRepo: apiKeyRepo,

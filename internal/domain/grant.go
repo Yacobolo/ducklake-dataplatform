@@ -21,6 +21,7 @@ const (
 	PrivWriteVolume             = "WRITE_VOLUME"
 	PrivReadFiles               = "READ_FILES"
 	PrivWriteFiles              = "WRITE_FILES"
+	PrivManageCompute           = "MANAGE_COMPUTE"
 )
 
 // Securable type constants.
