@@ -3,7 +3,6 @@ package ingestion
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 	"time"
@@ -19,7 +18,7 @@ import (
 //
 //nolint:revive // Name chosen for clarity across package boundaries
 type IngestionService struct {
-	duckDB      *sql.DB
+	executor    domain.DuckDBExecutor
 	metastore   domain.MetastoreQuerier
 	authSvc     domain.AuthorizationService
 	presigner   *query.S3Presigner // legacy presigner (from env config), may be nil
@@ -32,7 +31,7 @@ type IngestionService struct {
 
 // NewIngestionService creates a new IngestionService.
 func NewIngestionService(
-	duckDB *sql.DB,
+	executor domain.DuckDBExecutor,
 	metastore domain.MetastoreQuerier,
 	authSvc domain.AuthorizationService,
 	presigner *query.S3Presigner,
@@ -43,7 +42,7 @@ func NewIngestionService(
 	locRepo domain.ExternalLocationRepository,
 ) *IngestionService {
 	return &IngestionService{
-		duckDB:      duckDB,
+		executor:    executor,
 		metastore:   metastore,
 		authSvc:     authSvc,
 		presigner:   presigner,
@@ -201,7 +200,7 @@ func (s *IngestionService) execAddDataFiles(
 	paths []string,
 	opts domain.IngestionOptions,
 ) (*domain.IngestionResult, error) {
-	if s.duckDB == nil {
+	if s.executor == nil {
 		return nil, domain.ErrValidation("ingestion not available: DuckDB not configured")
 	}
 
@@ -223,8 +222,8 @@ func (s *IngestionService) execAddDataFiles(
 		opts.IgnoreExtraColumns,
 	)
 
-	// Execute directly on duckDB (bypasses SecureEngine — CALL not supported by pg_query_go)
-	_, err := s.duckDB.ExecContext(ctx, q)
+	// Execute directly on DuckDB (bypasses SecureEngine — CALL not supported by pg_query_go)
+	err := s.executor.ExecContext(ctx, q)
 	if err != nil {
 		return nil, classifyDuckDBError(err)
 	}

@@ -74,14 +74,14 @@ func setupTestService(t *testing.T) (*security.AuthorizationService, *dbstore.Qu
 }
 
 // setupIngestionTest creates an IngestionService backed by a real SQLite DB
-// (for authorization) but with nil presigner and duckDB (since we can't run
+// (for authorization) but with nil presigner and executor (since we can't run
 // ducklake_add_data_files in unit tests). Returns the service and test helpers.
 func setupIngestionTest(t *testing.T) (*IngestionService, *security.AuthorizationService, *dbstore.Queries, context.Context) {
 	t.Helper()
 	authSvc, q, ctx := setupTestService(t)
 
 	svc := &IngestionService{
-		duckDB:      nil, // CALL statements can't be tested in unit tests
+		executor:    nil, // CALL statements can't be tested in unit tests
 		metastore:   nil, // metastore only needed for readDataPath
 		authSvc:     authSvc,
 		presigner:   nil, // presigner requires real S3 credentials

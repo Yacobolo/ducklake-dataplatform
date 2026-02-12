@@ -180,8 +180,9 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 			if cfg.S3Bucket != nil {
 				bucket = *cfg.S3Bucket
 			}
+			duckExec := engine.NewDuckDBExecAdapter(deps.DuckDB)
 			ingestionSvc = ingestion.NewIngestionService(
-				deps.DuckDB, metastoreRepo, authSvc, presigner, auditRepo, "lake", bucket,
+				duckExec, metastoreRepo, authSvc, presigner, auditRepo, "lake", bucket,
 				storageCredRepo, externalLocRepo,
 			)
 			deps.Logger.Info("ingestion service enabled")

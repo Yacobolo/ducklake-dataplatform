@@ -36,6 +36,12 @@ type AuthorizationService interface {
 	GetTableColumnNames(ctx context.Context, tableID int64) ([]string, error)
 }
 
+// DuckDBExecutor executes raw SQL statements against DuckDB.
+// Used for CALL statements that bypass the SQL parser (e.g. ducklake_add_data_files).
+type DuckDBExecutor interface {
+	ExecContext(ctx context.Context, query string) error
+}
+
 // MetastoreQuerier provides read-only access to the DuckLake metastore.
 // Replaces raw *sql.DB usage in manifest and ingestion services.
 type MetastoreQuerier interface {

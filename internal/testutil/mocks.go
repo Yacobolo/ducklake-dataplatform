@@ -735,3 +735,22 @@ func (m *MockComputeEndpointRepo) GetAssignmentsForPrincipal(ctx context.Context
 }
 
 var _ domain.ComputeEndpointRepository = (*MockComputeEndpointRepo)(nil)
+
+// === DuckDB Executor ===
+
+// MockDuckDBExecutor is a test mock for domain.DuckDBExecutor.
+type MockDuckDBExecutor struct {
+	ExecContextFn func(ctx context.Context, query string) error
+	Queries       []string // records all executed queries
+}
+
+// ExecContext implements domain.DuckDBExecutor.
+func (m *MockDuckDBExecutor) ExecContext(ctx context.Context, query string) error {
+	m.Queries = append(m.Queries, query)
+	if m.ExecContextFn != nil {
+		return m.ExecContextFn(ctx, query)
+	}
+	return nil
+}
+
+var _ domain.DuckDBExecutor = (*MockDuckDBExecutor)(nil)
