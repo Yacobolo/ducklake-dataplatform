@@ -154,6 +154,7 @@ func run() error {
 		svc.StorageCredential, svc.ExternalLocation,
 		svc.Volume,
 		svc.ComputeEndpoint,
+		svc.APIKey,
 	)
 
 	// Create strict handler wrapper

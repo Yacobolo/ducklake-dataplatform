@@ -36,6 +36,7 @@ type APIHandler struct {
 	externalLocations *service.ExternalLocationService
 	volumes           *service.VolumeService
 	computeEndpoints  *service.ComputeEndpointService
+	apiKeys           *service.APIKeyService
 }
 
 // NewHandler creates a new APIHandler with all required service dependencies.
@@ -59,6 +60,7 @@ func NewHandler(
 	externalLocations *service.ExternalLocationService,
 	volumes *service.VolumeService,
 	computeEndpoints *service.ComputeEndpointService,
+	apiKeys *service.APIKeyService,
 ) *APIHandler {
 	return &APIHandler{
 		query:             query,
@@ -80,6 +82,7 @@ func NewHandler(
 		externalLocations: externalLocations,
 		volumes:           volumes,
 		computeEndpoints:  computeEndpoints,
+		apiKeys:           apiKeys,
 	}
 }
 
@@ -531,6 +534,81 @@ func (h *APIHandler) UnbindColumnMask(ctx context.Context, req UnbindColumnMaskR
 		return nil, err
 	}
 	return UnbindColumnMask204Response{}, nil
+}
+
+// === API Keys ===
+
+func (h *APIHandler) CreateAPIKey(ctx context.Context, req CreateAPIKeyRequestObject) (CreateAPIKeyResponseObject, error) {
+	rawKey, key, err := h.apiKeys.Create(ctx, req.Body.PrincipalId, req.Body.Name, req.Body.ExpiresAt)
+	if err != nil {
+		switch {
+		case errors.As(err, new(*domain.ValidationError)):
+			return CreateAPIKey400JSONResponse{Code: 400, Message: err.Error()}, nil
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return CreateAPIKey403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return CreateAPIKey201JSONResponse{
+		Id:        &key.ID,
+		Key:       &rawKey,
+		Name:      &key.Name,
+		KeyPrefix: &key.KeyPrefix,
+		ExpiresAt: key.ExpiresAt,
+		CreatedAt: &key.CreatedAt,
+	}, nil
+}
+
+func (h *APIHandler) ListAPIKeys(ctx context.Context, req ListAPIKeysRequestObject) (ListAPIKeysResponseObject, error) {
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	keys, total, err := h.apiKeys.List(ctx, req.Params.PrincipalId, page)
+	if err != nil {
+		return nil, err
+	}
+	data := make([]APIKeyInfo, len(keys))
+	for i, k := range keys {
+		data[i] = apiKeyToAPI(k)
+	}
+	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return ListAPIKeys200JSONResponse{Data: &data, NextPageToken: optStr(npt)}, nil
+}
+
+func (h *APIHandler) DeleteAPIKey(ctx context.Context, req DeleteAPIKeyRequestObject) (DeleteAPIKeyResponseObject, error) {
+	if err := h.apiKeys.Delete(ctx, req.ApiKeyId); err != nil {
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
+			return DeleteAPIKey404JSONResponse{Code: 404, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return DeleteAPIKey204Response{}, nil
+}
+
+func (h *APIHandler) CleanupExpiredAPIKeys(ctx context.Context, _ CleanupExpiredAPIKeysRequestObject) (CleanupExpiredAPIKeysResponseObject, error) {
+	count, err := h.apiKeys.CleanupExpired(ctx)
+	if err != nil {
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return CleanupExpiredAPIKeys403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
+	}
+	return CleanupExpiredAPIKeys200JSONResponse{DeletedCount: &count}, nil
+}
+
+// apiKeyToAPI converts a domain APIKey to the API representation.
+func apiKeyToAPI(k domain.APIKey) APIKeyInfo {
+	return APIKeyInfo{
+		Id:          &k.ID,
+		PrincipalId: &k.PrincipalID,
+		Name:        &k.Name,
+		KeyPrefix:   &k.KeyPrefix,
+		ExpiresAt:   k.ExpiresAt,
+		CreatedAt:   &k.CreatedAt,
+	}
 }
 
 // === Audit Logs ===
