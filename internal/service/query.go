@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"duck-demo/internal/domain"
-	"duck-demo/internal/engine"
 	"duck-demo/internal/sqlrewrite"
 )
 
@@ -19,15 +18,15 @@ type QueryResult struct {
 	RowCount int
 }
 
-// QueryService wraps the SecureEngine and records audit entries.
+// QueryService wraps the QueryEngine and records audit entries.
 type QueryService struct {
-	engine  *engine.SecureEngine
+	engine  domain.QueryEngine
 	audit   domain.AuditRepository
 	lineage domain.LineageRepository
 }
 
 // NewQueryService creates a new QueryService.
-func NewQueryService(eng *engine.SecureEngine, audit domain.AuditRepository, lineage domain.LineageRepository) *QueryService {
+func NewQueryService(eng domain.QueryEngine, audit domain.AuditRepository, lineage domain.LineageRepository) *QueryService {
 	return &QueryService{engine: eng, audit: audit, lineage: lineage}
 }
 

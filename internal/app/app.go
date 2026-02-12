@@ -172,8 +172,9 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 
 	storageCredSvc := service.NewStorageCredentialService(storageCredRepo, authSvc, auditRepo)
 	computeEndpointSvc := service.NewComputeEndpointService(computeEndpointRepo, authSvc, auditRepo)
+	secretMgr := engine.NewDuckDBSecretManager(deps.DuckDB)
 	extLocationSvc := service.NewExternalLocationService(
-		externalLocRepo, storageCredRepo, authSvc, auditRepo, deps.DuckDB, cfg.MetaDBPath,
+		externalLocRepo, storageCredRepo, authSvc, auditRepo, secretMgr, secretMgr, cfg.MetaDBPath,
 		deps.Logger.With("component", "external-location"),
 	)
 

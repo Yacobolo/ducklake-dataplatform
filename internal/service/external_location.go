@@ -2,13 +2,11 @@ package service
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log/slog"
 	"sync"
 
 	"duck-demo/internal/domain"
-	"duck-demo/internal/engine"
 )
 
 // ExternalLocationService provides CRUD operations for external locations
@@ -18,7 +16,8 @@ type ExternalLocationService struct {
 	credRepo domain.StorageCredentialRepository
 	auth     domain.AuthorizationService
 	audit    domain.AuditRepository
-	duckDB   *sql.DB
+	secrets  domain.SecretManager
+	attacher domain.CatalogAttacher
 	metaPath string
 	logger   *slog.Logger
 
@@ -32,7 +31,8 @@ func NewExternalLocationService(
 	credRepo domain.StorageCredentialRepository,
 	auth domain.AuthorizationService,
 	audit domain.AuditRepository,
-	duckDB *sql.DB,
+	secrets domain.SecretManager,
+	attacher domain.CatalogAttacher,
 	metaPath string,
 	logger *slog.Logger,
 ) *ExternalLocationService {
@@ -41,7 +41,8 @@ func NewExternalLocationService(
 		credRepo: credRepo,
 		auth:     auth,
 		audit:    audit,
-		duckDB:   duckDB,
+		secrets:  secrets,
+		attacher: attacher,
 		metaPath: metaPath,
 		logger:   logger,
 	}
@@ -113,7 +114,7 @@ func (s *ExternalLocationService) Create(ctx context.Context, principal string, 
 	// Attach DuckLake catalog if not already attached
 	if err := s.ensureCatalogAttached(ctx, req.URL); err != nil {
 		// Best-effort cleanup: drop secret, delete location
-		_ = engine.DropSecret(ctx, s.duckDB, secretName)
+		_ = s.secrets.DropSecret(ctx, secretName)
 		_ = s.locRepo.Delete(ctx, result.ID)
 		return nil, fmt.Errorf("attach catalog: %w", err)
 	}
@@ -167,7 +168,7 @@ func (s *ExternalLocationService) Delete(ctx context.Context, principal string, 
 
 	// Drop the DuckDB secret for this location's credential
 	secretName := "cred_" + existing.CredentialName
-	if err := engine.DropSecret(ctx, s.duckDB, secretName); err != nil {
+	if err := s.secrets.DropSecret(ctx, secretName); err != nil {
 		s.logger.Warn("failed to drop secret", "secret", secretName, "error", err)
 	}
 
@@ -222,7 +223,7 @@ func (s *ExternalLocationService) ensureCatalogAttached(ctx context.Context, dat
 		return nil
 	}
 
-	if err := engine.AttachDuckLake(ctx, s.duckDB, s.metaPath, dataPath); err != nil {
+	if err := s.attacher.AttachDuckLake(ctx, s.metaPath, dataPath); err != nil {
 		return err
 	}
 
@@ -248,7 +249,7 @@ func (s *ExternalLocationService) requirePrivilege(ctx context.Context, principa
 func (s *ExternalLocationService) createDuckDBSecret(ctx context.Context, secretName string, cred *domain.StorageCredential) error {
 	switch cred.CredentialType {
 	case domain.CredentialTypeS3:
-		return engine.CreateS3Secret(ctx, s.duckDB, secretName,
+		return s.secrets.CreateS3Secret(ctx, secretName,
 			cred.KeyID, cred.Secret, cred.Endpoint, cred.Region, cred.URLStyle)
 	case domain.CredentialTypeAzure:
 		// Build connection string if using account key (no service principal secret support in DuckDB yet)
@@ -256,10 +257,10 @@ func (s *ExternalLocationService) createDuckDBSecret(ctx context.Context, secret
 		if cred.AzureAccountKey != "" {
 			connectionString = fmt.Sprintf("AccountName=%s;AccountKey=%s", cred.AzureAccountName, cred.AzureAccountKey)
 		}
-		return engine.CreateAzureSecret(ctx, s.duckDB, secretName,
+		return s.secrets.CreateAzureSecret(ctx, secretName,
 			cred.AzureAccountName, cred.AzureAccountKey, connectionString)
 	case domain.CredentialTypeGCS:
-		return engine.CreateGCSSecret(ctx, s.duckDB, secretName, cred.GCSKeyFilePath)
+		return s.secrets.CreateGCSSecret(ctx, secretName, cred.GCSKeyFilePath)
 	default:
 		return fmt.Errorf("unsupported credential type %q", cred.CredentialType)
 	}
