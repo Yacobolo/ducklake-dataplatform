@@ -1627,6 +1627,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   # === Principals ===
   /principals:
     get:
@@ -1643,6 +1649,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedPrincipals'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     post:
       operationId: createPrincipal
       summary: Create a principal
@@ -1679,6 +1691,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /principals/{principalId}:
     parameters:
       - name: principalId
@@ -1704,6 +1722,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     delete:
       operationId: deletePrincipal
       summary: Delete a principal
@@ -1724,6 +1748,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /principals/{principalId}/admin:
     parameters:
       - name: principalId
@@ -1758,6 +1788,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   # === Groups ===
   /groups:
     get:
@@ -1774,6 +1810,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedGroups'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     post:
       operationId: createGroup
       summary: Create a group
@@ -1810,6 +1852,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /groups/{groupId}:
     parameters:
       - name: groupId
@@ -1835,6 +1883,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     delete:
       operationId: deleteGroup
       summary: Delete a group
@@ -1855,6 +1909,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /groups/{groupId}/members:
     parameters:
       - name: groupId
@@ -1879,6 +1939,12 @@ paths:
                 $ref: '#/components/schemas/PaginatedGroupMembers'
         '404':
           description: Group not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -1910,6 +1976,12 @@ paths:
                 $ref: '#/components/schemas/Error'
         '404':
           description: Group not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -1952,6 +2024,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   # === Grants ===
   /grants:
     get:
@@ -1986,6 +2064,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedGrants'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     post:
       operationId: createGrant
       summary: Grant a privilege
@@ -2022,6 +2106,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /grants/{grantId}:
     parameters:
       - name: grantId
@@ -2050,6 +2140,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   # === API Keys ===
   /api-keys:
     get:
@@ -2072,6 +2168,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedAPIKeys'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     post:
       operationId: createAPIKey
       summary: Create a new API key
@@ -2102,6 +2204,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /api-keys/{apiKeyId}:
     parameters:
       - name: apiKeyId
@@ -2124,6 +2232,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /api-keys/cleanup:
     post:
       operationId: cleanupExpiredAPIKeys
@@ -2143,6 +2263,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   # === Row Filters ===
   /tables/{tableId}/row-filters:
     parameters:
@@ -2168,6 +2294,12 @@ paths:
                 $ref: '#/components/schemas/PaginatedRowFilters'
         '404':
           description: Table not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -2208,6 +2340,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /row-filters/{rowFilterId}:
     parameters:
       - name: rowFilterId
@@ -2236,6 +2374,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /row-filters/{rowFilterId}/bindings:
     parameters:
       - name: rowFilterId
@@ -2271,6 +2415,12 @@ paths:
                 $ref: '#/components/schemas/Error'
         '404':
           description: Row filter not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -2313,6 +2463,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /row-filters:
     post:
       operationId: createRowFilterTopLevel
@@ -2350,6 +2506,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   # === Column Masks ===
   /tables/{tableId}/column-masks:
     parameters:
@@ -2375,6 +2537,12 @@ paths:
                 $ref: '#/components/schemas/PaginatedColumnMasks'
         '404':
           description: Table not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -2415,6 +2583,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /column-masks/{columnMaskId}:
     parameters:
       - name: columnMaskId
@@ -2443,6 +2617,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /column-masks/{columnMaskId}/bindings:
     parameters:
       - name: columnMaskId
@@ -2478,6 +2658,12 @@ paths:
                 $ref: '#/components/schemas/Error'
         '404':
           description: Column mask not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -2520,6 +2706,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   # === Manifest ===
   /manifest:
     post:
@@ -2598,6 +2790,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedAuditLogs'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   # === Catalog Management ===
   /catalog:
     get:
@@ -2612,6 +2810,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CatalogInfo'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     patch:
       operationId: updateCatalog
       summary: Update catalog metadata
@@ -2636,6 +2840,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /catalog/schemas:
     get:
       operationId: listSchemas
@@ -2651,6 +2861,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedSchemaDetails'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     post:
       operationId: createSchema
       summary: Create a new schema
@@ -2687,6 +2903,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /catalog/schemas/{schemaName}:
     parameters:
       - name: schemaName
@@ -2707,6 +2929,12 @@ paths:
                 $ref: '#/components/schemas/SchemaDetail'
         '404':
           description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -2736,6 +2964,12 @@ paths:
                 $ref: '#/components/schemas/Error'
         '404':
           description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -2773,6 +3007,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /catalog/schemas/{schemaName}/tables:
     parameters:
       - name: schemaName
@@ -2796,6 +3036,12 @@ paths:
                 $ref: '#/components/schemas/PaginatedTableDetails'
         '404':
           description: Schema not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -2836,6 +3082,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /catalog/schemas/{schemaName}/tables/{tableName}:
     parameters:
       - name: schemaName
@@ -2861,6 +3113,12 @@ paths:
                 $ref: '#/components/schemas/TableDetail'
         '404':
           description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -2894,6 +3152,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     delete:
       operationId: deleteTable
       summary: Delete a table
@@ -2914,6 +3178,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /catalog/schemas/{schemaName}/tables/{tableName}/columns:
     parameters:
       - name: schemaName
@@ -2947,6 +3217,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /catalog/schemas/{schemaName}/tables/{tableName}/columns/{columnName}:
     parameters:
       - name: schemaName
@@ -2994,6 +3270,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /catalog/schemas/{schemaName}/tables/{tableName}/profile:
     parameters:
       - name: schemaName
@@ -3031,6 +3313,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   # === Metastore ===
   /metastore/summary:
     get:
@@ -3046,6 +3334,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/MetastoreSummary'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   # === Query History ===
   /query-history:
     get:
@@ -3081,6 +3375,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedQueryHistoryEntries'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   # === Search ===
   /search:
     get:
@@ -3109,6 +3409,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedSearchResults'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   # === Lineage ===
   /lineage/tables/{schemaName}/{tableName}:
     parameters:
@@ -3122,11 +3428,11 @@ paths:
         required: true
         schema:
           type: string
-    get:
+    get: # apilint:ignore OAL025
       operationId: getTableLineage
       summary: Get full lineage for a table
       tags: [Lineage]
-      description: Returns both upstream and downstream lineage edges for a table.
+      description: Returns both upstream and downstream lineage edges for a table. Pagination params control edge depth, not list pagination.
       parameters:
         - $ref: '#/components/parameters/MaxResults'
         - $ref: '#/components/parameters/PageToken'
@@ -3138,6 +3444,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/LineageNode'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /lineage/tables/{schemaName}/{tableName}/upstream:
     parameters:
       - name: schemaName
@@ -3165,6 +3483,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedLineageEdges'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /lineage/tables/{schemaName}/{tableName}/downstream:
     parameters:
       - name: schemaName
@@ -3192,6 +3522,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedLineageEdges'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /lineage/edges/{edgeId}:
     parameters:
       - name: edgeId
@@ -3214,6 +3556,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /lineage/purge:
     post:
       operationId: purgeLineage
@@ -3240,6 +3594,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   # === Tags ===
   /tags:
     get:
@@ -3256,6 +3616,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedTags'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     post:
       operationId: createTag
       summary: Create a tag
@@ -3280,6 +3646,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /tags/{tagId}:
     parameters:
       - name: tagId
@@ -3302,6 +3680,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /tags/{tagId}/assignments:
     parameters:
       - name: tagId
@@ -3334,6 +3724,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /tag-assignments/{assignmentId}:
     parameters:
       - name: assignmentId
@@ -3356,6 +3758,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   # === Classifications ===
   /classifications:
     get:
@@ -3374,6 +3788,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedTags'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   # === Views ===
   /catalog/schemas/{schemaName}/views:
     parameters:
@@ -3398,6 +3818,12 @@ paths:
                 $ref: '#/components/schemas/PaginatedViewDetails'
         '404':
           description: Schema not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -3438,6 +3864,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /catalog/schemas/{schemaName}/views/{viewName}:
     parameters:
       - name: schemaName
@@ -3463,6 +3895,12 @@ paths:
                 $ref: '#/components/schemas/ViewDetail'
         '404':
           description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -3496,6 +3934,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     delete:
       operationId: deleteView
       summary: Delete a view
@@ -3516,6 +3960,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   # === Ingestion ===
   /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url:
     parameters:
@@ -3569,6 +4019,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/commit:
     parameters:
       - name: schemaName
@@ -3621,6 +4077,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/load:
     parameters:
       - name: schemaName
@@ -3674,6 +4136,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   # === Storage Credentials ===
   /storage-credentials:
     get:
@@ -3691,6 +4159,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedStorageCredentials'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     post:
       operationId: createStorageCredential
       summary: Create a storage credential
@@ -3728,6 +4202,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /storage-credentials/{credentialName}:
     parameters:
       - name: credentialName
@@ -3749,6 +4229,12 @@ paths:
                 $ref: '#/components/schemas/StorageCredential'
         '404':
           description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -3783,6 +4269,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     delete:
       operationId: deleteStorageCredential
       summary: Delete a storage credential
@@ -3804,6 +4296,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   # === External Locations ===
   /external-locations:
     get:
@@ -3820,6 +4318,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedExternalLocations'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     post:
       operationId: createExternalLocation
       summary: Create an external location
@@ -3860,6 +4364,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /external-locations/{locationName}:
     parameters:
       - name: locationName
@@ -3880,6 +4390,12 @@ paths:
                 $ref: '#/components/schemas/ExternalLocation'
         '404':
           description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -3914,6 +4430,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     delete:
       operationId: deleteExternalLocation
       summary: Delete an external location
@@ -3935,6 +4457,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   # === Volumes ===
   /catalog/schemas/{schemaName}/volumes:
     parameters:
@@ -3957,6 +4485,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedVolumes'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     post:
       operationId: createVolume
       summary: Create a volume in a schema
@@ -3997,6 +4537,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /catalog/schemas/{schemaName}/volumes/{volumeName}:
     parameters:
       - name: schemaName
@@ -4022,6 +4568,12 @@ paths:
                 $ref: '#/components/schemas/VolumeDetail'
         '404':
           description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -4056,6 +4608,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     delete:
       operationId: deleteVolume
       summary: Delete a volume
@@ -4077,6 +4635,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   # === Compute Endpoints ===
   /compute-endpoints:
     get:
@@ -4094,6 +4658,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedComputeEndpoints'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     post:
       operationId: createComputeEndpoint
       summary: Create a compute endpoint
@@ -4131,6 +4701,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /compute-endpoints/{endpointName}:
     parameters:
       - name: endpointName
@@ -4151,6 +4727,12 @@ paths:
                 $ref: '#/components/schemas/ComputeEndpoint'
         '404':
           description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -4185,6 +4767,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     delete:
       operationId: deleteComputeEndpoint
       summary: Delete a compute endpoint
@@ -4206,6 +4794,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /compute-endpoints/{endpointName}/assignments:
     parameters:
       - name: endpointName
@@ -4229,6 +4823,12 @@ paths:
                 $ref: '#/components/schemas/PaginatedComputeAssignments'
         '404':
           description: Endpoint not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -4270,6 +4870,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /compute-endpoints/{endpointName}/health:
     parameters:
       - name: endpointName
@@ -4308,6 +4914,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /compute-endpoints/{endpointName}/assignments/{assignmentId}:
     parameters:
       - name: endpointName
@@ -4337,6 +4949,13 @@ paths:
                 $ref: '#/components/schemas/Error'
         '404':
           description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: Unauthorized
           content:
             application/json:
               schema:
