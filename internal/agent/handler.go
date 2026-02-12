@@ -9,6 +9,8 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+
+	"duck-demo/internal/compute"
 )
 
 // HandlerConfig holds the parameters needed to build the agent HTTP handler.
@@ -36,23 +38,20 @@ func NewHandler(cfg HandlerConfig) http.Handler {
 
 		// Validate token
 		if r.Header.Get("X-Agent-Token") != cfg.AgentToken {
-			writeJSON(w, http.StatusUnauthorized, map[string]interface{}{
-				"error":      "unauthorized",
-				"code":       "AUTH_ERROR",
-				"request_id": requestID,
+			writeJSON(w, http.StatusUnauthorized, compute.ErrorResponse{
+				Error:     "unauthorized",
+				Code:      "AUTH_ERROR",
+				RequestID: requestID,
 			})
 			return
 		}
 
-		var req struct {
-			SQL       string `json:"sql"`
-			RequestID string `json:"request_id"`
-		}
+		var req compute.ExecuteRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeJSON(w, http.StatusBadRequest, map[string]interface{}{
-				"error":      "invalid request body",
-				"code":       "PARSE_ERROR",
-				"request_id": requestID,
+			writeJSON(w, http.StatusBadRequest, compute.ErrorResponse{
+				Error:     "invalid request body",
+				Code:      "PARSE_ERROR",
+				RequestID: requestID,
 			})
 			return
 		}
@@ -65,10 +64,10 @@ func NewHandler(cfg HandlerConfig) http.Handler {
 		rows, err := cfg.DB.QueryContext(r.Context(), req.SQL)
 		if err != nil {
 			logger.Error("query execution failed", "request_id", requestID, "error", err)
-			writeJSON(w, http.StatusInternalServerError, map[string]interface{}{
-				"error":      err.Error(),
-				"code":       "EXECUTION_ERROR",
-				"request_id": requestID,
+			writeJSON(w, http.StatusInternalServerError, compute.ErrorResponse{
+				Error:     err.Error(),
+				Code:      "EXECUTION_ERROR",
+				RequestID: requestID,
 			})
 			return
 		}
@@ -76,10 +75,10 @@ func NewHandler(cfg HandlerConfig) http.Handler {
 
 		cols, err := rows.Columns()
 		if err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]interface{}{
-				"error":      err.Error(),
-				"code":       "EXECUTION_ERROR",
-				"request_id": requestID,
+			writeJSON(w, http.StatusInternalServerError, compute.ErrorResponse{
+				Error:     err.Error(),
+				Code:      "EXECUTION_ERROR",
+				RequestID: requestID,
 			})
 			return
 		}
@@ -92,31 +91,31 @@ func NewHandler(cfg HandlerConfig) http.Handler {
 				ptrs[i] = &values[i]
 			}
 			if err := rows.Scan(ptrs...); err != nil {
-				writeJSON(w, http.StatusInternalServerError, map[string]interface{}{
-					"error":      err.Error(),
-					"code":       "SCAN_ERROR",
-					"request_id": requestID,
+				writeJSON(w, http.StatusInternalServerError, compute.ErrorResponse{
+					Error:     err.Error(),
+					Code:      "SCAN_ERROR",
+					RequestID: requestID,
 				})
 				return
 			}
 			resultRows = append(resultRows, values)
 		}
 		if err := rows.Err(); err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]interface{}{
-				"error":      err.Error(),
-				"code":       "EXECUTION_ERROR",
-				"request_id": requestID,
+			writeJSON(w, http.StatusInternalServerError, compute.ErrorResponse{
+				Error:     err.Error(),
+				Code:      "EXECUTION_ERROR",
+				RequestID: requestID,
 			})
 			return
 		}
 
 		logger.Info("query completed", "request_id", requestID, "row_count", len(resultRows))
 
-		writeJSON(w, http.StatusOK, map[string]interface{}{
-			"columns":    cols,
-			"rows":       resultRows,
-			"row_count":  len(resultRows),
-			"request_id": requestID,
+		writeJSON(w, http.StatusOK, compute.ExecuteResponse{
+			Columns:   cols,
+			Rows:      resultRows,
+			RowCount:  len(resultRows),
+			RequestID: requestID,
 		})
 	})
 

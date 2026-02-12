@@ -19,19 +19,6 @@ import (
 
 var _ domain.ComputeExecutor = (*RemoteExecutor)(nil)
 
-type executeRequest struct {
-	SQL       string `json:"sql"`
-	RequestID string `json:"request_id"`
-}
-
-type executeResponse struct {
-	Columns  []string        `json:"columns"`
-	Rows     [][]interface{} `json:"rows"`
-	RowCount int             `json:"row_count"`
-	Error    string          `json:"error,omitempty"`
-	Code     string          `json:"code,omitempty"`
-}
-
 // RemoteExecutor sends pre-secured SQL to a remote compute agent via HTTP
 // and materializes results into a local DuckDB temp table to return *sql.Rows.
 type RemoteExecutor struct {
@@ -65,7 +52,7 @@ func (e *RemoteExecutor) QueryContext(ctx context.Context, query string) (*sql.R
 	requestID := uuid.New().String()
 
 	// 1. Send to remote agent
-	reqBody := executeRequest{SQL: query, RequestID: requestID}
+	reqBody := ExecuteRequest{SQL: query, RequestID: requestID}
 	bodyBytes, err := json.Marshal(reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("marshal request: %w", err)
@@ -86,7 +73,7 @@ func (e *RemoteExecutor) QueryContext(ctx context.Context, query string) (*sql.R
 	}
 	defer resp.Body.Close() //nolint:errcheck
 
-	var result executeResponse
+	var result ExecuteResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("decode response: %w", err)
 	}
@@ -105,7 +92,7 @@ func (e *RemoteExecutor) QueryContext(ctx context.Context, query string) (*sql.R
 
 // materialize creates a DuckDB temp table from the remote response and returns
 // *sql.Rows over it. Uses a pinned connection so the temp table is visible.
-func (e *RemoteExecutor) materialize(ctx context.Context, result executeResponse) (*sql.Rows, error) {
+func (e *RemoteExecutor) materialize(ctx context.Context, result ExecuteResponse) (*sql.Rows, error) {
 	if len(result.Columns) == 0 {
 		// Return empty result set
 		return e.localDB.QueryContext(ctx, "SELECT 1 WHERE false")

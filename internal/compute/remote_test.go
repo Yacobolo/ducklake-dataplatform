@@ -24,13 +24,13 @@ func TestRemoteExecutor_QueryContext(t *testing.T) {
 			assert.Equal(t, "test-token", r.Header.Get("X-Agent-Token"))
 			assert.NotEmpty(t, r.Header.Get("X-Request-ID"))
 
-			var req executeRequest
+			var req ExecuteRequest
 			assert.NoError(t, json.NewDecoder(r.Body).Decode(&req))
 			assert.Equal(t, "SELECT 1", req.SQL)
 			assert.NotEmpty(t, req.RequestID)
 
 			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(executeResponse{
+			_ = json.NewEncoder(w).Encode(ExecuteResponse{
 				Columns:  []string{"id", "name"},
 				Rows:     [][]interface{}{{1, "Alice"}, {2, "Bob"}},
 				RowCount: 2,
@@ -62,7 +62,7 @@ func TestRemoteExecutor_QueryContext(t *testing.T) {
 	t.Run("empty_result", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(executeResponse{
+			_ = json.NewEncoder(w).Encode(ExecuteResponse{
 				Columns:  []string{},
 				Rows:     [][]interface{}{},
 				RowCount: 0,
@@ -118,7 +118,7 @@ func TestRemoteExecutor_QueryContext(t *testing.T) {
 	t.Run("null_values_in_response", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(executeResponse{
+			_ = json.NewEncoder(w).Encode(ExecuteResponse{
 				Columns:  []string{"id", "name"},
 				Rows:     [][]interface{}{{1, nil}, {2, "Bob"}},
 				RowCount: 2,
