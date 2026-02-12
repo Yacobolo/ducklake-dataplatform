@@ -1,5 +1,4 @@
-// Package mapper converts between domain, database, and API layer types.
-package mapper
+package api
 
 import (
 	"errors"
@@ -8,8 +7,8 @@ import (
 	"duck-demo/internal/domain"
 )
 
-// HTTPStatusFromDomainError maps domain errors to HTTP status codes.
-func HTTPStatusFromDomainError(err error) int {
+// httpStatusFromDomainError maps domain errors to HTTP status codes.
+func httpStatusFromDomainError(err error) int {
 	var notFound *domain.NotFoundError
 	var accessDenied *domain.AccessDeniedError
 	var validation *domain.ValidationError

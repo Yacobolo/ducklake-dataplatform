@@ -9,7 +9,6 @@ import (
 
 	"github.com/google/uuid"
 
-	"duck-demo/internal/db/mapper"
 	"duck-demo/internal/domain"
 	"duck-demo/internal/middleware"
 	"duck-demo/internal/service"
@@ -103,7 +102,7 @@ func pageFromParams(maxResults *MaxResults, pageToken *PageToken) domain.PageReq
 // httpStatusFromError returns the HTTP status code for a domain error using
 // the centralized mapper. Unknown errors return 500 Internal Server Error.
 func httpStatusFromError(err error) int {
-	return mapper.HTTPStatusFromDomainError(err)
+	return httpStatusFromDomainError(err)
 }
 
 // errorCodeFromError returns the HTTP status code for building error JSON responses.
@@ -1949,7 +1948,8 @@ func (h *APIHandler) CreateVolume(ctx context.Context, req CreateVolumeRequestOb
 		domReq.Comment = *req.Body.Comment
 	}
 
-	result, err := h.volumes.Create(ctx, req.SchemaName, domReq)
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	result, err := h.volumes.Create(ctx, principal, req.SchemaName, domReq)
 	if err != nil {
 		var accessErr *domain.AccessDeniedError
 		var validErr *domain.ValidationError
@@ -1988,7 +1988,8 @@ func (h *APIHandler) UpdateVolume(ctx context.Context, req UpdateVolumeRequestOb
 		Owner:   req.Body.Owner,
 	}
 
-	result, err := h.volumes.Update(ctx, req.SchemaName, req.VolumeName, domReq)
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	result, err := h.volumes.Update(ctx, principal, req.SchemaName, req.VolumeName, domReq)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
@@ -2003,7 +2004,8 @@ func (h *APIHandler) UpdateVolume(ctx context.Context, req UpdateVolumeRequestOb
 }
 
 func (h *APIHandler) DeleteVolume(ctx context.Context, req DeleteVolumeRequestObject) (DeleteVolumeResponseObject, error) {
-	if err := h.volumes.Delete(ctx, req.SchemaName, req.VolumeName); err != nil {
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	if err := h.volumes.Delete(ctx, principal, req.SchemaName, req.VolumeName); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
 			return DeleteVolume403JSONResponse{Code: 403, Message: err.Error()}, nil

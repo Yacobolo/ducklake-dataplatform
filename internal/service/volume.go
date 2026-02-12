@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"duck-demo/internal/domain"
-	"duck-demo/internal/middleware"
 )
 
 // VolumeService provides CRUD operations for volumes
@@ -31,9 +30,7 @@ func NewVolumeService(
 
 // Create validates and persists a new volume.
 // Requires CREATE_VOLUME on catalog.
-func (s *VolumeService) Create(ctx context.Context, schemaName string, req domain.CreateVolumeRequest) (*domain.Volume, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
-
+func (s *VolumeService) Create(ctx context.Context, principal, schemaName string, req domain.CreateVolumeRequest) (*domain.Volume, error) {
 	if err := s.requirePrivilege(ctx, principal, domain.PrivCreateVolume); err != nil {
 		return nil, err
 	}
@@ -73,9 +70,7 @@ func (s *VolumeService) List(ctx context.Context, schemaName string, page domain
 
 // Update updates a volume by schema and name.
 // Requires CREATE_VOLUME on catalog.
-func (s *VolumeService) Update(ctx context.Context, schemaName, name string, req domain.UpdateVolumeRequest) (*domain.Volume, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
-
+func (s *VolumeService) Update(ctx context.Context, principal, schemaName, name string, req domain.UpdateVolumeRequest) (*domain.Volume, error) {
 	if err := s.requirePrivilege(ctx, principal, domain.PrivCreateVolume); err != nil {
 		return nil, err
 	}
@@ -96,9 +91,7 @@ func (s *VolumeService) Update(ctx context.Context, schemaName, name string, req
 
 // Delete removes a volume by schema and name.
 // Requires CREATE_VOLUME on catalog.
-func (s *VolumeService) Delete(ctx context.Context, schemaName, name string) error {
-	principal, _ := middleware.PrincipalFromContext(ctx)
-
+func (s *VolumeService) Delete(ctx context.Context, principal, schemaName, name string) error {
 	if err := s.requirePrivilege(ctx, principal, domain.PrivCreateVolume); err != nil {
 		return err
 	}
