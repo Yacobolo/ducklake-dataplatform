@@ -18,7 +18,7 @@ func NewRowFilterService(repo domain.RowFilterRepository, audit domain.AuditRepo
 }
 
 // Create validates and persists a new row filter. Requires admin privileges.
-func (s *RowFilterService) Create(ctx context.Context, principal string, f *domain.RowFilter) (*domain.RowFilter, error) {
+func (s *RowFilterService) Create(ctx context.Context, _ string, f *domain.RowFilter) (*domain.RowFilter, error) {
 	if err := requireAdmin(ctx); err != nil {
 		return nil, err
 	}

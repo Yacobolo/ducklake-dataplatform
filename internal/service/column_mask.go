@@ -18,7 +18,7 @@ func NewColumnMaskService(repo domain.ColumnMaskRepository, audit domain.AuditRe
 }
 
 // Create validates and persists a new column mask. Requires admin privileges.
-func (s *ColumnMaskService) Create(ctx context.Context, principal string, m *domain.ColumnMask) (*domain.ColumnMask, error) {
+func (s *ColumnMaskService) Create(ctx context.Context, _ string, m *domain.ColumnMask) (*domain.ColumnMask, error) {
 	if err := requireAdmin(ctx); err != nil {
 		return nil, err
 	}

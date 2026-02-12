@@ -18,7 +18,7 @@ func NewGrantService(repo domain.GrantRepository, audit domain.AuditRepository) 
 }
 
 // Grant creates a new privilege grant. Requires admin privileges.
-func (s *GrantService) Grant(ctx context.Context, principal string, g *domain.PrivilegeGrant) (*domain.PrivilegeGrant, error) {
+func (s *GrantService) Grant(ctx context.Context, _ string, g *domain.PrivilegeGrant) (*domain.PrivilegeGrant, error) {
 	if err := requireAdmin(ctx); err != nil {
 		return nil, err
 	}
@@ -38,7 +38,7 @@ func (s *GrantService) Grant(ctx context.Context, principal string, g *domain.Pr
 }
 
 // Revoke removes a privilege grant. Requires admin privileges.
-func (s *GrantService) Revoke(ctx context.Context, principal string, g *domain.PrivilegeGrant) error {
+func (s *GrantService) Revoke(ctx context.Context, _ string, g *domain.PrivilegeGrant) error {
 	if err := requireAdmin(ctx); err != nil {
 		return err
 	}

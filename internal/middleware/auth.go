@@ -217,12 +217,14 @@ func writeUnauthorized(w http.ResponseWriter) {
 // === Backward-compatible helpers ===
 
 // WithPrincipal stores the principal name in the context.
+//
 // Deprecated: Use domain.WithPrincipal with a ContextPrincipal for enriched context.
 func WithPrincipal(ctx context.Context, name string) context.Context {
 	return domain.WithPrincipal(ctx, domain.ContextPrincipal{Name: name, Type: "user"})
 }
 
 // PrincipalFromContext extracts the principal name from the context.
+//
 // Deprecated: Use domain.PrincipalFromContext for enriched context.
 func PrincipalFromContext(ctx context.Context) (string, bool) {
 	p, ok := domain.PrincipalFromContext(ctx)
