@@ -29,6 +29,12 @@ type ManifestResult struct {
 	ExpiresAt   time.Time         `json:"expires_at"`
 }
 
+// FilePresigner generates accessible URLs or paths for data files.
+// Implementations include S3Presigner (production) and test doubles (local paths).
+type FilePresigner interface {
+	PresignGetObject(ctx context.Context, path string, expiry time.Duration) (string, error)
+}
+
 // ManifestService resolves table names to presigned Parquet URLs with
 // security policies (RLS filters, column masks) applied. It serves as
 // the bridge between the client-side DuckDB extension and the server-side
@@ -36,7 +42,7 @@ type ManifestResult struct {
 type ManifestService struct {
 	metaDB    *sql.DB // DuckLake SQLite metastore (same DB as permissions)
 	authSvc   domain.AuthorizationService
-	presigner *S3Presigner // legacy presigner (from env config), may be nil
+	presigner FilePresigner // legacy presigner (from env config), may be nil
 	introRepo domain.IntrospectionRepository
 	auditRepo domain.AuditRepository
 	credRepo  domain.StorageCredentialRepository // for credential-aware presigning
@@ -47,7 +53,7 @@ type ManifestService struct {
 func NewManifestService(
 	metaDB *sql.DB,
 	authSvc domain.AuthorizationService,
-	presigner *S3Presigner,
+	presigner FilePresigner,
 	introRepo domain.IntrospectionRepository,
 	auditRepo domain.AuditRepository,
 ) *ManifestService {
@@ -219,7 +225,7 @@ func (s *ManifestService) resolveDataFiles(ctx context.Context, tableID int64, s
 // resolvePresigner returns the appropriate presigner for the given schema path.
 // If the schema has a per-schema external location with stored credentials,
 // a dynamic presigner is created. Otherwise, the legacy presigner is returned.
-func (s *ManifestService) resolvePresigner(ctx context.Context, schemaPath string) (*S3Presigner, error) {
+func (s *ManifestService) resolvePresigner(ctx context.Context, schemaPath string) (FilePresigner, error) {
 	if schemaPath != "" && s.credRepo != nil && s.locRepo != nil {
 		// Find the external location matching this schema path
 		locations, _, err := s.locRepo.List(ctx, domain.PageRequest{MaxResults: 1000})
@@ -230,7 +236,9 @@ func (s *ManifestService) resolvePresigner(ctx context.Context, schemaPath strin
 					if err == nil {
 						bucket, _, _ := parseS3Path(schemaPath)
 						if bucket == "" {
-							bucket = s.presigner.Bucket()
+							if bp, ok := s.presigner.(interface{ Bucket() string }); ok {
+								bucket = bp.Bucket()
+							}
 						}
 						presigner, err := NewS3PresignerFromCredential(cred, bucket)
 						if err == nil {
