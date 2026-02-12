@@ -15,8 +15,17 @@ import (
 	"duck-demo/internal/domain"
 )
 
-// Compile-time check: S3Presigner implements FilePresigner.
+// Compile-time checks: S3Presigner implements both presigner interfaces.
 var _ FilePresigner = (*S3Presigner)(nil)
+var _ FileUploadPresigner = (*S3Presigner)(nil)
+
+// FileUploadPresigner extends FilePresigner with upload (PUT) support and
+// bucket discovery. Implementations: S3Presigner, AzurePresigner, GCSPresigner.
+type FileUploadPresigner interface {
+	FilePresigner
+	PresignPutObject(ctx context.Context, bucket, key string, expiry time.Duration) (string, error)
+	Bucket() string
+}
 
 // S3Presigner generates presigned S3 URLs for Hetzner-compatible object storage.
 // It uses the AWS SDK v2, configured with path-style addressing for Hetzner.
@@ -135,4 +144,36 @@ func ParseS3Path(s3Path string) (bucket, key string, err error) {
 		return "", "", fmt.Errorf("empty key in S3 path %q", s3Path)
 	}
 	return bucket, key, nil
+}
+
+// newPresignerFromCredential creates a FilePresigner based on credential type.
+// It dispatches to the appropriate cloud-specific constructor.
+func newPresignerFromCredential(cred *domain.StorageCredential, storagePath string) (FilePresigner, error) {
+	switch cred.CredentialType {
+	case domain.CredentialTypeS3:
+		bucket, _, _ := parseS3Path(storagePath)
+		return NewS3PresignerFromCredential(cred, bucket)
+	case domain.CredentialTypeAzure:
+		return NewAzurePresignerFromCredential(cred, storagePath)
+	case domain.CredentialTypeGCS:
+		return NewGCSPresignerFromCredential(cred, storagePath)
+	default:
+		return nil, fmt.Errorf("unsupported credential type %q", cred.CredentialType)
+	}
+}
+
+// newUploadPresignerFromCredential creates a FileUploadPresigner based on credential type.
+// All three implementations (S3, Azure, GCS) implement FileUploadPresigner.
+func newUploadPresignerFromCredential(cred *domain.StorageCredential, storagePath string) (FileUploadPresigner, error) {
+	switch cred.CredentialType {
+	case domain.CredentialTypeS3:
+		bucket, _, _ := parseS3Path(storagePath)
+		return NewS3PresignerFromCredential(cred, bucket)
+	case domain.CredentialTypeAzure:
+		return NewAzurePresignerFromCredential(cred, storagePath)
+	case domain.CredentialTypeGCS:
+		return NewGCSPresignerFromCredential(cred, storagePath)
+	default:
+		return nil, fmt.Errorf("unsupported credential type %q", cred.CredentialType)
+	}
 }
