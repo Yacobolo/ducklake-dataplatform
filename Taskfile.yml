@@ -47,6 +47,11 @@ tasks:
     cmds:
       - go build ./...
 
+  build-agent:
+    desc: Build the compute agent binary
+    cmds:
+      - go build -o bin/compute-agent ./cmd/compute-agent
+
   test:
     desc: Run all tests (package summary, shows failures inline)
     cmds:

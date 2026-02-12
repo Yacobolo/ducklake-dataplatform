@@ -223,6 +223,22 @@ func DiscoverColumnsSQL(sourcePath, fileFormat string) (string, error) {
 	), nil
 }
 
+// AttachDuckLakePostgres returns a DuckDB DDL statement to attach a DuckLake catalog
+// using a PostgreSQL metastore instead of SQLite.
+func AttachDuckLakePostgres(dsn, dataPath string) (string, error) {
+	if dsn == "" {
+		return "", fmt.Errorf("postgres DSN is required")
+	}
+	if dataPath == "" {
+		return "", fmt.Errorf("data path is required")
+	}
+	connStr := QuoteLiteral("ducklake:postgres:" + dsn)
+	return fmt.Sprintf("ATTACH %s AS lake (\n\tDATA_PATH %s\n)",
+		connStr,
+		QuoteLiteral(dataPath),
+	), nil
+}
+
 // AttachDuckLake returns a DuckDB DDL statement to attach a DuckLake catalog.
 // Both metaDBPath and dataPath are properly escaped as SQL string literals.
 func AttachDuckLake(metaDBPath, dataPath string) (string, error) {

@@ -22,6 +22,8 @@ type Config struct {
 	ListenAddr    string // HTTP listen address (default ":8080")
 	EncryptionKey string // 64-char hex string (32-byte AES key) for encrypting stored credentials
 	LogLevel      string // log level: debug, info, warn, error (default "info")
+	CatalogDBType string // "sqlite" (default) or "postgres"
+	CatalogDSN    string // PostgreSQL connection string (used when CatalogDBType is "postgres")
 
 	// Warnings collects non-fatal warnings generated during config loading.
 	// These are logged by the caller after the logger is initialised.
@@ -57,6 +59,8 @@ func LoadFromEnv() (*Config, error) {
 		ListenAddr:    os.Getenv("LISTEN_ADDR"),
 		EncryptionKey: os.Getenv("ENCRYPTION_KEY"),
 		LogLevel:      os.Getenv("LOG_LEVEL"),
+		CatalogDBType: os.Getenv("CATALOG_DB_TYPE"),
+		CatalogDSN:    os.Getenv("CATALOG_DSN"),
 	}
 
 	// S3 fields are optional — only set if present
@@ -93,6 +97,9 @@ func LoadFromEnv() (*Config, error) {
 	}
 	if cfg.LogLevel == "" {
 		cfg.LogLevel = "info"
+	}
+	if cfg.CatalogDBType == "" {
+		cfg.CatalogDBType = "sqlite"
 	}
 
 	return cfg, nil
