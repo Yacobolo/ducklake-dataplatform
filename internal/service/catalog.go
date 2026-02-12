@@ -335,6 +335,15 @@ func (s *CatalogService) ProfileTable(ctx context.Context, principal string, sch
 		return nil, err
 	}
 
+	// Authorization: require SELECT on the table
+	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableTable, tbl.TableID, domain.PrivSelect)
+	if err != nil {
+		return nil, fmt.Errorf("check profile privilege: %w", err)
+	}
+	if !allowed {
+		return nil, domain.ErrAccessDenied("principal %q lacks SELECT on %s.%s", principal, schemaName, tableName)
+	}
+
 	stats := &domain.TableStatistics{
 		ProfiledBy: principal,
 	}

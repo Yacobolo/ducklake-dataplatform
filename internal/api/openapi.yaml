@@ -301,6 +301,10 @@ components:
       type: object
       required: [filter_sql]
       properties:
+        table_id:
+          type: integer
+          format: int64
+          description: Table ID (required when creating via top-level POST /row-filters)
         filter_sql:
           type: string
         description:
@@ -1659,16 +1663,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
-  /groups/{groupId}/members/remove:
-    parameters:
-      - name: groupId
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-    post:
+    delete:
       operationId: deleteGroupMember
       summary: Remove member from group
       tags: [Security]
@@ -1763,9 +1758,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
-  /grants/revoke:
-    post:
+    delete:
       operationId: deleteGrant
       summary: Revoke a privilege
       tags: [Security]
@@ -1872,7 +1865,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /row-filters/{rowFilterId}/bind:
+  /row-filters/{rowFilterId}/bindings:
     parameters:
       - name: rowFilterId
         in: path
@@ -1905,16 +1898,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
-  /row-filters/{rowFilterId}/unbind:
-    parameters:
-      - name: rowFilterId
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-    post:
+    delete:
       operationId: unbindRowFilter
       summary: Unbind filter from principal
       tags: [Security]
@@ -1935,6 +1919,37 @@ paths:
                 $ref: '#/components/schemas/Error'
         '404':
           description: Row filter not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /row-filters:
+    post:
+      operationId: createRowFilterTopLevel
+      summary: Create row filter (top-level)
+      tags: [Security]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRowFilterRequest'
+      responses:
+        '201':
+          description: Created filter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RowFilter'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Table not found
           content:
             application/json:
               schema:
@@ -2021,7 +2036,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /column-masks/{columnMaskId}/bind:
+  /column-masks/{columnMaskId}/bindings:
     parameters:
       - name: columnMaskId
         in: path
@@ -2054,16 +2069,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
-  /column-masks/{columnMaskId}/unbind:
-    parameters:
-      - name: columnMaskId
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-    post:
+    delete:
       operationId: unbindColumnMask
       summary: Unbind mask from principal
       tags: [Security]
@@ -2679,7 +2685,7 @@ paths:
                 $ref: '#/components/schemas/PaginatedSearchResults'
 
   # === Lineage ===
-  /catalog/schemas/{schemaName}/tables/{tableName}/lineage:
+  /lineage/tables/{schemaName}/{tableName}:
     parameters:
       - name: schemaName
         in: path
@@ -2707,7 +2713,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/LineageNode'
 
-  /catalog/schemas/{schemaName}/tables/{tableName}/lineage/upstream:
+  /lineage/tables/{schemaName}/{tableName}/upstream:
     parameters:
       - name: schemaName
         in: path
@@ -2734,7 +2740,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedLineageEdges'
 
-  /catalog/schemas/{schemaName}/tables/{tableName}/lineage/downstream:
+  /lineage/tables/{schemaName}/{tableName}/downstream:
     parameters:
       - name: schemaName
         in: path

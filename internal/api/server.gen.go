@@ -77,15 +77,6 @@ type ServerInterface interface {
 	// Get a presigned URL for uploading a Parquet file
 	// (POST /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url)
 	CreateUploadUrl(w http.ResponseWriter, r *http.Request, schemaName string, tableName string)
-	// Get full lineage for a table
-	// (GET /catalog/schemas/{schemaName}/tables/{tableName}/lineage)
-	GetTableLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetTableLineageParams)
-	// Get downstream lineage for a table
-	// (GET /catalog/schemas/{schemaName}/tables/{tableName}/lineage/downstream)
-	GetDownstreamLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetDownstreamLineageParams)
-	// Get upstream lineage for a table
-	// (GET /catalog/schemas/{schemaName}/tables/{tableName}/lineage/upstream)
-	GetUpstreamLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetUpstreamLineageParams)
 	// Profile a table to collect statistics
 	// (POST /catalog/schemas/{schemaName}/tables/{tableName}/profile)
 	ProfileTable(w http.ResponseWriter, r *http.Request, schemaName string, tableName string)
@@ -125,12 +116,12 @@ type ServerInterface interface {
 	// Delete column mask
 	// (DELETE /column-masks/{columnMaskId})
 	DeleteColumnMask(w http.ResponseWriter, r *http.Request, columnMaskId int64)
-	// Bind mask to principal
-	// (POST /column-masks/{columnMaskId}/bind)
-	BindColumnMask(w http.ResponseWriter, r *http.Request, columnMaskId int64)
 	// Unbind mask from principal
-	// (POST /column-masks/{columnMaskId}/unbind)
+	// (DELETE /column-masks/{columnMaskId}/bindings)
 	UnbindColumnMask(w http.ResponseWriter, r *http.Request, columnMaskId int64)
+	// Bind mask to principal
+	// (POST /column-masks/{columnMaskId}/bindings)
+	BindColumnMask(w http.ResponseWriter, r *http.Request, columnMaskId int64)
 	// List external locations
 	// (GET /external-locations)
 	ListExternalLocations(w http.ResponseWriter, r *http.Request, params ListExternalLocationsParams)
@@ -146,15 +137,15 @@ type ServerInterface interface {
 	// Update an external location
 	// (PATCH /external-locations/{locationName})
 	UpdateExternalLocation(w http.ResponseWriter, r *http.Request, locationName string)
+	// Revoke a privilege
+	// (DELETE /grants)
+	DeleteGrant(w http.ResponseWriter, r *http.Request)
 	// List grants
 	// (GET /grants)
 	ListGrants(w http.ResponseWriter, r *http.Request, params ListGrantsParams)
 	// Grant a privilege
 	// (POST /grants)
 	CreateGrant(w http.ResponseWriter, r *http.Request)
-	// Revoke a privilege
-	// (POST /grants/revoke)
-	DeleteGrant(w http.ResponseWriter, r *http.Request)
 	// List all groups
 	// (GET /groups)
 	ListGroups(w http.ResponseWriter, r *http.Request, params ListGroupsParams)
@@ -167,21 +158,30 @@ type ServerInterface interface {
 	// Get group by ID
 	// (GET /groups/{groupId})
 	GetGroup(w http.ResponseWriter, r *http.Request, groupId int64)
+	// Remove member from group
+	// (DELETE /groups/{groupId}/members)
+	DeleteGroupMember(w http.ResponseWriter, r *http.Request, groupId int64)
 	// List group members
 	// (GET /groups/{groupId}/members)
 	ListGroupMembers(w http.ResponseWriter, r *http.Request, groupId int64, params ListGroupMembersParams)
 	// Add member to group
 	// (POST /groups/{groupId}/members)
 	CreateGroupMember(w http.ResponseWriter, r *http.Request, groupId int64)
-	// Remove member from group
-	// (POST /groups/{groupId}/members/remove)
-	DeleteGroupMember(w http.ResponseWriter, r *http.Request, groupId int64)
 	// Delete a lineage edge
 	// (DELETE /lineage/edges/{edgeId})
 	DeleteLineageEdge(w http.ResponseWriter, r *http.Request, edgeId int64)
 	// Purge old lineage edges
 	// (POST /lineage/purge)
 	PurgeLineage(w http.ResponseWriter, r *http.Request)
+	// Get full lineage for a table
+	// (GET /lineage/tables/{schemaName}/{tableName})
+	GetTableLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetTableLineageParams)
+	// Get downstream lineage for a table
+	// (GET /lineage/tables/{schemaName}/{tableName}/downstream)
+	GetDownstreamLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetDownstreamLineageParams)
+	// Get upstream lineage for a table
+	// (GET /lineage/tables/{schemaName}/{tableName}/upstream)
+	GetUpstreamLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetUpstreamLineageParams)
 	// Create table manifest with presigned URLs and security policies
 	// (POST /manifest)
 	CreateManifest(w http.ResponseWriter, r *http.Request)
@@ -209,15 +209,18 @@ type ServerInterface interface {
 	// List query execution history
 	// (GET /query-history)
 	ListQueryHistory(w http.ResponseWriter, r *http.Request, params ListQueryHistoryParams)
+	// Create row filter (top-level)
+	// (POST /row-filters)
+	CreateRowFilterTopLevel(w http.ResponseWriter, r *http.Request)
 	// Delete row filter
 	// (DELETE /row-filters/{rowFilterId})
 	DeleteRowFilter(w http.ResponseWriter, r *http.Request, rowFilterId int64)
-	// Bind filter to principal
-	// (POST /row-filters/{rowFilterId}/bind)
-	BindRowFilter(w http.ResponseWriter, r *http.Request, rowFilterId int64)
 	// Unbind filter from principal
-	// (POST /row-filters/{rowFilterId}/unbind)
+	// (DELETE /row-filters/{rowFilterId}/bindings)
 	UnbindRowFilter(w http.ResponseWriter, r *http.Request, rowFilterId int64)
+	// Bind filter to principal
+	// (POST /row-filters/{rowFilterId}/bindings)
+	BindRowFilter(w http.ResponseWriter, r *http.Request, rowFilterId int64)
 	// Search catalog objects
 	// (GET /search)
 	SearchCatalog(w http.ResponseWriter, r *http.Request, params SearchCatalogParams)
@@ -377,24 +380,6 @@ func (_ Unimplemented) CreateUploadUrl(w http.ResponseWriter, r *http.Request, s
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Get full lineage for a table
-// (GET /catalog/schemas/{schemaName}/tables/{tableName}/lineage)
-func (_ Unimplemented) GetTableLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetTableLineageParams) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// Get downstream lineage for a table
-// (GET /catalog/schemas/{schemaName}/tables/{tableName}/lineage/downstream)
-func (_ Unimplemented) GetDownstreamLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetDownstreamLineageParams) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// Get upstream lineage for a table
-// (GET /catalog/schemas/{schemaName}/tables/{tableName}/lineage/upstream)
-func (_ Unimplemented) GetUpstreamLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetUpstreamLineageParams) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
 // Profile a table to collect statistics
 // (POST /catalog/schemas/{schemaName}/tables/{tableName}/profile)
 func (_ Unimplemented) ProfileTable(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
@@ -473,15 +458,15 @@ func (_ Unimplemented) DeleteColumnMask(w http.ResponseWriter, r *http.Request, 
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Bind mask to principal
-// (POST /column-masks/{columnMaskId}/bind)
-func (_ Unimplemented) BindColumnMask(w http.ResponseWriter, r *http.Request, columnMaskId int64) {
+// Unbind mask from principal
+// (DELETE /column-masks/{columnMaskId}/bindings)
+func (_ Unimplemented) UnbindColumnMask(w http.ResponseWriter, r *http.Request, columnMaskId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Unbind mask from principal
-// (POST /column-masks/{columnMaskId}/unbind)
-func (_ Unimplemented) UnbindColumnMask(w http.ResponseWriter, r *http.Request, columnMaskId int64) {
+// Bind mask to principal
+// (POST /column-masks/{columnMaskId}/bindings)
+func (_ Unimplemented) BindColumnMask(w http.ResponseWriter, r *http.Request, columnMaskId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -515,6 +500,12 @@ func (_ Unimplemented) UpdateExternalLocation(w http.ResponseWriter, r *http.Req
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Revoke a privilege
+// (DELETE /grants)
+func (_ Unimplemented) DeleteGrant(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // List grants
 // (GET /grants)
 func (_ Unimplemented) ListGrants(w http.ResponseWriter, r *http.Request, params ListGrantsParams) {
@@ -524,12 +515,6 @@ func (_ Unimplemented) ListGrants(w http.ResponseWriter, r *http.Request, params
 // Grant a privilege
 // (POST /grants)
 func (_ Unimplemented) CreateGrant(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// Revoke a privilege
-// (POST /grants/revoke)
-func (_ Unimplemented) DeleteGrant(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -557,6 +542,12 @@ func (_ Unimplemented) GetGroup(w http.ResponseWriter, r *http.Request, groupId 
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Remove member from group
+// (DELETE /groups/{groupId}/members)
+func (_ Unimplemented) DeleteGroupMember(w http.ResponseWriter, r *http.Request, groupId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // List group members
 // (GET /groups/{groupId}/members)
 func (_ Unimplemented) ListGroupMembers(w http.ResponseWriter, r *http.Request, groupId int64, params ListGroupMembersParams) {
@@ -569,12 +560,6 @@ func (_ Unimplemented) CreateGroupMember(w http.ResponseWriter, r *http.Request,
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Remove member from group
-// (POST /groups/{groupId}/members/remove)
-func (_ Unimplemented) DeleteGroupMember(w http.ResponseWriter, r *http.Request, groupId int64) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
 // Delete a lineage edge
 // (DELETE /lineage/edges/{edgeId})
 func (_ Unimplemented) DeleteLineageEdge(w http.ResponseWriter, r *http.Request, edgeId int64) {
@@ -584,6 +569,24 @@ func (_ Unimplemented) DeleteLineageEdge(w http.ResponseWriter, r *http.Request,
 // Purge old lineage edges
 // (POST /lineage/purge)
 func (_ Unimplemented) PurgeLineage(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get full lineage for a table
+// (GET /lineage/tables/{schemaName}/{tableName})
+func (_ Unimplemented) GetTableLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetTableLineageParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get downstream lineage for a table
+// (GET /lineage/tables/{schemaName}/{tableName}/downstream)
+func (_ Unimplemented) GetDownstreamLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetDownstreamLineageParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get upstream lineage for a table
+// (GET /lineage/tables/{schemaName}/{tableName}/upstream)
+func (_ Unimplemented) GetUpstreamLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetUpstreamLineageParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -641,21 +644,27 @@ func (_ Unimplemented) ListQueryHistory(w http.ResponseWriter, r *http.Request, 
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Create row filter (top-level)
+// (POST /row-filters)
+func (_ Unimplemented) CreateRowFilterTopLevel(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Delete row filter
 // (DELETE /row-filters/{rowFilterId})
 func (_ Unimplemented) DeleteRowFilter(w http.ResponseWriter, r *http.Request, rowFilterId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Bind filter to principal
-// (POST /row-filters/{rowFilterId}/bind)
-func (_ Unimplemented) BindRowFilter(w http.ResponseWriter, r *http.Request, rowFilterId int64) {
+// Unbind filter from principal
+// (DELETE /row-filters/{rowFilterId}/bindings)
+func (_ Unimplemented) UnbindRowFilter(w http.ResponseWriter, r *http.Request, rowFilterId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Unbind filter from principal
-// (POST /row-filters/{rowFilterId}/unbind)
-func (_ Unimplemented) UnbindRowFilter(w http.ResponseWriter, r *http.Request, rowFilterId int64) {
+// Bind filter to principal
+// (POST /row-filters/{rowFilterId}/bindings)
+func (_ Unimplemented) BindRowFilter(w http.ResponseWriter, r *http.Request, rowFilterId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1493,189 +1502,6 @@ func (siw *ServerInterfaceWrapper) CreateUploadUrl(w http.ResponseWriter, r *htt
 	handler.ServeHTTP(w, r)
 }
 
-// GetTableLineage operation middleware
-func (siw *ServerInterfaceWrapper) GetTableLineage(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "schemaName" -------------
-	var schemaName string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "schemaName", chi.URLParam(r, "schemaName"), &schemaName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schemaName", Err: err})
-		return
-	}
-
-	// ------------- Path parameter "tableName" -------------
-	var tableName string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "tableName", chi.URLParam(r, "tableName"), &tableName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tableName", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params GetTableLineageParams
-
-	// ------------- Optional query parameter "max_results" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
-		return
-	}
-
-	// ------------- Optional query parameter "page_token" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetTableLineage(w, r, schemaName, tableName, params)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// GetDownstreamLineage operation middleware
-func (siw *ServerInterfaceWrapper) GetDownstreamLineage(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "schemaName" -------------
-	var schemaName string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "schemaName", chi.URLParam(r, "schemaName"), &schemaName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schemaName", Err: err})
-		return
-	}
-
-	// ------------- Path parameter "tableName" -------------
-	var tableName string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "tableName", chi.URLParam(r, "tableName"), &tableName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tableName", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params GetDownstreamLineageParams
-
-	// ------------- Optional query parameter "max_results" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
-		return
-	}
-
-	// ------------- Optional query parameter "page_token" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetDownstreamLineage(w, r, schemaName, tableName, params)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// GetUpstreamLineage operation middleware
-func (siw *ServerInterfaceWrapper) GetUpstreamLineage(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "schemaName" -------------
-	var schemaName string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "schemaName", chi.URLParam(r, "schemaName"), &schemaName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schemaName", Err: err})
-		return
-	}
-
-	// ------------- Path parameter "tableName" -------------
-	var tableName string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "tableName", chi.URLParam(r, "tableName"), &tableName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tableName", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params GetUpstreamLineageParams
-
-	// ------------- Optional query parameter "max_results" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
-		return
-	}
-
-	// ------------- Optional query parameter "page_token" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetUpstreamLineage(w, r, schemaName, tableName, params)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
 // ProfileTable operation middleware
 func (siw *ServerInterfaceWrapper) ProfileTable(w http.ResponseWriter, r *http.Request) {
 
@@ -2195,39 +2021,6 @@ func (siw *ServerInterfaceWrapper) DeleteColumnMask(w http.ResponseWriter, r *ht
 	handler.ServeHTTP(w, r)
 }
 
-// BindColumnMask operation middleware
-func (siw *ServerInterfaceWrapper) BindColumnMask(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "columnMaskId" -------------
-	var columnMaskId int64
-
-	err = runtime.BindStyledParameterWithOptions("simple", "columnMaskId", chi.URLParam(r, "columnMaskId"), &columnMaskId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "columnMaskId", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.BindColumnMask(w, r, columnMaskId)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
 // UnbindColumnMask operation middleware
 func (siw *ServerInterfaceWrapper) UnbindColumnMask(w http.ResponseWriter, r *http.Request) {
 
@@ -2252,6 +2045,39 @@ func (siw *ServerInterfaceWrapper) UnbindColumnMask(w http.ResponseWriter, r *ht
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UnbindColumnMask(w, r, columnMaskId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// BindColumnMask operation middleware
+func (siw *ServerInterfaceWrapper) BindColumnMask(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "columnMaskId" -------------
+	var columnMaskId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "columnMaskId", chi.URLParam(r, "columnMaskId"), &columnMaskId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "columnMaskId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BindColumnMask(w, r, columnMaskId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2425,6 +2251,28 @@ func (siw *ServerInterfaceWrapper) UpdateExternalLocation(w http.ResponseWriter,
 	handler.ServeHTTP(w, r)
 }
 
+// DeleteGrant operation middleware
+func (siw *ServerInterfaceWrapper) DeleteGrant(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteGrant(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListGrants operation middleware
 func (siw *ServerInterfaceWrapper) ListGrants(w http.ResponseWriter, r *http.Request) {
 
@@ -2513,28 +2361,6 @@ func (siw *ServerInterfaceWrapper) CreateGrant(w http.ResponseWriter, r *http.Re
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateGrant(w, r)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// DeleteGrant operation middleware
-func (siw *ServerInterfaceWrapper) DeleteGrant(w http.ResponseWriter, r *http.Request) {
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.DeleteGrant(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2675,6 +2501,39 @@ func (siw *ServerInterfaceWrapper) GetGroup(w http.ResponseWriter, r *http.Reque
 	handler.ServeHTTP(w, r)
 }
 
+// DeleteGroupMember operation middleware
+func (siw *ServerInterfaceWrapper) DeleteGroupMember(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "groupId" -------------
+	var groupId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "groupId", chi.URLParam(r, "groupId"), &groupId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "groupId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteGroupMember(w, r, groupId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListGroupMembers operation middleware
 func (siw *ServerInterfaceWrapper) ListGroupMembers(w http.ResponseWriter, r *http.Request) {
 
@@ -2760,39 +2619,6 @@ func (siw *ServerInterfaceWrapper) CreateGroupMember(w http.ResponseWriter, r *h
 	handler.ServeHTTP(w, r)
 }
 
-// DeleteGroupMember operation middleware
-func (siw *ServerInterfaceWrapper) DeleteGroupMember(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "groupId" -------------
-	var groupId int64
-
-	err = runtime.BindStyledParameterWithOptions("simple", "groupId", chi.URLParam(r, "groupId"), &groupId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "groupId", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.DeleteGroupMember(w, r, groupId)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
 // DeleteLineageEdge operation middleware
 func (siw *ServerInterfaceWrapper) DeleteLineageEdge(w http.ResponseWriter, r *http.Request) {
 
@@ -2839,6 +2665,189 @@ func (siw *ServerInterfaceWrapper) PurgeLineage(w http.ResponseWriter, r *http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PurgeLineage(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetTableLineage operation middleware
+func (siw *ServerInterfaceWrapper) GetTableLineage(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "schemaName" -------------
+	var schemaName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "schemaName", chi.URLParam(r, "schemaName"), &schemaName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schemaName", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "tableName" -------------
+	var tableName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tableName", chi.URLParam(r, "tableName"), &tableName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tableName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetTableLineageParams
+
+	// ------------- Optional query parameter "max_results" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetTableLineage(w, r, schemaName, tableName, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetDownstreamLineage operation middleware
+func (siw *ServerInterfaceWrapper) GetDownstreamLineage(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "schemaName" -------------
+	var schemaName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "schemaName", chi.URLParam(r, "schemaName"), &schemaName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schemaName", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "tableName" -------------
+	var tableName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tableName", chi.URLParam(r, "tableName"), &tableName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tableName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetDownstreamLineageParams
+
+	// ------------- Optional query parameter "max_results" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetDownstreamLineage(w, r, schemaName, tableName, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetUpstreamLineage operation middleware
+func (siw *ServerInterfaceWrapper) GetUpstreamLineage(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "schemaName" -------------
+	var schemaName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "schemaName", chi.URLParam(r, "schemaName"), &schemaName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schemaName", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "tableName" -------------
+	var tableName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tableName", chi.URLParam(r, "tableName"), &tableName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tableName", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetUpstreamLineageParams
+
+	// ------------- Optional query parameter "max_results" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetUpstreamLineage(w, r, schemaName, tableName, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3153,6 +3162,28 @@ func (siw *ServerInterfaceWrapper) ListQueryHistory(w http.ResponseWriter, r *ht
 	handler.ServeHTTP(w, r)
 }
 
+// CreateRowFilterTopLevel operation middleware
+func (siw *ServerInterfaceWrapper) CreateRowFilterTopLevel(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateRowFilterTopLevel(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // DeleteRowFilter operation middleware
 func (siw *ServerInterfaceWrapper) DeleteRowFilter(w http.ResponseWriter, r *http.Request) {
 
@@ -3186,39 +3217,6 @@ func (siw *ServerInterfaceWrapper) DeleteRowFilter(w http.ResponseWriter, r *htt
 	handler.ServeHTTP(w, r)
 }
 
-// BindRowFilter operation middleware
-func (siw *ServerInterfaceWrapper) BindRowFilter(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "rowFilterId" -------------
-	var rowFilterId int64
-
-	err = runtime.BindStyledParameterWithOptions("simple", "rowFilterId", chi.URLParam(r, "rowFilterId"), &rowFilterId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "rowFilterId", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.BindRowFilter(w, r, rowFilterId)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
 // UnbindRowFilter operation middleware
 func (siw *ServerInterfaceWrapper) UnbindRowFilter(w http.ResponseWriter, r *http.Request) {
 
@@ -3243,6 +3241,39 @@ func (siw *ServerInterfaceWrapper) UnbindRowFilter(w http.ResponseWriter, r *htt
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UnbindRowFilter(w, r, rowFilterId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// BindRowFilter operation middleware
+func (siw *ServerInterfaceWrapper) BindRowFilter(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "rowFilterId" -------------
+	var rowFilterId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "rowFilterId", chi.URLParam(r, "rowFilterId"), &rowFilterId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "rowFilterId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BindRowFilter(w, r, rowFilterId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3984,15 +4015,6 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url", wrapper.CreateUploadUrl)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}/lineage", wrapper.GetTableLineage)
-	})
-	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}/lineage/downstream", wrapper.GetDownstreamLineage)
-	})
-	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}/lineage/upstream", wrapper.GetUpstreamLineage)
-	})
-	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/catalog/schemas/{schemaName}/tables/{tableName}/profile", wrapper.ProfileTable)
 	})
 	r.Group(func(r chi.Router) {
@@ -4032,10 +4054,10 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Delete(options.BaseURL+"/column-masks/{columnMaskId}", wrapper.DeleteColumnMask)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/column-masks/{columnMaskId}/bind", wrapper.BindColumnMask)
+		r.Delete(options.BaseURL+"/column-masks/{columnMaskId}/bindings", wrapper.UnbindColumnMask)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/column-masks/{columnMaskId}/unbind", wrapper.UnbindColumnMask)
+		r.Post(options.BaseURL+"/column-masks/{columnMaskId}/bindings", wrapper.BindColumnMask)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/external-locations", wrapper.ListExternalLocations)
@@ -4053,13 +4075,13 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Patch(options.BaseURL+"/external-locations/{locationName}", wrapper.UpdateExternalLocation)
 	})
 	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/grants", wrapper.DeleteGrant)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/grants", wrapper.ListGrants)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/grants", wrapper.CreateGrant)
-	})
-	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/grants/revoke", wrapper.DeleteGrant)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/groups", wrapper.ListGroups)
@@ -4074,19 +4096,28 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/groups/{groupId}", wrapper.GetGroup)
 	})
 	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/groups/{groupId}/members", wrapper.DeleteGroupMember)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/groups/{groupId}/members", wrapper.ListGroupMembers)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/groups/{groupId}/members", wrapper.CreateGroupMember)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/groups/{groupId}/members/remove", wrapper.DeleteGroupMember)
-	})
-	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/lineage/edges/{edgeId}", wrapper.DeleteLineageEdge)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/lineage/purge", wrapper.PurgeLineage)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/lineage/tables/{schemaName}/{tableName}", wrapper.GetTableLineage)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/lineage/tables/{schemaName}/{tableName}/downstream", wrapper.GetDownstreamLineage)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/lineage/tables/{schemaName}/{tableName}/upstream", wrapper.GetUpstreamLineage)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/manifest", wrapper.CreateManifest)
@@ -4116,13 +4147,16 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/query-history", wrapper.ListQueryHistory)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/row-filters", wrapper.CreateRowFilterTopLevel)
+	})
+	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/row-filters/{rowFilterId}", wrapper.DeleteRowFilter)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/row-filters/{rowFilterId}/bind", wrapper.BindRowFilter)
+		r.Delete(options.BaseURL+"/row-filters/{rowFilterId}/bindings", wrapper.UnbindRowFilter)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/row-filters/{rowFilterId}/unbind", wrapper.UnbindRowFilter)
+		r.Post(options.BaseURL+"/row-filters/{rowFilterId}/bindings", wrapper.BindRowFilter)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/search", wrapper.SearchCatalog)
@@ -4774,63 +4808,6 @@ func (response CreateUploadUrl404JSONResponse) VisitCreateUploadUrlResponse(w ht
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetTableLineageRequestObject struct {
-	SchemaName string `json:"schemaName"`
-	TableName  string `json:"tableName"`
-	Params     GetTableLineageParams
-}
-
-type GetTableLineageResponseObject interface {
-	VisitGetTableLineageResponse(w http.ResponseWriter) error
-}
-
-type GetTableLineage200JSONResponse LineageNode
-
-func (response GetTableLineage200JSONResponse) VisitGetTableLineageResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GetDownstreamLineageRequestObject struct {
-	SchemaName string `json:"schemaName"`
-	TableName  string `json:"tableName"`
-	Params     GetDownstreamLineageParams
-}
-
-type GetDownstreamLineageResponseObject interface {
-	VisitGetDownstreamLineageResponse(w http.ResponseWriter) error
-}
-
-type GetDownstreamLineage200JSONResponse PaginatedLineageEdges
-
-func (response GetDownstreamLineage200JSONResponse) VisitGetDownstreamLineageResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GetUpstreamLineageRequestObject struct {
-	SchemaName string `json:"schemaName"`
-	TableName  string `json:"tableName"`
-	Params     GetUpstreamLineageParams
-}
-
-type GetUpstreamLineageResponseObject interface {
-	VisitGetUpstreamLineageResponse(w http.ResponseWriter) error
-}
-
-type GetUpstreamLineage200JSONResponse PaginatedLineageEdges
-
-func (response GetUpstreamLineage200JSONResponse) VisitGetUpstreamLineageResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
 type ProfileTableRequestObject struct {
 	SchemaName string `json:"schemaName"`
 	TableName  string `json:"tableName"`
@@ -5241,41 +5218,6 @@ func (response DeleteColumnMask404JSONResponse) VisitDeleteColumnMaskResponse(w 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type BindColumnMaskRequestObject struct {
-	ColumnMaskId int64 `json:"columnMaskId"`
-	Body         *BindColumnMaskJSONRequestBody
-}
-
-type BindColumnMaskResponseObject interface {
-	VisitBindColumnMaskResponse(w http.ResponseWriter) error
-}
-
-type BindColumnMask204Response struct {
-}
-
-func (response BindColumnMask204Response) VisitBindColumnMaskResponse(w http.ResponseWriter) error {
-	w.WriteHeader(204)
-	return nil
-}
-
-type BindColumnMask400JSONResponse Error
-
-func (response BindColumnMask400JSONResponse) VisitBindColumnMaskResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type BindColumnMask404JSONResponse Error
-
-func (response BindColumnMask404JSONResponse) VisitBindColumnMaskResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
 type UnbindColumnMaskRequestObject struct {
 	ColumnMaskId int64 `json:"columnMaskId"`
 	Body         *UnbindColumnMaskJSONRequestBody
@@ -5305,6 +5247,41 @@ func (response UnbindColumnMask400JSONResponse) VisitUnbindColumnMaskResponse(w 
 type UnbindColumnMask404JSONResponse Error
 
 func (response UnbindColumnMask404JSONResponse) VisitUnbindColumnMaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type BindColumnMaskRequestObject struct {
+	ColumnMaskId int64 `json:"columnMaskId"`
+	Body         *BindColumnMaskJSONRequestBody
+}
+
+type BindColumnMaskResponseObject interface {
+	VisitBindColumnMaskResponse(w http.ResponseWriter) error
+}
+
+type BindColumnMask204Response struct {
+}
+
+func (response BindColumnMask204Response) VisitBindColumnMaskResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type BindColumnMask400JSONResponse Error
+
+func (response BindColumnMask400JSONResponse) VisitBindColumnMaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type BindColumnMask404JSONResponse Error
+
+func (response BindColumnMask404JSONResponse) VisitBindColumnMaskResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
 
@@ -5468,6 +5445,40 @@ func (response UpdateExternalLocation404JSONResponse) VisitUpdateExternalLocatio
 	return json.NewEncoder(w).Encode(response)
 }
 
+type DeleteGrantRequestObject struct {
+	Body *DeleteGrantJSONRequestBody
+}
+
+type DeleteGrantResponseObject interface {
+	VisitDeleteGrantResponse(w http.ResponseWriter) error
+}
+
+type DeleteGrant204Response struct {
+}
+
+func (response DeleteGrant204Response) VisitDeleteGrantResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteGrant400JSONResponse Error
+
+func (response DeleteGrant400JSONResponse) VisitDeleteGrantResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteGrant404JSONResponse Error
+
+func (response DeleteGrant404JSONResponse) VisitDeleteGrantResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type ListGrantsRequestObject struct {
 	Params ListGrantsParams
 }
@@ -5525,40 +5536,6 @@ type CreateGrant409JSONResponse Error
 func (response CreateGrant409JSONResponse) VisitCreateGrantResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(409)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type DeleteGrantRequestObject struct {
-	Body *DeleteGrantJSONRequestBody
-}
-
-type DeleteGrantResponseObject interface {
-	VisitDeleteGrantResponse(w http.ResponseWriter) error
-}
-
-type DeleteGrant204Response struct {
-}
-
-func (response DeleteGrant204Response) VisitDeleteGrantResponse(w http.ResponseWriter) error {
-	w.WriteHeader(204)
-	return nil
-}
-
-type DeleteGrant400JSONResponse Error
-
-func (response DeleteGrant400JSONResponse) VisitDeleteGrantResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type DeleteGrant404JSONResponse Error
-
-func (response DeleteGrant404JSONResponse) VisitDeleteGrantResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -5666,6 +5643,41 @@ func (response GetGroup404JSONResponse) VisitGetGroupResponse(w http.ResponseWri
 	return json.NewEncoder(w).Encode(response)
 }
 
+type DeleteGroupMemberRequestObject struct {
+	GroupId int64 `json:"groupId"`
+	Body    *DeleteGroupMemberJSONRequestBody
+}
+
+type DeleteGroupMemberResponseObject interface {
+	VisitDeleteGroupMemberResponse(w http.ResponseWriter) error
+}
+
+type DeleteGroupMember204Response struct {
+}
+
+func (response DeleteGroupMember204Response) VisitDeleteGroupMemberResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteGroupMember400JSONResponse Error
+
+func (response DeleteGroupMember400JSONResponse) VisitDeleteGroupMemberResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteGroupMember404JSONResponse Error
+
+func (response DeleteGroupMember404JSONResponse) VisitDeleteGroupMemberResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type ListGroupMembersRequestObject struct {
 	GroupId int64 `json:"groupId"`
 	Params  ListGroupMembersParams
@@ -5728,41 +5740,6 @@ func (response CreateGroupMember404JSONResponse) VisitCreateGroupMemberResponse(
 	return json.NewEncoder(w).Encode(response)
 }
 
-type DeleteGroupMemberRequestObject struct {
-	GroupId int64 `json:"groupId"`
-	Body    *DeleteGroupMemberJSONRequestBody
-}
-
-type DeleteGroupMemberResponseObject interface {
-	VisitDeleteGroupMemberResponse(w http.ResponseWriter) error
-}
-
-type DeleteGroupMember204Response struct {
-}
-
-func (response DeleteGroupMember204Response) VisitDeleteGroupMemberResponse(w http.ResponseWriter) error {
-	w.WriteHeader(204)
-	return nil
-}
-
-type DeleteGroupMember400JSONResponse Error
-
-func (response DeleteGroupMember400JSONResponse) VisitDeleteGroupMemberResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type DeleteGroupMember404JSONResponse Error
-
-func (response DeleteGroupMember404JSONResponse) VisitDeleteGroupMemberResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
 type DeleteLineageEdgeRequestObject struct {
 	EdgeId int64 `json:"edgeId"`
 }
@@ -5810,6 +5787,63 @@ type PurgeLineage403JSONResponse Error
 func (response PurgeLineage403JSONResponse) VisitPurgeLineageResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetTableLineageRequestObject struct {
+	SchemaName string `json:"schemaName"`
+	TableName  string `json:"tableName"`
+	Params     GetTableLineageParams
+}
+
+type GetTableLineageResponseObject interface {
+	VisitGetTableLineageResponse(w http.ResponseWriter) error
+}
+
+type GetTableLineage200JSONResponse LineageNode
+
+func (response GetTableLineage200JSONResponse) VisitGetTableLineageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetDownstreamLineageRequestObject struct {
+	SchemaName string `json:"schemaName"`
+	TableName  string `json:"tableName"`
+	Params     GetDownstreamLineageParams
+}
+
+type GetDownstreamLineageResponseObject interface {
+	VisitGetDownstreamLineageResponse(w http.ResponseWriter) error
+}
+
+type GetDownstreamLineage200JSONResponse PaginatedLineageEdges
+
+func (response GetDownstreamLineage200JSONResponse) VisitGetDownstreamLineageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetUpstreamLineageRequestObject struct {
+	SchemaName string `json:"schemaName"`
+	TableName  string `json:"tableName"`
+	Params     GetUpstreamLineageParams
+}
+
+type GetUpstreamLineageResponseObject interface {
+	VisitGetUpstreamLineageResponse(w http.ResponseWriter) error
+}
+
+type GetUpstreamLineage200JSONResponse PaginatedLineageEdges
+
+func (response GetUpstreamLineage200JSONResponse) VisitGetUpstreamLineageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -6064,6 +6098,41 @@ func (response ListQueryHistory200JSONResponse) VisitListQueryHistoryResponse(w 
 	return json.NewEncoder(w).Encode(response)
 }
 
+type CreateRowFilterTopLevelRequestObject struct {
+	Body *CreateRowFilterTopLevelJSONRequestBody
+}
+
+type CreateRowFilterTopLevelResponseObject interface {
+	VisitCreateRowFilterTopLevelResponse(w http.ResponseWriter) error
+}
+
+type CreateRowFilterTopLevel201JSONResponse RowFilter
+
+func (response CreateRowFilterTopLevel201JSONResponse) VisitCreateRowFilterTopLevelResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateRowFilterTopLevel400JSONResponse Error
+
+func (response CreateRowFilterTopLevel400JSONResponse) VisitCreateRowFilterTopLevelResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateRowFilterTopLevel404JSONResponse Error
+
+func (response CreateRowFilterTopLevel404JSONResponse) VisitCreateRowFilterTopLevelResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type DeleteRowFilterRequestObject struct {
 	RowFilterId int64 `json:"rowFilterId"`
 }
@@ -6083,41 +6152,6 @@ func (response DeleteRowFilter204Response) VisitDeleteRowFilterResponse(w http.R
 type DeleteRowFilter404JSONResponse Error
 
 func (response DeleteRowFilter404JSONResponse) VisitDeleteRowFilterResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type BindRowFilterRequestObject struct {
-	RowFilterId int64 `json:"rowFilterId"`
-	Body        *BindRowFilterJSONRequestBody
-}
-
-type BindRowFilterResponseObject interface {
-	VisitBindRowFilterResponse(w http.ResponseWriter) error
-}
-
-type BindRowFilter204Response struct {
-}
-
-func (response BindRowFilter204Response) VisitBindRowFilterResponse(w http.ResponseWriter) error {
-	w.WriteHeader(204)
-	return nil
-}
-
-type BindRowFilter400JSONResponse Error
-
-func (response BindRowFilter400JSONResponse) VisitBindRowFilterResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type BindRowFilter404JSONResponse Error
-
-func (response BindRowFilter404JSONResponse) VisitBindRowFilterResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
 
@@ -6153,6 +6187,41 @@ func (response UnbindRowFilter400JSONResponse) VisitUnbindRowFilterResponse(w ht
 type UnbindRowFilter404JSONResponse Error
 
 func (response UnbindRowFilter404JSONResponse) VisitUnbindRowFilterResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type BindRowFilterRequestObject struct {
+	RowFilterId int64 `json:"rowFilterId"`
+	Body        *BindRowFilterJSONRequestBody
+}
+
+type BindRowFilterResponseObject interface {
+	VisitBindRowFilterResponse(w http.ResponseWriter) error
+}
+
+type BindRowFilter204Response struct {
+}
+
+func (response BindRowFilter204Response) VisitBindRowFilterResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type BindRowFilter400JSONResponse Error
+
+func (response BindRowFilter400JSONResponse) VisitBindRowFilterResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type BindRowFilter404JSONResponse Error
+
+func (response BindRowFilter404JSONResponse) VisitBindRowFilterResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
 
@@ -6635,15 +6704,6 @@ type StrictServerInterface interface {
 	// Get a presigned URL for uploading a Parquet file
 	// (POST /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url)
 	CreateUploadUrl(ctx context.Context, request CreateUploadUrlRequestObject) (CreateUploadUrlResponseObject, error)
-	// Get full lineage for a table
-	// (GET /catalog/schemas/{schemaName}/tables/{tableName}/lineage)
-	GetTableLineage(ctx context.Context, request GetTableLineageRequestObject) (GetTableLineageResponseObject, error)
-	// Get downstream lineage for a table
-	// (GET /catalog/schemas/{schemaName}/tables/{tableName}/lineage/downstream)
-	GetDownstreamLineage(ctx context.Context, request GetDownstreamLineageRequestObject) (GetDownstreamLineageResponseObject, error)
-	// Get upstream lineage for a table
-	// (GET /catalog/schemas/{schemaName}/tables/{tableName}/lineage/upstream)
-	GetUpstreamLineage(ctx context.Context, request GetUpstreamLineageRequestObject) (GetUpstreamLineageResponseObject, error)
 	// Profile a table to collect statistics
 	// (POST /catalog/schemas/{schemaName}/tables/{tableName}/profile)
 	ProfileTable(ctx context.Context, request ProfileTableRequestObject) (ProfileTableResponseObject, error)
@@ -6683,12 +6743,12 @@ type StrictServerInterface interface {
 	// Delete column mask
 	// (DELETE /column-masks/{columnMaskId})
 	DeleteColumnMask(ctx context.Context, request DeleteColumnMaskRequestObject) (DeleteColumnMaskResponseObject, error)
-	// Bind mask to principal
-	// (POST /column-masks/{columnMaskId}/bind)
-	BindColumnMask(ctx context.Context, request BindColumnMaskRequestObject) (BindColumnMaskResponseObject, error)
 	// Unbind mask from principal
-	// (POST /column-masks/{columnMaskId}/unbind)
+	// (DELETE /column-masks/{columnMaskId}/bindings)
 	UnbindColumnMask(ctx context.Context, request UnbindColumnMaskRequestObject) (UnbindColumnMaskResponseObject, error)
+	// Bind mask to principal
+	// (POST /column-masks/{columnMaskId}/bindings)
+	BindColumnMask(ctx context.Context, request BindColumnMaskRequestObject) (BindColumnMaskResponseObject, error)
 	// List external locations
 	// (GET /external-locations)
 	ListExternalLocations(ctx context.Context, request ListExternalLocationsRequestObject) (ListExternalLocationsResponseObject, error)
@@ -6704,15 +6764,15 @@ type StrictServerInterface interface {
 	// Update an external location
 	// (PATCH /external-locations/{locationName})
 	UpdateExternalLocation(ctx context.Context, request UpdateExternalLocationRequestObject) (UpdateExternalLocationResponseObject, error)
+	// Revoke a privilege
+	// (DELETE /grants)
+	DeleteGrant(ctx context.Context, request DeleteGrantRequestObject) (DeleteGrantResponseObject, error)
 	// List grants
 	// (GET /grants)
 	ListGrants(ctx context.Context, request ListGrantsRequestObject) (ListGrantsResponseObject, error)
 	// Grant a privilege
 	// (POST /grants)
 	CreateGrant(ctx context.Context, request CreateGrantRequestObject) (CreateGrantResponseObject, error)
-	// Revoke a privilege
-	// (POST /grants/revoke)
-	DeleteGrant(ctx context.Context, request DeleteGrantRequestObject) (DeleteGrantResponseObject, error)
 	// List all groups
 	// (GET /groups)
 	ListGroups(ctx context.Context, request ListGroupsRequestObject) (ListGroupsResponseObject, error)
@@ -6725,21 +6785,30 @@ type StrictServerInterface interface {
 	// Get group by ID
 	// (GET /groups/{groupId})
 	GetGroup(ctx context.Context, request GetGroupRequestObject) (GetGroupResponseObject, error)
+	// Remove member from group
+	// (DELETE /groups/{groupId}/members)
+	DeleteGroupMember(ctx context.Context, request DeleteGroupMemberRequestObject) (DeleteGroupMemberResponseObject, error)
 	// List group members
 	// (GET /groups/{groupId}/members)
 	ListGroupMembers(ctx context.Context, request ListGroupMembersRequestObject) (ListGroupMembersResponseObject, error)
 	// Add member to group
 	// (POST /groups/{groupId}/members)
 	CreateGroupMember(ctx context.Context, request CreateGroupMemberRequestObject) (CreateGroupMemberResponseObject, error)
-	// Remove member from group
-	// (POST /groups/{groupId}/members/remove)
-	DeleteGroupMember(ctx context.Context, request DeleteGroupMemberRequestObject) (DeleteGroupMemberResponseObject, error)
 	// Delete a lineage edge
 	// (DELETE /lineage/edges/{edgeId})
 	DeleteLineageEdge(ctx context.Context, request DeleteLineageEdgeRequestObject) (DeleteLineageEdgeResponseObject, error)
 	// Purge old lineage edges
 	// (POST /lineage/purge)
 	PurgeLineage(ctx context.Context, request PurgeLineageRequestObject) (PurgeLineageResponseObject, error)
+	// Get full lineage for a table
+	// (GET /lineage/tables/{schemaName}/{tableName})
+	GetTableLineage(ctx context.Context, request GetTableLineageRequestObject) (GetTableLineageResponseObject, error)
+	// Get downstream lineage for a table
+	// (GET /lineage/tables/{schemaName}/{tableName}/downstream)
+	GetDownstreamLineage(ctx context.Context, request GetDownstreamLineageRequestObject) (GetDownstreamLineageResponseObject, error)
+	// Get upstream lineage for a table
+	// (GET /lineage/tables/{schemaName}/{tableName}/upstream)
+	GetUpstreamLineage(ctx context.Context, request GetUpstreamLineageRequestObject) (GetUpstreamLineageResponseObject, error)
 	// Create table manifest with presigned URLs and security policies
 	// (POST /manifest)
 	CreateManifest(ctx context.Context, request CreateManifestRequestObject) (CreateManifestResponseObject, error)
@@ -6767,15 +6836,18 @@ type StrictServerInterface interface {
 	// List query execution history
 	// (GET /query-history)
 	ListQueryHistory(ctx context.Context, request ListQueryHistoryRequestObject) (ListQueryHistoryResponseObject, error)
+	// Create row filter (top-level)
+	// (POST /row-filters)
+	CreateRowFilterTopLevel(ctx context.Context, request CreateRowFilterTopLevelRequestObject) (CreateRowFilterTopLevelResponseObject, error)
 	// Delete row filter
 	// (DELETE /row-filters/{rowFilterId})
 	DeleteRowFilter(ctx context.Context, request DeleteRowFilterRequestObject) (DeleteRowFilterResponseObject, error)
-	// Bind filter to principal
-	// (POST /row-filters/{rowFilterId}/bind)
-	BindRowFilter(ctx context.Context, request BindRowFilterRequestObject) (BindRowFilterResponseObject, error)
 	// Unbind filter from principal
-	// (POST /row-filters/{rowFilterId}/unbind)
+	// (DELETE /row-filters/{rowFilterId}/bindings)
 	UnbindRowFilter(ctx context.Context, request UnbindRowFilterRequestObject) (UnbindRowFilterResponseObject, error)
+	// Bind filter to principal
+	// (POST /row-filters/{rowFilterId}/bindings)
+	BindRowFilter(ctx context.Context, request BindRowFilterRequestObject) (BindRowFilterResponseObject, error)
 	// Search catalog objects
 	// (GET /search)
 	SearchCatalog(ctx context.Context, request SearchCatalogRequestObject) (SearchCatalogResponseObject, error)
@@ -7389,90 +7461,6 @@ func (sh *strictHandler) CreateUploadUrl(w http.ResponseWriter, r *http.Request,
 	}
 }
 
-// GetTableLineage operation middleware
-func (sh *strictHandler) GetTableLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetTableLineageParams) {
-	var request GetTableLineageRequestObject
-
-	request.SchemaName = schemaName
-	request.TableName = tableName
-	request.Params = params
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.GetTableLineage(ctx, request.(GetTableLineageRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetTableLineage")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetTableLineageResponseObject); ok {
-		if err := validResponse.VisitGetTableLineageResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// GetDownstreamLineage operation middleware
-func (sh *strictHandler) GetDownstreamLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetDownstreamLineageParams) {
-	var request GetDownstreamLineageRequestObject
-
-	request.SchemaName = schemaName
-	request.TableName = tableName
-	request.Params = params
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.GetDownstreamLineage(ctx, request.(GetDownstreamLineageRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetDownstreamLineage")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetDownstreamLineageResponseObject); ok {
-		if err := validResponse.VisitGetDownstreamLineageResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// GetUpstreamLineage operation middleware
-func (sh *strictHandler) GetUpstreamLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetUpstreamLineageParams) {
-	var request GetUpstreamLineageRequestObject
-
-	request.SchemaName = schemaName
-	request.TableName = tableName
-	request.Params = params
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.GetUpstreamLineage(ctx, request.(GetUpstreamLineageRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetUpstreamLineage")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetUpstreamLineageResponseObject); ok {
-		if err := validResponse.VisitGetUpstreamLineageResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
 // ProfileTable operation middleware
 func (sh *strictHandler) ProfileTable(w http.ResponseWriter, r *http.Request, schemaName string, tableName string) {
 	var request ProfileTableRequestObject
@@ -7846,39 +7834,6 @@ func (sh *strictHandler) DeleteColumnMask(w http.ResponseWriter, r *http.Request
 	}
 }
 
-// BindColumnMask operation middleware
-func (sh *strictHandler) BindColumnMask(w http.ResponseWriter, r *http.Request, columnMaskId int64) {
-	var request BindColumnMaskRequestObject
-
-	request.ColumnMaskId = columnMaskId
-
-	var body BindColumnMaskJSONRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
-		return
-	}
-	request.Body = &body
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.BindColumnMask(ctx, request.(BindColumnMaskRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "BindColumnMask")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(BindColumnMaskResponseObject); ok {
-		if err := validResponse.VisitBindColumnMaskResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
 // UnbindColumnMask operation middleware
 func (sh *strictHandler) UnbindColumnMask(w http.ResponseWriter, r *http.Request, columnMaskId int64) {
 	var request UnbindColumnMaskRequestObject
@@ -7905,6 +7860,39 @@ func (sh *strictHandler) UnbindColumnMask(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UnbindColumnMaskResponseObject); ok {
 		if err := validResponse.VisitUnbindColumnMaskResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// BindColumnMask operation middleware
+func (sh *strictHandler) BindColumnMask(w http.ResponseWriter, r *http.Request, columnMaskId int64) {
+	var request BindColumnMaskRequestObject
+
+	request.ColumnMaskId = columnMaskId
+
+	var body BindColumnMaskJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.BindColumnMask(ctx, request.(BindColumnMaskRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "BindColumnMask")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(BindColumnMaskResponseObject); ok {
+		if err := validResponse.VisitBindColumnMaskResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -8054,6 +8042,37 @@ func (sh *strictHandler) UpdateExternalLocation(w http.ResponseWriter, r *http.R
 	}
 }
 
+// DeleteGrant operation middleware
+func (sh *strictHandler) DeleteGrant(w http.ResponseWriter, r *http.Request) {
+	var request DeleteGrantRequestObject
+
+	var body DeleteGrantJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteGrant(ctx, request.(DeleteGrantRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteGrant")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteGrantResponseObject); ok {
+		if err := validResponse.VisitDeleteGrantResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListGrants operation middleware
 func (sh *strictHandler) ListGrants(w http.ResponseWriter, r *http.Request, params ListGrantsParams) {
 	var request ListGrantsRequestObject
@@ -8104,37 +8123,6 @@ func (sh *strictHandler) CreateGrant(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(CreateGrantResponseObject); ok {
 		if err := validResponse.VisitCreateGrantResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// DeleteGrant operation middleware
-func (sh *strictHandler) DeleteGrant(w http.ResponseWriter, r *http.Request) {
-	var request DeleteGrantRequestObject
-
-	var body DeleteGrantJSONRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
-		return
-	}
-	request.Body = &body
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.DeleteGrant(ctx, request.(DeleteGrantRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "DeleteGrant")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(DeleteGrantResponseObject); ok {
-		if err := validResponse.VisitDeleteGrantResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -8251,6 +8239,39 @@ func (sh *strictHandler) GetGroup(w http.ResponseWriter, r *http.Request, groupI
 	}
 }
 
+// DeleteGroupMember operation middleware
+func (sh *strictHandler) DeleteGroupMember(w http.ResponseWriter, r *http.Request, groupId int64) {
+	var request DeleteGroupMemberRequestObject
+
+	request.GroupId = groupId
+
+	var body DeleteGroupMemberJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteGroupMember(ctx, request.(DeleteGroupMemberRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteGroupMember")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteGroupMemberResponseObject); ok {
+		if err := validResponse.VisitDeleteGroupMemberResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListGroupMembers operation middleware
 func (sh *strictHandler) ListGroupMembers(w http.ResponseWriter, r *http.Request, groupId int64, params ListGroupMembersParams) {
 	var request ListGroupMembersRequestObject
@@ -8311,39 +8332,6 @@ func (sh *strictHandler) CreateGroupMember(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-// DeleteGroupMember operation middleware
-func (sh *strictHandler) DeleteGroupMember(w http.ResponseWriter, r *http.Request, groupId int64) {
-	var request DeleteGroupMemberRequestObject
-
-	request.GroupId = groupId
-
-	var body DeleteGroupMemberJSONRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
-		return
-	}
-	request.Body = &body
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.DeleteGroupMember(ctx, request.(DeleteGroupMemberRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "DeleteGroupMember")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(DeleteGroupMemberResponseObject); ok {
-		if err := validResponse.VisitDeleteGroupMemberResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
 // DeleteLineageEdge operation middleware
 func (sh *strictHandler) DeleteLineageEdge(w http.ResponseWriter, r *http.Request, edgeId int64) {
 	var request DeleteLineageEdgeRequestObject
@@ -8394,6 +8382,90 @@ func (sh *strictHandler) PurgeLineage(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PurgeLineageResponseObject); ok {
 		if err := validResponse.VisitPurgeLineageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetTableLineage operation middleware
+func (sh *strictHandler) GetTableLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetTableLineageParams) {
+	var request GetTableLineageRequestObject
+
+	request.SchemaName = schemaName
+	request.TableName = tableName
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetTableLineage(ctx, request.(GetTableLineageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetTableLineage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetTableLineageResponseObject); ok {
+		if err := validResponse.VisitGetTableLineageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetDownstreamLineage operation middleware
+func (sh *strictHandler) GetDownstreamLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetDownstreamLineageParams) {
+	var request GetDownstreamLineageRequestObject
+
+	request.SchemaName = schemaName
+	request.TableName = tableName
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetDownstreamLineage(ctx, request.(GetDownstreamLineageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetDownstreamLineage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetDownstreamLineageResponseObject); ok {
+		if err := validResponse.VisitGetDownstreamLineageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetUpstreamLineage operation middleware
+func (sh *strictHandler) GetUpstreamLineage(w http.ResponseWriter, r *http.Request, schemaName string, tableName string, params GetUpstreamLineageParams) {
+	var request GetUpstreamLineageRequestObject
+
+	request.SchemaName = schemaName
+	request.TableName = tableName
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetUpstreamLineage(ctx, request.(GetUpstreamLineageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetUpstreamLineage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetUpstreamLineageResponseObject); ok {
+		if err := validResponse.VisitGetUpstreamLineageResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -8655,6 +8727,37 @@ func (sh *strictHandler) ListQueryHistory(w http.ResponseWriter, r *http.Request
 	}
 }
 
+// CreateRowFilterTopLevel operation middleware
+func (sh *strictHandler) CreateRowFilterTopLevel(w http.ResponseWriter, r *http.Request) {
+	var request CreateRowFilterTopLevelRequestObject
+
+	var body CreateRowFilterTopLevelJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateRowFilterTopLevel(ctx, request.(CreateRowFilterTopLevelRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateRowFilterTopLevel")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateRowFilterTopLevelResponseObject); ok {
+		if err := validResponse.VisitCreateRowFilterTopLevelResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // DeleteRowFilter operation middleware
 func (sh *strictHandler) DeleteRowFilter(w http.ResponseWriter, r *http.Request, rowFilterId int64) {
 	var request DeleteRowFilterRequestObject
@@ -8674,39 +8777,6 @@ func (sh *strictHandler) DeleteRowFilter(w http.ResponseWriter, r *http.Request,
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(DeleteRowFilterResponseObject); ok {
 		if err := validResponse.VisitDeleteRowFilterResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// BindRowFilter operation middleware
-func (sh *strictHandler) BindRowFilter(w http.ResponseWriter, r *http.Request, rowFilterId int64) {
-	var request BindRowFilterRequestObject
-
-	request.RowFilterId = rowFilterId
-
-	var body BindRowFilterJSONRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
-		return
-	}
-	request.Body = &body
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.BindRowFilter(ctx, request.(BindRowFilterRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "BindRowFilter")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(BindRowFilterResponseObject); ok {
-		if err := validResponse.VisitBindRowFilterResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -8740,6 +8810,39 @@ func (sh *strictHandler) UnbindRowFilter(w http.ResponseWriter, r *http.Request,
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UnbindRowFilterResponseObject); ok {
 		if err := validResponse.VisitUnbindRowFilterResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// BindRowFilter operation middleware
+func (sh *strictHandler) BindRowFilter(w http.ResponseWriter, r *http.Request, rowFilterId int64) {
+	var request BindRowFilterRequestObject
+
+	request.RowFilterId = rowFilterId
+
+	var body BindRowFilterJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.BindRowFilter(ctx, request.(BindRowFilterRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "BindRowFilter")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(BindRowFilterResponseObject); ok {
+		if err := validResponse.VisitBindRowFilterResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -9180,131 +9283,132 @@ func (sh *strictHandler) CreateTagAssignment(w http.ResponseWriter, r *http.Requ
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
