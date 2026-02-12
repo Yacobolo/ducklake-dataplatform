@@ -33,7 +33,7 @@ func NewAzurePresignerFromCredential(cred *domain.StorageCredential, storagePath
 	}
 
 	if cred.AzureAccountKey == "" {
-		return nil, fmt.Errorf("Azure account key authentication required; service principal presigning not yet supported")
+		return nil, fmt.Errorf("azure account key authentication required; service principal presigning not yet supported")
 	}
 
 	sharedKeyCred, err := azblob.NewSharedKeyCredential(cred.AzureAccountName, cred.AzureAccountKey)
@@ -65,7 +65,7 @@ func NewAzurePresignerFromCredential(cred *domain.StorageCredential, storagePath
 
 // PresignGetObject generates a presigned (SAS) GET URL for an Azure Blob Storage object.
 // path is a full Azure storage URI (abfss://, az://, or https://).
-func (p *AzurePresigner) PresignGetObject(ctx context.Context, path string, expiry time.Duration) (string, error) {
+func (p *AzurePresigner) PresignGetObject(_ context.Context, path string, expiry time.Duration) (string, error) {
 	container, key, err := parseAzurePath(path)
 	if err != nil {
 		return "", fmt.Errorf("parse Azure path %q: %w", path, err)
@@ -80,7 +80,7 @@ func (p *AzurePresigner) PresignGetObject(ctx context.Context, path string, expi
 }
 
 // PresignPutObject generates a presigned (SAS) PUT URL for uploading to Azure Blob Storage.
-func (p *AzurePresigner) PresignPutObject(ctx context.Context, bucket, key string, expiry time.Duration) (string, error) {
+func (p *AzurePresigner) PresignPutObject(_ context.Context, bucket, key string, expiry time.Duration) (string, error) {
 	blobClient := p.client.ServiceClient().NewContainerClient(bucket).NewBlobClient(key)
 	sasURL, err := blobClient.GetSASURL(sas.BlobPermissions{Write: true, Create: true}, time.Now().Add(expiry), nil)
 	if err != nil {

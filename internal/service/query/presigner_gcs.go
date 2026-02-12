@@ -33,7 +33,7 @@ func NewGCSPresignerFromCredential(cred *domain.StorageCredential, storagePath s
 		return nil, fmt.Errorf("gcs_key_file_path is required")
 	}
 
-	client, err := storage.NewClient(context.Background(), option.WithCredentialsFile(cred.GCSKeyFilePath))
+	client, err := storage.NewClient(context.Background(), option.WithAuthCredentialsFile(option.ServiceAccount, cred.GCSKeyFilePath))
 	if err != nil {
 		return nil, fmt.Errorf("create GCS client: %w", err)
 	}
@@ -51,7 +51,7 @@ func NewGCSPresignerFromCredential(cred *domain.StorageCredential, storagePath s
 
 // PresignGetObject generates a signed GET URL for a GCS object.
 // path is a full gs:// URI like "gs://bucket/path/to/file.parquet".
-func (p *GCSPresigner) PresignGetObject(ctx context.Context, path string, expiry time.Duration) (string, error) {
+func (p *GCSPresigner) PresignGetObject(_ context.Context, path string, expiry time.Duration) (string, error) {
 	bucket, key, err := parseGCSPath(path)
 	if err != nil {
 		return "", err
@@ -68,7 +68,7 @@ func (p *GCSPresigner) PresignGetObject(ctx context.Context, path string, expiry
 }
 
 // PresignPutObject generates a signed PUT URL for uploading a GCS object.
-func (p *GCSPresigner) PresignPutObject(ctx context.Context, bucket, key string, expiry time.Duration) (string, error) {
+func (p *GCSPresigner) PresignPutObject(_ context.Context, bucket, key string, expiry time.Duration) (string, error) {
 	signedURL, err := p.client.Bucket(bucket).SignedURL(key, &storage.SignedURLOptions{
 		Method:      "PUT",
 		Expires:     time.Now().Add(expiry),
