@@ -161,32 +161,42 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 		deps.CatalogAttached, deps.Logger.With("component", "external-location"),
 	)
 
-	// === Conditional S3 services ===
+	// === Conditional manifest/ingestion services ===
+	// Enabled whenever the DuckLake catalog is attached. A legacy S3 presigner
+	// is created when env-level S3 credentials exist; otherwise, services rely
+	// on per-schema credential resolution (S3, Azure, or GCS).
 	var manifestSvc *query.ManifestService
 	var ingestionSvc *ingestion.IngestionService
-	if cfg.HasS3Config() && deps.CatalogAttached {
-		presigner, err := query.NewS3Presigner(cfg)
-		if err != nil {
-			deps.Logger.Warn("could not create S3 presigner", "error", err)
-		} else {
-			metastoreRepo := repository.NewMetastoreRepo(deps.ReadDB)
-			manifestSvc = query.NewManifestService(
-				metastoreRepo, authSvc, presigner, introspectionRepo, auditRepo,
-				storageCredRepo, externalLocRepo,
-			)
-			deps.Logger.Info("manifest service enabled (duck_access extension support)")
+	if deps.CatalogAttached {
+		var legacyGetPresigner query.FilePresigner
+		var legacyUploadPresigner query.FileUploadPresigner
+		bucket := "duck-demo"
 
-			bucket := "duck-demo"
-			if cfg.S3Bucket != nil {
-				bucket = *cfg.S3Bucket
+		if cfg.HasS3Config() {
+			s3p, err := query.NewS3Presigner(cfg)
+			if err != nil {
+				deps.Logger.Warn("could not create legacy S3 presigner", "error", err)
+			} else {
+				legacyGetPresigner = s3p
+				legacyUploadPresigner = s3p
+				bucket = s3p.Bucket()
+				deps.Logger.Info("legacy S3 presigner configured")
 			}
-			duckExec := engine.NewDuckDBExecAdapter(deps.DuckDB)
-			ingestionSvc = ingestion.NewIngestionService(
-				duckExec, metastoreRepo, authSvc, presigner, auditRepo, "lake", bucket,
-				storageCredRepo, externalLocRepo,
-			)
-			deps.Logger.Info("ingestion service enabled")
 		}
+
+		metastoreRepo := repository.NewMetastoreRepo(deps.ReadDB)
+		manifestSvc = query.NewManifestService(
+			metastoreRepo, authSvc, legacyGetPresigner, introspectionRepo, auditRepo,
+			storageCredRepo, externalLocRepo,
+		)
+		deps.Logger.Info("manifest service enabled (duck_access extension support)")
+
+		duckExec := engine.NewDuckDBExecAdapter(deps.DuckDB)
+		ingestionSvc = ingestion.NewIngestionService(
+			duckExec, metastoreRepo, authSvc, legacyUploadPresigner, auditRepo, "lake", bucket,
+			storageCredRepo, externalLocRepo,
+		)
+		deps.Logger.Info("ingestion service enabled")
 	}
 
 	// === Restore secrets (best-effort) ===
