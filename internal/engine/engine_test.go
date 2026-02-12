@@ -17,7 +17,7 @@ import (
 	dbstore "duck-demo/internal/db/dbstore"
 	"duck-demo/internal/db/repository"
 	"duck-demo/internal/engine"
-	"duck-demo/internal/service"
+	"duck-demo/internal/service/security"
 )
 
 // ctx is a package-level background context used by setup helpers.
@@ -25,7 +25,7 @@ var ctx = context.Background()
 
 // setupTestCatalog creates a temporary SQLite metastore with demo permissions.
 // It also creates the DuckLake-like metadata tables that the catalog service queries.
-func setupTestCatalog(t *testing.T) *service.AuthorizationService {
+func setupTestCatalog(t *testing.T) *security.AuthorizationService {
 	t.Helper()
 
 	metaDB, _ := internaldb.OpenTestSQLite(t)
@@ -60,7 +60,7 @@ func setupTestCatalog(t *testing.T) *service.AuthorizationService {
 		t.Fatalf("create mock ducklake tables: %v", err)
 	}
 
-	cat := service.NewAuthorizationService(
+	cat := security.NewAuthorizationService(
 		repository.NewPrincipalRepo(metaDB),
 		repository.NewGroupRepo(metaDB),
 		repository.NewGrantRepo(metaDB),

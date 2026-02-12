@@ -16,7 +16,7 @@ import (
 	dbstore "duck-demo/internal/db/dbstore"
 	"duck-demo/internal/db/repository"
 	"duck-demo/internal/engine"
-	"duck-demo/internal/service"
+	"duck-demo/internal/service/security"
 )
 
 // TestDuckLakeWithHetznerSetup tests the full DuckLake setup flow with real
@@ -147,7 +147,7 @@ func TestDuckLakeRBACIntegration(t *testing.T) {
 		t.Fatalf("migrations: %v", err)
 	}
 
-	cat := service.NewAuthorizationService(
+	cat := security.NewAuthorizationService(
 		repository.NewPrincipalRepo(metaDB),
 		repository.NewGroupRepo(metaDB),
 		repository.NewGrantRepo(metaDB),

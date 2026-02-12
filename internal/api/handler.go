@@ -2,53 +2,59 @@
 package api
 
 import (
-	"duck-demo/internal/service"
+	"duck-demo/internal/service/catalog"
+	svccompute "duck-demo/internal/service/compute"
+	"duck-demo/internal/service/governance"
+	"duck-demo/internal/service/ingestion"
+	"duck-demo/internal/service/query"
+	"duck-demo/internal/service/security"
+	"duck-demo/internal/service/storage"
 )
 
 // APIHandler implements the StrictServerInterface.
 type APIHandler struct {
-	query             *service.QueryService
-	principals        *service.PrincipalService
-	groups            *service.GroupService
-	grants            *service.GrantService
-	rowFilters        *service.RowFilterService
-	columnMasks       *service.ColumnMaskService
-	audit             *service.AuditService
-	manifest          *service.ManifestService
-	catalog           *service.CatalogService
-	queryHistory      *service.QueryHistoryService
-	lineage           *service.LineageService
-	search            *service.SearchService
-	tags              *service.TagService
-	views             *service.ViewService
-	ingestion         *service.IngestionService
-	storageCreds      *service.StorageCredentialService
-	externalLocations *service.ExternalLocationService
-	volumes           *service.VolumeService
-	computeEndpoints  *service.ComputeEndpointService
+	query             *query.QueryService
+	principals        *security.PrincipalService
+	groups            *security.GroupService
+	grants            *security.GrantService
+	rowFilters        *security.RowFilterService
+	columnMasks       *security.ColumnMaskService
+	audit             *governance.AuditService
+	manifest          *query.ManifestService
+	catalog           *catalog.CatalogService
+	queryHistory      *governance.QueryHistoryService
+	lineage           *governance.LineageService
+	search            *catalog.SearchService
+	tags              *governance.TagService
+	views             *catalog.ViewService
+	ingestion         *ingestion.IngestionService
+	storageCreds      *storage.StorageCredentialService
+	externalLocations *storage.ExternalLocationService
+	volumes           *storage.VolumeService
+	computeEndpoints  *svccompute.ComputeEndpointService
 }
 
 // NewHandler creates a new APIHandler with all required service dependencies.
 func NewHandler(
-	query *service.QueryService,
-	principals *service.PrincipalService,
-	groups *service.GroupService,
-	grants *service.GrantService,
-	rowFilters *service.RowFilterService,
-	columnMasks *service.ColumnMaskService,
-	audit *service.AuditService,
-	manifest *service.ManifestService,
-	catalog *service.CatalogService,
-	queryHistory *service.QueryHistoryService,
-	lineage *service.LineageService,
-	search *service.SearchService,
-	tags *service.TagService,
-	views *service.ViewService,
-	ingestion *service.IngestionService,
-	storageCreds *service.StorageCredentialService,
-	externalLocations *service.ExternalLocationService,
-	volumes *service.VolumeService,
-	computeEndpoints *service.ComputeEndpointService,
+	query *query.QueryService,
+	principals *security.PrincipalService,
+	groups *security.GroupService,
+	grants *security.GrantService,
+	rowFilters *security.RowFilterService,
+	columnMasks *security.ColumnMaskService,
+	audit *governance.AuditService,
+	manifest *query.ManifestService,
+	catalog *catalog.CatalogService,
+	queryHistory *governance.QueryHistoryService,
+	lineage *governance.LineageService,
+	search *catalog.SearchService,
+	tags *governance.TagService,
+	views *catalog.ViewService,
+	ingestion *ingestion.IngestionService,
+	storageCreds *storage.StorageCredentialService,
+	externalLocations *storage.ExternalLocationService,
+	volumes *storage.VolumeService,
+	computeEndpoints *svccompute.ComputeEndpointService,
 ) *APIHandler {
 	return &APIHandler{
 		query:             query,
