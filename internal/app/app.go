@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"duck-demo/internal/compute"
 	"duck-demo/internal/config"
 	"duck-demo/internal/db/crypto"
 	dbstore "duck-demo/internal/db/dbstore"
@@ -98,7 +99,9 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	}
 
 	// === Engine ===
-	eng := engine.NewSecureEngine(deps.DuckDB, authSvc, deps.Logger.With("component", "engine"))
+	localExec := compute.NewLocalExecutor(deps.DuckDB)
+	resolver := compute.NewDefaultResolver(localExec)
+	eng := engine.NewSecureEngine(deps.DuckDB, authSvc, resolver, deps.Logger.With("component", "engine"))
 	eng.SetInformationSchemaProvider(engine.NewInformationSchemaProvider(catalogRepo))
 
 	// === Core services ===

@@ -17,14 +17,31 @@ import (
 type SecureEngine struct {
 	db         *sql.DB
 	catalog    domain.AuthorizationService
+	resolver   domain.ComputeResolver
 	infoSchema *InformationSchemaProvider
 	logger     *slog.Logger
 }
 
 // NewSecureEngine creates a SecureEngine with the given DuckDB connection
 // and authorization service (backed by the SQLite metastore).
-func NewSecureEngine(db *sql.DB, cat domain.AuthorizationService, logger *slog.Logger) *SecureEngine {
-	return &SecureEngine{db: db, catalog: cat, logger: logger}
+// When resolver is nil the engine falls back to the local *sql.DB for all queries.
+func NewSecureEngine(db *sql.DB, cat domain.AuthorizationService, resolver domain.ComputeResolver, logger *slog.Logger) *SecureEngine {
+	return &SecureEngine{db: db, catalog: cat, resolver: resolver, logger: logger}
+}
+
+// execQuery resolves a ComputeExecutor for the principal and executes the query.
+// When the resolver is nil or returns a nil executor, the local *sql.DB is used.
+func (e *SecureEngine) execQuery(ctx context.Context, principalName, query string) (*sql.Rows, error) {
+	if e.resolver != nil {
+		executor, err := e.resolver.Resolve(ctx, principalName)
+		if err != nil {
+			return nil, fmt.Errorf("resolve compute executor: %w", err)
+		}
+		if executor != nil {
+			return executor.QueryContext(ctx, query)
+		}
+	}
+	return e.db.QueryContext(ctx, query)
 }
 
 // SetInformationSchemaProvider attaches an information_schema provider.
@@ -78,7 +95,7 @@ func (e *SecureEngine) Query(ctx context.Context, principalName, sqlQuery string
 		if !allowed {
 			return nil, fmt.Errorf("access denied: %q lacks %s privilege for table-less queries", principalName, requiredPriv)
 		}
-		rows, err := e.db.QueryContext(ctx, sqlQuery)
+		rows, err := e.execQuery(ctx, principalName, sqlQuery)
 		if err != nil {
 			return nil, fmt.Errorf("execute query: %w", err)
 		}
@@ -142,7 +159,7 @@ func (e *SecureEngine) Query(ctx context.Context, principalName, sqlQuery string
 	e.logger.Info("query executed", "principal", principalName, "statement", stmtType, "tables", tables, "sql", rewritten)
 
 	// 5. Execute
-	rows, err := e.db.QueryContext(ctx, rewritten)
+	rows, err := e.execQuery(ctx, principalName, rewritten)
 	if err != nil {
 		return nil, fmt.Errorf("execute query: %w", err)
 	}
@@ -165,6 +182,16 @@ func privilegeForStatement(t sqlrewrite.StatementType) (string, error) {
 	default:
 		return "", fmt.Errorf("unsupported statement type: %s", t)
 	}
+}
+
+// === DuckDB Extension Setup ===
+
+// InstallPostgresExtension installs and loads the DuckDB postgres extension.
+func InstallPostgresExtension(ctx context.Context, db *sql.DB) error {
+	if _, err := db.ExecContext(ctx, "INSTALL postgres; LOAD postgres;"); err != nil {
+		return fmt.Errorf("postgres extension: %w", err)
+	}
+	return nil
 }
 
 // === DuckLake Setup Functions ===
@@ -249,6 +276,21 @@ func AttachDuckLake(ctx context.Context, db *sql.DB, metaDBPath, dataPath string
 
 	if _, err := db.ExecContext(ctx, attachSQL); err != nil {
 		return fmt.Errorf("attach ducklake: %w", err)
+	}
+	if _, err := db.ExecContext(ctx, "USE lake"); err != nil {
+		return fmt.Errorf("use lake: %w", err)
+	}
+	return nil
+}
+
+// AttachDuckLakePostgres attaches the DuckLake catalog using a PostgreSQL metastore.
+func AttachDuckLakePostgres(ctx context.Context, db *sql.DB, dsn, dataPath string) error {
+	attachSQL, err := ddl.AttachDuckLakePostgres(dsn, dataPath)
+	if err != nil {
+		return fmt.Errorf("build DDL: %w", err)
+	}
+	if _, err := db.ExecContext(ctx, attachSQL); err != nil {
+		return fmt.Errorf("attach ducklake postgres: %w", err)
 	}
 	if _, err := db.ExecContext(ctx, "USE lake"); err != nil {
 		return fmt.Errorf("use lake: %w", err)

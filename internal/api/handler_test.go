@@ -126,7 +126,7 @@ func setupTestServer(t *testing.T, principalName string) *httptest.Server {
 	introspectionRepo := repository.NewIntrospectionRepo(metaDB)
 
 	cat := service.NewAuthorizationService(principalRepo, groupRepo, grantRepo, rowFilterRepo, columnMaskRepo, introspectionRepo)
-	eng := engine.NewSecureEngine(duckDB, cat, slog.New(slog.DiscardHandler))
+	eng := engine.NewSecureEngine(duckDB, cat, nil, slog.New(slog.DiscardHandler))
 
 	lineageRepo := repository.NewLineageRepo(metaDB)
 	querySvc := service.NewQueryService(eng, auditRepo, lineageRepo)
@@ -400,7 +400,7 @@ func setupCatalogTestServer(t *testing.T, principalName string, mockRepo *mockCa
 	introspectionRepo := repository.NewIntrospectionRepo(metaDB)
 
 	cat := service.NewAuthorizationService(principalRepo, groupRepo, grantRepo, rowFilterRepo, columnMaskRepo, introspectionRepo)
-	eng := engine.NewSecureEngine(duckDB, cat, slog.New(slog.DiscardHandler))
+	eng := engine.NewSecureEngine(duckDB, cat, nil, slog.New(slog.DiscardHandler))
 
 	lineageRepo2 := repository.NewLineageRepo(metaDB)
 	querySvc := service.NewQueryService(eng, auditRepo, lineageRepo2)

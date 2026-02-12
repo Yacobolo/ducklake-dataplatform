@@ -1,6 +1,8 @@
 package domain
 
 import (
+	"context"
+	"database/sql"
 	"time"
 )
 
@@ -99,4 +101,15 @@ func ValidateCreateComputeAssignmentRequest(r CreateComputeAssignmentRequest) er
 		return ErrValidation("principal_type must be user or group, got %q", r.PrincipalType)
 	}
 	return nil
+}
+
+// ComputeExecutor executes pre-secured SQL on a compute resource.
+type ComputeExecutor interface {
+	QueryContext(ctx context.Context, query string) (*sql.Rows, error)
+}
+
+// ComputeResolver resolves a principal to a ComputeExecutor.
+// Returns nil when no compute endpoint is assigned (engine uses local DB).
+type ComputeResolver interface {
+	Resolve(ctx context.Context, principalName string) (ComputeExecutor, error)
 }

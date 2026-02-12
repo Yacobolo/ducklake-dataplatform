@@ -243,7 +243,7 @@ func TestDuckLakeRBACIntegration(t *testing.T) {
 		t.Fatalf("bind row filter: %v", err)
 	}
 
-	eng := engine.NewSecureEngine(db, cat, slog.New(slog.DiscardHandler))
+	eng := engine.NewSecureEngine(db, cat, nil, slog.New(slog.DiscardHandler))
 
 	t.Run("AdminAccess", func(t *testing.T) {
 		rows, err := eng.Query(ctx, "admin", "SELECT * FROM titanic LIMIT 10")
