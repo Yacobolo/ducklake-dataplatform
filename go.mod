@@ -1,6 +1,6 @@
 module duck-demo
 
-go 1.25.5
+go 1.25.7
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.41.1

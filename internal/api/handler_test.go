@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -127,7 +126,7 @@ func setupTestServer(t *testing.T, principalName string) *httptest.Server {
 	introspectionRepo := repository.NewIntrospectionRepo(metaDB)
 
 	cat := service.NewAuthorizationService(principalRepo, groupRepo, grantRepo, rowFilterRepo, columnMaskRepo, introspectionRepo)
-	eng := engine.NewSecureEngine(duckDB, cat, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	eng := engine.NewSecureEngine(duckDB, cat, slog.New(slog.DiscardHandler))
 
 	lineageRepo := repository.NewLineageRepo(metaDB)
 	querySvc := service.NewQueryService(eng, auditRepo, lineageRepo)
@@ -138,7 +137,7 @@ func setupTestServer(t *testing.T, principalName string) *httptest.Server {
 	columnMaskSvc := service.NewColumnMaskService(columnMaskRepo, auditRepo)
 	auditSvc := service.NewAuditService(auditRepo)
 
-	catalogRepo := repository.NewCatalogRepo(metaDB, duckDB, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	catalogRepo := repository.NewCatalogRepo(metaDB, duckDB, slog.New(slog.DiscardHandler))
 	tagRepo := repository.NewTagRepo(metaDB)
 	catalogSvc := service.NewCatalogService(catalogRepo, cat, auditRepo, tagRepo, nil)
 
@@ -401,7 +400,7 @@ func setupCatalogTestServer(t *testing.T, principalName string, mockRepo *mockCa
 	introspectionRepo := repository.NewIntrospectionRepo(metaDB)
 
 	cat := service.NewAuthorizationService(principalRepo, groupRepo, grantRepo, rowFilterRepo, columnMaskRepo, introspectionRepo)
-	eng := engine.NewSecureEngine(duckDB, cat, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	eng := engine.NewSecureEngine(duckDB, cat, slog.New(slog.DiscardHandler))
 
 	lineageRepo2 := repository.NewLineageRepo(metaDB)
 	querySvc := service.NewQueryService(eng, auditRepo, lineageRepo2)

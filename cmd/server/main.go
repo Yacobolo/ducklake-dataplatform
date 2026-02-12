@@ -34,9 +34,9 @@ func main() {
 func run() error {
 	ctx := context.Background()
 
-	// Load .env file (if present)
+	// Load .env file (if present) — no logger yet, so use stderr directly.
 	if err := config.LoadDotEnv(".env"); err != nil {
-		slog.Warn("could not load .env", "error", err)
+		fmt.Fprintf(os.Stderr, "warn: could not load .env: %v\n", err)
 	}
 
 	cfg, err := config.LoadFromEnv()
@@ -52,7 +52,7 @@ func run() error {
 
 	// Replay config warnings (generated before logger existed)
 	for _, w := range cfg.Warnings {
-		logger.Warn(w)
+		logger.Warn("config warning", "detail", w)
 	}
 
 	// Open DuckDB (in-memory)
