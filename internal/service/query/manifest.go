@@ -39,19 +39,20 @@ type FilePresigner interface {
 // security policies (RLS filters, column masks) applied. It serves as
 // the bridge between the client-side DuckDB extension and the server-side
 // security model.
+// All methods accept a catalogName parameter to resolve the correct metastore.
 type ManifestService struct {
-	metastore domain.MetastoreQuerier // DuckLake metastore (read-only queries)
-	authSvc   domain.AuthorizationService
-	presigner FilePresigner // legacy presigner (from env config), may be nil
-	introRepo domain.IntrospectionRepository
-	auditRepo domain.AuditRepository
-	credRepo  domain.StorageCredentialRepository // for credential-aware presigning
-	locRepo   domain.ExternalLocationRepository  // for resolving schema locations
+	metastoreFactory domain.MetastoreQuerierFactory // per-catalog metastore access
+	authSvc          domain.AuthorizationService
+	presigner        FilePresigner // legacy presigner (from env config), may be nil
+	introRepo        domain.IntrospectionRepository
+	auditRepo        domain.AuditRepository
+	credRepo         domain.StorageCredentialRepository // for credential-aware presigning
+	locRepo          domain.ExternalLocationRepository  // for resolving schema locations
 }
 
 // NewManifestService creates a ManifestService backed by the given dependencies.
 func NewManifestService(
-	metastore domain.MetastoreQuerier,
+	metastoreFactory domain.MetastoreQuerierFactory,
 	authSvc domain.AuthorizationService,
 	presigner FilePresigner,
 	introRepo domain.IntrospectionRepository,
@@ -60,13 +61,13 @@ func NewManifestService(
 	locRepo domain.ExternalLocationRepository,
 ) *ManifestService {
 	return &ManifestService{
-		metastore: metastore,
-		authSvc:   authSvc,
-		presigner: presigner,
-		introRepo: introRepo,
-		auditRepo: auditRepo,
-		credRepo:  credRepo,
-		locRepo:   locRepo,
+		metastoreFactory: metastoreFactory,
+		authSvc:          authSvc,
+		presigner:        presigner,
+		introRepo:        introRepo,
+		auditRepo:        auditRepo,
+		credRepo:         credRepo,
+		locRepo:          locRepo,
 	}
 }
 
@@ -76,6 +77,7 @@ func NewManifestService(
 func (s *ManifestService) GetManifest(
 	ctx context.Context,
 	principalName string,
+	catalogName string,
 	schemaName string,
 	tableName string,
 ) (*ManifestResult, error) {
@@ -123,7 +125,7 @@ func (s *ManifestService) GetManifest(
 	}
 
 	// 6. Resolve Parquet file paths from DuckLake metastore
-	s3Paths, schemaPath, err := s.resolveDataFiles(ctx, tableID, schemaName)
+	s3Paths, schemaPath, err := s.resolveDataFiles(ctx, catalogName, tableID, schemaName)
 	if err != nil {
 		return nil, fmt.Errorf("resolve files: %w", err)
 	}
@@ -169,15 +171,20 @@ func (s *ManifestService) GetManifest(
 // resolveDataFiles queries the DuckLake metastore for Parquet file
 // paths backing the given table. Returns fully-qualified S3 paths and the
 // schema-level storage path (if set), which is used to resolve the presigner.
-func (s *ManifestService) resolveDataFiles(ctx context.Context, tableID int64, schemaName string) ([]string, string, error) {
-	dataPath, err := s.metastore.ReadDataPath(ctx)
+func (s *ManifestService) resolveDataFiles(ctx context.Context, catalogName string, tableID int64, schemaName string) ([]string, string, error) {
+	metastore, err := s.metastoreFactory.ForCatalog(ctx, catalogName)
+	if err != nil {
+		return nil, "", fmt.Errorf("resolve metastore for catalog %q: %w", catalogName, err)
+	}
+
+	dataPath, err := metastore.ReadDataPath(ctx)
 	if err != nil {
 		return nil, "", err
 	}
 
-	schemaPath, _ := s.metastore.ReadSchemaPath(ctx, schemaName)
+	schemaPath, _ := metastore.ReadSchemaPath(ctx, schemaName)
 
-	filePaths, isRelative, err := s.metastore.ListDataFiles(ctx, tableID)
+	filePaths, isRelative, err := metastore.ListDataFiles(ctx, tableID)
 	if err != nil {
 		return nil, "", err
 	}

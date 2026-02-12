@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"log/slog"
 	"sync"
+
+	"duck-demo/internal/domain"
 )
 
 // CatalogRepoFactory creates CatalogRepo instances scoped to a catalog name.
@@ -29,8 +31,8 @@ func NewCatalogRepoFactory(controlDB, duckDB *sql.DB, extRepo *ExternalTableRepo
 	}
 }
 
-// ForCatalog returns a CatalogRepo for the given catalog name.
-func (f *CatalogRepoFactory) ForCatalog(catalogName string) *CatalogRepo {
+// ForCatalog returns a CatalogRepository for the given catalog name.
+func (f *CatalogRepoFactory) ForCatalog(catalogName string) domain.CatalogRepository {
 	f.mu.RLock()
 	if repo, ok := f.cache[catalogName]; ok {
 		f.mu.RUnlock()
