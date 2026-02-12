@@ -28,12 +28,15 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 
+	"duck-demo/internal/agent"
 	"duck-demo/internal/api"
+	"duck-demo/internal/compute"
 	"duck-demo/internal/config"
 	internaldb "duck-demo/internal/db"
 	"duck-demo/internal/db/crypto"
 	dbstore "duck-demo/internal/db/dbstore"
 	"duck-demo/internal/db/repository"
+	"duck-demo/internal/engine"
 	"duck-demo/internal/middleware"
 	"duck-demo/internal/service"
 )
@@ -588,8 +591,8 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 		rowFilterSvc, columnMaskSvc, auditSvc,
 		manifestSvc, nil, // catalogSvc=nil — integration tests only hit /v1/manifest
 		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
-		nil,           // ingestionSvc
-		nil, nil, nil, // storageCredSvc, extLocationSvc, volumeSvc
+		nil,                // ingestionSvc
+		nil, nil, nil, nil, // storageCredSvc, extLocationSvc, volumeSvc, computeEndpointSvc
 	)
 	strictHandler := api.NewStrictHandler(handler, nil)
 
@@ -845,6 +848,9 @@ type httpTestOpts struct {
 	JWTSecret []byte
 	// WithStorageCredentials wires StorageCredentialService and ExternalLocationService.
 	WithStorageCredentials bool
+	// WithComputeEndpoints wires ComputeEndpointService, a full resolver, and a
+	// SecureEngine so that /v1/query routes through the compute resolver.
+	WithComputeEndpoints bool
 }
 
 // httpTestEnv bundles the test server, API keys, and direct DB access.
@@ -1005,6 +1011,47 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		)
 	}
 
+	// Optionally wire compute endpoints with full resolver + engine
+	var computeEndpointSvc *service.ComputeEndpointService
+
+	if opts.WithComputeEndpoints {
+		testEncKey := "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+		enc, encErr := crypto.NewEncryptor(testEncKey)
+		if encErr != nil {
+			t.Fatalf("create encryptor for compute: %v", encErr)
+		}
+
+		// Need a DuckDB for the engine
+		engineDuckDB := duckDB
+		if engineDuckDB == nil {
+			var openErr error
+			engineDuckDB, openErr = sql.Open("duckdb", "")
+			if openErr != nil {
+				t.Fatalf("open duckdb for compute engine: %v", openErr)
+			}
+			t.Cleanup(func() { _ = engineDuckDB.Close() })
+			duckDB = engineDuckDB
+		}
+
+		computeEndpointRepo := repository.NewComputeEndpointRepo(metaDB, enc)
+		computeEndpointSvc = service.NewComputeEndpointService(computeEndpointRepo, authSvc, auditRepo)
+
+		// Build full resolver: local executor + compute repo + principal/group repos
+		localExec := compute.NewLocalExecutor(engineDuckDB)
+		remoteCache := compute.NewRemoteCache(engineDuckDB)
+		resolver := compute.NewResolver(
+			localExec, computeEndpointRepo, principalRepo, groupRepo,
+			remoteCache, slog.New(slog.NewTextHandler(io.Discard, nil)),
+		)
+
+		// Build SecureEngine with the resolver
+		eng := engine.NewSecureEngine(engineDuckDB, authSvc, resolver,
+			slog.New(slog.NewTextHandler(io.Discard, nil)))
+
+		// Rebuild querySvc with the real engine
+		querySvc = service.NewQueryService(eng, auditRepo, lineageRepo)
+	}
+
 	handler := api.NewHandler(
 		querySvc, principalSvc, groupSvc, grantSvc,
 		rowFilterSvc, columnMaskSvc, auditSvc,
@@ -1012,6 +1059,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
 		nil,                                 // ingestionSvc
 		storageCredSvc, extLocationSvc, nil, // volumeSvc
+		computeEndpointSvc,
 	)
 	strictHandler := api.NewStrictHandler(handler, nil)
 
@@ -1164,4 +1212,114 @@ func fetchAuditLogs(t *testing.T, serverURL, apiKey string) []map[string]interfa
 		t.Fatalf("decode audit response: %v", err)
 	}
 	return parsed.Data
+}
+
+// ---------------------------------------------------------------------------
+// Compute endpoint test helpers
+// ---------------------------------------------------------------------------
+
+// agentTestEnv holds the in-process compute agent and its auth token.
+type agentTestEnv struct {
+	Server     *httptest.Server
+	AgentToken string
+}
+
+// startTestAgent starts an in-process compute agent backed by a plain in-memory
+// DuckDB. No extensions, no S3, no DuckLake — just raw SQL execution. Returns
+// the agent's httptest.Server URL and the auth token for X-Agent-Token.
+func startTestAgent(t *testing.T) *agentTestEnv {
+	t.Helper()
+
+	agentToken := "test-agent-secret-token"
+
+	agentDB, err := sql.Open("duckdb", "")
+	if err != nil {
+		t.Fatalf("open agent duckdb: %v", err)
+	}
+	t.Cleanup(func() { _ = agentDB.Close() })
+
+	handler := agent.NewHandler(agent.HandlerConfig{
+		DB:         agentDB,
+		AgentToken: agentToken,
+		StartTime:  time.Now(),
+		Logger:     slog.New(slog.NewTextHandler(io.Discard, nil)),
+	})
+
+	srv := httptest.NewServer(handler)
+	t.Cleanup(srv.Close)
+
+	return &agentTestEnv{Server: srv, AgentToken: agentToken}
+}
+
+// lookupPrincipalID finds a principal by name via the API and returns its ID.
+func lookupPrincipalID(t *testing.T, env *httpTestEnv, name string) float64 {
+	t.Helper()
+	resp := doRequest(t, "GET", env.Server.URL+"/v1/principals", env.Keys.Admin, nil)
+	if resp.StatusCode != 200 {
+		body := readBody(t, resp)
+		t.Fatalf("list principals returned %d: %s", resp.StatusCode, body)
+	}
+
+	var result map[string]interface{}
+	decodeJSON(t, resp, &result)
+
+	data, ok := result["data"].([]interface{})
+	if !ok {
+		t.Fatalf("unexpected principals response shape: %v", result)
+	}
+	for _, p := range data {
+		pm, _ := p.(map[string]interface{})
+		if pm["name"] == name {
+			id, _ := pm["id"].(float64)
+			return id
+		}
+	}
+	t.Fatalf("principal %q not found", name)
+	return 0
+}
+
+// setupRemoteEndpoint creates and activates a REMOTE compute endpoint pointing
+// to the given agent. Uses the admin API key.
+func setupRemoteEndpoint(t *testing.T, env *httpTestEnv, agentEnv *agentTestEnv, name string) {
+	t.Helper()
+
+	resp := doRequest(t, "POST", env.Server.URL+"/v1/compute-endpoints", env.Keys.Admin,
+		map[string]interface{}{
+			"name":       name,
+			"url":        agentEnv.Server.URL,
+			"type":       "REMOTE",
+			"auth_token": agentEnv.AgentToken,
+		})
+	if resp.StatusCode != 201 {
+		body := readBody(t, resp)
+		t.Fatalf("create endpoint returned %d: %s", resp.StatusCode, body)
+	}
+	_ = resp.Body.Close()
+
+	resp = doRequest(t, "PATCH", env.Server.URL+"/v1/compute-endpoints/"+name,
+		env.Keys.Admin, map[string]interface{}{"status": "ACTIVE"})
+	if resp.StatusCode != 200 {
+		body := readBody(t, resp)
+		t.Fatalf("activate endpoint returned %d: %s", resp.StatusCode, body)
+	}
+	_ = resp.Body.Close()
+}
+
+// assignToEndpoint creates a default compute assignment for the given principal
+// to the named endpoint. Uses the admin API key.
+func assignToEndpoint(t *testing.T, env *httpTestEnv, endpointName string, principalID float64, principalType string) {
+	t.Helper()
+
+	resp := doRequest(t, "POST",
+		env.Server.URL+"/v1/compute-endpoints/"+endpointName+"/assignments",
+		env.Keys.Admin, map[string]interface{}{
+			"principal_id":   principalID,
+			"principal_type": principalType,
+			"is_default":     true,
+		})
+	if resp.StatusCode != 201 {
+		body := readBody(t, resp)
+		t.Fatalf("assign endpoint returned %d: %s", resp.StatusCode, body)
+	}
+	_ = resp.Body.Close()
 }
