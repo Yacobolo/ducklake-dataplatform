@@ -456,14 +456,24 @@ func (h *APIHandler) CreateRowFilter(ctx context.Context, req CreateRowFilterReq
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	result, err := h.rowFilters.Create(ctx, principal, f)
 	if err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return CreateRowFilter403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return CreateRowFilter201JSONResponse(rowFilterToAPI(*result)), nil
 }
 
 func (h *APIHandler) DeleteRowFilter(ctx context.Context, req DeleteRowFilterRequestObject) (DeleteRowFilterResponseObject, error) {
 	if err := h.rowFilters.Delete(ctx, req.RowFilterId); err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return DeleteRowFilter403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return DeleteRowFilter204Response{}, nil
 }
@@ -474,7 +484,12 @@ func (h *APIHandler) BindRowFilter(ctx context.Context, req BindRowFilterRequest
 		PrincipalID:   req.Body.PrincipalId,
 		PrincipalType: req.Body.PrincipalType,
 	}); err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return BindRowFilter403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return BindRowFilter204Response{}, nil
 }
@@ -485,7 +500,12 @@ func (h *APIHandler) UnbindRowFilter(ctx context.Context, req UnbindRowFilterReq
 		PrincipalID:   req.Body.PrincipalId,
 		PrincipalType: req.Body.PrincipalType,
 	}); err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return UnbindRowFilter403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return UnbindRowFilter204Response{}, nil
 }
@@ -504,7 +524,12 @@ func (h *APIHandler) CreateRowFilterTopLevel(ctx context.Context, req CreateRowF
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	result, err := h.rowFilters.Create(ctx, principal, f)
 	if err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return CreateRowFilterTopLevel403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return CreateRowFilterTopLevel201JSONResponse(rowFilterToAPI(*result)), nil
 }
@@ -537,14 +562,24 @@ func (h *APIHandler) CreateColumnMask(ctx context.Context, req CreateColumnMaskR
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	result, err := h.columnMasks.Create(ctx, principal, m)
 	if err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return CreateColumnMask403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return CreateColumnMask201JSONResponse(columnMaskToAPI(*result)), nil
 }
 
 func (h *APIHandler) DeleteColumnMask(ctx context.Context, req DeleteColumnMaskRequestObject) (DeleteColumnMaskResponseObject, error) {
 	if err := h.columnMasks.Delete(ctx, req.ColumnMaskId); err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return DeleteColumnMask403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return DeleteColumnMask204Response{}, nil
 }
@@ -560,7 +595,12 @@ func (h *APIHandler) BindColumnMask(ctx context.Context, req BindColumnMaskReque
 		PrincipalType: req.Body.PrincipalType,
 		SeeOriginal:   seeOriginal,
 	}); err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return BindColumnMask403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return BindColumnMask204Response{}, nil
 }
@@ -571,7 +611,12 @@ func (h *APIHandler) UnbindColumnMask(ctx context.Context, req UnbindColumnMaskR
 		PrincipalID:   req.Body.PrincipalId,
 		PrincipalType: req.Body.PrincipalType,
 	}); err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return UnbindColumnMask403JSONResponse{Code: 403, Message: err.Error()}, nil
+		default:
+			return nil, err
+		}
 	}
 	return UnbindColumnMask204Response{}, nil
 }

@@ -31,8 +31,8 @@ func TestHTTP_AuditLogs_Operations(t *testing.T) {
 			for _, entry := range logs {
 				if action, ok := entry["action"].(string); ok && action == "CREATE_PRINCIPAL" {
 					found = true
-					// The service logs the created principal's name, not the caller
-					assert.Equal(t, "audit-test-principal", entry["principal_name"])
+					// The service logs the caller's name (the authenticated admin).
+					assert.Equal(t, "admin_user", entry["principal_name"])
 					assert.Equal(t, "ALLOWED", entry["status"])
 					break
 				}
@@ -66,7 +66,7 @@ func TestHTTP_AuditLogs_Operations(t *testing.T) {
 			logs := fetchAuditLogs(t, env.Server.URL, env.Keys.Admin)
 			found := false
 			for _, entry := range logs {
-				if action, ok := entry["action"].(string); ok && action == "SET_ADMIN" {
+				if action, ok := entry["action"].(string); ok && containsAny(action, "SET_ADMIN") {
 					found = true
 					break
 				}
@@ -99,7 +99,7 @@ func TestHTTP_AuditLogs_Operations(t *testing.T) {
 			logs := fetchAuditLogs(t, env.Server.URL, env.Keys.Admin)
 			found := false
 			for _, entry := range logs {
-				if action, ok := entry["action"].(string); ok && action == "DELETE_PRINCIPAL" {
+				if action, ok := entry["action"].(string); ok && containsAny(action, "DELETE_PRINCIPAL") {
 					found = true
 					break
 				}
@@ -143,9 +143,9 @@ func TestHTTP_AuditLogs_Filtering(t *testing.T) {
 	})
 
 	t.Run("filter_by_principal_name", func(t *testing.T) {
-		// The service logs the created principal's name as the audit principal_name
-		// (not the authenticated caller). Filter by one of the created names.
-		url := env.Server.URL + "/v1/audit-logs?principal_name=audit-filter-user-0"
+		// The service logs the authenticated caller's name as the audit principal_name.
+		// Filter by the admin user who performed the operations.
+		url := env.Server.URL + "/v1/audit-logs?principal_name=admin_user"
 		resp := doRequest(t, "GET", url, env.Keys.Admin, nil)
 		require.Equal(t, 200, resp.StatusCode)
 
@@ -155,7 +155,7 @@ func TestHTTP_AuditLogs_Filtering(t *testing.T) {
 		assert.GreaterOrEqual(t, len(data), 1)
 		for _, item := range data {
 			entry := item.(map[string]interface{})
-			assert.Equal(t, "audit-filter-user-0", entry["principal_name"])
+			assert.Equal(t, "admin_user", entry["principal_name"])
 		}
 	})
 

@@ -2206,6 +2206,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: Table not found
           content:
@@ -2228,6 +2234,12 @@ paths:
       responses:
         '204':
           description: Deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: Not found
           content:
@@ -2262,6 +2274,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: Row filter not found
           content:
@@ -2283,6 +2301,12 @@ paths:
           description: Unbound
         '400':
           description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
           content:
             application/json:
               schema:
@@ -2314,6 +2338,12 @@ paths:
                 $ref: '#/components/schemas/RowFilter'
         '400':
           description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
           content:
             application/json:
               schema:
@@ -2377,6 +2407,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: Table not found
           content:
@@ -2399,6 +2435,12 @@ paths:
       responses:
         '204':
           description: Deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: Not found
           content:
@@ -2433,6 +2475,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: Column mask not found
           content:
@@ -2454,6 +2502,12 @@ paths:
           description: Unbound
         '400':
           description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
           content:
             application/json:
               schema:
