@@ -152,14 +152,25 @@ func run() error {
 		return fmt.Errorf("app init: %w", err)
 	}
 
-	// Create API handler
+	// Create API handler.
+	// Use local interface variables for nil-able services (Manifest, Ingestion)
+	// so that a nil concrete pointer becomes a true nil interface rather than
+	// a non-nil interface wrapping a nil pointer.
 	svc := application.Services
+	var manifestSvc api.ManifestService
+	if svc.Manifest != nil {
+		manifestSvc = svc.Manifest
+	}
+	var ingestionSvc api.IngestionService
+	if svc.Ingestion != nil {
+		ingestionSvc = svc.Ingestion
+	}
 	handler := api.NewHandler(
 		svc.Query, svc.Principal, svc.Group, svc.Grant,
 		svc.RowFilter, svc.ColumnMask, svc.Audit,
-		svc.Manifest, svc.Catalog,
+		manifestSvc, svc.Catalog,
 		svc.QueryHistory, svc.Lineage, svc.Search, svc.Tag, svc.View,
-		svc.Ingestion,
+		ingestionSvc,
 		svc.StorageCredential, svc.ExternalLocation,
 		svc.Volume,
 		svc.ComputeEndpoint,

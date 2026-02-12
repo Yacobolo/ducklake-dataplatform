@@ -16,7 +16,7 @@ import (
 	dbstore "duck-demo/internal/db/dbstore"
 	"duck-demo/internal/db/repository"
 	"duck-demo/internal/engine"
-	"duck-demo/internal/service"
+	"duck-demo/internal/service/security"
 )
 
 // TestDuckLakeWithHetznerSetup tests the full DuckLake setup flow with real
@@ -147,13 +147,14 @@ func TestDuckLakeRBACIntegration(t *testing.T) {
 		t.Fatalf("migrations: %v", err)
 	}
 
-	cat := service.NewAuthorizationService(
+	cat := security.NewAuthorizationService(
 		repository.NewPrincipalRepo(metaDB),
 		repository.NewGroupRepo(metaDB),
 		repository.NewGrantRepo(metaDB),
 		repository.NewRowFilterRepo(metaDB),
 		repository.NewColumnMaskRepo(metaDB),
 		repository.NewIntrospectionRepo(metaDB),
+		nil,
 	)
 	q := dbstore.New(metaDB)
 
@@ -243,7 +244,7 @@ func TestDuckLakeRBACIntegration(t *testing.T) {
 		t.Fatalf("bind row filter: %v", err)
 	}
 
-	eng := engine.NewSecureEngine(db, cat, nil, slog.New(slog.DiscardHandler))
+	eng := engine.NewSecureEngine(db, cat, nil, nil, slog.New(slog.DiscardHandler))
 
 	t.Run("AdminAccess", func(t *testing.T) {
 		rows, err := eng.Query(ctx, "admin", "SELECT * FROM titanic LIMIT 10")

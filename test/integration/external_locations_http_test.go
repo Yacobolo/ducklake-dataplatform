@@ -33,10 +33,7 @@ func createCredentialForLocation(t *testing.T, serverURL, apiKey, name string) {
 
 // TestHTTP_ExternalLocationCRUD tests the full CRUD lifecycle for external locations.
 func TestHTTP_ExternalLocationCRUD(t *testing.T) {
-	env := setupHTTPServer(t, httpTestOpts{WithStorageCredentials: true})
-
-	// Skip AttachDuckLake since we don't have a real DuckLake catalog in this test.
-	env.ExtLocationSvc.SetCatalogAttached(true)
+	env := setupHTTPServer(t, httpTestOpts{WithStorageCredentials: true, CatalogAttached: true})
 
 	credName := "loc-crud-cred"
 
@@ -145,8 +142,7 @@ func TestHTTP_ExternalLocationCRUD(t *testing.T) {
 
 // TestHTTP_ExternalLocationAuthorization verifies RBAC enforcement.
 func TestHTTP_ExternalLocationAuthorization(t *testing.T) {
-	env := setupHTTPServer(t, httpTestOpts{WithStorageCredentials: true})
-	env.ExtLocationSvc.SetCatalogAttached(true)
+	env := setupHTTPServer(t, httpTestOpts{WithStorageCredentials: true, CatalogAttached: true})
 
 	// Pre-create a credential and location as admin for GET/update/delete tests.
 	credName := "auth-loc-cred"
@@ -193,8 +189,7 @@ func TestHTTP_ExternalLocationAuthorization(t *testing.T) {
 
 // TestHTTP_ExternalLocationValidation verifies validation error responses.
 func TestHTTP_ExternalLocationValidation(t *testing.T) {
-	env := setupHTTPServer(t, httpTestOpts{WithStorageCredentials: true})
-	env.ExtLocationSvc.SetCatalogAttached(true)
+	env := setupHTTPServer(t, httpTestOpts{WithStorageCredentials: true, CatalogAttached: true})
 
 	// Pre-create a credential for valid bodies
 	credName := "val-loc-cred"
@@ -231,8 +226,7 @@ func TestHTTP_ExternalLocationValidation(t *testing.T) {
 
 // TestHTTP_ExternalLocationDuplicate verifies duplicate name returns 409.
 func TestHTTP_ExternalLocationDuplicate(t *testing.T) {
-	env := setupHTTPServer(t, httpTestOpts{WithStorageCredentials: true})
-	env.ExtLocationSvc.SetCatalogAttached(true)
+	env := setupHTTPServer(t, httpTestOpts{WithStorageCredentials: true, CatalogAttached: true})
 
 	credName := "dup-loc-cred"
 	createCredentialForLocation(t, env.Server.URL, env.Keys.Admin, credName)
@@ -250,8 +244,7 @@ func TestHTTP_ExternalLocationDuplicate(t *testing.T) {
 
 // TestHTTP_ExternalLocationPagination verifies pagination works correctly.
 func TestHTTP_ExternalLocationPagination(t *testing.T) {
-	env := setupHTTPServer(t, httpTestOpts{WithStorageCredentials: true})
-	env.ExtLocationSvc.SetCatalogAttached(true)
+	env := setupHTTPServer(t, httpTestOpts{WithStorageCredentials: true, CatalogAttached: true})
 
 	// Create 5 credentials (one per location, since each location references a credential)
 	locNames := []string{"alpha-loc", "bravo-loc", "charlie-loc", "delta-loc", "echo-loc"}

@@ -1,3 +1,4 @@
+// Package mapper provides conversion functions between domain and database types.
 package mapper
 
 import (

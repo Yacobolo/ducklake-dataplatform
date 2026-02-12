@@ -14,7 +14,13 @@ import (
 	dbstore "duck-demo/internal/db/dbstore"
 	"duck-demo/internal/db/repository"
 	"duck-demo/internal/engine"
-	"duck-demo/internal/service"
+	"duck-demo/internal/service/catalog"
+	svccompute "duck-demo/internal/service/compute"
+	"duck-demo/internal/service/governance"
+	"duck-demo/internal/service/ingestion"
+	"duck-demo/internal/service/query"
+	"duck-demo/internal/service/security"
+	"duck-demo/internal/service/storage"
 )
 
 // Deps holds the external dependencies that main() must provide.
@@ -32,26 +38,26 @@ type Deps struct {
 // Services groups all service pointers that the API handler and router need.
 // Conditional services (Manifest, Ingestion) are nil when S3 is not configured.
 type Services struct {
-	Query             *service.QueryService
-	Principal         *service.PrincipalService
-	Group             *service.GroupService
-	Grant             *service.GrantService
-	RowFilter         *service.RowFilterService
-	ColumnMask        *service.ColumnMaskService
-	Audit             *service.AuditService
-	QueryHistory      *service.QueryHistoryService
-	Lineage           *service.LineageService
-	Search            *service.SearchService
-	Tag               *service.TagService
-	View              *service.ViewService
-	Catalog           *service.CatalogService
-	Manifest          *service.ManifestService  // nil when S3 not configured
-	Ingestion         *service.IngestionService // nil when S3 not configured
-	StorageCredential *service.StorageCredentialService
-	ExternalLocation  *service.ExternalLocationService
-	Volume            *service.VolumeService
-	ComputeEndpoint   *service.ComputeEndpointService
-	APIKey            *service.APIKeyService
+	Query             *query.QueryService
+	Principal         *security.PrincipalService
+	Group             *security.GroupService
+	Grant             *security.GrantService
+	RowFilter         *security.RowFilterService
+	ColumnMask        *security.ColumnMaskService
+	Audit             *governance.AuditService
+	QueryHistory      *governance.QueryHistoryService
+	Lineage           *governance.LineageService
+	Search            *catalog.SearchService
+	Tag               *governance.TagService
+	View              *catalog.ViewService
+	Catalog           *catalog.CatalogService
+	Manifest          *query.ManifestService      // nil when S3 not configured
+	Ingestion         *ingestion.IngestionService // nil when S3 not configured
+	StorageCredential *storage.StorageCredentialService
+	ExternalLocation  *storage.ExternalLocationService
+	Volume            *storage.VolumeService
+	ComputeEndpoint   *svccompute.ComputeEndpointService
+	APIKey            *security.APIKeyService
 }
 
 // App holds the fully-wired application: engine, services, and the
@@ -64,10 +70,19 @@ type App struct {
 
 // New wires all repositories, services, and engine from the provided deps.
 // It also runs conditional seeding and external-table view restoration.
+//
+// Construction order is designed so every dependency is available at the
+// time each constructor is called — no post-construction Set*() calls.
 func New(ctx context.Context, deps Deps) (*App, error) {
 	cfg := deps.Cfg
 
-	// === Repositories (write-pool) ===
+	// === 1. Crypto / encryption (needed by credential repos) ===
+	encryptor, err := crypto.NewEncryptor(cfg.EncryptionKey)
+	if err != nil {
+		return nil, fmt.Errorf("encryption key: %w", err)
+	}
+
+	// === 2. All repositories (write-pool) ===
 	principalRepo := repository.NewPrincipalRepo(deps.WriteDB)
 	groupRepo := repository.NewGroupRepo(deps.WriteDB)
 	grantRepo := repository.NewGrantRepo(deps.WriteDB)
@@ -78,17 +93,31 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	tagRepo := repository.NewTagRepo(deps.WriteDB)
 	viewRepo := repository.NewViewRepo(deps.WriteDB)
 	tableStatsRepo := repository.NewTableStatisticsRepo(deps.WriteDB)
-	catalogRepo := repository.NewCatalogRepo(deps.WriteDB, deps.DuckDB, deps.Logger.With("component", "catalog-repo"))
+	extTableRepo := repository.NewExternalTableRepo(deps.WriteDB)
+	externalLocRepo := repository.NewExternalLocationRepo(deps.WriteDB)
+	volumeRepo := repository.NewVolumeRepo(deps.WriteDB)
+	storageCredRepo := repository.NewStorageCredentialRepo(deps.WriteDB, encryptor)
+	computeEndpointRepo := repository.NewComputeEndpointRepo(deps.WriteDB, encryptor)
+	catalogRepo := repository.NewCatalogRepo(deps.WriteDB, deps.DuckDB, extTableRepo, deps.Logger.With("component", "catalog-repo"))
 
-	// === Repositories (read-pool) ===
+	// === 3. Repositories (read-pool) ===
 	introspectionRepo := repository.NewIntrospectionRepo(deps.ReadDB)
 	queryHistoryRepo := repository.NewQueryHistoryRepo(deps.ReadDB)
 	searchRepo := repository.NewSearchRepo(deps.ReadDB)
 
-	// === Authorization ===
-	authSvc := service.NewAuthorizationService(
+	// === 4. Compute resolver (needs endpoint repo, principal repo, group repo) ===
+	localExec := compute.NewLocalExecutor(deps.DuckDB)
+	remoteCache := compute.NewRemoteCache(deps.DuckDB)
+	fullResolver := compute.NewResolver(
+		localExec, computeEndpointRepo, principalRepo, groupRepo,
+		remoteCache, deps.Logger.With("component", "compute-resolver"),
+	)
+
+	// === 5. Authorization (needs all security repos + extTableRepo) ===
+	authSvc := security.NewAuthorizationService(
 		principalRepo, groupRepo, grantRepo,
 		rowFilterRepo, columnMaskRepo, introspectionRepo,
+		extTableRepo,
 	)
 
 	// === Seed demo data (only when catalog attached) ===
@@ -99,107 +128,75 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 		}
 	}
 
-	// === Engine (resolver wired below after compute repo is created) ===
-	localExec := compute.NewLocalExecutor(deps.DuckDB)
-	placeholderResolver := compute.NewDefaultResolver(localExec)
-	eng := engine.NewSecureEngine(deps.DuckDB, authSvc, placeholderResolver, deps.Logger.With("component", "engine"))
-	eng.SetInformationSchemaProvider(engine.NewInformationSchemaProvider(catalogRepo))
-
-	// === Core services ===
-	querySvc := service.NewQueryService(eng, auditRepo, lineageRepo)
-	principalSvc := service.NewPrincipalService(principalRepo, auditRepo)
-	groupSvc := service.NewGroupService(groupRepo, auditRepo)
-	grantSvc := service.NewGrantService(grantRepo, auditRepo)
-	rowFilterSvc := service.NewRowFilterService(rowFilterRepo, auditRepo)
-	columnMaskSvc := service.NewColumnMaskService(columnMaskRepo, auditRepo)
-	auditSvc := service.NewAuditService(auditRepo)
-	queryHistorySvc := service.NewQueryHistoryService(queryHistoryRepo)
-	lineageSvc := service.NewLineageService(lineageRepo)
-	searchSvc := service.NewSearchService(searchRepo)
-	tagSvc := service.NewTagService(tagRepo, auditRepo)
-	viewSvc := service.NewViewService(viewRepo, catalogRepo, authSvc, auditRepo)
-
-	// === Conditional S3 services ===
-	var manifestSvc *service.ManifestService
-	var ingestionSvc *service.IngestionService
-	if cfg.HasS3Config() && deps.CatalogAttached {
-		presigner, err := service.NewS3Presigner(cfg)
-		if err != nil {
-			deps.Logger.Warn("could not create S3 presigner", "error", err)
-		} else {
-			manifestSvc = service.NewManifestService(deps.ReadDB, authSvc, presigner, introspectionRepo, auditRepo)
-			deps.Logger.Info("manifest service enabled (duck_access extension support)")
-
-			bucket := "duck-demo"
-			if cfg.S3Bucket != nil {
-				bucket = *cfg.S3Bucket
-			}
-			ingestionSvc = service.NewIngestionService(
-				deps.DuckDB, deps.ReadDB, authSvc, presigner, auditRepo, "lake", bucket,
-			)
-			deps.Logger.Info("ingestion service enabled")
-		}
-	}
-
-	// === External table repo + wiring ===
-	extTableRepo := repository.NewExternalTableRepo(deps.WriteDB)
-	catalogRepo.SetExternalTableRepo(extTableRepo)
-	authSvc.SetExternalTableRepo(extTableRepo)
+	// === 6. Engine (needs auth + resolver + infoSchema provider) ===
+	infoSchema := engine.NewInformationSchemaProvider(catalogRepo)
+	eng := engine.NewSecureEngine(deps.DuckDB, authSvc, fullResolver, infoSchema, deps.Logger.With("component", "engine"))
 
 	// Restore external table VIEWs (best-effort)
 	if err := restoreExternalTableViews(ctx, deps.DuckDB, extTableRepo, deps.Logger); err != nil {
 		deps.Logger.Warn("restore external table views failed", "error", err)
 	}
 
-	// === Catalog service ===
-	catalogSvc := service.NewCatalogService(catalogRepo, authSvc, auditRepo, tagRepo, tableStatsRepo)
+	// === 7. All services (all deps available at construction) ===
+	querySvc := query.NewQueryService(eng, auditRepo, lineageRepo)
+	principalSvc := security.NewPrincipalService(principalRepo, auditRepo)
+	groupSvc := security.NewGroupService(groupRepo, auditRepo)
+	grantSvc := security.NewGrantService(grantRepo, auditRepo)
+	rowFilterSvc := security.NewRowFilterService(rowFilterRepo, auditRepo)
+	columnMaskSvc := security.NewColumnMaskService(columnMaskRepo, auditRepo)
+	auditSvc := governance.NewAuditService(auditRepo)
+	queryHistorySvc := governance.NewQueryHistoryService(queryHistoryRepo)
+	lineageSvc := governance.NewLineageService(lineageRepo)
+	searchSvc := catalog.NewSearchService(searchRepo)
+	tagSvc := governance.NewTagService(tagRepo, auditRepo)
+	viewSvc := catalog.NewViewService(viewRepo, catalogRepo, authSvc, auditRepo)
+	catalogSvc := catalog.NewCatalogService(catalogRepo, authSvc, auditRepo, tagRepo, tableStatsRepo, externalLocRepo)
+	storageCredSvc := storage.NewStorageCredentialService(storageCredRepo, authSvc, auditRepo)
+	computeEndpointSvc := svccompute.NewComputeEndpointService(computeEndpointRepo, authSvc, auditRepo)
+	volumeSvc := storage.NewVolumeService(volumeRepo, authSvc, auditRepo)
 
-	// === Crypto + credential/location layer ===
-	encryptor, err := crypto.NewEncryptor(cfg.EncryptionKey)
-	if err != nil {
-		return nil, fmt.Errorf("encryption key: %w", err)
-	}
-	storageCredRepo := repository.NewStorageCredentialRepo(deps.WriteDB, encryptor)
-	computeEndpointRepo := repository.NewComputeEndpointRepo(deps.WriteDB, encryptor)
-
-	// Wire the full resolver now that compute repo is available
-	remoteCache := compute.NewRemoteCache(deps.DuckDB)
-	fullResolver := compute.NewResolver(
-		localExec, computeEndpointRepo, principalRepo, groupRepo,
-		remoteCache, deps.Logger.With("component", "compute-resolver"),
-	)
-	eng.SetResolver(fullResolver)
-	externalLocRepo := repository.NewExternalLocationRepo(deps.WriteDB)
-
-	storageCredSvc := service.NewStorageCredentialService(storageCredRepo, authSvc, auditRepo)
-	computeEndpointSvc := service.NewComputeEndpointService(computeEndpointRepo, authSvc, auditRepo)
-	extLocationSvc := service.NewExternalLocationService(
-		externalLocRepo, storageCredRepo, authSvc, auditRepo, deps.DuckDB, cfg.MetaDBPath,
-		deps.Logger.With("component", "external-location"),
+	secretMgr := engine.NewDuckDBSecretManager(deps.DuckDB)
+	extLocationSvc := storage.NewExternalLocationService(
+		externalLocRepo, storageCredRepo, authSvc, auditRepo, secretMgr, secretMgr, cfg.MetaDBPath,
+		deps.CatalogAttached, deps.Logger.With("component", "external-location"),
 	)
 
-	// === Volume ===
-	volumeRepo := repository.NewVolumeRepo(deps.WriteDB)
-	volumeSvc := service.NewVolumeService(volumeRepo, authSvc, auditRepo)
+	// === Conditional S3 services ===
+	var manifestSvc *query.ManifestService
+	var ingestionSvc *ingestion.IngestionService
+	if cfg.HasS3Config() && deps.CatalogAttached {
+		presigner, err := query.NewS3Presigner(cfg)
+		if err != nil {
+			deps.Logger.Warn("could not create S3 presigner", "error", err)
+		} else {
+			metastoreRepo := repository.NewMetastoreRepo(deps.ReadDB)
+			manifestSvc = query.NewManifestService(
+				metastoreRepo, authSvc, presigner, introspectionRepo, auditRepo,
+				storageCredRepo, externalLocRepo,
+			)
+			deps.Logger.Info("manifest service enabled (duck_access extension support)")
 
-	// === Post-construction wiring ===
-	catalogSvc.SetExternalLocationRepo(externalLocRepo)
-	if manifestSvc != nil {
-		manifestSvc.SetCredentialRepos(storageCredRepo, externalLocRepo)
+			bucket := "duck-demo"
+			if cfg.S3Bucket != nil {
+				bucket = *cfg.S3Bucket
+			}
+			duckExec := engine.NewDuckDBExecAdapter(deps.DuckDB)
+			ingestionSvc = ingestion.NewIngestionService(
+				duckExec, metastoreRepo, authSvc, presigner, auditRepo, "lake", bucket,
+				storageCredRepo, externalLocRepo,
+			)
+			deps.Logger.Info("ingestion service enabled")
+		}
 	}
-	if ingestionSvc != nil {
-		ingestionSvc.SetCredentialRepos(storageCredRepo, externalLocRepo)
-	}
-	if deps.CatalogAttached {
-		extLocationSvc.SetCatalogAttached(true)
-	}
+
+	// === Restore secrets (best-effort) ===
 	if err := extLocationSvc.RestoreSecrets(ctx); err != nil {
 		deps.Logger.Warn("restore secrets failed", "error", err)
 	}
 
 	// === API Key ===
 	apiKeyRepo := repository.NewAPIKeyRepo(deps.ReadDB)
-	apiKeySvc := service.NewAPIKeyService(apiKeyRepo, auditRepo)
+	apiKeySvc := security.NewAPIKeyService(apiKeyRepo, auditRepo)
 
 	return &App{
 		Services: Services{

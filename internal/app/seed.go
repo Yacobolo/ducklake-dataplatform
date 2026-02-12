@@ -7,12 +7,12 @@ import (
 
 	dbstore "duck-demo/internal/db/dbstore"
 	"duck-demo/internal/domain"
-	"duck-demo/internal/service"
+	"duck-demo/internal/service/security"
 )
 
 // seedCatalog populates the metastore with demo principals, groups, grants,
 // row filters, and column masks. Idempotent — checks if data already exists.
-func seedCatalog(ctx context.Context, cat *service.AuthorizationService, q *dbstore.Queries) error {
+func seedCatalog(ctx context.Context, cat *security.AuthorizationService, q *dbstore.Queries) error {
 
 	// Check if already seeded
 	principals, _ := q.ListPrincipals(ctx)

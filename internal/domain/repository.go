@@ -220,13 +220,3 @@ type ComputeEndpointRepository interface {
 	GetDefaultForPrincipal(ctx context.Context, principalID int64, principalType string) (*ComputeEndpoint, error)
 	GetAssignmentsForPrincipal(ctx context.Context, principalID int64, principalType string) ([]ComputeEndpoint, error)
 }
-
-// AuthorizationService defines the interface for permission checking.
-// The engine depends on this interface rather than a concrete service type.
-type AuthorizationService interface {
-	LookupTableID(ctx context.Context, tableName string) (tableID, schemaID int64, isExternal bool, err error)
-	CheckPrivilege(ctx context.Context, principalName, securableType string, securableID int64, privilege string) (bool, error)
-	GetEffectiveRowFilters(ctx context.Context, principalName string, tableID int64) ([]string, error)
-	GetEffectiveColumnMasks(ctx context.Context, principalName string, tableID int64) (map[string]string, error)
-	GetTableColumnNames(ctx context.Context, tableID int64) ([]string, error)
-}

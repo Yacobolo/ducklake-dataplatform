@@ -25,8 +25,8 @@ type SecureEngine struct {
 // NewSecureEngine creates a SecureEngine with the given DuckDB connection
 // and authorization service (backed by the SQLite metastore).
 // When resolver is nil the engine falls back to the local *sql.DB for all queries.
-func NewSecureEngine(db *sql.DB, cat domain.AuthorizationService, resolver domain.ComputeResolver, logger *slog.Logger) *SecureEngine {
-	return &SecureEngine{db: db, catalog: cat, resolver: resolver, logger: logger}
+func NewSecureEngine(db *sql.DB, cat domain.AuthorizationService, resolver domain.ComputeResolver, infoSchema *InformationSchemaProvider, logger *slog.Logger) *SecureEngine {
+	return &SecureEngine{db: db, catalog: cat, resolver: resolver, infoSchema: infoSchema, logger: logger}
 }
 
 // execQuery resolves a ComputeExecutor for the principal and executes the query.
@@ -42,17 +42,6 @@ func (e *SecureEngine) execQuery(ctx context.Context, principalName, query strin
 		}
 	}
 	return e.db.QueryContext(ctx, query)
-}
-
-// SetResolver replaces the compute resolver. Used during late wiring when the
-// compute endpoint repository is created after the engine.
-func (e *SecureEngine) SetResolver(r domain.ComputeResolver) {
-	e.resolver = r
-}
-
-// SetInformationSchemaProvider attaches an information_schema provider.
-func (e *SecureEngine) SetInformationSchemaProvider(p *InformationSchemaProvider) {
-	e.infoSchema = p
 }
 
 // Query executes a SQL query as the given principal, enforcing:
