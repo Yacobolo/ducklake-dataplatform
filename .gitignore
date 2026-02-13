@@ -43,3 +43,4 @@ internal/api/openapi.bundled.yaml
 # Binaries
 /server
 /server_test
+/bin/
