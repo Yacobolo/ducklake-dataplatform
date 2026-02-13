@@ -5,6 +5,7 @@ import "time"
 // CatalogStatus represents the lifecycle state of a registered catalog.
 type CatalogStatus string
 
+// Possible values for CatalogStatus.
 const (
 	CatalogStatusActive   CatalogStatus = "ACTIVE"
 	CatalogStatusError    CatalogStatus = "ERROR"
@@ -14,6 +15,7 @@ const (
 // MetastoreType represents the backend type for a DuckLake metastore.
 type MetastoreType string
 
+// Possible values for MetastoreType.
 const (
 	MetastoreTypeSQLite   MetastoreType = "sqlite"
 	MetastoreTypePostgres MetastoreType = "postgres"

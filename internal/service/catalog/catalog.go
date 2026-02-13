@@ -10,6 +10,8 @@ import (
 )
 
 // CatalogRepoFactory creates CatalogRepository instances scoped to a catalog.
+//
+//nolint:revive // Name chosen for clarity across package boundaries
 type CatalogRepoFactory interface {
 	ForCatalog(catalogName string) domain.CatalogRepository
 }

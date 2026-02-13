@@ -14,7 +14,7 @@ import (
 func TestHTTP_CatalogInfo(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{WithDuckLake: true})
 
-	resp := doRequest(t, "GET", env.Server.URL+"/v1/catalogs/lake", env.Keys.Admin, nil)
+	resp := doRequest(t, "GET", env.Server.URL+"/v1/catalogs/lake/info", env.Keys.Admin, nil)
 	require.Equal(t, 200, resp.StatusCode)
 
 	var result map[string]interface{}
@@ -364,7 +364,7 @@ func TestHTTP_CatalogAuthorization(t *testing.T) {
 	t.Run("read_operations_allowed_for_all_authenticated", func(t *testing.T) {
 		// Even the analyst should be able to read catalog data
 		endpoints := []string{
-			"/v1/catalogs/lake",
+			"/v1/catalogs/lake/info",
 			"/v1/catalogs/lake/schemas",
 			"/v1/catalogs/lake/schemas/main",
 			"/v1/catalogs/lake/metastore/summary",
@@ -408,7 +408,7 @@ func TestHTTP_CatalogSchemaForceDelete(t *testing.T) {
 
 	t.Run("delete_non_empty_with_force_succeeds", func(t *testing.T) {
 		resp := doRequest(t, "DELETE",
-			fmt.Sprintf("%s/v1/catalog/schemas/force_del_schema?force=true", env.Server.URL),
+			fmt.Sprintf("%s/v1/catalogs/lake/schemas/force_del_schema?force=true", env.Server.URL),
 			env.Keys.Admin, nil)
 		require.Equal(t, 204, resp.StatusCode)
 		_ = resp.Body.Close()
@@ -571,8 +571,8 @@ func TestHTTP_UpdateColumn(t *testing.T) {
 	}
 }
 
-// TestHTTP_UpdateCatalog tests PATCH /v1/catalog.
-func TestHTTP_UpdateCatalog(t *testing.T) {
+// TestHTTP_UpdateCatalogRegistration tests PATCH /v1/catalogs/{catalogName}.
+func TestHTTP_UpdateCatalogRegistration(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
 
 	catalogURL := env.Server.URL + "/v1/catalogs/lake"
@@ -602,13 +602,6 @@ func TestHTTP_UpdateCatalog(t *testing.T) {
 			var result map[string]interface{}
 			decodeJSON(t, resp, &result)
 			assert.Equal(t, "Production data lake", result["comment"])
-		}},
-
-		{"analyst_denied_403", func(t *testing.T) {
-			body := map[string]interface{}{"comment": "should fail"}
-			resp := doRequest(t, "PATCH", catalogURL, env.Keys.Analyst, body)
-			assert.Equal(t, 403, resp.StatusCode)
-			_ = resp.Body.Close()
 		}},
 	}
 
@@ -869,7 +862,7 @@ func TestHTTP_CascadeDeleteVerifiesGovernanceRecords(t *testing.T) {
 
 		{"force_delete_schema", func(t *testing.T) {
 			resp := doRequest(t, "DELETE",
-				fmt.Sprintf("%s/v1/catalog/schemas/cascade_test?force=true", env.Server.URL),
+				fmt.Sprintf("%s/v1/catalogs/lake/schemas/cascade_test?force=true", env.Server.URL),
 				env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()

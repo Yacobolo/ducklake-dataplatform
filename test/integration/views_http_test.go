@@ -15,7 +15,7 @@ func TestHTTP_ViewCRUD(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
 
 	var viewName = "v_test"
-	base := env.Server.URL + "/v1/catalog/schemas/main/views"
+	base := env.Server.URL + "/v1/catalogs/lake/schemas/main/views"
 
 	type step struct {
 		name string
@@ -132,7 +132,7 @@ func TestHTTP_ViewCRUD(t *testing.T) {
 func TestHTTP_ViewAuthZ(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
 
-	base := env.Server.URL + "/v1/catalog/schemas/main/views"
+	base := env.Server.URL + "/v1/catalogs/lake/schemas/main/views"
 	viewName := "v_authz_test"
 
 	type step struct {
@@ -196,7 +196,7 @@ func TestHTTP_ViewAuthZ(t *testing.T) {
 func TestHTTP_UpdateView(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
 
-	base := env.Server.URL + "/v1/catalog/schemas/main/views"
+	base := env.Server.URL + "/v1/catalogs/lake/schemas/main/views"
 	viewName := "v_update_test"
 
 	type step struct {
@@ -277,7 +277,7 @@ func TestHTTP_UpdateView(t *testing.T) {
 func TestHTTP_ViewSchemaNotFound(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
 
-	base := env.Server.URL + "/v1/catalog/schemas/nonexistent/views"
+	base := env.Server.URL + "/v1/catalogs/lake/schemas/nonexistent/views"
 
 	t.Run("list_bad_schema_404", func(t *testing.T) {
 		resp := doRequest(t, "GET", base, env.Keys.Admin, nil)

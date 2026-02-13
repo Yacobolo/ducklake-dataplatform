@@ -73,6 +73,7 @@ func (s *VolumeService) List(ctx context.Context, catalogName, schemaName string
 // Update updates a volume by schema and name.
 // Requires CREATE_VOLUME on catalog.
 func (s *VolumeService) Update(ctx context.Context, principal, catalogName, schemaName, name string, req domain.UpdateVolumeRequest) (*domain.Volume, error) {
+	_ = catalogName // volumes are stored globally; catalogName reserved for future use
 	if err := s.requirePrivilege(ctx, principal, domain.PrivCreateVolume); err != nil {
 		return nil, err
 	}
@@ -94,6 +95,7 @@ func (s *VolumeService) Update(ctx context.Context, principal, catalogName, sche
 // Delete removes a volume by schema and name.
 // Requires CREATE_VOLUME on catalog.
 func (s *VolumeService) Delete(ctx context.Context, principal, catalogName, schemaName, name string) error {
+	_ = catalogName // volumes are stored globally; catalogName reserved for future use
 	if err := s.requirePrivilege(ctx, principal, domain.PrivCreateVolume); err != nil {
 		return err
 	}

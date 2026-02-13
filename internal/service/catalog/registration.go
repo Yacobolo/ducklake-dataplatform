@@ -17,6 +17,8 @@ import (
 
 // CatalogRegistrationService manages the lifecycle of DuckLake catalog registrations:
 // register, attach, detach, delete, and startup AttachAll.
+//
+//nolint:revive // Name chosen for clarity across package boundaries
 type CatalogRegistrationService struct {
 	repo               domain.CatalogRegistrationRepository
 	attacher           domain.CatalogAttacher
