@@ -22,9 +22,9 @@ func (q *Queries) CountExternalTables(ctx context.Context, schemaName string) (i
 }
 
 const createExternalTable = `-- name: CreateExternalTable :one
-INSERT INTO external_tables (id, schema_name, table_name, file_format, source_path, location_name, comment, owner)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, schema_name, table_name, file_format, source_path, location_name, comment, owner, created_at, updated_at, deleted_at
+INSERT INTO external_tables (id, schema_name, table_name, file_format, source_path, location_name, comment, owner, catalog_name)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, schema_name, table_name, file_format, source_path, location_name, comment, owner, created_at, updated_at, deleted_at, catalog_name
 `
 
 type CreateExternalTableParams struct {
@@ -36,6 +36,7 @@ type CreateExternalTableParams struct {
 	LocationName string
 	Comment      string
 	Owner        string
+	CatalogName  string
 }
 
 func (q *Queries) CreateExternalTable(ctx context.Context, arg CreateExternalTableParams) (ExternalTable, error) {
@@ -48,6 +49,7 @@ func (q *Queries) CreateExternalTable(ctx context.Context, arg CreateExternalTab
 		arg.LocationName,
 		arg.Comment,
 		arg.Owner,
+		arg.CatalogName,
 	)
 	var i ExternalTable
 	err := row.Scan(
@@ -62,6 +64,7 @@ func (q *Queries) CreateExternalTable(ctx context.Context, arg CreateExternalTab
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.CatalogName,
 	)
 	return i, err
 }
@@ -77,7 +80,7 @@ func (q *Queries) DeleteExternalTableColumns(ctx context.Context, externalTableI
 }
 
 const getExternalTableByID = `-- name: GetExternalTableByID :one
-SELECT id, schema_name, table_name, file_format, source_path, location_name, comment, owner, created_at, updated_at, deleted_at FROM external_tables
+SELECT id, schema_name, table_name, file_format, source_path, location_name, comment, owner, created_at, updated_at, deleted_at, catalog_name FROM external_tables
 WHERE id = ? AND deleted_at IS NULL
 `
 
@@ -96,12 +99,13 @@ func (q *Queries) GetExternalTableByID(ctx context.Context, id string) (External
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.CatalogName,
 	)
 	return i, err
 }
 
 const getExternalTableByName = `-- name: GetExternalTableByName :one
-SELECT id, schema_name, table_name, file_format, source_path, location_name, comment, owner, created_at, updated_at, deleted_at FROM external_tables
+SELECT id, schema_name, table_name, file_format, source_path, location_name, comment, owner, created_at, updated_at, deleted_at, catalog_name FROM external_tables
 WHERE schema_name = ? AND table_name = ? AND deleted_at IS NULL
 `
 
@@ -125,12 +129,13 @@ func (q *Queries) GetExternalTableByName(ctx context.Context, arg GetExternalTab
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.CatalogName,
 	)
 	return i, err
 }
 
 const getExternalTableByTableName = `-- name: GetExternalTableByTableName :one
-SELECT id, schema_name, table_name, file_format, source_path, location_name, comment, owner, created_at, updated_at, deleted_at FROM external_tables
+SELECT id, schema_name, table_name, file_format, source_path, location_name, comment, owner, created_at, updated_at, deleted_at, catalog_name FROM external_tables
 WHERE table_name = ? AND deleted_at IS NULL
 `
 
@@ -149,6 +154,7 @@ func (q *Queries) GetExternalTableByTableName(ctx context.Context, tableName str
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.CatalogName,
 	)
 	return i, err
 }
@@ -178,7 +184,7 @@ func (q *Queries) InsertExternalTableColumn(ctx context.Context, arg InsertExter
 }
 
 const listAllExternalTables = `-- name: ListAllExternalTables :many
-SELECT id, schema_name, table_name, file_format, source_path, location_name, comment, owner, created_at, updated_at, deleted_at FROM external_tables
+SELECT id, schema_name, table_name, file_format, source_path, location_name, comment, owner, created_at, updated_at, deleted_at, catalog_name FROM external_tables
 WHERE deleted_at IS NULL
 `
 
@@ -203,6 +209,7 @@ func (q *Queries) ListAllExternalTables(ctx context.Context) ([]ExternalTable, e
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.CatalogName,
 		); err != nil {
 			return nil, err
 		}
@@ -253,7 +260,7 @@ func (q *Queries) ListExternalTableColumns(ctx context.Context, externalTableID 
 }
 
 const listExternalTables = `-- name: ListExternalTables :many
-SELECT id, schema_name, table_name, file_format, source_path, location_name, comment, owner, created_at, updated_at, deleted_at FROM external_tables
+SELECT id, schema_name, table_name, file_format, source_path, location_name, comment, owner, created_at, updated_at, deleted_at, catalog_name FROM external_tables
 WHERE schema_name = ? AND deleted_at IS NULL
 ORDER BY table_name
 LIMIT ? OFFSET ?
@@ -286,6 +293,7 @@ func (q *Queries) ListExternalTables(ctx context.Context, arg ListExternalTables
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.CatalogName,
 		); err != nil {
 			return nil, err
 		}

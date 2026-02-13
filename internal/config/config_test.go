@@ -131,6 +131,56 @@ func TestLoadDotEnv_SkipsComments(t *testing.T) {
 	_ = os.Unsetenv("TEST_COMMENT_KEY")
 }
 
+func TestLoadFromEnv_ProductionModeRejectsInsecureJWTSecret(t *testing.T) {
+	t.Setenv("ENV", "production")
+	t.Setenv("JWT_SECRET", "")
+	t.Setenv("ENCRYPTION_KEY", "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789")
+
+	_, err := LoadFromEnv()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "JWT_SECRET must be set in production")
+}
+
+func TestLoadFromEnv_ProductionModeRejectsInsecureEncryptionKey(t *testing.T) {
+	t.Setenv("ENV", "production")
+	t.Setenv("JWT_SECRET", "a-real-secret")
+	t.Setenv("ENCRYPTION_KEY", "")
+
+	_, err := LoadFromEnv()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "ENCRYPTION_KEY must be set in production")
+}
+
+func TestLoadFromEnv_ProductionModeAcceptsProperConfig(t *testing.T) {
+	t.Setenv("ENV", "production")
+	t.Setenv("JWT_SECRET", "a-real-secret")
+	t.Setenv("ENCRYPTION_KEY", "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789")
+
+	cfg, err := LoadFromEnv()
+	require.NoError(t, err)
+	assert.True(t, cfg.IsProduction())
+}
+
+func TestLoadFromEnv_RateLimitDefaults(t *testing.T) {
+	t.Setenv("RATE_LIMIT_RPS", "")
+	t.Setenv("RATE_LIMIT_BURST", "")
+
+	cfg, err := LoadFromEnv()
+	require.NoError(t, err)
+	assert.InDelta(t, float64(100), cfg.RateLimitRPS, 0.001)
+	assert.Equal(t, 200, cfg.RateLimitBurst)
+}
+
+func TestLoadFromEnv_RateLimitCustom(t *testing.T) {
+	t.Setenv("RATE_LIMIT_RPS", "50.5")
+	t.Setenv("RATE_LIMIT_BURST", "100")
+
+	cfg, err := LoadFromEnv()
+	require.NoError(t, err)
+	assert.InDelta(t, 50.5, cfg.RateLimitRPS, 0.001)
+	assert.Equal(t, 100, cfg.RateLimitBurst)
+}
+
 func TestLoadDotEnv_EnvVarPrecedence(t *testing.T) {
 	t.Setenv("TEST_PRECEDENCE_KEY", "from_env")
 

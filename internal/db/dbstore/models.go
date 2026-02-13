@@ -133,6 +133,7 @@ type ExternalTable struct {
 	CreatedAt    string
 	UpdatedAt    string
 	DeletedAt    sql.NullString
+	CatalogName  string
 }
 
 type ExternalTableColumn struct {

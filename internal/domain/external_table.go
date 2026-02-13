@@ -11,6 +11,7 @@ const (
 // ExternalTableRecord represents an external table stored in the application-owned SQLite table.
 type ExternalTableRecord struct {
 	ID           string
+	CatalogName  string
 	SchemaName   string
 	TableName    string
 	FileFormat   string

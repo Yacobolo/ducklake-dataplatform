@@ -1,0 +1,15 @@
+.git
+.github
+.opencode
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+bin/
+extension/
+docs/
+test/
+*.md
+.env
+.env.*
+!.env.sample
