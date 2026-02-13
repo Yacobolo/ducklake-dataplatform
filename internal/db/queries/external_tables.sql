@@ -1,6 +1,6 @@
 -- name: CreateExternalTable :one
-INSERT INTO external_tables (id, schema_name, table_name, file_format, source_path, location_name, comment, owner)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO external_tables (id, schema_name, table_name, file_format, source_path, location_name, comment, owner, catalog_name)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetExternalTableByName :one

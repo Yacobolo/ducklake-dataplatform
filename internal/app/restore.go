@@ -24,8 +24,11 @@ func restoreExternalTableViews(ctx context.Context, duckDB *sql.DB, repo *reposi
 
 	restored := 0
 	for _, et := range tables {
-		// TODO: pass actual catalog name when multi-catalog is wired
-		viewSQL, err := ddl.CreateExternalTableView("lake", et.SchemaName, et.TableName, et.SourcePath, et.FileFormat)
+		catalogName := et.CatalogName
+		if catalogName == "" {
+			catalogName = "lake" // fallback for records created before migration 028
+		}
+		viewSQL, err := ddl.CreateExternalTableView(catalogName, et.SchemaName, et.TableName, et.SourcePath, et.FileFormat)
 		if err != nil {
 			logger.Warn("build external table view DDL failed", "schema", et.SchemaName, "table", et.TableName, "error", err)
 			continue

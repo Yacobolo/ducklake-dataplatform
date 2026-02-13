@@ -63,6 +63,7 @@ func (r *CatalogRepo) CreateExternalTable(ctx context.Context, schemaName string
 
 	// Persist metadata in SQLite
 	et, err := r.extRepo.Create(ctx, &domain.ExternalTableRecord{
+		CatalogName:  r.catalogName,
 		SchemaName:   schemaName,
 		TableName:    req.Name,
 		FileFormat:   fileFormat,

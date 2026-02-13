@@ -26,6 +26,10 @@ var _ domain.ExternalTableRepository = (*ExternalTableRepo)(nil)
 
 // Create inserts a new external table record and its columns.
 func (r *ExternalTableRepo) Create(ctx context.Context, et *domain.ExternalTableRecord) (*domain.ExternalTableRecord, error) {
+	catalogName := et.CatalogName
+	if catalogName == "" {
+		catalogName = "lake"
+	}
 	row, err := r.q.CreateExternalTable(ctx, dbstore.CreateExternalTableParams{
 		ID:           newID(),
 		SchemaName:   et.SchemaName,
@@ -35,6 +39,7 @@ func (r *ExternalTableRepo) Create(ctx context.Context, et *domain.ExternalTable
 		LocationName: et.LocationName,
 		Comment:      et.Comment,
 		Owner:        et.Owner,
+		CatalogName:  catalogName,
 	})
 	if err != nil {
 		return nil, mapDBError(err)
@@ -185,6 +190,7 @@ func (r *ExternalTableRepo) loadColumns(ctx context.Context, externalTableID str
 func (r *ExternalTableRepo) toDomain(row dbstore.ExternalTable) *domain.ExternalTableRecord {
 	et := &domain.ExternalTableRecord{
 		ID:           row.ID,
+		CatalogName:  row.CatalogName,
 		SchemaName:   row.SchemaName,
 		TableName:    row.TableName,
 		FileFormat:   row.FileFormat,
