@@ -1,0 +1,416 @@
+CatalogInfo:
+  type: object
+  properties:
+    name:
+      type: string
+    comment:
+      type: string
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+
+SchemaDetail:
+  type: object
+  properties:
+    schema_id:
+      type: integer
+      format: int64
+    name:
+      type: string
+    catalog_name:
+      type: string
+    comment:
+      type: string
+    properties:
+      type: object
+      additionalProperties:
+        type: string
+    owner:
+      type: string
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+    tags:
+      type: array
+      items:
+        $ref: 'governance.yaml#/Tag'
+    deleted_at:
+      type: string
+      format: date-time
+      nullable: true
+
+CreateSchemaRequest:
+  type: object
+  required: [name]
+  properties:
+    name:
+      type: string
+    comment:
+      type: string
+    properties:
+      type: object
+      additionalProperties:
+        type: string
+    location_name:
+      type: string
+      description: Optional external location name to use for schema storage path.
+
+UpdateSchemaRequest:
+  type: object
+  properties:
+    comment:
+      type: string
+    properties:
+      type: object
+      additionalProperties:
+        type: string
+
+UpdateTableRequest:
+  type: object
+  properties:
+    comment:
+      type: string
+    properties:
+      type: object
+      additionalProperties:
+        type: string
+    owner:
+      type: string
+
+UpdateCatalogRequest:
+  type: object
+  properties:
+    comment:
+      type: string
+
+PaginatedSchemaDetails:
+  type: object
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/SchemaDetail'
+    next_page_token:
+      type: string
+
+TableDetail:
+  type: object
+  properties:
+    table_id:
+      type: integer
+      format: int64
+    name:
+      type: string
+    schema_name:
+      type: string
+    catalog_name:
+      type: string
+    table_type:
+      type: string
+    columns:
+      type: array
+      items:
+        $ref: '#/ColumnDetail'
+    comment:
+      type: string
+    properties:
+      type: object
+      additionalProperties:
+        type: string
+    owner:
+      type: string
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+    tags:
+      type: array
+      items:
+        $ref: 'governance.yaml#/Tag'
+    statistics:
+      $ref: '#/TableStatistics'
+    deleted_at:
+      type: string
+      format: date-time
+      nullable: true
+    storage_path:
+      type: string
+      description: Resolved DuckLake data path for MANAGED tables.
+    source_path:
+      type: string
+      description: S3/storage path for EXTERNAL tables.
+    file_format:
+      type: string
+      description: File format for EXTERNAL tables (parquet or csv).
+    location_name:
+      type: string
+      description: External location name for EXTERNAL tables.
+
+ColumnDetail:
+  type: object
+  properties:
+    name:
+      type: string
+    type:
+      type: string
+    position:
+      type: integer
+    nullable:
+      type: boolean
+      description: Whether the column allows NULL values.
+    comment:
+      type: string
+    properties:
+      type: object
+      additionalProperties:
+        type: string
+
+CreateTableRequest:
+  type: object
+  required: [name]
+  properties:
+    name:
+      type: string
+    columns:
+      type: array
+      items:
+        $ref: '#/CreateColumnRequest'
+      description: Required for MANAGED tables; auto-discovered for EXTERNAL if omitted.
+    comment:
+      type: string
+    table_type:
+      type: string
+      enum: [MANAGED, EXTERNAL]
+      default: MANAGED
+      description: Type of table. MANAGED (default) or EXTERNAL.
+    source_path:
+      type: string
+      description: S3/storage path to the data file(s). Required for EXTERNAL tables.
+    file_format:
+      type: string
+      enum: [parquet, csv]
+      default: parquet
+      description: File format of the external data. Required for EXTERNAL tables.
+    location_name:
+      type: string
+      description: Name of the external location that owns the source path. Required for EXTERNAL tables.
+
+CreateColumnRequest:
+  type: object
+  required: [name, type]
+  properties:
+    name:
+      type: string
+    type:
+      type: string
+
+UpdateColumnRequest:
+  type: object
+  properties:
+    comment:
+      type: string
+    properties:
+      type: object
+      additionalProperties:
+        type: string
+
+PaginatedTableDetails:
+  type: object
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/TableDetail'
+    next_page_token:
+      type: string
+
+PaginatedColumnDetails:
+  type: object
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/ColumnDetail'
+    next_page_token:
+      type: string
+
+TableStatistics:
+  type: object
+  properties:
+    row_count:
+      type: integer
+      format: int64
+      nullable: true
+    size_bytes:
+      type: integer
+      format: int64
+      nullable: true
+    column_count:
+      type: integer
+      format: int64
+      nullable: true
+    last_profiled_at:
+      type: string
+      format: date-time
+      nullable: true
+    profiled_by:
+      type: string
+
+MetastoreSummary:
+  type: object
+  properties:
+    catalog_name:
+      type: string
+    metastore_type:
+      type: string
+    storage_backend:
+      type: string
+    data_path:
+      type: string
+    schema_count:
+      type: integer
+      format: int64
+    table_count:
+      type: integer
+      format: int64
+
+ViewDetail:
+  type: object
+  properties:
+    id:
+      type: integer
+      format: int64
+    schema_id:
+      type: integer
+      format: int64
+    schema_name:
+      type: string
+    catalog_name:
+      type: string
+    name:
+      type: string
+    view_definition:
+      type: string
+    comment:
+      type: string
+      nullable: true
+    properties:
+      type: object
+      additionalProperties:
+        type: string
+    owner:
+      type: string
+    source_tables:
+      type: array
+      items:
+        type: string
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+
+CreateViewRequest:
+  type: object
+  required: [name, view_definition]
+  properties:
+    name:
+      type: string
+    view_definition:
+      type: string
+    comment:
+      type: string
+
+UpdateViewRequest:
+  type: object
+  properties:
+    comment:
+      type: string
+    properties:
+      type: object
+      additionalProperties:
+        type: string
+    view_definition:
+      type: string
+
+PaginatedViewDetails:
+  type: object
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/ViewDetail'
+    next_page_token:
+      type: string
+
+VolumeDetail:
+  type: object
+  properties:
+    id:
+      type: integer
+      format: int64
+    name:
+      type: string
+    schema_name:
+      type: string
+    catalog_name:
+      type: string
+    volume_type:
+      type: string
+      enum: [MANAGED, EXTERNAL]
+    storage_location:
+      type: string
+    comment:
+      type: string
+    owner:
+      type: string
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+
+CreateVolumeRequest:
+  type: object
+  required: [name, volume_type]
+  properties:
+    name:
+      type: string
+    volume_type:
+      type: string
+      enum: [MANAGED, EXTERNAL]
+    storage_location:
+      type: string
+      description: Required for EXTERNAL volumes. Ignored for MANAGED.
+    comment:
+      type: string
+
+UpdateVolumeRequest:
+  type: object
+  properties:
+    new_name:
+      type: string
+    comment:
+      type: string
+    owner:
+      type: string
+
+PaginatedVolumes:
+  type: object
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/VolumeDetail'
+    next_page_token:
+      type: string

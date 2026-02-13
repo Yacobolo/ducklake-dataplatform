@@ -1,0 +1,138 @@
+AuditEntry:
+  type: object
+  properties:
+    id:
+      type: integer
+      format: int64
+    principal_name:
+      type: string
+    action:
+      type: string
+    statement_type:
+      type: string
+      nullable: true
+    original_sql:
+      type: string
+      nullable: true
+    rewritten_sql:
+      type: string
+      nullable: true
+    tables_accessed:
+      type: array
+      items:
+        type: string
+    status:
+      type: string
+    error_message:
+      type: string
+      nullable: true
+    duration_ms:
+      type: integer
+      format: int64
+      nullable: true
+    created_at:
+      type: string
+      format: date-time
+
+PaginatedAuditLogs:
+  type: object
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/AuditEntry'
+    next_page_token:
+      type: string
+
+ManifestRequest:
+  type: object
+  required: [table]
+  properties:
+    table:
+      type: string
+    schema:
+      type: string
+      default: main
+
+ManifestColumn:
+  type: object
+  properties:
+    name:
+      type: string
+    type:
+      type: string
+
+ManifestResponse:
+  type: object
+  properties:
+    table:
+      type: string
+    schema:
+      type: string
+    columns:
+      type: array
+      items:
+        $ref: '#/ManifestColumn'
+    files:
+      type: array
+      items:
+        type: string
+    row_filters:
+      type: array
+      items:
+        type: string
+    column_masks:
+      type: object
+      additionalProperties:
+        type: string
+    expires_at:
+      type: string
+      format: date-time
+
+QueryHistoryEntry:
+  type: object
+  properties:
+    id:
+      type: integer
+      format: int64
+    principal_name:
+      type: string
+    original_sql:
+      type: string
+      nullable: true
+    rewritten_sql:
+      type: string
+      nullable: true
+    statement_type:
+      type: string
+      nullable: true
+    tables_accessed:
+      type: array
+      items:
+        type: string
+    status:
+      type: string
+    error_message:
+      type: string
+      nullable: true
+    duration_ms:
+      type: integer
+      format: int64
+      nullable: true
+    rows_returned:
+      type: integer
+      format: int64
+      nullable: true
+    created_at:
+      type: string
+      format: date-time
+
+PaginatedQueryHistoryEntries:
+  type: object
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/QueryHistoryEntry'
+    next_page_token:
+      type: string

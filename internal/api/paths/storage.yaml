@@ -1,0 +1,323 @@
+paths:
+  /storage-credentials:
+    get:
+      operationId: listStorageCredentials
+      summary: List storage credentials
+      tags: [Storage]
+      description: Returns a paginated list of storage credentials. Sensitive fields (key_id, secret) are never returned.
+      parameters:
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of storage credentials
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/storage.yaml#/PaginatedStorageCredentials'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+    post:
+      operationId: createStorageCredential
+      summary: Create a storage credential
+      tags: [Storage]
+      description: Creates a new storage credential. Requires ALL_PRIVILEGES on catalog.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/storage.yaml#/CreateStorageCredentialRequest'
+      responses:
+        '201':
+          description: Created credential (sensitive fields omitted)
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/storage.yaml#/StorageCredential'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '409':
+          description: Credential already exists
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+
+  /storage-credentials/{credentialName}:
+    parameters:
+      - name: credentialName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getStorageCredential
+      summary: Get a storage credential by name
+      tags: [Storage]
+      description: Returns credential metadata. Sensitive fields (key_id, secret) are never returned.
+      responses:
+        '200':
+          description: Credential details
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/storage.yaml#/StorageCredential'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+    patch:
+      operationId: updateStorageCredential
+      summary: Update a storage credential
+      tags: [Storage]
+      description: Updates credential fields. Requires ALL_PRIVILEGES on catalog.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/storage.yaml#/UpdateStorageCredentialRequest'
+      responses:
+        '200':
+          description: Updated credential
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/storage.yaml#/StorageCredential'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+    delete:
+      operationId: deleteStorageCredential
+      summary: Delete a storage credential
+      tags: [Storage]
+      description: Deletes a credential. Requires ALL_PRIVILEGES on catalog.
+      responses:
+        '204':
+          description: Credential deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+
+  /external-locations:
+    get:
+      operationId: listExternalLocations
+      summary: List external locations
+      tags: [Storage]
+      parameters:
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of external locations
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/storage.yaml#/PaginatedExternalLocations'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+    post:
+      operationId: createExternalLocation
+      summary: Create an external location
+      tags: [Storage]
+      description: >
+        Creates a new external location and configures DuckDB with the associated
+        credential. If this is the first location, the DuckLake catalog is attached.
+        Requires ALL_PRIVILEGES on catalog.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/storage.yaml#/CreateExternalLocationRequest'
+      responses:
+        '201':
+          description: Created location
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/storage.yaml#/ExternalLocation'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '409':
+          description: Location already exists
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+
+  /external-locations/{locationName}:
+    parameters:
+      - name: locationName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getExternalLocation
+      summary: Get an external location by name
+      tags: [Storage]
+      responses:
+        '200':
+          description: Location details
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/storage.yaml#/ExternalLocation'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+    patch:
+      operationId: updateExternalLocation
+      summary: Update an external location
+      tags: [Storage]
+      description: Updates location fields. Requires ALL_PRIVILEGES on catalog.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/storage.yaml#/UpdateExternalLocationRequest'
+      responses:
+        '200':
+          description: Updated location
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/storage.yaml#/ExternalLocation'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+    delete:
+      operationId: deleteExternalLocation
+      summary: Delete an external location
+      tags: [Storage]
+      description: Deletes a location and drops the associated DuckDB secret. Requires ALL_PRIVILEGES on catalog.
+      responses:
+        '204':
+          description: Location deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'

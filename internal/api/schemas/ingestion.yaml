@@ -1,0 +1,70 @@
+UploadUrlRequest:
+  type: object
+  properties:
+    filename:
+      type: string
+      description: Optional filename hint for the uploaded file.
+
+UploadUrlResponse:
+  type: object
+  properties:
+    upload_url:
+      type: string
+      description: Presigned PUT URL for uploading the Parquet file.
+    s3_key:
+      type: string
+      description: The S3 key where the file will be stored.
+    expires_at:
+      type: string
+      format: date-time
+      description: When the presigned URL expires.
+
+IngestionOptions:
+  type: object
+  properties:
+    allow_missing_columns:
+      type: boolean
+      default: false
+      description: Allow columns in the table that are missing from the Parquet file.
+    ignore_extra_columns:
+      type: boolean
+      default: false
+      description: Ignore columns in the Parquet file not present in the table.
+
+CommitIngestionRequest:
+  type: object
+  required: [s3_keys]
+  properties:
+    s3_keys:
+      type: array
+      items:
+        type: string
+      description: S3 keys returned from upload-url to register.
+    options:
+      $ref: '#/IngestionOptions'
+
+LoadExternalRequest:
+  type: object
+  required: [paths]
+  properties:
+    paths:
+      type: array
+      items:
+        type: string
+      description: S3 paths or globs to register.
+    options:
+      $ref: '#/IngestionOptions'
+
+IngestionResult:
+  type: object
+  properties:
+    files_registered:
+      type: integer
+      description: Number of files successfully registered.
+    files_skipped:
+      type: integer
+      description: Number of files skipped (e.g., empty files).
+    schema:
+      type: string
+    table:
+      type: string

@@ -1,7 +1,9 @@
 package apilint
 
 import (
+	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -1475,12 +1477,25 @@ func TestViolation_String(t *testing.T) {
 }
 
 func TestLintActualSpec(t *testing.T) {
-	// Lint the actual project spec and ensure 0 error-level violations.
-	specPath := "../../internal/api/openapi.yaml"
-	if _, err := os.Stat(specPath); os.IsNotExist(err) {
-		t.Skip("openapi.yaml not found at expected path")
+	// Lint the bundled project spec and ensure 0 error-level violations.
+	// The spec is split into multiple files and must be bundled first via
+	// "npx @redocly/cli bundle" (run by "task bundle-api").
+	bundledPath := "../../internal/api/openapi.bundled.yaml"
+	sourcePath := "../../internal/api/openapi.yaml"
+
+	// If the bundled file doesn't exist, try to generate it.
+	if _, err := os.Stat(bundledPath); os.IsNotExist(err) {
+		if _, err := os.Stat(sourcePath); os.IsNotExist(err) {
+			t.Skip("openapi.yaml not found at expected path")
+		}
+		cmd := exec.CommandContext(context.Background(), "npx", "--yes", "@redocly/cli", "bundle", sourcePath, "-o", bundledPath)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Skipf("failed to bundle spec (install @redocly/cli): %s: %v", out, err)
+		}
 	}
-	l, err := New(specPath)
+
+	l, err := New(bundledPath)
 	require.NoError(t, err)
 
 	vs := l.Run()
@@ -1488,5 +1503,5 @@ func TestLintActualSpec(t *testing.T) {
 	for _, v := range errors {
 		t.Errorf("%s", v)
 	}
-	assert.Empty(t, errors, "expected 0 error-level violations in openapi.yaml")
+	assert.Empty(t, errors, "expected 0 error-level violations in openapi.bundled.yaml")
 }

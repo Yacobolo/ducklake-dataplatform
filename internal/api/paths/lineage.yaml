@@ -1,0 +1,189 @@
+paths:
+  /lineage/tables/{schemaName}/{tableName}:
+    parameters:
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: tableName
+        in: path
+        required: true
+        schema:
+          type: string
+    get: # apilint:ignore OAL025
+      operationId: getTableLineage
+      summary: Get full lineage for a table
+      tags: [Lineage]
+      description: Returns both upstream and downstream lineage edges for a table. Pagination params control edge depth, not list pagination.
+      parameters:
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
+      responses:
+        '200':
+          description: Table lineage
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/lineage.yaml#/LineageNode'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+
+  /lineage/tables/{schemaName}/{tableName}/upstream:
+    parameters:
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: tableName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getUpstreamLineage
+      summary: Get upstream lineage for a table
+      tags: [Lineage]
+      parameters:
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
+      responses:
+        '200':
+          description: Upstream lineage edges
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/lineage.yaml#/PaginatedLineageEdges'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+
+  /lineage/tables/{schemaName}/{tableName}/downstream:
+    parameters:
+      - name: schemaName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: tableName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getDownstreamLineage
+      summary: Get downstream lineage for a table
+      tags: [Lineage]
+      parameters:
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
+      responses:
+        '200':
+          description: Downstream lineage edges
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/lineage.yaml#/PaginatedLineageEdges'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+
+  /lineage/edges/{edgeId}:
+    parameters:
+      - name: edgeId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    delete:
+      operationId: deleteLineageEdge
+      summary: Delete a lineage edge
+      tags: [Lineage]
+      responses:
+        '204':
+          description: Edge deleted
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+
+  /lineage/purge:
+    post:
+      operationId: purgeLineage
+      summary: Purge old lineage edges
+      tags: [Lineage]
+      description: Delete lineage edges older than the specified number of days.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/lineage.yaml#/PurgeLineageRequest'
+      responses:
+        '200':
+          description: Purge result
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/lineage.yaml#/PurgeLineageResponse'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'

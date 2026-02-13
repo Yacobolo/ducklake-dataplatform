@@ -32,18 +32,33 @@ tasks:
     cmds:
       - sqlc generate
 
+  bundle-api:
+    desc: Bundle split OpenAPI files into single resolved spec
+    cmds:
+      - npx --yes @redocly/cli bundle internal/api/openapi.yaml -o internal/api/openapi.bundled.yaml
+    sources:
+      - internal/api/openapi.yaml
+      - internal/api/paths/*.yaml
+      - internal/api/schemas/*.yaml
+    generates:
+      - internal/api/openapi.bundled.yaml
+
   generate-api:
     desc: Generate API types and server from OpenAPI spec
+    deps: [bundle-api]
     cmds:
-      - oapi-codegen -generate models -package api -o internal/api/types.gen.go internal/api/openapi.yaml
-      - oapi-codegen -generate chi-server,strict-server,spec -package api -o internal/api/server.gen.go internal/api/openapi.yaml
+      - oapi-codegen -generate models -package api -o internal/api/types.gen.go internal/api/openapi.bundled.yaml
+      - oapi-codegen -generate chi-server,strict-server,spec -package api -o internal/api/server.gen.go internal/api/openapi.bundled.yaml
 
   generate-cli:
     desc: Generate CLI commands from OpenAPI spec
+    deps: [bundle-api]
     cmds:
-      - go run ./cmd/cli-gen -spec internal/api/openapi.yaml -config cli-config.yaml -out pkg/cli/gen/
+      - go run ./cmd/cli-gen -spec internal/api/openapi.bundled.yaml -config cli-config.yaml -out pkg/cli/gen/
     sources:
       - internal/api/openapi.yaml
+      - internal/api/paths/*.yaml
+      - internal/api/schemas/*.yaml
       - cli-config.yaml
       - internal/codegen/cli/**/*.go
       - internal/codegen/cli/templates/*.tmpl
@@ -70,9 +85,18 @@ tasks:
       - go build -o bin/compute-agent ./cmd/compute-agent
 
   test:
-    desc: Run all tests (package summary, shows failures inline)
+    desc: Run all tests (unit + integration)
+    deps: [test:unit, test:integration]
+
+  test:unit:
+    desc: Run unit tests (package summary, shows failures inline)
     cmds:
       - gotestsum --format pkgname-and-test-fails -- -race ./...
+
+  test:integration:
+    desc: Run integration tests (package summary, shows failures inline)
+    cmds:
+      - gotestsum --format pkgname-and-test-fails -- -tags integration -timeout 120s ./test/integration/...
 
   vet:
     desc: Run go vet
@@ -86,8 +110,9 @@ tasks:
 
   lint-api:
     desc: Lint the OpenAPI spec for consistency
+    deps: [bundle-api]
     cmds:
-      - go run ./cmd/lint-api internal/api/openapi.yaml
+      - go run ./cmd/lint-api internal/api/openapi.bundled.yaml
 
   test-cli:
     desc: Run CLI tests
@@ -101,6 +126,5 @@ tasks:
       - git diff --exit-code pkg/cli/gen/ internal/api/types.gen.go internal/api/server.gen.go
 
   integration-test:
-    desc: Run integration tests (package summary, shows failures inline)
-    cmds:
-      - gotestsum --format pkgname-and-test-fails -- -tags integration -timeout 120s ./test/integration/...
+    desc: "Run integration tests (alias for test:integration)"
+    deps: [test:integration]

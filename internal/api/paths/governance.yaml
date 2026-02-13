@@ -1,0 +1,231 @@
+paths:
+  /search:
+    get:
+      operationId: searchCatalog
+      summary: Search catalog objects
+      tags: [Governance]
+      description: Full-text search across schemas, tables, and columns.
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: type
+          in: query
+          description: "Filter by object type: schema, table, or column"
+          schema:
+            type: string
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/governance.yaml#/PaginatedSearchResults'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+
+  /tags:
+    get:
+      operationId: listTags
+      summary: List all tags
+      tags: [Governance]
+      parameters:
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of tags
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/governance.yaml#/PaginatedTags'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+    post:
+      operationId: createTag
+      summary: Create a tag
+      tags: [Governance]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/governance.yaml#/CreateTagRequest'
+      responses:
+        '201':
+          description: Created tag
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/governance.yaml#/Tag'
+        '409':
+          description: Tag already exists
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+
+  /tags/{tagId}:
+    parameters:
+      - name: tagId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    delete:
+      operationId: deleteTag
+      summary: Delete a tag
+      tags: [Governance]
+      responses:
+        '204':
+          description: Tag deleted
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+
+  /tags/{tagId}/assignments:
+    parameters:
+      - name: tagId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    post:
+      operationId: createTagAssignment
+      summary: Assign a tag to a securable object
+      tags: [Governance]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/governance.yaml#/CreateTagAssignmentRequest'
+      responses:
+        '201':
+          description: Tag assigned
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/governance.yaml#/TagAssignment'
+        '409':
+          description: Tag already assigned
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+
+  /tag-assignments/{assignmentId}:
+    parameters:
+      - name: assignmentId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    delete:
+      operationId: deleteTagAssignment
+      summary: Remove a tag assignment
+      tags: [Governance]
+      responses:
+        '204':
+          description: Tag unassigned
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+
+  /classifications:
+    get:
+      operationId: listClassifications
+      summary: List classification and sensitivity tags
+      tags: [Governance]
+      description: Returns all tags with governed classification/sensitivity prefixes.
+      parameters:
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
+      responses:
+        '200':
+          description: Classification tags
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/governance.yaml#/PaginatedTags'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'

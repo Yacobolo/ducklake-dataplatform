@@ -1,0 +1,38 @@
+paths:
+  /query:
+    post:
+      operationId: executeQuery
+      summary: Execute SQL as authenticated principal
+      tags: [Query]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/QueryRequest'
+      responses:
+        '200':
+          description: Query result
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/QueryResult'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'

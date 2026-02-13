@@ -2,6 +2,8 @@ package cli
 
 import (
 	"context"
+	"os"
+	"os/exec"
 	"testing"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -141,9 +143,24 @@ func TestParse_CoverageCheck(t *testing.T) {
 }
 
 func TestParse_FullSpec(t *testing.T) {
+	// The spec is split into multiple files; use the bundled output.
+	bundledPath := "../../../internal/api/openapi.bundled.yaml"
+	sourcePath := "../../../internal/api/openapi.yaml"
+
+	if _, err := os.Stat(bundledPath); os.IsNotExist(err) {
+		if _, err := os.Stat(sourcePath); os.IsNotExist(err) {
+			t.Skip("openapi.yaml not found at expected path")
+		}
+		cmd := exec.CommandContext(context.Background(), "npx", "--yes", "@redocly/cli", "bundle", sourcePath, "-o", bundledPath)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Skipf("failed to bundle spec (install @redocly/cli): %s: %v", out, err)
+		}
+	}
+
 	// Load the real OpenAPI spec
 	loader := openapi3.NewLoader()
-	spec, err := loader.LoadFromFile("../../../internal/api/openapi.yaml")
+	spec, err := loader.LoadFromFile(bundledPath)
 	require.NoError(t, err)
 	require.NoError(t, spec.Validate(context.Background()))
 
