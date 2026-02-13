@@ -39,7 +39,7 @@ func (r *CatalogRepo) CreateExternalTable(ctx context.Context, schemaName string
 	}
 
 	// Create the VIEW on DuckDB
-	viewSQL, err := ddl.CreateExternalTableView(schemaName, req.Name, req.SourcePath, fileFormat)
+	viewSQL, err := ddl.CreateExternalTableView(r.catalogName, schemaName, req.Name, req.SourcePath, fileFormat)
 	if err != nil {
 		return nil, domain.ErrValidation("%s", err.Error())
 	}
@@ -74,7 +74,7 @@ func (r *CatalogRepo) CreateExternalTable(ctx context.Context, schemaName string
 	})
 	if err != nil {
 		// Best-effort: drop the VIEW we just created
-		dropSQL, _ := ddl.DropView(schemaName, req.Name)
+		dropSQL, _ := ddl.DropView(r.catalogName, schemaName, req.Name)
 		if dropSQL != "" {
 			_, _ = r.duckDB.ExecContext(ctx, dropSQL)
 		}
@@ -109,7 +109,7 @@ func (r *CatalogRepo) externalTableToDetail(et *domain.ExternalTableRecord, sche
 		TableID:      et.EffectiveTableID(),
 		Name:         et.TableName,
 		SchemaName:   schemaName,
-		CatalogName:  "lake",
+		CatalogName:  r.catalogName,
 		TableType:    domain.TableTypeExternal,
 		Columns:      cols,
 		Comment:      et.Comment,
@@ -125,7 +125,7 @@ func (r *CatalogRepo) externalTableToDetail(et *domain.ExternalTableRecord, sche
 // deleteExternalTable drops the VIEW and soft-deletes external table metadata.
 func (r *CatalogRepo) deleteExternalTable(ctx context.Context, schemaName, tableName string, et *domain.ExternalTableRecord) error {
 	// Drop the VIEW on DuckDB
-	dropSQL, err := ddl.DropView(schemaName, tableName)
+	dropSQL, err := ddl.DropView(r.catalogName, schemaName, tableName)
 	if err != nil {
 		return fmt.Errorf("build DDL: %w", err)
 	}

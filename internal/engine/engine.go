@@ -263,8 +263,8 @@ func DropS3Secret(ctx context.Context, db *sql.DB, name string) error {
 }
 
 // AttachDuckLake attaches the DuckLake catalog with the given metastore and data path.
-func AttachDuckLake(ctx context.Context, db *sql.DB, metaDBPath, dataPath string) error {
-	attachSQL, err := ddl.AttachDuckLake(metaDBPath, dataPath)
+func AttachDuckLake(ctx context.Context, db *sql.DB, catalogName, metaDBPath, dataPath string) error {
+	attachSQL, err := ddl.AttachDuckLake(catalogName, metaDBPath, dataPath)
 	if err != nil {
 		return fmt.Errorf("build DDL: %w", err)
 	}
@@ -272,30 +272,48 @@ func AttachDuckLake(ctx context.Context, db *sql.DB, metaDBPath, dataPath string
 	if _, err := db.ExecContext(ctx, attachSQL); err != nil {
 		return fmt.Errorf("attach ducklake: %w", err)
 	}
-	if _, err := db.ExecContext(ctx, "USE lake"); err != nil {
-		return fmt.Errorf("use lake: %w", err)
-	}
 	return nil
 }
 
 // AttachDuckLakePostgres attaches the DuckLake catalog using a PostgreSQL metastore.
-func AttachDuckLakePostgres(ctx context.Context, db *sql.DB, dsn, dataPath string) error {
-	attachSQL, err := ddl.AttachDuckLakePostgres(dsn, dataPath)
+func AttachDuckLakePostgres(ctx context.Context, db *sql.DB, catalogName, dsn, dataPath string) error {
+	attachSQL, err := ddl.AttachDuckLakePostgres(catalogName, dsn, dataPath)
 	if err != nil {
 		return fmt.Errorf("build DDL: %w", err)
 	}
 	if _, err := db.ExecContext(ctx, attachSQL); err != nil {
 		return fmt.Errorf("attach ducklake postgres: %w", err)
 	}
-	if _, err := db.ExecContext(ctx, "USE lake"); err != nil {
-		return fmt.Errorf("use lake: %w", err)
+	return nil
+}
+
+// DetachCatalog detaches a DuckLake catalog from DuckDB.
+func DetachCatalog(ctx context.Context, db *sql.DB, catalogName string) error {
+	detachSQL, err := ddl.DetachCatalog(catalogName)
+	if err != nil {
+		return fmt.Errorf("build DDL: %w", err)
+	}
+	if _, err := db.ExecContext(ctx, detachSQL); err != nil {
+		return fmt.Errorf("detach catalog: %w", err)
 	}
 	return nil
 }
 
-// IsCatalogAttached checks if the "lake" catalog is already attached to DuckDB.
-func IsCatalogAttached(ctx context.Context, db *sql.DB) bool {
-	rows, err := db.QueryContext(ctx, "SELECT catalog_name FROM information_schema.schemata WHERE catalog_name = 'lake'")
+// SetDefaultCatalog sets the default catalog via USE statement.
+func SetDefaultCatalog(ctx context.Context, db *sql.DB, catalogName string) error {
+	useSQL, err := ddl.SetDefaultCatalog(catalogName)
+	if err != nil {
+		return fmt.Errorf("build DDL: %w", err)
+	}
+	if _, err := db.ExecContext(ctx, useSQL); err != nil {
+		return fmt.Errorf("use catalog: %w", err)
+	}
+	return nil
+}
+
+// IsCatalogAttached checks if a named catalog is already attached to DuckDB.
+func IsCatalogAttached(ctx context.Context, db *sql.DB, catalogName string) bool {
+	rows, err := db.QueryContext(ctx, "SELECT catalog_name FROM information_schema.schemata WHERE catalog_name = ?", catalogName)
 	if err != nil {
 		return false
 	}

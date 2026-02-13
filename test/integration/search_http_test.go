@@ -130,7 +130,7 @@ func TestHTTP_SearchByComment(t *testing.T) {
 				"comment": "passenger survival data",
 			}
 			resp := doRequest(t, "PATCH",
-				env.Server.URL+"/v1/catalog/schemas/main/tables/titanic",
+				env.Server.URL+"/v1/catalogs/lake/schemas/main/tables/titanic",
 				env.Keys.Admin, body)
 			require.Equal(t, 200, resp.StatusCode)
 			_ = resp.Body.Close()

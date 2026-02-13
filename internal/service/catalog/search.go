@@ -2,21 +2,54 @@ package catalog
 
 import (
 	"context"
+	"fmt"
 
 	"duck-demo/internal/domain"
 )
 
+// SearchRepoFactory creates per-catalog SearchRepository instances.
+type SearchRepoFactory interface {
+	ForCatalog(ctx context.Context, catalogName string) (domain.SearchRepository, error)
+}
+
 // SearchService provides catalog search operations.
+// It uses a factory to route searches to the appropriate catalog metastore.
 type SearchService struct {
-	repo domain.SearchRepository
+	factory     SearchRepoFactory
+	defaultRepo domain.SearchRepository // used when no catalog is specified
 }
 
 // NewSearchService creates a new SearchService.
-func NewSearchService(repo domain.SearchRepository) *SearchService {
-	return &SearchService{repo: repo}
+// defaultRepo handles searches when no catalog name is specified.
+func NewSearchService(defaultRepo domain.SearchRepository, factory SearchRepoFactory) *SearchService {
+	return &SearchService{
+		defaultRepo: defaultRepo,
+		factory:     factory,
+	}
 }
 
 // Search performs a full-text search across schemas, tables, and columns.
-func (s *SearchService) Search(ctx context.Context, query string, objectType *string, page domain.PageRequest) ([]domain.SearchResult, int64, error) {
-	return s.repo.Search(ctx, query, objectType, page.Limit(), page.Offset())
+// When catalogName is nil, searches the default catalog's metastore.
+// When catalogName is provided, searches that specific catalog's metastore.
+func (s *SearchService) Search(ctx context.Context, query string, objectType *string, catalogName *string, page domain.PageRequest) ([]domain.SearchResult, int64, error) {
+	repo, err := s.resolveRepo(ctx, catalogName)
+	if err != nil {
+		return nil, 0, err
+	}
+	return repo.Search(ctx, query, objectType, page.Limit(), page.Offset())
+}
+
+// resolveRepo returns the appropriate SearchRepository for the given catalog name.
+func (s *SearchService) resolveRepo(ctx context.Context, catalogName *string) (domain.SearchRepository, error) {
+	if catalogName == nil || *catalogName == "" {
+		return s.defaultRepo, nil
+	}
+	if s.factory == nil {
+		return s.defaultRepo, nil
+	}
+	repo, err := s.factory.ForCatalog(ctx, *catalogName)
+	if err != nil {
+		return nil, fmt.Errorf("resolve search repo for catalog %q: %w", *catalogName, err)
+	}
+	return repo, nil
 }

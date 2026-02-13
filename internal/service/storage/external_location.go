@@ -4,25 +4,20 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"sync"
 
 	"duck-demo/internal/domain"
 )
 
 // ExternalLocationService provides CRUD operations for external locations
-// with RBAC enforcement, DuckDB secret management, and catalog attachment.
+// with RBAC enforcement and DuckDB secret management.
+// Catalog attachment is now handled by CatalogRegistrationService.
 type ExternalLocationService struct {
 	locRepo  domain.ExternalLocationRepository
 	credRepo domain.StorageCredentialRepository
 	auth     domain.AuthorizationService
 	audit    domain.AuditRepository
 	secrets  domain.SecretManager
-	attacher domain.CatalogAttacher
-	metaPath string
 	logger   *slog.Logger
-
-	mu              sync.Mutex
-	catalogAttached bool
 }
 
 // NewExternalLocationService creates a new ExternalLocationService.
@@ -32,29 +27,16 @@ func NewExternalLocationService(
 	auth domain.AuthorizationService,
 	audit domain.AuditRepository,
 	secrets domain.SecretManager,
-	attacher domain.CatalogAttacher,
-	metaPath string,
-	catalogAttached bool,
 	logger *slog.Logger,
 ) *ExternalLocationService {
 	return &ExternalLocationService{
-		locRepo:         locRepo,
-		credRepo:        credRepo,
-		auth:            auth,
-		audit:           audit,
-		secrets:         secrets,
-		attacher:        attacher,
-		metaPath:        metaPath,
-		catalogAttached: catalogAttached,
-		logger:          logger,
+		locRepo:  locRepo,
+		credRepo: credRepo,
+		auth:     auth,
+		audit:    audit,
+		secrets:  secrets,
+		logger:   logger,
 	}
-}
-
-// IsCatalogAttached returns whether the DuckLake catalog is attached.
-func (s *ExternalLocationService) IsCatalogAttached() bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.catalogAttached
 }
 
 // Create validates and persists a new external location, creates a DuckDB
@@ -103,14 +85,6 @@ func (s *ExternalLocationService) Create(ctx context.Context, principal string, 
 		// Rollback: delete the location we just persisted
 		_ = s.locRepo.Delete(ctx, result.ID)
 		return nil, fmt.Errorf("create DuckDB secret for credential %q: %w", cred.Name, err)
-	}
-
-	// Attach DuckLake catalog if not already attached
-	if err := s.ensureCatalogAttached(ctx, req.URL); err != nil {
-		// Best-effort cleanup: drop secret, delete location
-		_ = s.secrets.DropSecret(ctx, secretName)
-		_ = s.locRepo.Delete(ctx, result.ID)
-		return nil, fmt.Errorf("attach catalog: %w", err)
 	}
 
 	s.logAudit(ctx, principal, "CREATE_EXTERNAL_LOCATION", fmt.Sprintf("Created location %q -> %s", req.Name, req.URL))
@@ -174,22 +148,17 @@ func (s *ExternalLocationService) Delete(ctx context.Context, principal string, 
 	return nil
 }
 
-// RestoreSecrets recreates DuckDB secrets for all persisted storage credentials
-// and attaches the DuckLake catalog if any locations exist. Called at startup.
+// RestoreSecrets recreates DuckDB secrets for all persisted storage credentials.
+// Called at startup. Catalog attachment is now handled by CatalogRegistrationService.
 func (s *ExternalLocationService) RestoreSecrets(ctx context.Context) error {
-	// List all locations to see if we need to attach catalog
-	locations, _, err := s.locRepo.List(ctx, domain.PageRequest{MaxResults: 1})
-	if err != nil {
-		return fmt.Errorf("list external locations: %w", err)
-	}
-	if len(locations) == 0 {
-		return nil
-	}
-
 	// Recreate DuckDB secrets for all credentials
 	creds, _, err := s.credRepo.List(ctx, domain.PageRequest{MaxResults: 1000})
 	if err != nil {
 		return fmt.Errorf("list storage credentials: %w", err)
+	}
+
+	if len(creds) == 0 {
+		return nil
 	}
 
 	for _, cred := range creds {
@@ -199,30 +168,7 @@ func (s *ExternalLocationService) RestoreSecrets(ctx context.Context) error {
 		}
 	}
 
-	// Attach catalog using the first location's URL as the data path
-	if err := s.ensureCatalogAttached(ctx, locations[0].URL); err != nil {
-		return fmt.Errorf("attach catalog during restore: %w", err)
-	}
-
 	s.logger.Info("restored credential secrets", "count", len(creds))
-	return nil
-}
-
-// ensureCatalogAttached attaches the DuckLake catalog if not already attached.
-func (s *ExternalLocationService) ensureCatalogAttached(ctx context.Context, dataPath string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.catalogAttached {
-		return nil
-	}
-
-	if err := s.attacher.AttachDuckLake(ctx, s.metaPath, dataPath); err != nil {
-		return err
-	}
-
-	s.catalogAttached = true
-	s.logger.Info("DuckLake catalog attached via External Locations API")
 	return nil
 }
 

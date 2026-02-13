@@ -66,7 +66,7 @@ func TestExternalLocationService_Create(t *testing.T) {
 		audit := &mockAuditRepo{}
 
 		secretMgr := testSecretManager(duckDB)
-		svc := NewExternalLocationService(locRepo, credRepo, auth, audit, secretMgr, secretMgr, t.TempDir()+"/meta.db", false, discardLogger())
+		svc := NewExternalLocationService(locRepo, credRepo, auth, audit, secretMgr, discardLogger())
 
 		result, err := svc.Create(ctxWithPrincipal("admin_user"), "admin_user", validReq)
 
@@ -85,7 +85,7 @@ func TestExternalLocationService_Create(t *testing.T) {
 		}
 		svc := NewExternalLocationService(
 			&mockExternalLocationRepo{}, &mockStorageCredentialRepo{},
-			auth, &mockAuditRepo{}, nil, nil, "", false, discardLogger(),
+			auth, &mockAuditRepo{}, nil, discardLogger(),
 		)
 
 		_, err := svc.Create(ctxWithPrincipal("nobody"), "nobody", validReq)
@@ -103,7 +103,7 @@ func TestExternalLocationService_Create(t *testing.T) {
 		}
 		svc := NewExternalLocationService(
 			&mockExternalLocationRepo{}, &mockStorageCredentialRepo{},
-			auth, &mockAuditRepo{}, nil, nil, "", false, discardLogger(),
+			auth, &mockAuditRepo{}, nil, discardLogger(),
 		)
 
 		_, err := svc.Create(ctxWithPrincipal("admin_user"), "admin_user", domain.CreateExternalLocationRequest{})
@@ -126,7 +126,7 @@ func TestExternalLocationService_Create(t *testing.T) {
 		}
 		svc := NewExternalLocationService(
 			&mockExternalLocationRepo{}, credRepo,
-			auth, &mockAuditRepo{}, nil, nil, "", false, discardLogger(),
+			auth, &mockAuditRepo{}, nil, discardLogger(),
 		)
 
 		_, err := svc.Create(ctxWithPrincipal("admin_user"), "admin_user", validReq)
@@ -151,7 +151,7 @@ func TestExternalLocationService_Create(t *testing.T) {
 				return true, nil
 			},
 		}
-		svc := NewExternalLocationService(locRepo, credRepo, auth, &mockAuditRepo{}, nil, nil, "", false, discardLogger())
+		svc := NewExternalLocationService(locRepo, credRepo, auth, &mockAuditRepo{}, nil, discardLogger())
 
 		_, err := svc.Create(ctxWithPrincipal("admin_user"), "admin_user", validReq)
 
@@ -168,7 +168,7 @@ func TestExternalLocationService_GetByName(t *testing.T) {
 				return &domain.ExternalLocation{ID: 1, Name: name, URL: "s3://bucket/path/"}, nil
 			},
 		}
-		svc := NewExternalLocationService(repo, &mockStorageCredentialRepo{}, &mockAuthService{}, &mockAuditRepo{}, nil, nil, "", false, discardLogger())
+		svc := NewExternalLocationService(repo, &mockStorageCredentialRepo{}, &mockAuthService{}, &mockAuditRepo{}, nil, discardLogger())
 
 		result, err := svc.GetByName(context.Background(), "my-loc")
 
@@ -182,7 +182,7 @@ func TestExternalLocationService_GetByName(t *testing.T) {
 				return nil, domain.ErrNotFound("not found")
 			},
 		}
-		svc := NewExternalLocationService(repo, &mockStorageCredentialRepo{}, &mockAuthService{}, &mockAuditRepo{}, nil, nil, "", false, discardLogger())
+		svc := NewExternalLocationService(repo, &mockStorageCredentialRepo{}, &mockAuthService{}, &mockAuditRepo{}, nil, discardLogger())
 
 		_, err := svc.GetByName(context.Background(), "missing")
 
@@ -204,7 +204,7 @@ func TestExternalLocationService_List(t *testing.T) {
 				}, 2, nil
 			},
 		}
-		svc := NewExternalLocationService(repo, &mockStorageCredentialRepo{}, &mockAuthService{}, &mockAuditRepo{}, nil, nil, "", false, discardLogger())
+		svc := NewExternalLocationService(repo, &mockStorageCredentialRepo{}, &mockAuthService{}, &mockAuditRepo{}, nil, discardLogger())
 
 		locs, total, err := svc.List(context.Background(), domain.PageRequest{MaxResults: 100})
 
@@ -239,7 +239,7 @@ func TestExternalLocationService_Delete(t *testing.T) {
 		}
 		audit := &mockAuditRepo{}
 		secretMgr := testSecretManager(duckDB)
-		svc := NewExternalLocationService(locRepo, &mockStorageCredentialRepo{}, auth, audit, secretMgr, secretMgr, "", false, discardLogger())
+		svc := NewExternalLocationService(locRepo, &mockStorageCredentialRepo{}, auth, audit, secretMgr, discardLogger())
 
 		err := svc.Delete(ctxWithPrincipal("admin_user"), "admin_user", "my-loc")
 
@@ -255,7 +255,7 @@ func TestExternalLocationService_Delete(t *testing.T) {
 		}
 		svc := NewExternalLocationService(
 			&mockExternalLocationRepo{}, &mockStorageCredentialRepo{},
-			auth, &mockAuditRepo{}, nil, nil, "", false, discardLogger(),
+			auth, &mockAuditRepo{}, nil, discardLogger(),
 		)
 
 		err := svc.Delete(ctxWithPrincipal("nobody"), "nobody", "my-loc")
@@ -266,41 +266,20 @@ func TestExternalLocationService_Delete(t *testing.T) {
 	})
 }
 
-// === CatalogAttached via constructor ===
-
-func TestExternalLocationService_CatalogAttached(t *testing.T) {
-	t.Run("default_false", func(t *testing.T) {
-		svc := NewExternalLocationService(
-			&mockExternalLocationRepo{}, &mockStorageCredentialRepo{},
-			&mockAuthService{}, &mockAuditRepo{}, nil, nil, "", false, discardLogger(),
-		)
-		assert.False(t, svc.IsCatalogAttached())
-	})
-
-	t.Run("constructor_true", func(t *testing.T) {
-		svc := NewExternalLocationService(
-			&mockExternalLocationRepo{}, &mockStorageCredentialRepo{},
-			&mockAuthService{}, &mockAuditRepo{}, nil, nil, "", true, discardLogger(),
-		)
-		assert.True(t, svc.IsCatalogAttached())
-	})
-}
-
 // === RestoreSecrets ===
 
 func TestExternalLocationService_RestoreSecrets(t *testing.T) {
-	t.Run("no_locations_noop", func(t *testing.T) {
-		locRepo := &mockExternalLocationRepo{
-			ListFn: func(_ context.Context, _ domain.PageRequest) ([]domain.ExternalLocation, int64, error) {
+	t.Run("no_credentials_noop", func(t *testing.T) {
+		credRepo := &mockStorageCredentialRepo{
+			ListFn: func(_ context.Context, _ domain.PageRequest) ([]domain.StorageCredential, int64, error) {
 				return nil, 0, nil
 			},
 		}
-		svc := NewExternalLocationService(locRepo, &mockStorageCredentialRepo{}, &mockAuthService{}, &mockAuditRepo{}, nil, nil, "", false, discardLogger())
+		svc := NewExternalLocationService(nil, credRepo, &mockAuthService{}, &mockAuditRepo{}, nil, discardLogger())
 
 		err := svc.RestoreSecrets(context.Background())
 
 		require.NoError(t, err)
-		assert.False(t, svc.IsCatalogAttached())
 	})
 
 	t.Run("with_locations_creates_secrets", func(t *testing.T) {
@@ -325,13 +304,11 @@ func TestExternalLocationService_RestoreSecrets(t *testing.T) {
 			},
 		}
 
-		metaPath := t.TempDir() + "/meta.db"
 		secretMgr := testSecretManager(duckDB)
-		svc := NewExternalLocationService(locRepo, credRepo, &mockAuthService{}, &mockAuditRepo{}, secretMgr, secretMgr, metaPath, false, discardLogger())
+		svc := NewExternalLocationService(locRepo, credRepo, &mockAuthService{}, &mockAuditRepo{}, secretMgr, discardLogger())
 
 		err := svc.RestoreSecrets(context.Background())
 
 		require.NoError(t, err)
-		assert.True(t, svc.IsCatalogAttached())
 	})
 }

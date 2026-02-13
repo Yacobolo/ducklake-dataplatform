@@ -14,7 +14,7 @@ import (
 func TestHTTP_CatalogInfo(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{WithDuckLake: true})
 
-	resp := doRequest(t, "GET", env.Server.URL+"/v1/catalog", env.Keys.Admin, nil)
+	resp := doRequest(t, "GET", env.Server.URL+"/v1/catalogs/lake/info", env.Keys.Admin, nil)
 	require.Equal(t, 200, resp.StatusCode)
 
 	var result map[string]interface{}
@@ -37,7 +37,7 @@ func TestHTTP_SchemaCRUD(t *testing.T) {
 				"name":    "test_schema",
 				"comment": "integration test schema",
 			}
-			resp := doRequest(t, "POST", env.Server.URL+"/v1/catalog/schemas", env.Keys.Admin, body)
+			resp := doRequest(t, "POST", env.Server.URL+"/v1/catalogs/lake/schemas", env.Keys.Admin, body)
 			require.Equal(t, 201, resp.StatusCode)
 
 			var result map[string]interface{}
@@ -46,7 +46,7 @@ func TestHTTP_SchemaCRUD(t *testing.T) {
 			assert.Equal(t, "integration test schema", result["comment"])
 		}},
 		{"get_by_name_200", func(t *testing.T) {
-			resp := doRequest(t, "GET", env.Server.URL+"/v1/catalog/schemas/test_schema", env.Keys.Admin, nil)
+			resp := doRequest(t, "GET", env.Server.URL+"/v1/catalogs/lake/schemas/test_schema", env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
 			var result map[string]interface{}
@@ -54,7 +54,7 @@ func TestHTTP_SchemaCRUD(t *testing.T) {
 			assert.Equal(t, "test_schema", result["name"])
 		}},
 		{"list_contains_created", func(t *testing.T) {
-			resp := doRequest(t, "GET", env.Server.URL+"/v1/catalog/schemas", env.Keys.Admin, nil)
+			resp := doRequest(t, "GET", env.Server.URL+"/v1/catalogs/lake/schemas", env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
 			var result map[string]interface{}
@@ -72,7 +72,7 @@ func TestHTTP_SchemaCRUD(t *testing.T) {
 			body := map[string]interface{}{
 				"comment": "updated comment",
 			}
-			resp := doRequest(t, "PATCH", env.Server.URL+"/v1/catalog/schemas/test_schema", env.Keys.Admin, body)
+			resp := doRequest(t, "PATCH", env.Server.URL+"/v1/catalogs/lake/schemas/test_schema", env.Keys.Admin, body)
 			require.Equal(t, 200, resp.StatusCode)
 
 			var result map[string]interface{}
@@ -83,7 +83,7 @@ func TestHTTP_SchemaCRUD(t *testing.T) {
 			body := map[string]interface{}{
 				"properties": map[string]string{"env": "test", "owner": "ci"},
 			}
-			resp := doRequest(t, "PATCH", env.Server.URL+"/v1/catalog/schemas/test_schema", env.Keys.Admin, body)
+			resp := doRequest(t, "PATCH", env.Server.URL+"/v1/catalogs/lake/schemas/test_schema", env.Keys.Admin, body)
 			require.Equal(t, 200, resp.StatusCode)
 
 			var result map[string]interface{}
@@ -93,12 +93,12 @@ func TestHTTP_SchemaCRUD(t *testing.T) {
 			assert.Equal(t, "ci", props["owner"])
 		}},
 		{"delete_204", func(t *testing.T) {
-			resp := doRequest(t, "DELETE", env.Server.URL+"/v1/catalog/schemas/test_schema", env.Keys.Admin, nil)
+			resp := doRequest(t, "DELETE", env.Server.URL+"/v1/catalogs/lake/schemas/test_schema", env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()
 		}},
 		{"get_after_delete_404", func(t *testing.T) {
-			resp := doRequest(t, "GET", env.Server.URL+"/v1/catalog/schemas/test_schema", env.Keys.Admin, nil)
+			resp := doRequest(t, "GET", env.Server.URL+"/v1/catalogs/lake/schemas/test_schema", env.Keys.Admin, nil)
 			assert.Equal(t, 404, resp.StatusCode)
 			_ = resp.Body.Close()
 		}},
@@ -113,24 +113,24 @@ func TestHTTP_SchemaErrors(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{WithDuckLake: true})
 
 	t.Run("get_nonexistent_404", func(t *testing.T) {
-		resp := doRequest(t, "GET", env.Server.URL+"/v1/catalog/schemas/nonexistent_schema", env.Keys.Admin, nil)
+		resp := doRequest(t, "GET", env.Server.URL+"/v1/catalogs/lake/schemas/nonexistent_schema", env.Keys.Admin, nil)
 		assert.Equal(t, 404, resp.StatusCode)
 		_ = resp.Body.Close()
 	})
 
 	t.Run("create_duplicate_409", func(t *testing.T) {
 		body := map[string]interface{}{"name": "dup_schema"}
-		resp := doRequest(t, "POST", env.Server.URL+"/v1/catalog/schemas", env.Keys.Admin, body)
+		resp := doRequest(t, "POST", env.Server.URL+"/v1/catalogs/lake/schemas", env.Keys.Admin, body)
 		require.Equal(t, 201, resp.StatusCode)
 		_ = resp.Body.Close()
 
-		resp2 := doRequest(t, "POST", env.Server.URL+"/v1/catalog/schemas", env.Keys.Admin, body)
+		resp2 := doRequest(t, "POST", env.Server.URL+"/v1/catalogs/lake/schemas", env.Keys.Admin, body)
 		assert.Equal(t, 409, resp2.StatusCode)
 		_ = resp2.Body.Close()
 	})
 
 	t.Run("delete_nonexistent_404", func(t *testing.T) {
-		resp := doRequest(t, "DELETE", env.Server.URL+"/v1/catalog/schemas/nonexistent_schema", env.Keys.Admin, nil)
+		resp := doRequest(t, "DELETE", env.Server.URL+"/v1/catalogs/lake/schemas/nonexistent_schema", env.Keys.Admin, nil)
 		assert.Equal(t, 404, resp.StatusCode)
 		_ = resp.Body.Close()
 	})
@@ -142,7 +142,7 @@ func TestHTTP_TableCRUD(t *testing.T) {
 
 	// Create a schema first
 	schemaBody := map[string]interface{}{"name": "table_test_schema"}
-	resp := doRequest(t, "POST", env.Server.URL+"/v1/catalog/schemas", env.Keys.Admin, schemaBody)
+	resp := doRequest(t, "POST", env.Server.URL+"/v1/catalogs/lake/schemas", env.Keys.Admin, schemaBody)
 	require.Equal(t, 201, resp.StatusCode)
 	_ = resp.Body.Close()
 
@@ -161,7 +161,7 @@ func TestHTTP_TableCRUD(t *testing.T) {
 				},
 				"comment": "test table",
 			}
-			resp := doRequest(t, "POST", env.Server.URL+"/v1/catalog/schemas/table_test_schema/tables", env.Keys.Admin, body)
+			resp := doRequest(t, "POST", env.Server.URL+"/v1/catalogs/lake/schemas/table_test_schema/tables", env.Keys.Admin, body)
 			require.Equal(t, 201, resp.StatusCode)
 
 			var result map[string]interface{}
@@ -171,7 +171,7 @@ func TestHTTP_TableCRUD(t *testing.T) {
 		}},
 		{"get_by_name_200", func(t *testing.T) {
 			resp := doRequest(t, "GET",
-				env.Server.URL+"/v1/catalog/schemas/table_test_schema/tables/test_table",
+				env.Server.URL+"/v1/catalogs/lake/schemas/table_test_schema/tables/test_table",
 				env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
@@ -183,7 +183,7 @@ func TestHTTP_TableCRUD(t *testing.T) {
 		}},
 		{"list_tables", func(t *testing.T) {
 			resp := doRequest(t, "GET",
-				env.Server.URL+"/v1/catalog/schemas/table_test_schema/tables",
+				env.Server.URL+"/v1/catalogs/lake/schemas/table_test_schema/tables",
 				env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
@@ -194,7 +194,7 @@ func TestHTTP_TableCRUD(t *testing.T) {
 		}},
 		{"list_columns", func(t *testing.T) {
 			resp := doRequest(t, "GET",
-				env.Server.URL+"/v1/catalog/schemas/table_test_schema/tables/test_table/columns",
+				env.Server.URL+"/v1/catalogs/lake/schemas/table_test_schema/tables/test_table/columns",
 				env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
@@ -214,14 +214,14 @@ func TestHTTP_TableCRUD(t *testing.T) {
 		}},
 		{"drop_204", func(t *testing.T) {
 			resp := doRequest(t, "DELETE",
-				env.Server.URL+"/v1/catalog/schemas/table_test_schema/tables/test_table",
+				env.Server.URL+"/v1/catalogs/lake/schemas/table_test_schema/tables/test_table",
 				env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()
 		}},
 		{"get_after_drop_404", func(t *testing.T) {
 			resp := doRequest(t, "GET",
-				env.Server.URL+"/v1/catalog/schemas/table_test_schema/tables/test_table",
+				env.Server.URL+"/v1/catalogs/lake/schemas/table_test_schema/tables/test_table",
 				env.Keys.Admin, nil)
 			assert.Equal(t, 404, resp.StatusCode)
 			_ = resp.Body.Close()
@@ -244,7 +244,7 @@ func TestHTTP_TableErrors(t *testing.T) {
 			},
 		}
 		resp := doRequest(t, "POST",
-			env.Server.URL+"/v1/catalog/schemas/does_not_exist/tables",
+			env.Server.URL+"/v1/catalogs/lake/schemas/does_not_exist/tables",
 			env.Keys.Admin, body)
 		assert.Equal(t, 400, resp.StatusCode)
 		_ = resp.Body.Close()
@@ -252,7 +252,7 @@ func TestHTTP_TableErrors(t *testing.T) {
 
 	t.Run("drop_nonexistent_404", func(t *testing.T) {
 		resp := doRequest(t, "DELETE",
-			env.Server.URL+"/v1/catalog/schemas/main/tables/does_not_exist",
+			env.Server.URL+"/v1/catalogs/lake/schemas/main/tables/does_not_exist",
 			env.Keys.Admin, nil)
 		assert.Equal(t, 404, resp.StatusCode)
 		_ = resp.Body.Close()
@@ -264,7 +264,7 @@ func TestHTTP_MetastoreSummary(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{WithDuckLake: true})
 
 	t.Run("initial_counts", func(t *testing.T) {
-		resp := doRequest(t, "GET", env.Server.URL+"/v1/metastore/summary", env.Keys.Admin, nil)
+		resp := doRequest(t, "GET", env.Server.URL+"/v1/catalogs/lake/metastore/summary", env.Keys.Admin, nil)
 		require.Equal(t, 200, resp.StatusCode)
 
 		var result map[string]interface{}
@@ -275,7 +275,7 @@ func TestHTTP_MetastoreSummary(t *testing.T) {
 
 	t.Run("after_create_schema_and_table", func(t *testing.T) {
 		// Get initial counts
-		resp := doRequest(t, "GET", env.Server.URL+"/v1/metastore/summary", env.Keys.Admin, nil)
+		resp := doRequest(t, "GET", env.Server.URL+"/v1/catalogs/lake/metastore/summary", env.Keys.Admin, nil)
 		require.Equal(t, 200, resp.StatusCode)
 		var before map[string]interface{}
 		decodeJSON(t, resp, &before)
@@ -283,12 +283,12 @@ func TestHTTP_MetastoreSummary(t *testing.T) {
 		beforeTables := before["table_count"].(float64)
 
 		// Create a schema and table
-		resp2 := doRequest(t, "POST", env.Server.URL+"/v1/catalog/schemas", env.Keys.Admin,
+		resp2 := doRequest(t, "POST", env.Server.URL+"/v1/catalogs/lake/schemas", env.Keys.Admin,
 			map[string]interface{}{"name": "summary_test"})
 		require.Equal(t, 201, resp2.StatusCode)
 		_ = resp2.Body.Close()
 
-		resp3 := doRequest(t, "POST", env.Server.URL+"/v1/catalog/schemas/summary_test/tables", env.Keys.Admin,
+		resp3 := doRequest(t, "POST", env.Server.URL+"/v1/catalogs/lake/schemas/summary_test/tables", env.Keys.Admin,
 			map[string]interface{}{
 				"name":    "summary_table",
 				"columns": []map[string]interface{}{{"name": "x", "type": "INTEGER"}},
@@ -297,7 +297,7 @@ func TestHTTP_MetastoreSummary(t *testing.T) {
 		_ = resp3.Body.Close()
 
 		// Check updated counts
-		resp4 := doRequest(t, "GET", env.Server.URL+"/v1/metastore/summary", env.Keys.Admin, nil)
+		resp4 := doRequest(t, "GET", env.Server.URL+"/v1/catalogs/lake/metastore/summary", env.Keys.Admin, nil)
 		require.Equal(t, 200, resp4.StatusCode)
 		var after map[string]interface{}
 		decodeJSON(t, resp4, &after)
@@ -315,34 +315,34 @@ func TestHTTP_CatalogAuthorization(t *testing.T) {
 
 	t.Run("create_schema_denied_for_no_access", func(t *testing.T) {
 		body := map[string]interface{}{"name": "unauthorized_schema"}
-		resp := doRequest(t, "POST", env.Server.URL+"/v1/catalog/schemas", env.Keys.NoAccess, body)
+		resp := doRequest(t, "POST", env.Server.URL+"/v1/catalogs/lake/schemas", env.Keys.NoAccess, body)
 		assert.Equal(t, 403, resp.StatusCode)
 		_ = resp.Body.Close()
 	})
 
 	t.Run("create_schema_denied_for_analyst", func(t *testing.T) {
 		body := map[string]interface{}{"name": "unauthorized_schema_2"}
-		resp := doRequest(t, "POST", env.Server.URL+"/v1/catalog/schemas", env.Keys.Analyst, body)
+		resp := doRequest(t, "POST", env.Server.URL+"/v1/catalogs/lake/schemas", env.Keys.Analyst, body)
 		assert.Equal(t, 403, resp.StatusCode)
 		_ = resp.Body.Close()
 	})
 
 	t.Run("admin_can_create_schema", func(t *testing.T) {
 		body := map[string]interface{}{"name": "admin_allowed_schema"}
-		resp := doRequest(t, "POST", env.Server.URL+"/v1/catalog/schemas", env.Keys.Admin, body)
+		resp := doRequest(t, "POST", env.Server.URL+"/v1/catalogs/lake/schemas", env.Keys.Admin, body)
 		require.Equal(t, 201, resp.StatusCode)
 		_ = resp.Body.Close()
 	})
 
 	t.Run("update_schema_denied_for_analyst", func(t *testing.T) {
 		body := map[string]interface{}{"comment": "should fail"}
-		resp := doRequest(t, "PATCH", env.Server.URL+"/v1/catalog/schemas/admin_allowed_schema", env.Keys.Analyst, body)
+		resp := doRequest(t, "PATCH", env.Server.URL+"/v1/catalogs/lake/schemas/admin_allowed_schema", env.Keys.Analyst, body)
 		assert.Equal(t, 403, resp.StatusCode)
 		_ = resp.Body.Close()
 	})
 
 	t.Run("delete_schema_denied_for_analyst", func(t *testing.T) {
-		resp := doRequest(t, "DELETE", env.Server.URL+"/v1/catalog/schemas/admin_allowed_schema", env.Keys.Analyst, nil)
+		resp := doRequest(t, "DELETE", env.Server.URL+"/v1/catalogs/lake/schemas/admin_allowed_schema", env.Keys.Analyst, nil)
 		assert.Equal(t, 403, resp.StatusCode)
 		_ = resp.Body.Close()
 	})
@@ -355,7 +355,7 @@ func TestHTTP_CatalogAuthorization(t *testing.T) {
 			},
 		}
 		resp := doRequest(t, "POST",
-			env.Server.URL+"/v1/catalog/schemas/admin_allowed_schema/tables",
+			env.Server.URL+"/v1/catalogs/lake/schemas/admin_allowed_schema/tables",
 			env.Keys.Analyst, body)
 		assert.Equal(t, 403, resp.StatusCode)
 		_ = resp.Body.Close()
@@ -364,10 +364,10 @@ func TestHTTP_CatalogAuthorization(t *testing.T) {
 	t.Run("read_operations_allowed_for_all_authenticated", func(t *testing.T) {
 		// Even the analyst should be able to read catalog data
 		endpoints := []string{
-			"/v1/catalog",
-			"/v1/catalog/schemas",
-			"/v1/catalog/schemas/main",
-			"/v1/metastore/summary",
+			"/v1/catalogs/lake/info",
+			"/v1/catalogs/lake/schemas",
+			"/v1/catalogs/lake/schemas/main",
+			"/v1/catalogs/lake/metastore/summary",
 		}
 		for _, ep := range endpoints {
 			t.Run(ep, func(t *testing.T) {
@@ -384,12 +384,12 @@ func TestHTTP_CatalogSchemaForceDelete(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{WithDuckLake: true})
 
 	// Create a schema with a table
-	resp := doRequest(t, "POST", env.Server.URL+"/v1/catalog/schemas", env.Keys.Admin,
+	resp := doRequest(t, "POST", env.Server.URL+"/v1/catalogs/lake/schemas", env.Keys.Admin,
 		map[string]interface{}{"name": "force_del_schema"})
 	require.Equal(t, 201, resp.StatusCode)
 	_ = resp.Body.Close()
 
-	resp2 := doRequest(t, "POST", env.Server.URL+"/v1/catalog/schemas/force_del_schema/tables", env.Keys.Admin,
+	resp2 := doRequest(t, "POST", env.Server.URL+"/v1/catalogs/lake/schemas/force_del_schema/tables", env.Keys.Admin,
 		map[string]interface{}{
 			"name":    "child_table",
 			"columns": []map[string]interface{}{{"name": "id", "type": "INTEGER"}},
@@ -399,7 +399,7 @@ func TestHTTP_CatalogSchemaForceDelete(t *testing.T) {
 
 	t.Run("delete_non_empty_without_force_fails", func(t *testing.T) {
 		resp := doRequest(t, "DELETE",
-			env.Server.URL+"/v1/catalog/schemas/force_del_schema",
+			env.Server.URL+"/v1/catalogs/lake/schemas/force_del_schema",
 			env.Keys.Admin, nil)
 		// Should fail because schema has children (returns 409 Conflict)
 		assert.Equal(t, 409, resp.StatusCode)
@@ -408,14 +408,14 @@ func TestHTTP_CatalogSchemaForceDelete(t *testing.T) {
 
 	t.Run("delete_non_empty_with_force_succeeds", func(t *testing.T) {
 		resp := doRequest(t, "DELETE",
-			fmt.Sprintf("%s/v1/catalog/schemas/force_del_schema?force=true", env.Server.URL),
+			fmt.Sprintf("%s/v1/catalogs/lake/schemas/force_del_schema?force=true", env.Server.URL),
 			env.Keys.Admin, nil)
 		require.Equal(t, 204, resp.StatusCode)
 		_ = resp.Body.Close()
 
 		// Verify schema is gone
 		resp2 := doRequest(t, "GET",
-			env.Server.URL+"/v1/catalog/schemas/force_del_schema",
+			env.Server.URL+"/v1/catalogs/lake/schemas/force_del_schema",
 			env.Keys.Admin, nil)
 		assert.Equal(t, 404, resp2.StatusCode)
 		_ = resp2.Body.Close()
@@ -426,7 +426,7 @@ func TestHTTP_CatalogSchemaForceDelete(t *testing.T) {
 func TestHTTP_UpdateTable(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
 
-	tableURL := env.Server.URL + "/v1/catalog/schemas/main/tables/titanic"
+	tableURL := env.Server.URL + "/v1/catalogs/lake/schemas/main/tables/titanic"
 
 	type step struct {
 		name string
@@ -488,7 +488,7 @@ func TestHTTP_UpdateTable(t *testing.T) {
 		{"patch_nonexistent_404", func(t *testing.T) {
 			body := map[string]interface{}{"comment": "nope"}
 			resp := doRequest(t, "PATCH",
-				env.Server.URL+"/v1/catalog/schemas/main/tables/nonexistent",
+				env.Server.URL+"/v1/catalogs/lake/schemas/main/tables/nonexistent",
 				env.Keys.Admin, body)
 			assert.Equal(t, 404, resp.StatusCode)
 			_ = resp.Body.Close()
@@ -513,7 +513,7 @@ func TestHTTP_UpdateTable(t *testing.T) {
 func TestHTTP_UpdateColumn(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
 
-	columnURL := env.Server.URL + "/v1/catalog/schemas/main/tables/titanic/columns/Name"
+	columnURL := env.Server.URL + "/v1/catalogs/lake/schemas/main/tables/titanic/columns/Name"
 
 	type step struct {
 		name string
@@ -535,7 +535,7 @@ func TestHTTP_UpdateColumn(t *testing.T) {
 
 		{"get_table_verifies_column_comment", func(t *testing.T) {
 			resp := doRequest(t, "GET",
-				env.Server.URL+"/v1/catalog/schemas/main/tables/titanic",
+				env.Server.URL+"/v1/catalogs/lake/schemas/main/tables/titanic",
 				env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
@@ -557,57 +557,9 @@ func TestHTTP_UpdateColumn(t *testing.T) {
 		{"patch_nonexistent_column_404", func(t *testing.T) {
 			body := map[string]interface{}{"comment": "nope"}
 			resp := doRequest(t, "PATCH",
-				env.Server.URL+"/v1/catalog/schemas/main/tables/titanic/columns/DoesNotExist",
+				env.Server.URL+"/v1/catalogs/lake/schemas/main/tables/titanic/columns/DoesNotExist",
 				env.Keys.Admin, body)
 			assert.Equal(t, 404, resp.StatusCode)
-			_ = resp.Body.Close()
-		}},
-	}
-
-	for _, s := range steps {
-		if !t.Run(s.name, s.fn) {
-			t.FailNow()
-		}
-	}
-}
-
-// TestHTTP_UpdateCatalog tests PATCH /v1/catalog.
-func TestHTTP_UpdateCatalog(t *testing.T) {
-	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
-
-	catalogURL := env.Server.URL + "/v1/catalog"
-
-	type step struct {
-		name string
-		fn   func(t *testing.T)
-	}
-
-	steps := []step{
-		{"patch_comment_200", func(t *testing.T) {
-			body := map[string]interface{}{
-				"comment": "Production data lake",
-			}
-			resp := doRequest(t, "PATCH", catalogURL, env.Keys.Admin, body)
-			require.Equal(t, 200, resp.StatusCode)
-
-			var result map[string]interface{}
-			decodeJSON(t, resp, &result)
-			assert.Equal(t, "Production data lake", result["comment"])
-		}},
-
-		{"get_verifies", func(t *testing.T) {
-			resp := doRequest(t, "GET", catalogURL, env.Keys.Admin, nil)
-			require.Equal(t, 200, resp.StatusCode)
-
-			var result map[string]interface{}
-			decodeJSON(t, resp, &result)
-			assert.Equal(t, "Production data lake", result["comment"])
-		}},
-
-		{"analyst_denied_403", func(t *testing.T) {
-			body := map[string]interface{}{"comment": "should fail"}
-			resp := doRequest(t, "PATCH", catalogURL, env.Keys.Analyst, body)
-			assert.Equal(t, 403, resp.StatusCode)
 			_ = resp.Body.Close()
 		}},
 	}
@@ -623,8 +575,8 @@ func TestHTTP_UpdateCatalog(t *testing.T) {
 func TestHTTP_ProfileTable(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
 
-	profileURL := env.Server.URL + "/v1/catalog/schemas/main/tables/titanic/profile"
-	tableURL := env.Server.URL + "/v1/catalog/schemas/main/tables/titanic"
+	profileURL := env.Server.URL + "/v1/catalogs/lake/schemas/main/tables/titanic/profile"
+	tableURL := env.Server.URL + "/v1/catalogs/lake/schemas/main/tables/titanic"
 
 	type step struct {
 		name string
@@ -655,7 +607,7 @@ func TestHTTP_ProfileTable(t *testing.T) {
 
 		{"profile_nonexistent_404", func(t *testing.T) {
 			resp := doRequest(t, "POST",
-				env.Server.URL+"/v1/catalog/schemas/main/tables/nonexistent/profile",
+				env.Server.URL+"/v1/catalogs/lake/schemas/main/tables/nonexistent/profile",
 				env.Keys.Admin, nil)
 			assert.Equal(t, 404, resp.StatusCode)
 			_ = resp.Body.Close()
@@ -707,7 +659,7 @@ func TestHTTP_TagsInSchemaResponse(t *testing.T) {
 
 		{"get_schema_has_tags", func(t *testing.T) {
 			resp := doRequest(t, "GET",
-				env.Server.URL+"/v1/catalog/schemas/main",
+				env.Server.URL+"/v1/catalogs/lake/schemas/main",
 				env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
@@ -774,7 +726,7 @@ func TestHTTP_TagsInTableResponse(t *testing.T) {
 
 		{"get_table_has_tags", func(t *testing.T) {
 			resp := doRequest(t, "GET",
-				env.Server.URL+"/v1/catalog/schemas/main/tables/titanic",
+				env.Server.URL+"/v1/catalogs/lake/schemas/main/tables/titanic",
 				env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
@@ -818,7 +770,7 @@ func TestHTTP_CascadeDeleteVerifiesGovernanceRecords(t *testing.T) {
 
 	steps := []step{
 		{"create_schema", func(t *testing.T) {
-			resp := doRequest(t, "POST", env.Server.URL+"/v1/catalog/schemas", env.Keys.Admin,
+			resp := doRequest(t, "POST", env.Server.URL+"/v1/catalogs/lake/schemas", env.Keys.Admin,
 				map[string]interface{}{"name": "cascade_test"})
 			require.Equal(t, 201, resp.StatusCode)
 			_ = resp.Body.Close()
@@ -826,7 +778,7 @@ func TestHTTP_CascadeDeleteVerifiesGovernanceRecords(t *testing.T) {
 
 		{"create_table", func(t *testing.T) {
 			resp := doRequest(t, "POST",
-				env.Server.URL+"/v1/catalog/schemas/cascade_test/tables",
+				env.Server.URL+"/v1/catalogs/lake/schemas/cascade_test/tables",
 				env.Keys.Admin, map[string]interface{}{
 					"name": "gov_table",
 					"columns": []map[string]interface{}{
@@ -849,7 +801,7 @@ func TestHTTP_CascadeDeleteVerifiesGovernanceRecords(t *testing.T) {
 
 			// Get the table to find its table_id
 			resp2 := doRequest(t, "GET",
-				env.Server.URL+"/v1/catalog/schemas/cascade_test/tables/gov_table",
+				env.Server.URL+"/v1/catalogs/lake/schemas/cascade_test/tables/gov_table",
 				env.Keys.Admin, nil)
 			require.Equal(t, 200, resp2.StatusCode)
 			var table map[string]interface{}
@@ -869,7 +821,7 @@ func TestHTTP_CascadeDeleteVerifiesGovernanceRecords(t *testing.T) {
 
 		{"force_delete_schema", func(t *testing.T) {
 			resp := doRequest(t, "DELETE",
-				fmt.Sprintf("%s/v1/catalog/schemas/cascade_test?force=true", env.Server.URL),
+				fmt.Sprintf("%s/v1/catalogs/lake/schemas/cascade_test?force=true", env.Server.URL),
 				env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()
@@ -877,7 +829,7 @@ func TestHTTP_CascadeDeleteVerifiesGovernanceRecords(t *testing.T) {
 
 		{"verify_schema_gone", func(t *testing.T) {
 			resp := doRequest(t, "GET",
-				env.Server.URL+"/v1/catalog/schemas/cascade_test",
+				env.Server.URL+"/v1/catalogs/lake/schemas/cascade_test",
 				env.Keys.Admin, nil)
 			assert.Equal(t, 404, resp.StatusCode)
 			_ = resp.Body.Close()
@@ -905,7 +857,7 @@ func TestHTTP_CascadeDeleteVerifiesGovernanceRecords(t *testing.T) {
 // different user roles.
 func TestHTTP_TableProfileAuthorization(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
-	profileURL := env.Server.URL + "/v1/catalog/schemas/main/tables/titanic/profile"
+	profileURL := env.Server.URL + "/v1/catalogs/lake/schemas/main/tables/titanic/profile"
 
 	t.Run("no_access_denied", func(t *testing.T) {
 		resp := doRequest(t, "POST", profileURL, env.Keys.NoAccess, nil)

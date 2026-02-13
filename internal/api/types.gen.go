@@ -14,6 +14,19 @@ const (
 	BearerAuthScopes = "BearerAuth.Scopes"
 )
 
+// Defines values for CatalogRegistrationMetastoreType.
+const (
+	CatalogRegistrationMetastoreTypePostgres CatalogRegistrationMetastoreType = "postgres"
+	CatalogRegistrationMetastoreTypeSqlite   CatalogRegistrationMetastoreType = "sqlite"
+)
+
+// Defines values for CatalogRegistrationStatus.
+const (
+	CatalogRegistrationStatusACTIVE   CatalogRegistrationStatus = "ACTIVE"
+	CatalogRegistrationStatusDETACHED CatalogRegistrationStatus = "DETACHED"
+	CatalogRegistrationStatusERROR    CatalogRegistrationStatus = "ERROR"
+)
+
 // Defines values for ComputeAssignmentPrincipalType.
 const (
 	ComputeAssignmentPrincipalTypeGroup ComputeAssignmentPrincipalType = "group"
@@ -40,6 +53,12 @@ const (
 const (
 	ComputeEndpointTypeLOCAL  ComputeEndpointType = "LOCAL"
 	ComputeEndpointTypeREMOTE ComputeEndpointType = "REMOTE"
+)
+
+// Defines values for CreateCatalogRequestMetastoreType.
+const (
+	CreateCatalogRequestMetastoreTypePostgres CreateCatalogRequestMetastoreType = "postgres"
+	CreateCatalogRequestMetastoreTypeSqlite   CreateCatalogRequestMetastoreType = "sqlite"
 )
 
 // Defines values for CreateComputeAssignmentRequestPrincipalType.
@@ -107,11 +126,11 @@ const (
 
 // Defines values for UpdateComputeEndpointRequestStatus.
 const (
-	UpdateComputeEndpointRequestStatusACTIVE   UpdateComputeEndpointRequestStatus = "ACTIVE"
-	UpdateComputeEndpointRequestStatusERROR    UpdateComputeEndpointRequestStatus = "ERROR"
-	UpdateComputeEndpointRequestStatusINACTIVE UpdateComputeEndpointRequestStatus = "INACTIVE"
-	UpdateComputeEndpointRequestStatusSTARTING UpdateComputeEndpointRequestStatus = "STARTING"
-	UpdateComputeEndpointRequestStatusSTOPPING UpdateComputeEndpointRequestStatus = "STOPPING"
+	ACTIVE   UpdateComputeEndpointRequestStatus = "ACTIVE"
+	ERROR    UpdateComputeEndpointRequestStatus = "ERROR"
+	INACTIVE UpdateComputeEndpointRequestStatus = "INACTIVE"
+	STARTING UpdateComputeEndpointRequestStatus = "STARTING"
+	STOPPING UpdateComputeEndpointRequestStatus = "STOPPING"
 )
 
 // Defines values for VolumeDetailVolumeType.
@@ -151,6 +170,42 @@ type CatalogInfo struct {
 	CreatedAt *time.Time `json:"created_at,omitempty"`
 	Name      *string    `json:"name,omitempty"`
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+}
+
+// CatalogRegistration defines model for CatalogRegistration.
+type CatalogRegistration struct {
+	Comment   *string    `json:"comment,omitempty"`
+	CreatedAt *time.Time `json:"created_at,omitempty"`
+
+	// DataPath Data path (s3://bucket/path/ or local path)
+	DataPath string `json:"data_path"`
+
+	// Dsn File path (sqlite) or connection string (postgres)
+	Dsn       string `json:"dsn"`
+	Id        *int64 `json:"id,omitempty"`
+	IsDefault *bool  `json:"is_default,omitempty"`
+
+	// MetastoreType Type of metastore backend
+	MetastoreType CatalogRegistrationMetastoreType `json:"metastore_type"`
+
+	// Name DuckDB catalog alias, used in SQL as catalog.schema.table
+	Name          string                    `json:"name"`
+	Status        CatalogRegistrationStatus `json:"status"`
+	StatusMessage *string                   `json:"status_message,omitempty"`
+	UpdatedAt     *time.Time                `json:"updated_at,omitempty"`
+}
+
+// CatalogRegistrationMetastoreType Type of metastore backend
+type CatalogRegistrationMetastoreType string
+
+// CatalogRegistrationStatus defines model for CatalogRegistration.Status.
+type CatalogRegistrationStatus string
+
+// CatalogRegistrationList defines model for CatalogRegistrationList.
+type CatalogRegistrationList struct {
+	Catalogs      *[]CatalogRegistration `json:"catalogs,omitempty"`
+	NextPageToken *string                `json:"next_page_token,omitempty"`
+	TotalCount    *int64                 `json:"total_count,omitempty"`
 }
 
 // CleanupAPIKeysResponse defines model for CleanupAPIKeysResponse.
@@ -273,6 +328,18 @@ type CreateAPIKeyResponse struct {
 	KeyPrefix *string `json:"key_prefix,omitempty"`
 	Name      *string `json:"name,omitempty"`
 }
+
+// CreateCatalogRequest defines model for CreateCatalogRequest.
+type CreateCatalogRequest struct {
+	Comment       *string                           `json:"comment,omitempty"`
+	DataPath      string                            `json:"data_path"`
+	Dsn           string                            `json:"dsn"`
+	MetastoreType CreateCatalogRequestMetastoreType `json:"metastore_type"`
+	Name          string                            `json:"name"`
+}
+
+// CreateCatalogRequestMetastoreType defines model for CreateCatalogRequest.MetastoreType.
+type CreateCatalogRequestMetastoreType string
 
 // CreateColumnMaskRequest defines model for CreateColumnMaskRequest.
 type CreateColumnMaskRequest struct {
@@ -804,6 +871,9 @@ type SearchResult struct {
 	Type *string `json:"type,omitempty"`
 }
 
+// SetDefaultCatalogRequest Empty object, the catalog name is in the URL path
+type SetDefaultCatalogRequest = map[string]interface{}
+
 // StorageCredential defines model for StorageCredential.
 type StorageCredential struct {
 	AzureAccountName *string                          `json:"azure_account_name,omitempty"`
@@ -884,9 +954,11 @@ type TagAssignment struct {
 	TagId         *int64     `json:"tag_id,omitempty"`
 }
 
-// UpdateCatalogRequest defines model for UpdateCatalogRequest.
-type UpdateCatalogRequest struct {
-	Comment *string `json:"comment,omitempty"`
+// UpdateCatalogRegistrationRequest defines model for UpdateCatalogRegistrationRequest.
+type UpdateCatalogRegistrationRequest struct {
+	Comment  *string `json:"comment,omitempty"`
+	DataPath *string `json:"data_path,omitempty"`
+	Dsn      *string `json:"dsn,omitempty"`
 }
 
 // UpdateColumnRequest defines model for UpdateColumnRequest.
@@ -1024,6 +1096,9 @@ type MaxResults = int
 // PageToken defines model for PageToken.
 type PageToken = string
 
+// CatalogName defines model for catalogName.
+type CatalogName = string
+
 // ListAPIKeysParams defines parameters for ListAPIKeys.
 type ListAPIKeysParams struct {
 	PrincipalId int64 `form:"principal_id" json:"principal_id"`
@@ -1041,6 +1116,15 @@ type ListAuditLogsParams struct {
 	Action        *string `form:"action,omitempty" json:"action,omitempty"`
 	Status        *string `form:"status,omitempty" json:"status,omitempty"`
 
+	// MaxResults Maximum number of results to return per page.
+	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
+
+	// PageToken Opaque pagination token from a previous response.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// ListCatalogsParams defines parameters for ListCatalogs.
+type ListCatalogsParams struct {
 	// MaxResults Maximum number of results to return per page.
 	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
 
@@ -1242,6 +1326,9 @@ type SearchCatalogParams struct {
 	// Type Filter by object type: schema, table, or column
 	Type *string `form:"type,omitempty" json:"type,omitempty"`
 
+	// Catalog Scope search to a specific catalog (defaults to the default catalog)
+	Catalog *string `form:"catalog,omitempty" json:"catalog,omitempty"`
+
 	// MaxResults Maximum number of results to return per page.
 	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
 
@@ -1288,8 +1375,11 @@ type ListTagsParams struct {
 // CreateAPIKeyJSONRequestBody defines body for CreateAPIKey for application/json ContentType.
 type CreateAPIKeyJSONRequestBody = CreateAPIKeyRequest
 
-// UpdateCatalogJSONRequestBody defines body for UpdateCatalog for application/json ContentType.
-type UpdateCatalogJSONRequestBody = UpdateCatalogRequest
+// RegisterCatalogJSONRequestBody defines body for RegisterCatalog for application/json ContentType.
+type RegisterCatalogJSONRequestBody = CreateCatalogRequest
+
+// UpdateCatalogRegistrationJSONRequestBody defines body for UpdateCatalogRegistration for application/json ContentType.
+type UpdateCatalogRegistrationJSONRequestBody = UpdateCatalogRegistrationRequest
 
 // CreateSchemaJSONRequestBody defines body for CreateSchema for application/json ContentType.
 type CreateSchemaJSONRequestBody = CreateSchemaRequest
@@ -1326,6 +1416,9 @@ type CreateVolumeJSONRequestBody = CreateVolumeRequest
 
 // UpdateVolumeJSONRequestBody defines body for UpdateVolume for application/json ContentType.
 type UpdateVolumeJSONRequestBody = UpdateVolumeRequest
+
+// SetDefaultCatalogJSONRequestBody defines body for SetDefaultCatalog for application/json ContentType.
+type SetDefaultCatalogJSONRequestBody = SetDefaultCatalogRequest
 
 // BindColumnMaskJSONRequestBody defines body for BindColumnMask for application/json ContentType.
 type BindColumnMaskJSONRequestBody = ColumnMaskBindingRequest

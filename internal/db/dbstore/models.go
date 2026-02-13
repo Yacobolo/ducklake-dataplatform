@@ -33,6 +33,20 @@ type AuditLog struct {
 	RowsReturned   sql.NullInt64
 }
 
+type Catalog struct {
+	ID            int64
+	Name          string
+	MetastoreType string
+	Dsn           string
+	DataPath      string
+	Status        string
+	StatusMessage sql.NullString
+	IsDefault     int64
+	Comment       sql.NullString
+	CreatedAt     string
+	UpdatedAt     string
+}
+
 type CatalogMetadatum struct {
 	SecurableType string
 	SecurableName string

@@ -8,30 +8,32 @@ import (
 )
 
 // ViewService provides view management operations.
+// All methods accept a catalogName parameter to resolve the correct catalog repo.
 type ViewService struct {
-	repo    domain.ViewRepository
-	catalog domain.CatalogRepository
-	auth    domain.AuthorizationService
-	audit   domain.AuditRepository
+	repo           domain.ViewRepository
+	catalogFactory CatalogRepoFactory
+	auth           domain.AuthorizationService
+	audit          domain.AuditRepository
 }
 
 // NewViewService creates a new ViewService.
 func NewViewService(
 	repo domain.ViewRepository,
-	catalog domain.CatalogRepository,
+	catalogFactory CatalogRepoFactory,
 	auth domain.AuthorizationService,
 	audit domain.AuditRepository,
 ) *ViewService {
 	return &ViewService{
-		repo:    repo,
-		catalog: catalog,
-		auth:    auth,
-		audit:   audit,
+		repo:           repo,
+		catalogFactory: catalogFactory,
+		auth:           auth,
+		audit:          audit,
 	}
 }
 
 // CreateView creates a new view in the given schema.
-func (s *ViewService) CreateView(ctx context.Context, principal string, schemaName string, req domain.CreateViewRequest) (*domain.ViewDetail, error) {
+func (s *ViewService) CreateView(ctx context.Context, catalogName string, principal string, schemaName string, req domain.CreateViewRequest) (*domain.ViewDetail, error) {
+	catalogRepo := s.catalogFactory.ForCatalog(catalogName)
 
 	// Check CREATE_TABLE privilege (views require same privilege)
 	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateTable)
@@ -43,7 +45,7 @@ func (s *ViewService) CreateView(ctx context.Context, principal string, schemaNa
 	}
 
 	// Resolve schema ID
-	schema, err := s.catalog.GetSchema(ctx, schemaName)
+	schema, err := catalogRepo.GetSchema(ctx, schemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -72,8 +74,8 @@ func (s *ViewService) CreateView(ctx context.Context, principal string, schemaNa
 }
 
 // GetView returns a view by schema and name.
-func (s *ViewService) GetView(ctx context.Context, schemaName, viewName string) (*domain.ViewDetail, error) {
-	schema, err := s.catalog.GetSchema(ctx, schemaName)
+func (s *ViewService) GetView(ctx context.Context, catalogName string, schemaName, viewName string) (*domain.ViewDetail, error) {
+	schema, err := s.catalogFactory.ForCatalog(catalogName).GetSchema(ctx, schemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -87,8 +89,8 @@ func (s *ViewService) GetView(ctx context.Context, schemaName, viewName string) 
 }
 
 // ListViews returns a paginated list of views in a schema.
-func (s *ViewService) ListViews(ctx context.Context, schemaName string, page domain.PageRequest) ([]domain.ViewDetail, int64, error) {
-	schema, err := s.catalog.GetSchema(ctx, schemaName)
+func (s *ViewService) ListViews(ctx context.Context, catalogName string, schemaName string, page domain.PageRequest) ([]domain.ViewDetail, int64, error) {
+	schema, err := s.catalogFactory.ForCatalog(catalogName).GetSchema(ctx, schemaName)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -104,7 +106,7 @@ func (s *ViewService) ListViews(ctx context.Context, schemaName string, page dom
 }
 
 // DeleteView drops a view from the given schema.
-func (s *ViewService) DeleteView(ctx context.Context, principal string, schemaName, viewName string) error {
+func (s *ViewService) DeleteView(ctx context.Context, catalogName string, principal string, schemaName, viewName string) error {
 
 	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateTable)
 	if err != nil {
@@ -114,7 +116,7 @@ func (s *ViewService) DeleteView(ctx context.Context, principal string, schemaNa
 		return domain.ErrAccessDenied("%q lacks permission to delete view %q.%q", principal, schemaName, viewName)
 	}
 
-	schema, err := s.catalog.GetSchema(ctx, schemaName)
+	schema, err := s.catalogFactory.ForCatalog(catalogName).GetSchema(ctx, schemaName)
 	if err != nil {
 		return err
 	}
@@ -128,7 +130,7 @@ func (s *ViewService) DeleteView(ctx context.Context, principal string, schemaNa
 }
 
 // UpdateView updates a view's metadata.
-func (s *ViewService) UpdateView(ctx context.Context, principal string, schemaName, viewName string, req domain.UpdateViewRequest) (*domain.ViewDetail, error) {
+func (s *ViewService) UpdateView(ctx context.Context, catalogName string, principal string, schemaName, viewName string, req domain.UpdateViewRequest) (*domain.ViewDetail, error) {
 
 	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateTable)
 	if err != nil {
@@ -138,7 +140,7 @@ func (s *ViewService) UpdateView(ctx context.Context, principal string, schemaNa
 		return nil, domain.ErrAccessDenied("%q lacks permission to update view %q.%q", principal, schemaName, viewName)
 	}
 
-	schema, err := s.catalog.GetSchema(ctx, schemaName)
+	schema, err := s.catalogFactory.ForCatalog(catalogName).GetSchema(ctx, schemaName)
 	if err != nil {
 		return nil, err
 	}

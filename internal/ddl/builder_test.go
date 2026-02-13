@@ -10,22 +10,38 @@ import (
 func TestCreateSchema(t *testing.T) {
 	tests := []struct {
 		name    string
+		catalog string
 		schema  string
 		want    string
 		wantErr string
 	}{
 		{
-			name:   "valid",
-			schema: "analytics",
-			want:   `CREATE SCHEMA lake."analytics"`,
+			name:    "valid",
+			catalog: "lake",
+			schema:  "analytics",
+			want:    `CREATE SCHEMA "lake"."analytics"`,
+		},
+		{
+			name:    "custom_catalog",
+			catalog: "mycat",
+			schema:  "analytics",
+			want:    `CREATE SCHEMA "mycat"."analytics"`,
+		},
+		{
+			name:    "empty_catalog",
+			catalog: "",
+			schema:  "analytics",
+			wantErr: "invalid catalog name",
 		},
 		{
 			name:    "empty_name",
+			catalog: "lake",
 			schema:  "",
 			wantErr: "invalid schema name",
 		},
 		{
 			name:    "invalid_name",
+			catalog: "lake",
 			schema:  "my-schema",
 			wantErr: "invalid schema name",
 		},
@@ -33,7 +49,7 @@ func TestCreateSchema(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := CreateSchema(tt.schema)
+			got, err := CreateSchema(tt.catalog, tt.schema)
 			if tt.wantErr != "" {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tt.wantErr)
@@ -48,24 +64,28 @@ func TestCreateSchema(t *testing.T) {
 func TestDropSchema(t *testing.T) {
 	tests := []struct {
 		name    string
+		catalog string
 		schema  string
 		cascade bool
 		want    string
 		wantErr string
 	}{
 		{
-			name:   "without_cascade",
-			schema: "analytics",
-			want:   `DROP SCHEMA lake."analytics"`,
+			name:    "without_cascade",
+			catalog: "lake",
+			schema:  "analytics",
+			want:    `DROP SCHEMA "lake"."analytics"`,
 		},
 		{
 			name:    "with_cascade",
+			catalog: "lake",
 			schema:  "analytics",
 			cascade: true,
-			want:    `DROP SCHEMA lake."analytics" CASCADE`,
+			want:    `DROP SCHEMA "lake"."analytics" CASCADE`,
 		},
 		{
 			name:    "empty_name",
+			catalog: "lake",
 			schema:  "",
 			wantErr: "invalid schema name",
 		},
@@ -73,7 +93,7 @@ func TestDropSchema(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := DropSchema(tt.schema, tt.cascade)
+			got, err := DropSchema(tt.catalog, tt.schema, tt.cascade)
 			if tt.wantErr != "" {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tt.wantErr)
@@ -88,6 +108,7 @@ func TestDropSchema(t *testing.T) {
 func TestCreateTable(t *testing.T) {
 	tests := []struct {
 		name    string
+		catalog string
 		schema  string
 		table   string
 		columns []ColumnDef
@@ -95,36 +116,40 @@ func TestCreateTable(t *testing.T) {
 		wantErr string
 	}{
 		{
-			name:   "single_column",
-			schema: "analytics",
-			table:  "events",
+			name:    "single_column",
+			catalog: "lake",
+			schema:  "analytics",
+			table:   "events",
 			columns: []ColumnDef{
 				{Name: "id", Type: "INTEGER"},
 			},
-			want: `CREATE TABLE lake."analytics"."events" ("id" INTEGER)`,
+			want: `CREATE TABLE "lake"."analytics"."events" ("id" INTEGER)`,
 		},
 		{
-			name:   "multiple_columns",
-			schema: "analytics",
-			table:  "events",
+			name:    "multiple_columns",
+			catalog: "lake",
+			schema:  "analytics",
+			table:   "events",
 			columns: []ColumnDef{
 				{Name: "id", Type: "INTEGER"},
 				{Name: "name", Type: "VARCHAR(255)"},
 				{Name: "amount", Type: "DECIMAL(10,2)"},
 			},
-			want: `CREATE TABLE lake."analytics"."events" ("id" INTEGER, "name" VARCHAR(255), "amount" DECIMAL(10,2))`,
+			want: `CREATE TABLE "lake"."analytics"."events" ("id" INTEGER, "name" VARCHAR(255), "amount" DECIMAL(10,2))`,
 		},
 		{
-			name:   "array_type",
-			schema: "main",
-			table:  "data",
+			name:    "array_type",
+			catalog: "lake",
+			schema:  "main",
+			table:   "data",
 			columns: []ColumnDef{
 				{Name: "tags", Type: "VARCHAR[]"},
 			},
-			want: `CREATE TABLE lake."main"."data" ("tags" VARCHAR[])`,
+			want: `CREATE TABLE "lake"."main"."data" ("tags" VARCHAR[])`,
 		},
 		{
 			name:    "empty_schema",
+			catalog: "lake",
 			schema:  "",
 			table:   "events",
 			columns: []ColumnDef{{Name: "id", Type: "INTEGER"}},
@@ -132,6 +157,7 @@ func TestCreateTable(t *testing.T) {
 		},
 		{
 			name:    "empty_table",
+			catalog: "lake",
 			schema:  "analytics",
 			table:   "",
 			columns: []ColumnDef{{Name: "id", Type: "INTEGER"}},
@@ -139,24 +165,27 @@ func TestCreateTable(t *testing.T) {
 		},
 		{
 			name:    "no_columns",
+			catalog: "lake",
 			schema:  "analytics",
 			table:   "events",
 			columns: nil,
 			wantErr: "at least one column is required",
 		},
 		{
-			name:   "invalid_column_name",
-			schema: "analytics",
-			table:  "events",
+			name:    "invalid_column_name",
+			catalog: "lake",
+			schema:  "analytics",
+			table:   "events",
 			columns: []ColumnDef{
 				{Name: "my-col", Type: "INTEGER"},
 			},
 			wantErr: "invalid column name",
 		},
 		{
-			name:   "sql_injection_in_type",
-			schema: "analytics",
-			table:  "events",
+			name:    "sql_injection_in_type",
+			catalog: "lake",
+			schema:  "analytics",
+			table:   "events",
 			columns: []ColumnDef{
 				{Name: "id", Type: "INTEGER); DROP TABLE foo; --"},
 			},
@@ -166,7 +195,7 @@ func TestCreateTable(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := CreateTable(tt.schema, tt.table, tt.columns)
+			got, err := CreateTable(tt.catalog, tt.schema, tt.table, tt.columns)
 			if tt.wantErr != "" {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tt.wantErr)
@@ -181,25 +210,29 @@ func TestCreateTable(t *testing.T) {
 func TestDropTable(t *testing.T) {
 	tests := []struct {
 		name    string
+		catalog string
 		schema  string
 		table   string
 		want    string
 		wantErr string
 	}{
 		{
-			name:   "valid",
-			schema: "analytics",
-			table:  "events",
-			want:   `DROP TABLE lake."analytics"."events"`,
+			name:    "valid",
+			catalog: "lake",
+			schema:  "analytics",
+			table:   "events",
+			want:    `DROP TABLE "lake"."analytics"."events"`,
 		},
 		{
 			name:    "empty_schema",
+			catalog: "lake",
 			schema:  "",
 			table:   "events",
 			wantErr: "invalid schema name",
 		},
 		{
 			name:    "empty_table",
+			catalog: "lake",
 			schema:  "analytics",
 			table:   "",
 			wantErr: "invalid table name",
@@ -208,7 +241,7 @@ func TestDropTable(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := DropTable(tt.schema, tt.table)
+			got, err := DropTable(tt.catalog, tt.schema, tt.table)
 			if tt.wantErr != "" {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tt.wantErr)
@@ -464,6 +497,7 @@ func TestDropS3Secret(t *testing.T) {
 func TestCreateExternalTableView(t *testing.T) {
 	tests := []struct {
 		name       string
+		catalog    string
 		schema     string
 		table      string
 		sourcePath string
@@ -473,30 +507,34 @@ func TestCreateExternalTableView(t *testing.T) {
 	}{
 		{
 			name:       "parquet",
+			catalog:    "lake",
 			schema:     "analytics",
 			table:      "events",
 			sourcePath: "s3://bucket/data/events.parquet",
 			fileFormat: "parquet",
-			want:       `CREATE VIEW lake."analytics"."events" AS SELECT * FROM read_parquet(['s3://bucket/data/events.parquet'])`,
+			want:       `CREATE VIEW "lake"."analytics"."events" AS SELECT * FROM read_parquet(['s3://bucket/data/events.parquet'])`,
 		},
 		{
 			name:       "csv",
+			catalog:    "lake",
 			schema:     "analytics",
 			table:      "logs",
 			sourcePath: "s3://bucket/data/logs.csv",
 			fileFormat: "csv",
-			want:       `CREATE VIEW lake."analytics"."logs" AS SELECT * FROM read_csv(['s3://bucket/data/logs.csv'])`,
+			want:       `CREATE VIEW "lake"."analytics"."logs" AS SELECT * FROM read_csv(['s3://bucket/data/logs.csv'])`,
 		},
 		{
 			name:       "default_format",
+			catalog:    "lake",
 			schema:     "analytics",
 			table:      "data",
 			sourcePath: "s3://bucket/data.parquet",
 			fileFormat: "",
-			want:       `CREATE VIEW lake."analytics"."data" AS SELECT * FROM read_parquet(['s3://bucket/data.parquet'])`,
+			want:       `CREATE VIEW "lake"."analytics"."data" AS SELECT * FROM read_parquet(['s3://bucket/data.parquet'])`,
 		},
 		{
 			name:       "invalid_format",
+			catalog:    "lake",
 			schema:     "analytics",
 			table:      "data",
 			sourcePath: "s3://bucket/data",
@@ -505,6 +543,7 @@ func TestCreateExternalTableView(t *testing.T) {
 		},
 		{
 			name:       "missing_path",
+			catalog:    "lake",
 			schema:     "analytics",
 			table:      "data",
 			sourcePath: "",
@@ -513,6 +552,7 @@ func TestCreateExternalTableView(t *testing.T) {
 		},
 		{
 			name:       "invalid_schema",
+			catalog:    "lake",
 			schema:     "",
 			table:      "data",
 			sourcePath: "s3://bucket/data.parquet",
@@ -521,6 +561,7 @@ func TestCreateExternalTableView(t *testing.T) {
 		},
 		{
 			name:       "invalid_table",
+			catalog:    "lake",
 			schema:     "analytics",
 			table:      "",
 			sourcePath: "s3://bucket/data.parquet",
@@ -531,7 +572,7 @@ func TestCreateExternalTableView(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := CreateExternalTableView(tt.schema, tt.table, tt.sourcePath, tt.fileFormat)
+			got, err := CreateExternalTableView(tt.catalog, tt.schema, tt.table, tt.sourcePath, tt.fileFormat)
 			if tt.wantErr != "" {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tt.wantErr)
@@ -546,25 +587,29 @@ func TestCreateExternalTableView(t *testing.T) {
 func TestDropView(t *testing.T) {
 	tests := []struct {
 		name    string
+		catalog string
 		schema  string
 		table   string
 		want    string
 		wantErr string
 	}{
 		{
-			name:   "valid",
-			schema: "analytics",
-			table:  "events",
-			want:   `DROP VIEW IF EXISTS lake."analytics"."events"`,
+			name:    "valid",
+			catalog: "lake",
+			schema:  "analytics",
+			table:   "events",
+			want:    `DROP VIEW IF EXISTS "lake"."analytics"."events"`,
 		},
 		{
 			name:    "empty_schema",
+			catalog: "lake",
 			schema:  "",
 			table:   "events",
 			wantErr: "invalid schema name",
 		},
 		{
 			name:    "empty_table",
+			catalog: "lake",
 			schema:  "analytics",
 			table:   "",
 			wantErr: "invalid table name",
@@ -573,7 +618,7 @@ func TestDropView(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := DropView(tt.schema, tt.table)
+			got, err := DropView(tt.catalog, tt.schema, tt.table)
 			if tt.wantErr != "" {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tt.wantErr)
@@ -635,54 +680,70 @@ func TestDiscoverColumnsSQL(t *testing.T) {
 
 func TestAttachDuckLake(t *testing.T) {
 	tests := []struct {
-		name       string
-		metaDBPath string
-		dataPath   string
-		wantErr    string
-		contains   []string
+		name        string
+		catalogName string
+		metaDBPath  string
+		dataPath    string
+		wantErr     string
+		contains    []string
 	}{
 		{
-			name:       "valid",
-			metaDBPath: "/tmp/meta.db",
-			dataPath:   "s3://bucket/data",
+			name:        "valid",
+			catalogName: "lake",
+			metaDBPath:  "/tmp/meta.db",
+			dataPath:    "s3://bucket/data",
 			contains: []string{
 				"ATTACH 'ducklake:sqlite:/tmp/meta.db'",
+				`AS "lake"`,
 				"DATA_PATH 's3://bucket/data'",
 			},
 		},
 		{
-			name:       "escapes_metadb_path",
-			metaDBPath: "/tmp/it's here/meta.db",
-			dataPath:   "s3://bucket/data",
+			name:        "custom_catalog_name",
+			catalogName: "mycat",
+			metaDBPath:  "/tmp/meta.db",
+			dataPath:    "s3://bucket/data",
+			contains: []string{
+				`AS "mycat"`,
+			},
+		},
+		{
+			name:        "escapes_metadb_path",
+			catalogName: "lake",
+			metaDBPath:  "/tmp/it's here/meta.db",
+			dataPath:    "s3://bucket/data",
 			contains: []string{
 				"ATTACH 'ducklake:sqlite:/tmp/it''s here/meta.db'",
 			},
 		},
 		{
-			name:       "escapes_data_path",
-			metaDBPath: "/tmp/meta.db",
-			dataPath:   "s3://bucket/it's/data",
+			name:        "escapes_data_path",
+			catalogName: "lake",
+			metaDBPath:  "/tmp/meta.db",
+			dataPath:    "s3://bucket/it's/data",
 			contains: []string{
 				"DATA_PATH 's3://bucket/it''s/data'",
 			},
 		},
 		{
-			name:       "empty_meta_path",
-			metaDBPath: "",
-			dataPath:   "s3://bucket/data",
-			wantErr:    "metastore path is required",
+			name:        "empty_meta_path",
+			catalogName: "lake",
+			metaDBPath:  "",
+			dataPath:    "s3://bucket/data",
+			wantErr:     "metastore path is required",
 		},
 		{
-			name:       "empty_data_path",
-			metaDBPath: "/tmp/meta.db",
-			dataPath:   "",
-			wantErr:    "data path is required",
+			name:        "empty_data_path",
+			catalogName: "lake",
+			metaDBPath:  "/tmp/meta.db",
+			dataPath:    "",
+			wantErr:     "data path is required",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := AttachDuckLake(tt.metaDBPath, tt.dataPath)
+			got, err := AttachDuckLake(tt.catalogName, tt.metaDBPath, tt.dataPath)
 			if tt.wantErr != "" {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tt.wantErr)
@@ -692,6 +753,72 @@ func TestAttachDuckLake(t *testing.T) {
 			for _, s := range tt.contains {
 				assert.Contains(t, got, s)
 			}
+		})
+	}
+}
+
+func TestDetachCatalog(t *testing.T) {
+	tests := []struct {
+		name        string
+		catalogName string
+		want        string
+		wantErr     string
+	}{
+		{
+			name:        "valid",
+			catalogName: "lake",
+			want:        `DETACH "lake"`,
+		},
+		{
+			name:        "empty_name",
+			catalogName: "",
+			wantErr:     "invalid catalog name",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := DetachCatalog(tt.catalogName)
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestSetDefaultCatalog(t *testing.T) {
+	tests := []struct {
+		name        string
+		catalogName string
+		want        string
+		wantErr     string
+	}{
+		{
+			name:        "valid",
+			catalogName: "lake",
+			want:        `USE "lake"`,
+		},
+		{
+			name:        "empty_name",
+			catalogName: "",
+			wantErr:     "invalid catalog name",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := SetDefaultCatalog(tt.catalogName)
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

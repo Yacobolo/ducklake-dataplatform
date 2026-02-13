@@ -77,52 +77,6 @@ func run() error {
 	}
 	logger.Info("DuckDB extensions installed", "extensions", "ducklake, sqlite, httpfs")
 
-	// Install postgres extension if using PostgreSQL catalog
-	if cfg.CatalogDBType == "postgres" {
-		if err := engine.InstallPostgresExtension(ctx, duckDB); err != nil {
-			return fmt.Errorf("install postgres extension: %w", err)
-		}
-		logger.Info("PostgreSQL extension installed")
-	}
-
-	// If legacy S3 env vars are present, set up DuckLake for backward compat
-	catalogAttached := false
-	switch {
-	case cfg.HasS3Config():
-		logger.Info("legacy S3 config detected, setting up DuckLake")
-		if err := engine.CreateS3Secret(ctx, duckDB, "hetzner_s3",
-			*cfg.S3KeyID, *cfg.S3Secret, *cfg.S3Endpoint, *cfg.S3Region, "path"); err != nil {
-			logger.Warn("S3 secret creation failed", "error", err)
-		} else {
-			bucket := "duck-demo"
-			if cfg.S3Bucket != nil {
-				bucket = *cfg.S3Bucket
-			}
-			dataPath := fmt.Sprintf("s3://%s/lake_data/", bucket)
-			if err := engine.AttachDuckLake(ctx, duckDB, cfg.MetaDBPath, dataPath); err != nil {
-				logger.Warn("DuckLake attach failed", "error", err)
-			} else {
-				catalogAttached = true
-				logger.Info("DuckLake ready", "mode", "legacy S3")
-			}
-		}
-	case cfg.CatalogDBType == "postgres" && cfg.CatalogDSN != "":
-		// PostgreSQL-based DuckLake catalog
-		bucket := "duck-demo"
-		if cfg.S3Bucket != nil {
-			bucket = *cfg.S3Bucket
-		}
-		dataPath := fmt.Sprintf("s3://%s/lake_data/", bucket)
-		if err := engine.AttachDuckLakePostgres(ctx, duckDB, cfg.CatalogDSN, dataPath); err != nil {
-			logger.Warn("DuckLake PostgreSQL attach failed", "error", err)
-		} else {
-			catalogAttached = true
-			logger.Info("DuckLake ready", "mode", "PostgreSQL catalog")
-		}
-	default:
-		logger.Info("no S3 config — running in local mode, use External Locations API to add storage")
-	}
-
 	// Open SQLite metastore with hardened connection settings.
 	// writeDB: single-connection pool for serialized writes (WAL + txlock=immediate).
 	// readDB:  4-connection pool for concurrent reads (WAL, no txlock).
@@ -141,36 +95,29 @@ func run() error {
 
 	// Wire application dependencies
 	application, err := app.New(ctx, app.Deps{
-		Cfg:             cfg,
-		DuckDB:          duckDB,
-		WriteDB:         writeDB,
-		ReadDB:          readDB,
-		CatalogAttached: catalogAttached,
-		Logger:          logger,
+		Cfg:     cfg,
+		DuckDB:  duckDB,
+		WriteDB: writeDB,
+		ReadDB:  readDB,
+		Logger:  logger,
 	})
 	if err != nil {
 		return fmt.Errorf("app init: %w", err)
 	}
 
+	// Attach all registered catalogs (concurrent, bounded parallelism)
+	if err := application.Services.CatalogRegistration.AttachAll(ctx); err != nil {
+		logger.Warn("catalog AttachAll failed", "error", err)
+	}
+
 	// Create API handler.
-	// Use local interface variables for nil-able services (Manifest, Ingestion)
-	// so that a nil concrete pointer becomes a true nil interface rather than
-	// a non-nil interface wrapping a nil pointer.
 	svc := application.Services
-	var manifestSvc api.ManifestService
-	if svc.Manifest != nil {
-		manifestSvc = svc.Manifest
-	}
-	var ingestionSvc api.IngestionService
-	if svc.Ingestion != nil {
-		ingestionSvc = svc.Ingestion
-	}
 	handler := api.NewHandler(
 		svc.Query, svc.Principal, svc.Group, svc.Grant,
 		svc.RowFilter, svc.ColumnMask, svc.Audit,
-		manifestSvc, svc.Catalog,
+		svc.Manifest, svc.Catalog, svc.CatalogRegistration,
 		svc.QueryHistory, svc.Lineage, svc.Search, svc.Tag, svc.View,
-		ingestionSvc,
+		svc.Ingestion,
 		svc.StorageCredential, svc.ExternalLocation,
 		svc.Volume,
 		svc.ComputeEndpoint,

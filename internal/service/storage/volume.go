@@ -30,7 +30,7 @@ func NewVolumeService(
 
 // Create validates and persists a new volume.
 // Requires CREATE_VOLUME on catalog.
-func (s *VolumeService) Create(ctx context.Context, principal, schemaName string, req domain.CreateVolumeRequest) (*domain.Volume, error) {
+func (s *VolumeService) Create(ctx context.Context, principal, catalogName, schemaName string, req domain.CreateVolumeRequest) (*domain.Volume, error) {
 	if err := s.requirePrivilege(ctx, principal, domain.PrivCreateVolume); err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func (s *VolumeService) Create(ctx context.Context, principal, schemaName string
 	vol := &domain.Volume{
 		Name:            req.Name,
 		SchemaName:      schemaName,
-		CatalogName:     "lake",
+		CatalogName:     catalogName,
 		VolumeType:      req.VolumeType,
 		StorageLocation: req.StorageLocation,
 		Comment:         req.Comment,
@@ -59,18 +59,21 @@ func (s *VolumeService) Create(ctx context.Context, principal, schemaName string
 }
 
 // GetByName returns a volume by schema and name.
-func (s *VolumeService) GetByName(ctx context.Context, schemaName, name string) (*domain.Volume, error) {
+func (s *VolumeService) GetByName(ctx context.Context, catalogName, schemaName, name string) (*domain.Volume, error) {
+	_ = catalogName // volumes are stored globally; catalogName reserved for future use
 	return s.repo.GetByName(ctx, schemaName, name)
 }
 
 // List returns a paginated list of volumes in a schema.
-func (s *VolumeService) List(ctx context.Context, schemaName string, page domain.PageRequest) ([]domain.Volume, int64, error) {
+func (s *VolumeService) List(ctx context.Context, catalogName, schemaName string, page domain.PageRequest) ([]domain.Volume, int64, error) {
+	_ = catalogName // volumes are stored globally; catalogName reserved for future use
 	return s.repo.List(ctx, schemaName, page)
 }
 
 // Update updates a volume by schema and name.
 // Requires CREATE_VOLUME on catalog.
-func (s *VolumeService) Update(ctx context.Context, principal, schemaName, name string, req domain.UpdateVolumeRequest) (*domain.Volume, error) {
+func (s *VolumeService) Update(ctx context.Context, principal, catalogName, schemaName, name string, req domain.UpdateVolumeRequest) (*domain.Volume, error) {
+	_ = catalogName // volumes are stored globally; catalogName reserved for future use
 	if err := s.requirePrivilege(ctx, principal, domain.PrivCreateVolume); err != nil {
 		return nil, err
 	}
@@ -91,7 +94,8 @@ func (s *VolumeService) Update(ctx context.Context, principal, schemaName, name 
 
 // Delete removes a volume by schema and name.
 // Requires CREATE_VOLUME on catalog.
-func (s *VolumeService) Delete(ctx context.Context, principal, schemaName, name string) error {
+func (s *VolumeService) Delete(ctx context.Context, principal, catalogName, schemaName, name string) error {
+	_ = catalogName // volumes are stored globally; catalogName reserved for future use
 	if err := s.requirePrivilege(ctx, principal, domain.PrivCreateVolume); err != nil {
 		return err
 	}

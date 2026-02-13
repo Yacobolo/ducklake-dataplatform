@@ -11,17 +11,28 @@ import (
 	"duck-demo/internal/domain"
 )
 
+// CatalogRepoFactory creates per-catalog CatalogRepository instances.
+// Matches the interface from repository.CatalogRepoFactory.
+type CatalogRepoFactory interface {
+	ForCatalog(catalogName string) domain.CatalogRepository
+}
+
 // InformationSchemaProvider builds virtual information_schema views from the
 // catalog metadata. It intercepts queries to information_schema.* tables
-// and returns results from the SQLite metastore rather than DuckDB's own
-// information_schema.
+// and returns results aggregated across ALL active catalogs, not just one.
 type InformationSchemaProvider struct {
-	catalog domain.CatalogRepository
+	factory       CatalogRepoFactory
+	catalogLister domain.CatalogRegistrationRepository
 }
 
 // NewInformationSchemaProvider creates a new provider.
-func NewInformationSchemaProvider(catalog domain.CatalogRepository) *InformationSchemaProvider {
-	return &InformationSchemaProvider{catalog: catalog}
+// factory provides per-catalog CatalogRepository instances.
+// catalogLister provides the list of all registered catalogs.
+func NewInformationSchemaProvider(factory CatalogRepoFactory, catalogLister domain.CatalogRegistrationRepository) *InformationSchemaProvider {
+	return &InformationSchemaProvider{
+		factory:       factory,
+		catalogLister: catalogLister,
+	}
 }
 
 // IsInformationSchemaQuery checks if the SQL references information_schema tables.
@@ -30,66 +41,97 @@ func IsInformationSchemaQuery(sqlQuery string) bool {
 	return strings.Contains(lower, "information_schema.")
 }
 
-// BuildSchemataRows returns rows for information_schema.schemata.
-func (p *InformationSchemaProvider) BuildSchemataRows(ctx context.Context) ([][]interface{}, []string, error) {
-	page := domain.PageRequest{MaxResults: 1000}
-	schemas, _, err := p.catalog.ListSchemas(ctx, page)
-	if err != nil {
-		return nil, nil, fmt.Errorf("list schemas: %w", err)
+// activeCatalogs returns all ACTIVE catalog names. If the catalog lister is nil
+// or returns an error, falls back to an empty list (graceful degradation).
+func (p *InformationSchemaProvider) activeCatalogs(ctx context.Context) []string {
+	if p.catalogLister == nil {
+		return nil
 	}
 
+	page := domain.PageRequest{MaxResults: 10000}
+	catalogs, _, err := p.catalogLister.List(ctx, page)
+	if err != nil {
+		return nil
+	}
+
+	var names []string
+	for _, c := range catalogs {
+		if c.Status == domain.CatalogStatusActive {
+			names = append(names, c.Name)
+		}
+	}
+	return names
+}
+
+// BuildSchemataRows returns rows for information_schema.schemata across all active catalogs.
+func (p *InformationSchemaProvider) BuildSchemataRows(ctx context.Context) ([][]interface{}, []string, error) {
 	columns := []string{"catalog_name", "schema_name", "schema_owner", "default_character_set_catalog"}
 	var rows [][]interface{}
-	for _, s := range schemas {
-		rows = append(rows, []interface{}{s.CatalogName, s.Name, s.Owner, nil})
+
+	for _, catalogName := range p.activeCatalogs(ctx) {
+		repo := p.factory.ForCatalog(catalogName)
+		page := domain.PageRequest{MaxResults: 1000}
+		schemas, _, err := repo.ListSchemas(ctx, page)
+		if err != nil {
+			continue // skip catalogs that fail
+		}
+		for _, s := range schemas {
+			rows = append(rows, []interface{}{s.CatalogName, s.Name, s.Owner, nil})
+		}
 	}
 	return rows, columns, nil
 }
 
-// BuildTablesRows returns rows for information_schema.tables.
+// BuildTablesRows returns rows for information_schema.tables across all active catalogs.
 func (p *InformationSchemaProvider) BuildTablesRows(ctx context.Context) ([][]interface{}, []string, error) {
-	page := domain.PageRequest{MaxResults: 1000}
-	schemas, _, err := p.catalog.ListSchemas(ctx, page)
-	if err != nil {
-		return nil, nil, fmt.Errorf("list schemas: %w", err)
-	}
-
 	columns := []string{"table_catalog", "table_schema", "table_name", "table_type"}
 	var rows [][]interface{}
-	for _, s := range schemas {
-		tables, _, err := p.catalog.ListTables(ctx, s.Name, page)
+
+	for _, catalogName := range p.activeCatalogs(ctx) {
+		repo := p.factory.ForCatalog(catalogName)
+		page := domain.PageRequest{MaxResults: 1000}
+		schemas, _, err := repo.ListSchemas(ctx, page)
 		if err != nil {
 			continue
 		}
-		for _, t := range tables {
-			rows = append(rows, []interface{}{s.CatalogName, s.Name, t.Name, t.TableType})
-		}
-	}
-	return rows, columns, nil
-}
-
-// BuildColumnsRows returns rows for information_schema.columns.
-func (p *InformationSchemaProvider) BuildColumnsRows(ctx context.Context) ([][]interface{}, []string, error) {
-	page := domain.PageRequest{MaxResults: 1000}
-	schemas, _, err := p.catalog.ListSchemas(ctx, page)
-	if err != nil {
-		return nil, nil, fmt.Errorf("list schemas: %w", err)
-	}
-
-	columns := []string{"table_catalog", "table_schema", "table_name", "column_name", "ordinal_position", "data_type"}
-	var rows [][]interface{}
-	for _, s := range schemas {
-		tables, _, err := p.catalog.ListTables(ctx, s.Name, page)
-		if err != nil {
-			continue
-		}
-		for _, t := range tables {
-			cols, _, err := p.catalog.ListColumns(ctx, s.Name, t.Name, page)
+		for _, s := range schemas {
+			tables, _, err := repo.ListTables(ctx, s.Name, page)
 			if err != nil {
 				continue
 			}
-			for _, c := range cols {
-				rows = append(rows, []interface{}{s.CatalogName, s.Name, t.Name, c.Name, c.Position, c.Type})
+			for _, t := range tables {
+				rows = append(rows, []interface{}{s.CatalogName, s.Name, t.Name, t.TableType})
+			}
+		}
+	}
+	return rows, columns, nil
+}
+
+// BuildColumnsRows returns rows for information_schema.columns across all active catalogs.
+func (p *InformationSchemaProvider) BuildColumnsRows(ctx context.Context) ([][]interface{}, []string, error) {
+	columns := []string{"table_catalog", "table_schema", "table_name", "column_name", "ordinal_position", "data_type"}
+	var rows [][]interface{}
+
+	for _, catalogName := range p.activeCatalogs(ctx) {
+		repo := p.factory.ForCatalog(catalogName)
+		page := domain.PageRequest{MaxResults: 1000}
+		schemas, _, err := repo.ListSchemas(ctx, page)
+		if err != nil {
+			continue
+		}
+		for _, s := range schemas {
+			tables, _, err := repo.ListTables(ctx, s.Name, page)
+			if err != nil {
+				continue
+			}
+			for _, t := range tables {
+				cols, _, err := repo.ListColumns(ctx, s.Name, t.Name, page)
+				if err != nil {
+					continue
+				}
+				for _, c := range cols {
+					rows = append(rows, []interface{}{s.CatalogName, s.Name, t.Name, c.Name, c.Position, c.Type})
+				}
 			}
 		}
 	}

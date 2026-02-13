@@ -29,11 +29,11 @@ type externalLocationService interface {
 
 // volumeService defines the volume operations used by the API handler.
 type volumeService interface {
-	List(ctx context.Context, schemaName string, page domain.PageRequest) ([]domain.Volume, int64, error)
-	Create(ctx context.Context, principal, schemaName string, req domain.CreateVolumeRequest) (*domain.Volume, error)
-	GetByName(ctx context.Context, schemaName, name string) (*domain.Volume, error)
-	Update(ctx context.Context, principal, schemaName, name string, req domain.UpdateVolumeRequest) (*domain.Volume, error)
-	Delete(ctx context.Context, principal, schemaName, name string) error
+	List(ctx context.Context, catalogName string, schemaName string, page domain.PageRequest) ([]domain.Volume, int64, error)
+	Create(ctx context.Context, catalogName string, principal, schemaName string, req domain.CreateVolumeRequest) (*domain.Volume, error)
+	GetByName(ctx context.Context, catalogName string, schemaName, name string) (*domain.Volume, error)
+	Update(ctx context.Context, catalogName string, principal, schemaName, name string, req domain.UpdateVolumeRequest) (*domain.Volume, error)
+	Delete(ctx context.Context, catalogName string, principal, schemaName, name string) error
 }
 
 // === Storage Credentials ===
@@ -363,9 +363,9 @@ func externalLocationToAPI(l domain.ExternalLocation) ExternalLocation {
 // === Volumes ===
 
 // ListVolumes implements the endpoint for listing volumes in a schema.
-func (h *APIHandler) ListVolumes(ctx context.Context, req ListVolumesRequestObject) (ListVolumesResponseObject, error) {
-	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
-	vols, total, err := h.volumes.List(ctx, req.SchemaName, page)
+func (h *APIHandler) ListVolumes(ctx context.Context, request ListVolumesRequestObject) (ListVolumesResponseObject, error) {
+	page := pageFromParams(request.Params.MaxResults, request.Params.PageToken)
+	vols, total, err := h.volumes.List(ctx, string(request.CatalogName), request.SchemaName, page)
 	if err != nil {
 		return nil, err
 	}
@@ -382,20 +382,20 @@ func (h *APIHandler) ListVolumes(ctx context.Context, req ListVolumesRequestObje
 }
 
 // CreateVolume implements the endpoint for creating a new volume in a schema.
-func (h *APIHandler) CreateVolume(ctx context.Context, req CreateVolumeRequestObject) (CreateVolumeResponseObject, error) {
+func (h *APIHandler) CreateVolume(ctx context.Context, request CreateVolumeRequestObject) (CreateVolumeResponseObject, error) {
 	domReq := domain.CreateVolumeRequest{
-		Name:       req.Body.Name,
-		VolumeType: string(req.Body.VolumeType),
+		Name:       request.Body.Name,
+		VolumeType: string(request.Body.VolumeType),
 	}
-	if req.Body.StorageLocation != nil {
-		domReq.StorageLocation = *req.Body.StorageLocation
+	if request.Body.StorageLocation != nil {
+		domReq.StorageLocation = *request.Body.StorageLocation
 	}
-	if req.Body.Comment != nil {
-		domReq.Comment = *req.Body.Comment
+	if request.Body.Comment != nil {
+		domReq.Comment = *request.Body.Comment
 	}
 
-	principal, _ := middleware.PrincipalFromContext(ctx)
-	result, err := h.volumes.Create(ctx, principal, req.SchemaName, domReq)
+	principal := principalFromCtx(ctx)
+	result, err := h.volumes.Create(ctx, string(request.CatalogName), principal, request.SchemaName, domReq)
 	if err != nil {
 		var accessErr *domain.AccessDeniedError
 		var validErr *domain.ValidationError
@@ -415,8 +415,8 @@ func (h *APIHandler) CreateVolume(ctx context.Context, req CreateVolumeRequestOb
 }
 
 // GetVolume implements the endpoint for retrieving a volume by name.
-func (h *APIHandler) GetVolume(ctx context.Context, req GetVolumeRequestObject) (GetVolumeResponseObject, error) {
-	result, err := h.volumes.GetByName(ctx, req.SchemaName, req.VolumeName)
+func (h *APIHandler) GetVolume(ctx context.Context, request GetVolumeRequestObject) (GetVolumeResponseObject, error) {
+	result, err := h.volumes.GetByName(ctx, string(request.CatalogName), request.SchemaName, request.VolumeName)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
@@ -429,15 +429,15 @@ func (h *APIHandler) GetVolume(ctx context.Context, req GetVolumeRequestObject) 
 }
 
 // UpdateVolume implements the endpoint for updating a volume by name.
-func (h *APIHandler) UpdateVolume(ctx context.Context, req UpdateVolumeRequestObject) (UpdateVolumeResponseObject, error) {
+func (h *APIHandler) UpdateVolume(ctx context.Context, request UpdateVolumeRequestObject) (UpdateVolumeResponseObject, error) {
 	domReq := domain.UpdateVolumeRequest{
-		NewName: req.Body.NewName,
-		Comment: req.Body.Comment,
-		Owner:   req.Body.Owner,
+		NewName: request.Body.NewName,
+		Comment: request.Body.Comment,
+		Owner:   request.Body.Owner,
 	}
 
-	principal, _ := middleware.PrincipalFromContext(ctx)
-	result, err := h.volumes.Update(ctx, principal, req.SchemaName, req.VolumeName, domReq)
+	principal := principalFromCtx(ctx)
+	result, err := h.volumes.Update(ctx, string(request.CatalogName), principal, request.SchemaName, request.VolumeName, domReq)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
@@ -452,9 +452,9 @@ func (h *APIHandler) UpdateVolume(ctx context.Context, req UpdateVolumeRequestOb
 }
 
 // DeleteVolume implements the endpoint for deleting a volume by name.
-func (h *APIHandler) DeleteVolume(ctx context.Context, req DeleteVolumeRequestObject) (DeleteVolumeResponseObject, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
-	if err := h.volumes.Delete(ctx, principal, req.SchemaName, req.VolumeName); err != nil {
+func (h *APIHandler) DeleteVolume(ctx context.Context, request DeleteVolumeRequestObject) (DeleteVolumeResponseObject, error) {
+	principal := principalFromCtx(ctx)
+	if err := h.volumes.Delete(ctx, string(request.CatalogName), principal, request.SchemaName, request.VolumeName); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
 			return DeleteVolume403JSONResponse{Code: 403, Message: err.Error()}, nil

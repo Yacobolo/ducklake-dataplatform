@@ -20,7 +20,7 @@ type queryHistoryService interface {
 
 // searchService defines the search operations used by the API handler.
 type searchService interface {
-	Search(ctx context.Context, query string, objectType *string, page domain.PageRequest) ([]domain.SearchResult, int64, error)
+	Search(ctx context.Context, query string, objectType *string, catalogName *string, page domain.PageRequest) ([]domain.SearchResult, int64, error)
 }
 
 // lineageService defines the lineage operations used by the API handler.
@@ -100,7 +100,7 @@ func (h *APIHandler) ListQueryHistory(ctx context.Context, req ListQueryHistoryR
 func (h *APIHandler) SearchCatalog(ctx context.Context, req SearchCatalogRequestObject) (SearchCatalogResponseObject, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 
-	results, total, err := h.search.Search(ctx, req.Params.Query, req.Params.Type, page)
+	results, total, err := h.search.Search(ctx, req.Params.Query, req.Params.Type, req.Params.Catalog, page)
 	if err != nil {
 		return nil, err
 	}

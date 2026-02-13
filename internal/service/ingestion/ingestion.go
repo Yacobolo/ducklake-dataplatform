@@ -15,42 +15,40 @@ import (
 
 // IngestionService handles Parquet file ingestion into DuckLake tables
 // via the ducklake_add_data_files() function.
+// All methods accept a catalogName parameter to resolve the correct metastore.
 //
 //nolint:revive // Name chosen for clarity across package boundaries
 type IngestionService struct {
-	executor    domain.DuckDBExecutor
-	metastore   domain.MetastoreQuerier
-	authSvc     domain.AuthorizationService
-	presigner   query.FileUploadPresigner // legacy presigner (from env config), may be nil
-	auditRepo   domain.AuditRepository
-	credRepo    domain.StorageCredentialRepository // for credential-aware presigning
-	locRepo     domain.ExternalLocationRepository  // for resolving schema locations
-	catalogName string                             // attached catalog name (e.g., "lake")
-	bucket      string                             // S3 bucket name (legacy default)
+	executor         domain.DuckDBExecutor
+	metastoreFactory domain.MetastoreQuerierFactory
+	authSvc          domain.AuthorizationService
+	presigner        query.FileUploadPresigner // legacy presigner (from env config), may be nil
+	auditRepo        domain.AuditRepository
+	credRepo         domain.StorageCredentialRepository // for credential-aware presigning
+	locRepo          domain.ExternalLocationRepository  // for resolving schema locations
+	bucket           string                             // S3 bucket name (legacy default)
 }
 
 // NewIngestionService creates a new IngestionService.
 func NewIngestionService(
 	executor domain.DuckDBExecutor,
-	metastore domain.MetastoreQuerier,
+	metastoreFactory domain.MetastoreQuerierFactory,
 	authSvc domain.AuthorizationService,
 	presigner query.FileUploadPresigner,
 	auditRepo domain.AuditRepository,
-	catalogName string,
 	bucket string,
 	credRepo domain.StorageCredentialRepository,
 	locRepo domain.ExternalLocationRepository,
 ) *IngestionService {
 	return &IngestionService{
-		executor:    executor,
-		metastore:   metastore,
-		authSvc:     authSvc,
-		presigner:   presigner,
-		auditRepo:   auditRepo,
-		catalogName: catalogName,
-		bucket:      bucket,
-		credRepo:    credRepo,
-		locRepo:     locRepo,
+		executor:         executor,
+		metastoreFactory: metastoreFactory,
+		authSvc:          authSvc,
+		presigner:        presigner,
+		auditRepo:        auditRepo,
+		bucket:           bucket,
+		credRepo:         credRepo,
+		locRepo:          locRepo,
 	}
 }
 
@@ -59,6 +57,7 @@ func NewIngestionService(
 func (s *IngestionService) RequestUploadURL(
 	ctx context.Context,
 	principal string,
+	catalogName string,
 	schemaName, tableName string,
 	filename *string,
 ) (*domain.UploadURLResult, error) {
@@ -69,7 +68,7 @@ func (s *IngestionService) RequestUploadURL(
 	}
 
 	// Resolve presigner and bucket: prefer per-schema location, fall back to legacy
-	presigner, bucket, err := s.resolvePresigner(ctx, schemaName)
+	presigner, bucket, err := s.resolvePresigner(ctx, catalogName, schemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -107,6 +106,7 @@ func (s *IngestionService) RequestUploadURL(
 func (s *IngestionService) CommitIngestion(
 	ctx context.Context,
 	principal string,
+	catalogName string,
 	schemaName, tableName string,
 	s3Keys []string,
 	opts domain.IngestionOptions,
@@ -122,7 +122,7 @@ func (s *IngestionService) CommitIngestion(
 	}
 
 	// Resolve the bucket for this schema
-	_, bucket, err := s.resolvePresigner(ctx, schemaName)
+	_, bucket, err := s.resolvePresigner(ctx, catalogName, schemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +134,7 @@ func (s *IngestionService) CommitIngestion(
 	}
 
 	// Execute ducklake_add_data_files
-	result, err := s.execAddDataFiles(ctx, schemaName, tableName, paths, opts)
+	result, err := s.execAddDataFiles(ctx, catalogName, schemaName, tableName, paths, opts)
 	if err != nil {
 		s.logAudit(ctx, principal, "INGESTION_COMMIT",
 			fmt.Sprintf("Failed to commit %d file(s) to %s.%s: %v", len(s3Keys), schemaName, tableName, err))
@@ -152,6 +152,7 @@ func (s *IngestionService) CommitIngestion(
 func (s *IngestionService) LoadExternalFiles(
 	ctx context.Context,
 	principal string,
+	catalogName string,
 	schemaName, tableName string,
 	paths []string,
 	opts domain.IngestionOptions,
@@ -172,7 +173,7 @@ func (s *IngestionService) LoadExternalFiles(
 		if strings.HasPrefix(p, "s3://") {
 			resolved[i] = p
 		} else {
-			dataPath, err := s.readDataPath(ctx)
+			dataPath, err := s.readDataPath(ctx, catalogName)
 			if err != nil {
 				return nil, fmt.Errorf("resolve data path: %w", err)
 			}
@@ -180,7 +181,7 @@ func (s *IngestionService) LoadExternalFiles(
 		}
 	}
 
-	result, err := s.execAddDataFiles(ctx, schemaName, tableName, resolved, opts)
+	result, err := s.execAddDataFiles(ctx, catalogName, schemaName, tableName, resolved, opts)
 	if err != nil {
 		s.logAudit(ctx, principal, "INGESTION_LOAD",
 			fmt.Sprintf("Failed to load %d path(s) into %s.%s: %v", len(paths), schemaName, tableName, err))
@@ -196,6 +197,7 @@ func (s *IngestionService) LoadExternalFiles(
 // execAddDataFiles builds and executes the CALL ducklake_add_data_files() statement.
 func (s *IngestionService) execAddDataFiles(
 	ctx context.Context,
+	catalogName string,
 	schemaName, tableName string,
 	paths []string,
 	opts domain.IngestionOptions,
@@ -214,7 +216,7 @@ func (s *IngestionService) execAddDataFiles(
 	// Build the CALL statement
 	q := fmt.Sprintf(
 		"CALL ducklake_add_data_files('%s', '%s', %s, schema => '%s', allow_missing => %t, ignore_extra_columns => %t)",
-		strings.ReplaceAll(s.catalogName, "'", "''"),
+		strings.ReplaceAll(catalogName, "'", "''"),
 		strings.ReplaceAll(tableName, "'", "''"),
 		fileList,
 		strings.ReplaceAll(schemaName, "'", "''"),
@@ -253,9 +255,13 @@ func (s *IngestionService) checkInsertPrivilege(ctx context.Context, principal, 
 	return nil
 }
 
-// readDataPath reads the data_path from the DuckLake metadata table.
-func (s *IngestionService) readDataPath(ctx context.Context) (string, error) {
-	return s.metastore.ReadDataPath(ctx)
+// readDataPath reads the data_path from the DuckLake metadata table for a catalog.
+func (s *IngestionService) readDataPath(ctx context.Context, catalogName string) (string, error) {
+	metastore, err := s.metastoreFactory.ForCatalog(ctx, catalogName)
+	if err != nil {
+		return "", fmt.Errorf("resolve metastore for catalog %q: %w", catalogName, err)
+	}
+	return metastore.ReadDataPath(ctx)
 }
 
 // classifyDuckDBError maps DuckDB errors from ducklake_add_data_files into domain errors.
@@ -289,26 +295,29 @@ func sanitizeFilename(name string) string {
 // If the schema has a per-schema external location with a stored credential,
 // a dynamic presigner is created from that credential. Otherwise, the legacy
 // presigner and bucket are returned.
-func (s *IngestionService) resolvePresigner(ctx context.Context, schemaName string) (query.FileUploadPresigner, string, error) {
+func (s *IngestionService) resolvePresigner(ctx context.Context, catalogName string, schemaName string) (query.FileUploadPresigner, string, error) {
 	// Try per-schema resolution via schema path in ducklake_schema
-	if s.metastore != nil && s.credRepo != nil && s.locRepo != nil {
-		schemaPath, err := s.metastore.ReadSchemaPath(ctx, schemaName)
-		if err == nil && schemaPath != "" {
-			// Schema has a custom path — find the location that matches this URL
-			locations, _, err := s.locRepo.List(ctx, domain.PageRequest{MaxResults: 1000})
-			if err == nil {
-				for _, loc := range locations {
-					if strings.HasPrefix(schemaPath, loc.URL) || schemaPath == loc.URL {
-						// Found the matching location, look up its credential
-						cred, err := s.credRepo.GetByName(ctx, loc.CredentialName)
-						if err == nil {
-							presigner, err := query.NewUploadPresignerFromCredential(cred, schemaPath)
+	if s.metastoreFactory != nil && s.credRepo != nil && s.locRepo != nil {
+		metastore, err := s.metastoreFactory.ForCatalog(ctx, catalogName)
+		if err == nil {
+			schemaPath, err := metastore.ReadSchemaPath(ctx, schemaName)
+			if err == nil && schemaPath != "" {
+				// Schema has a custom path — find the location that matches this URL
+				locations, _, err := s.locRepo.List(ctx, domain.PageRequest{MaxResults: 1000})
+				if err == nil {
+					for _, loc := range locations {
+						if strings.HasPrefix(schemaPath, loc.URL) || schemaPath == loc.URL {
+							// Found the matching location, look up its credential
+							cred, err := s.credRepo.GetByName(ctx, loc.CredentialName)
 							if err == nil {
-								bucket := presigner.Bucket()
-								if bucket == "" {
-									bucket = s.bucket // fallback
+								presigner, err := query.NewUploadPresignerFromCredential(cred, schemaPath)
+								if err == nil {
+									bucket := presigner.Bucket()
+									if bucket == "" {
+										bucket = s.bucket // fallback
+									}
+									return presigner, bucket, nil
 								}
-								return presigner, bucket, nil
 							}
 						}
 					}

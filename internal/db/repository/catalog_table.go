@@ -31,7 +31,7 @@ func (r *CatalogRepo) CreateTable(ctx context.Context, schemaName string, req do
 		cols[i] = ddl.ColumnDef{Name: c.Name, Type: c.Type}
 	}
 
-	stmt, err := ddl.CreateTable(schemaName, req.Name, cols)
+	stmt, err := ddl.CreateTable(r.catalogName, schemaName, req.Name, cols)
 	if err != nil {
 		return nil, domain.ErrValidation("%s", err.Error())
 	}
@@ -101,7 +101,7 @@ func (r *CatalogRepo) GetTable(ctx context.Context, schemaName, tableName string
 	}
 
 	t.SchemaName = schemaName
-	t.CatalogName = "lake"
+	t.CatalogName = r.catalogName
 	t.TableType = "MANAGED"
 
 	// Resolve storage path for MANAGED tables
@@ -156,7 +156,7 @@ func (r *CatalogRepo) ListTables(ctx context.Context, schemaName string, page do
 			return nil, 0, err
 		}
 		t.SchemaName = schemaName
-		t.CatalogName = "lake"
+		t.CatalogName = r.catalogName
 		t.TableType = "MANAGED"
 		tables = append(tables, t)
 	}
@@ -206,7 +206,7 @@ func (r *CatalogRepo) DeleteTable(ctx context.Context, schemaName, tableName str
 		return err
 	}
 
-	stmt, err := ddl.DropTable(schemaName, tableName)
+	stmt, err := ddl.DropTable(r.catalogName, schemaName, tableName)
 	if err != nil {
 		return fmt.Errorf("build DDL: %w", err)
 	}
@@ -350,7 +350,7 @@ func (r *CatalogRepo) UpdateTable(ctx context.Context, schemaName, tableName str
 func (r *CatalogRepo) UpdateCatalog(ctx context.Context, comment *string) (*domain.CatalogInfo, error) {
 	err := r.q.UpsertCatalogMetadata(ctx, dbstore.UpsertCatalogMetadataParams{
 		SecurableType: "catalog",
-		SecurableName: "lake",
+		SecurableName: r.catalogName,
 		Comment:       sql.NullString{String: ptrToStr(comment), Valid: comment != nil},
 		Properties:    sql.NullString{},
 		Owner:         sql.NullString{},
