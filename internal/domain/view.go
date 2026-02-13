@@ -26,6 +26,17 @@ type CreateViewRequest struct {
 	Comment        string
 }
 
+// Validate checks that the request is well-formed.
+func (r *CreateViewRequest) Validate() error {
+	if r.Name == "" {
+		return ErrValidation("view name is required")
+	}
+	if r.ViewDefinition == "" {
+		return ErrValidation("view_definition is required")
+	}
+	return nil
+}
+
 // UpdateViewRequest holds parameters for updating view metadata.
 type UpdateViewRequest struct {
 	Comment        *string

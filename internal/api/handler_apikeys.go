@@ -3,14 +3,13 @@ package api
 import (
 	"context"
 	"errors"
-	"time"
 
 	"duck-demo/internal/domain"
 )
 
 // apiKeyService defines the API key management operations used by the API handler.
 type apiKeyService interface {
-	Create(ctx context.Context, principalID string, name string, expiresAt *time.Time) (string, *domain.APIKey, error)
+	Create(ctx context.Context, req domain.CreateAPIKeyRequest) (string, *domain.APIKey, error)
 	List(ctx context.Context, principalID string, page domain.PageRequest) ([]domain.APIKey, int64, error)
 	Delete(ctx context.Context, id string) error
 	CleanupExpired(ctx context.Context) (int64, error)
@@ -20,7 +19,11 @@ type apiKeyService interface {
 
 // CreateAPIKey implements the endpoint for creating a new API key.
 func (h *APIHandler) CreateAPIKey(ctx context.Context, req CreateAPIKeyRequestObject) (CreateAPIKeyResponseObject, error) {
-	rawKey, key, err := h.apiKeys.Create(ctx, req.Body.PrincipalId, req.Body.Name, req.Body.ExpiresAt)
+	rawKey, key, err := h.apiKeys.Create(ctx, domain.CreateAPIKeyRequest{
+		PrincipalID: req.Body.PrincipalId,
+		Name:        req.Body.Name,
+		ExpiresAt:   req.Body.ExpiresAt,
+	})
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.ValidationError)):

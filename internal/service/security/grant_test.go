@@ -24,10 +24,10 @@ func setupGrantService(t *testing.T) (*GrantService, *PrincipalService) {
 func TestGrantService_Grant_AdminRequired(t *testing.T) {
 	svc, principalSvc := setupGrantService(t)
 
-	p, err := principalSvc.Create(adminCtx(), &domain.Principal{Name: "grantee", Type: "user"})
+	p, err := principalSvc.Create(adminCtx(), domain.CreatePrincipalRequest{Name: "grantee", Type: "user"})
 	require.NoError(t, err)
 
-	_, err = svc.Grant(nonAdminCtx(), "grantee", &domain.PrivilegeGrant{
+	_, err = svc.Grant(nonAdminCtx(), domain.CreateGrantRequest{
 		PrincipalID:   p.ID,
 		PrincipalType: "user",
 		Privilege:     "SELECT",
@@ -42,10 +42,10 @@ func TestGrantService_Grant_AdminRequired(t *testing.T) {
 func TestGrantService_Grant_AdminAllowed(t *testing.T) {
 	svc, principalSvc := setupGrantService(t)
 
-	p, err := principalSvc.Create(adminCtx(), &domain.Principal{Name: "grantee", Type: "user"})
+	p, err := principalSvc.Create(adminCtx(), domain.CreatePrincipalRequest{Name: "grantee", Type: "user"})
 	require.NoError(t, err)
 
-	grant, err := svc.Grant(adminCtx(), "admin-user", &domain.PrivilegeGrant{
+	grant, err := svc.Grant(adminCtx(), domain.CreateGrantRequest{
 		PrincipalID:   p.ID,
 		PrincipalType: "user",
 		Privilege:     "SELECT",
@@ -69,10 +69,10 @@ func TestGrantService_Revoke_AdminRequired(t *testing.T) {
 func TestGrantService_Revoke_AdminAllowed(t *testing.T) {
 	svc, principalSvc := setupGrantService(t)
 
-	p, err := principalSvc.Create(adminCtx(), &domain.Principal{Name: "grantee", Type: "user"})
+	p, err := principalSvc.Create(adminCtx(), domain.CreatePrincipalRequest{Name: "grantee", Type: "user"})
 	require.NoError(t, err)
 
-	grant, err := svc.Grant(adminCtx(), "admin-user", &domain.PrivilegeGrant{
+	grant, err := svc.Grant(adminCtx(), domain.CreateGrantRequest{
 		PrincipalID:   p.ID,
 		PrincipalType: "user",
 		Privilege:     "SELECT",
@@ -88,7 +88,7 @@ func TestGrantService_Revoke_AdminAllowed(t *testing.T) {
 func TestGrantService_List_NoAdminRequired(t *testing.T) {
 	svc, principalSvc := setupGrantService(t)
 
-	p, err := principalSvc.Create(adminCtx(), &domain.Principal{Name: "lister", Type: "user"})
+	p, err := principalSvc.Create(adminCtx(), domain.CreatePrincipalRequest{Name: "lister", Type: "user"})
 	require.NoError(t, err)
 
 	// Non-admin can list grants (even if none exist).
@@ -101,7 +101,7 @@ func TestGrantService_List_NoAdminRequired(t *testing.T) {
 func TestGrantService_Grant_EmptyPrivilege(t *testing.T) {
 	svc, _ := setupGrantService(t)
 
-	_, err := svc.Grant(adminCtx(), "admin-user", &domain.PrivilegeGrant{
+	_, err := svc.Grant(adminCtx(), domain.CreateGrantRequest{
 		PrincipalID:   "1",
 		PrincipalType: "user",
 		Privilege:     "", // empty

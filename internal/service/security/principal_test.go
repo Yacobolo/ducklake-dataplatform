@@ -23,7 +23,7 @@ func setupPrincipalService(t *testing.T) (*PrincipalService, *repository.Princip
 func TestPrincipalService_Create_AdminRequired(t *testing.T) {
 	svc, _ := setupPrincipalService(t)
 
-	_, err := svc.Create(nonAdminCtx(), &domain.Principal{Name: "test", Type: "user"})
+	_, err := svc.Create(nonAdminCtx(), domain.CreatePrincipalRequest{Name: "test", Type: "user"})
 	require.Error(t, err)
 	var accessDenied *domain.AccessDeniedError
 	assert.ErrorAs(t, err, &accessDenied)
@@ -32,7 +32,7 @@ func TestPrincipalService_Create_AdminRequired(t *testing.T) {
 func TestPrincipalService_Create_AdminAllowed(t *testing.T) {
 	svc, _ := setupPrincipalService(t)
 
-	p, err := svc.Create(adminCtx(), &domain.Principal{Name: "new-principal", Type: "user"})
+	p, err := svc.Create(adminCtx(), domain.CreatePrincipalRequest{Name: "new-principal", Type: "user"})
 	require.NoError(t, err)
 	assert.Equal(t, "new-principal", p.Name)
 	assert.Equal(t, "user", p.Type)
@@ -42,7 +42,7 @@ func TestPrincipalService_Create_AdminAllowed(t *testing.T) {
 func TestPrincipalService_Create_EmptyName(t *testing.T) {
 	svc, _ := setupPrincipalService(t)
 
-	_, err := svc.Create(adminCtx(), &domain.Principal{Name: "", Type: "user"})
+	_, err := svc.Create(adminCtx(), domain.CreatePrincipalRequest{Name: "", Type: "user"})
 	require.Error(t, err)
 	var validationErr *domain.ValidationError
 	assert.ErrorAs(t, err, &validationErr)
@@ -51,7 +51,7 @@ func TestPrincipalService_Create_EmptyName(t *testing.T) {
 func TestPrincipalService_Create_InvalidType(t *testing.T) {
 	svc, _ := setupPrincipalService(t)
 
-	_, err := svc.Create(adminCtx(), &domain.Principal{Name: "test", Type: "invalid"})
+	_, err := svc.Create(adminCtx(), domain.CreatePrincipalRequest{Name: "test", Type: "invalid"})
 	require.Error(t, err)
 	var validationErr *domain.ValidationError
 	assert.ErrorAs(t, err, &validationErr)
@@ -60,7 +60,7 @@ func TestPrincipalService_Create_InvalidType(t *testing.T) {
 func TestPrincipalService_Create_DefaultType(t *testing.T) {
 	svc, _ := setupPrincipalService(t)
 
-	p, err := svc.Create(adminCtx(), &domain.Principal{Name: "defaulttype"})
+	p, err := svc.Create(adminCtx(), domain.CreatePrincipalRequest{Name: "defaulttype"})
 	require.NoError(t, err)
 	assert.Equal(t, "user", p.Type)
 }
@@ -69,7 +69,7 @@ func TestPrincipalService_Delete_AdminRequired(t *testing.T) {
 	svc, _ := setupPrincipalService(t)
 
 	// Create as admin first.
-	p, err := svc.Create(adminCtx(), &domain.Principal{Name: "to-delete", Type: "user"})
+	p, err := svc.Create(adminCtx(), domain.CreatePrincipalRequest{Name: "to-delete", Type: "user"})
 	require.NoError(t, err)
 
 	// Non-admin cannot delete.
@@ -82,7 +82,7 @@ func TestPrincipalService_Delete_AdminRequired(t *testing.T) {
 func TestPrincipalService_Delete_AdminAllowed(t *testing.T) {
 	svc, _ := setupPrincipalService(t)
 
-	p, err := svc.Create(adminCtx(), &domain.Principal{Name: "to-delete", Type: "user"})
+	p, err := svc.Create(adminCtx(), domain.CreatePrincipalRequest{Name: "to-delete", Type: "user"})
 	require.NoError(t, err)
 
 	err = svc.Delete(adminCtx(), p.ID)
@@ -95,7 +95,7 @@ func TestPrincipalService_Delete_AdminAllowed(t *testing.T) {
 func TestPrincipalService_SetAdmin_AdminRequired(t *testing.T) {
 	svc, _ := setupPrincipalService(t)
 
-	p, err := svc.Create(adminCtx(), &domain.Principal{Name: "user1", Type: "user"})
+	p, err := svc.Create(adminCtx(), domain.CreatePrincipalRequest{Name: "user1", Type: "user"})
 	require.NoError(t, err)
 
 	err = svc.SetAdmin(nonAdminCtx(), p.ID, true)
@@ -107,7 +107,7 @@ func TestPrincipalService_SetAdmin_AdminRequired(t *testing.T) {
 func TestPrincipalService_SetAdmin_AdminAllowed(t *testing.T) {
 	svc, _ := setupPrincipalService(t)
 
-	p, err := svc.Create(adminCtx(), &domain.Principal{Name: "user1", Type: "user"})
+	p, err := svc.Create(adminCtx(), domain.CreatePrincipalRequest{Name: "user1", Type: "user"})
 	require.NoError(t, err)
 
 	err = svc.SetAdmin(adminCtx(), p.ID, true)
@@ -121,7 +121,7 @@ func TestPrincipalService_SetAdmin_AdminAllowed(t *testing.T) {
 func TestPrincipalService_GetByID_NoAdminRequired(t *testing.T) {
 	svc, _ := setupPrincipalService(t)
 
-	p, err := svc.Create(adminCtx(), &domain.Principal{Name: "readable", Type: "user"})
+	p, err := svc.Create(adminCtx(), domain.CreatePrincipalRequest{Name: "readable", Type: "user"})
 	require.NoError(t, err)
 
 	// Non-admin can read.
@@ -133,7 +133,7 @@ func TestPrincipalService_GetByID_NoAdminRequired(t *testing.T) {
 func TestPrincipalService_List_NoAdminRequired(t *testing.T) {
 	svc, _ := setupPrincipalService(t)
 
-	_, err := svc.Create(adminCtx(), &domain.Principal{Name: "listed", Type: "user"})
+	_, err := svc.Create(adminCtx(), domain.CreatePrincipalRequest{Name: "listed", Type: "user"})
 	require.NoError(t, err)
 
 	ps, total, err := svc.List(nonAdminCtx(), domain.PageRequest{})
@@ -158,7 +158,9 @@ func TestPrincipalService_ResolveOrProvision_Existing(t *testing.T) {
 	require.NoError(t, err)
 
 	// ResolveOrProvision should find the existing one.
-	p, err := svc.ResolveOrProvision(ctx, issuer, extID, "existing-user", false)
+	p, err := svc.ResolveOrProvision(ctx, domain.ResolveOrProvisionRequest{
+		Issuer: issuer, ExternalID: extID, DisplayName: "existing-user",
+	})
 	require.NoError(t, err)
 	assert.Equal(t, "existing-user", p.Name)
 }
@@ -166,7 +168,9 @@ func TestPrincipalService_ResolveOrProvision_Existing(t *testing.T) {
 func TestPrincipalService_ResolveOrProvision_New(t *testing.T) {
 	svc, _ := setupPrincipalService(t)
 
-	p, err := svc.ResolveOrProvision(ctx, "https://issuer.example.com", "new-ext-id", "New User", false)
+	p, err := svc.ResolveOrProvision(ctx, domain.ResolveOrProvisionRequest{
+		Issuer: "https://issuer.example.com", ExternalID: "new-ext-id", DisplayName: "New User",
+	})
 	require.NoError(t, err)
 	assert.Equal(t, "new user", p.Name) // sanitized: lowercased, trimmed
 	assert.False(t, p.IsAdmin)
@@ -176,7 +180,9 @@ func TestPrincipalService_ResolveOrProvision_New(t *testing.T) {
 func TestPrincipalService_ResolveOrProvision_Bootstrap(t *testing.T) {
 	svc, _ := setupPrincipalService(t)
 
-	p, err := svc.ResolveOrProvision(ctx, "https://issuer.example.com", "bootstrap-sub", "Bootstrap Admin", true)
+	p, err := svc.ResolveOrProvision(ctx, domain.ResolveOrProvisionRequest{
+		Issuer: "https://issuer.example.com", ExternalID: "bootstrap-sub", DisplayName: "Bootstrap Admin", IsBootstrap: true,
+	})
 	require.NoError(t, err)
 	assert.True(t, p.IsAdmin)
 }
@@ -184,7 +190,7 @@ func TestPrincipalService_ResolveOrProvision_Bootstrap(t *testing.T) {
 func TestPrincipalService_GetByName(t *testing.T) {
 	svc, _ := setupPrincipalService(t)
 
-	_, err := svc.Create(adminCtx(), &domain.Principal{Name: "findme", Type: "user"})
+	_, err := svc.Create(adminCtx(), domain.CreatePrincipalRequest{Name: "findme", Type: "user"})
 	require.NoError(t, err)
 
 	found, err := svc.GetByName(ctx, "findme")

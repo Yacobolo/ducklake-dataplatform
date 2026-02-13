@@ -133,6 +133,11 @@ type UpdateExternalLocationRequest struct {
 	Owner          *string
 }
 
+// Validate checks that the request is well-formed.
+func (r *CreateStorageCredentialRequest) Validate() error {
+	return ValidateStorageCredentialRequest(*r)
+}
+
 // ValidateStorageCredentialRequest validates a create-credential request.
 func ValidateStorageCredentialRequest(req CreateStorageCredentialRequest) error {
 	if req.Name == "" {
@@ -174,6 +179,11 @@ func ValidateStorageCredentialRequest(req CreateStorageCredentialRequest) error 
 		return ErrValidation("unsupported credential type %q; supported: S3, AZURE, GCS", string(req.CredentialType))
 	}
 	return nil
+}
+
+// Validate checks that the request is well-formed.
+func (r *CreateExternalLocationRequest) Validate() error {
+	return ValidateExternalLocationRequest(*r)
 }
 
 // ValidateExternalLocationRequest validates a create-location request.

@@ -124,7 +124,7 @@ func (s *CatalogService) GetSchema(ctx context.Context, catalogName string, name
 }
 
 // UpdateSchema updates schema metadata.
-func (s *CatalogService) UpdateSchema(ctx context.Context, catalogName string, principal string, name string, comment *string, props map[string]string) (*domain.SchemaDetail, error) {
+func (s *CatalogService) UpdateSchema(ctx context.Context, catalogName string, principal string, name string, req domain.UpdateSchemaRequest) (*domain.SchemaDetail, error) {
 
 	// Check privilege: need CREATE_SCHEMA on catalog or be admin
 	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateSchema)
@@ -135,7 +135,7 @@ func (s *CatalogService) UpdateSchema(ctx context.Context, catalogName string, p
 		return nil, domain.ErrAccessDenied("%q lacks permission to update schema %q", principal, name)
 	}
 
-	result, err := s.repoFactory.ForCatalog(catalogName).UpdateSchema(ctx, name, comment, props)
+	result, err := s.repoFactory.ForCatalog(catalogName).UpdateSchema(ctx, name, req.Comment, req.Properties)
 	if err != nil {
 		return nil, err
 	}

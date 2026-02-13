@@ -21,7 +21,7 @@ type catalogService interface {
 	ListSchemas(ctx context.Context, catalogName string, page domain.PageRequest) ([]domain.SchemaDetail, int64, error)
 	CreateSchema(ctx context.Context, catalogName string, principal string, req domain.CreateSchemaRequest) (*domain.SchemaDetail, error)
 	GetSchema(ctx context.Context, catalogName string, name string) (*domain.SchemaDetail, error)
-	UpdateSchema(ctx context.Context, catalogName string, principal string, name string, comment *string, props map[string]string) (*domain.SchemaDetail, error)
+	UpdateSchema(ctx context.Context, catalogName string, principal string, name string, req domain.UpdateSchemaRequest) (*domain.SchemaDetail, error)
 	DeleteSchema(ctx context.Context, catalogName string, principal string, name string, force bool) error
 	ListTables(ctx context.Context, catalogName string, schemaName string, page domain.PageRequest) ([]domain.TableDetail, int64, error)
 	CreateTable(ctx context.Context, catalogName string, principal string, schemaName string, req domain.CreateTableRequest) (*domain.TableDetail, error)
@@ -125,13 +125,15 @@ func (h *APIHandler) GetSchema(ctx context.Context, request GetSchemaRequestObje
 
 // UpdateSchema implements the endpoint for updating schema metadata.
 func (h *APIHandler) UpdateSchema(ctx context.Context, request UpdateSchemaRequestObject) (UpdateSchemaResponseObject, error) {
-	var props map[string]string
+	domReq := domain.UpdateSchemaRequest{
+		Comment: request.Body.Comment,
+	}
 	if request.Body.Properties != nil {
-		props = *request.Body.Properties
+		domReq.Properties = *request.Body.Properties
 	}
 
 	principal := principalFromCtx(ctx)
-	result, err := h.catalog.UpdateSchema(ctx, string(request.CatalogName), principal, request.SchemaName, request.Body.Comment, props)
+	result, err := h.catalog.UpdateSchema(ctx, string(request.CatalogName), principal, request.SchemaName, domReq)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):

@@ -11,7 +11,7 @@ import (
 // principalService defines the principal operations used by the API handler.
 type principalService interface {
 	List(ctx context.Context, page domain.PageRequest) ([]domain.Principal, int64, error)
-	Create(ctx context.Context, p *domain.Principal) (*domain.Principal, error)
+	Create(ctx context.Context, req domain.CreatePrincipalRequest) (*domain.Principal, error)
 	GetByID(ctx context.Context, id string) (*domain.Principal, error)
 	Delete(ctx context.Context, id string) error
 	SetAdmin(ctx context.Context, id string, isAdmin bool) error
@@ -20,38 +20,38 @@ type principalService interface {
 // groupService defines the group operations used by the API handler.
 type groupService interface {
 	List(ctx context.Context, page domain.PageRequest) ([]domain.Group, int64, error)
-	Create(ctx context.Context, g *domain.Group) (*domain.Group, error)
+	Create(ctx context.Context, req domain.CreateGroupRequest) (*domain.Group, error)
 	GetByID(ctx context.Context, id string) (*domain.Group, error)
 	Delete(ctx context.Context, id string) error
 	ListMembers(ctx context.Context, groupID string, page domain.PageRequest) ([]domain.GroupMember, int64, error)
-	AddMember(ctx context.Context, m *domain.GroupMember) error
-	RemoveMember(ctx context.Context, m *domain.GroupMember) error
+	AddMember(ctx context.Context, req domain.AddGroupMemberRequest) error
+	RemoveMember(ctx context.Context, req domain.RemoveGroupMemberRequest) error
 }
 
 // grantService defines the grant operations used by the API handler.
 type grantService interface {
 	ListForPrincipal(ctx context.Context, principalID string, principalType string, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error)
 	ListForSecurable(ctx context.Context, securableType string, securableID string, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error)
-	Grant(ctx context.Context, principal string, g *domain.PrivilegeGrant) (*domain.PrivilegeGrant, error)
+	Grant(ctx context.Context, req domain.CreateGrantRequest) (*domain.PrivilegeGrant, error)
 	Revoke(ctx context.Context, principal string, grantID string) error
 }
 
 // rowFilterService defines the row filter operations used by the API handler.
 type rowFilterService interface {
 	GetForTable(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.RowFilter, int64, error)
-	Create(ctx context.Context, principal string, f *domain.RowFilter) (*domain.RowFilter, error)
+	Create(ctx context.Context, req domain.CreateRowFilterRequest) (*domain.RowFilter, error)
 	Delete(ctx context.Context, id string) error
-	Bind(ctx context.Context, b *domain.RowFilterBinding) error
-	Unbind(ctx context.Context, b *domain.RowFilterBinding) error
+	Bind(ctx context.Context, req domain.BindRowFilterRequest) error
+	Unbind(ctx context.Context, req domain.BindRowFilterRequest) error
 }
 
 // columnMaskService defines the column mask operations used by the API handler.
 type columnMaskService interface {
 	GetForTable(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.ColumnMask, int64, error)
-	Create(ctx context.Context, principal string, m *domain.ColumnMask) (*domain.ColumnMask, error)
+	Create(ctx context.Context, req domain.CreateColumnMaskRequest) (*domain.ColumnMask, error)
 	Delete(ctx context.Context, id string) error
-	Bind(ctx context.Context, b *domain.ColumnMaskBinding) error
-	Unbind(ctx context.Context, b *domain.ColumnMaskBinding) error
+	Bind(ctx context.Context, req domain.BindColumnMaskRequest) error
+	Unbind(ctx context.Context, req domain.BindColumnMaskRequest) error
 }
 
 // === Principals ===
@@ -76,16 +76,16 @@ func (h *APIHandler) ListPrincipals(ctx context.Context, req ListPrincipalsReque
 
 // CreatePrincipal implements the endpoint for creating a new principal.
 func (h *APIHandler) CreatePrincipal(ctx context.Context, req CreatePrincipalRequestObject) (CreatePrincipalResponseObject, error) {
-	p := &domain.Principal{
+	domReq := domain.CreatePrincipalRequest{
 		Name: req.Body.Name,
 	}
 	if req.Body.Type != nil {
-		p.Type = string(*req.Body.Type)
+		domReq.Type = string(*req.Body.Type)
 	}
 	if req.Body.IsAdmin != nil {
-		p.IsAdmin = *req.Body.IsAdmin
+		domReq.IsAdmin = *req.Body.IsAdmin
 	}
-	result, err := h.principals.Create(ctx, p)
+	result, err := h.principals.Create(ctx, domReq)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
@@ -173,11 +173,11 @@ func (h *APIHandler) ListGroups(ctx context.Context, req ListGroupsRequestObject
 
 // CreateGroup implements the endpoint for creating a new group.
 func (h *APIHandler) CreateGroup(ctx context.Context, req CreateGroupRequestObject) (CreateGroupResponseObject, error) {
-	g := &domain.Group{Name: req.Body.Name}
+	domReq := domain.CreateGroupRequest{Name: req.Body.Name}
 	if req.Body.Description != nil {
-		g.Description = *req.Body.Description
+		domReq.Description = *req.Body.Description
 	}
-	result, err := h.groups.Create(ctx, g)
+	result, err := h.groups.Create(ctx, domReq)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
@@ -242,7 +242,7 @@ func (h *APIHandler) ListGroupMembers(ctx context.Context, req ListGroupMembersR
 
 // CreateGroupMember implements the endpoint for adding a member to a group.
 func (h *APIHandler) CreateGroupMember(ctx context.Context, req CreateGroupMemberRequestObject) (CreateGroupMemberResponseObject, error) {
-	if err := h.groups.AddMember(ctx, &domain.GroupMember{
+	if err := h.groups.AddMember(ctx, domain.AddGroupMemberRequest{
 		GroupID:    req.GroupId,
 		MemberType: string(req.Body.MemberType),
 		MemberID:   req.Body.MemberId,
@@ -259,7 +259,7 @@ func (h *APIHandler) CreateGroupMember(ctx context.Context, req CreateGroupMembe
 
 // DeleteGroupMember implements the endpoint for removing a member from a group.
 func (h *APIHandler) DeleteGroupMember(ctx context.Context, req DeleteGroupMemberRequestObject) (DeleteGroupMemberResponseObject, error) {
-	if err := h.groups.RemoveMember(ctx, &domain.GroupMember{
+	if err := h.groups.RemoveMember(ctx, domain.RemoveGroupMemberRequest{
 		GroupID:    req.GroupId,
 		MemberType: string(req.Params.MemberType),
 		MemberID:   req.Params.MemberId,
@@ -308,15 +308,14 @@ func (h *APIHandler) ListGrants(ctx context.Context, req ListGrantsRequestObject
 
 // CreateGrant implements the endpoint for granting a privilege to a principal.
 func (h *APIHandler) CreateGrant(ctx context.Context, req CreateGrantRequestObject) (CreateGrantResponseObject, error) {
-	g := &domain.PrivilegeGrant{
+	domReq := domain.CreateGrantRequest{
 		PrincipalID:   req.Body.PrincipalId,
 		PrincipalType: string(req.Body.PrincipalType),
 		SecurableType: req.Body.SecurableType,
 		SecurableID:   req.Body.SecurableId,
 		Privilege:     req.Body.Privilege,
 	}
-	principal, _ := middleware.PrincipalFromContext(ctx)
-	result, err := h.grants.Grant(ctx, principal, g)
+	result, err := h.grants.Grant(ctx, domReq)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
@@ -369,15 +368,14 @@ func (h *APIHandler) ListRowFilters(ctx context.Context, req ListRowFiltersReque
 
 // CreateRowFilter implements the endpoint for creating a row filter on a table.
 func (h *APIHandler) CreateRowFilter(ctx context.Context, req CreateRowFilterRequestObject) (CreateRowFilterResponseObject, error) {
-	f := &domain.RowFilter{
+	domReq := domain.CreateRowFilterRequest{
 		TableID:   req.TableId,
 		FilterSQL: req.Body.FilterSql,
 	}
 	if req.Body.Description != nil {
-		f.Description = *req.Body.Description
+		domReq.Description = *req.Body.Description
 	}
-	principal, _ := middleware.PrincipalFromContext(ctx)
-	result, err := h.rowFilters.Create(ctx, principal, f)
+	result, err := h.rowFilters.Create(ctx, domReq)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
@@ -407,7 +405,7 @@ func (h *APIHandler) DeleteRowFilter(ctx context.Context, req DeleteRowFilterReq
 
 // BindRowFilter implements the endpoint for binding a row filter to a principal.
 func (h *APIHandler) BindRowFilter(ctx context.Context, req BindRowFilterRequestObject) (BindRowFilterResponseObject, error) {
-	if err := h.rowFilters.Bind(ctx, &domain.RowFilterBinding{
+	if err := h.rowFilters.Bind(ctx, domain.BindRowFilterRequest{
 		RowFilterID:   req.RowFilterId,
 		PrincipalID:   req.Body.PrincipalId,
 		PrincipalType: string(req.Body.PrincipalType),
@@ -424,7 +422,7 @@ func (h *APIHandler) BindRowFilter(ctx context.Context, req BindRowFilterRequest
 
 // UnbindRowFilter implements the endpoint for unbinding a row filter from a principal.
 func (h *APIHandler) UnbindRowFilter(ctx context.Context, req UnbindRowFilterRequestObject) (UnbindRowFilterResponseObject, error) {
-	if err := h.rowFilters.Unbind(ctx, &domain.RowFilterBinding{
+	if err := h.rowFilters.Unbind(ctx, domain.BindRowFilterRequest{
 		RowFilterID:   req.RowFilterId,
 		PrincipalID:   req.Params.PrincipalId,
 		PrincipalType: string(req.Params.PrincipalType),
@@ -444,15 +442,14 @@ func (h *APIHandler) CreateRowFilterTopLevel(ctx context.Context, req CreateRowF
 	if req.Body.TableId == nil {
 		return CreateRowFilterTopLevel400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: "table_id is required"}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
-	f := &domain.RowFilter{
+	domReq := domain.CreateRowFilterRequest{
 		TableID:   *req.Body.TableId,
 		FilterSQL: req.Body.FilterSql,
 	}
 	if req.Body.Description != nil {
-		f.Description = *req.Body.Description
+		domReq.Description = *req.Body.Description
 	}
-	principal, _ := middleware.PrincipalFromContext(ctx)
-	result, err := h.rowFilters.Create(ctx, principal, f)
+	result, err := h.rowFilters.Create(ctx, domReq)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
@@ -489,16 +486,15 @@ func (h *APIHandler) ListColumnMasks(ctx context.Context, req ListColumnMasksReq
 
 // CreateColumnMask implements the endpoint for creating a column mask on a table.
 func (h *APIHandler) CreateColumnMask(ctx context.Context, req CreateColumnMaskRequestObject) (CreateColumnMaskResponseObject, error) {
-	m := &domain.ColumnMask{
+	domReq := domain.CreateColumnMaskRequest{
 		TableID:        req.TableId,
 		ColumnName:     req.Body.ColumnName,
 		MaskExpression: req.Body.MaskExpression,
 	}
 	if req.Body.Description != nil {
-		m.Description = *req.Body.Description
+		domReq.Description = *req.Body.Description
 	}
-	principal, _ := middleware.PrincipalFromContext(ctx)
-	result, err := h.columnMasks.Create(ctx, principal, m)
+	result, err := h.columnMasks.Create(ctx, domReq)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
@@ -532,7 +528,7 @@ func (h *APIHandler) BindColumnMask(ctx context.Context, req BindColumnMaskReque
 	if req.Body.SeeOriginal != nil {
 		seeOriginal = *req.Body.SeeOriginal
 	}
-	if err := h.columnMasks.Bind(ctx, &domain.ColumnMaskBinding{
+	if err := h.columnMasks.Bind(ctx, domain.BindColumnMaskRequest{
 		ColumnMaskID:  req.ColumnMaskId,
 		PrincipalID:   req.Body.PrincipalId,
 		PrincipalType: string(req.Body.PrincipalType),
@@ -550,7 +546,7 @@ func (h *APIHandler) BindColumnMask(ctx context.Context, req BindColumnMaskReque
 
 // UnbindColumnMask implements the endpoint for unbinding a column mask from a principal.
 func (h *APIHandler) UnbindColumnMask(ctx context.Context, req UnbindColumnMaskRequestObject) (UnbindColumnMaskResponseObject, error) {
-	if err := h.columnMasks.Unbind(ctx, &domain.ColumnMaskBinding{
+	if err := h.columnMasks.Unbind(ctx, domain.BindColumnMaskRequest{
 		ColumnMaskID:  req.ColumnMaskId,
 		PrincipalID:   req.Params.PrincipalId,
 		PrincipalType: string(req.Params.PrincipalType),

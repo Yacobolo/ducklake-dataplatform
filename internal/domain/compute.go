@@ -53,6 +53,11 @@ type UpdateComputeEndpointRequest struct {
 	Status      *string
 }
 
+// Validate checks that the request is well-formed.
+func (r *CreateComputeEndpointRequest) Validate() error {
+	return ValidateCreateComputeEndpointRequest(*r)
+}
+
 // ValidateCreateComputeEndpointRequest validates the create request.
 func ValidateCreateComputeEndpointRequest(r CreateComputeEndpointRequest) error {
 	if r.Name == "" {
@@ -86,6 +91,11 @@ type CreateComputeAssignmentRequest struct {
 	PrincipalType string
 	IsDefault     bool
 	FallbackLocal bool
+}
+
+// Validate checks that the request is well-formed.
+func (r *CreateComputeAssignmentRequest) Validate() error {
+	return ValidateCreateComputeAssignmentRequest(*r)
 }
 
 // ValidateCreateComputeAssignmentRequest validates the assignment create request.

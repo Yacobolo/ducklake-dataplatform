@@ -19,18 +19,22 @@ func NewGroupService(repo domain.GroupRepository, audit domain.AuditRepository) 
 }
 
 // Create validates and persists a new group. Requires admin privileges.
-func (s *GroupService) Create(ctx context.Context, g *domain.Group) (*domain.Group, error) {
+func (s *GroupService) Create(ctx context.Context, req domain.CreateGroupRequest) (*domain.Group, error) {
 	if err := requireAdmin(ctx); err != nil {
 		return nil, err
 	}
-	if g.Name == "" {
-		return nil, domain.ErrValidation("group name is required")
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+	g := &domain.Group{
+		Name:        req.Name,
+		Description: req.Description,
 	}
 	result, err := s.repo.Create(ctx, g)
 	if err != nil {
 		return nil, err
 	}
-	s.logAudit(ctx, fmt.Sprintf("CREATE_GROUP(%s)", g.Name))
+	s.logAudit(ctx, fmt.Sprintf("CREATE_GROUP(%s)", req.Name))
 	return result, nil
 }
 
@@ -57,26 +61,42 @@ func (s *GroupService) Delete(ctx context.Context, id string) error {
 }
 
 // AddMember adds a principal to a group. Requires admin privileges.
-func (s *GroupService) AddMember(ctx context.Context, m *domain.GroupMember) error {
+func (s *GroupService) AddMember(ctx context.Context, req domain.AddGroupMemberRequest) error {
 	if err := requireAdmin(ctx); err != nil {
 		return err
+	}
+	if err := req.Validate(); err != nil {
+		return err
+	}
+	m := &domain.GroupMember{
+		GroupID:    req.GroupID,
+		MemberType: req.MemberType,
+		MemberID:   req.MemberID,
 	}
 	if err := s.repo.AddMember(ctx, m); err != nil {
 		return err
 	}
-	s.logAudit(ctx, fmt.Sprintf("ADD_GROUP_MEMBER(group=%s, member=%s)", m.GroupID, m.MemberID))
+	s.logAudit(ctx, fmt.Sprintf("ADD_GROUP_MEMBER(group=%s, member=%s)", req.GroupID, req.MemberID))
 	return nil
 }
 
 // RemoveMember removes a principal from a group. Requires admin privileges.
-func (s *GroupService) RemoveMember(ctx context.Context, m *domain.GroupMember) error {
+func (s *GroupService) RemoveMember(ctx context.Context, req domain.RemoveGroupMemberRequest) error {
 	if err := requireAdmin(ctx); err != nil {
 		return err
+	}
+	if err := req.Validate(); err != nil {
+		return err
+	}
+	m := &domain.GroupMember{
+		GroupID:    req.GroupID,
+		MemberType: req.MemberType,
+		MemberID:   req.MemberID,
 	}
 	if err := s.repo.RemoveMember(ctx, m); err != nil {
 		return err
 	}
-	s.logAudit(ctx, fmt.Sprintf("REMOVE_GROUP_MEMBER(group=%s, member=%s)", m.GroupID, m.MemberID))
+	s.logAudit(ctx, fmt.Sprintf("REMOVE_GROUP_MEMBER(group=%s, member=%s)", req.GroupID, req.MemberID))
 	return nil
 }
 

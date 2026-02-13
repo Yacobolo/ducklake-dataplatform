@@ -18,15 +18,18 @@ func NewColumnMaskService(repo domain.ColumnMaskRepository, audit domain.AuditRe
 }
 
 // Create validates and persists a new column mask. Requires admin privileges.
-func (s *ColumnMaskService) Create(ctx context.Context, _ string, m *domain.ColumnMask) (*domain.ColumnMask, error) {
+func (s *ColumnMaskService) Create(ctx context.Context, req domain.CreateColumnMaskRequest) (*domain.ColumnMask, error) {
 	if err := requireAdmin(ctx); err != nil {
 		return nil, err
 	}
-	if m.ColumnName == "" {
-		return nil, domain.ErrValidation("column_name is required")
+	if err := req.Validate(); err != nil {
+		return nil, err
 	}
-	if m.MaskExpression == "" {
-		return nil, domain.ErrValidation("mask_expression is required")
+	m := &domain.ColumnMask{
+		TableID:        req.TableID,
+		ColumnName:     req.ColumnName,
+		MaskExpression: req.MaskExpression,
+		Description:    req.Description,
 	}
 	result, err := s.repo.Create(ctx, m)
 	if err != nil {
@@ -54,17 +57,34 @@ func (s *ColumnMaskService) Delete(ctx context.Context, id string) error {
 }
 
 // Bind associates a column mask with a principal or group. Requires admin privileges.
-func (s *ColumnMaskService) Bind(ctx context.Context, b *domain.ColumnMaskBinding) error {
+func (s *ColumnMaskService) Bind(ctx context.Context, req domain.BindColumnMaskRequest) error {
 	if err := requireAdmin(ctx); err != nil {
 		return err
+	}
+	if err := req.Validate(); err != nil {
+		return err
+	}
+	b := &domain.ColumnMaskBinding{
+		ColumnMaskID:  req.ColumnMaskID,
+		PrincipalID:   req.PrincipalID,
+		PrincipalType: req.PrincipalType,
+		SeeOriginal:   req.SeeOriginal,
 	}
 	return s.repo.Bind(ctx, b)
 }
 
 // Unbind removes a column mask binding from a principal or group. Requires admin privileges.
-func (s *ColumnMaskService) Unbind(ctx context.Context, b *domain.ColumnMaskBinding) error {
+func (s *ColumnMaskService) Unbind(ctx context.Context, req domain.BindColumnMaskRequest) error {
 	if err := requireAdmin(ctx); err != nil {
 		return err
+	}
+	if err := req.Validate(); err != nil {
+		return err
+	}
+	b := &domain.ColumnMaskBinding{
+		ColumnMaskID:  req.ColumnMaskID,
+		PrincipalID:   req.PrincipalID,
+		PrincipalType: req.PrincipalType,
 	}
 	return s.repo.Unbind(ctx, b)
 }

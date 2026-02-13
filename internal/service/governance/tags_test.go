@@ -30,7 +30,7 @@ func TestTagService_CreateTag(t *testing.T) {
 		svc := NewTagService(repo, audit)
 
 		val := "production"
-		result, err := svc.CreateTag(ctxWithPrincipal("alice"), "alice", &domain.Tag{Key: "env", Value: &val})
+		result, err := svc.CreateTag(ctxWithPrincipal("alice"), "alice", domain.CreateTagRequest{Key: "env", Value: &val})
 
 		require.NoError(t, err)
 		assert.Equal(t, "env", result.Key)
@@ -47,7 +47,7 @@ func TestTagService_CreateTag(t *testing.T) {
 		audit := &mockAuditRepo{}
 		svc := NewTagService(repo, audit)
 
-		_, err := svc.CreateTag(ctxWithPrincipal("alice"), "alice", &domain.Tag{Key: "env"})
+		_, err := svc.CreateTag(ctxWithPrincipal("alice"), "alice", domain.CreateTagRequest{Key: "env"})
 
 		require.Error(t, err)
 		require.ErrorIs(t, err, errTest)
@@ -178,7 +178,7 @@ func TestTagService_AssignTag(t *testing.T) {
 		audit := &mockAuditRepo{}
 		svc := NewTagService(repo, audit)
 
-		result, err := svc.AssignTag(ctxWithPrincipal("bob"), "bob", &domain.TagAssignment{
+		result, err := svc.AssignTag(ctxWithPrincipal("bob"), "bob", domain.AssignTagRequest{
 			TagID:         "1",
 			SecurableType: "table",
 			SecurableID:   "42",
@@ -199,7 +199,7 @@ func TestTagService_AssignTag(t *testing.T) {
 		audit := &mockAuditRepo{}
 		svc := NewTagService(repo, audit)
 
-		_, err := svc.AssignTag(ctxWithPrincipal("bob"), "bob", &domain.TagAssignment{TagID: "1"})
+		_, err := svc.AssignTag(ctxWithPrincipal("bob"), "bob", domain.AssignTagRequest{TagID: "1", SecurableType: "table", SecurableID: "1"})
 
 		require.Error(t, err)
 		require.ErrorIs(t, err, errTest)
@@ -327,7 +327,7 @@ func TestTagService_CreateTag_ClassificationValidation(t *testing.T) {
 		svc := NewTagService(repo, audit)
 
 		val := "pii"
-		result, err := svc.CreateTag(ctxWithPrincipal("alice"), "alice", &domain.Tag{Key: "classification", Value: &val})
+		result, err := svc.CreateTag(ctxWithPrincipal("alice"), "alice", domain.CreateTagRequest{Key: "classification", Value: &val})
 
 		require.NoError(t, err)
 		assert.Equal(t, "classification", result.Key)
@@ -341,7 +341,7 @@ func TestTagService_CreateTag_ClassificationValidation(t *testing.T) {
 		svc := NewTagService(repo, audit)
 
 		val := "invalid_class"
-		_, err := svc.CreateTag(ctxWithPrincipal("alice"), "alice", &domain.Tag{Key: "classification", Value: &val})
+		_, err := svc.CreateTag(ctxWithPrincipal("alice"), "alice", domain.CreateTagRequest{Key: "classification", Value: &val})
 
 		require.Error(t, err)
 		var validationErr *domain.ValidationError

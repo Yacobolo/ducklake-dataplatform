@@ -18,12 +18,17 @@ func NewRowFilterService(repo domain.RowFilterRepository, audit domain.AuditRepo
 }
 
 // Create validates and persists a new row filter. Requires admin privileges.
-func (s *RowFilterService) Create(ctx context.Context, _ string, f *domain.RowFilter) (*domain.RowFilter, error) {
+func (s *RowFilterService) Create(ctx context.Context, req domain.CreateRowFilterRequest) (*domain.RowFilter, error) {
 	if err := requireAdmin(ctx); err != nil {
 		return nil, err
 	}
-	if f.FilterSQL == "" {
-		return nil, domain.ErrValidation("filter_sql is required")
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+	f := &domain.RowFilter{
+		TableID:     req.TableID,
+		FilterSQL:   req.FilterSQL,
+		Description: req.Description,
 	}
 	result, err := s.repo.Create(ctx, f)
 	if err != nil {
@@ -51,17 +56,33 @@ func (s *RowFilterService) Delete(ctx context.Context, id string) error {
 }
 
 // Bind associates a row filter with a principal or group. Requires admin privileges.
-func (s *RowFilterService) Bind(ctx context.Context, b *domain.RowFilterBinding) error {
+func (s *RowFilterService) Bind(ctx context.Context, req domain.BindRowFilterRequest) error {
 	if err := requireAdmin(ctx); err != nil {
 		return err
+	}
+	if err := req.Validate(); err != nil {
+		return err
+	}
+	b := &domain.RowFilterBinding{
+		RowFilterID:   req.RowFilterID,
+		PrincipalID:   req.PrincipalID,
+		PrincipalType: req.PrincipalType,
 	}
 	return s.repo.Bind(ctx, b)
 }
 
 // Unbind removes a row filter binding from a principal or group. Requires admin privileges.
-func (s *RowFilterService) Unbind(ctx context.Context, b *domain.RowFilterBinding) error {
+func (s *RowFilterService) Unbind(ctx context.Context, req domain.BindRowFilterRequest) error {
 	if err := requireAdmin(ctx); err != nil {
 		return err
+	}
+	if err := req.Validate(); err != nil {
+		return err
+	}
+	b := &domain.RowFilterBinding{
+		RowFilterID:   req.RowFilterID,
+		PrincipalID:   req.PrincipalID,
+		PrincipalType: req.PrincipalType,
 	}
 	return s.repo.Unbind(ctx, b)
 }

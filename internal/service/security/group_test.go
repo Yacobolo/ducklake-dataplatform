@@ -24,7 +24,7 @@ func setupGroupService(t *testing.T) (*GroupService, *PrincipalService) {
 func TestGroupService_Create_AdminRequired(t *testing.T) {
 	svc, _ := setupGroupService(t)
 
-	_, err := svc.Create(nonAdminCtx(), &domain.Group{Name: "test-group"})
+	_, err := svc.Create(nonAdminCtx(), domain.CreateGroupRequest{Name: "test-group"})
 	require.Error(t, err)
 	var accessDenied *domain.AccessDeniedError
 	assert.ErrorAs(t, err, &accessDenied)
@@ -33,7 +33,7 @@ func TestGroupService_Create_AdminRequired(t *testing.T) {
 func TestGroupService_Create_AdminAllowed(t *testing.T) {
 	svc, _ := setupGroupService(t)
 
-	g, err := svc.Create(adminCtx(), &domain.Group{Name: "engineering"})
+	g, err := svc.Create(adminCtx(), domain.CreateGroupRequest{Name: "engineering"})
 	require.NoError(t, err)
 	assert.Equal(t, "engineering", g.Name)
 	assert.NotEmpty(t, g.ID)
@@ -42,7 +42,7 @@ func TestGroupService_Create_AdminAllowed(t *testing.T) {
 func TestGroupService_Create_EmptyName(t *testing.T) {
 	svc, _ := setupGroupService(t)
 
-	_, err := svc.Create(adminCtx(), &domain.Group{Name: ""})
+	_, err := svc.Create(adminCtx(), domain.CreateGroupRequest{Name: ""})
 	require.Error(t, err)
 	var validationErr *domain.ValidationError
 	assert.ErrorAs(t, err, &validationErr)
@@ -51,7 +51,7 @@ func TestGroupService_Create_EmptyName(t *testing.T) {
 func TestGroupService_Delete_AdminRequired(t *testing.T) {
 	svc, _ := setupGroupService(t)
 
-	g, err := svc.Create(adminCtx(), &domain.Group{Name: "to-delete"})
+	g, err := svc.Create(adminCtx(), domain.CreateGroupRequest{Name: "to-delete"})
 	require.NoError(t, err)
 
 	err = svc.Delete(nonAdminCtx(), g.ID)
@@ -63,7 +63,7 @@ func TestGroupService_Delete_AdminRequired(t *testing.T) {
 func TestGroupService_Delete_AdminAllowed(t *testing.T) {
 	svc, _ := setupGroupService(t)
 
-	g, err := svc.Create(adminCtx(), &domain.Group{Name: "to-delete"})
+	g, err := svc.Create(adminCtx(), domain.CreateGroupRequest{Name: "to-delete"})
 	require.NoError(t, err)
 
 	err = svc.Delete(adminCtx(), g.ID)
@@ -73,13 +73,13 @@ func TestGroupService_Delete_AdminAllowed(t *testing.T) {
 func TestGroupService_AddMember_AdminRequired(t *testing.T) {
 	svc, principalSvc := setupGroupService(t)
 
-	g, err := svc.Create(adminCtx(), &domain.Group{Name: "team"})
+	g, err := svc.Create(adminCtx(), domain.CreateGroupRequest{Name: "team"})
 	require.NoError(t, err)
 
-	p, err := principalSvc.Create(adminCtx(), &domain.Principal{Name: "member1", Type: "user"})
+	p, err := principalSvc.Create(adminCtx(), domain.CreatePrincipalRequest{Name: "member1", Type: "user"})
 	require.NoError(t, err)
 
-	err = svc.AddMember(nonAdminCtx(), &domain.GroupMember{
+	err = svc.AddMember(nonAdminCtx(), domain.AddGroupMemberRequest{
 		GroupID:    g.ID,
 		MemberID:   p.ID,
 		MemberType: "user",
@@ -92,13 +92,13 @@ func TestGroupService_AddMember_AdminRequired(t *testing.T) {
 func TestGroupService_AddMember_AdminAllowed(t *testing.T) {
 	svc, principalSvc := setupGroupService(t)
 
-	g, err := svc.Create(adminCtx(), &domain.Group{Name: "team"})
+	g, err := svc.Create(adminCtx(), domain.CreateGroupRequest{Name: "team"})
 	require.NoError(t, err)
 
-	p, err := principalSvc.Create(adminCtx(), &domain.Principal{Name: "member1", Type: "user"})
+	p, err := principalSvc.Create(adminCtx(), domain.CreatePrincipalRequest{Name: "member1", Type: "user"})
 	require.NoError(t, err)
 
-	err = svc.AddMember(adminCtx(), &domain.GroupMember{
+	err = svc.AddMember(adminCtx(), domain.AddGroupMemberRequest{
 		GroupID:    g.ID,
 		MemberID:   p.ID,
 		MemberType: "user",
@@ -109,16 +109,16 @@ func TestGroupService_AddMember_AdminAllowed(t *testing.T) {
 func TestGroupService_RemoveMember_AdminRequired(t *testing.T) {
 	svc, principalSvc := setupGroupService(t)
 
-	g, err := svc.Create(adminCtx(), &domain.Group{Name: "team"})
+	g, err := svc.Create(adminCtx(), domain.CreateGroupRequest{Name: "team"})
 	require.NoError(t, err)
 
-	p, err := principalSvc.Create(adminCtx(), &domain.Principal{Name: "member1", Type: "user"})
+	p, err := principalSvc.Create(adminCtx(), domain.CreatePrincipalRequest{Name: "member1", Type: "user"})
 	require.NoError(t, err)
 
-	err = svc.AddMember(adminCtx(), &domain.GroupMember{GroupID: g.ID, MemberID: p.ID, MemberType: "user"})
+	err = svc.AddMember(adminCtx(), domain.AddGroupMemberRequest{GroupID: g.ID, MemberID: p.ID, MemberType: "user"})
 	require.NoError(t, err)
 
-	err = svc.RemoveMember(nonAdminCtx(), &domain.GroupMember{GroupID: g.ID, MemberID: p.ID, MemberType: "user"})
+	err = svc.RemoveMember(nonAdminCtx(), domain.RemoveGroupMemberRequest{GroupID: g.ID, MemberID: p.ID, MemberType: "user"})
 	require.Error(t, err)
 	var accessDenied *domain.AccessDeniedError
 	assert.ErrorAs(t, err, &accessDenied)
@@ -127,7 +127,7 @@ func TestGroupService_RemoveMember_AdminRequired(t *testing.T) {
 func TestGroupService_List_NoAdminRequired(t *testing.T) {
 	svc, _ := setupGroupService(t)
 
-	_, err := svc.Create(adminCtx(), &domain.Group{Name: "visible"})
+	_, err := svc.Create(adminCtx(), domain.CreateGroupRequest{Name: "visible"})
 	require.NoError(t, err)
 
 	groups, total, err := svc.List(nonAdminCtx(), domain.PageRequest{})
@@ -139,7 +139,7 @@ func TestGroupService_List_NoAdminRequired(t *testing.T) {
 func TestGroupService_GetByID_NoAdminRequired(t *testing.T) {
 	svc, _ := setupGroupService(t)
 
-	g, err := svc.Create(adminCtx(), &domain.Group{Name: "readable"})
+	g, err := svc.Create(adminCtx(), domain.CreateGroupRequest{Name: "readable"})
 	require.NoError(t, err)
 
 	found, err := svc.GetByID(nonAdminCtx(), g.ID)
@@ -150,7 +150,7 @@ func TestGroupService_GetByID_NoAdminRequired(t *testing.T) {
 func TestGroupService_ListMembers_NoAdminRequired(t *testing.T) {
 	svc, _ := setupGroupService(t)
 
-	g, err := svc.Create(adminCtx(), &domain.Group{Name: "team"})
+	g, err := svc.Create(adminCtx(), domain.CreateGroupRequest{Name: "team"})
 	require.NoError(t, err)
 
 	members, total, err := svc.ListMembers(nonAdminCtx(), g.ID, domain.PageRequest{})

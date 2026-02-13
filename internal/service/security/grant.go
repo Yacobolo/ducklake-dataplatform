@@ -18,12 +18,19 @@ func NewGrantService(repo domain.GrantRepository, audit domain.AuditRepository) 
 }
 
 // Grant creates a new privilege grant. Requires admin privileges.
-func (s *GrantService) Grant(ctx context.Context, _ string, g *domain.PrivilegeGrant) (*domain.PrivilegeGrant, error) {
+func (s *GrantService) Grant(ctx context.Context, req domain.CreateGrantRequest) (*domain.PrivilegeGrant, error) {
 	if err := requireAdmin(ctx); err != nil {
 		return nil, err
 	}
-	if g.Privilege == "" {
-		return nil, domain.ErrValidation("privilege is required")
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+	g := &domain.PrivilegeGrant{
+		PrincipalID:   req.PrincipalID,
+		PrincipalType: req.PrincipalType,
+		SecurableType: req.SecurableType,
+		SecurableID:   req.SecurableID,
+		Privilege:     req.Privilege,
 	}
 	result, err := s.repo.Grant(ctx, g)
 	if err != nil {

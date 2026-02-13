@@ -16,7 +16,7 @@ import (
 
 // PrincipalProvisioner resolves or creates a principal from an external identity.
 type PrincipalProvisioner interface {
-	ResolveOrProvision(ctx context.Context, issuer, externalID, displayName string, isBootstrap bool) (*domain.Principal, error)
+	ResolveOrProvision(ctx context.Context, req domain.ResolveOrProvisionRequest) (*domain.Principal, error)
 }
 
 // APIKeyLookup abstracts the API key verification store.
@@ -117,7 +117,12 @@ func (a *Authenticator) authenticateJWT(ctx context.Context, tokenStr string) (*
 		issuer := claims.Issuer
 		isBootstrap := a.cfg.BootstrapAdmin != "" && claims.Subject == a.cfg.BootstrapAdmin
 
-		p, err := a.provisioner.ResolveOrProvision(ctx, issuer, claims.Subject, displayName, isBootstrap)
+		p, err := a.provisioner.ResolveOrProvision(ctx, domain.ResolveOrProvisionRequest{
+			Issuer:      issuer,
+			ExternalID:  claims.Subject,
+			DisplayName: displayName,
+			IsBootstrap: isBootstrap,
+		})
 		if err != nil {
 			a.logger.Error("JIT provisioning failed", "error", err, "sub", claims.Subject)
 			return nil, fmt.Errorf("principal resolution failed: %w", err)
