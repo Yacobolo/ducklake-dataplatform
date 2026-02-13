@@ -24,20 +24,27 @@ func (h *APIHandler) CreateAPIKey(ctx context.Context, req CreateAPIKeyRequestOb
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.ValidationError)):
-			return CreateAPIKey400JSONResponse{Code: 400, Message: err.Error()}, nil
+			return CreateAPIKey400JSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: CreateAPIKey400ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CreateAPIKey403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return CreateAPIKey403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: CreateAPIKey403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}
 	}
 	return CreateAPIKey201JSONResponse{
-		Id:        &key.ID,
-		Key:       &rawKey,
-		Name:      &key.Name,
-		KeyPrefix: &key.KeyPrefix,
-		ExpiresAt: key.ExpiresAt,
-		CreatedAt: &key.CreatedAt,
+		Body: CreateAPIKeyResponse{
+			Id:        &key.ID,
+			Key:       &rawKey,
+			Name:      &key.Name,
+			KeyPrefix: &key.KeyPrefix,
+			ExpiresAt: key.ExpiresAt,
+			CreatedAt: &key.CreatedAt,
+		},
+		Headers: CreateAPIKey201ResponseHeaders{
+			XRateLimitLimit:     defaultRateLimitLimit,
+			XRateLimitRemaining: defaultRateLimitRemaining,
+			XRateLimitReset:     defaultRateLimitReset,
+		},
 	}, nil
 }
 
@@ -53,7 +60,10 @@ func (h *APIHandler) ListAPIKeys(ctx context.Context, req ListAPIKeysRequestObje
 		data[i] = apiKeyToAPI(k)
 	}
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListAPIKeys200JSONResponse{Data: &data, NextPageToken: optStr(npt)}, nil
+	return ListAPIKeys200JSONResponse{
+		Body:    PaginatedAPIKeys{Data: &data, NextPageToken: optStr(npt)},
+		Headers: ListAPIKeys200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // DeleteAPIKey implements the endpoint for deleting an API key by ID.
@@ -61,7 +71,7 @@ func (h *APIHandler) DeleteAPIKey(ctx context.Context, req DeleteAPIKeyRequestOb
 	if err := h.apiKeys.Delete(ctx, req.ApiKeyId); err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return DeleteAPIKey404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return DeleteAPIKey404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: DeleteAPIKey404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}
@@ -75,12 +85,15 @@ func (h *APIHandler) CleanupExpiredAPIKeys(ctx context.Context, _ CleanupExpired
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CleanupExpiredAPIKeys403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return CleanupExpiredAPIKeys403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: CleanupExpiredAPIKeys403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return CleanupExpiredAPIKeys200JSONResponse{DeletedCount: &count}, nil
+	return CleanupExpiredAPIKeys200JSONResponse{
+		Body:    CleanupAPIKeysResponse{DeletedCount: &count},
+		Headers: CleanupExpiredAPIKeys200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // apiKeyToAPI converts a domain APIKey to the API representation.

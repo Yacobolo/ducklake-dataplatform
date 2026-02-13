@@ -25,7 +25,7 @@ func (h *APIHandler) ListViews(ctx context.Context, request ListViewsRequestObje
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return ListViews404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return ListViews404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: ListViews404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}
@@ -37,7 +37,10 @@ func (h *APIHandler) ListViews(ctx context.Context, request ListViewsRequestObje
 	}
 
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListViews200JSONResponse{Data: &data, NextPageToken: optStr(npt)}, nil
+	return ListViews200JSONResponse{
+		Body:    PaginatedViewDetails{Data: &data, NextPageToken: optStr(npt)},
+		Headers: ListViews200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // CreateView implements the endpoint for creating a new view in a schema.
@@ -55,16 +58,19 @@ func (h *APIHandler) CreateView(ctx context.Context, request CreateViewRequestOb
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CreateView403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return CreateView403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: CreateView403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, new(*domain.ValidationError)):
-			return CreateView400JSONResponse{Code: 400, Message: err.Error()}, nil
+			return CreateView400JSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: CreateView400ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, new(*domain.ConflictError)):
-			return CreateView409JSONResponse{Code: 409, Message: err.Error()}, nil
+			return CreateView409JSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: CreateView409ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
-			return CreateView400JSONResponse{Code: 400, Message: err.Error()}, nil
+			return CreateView400JSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: CreateView400ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		}
 	}
-	return CreateView201JSONResponse(viewDetailToAPI(*result)), nil
+	return CreateView201JSONResponse{
+		Body:    viewDetailToAPI(*result),
+		Headers: CreateView201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // GetView implements the endpoint for retrieving a view by name.
@@ -73,12 +79,15 @@ func (h *APIHandler) GetView(ctx context.Context, request GetViewRequestObject) 
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return GetView404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return GetView404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GetView404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return GetView200JSONResponse(viewDetailToAPI(*result)), nil
+	return GetView200JSONResponse{
+		Body:    viewDetailToAPI(*result),
+		Headers: GetView200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // UpdateView implements the endpoint for updating a view by name.
@@ -99,14 +108,17 @@ func (h *APIHandler) UpdateView(ctx context.Context, request UpdateViewRequestOb
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return UpdateView403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return UpdateView403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: UpdateView403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return UpdateView404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return UpdateView404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: UpdateView404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return UpdateView200JSONResponse(viewDetailToAPI(*result)), nil
+	return UpdateView200JSONResponse{
+		Body:    viewDetailToAPI(*result),
+		Headers: UpdateView200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // DeleteView implements the endpoint for deleting a view by name.
@@ -115,9 +127,9 @@ func (h *APIHandler) DeleteView(ctx context.Context, request DeleteViewRequestOb
 	if err := h.views.DeleteView(ctx, string(request.CatalogName), principal, request.SchemaName, request.ViewName); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return DeleteView403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return DeleteView403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: DeleteView403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return DeleteView404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return DeleteView404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: DeleteView404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}

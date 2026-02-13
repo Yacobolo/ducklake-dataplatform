@@ -7,7 +7,9 @@ parameters:
     schema:
       type: integer
       default: 100
+      minimum: 1
       maximum: 1000
+      format: int32
   PageToken:
     name: page_token
     in: query
@@ -15,34 +17,54 @@ parameters:
     required: false
     schema:
       type: string
+      maxLength: 4096
+      pattern: '^\S+$'
 
 Error:
+  description: Standard error response returned by the API on failure.
   type: object
   required: [code, message]
   properties:
     code:
       type: integer
+      minimum: 100
+      maximum: 599
+      format: int32
     message:
       type: string
+      maxLength: 4096
+      pattern: '[\s\S]+'
 
 QueryRequest:
+  description: A SQL query to execute against the analytics engine.
   type: object
   required: [sql]
   properties:
     sql:
       type: string
+      maxLength: 65536
+      pattern: '[\s\S]+'
 
 QueryResult:
+  description: The result set returned after executing a SQL query.
   type: object
   properties:
     columns:
       type: array
+      maxItems: 10000
       items:
         type: string
+        maxLength: 255
+        pattern: '^\S.*$'
     rows:
       type: array
+      maxItems: 1000000
       items:
         type: array
+        maxItems: 10000
         items: {}
     row_count:
       type: integer
+      minimum: 0
+      maximum: 9223372036854775807
+      format: int64

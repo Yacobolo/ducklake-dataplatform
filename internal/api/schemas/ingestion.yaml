@@ -1,25 +1,36 @@
 UploadUrlRequest:
+  description: Request to obtain a presigned URL for uploading a Parquet file.
   type: object
+  additionalProperties: false
   properties:
     filename:
       type: string
+      maxLength: 255
+      pattern: '^\S.*$'
       description: Optional filename hint for the uploaded file.
 
 UploadUrlResponse:
+  description: Response containing the presigned upload URL and associated S3 key.
   type: object
   properties:
     upload_url:
       type: string
+      maxLength: 2048
+      format: uri
       description: Presigned PUT URL for uploading the Parquet file.
     s3_key:
       type: string
+      maxLength: 1024
+      pattern: '^\S+$'
       description: The S3 key where the file will be stored.
     expires_at:
       type: string
       format: date-time
+      maxLength: 64
       description: When the presigned URL expires.
 
 IngestionOptions:
+  description: Options controlling how ingested files are mapped to the target table schema.
   type: object
   properties:
     allow_missing_columns:
@@ -32,39 +43,60 @@ IngestionOptions:
       description: Ignore columns in the Parquet file not present in the table.
 
 CommitIngestionRequest:
+  description: Request to commit previously uploaded files into a target table.
   type: object
+  additionalProperties: false
   required: [s3_keys]
   properties:
     s3_keys:
       type: array
+      maxItems: 10000
       items:
         type: string
+        maxLength: 1024
+        pattern: '^\S+$'
       description: S3 keys returned from upload-url to register.
     options:
       $ref: '#/IngestionOptions'
 
 LoadExternalRequest:
+  description: Request to load data from external S3 paths or globs into a table.
   type: object
+  additionalProperties: false
   required: [paths]
   properties:
     paths:
       type: array
+      maxItems: 10000
       items:
         type: string
+        maxLength: 2048
+        pattern: '^\S+$'
       description: S3 paths or globs to register.
     options:
       $ref: '#/IngestionOptions'
 
 IngestionResult:
+  description: Summary of an ingestion operation including file counts and target table.
   type: object
   properties:
     files_registered:
       type: integer
+      minimum: 0
+      maximum: 9223372036854775807
+      format: int64
       description: Number of files successfully registered.
     files_skipped:
       type: integer
+      minimum: 0
+      maximum: 9223372036854775807
+      format: int64
       description: Number of files skipped (e.g., empty files).
     schema:
       type: string
+      maxLength: 255
+      pattern: '^\S.*$'
     table:
       type: string
+      maxLength: 255
+      pattern: '^\S.*$'

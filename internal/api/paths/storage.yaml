@@ -11,16 +11,145 @@ paths:
       responses:
         '200':
           description: Paginated list of storage credentials
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/storage.yaml#/PaginatedStorageCredentials'
-        '401':
-          description: Unauthorized
+              example:
+                data:
+                  - id: 1
+                    name: "aws-prod-creds"
+                    credential_type: S3
+                    endpoint: "s3.amazonaws.com"
+                    region: "us-east-1"
+                    url_style: "path"
+                    comment: "Production S3 credentials"
+                    owner: "admin"
+                    created_at: "2025-01-15T09:30:00Z"
+                    updated_at: "2025-01-15T09:30:00Z"
+                next_page_token: "eyJpZCI6MTB9"
+        '429':
+          description: Rate limit exceeded. Retry after the indicated duration.
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying the request.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 3600
+                format: int32
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: "Rate limit exceeded, retry after 30 seconds"
+        '500':
+          description: An unexpected internal server error occurred.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: "An unexpected error occurred"
+        '401':
+          description: Unauthorized
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: "Authentication required"
     post:
       operationId: createStorageCredential
       summary: Create a storage credential
@@ -32,46 +161,258 @@ paths:
           application/json:
             schema:
               $ref: '../schemas/storage.yaml#/CreateStorageCredentialRequest'
+            example:
+              name: "aws-prod-creds"
+              credential_type: S3
+              key_id: "AKIAIOSFODNN7EXAMPLE"
+              secret: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+              endpoint: "s3.amazonaws.com"
+              region: "us-east-1"
+              url_style: "path"
       responses:
         '201':
           description: Created credential (sensitive fields omitted)
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/storage.yaml#/StorageCredential'
+              example:
+                id: 1
+                name: "aws-prod-creds"
+                credential_type: S3
+                endpoint: "s3.amazonaws.com"
+                region: "us-east-1"
+                url_style: "path"
+                comment: "Production S3 credentials"
+                owner: "admin"
+                created_at: "2025-01-15T09:30:00Z"
+                updated_at: "2025-01-15T09:30:00Z"
         '400':
           description: Validation error
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
-        '403':
-          description: Access denied
+              example:
+                code: 400
+                message: "Invalid request: field 'name' is required"
+        '429':
+          description: Rate limit exceeded. Retry after the indicated duration.
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying the request.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 3600
+                format: int32
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
-        '409':
-          description: Credential already exists
+              example:
+                code: 429
+                message: "Rate limit exceeded, retry after 30 seconds"
+        '500':
+          description: An unexpected internal server error occurred.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
-
+              example:
+                code: 500
+                message: "An unexpected error occurred"
         '401':
           description: Unauthorized
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: "Authentication required"
+        '403':
+          description: Access denied
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: "Insufficient privileges to perform this operation"
+        '409':
+          description: Credential already exists
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 409
+                message: "Resource already exists"
 
   /storage-credentials/{credentialName}:
     parameters:
       - name: credentialName
         in: path
         required: true
+        description: Name of the storage credential.
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
     get:
       operationId: getStorageCredential
       summary: Get a storage credential by name
@@ -80,22 +421,174 @@ paths:
       responses:
         '200':
           description: Credential details
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/storage.yaml#/StorageCredential'
-        '404':
-          description: Not found
+              example:
+                id: 1
+                name: "aws-prod-creds"
+                credential_type: S3
+                endpoint: "s3.amazonaws.com"
+                region: "us-east-1"
+                url_style: "path"
+                comment: "Production S3 credentials"
+                owner: "admin"
+                created_at: "2025-01-15T09:30:00Z"
+                updated_at: "2025-01-15T09:30:00Z"
+        '429':
+          description: Rate limit exceeded. Retry after the indicated duration.
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying the request.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 3600
+                format: int32
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: "Rate limit exceeded, retry after 30 seconds"
+        '500':
+          description: An unexpected internal server error occurred.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: "An unexpected error occurred"
         '401':
           description: Unauthorized
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: "Authentication required"
+        '404':
+          description: Not found
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: "Resource not found"
     patch:
       operationId: updateStorageCredential
       summary: Update a storage credential
@@ -107,31 +600,243 @@ paths:
           application/json:
             schema:
               $ref: '../schemas/storage.yaml#/UpdateStorageCredentialRequest'
+            example:
+              key_id: "AKIAIOSFODNN7RENEWED"
+              secret: "newJalrXUtnFEMI/K7MDENG/bPxRfiCYNEWKEY"
+              region: "us-west-2"
       responses:
         '200':
           description: Updated credential
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/storage.yaml#/StorageCredential'
-        '403':
-          description: Access denied
+              example:
+                id: 1
+                name: "aws-prod-creds"
+                credential_type: S3
+                endpoint: "s3.amazonaws.com"
+                region: "us-east-1"
+                url_style: "path"
+                comment: "Production S3 credentials"
+                owner: "admin"
+                created_at: "2025-01-15T09:30:00Z"
+                updated_at: "2025-01-15T09:30:00Z"
+        '400':
+          description: Invalid request parameters or malformed request body.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
-        '404':
-          description: Not found
+              example:
+                code: 400
+                message: "Invalid request: field 'name' is required"
+        '429':
+          description: Rate limit exceeded. Retry after the indicated duration.
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying the request.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 3600
+                format: int32
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: "Rate limit exceeded, retry after 30 seconds"
+        '500':
+          description: An unexpected internal server error occurred.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: "An unexpected error occurred"
         '401':
           description: Unauthorized
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: "Authentication required"
+        '403':
+          description: Access denied
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: "Insufficient privileges to perform this operation"
+        '404':
+          description: Not found
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: "Resource not found"
     delete:
       operationId: deleteStorageCredential
       summary: Delete a storage credential
@@ -140,47 +845,342 @@ paths:
       responses:
         '204':
           description: Credential deleted
-        '403':
-          description: Access denied
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+        '429':
+          description: Rate limit exceeded. Retry after the indicated duration.
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying the request.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 3600
+                format: int32
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
-        '404':
-          description: Not found
+              example:
+                code: 429
+                message: "Rate limit exceeded, retry after 30 seconds"
+        '500':
+          description: An unexpected internal server error occurred.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
-
+              example:
+                code: 500
+                message: "An unexpected error occurred"
         '401':
           description: Unauthorized
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: "Authentication required"
+        '403':
+          description: Access denied
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: "Insufficient privileges to perform this operation"
+        '404':
+          description: Not found
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: "Resource not found"
 
   /external-locations:
     get:
       operationId: listExternalLocations
       summary: List external locations
       tags: [Storage]
+      description: Returns a paginated list of external locations configured for remote storage access.
       parameters:
         - $ref: '../schemas/common.yaml#/parameters/MaxResults'
         - $ref: '../schemas/common.yaml#/parameters/PageToken'
       responses:
         '200':
           description: Paginated list of external locations
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/storage.yaml#/PaginatedExternalLocations'
-        '401':
-          description: Unauthorized
+              example:
+                data:
+                  - id: 1
+                    name: "prod-datalake"
+                    url: "s3://acme-datalake/warehouse/"
+                    credential_name: "aws-prod-creds"
+                    storage_type: S3
+                    comment: "Production data lake"
+                    owner: "admin"
+                    read_only: false
+                    created_at: "2025-01-15T09:30:00Z"
+                    updated_at: "2025-01-15T09:30:00Z"
+                next_page_token: "eyJpZCI6MTB9"
+        '429':
+          description: Rate limit exceeded. Retry after the indicated duration.
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying the request.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 3600
+                format: int32
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: "Rate limit exceeded, retry after 30 seconds"
+        '500':
+          description: An unexpected internal server error occurred.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: "An unexpected error occurred"
+        '401':
+          description: Unauthorized
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: "Authentication required"
     post:
       operationId: createExternalLocation
       summary: Create an external location
@@ -195,69 +1195,433 @@ paths:
           application/json:
             schema:
               $ref: '../schemas/storage.yaml#/CreateExternalLocationRequest'
+            example:
+              name: "prod-datalake"
+              url: "s3://acme-datalake/warehouse/"
+              credential_name: "aws-prod-creds"
+              storage_type: S3
+              comment: "Production data lake"
+              read_only: false
       responses:
         '201':
           description: Created location
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/storage.yaml#/ExternalLocation'
+              example:
+                id: 1
+                name: "prod-datalake"
+                url: "s3://acme-datalake/warehouse/"
+                credential_name: "aws-prod-creds"
+                storage_type: S3
+                comment: "Production data lake"
+                owner: "admin"
+                read_only: false
+                created_at: "2025-01-15T09:30:00Z"
+                updated_at: "2025-01-15T09:30:00Z"
         '400':
           description: Validation error
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
-        '403':
-          description: Access denied
+              example:
+                code: 400
+                message: "Invalid request: field 'name' is required"
+        '429':
+          description: Rate limit exceeded. Retry after the indicated duration.
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying the request.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 3600
+                format: int32
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
-        '409':
-          description: Location already exists
+              example:
+                code: 429
+                message: "Rate limit exceeded, retry after 30 seconds"
+        '500':
+          description: An unexpected internal server error occurred.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
-
+              example:
+                code: 500
+                message: "An unexpected error occurred"
         '401':
           description: Unauthorized
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: "Authentication required"
+        '403':
+          description: Access denied
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: "Insufficient privileges to perform this operation"
+        '409':
+          description: Location already exists
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 409
+                message: "Resource already exists"
 
   /external-locations/{locationName}:
     parameters:
       - name: locationName
         in: path
         required: true
+        description: Name of the external location.
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
     get:
       operationId: getExternalLocation
       summary: Get an external location by name
       tags: [Storage]
+      description: Retrieves the details of a specific external location identified by its name.
       responses:
         '200':
           description: Location details
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/storage.yaml#/ExternalLocation'
-        '404':
-          description: Not found
+              example:
+                id: 1
+                name: "prod-datalake"
+                url: "s3://acme-datalake/warehouse/"
+                credential_name: "aws-prod-creds"
+                storage_type: S3
+                comment: "Production data lake"
+                owner: "admin"
+                read_only: false
+                created_at: "2025-01-15T09:30:00Z"
+                updated_at: "2025-01-15T09:30:00Z"
+        '429':
+          description: Rate limit exceeded. Retry after the indicated duration.
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying the request.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 3600
+                format: int32
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: "Rate limit exceeded, retry after 30 seconds"
+        '500':
+          description: An unexpected internal server error occurred.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: "An unexpected error occurred"
         '401':
           description: Unauthorized
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: "Authentication required"
+        '404':
+          description: Not found
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: "Resource not found"
     patch:
       operationId: updateExternalLocation
       summary: Update an external location
@@ -269,31 +1633,244 @@ paths:
           application/json:
             schema:
               $ref: '../schemas/storage.yaml#/UpdateExternalLocationRequest'
+            example:
+              url: "s3://acme-datalake/warehouse-v2/"
+              credential_name: "aws-prod-creds"
+              comment: "Updated production data lake path"
+              read_only: false
       responses:
         '200':
           description: Updated location
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/storage.yaml#/ExternalLocation'
-        '403':
-          description: Access denied
+              example:
+                id: 1
+                name: "prod-datalake"
+                url: "s3://acme-datalake/warehouse/"
+                credential_name: "aws-prod-creds"
+                storage_type: S3
+                comment: "Production data lake"
+                owner: "admin"
+                read_only: false
+                created_at: "2025-01-15T09:30:00Z"
+                updated_at: "2025-01-15T09:30:00Z"
+        '400':
+          description: Invalid request parameters or malformed request body.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
-        '404':
-          description: Not found
+              example:
+                code: 400
+                message: "Invalid request: field 'name' is required"
+        '429':
+          description: Rate limit exceeded. Retry after the indicated duration.
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying the request.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 3600
+                format: int32
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: "Rate limit exceeded, retry after 30 seconds"
+        '500':
+          description: An unexpected internal server error occurred.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: "An unexpected error occurred"
         '401':
           description: Unauthorized
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: "Authentication required"
+        '403':
+          description: Access denied
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: "Insufficient privileges to perform this operation"
+        '404':
+          description: Not found
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: "Resource not found"
     delete:
       operationId: deleteExternalLocation
       summary: Delete an external location
@@ -302,22 +1879,187 @@ paths:
       responses:
         '204':
           description: Location deleted
-        '403':
-          description: Access denied
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+        '429':
+          description: Rate limit exceeded. Retry after the indicated duration.
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying the request.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 3600
+                format: int32
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
-        '404':
-          description: Not found
+              example:
+                code: 429
+                message: "Rate limit exceeded, retry after 30 seconds"
+        '500':
+          description: An unexpected internal server error occurred.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
-
+              example:
+                code: 500
+                message: "An unexpected error occurred"
         '401':
           description: Unauthorized
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
           content:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: "Authentication required"
+        '403':
+          description: Access denied
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: "Insufficient privileges to perform this operation"
+        '404':
+          description: Not found
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: "Resource not found"
