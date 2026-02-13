@@ -40,3 +40,4 @@ ducklake_meta.sqlite*
 # Binaries
 /server
 /server_test
+/bin/
