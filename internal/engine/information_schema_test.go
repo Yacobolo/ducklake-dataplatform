@@ -84,6 +84,68 @@ func (m *mockEngineCatalog) CreateExternalTable(_ context.Context, _ string, _ d
 
 var _ domain.CatalogRepository = (*mockEngineCatalog)(nil)
 
+// === Mock CatalogRepoFactory ===
+
+type mockCatalogRepoFactory struct {
+	catalogs map[string]domain.CatalogRepository
+}
+
+func (f *mockCatalogRepoFactory) ForCatalog(name string) domain.CatalogRepository {
+	if repo, ok := f.catalogs[name]; ok {
+		return repo
+	}
+	panic(fmt.Sprintf("unexpected catalog: %s", name))
+}
+
+// === Mock CatalogRegistrationRepository (lister) ===
+
+type mockCatalogLister struct {
+	registrations []domain.CatalogRegistration
+}
+
+func (m *mockCatalogLister) Create(_ context.Context, _ *domain.CatalogRegistration) (*domain.CatalogRegistration, error) {
+	panic("unexpected call")
+}
+func (m *mockCatalogLister) GetByID(_ context.Context, _ int64) (*domain.CatalogRegistration, error) {
+	panic("unexpected call")
+}
+func (m *mockCatalogLister) GetByName(_ context.Context, _ string) (*domain.CatalogRegistration, error) {
+	panic("unexpected call")
+}
+func (m *mockCatalogLister) List(_ context.Context, _ domain.PageRequest) ([]domain.CatalogRegistration, int64, error) {
+	return m.registrations, int64(len(m.registrations)), nil
+}
+func (m *mockCatalogLister) Update(_ context.Context, _ int64, _ domain.UpdateCatalogRegistrationRequest) (*domain.CatalogRegistration, error) {
+	panic("unexpected call")
+}
+func (m *mockCatalogLister) Delete(_ context.Context, _ int64) error {
+	panic("unexpected call")
+}
+func (m *mockCatalogLister) UpdateStatus(_ context.Context, _ int64, _ domain.CatalogStatus, _ string) error {
+	panic("unexpected call")
+}
+func (m *mockCatalogLister) GetDefault(_ context.Context) (*domain.CatalogRegistration, error) {
+	panic("unexpected call")
+}
+func (m *mockCatalogLister) SetDefault(_ context.Context, _ int64) error {
+	panic("unexpected call")
+}
+
+var _ domain.CatalogRegistrationRepository = (*mockCatalogLister)(nil)
+
+// newTestProvider creates an InformationSchemaProvider for testing with a single catalog.
+func newTestProvider(catalogName string, repo domain.CatalogRepository) *InformationSchemaProvider {
+	factory := &mockCatalogRepoFactory{
+		catalogs: map[string]domain.CatalogRepository{catalogName: repo},
+	}
+	lister := &mockCatalogLister{
+		registrations: []domain.CatalogRegistration{
+			{Name: catalogName, Status: domain.CatalogStatusActive},
+		},
+	}
+	return NewInformationSchemaProvider(factory, lister)
+}
+
 // === IsInformationSchemaQuery ===
 
 func TestIsInformationSchemaQuery(t *testing.T) {
@@ -121,7 +183,7 @@ func TestBuildSchemataRows(t *testing.T) {
 				}, 2, nil
 			},
 		}
-		provider := NewInformationSchemaProvider(catalog)
+		provider := newTestProvider("lake", catalog)
 
 		rows, columns, err := provider.BuildSchemataRows(context.Background())
 
@@ -140,7 +202,7 @@ func TestBuildSchemataRows(t *testing.T) {
 				return []domain.SchemaDetail{}, 0, nil
 			},
 		}
-		provider := NewInformationSchemaProvider(catalog)
+		provider := newTestProvider("lake", catalog)
 
 		rows, columns, err := provider.BuildSchemataRows(context.Background())
 
@@ -149,18 +211,61 @@ func TestBuildSchemataRows(t *testing.T) {
 		assert.Empty(t, rows)
 	})
 
-	t.Run("list_error", func(t *testing.T) {
+	t.Run("list_error_skips_catalog", func(t *testing.T) {
 		catalog := &mockEngineCatalog{
 			listSchemasFn: func(_ context.Context, _ domain.PageRequest) ([]domain.SchemaDetail, int64, error) {
 				return nil, 0, errInfoTest
 			},
 		}
-		provider := NewInformationSchemaProvider(catalog)
+		provider := newTestProvider("lake", catalog)
 
-		_, _, err := provider.BuildSchemataRows(context.Background())
+		rows, _, err := provider.BuildSchemataRows(context.Background())
 
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "list schemas")
+		// Errors in a single catalog are skipped, not propagated
+		require.NoError(t, err)
+		assert.Empty(t, rows)
+	})
+
+	t.Run("multi_catalog", func(t *testing.T) {
+		lakeCatalog := &mockEngineCatalog{
+			listSchemasFn: func(_ context.Context, _ domain.PageRequest) ([]domain.SchemaDetail, int64, error) {
+				return []domain.SchemaDetail{
+					{SchemaID: 1, Name: "main", CatalogName: "lake", Owner: "admin"},
+				}, 1, nil
+			},
+		}
+		analyticsCatalog := &mockEngineCatalog{
+			listSchemasFn: func(_ context.Context, _ domain.PageRequest) ([]domain.SchemaDetail, int64, error) {
+				return []domain.SchemaDetail{
+					{SchemaID: 1, Name: "raw", CatalogName: "analytics", Owner: "data_eng"},
+				}, 1, nil
+			},
+		}
+		factory := &mockCatalogRepoFactory{
+			catalogs: map[string]domain.CatalogRepository{
+				"lake":      lakeCatalog,
+				"analytics": analyticsCatalog,
+			},
+		}
+		lister := &mockCatalogLister{
+			registrations: []domain.CatalogRegistration{
+				{Name: "lake", Status: domain.CatalogStatusActive},
+				{Name: "analytics", Status: domain.CatalogStatusActive},
+			},
+		}
+		provider := NewInformationSchemaProvider(factory, lister)
+
+		rows, _, err := provider.BuildSchemataRows(context.Background())
+
+		require.NoError(t, err)
+		require.Len(t, rows, 2)
+		// Verify both catalogs are represented
+		catalogNames := make(map[string]bool)
+		for _, row := range rows {
+			catalogNames[row[0].(string)] = true
+		}
+		assert.True(t, catalogNames["lake"])
+		assert.True(t, catalogNames["analytics"])
 	})
 }
 
@@ -185,7 +290,7 @@ func TestBuildTablesRows(t *testing.T) {
 				return nil, 0, nil
 			},
 		}
-		provider := NewInformationSchemaProvider(catalog)
+		provider := newTestProvider("lake", catalog)
 
 		rows, columns, err := provider.BuildTablesRows(context.Background())
 
@@ -198,17 +303,18 @@ func TestBuildTablesRows(t *testing.T) {
 		assert.Equal(t, "raw_events", rows[1][2])
 	})
 
-	t.Run("schema_list_error", func(t *testing.T) {
+	t.Run("schema_list_error_skips_catalog", func(t *testing.T) {
 		catalog := &mockEngineCatalog{
 			listSchemasFn: func(_ context.Context, _ domain.PageRequest) ([]domain.SchemaDetail, int64, error) {
 				return nil, 0, errInfoTest
 			},
 		}
-		provider := NewInformationSchemaProvider(catalog)
+		provider := newTestProvider("lake", catalog)
 
-		_, _, err := provider.BuildTablesRows(context.Background())
+		rows, _, err := provider.BuildTablesRows(context.Background())
 
-		require.Error(t, err)
+		require.NoError(t, err)
+		assert.Empty(t, rows)
 	})
 
 	t.Run("table_list_error_continues", func(t *testing.T) {
@@ -226,7 +332,7 @@ func TestBuildTablesRows(t *testing.T) {
 				return []domain.TableDetail{{Name: "t1", TableType: "MANAGED"}}, 1, nil
 			},
 		}
-		provider := NewInformationSchemaProvider(catalog)
+		provider := newTestProvider("lake", catalog)
 
 		rows, _, err := provider.BuildTablesRows(context.Background())
 
@@ -256,7 +362,7 @@ func TestBuildColumnsRows(t *testing.T) {
 				}, 2, nil
 			},
 		}
-		provider := NewInformationSchemaProvider(catalog)
+		provider := newTestProvider("lake", catalog)
 
 		rows, columns, err := provider.BuildColumnsRows(context.Background())
 
@@ -292,7 +398,7 @@ func TestBuildColumnsRows(t *testing.T) {
 				}, 1, nil
 			},
 		}
-		provider := NewInformationSchemaProvider(catalog)
+		provider := newTestProvider("lake", catalog)
 
 		rows, _, err := provider.BuildColumnsRows(context.Background())
 
@@ -317,7 +423,7 @@ func TestInformationSchema_ConcurrentQueries(t *testing.T) {
 		},
 	}
 
-	provider := NewInformationSchemaProvider(catalog)
+	provider := newTestProvider("lake", catalog)
 
 	db, err := sql.Open("duckdb", "")
 	require.NoError(t, err)
