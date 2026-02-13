@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -60,6 +61,11 @@ type Config struct {
 	ListenAddr    string // HTTP listen address (default ":8080")
 	EncryptionKey string // 64-char hex string (32-byte AES key) for encrypting stored credentials
 	LogLevel      string // log level: debug, info, warn, error (default "info")
+	Env           string // environment: "development" (default) or "production"
+
+	// Rate limiting
+	RateLimitRPS   float64 // sustained requests per second (default 100)
+	RateLimitBurst int     // burst capacity (default 200)
 
 	// Auth holds identity provider and authentication configuration.
 	Auth AuthConfig
@@ -83,6 +89,11 @@ func (c *Config) SlogLevel() slog.Level {
 	}
 }
 
+// IsProduction returns true when the server is running in production mode.
+func (c *Config) IsProduction() bool {
+	return strings.EqualFold(c.Env, "production")
+}
+
 // HasS3Config returns true if all required S3 fields are set.
 func (c *Config) HasS3Config() bool {
 	return c.S3KeyID != nil && c.S3Secret != nil &&
@@ -98,6 +109,19 @@ func LoadFromEnv() (*Config, error) {
 		ListenAddr:    os.Getenv("LISTEN_ADDR"),
 		EncryptionKey: os.Getenv("ENCRYPTION_KEY"),
 		LogLevel:      os.Getenv("LOG_LEVEL"),
+		Env:           os.Getenv("ENV"),
+	}
+
+	// Rate limiting
+	if v := os.Getenv("RATE_LIMIT_RPS"); v != "" {
+		if f, err := strconv.ParseFloat(v, 64); err == nil {
+			cfg.RateLimitRPS = f
+		}
+	}
+	if v := os.Getenv("RATE_LIMIT_BURST"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			cfg.RateLimitBurst = n
+		}
 	}
 
 	// S3 fields are optional — only set if present
@@ -174,6 +198,22 @@ func LoadFromEnv() (*Config, error) {
 	}
 	if cfg.LogLevel == "" {
 		cfg.LogLevel = "info"
+	}
+	if cfg.RateLimitRPS == 0 {
+		cfg.RateLimitRPS = 100
+	}
+	if cfg.RateLimitBurst == 0 {
+		cfg.RateLimitBurst = 200
+	}
+
+	// Production mode: insecure defaults are fatal errors.
+	if cfg.IsProduction() {
+		if cfg.JWTSecret == "dev-secret-change-in-production" {
+			return nil, fmt.Errorf("JWT_SECRET must be set in production (ENV=production)")
+		}
+		if cfg.EncryptionKey == "0000000000000000000000000000000000000000000000000000000000000000" {
+			return nil, fmt.Errorf("ENCRYPTION_KEY must be set in production (ENV=production)")
+		}
 	}
 
 	return cfg, nil

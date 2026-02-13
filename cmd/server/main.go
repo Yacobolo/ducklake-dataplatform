@@ -17,6 +17,7 @@ import (
 	_ "github.com/duckdb/duckdb-go/v2"
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	_ "github.com/mattn/go-sqlite3"
 
 	"duck-demo/internal/api"
@@ -133,8 +134,21 @@ func run() error {
 
 	// Setup Chi router
 	r := chi.NewRouter()
+	r.Use(middleware.RequestID)
 	r.Use(chimw.Logger)
 	r.Use(chimw.Recoverer)
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-API-Key", "X-Request-ID"},
+		ExposedHeaders:   []string{"X-Request-ID", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"},
+		AllowCredentials: false,
+		MaxAge:           300,
+	}))
+	r.Use(middleware.RateLimiter(middleware.RateLimitConfig{
+		RequestsPerSecond: cfg.RateLimitRPS,
+		Burst:             cfg.RateLimitBurst,
+	}))
 
 	// Health check endpoint — no auth required, used by load balancers / K8s probes
 	r.Get("/healthz", func(w http.ResponseWriter, _ *http.Request) {
