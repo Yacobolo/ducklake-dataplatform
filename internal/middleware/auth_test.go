@@ -340,7 +340,7 @@ func TestAuth_SharedSecretHS256(t *testing.T) {
 		"exp": time.Now().Add(time.Hour).Unix(),
 	})
 
-	mw := AuthMiddleware([]byte(secret), nil)
+	mw := AuthMiddleware([]byte(secret), nil, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
@@ -361,7 +361,7 @@ func TestAuth_SharedSecretHS256_InvalidToken(t *testing.T) {
 		"exp": time.Now().Add(time.Hour).Unix(),
 	})
 
-	mw := AuthMiddleware([]byte(secret), nil)
+	mw := AuthMiddleware([]byte(secret), nil, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("Authorization", "Bearer "+token)

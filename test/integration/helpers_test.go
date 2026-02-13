@@ -628,7 +628,7 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 
 	// Router with REAL auth middleware (API key via SHA-256 hash lookup)
 	r := chi.NewRouter()
-	r.Use(middleware.AuthMiddleware([]byte("test-jwt-secret"), apiKeyRepo))
+	r.Use(middleware.AuthMiddleware([]byte("test-jwt-secret"), apiKeyRepo, principalRepo))
 	r.Route("/v1", func(r chi.Router) {
 		api.HandlerFromMux(strictHandler, r)
 	})
@@ -752,7 +752,7 @@ func setupLocalExtensionServer(t *testing.T) *testEnv {
 
 	// Router with REAL auth middleware (API key via SHA-256 hash lookup)
 	r := chi.NewRouter()
-	r.Use(middleware.AuthMiddleware([]byte("test-jwt-secret"), apiKeyRepo))
+	r.Use(middleware.AuthMiddleware([]byte("test-jwt-secret"), apiKeyRepo, principalRepo))
 	r.Route("/v1", func(r chi.Router) {
 		api.HandlerFromMux(strictHandler, r)
 	})
@@ -1932,7 +1932,7 @@ func setupMultiTableLocalServer(t *testing.T) *multiTableTestEnv {
 	strictHandler := api.NewStrictHandler(handler, nil)
 
 	r := chi.NewRouter()
-	r.Use(middleware.AuthMiddleware([]byte("test-jwt-secret"), apiKeyRepo))
+	r.Use(middleware.AuthMiddleware([]byte("test-jwt-secret"), apiKeyRepo, principalRepo))
 	r.Route("/v1", func(r chi.Router) {
 		api.HandlerFromMux(strictHandler, r)
 	})

@@ -139,13 +139,13 @@ func TestHTTP_TagCRUD(t *testing.T) {
 		}},
 
 		{"delete_tag_idempotent", func(t *testing.T) {
-			// Deleting an already-deleted tag returns 204 (idempotent — the SQL
-			// DELETE succeeds with 0 rows affected and no error).
+			// B11: Deleting an already-deleted tag now returns 404 (not found)
+			// instead of silently returning 204.
 			resp := doRequest(t, "DELETE",
 				fmt.Sprintf("%s/v1/tags/%s", env.Server.URL, tagID),
 				env.Keys.Admin, nil)
 			defer resp.Body.Close() //nolint:errcheck
-			require.Equal(t, 204, resp.StatusCode)
+			require.Equal(t, 404, resp.StatusCode)
 		}},
 
 		{"verify_audit_logs", func(t *testing.T) {
@@ -218,12 +218,10 @@ func TestHTTP_ListClassifications(t *testing.T) {
 	})
 }
 
-// TestHTTP_TagAnyUserCanManage verifies that non-admin users can create and
-// delete tags (no privilege checks enforced).
-func TestHTTP_TagAnyUserCanManage(t *testing.T) {
+// TestHTTP_TagAdminOnly verifies that non-admin users are denied tag
+// management (B13: create/delete tags require admin).
+func TestHTTP_TagAdminOnly(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
-
-	var tagID string
 
 	type step struct {
 		name string
@@ -231,8 +229,17 @@ func TestHTTP_TagAnyUserCanManage(t *testing.T) {
 	}
 
 	steps := []step{
-		{"analyst_creates_tag", func(t *testing.T) {
+		{"analyst_denied_create_tag", func(t *testing.T) {
 			resp := doRequest(t, "POST", env.Server.URL+"/v1/tags", env.Keys.Analyst, map[string]interface{}{
+				"key":   "department",
+				"value": "engineering",
+			})
+			defer resp.Body.Close() //nolint:errcheck
+			require.Equal(t, 403, resp.StatusCode)
+		}},
+
+		{"admin_creates_tag", func(t *testing.T) {
+			resp := doRequest(t, "POST", env.Server.URL+"/v1/tags", env.Keys.Admin, map[string]interface{}{
 				"key":   "department",
 				"value": "engineering",
 			})
@@ -240,15 +247,14 @@ func TestHTTP_TagAnyUserCanManage(t *testing.T) {
 
 			var result map[string]interface{}
 			decodeJSON(t, resp, &result)
-			tagID = result["id"].(string)
-		}},
+			tagID := result["id"].(string)
 
-		{"analyst_deletes_tag", func(t *testing.T) {
-			resp := doRequest(t, "DELETE",
+			// Analyst cannot delete admin-created tag
+			delResp := doRequest(t, "DELETE",
 				fmt.Sprintf("%s/v1/tags/%s", env.Server.URL, tagID),
 				env.Keys.Analyst, nil)
-			defer resp.Body.Close() //nolint:errcheck
-			require.Equal(t, 204, resp.StatusCode)
+			defer delResp.Body.Close() //nolint:errcheck
+			require.Equal(t, 403, delResp.StatusCode)
 		}},
 	}
 

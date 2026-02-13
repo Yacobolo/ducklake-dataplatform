@@ -6,6 +6,7 @@ type principalKey struct{}
 
 // ContextPrincipal carries the authenticated identity through request context.
 type ContextPrincipal struct {
+	ID      string // principal UUID (empty if resolved via fallback)
 	Name    string
 	IsAdmin bool
 	Type    string // "user" or "service_principal"

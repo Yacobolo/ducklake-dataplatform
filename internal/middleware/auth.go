@@ -128,6 +128,7 @@ func (a *Authenticator) authenticateJWT(ctx context.Context, tokenStr string) (*
 			return nil, fmt.Errorf("principal resolution failed: %w", err)
 		}
 		return &domain.ContextPrincipal{
+			ID:      p.ID,
 			Name:    p.Name,
 			IsAdmin: p.IsAdmin,
 			Type:    p.Type,
@@ -139,6 +140,7 @@ func (a *Authenticator) authenticateJWT(ctx context.Context, tokenStr string) (*
 		p, err := a.principalRepo.GetByName(ctx, displayName)
 		if err == nil {
 			return &domain.ContextPrincipal{
+				ID:      p.ID,
 				Name:    p.Name,
 				IsAdmin: p.IsAdmin,
 				Type:    p.Type,
@@ -167,6 +169,7 @@ func (a *Authenticator) authenticateAPIKey(ctx context.Context, rawKey string) (
 	if a.principalRepo != nil {
 		if p, err := a.principalRepo.GetByName(ctx, principalName); err == nil {
 			return &domain.ContextPrincipal{
+				ID:      p.ID,
 				Name:    p.Name,
 				IsAdmin: p.IsAdmin,
 				Type:    p.Type,
@@ -238,14 +241,15 @@ func PrincipalFromContext(ctx context.Context) (string, bool) {
 
 // AuthMiddleware is a backward-compatible wrapper that creates an Authenticator
 // with a shared-secret JWT validator. Used when OIDC is not configured.
-func AuthMiddleware(jwtSecret []byte, apiKeys APIKeyLookup) func(http.Handler) http.Handler {
+func AuthMiddleware(jwtSecret []byte, apiKeys APIKeyLookup, principals PrincipalLookup) func(http.Handler) http.Handler {
 	var validator JWTValidator
 	if len(jwtSecret) > 0 {
 		validator = NewSharedSecretValidator(string(jwtSecret))
 	}
 	auth := &Authenticator{
-		jwtValidator: validator,
-		apiKeyLookup: apiKeys,
+		jwtValidator:  validator,
+		apiKeyLookup:  apiKeys,
+		principalRepo: principals,
 		cfg: config.AuthConfig{
 			APIKeyEnabled: true,
 			APIKeyHeader:  "X-API-Key",

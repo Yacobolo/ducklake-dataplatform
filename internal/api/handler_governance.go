@@ -108,7 +108,7 @@ func (h *APIHandler) SearchCatalog(ctx context.Context, req SearchCatalogRequest
 
 	results, total, err := h.search.Search(ctx, req.Params.Query, req.Params.Type, req.Params.Catalog, page)
 	if err != nil {
-		return nil, err
+		return SearchCatalog500JSONResponse{InternalErrorJSONResponse{Body: Error{Code: 500, Message: err.Error()}, Headers: InternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil //nolint:nilerr // oapi-codegen strict handler: typed response encodes the error
 	}
 
 	data := make([]SearchResult, len(results))
@@ -213,6 +213,11 @@ func (h *APIHandler) DeleteLineageEdge(ctx context.Context, req DeleteLineageEdg
 
 // PurgeLineage implements the endpoint for purging lineage data older than a threshold.
 func (h *APIHandler) PurgeLineage(ctx context.Context, req PurgeLineageRequestObject) (PurgeLineageResponseObject, error) {
+	caller, ok := domain.PrincipalFromContext(ctx)
+	if !ok || !caller.IsAdmin {
+		return PurgeLineage403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: "admin privileges required"}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+	}
+
 	deleted, err := h.lineage.PurgeOlderThan(ctx, int(req.Body.OlderThanDays))
 	if err != nil {
 		code := errorCodeFromError(err)
@@ -248,6 +253,11 @@ func (h *APIHandler) ListTags(ctx context.Context, req ListTagsRequestObject) (L
 
 // CreateTag implements the endpoint for creating a new tag.
 func (h *APIHandler) CreateTag(ctx context.Context, req CreateTagRequestObject) (CreateTagResponseObject, error) {
+	caller, ok := domain.PrincipalFromContext(ctx)
+	if !ok || !caller.IsAdmin {
+		return CreateTag403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: "admin privileges required"}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+	}
+
 	domReq := domain.CreateTagRequest{
 		Key:   req.Body.Key,
 		Value: req.Body.Value,
@@ -256,6 +266,8 @@ func (h *APIHandler) CreateTag(ctx context.Context, req CreateTagRequestObject) 
 	result, err := h.tags.CreateTag(ctx, principal, domReq)
 	if err != nil {
 		switch {
+		case errors.As(err, new(*domain.ValidationError)):
+			return CreateTag400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.ConflictError)):
 			return CreateTag409JSONResponse{ConflictJSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
@@ -270,6 +282,11 @@ func (h *APIHandler) CreateTag(ctx context.Context, req CreateTagRequestObject) 
 
 // DeleteTag implements the endpoint for deleting a tag by ID.
 func (h *APIHandler) DeleteTag(ctx context.Context, req DeleteTagRequestObject) (DeleteTagResponseObject, error) {
+	caller, ok := domain.PrincipalFromContext(ctx)
+	if !ok || !caller.IsAdmin {
+		return DeleteTag403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: "admin privileges required"}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+	}
+
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	if err := h.tags.DeleteTag(ctx, principal, req.TagId); err != nil {
 		switch {
