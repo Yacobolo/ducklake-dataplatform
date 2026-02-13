@@ -60,8 +60,8 @@ rules:
   oas3-api-servers: warn
   description-duplication: warn
 
-  # Info — advisory
-  oas3-unused-component: info
+  # Warnings — housekeeping
+  oas3-unused-component: warn
   operation-description: info
 
   # Disable — intentionally off for this project
@@ -85,7 +85,7 @@ rules:
   operation-id-camel-case:
     description: "operationId should be lowerCamelCase"
     given: "$.paths[*][get,post,put,patch,delete]"
-    severity: info
+    severity: warn
     then:
       field: operationId
       function: casing
@@ -94,6 +94,12 @@ rules:
 
   # ================================================================
   # Custom rules — backed by Go functions registered at runtime
+  #
+  # All custom rules use resolved: false so they see the raw YAML with
+  # $ref nodes intact. Several rules (check-schema-ref, check-error-schema-ref,
+  # check-pagination-*) inspect $ref values directly. The remaining rules
+  # also use resolved: false for consistency — our YAML helpers handle
+  # both inline and $ref'd parameters correctly.
   # ================================================================
 
   # Response + request schemas must use $ref (no inline anonymous objects)
