@@ -37,6 +37,9 @@ ducklake_meta.sqlite*
 
 *PLAN.md
 
+# Task runner cache
+.task/
+
 # Generated OpenAPI bundle
 internal/api/openapi.bundled.yaml
 
