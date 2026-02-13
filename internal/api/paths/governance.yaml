@@ -16,22 +16,22 @@ paths:
           description: "Filter by object type: schema, table, or column"
           schema:
             type: string
-        - $ref: '../openapi.yaml#/components/parameters/MaxResults'
-        - $ref: '../openapi.yaml#/components/parameters/PageToken'
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
       responses:
         '200':
           description: Search results
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/PaginatedSearchResults'
+                $ref: '../schemas/governance.yaml#/PaginatedSearchResults'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
   /tags:
     get:
@@ -39,21 +39,21 @@ paths:
       summary: List all tags
       tags: [Governance]
       parameters:
-        - $ref: '../openapi.yaml#/components/parameters/MaxResults'
-        - $ref: '../openapi.yaml#/components/parameters/PageToken'
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
       responses:
         '200':
           description: Paginated list of tags
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/PaginatedTags'
+                $ref: '../schemas/governance.yaml#/PaginatedTags'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
     post:
       operationId: createTag
       summary: Create a tag
@@ -63,33 +63,33 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/CreateTagRequest'
+              $ref: '../schemas/governance.yaml#/CreateTagRequest'
       responses:
         '201':
           description: Created tag
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Tag'
+                $ref: '../schemas/governance.yaml#/Tag'
         '409':
           description: Tag already exists
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '403':
           description: Access denied
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
   /tags/{tagId}:
     parameters:
@@ -111,20 +111,20 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '403':
           description: Access denied
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
   /tags/{tagId}/assignments:
     parameters:
@@ -143,33 +143,33 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/CreateTagAssignmentRequest'
+              $ref: '../schemas/governance.yaml#/CreateTagAssignmentRequest'
       responses:
         '201':
           description: Tag assigned
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/TagAssignment'
+                $ref: '../schemas/governance.yaml#/TagAssignment'
         '409':
           description: Tag already assigned
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '403':
           description: Access denied
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
   /tag-assignments/{assignmentId}:
     parameters:
@@ -191,20 +191,20 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '403':
           description: Access denied
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
   /classifications:
     get:
@@ -213,19 +213,19 @@ paths:
       tags: [Governance]
       description: Returns all tags with governed classification/sensitivity prefixes.
       parameters:
-        - $ref: '../openapi.yaml#/components/parameters/MaxResults'
-        - $ref: '../openapi.yaml#/components/parameters/PageToken'
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
       responses:
         '200':
           description: Classification tags
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/PaginatedTags'
+                $ref: '../schemas/governance.yaml#/PaginatedTags'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'

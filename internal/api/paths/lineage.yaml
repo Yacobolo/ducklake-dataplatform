@@ -17,28 +17,28 @@ paths:
       tags: [Lineage]
       description: Returns both upstream and downstream lineage edges for a table. Pagination params control edge depth, not list pagination.
       parameters:
-        - $ref: '../openapi.yaml#/components/parameters/MaxResults'
-        - $ref: '../openapi.yaml#/components/parameters/PageToken'
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
       responses:
         '200':
           description: Table lineage
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/LineageNode'
+                $ref: '../schemas/lineage.yaml#/LineageNode'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '404':
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
   /lineage/tables/{schemaName}/{tableName}/upstream:
     parameters:
@@ -57,28 +57,28 @@ paths:
       summary: Get upstream lineage for a table
       tags: [Lineage]
       parameters:
-        - $ref: '../openapi.yaml#/components/parameters/MaxResults'
-        - $ref: '../openapi.yaml#/components/parameters/PageToken'
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
       responses:
         '200':
           description: Upstream lineage edges
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/PaginatedLineageEdges'
+                $ref: '../schemas/lineage.yaml#/PaginatedLineageEdges'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '404':
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
   /lineage/tables/{schemaName}/{tableName}/downstream:
     parameters:
@@ -97,28 +97,28 @@ paths:
       summary: Get downstream lineage for a table
       tags: [Lineage]
       parameters:
-        - $ref: '../openapi.yaml#/components/parameters/MaxResults'
-        - $ref: '../openapi.yaml#/components/parameters/PageToken'
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
       responses:
         '200':
           description: Downstream lineage edges
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/PaginatedLineageEdges'
+                $ref: '../schemas/lineage.yaml#/PaginatedLineageEdges'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '404':
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
   /lineage/edges/{edgeId}:
     parameters:
@@ -140,20 +140,20 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '403':
           description: Access denied
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
   /lineage/purge:
     post:
@@ -166,24 +166,24 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/PurgeLineageRequest'
+              $ref: '../schemas/lineage.yaml#/PurgeLineageRequest'
       responses:
         '200':
           description: Purge result
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/PurgeLineageResponse'
+                $ref: '../schemas/lineage.yaml#/PurgeLineageResponse'
         '403':
           description: Access denied
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'

@@ -24,39 +24,39 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/UploadUrlRequest'
+              $ref: '../schemas/ingestion.yaml#/UploadUrlRequest'
       responses:
         '200':
           description: Presigned upload URL
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/UploadUrlResponse'
+                $ref: '../schemas/ingestion.yaml#/UploadUrlResponse'
         '400':
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '403':
           description: Access denied
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '404':
           description: Table not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
   /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/commit:
     parameters:
@@ -83,39 +83,39 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/CommitIngestionRequest'
+              $ref: '../schemas/ingestion.yaml#/CommitIngestionRequest'
       responses:
         '200':
           description: Ingestion result
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/IngestionResult'
+                $ref: '../schemas/ingestion.yaml#/IngestionResult'
         '400':
           description: Validation error (schema mismatch, missing files, etc.)
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '403':
           description: Access denied
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '404':
           description: Table not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
   /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/load:
     parameters:
@@ -143,36 +143,36 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/LoadExternalRequest'
+              $ref: '../schemas/ingestion.yaml#/LoadExternalRequest'
       responses:
         '200':
           description: Ingestion result
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/IngestionResult'
+                $ref: '../schemas/ingestion.yaml#/IngestionResult'
         '400':
           description: Validation error (schema mismatch, missing files, etc.)
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '403':
           description: Access denied
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '404':
           description: Table not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'

@@ -6,21 +6,21 @@ paths:
       tags: [Compute]
       description: Returns a paginated list of compute endpoints.
       parameters:
-        - $ref: '../openapi.yaml#/components/parameters/MaxResults'
-        - $ref: '../openapi.yaml#/components/parameters/PageToken'
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
       responses:
         '200':
           description: Paginated list of compute endpoints
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/PaginatedComputeEndpoints'
+                $ref: '../schemas/compute.yaml#/PaginatedComputeEndpoints'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
     post:
       operationId: createComputeEndpoint
       summary: Create a compute endpoint
@@ -31,39 +31,39 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/CreateComputeEndpointRequest'
+              $ref: '../schemas/compute.yaml#/CreateComputeEndpointRequest'
       responses:
         '201':
           description: Created compute endpoint
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/ComputeEndpoint'
+                $ref: '../schemas/compute.yaml#/ComputeEndpoint'
         '400':
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '403':
           description: Access denied
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '409':
           description: Endpoint already exists
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
   /compute-endpoints/{endpointName}:
     parameters:
@@ -82,19 +82,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/ComputeEndpoint'
+                $ref: '../schemas/compute.yaml#/ComputeEndpoint'
         '404':
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
     patch:
       operationId: updateComputeEndpoint
       summary: Update a compute endpoint
@@ -105,32 +105,32 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/UpdateComputeEndpointRequest'
+              $ref: '../schemas/compute.yaml#/UpdateComputeEndpointRequest'
       responses:
         '200':
           description: Updated compute endpoint
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/ComputeEndpoint'
+                $ref: '../schemas/compute.yaml#/ComputeEndpoint'
         '403':
           description: Access denied
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '404':
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
     delete:
       operationId: deleteComputeEndpoint
       summary: Delete a compute endpoint
@@ -144,20 +144,20 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '404':
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
   /compute-endpoints/{endpointName}/assignments:
     parameters:
@@ -171,27 +171,27 @@ paths:
       summary: List assignments for a compute endpoint
       tags: [Compute]
       parameters:
-        - $ref: '../openapi.yaml#/components/parameters/MaxResults'
-        - $ref: '../openapi.yaml#/components/parameters/PageToken'
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
       responses:
         '200':
           description: Paginated list of compute assignments
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/PaginatedComputeAssignments'
+                $ref: '../schemas/compute.yaml#/PaginatedComputeAssignments'
         '404':
           description: Endpoint not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
     post:
       operationId: createComputeAssignment
       summary: Assign a principal to a compute endpoint
@@ -202,39 +202,39 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/CreateComputeAssignmentRequest'
+              $ref: '../schemas/compute.yaml#/CreateComputeAssignmentRequest'
       responses:
         '201':
           description: Created compute assignment
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/ComputeAssignment'
+                $ref: '../schemas/compute.yaml#/ComputeAssignment'
         '400':
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '403':
           description: Access denied
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '409':
           description: Assignment already exists
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
   /compute-endpoints/{endpointName}/health:
     parameters:
@@ -254,32 +254,32 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/ComputeEndpointHealth'
+                $ref: '../schemas/compute.yaml#/ComputeEndpointHealth'
         '403':
           description: Access denied
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '404':
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '502':
           description: Agent unreachable
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
   /compute-endpoints/{endpointName}/assignments/{assignmentId}:
     parameters:
@@ -307,17 +307,17 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '404':
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'

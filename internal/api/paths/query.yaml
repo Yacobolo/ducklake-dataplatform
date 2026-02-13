@@ -9,30 +9,30 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/QueryRequest'
+              $ref: '../schemas/common.yaml#/QueryRequest'
       responses:
         '200':
           description: Query result
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/QueryResult'
+                $ref: '../schemas/common.yaml#/QueryResult'
         '400':
           description: Bad request
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '403':
           description: Access denied
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'

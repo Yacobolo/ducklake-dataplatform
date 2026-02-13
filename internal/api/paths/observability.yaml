@@ -14,38 +14,38 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/ManifestRequest'
+              $ref: '../schemas/observability.yaml#/ManifestRequest'
       responses:
         '200':
           description: Manifest with presigned URLs and security policies
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/ManifestResponse'
+                $ref: '../schemas/observability.yaml#/ManifestResponse'
         '400':
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '403':
           description: Access denied
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '404':
           description: Table not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
   /audit-logs:
     get:
@@ -65,22 +65,22 @@ paths:
           in: query
           schema:
             type: string
-        - $ref: '../openapi.yaml#/components/parameters/MaxResults'
-        - $ref: '../openapi.yaml#/components/parameters/PageToken'
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
       responses:
         '200':
           description: Paginated audit log entries
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/PaginatedAuditLogs'
+                $ref: '../schemas/observability.yaml#/PaginatedAuditLogs'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
   /metastore/summary:
     get:
@@ -94,14 +94,14 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/MetastoreSummary'
+                $ref: '../schemas/catalog.yaml#/MetastoreSummary'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
   /query-history:
     get:
@@ -127,19 +127,19 @@ paths:
           schema:
             type: string
             format: date-time
-        - $ref: '../openapi.yaml#/components/parameters/MaxResults'
-        - $ref: '../openapi.yaml#/components/parameters/PageToken'
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
       responses:
         '200':
           description: Paginated query history
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/PaginatedQueryHistoryEntries'
+                $ref: '../schemas/observability.yaml#/PaginatedQueryHistoryEntries'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'

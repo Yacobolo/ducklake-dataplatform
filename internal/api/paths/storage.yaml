@@ -6,21 +6,21 @@ paths:
       tags: [Storage]
       description: Returns a paginated list of storage credentials. Sensitive fields (key_id, secret) are never returned.
       parameters:
-        - $ref: '../openapi.yaml#/components/parameters/MaxResults'
-        - $ref: '../openapi.yaml#/components/parameters/PageToken'
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
       responses:
         '200':
           description: Paginated list of storage credentials
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/PaginatedStorageCredentials'
+                $ref: '../schemas/storage.yaml#/PaginatedStorageCredentials'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
     post:
       operationId: createStorageCredential
       summary: Create a storage credential
@@ -31,39 +31,39 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/CreateStorageCredentialRequest'
+              $ref: '../schemas/storage.yaml#/CreateStorageCredentialRequest'
       responses:
         '201':
           description: Created credential (sensitive fields omitted)
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/StorageCredential'
+                $ref: '../schemas/storage.yaml#/StorageCredential'
         '400':
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '403':
           description: Access denied
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '409':
           description: Credential already exists
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
   /storage-credentials/{credentialName}:
     parameters:
@@ -83,19 +83,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/StorageCredential'
+                $ref: '../schemas/storage.yaml#/StorageCredential'
         '404':
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
     patch:
       operationId: updateStorageCredential
       summary: Update a storage credential
@@ -106,32 +106,32 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/UpdateStorageCredentialRequest'
+              $ref: '../schemas/storage.yaml#/UpdateStorageCredentialRequest'
       responses:
         '200':
           description: Updated credential
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/StorageCredential'
+                $ref: '../schemas/storage.yaml#/StorageCredential'
         '403':
           description: Access denied
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '404':
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
     delete:
       operationId: deleteStorageCredential
       summary: Delete a storage credential
@@ -145,20 +145,20 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '404':
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
   /external-locations:
     get:
@@ -166,21 +166,21 @@ paths:
       summary: List external locations
       tags: [Storage]
       parameters:
-        - $ref: '../openapi.yaml#/components/parameters/MaxResults'
-        - $ref: '../openapi.yaml#/components/parameters/PageToken'
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
       responses:
         '200':
           description: Paginated list of external locations
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/PaginatedExternalLocations'
+                $ref: '../schemas/storage.yaml#/PaginatedExternalLocations'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
     post:
       operationId: createExternalLocation
       summary: Create an external location
@@ -194,39 +194,39 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/CreateExternalLocationRequest'
+              $ref: '../schemas/storage.yaml#/CreateExternalLocationRequest'
       responses:
         '201':
           description: Created location
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/ExternalLocation'
+                $ref: '../schemas/storage.yaml#/ExternalLocation'
         '400':
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '403':
           description: Access denied
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '409':
           description: Location already exists
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
   /external-locations/{locationName}:
     parameters:
@@ -245,19 +245,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/ExternalLocation'
+                $ref: '../schemas/storage.yaml#/ExternalLocation'
         '404':
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
     patch:
       operationId: updateExternalLocation
       summary: Update an external location
@@ -268,32 +268,32 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/UpdateExternalLocationRequest'
+              $ref: '../schemas/storage.yaml#/UpdateExternalLocationRequest'
       responses:
         '200':
           description: Updated location
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/ExternalLocation'
+                $ref: '../schemas/storage.yaml#/ExternalLocation'
         '403':
           description: Access denied
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '404':
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
     delete:
       operationId: deleteExternalLocation
       summary: Delete an external location
@@ -307,17 +307,17 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '404':
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'

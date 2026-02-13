@@ -11,13 +11,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/CatalogInfo'
+                $ref: '../schemas/catalog.yaml#/CatalogInfo'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
     patch:
       operationId: updateCatalog
       summary: Update catalog metadata
@@ -27,27 +27,27 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/UpdateCatalogRequest'
+              $ref: '../schemas/catalog.yaml#/UpdateCatalogRequest'
       responses:
         '200':
           description: Updated catalog
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/CatalogInfo'
+                $ref: '../schemas/catalog.yaml#/CatalogInfo'
         '403':
           description: Access denied
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
   /catalog/schemas:
     get:
@@ -55,21 +55,21 @@ paths:
       summary: List schemas in the catalog
       tags: [Catalog]
       parameters:
-        - $ref: '../openapi.yaml#/components/parameters/MaxResults'
-        - $ref: '../openapi.yaml#/components/parameters/PageToken'
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
       responses:
         '200':
           description: Paginated list of schemas
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/PaginatedSchemaDetails'
+                $ref: '../schemas/catalog.yaml#/PaginatedSchemaDetails'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
     post:
       operationId: createSchema
       summary: Create a new schema
@@ -79,39 +79,39 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/CreateSchemaRequest'
+              $ref: '../schemas/catalog.yaml#/CreateSchemaRequest'
       responses:
         '201':
           description: Schema created
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/SchemaDetail'
+                $ref: '../schemas/catalog.yaml#/SchemaDetail'
         '400':
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '403':
           description: Access denied
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '409':
           description: Schema already exists
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
   /catalog/schemas/{schemaName}:
     parameters:
@@ -130,19 +130,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/SchemaDetail'
+                $ref: '../schemas/catalog.yaml#/SchemaDetail'
         '404':
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
     patch:
       operationId: updateSchema
       summary: Update schema metadata
@@ -152,32 +152,32 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/UpdateSchemaRequest'
+              $ref: '../schemas/catalog.yaml#/UpdateSchemaRequest'
       responses:
         '200':
           description: Updated schema
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/SchemaDetail'
+                $ref: '../schemas/catalog.yaml#/SchemaDetail'
         '403':
           description: Access denied
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '404':
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
     delete:
       operationId: deleteSchema
       summary: Delete a schema
@@ -197,26 +197,26 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '404':
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '409':
           description: Schema not empty
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
   /catalog/schemas/{schemaName}/tables:
     parameters:
@@ -230,27 +230,27 @@ paths:
       summary: List tables in a schema
       tags: [Catalog]
       parameters:
-        - $ref: '../openapi.yaml#/components/parameters/MaxResults'
-        - $ref: '../openapi.yaml#/components/parameters/PageToken'
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
       responses:
         '200':
           description: Paginated list of tables
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/PaginatedTableDetails'
+                $ref: '../schemas/catalog.yaml#/PaginatedTableDetails'
         '404':
           description: Schema not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
     post:
       operationId: createTable
       summary: Create a new table in a schema
@@ -260,39 +260,39 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/CreateTableRequest'
+              $ref: '../schemas/catalog.yaml#/CreateTableRequest'
       responses:
         '201':
           description: Table created
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/TableDetail'
+                $ref: '../schemas/catalog.yaml#/TableDetail'
         '400':
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '403':
           description: Access denied
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '409':
           description: Table already exists
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
   /catalog/schemas/{schemaName}/tables/{tableName}:
     parameters:
@@ -316,19 +316,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/TableDetail'
+                $ref: '../schemas/catalog.yaml#/TableDetail'
         '404':
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
     patch:
       operationId: updateTable
       summary: Update table metadata
@@ -338,32 +338,32 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/UpdateTableRequest'
+              $ref: '../schemas/catalog.yaml#/UpdateTableRequest'
       responses:
         '200':
           description: Updated table
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/TableDetail'
+                $ref: '../schemas/catalog.yaml#/TableDetail'
         '403':
           description: Access denied
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '404':
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
     delete:
       operationId: deleteTable
       summary: Delete a table
@@ -376,20 +376,20 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '404':
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
   /catalog/schemas/{schemaName}/tables/{tableName}/columns:
     parameters:
@@ -408,28 +408,28 @@ paths:
       summary: List columns of a table
       tags: [Catalog]
       parameters:
-        - $ref: '../openapi.yaml#/components/parameters/MaxResults'
-        - $ref: '../openapi.yaml#/components/parameters/PageToken'
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
       responses:
         '200':
           description: Paginated list of columns
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/PaginatedColumnDetails'
+                $ref: '../schemas/catalog.yaml#/PaginatedColumnDetails'
         '404':
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
   /catalog/schemas/{schemaName}/tables/{tableName}/columns/{columnName}:
     parameters:
@@ -457,33 +457,33 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/UpdateColumnRequest'
+              $ref: '../schemas/catalog.yaml#/UpdateColumnRequest'
       responses:
         '200':
           description: Updated column
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/ColumnDetail'
+                $ref: '../schemas/catalog.yaml#/ColumnDetail'
         '403':
           description: Access denied
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '404':
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
   /catalog/schemas/{schemaName}/tables/{tableName}/profile:
     parameters:
@@ -508,26 +508,26 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/TableStatistics'
+                $ref: '../schemas/catalog.yaml#/TableStatistics'
         '403':
           description: Access denied
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '404':
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
   /catalog/schemas/{schemaName}/views:
     parameters:
@@ -541,27 +541,27 @@ paths:
       summary: List views in a schema
       tags: [Catalog]
       parameters:
-        - $ref: '../openapi.yaml#/components/parameters/MaxResults'
-        - $ref: '../openapi.yaml#/components/parameters/PageToken'
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
       responses:
         '200':
           description: Paginated list of views
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/PaginatedViewDetails'
+                $ref: '../schemas/catalog.yaml#/PaginatedViewDetails'
         '404':
           description: Schema not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
     post:
       operationId: createView
       summary: Create a view in a schema
@@ -571,39 +571,39 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/CreateViewRequest'
+              $ref: '../schemas/catalog.yaml#/CreateViewRequest'
       responses:
         '201':
           description: View created
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/ViewDetail'
+                $ref: '../schemas/catalog.yaml#/ViewDetail'
         '400':
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '403':
           description: Access denied
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '409':
           description: View already exists
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
   /catalog/schemas/{schemaName}/views/{viewName}:
     parameters:
@@ -627,19 +627,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/ViewDetail'
+                $ref: '../schemas/catalog.yaml#/ViewDetail'
         '404':
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
     patch:
       operationId: updateView
       summary: Update a view's metadata
@@ -649,32 +649,32 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/UpdateViewRequest'
+              $ref: '../schemas/catalog.yaml#/UpdateViewRequest'
       responses:
         '200':
           description: Updated view
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/ViewDetail'
+                $ref: '../schemas/catalog.yaml#/ViewDetail'
         '403':
           description: Access denied
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '404':
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
     delete:
       operationId: deleteView
       summary: Delete a view
@@ -687,20 +687,20 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '404':
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
   /catalog/schemas/{schemaName}/volumes:
     parameters:
@@ -714,27 +714,27 @@ paths:
       summary: List volumes in a schema
       tags: [Catalog]
       parameters:
-        - $ref: '../openapi.yaml#/components/parameters/MaxResults'
-        - $ref: '../openapi.yaml#/components/parameters/PageToken'
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
       responses:
         '200':
           description: Paginated list of volumes
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/PaginatedVolumes'
+                $ref: '../schemas/catalog.yaml#/PaginatedVolumes'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '404':
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
     post:
       operationId: createVolume
       summary: Create a volume in a schema
@@ -748,39 +748,39 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/CreateVolumeRequest'
+              $ref: '../schemas/catalog.yaml#/CreateVolumeRequest'
       responses:
         '201':
           description: Volume created
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/VolumeDetail'
+                $ref: '../schemas/catalog.yaml#/VolumeDetail'
         '400':
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '403':
           description: Access denied
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '409':
           description: Volume already exists
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
   /catalog/schemas/{schemaName}/volumes/{volumeName}:
     parameters:
@@ -804,19 +804,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/VolumeDetail'
+                $ref: '../schemas/catalog.yaml#/VolumeDetail'
         '404':
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
     patch:
       operationId: updateVolume
       summary: Update a volume
@@ -827,32 +827,32 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/UpdateVolumeRequest'
+              $ref: '../schemas/catalog.yaml#/UpdateVolumeRequest'
       responses:
         '200':
           description: Updated volume
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/VolumeDetail'
+                $ref: '../schemas/catalog.yaml#/VolumeDetail'
         '403':
           description: Access denied
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '404':
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
     delete:
       operationId: deleteVolume
       summary: Delete a volume
@@ -866,17 +866,17 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
         '404':
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'
 
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/Error'
+                $ref: '../schemas/common.yaml#/Error'

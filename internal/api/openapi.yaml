@@ -48,21 +48,9 @@ components:
 
   parameters:
     MaxResults:
-      name: max_results
-      in: query
-      description: Maximum number of results to return per page.
-      required: false
-      schema:
-        type: integer
-        default: 100
-        maximum: 1000
+      $ref: 'schemas/common.yaml#/parameters/MaxResults'
     PageToken:
-      name: page_token
-      in: query
-      description: Opaque pagination token from a previous response.
-      required: false
-      schema:
-        type: string
+      $ref: 'schemas/common.yaml#/parameters/PageToken'
 
   schemas:
     Error:
