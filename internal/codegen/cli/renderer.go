@@ -13,6 +13,60 @@ import (
 	"golang.org/x/tools/imports"
 )
 
+// defaultValueForFlag returns the Go literal default value for a flag based on its CobraType.
+func defaultValueForFlag(f FlagModel) string {
+	switch f.CobraType {
+	case "Bool":
+		if f.Default == "true" {
+			return "true"
+		}
+		return "false"
+	case "Int64":
+		if f.Default != "" {
+			return f.Default
+		}
+		return "0"
+	case "Float64":
+		if f.Default != "" {
+			return f.Default
+		}
+		return "0"
+	default:
+		return f.Default
+	}
+}
+
+// groupCommandsByPath groups commands by their first CommandPath element.
+// Commands with no CommandPath are grouped under the empty string key.
+func groupCommandsByPath(commands []CommandModel) map[string][]CommandModel {
+	m := make(map[string][]CommandModel)
+	for _, cmd := range commands {
+		key := ""
+		if len(cmd.CommandPath) > 0 {
+			key = cmd.CommandPath[0]
+		}
+		m[key] = append(m[key], cmd)
+	}
+	return m
+}
+
+// uniqueSubcommandNames returns sorted, deduplicated first-element command paths.
+func uniqueSubcommandNames(commands []CommandModel) []string {
+	seen := map[string]bool{}
+	var result []string
+	for _, cmd := range commands {
+		if len(cmd.CommandPath) > 0 {
+			key := cmd.CommandPath[0]
+			if !seen[key] {
+				seen[key] = true
+				result = append(result, key)
+			}
+		}
+	}
+	sort.Strings(result)
+	return result
+}
+
 //go:embed templates/*.tmpl
 var templateFS embed.FS
 
@@ -64,58 +118,14 @@ func Render(groups []GroupModel, cfg *Config, outDir string) error {
 		"isSingleResource": func(p ResponsePattern) bool { return p == SingleResource },
 		"isNoContent":      func(p ResponsePattern) bool { return p == NoContent },
 		"isCustomResult":   func(p ResponsePattern) bool { return p == CustomResult },
-		"defaultValue": func(f FlagModel) string {
-			switch f.CobraType {
-			case "Bool":
-				if f.Default == "true" {
-					return "true"
-				}
-				return "false"
-			case "Int64":
-				if f.Default != "" {
-					return f.Default
-				}
-				return "0"
-			case "Float64":
-				if f.Default != "" {
-					return f.Default
-				}
-				return "0"
-			default:
-				return f.Default
-			}
-		},
+		"defaultValue":     defaultValueForFlag,
 		"pathTemplate": func(urlPath string) string {
 			// Convert /catalog/schemas/{schemaName} to fmt.Sprintf pattern
 			result := urlPath
 			return result
 		},
-		"groupCommands": func(commands []CommandModel) map[string][]CommandModel {
-			m := make(map[string][]CommandModel)
-			for _, cmd := range commands {
-				key := ""
-				if len(cmd.CommandPath) > 0 {
-					key = cmd.CommandPath[0]
-				}
-				m[key] = append(m[key], cmd)
-			}
-			return m
-		},
-		"uniqueSubcommands": func(commands []CommandModel) []string {
-			seen := map[string]bool{}
-			var result []string
-			for _, cmd := range commands {
-				if len(cmd.CommandPath) > 0 {
-					key := cmd.CommandPath[0]
-					if !seen[key] {
-						seen[key] = true
-						result = append(result, key)
-					}
-				}
-			}
-			sort.Strings(result)
-			return result
-		},
+		"groupCommands":     groupCommandsByPath,
+		"uniqueSubcommands": uniqueSubcommandNames,
 	}
 
 	tmpl, err := template.New("").Funcs(funcMap).ParseFS(templateFS, "templates/*.tmpl")
