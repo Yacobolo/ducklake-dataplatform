@@ -2,7 +2,6 @@ package apilint
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/daveshanley/vacuum/model"
@@ -14,19 +13,14 @@ func customFunctions() map[string]model.RuleFunction {
 	return map[string]model.RuleFunction{
 		"checkSchemaRef":             &fnCheckSchemaRef{},
 		"checkPaginationParams":      &fnCheckPaginationParams{},
-		"checkCollectionOrdering":    &fnCheckCollectionOrdering{},
-		"checkSecuredEndpoint401":    &fnCheckSecuredEndpoint401{},
 		"checkPaginatedSchema":       &fnCheckPaginatedSchema{},
 		"checkPostCreateStatus":      &fnCheckPostCreateStatus{},
 		"checkMutatingOps403":        &fnCheckMutatingOps403{},
 		"checkGetResource404":        &fnCheckGetResource404{},
-		"checkCreateRequestRequired": &fnCheckCreateRequestRequired{},
 		"checkErrorSchemaRef":        &fnCheckErrorSchemaRef{},
-		"checkEnumMinValues":         &fnCheckEnumMinValues{},
 		"checkDeleteReturns204":      &fnCheckDeleteReturns204{},
 		"checkPaginationSchemaMatch": &fnCheckPaginationSchemaMatch{},
 		"checkDiscriminatorRequired": &fnCheckDiscriminatorRequired{},
-		"checkReadOnlySystemFields":  &fnCheckReadOnlySystemFields{},
 	}
 }
 
@@ -67,9 +61,6 @@ var httpMethodSet = map[string]bool{
 	"get": true, "put": true, "post": true, "delete": true,
 	"options": true, "head": true, "patch": true, "trace": true,
 }
-
-var camelRe = regexp.MustCompile(`^[a-z][a-zA-Z0-9]*$`)
-var snakeRe = regexp.MustCompile(`^[a-z][a-z0-9]*(_[a-z0-9]+)*$`)
 
 type opVisitor = func(path, method string, op *yaml.Node)
 
@@ -310,100 +301,6 @@ func checkPagParams(root *yaml.Node, path string, op *yaml.Node) (hasMaxResults,
 }
 
 // ================================================================
-// OAL006 — GET before POST ordering on collection paths
-// ================================================================
-
-type fnCheckCollectionOrdering struct{}
-
-func (f *fnCheckCollectionOrdering) GetSchema() model.RuleFunctionSchema {
-	return model.RuleFunctionSchema{Name: "checkCollectionOrdering"}
-}
-func (f *fnCheckCollectionOrdering) GetCategory() string { return model.CategoryOperations }
-
-func (f *fnCheckCollectionOrdering) RunRule(nodes []*yaml.Node, ctx model.RuleFunctionContext) []model.RuleFunctionResult {
-	root := rootNode(nodes)
-	if root == nil {
-		return nil
-	}
-	paths := yGet(root, "paths")
-	if paths == nil {
-		return nil
-	}
-	var results []model.RuleFunctionResult
-	for i := 0; i < len(paths.Content)-1; i += 2 {
-		pathKey := paths.Content[i].Value
-		pathItem := paths.Content[i+1]
-		if pathItem.Kind != yaml.MappingNode {
-			continue
-		}
-		getLine, postLine := 0, 0
-		var postNode *yaml.Node
-		for j := 0; j < len(pathItem.Content)-1; j += 2 {
-			m := pathItem.Content[j].Value
-			l := int(pathItem.Content[j].Line)
-			if m == "get" {
-				getLine = l
-			}
-			if m == "post" {
-				postLine = l
-				postNode = pathItem.Content[j]
-			}
-		}
-		if getLine > 0 && postLine > 0 && postLine < getLine && postNode != nil {
-			results = append(results, makeResult(
-				fmt.Sprintf("on %q, POST (line %d) is declared before GET (line %d)", pathKey, postLine, getLine),
-				fmt.Sprintf("$.paths.%s", pathKey),
-				"check-collection-ordering", postNode, ctx))
-		}
-	}
-	return results
-}
-
-// ================================================================
-// OAL009 — secured endpoints should include 401
-// ================================================================
-
-type fnCheckSecuredEndpoint401 struct{}
-
-func (f *fnCheckSecuredEndpoint401) GetSchema() model.RuleFunctionSchema {
-	return model.RuleFunctionSchema{Name: "checkSecuredEndpoint401"}
-}
-func (f *fnCheckSecuredEndpoint401) GetCategory() string { return model.CategorySecurity }
-
-func (f *fnCheckSecuredEndpoint401) RunRule(nodes []*yaml.Node, ctx model.RuleFunctionContext) []model.RuleFunctionResult {
-	root := rootNode(nodes)
-	if root == nil {
-		return nil
-	}
-	if !hasGlobalSecurity(root) {
-		return nil
-	}
-	var results []model.RuleFunctionResult
-	forEachOp(root, func(path, method string, op *yaml.Node) {
-		sec := yGet(op, "security")
-		if sec != nil && len(sec.Content) == 0 {
-			return
-		}
-		responses := yGet(op, "responses")
-		if responses == nil {
-			return
-		}
-		if yGet(responses, "401") != nil {
-			return
-		}
-		opID := yOpID(op)
-		if opID == "" {
-			opID = method + " " + path
-		}
-		results = append(results, makeResult(
-			fmt.Sprintf("operation %q has global security but no 401 response", opID),
-			fmt.Sprintf("$.paths.%s.%s.responses", path, method),
-			"check-secured-endpoint-401", responses, ctx))
-	})
-	return results
-}
-
-// ================================================================
 // OAL010 — Paginated* schema structure
 // ================================================================
 
@@ -617,43 +514,6 @@ func (f *fnCheckGetResource404) RunRule(nodes []*yaml.Node, ctx model.RuleFuncti
 }
 
 // ================================================================
-// OAL017 — Create*Request schemas should have required
-// ================================================================
-
-type fnCheckCreateRequestRequired struct{}
-
-func (f *fnCheckCreateRequestRequired) GetSchema() model.RuleFunctionSchema {
-	return model.RuleFunctionSchema{Name: "checkCreateRequestRequired"}
-}
-func (f *fnCheckCreateRequestRequired) GetCategory() string { return model.CategorySchemas }
-
-func (f *fnCheckCreateRequestRequired) RunRule(nodes []*yaml.Node, ctx model.RuleFunctionContext) []model.RuleFunctionResult {
-	root := rootNode(nodes)
-	if root == nil {
-		return nil
-	}
-	schemas := yGet(yGet(root, "components"), "schemas")
-	if schemas == nil {
-		return nil
-	}
-	var results []model.RuleFunctionResult
-	for i := 0; i < len(schemas.Content)-1; i += 2 {
-		name := schemas.Content[i].Value
-		if !strings.HasPrefix(name, "Create") || !strings.HasSuffix(name, "Request") {
-			continue
-		}
-		schema := schemas.Content[i+1]
-		if yGet(schema, "required") == nil {
-			results = append(results, makeResult(
-				fmt.Sprintf("schema %q should have a 'required' array", name),
-				fmt.Sprintf("$.components.schemas.%s", name),
-				"check-create-request-required", schema, ctx))
-		}
-	}
-	return results
-}
-
-// ================================================================
 // OAL021 — error responses should use Error schema
 // ================================================================
 
@@ -706,60 +566,6 @@ func (f *fnCheckErrorSchemaRef) RunRule(nodes []*yaml.Node, ctx model.RuleFuncti
 			}
 		}
 	})
-	return results
-}
-
-// ================================================================
-// OAL022 — enums should have >= 2 values
-// ================================================================
-
-type fnCheckEnumMinValues struct{}
-
-func (f *fnCheckEnumMinValues) GetSchema() model.RuleFunctionSchema {
-	return model.RuleFunctionSchema{Name: "checkEnumMinValues"}
-}
-func (f *fnCheckEnumMinValues) GetCategory() string { return model.CategorySchemas }
-
-func (f *fnCheckEnumMinValues) RunRule(nodes []*yaml.Node, ctx model.RuleFunctionContext) []model.RuleFunctionResult {
-	root := rootNode(nodes)
-	if root == nil {
-		return nil
-	}
-	var results []model.RuleFunctionResult
-
-	var walk func(n *yaml.Node, context string)
-	walk = func(n *yaml.Node, context string) {
-		if n == nil {
-			return
-		}
-		if n.Kind == yaml.MappingNode {
-			enumNode := yGet(n, "enum")
-			if enumNode != nil && enumNode.Kind == yaml.SequenceNode && len(enumNode.Content) < 2 {
-				results = append(results, makeResult(
-					fmt.Sprintf("enum%s has only %d value(s)", context, len(enumNode.Content)),
-					"$",
-					"check-enum-min-values", enumNode, ctx))
-			}
-		}
-		for _, c := range n.Content {
-			walk(c, context)
-		}
-	}
-
-	// Walk schemas for better context.
-	schemas := yGet(yGet(root, "components"), "schemas")
-	if schemas != nil {
-		for i := 0; i < len(schemas.Content)-1; i += 2 {
-			schemaName := schemas.Content[i].Value
-			walk(schemas.Content[i+1], fmt.Sprintf(" in schema %q", schemaName))
-		}
-	}
-
-	// Walk paths for inline enums.
-	paths := yGet(root, "paths")
-	if paths != nil {
-		walk(paths, "")
-	}
 	return results
 }
 
@@ -886,59 +692,6 @@ func (f *fnCheckDiscriminatorRequired) RunRule(nodes []*yaml.Node, ctx model.Rul
 					fmt.Sprintf("schema %q uses %s without a discriminator", name, combiner),
 					fmt.Sprintf("$.components.schemas.%s", name),
 					"check-discriminator-required", schema, ctx))
-			}
-		}
-	}
-	return results
-}
-
-// ================================================================
-// NEW — system fields should be readOnly
-// ================================================================
-
-type fnCheckReadOnlySystemFields struct{}
-
-func (f *fnCheckReadOnlySystemFields) GetSchema() model.RuleFunctionSchema {
-	return model.RuleFunctionSchema{Name: "checkReadOnlySystemFields"}
-}
-func (f *fnCheckReadOnlySystemFields) GetCategory() string { return model.CategorySchemas }
-
-var systemFields = map[string]bool{
-	"id": true, "created_at": true, "updated_at": true,
-}
-
-func (f *fnCheckReadOnlySystemFields) RunRule(nodes []*yaml.Node, ctx model.RuleFunctionContext) []model.RuleFunctionResult {
-	root := rootNode(nodes)
-	if root == nil {
-		return nil
-	}
-	schemas := yGet(yGet(root, "components"), "schemas")
-	if schemas == nil {
-		return nil
-	}
-	var results []model.RuleFunctionResult
-	for i := 0; i < len(schemas.Content)-1; i += 2 {
-		name := schemas.Content[i].Value
-		schema := schemas.Content[i+1]
-		props := yGet(schema, "properties")
-		if props == nil || props.Kind != yaml.MappingNode {
-			continue
-		}
-		for j := 0; j < len(props.Content)-1; j += 2 {
-			propName := props.Content[j].Value
-			if !systemFields[propName] {
-				continue
-			}
-			propSchema := props.Content[j+1]
-			if propSchema.Kind != yaml.MappingNode {
-				continue
-			}
-			roNode := yGet(propSchema, "readOnly")
-			if roNode == nil || roNode.Value != "true" {
-				results = append(results, makeResult(
-					fmt.Sprintf("schema %q property %q should be readOnly: true", name, propName),
-					fmt.Sprintf("$.components.schemas.%s.properties.%s", name, propName),
-					"check-read-only-system-fields", props.Content[j], ctx))
 			}
 		}
 	}

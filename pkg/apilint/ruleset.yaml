@@ -1,36 +1,78 @@
 # Vacuum ruleset for duck-demo OpenAPI spec.
 #
-# Start from "off" so only the rules listed below are active.
-# Custom Go functions (Bucket 3) are registered programmatically;
-# their rule entries appear under "# === Custom rules ===".
+# Extends vacuum's recommended OAS rules (42 built-in) plus all OWASP rules
+# (23 security checks). Custom Go functions are registered programmatically;
+# their rule entries appear under "Custom rules".
 #
-# For built-in rules, use the shorthand string format to set severity.
-# For custom rules, use the full object format with given/then.
+# Built-in rules use shorthand to override severity (or "off" to disable).
+# Custom rules use full object format with given/then/resolved.
 
 extends:
   - - "vacuum:oas"
-    - "off"
+    - "recommended"
+  - - "vacuum:owasp"
+    - "all"
 
 rules:
 
   # ================================================================
-  # Bucket 1 — Direct replacements for old hand-written rules
+  # Disable OAS2-only rules (this project uses OpenAPI 3.x)
   # ================================================================
 
-  operation-tags: error               # OAL001
-  operation-operationId: error        # OAL002
-  operation-operationId-unique: error # OAL002
-  no-request-body: warn               # OAL003
-  resolving-references: error         # OAL011
-  oas3-unused-component: info         # OAL018
-  paths-kebab-case: error             # OAL020
-  operation-description: info         # OAL023
+  oas2-schema: off
+  oas2-api-host: off
+  oas2-api-schemes: off
+  oas2-anyOf: off
+  oas2-oneOf: off
+  oas2-discriminator: off
+  oas2-host-not-example: off
+  oas2-host-trailing-slash: off
+  oas2-operation-formData-consume-check: off
+  oas2-operation-security-defined: off
+  oas2-parameter-description: off
+  oas2-unused-definition: off
 
   # ================================================================
-  # Bucket 2 — Expressible via vacuum core functions
+  # Severity overrides for built-in rules
   # ================================================================
 
-  # OAL013 — operations must have a summary
+  # Errors — spec-breaking issues
+  operation-tags: error
+  operation-operationId: error
+  operation-operationId-unique: error
+  paths-kebab-case: error
+  no-ambiguous-paths: error
+  path-not-include-query: error
+  duplicate-paths: error
+  duplicated-entry-in-enum: error
+  no-eval-in-markdown: error
+  no-script-tags-in-markdown: error
+  oas3-schema: error
+
+  # Warnings — best-practice issues
+  no-request-body: warn
+  no-http-verbs-in-path: warn
+  path-keys-no-trailing-slash: warn
+  operation-success-response: warn
+  typed-enum: warn
+  no-unnecessary-combinator: warn
+  oas3-no-$ref-siblings: warn
+  oas3-api-servers: warn
+  description-duplication: warn
+
+  # Info — advisory
+  oas3-unused-component: info
+  operation-description: info
+
+  # Disable — intentionally off for this project
+  camel-case-properties: off         # our API uses snake_case by convention
+  migrate-zally-ignore: off          # not applicable
+
+  # ================================================================
+  # Custom rules using vacuum core functions
+  # ================================================================
+
+  # Operations must have a summary (for SDK/AI consumption)
   operation-summary:
     description: "Operations must have a summary"
     given: "$.paths[*][get,post,put,patch,delete]"
@@ -39,7 +81,7 @@ rules:
       field: summary
       function: truthy
 
-  # OAL019 — operationId must be lowerCamelCase
+  # operationId must be lowerCamelCase (for SDK method naming)
   operation-id-camel-case:
     description: "operationId should be lowerCamelCase"
     given: "$.paths[*][get,post,put,patch,delete]"
@@ -51,29 +93,10 @@ rules:
         type: camel
 
   # ================================================================
-  # New vacuum built-in rules to adopt
-  # ================================================================
-
-  no-ambiguous-paths: error
-  path-not-include-query: error
-  no-http-verbs-in-path: warn
-  path-keys-no-trailing-slash: warn
-  operation-success-response: warn
-  duplicate-paths: error
-  typed-enum: warn
-  duplicated-entry-in-enum: error
-  no-unnecessary-combinator: warn
-  oas3-no-$ref-siblings: warn
-  no-eval-in-markdown: error
-  no-script-tags-in-markdown: error
-  oas3-api-servers: warn
-  description-duplication: warn
-
-  # ================================================================
   # Custom rules — backed by Go functions registered at runtime
   # ================================================================
 
-  # OAL004 — response + request schemas must use $ref
+  # Response + request schemas must use $ref (no inline anonymous objects)
   check-schema-ref:
     description: "Response and request body schemas must use $ref (no inline anonymous objects)"
     given: "$"
@@ -82,7 +105,7 @@ rules:
     then:
       function: checkSchemaRef
 
-  # OAL005 — paginated GET endpoints must include MaxResults + PageToken
+  # Paginated GET endpoints must include MaxResults + PageToken params
   check-pagination-params:
     description: "Paginated GET endpoints must include MaxResults + PageToken params"
     given: "$"
@@ -91,25 +114,7 @@ rules:
     then:
       function: checkPaginationParams
 
-  # OAL006 — GET before POST ordering on collection paths
-  check-collection-ordering:
-    description: "On collection paths, GET should be declared before POST"
-    given: "$"
-    severity: info
-    resolved: false
-    then:
-      function: checkCollectionOrdering
-
-  # OAL009 — secured endpoints should include 401
-  check-secured-endpoint-401:
-    description: "Secured endpoints should include 401 response"
-    given: "$"
-    severity: warn
-    resolved: false
-    then:
-      function: checkSecuredEndpoint401
-
-  # OAL010 — Paginated* schema structure
+  # Paginated* schema structure validation
   check-paginated-schema:
     description: "Paginated schemas must have data (array) + next_page_token (string)"
     given: "$"
@@ -118,7 +123,7 @@ rules:
     then:
       function: checkPaginatedSchema
 
-  # OAL012 — POST create should return 201
+  # POST-create endpoints should return 201
   check-post-create-status:
     description: "POST-create endpoints should return 201 (not 200)"
     given: "$"
@@ -127,7 +132,7 @@ rules:
     then:
       function: checkPostCreateStatus
 
-  # OAL014 — mutating ops should include 403
+  # Mutating operations should include 403 response
   check-mutating-ops-403:
     description: "Mutating operations should include 403 response"
     given: "$"
@@ -136,7 +141,7 @@ rules:
     then:
       function: checkMutatingOps403
 
-  # OAL015 — GET resource paths should include 404
+  # GET resource paths should include 404 response
   check-get-resource-404:
     description: "GET operations on resource paths should include 404 response"
     given: "$"
@@ -145,16 +150,7 @@ rules:
     then:
       function: checkGetResource404
 
-  # OAL017 — Create*Request schemas should have required
-  check-create-request-required:
-    description: "Create*Request schemas should have a required array"
-    given: "$"
-    severity: info
-    resolved: false
-    then:
-      function: checkCreateRequestRequired
-
-  # OAL021 — error responses should use Error schema
+  # Error responses should reference the standard Error schema
   check-error-schema-ref:
     description: "Error responses should reference the standard Error schema"
     given: "$"
@@ -163,16 +159,7 @@ rules:
     then:
       function: checkErrorSchemaRef
 
-  # OAL022 — enums should have >= 2 values
-  check-enum-min-values:
-    description: "Enums should have at least 2 values"
-    given: "$"
-    severity: info
-    resolved: false
-    then:
-      function: checkEnumMinValues
-
-  # OAL024 — DELETE should include 204
+  # DELETE operations should include 204 response
   check-delete-returns-204:
     description: "DELETE operations should include 204 response"
     given: "$"
@@ -181,7 +168,7 @@ rules:
     then:
       function: checkDeleteReturns204
 
-  # OAL025 — pagination params should match Paginated* response
+  # GET with pagination params should return Paginated* schema
   check-pagination-schema-match:
     description: "GET with pagination params should return a Paginated* schema"
     given: "$"
@@ -190,7 +177,7 @@ rules:
     then:
       function: checkPaginationSchemaMatch
 
-  # NEW — oneOf/anyOf should have discriminator
+  # oneOf/anyOf must have discriminator for clean codegen
   check-discriminator-required:
     description: "Every oneOf/anyOf must have a discriminator object for clean codegen"
     given: "$"
@@ -198,12 +185,3 @@ rules:
     resolved: false
     then:
       function: checkDiscriminatorRequired
-
-  # NEW — system fields should be readOnly
-  check-read-only-system-fields:
-    description: "System-generated fields (id, created_at, updated_at) should be readOnly"
-    given: "$"
-    severity: info
-    resolved: false
-    then:
-      function: checkReadOnlySystemFields
