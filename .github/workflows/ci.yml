@@ -18,8 +18,8 @@ env:
     gotestsum=gotest.tools/gotestsum@latest
 
 jobs:
-  lint:
-    name: Lint
+  lint-go:
+    name: Lint Go
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -29,6 +29,27 @@ jobs:
       - uses: golangci/golangci-lint-action@v7
         with:
           version: v2.7
+
+  lint-api:
+    name: Lint OpenAPI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Cache Go tools
+        uses: actions/cache@v4
+        with:
+          path: ~/go/bin
+          key: go-tools-${{ runner.os }}-task
+      - name: Install Task
+        run: test -f ~/go/bin/task || go install github.com/go-task/task/v3/cmd/task@latest
+      - name: Lint OpenAPI spec
+        run: task lint:api
 
   test-unit:
     name: Unit Tests

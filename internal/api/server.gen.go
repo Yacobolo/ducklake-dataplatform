@@ -38,7 +38,7 @@ type ServerInterface interface {
 	// Query audit logs
 	// (GET /audit-logs)
 	ListAuditLogs(w http.ResponseWriter, r *http.Request, params ListAuditLogsParams)
-	// List registered catalogs
+	// List all registered catalogs
 	// (GET /catalogs)
 	ListCatalogs(w http.ResponseWriter, r *http.Request, params ListCatalogsParams)
 	// Register a new catalog
@@ -46,100 +46,100 @@ type ServerInterface interface {
 	RegisterCatalog(w http.ResponseWriter, r *http.Request)
 	// Delete a catalog registration
 	// (DELETE /catalogs/{catalogName})
-	DeleteCatalogRegistration(w http.ResponseWriter, r *http.Request, catalogName CatalogName)
+	DeleteCatalogRegistration(w http.ResponseWriter, r *http.Request, catalogName string)
 	// Get a catalog registration by name
 	// (GET /catalogs/{catalogName})
-	GetCatalogRegistration(w http.ResponseWriter, r *http.Request, catalogName CatalogName)
+	GetCatalogRegistration(w http.ResponseWriter, r *http.Request, catalogName string)
 	// Update a catalog registration
 	// (PATCH /catalogs/{catalogName})
-	UpdateCatalogRegistration(w http.ResponseWriter, r *http.Request, catalogName CatalogName)
+	UpdateCatalogRegistration(w http.ResponseWriter, r *http.Request, catalogName string)
 	// Get catalog info
 	// (GET /catalogs/{catalogName}/info)
-	GetCatalog(w http.ResponseWriter, r *http.Request, catalogName CatalogName)
+	GetCatalog(w http.ResponseWriter, r *http.Request, catalogName string)
 	// Get metastore summary
 	// (GET /catalogs/{catalogName}/metastore/summary)
-	GetMetastoreSummary(w http.ResponseWriter, r *http.Request, catalogName CatalogName)
+	GetMetastoreSummary(w http.ResponseWriter, r *http.Request, catalogName string)
 	// List schemas in the catalog
 	// (GET /catalogs/{catalogName}/schemas)
-	ListSchemas(w http.ResponseWriter, r *http.Request, catalogName CatalogName, params ListSchemasParams)
+	ListSchemas(w http.ResponseWriter, r *http.Request, catalogName string, params ListSchemasParams)
 	// Create a new schema
 	// (POST /catalogs/{catalogName}/schemas)
-	CreateSchema(w http.ResponseWriter, r *http.Request, catalogName CatalogName)
+	CreateSchema(w http.ResponseWriter, r *http.Request, catalogName string)
 	// Delete a schema
 	// (DELETE /catalogs/{catalogName}/schemas/{schemaName})
-	DeleteSchema(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, params DeleteSchemaParams)
+	DeleteSchema(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, params DeleteSchemaParams)
 	// Get a schema by name
 	// (GET /catalogs/{catalogName}/schemas/{schemaName})
-	GetSchema(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string)
+	GetSchema(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string)
 	// Update schema metadata
 	// (PATCH /catalogs/{catalogName}/schemas/{schemaName})
-	UpdateSchema(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string)
+	UpdateSchema(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string)
 	// List tables in a schema
 	// (GET /catalogs/{catalogName}/schemas/{schemaName}/tables)
-	ListTables(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, params ListTablesParams)
+	ListTables(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, params ListTablesParams)
 	// Create a new table in a schema
 	// (POST /catalogs/{catalogName}/schemas/{schemaName}/tables)
-	CreateTable(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string)
+	CreateTable(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string)
 	// Delete a table
 	// (DELETE /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName})
-	DeleteTable(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string)
+	DeleteTable(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, tableName string)
 	// Get a table by name
 	// (GET /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName})
-	GetTable(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string)
+	GetTable(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, tableName string)
 	// Update table metadata
 	// (PATCH /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName})
-	UpdateTable(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string)
+	UpdateTable(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, tableName string)
 	// List columns of a table
 	// (GET /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns)
-	ListTableColumns(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string, params ListTableColumnsParams)
+	ListTableColumns(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, tableName string, params ListTableColumnsParams)
 	// Update column metadata
 	// (PATCH /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns/{columnName})
-	UpdateColumn(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string, columnName string)
+	UpdateColumn(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, tableName string, columnName string)
 	// Register uploaded Parquet files in DuckLake
 	// (POST /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/commit)
-	CommitTableIngestion(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string)
+	CommitTableIngestion(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, tableName string)
 	// Register existing S3 files in DuckLake
 	// (POST /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/load)
-	LoadTableExternalFiles(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string)
+	LoadTableExternalFiles(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, tableName string)
 	// Get a presigned URL for uploading a Parquet file
 	// (POST /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url)
-	CreateUploadUrl(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string)
+	CreateUploadUrl(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, tableName string)
 	// Profile a table to collect statistics
 	// (POST /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/profile)
-	ProfileTable(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string)
+	ProfileTable(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, tableName string)
 	// List views in a schema
 	// (GET /catalogs/{catalogName}/schemas/{schemaName}/views)
-	ListViews(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, params ListViewsParams)
+	ListViews(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, params ListViewsParams)
 	// Create a view in a schema
 	// (POST /catalogs/{catalogName}/schemas/{schemaName}/views)
-	CreateView(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string)
+	CreateView(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string)
 	// Delete a view
 	// (DELETE /catalogs/{catalogName}/schemas/{schemaName}/views/{viewName})
-	DeleteView(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, viewName string)
+	DeleteView(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, viewName string)
 	// Get a view by name
 	// (GET /catalogs/{catalogName}/schemas/{schemaName}/views/{viewName})
-	GetView(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, viewName string)
+	GetView(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, viewName string)
 	// Update a view's metadata
 	// (PATCH /catalogs/{catalogName}/schemas/{schemaName}/views/{viewName})
-	UpdateView(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, viewName string)
+	UpdateView(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, viewName string)
 	// List volumes in a schema
 	// (GET /catalogs/{catalogName}/schemas/{schemaName}/volumes)
-	ListVolumes(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, params ListVolumesParams)
+	ListVolumes(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, params ListVolumesParams)
 	// Create a volume in a schema
 	// (POST /catalogs/{catalogName}/schemas/{schemaName}/volumes)
-	CreateVolume(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string)
+	CreateVolume(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string)
 	// Delete a volume
 	// (DELETE /catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName})
-	DeleteVolume(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, volumeName string)
+	DeleteVolume(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, volumeName string)
 	// Get a volume by name
 	// (GET /catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName})
-	GetVolume(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, volumeName string)
+	GetVolume(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, volumeName string)
 	// Update a volume
 	// (PATCH /catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName})
-	UpdateVolume(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, volumeName string)
+	UpdateVolume(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, volumeName string)
 	// Set a catalog as the default
 	// (POST /catalogs/{catalogName}/set-default)
-	SetDefaultCatalog(w http.ResponseWriter, r *http.Request, catalogName CatalogName)
+	SetDefaultCatalog(w http.ResponseWriter, r *http.Request, catalogName string)
 	// List classification and sensitivity tags
 	// (GET /classifications)
 	ListClassifications(w http.ResponseWriter, r *http.Request, params ListClassificationsParams)
@@ -356,7 +356,7 @@ func (_ Unimplemented) ListAuditLogs(w http.ResponseWriter, r *http.Request, par
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// List registered catalogs
+// List all registered catalogs
 // (GET /catalogs)
 func (_ Unimplemented) ListCatalogs(w http.ResponseWriter, r *http.Request, params ListCatalogsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -370,193 +370,193 @@ func (_ Unimplemented) RegisterCatalog(w http.ResponseWriter, r *http.Request) {
 
 // Delete a catalog registration
 // (DELETE /catalogs/{catalogName})
-func (_ Unimplemented) DeleteCatalogRegistration(w http.ResponseWriter, r *http.Request, catalogName CatalogName) {
+func (_ Unimplemented) DeleteCatalogRegistration(w http.ResponseWriter, r *http.Request, catalogName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Get a catalog registration by name
 // (GET /catalogs/{catalogName})
-func (_ Unimplemented) GetCatalogRegistration(w http.ResponseWriter, r *http.Request, catalogName CatalogName) {
+func (_ Unimplemented) GetCatalogRegistration(w http.ResponseWriter, r *http.Request, catalogName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Update a catalog registration
 // (PATCH /catalogs/{catalogName})
-func (_ Unimplemented) UpdateCatalogRegistration(w http.ResponseWriter, r *http.Request, catalogName CatalogName) {
+func (_ Unimplemented) UpdateCatalogRegistration(w http.ResponseWriter, r *http.Request, catalogName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Get catalog info
 // (GET /catalogs/{catalogName}/info)
-func (_ Unimplemented) GetCatalog(w http.ResponseWriter, r *http.Request, catalogName CatalogName) {
+func (_ Unimplemented) GetCatalog(w http.ResponseWriter, r *http.Request, catalogName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Get metastore summary
 // (GET /catalogs/{catalogName}/metastore/summary)
-func (_ Unimplemented) GetMetastoreSummary(w http.ResponseWriter, r *http.Request, catalogName CatalogName) {
+func (_ Unimplemented) GetMetastoreSummary(w http.ResponseWriter, r *http.Request, catalogName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // List schemas in the catalog
 // (GET /catalogs/{catalogName}/schemas)
-func (_ Unimplemented) ListSchemas(w http.ResponseWriter, r *http.Request, catalogName CatalogName, params ListSchemasParams) {
+func (_ Unimplemented) ListSchemas(w http.ResponseWriter, r *http.Request, catalogName string, params ListSchemasParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Create a new schema
 // (POST /catalogs/{catalogName}/schemas)
-func (_ Unimplemented) CreateSchema(w http.ResponseWriter, r *http.Request, catalogName CatalogName) {
+func (_ Unimplemented) CreateSchema(w http.ResponseWriter, r *http.Request, catalogName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Delete a schema
 // (DELETE /catalogs/{catalogName}/schemas/{schemaName})
-func (_ Unimplemented) DeleteSchema(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, params DeleteSchemaParams) {
+func (_ Unimplemented) DeleteSchema(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, params DeleteSchemaParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Get a schema by name
 // (GET /catalogs/{catalogName}/schemas/{schemaName})
-func (_ Unimplemented) GetSchema(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string) {
+func (_ Unimplemented) GetSchema(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Update schema metadata
 // (PATCH /catalogs/{catalogName}/schemas/{schemaName})
-func (_ Unimplemented) UpdateSchema(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string) {
+func (_ Unimplemented) UpdateSchema(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // List tables in a schema
 // (GET /catalogs/{catalogName}/schemas/{schemaName}/tables)
-func (_ Unimplemented) ListTables(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, params ListTablesParams) {
+func (_ Unimplemented) ListTables(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, params ListTablesParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Create a new table in a schema
 // (POST /catalogs/{catalogName}/schemas/{schemaName}/tables)
-func (_ Unimplemented) CreateTable(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string) {
+func (_ Unimplemented) CreateTable(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Delete a table
 // (DELETE /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName})
-func (_ Unimplemented) DeleteTable(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string) {
+func (_ Unimplemented) DeleteTable(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, tableName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Get a table by name
 // (GET /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName})
-func (_ Unimplemented) GetTable(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string) {
+func (_ Unimplemented) GetTable(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, tableName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Update table metadata
 // (PATCH /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName})
-func (_ Unimplemented) UpdateTable(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string) {
+func (_ Unimplemented) UpdateTable(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, tableName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // List columns of a table
 // (GET /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns)
-func (_ Unimplemented) ListTableColumns(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string, params ListTableColumnsParams) {
+func (_ Unimplemented) ListTableColumns(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, tableName string, params ListTableColumnsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Update column metadata
 // (PATCH /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns/{columnName})
-func (_ Unimplemented) UpdateColumn(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string, columnName string) {
+func (_ Unimplemented) UpdateColumn(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, tableName string, columnName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Register uploaded Parquet files in DuckLake
 // (POST /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/commit)
-func (_ Unimplemented) CommitTableIngestion(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string) {
+func (_ Unimplemented) CommitTableIngestion(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, tableName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Register existing S3 files in DuckLake
 // (POST /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/load)
-func (_ Unimplemented) LoadTableExternalFiles(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string) {
+func (_ Unimplemented) LoadTableExternalFiles(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, tableName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Get a presigned URL for uploading a Parquet file
 // (POST /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url)
-func (_ Unimplemented) CreateUploadUrl(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string) {
+func (_ Unimplemented) CreateUploadUrl(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, tableName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Profile a table to collect statistics
 // (POST /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/profile)
-func (_ Unimplemented) ProfileTable(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string) {
+func (_ Unimplemented) ProfileTable(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, tableName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // List views in a schema
 // (GET /catalogs/{catalogName}/schemas/{schemaName}/views)
-func (_ Unimplemented) ListViews(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, params ListViewsParams) {
+func (_ Unimplemented) ListViews(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, params ListViewsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Create a view in a schema
 // (POST /catalogs/{catalogName}/schemas/{schemaName}/views)
-func (_ Unimplemented) CreateView(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string) {
+func (_ Unimplemented) CreateView(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Delete a view
 // (DELETE /catalogs/{catalogName}/schemas/{schemaName}/views/{viewName})
-func (_ Unimplemented) DeleteView(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, viewName string) {
+func (_ Unimplemented) DeleteView(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, viewName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Get a view by name
 // (GET /catalogs/{catalogName}/schemas/{schemaName}/views/{viewName})
-func (_ Unimplemented) GetView(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, viewName string) {
+func (_ Unimplemented) GetView(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, viewName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Update a view's metadata
 // (PATCH /catalogs/{catalogName}/schemas/{schemaName}/views/{viewName})
-func (_ Unimplemented) UpdateView(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, viewName string) {
+func (_ Unimplemented) UpdateView(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, viewName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // List volumes in a schema
 // (GET /catalogs/{catalogName}/schemas/{schemaName}/volumes)
-func (_ Unimplemented) ListVolumes(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, params ListVolumesParams) {
+func (_ Unimplemented) ListVolumes(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, params ListVolumesParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Create a volume in a schema
 // (POST /catalogs/{catalogName}/schemas/{schemaName}/volumes)
-func (_ Unimplemented) CreateVolume(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string) {
+func (_ Unimplemented) CreateVolume(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Delete a volume
 // (DELETE /catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName})
-func (_ Unimplemented) DeleteVolume(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, volumeName string) {
+func (_ Unimplemented) DeleteVolume(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, volumeName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Get a volume by name
 // (GET /catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName})
-func (_ Unimplemented) GetVolume(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, volumeName string) {
+func (_ Unimplemented) GetVolume(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, volumeName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Update a volume
 // (PATCH /catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName})
-func (_ Unimplemented) UpdateVolume(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, volumeName string) {
+func (_ Unimplemented) UpdateVolume(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, volumeName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Set a catalog as the default
 // (POST /catalogs/{catalogName}/set-default)
-func (_ Unimplemented) SetDefaultCatalog(w http.ResponseWriter, r *http.Request, catalogName CatalogName) {
+func (_ Unimplemented) SetDefaultCatalog(w http.ResponseWriter, r *http.Request, catalogName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1202,7 +1202,7 @@ func (siw *ServerInterfaceWrapper) DeleteCatalogRegistration(w http.ResponseWrit
 	var err error
 
 	// ------------- Path parameter "catalogName" -------------
-	var catalogName CatalogName
+	var catalogName string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -1235,7 +1235,7 @@ func (siw *ServerInterfaceWrapper) GetCatalogRegistration(w http.ResponseWriter,
 	var err error
 
 	// ------------- Path parameter "catalogName" -------------
-	var catalogName CatalogName
+	var catalogName string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -1268,7 +1268,7 @@ func (siw *ServerInterfaceWrapper) UpdateCatalogRegistration(w http.ResponseWrit
 	var err error
 
 	// ------------- Path parameter "catalogName" -------------
-	var catalogName CatalogName
+	var catalogName string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -1301,7 +1301,7 @@ func (siw *ServerInterfaceWrapper) GetCatalog(w http.ResponseWriter, r *http.Req
 	var err error
 
 	// ------------- Path parameter "catalogName" -------------
-	var catalogName CatalogName
+	var catalogName string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -1334,7 +1334,7 @@ func (siw *ServerInterfaceWrapper) GetMetastoreSummary(w http.ResponseWriter, r 
 	var err error
 
 	// ------------- Path parameter "catalogName" -------------
-	var catalogName CatalogName
+	var catalogName string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -1367,7 +1367,7 @@ func (siw *ServerInterfaceWrapper) ListSchemas(w http.ResponseWriter, r *http.Re
 	var err error
 
 	// ------------- Path parameter "catalogName" -------------
-	var catalogName CatalogName
+	var catalogName string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -1419,7 +1419,7 @@ func (siw *ServerInterfaceWrapper) CreateSchema(w http.ResponseWriter, r *http.R
 	var err error
 
 	// ------------- Path parameter "catalogName" -------------
-	var catalogName CatalogName
+	var catalogName string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -1452,7 +1452,7 @@ func (siw *ServerInterfaceWrapper) DeleteSchema(w http.ResponseWriter, r *http.R
 	var err error
 
 	// ------------- Path parameter "catalogName" -------------
-	var catalogName CatalogName
+	var catalogName string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -1505,7 +1505,7 @@ func (siw *ServerInterfaceWrapper) GetSchema(w http.ResponseWriter, r *http.Requ
 	var err error
 
 	// ------------- Path parameter "catalogName" -------------
-	var catalogName CatalogName
+	var catalogName string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -1547,7 +1547,7 @@ func (siw *ServerInterfaceWrapper) UpdateSchema(w http.ResponseWriter, r *http.R
 	var err error
 
 	// ------------- Path parameter "catalogName" -------------
-	var catalogName CatalogName
+	var catalogName string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -1589,7 +1589,7 @@ func (siw *ServerInterfaceWrapper) ListTables(w http.ResponseWriter, r *http.Req
 	var err error
 
 	// ------------- Path parameter "catalogName" -------------
-	var catalogName CatalogName
+	var catalogName string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -1650,7 +1650,7 @@ func (siw *ServerInterfaceWrapper) CreateTable(w http.ResponseWriter, r *http.Re
 	var err error
 
 	// ------------- Path parameter "catalogName" -------------
-	var catalogName CatalogName
+	var catalogName string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -1692,7 +1692,7 @@ func (siw *ServerInterfaceWrapper) DeleteTable(w http.ResponseWriter, r *http.Re
 	var err error
 
 	// ------------- Path parameter "catalogName" -------------
-	var catalogName CatalogName
+	var catalogName string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -1743,7 +1743,7 @@ func (siw *ServerInterfaceWrapper) GetTable(w http.ResponseWriter, r *http.Reque
 	var err error
 
 	// ------------- Path parameter "catalogName" -------------
-	var catalogName CatalogName
+	var catalogName string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -1794,7 +1794,7 @@ func (siw *ServerInterfaceWrapper) UpdateTable(w http.ResponseWriter, r *http.Re
 	var err error
 
 	// ------------- Path parameter "catalogName" -------------
-	var catalogName CatalogName
+	var catalogName string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -1845,7 +1845,7 @@ func (siw *ServerInterfaceWrapper) ListTableColumns(w http.ResponseWriter, r *ht
 	var err error
 
 	// ------------- Path parameter "catalogName" -------------
-	var catalogName CatalogName
+	var catalogName string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -1915,7 +1915,7 @@ func (siw *ServerInterfaceWrapper) UpdateColumn(w http.ResponseWriter, r *http.R
 	var err error
 
 	// ------------- Path parameter "catalogName" -------------
-	var catalogName CatalogName
+	var catalogName string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -1975,7 +1975,7 @@ func (siw *ServerInterfaceWrapper) CommitTableIngestion(w http.ResponseWriter, r
 	var err error
 
 	// ------------- Path parameter "catalogName" -------------
-	var catalogName CatalogName
+	var catalogName string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -2026,7 +2026,7 @@ func (siw *ServerInterfaceWrapper) LoadTableExternalFiles(w http.ResponseWriter,
 	var err error
 
 	// ------------- Path parameter "catalogName" -------------
-	var catalogName CatalogName
+	var catalogName string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -2077,7 +2077,7 @@ func (siw *ServerInterfaceWrapper) CreateUploadUrl(w http.ResponseWriter, r *htt
 	var err error
 
 	// ------------- Path parameter "catalogName" -------------
-	var catalogName CatalogName
+	var catalogName string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -2128,7 +2128,7 @@ func (siw *ServerInterfaceWrapper) ProfileTable(w http.ResponseWriter, r *http.R
 	var err error
 
 	// ------------- Path parameter "catalogName" -------------
-	var catalogName CatalogName
+	var catalogName string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -2179,7 +2179,7 @@ func (siw *ServerInterfaceWrapper) ListViews(w http.ResponseWriter, r *http.Requ
 	var err error
 
 	// ------------- Path parameter "catalogName" -------------
-	var catalogName CatalogName
+	var catalogName string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -2240,7 +2240,7 @@ func (siw *ServerInterfaceWrapper) CreateView(w http.ResponseWriter, r *http.Req
 	var err error
 
 	// ------------- Path parameter "catalogName" -------------
-	var catalogName CatalogName
+	var catalogName string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -2282,7 +2282,7 @@ func (siw *ServerInterfaceWrapper) DeleteView(w http.ResponseWriter, r *http.Req
 	var err error
 
 	// ------------- Path parameter "catalogName" -------------
-	var catalogName CatalogName
+	var catalogName string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -2333,7 +2333,7 @@ func (siw *ServerInterfaceWrapper) GetView(w http.ResponseWriter, r *http.Reques
 	var err error
 
 	// ------------- Path parameter "catalogName" -------------
-	var catalogName CatalogName
+	var catalogName string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -2384,7 +2384,7 @@ func (siw *ServerInterfaceWrapper) UpdateView(w http.ResponseWriter, r *http.Req
 	var err error
 
 	// ------------- Path parameter "catalogName" -------------
-	var catalogName CatalogName
+	var catalogName string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -2435,7 +2435,7 @@ func (siw *ServerInterfaceWrapper) ListVolumes(w http.ResponseWriter, r *http.Re
 	var err error
 
 	// ------------- Path parameter "catalogName" -------------
-	var catalogName CatalogName
+	var catalogName string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -2496,7 +2496,7 @@ func (siw *ServerInterfaceWrapper) CreateVolume(w http.ResponseWriter, r *http.R
 	var err error
 
 	// ------------- Path parameter "catalogName" -------------
-	var catalogName CatalogName
+	var catalogName string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -2538,7 +2538,7 @@ func (siw *ServerInterfaceWrapper) DeleteVolume(w http.ResponseWriter, r *http.R
 	var err error
 
 	// ------------- Path parameter "catalogName" -------------
-	var catalogName CatalogName
+	var catalogName string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -2589,7 +2589,7 @@ func (siw *ServerInterfaceWrapper) GetVolume(w http.ResponseWriter, r *http.Requ
 	var err error
 
 	// ------------- Path parameter "catalogName" -------------
-	var catalogName CatalogName
+	var catalogName string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -2640,7 +2640,7 @@ func (siw *ServerInterfaceWrapper) UpdateVolume(w http.ResponseWriter, r *http.R
 	var err error
 
 	// ------------- Path parameter "catalogName" -------------
-	var catalogName CatalogName
+	var catalogName string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -2691,7 +2691,7 @@ func (siw *ServerInterfaceWrapper) SetDefaultCatalog(w http.ResponseWriter, r *h
 	var err error
 
 	// ------------- Path parameter "catalogName" -------------
-	var catalogName CatalogName
+	var catalogName string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "catalogName", chi.URLParam(r, "catalogName"), &catalogName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -5462,22 +5462,111 @@ type ListAPIKeysResponseObject interface {
 	VisitListAPIKeysResponse(w http.ResponseWriter) error
 }
 
-type ListAPIKeys200JSONResponse PaginatedAPIKeys
+type ListAPIKeys200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListAPIKeys200JSONResponse struct {
+	Body    PaginatedAPIKeys
+	Headers ListAPIKeys200ResponseHeaders
+}
 
 func (response ListAPIKeys200JSONResponse) VisitListAPIKeysResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ListAPIKeys401JSONResponse Error
+type ListAPIKeys400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListAPIKeys400JSONResponse struct {
+	Body    Error
+	Headers ListAPIKeys400ResponseHeaders
+}
+
+func (response ListAPIKeys400JSONResponse) VisitListAPIKeysResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListAPIKeys401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListAPIKeys401JSONResponse struct {
+	Body    Error
+	Headers ListAPIKeys401ResponseHeaders
+}
 
 func (response ListAPIKeys401JSONResponse) VisitListAPIKeysResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListAPIKeys429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListAPIKeys429JSONResponse struct {
+	Body    Error
+	Headers ListAPIKeys429ResponseHeaders
+}
+
+func (response ListAPIKeys429JSONResponse) VisitListAPIKeysResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListAPIKeys500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListAPIKeys500JSONResponse struct {
+	Body    Error
+	Headers ListAPIKeys500ResponseHeaders
+}
+
+func (response ListAPIKeys500JSONResponse) VisitListAPIKeysResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type CreateAPIKeyRequestObject struct {
@@ -5488,40 +5577,132 @@ type CreateAPIKeyResponseObject interface {
 	VisitCreateAPIKeyResponse(w http.ResponseWriter) error
 }
 
-type CreateAPIKey201JSONResponse CreateAPIKeyResponse
+type CreateAPIKey201ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateAPIKey201JSONResponse struct {
+	Body    CreateAPIKeyResponse
+	Headers CreateAPIKey201ResponseHeaders
+}
 
 func (response CreateAPIKey201JSONResponse) VisitCreateAPIKeyResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(201)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateAPIKey400JSONResponse Error
+type CreateAPIKey400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateAPIKey400JSONResponse struct {
+	Body    Error
+	Headers CreateAPIKey400ResponseHeaders
+}
 
 func (response CreateAPIKey400JSONResponse) VisitCreateAPIKeyResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(400)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateAPIKey401JSONResponse Error
+type CreateAPIKey401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateAPIKey401JSONResponse struct {
+	Body    Error
+	Headers CreateAPIKey401ResponseHeaders
+}
 
 func (response CreateAPIKey401JSONResponse) VisitCreateAPIKeyResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateAPIKey403JSONResponse Error
+type CreateAPIKey403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateAPIKey403JSONResponse struct {
+	Body    Error
+	Headers CreateAPIKey403ResponseHeaders
+}
 
 func (response CreateAPIKey403JSONResponse) VisitCreateAPIKeyResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateAPIKey429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateAPIKey429JSONResponse struct {
+	Body    Error
+	Headers CreateAPIKey429ResponseHeaders
+}
+
+func (response CreateAPIKey429JSONResponse) VisitCreateAPIKeyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateAPIKey500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateAPIKey500JSONResponse struct {
+	Body    Error
+	Headers CreateAPIKey500ResponseHeaders
+}
+
+func (response CreateAPIKey500JSONResponse) VisitCreateAPIKeyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type CleanupExpiredAPIKeysRequestObject struct {
@@ -5531,31 +5712,132 @@ type CleanupExpiredAPIKeysResponseObject interface {
 	VisitCleanupExpiredAPIKeysResponse(w http.ResponseWriter) error
 }
 
-type CleanupExpiredAPIKeys200JSONResponse CleanupAPIKeysResponse
+type CleanupExpiredAPIKeys200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CleanupExpiredAPIKeys200JSONResponse struct {
+	Body    CleanupAPIKeysResponse
+	Headers CleanupExpiredAPIKeys200ResponseHeaders
+}
 
 func (response CleanupExpiredAPIKeys200JSONResponse) VisitCleanupExpiredAPIKeysResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CleanupExpiredAPIKeys401JSONResponse Error
+type CleanupExpiredAPIKeys400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CleanupExpiredAPIKeys400JSONResponse struct {
+	Body    Error
+	Headers CleanupExpiredAPIKeys400ResponseHeaders
+}
+
+func (response CleanupExpiredAPIKeys400JSONResponse) VisitCleanupExpiredAPIKeysResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CleanupExpiredAPIKeys401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CleanupExpiredAPIKeys401JSONResponse struct {
+	Body    Error
+	Headers CleanupExpiredAPIKeys401ResponseHeaders
+}
 
 func (response CleanupExpiredAPIKeys401JSONResponse) VisitCleanupExpiredAPIKeysResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CleanupExpiredAPIKeys403JSONResponse Error
+type CleanupExpiredAPIKeys403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CleanupExpiredAPIKeys403JSONResponse struct {
+	Body    Error
+	Headers CleanupExpiredAPIKeys403ResponseHeaders
+}
 
 func (response CleanupExpiredAPIKeys403JSONResponse) VisitCleanupExpiredAPIKeysResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CleanupExpiredAPIKeys429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CleanupExpiredAPIKeys429JSONResponse struct {
+	Body    Error
+	Headers CleanupExpiredAPIKeys429ResponseHeaders
+}
+
+func (response CleanupExpiredAPIKeys429JSONResponse) VisitCleanupExpiredAPIKeysResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CleanupExpiredAPIKeys500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CleanupExpiredAPIKeys500JSONResponse struct {
+	Body    Error
+	Headers CleanupExpiredAPIKeys500ResponseHeaders
+}
+
+func (response CleanupExpiredAPIKeys500JSONResponse) VisitCleanupExpiredAPIKeysResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type DeleteAPIKeyRequestObject struct {
@@ -5566,39 +5848,150 @@ type DeleteAPIKeyResponseObject interface {
 	VisitDeleteAPIKeyResponse(w http.ResponseWriter) error
 }
 
+type DeleteAPIKey204ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
 type DeleteAPIKey204Response struct {
+	Headers DeleteAPIKey204ResponseHeaders
 }
 
 func (response DeleteAPIKey204Response) VisitDeleteAPIKeyResponse(w http.ResponseWriter) error {
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(204)
 	return nil
 }
 
-type DeleteAPIKey401JSONResponse Error
+type DeleteAPIKey400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteAPIKey400JSONResponse struct {
+	Body    Error
+	Headers DeleteAPIKey400ResponseHeaders
+}
+
+func (response DeleteAPIKey400JSONResponse) VisitDeleteAPIKeyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteAPIKey401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteAPIKey401JSONResponse struct {
+	Body    Error
+	Headers DeleteAPIKey401ResponseHeaders
+}
 
 func (response DeleteAPIKey401JSONResponse) VisitDeleteAPIKeyResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteAPIKey403JSONResponse Error
+type DeleteAPIKey403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteAPIKey403JSONResponse struct {
+	Body    Error
+	Headers DeleteAPIKey403ResponseHeaders
+}
 
 func (response DeleteAPIKey403JSONResponse) VisitDeleteAPIKeyResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteAPIKey404JSONResponse Error
+type DeleteAPIKey404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteAPIKey404JSONResponse struct {
+	Body    Error
+	Headers DeleteAPIKey404ResponseHeaders
+}
 
 func (response DeleteAPIKey404JSONResponse) VisitDeleteAPIKeyResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteAPIKey429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteAPIKey429JSONResponse struct {
+	Body    Error
+	Headers DeleteAPIKey429ResponseHeaders
+}
+
+func (response DeleteAPIKey429JSONResponse) VisitDeleteAPIKeyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteAPIKey500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteAPIKey500JSONResponse struct {
+	Body    Error
+	Headers DeleteAPIKey500ResponseHeaders
+}
+
+func (response DeleteAPIKey500JSONResponse) VisitDeleteAPIKeyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type ListAuditLogsRequestObject struct {
@@ -5609,22 +6002,90 @@ type ListAuditLogsResponseObject interface {
 	VisitListAuditLogsResponse(w http.ResponseWriter) error
 }
 
-type ListAuditLogs200JSONResponse PaginatedAuditLogs
+type ListAuditLogs200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListAuditLogs200JSONResponse struct {
+	Body    PaginatedAuditLogs
+	Headers ListAuditLogs200ResponseHeaders
+}
 
 func (response ListAuditLogs200JSONResponse) VisitListAuditLogsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ListAuditLogs401JSONResponse Error
+type ListAuditLogs401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListAuditLogs401JSONResponse struct {
+	Body    Error
+	Headers ListAuditLogs401ResponseHeaders
+}
 
 func (response ListAuditLogs401JSONResponse) VisitListAuditLogsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListAuditLogs429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListAuditLogs429JSONResponse struct {
+	Body    Error
+	Headers ListAuditLogs429ResponseHeaders
+}
+
+func (response ListAuditLogs429JSONResponse) VisitListAuditLogsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListAuditLogs500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListAuditLogs500JSONResponse struct {
+	Body    Error
+	Headers ListAuditLogs500ResponseHeaders
+}
+
+func (response ListAuditLogs500JSONResponse) VisitListAuditLogsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type ListCatalogsRequestObject struct {
@@ -5635,22 +6096,90 @@ type ListCatalogsResponseObject interface {
 	VisitListCatalogsResponse(w http.ResponseWriter) error
 }
 
-type ListCatalogs200JSONResponse CatalogRegistrationList
+type ListCatalogs200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListCatalogs200JSONResponse struct {
+	Body    CatalogRegistrationList
+	Headers ListCatalogs200ResponseHeaders
+}
 
 func (response ListCatalogs200JSONResponse) VisitListCatalogsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ListCatalogs401JSONResponse Error
+type ListCatalogs401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListCatalogs401JSONResponse struct {
+	Body    Error
+	Headers ListCatalogs401ResponseHeaders
+}
 
 func (response ListCatalogs401JSONResponse) VisitListCatalogsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListCatalogs429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListCatalogs429JSONResponse struct {
+	Body    Error
+	Headers ListCatalogs429ResponseHeaders
+}
+
+func (response ListCatalogs429JSONResponse) VisitListCatalogsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListCatalogs500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListCatalogs500JSONResponse struct {
+	Body    Error
+	Headers ListCatalogs500ResponseHeaders
+}
+
+func (response ListCatalogs500JSONResponse) VisitListCatalogsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type RegisterCatalogRequestObject struct {
@@ -5661,131 +6190,405 @@ type RegisterCatalogResponseObject interface {
 	VisitRegisterCatalogResponse(w http.ResponseWriter) error
 }
 
-type RegisterCatalog201JSONResponse CatalogRegistration
+type RegisterCatalog201ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type RegisterCatalog201JSONResponse struct {
+	Body    CatalogRegistration
+	Headers RegisterCatalog201ResponseHeaders
+}
 
 func (response RegisterCatalog201JSONResponse) VisitRegisterCatalogResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(201)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type RegisterCatalog400JSONResponse Error
+type RegisterCatalog400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type RegisterCatalog400JSONResponse struct {
+	Body    Error
+	Headers RegisterCatalog400ResponseHeaders
+}
 
 func (response RegisterCatalog400JSONResponse) VisitRegisterCatalogResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(400)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type RegisterCatalog401JSONResponse Error
+type RegisterCatalog401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type RegisterCatalog401JSONResponse struct {
+	Body    Error
+	Headers RegisterCatalog401ResponseHeaders
+}
 
 func (response RegisterCatalog401JSONResponse) VisitRegisterCatalogResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type RegisterCatalog403JSONResponse Error
+type RegisterCatalog403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type RegisterCatalog403JSONResponse struct {
+	Body    Error
+	Headers RegisterCatalog403ResponseHeaders
+}
 
 func (response RegisterCatalog403JSONResponse) VisitRegisterCatalogResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type RegisterCatalog409JSONResponse Error
+type RegisterCatalog409ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type RegisterCatalog409JSONResponse struct {
+	Body    Error
+	Headers RegisterCatalog409ResponseHeaders
+}
 
 func (response RegisterCatalog409JSONResponse) VisitRegisterCatalogResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(409)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type RegisterCatalog429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type RegisterCatalog429JSONResponse struct {
+	Body    Error
+	Headers RegisterCatalog429ResponseHeaders
+}
+
+func (response RegisterCatalog429JSONResponse) VisitRegisterCatalogResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type RegisterCatalog500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type RegisterCatalog500JSONResponse struct {
+	Body    Error
+	Headers RegisterCatalog500ResponseHeaders
+}
+
+func (response RegisterCatalog500JSONResponse) VisitRegisterCatalogResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type DeleteCatalogRegistrationRequestObject struct {
-	CatalogName CatalogName `json:"catalogName"`
+	CatalogName string `json:"catalogName"`
 }
 
 type DeleteCatalogRegistrationResponseObject interface {
 	VisitDeleteCatalogRegistrationResponse(w http.ResponseWriter) error
 }
 
+type DeleteCatalogRegistration204ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
 type DeleteCatalogRegistration204Response struct {
+	Headers DeleteCatalogRegistration204ResponseHeaders
 }
 
 func (response DeleteCatalogRegistration204Response) VisitDeleteCatalogRegistrationResponse(w http.ResponseWriter) error {
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(204)
 	return nil
 }
 
-type DeleteCatalogRegistration401JSONResponse Error
+type DeleteCatalogRegistration401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteCatalogRegistration401JSONResponse struct {
+	Body    Error
+	Headers DeleteCatalogRegistration401ResponseHeaders
+}
 
 func (response DeleteCatalogRegistration401JSONResponse) VisitDeleteCatalogRegistrationResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteCatalogRegistration403JSONResponse Error
+type DeleteCatalogRegistration403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteCatalogRegistration403JSONResponse struct {
+	Body    Error
+	Headers DeleteCatalogRegistration403ResponseHeaders
+}
 
 func (response DeleteCatalogRegistration403JSONResponse) VisitDeleteCatalogRegistrationResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteCatalogRegistration404JSONResponse Error
+type DeleteCatalogRegistration404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteCatalogRegistration404JSONResponse struct {
+	Body    Error
+	Headers DeleteCatalogRegistration404ResponseHeaders
+}
 
 func (response DeleteCatalogRegistration404JSONResponse) VisitDeleteCatalogRegistrationResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteCatalogRegistration429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteCatalogRegistration429JSONResponse struct {
+	Body    Error
+	Headers DeleteCatalogRegistration429ResponseHeaders
+}
+
+func (response DeleteCatalogRegistration429JSONResponse) VisitDeleteCatalogRegistrationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteCatalogRegistration500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteCatalogRegistration500JSONResponse struct {
+	Body    Error
+	Headers DeleteCatalogRegistration500ResponseHeaders
+}
+
+func (response DeleteCatalogRegistration500JSONResponse) VisitDeleteCatalogRegistrationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type GetCatalogRegistrationRequestObject struct {
-	CatalogName CatalogName `json:"catalogName"`
+	CatalogName string `json:"catalogName"`
 }
 
 type GetCatalogRegistrationResponseObject interface {
 	VisitGetCatalogRegistrationResponse(w http.ResponseWriter) error
 }
 
-type GetCatalogRegistration200JSONResponse CatalogRegistration
+type GetCatalogRegistration200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetCatalogRegistration200JSONResponse struct {
+	Body    CatalogRegistration
+	Headers GetCatalogRegistration200ResponseHeaders
+}
 
 func (response GetCatalogRegistration200JSONResponse) VisitGetCatalogRegistrationResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type GetCatalogRegistration401JSONResponse Error
+type GetCatalogRegistration401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetCatalogRegistration401JSONResponse struct {
+	Body    Error
+	Headers GetCatalogRegistration401ResponseHeaders
+}
 
 func (response GetCatalogRegistration401JSONResponse) VisitGetCatalogRegistrationResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type GetCatalogRegistration404JSONResponse Error
+type GetCatalogRegistration404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetCatalogRegistration404JSONResponse struct {
+	Body    Error
+	Headers GetCatalogRegistration404ResponseHeaders
+}
 
 func (response GetCatalogRegistration404JSONResponse) VisitGetCatalogRegistrationResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetCatalogRegistration429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetCatalogRegistration429JSONResponse struct {
+	Body    Error
+	Headers GetCatalogRegistration429ResponseHeaders
+}
+
+func (response GetCatalogRegistration429JSONResponse) VisitGetCatalogRegistrationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetCatalogRegistration500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetCatalogRegistration500JSONResponse struct {
+	Body    Error
+	Headers GetCatalogRegistration500ResponseHeaders
+}
+
+func (response GetCatalogRegistration500JSONResponse) VisitGetCatalogRegistrationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type UpdateCatalogRegistrationRequestObject struct {
-	CatalogName CatalogName `json:"catalogName"`
+	CatalogName string `json:"catalogName"`
 	Body        *UpdateCatalogRegistrationJSONRequestBody
 }
 
@@ -5793,105 +6596,366 @@ type UpdateCatalogRegistrationResponseObject interface {
 	VisitUpdateCatalogRegistrationResponse(w http.ResponseWriter) error
 }
 
-type UpdateCatalogRegistration200JSONResponse CatalogRegistration
+type UpdateCatalogRegistration200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateCatalogRegistration200JSONResponse struct {
+	Body    CatalogRegistration
+	Headers UpdateCatalogRegistration200ResponseHeaders
+}
 
 func (response UpdateCatalogRegistration200JSONResponse) VisitUpdateCatalogRegistrationResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UpdateCatalogRegistration401JSONResponse Error
+type UpdateCatalogRegistration401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateCatalogRegistration401JSONResponse struct {
+	Body    Error
+	Headers UpdateCatalogRegistration401ResponseHeaders
+}
 
 func (response UpdateCatalogRegistration401JSONResponse) VisitUpdateCatalogRegistrationResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UpdateCatalogRegistration403JSONResponse Error
+type UpdateCatalogRegistration403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateCatalogRegistration403JSONResponse struct {
+	Body    Error
+	Headers UpdateCatalogRegistration403ResponseHeaders
+}
 
 func (response UpdateCatalogRegistration403JSONResponse) VisitUpdateCatalogRegistrationResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UpdateCatalogRegistration404JSONResponse Error
+type UpdateCatalogRegistration404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateCatalogRegistration404JSONResponse struct {
+	Body    Error
+	Headers UpdateCatalogRegistration404ResponseHeaders
+}
 
 func (response UpdateCatalogRegistration404JSONResponse) VisitUpdateCatalogRegistrationResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateCatalogRegistration429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateCatalogRegistration429JSONResponse struct {
+	Body    Error
+	Headers UpdateCatalogRegistration429ResponseHeaders
+}
+
+func (response UpdateCatalogRegistration429JSONResponse) VisitUpdateCatalogRegistrationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateCatalogRegistration500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateCatalogRegistration500JSONResponse struct {
+	Body    Error
+	Headers UpdateCatalogRegistration500ResponseHeaders
+}
+
+func (response UpdateCatalogRegistration500JSONResponse) VisitUpdateCatalogRegistrationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type GetCatalogRequestObject struct {
-	CatalogName CatalogName `json:"catalogName"`
+	CatalogName string `json:"catalogName"`
 }
 
 type GetCatalogResponseObject interface {
 	VisitGetCatalogResponse(w http.ResponseWriter) error
 }
 
-type GetCatalog200JSONResponse CatalogInfo
+type GetCatalog200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetCatalog200JSONResponse struct {
+	Body    CatalogInfo
+	Headers GetCatalog200ResponseHeaders
+}
 
 func (response GetCatalog200JSONResponse) VisitGetCatalogResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type GetCatalog401JSONResponse Error
+type GetCatalog400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetCatalog400JSONResponse struct {
+	Body    Error
+	Headers GetCatalog400ResponseHeaders
+}
+
+func (response GetCatalog400JSONResponse) VisitGetCatalogResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetCatalog401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetCatalog401JSONResponse struct {
+	Body    Error
+	Headers GetCatalog401ResponseHeaders
+}
 
 func (response GetCatalog401JSONResponse) VisitGetCatalogResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type GetCatalog404JSONResponse Error
+type GetCatalog404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetCatalog404JSONResponse struct {
+	Body    Error
+	Headers GetCatalog404ResponseHeaders
+}
 
 func (response GetCatalog404JSONResponse) VisitGetCatalogResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetCatalog429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetCatalog429JSONResponse struct {
+	Body    Error
+	Headers GetCatalog429ResponseHeaders
+}
+
+func (response GetCatalog429JSONResponse) VisitGetCatalogResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetCatalog500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetCatalog500JSONResponse struct {
+	Body    Error
+	Headers GetCatalog500ResponseHeaders
+}
+
+func (response GetCatalog500JSONResponse) VisitGetCatalogResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type GetMetastoreSummaryRequestObject struct {
-	CatalogName CatalogName `json:"catalogName"`
+	CatalogName string `json:"catalogName"`
 }
 
 type GetMetastoreSummaryResponseObject interface {
 	VisitGetMetastoreSummaryResponse(w http.ResponseWriter) error
 }
 
-type GetMetastoreSummary200JSONResponse MetastoreSummary
+type GetMetastoreSummary200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetMetastoreSummary200JSONResponse struct {
+	Body    MetastoreSummary
+	Headers GetMetastoreSummary200ResponseHeaders
+}
 
 func (response GetMetastoreSummary200JSONResponse) VisitGetMetastoreSummaryResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type GetMetastoreSummary401JSONResponse Error
+type GetMetastoreSummary401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetMetastoreSummary401JSONResponse struct {
+	Body    Error
+	Headers GetMetastoreSummary401ResponseHeaders
+}
 
 func (response GetMetastoreSummary401JSONResponse) VisitGetMetastoreSummaryResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetMetastoreSummary429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetMetastoreSummary429JSONResponse struct {
+	Body    Error
+	Headers GetMetastoreSummary429ResponseHeaders
+}
+
+func (response GetMetastoreSummary429JSONResponse) VisitGetMetastoreSummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetMetastoreSummary500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetMetastoreSummary500JSONResponse struct {
+	Body    Error
+	Headers GetMetastoreSummary500ResponseHeaders
+}
+
+func (response GetMetastoreSummary500JSONResponse) VisitGetMetastoreSummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type ListSchemasRequestObject struct {
-	CatalogName CatalogName `json:"catalogName"`
+	CatalogName string `json:"catalogName"`
 	Params      ListSchemasParams
 }
 
@@ -5899,26 +6963,115 @@ type ListSchemasResponseObject interface {
 	VisitListSchemasResponse(w http.ResponseWriter) error
 }
 
-type ListSchemas200JSONResponse PaginatedSchemaDetails
+type ListSchemas200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListSchemas200JSONResponse struct {
+	Body    PaginatedSchemaDetails
+	Headers ListSchemas200ResponseHeaders
+}
 
 func (response ListSchemas200JSONResponse) VisitListSchemasResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ListSchemas401JSONResponse Error
+type ListSchemas400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListSchemas400JSONResponse struct {
+	Body    Error
+	Headers ListSchemas400ResponseHeaders
+}
+
+func (response ListSchemas400JSONResponse) VisitListSchemasResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListSchemas401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListSchemas401JSONResponse struct {
+	Body    Error
+	Headers ListSchemas401ResponseHeaders
+}
 
 func (response ListSchemas401JSONResponse) VisitListSchemasResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListSchemas429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListSchemas429JSONResponse struct {
+	Body    Error
+	Headers ListSchemas429ResponseHeaders
+}
+
+func (response ListSchemas429JSONResponse) VisitListSchemasResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListSchemas500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListSchemas500JSONResponse struct {
+	Body    Error
+	Headers ListSchemas500ResponseHeaders
+}
+
+func (response ListSchemas500JSONResponse) VisitListSchemasResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type CreateSchemaRequestObject struct {
-	CatalogName CatalogName `json:"catalogName"`
+	CatalogName string `json:"catalogName"`
 	Body        *CreateSchemaJSONRequestBody
 }
 
@@ -5926,54 +7079,158 @@ type CreateSchemaResponseObject interface {
 	VisitCreateSchemaResponse(w http.ResponseWriter) error
 }
 
-type CreateSchema201JSONResponse SchemaDetail
+type CreateSchema201ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateSchema201JSONResponse struct {
+	Body    SchemaDetail
+	Headers CreateSchema201ResponseHeaders
+}
 
 func (response CreateSchema201JSONResponse) VisitCreateSchemaResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(201)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateSchema400JSONResponse Error
+type CreateSchema400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateSchema400JSONResponse struct {
+	Body    Error
+	Headers CreateSchema400ResponseHeaders
+}
 
 func (response CreateSchema400JSONResponse) VisitCreateSchemaResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(400)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateSchema401JSONResponse Error
+type CreateSchema401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateSchema401JSONResponse struct {
+	Body    Error
+	Headers CreateSchema401ResponseHeaders
+}
 
 func (response CreateSchema401JSONResponse) VisitCreateSchemaResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateSchema403JSONResponse Error
+type CreateSchema403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateSchema403JSONResponse struct {
+	Body    Error
+	Headers CreateSchema403ResponseHeaders
+}
 
 func (response CreateSchema403JSONResponse) VisitCreateSchemaResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateSchema409JSONResponse Error
+type CreateSchema409ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateSchema409JSONResponse struct {
+	Body    Error
+	Headers CreateSchema409ResponseHeaders
+}
 
 func (response CreateSchema409JSONResponse) VisitCreateSchemaResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(409)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateSchema429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateSchema429JSONResponse struct {
+	Body    Error
+	Headers CreateSchema429ResponseHeaders
+}
+
+func (response CreateSchema429JSONResponse) VisitCreateSchemaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateSchema500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateSchema500JSONResponse struct {
+	Body    Error
+	Headers CreateSchema500ResponseHeaders
+}
+
+func (response CreateSchema500JSONResponse) VisitCreateSchemaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type DeleteSchemaRequestObject struct {
-	CatalogName CatalogName `json:"catalogName"`
-	SchemaName  string      `json:"schemaName"`
+	CatalogName string `json:"catalogName"`
+	SchemaName  string `json:"schemaName"`
 	Params      DeleteSchemaParams
 }
 
@@ -5981,89 +7238,313 @@ type DeleteSchemaResponseObject interface {
 	VisitDeleteSchemaResponse(w http.ResponseWriter) error
 }
 
+type DeleteSchema204ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
 type DeleteSchema204Response struct {
+	Headers DeleteSchema204ResponseHeaders
 }
 
 func (response DeleteSchema204Response) VisitDeleteSchemaResponse(w http.ResponseWriter) error {
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(204)
 	return nil
 }
 
-type DeleteSchema401JSONResponse Error
+type DeleteSchema400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteSchema400JSONResponse struct {
+	Body    Error
+	Headers DeleteSchema400ResponseHeaders
+}
+
+func (response DeleteSchema400JSONResponse) VisitDeleteSchemaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteSchema401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteSchema401JSONResponse struct {
+	Body    Error
+	Headers DeleteSchema401ResponseHeaders
+}
 
 func (response DeleteSchema401JSONResponse) VisitDeleteSchemaResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteSchema403JSONResponse Error
+type DeleteSchema403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteSchema403JSONResponse struct {
+	Body    Error
+	Headers DeleteSchema403ResponseHeaders
+}
 
 func (response DeleteSchema403JSONResponse) VisitDeleteSchemaResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteSchema404JSONResponse Error
+type DeleteSchema404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteSchema404JSONResponse struct {
+	Body    Error
+	Headers DeleteSchema404ResponseHeaders
+}
 
 func (response DeleteSchema404JSONResponse) VisitDeleteSchemaResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteSchema409JSONResponse Error
+type DeleteSchema409ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteSchema409JSONResponse struct {
+	Body    Error
+	Headers DeleteSchema409ResponseHeaders
+}
 
 func (response DeleteSchema409JSONResponse) VisitDeleteSchemaResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(409)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteSchema429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteSchema429JSONResponse struct {
+	Body    Error
+	Headers DeleteSchema429ResponseHeaders
+}
+
+func (response DeleteSchema429JSONResponse) VisitDeleteSchemaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteSchema500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteSchema500JSONResponse struct {
+	Body    Error
+	Headers DeleteSchema500ResponseHeaders
+}
+
+func (response DeleteSchema500JSONResponse) VisitDeleteSchemaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type GetSchemaRequestObject struct {
-	CatalogName CatalogName `json:"catalogName"`
-	SchemaName  string      `json:"schemaName"`
+	CatalogName string `json:"catalogName"`
+	SchemaName  string `json:"schemaName"`
 }
 
 type GetSchemaResponseObject interface {
 	VisitGetSchemaResponse(w http.ResponseWriter) error
 }
 
-type GetSchema200JSONResponse SchemaDetail
+type GetSchema200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetSchema200JSONResponse struct {
+	Body    SchemaDetail
+	Headers GetSchema200ResponseHeaders
+}
 
 func (response GetSchema200JSONResponse) VisitGetSchemaResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type GetSchema401JSONResponse Error
+type GetSchema400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetSchema400JSONResponse struct {
+	Body    Error
+	Headers GetSchema400ResponseHeaders
+}
+
+func (response GetSchema400JSONResponse) VisitGetSchemaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetSchema401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetSchema401JSONResponse struct {
+	Body    Error
+	Headers GetSchema401ResponseHeaders
+}
 
 func (response GetSchema401JSONResponse) VisitGetSchemaResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type GetSchema404JSONResponse Error
+type GetSchema404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetSchema404JSONResponse struct {
+	Body    Error
+	Headers GetSchema404ResponseHeaders
+}
 
 func (response GetSchema404JSONResponse) VisitGetSchemaResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetSchema429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetSchema429JSONResponse struct {
+	Body    Error
+	Headers GetSchema429ResponseHeaders
+}
+
+func (response GetSchema429JSONResponse) VisitGetSchemaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetSchema500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetSchema500JSONResponse struct {
+	Body    Error
+	Headers GetSchema500ResponseHeaders
+}
+
+func (response GetSchema500JSONResponse) VisitGetSchemaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type UpdateSchemaRequestObject struct {
-	CatalogName CatalogName `json:"catalogName"`
-	SchemaName  string      `json:"schemaName"`
+	CatalogName string `json:"catalogName"`
+	SchemaName  string `json:"schemaName"`
 	Body        *UpdateSchemaJSONRequestBody
 }
 
@@ -6071,45 +7552,158 @@ type UpdateSchemaResponseObject interface {
 	VisitUpdateSchemaResponse(w http.ResponseWriter) error
 }
 
-type UpdateSchema200JSONResponse SchemaDetail
+type UpdateSchema200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateSchema200JSONResponse struct {
+	Body    SchemaDetail
+	Headers UpdateSchema200ResponseHeaders
+}
 
 func (response UpdateSchema200JSONResponse) VisitUpdateSchemaResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UpdateSchema401JSONResponse Error
+type UpdateSchema400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateSchema400JSONResponse struct {
+	Body    Error
+	Headers UpdateSchema400ResponseHeaders
+}
+
+func (response UpdateSchema400JSONResponse) VisitUpdateSchemaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateSchema401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateSchema401JSONResponse struct {
+	Body    Error
+	Headers UpdateSchema401ResponseHeaders
+}
 
 func (response UpdateSchema401JSONResponse) VisitUpdateSchemaResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UpdateSchema403JSONResponse Error
+type UpdateSchema403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateSchema403JSONResponse struct {
+	Body    Error
+	Headers UpdateSchema403ResponseHeaders
+}
 
 func (response UpdateSchema403JSONResponse) VisitUpdateSchemaResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UpdateSchema404JSONResponse Error
+type UpdateSchema404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateSchema404JSONResponse struct {
+	Body    Error
+	Headers UpdateSchema404ResponseHeaders
+}
 
 func (response UpdateSchema404JSONResponse) VisitUpdateSchemaResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateSchema429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateSchema429JSONResponse struct {
+	Body    Error
+	Headers UpdateSchema429ResponseHeaders
+}
+
+func (response UpdateSchema429JSONResponse) VisitUpdateSchemaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateSchema500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateSchema500JSONResponse struct {
+	Body    Error
+	Headers UpdateSchema500ResponseHeaders
+}
+
+func (response UpdateSchema500JSONResponse) VisitUpdateSchemaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type ListTablesRequestObject struct {
-	CatalogName CatalogName `json:"catalogName"`
-	SchemaName  string      `json:"schemaName"`
+	CatalogName string `json:"catalogName"`
+	SchemaName  string `json:"schemaName"`
 	Params      ListTablesParams
 }
 
@@ -6117,36 +7711,137 @@ type ListTablesResponseObject interface {
 	VisitListTablesResponse(w http.ResponseWriter) error
 }
 
-type ListTables200JSONResponse PaginatedTableDetails
+type ListTables200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListTables200JSONResponse struct {
+	Body    PaginatedTableDetails
+	Headers ListTables200ResponseHeaders
+}
 
 func (response ListTables200JSONResponse) VisitListTablesResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ListTables401JSONResponse Error
+type ListTables400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListTables400JSONResponse struct {
+	Body    Error
+	Headers ListTables400ResponseHeaders
+}
+
+func (response ListTables400JSONResponse) VisitListTablesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListTables401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListTables401JSONResponse struct {
+	Body    Error
+	Headers ListTables401ResponseHeaders
+}
 
 func (response ListTables401JSONResponse) VisitListTablesResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ListTables404JSONResponse Error
+type ListTables404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListTables404JSONResponse struct {
+	Body    Error
+	Headers ListTables404ResponseHeaders
+}
 
 func (response ListTables404JSONResponse) VisitListTablesResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListTables429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListTables429JSONResponse struct {
+	Body    Error
+	Headers ListTables429ResponseHeaders
+}
+
+func (response ListTables429JSONResponse) VisitListTablesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListTables500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListTables500JSONResponse struct {
+	Body    Error
+	Headers ListTables500ResponseHeaders
+}
+
+func (response ListTables500JSONResponse) VisitListTablesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type CreateTableRequestObject struct {
-	CatalogName CatalogName `json:"catalogName"`
-	SchemaName  string      `json:"schemaName"`
+	CatalogName string `json:"catalogName"`
+	SchemaName  string `json:"schemaName"`
 	Body        *CreateTableJSONRequestBody
 }
 
@@ -6154,137 +7849,453 @@ type CreateTableResponseObject interface {
 	VisitCreateTableResponse(w http.ResponseWriter) error
 }
 
-type CreateTable201JSONResponse TableDetail
+type CreateTable201ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateTable201JSONResponse struct {
+	Body    TableDetail
+	Headers CreateTable201ResponseHeaders
+}
 
 func (response CreateTable201JSONResponse) VisitCreateTableResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(201)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateTable400JSONResponse Error
+type CreateTable400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateTable400JSONResponse struct {
+	Body    Error
+	Headers CreateTable400ResponseHeaders
+}
 
 func (response CreateTable400JSONResponse) VisitCreateTableResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(400)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateTable401JSONResponse Error
+type CreateTable401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateTable401JSONResponse struct {
+	Body    Error
+	Headers CreateTable401ResponseHeaders
+}
 
 func (response CreateTable401JSONResponse) VisitCreateTableResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateTable403JSONResponse Error
+type CreateTable403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateTable403JSONResponse struct {
+	Body    Error
+	Headers CreateTable403ResponseHeaders
+}
 
 func (response CreateTable403JSONResponse) VisitCreateTableResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateTable409JSONResponse Error
+type CreateTable409ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateTable409JSONResponse struct {
+	Body    Error
+	Headers CreateTable409ResponseHeaders
+}
 
 func (response CreateTable409JSONResponse) VisitCreateTableResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(409)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateTable429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateTable429JSONResponse struct {
+	Body    Error
+	Headers CreateTable429ResponseHeaders
+}
+
+func (response CreateTable429JSONResponse) VisitCreateTableResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateTable500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateTable500JSONResponse struct {
+	Body    Error
+	Headers CreateTable500ResponseHeaders
+}
+
+func (response CreateTable500JSONResponse) VisitCreateTableResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type DeleteTableRequestObject struct {
-	CatalogName CatalogName `json:"catalogName"`
-	SchemaName  string      `json:"schemaName"`
-	TableName   string      `json:"tableName"`
+	CatalogName string `json:"catalogName"`
+	SchemaName  string `json:"schemaName"`
+	TableName   string `json:"tableName"`
 }
 
 type DeleteTableResponseObject interface {
 	VisitDeleteTableResponse(w http.ResponseWriter) error
 }
 
+type DeleteTable204ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
 type DeleteTable204Response struct {
+	Headers DeleteTable204ResponseHeaders
 }
 
 func (response DeleteTable204Response) VisitDeleteTableResponse(w http.ResponseWriter) error {
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(204)
 	return nil
 }
 
-type DeleteTable401JSONResponse Error
+type DeleteTable400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteTable400JSONResponse struct {
+	Body    Error
+	Headers DeleteTable400ResponseHeaders
+}
+
+func (response DeleteTable400JSONResponse) VisitDeleteTableResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteTable401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteTable401JSONResponse struct {
+	Body    Error
+	Headers DeleteTable401ResponseHeaders
+}
 
 func (response DeleteTable401JSONResponse) VisitDeleteTableResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteTable403JSONResponse Error
+type DeleteTable403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteTable403JSONResponse struct {
+	Body    Error
+	Headers DeleteTable403ResponseHeaders
+}
 
 func (response DeleteTable403JSONResponse) VisitDeleteTableResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteTable404JSONResponse Error
+type DeleteTable404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteTable404JSONResponse struct {
+	Body    Error
+	Headers DeleteTable404ResponseHeaders
+}
 
 func (response DeleteTable404JSONResponse) VisitDeleteTableResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteTable429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteTable429JSONResponse struct {
+	Body    Error
+	Headers DeleteTable429ResponseHeaders
+}
+
+func (response DeleteTable429JSONResponse) VisitDeleteTableResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteTable500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteTable500JSONResponse struct {
+	Body    Error
+	Headers DeleteTable500ResponseHeaders
+}
+
+func (response DeleteTable500JSONResponse) VisitDeleteTableResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type GetTableRequestObject struct {
-	CatalogName CatalogName `json:"catalogName"`
-	SchemaName  string      `json:"schemaName"`
-	TableName   string      `json:"tableName"`
+	CatalogName string `json:"catalogName"`
+	SchemaName  string `json:"schemaName"`
+	TableName   string `json:"tableName"`
 }
 
 type GetTableResponseObject interface {
 	VisitGetTableResponse(w http.ResponseWriter) error
 }
 
-type GetTable200JSONResponse TableDetail
+type GetTable200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetTable200JSONResponse struct {
+	Body    TableDetail
+	Headers GetTable200ResponseHeaders
+}
 
 func (response GetTable200JSONResponse) VisitGetTableResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type GetTable401JSONResponse Error
+type GetTable400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetTable400JSONResponse struct {
+	Body    Error
+	Headers GetTable400ResponseHeaders
+}
+
+func (response GetTable400JSONResponse) VisitGetTableResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetTable401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetTable401JSONResponse struct {
+	Body    Error
+	Headers GetTable401ResponseHeaders
+}
 
 func (response GetTable401JSONResponse) VisitGetTableResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type GetTable404JSONResponse Error
+type GetTable404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetTable404JSONResponse struct {
+	Body    Error
+	Headers GetTable404ResponseHeaders
+}
 
 func (response GetTable404JSONResponse) VisitGetTableResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetTable429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetTable429JSONResponse struct {
+	Body    Error
+	Headers GetTable429ResponseHeaders
+}
+
+func (response GetTable429JSONResponse) VisitGetTableResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetTable500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetTable500JSONResponse struct {
+	Body    Error
+	Headers GetTable500ResponseHeaders
+}
+
+func (response GetTable500JSONResponse) VisitGetTableResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type UpdateTableRequestObject struct {
-	CatalogName CatalogName `json:"catalogName"`
-	SchemaName  string      `json:"schemaName"`
-	TableName   string      `json:"tableName"`
+	CatalogName string `json:"catalogName"`
+	SchemaName  string `json:"schemaName"`
+	TableName   string `json:"tableName"`
 	Body        *UpdateTableJSONRequestBody
 }
 
@@ -6292,46 +8303,159 @@ type UpdateTableResponseObject interface {
 	VisitUpdateTableResponse(w http.ResponseWriter) error
 }
 
-type UpdateTable200JSONResponse TableDetail
+type UpdateTable200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateTable200JSONResponse struct {
+	Body    TableDetail
+	Headers UpdateTable200ResponseHeaders
+}
 
 func (response UpdateTable200JSONResponse) VisitUpdateTableResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UpdateTable401JSONResponse Error
+type UpdateTable400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateTable400JSONResponse struct {
+	Body    Error
+	Headers UpdateTable400ResponseHeaders
+}
+
+func (response UpdateTable400JSONResponse) VisitUpdateTableResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateTable401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateTable401JSONResponse struct {
+	Body    Error
+	Headers UpdateTable401ResponseHeaders
+}
 
 func (response UpdateTable401JSONResponse) VisitUpdateTableResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UpdateTable403JSONResponse Error
+type UpdateTable403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateTable403JSONResponse struct {
+	Body    Error
+	Headers UpdateTable403ResponseHeaders
+}
 
 func (response UpdateTable403JSONResponse) VisitUpdateTableResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UpdateTable404JSONResponse Error
+type UpdateTable404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateTable404JSONResponse struct {
+	Body    Error
+	Headers UpdateTable404ResponseHeaders
+}
 
 func (response UpdateTable404JSONResponse) VisitUpdateTableResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateTable429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateTable429JSONResponse struct {
+	Body    Error
+	Headers UpdateTable429ResponseHeaders
+}
+
+func (response UpdateTable429JSONResponse) VisitUpdateTableResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateTable500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateTable500JSONResponse struct {
+	Body    Error
+	Headers UpdateTable500ResponseHeaders
+}
+
+func (response UpdateTable500JSONResponse) VisitUpdateTableResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type ListTableColumnsRequestObject struct {
-	CatalogName CatalogName `json:"catalogName"`
-	SchemaName  string      `json:"schemaName"`
-	TableName   string      `json:"tableName"`
+	CatalogName string `json:"catalogName"`
+	SchemaName  string `json:"schemaName"`
+	TableName   string `json:"tableName"`
 	Params      ListTableColumnsParams
 }
 
@@ -6339,38 +8463,139 @@ type ListTableColumnsResponseObject interface {
 	VisitListTableColumnsResponse(w http.ResponseWriter) error
 }
 
-type ListTableColumns200JSONResponse PaginatedColumnDetails
+type ListTableColumns200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListTableColumns200JSONResponse struct {
+	Body    PaginatedColumnDetails
+	Headers ListTableColumns200ResponseHeaders
+}
 
 func (response ListTableColumns200JSONResponse) VisitListTableColumnsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ListTableColumns401JSONResponse Error
+type ListTableColumns400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListTableColumns400JSONResponse struct {
+	Body    Error
+	Headers ListTableColumns400ResponseHeaders
+}
+
+func (response ListTableColumns400JSONResponse) VisitListTableColumnsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListTableColumns401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListTableColumns401JSONResponse struct {
+	Body    Error
+	Headers ListTableColumns401ResponseHeaders
+}
 
 func (response ListTableColumns401JSONResponse) VisitListTableColumnsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ListTableColumns404JSONResponse Error
+type ListTableColumns404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListTableColumns404JSONResponse struct {
+	Body    Error
+	Headers ListTableColumns404ResponseHeaders
+}
 
 func (response ListTableColumns404JSONResponse) VisitListTableColumnsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListTableColumns429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListTableColumns429JSONResponse struct {
+	Body    Error
+	Headers ListTableColumns429ResponseHeaders
+}
+
+func (response ListTableColumns429JSONResponse) VisitListTableColumnsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListTableColumns500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListTableColumns500JSONResponse struct {
+	Body    Error
+	Headers ListTableColumns500ResponseHeaders
+}
+
+func (response ListTableColumns500JSONResponse) VisitListTableColumnsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type UpdateColumnRequestObject struct {
-	CatalogName CatalogName `json:"catalogName"`
-	SchemaName  string      `json:"schemaName"`
-	TableName   string      `json:"tableName"`
-	ColumnName  string      `json:"columnName"`
+	CatalogName string `json:"catalogName"`
+	SchemaName  string `json:"schemaName"`
+	TableName   string `json:"tableName"`
+	ColumnName  string `json:"columnName"`
 	Body        *UpdateColumnJSONRequestBody
 }
 
@@ -6378,46 +8603,159 @@ type UpdateColumnResponseObject interface {
 	VisitUpdateColumnResponse(w http.ResponseWriter) error
 }
 
-type UpdateColumn200JSONResponse ColumnDetail
+type UpdateColumn200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateColumn200JSONResponse struct {
+	Body    ColumnDetail
+	Headers UpdateColumn200ResponseHeaders
+}
 
 func (response UpdateColumn200JSONResponse) VisitUpdateColumnResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UpdateColumn401JSONResponse Error
+type UpdateColumn400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateColumn400JSONResponse struct {
+	Body    Error
+	Headers UpdateColumn400ResponseHeaders
+}
+
+func (response UpdateColumn400JSONResponse) VisitUpdateColumnResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateColumn401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateColumn401JSONResponse struct {
+	Body    Error
+	Headers UpdateColumn401ResponseHeaders
+}
 
 func (response UpdateColumn401JSONResponse) VisitUpdateColumnResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UpdateColumn403JSONResponse Error
+type UpdateColumn403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateColumn403JSONResponse struct {
+	Body    Error
+	Headers UpdateColumn403ResponseHeaders
+}
 
 func (response UpdateColumn403JSONResponse) VisitUpdateColumnResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UpdateColumn404JSONResponse Error
+type UpdateColumn404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateColumn404JSONResponse struct {
+	Body    Error
+	Headers UpdateColumn404ResponseHeaders
+}
 
 func (response UpdateColumn404JSONResponse) VisitUpdateColumnResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateColumn429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateColumn429JSONResponse struct {
+	Body    Error
+	Headers UpdateColumn429ResponseHeaders
+}
+
+func (response UpdateColumn429JSONResponse) VisitUpdateColumnResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateColumn500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateColumn500JSONResponse struct {
+	Body    Error
+	Headers UpdateColumn500ResponseHeaders
+}
+
+func (response UpdateColumn500JSONResponse) VisitUpdateColumnResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type CommitTableIngestionRequestObject struct {
-	CatalogName CatalogName `json:"catalogName"`
-	SchemaName  string      `json:"schemaName"`
-	TableName   string      `json:"tableName"`
+	CatalogName string `json:"catalogName"`
+	SchemaName  string `json:"schemaName"`
+	TableName   string `json:"tableName"`
 	Body        *CommitTableIngestionJSONRequestBody
 }
 
@@ -6425,55 +8763,159 @@ type CommitTableIngestionResponseObject interface {
 	VisitCommitTableIngestionResponse(w http.ResponseWriter) error
 }
 
-type CommitTableIngestion200JSONResponse IngestionResult
+type CommitTableIngestion200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CommitTableIngestion200JSONResponse struct {
+	Body    IngestionResult
+	Headers CommitTableIngestion200ResponseHeaders
+}
 
 func (response CommitTableIngestion200JSONResponse) VisitCommitTableIngestionResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CommitTableIngestion400JSONResponse Error
+type CommitTableIngestion400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CommitTableIngestion400JSONResponse struct {
+	Body    Error
+	Headers CommitTableIngestion400ResponseHeaders
+}
 
 func (response CommitTableIngestion400JSONResponse) VisitCommitTableIngestionResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(400)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CommitTableIngestion401JSONResponse Error
+type CommitTableIngestion401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CommitTableIngestion401JSONResponse struct {
+	Body    Error
+	Headers CommitTableIngestion401ResponseHeaders
+}
 
 func (response CommitTableIngestion401JSONResponse) VisitCommitTableIngestionResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CommitTableIngestion403JSONResponse Error
+type CommitTableIngestion403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CommitTableIngestion403JSONResponse struct {
+	Body    Error
+	Headers CommitTableIngestion403ResponseHeaders
+}
 
 func (response CommitTableIngestion403JSONResponse) VisitCommitTableIngestionResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CommitTableIngestion404JSONResponse Error
+type CommitTableIngestion404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CommitTableIngestion404JSONResponse struct {
+	Body    Error
+	Headers CommitTableIngestion404ResponseHeaders
+}
 
 func (response CommitTableIngestion404JSONResponse) VisitCommitTableIngestionResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CommitTableIngestion429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CommitTableIngestion429JSONResponse struct {
+	Body    Error
+	Headers CommitTableIngestion429ResponseHeaders
+}
+
+func (response CommitTableIngestion429JSONResponse) VisitCommitTableIngestionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CommitTableIngestion500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CommitTableIngestion500JSONResponse struct {
+	Body    Error
+	Headers CommitTableIngestion500ResponseHeaders
+}
+
+func (response CommitTableIngestion500JSONResponse) VisitCommitTableIngestionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type LoadTableExternalFilesRequestObject struct {
-	CatalogName CatalogName `json:"catalogName"`
-	SchemaName  string      `json:"schemaName"`
-	TableName   string      `json:"tableName"`
+	CatalogName string `json:"catalogName"`
+	SchemaName  string `json:"schemaName"`
+	TableName   string `json:"tableName"`
 	Body        *LoadTableExternalFilesJSONRequestBody
 }
 
@@ -6481,55 +8923,159 @@ type LoadTableExternalFilesResponseObject interface {
 	VisitLoadTableExternalFilesResponse(w http.ResponseWriter) error
 }
 
-type LoadTableExternalFiles200JSONResponse IngestionResult
+type LoadTableExternalFiles200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type LoadTableExternalFiles200JSONResponse struct {
+	Body    IngestionResult
+	Headers LoadTableExternalFiles200ResponseHeaders
+}
 
 func (response LoadTableExternalFiles200JSONResponse) VisitLoadTableExternalFilesResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type LoadTableExternalFiles400JSONResponse Error
+type LoadTableExternalFiles400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type LoadTableExternalFiles400JSONResponse struct {
+	Body    Error
+	Headers LoadTableExternalFiles400ResponseHeaders
+}
 
 func (response LoadTableExternalFiles400JSONResponse) VisitLoadTableExternalFilesResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(400)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type LoadTableExternalFiles401JSONResponse Error
+type LoadTableExternalFiles401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type LoadTableExternalFiles401JSONResponse struct {
+	Body    Error
+	Headers LoadTableExternalFiles401ResponseHeaders
+}
 
 func (response LoadTableExternalFiles401JSONResponse) VisitLoadTableExternalFilesResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type LoadTableExternalFiles403JSONResponse Error
+type LoadTableExternalFiles403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type LoadTableExternalFiles403JSONResponse struct {
+	Body    Error
+	Headers LoadTableExternalFiles403ResponseHeaders
+}
 
 func (response LoadTableExternalFiles403JSONResponse) VisitLoadTableExternalFilesResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type LoadTableExternalFiles404JSONResponse Error
+type LoadTableExternalFiles404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type LoadTableExternalFiles404JSONResponse struct {
+	Body    Error
+	Headers LoadTableExternalFiles404ResponseHeaders
+}
 
 func (response LoadTableExternalFiles404JSONResponse) VisitLoadTableExternalFilesResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type LoadTableExternalFiles429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type LoadTableExternalFiles429JSONResponse struct {
+	Body    Error
+	Headers LoadTableExternalFiles429ResponseHeaders
+}
+
+func (response LoadTableExternalFiles429JSONResponse) VisitLoadTableExternalFilesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type LoadTableExternalFiles500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type LoadTableExternalFiles500JSONResponse struct {
+	Body    Error
+	Headers LoadTableExternalFiles500ResponseHeaders
+}
+
+func (response LoadTableExternalFiles500JSONResponse) VisitLoadTableExternalFilesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type CreateUploadUrlRequestObject struct {
-	CatalogName CatalogName `json:"catalogName"`
-	SchemaName  string      `json:"schemaName"`
-	TableName   string      `json:"tableName"`
+	CatalogName string `json:"catalogName"`
+	SchemaName  string `json:"schemaName"`
+	TableName   string `json:"tableName"`
 	Body        *CreateUploadUrlJSONRequestBody
 }
 
@@ -6537,100 +9083,317 @@ type CreateUploadUrlResponseObject interface {
 	VisitCreateUploadUrlResponse(w http.ResponseWriter) error
 }
 
-type CreateUploadUrl200JSONResponse UploadUrlResponse
+type CreateUploadUrl200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateUploadUrl200JSONResponse struct {
+	Body    UploadUrlResponse
+	Headers CreateUploadUrl200ResponseHeaders
+}
 
 func (response CreateUploadUrl200JSONResponse) VisitCreateUploadUrlResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateUploadUrl400JSONResponse Error
+type CreateUploadUrl400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateUploadUrl400JSONResponse struct {
+	Body    Error
+	Headers CreateUploadUrl400ResponseHeaders
+}
 
 func (response CreateUploadUrl400JSONResponse) VisitCreateUploadUrlResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(400)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateUploadUrl401JSONResponse Error
+type CreateUploadUrl401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateUploadUrl401JSONResponse struct {
+	Body    Error
+	Headers CreateUploadUrl401ResponseHeaders
+}
 
 func (response CreateUploadUrl401JSONResponse) VisitCreateUploadUrlResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateUploadUrl403JSONResponse Error
+type CreateUploadUrl403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateUploadUrl403JSONResponse struct {
+	Body    Error
+	Headers CreateUploadUrl403ResponseHeaders
+}
 
 func (response CreateUploadUrl403JSONResponse) VisitCreateUploadUrlResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateUploadUrl404JSONResponse Error
+type CreateUploadUrl404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateUploadUrl404JSONResponse struct {
+	Body    Error
+	Headers CreateUploadUrl404ResponseHeaders
+}
 
 func (response CreateUploadUrl404JSONResponse) VisitCreateUploadUrlResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateUploadUrl429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateUploadUrl429JSONResponse struct {
+	Body    Error
+	Headers CreateUploadUrl429ResponseHeaders
+}
+
+func (response CreateUploadUrl429JSONResponse) VisitCreateUploadUrlResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateUploadUrl500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateUploadUrl500JSONResponse struct {
+	Body    Error
+	Headers CreateUploadUrl500ResponseHeaders
+}
+
+func (response CreateUploadUrl500JSONResponse) VisitCreateUploadUrlResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type ProfileTableRequestObject struct {
-	CatalogName CatalogName `json:"catalogName"`
-	SchemaName  string      `json:"schemaName"`
-	TableName   string      `json:"tableName"`
+	CatalogName string `json:"catalogName"`
+	SchemaName  string `json:"schemaName"`
+	TableName   string `json:"tableName"`
 }
 
 type ProfileTableResponseObject interface {
 	VisitProfileTableResponse(w http.ResponseWriter) error
 }
 
-type ProfileTable200JSONResponse TableStatistics
+type ProfileTable200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ProfileTable200JSONResponse struct {
+	Body    TableStatistics
+	Headers ProfileTable200ResponseHeaders
+}
 
 func (response ProfileTable200JSONResponse) VisitProfileTableResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ProfileTable401JSONResponse Error
+type ProfileTable400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ProfileTable400JSONResponse struct {
+	Body    Error
+	Headers ProfileTable400ResponseHeaders
+}
+
+func (response ProfileTable400JSONResponse) VisitProfileTableResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ProfileTable401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ProfileTable401JSONResponse struct {
+	Body    Error
+	Headers ProfileTable401ResponseHeaders
+}
 
 func (response ProfileTable401JSONResponse) VisitProfileTableResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ProfileTable403JSONResponse Error
+type ProfileTable403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ProfileTable403JSONResponse struct {
+	Body    Error
+	Headers ProfileTable403ResponseHeaders
+}
 
 func (response ProfileTable403JSONResponse) VisitProfileTableResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ProfileTable404JSONResponse Error
+type ProfileTable404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ProfileTable404JSONResponse struct {
+	Body    Error
+	Headers ProfileTable404ResponseHeaders
+}
 
 func (response ProfileTable404JSONResponse) VisitProfileTableResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ProfileTable429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ProfileTable429JSONResponse struct {
+	Body    Error
+	Headers ProfileTable429ResponseHeaders
+}
+
+func (response ProfileTable429JSONResponse) VisitProfileTableResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ProfileTable500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ProfileTable500JSONResponse struct {
+	Body    Error
+	Headers ProfileTable500ResponseHeaders
+}
+
+func (response ProfileTable500JSONResponse) VisitProfileTableResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type ListViewsRequestObject struct {
-	CatalogName CatalogName `json:"catalogName"`
-	SchemaName  string      `json:"schemaName"`
+	CatalogName string `json:"catalogName"`
+	SchemaName  string `json:"schemaName"`
 	Params      ListViewsParams
 }
 
@@ -6638,36 +9401,137 @@ type ListViewsResponseObject interface {
 	VisitListViewsResponse(w http.ResponseWriter) error
 }
 
-type ListViews200JSONResponse PaginatedViewDetails
+type ListViews200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListViews200JSONResponse struct {
+	Body    PaginatedViewDetails
+	Headers ListViews200ResponseHeaders
+}
 
 func (response ListViews200JSONResponse) VisitListViewsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ListViews401JSONResponse Error
+type ListViews400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListViews400JSONResponse struct {
+	Body    Error
+	Headers ListViews400ResponseHeaders
+}
+
+func (response ListViews400JSONResponse) VisitListViewsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListViews401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListViews401JSONResponse struct {
+	Body    Error
+	Headers ListViews401ResponseHeaders
+}
 
 func (response ListViews401JSONResponse) VisitListViewsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ListViews404JSONResponse Error
+type ListViews404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListViews404JSONResponse struct {
+	Body    Error
+	Headers ListViews404ResponseHeaders
+}
 
 func (response ListViews404JSONResponse) VisitListViewsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListViews429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListViews429JSONResponse struct {
+	Body    Error
+	Headers ListViews429ResponseHeaders
+}
+
+func (response ListViews429JSONResponse) VisitListViewsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListViews500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListViews500JSONResponse struct {
+	Body    Error
+	Headers ListViews500ResponseHeaders
+}
+
+func (response ListViews500JSONResponse) VisitListViewsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type CreateViewRequestObject struct {
-	CatalogName CatalogName `json:"catalogName"`
-	SchemaName  string      `json:"schemaName"`
+	CatalogName string `json:"catalogName"`
+	SchemaName  string `json:"schemaName"`
 	Body        *CreateViewJSONRequestBody
 }
 
@@ -6675,137 +9539,453 @@ type CreateViewResponseObject interface {
 	VisitCreateViewResponse(w http.ResponseWriter) error
 }
 
-type CreateView201JSONResponse ViewDetail
+type CreateView201ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateView201JSONResponse struct {
+	Body    ViewDetail
+	Headers CreateView201ResponseHeaders
+}
 
 func (response CreateView201JSONResponse) VisitCreateViewResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(201)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateView400JSONResponse Error
+type CreateView400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateView400JSONResponse struct {
+	Body    Error
+	Headers CreateView400ResponseHeaders
+}
 
 func (response CreateView400JSONResponse) VisitCreateViewResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(400)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateView401JSONResponse Error
+type CreateView401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateView401JSONResponse struct {
+	Body    Error
+	Headers CreateView401ResponseHeaders
+}
 
 func (response CreateView401JSONResponse) VisitCreateViewResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateView403JSONResponse Error
+type CreateView403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateView403JSONResponse struct {
+	Body    Error
+	Headers CreateView403ResponseHeaders
+}
 
 func (response CreateView403JSONResponse) VisitCreateViewResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateView409JSONResponse Error
+type CreateView409ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateView409JSONResponse struct {
+	Body    Error
+	Headers CreateView409ResponseHeaders
+}
 
 func (response CreateView409JSONResponse) VisitCreateViewResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(409)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateView429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateView429JSONResponse struct {
+	Body    Error
+	Headers CreateView429ResponseHeaders
+}
+
+func (response CreateView429JSONResponse) VisitCreateViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateView500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateView500JSONResponse struct {
+	Body    Error
+	Headers CreateView500ResponseHeaders
+}
+
+func (response CreateView500JSONResponse) VisitCreateViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type DeleteViewRequestObject struct {
-	CatalogName CatalogName `json:"catalogName"`
-	SchemaName  string      `json:"schemaName"`
-	ViewName    string      `json:"viewName"`
+	CatalogName string `json:"catalogName"`
+	SchemaName  string `json:"schemaName"`
+	ViewName    string `json:"viewName"`
 }
 
 type DeleteViewResponseObject interface {
 	VisitDeleteViewResponse(w http.ResponseWriter) error
 }
 
+type DeleteView204ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
 type DeleteView204Response struct {
+	Headers DeleteView204ResponseHeaders
 }
 
 func (response DeleteView204Response) VisitDeleteViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(204)
 	return nil
 }
 
-type DeleteView401JSONResponse Error
+type DeleteView400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteView400JSONResponse struct {
+	Body    Error
+	Headers DeleteView400ResponseHeaders
+}
+
+func (response DeleteView400JSONResponse) VisitDeleteViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteView401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteView401JSONResponse struct {
+	Body    Error
+	Headers DeleteView401ResponseHeaders
+}
 
 func (response DeleteView401JSONResponse) VisitDeleteViewResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteView403JSONResponse Error
+type DeleteView403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteView403JSONResponse struct {
+	Body    Error
+	Headers DeleteView403ResponseHeaders
+}
 
 func (response DeleteView403JSONResponse) VisitDeleteViewResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteView404JSONResponse Error
+type DeleteView404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteView404JSONResponse struct {
+	Body    Error
+	Headers DeleteView404ResponseHeaders
+}
 
 func (response DeleteView404JSONResponse) VisitDeleteViewResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteView429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteView429JSONResponse struct {
+	Body    Error
+	Headers DeleteView429ResponseHeaders
+}
+
+func (response DeleteView429JSONResponse) VisitDeleteViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteView500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteView500JSONResponse struct {
+	Body    Error
+	Headers DeleteView500ResponseHeaders
+}
+
+func (response DeleteView500JSONResponse) VisitDeleteViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type GetViewRequestObject struct {
-	CatalogName CatalogName `json:"catalogName"`
-	SchemaName  string      `json:"schemaName"`
-	ViewName    string      `json:"viewName"`
+	CatalogName string `json:"catalogName"`
+	SchemaName  string `json:"schemaName"`
+	ViewName    string `json:"viewName"`
 }
 
 type GetViewResponseObject interface {
 	VisitGetViewResponse(w http.ResponseWriter) error
 }
 
-type GetView200JSONResponse ViewDetail
+type GetView200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetView200JSONResponse struct {
+	Body    ViewDetail
+	Headers GetView200ResponseHeaders
+}
 
 func (response GetView200JSONResponse) VisitGetViewResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type GetView401JSONResponse Error
+type GetView400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetView400JSONResponse struct {
+	Body    Error
+	Headers GetView400ResponseHeaders
+}
+
+func (response GetView400JSONResponse) VisitGetViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetView401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetView401JSONResponse struct {
+	Body    Error
+	Headers GetView401ResponseHeaders
+}
 
 func (response GetView401JSONResponse) VisitGetViewResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type GetView404JSONResponse Error
+type GetView404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetView404JSONResponse struct {
+	Body    Error
+	Headers GetView404ResponseHeaders
+}
 
 func (response GetView404JSONResponse) VisitGetViewResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetView429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetView429JSONResponse struct {
+	Body    Error
+	Headers GetView429ResponseHeaders
+}
+
+func (response GetView429JSONResponse) VisitGetViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetView500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetView500JSONResponse struct {
+	Body    Error
+	Headers GetView500ResponseHeaders
+}
+
+func (response GetView500JSONResponse) VisitGetViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type UpdateViewRequestObject struct {
-	CatalogName CatalogName `json:"catalogName"`
-	SchemaName  string      `json:"schemaName"`
-	ViewName    string      `json:"viewName"`
+	CatalogName string `json:"catalogName"`
+	SchemaName  string `json:"schemaName"`
+	ViewName    string `json:"viewName"`
 	Body        *UpdateViewJSONRequestBody
 }
 
@@ -6813,45 +9993,158 @@ type UpdateViewResponseObject interface {
 	VisitUpdateViewResponse(w http.ResponseWriter) error
 }
 
-type UpdateView200JSONResponse ViewDetail
+type UpdateView200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateView200JSONResponse struct {
+	Body    ViewDetail
+	Headers UpdateView200ResponseHeaders
+}
 
 func (response UpdateView200JSONResponse) VisitUpdateViewResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UpdateView401JSONResponse Error
+type UpdateView400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateView400JSONResponse struct {
+	Body    Error
+	Headers UpdateView400ResponseHeaders
+}
+
+func (response UpdateView400JSONResponse) VisitUpdateViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateView401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateView401JSONResponse struct {
+	Body    Error
+	Headers UpdateView401ResponseHeaders
+}
 
 func (response UpdateView401JSONResponse) VisitUpdateViewResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UpdateView403JSONResponse Error
+type UpdateView403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateView403JSONResponse struct {
+	Body    Error
+	Headers UpdateView403ResponseHeaders
+}
 
 func (response UpdateView403JSONResponse) VisitUpdateViewResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UpdateView404JSONResponse Error
+type UpdateView404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateView404JSONResponse struct {
+	Body    Error
+	Headers UpdateView404ResponseHeaders
+}
 
 func (response UpdateView404JSONResponse) VisitUpdateViewResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateView429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateView429JSONResponse struct {
+	Body    Error
+	Headers UpdateView429ResponseHeaders
+}
+
+func (response UpdateView429JSONResponse) VisitUpdateViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateView500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateView500JSONResponse struct {
+	Body    Error
+	Headers UpdateView500ResponseHeaders
+}
+
+func (response UpdateView500JSONResponse) VisitUpdateViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type ListVolumesRequestObject struct {
-	CatalogName CatalogName `json:"catalogName"`
-	SchemaName  string      `json:"schemaName"`
+	CatalogName string `json:"catalogName"`
+	SchemaName  string `json:"schemaName"`
 	Params      ListVolumesParams
 }
 
@@ -6859,36 +10152,137 @@ type ListVolumesResponseObject interface {
 	VisitListVolumesResponse(w http.ResponseWriter) error
 }
 
-type ListVolumes200JSONResponse PaginatedVolumes
+type ListVolumes200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListVolumes200JSONResponse struct {
+	Body    PaginatedVolumes
+	Headers ListVolumes200ResponseHeaders
+}
 
 func (response ListVolumes200JSONResponse) VisitListVolumesResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ListVolumes401JSONResponse Error
+type ListVolumes400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListVolumes400JSONResponse struct {
+	Body    Error
+	Headers ListVolumes400ResponseHeaders
+}
+
+func (response ListVolumes400JSONResponse) VisitListVolumesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListVolumes401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListVolumes401JSONResponse struct {
+	Body    Error
+	Headers ListVolumes401ResponseHeaders
+}
 
 func (response ListVolumes401JSONResponse) VisitListVolumesResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ListVolumes404JSONResponse Error
+type ListVolumes404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListVolumes404JSONResponse struct {
+	Body    Error
+	Headers ListVolumes404ResponseHeaders
+}
 
 func (response ListVolumes404JSONResponse) VisitListVolumesResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListVolumes429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListVolumes429JSONResponse struct {
+	Body    Error
+	Headers ListVolumes429ResponseHeaders
+}
+
+func (response ListVolumes429JSONResponse) VisitListVolumesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListVolumes500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListVolumes500JSONResponse struct {
+	Body    Error
+	Headers ListVolumes500ResponseHeaders
+}
+
+func (response ListVolumes500JSONResponse) VisitListVolumesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type CreateVolumeRequestObject struct {
-	CatalogName CatalogName `json:"catalogName"`
-	SchemaName  string      `json:"schemaName"`
+	CatalogName string `json:"catalogName"`
+	SchemaName  string `json:"schemaName"`
 	Body        *CreateVolumeJSONRequestBody
 }
 
@@ -6896,137 +10290,453 @@ type CreateVolumeResponseObject interface {
 	VisitCreateVolumeResponse(w http.ResponseWriter) error
 }
 
-type CreateVolume201JSONResponse VolumeDetail
+type CreateVolume201ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateVolume201JSONResponse struct {
+	Body    VolumeDetail
+	Headers CreateVolume201ResponseHeaders
+}
 
 func (response CreateVolume201JSONResponse) VisitCreateVolumeResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(201)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateVolume400JSONResponse Error
+type CreateVolume400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateVolume400JSONResponse struct {
+	Body    Error
+	Headers CreateVolume400ResponseHeaders
+}
 
 func (response CreateVolume400JSONResponse) VisitCreateVolumeResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(400)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateVolume401JSONResponse Error
+type CreateVolume401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateVolume401JSONResponse struct {
+	Body    Error
+	Headers CreateVolume401ResponseHeaders
+}
 
 func (response CreateVolume401JSONResponse) VisitCreateVolumeResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateVolume403JSONResponse Error
+type CreateVolume403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateVolume403JSONResponse struct {
+	Body    Error
+	Headers CreateVolume403ResponseHeaders
+}
 
 func (response CreateVolume403JSONResponse) VisitCreateVolumeResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateVolume409JSONResponse Error
+type CreateVolume409ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateVolume409JSONResponse struct {
+	Body    Error
+	Headers CreateVolume409ResponseHeaders
+}
 
 func (response CreateVolume409JSONResponse) VisitCreateVolumeResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(409)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateVolume429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateVolume429JSONResponse struct {
+	Body    Error
+	Headers CreateVolume429ResponseHeaders
+}
+
+func (response CreateVolume429JSONResponse) VisitCreateVolumeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateVolume500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateVolume500JSONResponse struct {
+	Body    Error
+	Headers CreateVolume500ResponseHeaders
+}
+
+func (response CreateVolume500JSONResponse) VisitCreateVolumeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type DeleteVolumeRequestObject struct {
-	CatalogName CatalogName `json:"catalogName"`
-	SchemaName  string      `json:"schemaName"`
-	VolumeName  string      `json:"volumeName"`
+	CatalogName string `json:"catalogName"`
+	SchemaName  string `json:"schemaName"`
+	VolumeName  string `json:"volumeName"`
 }
 
 type DeleteVolumeResponseObject interface {
 	VisitDeleteVolumeResponse(w http.ResponseWriter) error
 }
 
+type DeleteVolume204ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
 type DeleteVolume204Response struct {
+	Headers DeleteVolume204ResponseHeaders
 }
 
 func (response DeleteVolume204Response) VisitDeleteVolumeResponse(w http.ResponseWriter) error {
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(204)
 	return nil
 }
 
-type DeleteVolume401JSONResponse Error
+type DeleteVolume400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteVolume400JSONResponse struct {
+	Body    Error
+	Headers DeleteVolume400ResponseHeaders
+}
+
+func (response DeleteVolume400JSONResponse) VisitDeleteVolumeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteVolume401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteVolume401JSONResponse struct {
+	Body    Error
+	Headers DeleteVolume401ResponseHeaders
+}
 
 func (response DeleteVolume401JSONResponse) VisitDeleteVolumeResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteVolume403JSONResponse Error
+type DeleteVolume403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteVolume403JSONResponse struct {
+	Body    Error
+	Headers DeleteVolume403ResponseHeaders
+}
 
 func (response DeleteVolume403JSONResponse) VisitDeleteVolumeResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteVolume404JSONResponse Error
+type DeleteVolume404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteVolume404JSONResponse struct {
+	Body    Error
+	Headers DeleteVolume404ResponseHeaders
+}
 
 func (response DeleteVolume404JSONResponse) VisitDeleteVolumeResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteVolume429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteVolume429JSONResponse struct {
+	Body    Error
+	Headers DeleteVolume429ResponseHeaders
+}
+
+func (response DeleteVolume429JSONResponse) VisitDeleteVolumeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteVolume500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteVolume500JSONResponse struct {
+	Body    Error
+	Headers DeleteVolume500ResponseHeaders
+}
+
+func (response DeleteVolume500JSONResponse) VisitDeleteVolumeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type GetVolumeRequestObject struct {
-	CatalogName CatalogName `json:"catalogName"`
-	SchemaName  string      `json:"schemaName"`
-	VolumeName  string      `json:"volumeName"`
+	CatalogName string `json:"catalogName"`
+	SchemaName  string `json:"schemaName"`
+	VolumeName  string `json:"volumeName"`
 }
 
 type GetVolumeResponseObject interface {
 	VisitGetVolumeResponse(w http.ResponseWriter) error
 }
 
-type GetVolume200JSONResponse VolumeDetail
+type GetVolume200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetVolume200JSONResponse struct {
+	Body    VolumeDetail
+	Headers GetVolume200ResponseHeaders
+}
 
 func (response GetVolume200JSONResponse) VisitGetVolumeResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type GetVolume401JSONResponse Error
+type GetVolume400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetVolume400JSONResponse struct {
+	Body    Error
+	Headers GetVolume400ResponseHeaders
+}
+
+func (response GetVolume400JSONResponse) VisitGetVolumeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetVolume401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetVolume401JSONResponse struct {
+	Body    Error
+	Headers GetVolume401ResponseHeaders
+}
 
 func (response GetVolume401JSONResponse) VisitGetVolumeResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type GetVolume404JSONResponse Error
+type GetVolume404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetVolume404JSONResponse struct {
+	Body    Error
+	Headers GetVolume404ResponseHeaders
+}
 
 func (response GetVolume404JSONResponse) VisitGetVolumeResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetVolume429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetVolume429JSONResponse struct {
+	Body    Error
+	Headers GetVolume429ResponseHeaders
+}
+
+func (response GetVolume429JSONResponse) VisitGetVolumeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetVolume500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetVolume500JSONResponse struct {
+	Body    Error
+	Headers GetVolume500ResponseHeaders
+}
+
+func (response GetVolume500JSONResponse) VisitGetVolumeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type UpdateVolumeRequestObject struct {
-	CatalogName CatalogName `json:"catalogName"`
-	SchemaName  string      `json:"schemaName"`
-	VolumeName  string      `json:"volumeName"`
+	CatalogName string `json:"catalogName"`
+	SchemaName  string `json:"schemaName"`
+	VolumeName  string `json:"volumeName"`
 	Body        *UpdateVolumeJSONRequestBody
 }
 
@@ -7034,44 +10744,157 @@ type UpdateVolumeResponseObject interface {
 	VisitUpdateVolumeResponse(w http.ResponseWriter) error
 }
 
-type UpdateVolume200JSONResponse VolumeDetail
+type UpdateVolume200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateVolume200JSONResponse struct {
+	Body    VolumeDetail
+	Headers UpdateVolume200ResponseHeaders
+}
 
 func (response UpdateVolume200JSONResponse) VisitUpdateVolumeResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UpdateVolume401JSONResponse Error
+type UpdateVolume400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateVolume400JSONResponse struct {
+	Body    Error
+	Headers UpdateVolume400ResponseHeaders
+}
+
+func (response UpdateVolume400JSONResponse) VisitUpdateVolumeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateVolume401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateVolume401JSONResponse struct {
+	Body    Error
+	Headers UpdateVolume401ResponseHeaders
+}
 
 func (response UpdateVolume401JSONResponse) VisitUpdateVolumeResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UpdateVolume403JSONResponse Error
+type UpdateVolume403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateVolume403JSONResponse struct {
+	Body    Error
+	Headers UpdateVolume403ResponseHeaders
+}
 
 func (response UpdateVolume403JSONResponse) VisitUpdateVolumeResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UpdateVolume404JSONResponse Error
+type UpdateVolume404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateVolume404JSONResponse struct {
+	Body    Error
+	Headers UpdateVolume404ResponseHeaders
+}
 
 func (response UpdateVolume404JSONResponse) VisitUpdateVolumeResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateVolume429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateVolume429JSONResponse struct {
+	Body    Error
+	Headers UpdateVolume429ResponseHeaders
+}
+
+func (response UpdateVolume429JSONResponse) VisitUpdateVolumeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateVolume500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateVolume500JSONResponse struct {
+	Body    Error
+	Headers UpdateVolume500ResponseHeaders
+}
+
+func (response UpdateVolume500JSONResponse) VisitUpdateVolumeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type SetDefaultCatalogRequestObject struct {
-	CatalogName CatalogName `json:"catalogName"`
+	CatalogName string `json:"catalogName"`
 	Body        *SetDefaultCatalogJSONRequestBody
 }
 
@@ -7079,40 +10902,132 @@ type SetDefaultCatalogResponseObject interface {
 	VisitSetDefaultCatalogResponse(w http.ResponseWriter) error
 }
 
-type SetDefaultCatalog200JSONResponse CatalogRegistration
+type SetDefaultCatalog200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type SetDefaultCatalog200JSONResponse struct {
+	Body    CatalogRegistration
+	Headers SetDefaultCatalog200ResponseHeaders
+}
 
 func (response SetDefaultCatalog200JSONResponse) VisitSetDefaultCatalogResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type SetDefaultCatalog401JSONResponse Error
+type SetDefaultCatalog401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type SetDefaultCatalog401JSONResponse struct {
+	Body    Error
+	Headers SetDefaultCatalog401ResponseHeaders
+}
 
 func (response SetDefaultCatalog401JSONResponse) VisitSetDefaultCatalogResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type SetDefaultCatalog403JSONResponse Error
+type SetDefaultCatalog403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type SetDefaultCatalog403JSONResponse struct {
+	Body    Error
+	Headers SetDefaultCatalog403ResponseHeaders
+}
 
 func (response SetDefaultCatalog403JSONResponse) VisitSetDefaultCatalogResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type SetDefaultCatalog404JSONResponse Error
+type SetDefaultCatalog404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type SetDefaultCatalog404JSONResponse struct {
+	Body    Error
+	Headers SetDefaultCatalog404ResponseHeaders
+}
 
 func (response SetDefaultCatalog404JSONResponse) VisitSetDefaultCatalogResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type SetDefaultCatalog429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type SetDefaultCatalog429JSONResponse struct {
+	Body    Error
+	Headers SetDefaultCatalog429ResponseHeaders
+}
+
+func (response SetDefaultCatalog429JSONResponse) VisitSetDefaultCatalogResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type SetDefaultCatalog500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type SetDefaultCatalog500JSONResponse struct {
+	Body    Error
+	Headers SetDefaultCatalog500ResponseHeaders
+}
+
+func (response SetDefaultCatalog500JSONResponse) VisitSetDefaultCatalogResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type ListClassificationsRequestObject struct {
@@ -7123,22 +11038,90 @@ type ListClassificationsResponseObject interface {
 	VisitListClassificationsResponse(w http.ResponseWriter) error
 }
 
-type ListClassifications200JSONResponse PaginatedTags
+type ListClassifications200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListClassifications200JSONResponse struct {
+	Body    PaginatedTags
+	Headers ListClassifications200ResponseHeaders
+}
 
 func (response ListClassifications200JSONResponse) VisitListClassificationsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ListClassifications401JSONResponse Error
+type ListClassifications401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListClassifications401JSONResponse struct {
+	Body    Error
+	Headers ListClassifications401ResponseHeaders
+}
 
 func (response ListClassifications401JSONResponse) VisitListClassificationsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListClassifications429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListClassifications429JSONResponse struct {
+	Body    Error
+	Headers ListClassifications429ResponseHeaders
+}
+
+func (response ListClassifications429JSONResponse) VisitListClassificationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListClassifications500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListClassifications500JSONResponse struct {
+	Body    Error
+	Headers ListClassifications500ResponseHeaders
+}
+
+func (response ListClassifications500JSONResponse) VisitListClassificationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type DeleteColumnMaskRequestObject struct {
@@ -7149,39 +11132,150 @@ type DeleteColumnMaskResponseObject interface {
 	VisitDeleteColumnMaskResponse(w http.ResponseWriter) error
 }
 
+type DeleteColumnMask204ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
 type DeleteColumnMask204Response struct {
+	Headers DeleteColumnMask204ResponseHeaders
 }
 
 func (response DeleteColumnMask204Response) VisitDeleteColumnMaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(204)
 	return nil
 }
 
-type DeleteColumnMask401JSONResponse Error
+type DeleteColumnMask400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteColumnMask400JSONResponse struct {
+	Body    Error
+	Headers DeleteColumnMask400ResponseHeaders
+}
+
+func (response DeleteColumnMask400JSONResponse) VisitDeleteColumnMaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteColumnMask401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteColumnMask401JSONResponse struct {
+	Body    Error
+	Headers DeleteColumnMask401ResponseHeaders
+}
 
 func (response DeleteColumnMask401JSONResponse) VisitDeleteColumnMaskResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteColumnMask403JSONResponse Error
+type DeleteColumnMask403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteColumnMask403JSONResponse struct {
+	Body    Error
+	Headers DeleteColumnMask403ResponseHeaders
+}
 
 func (response DeleteColumnMask403JSONResponse) VisitDeleteColumnMaskResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteColumnMask404JSONResponse Error
+type DeleteColumnMask404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteColumnMask404JSONResponse struct {
+	Body    Error
+	Headers DeleteColumnMask404ResponseHeaders
+}
 
 func (response DeleteColumnMask404JSONResponse) VisitDeleteColumnMaskResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteColumnMask429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteColumnMask429JSONResponse struct {
+	Body    Error
+	Headers DeleteColumnMask429ResponseHeaders
+}
+
+func (response DeleteColumnMask429JSONResponse) VisitDeleteColumnMaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteColumnMask500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteColumnMask500JSONResponse struct {
+	Body    Error
+	Headers DeleteColumnMask500ResponseHeaders
+}
+
+func (response DeleteColumnMask500JSONResponse) VisitDeleteColumnMaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type UnbindColumnMaskRequestObject struct {
@@ -7193,48 +11287,150 @@ type UnbindColumnMaskResponseObject interface {
 	VisitUnbindColumnMaskResponse(w http.ResponseWriter) error
 }
 
+type UnbindColumnMask204ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
 type UnbindColumnMask204Response struct {
+	Headers UnbindColumnMask204ResponseHeaders
 }
 
 func (response UnbindColumnMask204Response) VisitUnbindColumnMaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(204)
 	return nil
 }
 
-type UnbindColumnMask400JSONResponse Error
+type UnbindColumnMask400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UnbindColumnMask400JSONResponse struct {
+	Body    Error
+	Headers UnbindColumnMask400ResponseHeaders
+}
 
 func (response UnbindColumnMask400JSONResponse) VisitUnbindColumnMaskResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(400)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UnbindColumnMask401JSONResponse Error
+type UnbindColumnMask401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UnbindColumnMask401JSONResponse struct {
+	Body    Error
+	Headers UnbindColumnMask401ResponseHeaders
+}
 
 func (response UnbindColumnMask401JSONResponse) VisitUnbindColumnMaskResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UnbindColumnMask403JSONResponse Error
+type UnbindColumnMask403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UnbindColumnMask403JSONResponse struct {
+	Body    Error
+	Headers UnbindColumnMask403ResponseHeaders
+}
 
 func (response UnbindColumnMask403JSONResponse) VisitUnbindColumnMaskResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UnbindColumnMask404JSONResponse Error
+type UnbindColumnMask404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UnbindColumnMask404JSONResponse struct {
+	Body    Error
+	Headers UnbindColumnMask404ResponseHeaders
+}
 
 func (response UnbindColumnMask404JSONResponse) VisitUnbindColumnMaskResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UnbindColumnMask429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UnbindColumnMask429JSONResponse struct {
+	Body    Error
+	Headers UnbindColumnMask429ResponseHeaders
+}
+
+func (response UnbindColumnMask429JSONResponse) VisitUnbindColumnMaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UnbindColumnMask500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UnbindColumnMask500JSONResponse struct {
+	Body    Error
+	Headers UnbindColumnMask500ResponseHeaders
+}
+
+func (response UnbindColumnMask500JSONResponse) VisitUnbindColumnMaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type BindColumnMaskRequestObject struct {
@@ -7246,48 +11442,150 @@ type BindColumnMaskResponseObject interface {
 	VisitBindColumnMaskResponse(w http.ResponseWriter) error
 }
 
+type BindColumnMask204ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
 type BindColumnMask204Response struct {
+	Headers BindColumnMask204ResponseHeaders
 }
 
 func (response BindColumnMask204Response) VisitBindColumnMaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(204)
 	return nil
 }
 
-type BindColumnMask400JSONResponse Error
+type BindColumnMask400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type BindColumnMask400JSONResponse struct {
+	Body    Error
+	Headers BindColumnMask400ResponseHeaders
+}
 
 func (response BindColumnMask400JSONResponse) VisitBindColumnMaskResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(400)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type BindColumnMask401JSONResponse Error
+type BindColumnMask401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type BindColumnMask401JSONResponse struct {
+	Body    Error
+	Headers BindColumnMask401ResponseHeaders
+}
 
 func (response BindColumnMask401JSONResponse) VisitBindColumnMaskResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type BindColumnMask403JSONResponse Error
+type BindColumnMask403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type BindColumnMask403JSONResponse struct {
+	Body    Error
+	Headers BindColumnMask403ResponseHeaders
+}
 
 func (response BindColumnMask403JSONResponse) VisitBindColumnMaskResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type BindColumnMask404JSONResponse Error
+type BindColumnMask404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type BindColumnMask404JSONResponse struct {
+	Body    Error
+	Headers BindColumnMask404ResponseHeaders
+}
 
 func (response BindColumnMask404JSONResponse) VisitBindColumnMaskResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type BindColumnMask429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type BindColumnMask429JSONResponse struct {
+	Body    Error
+	Headers BindColumnMask429ResponseHeaders
+}
+
+func (response BindColumnMask429JSONResponse) VisitBindColumnMaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type BindColumnMask500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type BindColumnMask500JSONResponse struct {
+	Body    Error
+	Headers BindColumnMask500ResponseHeaders
+}
+
+func (response BindColumnMask500JSONResponse) VisitBindColumnMaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type ListComputeEndpointsRequestObject struct {
@@ -7298,22 +11596,90 @@ type ListComputeEndpointsResponseObject interface {
 	VisitListComputeEndpointsResponse(w http.ResponseWriter) error
 }
 
-type ListComputeEndpoints200JSONResponse PaginatedComputeEndpoints
+type ListComputeEndpoints200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListComputeEndpoints200JSONResponse struct {
+	Body    PaginatedComputeEndpoints
+	Headers ListComputeEndpoints200ResponseHeaders
+}
 
 func (response ListComputeEndpoints200JSONResponse) VisitListComputeEndpointsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ListComputeEndpoints401JSONResponse Error
+type ListComputeEndpoints401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListComputeEndpoints401JSONResponse struct {
+	Body    Error
+	Headers ListComputeEndpoints401ResponseHeaders
+}
 
 func (response ListComputeEndpoints401JSONResponse) VisitListComputeEndpointsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListComputeEndpoints429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListComputeEndpoints429JSONResponse struct {
+	Body    Error
+	Headers ListComputeEndpoints429ResponseHeaders
+}
+
+func (response ListComputeEndpoints429JSONResponse) VisitListComputeEndpointsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListComputeEndpoints500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListComputeEndpoints500JSONResponse struct {
+	Body    Error
+	Headers ListComputeEndpoints500ResponseHeaders
+}
+
+func (response ListComputeEndpoints500JSONResponse) VisitListComputeEndpointsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type CreateComputeEndpointRequestObject struct {
@@ -7324,49 +11690,153 @@ type CreateComputeEndpointResponseObject interface {
 	VisitCreateComputeEndpointResponse(w http.ResponseWriter) error
 }
 
-type CreateComputeEndpoint201JSONResponse ComputeEndpoint
+type CreateComputeEndpoint201ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateComputeEndpoint201JSONResponse struct {
+	Body    ComputeEndpoint
+	Headers CreateComputeEndpoint201ResponseHeaders
+}
 
 func (response CreateComputeEndpoint201JSONResponse) VisitCreateComputeEndpointResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(201)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateComputeEndpoint400JSONResponse Error
+type CreateComputeEndpoint400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateComputeEndpoint400JSONResponse struct {
+	Body    Error
+	Headers CreateComputeEndpoint400ResponseHeaders
+}
 
 func (response CreateComputeEndpoint400JSONResponse) VisitCreateComputeEndpointResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(400)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateComputeEndpoint401JSONResponse Error
+type CreateComputeEndpoint401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateComputeEndpoint401JSONResponse struct {
+	Body    Error
+	Headers CreateComputeEndpoint401ResponseHeaders
+}
 
 func (response CreateComputeEndpoint401JSONResponse) VisitCreateComputeEndpointResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateComputeEndpoint403JSONResponse Error
+type CreateComputeEndpoint403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateComputeEndpoint403JSONResponse struct {
+	Body    Error
+	Headers CreateComputeEndpoint403ResponseHeaders
+}
 
 func (response CreateComputeEndpoint403JSONResponse) VisitCreateComputeEndpointResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateComputeEndpoint409JSONResponse Error
+type CreateComputeEndpoint409ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateComputeEndpoint409JSONResponse struct {
+	Body    Error
+	Headers CreateComputeEndpoint409ResponseHeaders
+}
 
 func (response CreateComputeEndpoint409JSONResponse) VisitCreateComputeEndpointResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(409)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateComputeEndpoint429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateComputeEndpoint429JSONResponse struct {
+	Body    Error
+	Headers CreateComputeEndpoint429ResponseHeaders
+}
+
+func (response CreateComputeEndpoint429JSONResponse) VisitCreateComputeEndpointResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateComputeEndpoint500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateComputeEndpoint500JSONResponse struct {
+	Body    Error
+	Headers CreateComputeEndpoint500ResponseHeaders
+}
+
+func (response CreateComputeEndpoint500JSONResponse) VisitCreateComputeEndpointResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type DeleteComputeEndpointRequestObject struct {
@@ -7377,39 +11847,129 @@ type DeleteComputeEndpointResponseObject interface {
 	VisitDeleteComputeEndpointResponse(w http.ResponseWriter) error
 }
 
+type DeleteComputeEndpoint204ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
 type DeleteComputeEndpoint204Response struct {
+	Headers DeleteComputeEndpoint204ResponseHeaders
 }
 
 func (response DeleteComputeEndpoint204Response) VisitDeleteComputeEndpointResponse(w http.ResponseWriter) error {
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(204)
 	return nil
 }
 
-type DeleteComputeEndpoint401JSONResponse Error
+type DeleteComputeEndpoint401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteComputeEndpoint401JSONResponse struct {
+	Body    Error
+	Headers DeleteComputeEndpoint401ResponseHeaders
+}
 
 func (response DeleteComputeEndpoint401JSONResponse) VisitDeleteComputeEndpointResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteComputeEndpoint403JSONResponse Error
+type DeleteComputeEndpoint403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteComputeEndpoint403JSONResponse struct {
+	Body    Error
+	Headers DeleteComputeEndpoint403ResponseHeaders
+}
 
 func (response DeleteComputeEndpoint403JSONResponse) VisitDeleteComputeEndpointResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteComputeEndpoint404JSONResponse Error
+type DeleteComputeEndpoint404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteComputeEndpoint404JSONResponse struct {
+	Body    Error
+	Headers DeleteComputeEndpoint404ResponseHeaders
+}
 
 func (response DeleteComputeEndpoint404JSONResponse) VisitDeleteComputeEndpointResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteComputeEndpoint429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteComputeEndpoint429JSONResponse struct {
+	Body    Error
+	Headers DeleteComputeEndpoint429ResponseHeaders
+}
+
+func (response DeleteComputeEndpoint429JSONResponse) VisitDeleteComputeEndpointResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteComputeEndpoint500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteComputeEndpoint500JSONResponse struct {
+	Body    Error
+	Headers DeleteComputeEndpoint500ResponseHeaders
+}
+
+func (response DeleteComputeEndpoint500JSONResponse) VisitDeleteComputeEndpointResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type GetComputeEndpointRequestObject struct {
@@ -7420,31 +11980,111 @@ type GetComputeEndpointResponseObject interface {
 	VisitGetComputeEndpointResponse(w http.ResponseWriter) error
 }
 
-type GetComputeEndpoint200JSONResponse ComputeEndpoint
+type GetComputeEndpoint200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetComputeEndpoint200JSONResponse struct {
+	Body    ComputeEndpoint
+	Headers GetComputeEndpoint200ResponseHeaders
+}
 
 func (response GetComputeEndpoint200JSONResponse) VisitGetComputeEndpointResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type GetComputeEndpoint401JSONResponse Error
+type GetComputeEndpoint401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetComputeEndpoint401JSONResponse struct {
+	Body    Error
+	Headers GetComputeEndpoint401ResponseHeaders
+}
 
 func (response GetComputeEndpoint401JSONResponse) VisitGetComputeEndpointResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type GetComputeEndpoint404JSONResponse Error
+type GetComputeEndpoint404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetComputeEndpoint404JSONResponse struct {
+	Body    Error
+	Headers GetComputeEndpoint404ResponseHeaders
+}
 
 func (response GetComputeEndpoint404JSONResponse) VisitGetComputeEndpointResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetComputeEndpoint429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetComputeEndpoint429JSONResponse struct {
+	Body    Error
+	Headers GetComputeEndpoint429ResponseHeaders
+}
+
+func (response GetComputeEndpoint429JSONResponse) VisitGetComputeEndpointResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetComputeEndpoint500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetComputeEndpoint500JSONResponse struct {
+	Body    Error
+	Headers GetComputeEndpoint500ResponseHeaders
+}
+
+func (response GetComputeEndpoint500JSONResponse) VisitGetComputeEndpointResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type UpdateComputeEndpointRequestObject struct {
@@ -7456,40 +12096,153 @@ type UpdateComputeEndpointResponseObject interface {
 	VisitUpdateComputeEndpointResponse(w http.ResponseWriter) error
 }
 
-type UpdateComputeEndpoint200JSONResponse ComputeEndpoint
+type UpdateComputeEndpoint200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateComputeEndpoint200JSONResponse struct {
+	Body    ComputeEndpoint
+	Headers UpdateComputeEndpoint200ResponseHeaders
+}
 
 func (response UpdateComputeEndpoint200JSONResponse) VisitUpdateComputeEndpointResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UpdateComputeEndpoint401JSONResponse Error
+type UpdateComputeEndpoint400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateComputeEndpoint400JSONResponse struct {
+	Body    Error
+	Headers UpdateComputeEndpoint400ResponseHeaders
+}
+
+func (response UpdateComputeEndpoint400JSONResponse) VisitUpdateComputeEndpointResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateComputeEndpoint401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateComputeEndpoint401JSONResponse struct {
+	Body    Error
+	Headers UpdateComputeEndpoint401ResponseHeaders
+}
 
 func (response UpdateComputeEndpoint401JSONResponse) VisitUpdateComputeEndpointResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UpdateComputeEndpoint403JSONResponse Error
+type UpdateComputeEndpoint403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateComputeEndpoint403JSONResponse struct {
+	Body    Error
+	Headers UpdateComputeEndpoint403ResponseHeaders
+}
 
 func (response UpdateComputeEndpoint403JSONResponse) VisitUpdateComputeEndpointResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UpdateComputeEndpoint404JSONResponse Error
+type UpdateComputeEndpoint404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateComputeEndpoint404JSONResponse struct {
+	Body    Error
+	Headers UpdateComputeEndpoint404ResponseHeaders
+}
 
 func (response UpdateComputeEndpoint404JSONResponse) VisitUpdateComputeEndpointResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateComputeEndpoint429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateComputeEndpoint429JSONResponse struct {
+	Body    Error
+	Headers UpdateComputeEndpoint429ResponseHeaders
+}
+
+func (response UpdateComputeEndpoint429JSONResponse) VisitUpdateComputeEndpointResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateComputeEndpoint500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateComputeEndpoint500JSONResponse struct {
+	Body    Error
+	Headers UpdateComputeEndpoint500ResponseHeaders
+}
+
+func (response UpdateComputeEndpoint500JSONResponse) VisitUpdateComputeEndpointResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type ListComputeAssignmentsRequestObject struct {
@@ -7501,31 +12254,111 @@ type ListComputeAssignmentsResponseObject interface {
 	VisitListComputeAssignmentsResponse(w http.ResponseWriter) error
 }
 
-type ListComputeAssignments200JSONResponse PaginatedComputeAssignments
+type ListComputeAssignments200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListComputeAssignments200JSONResponse struct {
+	Body    PaginatedComputeAssignments
+	Headers ListComputeAssignments200ResponseHeaders
+}
 
 func (response ListComputeAssignments200JSONResponse) VisitListComputeAssignmentsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ListComputeAssignments401JSONResponse Error
+type ListComputeAssignments401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListComputeAssignments401JSONResponse struct {
+	Body    Error
+	Headers ListComputeAssignments401ResponseHeaders
+}
 
 func (response ListComputeAssignments401JSONResponse) VisitListComputeAssignmentsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ListComputeAssignments404JSONResponse Error
+type ListComputeAssignments404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListComputeAssignments404JSONResponse struct {
+	Body    Error
+	Headers ListComputeAssignments404ResponseHeaders
+}
 
 func (response ListComputeAssignments404JSONResponse) VisitListComputeAssignmentsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListComputeAssignments429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListComputeAssignments429JSONResponse struct {
+	Body    Error
+	Headers ListComputeAssignments429ResponseHeaders
+}
+
+func (response ListComputeAssignments429JSONResponse) VisitListComputeAssignmentsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListComputeAssignments500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListComputeAssignments500JSONResponse struct {
+	Body    Error
+	Headers ListComputeAssignments500ResponseHeaders
+}
+
+func (response ListComputeAssignments500JSONResponse) VisitListComputeAssignmentsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type CreateComputeAssignmentRequestObject struct {
@@ -7537,49 +12370,153 @@ type CreateComputeAssignmentResponseObject interface {
 	VisitCreateComputeAssignmentResponse(w http.ResponseWriter) error
 }
 
-type CreateComputeAssignment201JSONResponse ComputeAssignment
+type CreateComputeAssignment201ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateComputeAssignment201JSONResponse struct {
+	Body    ComputeAssignment
+	Headers CreateComputeAssignment201ResponseHeaders
+}
 
 func (response CreateComputeAssignment201JSONResponse) VisitCreateComputeAssignmentResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(201)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateComputeAssignment400JSONResponse Error
+type CreateComputeAssignment400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateComputeAssignment400JSONResponse struct {
+	Body    Error
+	Headers CreateComputeAssignment400ResponseHeaders
+}
 
 func (response CreateComputeAssignment400JSONResponse) VisitCreateComputeAssignmentResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(400)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateComputeAssignment401JSONResponse Error
+type CreateComputeAssignment401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateComputeAssignment401JSONResponse struct {
+	Body    Error
+	Headers CreateComputeAssignment401ResponseHeaders
+}
 
 func (response CreateComputeAssignment401JSONResponse) VisitCreateComputeAssignmentResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateComputeAssignment403JSONResponse Error
+type CreateComputeAssignment403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateComputeAssignment403JSONResponse struct {
+	Body    Error
+	Headers CreateComputeAssignment403ResponseHeaders
+}
 
 func (response CreateComputeAssignment403JSONResponse) VisitCreateComputeAssignmentResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateComputeAssignment409JSONResponse Error
+type CreateComputeAssignment409ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateComputeAssignment409JSONResponse struct {
+	Body    Error
+	Headers CreateComputeAssignment409ResponseHeaders
+}
 
 func (response CreateComputeAssignment409JSONResponse) VisitCreateComputeAssignmentResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(409)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateComputeAssignment429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateComputeAssignment429JSONResponse struct {
+	Body    Error
+	Headers CreateComputeAssignment429ResponseHeaders
+}
+
+func (response CreateComputeAssignment429JSONResponse) VisitCreateComputeAssignmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateComputeAssignment500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateComputeAssignment500JSONResponse struct {
+	Body    Error
+	Headers CreateComputeAssignment500ResponseHeaders
+}
+
+func (response CreateComputeAssignment500JSONResponse) VisitCreateComputeAssignmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type DeleteComputeAssignmentRequestObject struct {
@@ -7591,39 +12528,129 @@ type DeleteComputeAssignmentResponseObject interface {
 	VisitDeleteComputeAssignmentResponse(w http.ResponseWriter) error
 }
 
+type DeleteComputeAssignment204ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
 type DeleteComputeAssignment204Response struct {
+	Headers DeleteComputeAssignment204ResponseHeaders
 }
 
 func (response DeleteComputeAssignment204Response) VisitDeleteComputeAssignmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(204)
 	return nil
 }
 
-type DeleteComputeAssignment401JSONResponse Error
+type DeleteComputeAssignment401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteComputeAssignment401JSONResponse struct {
+	Body    Error
+	Headers DeleteComputeAssignment401ResponseHeaders
+}
 
 func (response DeleteComputeAssignment401JSONResponse) VisitDeleteComputeAssignmentResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteComputeAssignment403JSONResponse Error
+type DeleteComputeAssignment403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteComputeAssignment403JSONResponse struct {
+	Body    Error
+	Headers DeleteComputeAssignment403ResponseHeaders
+}
 
 func (response DeleteComputeAssignment403JSONResponse) VisitDeleteComputeAssignmentResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteComputeAssignment404JSONResponse Error
+type DeleteComputeAssignment404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteComputeAssignment404JSONResponse struct {
+	Body    Error
+	Headers DeleteComputeAssignment404ResponseHeaders
+}
 
 func (response DeleteComputeAssignment404JSONResponse) VisitDeleteComputeAssignmentResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteComputeAssignment429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteComputeAssignment429JSONResponse struct {
+	Body    Error
+	Headers DeleteComputeAssignment429ResponseHeaders
+}
+
+func (response DeleteComputeAssignment429JSONResponse) VisitDeleteComputeAssignmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteComputeAssignment500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteComputeAssignment500JSONResponse struct {
+	Body    Error
+	Headers DeleteComputeAssignment500ResponseHeaders
+}
+
+func (response DeleteComputeAssignment500JSONResponse) VisitDeleteComputeAssignmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type GetComputeEndpointHealthRequestObject struct {
@@ -7634,49 +12661,153 @@ type GetComputeEndpointHealthResponseObject interface {
 	VisitGetComputeEndpointHealthResponse(w http.ResponseWriter) error
 }
 
-type GetComputeEndpointHealth200JSONResponse ComputeEndpointHealth
+type GetComputeEndpointHealth200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetComputeEndpointHealth200JSONResponse struct {
+	Body    ComputeEndpointHealth
+	Headers GetComputeEndpointHealth200ResponseHeaders
+}
 
 func (response GetComputeEndpointHealth200JSONResponse) VisitGetComputeEndpointHealthResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type GetComputeEndpointHealth401JSONResponse Error
+type GetComputeEndpointHealth401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetComputeEndpointHealth401JSONResponse struct {
+	Body    Error
+	Headers GetComputeEndpointHealth401ResponseHeaders
+}
 
 func (response GetComputeEndpointHealth401JSONResponse) VisitGetComputeEndpointHealthResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type GetComputeEndpointHealth403JSONResponse Error
+type GetComputeEndpointHealth403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetComputeEndpointHealth403JSONResponse struct {
+	Body    Error
+	Headers GetComputeEndpointHealth403ResponseHeaders
+}
 
 func (response GetComputeEndpointHealth403JSONResponse) VisitGetComputeEndpointHealthResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type GetComputeEndpointHealth404JSONResponse Error
+type GetComputeEndpointHealth404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetComputeEndpointHealth404JSONResponse struct {
+	Body    Error
+	Headers GetComputeEndpointHealth404ResponseHeaders
+}
 
 func (response GetComputeEndpointHealth404JSONResponse) VisitGetComputeEndpointHealthResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type GetComputeEndpointHealth502JSONResponse Error
+type GetComputeEndpointHealth429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetComputeEndpointHealth429JSONResponse struct {
+	Body    Error
+	Headers GetComputeEndpointHealth429ResponseHeaders
+}
+
+func (response GetComputeEndpointHealth429JSONResponse) VisitGetComputeEndpointHealthResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetComputeEndpointHealth500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetComputeEndpointHealth500JSONResponse struct {
+	Body    Error
+	Headers GetComputeEndpointHealth500ResponseHeaders
+}
+
+func (response GetComputeEndpointHealth500JSONResponse) VisitGetComputeEndpointHealthResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetComputeEndpointHealth502ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetComputeEndpointHealth502JSONResponse struct {
+	Body    Error
+	Headers GetComputeEndpointHealth502ResponseHeaders
+}
 
 func (response GetComputeEndpointHealth502JSONResponse) VisitGetComputeEndpointHealthResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(502)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type ListExternalLocationsRequestObject struct {
@@ -7687,22 +12818,90 @@ type ListExternalLocationsResponseObject interface {
 	VisitListExternalLocationsResponse(w http.ResponseWriter) error
 }
 
-type ListExternalLocations200JSONResponse PaginatedExternalLocations
+type ListExternalLocations200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListExternalLocations200JSONResponse struct {
+	Body    PaginatedExternalLocations
+	Headers ListExternalLocations200ResponseHeaders
+}
 
 func (response ListExternalLocations200JSONResponse) VisitListExternalLocationsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ListExternalLocations401JSONResponse Error
+type ListExternalLocations401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListExternalLocations401JSONResponse struct {
+	Body    Error
+	Headers ListExternalLocations401ResponseHeaders
+}
 
 func (response ListExternalLocations401JSONResponse) VisitListExternalLocationsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListExternalLocations429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListExternalLocations429JSONResponse struct {
+	Body    Error
+	Headers ListExternalLocations429ResponseHeaders
+}
+
+func (response ListExternalLocations429JSONResponse) VisitListExternalLocationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListExternalLocations500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListExternalLocations500JSONResponse struct {
+	Body    Error
+	Headers ListExternalLocations500ResponseHeaders
+}
+
+func (response ListExternalLocations500JSONResponse) VisitListExternalLocationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type CreateExternalLocationRequestObject struct {
@@ -7713,49 +12912,153 @@ type CreateExternalLocationResponseObject interface {
 	VisitCreateExternalLocationResponse(w http.ResponseWriter) error
 }
 
-type CreateExternalLocation201JSONResponse ExternalLocation
+type CreateExternalLocation201ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateExternalLocation201JSONResponse struct {
+	Body    ExternalLocation
+	Headers CreateExternalLocation201ResponseHeaders
+}
 
 func (response CreateExternalLocation201JSONResponse) VisitCreateExternalLocationResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(201)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateExternalLocation400JSONResponse Error
+type CreateExternalLocation400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateExternalLocation400JSONResponse struct {
+	Body    Error
+	Headers CreateExternalLocation400ResponseHeaders
+}
 
 func (response CreateExternalLocation400JSONResponse) VisitCreateExternalLocationResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(400)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateExternalLocation401JSONResponse Error
+type CreateExternalLocation401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateExternalLocation401JSONResponse struct {
+	Body    Error
+	Headers CreateExternalLocation401ResponseHeaders
+}
 
 func (response CreateExternalLocation401JSONResponse) VisitCreateExternalLocationResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateExternalLocation403JSONResponse Error
+type CreateExternalLocation403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateExternalLocation403JSONResponse struct {
+	Body    Error
+	Headers CreateExternalLocation403ResponseHeaders
+}
 
 func (response CreateExternalLocation403JSONResponse) VisitCreateExternalLocationResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateExternalLocation409JSONResponse Error
+type CreateExternalLocation409ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateExternalLocation409JSONResponse struct {
+	Body    Error
+	Headers CreateExternalLocation409ResponseHeaders
+}
 
 func (response CreateExternalLocation409JSONResponse) VisitCreateExternalLocationResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(409)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateExternalLocation429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateExternalLocation429JSONResponse struct {
+	Body    Error
+	Headers CreateExternalLocation429ResponseHeaders
+}
+
+func (response CreateExternalLocation429JSONResponse) VisitCreateExternalLocationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateExternalLocation500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateExternalLocation500JSONResponse struct {
+	Body    Error
+	Headers CreateExternalLocation500ResponseHeaders
+}
+
+func (response CreateExternalLocation500JSONResponse) VisitCreateExternalLocationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type DeleteExternalLocationRequestObject struct {
@@ -7766,39 +13069,129 @@ type DeleteExternalLocationResponseObject interface {
 	VisitDeleteExternalLocationResponse(w http.ResponseWriter) error
 }
 
+type DeleteExternalLocation204ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
 type DeleteExternalLocation204Response struct {
+	Headers DeleteExternalLocation204ResponseHeaders
 }
 
 func (response DeleteExternalLocation204Response) VisitDeleteExternalLocationResponse(w http.ResponseWriter) error {
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(204)
 	return nil
 }
 
-type DeleteExternalLocation401JSONResponse Error
+type DeleteExternalLocation401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteExternalLocation401JSONResponse struct {
+	Body    Error
+	Headers DeleteExternalLocation401ResponseHeaders
+}
 
 func (response DeleteExternalLocation401JSONResponse) VisitDeleteExternalLocationResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteExternalLocation403JSONResponse Error
+type DeleteExternalLocation403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteExternalLocation403JSONResponse struct {
+	Body    Error
+	Headers DeleteExternalLocation403ResponseHeaders
+}
 
 func (response DeleteExternalLocation403JSONResponse) VisitDeleteExternalLocationResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteExternalLocation404JSONResponse Error
+type DeleteExternalLocation404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteExternalLocation404JSONResponse struct {
+	Body    Error
+	Headers DeleteExternalLocation404ResponseHeaders
+}
 
 func (response DeleteExternalLocation404JSONResponse) VisitDeleteExternalLocationResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteExternalLocation429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteExternalLocation429JSONResponse struct {
+	Body    Error
+	Headers DeleteExternalLocation429ResponseHeaders
+}
+
+func (response DeleteExternalLocation429JSONResponse) VisitDeleteExternalLocationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteExternalLocation500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteExternalLocation500JSONResponse struct {
+	Body    Error
+	Headers DeleteExternalLocation500ResponseHeaders
+}
+
+func (response DeleteExternalLocation500JSONResponse) VisitDeleteExternalLocationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type GetExternalLocationRequestObject struct {
@@ -7809,31 +13202,111 @@ type GetExternalLocationResponseObject interface {
 	VisitGetExternalLocationResponse(w http.ResponseWriter) error
 }
 
-type GetExternalLocation200JSONResponse ExternalLocation
+type GetExternalLocation200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetExternalLocation200JSONResponse struct {
+	Body    ExternalLocation
+	Headers GetExternalLocation200ResponseHeaders
+}
 
 func (response GetExternalLocation200JSONResponse) VisitGetExternalLocationResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type GetExternalLocation401JSONResponse Error
+type GetExternalLocation401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetExternalLocation401JSONResponse struct {
+	Body    Error
+	Headers GetExternalLocation401ResponseHeaders
+}
 
 func (response GetExternalLocation401JSONResponse) VisitGetExternalLocationResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type GetExternalLocation404JSONResponse Error
+type GetExternalLocation404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetExternalLocation404JSONResponse struct {
+	Body    Error
+	Headers GetExternalLocation404ResponseHeaders
+}
 
 func (response GetExternalLocation404JSONResponse) VisitGetExternalLocationResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetExternalLocation429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetExternalLocation429JSONResponse struct {
+	Body    Error
+	Headers GetExternalLocation429ResponseHeaders
+}
+
+func (response GetExternalLocation429JSONResponse) VisitGetExternalLocationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetExternalLocation500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetExternalLocation500JSONResponse struct {
+	Body    Error
+	Headers GetExternalLocation500ResponseHeaders
+}
+
+func (response GetExternalLocation500JSONResponse) VisitGetExternalLocationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type UpdateExternalLocationRequestObject struct {
@@ -7845,40 +13318,153 @@ type UpdateExternalLocationResponseObject interface {
 	VisitUpdateExternalLocationResponse(w http.ResponseWriter) error
 }
 
-type UpdateExternalLocation200JSONResponse ExternalLocation
+type UpdateExternalLocation200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateExternalLocation200JSONResponse struct {
+	Body    ExternalLocation
+	Headers UpdateExternalLocation200ResponseHeaders
+}
 
 func (response UpdateExternalLocation200JSONResponse) VisitUpdateExternalLocationResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UpdateExternalLocation401JSONResponse Error
+type UpdateExternalLocation400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateExternalLocation400JSONResponse struct {
+	Body    Error
+	Headers UpdateExternalLocation400ResponseHeaders
+}
+
+func (response UpdateExternalLocation400JSONResponse) VisitUpdateExternalLocationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateExternalLocation401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateExternalLocation401JSONResponse struct {
+	Body    Error
+	Headers UpdateExternalLocation401ResponseHeaders
+}
 
 func (response UpdateExternalLocation401JSONResponse) VisitUpdateExternalLocationResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UpdateExternalLocation403JSONResponse Error
+type UpdateExternalLocation403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateExternalLocation403JSONResponse struct {
+	Body    Error
+	Headers UpdateExternalLocation403ResponseHeaders
+}
 
 func (response UpdateExternalLocation403JSONResponse) VisitUpdateExternalLocationResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UpdateExternalLocation404JSONResponse Error
+type UpdateExternalLocation404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateExternalLocation404JSONResponse struct {
+	Body    Error
+	Headers UpdateExternalLocation404ResponseHeaders
+}
 
 func (response UpdateExternalLocation404JSONResponse) VisitUpdateExternalLocationResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateExternalLocation429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateExternalLocation429JSONResponse struct {
+	Body    Error
+	Headers UpdateExternalLocation429ResponseHeaders
+}
+
+func (response UpdateExternalLocation429JSONResponse) VisitUpdateExternalLocationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateExternalLocation500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateExternalLocation500JSONResponse struct {
+	Body    Error
+	Headers UpdateExternalLocation500ResponseHeaders
+}
+
+func (response UpdateExternalLocation500JSONResponse) VisitUpdateExternalLocationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type ListGrantsRequestObject struct {
@@ -7889,22 +13475,111 @@ type ListGrantsResponseObject interface {
 	VisitListGrantsResponse(w http.ResponseWriter) error
 }
 
-type ListGrants200JSONResponse PaginatedGrants
+type ListGrants200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListGrants200JSONResponse struct {
+	Body    PaginatedGrants
+	Headers ListGrants200ResponseHeaders
+}
 
 func (response ListGrants200JSONResponse) VisitListGrantsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ListGrants401JSONResponse Error
+type ListGrants400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListGrants400JSONResponse struct {
+	Body    Error
+	Headers ListGrants400ResponseHeaders
+}
+
+func (response ListGrants400JSONResponse) VisitListGrantsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListGrants401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListGrants401JSONResponse struct {
+	Body    Error
+	Headers ListGrants401ResponseHeaders
+}
 
 func (response ListGrants401JSONResponse) VisitListGrantsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListGrants429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListGrants429JSONResponse struct {
+	Body    Error
+	Headers ListGrants429ResponseHeaders
+}
+
+func (response ListGrants429JSONResponse) VisitListGrantsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListGrants500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListGrants500JSONResponse struct {
+	Body    Error
+	Headers ListGrants500ResponseHeaders
+}
+
+func (response ListGrants500JSONResponse) VisitListGrantsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type CreateGrantRequestObject struct {
@@ -7915,49 +13590,153 @@ type CreateGrantResponseObject interface {
 	VisitCreateGrantResponse(w http.ResponseWriter) error
 }
 
-type CreateGrant201JSONResponse PrivilegeGrant
+type CreateGrant201ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateGrant201JSONResponse struct {
+	Body    PrivilegeGrant
+	Headers CreateGrant201ResponseHeaders
+}
 
 func (response CreateGrant201JSONResponse) VisitCreateGrantResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(201)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateGrant400JSONResponse Error
+type CreateGrant400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateGrant400JSONResponse struct {
+	Body    Error
+	Headers CreateGrant400ResponseHeaders
+}
 
 func (response CreateGrant400JSONResponse) VisitCreateGrantResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(400)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateGrant401JSONResponse Error
+type CreateGrant401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateGrant401JSONResponse struct {
+	Body    Error
+	Headers CreateGrant401ResponseHeaders
+}
 
 func (response CreateGrant401JSONResponse) VisitCreateGrantResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateGrant403JSONResponse Error
+type CreateGrant403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateGrant403JSONResponse struct {
+	Body    Error
+	Headers CreateGrant403ResponseHeaders
+}
 
 func (response CreateGrant403JSONResponse) VisitCreateGrantResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateGrant409JSONResponse Error
+type CreateGrant409ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateGrant409JSONResponse struct {
+	Body    Error
+	Headers CreateGrant409ResponseHeaders
+}
 
 func (response CreateGrant409JSONResponse) VisitCreateGrantResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(409)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateGrant429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateGrant429JSONResponse struct {
+	Body    Error
+	Headers CreateGrant429ResponseHeaders
+}
+
+func (response CreateGrant429JSONResponse) VisitCreateGrantResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateGrant500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateGrant500JSONResponse struct {
+	Body    Error
+	Headers CreateGrant500ResponseHeaders
+}
+
+func (response CreateGrant500JSONResponse) VisitCreateGrantResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type DeleteGrantRequestObject struct {
@@ -7968,39 +13747,150 @@ type DeleteGrantResponseObject interface {
 	VisitDeleteGrantResponse(w http.ResponseWriter) error
 }
 
+type DeleteGrant204ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
 type DeleteGrant204Response struct {
+	Headers DeleteGrant204ResponseHeaders
 }
 
 func (response DeleteGrant204Response) VisitDeleteGrantResponse(w http.ResponseWriter) error {
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(204)
 	return nil
 }
 
-type DeleteGrant401JSONResponse Error
+type DeleteGrant400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteGrant400JSONResponse struct {
+	Body    Error
+	Headers DeleteGrant400ResponseHeaders
+}
+
+func (response DeleteGrant400JSONResponse) VisitDeleteGrantResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteGrant401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteGrant401JSONResponse struct {
+	Body    Error
+	Headers DeleteGrant401ResponseHeaders
+}
 
 func (response DeleteGrant401JSONResponse) VisitDeleteGrantResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteGrant403JSONResponse Error
+type DeleteGrant403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteGrant403JSONResponse struct {
+	Body    Error
+	Headers DeleteGrant403ResponseHeaders
+}
 
 func (response DeleteGrant403JSONResponse) VisitDeleteGrantResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteGrant404JSONResponse Error
+type DeleteGrant404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteGrant404JSONResponse struct {
+	Body    Error
+	Headers DeleteGrant404ResponseHeaders
+}
 
 func (response DeleteGrant404JSONResponse) VisitDeleteGrantResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteGrant429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteGrant429JSONResponse struct {
+	Body    Error
+	Headers DeleteGrant429ResponseHeaders
+}
+
+func (response DeleteGrant429JSONResponse) VisitDeleteGrantResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteGrant500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteGrant500JSONResponse struct {
+	Body    Error
+	Headers DeleteGrant500ResponseHeaders
+}
+
+func (response DeleteGrant500JSONResponse) VisitDeleteGrantResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type ListGroupsRequestObject struct {
@@ -8011,22 +13901,111 @@ type ListGroupsResponseObject interface {
 	VisitListGroupsResponse(w http.ResponseWriter) error
 }
 
-type ListGroups200JSONResponse PaginatedGroups
+type ListGroups200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListGroups200JSONResponse struct {
+	Body    PaginatedGroups
+	Headers ListGroups200ResponseHeaders
+}
 
 func (response ListGroups200JSONResponse) VisitListGroupsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ListGroups401JSONResponse Error
+type ListGroups400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListGroups400JSONResponse struct {
+	Body    Error
+	Headers ListGroups400ResponseHeaders
+}
+
+func (response ListGroups400JSONResponse) VisitListGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListGroups401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListGroups401JSONResponse struct {
+	Body    Error
+	Headers ListGroups401ResponseHeaders
+}
 
 func (response ListGroups401JSONResponse) VisitListGroupsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListGroups429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListGroups429JSONResponse struct {
+	Body    Error
+	Headers ListGroups429ResponseHeaders
+}
+
+func (response ListGroups429JSONResponse) VisitListGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListGroups500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListGroups500JSONResponse struct {
+	Body    Error
+	Headers ListGroups500ResponseHeaders
+}
+
+func (response ListGroups500JSONResponse) VisitListGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type CreateGroupRequestObject struct {
@@ -8037,49 +14016,153 @@ type CreateGroupResponseObject interface {
 	VisitCreateGroupResponse(w http.ResponseWriter) error
 }
 
-type CreateGroup201JSONResponse Group
+type CreateGroup201ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateGroup201JSONResponse struct {
+	Body    Group
+	Headers CreateGroup201ResponseHeaders
+}
 
 func (response CreateGroup201JSONResponse) VisitCreateGroupResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(201)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateGroup400JSONResponse Error
+type CreateGroup400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateGroup400JSONResponse struct {
+	Body    Error
+	Headers CreateGroup400ResponseHeaders
+}
 
 func (response CreateGroup400JSONResponse) VisitCreateGroupResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(400)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateGroup401JSONResponse Error
+type CreateGroup401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateGroup401JSONResponse struct {
+	Body    Error
+	Headers CreateGroup401ResponseHeaders
+}
 
 func (response CreateGroup401JSONResponse) VisitCreateGroupResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateGroup403JSONResponse Error
+type CreateGroup403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateGroup403JSONResponse struct {
+	Body    Error
+	Headers CreateGroup403ResponseHeaders
+}
 
 func (response CreateGroup403JSONResponse) VisitCreateGroupResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateGroup409JSONResponse Error
+type CreateGroup409ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateGroup409JSONResponse struct {
+	Body    Error
+	Headers CreateGroup409ResponseHeaders
+}
 
 func (response CreateGroup409JSONResponse) VisitCreateGroupResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(409)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateGroup429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateGroup429JSONResponse struct {
+	Body    Error
+	Headers CreateGroup429ResponseHeaders
+}
+
+func (response CreateGroup429JSONResponse) VisitCreateGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateGroup500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateGroup500JSONResponse struct {
+	Body    Error
+	Headers CreateGroup500ResponseHeaders
+}
+
+func (response CreateGroup500JSONResponse) VisitCreateGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type DeleteGroupRequestObject struct {
@@ -8090,39 +14173,150 @@ type DeleteGroupResponseObject interface {
 	VisitDeleteGroupResponse(w http.ResponseWriter) error
 }
 
+type DeleteGroup204ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
 type DeleteGroup204Response struct {
+	Headers DeleteGroup204ResponseHeaders
 }
 
 func (response DeleteGroup204Response) VisitDeleteGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(204)
 	return nil
 }
 
-type DeleteGroup401JSONResponse Error
+type DeleteGroup400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteGroup400JSONResponse struct {
+	Body    Error
+	Headers DeleteGroup400ResponseHeaders
+}
+
+func (response DeleteGroup400JSONResponse) VisitDeleteGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteGroup401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteGroup401JSONResponse struct {
+	Body    Error
+	Headers DeleteGroup401ResponseHeaders
+}
 
 func (response DeleteGroup401JSONResponse) VisitDeleteGroupResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteGroup403JSONResponse Error
+type DeleteGroup403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteGroup403JSONResponse struct {
+	Body    Error
+	Headers DeleteGroup403ResponseHeaders
+}
 
 func (response DeleteGroup403JSONResponse) VisitDeleteGroupResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteGroup404JSONResponse Error
+type DeleteGroup404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteGroup404JSONResponse struct {
+	Body    Error
+	Headers DeleteGroup404ResponseHeaders
+}
 
 func (response DeleteGroup404JSONResponse) VisitDeleteGroupResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteGroup429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteGroup429JSONResponse struct {
+	Body    Error
+	Headers DeleteGroup429ResponseHeaders
+}
+
+func (response DeleteGroup429JSONResponse) VisitDeleteGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteGroup500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteGroup500JSONResponse struct {
+	Body    Error
+	Headers DeleteGroup500ResponseHeaders
+}
+
+func (response DeleteGroup500JSONResponse) VisitDeleteGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type GetGroupRequestObject struct {
@@ -8133,31 +14327,132 @@ type GetGroupResponseObject interface {
 	VisitGetGroupResponse(w http.ResponseWriter) error
 }
 
-type GetGroup200JSONResponse Group
+type GetGroup200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetGroup200JSONResponse struct {
+	Body    Group
+	Headers GetGroup200ResponseHeaders
+}
 
 func (response GetGroup200JSONResponse) VisitGetGroupResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type GetGroup401JSONResponse Error
+type GetGroup400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetGroup400JSONResponse struct {
+	Body    Error
+	Headers GetGroup400ResponseHeaders
+}
+
+func (response GetGroup400JSONResponse) VisitGetGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetGroup401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetGroup401JSONResponse struct {
+	Body    Error
+	Headers GetGroup401ResponseHeaders
+}
 
 func (response GetGroup401JSONResponse) VisitGetGroupResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type GetGroup404JSONResponse Error
+type GetGroup404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetGroup404JSONResponse struct {
+	Body    Error
+	Headers GetGroup404ResponseHeaders
+}
 
 func (response GetGroup404JSONResponse) VisitGetGroupResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetGroup429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetGroup429JSONResponse struct {
+	Body    Error
+	Headers GetGroup429ResponseHeaders
+}
+
+func (response GetGroup429JSONResponse) VisitGetGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetGroup500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetGroup500JSONResponse struct {
+	Body    Error
+	Headers GetGroup500ResponseHeaders
+}
+
+func (response GetGroup500JSONResponse) VisitGetGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type DeleteGroupMemberRequestObject struct {
@@ -8169,48 +14464,150 @@ type DeleteGroupMemberResponseObject interface {
 	VisitDeleteGroupMemberResponse(w http.ResponseWriter) error
 }
 
+type DeleteGroupMember204ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
 type DeleteGroupMember204Response struct {
+	Headers DeleteGroupMember204ResponseHeaders
 }
 
 func (response DeleteGroupMember204Response) VisitDeleteGroupMemberResponse(w http.ResponseWriter) error {
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(204)
 	return nil
 }
 
-type DeleteGroupMember400JSONResponse Error
+type DeleteGroupMember400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteGroupMember400JSONResponse struct {
+	Body    Error
+	Headers DeleteGroupMember400ResponseHeaders
+}
 
 func (response DeleteGroupMember400JSONResponse) VisitDeleteGroupMemberResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(400)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteGroupMember401JSONResponse Error
+type DeleteGroupMember401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteGroupMember401JSONResponse struct {
+	Body    Error
+	Headers DeleteGroupMember401ResponseHeaders
+}
 
 func (response DeleteGroupMember401JSONResponse) VisitDeleteGroupMemberResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteGroupMember403JSONResponse Error
+type DeleteGroupMember403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteGroupMember403JSONResponse struct {
+	Body    Error
+	Headers DeleteGroupMember403ResponseHeaders
+}
 
 func (response DeleteGroupMember403JSONResponse) VisitDeleteGroupMemberResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteGroupMember404JSONResponse Error
+type DeleteGroupMember404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteGroupMember404JSONResponse struct {
+	Body    Error
+	Headers DeleteGroupMember404ResponseHeaders
+}
 
 func (response DeleteGroupMember404JSONResponse) VisitDeleteGroupMemberResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteGroupMember429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteGroupMember429JSONResponse struct {
+	Body    Error
+	Headers DeleteGroupMember429ResponseHeaders
+}
+
+func (response DeleteGroupMember429JSONResponse) VisitDeleteGroupMemberResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteGroupMember500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteGroupMember500JSONResponse struct {
+	Body    Error
+	Headers DeleteGroupMember500ResponseHeaders
+}
+
+func (response DeleteGroupMember500JSONResponse) VisitDeleteGroupMemberResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type ListGroupMembersRequestObject struct {
@@ -8222,31 +14619,132 @@ type ListGroupMembersResponseObject interface {
 	VisitListGroupMembersResponse(w http.ResponseWriter) error
 }
 
-type ListGroupMembers200JSONResponse PaginatedGroupMembers
+type ListGroupMembers200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListGroupMembers200JSONResponse struct {
+	Body    PaginatedGroupMembers
+	Headers ListGroupMembers200ResponseHeaders
+}
 
 func (response ListGroupMembers200JSONResponse) VisitListGroupMembersResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ListGroupMembers401JSONResponse Error
+type ListGroupMembers400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListGroupMembers400JSONResponse struct {
+	Body    Error
+	Headers ListGroupMembers400ResponseHeaders
+}
+
+func (response ListGroupMembers400JSONResponse) VisitListGroupMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListGroupMembers401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListGroupMembers401JSONResponse struct {
+	Body    Error
+	Headers ListGroupMembers401ResponseHeaders
+}
 
 func (response ListGroupMembers401JSONResponse) VisitListGroupMembersResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ListGroupMembers404JSONResponse Error
+type ListGroupMembers404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListGroupMembers404JSONResponse struct {
+	Body    Error
+	Headers ListGroupMembers404ResponseHeaders
+}
 
 func (response ListGroupMembers404JSONResponse) VisitListGroupMembersResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListGroupMembers429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListGroupMembers429JSONResponse struct {
+	Body    Error
+	Headers ListGroupMembers429ResponseHeaders
+}
+
+func (response ListGroupMembers429JSONResponse) VisitListGroupMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListGroupMembers500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListGroupMembers500JSONResponse struct {
+	Body    Error
+	Headers ListGroupMembers500ResponseHeaders
+}
+
+func (response ListGroupMembers500JSONResponse) VisitListGroupMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type CreateGroupMemberRequestObject struct {
@@ -8258,48 +14756,150 @@ type CreateGroupMemberResponseObject interface {
 	VisitCreateGroupMemberResponse(w http.ResponseWriter) error
 }
 
+type CreateGroupMember204ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
 type CreateGroupMember204Response struct {
+	Headers CreateGroupMember204ResponseHeaders
 }
 
 func (response CreateGroupMember204Response) VisitCreateGroupMemberResponse(w http.ResponseWriter) error {
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(204)
 	return nil
 }
 
-type CreateGroupMember400JSONResponse Error
+type CreateGroupMember400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateGroupMember400JSONResponse struct {
+	Body    Error
+	Headers CreateGroupMember400ResponseHeaders
+}
 
 func (response CreateGroupMember400JSONResponse) VisitCreateGroupMemberResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(400)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateGroupMember401JSONResponse Error
+type CreateGroupMember401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateGroupMember401JSONResponse struct {
+	Body    Error
+	Headers CreateGroupMember401ResponseHeaders
+}
 
 func (response CreateGroupMember401JSONResponse) VisitCreateGroupMemberResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateGroupMember403JSONResponse Error
+type CreateGroupMember403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateGroupMember403JSONResponse struct {
+	Body    Error
+	Headers CreateGroupMember403ResponseHeaders
+}
 
 func (response CreateGroupMember403JSONResponse) VisitCreateGroupMemberResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateGroupMember404JSONResponse Error
+type CreateGroupMember404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateGroupMember404JSONResponse struct {
+	Body    Error
+	Headers CreateGroupMember404ResponseHeaders
+}
 
 func (response CreateGroupMember404JSONResponse) VisitCreateGroupMemberResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateGroupMember429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateGroupMember429JSONResponse struct {
+	Body    Error
+	Headers CreateGroupMember429ResponseHeaders
+}
+
+func (response CreateGroupMember429JSONResponse) VisitCreateGroupMemberResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateGroupMember500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateGroupMember500JSONResponse struct {
+	Body    Error
+	Headers CreateGroupMember500ResponseHeaders
+}
+
+func (response CreateGroupMember500JSONResponse) VisitCreateGroupMemberResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type DeleteLineageEdgeRequestObject struct {
@@ -8310,39 +14910,129 @@ type DeleteLineageEdgeResponseObject interface {
 	VisitDeleteLineageEdgeResponse(w http.ResponseWriter) error
 }
 
+type DeleteLineageEdge204ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
 type DeleteLineageEdge204Response struct {
+	Headers DeleteLineageEdge204ResponseHeaders
 }
 
 func (response DeleteLineageEdge204Response) VisitDeleteLineageEdgeResponse(w http.ResponseWriter) error {
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(204)
 	return nil
 }
 
-type DeleteLineageEdge401JSONResponse Error
+type DeleteLineageEdge401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteLineageEdge401JSONResponse struct {
+	Body    Error
+	Headers DeleteLineageEdge401ResponseHeaders
+}
 
 func (response DeleteLineageEdge401JSONResponse) VisitDeleteLineageEdgeResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteLineageEdge403JSONResponse Error
+type DeleteLineageEdge403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteLineageEdge403JSONResponse struct {
+	Body    Error
+	Headers DeleteLineageEdge403ResponseHeaders
+}
 
 func (response DeleteLineageEdge403JSONResponse) VisitDeleteLineageEdgeResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteLineageEdge404JSONResponse Error
+type DeleteLineageEdge404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteLineageEdge404JSONResponse struct {
+	Body    Error
+	Headers DeleteLineageEdge404ResponseHeaders
+}
 
 func (response DeleteLineageEdge404JSONResponse) VisitDeleteLineageEdgeResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteLineageEdge429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteLineageEdge429JSONResponse struct {
+	Body    Error
+	Headers DeleteLineageEdge429ResponseHeaders
+}
+
+func (response DeleteLineageEdge429JSONResponse) VisitDeleteLineageEdgeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteLineageEdge500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteLineageEdge500JSONResponse struct {
+	Body    Error
+	Headers DeleteLineageEdge500ResponseHeaders
+}
+
+func (response DeleteLineageEdge500JSONResponse) VisitDeleteLineageEdgeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type PurgeLineageRequestObject struct {
@@ -8353,31 +15043,132 @@ type PurgeLineageResponseObject interface {
 	VisitPurgeLineageResponse(w http.ResponseWriter) error
 }
 
-type PurgeLineage200JSONResponse PurgeLineageResponse
+type PurgeLineage200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type PurgeLineage200JSONResponse struct {
+	Body    PurgeLineageResponse
+	Headers PurgeLineage200ResponseHeaders
+}
 
 func (response PurgeLineage200JSONResponse) VisitPurgeLineageResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type PurgeLineage401JSONResponse Error
+type PurgeLineage400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type PurgeLineage400JSONResponse struct {
+	Body    Error
+	Headers PurgeLineage400ResponseHeaders
+}
+
+func (response PurgeLineage400JSONResponse) VisitPurgeLineageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type PurgeLineage401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type PurgeLineage401JSONResponse struct {
+	Body    Error
+	Headers PurgeLineage401ResponseHeaders
+}
 
 func (response PurgeLineage401JSONResponse) VisitPurgeLineageResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type PurgeLineage403JSONResponse Error
+type PurgeLineage403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type PurgeLineage403JSONResponse struct {
+	Body    Error
+	Headers PurgeLineage403ResponseHeaders
+}
 
 func (response PurgeLineage403JSONResponse) VisitPurgeLineageResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type PurgeLineage429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type PurgeLineage429JSONResponse struct {
+	Body    Error
+	Headers PurgeLineage429ResponseHeaders
+}
+
+func (response PurgeLineage429JSONResponse) VisitPurgeLineageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type PurgeLineage500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type PurgeLineage500JSONResponse struct {
+	Body    Error
+	Headers PurgeLineage500ResponseHeaders
+}
+
+func (response PurgeLineage500JSONResponse) VisitPurgeLineageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type GetTableLineageRequestObject struct {
@@ -8390,31 +15181,111 @@ type GetTableLineageResponseObject interface {
 	VisitGetTableLineageResponse(w http.ResponseWriter) error
 }
 
-type GetTableLineage200JSONResponse LineageNode
+type GetTableLineage200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetTableLineage200JSONResponse struct {
+	Body    LineageNode
+	Headers GetTableLineage200ResponseHeaders
+}
 
 func (response GetTableLineage200JSONResponse) VisitGetTableLineageResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type GetTableLineage401JSONResponse Error
+type GetTableLineage401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetTableLineage401JSONResponse struct {
+	Body    Error
+	Headers GetTableLineage401ResponseHeaders
+}
 
 func (response GetTableLineage401JSONResponse) VisitGetTableLineageResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type GetTableLineage404JSONResponse Error
+type GetTableLineage404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetTableLineage404JSONResponse struct {
+	Body    Error
+	Headers GetTableLineage404ResponseHeaders
+}
 
 func (response GetTableLineage404JSONResponse) VisitGetTableLineageResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetTableLineage429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetTableLineage429JSONResponse struct {
+	Body    Error
+	Headers GetTableLineage429ResponseHeaders
+}
+
+func (response GetTableLineage429JSONResponse) VisitGetTableLineageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetTableLineage500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetTableLineage500JSONResponse struct {
+	Body    Error
+	Headers GetTableLineage500ResponseHeaders
+}
+
+func (response GetTableLineage500JSONResponse) VisitGetTableLineageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type GetDownstreamLineageRequestObject struct {
@@ -8427,31 +15298,111 @@ type GetDownstreamLineageResponseObject interface {
 	VisitGetDownstreamLineageResponse(w http.ResponseWriter) error
 }
 
-type GetDownstreamLineage200JSONResponse PaginatedLineageEdges
+type GetDownstreamLineage200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetDownstreamLineage200JSONResponse struct {
+	Body    PaginatedLineageEdges
+	Headers GetDownstreamLineage200ResponseHeaders
+}
 
 func (response GetDownstreamLineage200JSONResponse) VisitGetDownstreamLineageResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type GetDownstreamLineage401JSONResponse Error
+type GetDownstreamLineage401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetDownstreamLineage401JSONResponse struct {
+	Body    Error
+	Headers GetDownstreamLineage401ResponseHeaders
+}
 
 func (response GetDownstreamLineage401JSONResponse) VisitGetDownstreamLineageResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type GetDownstreamLineage404JSONResponse Error
+type GetDownstreamLineage404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetDownstreamLineage404JSONResponse struct {
+	Body    Error
+	Headers GetDownstreamLineage404ResponseHeaders
+}
 
 func (response GetDownstreamLineage404JSONResponse) VisitGetDownstreamLineageResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetDownstreamLineage429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetDownstreamLineage429JSONResponse struct {
+	Body    Error
+	Headers GetDownstreamLineage429ResponseHeaders
+}
+
+func (response GetDownstreamLineage429JSONResponse) VisitGetDownstreamLineageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetDownstreamLineage500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetDownstreamLineage500JSONResponse struct {
+	Body    Error
+	Headers GetDownstreamLineage500ResponseHeaders
+}
+
+func (response GetDownstreamLineage500JSONResponse) VisitGetDownstreamLineageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type GetUpstreamLineageRequestObject struct {
@@ -8464,31 +15415,111 @@ type GetUpstreamLineageResponseObject interface {
 	VisitGetUpstreamLineageResponse(w http.ResponseWriter) error
 }
 
-type GetUpstreamLineage200JSONResponse PaginatedLineageEdges
+type GetUpstreamLineage200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetUpstreamLineage200JSONResponse struct {
+	Body    PaginatedLineageEdges
+	Headers GetUpstreamLineage200ResponseHeaders
+}
 
 func (response GetUpstreamLineage200JSONResponse) VisitGetUpstreamLineageResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type GetUpstreamLineage401JSONResponse Error
+type GetUpstreamLineage401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetUpstreamLineage401JSONResponse struct {
+	Body    Error
+	Headers GetUpstreamLineage401ResponseHeaders
+}
 
 func (response GetUpstreamLineage401JSONResponse) VisitGetUpstreamLineageResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type GetUpstreamLineage404JSONResponse Error
+type GetUpstreamLineage404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetUpstreamLineage404JSONResponse struct {
+	Body    Error
+	Headers GetUpstreamLineage404ResponseHeaders
+}
 
 func (response GetUpstreamLineage404JSONResponse) VisitGetUpstreamLineageResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetUpstreamLineage429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetUpstreamLineage429JSONResponse struct {
+	Body    Error
+	Headers GetUpstreamLineage429ResponseHeaders
+}
+
+func (response GetUpstreamLineage429JSONResponse) VisitGetUpstreamLineageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetUpstreamLineage500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetUpstreamLineage500JSONResponse struct {
+	Body    Error
+	Headers GetUpstreamLineage500ResponseHeaders
+}
+
+func (response GetUpstreamLineage500JSONResponse) VisitGetUpstreamLineageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type CreateManifestRequestObject struct {
@@ -8499,49 +15530,153 @@ type CreateManifestResponseObject interface {
 	VisitCreateManifestResponse(w http.ResponseWriter) error
 }
 
-type CreateManifest200JSONResponse ManifestResponse
+type CreateManifest200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateManifest200JSONResponse struct {
+	Body    ManifestResponse
+	Headers CreateManifest200ResponseHeaders
+}
 
 func (response CreateManifest200JSONResponse) VisitCreateManifestResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateManifest400JSONResponse Error
+type CreateManifest400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateManifest400JSONResponse struct {
+	Body    Error
+	Headers CreateManifest400ResponseHeaders
+}
 
 func (response CreateManifest400JSONResponse) VisitCreateManifestResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(400)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateManifest401JSONResponse Error
+type CreateManifest401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateManifest401JSONResponse struct {
+	Body    Error
+	Headers CreateManifest401ResponseHeaders
+}
 
 func (response CreateManifest401JSONResponse) VisitCreateManifestResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateManifest403JSONResponse Error
+type CreateManifest403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateManifest403JSONResponse struct {
+	Body    Error
+	Headers CreateManifest403ResponseHeaders
+}
 
 func (response CreateManifest403JSONResponse) VisitCreateManifestResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateManifest404JSONResponse Error
+type CreateManifest404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateManifest404JSONResponse struct {
+	Body    Error
+	Headers CreateManifest404ResponseHeaders
+}
 
 func (response CreateManifest404JSONResponse) VisitCreateManifestResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateManifest429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateManifest429JSONResponse struct {
+	Body    Error
+	Headers CreateManifest429ResponseHeaders
+}
+
+func (response CreateManifest429JSONResponse) VisitCreateManifestResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateManifest500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateManifest500JSONResponse struct {
+	Body    Error
+	Headers CreateManifest500ResponseHeaders
+}
+
+func (response CreateManifest500JSONResponse) VisitCreateManifestResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type ListPrincipalsRequestObject struct {
@@ -8552,22 +15687,111 @@ type ListPrincipalsResponseObject interface {
 	VisitListPrincipalsResponse(w http.ResponseWriter) error
 }
 
-type ListPrincipals200JSONResponse PaginatedPrincipals
+type ListPrincipals200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListPrincipals200JSONResponse struct {
+	Body    PaginatedPrincipals
+	Headers ListPrincipals200ResponseHeaders
+}
 
 func (response ListPrincipals200JSONResponse) VisitListPrincipalsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ListPrincipals401JSONResponse Error
+type ListPrincipals400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListPrincipals400JSONResponse struct {
+	Body    Error
+	Headers ListPrincipals400ResponseHeaders
+}
+
+func (response ListPrincipals400JSONResponse) VisitListPrincipalsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListPrincipals401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListPrincipals401JSONResponse struct {
+	Body    Error
+	Headers ListPrincipals401ResponseHeaders
+}
 
 func (response ListPrincipals401JSONResponse) VisitListPrincipalsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListPrincipals429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListPrincipals429JSONResponse struct {
+	Body    Error
+	Headers ListPrincipals429ResponseHeaders
+}
+
+func (response ListPrincipals429JSONResponse) VisitListPrincipalsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListPrincipals500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListPrincipals500JSONResponse struct {
+	Body    Error
+	Headers ListPrincipals500ResponseHeaders
+}
+
+func (response ListPrincipals500JSONResponse) VisitListPrincipalsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type CreatePrincipalRequestObject struct {
@@ -8578,49 +15802,153 @@ type CreatePrincipalResponseObject interface {
 	VisitCreatePrincipalResponse(w http.ResponseWriter) error
 }
 
-type CreatePrincipal201JSONResponse Principal
+type CreatePrincipal201ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreatePrincipal201JSONResponse struct {
+	Body    Principal
+	Headers CreatePrincipal201ResponseHeaders
+}
 
 func (response CreatePrincipal201JSONResponse) VisitCreatePrincipalResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(201)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreatePrincipal400JSONResponse Error
+type CreatePrincipal400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreatePrincipal400JSONResponse struct {
+	Body    Error
+	Headers CreatePrincipal400ResponseHeaders
+}
 
 func (response CreatePrincipal400JSONResponse) VisitCreatePrincipalResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(400)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreatePrincipal401JSONResponse Error
+type CreatePrincipal401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreatePrincipal401JSONResponse struct {
+	Body    Error
+	Headers CreatePrincipal401ResponseHeaders
+}
 
 func (response CreatePrincipal401JSONResponse) VisitCreatePrincipalResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreatePrincipal403JSONResponse Error
+type CreatePrincipal403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreatePrincipal403JSONResponse struct {
+	Body    Error
+	Headers CreatePrincipal403ResponseHeaders
+}
 
 func (response CreatePrincipal403JSONResponse) VisitCreatePrincipalResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreatePrincipal409JSONResponse Error
+type CreatePrincipal409ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreatePrincipal409JSONResponse struct {
+	Body    Error
+	Headers CreatePrincipal409ResponseHeaders
+}
 
 func (response CreatePrincipal409JSONResponse) VisitCreatePrincipalResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(409)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreatePrincipal429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreatePrincipal429JSONResponse struct {
+	Body    Error
+	Headers CreatePrincipal429ResponseHeaders
+}
+
+func (response CreatePrincipal429JSONResponse) VisitCreatePrincipalResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreatePrincipal500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreatePrincipal500JSONResponse struct {
+	Body    Error
+	Headers CreatePrincipal500ResponseHeaders
+}
+
+func (response CreatePrincipal500JSONResponse) VisitCreatePrincipalResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type DeletePrincipalRequestObject struct {
@@ -8631,39 +15959,150 @@ type DeletePrincipalResponseObject interface {
 	VisitDeletePrincipalResponse(w http.ResponseWriter) error
 }
 
+type DeletePrincipal204ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
 type DeletePrincipal204Response struct {
+	Headers DeletePrincipal204ResponseHeaders
 }
 
 func (response DeletePrincipal204Response) VisitDeletePrincipalResponse(w http.ResponseWriter) error {
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(204)
 	return nil
 }
 
-type DeletePrincipal401JSONResponse Error
+type DeletePrincipal400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeletePrincipal400JSONResponse struct {
+	Body    Error
+	Headers DeletePrincipal400ResponseHeaders
+}
+
+func (response DeletePrincipal400JSONResponse) VisitDeletePrincipalResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeletePrincipal401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeletePrincipal401JSONResponse struct {
+	Body    Error
+	Headers DeletePrincipal401ResponseHeaders
+}
 
 func (response DeletePrincipal401JSONResponse) VisitDeletePrincipalResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeletePrincipal403JSONResponse Error
+type DeletePrincipal403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeletePrincipal403JSONResponse struct {
+	Body    Error
+	Headers DeletePrincipal403ResponseHeaders
+}
 
 func (response DeletePrincipal403JSONResponse) VisitDeletePrincipalResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeletePrincipal404JSONResponse Error
+type DeletePrincipal404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeletePrincipal404JSONResponse struct {
+	Body    Error
+	Headers DeletePrincipal404ResponseHeaders
+}
 
 func (response DeletePrincipal404JSONResponse) VisitDeletePrincipalResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeletePrincipal429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeletePrincipal429JSONResponse struct {
+	Body    Error
+	Headers DeletePrincipal429ResponseHeaders
+}
+
+func (response DeletePrincipal429JSONResponse) VisitDeletePrincipalResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeletePrincipal500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeletePrincipal500JSONResponse struct {
+	Body    Error
+	Headers DeletePrincipal500ResponseHeaders
+}
+
+func (response DeletePrincipal500JSONResponse) VisitDeletePrincipalResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type GetPrincipalRequestObject struct {
@@ -8674,31 +16113,132 @@ type GetPrincipalResponseObject interface {
 	VisitGetPrincipalResponse(w http.ResponseWriter) error
 }
 
-type GetPrincipal200JSONResponse Principal
+type GetPrincipal200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetPrincipal200JSONResponse struct {
+	Body    Principal
+	Headers GetPrincipal200ResponseHeaders
+}
 
 func (response GetPrincipal200JSONResponse) VisitGetPrincipalResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type GetPrincipal401JSONResponse Error
+type GetPrincipal400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetPrincipal400JSONResponse struct {
+	Body    Error
+	Headers GetPrincipal400ResponseHeaders
+}
+
+func (response GetPrincipal400JSONResponse) VisitGetPrincipalResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetPrincipal401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetPrincipal401JSONResponse struct {
+	Body    Error
+	Headers GetPrincipal401ResponseHeaders
+}
 
 func (response GetPrincipal401JSONResponse) VisitGetPrincipalResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type GetPrincipal404JSONResponse Error
+type GetPrincipal404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetPrincipal404JSONResponse struct {
+	Body    Error
+	Headers GetPrincipal404ResponseHeaders
+}
 
 func (response GetPrincipal404JSONResponse) VisitGetPrincipalResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetPrincipal429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetPrincipal429JSONResponse struct {
+	Body    Error
+	Headers GetPrincipal429ResponseHeaders
+}
+
+func (response GetPrincipal429JSONResponse) VisitGetPrincipalResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetPrincipal500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetPrincipal500JSONResponse struct {
+	Body    Error
+	Headers GetPrincipal500ResponseHeaders
+}
+
+func (response GetPrincipal500JSONResponse) VisitGetPrincipalResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type UpdatePrincipalAdminRequestObject struct {
@@ -8710,39 +16250,150 @@ type UpdatePrincipalAdminResponseObject interface {
 	VisitUpdatePrincipalAdminResponse(w http.ResponseWriter) error
 }
 
+type UpdatePrincipalAdmin204ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
 type UpdatePrincipalAdmin204Response struct {
+	Headers UpdatePrincipalAdmin204ResponseHeaders
 }
 
 func (response UpdatePrincipalAdmin204Response) VisitUpdatePrincipalAdminResponse(w http.ResponseWriter) error {
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(204)
 	return nil
 }
 
-type UpdatePrincipalAdmin401JSONResponse Error
+type UpdatePrincipalAdmin400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdatePrincipalAdmin400JSONResponse struct {
+	Body    Error
+	Headers UpdatePrincipalAdmin400ResponseHeaders
+}
+
+func (response UpdatePrincipalAdmin400JSONResponse) VisitUpdatePrincipalAdminResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdatePrincipalAdmin401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdatePrincipalAdmin401JSONResponse struct {
+	Body    Error
+	Headers UpdatePrincipalAdmin401ResponseHeaders
+}
 
 func (response UpdatePrincipalAdmin401JSONResponse) VisitUpdatePrincipalAdminResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UpdatePrincipalAdmin403JSONResponse Error
+type UpdatePrincipalAdmin403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdatePrincipalAdmin403JSONResponse struct {
+	Body    Error
+	Headers UpdatePrincipalAdmin403ResponseHeaders
+}
 
 func (response UpdatePrincipalAdmin403JSONResponse) VisitUpdatePrincipalAdminResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UpdatePrincipalAdmin404JSONResponse Error
+type UpdatePrincipalAdmin404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdatePrincipalAdmin404JSONResponse struct {
+	Body    Error
+	Headers UpdatePrincipalAdmin404ResponseHeaders
+}
 
 func (response UpdatePrincipalAdmin404JSONResponse) VisitUpdatePrincipalAdminResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdatePrincipalAdmin429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdatePrincipalAdmin429JSONResponse struct {
+	Body    Error
+	Headers UpdatePrincipalAdmin429ResponseHeaders
+}
+
+func (response UpdatePrincipalAdmin429JSONResponse) VisitUpdatePrincipalAdminResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdatePrincipalAdmin500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdatePrincipalAdmin500JSONResponse struct {
+	Body    Error
+	Headers UpdatePrincipalAdmin500ResponseHeaders
+}
+
+func (response UpdatePrincipalAdmin500JSONResponse) VisitUpdatePrincipalAdminResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type ExecuteQueryRequestObject struct {
@@ -8753,40 +16404,132 @@ type ExecuteQueryResponseObject interface {
 	VisitExecuteQueryResponse(w http.ResponseWriter) error
 }
 
-type ExecuteQuery200JSONResponse QueryResult
+type ExecuteQuery200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ExecuteQuery200JSONResponse struct {
+	Body    QueryResult
+	Headers ExecuteQuery200ResponseHeaders
+}
 
 func (response ExecuteQuery200JSONResponse) VisitExecuteQueryResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ExecuteQuery400JSONResponse Error
+type ExecuteQuery400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ExecuteQuery400JSONResponse struct {
+	Body    Error
+	Headers ExecuteQuery400ResponseHeaders
+}
 
 func (response ExecuteQuery400JSONResponse) VisitExecuteQueryResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(400)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ExecuteQuery401JSONResponse Error
+type ExecuteQuery401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ExecuteQuery401JSONResponse struct {
+	Body    Error
+	Headers ExecuteQuery401ResponseHeaders
+}
 
 func (response ExecuteQuery401JSONResponse) VisitExecuteQueryResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ExecuteQuery403JSONResponse Error
+type ExecuteQuery403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ExecuteQuery403JSONResponse struct {
+	Body    Error
+	Headers ExecuteQuery403ResponseHeaders
+}
 
 func (response ExecuteQuery403JSONResponse) VisitExecuteQueryResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ExecuteQuery429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ExecuteQuery429JSONResponse struct {
+	Body    Error
+	Headers ExecuteQuery429ResponseHeaders
+}
+
+func (response ExecuteQuery429JSONResponse) VisitExecuteQueryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ExecuteQuery500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ExecuteQuery500JSONResponse struct {
+	Body    Error
+	Headers ExecuteQuery500ResponseHeaders
+}
+
+func (response ExecuteQuery500JSONResponse) VisitExecuteQueryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type ListQueryHistoryRequestObject struct {
@@ -8797,22 +16540,90 @@ type ListQueryHistoryResponseObject interface {
 	VisitListQueryHistoryResponse(w http.ResponseWriter) error
 }
 
-type ListQueryHistory200JSONResponse PaginatedQueryHistoryEntries
+type ListQueryHistory200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListQueryHistory200JSONResponse struct {
+	Body    PaginatedQueryHistoryEntries
+	Headers ListQueryHistory200ResponseHeaders
+}
 
 func (response ListQueryHistory200JSONResponse) VisitListQueryHistoryResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ListQueryHistory401JSONResponse Error
+type ListQueryHistory401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListQueryHistory401JSONResponse struct {
+	Body    Error
+	Headers ListQueryHistory401ResponseHeaders
+}
 
 func (response ListQueryHistory401JSONResponse) VisitListQueryHistoryResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListQueryHistory429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListQueryHistory429JSONResponse struct {
+	Body    Error
+	Headers ListQueryHistory429ResponseHeaders
+}
+
+func (response ListQueryHistory429JSONResponse) VisitListQueryHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListQueryHistory500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListQueryHistory500JSONResponse struct {
+	Body    Error
+	Headers ListQueryHistory500ResponseHeaders
+}
+
+func (response ListQueryHistory500JSONResponse) VisitListQueryHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type CreateRowFilterTopLevelRequestObject struct {
@@ -8823,49 +16634,153 @@ type CreateRowFilterTopLevelResponseObject interface {
 	VisitCreateRowFilterTopLevelResponse(w http.ResponseWriter) error
 }
 
-type CreateRowFilterTopLevel201JSONResponse RowFilter
+type CreateRowFilterTopLevel201ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateRowFilterTopLevel201JSONResponse struct {
+	Body    RowFilter
+	Headers CreateRowFilterTopLevel201ResponseHeaders
+}
 
 func (response CreateRowFilterTopLevel201JSONResponse) VisitCreateRowFilterTopLevelResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(201)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateRowFilterTopLevel400JSONResponse Error
+type CreateRowFilterTopLevel400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateRowFilterTopLevel400JSONResponse struct {
+	Body    Error
+	Headers CreateRowFilterTopLevel400ResponseHeaders
+}
 
 func (response CreateRowFilterTopLevel400JSONResponse) VisitCreateRowFilterTopLevelResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(400)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateRowFilterTopLevel401JSONResponse Error
+type CreateRowFilterTopLevel401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateRowFilterTopLevel401JSONResponse struct {
+	Body    Error
+	Headers CreateRowFilterTopLevel401ResponseHeaders
+}
 
 func (response CreateRowFilterTopLevel401JSONResponse) VisitCreateRowFilterTopLevelResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateRowFilterTopLevel403JSONResponse Error
+type CreateRowFilterTopLevel403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateRowFilterTopLevel403JSONResponse struct {
+	Body    Error
+	Headers CreateRowFilterTopLevel403ResponseHeaders
+}
 
 func (response CreateRowFilterTopLevel403JSONResponse) VisitCreateRowFilterTopLevelResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateRowFilterTopLevel404JSONResponse Error
+type CreateRowFilterTopLevel404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateRowFilterTopLevel404JSONResponse struct {
+	Body    Error
+	Headers CreateRowFilterTopLevel404ResponseHeaders
+}
 
 func (response CreateRowFilterTopLevel404JSONResponse) VisitCreateRowFilterTopLevelResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateRowFilterTopLevel429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateRowFilterTopLevel429JSONResponse struct {
+	Body    Error
+	Headers CreateRowFilterTopLevel429ResponseHeaders
+}
+
+func (response CreateRowFilterTopLevel429JSONResponse) VisitCreateRowFilterTopLevelResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateRowFilterTopLevel500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateRowFilterTopLevel500JSONResponse struct {
+	Body    Error
+	Headers CreateRowFilterTopLevel500ResponseHeaders
+}
+
+func (response CreateRowFilterTopLevel500JSONResponse) VisitCreateRowFilterTopLevelResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type DeleteRowFilterRequestObject struct {
@@ -8876,39 +16791,150 @@ type DeleteRowFilterResponseObject interface {
 	VisitDeleteRowFilterResponse(w http.ResponseWriter) error
 }
 
+type DeleteRowFilter204ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
 type DeleteRowFilter204Response struct {
+	Headers DeleteRowFilter204ResponseHeaders
 }
 
 func (response DeleteRowFilter204Response) VisitDeleteRowFilterResponse(w http.ResponseWriter) error {
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(204)
 	return nil
 }
 
-type DeleteRowFilter401JSONResponse Error
+type DeleteRowFilter400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteRowFilter400JSONResponse struct {
+	Body    Error
+	Headers DeleteRowFilter400ResponseHeaders
+}
+
+func (response DeleteRowFilter400JSONResponse) VisitDeleteRowFilterResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteRowFilter401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteRowFilter401JSONResponse struct {
+	Body    Error
+	Headers DeleteRowFilter401ResponseHeaders
+}
 
 func (response DeleteRowFilter401JSONResponse) VisitDeleteRowFilterResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteRowFilter403JSONResponse Error
+type DeleteRowFilter403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteRowFilter403JSONResponse struct {
+	Body    Error
+	Headers DeleteRowFilter403ResponseHeaders
+}
 
 func (response DeleteRowFilter403JSONResponse) VisitDeleteRowFilterResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteRowFilter404JSONResponse Error
+type DeleteRowFilter404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteRowFilter404JSONResponse struct {
+	Body    Error
+	Headers DeleteRowFilter404ResponseHeaders
+}
 
 func (response DeleteRowFilter404JSONResponse) VisitDeleteRowFilterResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteRowFilter429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteRowFilter429JSONResponse struct {
+	Body    Error
+	Headers DeleteRowFilter429ResponseHeaders
+}
+
+func (response DeleteRowFilter429JSONResponse) VisitDeleteRowFilterResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteRowFilter500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteRowFilter500JSONResponse struct {
+	Body    Error
+	Headers DeleteRowFilter500ResponseHeaders
+}
+
+func (response DeleteRowFilter500JSONResponse) VisitDeleteRowFilterResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type UnbindRowFilterRequestObject struct {
@@ -8920,48 +16946,150 @@ type UnbindRowFilterResponseObject interface {
 	VisitUnbindRowFilterResponse(w http.ResponseWriter) error
 }
 
+type UnbindRowFilter204ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
 type UnbindRowFilter204Response struct {
+	Headers UnbindRowFilter204ResponseHeaders
 }
 
 func (response UnbindRowFilter204Response) VisitUnbindRowFilterResponse(w http.ResponseWriter) error {
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(204)
 	return nil
 }
 
-type UnbindRowFilter400JSONResponse Error
+type UnbindRowFilter400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UnbindRowFilter400JSONResponse struct {
+	Body    Error
+	Headers UnbindRowFilter400ResponseHeaders
+}
 
 func (response UnbindRowFilter400JSONResponse) VisitUnbindRowFilterResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(400)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UnbindRowFilter401JSONResponse Error
+type UnbindRowFilter401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UnbindRowFilter401JSONResponse struct {
+	Body    Error
+	Headers UnbindRowFilter401ResponseHeaders
+}
 
 func (response UnbindRowFilter401JSONResponse) VisitUnbindRowFilterResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UnbindRowFilter403JSONResponse Error
+type UnbindRowFilter403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UnbindRowFilter403JSONResponse struct {
+	Body    Error
+	Headers UnbindRowFilter403ResponseHeaders
+}
 
 func (response UnbindRowFilter403JSONResponse) VisitUnbindRowFilterResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UnbindRowFilter404JSONResponse Error
+type UnbindRowFilter404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UnbindRowFilter404JSONResponse struct {
+	Body    Error
+	Headers UnbindRowFilter404ResponseHeaders
+}
 
 func (response UnbindRowFilter404JSONResponse) VisitUnbindRowFilterResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UnbindRowFilter429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UnbindRowFilter429JSONResponse struct {
+	Body    Error
+	Headers UnbindRowFilter429ResponseHeaders
+}
+
+func (response UnbindRowFilter429JSONResponse) VisitUnbindRowFilterResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UnbindRowFilter500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UnbindRowFilter500JSONResponse struct {
+	Body    Error
+	Headers UnbindRowFilter500ResponseHeaders
+}
+
+func (response UnbindRowFilter500JSONResponse) VisitUnbindRowFilterResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type BindRowFilterRequestObject struct {
@@ -8973,48 +17101,150 @@ type BindRowFilterResponseObject interface {
 	VisitBindRowFilterResponse(w http.ResponseWriter) error
 }
 
+type BindRowFilter204ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
 type BindRowFilter204Response struct {
+	Headers BindRowFilter204ResponseHeaders
 }
 
 func (response BindRowFilter204Response) VisitBindRowFilterResponse(w http.ResponseWriter) error {
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(204)
 	return nil
 }
 
-type BindRowFilter400JSONResponse Error
+type BindRowFilter400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type BindRowFilter400JSONResponse struct {
+	Body    Error
+	Headers BindRowFilter400ResponseHeaders
+}
 
 func (response BindRowFilter400JSONResponse) VisitBindRowFilterResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(400)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type BindRowFilter401JSONResponse Error
+type BindRowFilter401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type BindRowFilter401JSONResponse struct {
+	Body    Error
+	Headers BindRowFilter401ResponseHeaders
+}
 
 func (response BindRowFilter401JSONResponse) VisitBindRowFilterResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type BindRowFilter403JSONResponse Error
+type BindRowFilter403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type BindRowFilter403JSONResponse struct {
+	Body    Error
+	Headers BindRowFilter403ResponseHeaders
+}
 
 func (response BindRowFilter403JSONResponse) VisitBindRowFilterResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type BindRowFilter404JSONResponse Error
+type BindRowFilter404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type BindRowFilter404JSONResponse struct {
+	Body    Error
+	Headers BindRowFilter404ResponseHeaders
+}
 
 func (response BindRowFilter404JSONResponse) VisitBindRowFilterResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type BindRowFilter429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type BindRowFilter429JSONResponse struct {
+	Body    Error
+	Headers BindRowFilter429ResponseHeaders
+}
+
+func (response BindRowFilter429JSONResponse) VisitBindRowFilterResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type BindRowFilter500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type BindRowFilter500JSONResponse struct {
+	Body    Error
+	Headers BindRowFilter500ResponseHeaders
+}
+
+func (response BindRowFilter500JSONResponse) VisitBindRowFilterResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type SearchCatalogRequestObject struct {
@@ -9025,22 +17255,90 @@ type SearchCatalogResponseObject interface {
 	VisitSearchCatalogResponse(w http.ResponseWriter) error
 }
 
-type SearchCatalog200JSONResponse PaginatedSearchResults
+type SearchCatalog200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type SearchCatalog200JSONResponse struct {
+	Body    PaginatedSearchResults
+	Headers SearchCatalog200ResponseHeaders
+}
 
 func (response SearchCatalog200JSONResponse) VisitSearchCatalogResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type SearchCatalog401JSONResponse Error
+type SearchCatalog401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type SearchCatalog401JSONResponse struct {
+	Body    Error
+	Headers SearchCatalog401ResponseHeaders
+}
 
 func (response SearchCatalog401JSONResponse) VisitSearchCatalogResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type SearchCatalog429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type SearchCatalog429JSONResponse struct {
+	Body    Error
+	Headers SearchCatalog429ResponseHeaders
+}
+
+func (response SearchCatalog429JSONResponse) VisitSearchCatalogResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type SearchCatalog500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type SearchCatalog500JSONResponse struct {
+	Body    Error
+	Headers SearchCatalog500ResponseHeaders
+}
+
+func (response SearchCatalog500JSONResponse) VisitSearchCatalogResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type ListStorageCredentialsRequestObject struct {
@@ -9051,22 +17349,90 @@ type ListStorageCredentialsResponseObject interface {
 	VisitListStorageCredentialsResponse(w http.ResponseWriter) error
 }
 
-type ListStorageCredentials200JSONResponse PaginatedStorageCredentials
+type ListStorageCredentials200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListStorageCredentials200JSONResponse struct {
+	Body    PaginatedStorageCredentials
+	Headers ListStorageCredentials200ResponseHeaders
+}
 
 func (response ListStorageCredentials200JSONResponse) VisitListStorageCredentialsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ListStorageCredentials401JSONResponse Error
+type ListStorageCredentials401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListStorageCredentials401JSONResponse struct {
+	Body    Error
+	Headers ListStorageCredentials401ResponseHeaders
+}
 
 func (response ListStorageCredentials401JSONResponse) VisitListStorageCredentialsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListStorageCredentials429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListStorageCredentials429JSONResponse struct {
+	Body    Error
+	Headers ListStorageCredentials429ResponseHeaders
+}
+
+func (response ListStorageCredentials429JSONResponse) VisitListStorageCredentialsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListStorageCredentials500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListStorageCredentials500JSONResponse struct {
+	Body    Error
+	Headers ListStorageCredentials500ResponseHeaders
+}
+
+func (response ListStorageCredentials500JSONResponse) VisitListStorageCredentialsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type CreateStorageCredentialRequestObject struct {
@@ -9077,49 +17443,153 @@ type CreateStorageCredentialResponseObject interface {
 	VisitCreateStorageCredentialResponse(w http.ResponseWriter) error
 }
 
-type CreateStorageCredential201JSONResponse StorageCredential
+type CreateStorageCredential201ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateStorageCredential201JSONResponse struct {
+	Body    StorageCredential
+	Headers CreateStorageCredential201ResponseHeaders
+}
 
 func (response CreateStorageCredential201JSONResponse) VisitCreateStorageCredentialResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(201)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateStorageCredential400JSONResponse Error
+type CreateStorageCredential400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateStorageCredential400JSONResponse struct {
+	Body    Error
+	Headers CreateStorageCredential400ResponseHeaders
+}
 
 func (response CreateStorageCredential400JSONResponse) VisitCreateStorageCredentialResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(400)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateStorageCredential401JSONResponse Error
+type CreateStorageCredential401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateStorageCredential401JSONResponse struct {
+	Body    Error
+	Headers CreateStorageCredential401ResponseHeaders
+}
 
 func (response CreateStorageCredential401JSONResponse) VisitCreateStorageCredentialResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateStorageCredential403JSONResponse Error
+type CreateStorageCredential403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateStorageCredential403JSONResponse struct {
+	Body    Error
+	Headers CreateStorageCredential403ResponseHeaders
+}
 
 func (response CreateStorageCredential403JSONResponse) VisitCreateStorageCredentialResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateStorageCredential409JSONResponse Error
+type CreateStorageCredential409ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateStorageCredential409JSONResponse struct {
+	Body    Error
+	Headers CreateStorageCredential409ResponseHeaders
+}
 
 func (response CreateStorageCredential409JSONResponse) VisitCreateStorageCredentialResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(409)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateStorageCredential429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateStorageCredential429JSONResponse struct {
+	Body    Error
+	Headers CreateStorageCredential429ResponseHeaders
+}
+
+func (response CreateStorageCredential429JSONResponse) VisitCreateStorageCredentialResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateStorageCredential500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateStorageCredential500JSONResponse struct {
+	Body    Error
+	Headers CreateStorageCredential500ResponseHeaders
+}
+
+func (response CreateStorageCredential500JSONResponse) VisitCreateStorageCredentialResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type DeleteStorageCredentialRequestObject struct {
@@ -9130,39 +17600,129 @@ type DeleteStorageCredentialResponseObject interface {
 	VisitDeleteStorageCredentialResponse(w http.ResponseWriter) error
 }
 
+type DeleteStorageCredential204ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
 type DeleteStorageCredential204Response struct {
+	Headers DeleteStorageCredential204ResponseHeaders
 }
 
 func (response DeleteStorageCredential204Response) VisitDeleteStorageCredentialResponse(w http.ResponseWriter) error {
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(204)
 	return nil
 }
 
-type DeleteStorageCredential401JSONResponse Error
+type DeleteStorageCredential401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteStorageCredential401JSONResponse struct {
+	Body    Error
+	Headers DeleteStorageCredential401ResponseHeaders
+}
 
 func (response DeleteStorageCredential401JSONResponse) VisitDeleteStorageCredentialResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteStorageCredential403JSONResponse Error
+type DeleteStorageCredential403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteStorageCredential403JSONResponse struct {
+	Body    Error
+	Headers DeleteStorageCredential403ResponseHeaders
+}
 
 func (response DeleteStorageCredential403JSONResponse) VisitDeleteStorageCredentialResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteStorageCredential404JSONResponse Error
+type DeleteStorageCredential404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteStorageCredential404JSONResponse struct {
+	Body    Error
+	Headers DeleteStorageCredential404ResponseHeaders
+}
 
 func (response DeleteStorageCredential404JSONResponse) VisitDeleteStorageCredentialResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteStorageCredential429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteStorageCredential429JSONResponse struct {
+	Body    Error
+	Headers DeleteStorageCredential429ResponseHeaders
+}
+
+func (response DeleteStorageCredential429JSONResponse) VisitDeleteStorageCredentialResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteStorageCredential500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteStorageCredential500JSONResponse struct {
+	Body    Error
+	Headers DeleteStorageCredential500ResponseHeaders
+}
+
+func (response DeleteStorageCredential500JSONResponse) VisitDeleteStorageCredentialResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type GetStorageCredentialRequestObject struct {
@@ -9173,31 +17733,111 @@ type GetStorageCredentialResponseObject interface {
 	VisitGetStorageCredentialResponse(w http.ResponseWriter) error
 }
 
-type GetStorageCredential200JSONResponse StorageCredential
+type GetStorageCredential200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetStorageCredential200JSONResponse struct {
+	Body    StorageCredential
+	Headers GetStorageCredential200ResponseHeaders
+}
 
 func (response GetStorageCredential200JSONResponse) VisitGetStorageCredentialResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type GetStorageCredential401JSONResponse Error
+type GetStorageCredential401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetStorageCredential401JSONResponse struct {
+	Body    Error
+	Headers GetStorageCredential401ResponseHeaders
+}
 
 func (response GetStorageCredential401JSONResponse) VisitGetStorageCredentialResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type GetStorageCredential404JSONResponse Error
+type GetStorageCredential404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetStorageCredential404JSONResponse struct {
+	Body    Error
+	Headers GetStorageCredential404ResponseHeaders
+}
 
 func (response GetStorageCredential404JSONResponse) VisitGetStorageCredentialResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetStorageCredential429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetStorageCredential429JSONResponse struct {
+	Body    Error
+	Headers GetStorageCredential429ResponseHeaders
+}
+
+func (response GetStorageCredential429JSONResponse) VisitGetStorageCredentialResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetStorageCredential500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetStorageCredential500JSONResponse struct {
+	Body    Error
+	Headers GetStorageCredential500ResponseHeaders
+}
+
+func (response GetStorageCredential500JSONResponse) VisitGetStorageCredentialResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type UpdateStorageCredentialRequestObject struct {
@@ -9209,40 +17849,153 @@ type UpdateStorageCredentialResponseObject interface {
 	VisitUpdateStorageCredentialResponse(w http.ResponseWriter) error
 }
 
-type UpdateStorageCredential200JSONResponse StorageCredential
+type UpdateStorageCredential200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateStorageCredential200JSONResponse struct {
+	Body    StorageCredential
+	Headers UpdateStorageCredential200ResponseHeaders
+}
 
 func (response UpdateStorageCredential200JSONResponse) VisitUpdateStorageCredentialResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UpdateStorageCredential401JSONResponse Error
+type UpdateStorageCredential400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateStorageCredential400JSONResponse struct {
+	Body    Error
+	Headers UpdateStorageCredential400ResponseHeaders
+}
+
+func (response UpdateStorageCredential400JSONResponse) VisitUpdateStorageCredentialResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateStorageCredential401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateStorageCredential401JSONResponse struct {
+	Body    Error
+	Headers UpdateStorageCredential401ResponseHeaders
+}
 
 func (response UpdateStorageCredential401JSONResponse) VisitUpdateStorageCredentialResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UpdateStorageCredential403JSONResponse Error
+type UpdateStorageCredential403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateStorageCredential403JSONResponse struct {
+	Body    Error
+	Headers UpdateStorageCredential403ResponseHeaders
+}
 
 func (response UpdateStorageCredential403JSONResponse) VisitUpdateStorageCredentialResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type UpdateStorageCredential404JSONResponse Error
+type UpdateStorageCredential404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateStorageCredential404JSONResponse struct {
+	Body    Error
+	Headers UpdateStorageCredential404ResponseHeaders
+}
 
 func (response UpdateStorageCredential404JSONResponse) VisitUpdateStorageCredentialResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateStorageCredential429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateStorageCredential429JSONResponse struct {
+	Body    Error
+	Headers UpdateStorageCredential429ResponseHeaders
+}
+
+func (response UpdateStorageCredential429JSONResponse) VisitUpdateStorageCredentialResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateStorageCredential500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateStorageCredential500JSONResponse struct {
+	Body    Error
+	Headers UpdateStorageCredential500ResponseHeaders
+}
+
+func (response UpdateStorageCredential500JSONResponse) VisitUpdateStorageCredentialResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type ListColumnMasksRequestObject struct {
@@ -9254,31 +18007,132 @@ type ListColumnMasksResponseObject interface {
 	VisitListColumnMasksResponse(w http.ResponseWriter) error
 }
 
-type ListColumnMasks200JSONResponse PaginatedColumnMasks
+type ListColumnMasks200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListColumnMasks200JSONResponse struct {
+	Body    PaginatedColumnMasks
+	Headers ListColumnMasks200ResponseHeaders
+}
 
 func (response ListColumnMasks200JSONResponse) VisitListColumnMasksResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ListColumnMasks401JSONResponse Error
+type ListColumnMasks400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListColumnMasks400JSONResponse struct {
+	Body    Error
+	Headers ListColumnMasks400ResponseHeaders
+}
+
+func (response ListColumnMasks400JSONResponse) VisitListColumnMasksResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListColumnMasks401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListColumnMasks401JSONResponse struct {
+	Body    Error
+	Headers ListColumnMasks401ResponseHeaders
+}
 
 func (response ListColumnMasks401JSONResponse) VisitListColumnMasksResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ListColumnMasks404JSONResponse Error
+type ListColumnMasks404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListColumnMasks404JSONResponse struct {
+	Body    Error
+	Headers ListColumnMasks404ResponseHeaders
+}
 
 func (response ListColumnMasks404JSONResponse) VisitListColumnMasksResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListColumnMasks429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListColumnMasks429JSONResponse struct {
+	Body    Error
+	Headers ListColumnMasks429ResponseHeaders
+}
+
+func (response ListColumnMasks429JSONResponse) VisitListColumnMasksResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListColumnMasks500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListColumnMasks500JSONResponse struct {
+	Body    Error
+	Headers ListColumnMasks500ResponseHeaders
+}
+
+func (response ListColumnMasks500JSONResponse) VisitListColumnMasksResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type CreateColumnMaskRequestObject struct {
@@ -9290,49 +18144,153 @@ type CreateColumnMaskResponseObject interface {
 	VisitCreateColumnMaskResponse(w http.ResponseWriter) error
 }
 
-type CreateColumnMask201JSONResponse ColumnMask
+type CreateColumnMask201ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateColumnMask201JSONResponse struct {
+	Body    ColumnMask
+	Headers CreateColumnMask201ResponseHeaders
+}
 
 func (response CreateColumnMask201JSONResponse) VisitCreateColumnMaskResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(201)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateColumnMask400JSONResponse Error
+type CreateColumnMask400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateColumnMask400JSONResponse struct {
+	Body    Error
+	Headers CreateColumnMask400ResponseHeaders
+}
 
 func (response CreateColumnMask400JSONResponse) VisitCreateColumnMaskResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(400)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateColumnMask401JSONResponse Error
+type CreateColumnMask401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateColumnMask401JSONResponse struct {
+	Body    Error
+	Headers CreateColumnMask401ResponseHeaders
+}
 
 func (response CreateColumnMask401JSONResponse) VisitCreateColumnMaskResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateColumnMask403JSONResponse Error
+type CreateColumnMask403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateColumnMask403JSONResponse struct {
+	Body    Error
+	Headers CreateColumnMask403ResponseHeaders
+}
 
 func (response CreateColumnMask403JSONResponse) VisitCreateColumnMaskResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateColumnMask404JSONResponse Error
+type CreateColumnMask404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateColumnMask404JSONResponse struct {
+	Body    Error
+	Headers CreateColumnMask404ResponseHeaders
+}
 
 func (response CreateColumnMask404JSONResponse) VisitCreateColumnMaskResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateColumnMask429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateColumnMask429JSONResponse struct {
+	Body    Error
+	Headers CreateColumnMask429ResponseHeaders
+}
+
+func (response CreateColumnMask429JSONResponse) VisitCreateColumnMaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateColumnMask500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateColumnMask500JSONResponse struct {
+	Body    Error
+	Headers CreateColumnMask500ResponseHeaders
+}
+
+func (response CreateColumnMask500JSONResponse) VisitCreateColumnMaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type ListRowFiltersRequestObject struct {
@@ -9344,31 +18302,132 @@ type ListRowFiltersResponseObject interface {
 	VisitListRowFiltersResponse(w http.ResponseWriter) error
 }
 
-type ListRowFilters200JSONResponse PaginatedRowFilters
+type ListRowFilters200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListRowFilters200JSONResponse struct {
+	Body    PaginatedRowFilters
+	Headers ListRowFilters200ResponseHeaders
+}
 
 func (response ListRowFilters200JSONResponse) VisitListRowFiltersResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ListRowFilters401JSONResponse Error
+type ListRowFilters400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListRowFilters400JSONResponse struct {
+	Body    Error
+	Headers ListRowFilters400ResponseHeaders
+}
+
+func (response ListRowFilters400JSONResponse) VisitListRowFiltersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListRowFilters401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListRowFilters401JSONResponse struct {
+	Body    Error
+	Headers ListRowFilters401ResponseHeaders
+}
 
 func (response ListRowFilters401JSONResponse) VisitListRowFiltersResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ListRowFilters404JSONResponse Error
+type ListRowFilters404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListRowFilters404JSONResponse struct {
+	Body    Error
+	Headers ListRowFilters404ResponseHeaders
+}
 
 func (response ListRowFilters404JSONResponse) VisitListRowFiltersResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListRowFilters429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListRowFilters429JSONResponse struct {
+	Body    Error
+	Headers ListRowFilters429ResponseHeaders
+}
+
+func (response ListRowFilters429JSONResponse) VisitListRowFiltersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListRowFilters500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListRowFilters500JSONResponse struct {
+	Body    Error
+	Headers ListRowFilters500ResponseHeaders
+}
+
+func (response ListRowFilters500JSONResponse) VisitListRowFiltersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type CreateRowFilterRequestObject struct {
@@ -9380,49 +18439,153 @@ type CreateRowFilterResponseObject interface {
 	VisitCreateRowFilterResponse(w http.ResponseWriter) error
 }
 
-type CreateRowFilter201JSONResponse RowFilter
+type CreateRowFilter201ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateRowFilter201JSONResponse struct {
+	Body    RowFilter
+	Headers CreateRowFilter201ResponseHeaders
+}
 
 func (response CreateRowFilter201JSONResponse) VisitCreateRowFilterResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(201)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateRowFilter400JSONResponse Error
+type CreateRowFilter400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateRowFilter400JSONResponse struct {
+	Body    Error
+	Headers CreateRowFilter400ResponseHeaders
+}
 
 func (response CreateRowFilter400JSONResponse) VisitCreateRowFilterResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(400)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateRowFilter401JSONResponse Error
+type CreateRowFilter401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateRowFilter401JSONResponse struct {
+	Body    Error
+	Headers CreateRowFilter401ResponseHeaders
+}
 
 func (response CreateRowFilter401JSONResponse) VisitCreateRowFilterResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateRowFilter403JSONResponse Error
+type CreateRowFilter403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateRowFilter403JSONResponse struct {
+	Body    Error
+	Headers CreateRowFilter403ResponseHeaders
+}
 
 func (response CreateRowFilter403JSONResponse) VisitCreateRowFilterResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateRowFilter404JSONResponse Error
+type CreateRowFilter404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateRowFilter404JSONResponse struct {
+	Body    Error
+	Headers CreateRowFilter404ResponseHeaders
+}
 
 func (response CreateRowFilter404JSONResponse) VisitCreateRowFilterResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateRowFilter429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateRowFilter429JSONResponse struct {
+	Body    Error
+	Headers CreateRowFilter429ResponseHeaders
+}
+
+func (response CreateRowFilter429JSONResponse) VisitCreateRowFilterResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateRowFilter500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateRowFilter500JSONResponse struct {
+	Body    Error
+	Headers CreateRowFilter500ResponseHeaders
+}
+
+func (response CreateRowFilter500JSONResponse) VisitCreateRowFilterResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type DeleteTagAssignmentRequestObject struct {
@@ -9433,39 +18596,129 @@ type DeleteTagAssignmentResponseObject interface {
 	VisitDeleteTagAssignmentResponse(w http.ResponseWriter) error
 }
 
+type DeleteTagAssignment204ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
 type DeleteTagAssignment204Response struct {
+	Headers DeleteTagAssignment204ResponseHeaders
 }
 
 func (response DeleteTagAssignment204Response) VisitDeleteTagAssignmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(204)
 	return nil
 }
 
-type DeleteTagAssignment401JSONResponse Error
+type DeleteTagAssignment401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteTagAssignment401JSONResponse struct {
+	Body    Error
+	Headers DeleteTagAssignment401ResponseHeaders
+}
 
 func (response DeleteTagAssignment401JSONResponse) VisitDeleteTagAssignmentResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteTagAssignment403JSONResponse Error
+type DeleteTagAssignment403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteTagAssignment403JSONResponse struct {
+	Body    Error
+	Headers DeleteTagAssignment403ResponseHeaders
+}
 
 func (response DeleteTagAssignment403JSONResponse) VisitDeleteTagAssignmentResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteTagAssignment404JSONResponse Error
+type DeleteTagAssignment404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteTagAssignment404JSONResponse struct {
+	Body    Error
+	Headers DeleteTagAssignment404ResponseHeaders
+}
 
 func (response DeleteTagAssignment404JSONResponse) VisitDeleteTagAssignmentResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteTagAssignment429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteTagAssignment429JSONResponse struct {
+	Body    Error
+	Headers DeleteTagAssignment429ResponseHeaders
+}
+
+func (response DeleteTagAssignment429JSONResponse) VisitDeleteTagAssignmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteTagAssignment500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteTagAssignment500JSONResponse struct {
+	Body    Error
+	Headers DeleteTagAssignment500ResponseHeaders
+}
+
+func (response DeleteTagAssignment500JSONResponse) VisitDeleteTagAssignmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type ListTagsRequestObject struct {
@@ -9476,22 +18729,90 @@ type ListTagsResponseObject interface {
 	VisitListTagsResponse(w http.ResponseWriter) error
 }
 
-type ListTags200JSONResponse PaginatedTags
+type ListTags200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListTags200JSONResponse struct {
+	Body    PaginatedTags
+	Headers ListTags200ResponseHeaders
+}
 
 func (response ListTags200JSONResponse) VisitListTagsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ListTags401JSONResponse Error
+type ListTags401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListTags401JSONResponse struct {
+	Body    Error
+	Headers ListTags401ResponseHeaders
+}
 
 func (response ListTags401JSONResponse) VisitListTagsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListTags429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListTags429JSONResponse struct {
+	Body    Error
+	Headers ListTags429ResponseHeaders
+}
+
+func (response ListTags429JSONResponse) VisitListTagsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListTags500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListTags500JSONResponse struct {
+	Body    Error
+	Headers ListTags500ResponseHeaders
+}
+
+func (response ListTags500JSONResponse) VisitListTagsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type CreateTagRequestObject struct {
@@ -9502,40 +18823,153 @@ type CreateTagResponseObject interface {
 	VisitCreateTagResponse(w http.ResponseWriter) error
 }
 
-type CreateTag201JSONResponse Tag
+type CreateTag201ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateTag201JSONResponse struct {
+	Body    Tag
+	Headers CreateTag201ResponseHeaders
+}
 
 func (response CreateTag201JSONResponse) VisitCreateTagResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(201)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateTag401JSONResponse Error
+type CreateTag400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateTag400JSONResponse struct {
+	Body    Error
+	Headers CreateTag400ResponseHeaders
+}
+
+func (response CreateTag400JSONResponse) VisitCreateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateTag401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateTag401JSONResponse struct {
+	Body    Error
+	Headers CreateTag401ResponseHeaders
+}
 
 func (response CreateTag401JSONResponse) VisitCreateTagResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateTag403JSONResponse Error
+type CreateTag403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateTag403JSONResponse struct {
+	Body    Error
+	Headers CreateTag403ResponseHeaders
+}
 
 func (response CreateTag403JSONResponse) VisitCreateTagResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateTag409JSONResponse Error
+type CreateTag409ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateTag409JSONResponse struct {
+	Body    Error
+	Headers CreateTag409ResponseHeaders
+}
 
 func (response CreateTag409JSONResponse) VisitCreateTagResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(409)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateTag429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateTag429JSONResponse struct {
+	Body    Error
+	Headers CreateTag429ResponseHeaders
+}
+
+func (response CreateTag429JSONResponse) VisitCreateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateTag500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateTag500JSONResponse struct {
+	Body    Error
+	Headers CreateTag500ResponseHeaders
+}
+
+func (response CreateTag500JSONResponse) VisitCreateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type DeleteTagRequestObject struct {
@@ -9546,39 +18980,129 @@ type DeleteTagResponseObject interface {
 	VisitDeleteTagResponse(w http.ResponseWriter) error
 }
 
+type DeleteTag204ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
 type DeleteTag204Response struct {
+	Headers DeleteTag204ResponseHeaders
 }
 
 func (response DeleteTag204Response) VisitDeleteTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(204)
 	return nil
 }
 
-type DeleteTag401JSONResponse Error
+type DeleteTag401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteTag401JSONResponse struct {
+	Body    Error
+	Headers DeleteTag401ResponseHeaders
+}
 
 func (response DeleteTag401JSONResponse) VisitDeleteTagResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteTag403JSONResponse Error
+type DeleteTag403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteTag403JSONResponse struct {
+	Body    Error
+	Headers DeleteTag403ResponseHeaders
+}
 
 func (response DeleteTag403JSONResponse) VisitDeleteTagResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type DeleteTag404JSONResponse Error
+type DeleteTag404ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteTag404JSONResponse struct {
+	Body    Error
+	Headers DeleteTag404ResponseHeaders
+}
 
 func (response DeleteTag404JSONResponse) VisitDeleteTagResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(404)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteTag429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteTag429JSONResponse struct {
+	Body    Error
+	Headers DeleteTag429ResponseHeaders
+}
+
+func (response DeleteTag429JSONResponse) VisitDeleteTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteTag500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteTag500JSONResponse struct {
+	Body    Error
+	Headers DeleteTag500ResponseHeaders
+}
+
+func (response DeleteTag500JSONResponse) VisitDeleteTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type CreateTagAssignmentRequestObject struct {
@@ -9590,40 +19114,153 @@ type CreateTagAssignmentResponseObject interface {
 	VisitCreateTagAssignmentResponse(w http.ResponseWriter) error
 }
 
-type CreateTagAssignment201JSONResponse TagAssignment
+type CreateTagAssignment201ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateTagAssignment201JSONResponse struct {
+	Body    TagAssignment
+	Headers CreateTagAssignment201ResponseHeaders
+}
 
 func (response CreateTagAssignment201JSONResponse) VisitCreateTagAssignmentResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(201)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateTagAssignment401JSONResponse Error
+type CreateTagAssignment400ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateTagAssignment400JSONResponse struct {
+	Body    Error
+	Headers CreateTagAssignment400ResponseHeaders
+}
+
+func (response CreateTagAssignment400JSONResponse) VisitCreateTagAssignmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateTagAssignment401ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateTagAssignment401JSONResponse struct {
+	Body    Error
+	Headers CreateTagAssignment401ResponseHeaders
+}
 
 func (response CreateTagAssignment401JSONResponse) VisitCreateTagAssignmentResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(401)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateTagAssignment403JSONResponse Error
+type CreateTagAssignment403ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateTagAssignment403JSONResponse struct {
+	Body    Error
+	Headers CreateTagAssignment403ResponseHeaders
+}
 
 func (response CreateTagAssignment403JSONResponse) VisitCreateTagAssignmentResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(403)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type CreateTagAssignment409JSONResponse Error
+type CreateTagAssignment409ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateTagAssignment409JSONResponse struct {
+	Body    Error
+	Headers CreateTagAssignment409ResponseHeaders
+}
 
 func (response CreateTagAssignment409JSONResponse) VisitCreateTagAssignmentResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
 	w.WriteHeader(409)
 
-	return json.NewEncoder(w).Encode(response)
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateTagAssignment429ResponseHeaders struct {
+	RetryAfter          int32
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateTagAssignment429JSONResponse struct {
+	Body    Error
+	Headers CreateTagAssignment429ResponseHeaders
+}
+
+func (response CreateTagAssignment429JSONResponse) VisitCreateTagAssignmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateTagAssignment500ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateTagAssignment500JSONResponse struct {
+	Body    Error
+	Headers CreateTagAssignment500ResponseHeaders
+}
+
+func (response CreateTagAssignment500JSONResponse) VisitCreateTagAssignmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 // StrictServerInterface represents all server handlers.
@@ -9643,7 +19280,7 @@ type StrictServerInterface interface {
 	// Query audit logs
 	// (GET /audit-logs)
 	ListAuditLogs(ctx context.Context, request ListAuditLogsRequestObject) (ListAuditLogsResponseObject, error)
-	// List registered catalogs
+	// List all registered catalogs
 	// (GET /catalogs)
 	ListCatalogs(ctx context.Context, request ListCatalogsRequestObject) (ListCatalogsResponseObject, error)
 	// Register a new catalog
@@ -10147,7 +19784,7 @@ func (sh *strictHandler) RegisterCatalog(w http.ResponseWriter, r *http.Request)
 }
 
 // DeleteCatalogRegistration operation middleware
-func (sh *strictHandler) DeleteCatalogRegistration(w http.ResponseWriter, r *http.Request, catalogName CatalogName) {
+func (sh *strictHandler) DeleteCatalogRegistration(w http.ResponseWriter, r *http.Request, catalogName string) {
 	var request DeleteCatalogRegistrationRequestObject
 
 	request.CatalogName = catalogName
@@ -10173,7 +19810,7 @@ func (sh *strictHandler) DeleteCatalogRegistration(w http.ResponseWriter, r *htt
 }
 
 // GetCatalogRegistration operation middleware
-func (sh *strictHandler) GetCatalogRegistration(w http.ResponseWriter, r *http.Request, catalogName CatalogName) {
+func (sh *strictHandler) GetCatalogRegistration(w http.ResponseWriter, r *http.Request, catalogName string) {
 	var request GetCatalogRegistrationRequestObject
 
 	request.CatalogName = catalogName
@@ -10199,7 +19836,7 @@ func (sh *strictHandler) GetCatalogRegistration(w http.ResponseWriter, r *http.R
 }
 
 // UpdateCatalogRegistration operation middleware
-func (sh *strictHandler) UpdateCatalogRegistration(w http.ResponseWriter, r *http.Request, catalogName CatalogName) {
+func (sh *strictHandler) UpdateCatalogRegistration(w http.ResponseWriter, r *http.Request, catalogName string) {
 	var request UpdateCatalogRegistrationRequestObject
 
 	request.CatalogName = catalogName
@@ -10232,7 +19869,7 @@ func (sh *strictHandler) UpdateCatalogRegistration(w http.ResponseWriter, r *htt
 }
 
 // GetCatalog operation middleware
-func (sh *strictHandler) GetCatalog(w http.ResponseWriter, r *http.Request, catalogName CatalogName) {
+func (sh *strictHandler) GetCatalog(w http.ResponseWriter, r *http.Request, catalogName string) {
 	var request GetCatalogRequestObject
 
 	request.CatalogName = catalogName
@@ -10258,7 +19895,7 @@ func (sh *strictHandler) GetCatalog(w http.ResponseWriter, r *http.Request, cata
 }
 
 // GetMetastoreSummary operation middleware
-func (sh *strictHandler) GetMetastoreSummary(w http.ResponseWriter, r *http.Request, catalogName CatalogName) {
+func (sh *strictHandler) GetMetastoreSummary(w http.ResponseWriter, r *http.Request, catalogName string) {
 	var request GetMetastoreSummaryRequestObject
 
 	request.CatalogName = catalogName
@@ -10284,7 +19921,7 @@ func (sh *strictHandler) GetMetastoreSummary(w http.ResponseWriter, r *http.Requ
 }
 
 // ListSchemas operation middleware
-func (sh *strictHandler) ListSchemas(w http.ResponseWriter, r *http.Request, catalogName CatalogName, params ListSchemasParams) {
+func (sh *strictHandler) ListSchemas(w http.ResponseWriter, r *http.Request, catalogName string, params ListSchemasParams) {
 	var request ListSchemasRequestObject
 
 	request.CatalogName = catalogName
@@ -10311,7 +19948,7 @@ func (sh *strictHandler) ListSchemas(w http.ResponseWriter, r *http.Request, cat
 }
 
 // CreateSchema operation middleware
-func (sh *strictHandler) CreateSchema(w http.ResponseWriter, r *http.Request, catalogName CatalogName) {
+func (sh *strictHandler) CreateSchema(w http.ResponseWriter, r *http.Request, catalogName string) {
 	var request CreateSchemaRequestObject
 
 	request.CatalogName = catalogName
@@ -10344,7 +19981,7 @@ func (sh *strictHandler) CreateSchema(w http.ResponseWriter, r *http.Request, ca
 }
 
 // DeleteSchema operation middleware
-func (sh *strictHandler) DeleteSchema(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, params DeleteSchemaParams) {
+func (sh *strictHandler) DeleteSchema(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, params DeleteSchemaParams) {
 	var request DeleteSchemaRequestObject
 
 	request.CatalogName = catalogName
@@ -10372,7 +20009,7 @@ func (sh *strictHandler) DeleteSchema(w http.ResponseWriter, r *http.Request, ca
 }
 
 // GetSchema operation middleware
-func (sh *strictHandler) GetSchema(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string) {
+func (sh *strictHandler) GetSchema(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string) {
 	var request GetSchemaRequestObject
 
 	request.CatalogName = catalogName
@@ -10399,7 +20036,7 @@ func (sh *strictHandler) GetSchema(w http.ResponseWriter, r *http.Request, catal
 }
 
 // UpdateSchema operation middleware
-func (sh *strictHandler) UpdateSchema(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string) {
+func (sh *strictHandler) UpdateSchema(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string) {
 	var request UpdateSchemaRequestObject
 
 	request.CatalogName = catalogName
@@ -10433,7 +20070,7 @@ func (sh *strictHandler) UpdateSchema(w http.ResponseWriter, r *http.Request, ca
 }
 
 // ListTables operation middleware
-func (sh *strictHandler) ListTables(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, params ListTablesParams) {
+func (sh *strictHandler) ListTables(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, params ListTablesParams) {
 	var request ListTablesRequestObject
 
 	request.CatalogName = catalogName
@@ -10461,7 +20098,7 @@ func (sh *strictHandler) ListTables(w http.ResponseWriter, r *http.Request, cata
 }
 
 // CreateTable operation middleware
-func (sh *strictHandler) CreateTable(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string) {
+func (sh *strictHandler) CreateTable(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string) {
 	var request CreateTableRequestObject
 
 	request.CatalogName = catalogName
@@ -10495,7 +20132,7 @@ func (sh *strictHandler) CreateTable(w http.ResponseWriter, r *http.Request, cat
 }
 
 // DeleteTable operation middleware
-func (sh *strictHandler) DeleteTable(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string) {
+func (sh *strictHandler) DeleteTable(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, tableName string) {
 	var request DeleteTableRequestObject
 
 	request.CatalogName = catalogName
@@ -10523,7 +20160,7 @@ func (sh *strictHandler) DeleteTable(w http.ResponseWriter, r *http.Request, cat
 }
 
 // GetTable operation middleware
-func (sh *strictHandler) GetTable(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string) {
+func (sh *strictHandler) GetTable(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, tableName string) {
 	var request GetTableRequestObject
 
 	request.CatalogName = catalogName
@@ -10551,7 +20188,7 @@ func (sh *strictHandler) GetTable(w http.ResponseWriter, r *http.Request, catalo
 }
 
 // UpdateTable operation middleware
-func (sh *strictHandler) UpdateTable(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string) {
+func (sh *strictHandler) UpdateTable(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, tableName string) {
 	var request UpdateTableRequestObject
 
 	request.CatalogName = catalogName
@@ -10586,7 +20223,7 @@ func (sh *strictHandler) UpdateTable(w http.ResponseWriter, r *http.Request, cat
 }
 
 // ListTableColumns operation middleware
-func (sh *strictHandler) ListTableColumns(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string, params ListTableColumnsParams) {
+func (sh *strictHandler) ListTableColumns(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, tableName string, params ListTableColumnsParams) {
 	var request ListTableColumnsRequestObject
 
 	request.CatalogName = catalogName
@@ -10615,7 +20252,7 @@ func (sh *strictHandler) ListTableColumns(w http.ResponseWriter, r *http.Request
 }
 
 // UpdateColumn operation middleware
-func (sh *strictHandler) UpdateColumn(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string, columnName string) {
+func (sh *strictHandler) UpdateColumn(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, tableName string, columnName string) {
 	var request UpdateColumnRequestObject
 
 	request.CatalogName = catalogName
@@ -10651,7 +20288,7 @@ func (sh *strictHandler) UpdateColumn(w http.ResponseWriter, r *http.Request, ca
 }
 
 // CommitTableIngestion operation middleware
-func (sh *strictHandler) CommitTableIngestion(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string) {
+func (sh *strictHandler) CommitTableIngestion(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, tableName string) {
 	var request CommitTableIngestionRequestObject
 
 	request.CatalogName = catalogName
@@ -10686,7 +20323,7 @@ func (sh *strictHandler) CommitTableIngestion(w http.ResponseWriter, r *http.Req
 }
 
 // LoadTableExternalFiles operation middleware
-func (sh *strictHandler) LoadTableExternalFiles(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string) {
+func (sh *strictHandler) LoadTableExternalFiles(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, tableName string) {
 	var request LoadTableExternalFilesRequestObject
 
 	request.CatalogName = catalogName
@@ -10721,7 +20358,7 @@ func (sh *strictHandler) LoadTableExternalFiles(w http.ResponseWriter, r *http.R
 }
 
 // CreateUploadUrl operation middleware
-func (sh *strictHandler) CreateUploadUrl(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string) {
+func (sh *strictHandler) CreateUploadUrl(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, tableName string) {
 	var request CreateUploadUrlRequestObject
 
 	request.CatalogName = catalogName
@@ -10756,7 +20393,7 @@ func (sh *strictHandler) CreateUploadUrl(w http.ResponseWriter, r *http.Request,
 }
 
 // ProfileTable operation middleware
-func (sh *strictHandler) ProfileTable(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, tableName string) {
+func (sh *strictHandler) ProfileTable(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, tableName string) {
 	var request ProfileTableRequestObject
 
 	request.CatalogName = catalogName
@@ -10784,7 +20421,7 @@ func (sh *strictHandler) ProfileTable(w http.ResponseWriter, r *http.Request, ca
 }
 
 // ListViews operation middleware
-func (sh *strictHandler) ListViews(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, params ListViewsParams) {
+func (sh *strictHandler) ListViews(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, params ListViewsParams) {
 	var request ListViewsRequestObject
 
 	request.CatalogName = catalogName
@@ -10812,7 +20449,7 @@ func (sh *strictHandler) ListViews(w http.ResponseWriter, r *http.Request, catal
 }
 
 // CreateView operation middleware
-func (sh *strictHandler) CreateView(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string) {
+func (sh *strictHandler) CreateView(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string) {
 	var request CreateViewRequestObject
 
 	request.CatalogName = catalogName
@@ -10846,7 +20483,7 @@ func (sh *strictHandler) CreateView(w http.ResponseWriter, r *http.Request, cata
 }
 
 // DeleteView operation middleware
-func (sh *strictHandler) DeleteView(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, viewName string) {
+func (sh *strictHandler) DeleteView(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, viewName string) {
 	var request DeleteViewRequestObject
 
 	request.CatalogName = catalogName
@@ -10874,7 +20511,7 @@ func (sh *strictHandler) DeleteView(w http.ResponseWriter, r *http.Request, cata
 }
 
 // GetView operation middleware
-func (sh *strictHandler) GetView(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, viewName string) {
+func (sh *strictHandler) GetView(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, viewName string) {
 	var request GetViewRequestObject
 
 	request.CatalogName = catalogName
@@ -10902,7 +20539,7 @@ func (sh *strictHandler) GetView(w http.ResponseWriter, r *http.Request, catalog
 }
 
 // UpdateView operation middleware
-func (sh *strictHandler) UpdateView(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, viewName string) {
+func (sh *strictHandler) UpdateView(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, viewName string) {
 	var request UpdateViewRequestObject
 
 	request.CatalogName = catalogName
@@ -10937,7 +20574,7 @@ func (sh *strictHandler) UpdateView(w http.ResponseWriter, r *http.Request, cata
 }
 
 // ListVolumes operation middleware
-func (sh *strictHandler) ListVolumes(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, params ListVolumesParams) {
+func (sh *strictHandler) ListVolumes(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, params ListVolumesParams) {
 	var request ListVolumesRequestObject
 
 	request.CatalogName = catalogName
@@ -10965,7 +20602,7 @@ func (sh *strictHandler) ListVolumes(w http.ResponseWriter, r *http.Request, cat
 }
 
 // CreateVolume operation middleware
-func (sh *strictHandler) CreateVolume(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string) {
+func (sh *strictHandler) CreateVolume(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string) {
 	var request CreateVolumeRequestObject
 
 	request.CatalogName = catalogName
@@ -10999,7 +20636,7 @@ func (sh *strictHandler) CreateVolume(w http.ResponseWriter, r *http.Request, ca
 }
 
 // DeleteVolume operation middleware
-func (sh *strictHandler) DeleteVolume(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, volumeName string) {
+func (sh *strictHandler) DeleteVolume(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, volumeName string) {
 	var request DeleteVolumeRequestObject
 
 	request.CatalogName = catalogName
@@ -11027,7 +20664,7 @@ func (sh *strictHandler) DeleteVolume(w http.ResponseWriter, r *http.Request, ca
 }
 
 // GetVolume operation middleware
-func (sh *strictHandler) GetVolume(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, volumeName string) {
+func (sh *strictHandler) GetVolume(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, volumeName string) {
 	var request GetVolumeRequestObject
 
 	request.CatalogName = catalogName
@@ -11055,7 +20692,7 @@ func (sh *strictHandler) GetVolume(w http.ResponseWriter, r *http.Request, catal
 }
 
 // UpdateVolume operation middleware
-func (sh *strictHandler) UpdateVolume(w http.ResponseWriter, r *http.Request, catalogName CatalogName, schemaName string, volumeName string) {
+func (sh *strictHandler) UpdateVolume(w http.ResponseWriter, r *http.Request, catalogName string, schemaName string, volumeName string) {
 	var request UpdateVolumeRequestObject
 
 	request.CatalogName = catalogName
@@ -11090,7 +20727,7 @@ func (sh *strictHandler) UpdateVolume(w http.ResponseWriter, r *http.Request, ca
 }
 
 // SetDefaultCatalog operation middleware
-func (sh *strictHandler) SetDefaultCatalog(w http.ResponseWriter, r *http.Request, catalogName CatalogName) {
+func (sh *strictHandler) SetDefaultCatalog(w http.ResponseWriter, r *http.Request, catalogName string) {
 	var request SetDefaultCatalogRequestObject
 
 	request.CatalogName = catalogName
@@ -12831,166 +22468,396 @@ func (sh *strictHandler) CreateTagAssignment(w http.ResponseWriter, r *http.Requ
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

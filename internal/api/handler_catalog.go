@@ -42,12 +42,15 @@ func (h *APIHandler) GetCatalog(ctx context.Context, request GetCatalogRequestOb
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return GetCatalog404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return GetCatalog404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GetCatalog404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return GetCatalog200JSONResponse(catalogInfoToAPI(*info)), nil
+	return GetCatalog200JSONResponse{
+		Body:    catalogInfoToAPI(*info),
+		Headers: GetCatalog200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // ListSchemas implements the endpoint for listing schemas in the catalog.
@@ -62,7 +65,10 @@ func (h *APIHandler) ListSchemas(ctx context.Context, request ListSchemasRequest
 		out[i] = schemaDetailToAPI(s)
 	}
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListSchemas200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
+	return ListSchemas200JSONResponse{
+		Body:    PaginatedSchemaDetails{Data: &out, NextPageToken: optStr(npt)},
+		Headers: ListSchemas200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // CreateSchema implements the endpoint for creating a new schema.
@@ -85,16 +91,19 @@ func (h *APIHandler) CreateSchema(ctx context.Context, request CreateSchemaReque
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CreateSchema403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return CreateSchema403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: CreateSchema403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, new(*domain.ValidationError)):
-			return CreateSchema400JSONResponse{Code: 400, Message: err.Error()}, nil
+			return CreateSchema400JSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: CreateSchema400ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, new(*domain.ConflictError)):
-			return CreateSchema409JSONResponse{Code: 409, Message: err.Error()}, nil
+			return CreateSchema409JSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: CreateSchema409ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
-			return CreateSchema400JSONResponse{Code: 400, Message: err.Error()}, nil
+			return CreateSchema400JSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: CreateSchema400ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		}
 	}
-	return CreateSchema201JSONResponse(schemaDetailToAPI(*result)), nil
+	return CreateSchema201JSONResponse{
+		Body:    schemaDetailToAPI(*result),
+		Headers: CreateSchema201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // GetSchema implements the endpoint for retrieving a schema by name.
@@ -103,12 +112,15 @@ func (h *APIHandler) GetSchema(ctx context.Context, request GetSchemaRequestObje
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return GetSchema404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return GetSchema404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GetSchema404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return GetSchema200JSONResponse(schemaDetailToAPI(*result)), nil
+	return GetSchema200JSONResponse{
+		Body:    schemaDetailToAPI(*result),
+		Headers: GetSchema200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // UpdateSchema implements the endpoint for updating schema metadata.
@@ -123,14 +135,17 @@ func (h *APIHandler) UpdateSchema(ctx context.Context, request UpdateSchemaReque
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return UpdateSchema403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return UpdateSchema403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: UpdateSchema403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return UpdateSchema404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return UpdateSchema404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: UpdateSchema404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return UpdateSchema200JSONResponse(schemaDetailToAPI(*result)), nil
+	return UpdateSchema200JSONResponse{
+		Body:    schemaDetailToAPI(*result),
+		Headers: UpdateSchema200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // DeleteSchema implements the endpoint for deleting a schema by name.
@@ -145,13 +160,13 @@ func (h *APIHandler) DeleteSchema(ctx context.Context, request DeleteSchemaReque
 		code := errorCodeFromError(err)
 		switch code {
 		case http.StatusForbidden:
-			return DeleteSchema403JSONResponse{Code: code, Message: err.Error()}, nil
+			return DeleteSchema403JSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: DeleteSchema403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case http.StatusNotFound:
-			return DeleteSchema404JSONResponse{Code: code, Message: err.Error()}, nil
+			return DeleteSchema404JSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: DeleteSchema404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case http.StatusConflict:
-			return DeleteSchema409JSONResponse{Code: code, Message: err.Error()}, nil
+			return DeleteSchema409JSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: DeleteSchema409ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
-			return DeleteSchema403JSONResponse{Code: code, Message: err.Error()}, nil
+			return DeleteSchema403JSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: DeleteSchema403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		}
 	}
 	return DeleteSchema204Response{}, nil
@@ -164,7 +179,7 @@ func (h *APIHandler) ListTables(ctx context.Context, request ListTablesRequestOb
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return ListTables404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return ListTables404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: ListTables404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}
@@ -174,7 +189,10 @@ func (h *APIHandler) ListTables(ctx context.Context, request ListTablesRequestOb
 		out[i] = tableDetailToAPI(t)
 	}
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListTables200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
+	return ListTables200JSONResponse{
+		Body:    PaginatedTableDetails{Data: &out, NextPageToken: optStr(npt)},
+		Headers: ListTables200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // CreateTable implements the endpoint for creating a new table in a schema.
@@ -211,18 +229,21 @@ func (h *APIHandler) CreateTable(ctx context.Context, request CreateTableRequest
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CreateTable403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return CreateTable403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: CreateTable403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, new(*domain.ValidationError)):
-			return CreateTable400JSONResponse{Code: 400, Message: err.Error()}, nil
+			return CreateTable400JSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: CreateTable400ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, new(*domain.ConflictError)):
-			return CreateTable409JSONResponse{Code: 409, Message: err.Error()}, nil
+			return CreateTable409JSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: CreateTable409ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return CreateTable400JSONResponse{Code: 400, Message: err.Error()}, nil
+			return CreateTable400JSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: CreateTable400ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
-			return CreateTable400JSONResponse{Code: 400, Message: err.Error()}, nil
+			return CreateTable400JSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: CreateTable400ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		}
 	}
-	return CreateTable201JSONResponse(tableDetailToAPI(*result)), nil
+	return CreateTable201JSONResponse{
+		Body:    tableDetailToAPI(*result),
+		Headers: CreateTable201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // GetTable implements the endpoint for retrieving a table by name.
@@ -231,12 +252,15 @@ func (h *APIHandler) GetTable(ctx context.Context, request GetTableRequestObject
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return GetTable404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return GetTable404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GetTable404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return GetTable200JSONResponse(tableDetailToAPI(*result)), nil
+	return GetTable200JSONResponse{
+		Body:    tableDetailToAPI(*result),
+		Headers: GetTable200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // UpdateTable implements the endpoint for updating table metadata.
@@ -257,14 +281,17 @@ func (h *APIHandler) UpdateTable(ctx context.Context, request UpdateTableRequest
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return UpdateTable403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return UpdateTable403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: UpdateTable403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return UpdateTable404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return UpdateTable404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: UpdateTable404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return UpdateTable200JSONResponse(tableDetailToAPI(*result)), nil
+	return UpdateTable200JSONResponse{
+		Body:    tableDetailToAPI(*result),
+		Headers: UpdateTable200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // DeleteTable implements the endpoint for deleting a table by name.
@@ -273,9 +300,9 @@ func (h *APIHandler) DeleteTable(ctx context.Context, request DeleteTableRequest
 	if err := h.catalog.DeleteTable(ctx, string(request.CatalogName), principal, request.SchemaName, request.TableName); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return DeleteTable403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return DeleteTable403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: DeleteTable403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return DeleteTable404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return DeleteTable404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: DeleteTable404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}
@@ -290,7 +317,7 @@ func (h *APIHandler) ListTableColumns(ctx context.Context, request ListTableColu
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return ListTableColumns404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return ListTableColumns404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: ListTableColumns404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}
@@ -300,7 +327,10 @@ func (h *APIHandler) ListTableColumns(ctx context.Context, request ListTableColu
 		out[i] = columnDetailToAPI(c)
 	}
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListTableColumns200JSONResponse{Data: &out, NextPageToken: optStr(npt)}, nil
+	return ListTableColumns200JSONResponse{
+		Body:    PaginatedColumnDetails{Data: &out, NextPageToken: optStr(npt)},
+		Headers: ListTableColumns200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // UpdateColumn implements the endpoint for updating column metadata.
@@ -318,14 +348,17 @@ func (h *APIHandler) UpdateColumn(ctx context.Context, request UpdateColumnReque
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return UpdateColumn403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return UpdateColumn403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: UpdateColumn403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return UpdateColumn404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return UpdateColumn404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: UpdateColumn404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return UpdateColumn200JSONResponse(columnDetailToAPI(*result)), nil
+	return UpdateColumn200JSONResponse{
+		Body:    columnDetailToAPI(*result),
+		Headers: UpdateColumn200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // ProfileTable implements the endpoint for profiling table statistics.
@@ -335,14 +368,17 @@ func (h *APIHandler) ProfileTable(ctx context.Context, request ProfileTableReque
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return ProfileTable403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return ProfileTable403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ProfileTable403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return ProfileTable404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return ProfileTable404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: ProfileTable404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return ProfileTable200JSONResponse(tableStatisticsToAPI(stats)), nil
+	return ProfileTable200JSONResponse{
+		Body:    tableStatisticsToAPI(stats),
+		Headers: ProfileTable200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // GetMetastoreSummary implements the endpoint for retrieving the metastore summary.
@@ -352,11 +388,14 @@ func (h *APIHandler) GetMetastoreSummary(ctx context.Context, request GetMetasto
 		return nil, err
 	}
 	return GetMetastoreSummary200JSONResponse{
-		CatalogName:    &summary.CatalogName,
-		MetastoreType:  &summary.MetastoreType,
-		StorageBackend: &summary.StorageBackend,
-		DataPath:       &summary.DataPath,
-		SchemaCount:    &summary.SchemaCount,
-		TableCount:     &summary.TableCount,
+		Body: MetastoreSummary{
+			CatalogName:    &summary.CatalogName,
+			MetastoreType:  &summary.MetastoreType,
+			StorageBackend: &summary.StorageBackend,
+			DataPath:       &summary.DataPath,
+			SchemaCount:    &summary.SchemaCount,
+			TableCount:     &summary.TableCount,
+		},
+		Headers: GetMetastoreSummary200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }

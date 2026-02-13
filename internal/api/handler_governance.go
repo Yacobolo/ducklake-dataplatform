@@ -64,7 +64,10 @@ func (h *APIHandler) ListAuditLogs(ctx context.Context, req ListAuditLogsRequest
 	}
 
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListAuditLogs200JSONResponse{Data: &data, NextPageToken: optStr(npt)}, nil
+	return ListAuditLogs200JSONResponse{
+		Body:    PaginatedAuditLogs{Data: &data, NextPageToken: optStr(npt)},
+		Headers: ListAuditLogs200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // === Query History ===
@@ -91,7 +94,10 @@ func (h *APIHandler) ListQueryHistory(ctx context.Context, req ListQueryHistoryR
 	}
 
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListQueryHistory200JSONResponse{Data: &data, NextPageToken: optStr(npt)}, nil
+	return ListQueryHistory200JSONResponse{
+		Body:    PaginatedQueryHistoryEntries{Data: &data, NextPageToken: optStr(npt)},
+		Headers: ListQueryHistory200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // === Search ===
@@ -111,7 +117,10 @@ func (h *APIHandler) SearchCatalog(ctx context.Context, req SearchCatalogRequest
 	}
 
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return SearchCatalog200JSONResponse{Data: &data, NextPageToken: optStr(npt)}, nil
+	return SearchCatalog200JSONResponse{
+		Body:    PaginatedSearchResults{Data: &data, NextPageToken: optStr(npt)},
+		Headers: SearchCatalog200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // === Lineage ===
@@ -136,9 +145,12 @@ func (h *APIHandler) GetTableLineage(ctx context.Context, req GetTableLineageReq
 	}
 
 	return GetTableLineage200JSONResponse{
-		TableName:  &node.TableName,
-		Upstream:   &upstream,
-		Downstream: &downstream,
+		Body: LineageNode{
+			TableName:  &node.TableName,
+			Upstream:   &upstream,
+			Downstream: &downstream,
+		},
+		Headers: GetTableLineage200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -158,7 +170,10 @@ func (h *APIHandler) GetUpstreamLineage(ctx context.Context, req GetUpstreamLine
 	}
 
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return GetUpstreamLineage200JSONResponse{Data: &data, NextPageToken: optStr(npt)}, nil
+	return GetUpstreamLineage200JSONResponse{
+		Body:    PaginatedLineageEdges{Data: &data, NextPageToken: optStr(npt)},
+		Headers: GetUpstreamLineage200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // GetDownstreamLineage implements the endpoint for retrieving downstream lineage edges.
@@ -177,7 +192,10 @@ func (h *APIHandler) GetDownstreamLineage(ctx context.Context, req GetDownstream
 	}
 
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return GetDownstreamLineage200JSONResponse{Data: &data, NextPageToken: optStr(npt)}, nil
+	return GetDownstreamLineage200JSONResponse{
+		Body:    PaginatedLineageEdges{Data: &data, NextPageToken: optStr(npt)},
+		Headers: GetDownstreamLineage200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // DeleteLineageEdge implements the endpoint for deleting a lineage edge by ID.
@@ -185,7 +203,7 @@ func (h *APIHandler) DeleteLineageEdge(ctx context.Context, req DeleteLineageEdg
 	if err := h.lineage.DeleteEdge(ctx, req.EdgeId); err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return DeleteLineageEdge404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return DeleteLineageEdge404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: DeleteLineageEdge404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}
@@ -195,12 +213,15 @@ func (h *APIHandler) DeleteLineageEdge(ctx context.Context, req DeleteLineageEdg
 
 // PurgeLineage implements the endpoint for purging lineage data older than a threshold.
 func (h *APIHandler) PurgeLineage(ctx context.Context, req PurgeLineageRequestObject) (PurgeLineageResponseObject, error) {
-	deleted, err := h.lineage.PurgeOlderThan(ctx, req.Body.OlderThanDays)
+	deleted, err := h.lineage.PurgeOlderThan(ctx, int(req.Body.OlderThanDays))
 	if err != nil {
 		code := errorCodeFromError(err)
-		return PurgeLineage403JSONResponse{Code: code, Message: err.Error()}, nil
+		return PurgeLineage403JSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: PurgeLineage403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 	}
-	return PurgeLineage200JSONResponse{DeletedCount: &deleted}, nil
+	return PurgeLineage200JSONResponse{
+		Body:    PurgeLineageResponse{DeletedCount: &deleted},
+		Headers: PurgeLineage200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // === Tags ===
@@ -219,7 +240,10 @@ func (h *APIHandler) ListTags(ctx context.Context, req ListTagsRequestObject) (L
 	}
 
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListTags200JSONResponse{Data: &data, NextPageToken: optStr(npt)}, nil
+	return ListTags200JSONResponse{
+		Body:    PaginatedTags{Data: &data, NextPageToken: optStr(npt)},
+		Headers: ListTags200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // CreateTag implements the endpoint for creating a new tag.
@@ -233,12 +257,15 @@ func (h *APIHandler) CreateTag(ctx context.Context, req CreateTagRequestObject) 
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.ConflictError)):
-			return CreateTag409JSONResponse{Code: 409, Message: err.Error()}, nil
+			return CreateTag409JSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: CreateTag409ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return CreateTag201JSONResponse(tagToAPI(*result)), nil
+	return CreateTag201JSONResponse{
+		Body:    tagToAPI(*result),
+		Headers: CreateTag201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // DeleteTag implements the endpoint for deleting a tag by ID.
@@ -247,7 +274,7 @@ func (h *APIHandler) DeleteTag(ctx context.Context, req DeleteTagRequestObject) 
 	if err := h.tags.DeleteTag(ctx, principal, req.TagId); err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return DeleteTag404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return DeleteTag404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: DeleteTag404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}
@@ -268,12 +295,15 @@ func (h *APIHandler) CreateTagAssignment(ctx context.Context, req CreateTagAssig
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.ConflictError)):
-			return CreateTagAssignment409JSONResponse{Code: 409, Message: err.Error()}, nil
+			return CreateTagAssignment409JSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: CreateTagAssignment409ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return CreateTagAssignment201JSONResponse(tagAssignmentToAPI(*result)), nil
+	return CreateTagAssignment201JSONResponse{
+		Body:    tagAssignmentToAPI(*result),
+		Headers: CreateTagAssignment201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // DeleteTagAssignment implements the endpoint for removing a tag assignment.
@@ -301,5 +331,8 @@ func (h *APIHandler) ListClassifications(ctx context.Context, _ ListClassificati
 		}
 	}
 
-	return ListClassifications200JSONResponse{Data: &filtered}, nil
+	return ListClassifications200JSONResponse{
+		Body:    PaginatedTags{Data: &filtered},
+		Headers: ListClassifications200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }

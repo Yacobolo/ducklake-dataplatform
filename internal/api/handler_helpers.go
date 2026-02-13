@@ -1,16 +1,29 @@
 package api
 
 import (
+	"math"
+
 	"duck-demo/internal/domain"
 )
 
 // --- helpers ---
 
+// safeIntToInt32 converts an int to int32 clamping to [math.MinInt32, math.MaxInt32].
+func safeIntToInt32(v int) int32 {
+	if v > math.MaxInt32 {
+		return math.MaxInt32
+	}
+	if v < math.MinInt32 {
+		return math.MinInt32
+	}
+	return int32(v)
+}
+
 // pageFromParams extracts a PageRequest from optional max_results/page_token params.
 func pageFromParams(maxResults *MaxResults, pageToken *PageToken) domain.PageRequest {
 	p := domain.PageRequest{}
 	if maxResults != nil {
-		p.MaxResults = *maxResults
+		p.MaxResults = int(*maxResults)
 	}
 	if pageToken != nil {
 		p.PageToken = *pageToken
@@ -26,18 +39,19 @@ func httpStatusFromError(err error) int {
 
 // errorCodeFromError returns the HTTP status code for building error JSON responses.
 // This is a convenience alias for use in handler methods.
-func errorCodeFromError(err error) int {
-	return httpStatusFromError(err)
+func errorCodeFromError(err error) int32 {
+	return int32(httpStatusFromError(err)) //nolint:gosec // HTTP status codes are always in [100,599]
 }
 
 // === Mapping helpers ===
 
 func principalToAPI(p domain.Principal) Principal {
 	t := p.CreatedAt
+	pt := PrincipalType(p.Type)
 	return Principal{
 		Id:        &p.ID,
 		Name:      &p.Name,
-		Type:      &p.Type,
+		Type:      &pt,
 		IsAdmin:   &p.IsAdmin,
 		CreatedAt: &t,
 	}
@@ -54,19 +68,21 @@ func groupToAPI(g domain.Group) Group {
 }
 
 func groupMemberToAPI(m domain.GroupMember, groupID string) GroupMember {
+	mt := GroupMemberMemberType(m.MemberType)
 	return GroupMember{
 		GroupId:    &groupID,
-		MemberType: &m.MemberType,
+		MemberType: &mt,
 		MemberId:   &m.MemberID,
 	}
 }
 
 func grantToAPI(g domain.PrivilegeGrant) PrivilegeGrant {
 	t := g.GrantedAt
+	pt := PrivilegeGrantPrincipalType(g.PrincipalType)
 	return PrivilegeGrant{
 		Id:            &g.ID,
 		PrincipalId:   &g.PrincipalID,
-		PrincipalType: &g.PrincipalType,
+		PrincipalType: &pt,
 		SecurableType: &g.SecurableType,
 		SecurableId:   &g.SecurableID,
 		Privilege:     &g.Privilege,
@@ -186,10 +202,11 @@ func tableDetailToAPI(t domain.TableDetail) TableDetail {
 }
 
 func columnDetailToAPI(c domain.ColumnDetail) ColumnDetail {
+	pos := safeIntToInt32(c.Position)
 	return ColumnDetail{
 		Name:       &c.Name,
 		Type:       &c.Type,
-		Position:   &c.Position,
+		Position:   &pos,
 		Nullable:   &c.Nullable,
 		Comment:    &c.Comment,
 		Properties: &c.Properties,
@@ -226,13 +243,14 @@ func searchResultToAPI(r domain.SearchResult) SearchResult {
 
 func lineageEdgeToAPI(e domain.LineageEdge) LineageEdge {
 	t := e.CreatedAt
+	et := LineageEdgeEdgeType(e.EdgeType)
 	return LineageEdge{
 		Id:            &e.ID,
 		SourceTable:   &e.SourceTable,
 		TargetTable:   e.TargetTable,
 		SourceSchema:  strPtrIfNonEmpty(e.SourceSchema),
 		TargetSchema:  strPtrIfNonEmpty(e.TargetSchema),
-		EdgeType:      &e.EdgeType,
+		EdgeType:      &et,
 		PrincipalName: &e.PrincipalName,
 		CreatedAt:     &t,
 	}
@@ -316,3 +334,10 @@ func optStr(s string) *string {
 	}
 	return &s
 }
+
+// Default rate-limit header values used by all success responses.
+const (
+	defaultRateLimitLimit     = 1000
+	defaultRateLimitRemaining = 999
+	defaultRateLimitReset     = 0
+)

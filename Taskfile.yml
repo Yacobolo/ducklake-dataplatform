@@ -104,11 +104,15 @@ tasks:
       - go vet ./...
 
   lint:
+    desc: Run all linters (Go + OpenAPI)
+    deps: [lint:go, lint:api]
+
+  lint:go:
     desc: Run Go linters
     cmds:
       - golangci-lint run
 
-  lint-api:
+  lint:api:
     desc: Lint the OpenAPI spec for consistency
     deps: [bundle-api]
     cmds:

@@ -52,8 +52,8 @@ func (h *APIHandler) ListStorageCredentials(ctx context.Context, req ListStorage
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return ListStorageCredentials200JSONResponse{
-		Data:          &data,
-		NextPageToken: optStr(nextToken),
+		Body:    PaginatedStorageCredentials{Data: &data, NextPageToken: optStr(nextToken)},
+		Headers: ListStorageCredentials200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -113,16 +113,19 @@ func (h *APIHandler) CreateStorageCredential(ctx context.Context, req CreateStor
 		var conflictErr *domain.ConflictError
 		switch {
 		case errors.As(err, &accessErr):
-			return CreateStorageCredential403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return CreateStorageCredential403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: CreateStorageCredential403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, &validErr):
-			return CreateStorageCredential400JSONResponse{Code: 400, Message: err.Error()}, nil
+			return CreateStorageCredential400JSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: CreateStorageCredential400ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, &conflictErr):
-			return CreateStorageCredential409JSONResponse{Code: 409, Message: err.Error()}, nil
+			return CreateStorageCredential409JSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: CreateStorageCredential409ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
-			return CreateStorageCredential400JSONResponse{Code: 400, Message: err.Error()}, nil
+			return CreateStorageCredential400JSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: CreateStorageCredential400ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		}
 	}
-	return CreateStorageCredential201JSONResponse(storageCredentialToAPI(*result)), nil
+	return CreateStorageCredential201JSONResponse{
+		Body:    storageCredentialToAPI(*result),
+		Headers: CreateStorageCredential201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // GetStorageCredential implements the endpoint for retrieving a storage credential by name.
@@ -131,12 +134,15 @@ func (h *APIHandler) GetStorageCredential(ctx context.Context, req GetStorageCre
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return GetStorageCredential404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return GetStorageCredential404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GetStorageCredential404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return GetStorageCredential200JSONResponse(storageCredentialToAPI(*result)), nil
+	return GetStorageCredential200JSONResponse{
+		Body:    storageCredentialToAPI(*result),
+		Headers: GetStorageCredential200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // UpdateStorageCredential implements the endpoint for updating a storage credential by name.
@@ -164,14 +170,17 @@ func (h *APIHandler) UpdateStorageCredential(ctx context.Context, req UpdateStor
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return UpdateStorageCredential403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return UpdateStorageCredential403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: UpdateStorageCredential403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return UpdateStorageCredential404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return UpdateStorageCredential404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: UpdateStorageCredential404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return UpdateStorageCredential200JSONResponse(storageCredentialToAPI(*result)), nil
+	return UpdateStorageCredential200JSONResponse{
+		Body:    storageCredentialToAPI(*result),
+		Headers: UpdateStorageCredential200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // DeleteStorageCredential implements the endpoint for deleting a storage credential by name.
@@ -180,9 +189,9 @@ func (h *APIHandler) DeleteStorageCredential(ctx context.Context, req DeleteStor
 	if err := h.storageCreds.Delete(ctx, principal, req.CredentialName); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return DeleteStorageCredential403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return DeleteStorageCredential403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: DeleteStorageCredential403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return DeleteStorageCredential404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return DeleteStorageCredential404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: DeleteStorageCredential404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}
@@ -206,8 +215,8 @@ func (h *APIHandler) ListExternalLocations(ctx context.Context, req ListExternal
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return ListExternalLocations200JSONResponse{
-		Data:          &data,
-		NextPageToken: optStr(nextToken),
+		Body:    PaginatedExternalLocations{Data: &data, NextPageToken: optStr(nextToken)},
+		Headers: ListExternalLocations200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -221,7 +230,8 @@ func (h *APIHandler) CreateExternalLocation(ctx context.Context, req CreateExter
 	if req.Body.StorageType != nil {
 		if *req.Body.StorageType != CreateExternalLocationRequestStorageTypeS3 {
 			return CreateExternalLocation400JSONResponse{
-				Code: 400, Message: fmt.Sprintf("unsupported storage type %q; supported: S3", string(*req.Body.StorageType)),
+				Body:    Error{Code: 400, Message: fmt.Sprintf("unsupported storage type %q; supported: S3", string(*req.Body.StorageType))},
+				Headers: CreateExternalLocation400ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 			}, nil
 		}
 		domReq.StorageType = domain.StorageType(*req.Body.StorageType)
@@ -242,19 +252,22 @@ func (h *APIHandler) CreateExternalLocation(ctx context.Context, req CreateExter
 		var notFoundErr *domain.NotFoundError
 		switch {
 		case errors.As(err, &accessErr):
-			return CreateExternalLocation403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return CreateExternalLocation403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: CreateExternalLocation403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, &validErr):
-			return CreateExternalLocation400JSONResponse{Code: 400, Message: err.Error()}, nil
+			return CreateExternalLocation400JSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: CreateExternalLocation400ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, &conflictErr):
-			return CreateExternalLocation409JSONResponse{Code: 409, Message: err.Error()}, nil
+			return CreateExternalLocation409JSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: CreateExternalLocation409ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, &notFoundErr):
 			// Referenced credential not found — report as 400 (bad request)
-			return CreateExternalLocation400JSONResponse{Code: 400, Message: err.Error()}, nil
+			return CreateExternalLocation400JSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: CreateExternalLocation400ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
-			return CreateExternalLocation400JSONResponse{Code: 400, Message: err.Error()}, nil
+			return CreateExternalLocation400JSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: CreateExternalLocation400ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		}
 	}
-	return CreateExternalLocation201JSONResponse(externalLocationToAPI(*result)), nil
+	return CreateExternalLocation201JSONResponse{
+		Body:    externalLocationToAPI(*result),
+		Headers: CreateExternalLocation201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // GetExternalLocation implements the endpoint for retrieving an external location by name.
@@ -263,12 +276,15 @@ func (h *APIHandler) GetExternalLocation(ctx context.Context, req GetExternalLoc
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return GetExternalLocation404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return GetExternalLocation404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GetExternalLocation404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return GetExternalLocation200JSONResponse(externalLocationToAPI(*result)), nil
+	return GetExternalLocation200JSONResponse{
+		Body:    externalLocationToAPI(*result),
+		Headers: GetExternalLocation200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // UpdateExternalLocation implements the endpoint for updating an external location by name.
@@ -290,14 +306,17 @@ func (h *APIHandler) UpdateExternalLocation(ctx context.Context, req UpdateExter
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return UpdateExternalLocation403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return UpdateExternalLocation403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: UpdateExternalLocation403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return UpdateExternalLocation404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return UpdateExternalLocation404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: UpdateExternalLocation404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return UpdateExternalLocation200JSONResponse(externalLocationToAPI(*result)), nil
+	return UpdateExternalLocation200JSONResponse{
+		Body:    externalLocationToAPI(*result),
+		Headers: UpdateExternalLocation200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // DeleteExternalLocation implements the endpoint for deleting an external location by name.
@@ -306,9 +325,9 @@ func (h *APIHandler) DeleteExternalLocation(ctx context.Context, req DeleteExter
 	if err := h.externalLocations.Delete(ctx, principal, req.LocationName); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return DeleteExternalLocation403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return DeleteExternalLocation403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: DeleteExternalLocation403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return DeleteExternalLocation404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return DeleteExternalLocation404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: DeleteExternalLocation404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}
@@ -376,8 +395,8 @@ func (h *APIHandler) ListVolumes(ctx context.Context, request ListVolumesRequest
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return ListVolumes200JSONResponse{
-		Data:          &data,
-		NextPageToken: optStr(nextToken),
+		Body:    PaginatedVolumes{Data: &data, NextPageToken: optStr(nextToken)},
+		Headers: ListVolumes200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -402,16 +421,19 @@ func (h *APIHandler) CreateVolume(ctx context.Context, request CreateVolumeReque
 		var conflictErr *domain.ConflictError
 		switch {
 		case errors.As(err, &accessErr):
-			return CreateVolume403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return CreateVolume403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: CreateVolume403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, &validErr):
-			return CreateVolume400JSONResponse{Code: 400, Message: err.Error()}, nil
+			return CreateVolume400JSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: CreateVolume400ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, &conflictErr):
-			return CreateVolume409JSONResponse{Code: 409, Message: err.Error()}, nil
+			return CreateVolume409JSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: CreateVolume409ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
-			return CreateVolume400JSONResponse{Code: 400, Message: err.Error()}, nil
+			return CreateVolume400JSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: CreateVolume400ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		}
 	}
-	return CreateVolume201JSONResponse(volumeToAPI(*result)), nil
+	return CreateVolume201JSONResponse{
+		Body:    volumeToAPI(*result),
+		Headers: CreateVolume201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // GetVolume implements the endpoint for retrieving a volume by name.
@@ -420,12 +442,15 @@ func (h *APIHandler) GetVolume(ctx context.Context, request GetVolumeRequestObje
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return GetVolume404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return GetVolume404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GetVolume404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return GetVolume200JSONResponse(volumeToAPI(*result)), nil
+	return GetVolume200JSONResponse{
+		Body:    volumeToAPI(*result),
+		Headers: GetVolume200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // UpdateVolume implements the endpoint for updating a volume by name.
@@ -441,14 +466,17 @@ func (h *APIHandler) UpdateVolume(ctx context.Context, request UpdateVolumeReque
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return UpdateVolume403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return UpdateVolume403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: UpdateVolume403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return UpdateVolume404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return UpdateVolume404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: UpdateVolume404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return UpdateVolume200JSONResponse(volumeToAPI(*result)), nil
+	return UpdateVolume200JSONResponse{
+		Body:    volumeToAPI(*result),
+		Headers: UpdateVolume200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // DeleteVolume implements the endpoint for deleting a volume by name.
@@ -457,9 +485,9 @@ func (h *APIHandler) DeleteVolume(ctx context.Context, request DeleteVolumeReque
 	if err := h.volumes.Delete(ctx, string(request.CatalogName), principal, request.SchemaName, request.VolumeName); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return DeleteVolume403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return DeleteVolume403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: DeleteVolume403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return DeleteVolume404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return DeleteVolume404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: DeleteVolume404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}

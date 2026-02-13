@@ -1,316 +1,497 @@
 Principal:
+  description: A security principal representing a user or service account.
   type: object
   properties:
     id:
       type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     name:
       type: string
+      maxLength: 255
+      pattern: '^\S.*$'
     type:
       type: string
+      maxLength: 64
+      enum: [user, group]
     is_admin:
       type: boolean
     created_at:
       type: string
       format: date-time
+      maxLength: 64
 
 CreatePrincipalRequest:
+  description: Request body for creating a new principal.
   type: object
+  additionalProperties: false
   required: [name]
   properties:
     name:
       type: string
+      maxLength: 255
+      pattern: '^\S.*$'
     type:
       type: string
       default: user
+      maxLength: 64
+      enum: [user, group]
     is_admin:
       type: boolean
       default: false
 
 UpdatePrincipalAdminRequest:
+  description: Request body for updating a principal's admin status.
   type: object
+  additionalProperties: false
   required: [is_admin]
   properties:
     is_admin:
       type: boolean
 
 PaginatedPrincipals:
+  description: Paginated list of principals.
   type: object
   properties:
     data:
       type: array
       items:
         $ref: '#/Principal'
+      maxItems: 1000
     next_page_token:
       type: string
+      maxLength: 4096
+      pattern: '^\S+$'
 
 Group:
+  description: A group that can contain multiple principals for collective access control.
   type: object
   properties:
     id:
       type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     name:
       type: string
+      maxLength: 255
+      pattern: '^\S.*$'
     description:
       type: string
+      maxLength: 1024
+      pattern: '[\s\S]+'
     created_at:
       type: string
       format: date-time
+      maxLength: 64
 
 CreateGroupRequest:
+  description: Request body for creating a new group.
   type: object
+  additionalProperties: false
   required: [name]
   properties:
     name:
       type: string
+      maxLength: 255
+      pattern: '^\S.*$'
     description:
       type: string
+      maxLength: 1024
+      pattern: '[\s\S]+'
 
 GroupMember:
+  description: Represents a principal's membership in a group.
   type: object
   properties:
     group_id:
       type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     member_type:
       type: string
+      maxLength: 64
+      enum: [user, group]
     member_id:
       type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
 
 CreateGroupMemberRequest:
+  description: Request body for adding a member to a group.
   type: object
+  additionalProperties: false
   required: [member_type, member_id]
   properties:
     member_type:
       type: string
+      maxLength: 64
+      enum: [user, group]
     member_id:
       type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
 
 PaginatedGroups:
+  description: Paginated list of groups.
   type: object
   properties:
     data:
       type: array
       items:
         $ref: '#/Group'
+      maxItems: 1000
     next_page_token:
       type: string
+      maxLength: 4096
+      pattern: '^\S+$'
 
 PaginatedGroupMembers:
+  description: Paginated list of group members.
   type: object
   properties:
     data:
       type: array
       items:
         $ref: '#/GroupMember'
+      maxItems: 1000
     next_page_token:
       type: string
+      maxLength: 4096
+      pattern: '^\S+$'
 
 PrivilegeGrant:
+  description: A privilege grant linking a principal to a securable resource with a specific permission.
   type: object
   properties:
     id:
       type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     principal_id:
       type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     principal_type:
       type: string
+      maxLength: 64
+      enum: [user, group]
     securable_type:
       type: string
+      maxLength: 64
+      pattern: '^\S+$'
     securable_id:
       type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     privilege:
       type: string
+      maxLength: 64
+      pattern: '^\S+$'
     granted_by:
       type: string
       nullable: true
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     granted_at:
       type: string
       format: date-time
+      maxLength: 64
 
 CreateGrantRequest:
+  description: Request body for creating a new privilege grant.
   type: object
+  additionalProperties: false
   required: [principal_id, principal_type, securable_type, securable_id, privilege]
   properties:
     principal_id:
       type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     principal_type:
       type: string
+      maxLength: 64
+      enum: [user, group]
     securable_type:
       type: string
+      maxLength: 64
+      pattern: '^\S+$'
     securable_id:
       type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     privilege:
       type: string
+      maxLength: 64
+      pattern: '^\S+$'
 
 PaginatedGrants:
+  description: Paginated list of privilege grants.
   type: object
   properties:
     data:
       type: array
       items:
         $ref: '#/PrivilegeGrant'
+      maxItems: 1000
     next_page_token:
       type: string
+      maxLength: 4096
+      pattern: '^\S+$'
 
 APIKeyInfo:
+  description: Metadata about an API key, excluding the secret key value.
   type: object
   properties:
     id:
       type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     principal_id:
       type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     name:
       type: string
+      maxLength: 255
+      pattern: '^\S.*$'
     key_prefix:
       type: string
+      maxLength: 255
+      pattern: '^\S+$'
     expires_at:
       type: string
       format: date-time
+      maxLength: 64
       nullable: true
     created_at:
       type: string
       format: date-time
+      maxLength: 64
 
 CreateAPIKeyRequest:
+  description: Request body for creating a new API key.
   type: object
+  additionalProperties: false
   required: [principal_id, name]
   properties:
     principal_id:
       type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     name:
       type: string
+      maxLength: 255
+      pattern: '^\S.*$'
     expires_at:
       type: string
       format: date-time
+      maxLength: 64
 
 CreateAPIKeyResponse:
+  description: Response returned after creating an API key, including the raw secret shown only once.
   type: object
   properties:
     id:
       type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     key:
       type: string
       description: Raw API key (shown only once)
+      maxLength: 512
+      pattern: '^\S+$'
     name:
       type: string
+      maxLength: 255
+      pattern: '^\S.*$'
     key_prefix:
       type: string
+      maxLength: 255
+      pattern: '^\S+$'
     expires_at:
       type: string
       format: date-time
+      maxLength: 64
       nullable: true
     created_at:
       type: string
       format: date-time
+      maxLength: 64
 
 PaginatedAPIKeys:
+  description: Paginated list of API key metadata.
   type: object
   properties:
     data:
       type: array
       items:
         $ref: '#/APIKeyInfo'
+      maxItems: 1000
     next_page_token:
       type: string
+      maxLength: 4096
+      pattern: '^\S+$'
 
 CleanupAPIKeysResponse:
+  description: Response returned after cleaning up expired API keys.
   type: object
   properties:
     deleted_count:
       type: integer
       format: int64
+      minimum: 0
+      maximum: 9223372036854775807
 
 RowFilter:
+  description: A row-level security filter applied to a table.
   type: object
   properties:
     id:
       type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     table_id:
       type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     filter_sql:
       type: string
+      maxLength: 65536
+      pattern: '[\s\S]+'
     description:
       type: string
+      maxLength: 1024
+      pattern: '[\s\S]+'
     created_at:
       type: string
       format: date-time
+      maxLength: 64
 
 CreateRowFilterRequest:
+  description: Request body for creating a new row-level security filter.
   type: object
+  additionalProperties: false
   required: [filter_sql]
   properties:
     table_id:
       type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
       description: Table ID (required when creating via top-level POST /row-filters)
     filter_sql:
       type: string
+      maxLength: 65536
+      pattern: '[\s\S]+'
     description:
       type: string
+      maxLength: 1024
+      pattern: '[\s\S]+'
 
 RowFilterBindingRequest:
+  description: Request body for binding a row filter to a principal.
   type: object
+  additionalProperties: false
   required: [principal_id, principal_type]
   properties:
     principal_id:
       type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     principal_type:
       type: string
+      maxLength: 64
+      enum: [user, group]
 
 PaginatedRowFilters:
+  description: Paginated list of row-level security filters.
   type: object
   properties:
     data:
       type: array
       items:
         $ref: '#/RowFilter'
+      maxItems: 1000
     next_page_token:
       type: string
+      maxLength: 4096
+      pattern: '^\S+$'
 
 ColumnMask:
+  description: A column masking rule that transforms column values for specific principals.
   type: object
   properties:
     id:
       type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     table_id:
       type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     column_name:
       type: string
+      maxLength: 255
+      pattern: '^\S.*$'
     mask_expression:
       type: string
+      maxLength: 65536
+      pattern: '[\s\S]+'
     description:
       type: string
+      maxLength: 1024
+      pattern: '[\s\S]+'
     created_at:
       type: string
       format: date-time
+      maxLength: 64
 
 CreateColumnMaskRequest:
+  description: Request body for creating a new column mask.
   type: object
+  additionalProperties: false
   required: [column_name, mask_expression]
   properties:
     column_name:
       type: string
+      maxLength: 255
+      pattern: '^\S.*$'
     mask_expression:
       type: string
+      maxLength: 65536
+      pattern: '[\s\S]+'
     description:
       type: string
+      maxLength: 1024
+      pattern: '[\s\S]+'
 
 ColumnMaskBindingRequest:
+  description: Request body for binding a column mask to a principal.
   type: object
+  additionalProperties: false
   required: [principal_id, principal_type]
   properties:
     principal_id:
       type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     principal_type:
       type: string
+      maxLength: 64
+      enum: [user, group]
     see_original:
       type: boolean
       default: false
 
 PaginatedColumnMasks:
+  description: Paginated list of column masks.
   type: object
   properties:
     data:
       type: array
       items:
         $ref: '#/ColumnMask'
+      maxItems: 1000
     next_page_token:
       type: string
+      maxLength: 4096
+      pattern: '^\S+$'

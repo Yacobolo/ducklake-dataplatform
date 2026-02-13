@@ -1,96 +1,155 @@
 SearchResult:
+  description: A search result representing a matched schema, table, or column object.
   type: object
   properties:
     type:
       type: string
       description: "Object type: schema, table, or column"
+      maxLength: 64
+      pattern: '^\S+$'
     name:
       type: string
+      maxLength: 255
+      pattern: '^\S.*$'
     schema_name:
       type: string
       nullable: true
+      maxLength: 255
+      pattern: '^\S.*$'
     table_name:
       type: string
       nullable: true
+      maxLength: 255
+      pattern: '^\S.*$'
     comment:
       type: string
       nullable: true
+      maxLength: 1024
+      pattern: '[\s\S]+'
     match_field:
       type: string
       description: "Field that matched: name, comment, property, or tag"
+      maxLength: 64
+      pattern: '^\S+$'
 
 PaginatedSearchResults:
+  description: A paginated list of search results.
   type: object
   properties:
     data:
       type: array
+      maxItems: 1000
       items:
         $ref: '#/SearchResult'
     next_page_token:
       type: string
+      maxLength: 4096
+      pattern: '^\S+$'
 
 Tag:
+  description: A key-value tag that can be assigned to securable objects for classification and discovery.
   type: object
   properties:
     id:
       type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     key:
       type: string
+      maxLength: 255
+      pattern: '^\S.*$'
     value:
       type: string
       nullable: true
+      maxLength: 1024
+      pattern: '[\s\S]+'
     created_by:
       type: string
+      maxLength: 255
+      pattern: '^\S.*$'
     created_at:
       type: string
       format: date-time
+      maxLength: 64
 
 CreateTagRequest:
+  description: Request payload for creating a new tag.
   type: object
+  additionalProperties: false
   required: [key]
   properties:
     key:
       type: string
+      maxLength: 255
+      pattern: '^\S.*$'
     value:
       type: string
+      maxLength: 1024
+      pattern: '[\s\S]+'
 
 TagAssignment:
+  description: An assignment linking a tag to a securable object, optionally scoped to a specific column.
   type: object
   properties:
     id:
       type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     tag_id:
       type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     securable_type:
       type: string
+      maxLength: 64
+      pattern: '^\S+$'
     securable_id:
       type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     column_name:
       type: string
       nullable: true
+      maxLength: 255
+      pattern: '^\S.*$'
     assigned_by:
       type: string
+      maxLength: 255
+      pattern: '^\S.*$'
     assigned_at:
       type: string
       format: date-time
+      maxLength: 64
 
 CreateTagAssignmentRequest:
+  description: Request payload for creating a new tag assignment on a securable object.
   type: object
+  additionalProperties: false
   required: [securable_type, securable_id]
   properties:
     securable_type:
       type: string
+      maxLength: 64
+      pattern: '^\S+$'
     securable_id:
       type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     column_name:
       type: string
+      maxLength: 255
+      pattern: '^\S.*$'
 
 PaginatedTags:
+  description: A paginated list of tags.
   type: object
   properties:
     data:
       type: array
+      maxItems: 1000
       items:
         $ref: '#/Tag'
     next_page_token:
       type: string
+      maxLength: 4096
+      pattern: '^\S+$'

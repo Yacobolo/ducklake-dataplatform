@@ -1,186 +1,310 @@
 StorageCredential:
+  description: A credential for accessing external storage systems such as S3, Azure Blob, or GCS.
   type: object
   properties:
     id:
       type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     name:
       type: string
+      maxLength: 255
+      pattern: '^\S.*$'
     credential_type:
       type: string
       enum: [S3, AZURE, GCS]
     # S3 fields (write-only: key_id and secret are never returned)
     endpoint:
       type: string
+      maxLength: 255
+      pattern: '^\S+$'
     region:
       type: string
+      maxLength: 255
+      pattern: '^\S+$'
     url_style:
       type: string
+      maxLength: 255
+      pattern: '^\S+$'
     # Azure fields (write-only: account_key and client_secret are never returned)
     azure_account_name:
       type: string
+      maxLength: 512
+      pattern: '^\S+$'
     azure_client_id:
       type: string
+      maxLength: 512
+      pattern: '^\S+$'
     azure_tenant_id:
       type: string
+      maxLength: 512
+      pattern: '^\S+$'
     # GCS fields
     gcs_key_file_path:
       type: string
+      maxLength: 512
+      pattern: '^\S+$'
     comment:
       type: string
+      maxLength: 1024
+      pattern: '[\s\S]+'
     owner:
       type: string
+      maxLength: 255
+      pattern: '^\S.*$'
     created_at:
       type: string
       format: date-time
+      maxLength: 64
     updated_at:
       type: string
       format: date-time
+      maxLength: 64
 
 CreateStorageCredentialRequest:
+  description: Request payload for creating a new storage credential.
   type: object
+  additionalProperties: false
   required: [name, credential_type]
   properties:
     name:
       type: string
+      maxLength: 255
+      pattern: '^\S.*$'
     credential_type:
       type: string
       enum: [S3, AZURE, GCS]
     # S3 fields (required when credential_type = S3)
     key_id:
       type: string
+      maxLength: 512
+      pattern: '^\S+$'
     secret:
       type: string
+      maxLength: 512
+      pattern: '^\S+$'
     endpoint:
       type: string
+      maxLength: 255
+      pattern: '^\S+$'
     region:
       type: string
+      maxLength: 255
+      pattern: '^\S+$'
     url_style:
       type: string
+      maxLength: 255
+      pattern: '^\S+$'
       default: path
     # Azure fields (required when credential_type = AZURE)
     azure_account_name:
       type: string
+      maxLength: 512
+      pattern: '^\S+$'
     azure_account_key:
       type: string
+      maxLength: 512
+      pattern: '^\S+$'
     azure_client_id:
       type: string
+      maxLength: 512
+      pattern: '^\S+$'
     azure_tenant_id:
       type: string
+      maxLength: 512
+      pattern: '^\S+$'
     azure_client_secret:
       type: string
+      maxLength: 512
+      pattern: '^\S+$'
     # GCS fields (required when credential_type = GCS)
     gcs_key_file_path:
       type: string
+      maxLength: 512
+      pattern: '^\S+$'
     comment:
       type: string
+      maxLength: 1024
+      pattern: '[\s\S]+'
 
 UpdateStorageCredentialRequest:
+  description: Request payload for updating an existing storage credential.
   type: object
+  additionalProperties: false
   properties:
     # S3 fields
     key_id:
       type: string
+      maxLength: 512
+      pattern: '^\S+$'
     secret:
       type: string
+      maxLength: 512
+      pattern: '^\S+$'
     endpoint:
       type: string
+      maxLength: 255
+      pattern: '^\S+$'
     region:
       type: string
+      maxLength: 255
+      pattern: '^\S+$'
     url_style:
       type: string
+      maxLength: 255
+      pattern: '^\S+$'
     # Azure fields
     azure_account_name:
       type: string
+      maxLength: 512
+      pattern: '^\S+$'
     azure_account_key:
       type: string
+      maxLength: 512
+      pattern: '^\S+$'
     azure_client_id:
       type: string
+      maxLength: 512
+      pattern: '^\S+$'
     azure_tenant_id:
       type: string
+      maxLength: 512
+      pattern: '^\S+$'
     azure_client_secret:
       type: string
+      maxLength: 512
+      pattern: '^\S+$'
     # GCS fields
     gcs_key_file_path:
       type: string
+      maxLength: 512
+      pattern: '^\S+$'
     comment:
       type: string
+      maxLength: 1024
+      pattern: '[\s\S]+'
 
 PaginatedStorageCredentials:
+  description: A paginated list of storage credentials.
   type: object
   properties:
     data:
       type: array
+      maxItems: 1000
       items:
         $ref: '#/StorageCredential'
     next_page_token:
       type: string
+      maxLength: 4096
+      pattern: '^\S+$'
 
 ExternalLocation:
+  description: An external storage location backed by a storage credential, used for accessing remote data.
   type: object
   properties:
     id:
       type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     name:
       type: string
+      maxLength: 255
+      pattern: '^\S.*$'
     url:
       type: string
+      maxLength: 2048
+      format: uri
     credential_name:
       type: string
+      maxLength: 255
+      pattern: '^\S.*$'
     storage_type:
       type: string
+      maxLength: 64
+      pattern: '^\S+$'
     comment:
       type: string
+      maxLength: 1024
+      pattern: '[\s\S]+'
     owner:
       type: string
+      maxLength: 255
+      pattern: '^\S.*$'
     read_only:
       type: boolean
     created_at:
       type: string
       format: date-time
+      maxLength: 64
     updated_at:
       type: string
       format: date-time
+      maxLength: 64
 
 CreateExternalLocationRequest:
+  description: Request payload for creating a new external location.
   type: object
+  additionalProperties: false
   required: [name, url, credential_name]
   properties:
     name:
       type: string
+      maxLength: 255
+      pattern: '^\S.*$'
     url:
       type: string
+      maxLength: 2048
+      format: uri
     credential_name:
       type: string
+      maxLength: 255
+      pattern: '^\S.*$'
     storage_type:
       type: string
       enum: [S3]
       default: S3
     comment:
       type: string
+      maxLength: 1024
+      pattern: '[\s\S]+'
     read_only:
       type: boolean
       default: false
 
 UpdateExternalLocationRequest:
+  description: Request payload for updating an existing external location.
   type: object
+  additionalProperties: false
   properties:
     url:
       type: string
+      maxLength: 2048
+      format: uri
     credential_name:
       type: string
+      maxLength: 255
+      pattern: '^\S.*$'
     comment:
       type: string
+      maxLength: 1024
+      pattern: '[\s\S]+'
     read_only:
       type: boolean
     owner:
       type: string
+      maxLength: 255
+      pattern: '^\S.*$'
 
 PaginatedExternalLocations:
+  description: A paginated list of external locations.
   type: object
   properties:
     data:
       type: array
+      maxItems: 1000
       items:
         $ref: '#/ExternalLocation'
     next_page_token:
       type: string
+      maxLength: 4096
+      pattern: '^\S+$'

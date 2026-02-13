@@ -5,8 +5,6 @@ package api
 
 import (
 	"time"
-
-	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 const (
@@ -25,6 +23,12 @@ const (
 	CatalogRegistrationStatusACTIVE   CatalogRegistrationStatus = "ACTIVE"
 	CatalogRegistrationStatusDETACHED CatalogRegistrationStatus = "DETACHED"
 	CatalogRegistrationStatusERROR    CatalogRegistrationStatus = "ERROR"
+)
+
+// Defines values for ColumnMaskBindingRequestPrincipalType.
+const (
+	ColumnMaskBindingRequestPrincipalTypeGroup ColumnMaskBindingRequestPrincipalType = "group"
+	ColumnMaskBindingRequestPrincipalTypeUser  ColumnMaskBindingRequestPrincipalType = "user"
 )
 
 // Defines values for ComputeAssignmentPrincipalType.
@@ -85,6 +89,24 @@ const (
 	CreateExternalLocationRequestStorageTypeS3 CreateExternalLocationRequestStorageType = "S3"
 )
 
+// Defines values for CreateGrantRequestPrincipalType.
+const (
+	CreateGrantRequestPrincipalTypeGroup CreateGrantRequestPrincipalType = "group"
+	CreateGrantRequestPrincipalTypeUser  CreateGrantRequestPrincipalType = "user"
+)
+
+// Defines values for CreateGroupMemberRequestMemberType.
+const (
+	CreateGroupMemberRequestMemberTypeGroup CreateGroupMemberRequestMemberType = "group"
+	CreateGroupMemberRequestMemberTypeUser  CreateGroupMemberRequestMemberType = "user"
+)
+
+// Defines values for CreatePrincipalRequestType.
+const (
+	CreatePrincipalRequestTypeGroup CreatePrincipalRequestType = "group"
+	CreatePrincipalRequestTypeUser  CreatePrincipalRequestType = "user"
+)
+
 // Defines values for CreateStorageCredentialRequestCredentialType.
 const (
 	CreateStorageCredentialRequestCredentialTypeAZURE CreateStorageCredentialRequestCredentialType = "AZURE"
@@ -108,6 +130,37 @@ const (
 const (
 	CreateVolumeRequestVolumeTypeEXTERNAL CreateVolumeRequestVolumeType = "EXTERNAL"
 	CreateVolumeRequestVolumeTypeMANAGED  CreateVolumeRequestVolumeType = "MANAGED"
+)
+
+// Defines values for GroupMemberMemberType.
+const (
+	GroupMemberMemberTypeGroup GroupMemberMemberType = "group"
+	GroupMemberMemberTypeUser  GroupMemberMemberType = "user"
+)
+
+// Defines values for LineageEdgeEdgeType.
+const (
+	READ      LineageEdgeEdgeType = "READ"
+	READWRITE LineageEdgeEdgeType = "READ_WRITE"
+	WRITE     LineageEdgeEdgeType = "WRITE"
+)
+
+// Defines values for PrincipalType.
+const (
+	PrincipalTypeGroup PrincipalType = "group"
+	PrincipalTypeUser  PrincipalType = "user"
+)
+
+// Defines values for PrivilegeGrantPrincipalType.
+const (
+	PrivilegeGrantPrincipalTypeGroup PrivilegeGrantPrincipalType = "group"
+	PrivilegeGrantPrincipalTypeUser  PrivilegeGrantPrincipalType = "user"
+)
+
+// Defines values for RowFilterBindingRequestPrincipalType.
+const (
+	RowFilterBindingRequestPrincipalTypeGroup RowFilterBindingRequestPrincipalType = "group"
+	RowFilterBindingRequestPrincipalTypeUser  RowFilterBindingRequestPrincipalType = "user"
 )
 
 // Defines values for StorageCredentialCredentialType.
@@ -139,7 +192,31 @@ const (
 	MANAGED  VolumeDetailVolumeType = "MANAGED"
 )
 
-// APIKeyInfo defines model for APIKeyInfo.
+// Defines values for UnbindColumnMaskParamsPrincipalType.
+const (
+	UnbindColumnMaskParamsPrincipalTypeGroup UnbindColumnMaskParamsPrincipalType = "group"
+	UnbindColumnMaskParamsPrincipalTypeUser  UnbindColumnMaskParamsPrincipalType = "user"
+)
+
+// Defines values for ListGrantsParamsPrincipalType.
+const (
+	ListGrantsParamsPrincipalTypeGroup ListGrantsParamsPrincipalType = "group"
+	ListGrantsParamsPrincipalTypeUser  ListGrantsParamsPrincipalType = "user"
+)
+
+// Defines values for DeleteGroupMemberParamsMemberType.
+const (
+	DeleteGroupMemberParamsMemberTypeGroup DeleteGroupMemberParamsMemberType = "group"
+	DeleteGroupMemberParamsMemberTypeUser  DeleteGroupMemberParamsMemberType = "user"
+)
+
+// Defines values for UnbindRowFilterParamsPrincipalType.
+const (
+	UnbindRowFilterParamsPrincipalTypeGroup UnbindRowFilterParamsPrincipalType = "group"
+	UnbindRowFilterParamsPrincipalTypeUser  UnbindRowFilterParamsPrincipalType = "user"
+)
+
+// APIKeyInfo Metadata about an API key, excluding the secret key value.
 type APIKeyInfo struct {
 	CreatedAt   *time.Time `json:"created_at,omitempty"`
 	ExpiresAt   *time.Time `json:"expires_at"`
@@ -149,7 +226,7 @@ type APIKeyInfo struct {
 	PrincipalId *string    `json:"principal_id,omitempty"`
 }
 
-// AuditEntry defines model for AuditEntry.
+// AuditEntry A record of an auditable action performed by a principal.
 type AuditEntry struct {
 	Action         *string    `json:"action,omitempty"`
 	CreatedAt      *time.Time `json:"created_at,omitempty"`
@@ -164,7 +241,7 @@ type AuditEntry struct {
 	TablesAccessed *[]string  `json:"tables_accessed,omitempty"`
 }
 
-// CatalogInfo defines model for CatalogInfo.
+// CatalogInfo Top-level catalog containing schemas, tables, and other data objects.
 type CatalogInfo struct {
 	Comment   *string    `json:"comment,omitempty"`
 	CreatedAt *time.Time `json:"created_at,omitempty"`
@@ -172,7 +249,7 @@ type CatalogInfo struct {
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 }
 
-// CatalogRegistration defines model for CatalogRegistration.
+// CatalogRegistration Registration details for a DuckLake catalog.
 type CatalogRegistration struct {
 	Comment   *string    `json:"comment,omitempty"`
 	CreatedAt *time.Time `json:"created_at,omitempty"`
@@ -201,31 +278,31 @@ type CatalogRegistrationMetastoreType string
 // CatalogRegistrationStatus defines model for CatalogRegistration.Status.
 type CatalogRegistrationStatus string
 
-// CatalogRegistrationList defines model for CatalogRegistrationList.
+// CatalogRegistrationList Paginated list of catalog registrations.
 type CatalogRegistrationList struct {
 	Catalogs      *[]CatalogRegistration `json:"catalogs,omitempty"`
 	NextPageToken *string                `json:"next_page_token,omitempty"`
 	TotalCount    *int64                 `json:"total_count,omitempty"`
 }
 
-// CleanupAPIKeysResponse defines model for CleanupAPIKeysResponse.
+// CleanupAPIKeysResponse Response returned after cleaning up expired API keys.
 type CleanupAPIKeysResponse struct {
 	DeletedCount *int64 `json:"deleted_count,omitempty"`
 }
 
-// ColumnDetail defines model for ColumnDetail.
+// ColumnDetail Detailed information about a single column in a table.
 type ColumnDetail struct {
 	Comment *string `json:"comment,omitempty"`
 	Name    *string `json:"name,omitempty"`
 
 	// Nullable Whether the column allows NULL values.
 	Nullable   *bool              `json:"nullable,omitempty"`
-	Position   *int               `json:"position,omitempty"`
+	Position   *int32             `json:"position,omitempty"`
 	Properties *map[string]string `json:"properties,omitempty"`
 	Type       *string            `json:"type,omitempty"`
 }
 
-// ColumnMask defines model for ColumnMask.
+// ColumnMask A column masking rule that transforms column values for specific principals.
 type ColumnMask struct {
 	ColumnName     *string    `json:"column_name,omitempty"`
 	CreatedAt      *time.Time `json:"created_at,omitempty"`
@@ -235,22 +312,26 @@ type ColumnMask struct {
 	TableId        *string    `json:"table_id,omitempty"`
 }
 
-// ColumnMaskBindingRequest defines model for ColumnMaskBindingRequest.
+// ColumnMaskBindingRequest Request body for binding a column mask to a principal.
 type ColumnMaskBindingRequest struct {
-	PrincipalId   string `json:"principal_id"`
-	PrincipalType string `json:"principal_type"`
-	SeeOriginal   *bool  `json:"see_original,omitempty"`
+	PrincipalId   string                                `json:"principal_id"`
+	PrincipalType ColumnMaskBindingRequestPrincipalType `json:"principal_type"`
+	SeeOriginal   *bool                                 `json:"see_original,omitempty"`
 }
 
-// CommitIngestionRequest defines model for CommitIngestionRequest.
+// ColumnMaskBindingRequestPrincipalType defines model for ColumnMaskBindingRequest.PrincipalType.
+type ColumnMaskBindingRequestPrincipalType string
+
+// CommitIngestionRequest Request to commit previously uploaded files into a target table.
 type CommitIngestionRequest struct {
+	// Options Options controlling how ingested files are mapped to the target table schema.
 	Options *IngestionOptions `json:"options,omitempty"`
 
 	// S3Keys S3 keys returned from upload-url to register.
 	S3Keys []string `json:"s3_keys"`
 }
 
-// ComputeAssignment defines model for ComputeAssignment.
+// ComputeAssignment An assignment linking a principal (user or group) to a compute endpoint.
 type ComputeAssignment struct {
 	CreatedAt     *time.Time                      `json:"created_at,omitempty"`
 	EndpointId    *string                         `json:"endpoint_id,omitempty"`
@@ -265,10 +346,10 @@ type ComputeAssignment struct {
 // ComputeAssignmentPrincipalType defines model for ComputeAssignment.PrincipalType.
 type ComputeAssignmentPrincipalType string
 
-// ComputeEndpoint defines model for ComputeEndpoint.
+// ComputeEndpoint A compute endpoint representing a DuckDB execution environment, either local or remote.
 type ComputeEndpoint struct {
 	CreatedAt   *time.Time             `json:"created_at,omitempty"`
-	ExternalId  *openapi_types.UUID    `json:"external_id,omitempty"`
+	ExternalId  *string                `json:"external_id,omitempty"`
 	Id          *string                `json:"id,omitempty"`
 	MaxMemoryGb *int64                 `json:"max_memory_gb,omitempty"`
 	Name        *string                `json:"name,omitempty"`
@@ -289,7 +370,7 @@ type ComputeEndpointStatus string
 // ComputeEndpointType defines model for ComputeEndpoint.Type.
 type ComputeEndpointType string
 
-// ComputeEndpointHealth defines model for ComputeEndpointHealth.
+// ComputeEndpointHealth Health and resource usage information for a compute endpoint.
 type ComputeEndpointHealth struct {
 	// DuckdbVersion DuckDB version running on the agent
 	DuckdbVersion *string `json:"duckdb_version,omitempty"`
@@ -298,26 +379,26 @@ type ComputeEndpointHealth struct {
 	EndpointName *string `json:"endpoint_name,omitempty"`
 
 	// MaxMemoryGb Maximum memory limit in GB
-	MaxMemoryGb *int `json:"max_memory_gb,omitempty"`
+	MaxMemoryGb *int32 `json:"max_memory_gb,omitempty"`
 
 	// MemoryUsedMb Current memory usage in MB
-	MemoryUsedMb *int `json:"memory_used_mb,omitempty"`
+	MemoryUsedMb *int32 `json:"memory_used_mb,omitempty"`
 
 	// Status Health status (e.g. "ok")
 	Status *string `json:"status,omitempty"`
 
 	// UptimeSeconds Agent uptime in seconds
-	UptimeSeconds *int `json:"uptime_seconds,omitempty"`
+	UptimeSeconds *int32 `json:"uptime_seconds,omitempty"`
 }
 
-// CreateAPIKeyRequest defines model for CreateAPIKeyRequest.
+// CreateAPIKeyRequest Request body for creating a new API key.
 type CreateAPIKeyRequest struct {
 	ExpiresAt   *time.Time `json:"expires_at,omitempty"`
 	Name        string     `json:"name"`
 	PrincipalId string     `json:"principal_id"`
 }
 
-// CreateAPIKeyResponse defines model for CreateAPIKeyResponse.
+// CreateAPIKeyResponse Response returned after creating an API key, including the raw secret shown only once.
 type CreateAPIKeyResponse struct {
 	CreatedAt *time.Time `json:"created_at,omitempty"`
 	ExpiresAt *time.Time `json:"expires_at"`
@@ -329,7 +410,7 @@ type CreateAPIKeyResponse struct {
 	Name      *string `json:"name,omitempty"`
 }
 
-// CreateCatalogRequest defines model for CreateCatalogRequest.
+// CreateCatalogRequest Request body for registering a new catalog.
 type CreateCatalogRequest struct {
 	Comment       *string                           `json:"comment,omitempty"`
 	DataPath      string                            `json:"data_path"`
@@ -341,20 +422,20 @@ type CreateCatalogRequest struct {
 // CreateCatalogRequestMetastoreType defines model for CreateCatalogRequest.MetastoreType.
 type CreateCatalogRequestMetastoreType string
 
-// CreateColumnMaskRequest defines model for CreateColumnMaskRequest.
+// CreateColumnMaskRequest Request body for creating a new column mask.
 type CreateColumnMaskRequest struct {
 	ColumnName     string  `json:"column_name"`
 	Description    *string `json:"description,omitempty"`
 	MaskExpression string  `json:"mask_expression"`
 }
 
-// CreateColumnRequest defines model for CreateColumnRequest.
+// CreateColumnRequest Request body for defining a column when creating a table.
 type CreateColumnRequest struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
 }
 
-// CreateComputeAssignmentRequest defines model for CreateComputeAssignmentRequest.
+// CreateComputeAssignmentRequest Request payload for creating a new compute assignment for a principal.
 type CreateComputeAssignmentRequest struct {
 	FallbackLocal *bool                                       `json:"fallback_local,omitempty"`
 	IsDefault     *bool                                       `json:"is_default,omitempty"`
@@ -365,7 +446,7 @@ type CreateComputeAssignmentRequest struct {
 // CreateComputeAssignmentRequestPrincipalType defines model for CreateComputeAssignmentRequest.PrincipalType.
 type CreateComputeAssignmentRequestPrincipalType string
 
-// CreateComputeEndpointRequest defines model for CreateComputeEndpointRequest.
+// CreateComputeEndpointRequest Request payload for creating a new compute endpoint.
 type CreateComputeEndpointRequest struct {
 	// AuthToken Pre-shared secret for remote agent authentication.
 	AuthToken   *string                           `json:"auth_token,omitempty"`
@@ -382,7 +463,7 @@ type CreateComputeEndpointRequestSize string
 // CreateComputeEndpointRequestType defines model for CreateComputeEndpointRequest.Type.
 type CreateComputeEndpointRequestType string
 
-// CreateExternalLocationRequest defines model for CreateExternalLocationRequest.
+// CreateExternalLocationRequest Request payload for creating a new external location.
 type CreateExternalLocationRequest struct {
 	Comment        *string                                   `json:"comment,omitempty"`
 	CredentialName string                                    `json:"credential_name"`
@@ -395,35 +476,44 @@ type CreateExternalLocationRequest struct {
 // CreateExternalLocationRequestStorageType defines model for CreateExternalLocationRequest.StorageType.
 type CreateExternalLocationRequestStorageType string
 
-// CreateGrantRequest defines model for CreateGrantRequest.
+// CreateGrantRequest Request body for creating a new privilege grant.
 type CreateGrantRequest struct {
-	PrincipalId   string `json:"principal_id"`
-	PrincipalType string `json:"principal_type"`
-	Privilege     string `json:"privilege"`
-	SecurableId   string `json:"securable_id"`
-	SecurableType string `json:"securable_type"`
+	PrincipalId   string                          `json:"principal_id"`
+	PrincipalType CreateGrantRequestPrincipalType `json:"principal_type"`
+	Privilege     string                          `json:"privilege"`
+	SecurableId   string                          `json:"securable_id"`
+	SecurableType string                          `json:"securable_type"`
 }
 
-// CreateGroupMemberRequest defines model for CreateGroupMemberRequest.
+// CreateGrantRequestPrincipalType defines model for CreateGrantRequest.PrincipalType.
+type CreateGrantRequestPrincipalType string
+
+// CreateGroupMemberRequest Request body for adding a member to a group.
 type CreateGroupMemberRequest struct {
-	MemberId   string `json:"member_id"`
-	MemberType string `json:"member_type"`
+	MemberId   string                             `json:"member_id"`
+	MemberType CreateGroupMemberRequestMemberType `json:"member_type"`
 }
 
-// CreateGroupRequest defines model for CreateGroupRequest.
+// CreateGroupMemberRequestMemberType defines model for CreateGroupMemberRequest.MemberType.
+type CreateGroupMemberRequestMemberType string
+
+// CreateGroupRequest Request body for creating a new group.
 type CreateGroupRequest struct {
 	Description *string `json:"description,omitempty"`
 	Name        string  `json:"name"`
 }
 
-// CreatePrincipalRequest defines model for CreatePrincipalRequest.
+// CreatePrincipalRequest Request body for creating a new principal.
 type CreatePrincipalRequest struct {
-	IsAdmin *bool   `json:"is_admin,omitempty"`
-	Name    string  `json:"name"`
-	Type    *string `json:"type,omitempty"`
+	IsAdmin *bool                       `json:"is_admin,omitempty"`
+	Name    string                      `json:"name"`
+	Type    *CreatePrincipalRequestType `json:"type,omitempty"`
 }
 
-// CreateRowFilterRequest defines model for CreateRowFilterRequest.
+// CreatePrincipalRequestType defines model for CreatePrincipalRequest.Type.
+type CreatePrincipalRequestType string
+
+// CreateRowFilterRequest Request body for creating a new row-level security filter.
 type CreateRowFilterRequest struct {
 	Description *string `json:"description,omitempty"`
 	FilterSql   string  `json:"filter_sql"`
@@ -432,7 +522,7 @@ type CreateRowFilterRequest struct {
 	TableId *string `json:"table_id,omitempty"`
 }
 
-// CreateSchemaRequest defines model for CreateSchemaRequest.
+// CreateSchemaRequest Request body for creating a new schema.
 type CreateSchemaRequest struct {
 	Comment *string `json:"comment,omitempty"`
 
@@ -442,7 +532,7 @@ type CreateSchemaRequest struct {
 	Properties   *map[string]string `json:"properties,omitempty"`
 }
 
-// CreateStorageCredentialRequest defines model for CreateStorageCredentialRequest.
+// CreateStorageCredentialRequest Request payload for creating a new storage credential.
 type CreateStorageCredentialRequest struct {
 	AzureAccountKey   *string                                      `json:"azure_account_key,omitempty"`
 	AzureAccountName  *string                                      `json:"azure_account_name,omitempty"`
@@ -463,7 +553,7 @@ type CreateStorageCredentialRequest struct {
 // CreateStorageCredentialRequestCredentialType defines model for CreateStorageCredentialRequest.CredentialType.
 type CreateStorageCredentialRequestCredentialType string
 
-// CreateTableRequest defines model for CreateTableRequest.
+// CreateTableRequest Request body for creating a new table (managed or external).
 type CreateTableRequest struct {
 	// Columns Required for MANAGED tables; auto-discovered for EXTERNAL if omitted.
 	Columns *[]CreateColumnRequest `json:"columns,omitempty"`
@@ -489,27 +579,27 @@ type CreateTableRequestFileFormat string
 // CreateTableRequestTableType Type of table. MANAGED (default) or EXTERNAL.
 type CreateTableRequestTableType string
 
-// CreateTagAssignmentRequest defines model for CreateTagAssignmentRequest.
+// CreateTagAssignmentRequest Request payload for creating a new tag assignment on a securable object.
 type CreateTagAssignmentRequest struct {
 	ColumnName    *string `json:"column_name,omitempty"`
 	SecurableId   string  `json:"securable_id"`
 	SecurableType string  `json:"securable_type"`
 }
 
-// CreateTagRequest defines model for CreateTagRequest.
+// CreateTagRequest Request payload for creating a new tag.
 type CreateTagRequest struct {
 	Key   string  `json:"key"`
 	Value *string `json:"value,omitempty"`
 }
 
-// CreateViewRequest defines model for CreateViewRequest.
+// CreateViewRequest Request body for creating a new view.
 type CreateViewRequest struct {
 	Comment        *string `json:"comment,omitempty"`
 	Name           string  `json:"name"`
 	ViewDefinition string  `json:"view_definition"`
 }
 
-// CreateVolumeRequest defines model for CreateVolumeRequest.
+// CreateVolumeRequest Request body for creating a new volume.
 type CreateVolumeRequest struct {
 	Comment *string `json:"comment,omitempty"`
 	Name    string  `json:"name"`
@@ -522,13 +612,13 @@ type CreateVolumeRequest struct {
 // CreateVolumeRequestVolumeType defines model for CreateVolumeRequest.VolumeType.
 type CreateVolumeRequestVolumeType string
 
-// Error defines model for Error.
+// Error Standard error response returned by the API on failure.
 type Error struct {
-	Code    int    `json:"code"`
+	Code    int32  `json:"code"`
 	Message string `json:"message"`
 }
 
-// ExternalLocation defines model for ExternalLocation.
+// ExternalLocation An external storage location backed by a storage credential, used for accessing remote data.
 type ExternalLocation struct {
 	Comment        *string    `json:"comment,omitempty"`
 	CreatedAt      *time.Time `json:"created_at,omitempty"`
@@ -542,7 +632,7 @@ type ExternalLocation struct {
 	Url            *string    `json:"url,omitempty"`
 }
 
-// Group defines model for Group.
+// Group A group that can contain multiple principals for collective access control.
 type Group struct {
 	CreatedAt   *time.Time `json:"created_at,omitempty"`
 	Description *string    `json:"description,omitempty"`
@@ -550,14 +640,17 @@ type Group struct {
 	Name        *string    `json:"name,omitempty"`
 }
 
-// GroupMember defines model for GroupMember.
+// GroupMember Represents a principal's membership in a group.
 type GroupMember struct {
-	GroupId    *string `json:"group_id,omitempty"`
-	MemberId   *string `json:"member_id,omitempty"`
-	MemberType *string `json:"member_type,omitempty"`
+	GroupId    *string                `json:"group_id,omitempty"`
+	MemberId   *string                `json:"member_id,omitempty"`
+	MemberType *GroupMemberMemberType `json:"member_type,omitempty"`
 }
 
-// IngestionOptions defines model for IngestionOptions.
+// GroupMemberMemberType defines model for GroupMember.MemberType.
+type GroupMemberMemberType string
+
+// IngestionOptions Options controlling how ingested files are mapped to the target table schema.
 type IngestionOptions struct {
 	// AllowMissingColumns Allow columns in the table that are missing from the Parquet file.
 	AllowMissingColumns *bool `json:"allow_missing_columns,omitempty"`
@@ -566,25 +659,25 @@ type IngestionOptions struct {
 	IgnoreExtraColumns *bool `json:"ignore_extra_columns,omitempty"`
 }
 
-// IngestionResult defines model for IngestionResult.
+// IngestionResult Summary of an ingestion operation including file counts and target table.
 type IngestionResult struct {
 	// FilesRegistered Number of files successfully registered.
-	FilesRegistered *int `json:"files_registered,omitempty"`
+	FilesRegistered *int64 `json:"files_registered,omitempty"`
 
 	// FilesSkipped Number of files skipped (e.g., empty files).
-	FilesSkipped *int    `json:"files_skipped,omitempty"`
+	FilesSkipped *int64  `json:"files_skipped,omitempty"`
 	Schema       *string `json:"schema,omitempty"`
 	Table        *string `json:"table,omitempty"`
 }
 
-// LineageEdge defines model for LineageEdge.
+// LineageEdge A directed edge representing a data dependency between two tables.
 type LineageEdge struct {
 	CreatedAt *time.Time `json:"created_at,omitempty"`
 
 	// EdgeType Edge type: READ, WRITE, READ_WRITE
-	EdgeType      *string `json:"edge_type,omitempty"`
-	Id            *string `json:"id,omitempty"`
-	PrincipalName *string `json:"principal_name,omitempty"`
+	EdgeType      *LineageEdgeEdgeType `json:"edge_type,omitempty"`
+	Id            *string              `json:"id,omitempty"`
+	PrincipalName *string              `json:"principal_name,omitempty"`
 
 	// SourceSchema Schema of the source table
 	SourceSchema *string `json:"source_schema,omitempty"`
@@ -595,34 +688,38 @@ type LineageEdge struct {
 	TargetTable  *string `json:"target_table"`
 }
 
-// LineageNode defines model for LineageNode.
+// LineageEdgeEdgeType Edge type: READ, WRITE, READ_WRITE
+type LineageEdgeEdgeType string
+
+// LineageNode A table node in the lineage graph with its upstream and downstream edges.
 type LineageNode struct {
 	Downstream *[]LineageEdge `json:"downstream,omitempty"`
 	TableName  *string        `json:"table_name,omitempty"`
 	Upstream   *[]LineageEdge `json:"upstream,omitempty"`
 }
 
-// LoadExternalRequest defines model for LoadExternalRequest.
+// LoadExternalRequest Request to load data from external S3 paths or globs into a table.
 type LoadExternalRequest struct {
+	// Options Options controlling how ingested files are mapped to the target table schema.
 	Options *IngestionOptions `json:"options,omitempty"`
 
 	// Paths S3 paths or globs to register.
 	Paths []string `json:"paths"`
 }
 
-// ManifestColumn defines model for ManifestColumn.
+// ManifestColumn A column definition within a table manifest.
 type ManifestColumn struct {
 	Name *string `json:"name,omitempty"`
 	Type *string `json:"type,omitempty"`
 }
 
-// ManifestRequest defines model for ManifestRequest.
+// ManifestRequest Request to retrieve the manifest for a specific table.
 type ManifestRequest struct {
 	Schema *string `json:"schema,omitempty"`
 	Table  string  `json:"table"`
 }
 
-// ManifestResponse defines model for ManifestResponse.
+// ManifestResponse The manifest of a table including its schema, files, and access controls.
 type ManifestResponse struct {
 	ColumnMasks *map[string]string `json:"column_masks,omitempty"`
 	Columns     *[]ManifestColumn  `json:"columns,omitempty"`
@@ -633,7 +730,7 @@ type ManifestResponse struct {
 	Table       *string            `json:"table,omitempty"`
 }
 
-// MetastoreSummary defines model for MetastoreSummary.
+// MetastoreSummary Summary information about the metastore including catalog and storage details.
 type MetastoreSummary struct {
 	CatalogName    *string `json:"catalog_name,omitempty"`
 	DataPath       *string `json:"data_path,omitempty"`
@@ -643,165 +740,171 @@ type MetastoreSummary struct {
 	TableCount     *int64  `json:"table_count,omitempty"`
 }
 
-// PaginatedAPIKeys defines model for PaginatedAPIKeys.
+// PaginatedAPIKeys Paginated list of API key metadata.
 type PaginatedAPIKeys struct {
 	Data          *[]APIKeyInfo `json:"data,omitempty"`
 	NextPageToken *string       `json:"next_page_token,omitempty"`
 }
 
-// PaginatedAuditLogs defines model for PaginatedAuditLogs.
+// PaginatedAuditLogs A paginated list of audit log entries.
 type PaginatedAuditLogs struct {
 	Data          *[]AuditEntry `json:"data,omitempty"`
 	NextPageToken *string       `json:"next_page_token,omitempty"`
 }
 
-// PaginatedColumnDetails defines model for PaginatedColumnDetails.
+// PaginatedColumnDetails Paginated list of column details.
 type PaginatedColumnDetails struct {
 	Data          *[]ColumnDetail `json:"data,omitempty"`
 	NextPageToken *string         `json:"next_page_token,omitempty"`
 }
 
-// PaginatedColumnMasks defines model for PaginatedColumnMasks.
+// PaginatedColumnMasks Paginated list of column masks.
 type PaginatedColumnMasks struct {
 	Data          *[]ColumnMask `json:"data,omitempty"`
 	NextPageToken *string       `json:"next_page_token,omitempty"`
 }
 
-// PaginatedComputeAssignments defines model for PaginatedComputeAssignments.
+// PaginatedComputeAssignments A paginated list of compute assignments.
 type PaginatedComputeAssignments struct {
 	Data          *[]ComputeAssignment `json:"data,omitempty"`
 	NextPageToken *string              `json:"next_page_token,omitempty"`
 }
 
-// PaginatedComputeEndpoints defines model for PaginatedComputeEndpoints.
+// PaginatedComputeEndpoints A paginated list of compute endpoints.
 type PaginatedComputeEndpoints struct {
 	Data          *[]ComputeEndpoint `json:"data,omitempty"`
 	NextPageToken *string            `json:"next_page_token,omitempty"`
 }
 
-// PaginatedExternalLocations defines model for PaginatedExternalLocations.
+// PaginatedExternalLocations A paginated list of external locations.
 type PaginatedExternalLocations struct {
 	Data          *[]ExternalLocation `json:"data,omitempty"`
 	NextPageToken *string             `json:"next_page_token,omitempty"`
 }
 
-// PaginatedGrants defines model for PaginatedGrants.
+// PaginatedGrants Paginated list of privilege grants.
 type PaginatedGrants struct {
 	Data          *[]PrivilegeGrant `json:"data,omitempty"`
 	NextPageToken *string           `json:"next_page_token,omitempty"`
 }
 
-// PaginatedGroupMembers defines model for PaginatedGroupMembers.
+// PaginatedGroupMembers Paginated list of group members.
 type PaginatedGroupMembers struct {
 	Data          *[]GroupMember `json:"data,omitempty"`
 	NextPageToken *string        `json:"next_page_token,omitempty"`
 }
 
-// PaginatedGroups defines model for PaginatedGroups.
+// PaginatedGroups Paginated list of groups.
 type PaginatedGroups struct {
 	Data          *[]Group `json:"data,omitempty"`
 	NextPageToken *string  `json:"next_page_token,omitempty"`
 }
 
-// PaginatedLineageEdges defines model for PaginatedLineageEdges.
+// PaginatedLineageEdges A paginated list of lineage edges.
 type PaginatedLineageEdges struct {
 	Data          *[]LineageEdge `json:"data,omitempty"`
 	NextPageToken *string        `json:"next_page_token,omitempty"`
 }
 
-// PaginatedPrincipals defines model for PaginatedPrincipals.
+// PaginatedPrincipals Paginated list of principals.
 type PaginatedPrincipals struct {
 	Data          *[]Principal `json:"data,omitempty"`
 	NextPageToken *string      `json:"next_page_token,omitempty"`
 }
 
-// PaginatedQueryHistoryEntries defines model for PaginatedQueryHistoryEntries.
+// PaginatedQueryHistoryEntries A paginated list of query history entries.
 type PaginatedQueryHistoryEntries struct {
 	Data          *[]QueryHistoryEntry `json:"data,omitempty"`
 	NextPageToken *string              `json:"next_page_token,omitempty"`
 }
 
-// PaginatedRowFilters defines model for PaginatedRowFilters.
+// PaginatedRowFilters Paginated list of row-level security filters.
 type PaginatedRowFilters struct {
 	Data          *[]RowFilter `json:"data,omitempty"`
 	NextPageToken *string      `json:"next_page_token,omitempty"`
 }
 
-// PaginatedSchemaDetails defines model for PaginatedSchemaDetails.
+// PaginatedSchemaDetails Paginated list of schema details.
 type PaginatedSchemaDetails struct {
 	Data          *[]SchemaDetail `json:"data,omitempty"`
 	NextPageToken *string         `json:"next_page_token,omitempty"`
 }
 
-// PaginatedSearchResults defines model for PaginatedSearchResults.
+// PaginatedSearchResults A paginated list of search results.
 type PaginatedSearchResults struct {
 	Data          *[]SearchResult `json:"data,omitempty"`
 	NextPageToken *string         `json:"next_page_token,omitempty"`
 }
 
-// PaginatedStorageCredentials defines model for PaginatedStorageCredentials.
+// PaginatedStorageCredentials A paginated list of storage credentials.
 type PaginatedStorageCredentials struct {
 	Data          *[]StorageCredential `json:"data,omitempty"`
 	NextPageToken *string              `json:"next_page_token,omitempty"`
 }
 
-// PaginatedTableDetails defines model for PaginatedTableDetails.
+// PaginatedTableDetails Paginated list of table details.
 type PaginatedTableDetails struct {
 	Data          *[]TableDetail `json:"data,omitempty"`
 	NextPageToken *string        `json:"next_page_token,omitempty"`
 }
 
-// PaginatedTags defines model for PaginatedTags.
+// PaginatedTags A paginated list of tags.
 type PaginatedTags struct {
 	Data          *[]Tag  `json:"data,omitempty"`
 	NextPageToken *string `json:"next_page_token,omitempty"`
 }
 
-// PaginatedViewDetails defines model for PaginatedViewDetails.
+// PaginatedViewDetails Paginated list of view details.
 type PaginatedViewDetails struct {
 	Data          *[]ViewDetail `json:"data,omitempty"`
 	NextPageToken *string       `json:"next_page_token,omitempty"`
 }
 
-// PaginatedVolumes defines model for PaginatedVolumes.
+// PaginatedVolumes Paginated list of volumes.
 type PaginatedVolumes struct {
 	Data          *[]VolumeDetail `json:"data,omitempty"`
 	NextPageToken *string         `json:"next_page_token,omitempty"`
 }
 
-// Principal defines model for Principal.
+// Principal A security principal representing a user or service account.
 type Principal struct {
-	CreatedAt *time.Time `json:"created_at,omitempty"`
-	Id        *string    `json:"id,omitempty"`
-	IsAdmin   *bool      `json:"is_admin,omitempty"`
-	Name      *string    `json:"name,omitempty"`
-	Type      *string    `json:"type,omitempty"`
+	CreatedAt *time.Time     `json:"created_at,omitempty"`
+	Id        *string        `json:"id,omitempty"`
+	IsAdmin   *bool          `json:"is_admin,omitempty"`
+	Name      *string        `json:"name,omitempty"`
+	Type      *PrincipalType `json:"type,omitempty"`
 }
 
-// PrivilegeGrant defines model for PrivilegeGrant.
+// PrincipalType defines model for Principal.Type.
+type PrincipalType string
+
+// PrivilegeGrant A privilege grant linking a principal to a securable resource with a specific permission.
 type PrivilegeGrant struct {
-	GrantedAt     *time.Time `json:"granted_at,omitempty"`
-	GrantedBy     *string    `json:"granted_by"`
-	Id            *string    `json:"id,omitempty"`
-	PrincipalId   *string    `json:"principal_id,omitempty"`
-	PrincipalType *string    `json:"principal_type,omitempty"`
-	Privilege     *string    `json:"privilege,omitempty"`
-	SecurableId   *string    `json:"securable_id,omitempty"`
-	SecurableType *string    `json:"securable_type,omitempty"`
+	GrantedAt     *time.Time                   `json:"granted_at,omitempty"`
+	GrantedBy     *string                      `json:"granted_by"`
+	Id            *string                      `json:"id,omitempty"`
+	PrincipalId   *string                      `json:"principal_id,omitempty"`
+	PrincipalType *PrivilegeGrantPrincipalType `json:"principal_type,omitempty"`
+	Privilege     *string                      `json:"privilege,omitempty"`
+	SecurableId   *string                      `json:"securable_id,omitempty"`
+	SecurableType *string                      `json:"securable_type,omitempty"`
 }
 
-// PurgeLineageRequest defines model for PurgeLineageRequest.
+// PrivilegeGrantPrincipalType defines model for PrivilegeGrant.PrincipalType.
+type PrivilegeGrantPrincipalType string
+
+// PurgeLineageRequest Request to delete lineage edges older than a specified number of days.
 type PurgeLineageRequest struct {
 	// OlderThanDays Delete lineage edges older than this many days.
-	OlderThanDays int `json:"older_than_days"`
+	OlderThanDays int32 `json:"older_than_days"`
 }
 
-// PurgeLineageResponse defines model for PurgeLineageResponse.
+// PurgeLineageResponse Result of a lineage purge operation indicating how many edges were deleted.
 type PurgeLineageResponse struct {
 	DeletedCount *int64 `json:"deleted_count,omitempty"`
 }
 
-// QueryHistoryEntry defines model for QueryHistoryEntry.
+// QueryHistoryEntry A historical record of a query executed by a principal.
 type QueryHistoryEntry struct {
 	CreatedAt      *time.Time `json:"created_at,omitempty"`
 	DurationMs     *int64     `json:"duration_ms"`
@@ -816,19 +919,19 @@ type QueryHistoryEntry struct {
 	TablesAccessed *[]string  `json:"tables_accessed,omitempty"`
 }
 
-// QueryRequest defines model for QueryRequest.
+// QueryRequest A SQL query to execute against the analytics engine.
 type QueryRequest struct {
 	Sql string `json:"sql"`
 }
 
-// QueryResult defines model for QueryResult.
+// QueryResult The result set returned after executing a SQL query.
 type QueryResult struct {
 	Columns  *[]string        `json:"columns,omitempty"`
-	RowCount *int             `json:"row_count,omitempty"`
+	RowCount *int64           `json:"row_count,omitempty"`
 	Rows     *[][]interface{} `json:"rows,omitempty"`
 }
 
-// RowFilter defines model for RowFilter.
+// RowFilter A row-level security filter applied to a table.
 type RowFilter struct {
 	CreatedAt   *time.Time `json:"created_at,omitempty"`
 	Description *string    `json:"description,omitempty"`
@@ -837,13 +940,16 @@ type RowFilter struct {
 	TableId     *string    `json:"table_id,omitempty"`
 }
 
-// RowFilterBindingRequest defines model for RowFilterBindingRequest.
+// RowFilterBindingRequest Request body for binding a row filter to a principal.
 type RowFilterBindingRequest struct {
-	PrincipalId   string `json:"principal_id"`
-	PrincipalType string `json:"principal_type"`
+	PrincipalId   string                               `json:"principal_id"`
+	PrincipalType RowFilterBindingRequestPrincipalType `json:"principal_type"`
 }
 
-// SchemaDetail defines model for SchemaDetail.
+// RowFilterBindingRequestPrincipalType defines model for RowFilterBindingRequest.PrincipalType.
+type RowFilterBindingRequestPrincipalType string
+
+// SchemaDetail Detailed information about a schema within a catalog.
 type SchemaDetail struct {
 	CatalogName *string            `json:"catalog_name,omitempty"`
 	Comment     *string            `json:"comment,omitempty"`
@@ -857,7 +963,7 @@ type SchemaDetail struct {
 	UpdatedAt   *time.Time         `json:"updated_at,omitempty"`
 }
 
-// SearchResult defines model for SearchResult.
+// SearchResult A search result representing a matched schema, table, or column object.
 type SearchResult struct {
 	Comment *string `json:"comment"`
 
@@ -871,10 +977,10 @@ type SearchResult struct {
 	Type *string `json:"type,omitempty"`
 }
 
-// SetDefaultCatalogRequest Empty object, the catalog name is in the URL path
+// SetDefaultCatalogRequest Empty object, the catalog name is in the URL path.
 type SetDefaultCatalogRequest = map[string]interface{}
 
-// StorageCredential defines model for StorageCredential.
+// StorageCredential A credential for accessing external storage systems such as S3, Azure Blob, or GCS.
 type StorageCredential struct {
 	AzureAccountName *string                          `json:"azure_account_name,omitempty"`
 	AzureClientId    *string                          `json:"azure_client_id,omitempty"`
@@ -895,7 +1001,7 @@ type StorageCredential struct {
 // StorageCredentialCredentialType defines model for StorageCredential.CredentialType.
 type StorageCredentialCredentialType string
 
-// TableDetail defines model for TableDetail.
+// TableDetail Detailed information about a table including its columns and metadata.
 type TableDetail struct {
 	CatalogName *string         `json:"catalog_name,omitempty"`
 	Columns     *[]ColumnDetail `json:"columns,omitempty"`
@@ -914,7 +1020,9 @@ type TableDetail struct {
 	SchemaName   *string            `json:"schema_name,omitempty"`
 
 	// SourcePath S3/storage path for EXTERNAL tables.
-	SourcePath *string          `json:"source_path,omitempty"`
+	SourcePath *string `json:"source_path,omitempty"`
+
+	// Statistics Statistical metadata about a table's size and profiling status.
 	Statistics *TableStatistics `json:"statistics,omitempty"`
 
 	// StoragePath Resolved DuckLake data path for MANAGED tables.
@@ -925,7 +1033,7 @@ type TableDetail struct {
 	UpdatedAt   *time.Time `json:"updated_at,omitempty"`
 }
 
-// TableStatistics defines model for TableStatistics.
+// TableStatistics Statistical metadata about a table's size and profiling status.
 type TableStatistics struct {
 	ColumnCount    *int64     `json:"column_count"`
 	LastProfiledAt *time.Time `json:"last_profiled_at"`
@@ -934,7 +1042,7 @@ type TableStatistics struct {
 	SizeBytes      *int64     `json:"size_bytes"`
 }
 
-// Tag defines model for Tag.
+// Tag A key-value tag that can be assigned to securable objects for classification and discovery.
 type Tag struct {
 	CreatedAt *time.Time `json:"created_at,omitempty"`
 	CreatedBy *string    `json:"created_by,omitempty"`
@@ -943,7 +1051,7 @@ type Tag struct {
 	Value     *string    `json:"value"`
 }
 
-// TagAssignment defines model for TagAssignment.
+// TagAssignment An assignment linking a tag to a securable object, optionally scoped to a specific column.
 type TagAssignment struct {
 	AssignedAt    *time.Time `json:"assigned_at,omitempty"`
 	AssignedBy    *string    `json:"assigned_by,omitempty"`
@@ -954,20 +1062,20 @@ type TagAssignment struct {
 	TagId         *string    `json:"tag_id,omitempty"`
 }
 
-// UpdateCatalogRegistrationRequest defines model for UpdateCatalogRegistrationRequest.
+// UpdateCatalogRegistrationRequest Request body for updating a catalog registration.
 type UpdateCatalogRegistrationRequest struct {
 	Comment  *string `json:"comment,omitempty"`
 	DataPath *string `json:"data_path,omitempty"`
 	Dsn      *string `json:"dsn,omitempty"`
 }
 
-// UpdateColumnRequest defines model for UpdateColumnRequest.
+// UpdateColumnRequest Request body for updating column metadata.
 type UpdateColumnRequest struct {
 	Comment    *string            `json:"comment,omitempty"`
 	Properties *map[string]string `json:"properties,omitempty"`
 }
 
-// UpdateComputeEndpointRequest defines model for UpdateComputeEndpointRequest.
+// UpdateComputeEndpointRequest Request payload for updating an existing compute endpoint.
 type UpdateComputeEndpointRequest struct {
 	AuthToken   *string                             `json:"auth_token,omitempty"`
 	MaxMemoryGb *int64                              `json:"max_memory_gb,omitempty"`
@@ -982,7 +1090,7 @@ type UpdateComputeEndpointRequestSize string
 // UpdateComputeEndpointRequestStatus defines model for UpdateComputeEndpointRequest.Status.
 type UpdateComputeEndpointRequestStatus string
 
-// UpdateExternalLocationRequest defines model for UpdateExternalLocationRequest.
+// UpdateExternalLocationRequest Request payload for updating an existing external location.
 type UpdateExternalLocationRequest struct {
 	Comment        *string `json:"comment,omitempty"`
 	CredentialName *string `json:"credential_name,omitempty"`
@@ -991,18 +1099,18 @@ type UpdateExternalLocationRequest struct {
 	Url            *string `json:"url,omitempty"`
 }
 
-// UpdatePrincipalAdminRequest defines model for UpdatePrincipalAdminRequest.
+// UpdatePrincipalAdminRequest Request body for updating a principal's admin status.
 type UpdatePrincipalAdminRequest struct {
 	IsAdmin bool `json:"is_admin"`
 }
 
-// UpdateSchemaRequest defines model for UpdateSchemaRequest.
+// UpdateSchemaRequest Request body for updating an existing schema.
 type UpdateSchemaRequest struct {
 	Comment    *string            `json:"comment,omitempty"`
 	Properties *map[string]string `json:"properties,omitempty"`
 }
 
-// UpdateStorageCredentialRequest defines model for UpdateStorageCredentialRequest.
+// UpdateStorageCredentialRequest Request payload for updating an existing storage credential.
 type UpdateStorageCredentialRequest struct {
 	AzureAccountKey   *string `json:"azure_account_key,omitempty"`
 	AzureAccountName  *string `json:"azure_account_name,omitempty"`
@@ -1018,34 +1126,34 @@ type UpdateStorageCredentialRequest struct {
 	UrlStyle          *string `json:"url_style,omitempty"`
 }
 
-// UpdateTableRequest defines model for UpdateTableRequest.
+// UpdateTableRequest Request body for updating an existing table.
 type UpdateTableRequest struct {
 	Comment    *string            `json:"comment,omitempty"`
 	Owner      *string            `json:"owner,omitempty"`
 	Properties *map[string]string `json:"properties,omitempty"`
 }
 
-// UpdateViewRequest defines model for UpdateViewRequest.
+// UpdateViewRequest Request body for updating an existing view.
 type UpdateViewRequest struct {
 	Comment        *string            `json:"comment,omitempty"`
 	Properties     *map[string]string `json:"properties,omitempty"`
 	ViewDefinition *string            `json:"view_definition,omitempty"`
 }
 
-// UpdateVolumeRequest defines model for UpdateVolumeRequest.
+// UpdateVolumeRequest Request body for updating an existing volume.
 type UpdateVolumeRequest struct {
 	Comment *string `json:"comment,omitempty"`
 	NewName *string `json:"new_name,omitempty"`
 	Owner   *string `json:"owner,omitempty"`
 }
 
-// UploadUrlRequest defines model for UploadUrlRequest.
+// UploadUrlRequest Request to obtain a presigned URL for uploading a Parquet file.
 type UploadUrlRequest struct {
 	// Filename Optional filename hint for the uploaded file.
 	Filename *string `json:"filename,omitempty"`
 }
 
-// UploadUrlResponse defines model for UploadUrlResponse.
+// UploadUrlResponse Response containing the presigned upload URL and associated S3 key.
 type UploadUrlResponse struct {
 	// ExpiresAt When the presigned URL expires.
 	ExpiresAt *time.Time `json:"expires_at,omitempty"`
@@ -1057,7 +1165,7 @@ type UploadUrlResponse struct {
 	UploadUrl *string `json:"upload_url,omitempty"`
 }
 
-// ViewDetail defines model for ViewDetail.
+// ViewDetail Detailed information about a view including its definition and source tables.
 type ViewDetail struct {
 	CatalogName    *string            `json:"catalog_name,omitempty"`
 	Comment        *string            `json:"comment"`
@@ -1073,7 +1181,7 @@ type ViewDetail struct {
 	ViewDefinition *string            `json:"view_definition,omitempty"`
 }
 
-// VolumeDetail defines model for VolumeDetail.
+// VolumeDetail Detailed information about a storage volume.
 type VolumeDetail struct {
 	CatalogName     *string                 `json:"catalog_name,omitempty"`
 	Comment         *string                 `json:"comment,omitempty"`
@@ -1091,16 +1199,14 @@ type VolumeDetail struct {
 type VolumeDetailVolumeType string
 
 // MaxResults defines model for MaxResults.
-type MaxResults = int
+type MaxResults = int32
 
 // PageToken defines model for PageToken.
 type PageToken = string
 
-// CatalogName defines model for catalogName.
-type CatalogName = string
-
 // ListAPIKeysParams defines parameters for ListAPIKeys.
 type ListAPIKeysParams struct {
+	// PrincipalId Filter by principal identifier.
 	PrincipalId string `form:"principal_id" json:"principal_id"`
 
 	// MaxResults Maximum number of results to return per page.
@@ -1112,9 +1218,14 @@ type ListAPIKeysParams struct {
 
 // ListAuditLogsParams defines parameters for ListAuditLogs.
 type ListAuditLogsParams struct {
+	// PrincipalName Filter by principal name.
 	PrincipalName *string `form:"principal_name,omitempty" json:"principal_name,omitempty"`
-	Action        *string `form:"action,omitempty" json:"action,omitempty"`
-	Status        *string `form:"status,omitempty" json:"status,omitempty"`
+
+	// Action Filter by audit action type.
+	Action *string `form:"action,omitempty" json:"action,omitempty"`
+
+	// Status Filter by status.
+	Status *string `form:"status,omitempty" json:"status,omitempty"`
 
 	// MaxResults Maximum number of results to return per page.
 	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
@@ -1194,9 +1305,15 @@ type ListClassificationsParams struct {
 
 // UnbindColumnMaskParams defines parameters for UnbindColumnMask.
 type UnbindColumnMaskParams struct {
-	PrincipalId   string `form:"principal_id" json:"principal_id"`
-	PrincipalType string `form:"principal_type" json:"principal_type"`
+	// PrincipalId Filter by principal identifier.
+	PrincipalId string `form:"principal_id" json:"principal_id"`
+
+	// PrincipalType Filter by principal type.
+	PrincipalType UnbindColumnMaskParamsPrincipalType `form:"principal_type" json:"principal_type"`
 }
+
+// UnbindColumnMaskParamsPrincipalType defines parameters for UnbindColumnMask.
+type UnbindColumnMaskParamsPrincipalType string
 
 // ListComputeEndpointsParams defines parameters for ListComputeEndpoints.
 type ListComputeEndpointsParams struct {
@@ -1227,10 +1344,17 @@ type ListExternalLocationsParams struct {
 
 // ListGrantsParams defines parameters for ListGrants.
 type ListGrantsParams struct {
-	PrincipalId   *string `form:"principal_id,omitempty" json:"principal_id,omitempty"`
-	PrincipalType *string `form:"principal_type,omitempty" json:"principal_type,omitempty"`
+	// PrincipalId Filter by principal identifier.
+	PrincipalId *string `form:"principal_id,omitempty" json:"principal_id,omitempty"`
+
+	// PrincipalType Filter by principal type.
+	PrincipalType *ListGrantsParamsPrincipalType `form:"principal_type,omitempty" json:"principal_type,omitempty"`
+
+	// SecurableType Filter by securable resource type.
 	SecurableType *string `form:"securable_type,omitempty" json:"securable_type,omitempty"`
-	SecurableId   *string `form:"securable_id,omitempty" json:"securable_id,omitempty"`
+
+	// SecurableId Filter by securable resource identifier.
+	SecurableId *string `form:"securable_id,omitempty" json:"securable_id,omitempty"`
 
 	// MaxResults Maximum number of results to return per page.
 	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
@@ -1238,6 +1362,9 @@ type ListGrantsParams struct {
 	// PageToken Opaque pagination token from a previous response.
 	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
 }
+
+// ListGrantsParamsPrincipalType defines parameters for ListGrants.
+type ListGrantsParamsPrincipalType string
 
 // ListGroupsParams defines parameters for ListGroups.
 type ListGroupsParams struct {
@@ -1250,9 +1377,15 @@ type ListGroupsParams struct {
 
 // DeleteGroupMemberParams defines parameters for DeleteGroupMember.
 type DeleteGroupMemberParams struct {
-	MemberType string `form:"member_type" json:"member_type"`
-	MemberId   string `form:"member_id" json:"member_id"`
+	// MemberType Type of the group member (user or group).
+	MemberType DeleteGroupMemberParamsMemberType `form:"member_type" json:"member_type"`
+
+	// MemberId Identifier of the member to remove.
+	MemberId string `form:"member_id" json:"member_id"`
 }
+
+// DeleteGroupMemberParamsMemberType defines parameters for DeleteGroupMember.
+type DeleteGroupMemberParamsMemberType string
 
 // ListGroupMembersParams defines parameters for ListGroupMembers.
 type ListGroupMembersParams struct {
@@ -1301,10 +1434,17 @@ type ListPrincipalsParams struct {
 
 // ListQueryHistoryParams defines parameters for ListQueryHistory.
 type ListQueryHistoryParams struct {
-	PrincipalName *string    `form:"principal_name,omitempty" json:"principal_name,omitempty"`
-	Status        *string    `form:"status,omitempty" json:"status,omitempty"`
-	From          *time.Time `form:"from,omitempty" json:"from,omitempty"`
-	To            *time.Time `form:"to,omitempty" json:"to,omitempty"`
+	// PrincipalName Filter by principal name.
+	PrincipalName *string `form:"principal_name,omitempty" json:"principal_name,omitempty"`
+
+	// Status Filter by status.
+	Status *string `form:"status,omitempty" json:"status,omitempty"`
+
+	// From Start of the time range filter (ISO 8601 datetime).
+	From *time.Time `form:"from,omitempty" json:"from,omitempty"`
+
+	// To End of the time range filter (ISO 8601 datetime).
+	To *time.Time `form:"to,omitempty" json:"to,omitempty"`
 
 	// MaxResults Maximum number of results to return per page.
 	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
@@ -1315,18 +1455,25 @@ type ListQueryHistoryParams struct {
 
 // UnbindRowFilterParams defines parameters for UnbindRowFilter.
 type UnbindRowFilterParams struct {
-	PrincipalId   string `form:"principal_id" json:"principal_id"`
-	PrincipalType string `form:"principal_type" json:"principal_type"`
+	// PrincipalId Filter by principal identifier.
+	PrincipalId string `form:"principal_id" json:"principal_id"`
+
+	// PrincipalType Filter by principal type.
+	PrincipalType UnbindRowFilterParamsPrincipalType `form:"principal_type" json:"principal_type"`
 }
+
+// UnbindRowFilterParamsPrincipalType defines parameters for UnbindRowFilter.
+type UnbindRowFilterParamsPrincipalType string
 
 // SearchCatalogParams defines parameters for SearchCatalog.
 type SearchCatalogParams struct {
+	// Query Search query string to match against catalog objects.
 	Query string `form:"query" json:"query"`
 
 	// Type Filter by object type: schema, table, or column
 	Type *string `form:"type,omitempty" json:"type,omitempty"`
 
-	// Catalog Scope search to a specific catalog (defaults to the default catalog)
+	// Catalog Scope search to a specific catalog (defaults to the default catalog).
 	Catalog *string `form:"catalog,omitempty" json:"catalog,omitempty"`
 
 	// MaxResults Maximum number of results to return per page.

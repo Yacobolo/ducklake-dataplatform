@@ -35,16 +35,19 @@ func (h *APIHandler) RegisterCatalog(ctx context.Context, request RegisterCatalo
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return RegisterCatalog403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return RegisterCatalog403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: RegisterCatalog403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, new(*domain.ValidationError)):
-			return RegisterCatalog400JSONResponse{Code: 400, Message: err.Error()}, nil
+			return RegisterCatalog400JSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: RegisterCatalog400ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, new(*domain.ConflictError)):
-			return RegisterCatalog409JSONResponse{Code: 409, Message: err.Error()}, nil
+			return RegisterCatalog409JSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: RegisterCatalog409ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
-			return RegisterCatalog400JSONResponse{Code: 400, Message: err.Error()}, nil
+			return RegisterCatalog400JSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: RegisterCatalog400ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		}
 	}
-	return RegisterCatalog201JSONResponse(catalogRegistrationToAPI(*result)), nil
+	return RegisterCatalog201JSONResponse{
+		Body:    catalogRegistrationToAPI(*result),
+		Headers: RegisterCatalog201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // ListCatalogs implements the endpoint for listing registered catalogs.
@@ -62,9 +65,12 @@ func (h *APIHandler) ListCatalogs(ctx context.Context, request ListCatalogsReque
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	tc := total
 	return ListCatalogs200JSONResponse{
-		Catalogs:      &data,
-		NextPageToken: optStr(npt),
-		TotalCount:    &tc,
+		Body: CatalogRegistrationList{
+			Catalogs:      &data,
+			NextPageToken: optStr(npt),
+			TotalCount:    &tc,
+		},
+		Headers: ListCatalogs200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -74,12 +80,15 @@ func (h *APIHandler) GetCatalogRegistration(ctx context.Context, request GetCata
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return GetCatalogRegistration404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return GetCatalogRegistration404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GetCatalogRegistration404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return GetCatalogRegistration200JSONResponse(catalogRegistrationToAPI(*result)), nil
+	return GetCatalogRegistration200JSONResponse{
+		Body:    catalogRegistrationToAPI(*result),
+		Headers: GetCatalogRegistration200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // UpdateCatalogRegistration implements the endpoint for updating a catalog registration.
@@ -94,14 +103,17 @@ func (h *APIHandler) UpdateCatalogRegistration(ctx context.Context, request Upda
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return UpdateCatalogRegistration403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return UpdateCatalogRegistration403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: UpdateCatalogRegistration403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return UpdateCatalogRegistration404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return UpdateCatalogRegistration404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: UpdateCatalogRegistration404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return UpdateCatalogRegistration200JSONResponse(catalogRegistrationToAPI(*result)), nil
+	return UpdateCatalogRegistration200JSONResponse{
+		Body:    catalogRegistrationToAPI(*result),
+		Headers: UpdateCatalogRegistration200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // DeleteCatalogRegistration implements the endpoint for deleting a catalog registration.
@@ -109,14 +121,16 @@ func (h *APIHandler) DeleteCatalogRegistration(ctx context.Context, request Dele
 	if err := h.catalogRegistration.Delete(ctx, string(request.CatalogName)); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return DeleteCatalogRegistration403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return DeleteCatalogRegistration403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: DeleteCatalogRegistration403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return DeleteCatalogRegistration404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return DeleteCatalogRegistration404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: DeleteCatalogRegistration404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return DeleteCatalogRegistration204Response{}, nil
+	return DeleteCatalogRegistration204Response{
+		Headers: DeleteCatalogRegistration204ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // SetDefaultCatalog implements the endpoint for setting a catalog as the default.
@@ -125,16 +139,19 @@ func (h *APIHandler) SetDefaultCatalog(ctx context.Context, request SetDefaultCa
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return SetDefaultCatalog403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return SetDefaultCatalog403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: SetDefaultCatalog403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return SetDefaultCatalog404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return SetDefaultCatalog404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: SetDefaultCatalog404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, new(*domain.ValidationError)):
-			return SetDefaultCatalog403JSONResponse{Code: 400, Message: err.Error()}, nil
+			return SetDefaultCatalog403JSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: SetDefaultCatalog403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return SetDefaultCatalog200JSONResponse(catalogRegistrationToAPI(*result)), nil
+	return SetDefaultCatalog200JSONResponse{
+		Body:    catalogRegistrationToAPI(*result),
+		Headers: SetDefaultCatalog200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // catalogRegistrationToAPI converts a domain CatalogRegistration to the API type.
