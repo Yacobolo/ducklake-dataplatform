@@ -59,7 +59,7 @@ paths:
                     target_schema: "reporting"
                     edge_type: READ
                     principal_name: "etl-service"
-                     created_at: "2025-01-15T09:30:00Z"
+                    created_at: "2025-01-15T09:30:00Z"
         '400':
           $ref: '../schemas/responses.yaml#/responses/BadRequest'
         '401':
