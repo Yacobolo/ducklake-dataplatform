@@ -110,7 +110,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	// === 4. Repositories (read-pool) ===
 	introspectionRepo := repository.NewIntrospectionRepo(deps.ReadDB)
 	queryHistoryRepo := repository.NewQueryHistoryRepo(deps.ReadDB)
-	searchRepo := repository.NewSearchRepo(deps.ReadDB)
+	searchRepo := repository.NewSearchRepo(deps.ReadDB, deps.ReadDB)
 
 	// === 5. Compute resolver (needs endpoint repo, principal repo, group repo) ===
 	localExec := compute.NewLocalExecutor(deps.DuckDB)
@@ -134,10 +134,8 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	}
 
 	// === 7. Engine (needs auth + resolver + infoSchema provider) ===
-	// Use the factory's ForCatalog to get a default catalog repo for info schema
-	// (this creates a "lake" instance, but any ACTIVE catalog could work)
-	defaultCatalogRepo := catalogRepoFactory.ForCatalog("lake")
-	infoSchema := engine.NewInformationSchemaProvider(defaultCatalogRepo)
+	// InformationSchemaProvider aggregates metadata across all active catalogs.
+	infoSchema := engine.NewInformationSchemaProvider(catalogRepoFactory, catalogRegRepo)
 	eng := engine.NewSecureEngine(deps.DuckDB, authSvc, fullResolver, infoSchema, deps.Logger.With("component", "engine"))
 
 	// Restore external table VIEWs (best-effort)
@@ -155,7 +153,8 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	auditSvc := governance.NewAuditService(auditRepo)
 	queryHistorySvc := governance.NewQueryHistoryService(queryHistoryRepo)
 	lineageSvc := governance.NewLineageService(lineageRepo)
-	searchSvc := catalog.NewSearchService(searchRepo)
+	searchRepoFactory := repository.NewSearchRepoFactory(deps.ReadDB, catalogRegRepo)
+	searchSvc := catalog.NewSearchService(searchRepo, searchRepoFactory)
 	tagSvc := governance.NewTagService(tagRepo, auditRepo)
 	viewSvc := catalog.NewViewService(viewRepo, catalogRepoFactory, authSvc, auditRepo)
 	catalogSvc := catalog.NewCatalogService(catalogRepoFactory, authSvc, auditRepo, tagRepo, tableStatsRepo, externalLocRepo)

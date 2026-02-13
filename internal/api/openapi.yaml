@@ -3646,7 +3646,11 @@ paths:
       operationId: searchCatalog
       summary: Search catalog objects
       tags: [Governance]
-      description: Full-text search across schemas, tables, and columns.
+      description: >-
+        Full-text search across schemas, tables, and columns.
+        When the optional catalog parameter is provided, the search is scoped
+        to that catalog's metastore. When omitted, the search targets the
+        default catalog.
       parameters:
         - name: query
           in: query
@@ -3656,6 +3660,11 @@ paths:
         - name: type
           in: query
           description: "Filter by object type: schema, table, or column"
+          schema:
+            type: string
+        - name: catalog
+          in: query
+          description: "Scope search to a specific catalog (defaults to the default catalog)"
           schema:
             type: string
         - $ref: '#/components/parameters/MaxResults'

@@ -145,7 +145,7 @@ func setupTestServer(t *testing.T, principalName string) *httptest.Server {
 
 	queryHistorySvc := governance.NewQueryHistoryService(repository.NewQueryHistoryRepo(metaDB))
 	lineageSvc := governance.NewLineageService(lineageRepo)
-	searchSvc := catalog.NewSearchService(repository.NewSearchRepo(metaDB))
+	searchSvc := catalog.NewSearchService(repository.NewSearchRepo(metaDB, metaDB), nil)
 	tagSvc := governance.NewTagService(repository.NewTagRepo(metaDB), auditRepo)
 	viewSvc := catalog.NewViewService(repository.NewViewRepo(metaDB), catalogRepoFactory, cat, auditRepo)
 
@@ -431,7 +431,7 @@ func setupCatalogTestServer(t *testing.T, principalName string, mockRepo *mockCa
 
 	queryHistorySvc := governance.NewQueryHistoryService(repository.NewQueryHistoryRepo(metaDB))
 	lineageSvc := governance.NewLineageService(lineageRepo2)
-	searchSvc := catalog.NewSearchService(repository.NewSearchRepo(metaDB))
+	searchSvc := catalog.NewSearchService(repository.NewSearchRepo(metaDB, metaDB), nil)
 	tagSvc := governance.NewTagService(repository.NewTagRepo(metaDB), auditRepo)
 	viewSvc := catalog.NewViewService(repository.NewViewRepo(metaDB), mockFactory, cat, auditRepo)
 

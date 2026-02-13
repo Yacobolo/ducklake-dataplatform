@@ -1326,6 +1326,9 @@ type SearchCatalogParams struct {
 	// Type Filter by object type: schema, table, or column
 	Type *string `form:"type,omitempty" json:"type,omitempty"`
 
+	// Catalog Scope search to a specific catalog (defaults to the default catalog)
+	Catalog *string `form:"catalog,omitempty" json:"catalog,omitempty"`
+
 	// MaxResults Maximum number of results to return per page.
 	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
 
