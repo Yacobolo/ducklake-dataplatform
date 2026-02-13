@@ -74,13 +74,12 @@ func (q *Queries) CreateRowFilter(ctx context.Context, arg CreateRowFilterParams
 	return i, err
 }
 
-const deleteRowFilter = `-- name: DeleteRowFilter :exec
+const deleteRowFilter = `-- name: DeleteRowFilter :execresult
 DELETE FROM row_filters WHERE id = ?
 `
 
-func (q *Queries) DeleteRowFilter(ctx context.Context, id string) error {
-	_, err := q.db.ExecContext(ctx, deleteRowFilter, id)
-	return err
+func (q *Queries) DeleteRowFilter(ctx context.Context, id string) (sql.Result, error) {
+	return q.db.ExecContext(ctx, deleteRowFilter, id)
 }
 
 const deleteRowFiltersByTable = `-- name: DeleteRowFiltersByTable :exec
@@ -110,46 +109,6 @@ func (q *Queries) GetRowFilterBindingsForFilter(ctx context.Context, rowFilterID
 			&i.RowFilterID,
 			&i.PrincipalID,
 			&i.PrincipalType,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getRowFiltersForPrincipal = `-- name: GetRowFiltersForPrincipal :many
-SELECT rf.id, rf.table_id, rf.filter_sql, rf.description, rf.created_at FROM row_filters rf
-JOIN row_filter_bindings rfb ON rf.id = rfb.row_filter_id
-WHERE rfb.principal_id = ? AND rfb.principal_type = ?
-`
-
-type GetRowFiltersForPrincipalParams struct {
-	PrincipalID   string
-	PrincipalType string
-}
-
-func (q *Queries) GetRowFiltersForPrincipal(ctx context.Context, arg GetRowFiltersForPrincipalParams) ([]RowFilter, error) {
-	rows, err := q.db.QueryContext(ctx, getRowFiltersForPrincipal, arg.PrincipalID, arg.PrincipalType)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []RowFilter
-	for rows.Next() {
-		var i RowFilter
-		if err := rows.Scan(
-			&i.ID,
-			&i.TableID,
-			&i.FilterSql,
-			&i.Description,
-			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -277,7 +236,7 @@ func (q *Queries) ListRowFiltersForTablePaginated(ctx context.Context, arg ListR
 	return items, nil
 }
 
-const unbindRowFilter = `-- name: UnbindRowFilter :exec
+const unbindRowFilter = `-- name: UnbindRowFilter :execresult
 DELETE FROM row_filter_bindings
 WHERE row_filter_id = ? AND principal_id = ? AND principal_type = ?
 `
@@ -288,7 +247,6 @@ type UnbindRowFilterParams struct {
 	PrincipalType string
 }
 
-func (q *Queries) UnbindRowFilter(ctx context.Context, arg UnbindRowFilterParams) error {
-	_, err := q.db.ExecContext(ctx, unbindRowFilter, arg.RowFilterID, arg.PrincipalID, arg.PrincipalType)
-	return err
+func (q *Queries) UnbindRowFilter(ctx context.Context, arg UnbindRowFilterParams) (sql.Result, error) {
+	return q.db.ExecContext(ctx, unbindRowFilter, arg.RowFilterID, arg.PrincipalID, arg.PrincipalType)
 }

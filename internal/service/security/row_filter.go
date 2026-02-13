@@ -2,6 +2,9 @@ package security
 
 import (
 	"context"
+	"fmt"
+
+	pg_query "github.com/pganalyze/pg_query_go/v6"
 
 	"duck-demo/internal/domain"
 )
@@ -18,12 +21,18 @@ func NewRowFilterService(repo domain.RowFilterRepository, audit domain.AuditRepo
 }
 
 // Create validates and persists a new row filter. Requires admin privileges.
+// The filter_sql expression is validated as syntactically correct SQL before persisting.
 func (s *RowFilterService) Create(ctx context.Context, req domain.CreateRowFilterRequest) (*domain.RowFilter, error) {
 	if err := requireAdmin(ctx); err != nil {
 		return nil, err
 	}
 	if err := req.Validate(); err != nil {
 		return nil, err
+	}
+	// Validate filter_sql is syntactically valid SQL by parsing it through the PostgreSQL parser.
+	// This catches malformed expressions early rather than failing at query time.
+	if _, err := pg_query.Parse(fmt.Sprintf("SELECT 1 WHERE %s", req.FilterSQL)); err != nil {
+		return nil, domain.ErrValidation("filter_sql is not valid SQL: %v", err)
 	}
 	f := &domain.RowFilter{
 		TableID:     req.TableID,
@@ -42,8 +51,11 @@ func (s *RowFilterService) Create(ctx context.Context, req domain.CreateRowFilte
 	return result, nil
 }
 
-// GetForTable returns a paginated list of row filters for a table.
+// GetForTable returns a paginated list of row filters for a table. Requires admin privileges.
 func (s *RowFilterService) GetForTable(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.RowFilter, int64, error) {
+	if err := requireAdmin(ctx); err != nil {
+		return nil, 0, err
+	}
 	return s.repo.GetForTable(ctx, tableID, page)
 }
 
@@ -52,7 +64,15 @@ func (s *RowFilterService) Delete(ctx context.Context, id string) error {
 	if err := requireAdmin(ctx); err != nil {
 		return err
 	}
-	return s.repo.Delete(ctx, id)
+	if err := s.repo.Delete(ctx, id); err != nil {
+		return err
+	}
+	_ = s.audit.Insert(ctx, &domain.AuditEntry{
+		PrincipalName: callerName(ctx),
+		Action:        "DELETE_ROW_FILTER",
+		Status:        "ALLOWED",
+	})
+	return nil
 }
 
 // Bind associates a row filter with a principal or group. Requires admin privileges.
@@ -68,7 +88,15 @@ func (s *RowFilterService) Bind(ctx context.Context, req domain.BindRowFilterReq
 		PrincipalID:   req.PrincipalID,
 		PrincipalType: req.PrincipalType,
 	}
-	return s.repo.Bind(ctx, b)
+	if err := s.repo.Bind(ctx, b); err != nil {
+		return err
+	}
+	_ = s.audit.Insert(ctx, &domain.AuditEntry{
+		PrincipalName: callerName(ctx),
+		Action:        "BIND_ROW_FILTER",
+		Status:        "ALLOWED",
+	})
+	return nil
 }
 
 // Unbind removes a row filter binding from a principal or group. Requires admin privileges.
@@ -84,10 +112,21 @@ func (s *RowFilterService) Unbind(ctx context.Context, req domain.BindRowFilterR
 		PrincipalID:   req.PrincipalID,
 		PrincipalType: req.PrincipalType,
 	}
-	return s.repo.Unbind(ctx, b)
+	if err := s.repo.Unbind(ctx, b); err != nil {
+		return err
+	}
+	_ = s.audit.Insert(ctx, &domain.AuditEntry{
+		PrincipalName: callerName(ctx),
+		Action:        "UNBIND_ROW_FILTER",
+		Status:        "ALLOWED",
+	})
+	return nil
 }
 
-// ListBindings returns all bindings for a row filter.
+// ListBindings returns all bindings for a row filter. Requires admin privileges.
 func (s *RowFilterService) ListBindings(ctx context.Context, filterID string) ([]domain.RowFilterBinding, error) {
+	if err := requireAdmin(ctx); err != nil {
+		return nil, err
+	}
 	return s.repo.ListBindings(ctx, filterID)
 }

@@ -15,6 +15,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	_ "github.com/duckdb/duckdb-go/v2"
@@ -1436,4 +1437,120 @@ func TestAPI_ReadEndpoints_NoAdminRequired(t *testing.T) {
 	if resp2.StatusCode != http.StatusOK {
 		t.Errorf("list groups: got status %d, want 200", resp2.StatusCode)
 	}
+}
+
+// === Row Filter API Tests ===
+
+func TestAPI_RowFilterCRUD(t *testing.T) {
+	srv := setupSecurityTestServer(t, "admin-user", true)
+	defer srv.Close()
+
+	// Create a principal and table ID for testing.
+	resp := doRequest(t, http.MethodPost, srv.URL+"/principals", `{"name":"rls-user","type":"user"}`)
+	require.Equal(t, http.StatusCreated, resp.StatusCode)
+	p := decodeJSON[Principal](t, resp)
+
+	tableID := "test-table-id"
+
+	t.Run("create row filter", func(t *testing.T) {
+		body := `{"filter_sql":"\"Pclass\" = 1","description":"First class only"}`
+		resp := doRequest(t, http.MethodPost, srv.URL+"/tables/"+tableID+"/row-filters", body)
+		require.Equal(t, http.StatusCreated, resp.StatusCode)
+		rf := decodeJSON[RowFilter](t, resp)
+		require.NotNil(t, rf.Id)
+		require.NotNil(t, rf.FilterSql)
+		assert.Equal(t, `"Pclass" = 1`, *rf.FilterSql)
+	})
+
+	t.Run("create row filter top level", func(t *testing.T) {
+		body := fmt.Sprintf(`{"table_id":"%s","filter_sql":"\"Survived\" = 1"}`, tableID)
+		resp := doRequest(t, http.MethodPost, srv.URL+"/row-filters", body)
+		require.Equal(t, http.StatusCreated, resp.StatusCode)
+		rf := decodeJSON[RowFilter](t, resp)
+		require.NotNil(t, rf.Id)
+	})
+
+	t.Run("create row filter top level missing table_id", func(t *testing.T) {
+		body := `{"filter_sql":"\"Survived\" = 1"}`
+		resp := doRequest(t, http.MethodPost, srv.URL+"/row-filters", body)
+		defer resp.Body.Close() //nolint:errcheck
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	})
+
+	t.Run("create row filter invalid SQL", func(t *testing.T) {
+		body := `{"filter_sql":"NOT VALID ((("}`
+		resp := doRequest(t, http.MethodPost, srv.URL+"/tables/"+tableID+"/row-filters", body)
+		defer resp.Body.Close() //nolint:errcheck
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	})
+
+	t.Run("list row filters", func(t *testing.T) {
+		resp := doRequest(t, http.MethodGet, srv.URL+"/tables/"+tableID+"/row-filters", "")
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		list := decodeJSON[PaginatedRowFilters](t, resp)
+		require.NotNil(t, list.Data)
+		assert.GreaterOrEqual(t, len(*list.Data), 2)
+	})
+
+	t.Run("bind and unbind row filter", func(t *testing.T) {
+		// Create a filter.
+		body := `{"filter_sql":"\"Age\" > 18"}`
+		resp := doRequest(t, http.MethodPost, srv.URL+"/tables/"+tableID+"/row-filters", body)
+		require.Equal(t, http.StatusCreated, resp.StatusCode)
+		rf := decodeJSON[RowFilter](t, resp)
+		filterID := *rf.Id
+
+		// Bind.
+		bindBody := fmt.Sprintf(`{"principal_id":"%s","principal_type":"user"}`, *p.Id)
+		resp2 := doRequest(t, http.MethodPost, srv.URL+"/row-filters/"+filterID+"/bindings", bindBody)
+		defer resp2.Body.Close() //nolint:errcheck
+		require.Equal(t, http.StatusNoContent, resp2.StatusCode)
+
+		// Unbind.
+		unbindURL := fmt.Sprintf("%s/row-filters/%s/bindings?principal_id=%s&principal_type=user", srv.URL, filterID, *p.Id)
+		resp3 := doRequest(t, http.MethodDelete, unbindURL, "")
+		defer resp3.Body.Close() //nolint:errcheck
+		require.Equal(t, http.StatusNoContent, resp3.StatusCode)
+	})
+
+	t.Run("delete row filter", func(t *testing.T) {
+		// Create a filter to delete.
+		body := `{"filter_sql":"\"Fare\" > 100"}`
+		resp := doRequest(t, http.MethodPost, srv.URL+"/tables/"+tableID+"/row-filters", body)
+		require.Equal(t, http.StatusCreated, resp.StatusCode)
+		rf := decodeJSON[RowFilter](t, resp)
+
+		resp2 := doRequest(t, http.MethodDelete, srv.URL+"/row-filters/"+*rf.Id, "")
+		defer resp2.Body.Close() //nolint:errcheck
+		require.Equal(t, http.StatusNoContent, resp2.StatusCode)
+	})
+
+	t.Run("delete nonexistent row filter returns 404", func(t *testing.T) {
+		resp := doRequest(t, http.MethodDelete, srv.URL+"/row-filters/nonexistent-id", "")
+		defer resp.Body.Close() //nolint:errcheck
+		require.Equal(t, http.StatusNotFound, resp.StatusCode)
+	})
+}
+
+func TestAPI_RowFilter_NonAdminDenied(t *testing.T) {
+	srv := setupSecurityTestServer(t, "regular-user", false)
+	defer srv.Close()
+
+	t.Run("create denied", func(t *testing.T) {
+		resp := doRequest(t, http.MethodPost, srv.URL+"/tables/t1/row-filters", `{"filter_sql":"x = 1"}`)
+		defer resp.Body.Close() //nolint:errcheck
+		require.Equal(t, http.StatusForbidden, resp.StatusCode)
+	})
+
+	t.Run("list denied", func(t *testing.T) {
+		resp := doRequest(t, http.MethodGet, srv.URL+"/tables/t1/row-filters", "")
+		defer resp.Body.Close() //nolint:errcheck
+		require.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+	})
+
+	t.Run("delete denied", func(t *testing.T) {
+		resp := doRequest(t, http.MethodDelete, srv.URL+"/row-filters/rf-1", "")
+		defer resp.Body.Close() //nolint:errcheck
+		require.Equal(t, http.StatusForbidden, resp.StatusCode)
+	})
 }
