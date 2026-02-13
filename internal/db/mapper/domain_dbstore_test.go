@@ -221,7 +221,7 @@ func TestGroupFromDB(t *testing.T) {
 			CreatedAt: "2024-01-01 00:00:00",
 		}
 		got := GroupFromDB(db)
-		assert.Equal(t, "", got.Description)
+		assert.Empty(t, got.Description)
 	})
 }
 

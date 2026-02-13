@@ -27,7 +27,7 @@ func lineagePtrStr(s string) *string { return &s }
 func getLineageEdgeID(t *testing.T, db *sql.DB, sourceTable, targetTable string) string {
 	t.Helper()
 	var id string
-	err := db.QueryRow(
+	err := db.QueryRowContext(context.Background(),
 		"SELECT id FROM lineage_edges WHERE source_table = ? AND target_table = ? LIMIT 1",
 		sourceTable, targetTable,
 	).Scan(&id)
