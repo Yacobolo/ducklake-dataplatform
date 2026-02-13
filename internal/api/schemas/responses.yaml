@@ -1,0 +1,422 @@
+# Reusable response objects and path parameters for the DuckDB Data Platform API.
+# Referenced via: $ref: '../schemas/responses.yaml#/responses/BadRequest'
+
+responses:
+  BadRequest:
+    description: Invalid request parameters or malformed request body.
+    headers:
+      X-RateLimit-Limit:
+        description: Maximum requests allowed in the current window.
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+          format: int32
+      X-RateLimit-Remaining:
+        description: Requests remaining in the current window.
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+          format: int32
+      X-RateLimit-Reset:
+        description: UTC epoch seconds when the rate limit resets.
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 4102444800
+          format: int64
+    content:
+      application/json:
+        schema:
+          $ref: 'common.yaml#/Error'
+        example:
+          code: 400
+          message: "Invalid request: check the request body and parameters"
+
+  Unauthorized:
+    description: Authentication credentials are missing or invalid.
+    headers:
+      X-RateLimit-Limit:
+        description: Maximum requests allowed in the current window.
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+          format: int32
+      X-RateLimit-Remaining:
+        description: Requests remaining in the current window.
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+          format: int32
+      X-RateLimit-Reset:
+        description: UTC epoch seconds when the rate limit resets.
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 4102444800
+          format: int64
+    content:
+      application/json:
+        schema:
+          $ref: 'common.yaml#/Error'
+        example:
+          code: 401
+          message: "Authentication required"
+
+  Forbidden:
+    description: Insufficient privileges to perform this operation.
+    headers:
+      X-RateLimit-Limit:
+        description: Maximum requests allowed in the current window.
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+          format: int32
+      X-RateLimit-Remaining:
+        description: Requests remaining in the current window.
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+          format: int32
+      X-RateLimit-Reset:
+        description: UTC epoch seconds when the rate limit resets.
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 4102444800
+          format: int64
+    content:
+      application/json:
+        schema:
+          $ref: 'common.yaml#/Error'
+        example:
+          code: 403
+          message: "Insufficient privileges to perform this operation"
+
+  NotFound:
+    description: The requested resource was not found.
+    headers:
+      X-RateLimit-Limit:
+        description: Maximum requests allowed in the current window.
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+          format: int32
+      X-RateLimit-Remaining:
+        description: Requests remaining in the current window.
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+          format: int32
+      X-RateLimit-Reset:
+        description: UTC epoch seconds when the rate limit resets.
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 4102444800
+          format: int64
+    content:
+      application/json:
+        schema:
+          $ref: 'common.yaml#/Error'
+        example:
+          code: 404
+          message: "Resource not found"
+
+  Conflict:
+    description: The resource already exists or conflicts with current state.
+    headers:
+      X-RateLimit-Limit:
+        description: Maximum requests allowed in the current window.
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+          format: int32
+      X-RateLimit-Remaining:
+        description: Requests remaining in the current window.
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+          format: int32
+      X-RateLimit-Reset:
+        description: UTC epoch seconds when the rate limit resets.
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 4102444800
+          format: int64
+    content:
+      application/json:
+        schema:
+          $ref: 'common.yaml#/Error'
+        example:
+          code: 409
+          message: "Resource already exists"
+
+  RateLimitExceeded:
+    description: Rate limit exceeded. Retry after the indicated duration.
+    headers:
+      Retry-After:
+        description: Seconds to wait before retrying the request.
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 3600
+          format: int32
+      X-RateLimit-Limit:
+        description: Maximum requests allowed in the current window.
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+          format: int32
+      X-RateLimit-Remaining:
+        description: Requests remaining in the current window.
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+          format: int32
+      X-RateLimit-Reset:
+        description: UTC epoch seconds when the rate limit resets.
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 4102444800
+          format: int64
+    content:
+      application/json:
+        schema:
+          $ref: 'common.yaml#/Error'
+        example:
+          code: 429
+          message: "Rate limit exceeded, retry after 30 seconds"
+
+  InternalError:
+    description: An unexpected internal server error occurred.
+    headers:
+      X-RateLimit-Limit:
+        description: Maximum requests allowed in the current window.
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+          format: int32
+      X-RateLimit-Remaining:
+        description: Requests remaining in the current window.
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+          format: int32
+      X-RateLimit-Reset:
+        description: UTC epoch seconds when the rate limit resets.
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 4102444800
+          format: int64
+    content:
+      application/json:
+        schema:
+          $ref: 'common.yaml#/Error'
+        example:
+          code: 500
+          message: "An unexpected error occurred"
+
+# === Reusable path parameters ===
+
+parameters:
+  # --- String name path parameters ---
+  catalogName:
+    name: catalogName
+    in: path
+    required: true
+    description: Name of the catalog.
+    schema:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+  schemaName:
+    name: schemaName
+    in: path
+    required: true
+    description: Name of the database schema.
+    schema:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+  tableName:
+    name: tableName
+    in: path
+    required: true
+    description: Name of the table.
+    schema:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+  viewName:
+    name: viewName
+    in: path
+    required: true
+    description: Name of the view.
+    schema:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+  columnName:
+    name: columnName
+    in: path
+    required: true
+    description: Name of the column.
+    schema:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+  volumeName:
+    name: volumeName
+    in: path
+    required: true
+    description: Name of the volume.
+    schema:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+  credentialName:
+    name: credentialName
+    in: path
+    required: true
+    description: Name of the storage credential.
+    schema:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+  locationName:
+    name: locationName
+    in: path
+    required: true
+    description: Name of the external location.
+    schema:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+  endpointName:
+    name: endpointName
+    in: path
+    required: true
+    description: Name of the compute endpoint.
+    schema:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+
+  # --- Integer ID path parameters ---
+  principalId:
+    name: principalId
+    in: path
+    required: true
+    description: Unique identifier of the principal.
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+      maximum: 9223372036854775807
+  groupId:
+    name: groupId
+    in: path
+    required: true
+    description: Unique identifier of the group.
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+      maximum: 9223372036854775807
+  grantId:
+    name: grantId
+    in: path
+    required: true
+    description: Unique identifier of the grant.
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+      maximum: 9223372036854775807
+  apiKeyId:
+    name: apiKeyId
+    in: path
+    required: true
+    description: Unique identifier of the API key.
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+      maximum: 9223372036854775807
+  tableId:
+    name: tableId
+    in: path
+    required: true
+    description: Unique identifier of the table.
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+      maximum: 9223372036854775807
+  rowFilterId:
+    name: rowFilterId
+    in: path
+    required: true
+    description: Unique identifier of the row filter.
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+      maximum: 9223372036854775807
+  columnMaskId:
+    name: columnMaskId
+    in: path
+    required: true
+    description: Unique identifier of the column mask.
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+      maximum: 9223372036854775807
+  tagId:
+    name: tagId
+    in: path
+    required: true
+    description: Unique identifier of the tag.
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+      maximum: 9223372036854775807
+  assignmentId:
+    name: assignmentId
+    in: path
+    required: true
+    description: Unique identifier of the assignment.
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+      maximum: 9223372036854775807
+  edgeId:
+    name: edgeId
+    in: path
+    required: true
+    description: Unique identifier of the lineage edge.
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+      maximum: 9223372036854775807

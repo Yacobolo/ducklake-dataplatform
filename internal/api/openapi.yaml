@@ -50,20 +50,65 @@ components:
       name: X-API-Key
       description: API key authentication via the X-API-Key header.
 
+  responses:
+    BadRequest:
+      $ref: 'schemas/responses.yaml#/responses/BadRequest'
+    Unauthorized:
+      $ref: 'schemas/responses.yaml#/responses/Unauthorized'
+    Forbidden:
+      $ref: 'schemas/responses.yaml#/responses/Forbidden'
+    NotFound:
+      $ref: 'schemas/responses.yaml#/responses/NotFound'
+    Conflict:
+      $ref: 'schemas/responses.yaml#/responses/Conflict'
+    RateLimitExceeded:
+      $ref: 'schemas/responses.yaml#/responses/RateLimitExceeded'
+    InternalError:
+      $ref: 'schemas/responses.yaml#/responses/InternalError'
+
   parameters:
     MaxResults:
       $ref: 'schemas/common.yaml#/parameters/MaxResults'
     PageToken:
       $ref: 'schemas/common.yaml#/parameters/PageToken'
     catalogName:
-      name: catalogName
-      in: path
-      required: true
-      description: Name of the catalog
-      schema:
-        type: string
-        maxLength: 255
-        pattern: '^\S+$'
+      $ref: 'schemas/responses.yaml#/parameters/catalogName'
+    schemaName:
+      $ref: 'schemas/responses.yaml#/parameters/schemaName'
+    tableName:
+      $ref: 'schemas/responses.yaml#/parameters/tableName'
+    viewName:
+      $ref: 'schemas/responses.yaml#/parameters/viewName'
+    columnName:
+      $ref: 'schemas/responses.yaml#/parameters/columnName'
+    volumeName:
+      $ref: 'schemas/responses.yaml#/parameters/volumeName'
+    credentialName:
+      $ref: 'schemas/responses.yaml#/parameters/credentialName'
+    locationName:
+      $ref: 'schemas/responses.yaml#/parameters/locationName'
+    endpointName:
+      $ref: 'schemas/responses.yaml#/parameters/endpointName'
+    principalId:
+      $ref: 'schemas/responses.yaml#/parameters/principalId'
+    groupId:
+      $ref: 'schemas/responses.yaml#/parameters/groupId'
+    grantId:
+      $ref: 'schemas/responses.yaml#/parameters/grantId'
+    apiKeyId:
+      $ref: 'schemas/responses.yaml#/parameters/apiKeyId'
+    tableId:
+      $ref: 'schemas/responses.yaml#/parameters/tableId'
+    rowFilterId:
+      $ref: 'schemas/responses.yaml#/parameters/rowFilterId'
+    columnMaskId:
+      $ref: 'schemas/responses.yaml#/parameters/columnMaskId'
+    tagId:
+      $ref: 'schemas/responses.yaml#/parameters/tagId'
+    assignmentId:
+      $ref: 'schemas/responses.yaml#/parameters/assignmentId'
+    edgeId:
+      $ref: 'schemas/responses.yaml#/parameters/edgeId'
 
   schemas:
     Error:
