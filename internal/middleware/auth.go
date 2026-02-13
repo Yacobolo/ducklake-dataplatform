@@ -128,6 +128,7 @@ func (a *Authenticator) authenticateJWT(ctx context.Context, tokenStr string) (*
 			return nil, fmt.Errorf("principal resolution failed: %w", err)
 		}
 		return &domain.ContextPrincipal{
+			ID:      p.ID,
 			Name:    p.Name,
 			IsAdmin: p.IsAdmin,
 			Type:    p.Type,
@@ -139,6 +140,7 @@ func (a *Authenticator) authenticateJWT(ctx context.Context, tokenStr string) (*
 		p, err := a.principalRepo.GetByName(ctx, displayName)
 		if err == nil {
 			return &domain.ContextPrincipal{
+				ID:      p.ID,
 				Name:    p.Name,
 				IsAdmin: p.IsAdmin,
 				Type:    p.Type,
@@ -167,6 +169,7 @@ func (a *Authenticator) authenticateAPIKey(ctx context.Context, rawKey string) (
 	if a.principalRepo != nil {
 		if p, err := a.principalRepo.GetByName(ctx, principalName); err == nil {
 			return &domain.ContextPrincipal{
+				ID:      p.ID,
 				Name:    p.Name,
 				IsAdmin: p.IsAdmin,
 				Type:    p.Type,
