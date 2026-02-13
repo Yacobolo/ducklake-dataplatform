@@ -16,10 +16,10 @@ WHERE principal_id = ? AND principal_type = ? AND securable_type = ? AND securab
 `
 
 type CheckDirectGrantParams struct {
-	PrincipalID   int64
+	PrincipalID   string
 	PrincipalType string
 	SecurableType string
-	SecurableID   int64
+	SecurableID   string
 	Privilege     string
 }
 
@@ -43,10 +43,10 @@ WHERE principal_id = ? AND principal_type = ? AND securable_type = ? AND securab
 `
 
 type CheckDirectGrantAnyParams struct {
-	PrincipalID   int64
+	PrincipalID   string
 	PrincipalType string
 	SecurableType string
-	SecurableID   int64
+	SecurableID   string
 	Privilege     string
 }
 
@@ -69,7 +69,7 @@ WHERE principal_id = ? AND principal_type = ?
 `
 
 type CountGrantsForPrincipalParams struct {
-	PrincipalID   int64
+	PrincipalID   string
 	PrincipalType string
 }
 
@@ -87,7 +87,7 @@ WHERE securable_type = ? AND securable_id = ?
 
 type CountGrantsForSecurableParams struct {
 	SecurableType string
-	SecurableID   int64
+	SecurableID   string
 }
 
 func (q *Queries) CountGrantsForSecurable(ctx context.Context, arg CountGrantsForSecurableParams) (int64, error) {
@@ -98,22 +98,24 @@ func (q *Queries) CountGrantsForSecurable(ctx context.Context, arg CountGrantsFo
 }
 
 const grantPrivilege = `-- name: GrantPrivilege :one
-INSERT INTO privilege_grants (principal_id, principal_type, securable_type, securable_id, privilege, granted_by)
-VALUES (?, ?, ?, ?, ?, ?)
+INSERT INTO privilege_grants (id, principal_id, principal_type, securable_type, securable_id, privilege, granted_by)
+VALUES (?, ?, ?, ?, ?, ?, ?)
 RETURNING id, principal_id, principal_type, securable_type, securable_id, privilege, granted_by, granted_at
 `
 
 type GrantPrivilegeParams struct {
-	PrincipalID   int64
+	ID            string
+	PrincipalID   string
 	PrincipalType string
 	SecurableType string
-	SecurableID   int64
+	SecurableID   string
 	Privilege     string
-	GrantedBy     sql.NullInt64
+	GrantedBy     sql.NullString
 }
 
 func (q *Queries) GrantPrivilege(ctx context.Context, arg GrantPrivilegeParams) (PrivilegeGrant, error) {
 	row := q.db.QueryRowContext(ctx, grantPrivilege,
+		arg.ID,
 		arg.PrincipalID,
 		arg.PrincipalType,
 		arg.SecurableType,
@@ -144,8 +146,8 @@ WHERE (principal_type = 'user' AND principal_id = ?)
 `
 
 type ListAllGrantsForIdentitiesParams struct {
-	PrincipalID int64
-	MemberID    int64
+	PrincipalID string
+	MemberID    string
 }
 
 func (q *Queries) ListAllGrantsForIdentities(ctx context.Context, arg ListAllGrantsForIdentitiesParams) ([]PrivilegeGrant, error) {
@@ -186,7 +188,7 @@ WHERE principal_id = ? AND principal_type = ?
 `
 
 type ListGrantsForPrincipalParams struct {
-	PrincipalID   int64
+	PrincipalID   string
 	PrincipalType string
 }
 
@@ -228,10 +230,10 @@ WHERE principal_id = ? AND principal_type = ? AND securable_type = ? AND securab
 `
 
 type ListGrantsForPrincipalOnSecurableParams struct {
-	PrincipalID   int64
+	PrincipalID   string
 	PrincipalType string
 	SecurableType string
-	SecurableID   int64
+	SecurableID   string
 }
 
 func (q *Queries) ListGrantsForPrincipalOnSecurable(ctx context.Context, arg ListGrantsForPrincipalOnSecurableParams) ([]PrivilegeGrant, error) {
@@ -278,7 +280,7 @@ ORDER BY id LIMIT ? OFFSET ?
 `
 
 type ListGrantsForPrincipalPaginatedParams struct {
-	PrincipalID   int64
+	PrincipalID   string
 	PrincipalType string
 	Limit         int64
 	Offset        int64
@@ -328,7 +330,7 @@ WHERE securable_type = ? AND securable_id = ?
 
 type ListGrantsForSecurableParams struct {
 	SecurableType string
-	SecurableID   int64
+	SecurableID   string
 }
 
 func (q *Queries) ListGrantsForSecurable(ctx context.Context, arg ListGrantsForSecurableParams) ([]PrivilegeGrant, error) {
@@ -371,7 +373,7 @@ ORDER BY id LIMIT ? OFFSET ?
 
 type ListGrantsForSecurablePaginatedParams struct {
 	SecurableType string
-	SecurableID   int64
+	SecurableID   string
 	Limit         int64
 	Offset        int64
 }
@@ -419,10 +421,10 @@ WHERE principal_id = ? AND principal_type = ? AND securable_type = ? AND securab
 `
 
 type RevokePrivilegeParams struct {
-	PrincipalID   int64
+	PrincipalID   string
 	PrincipalType string
 	SecurableType string
-	SecurableID   int64
+	SecurableID   string
 	Privilege     string
 }
 
@@ -441,7 +443,7 @@ const revokePrivilegeByID = `-- name: RevokePrivilegeByID :exec
 DELETE FROM privilege_grants WHERE id = ?
 `
 
-func (q *Queries) RevokePrivilegeByID(ctx context.Context, id int64) error {
+func (q *Queries) RevokePrivilegeByID(ctx context.Context, id string) error {
 	_, err := q.db.ExecContext(ctx, revokePrivilegeByID, id)
 	return err
 }

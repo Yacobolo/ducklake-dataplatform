@@ -12,7 +12,7 @@ type CatalogInfo struct {
 
 // SchemaDetail is an enriched schema representation for the catalog API.
 type SchemaDetail struct {
-	SchemaID    int64
+	SchemaID    string
 	Name        string
 	CatalogName string
 	Comment     string
@@ -26,7 +26,7 @@ type SchemaDetail struct {
 
 // TableDetail is an enriched table representation for the catalog API.
 type TableDetail struct {
-	TableID      int64
+	TableID      string
 	Name         string
 	SchemaName   string
 	CatalogName  string

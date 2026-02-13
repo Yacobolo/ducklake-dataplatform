@@ -4,7 +4,7 @@ import "time"
 
 // Tag represents a tag definition.
 type Tag struct {
-	ID        int64
+	ID        string
 	Key       string
 	Value     *string
 	CreatedBy string
@@ -13,10 +13,10 @@ type Tag struct {
 
 // TagAssignment represents a tag assigned to a securable object.
 type TagAssignment struct {
-	ID            int64
-	TagID         int64
+	ID            string
+	TagID         string
 	SecurableType string // "schema", "table", "column"
-	SecurableID   int64
+	SecurableID   string
 	ColumnName    *string
 	AssignedBy    string
 	AssignedAt    time.Time

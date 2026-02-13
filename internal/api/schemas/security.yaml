@@ -2,8 +2,7 @@ Principal:
   type: object
   properties:
     id:
-      type: integer
-      format: int64
+      type: string
     name:
       type: string
     type:
@@ -48,8 +47,7 @@ Group:
   type: object
   properties:
     id:
-      type: integer
-      format: int64
+      type: string
     name:
       type: string
     description:
@@ -71,13 +69,11 @@ GroupMember:
   type: object
   properties:
     group_id:
-      type: integer
-      format: int64
+      type: string
     member_type:
       type: string
     member_id:
-      type: integer
-      format: int64
+      type: string
 
 CreateGroupMemberRequest:
   type: object
@@ -86,8 +82,7 @@ CreateGroupMemberRequest:
     member_type:
       type: string
     member_id:
-      type: integer
-      format: int64
+      type: string
 
 PaginatedGroups:
   type: object
@@ -113,23 +108,19 @@ PrivilegeGrant:
   type: object
   properties:
     id:
-      type: integer
-      format: int64
+      type: string
     principal_id:
-      type: integer
-      format: int64
+      type: string
     principal_type:
       type: string
     securable_type:
       type: string
     securable_id:
-      type: integer
-      format: int64
+      type: string
     privilege:
       type: string
     granted_by:
-      type: integer
-      format: int64
+      type: string
       nullable: true
     granted_at:
       type: string
@@ -140,15 +131,13 @@ CreateGrantRequest:
   required: [principal_id, principal_type, securable_type, securable_id, privilege]
   properties:
     principal_id:
-      type: integer
-      format: int64
+      type: string
     principal_type:
       type: string
     securable_type:
       type: string
     securable_id:
-      type: integer
-      format: int64
+      type: string
     privilege:
       type: string
 
@@ -166,11 +155,9 @@ APIKeyInfo:
   type: object
   properties:
     id:
-      type: integer
-      format: int64
+      type: string
     principal_id:
-      type: integer
-      format: int64
+      type: string
     name:
       type: string
     key_prefix:
@@ -188,8 +175,7 @@ CreateAPIKeyRequest:
   required: [principal_id, name]
   properties:
     principal_id:
-      type: integer
-      format: int64
+      type: string
     name:
       type: string
     expires_at:
@@ -200,8 +186,7 @@ CreateAPIKeyResponse:
   type: object
   properties:
     id:
-      type: integer
-      format: int64
+      type: string
     key:
       type: string
       description: Raw API key (shown only once)
@@ -238,11 +223,9 @@ RowFilter:
   type: object
   properties:
     id:
-      type: integer
-      format: int64
+      type: string
     table_id:
-      type: integer
-      format: int64
+      type: string
     filter_sql:
       type: string
     description:
@@ -256,8 +239,7 @@ CreateRowFilterRequest:
   required: [filter_sql]
   properties:
     table_id:
-      type: integer
-      format: int64
+      type: string
       description: Table ID (required when creating via top-level POST /row-filters)
     filter_sql:
       type: string
@@ -269,8 +251,7 @@ RowFilterBindingRequest:
   required: [principal_id, principal_type]
   properties:
     principal_id:
-      type: integer
-      format: int64
+      type: string
     principal_type:
       type: string
 
@@ -288,11 +269,9 @@ ColumnMask:
   type: object
   properties:
     id:
-      type: integer
-      format: int64
+      type: string
     table_id:
-      type: integer
-      format: int64
+      type: string
     column_name:
       type: string
     mask_expression:
@@ -319,8 +298,7 @@ ColumnMaskBindingRequest:
   required: [principal_id, principal_type]
   properties:
     principal_id:
-      type: integer
-      format: int64
+      type: string
     principal_type:
       type: string
     see_original:

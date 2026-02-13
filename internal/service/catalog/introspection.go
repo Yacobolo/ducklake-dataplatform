@@ -22,11 +22,11 @@ func (s *IntrospectionService) ListSchemas(ctx context.Context, page domain.Page
 }
 
 // ListTables returns a paginated list of tables in a schema.
-func (s *IntrospectionService) ListTables(ctx context.Context, schemaID int64, page domain.PageRequest) ([]domain.Table, int64, error) {
+func (s *IntrospectionService) ListTables(ctx context.Context, schemaID string, page domain.PageRequest) ([]domain.Table, int64, error) {
 	return s.repo.ListTables(ctx, schemaID, page)
 }
 
 // ListColumns returns a paginated list of columns for a table.
-func (s *IntrospectionService) ListColumns(ctx context.Context, tableID int64, page domain.PageRequest) ([]domain.Column, int64, error) {
+func (s *IntrospectionService) ListColumns(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.Column, int64, error) {
 	return s.repo.ListColumns(ctx, tableID, page)
 }

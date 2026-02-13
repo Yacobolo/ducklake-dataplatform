@@ -46,6 +46,7 @@ func (r *StorageCredentialRepo) Create(ctx context.Context, cred *domain.Storage
 	}
 
 	row, err := r.q.CreateStorageCredential(ctx, dbstore.CreateStorageCredentialParams{
+		ID:                         newID(),
 		Name:                       cred.Name,
 		CredentialType:             string(cred.CredentialType),
 		KeyIDEncrypted:             encKeyID,
@@ -69,7 +70,7 @@ func (r *StorageCredentialRepo) Create(ctx context.Context, cred *domain.Storage
 }
 
 // GetByID returns a storage credential by its ID, decrypting secrets.
-func (r *StorageCredentialRepo) GetByID(ctx context.Context, id int64) (*domain.StorageCredential, error) {
+func (r *StorageCredentialRepo) GetByID(ctx context.Context, id string) (*domain.StorageCredential, error) {
 	row, err := r.q.GetStorageCredential(ctx, id)
 	if err != nil {
 		return nil, mapDBError(err)
@@ -113,7 +114,7 @@ func (r *StorageCredentialRepo) List(ctx context.Context, page domain.PageReques
 }
 
 // Update applies partial updates to a storage credential by ID.
-func (r *StorageCredentialRepo) Update(ctx context.Context, id int64, req domain.UpdateStorageCredentialRequest) (*domain.StorageCredential, error) {
+func (r *StorageCredentialRepo) Update(ctx context.Context, id string, req domain.UpdateStorageCredentialRequest) (*domain.StorageCredential, error) {
 	// Fetch current to fill in defaults for COALESCE
 	current, err := r.GetByID(ctx, id)
 	if err != nil {
@@ -222,7 +223,7 @@ func (r *StorageCredentialRepo) Update(ctx context.Context, id int64, req domain
 }
 
 // Delete removes a storage credential by ID.
-func (r *StorageCredentialRepo) Delete(ctx context.Context, id int64) error {
+func (r *StorageCredentialRepo) Delete(ctx context.Context, id string) error {
 	return mapDBError(r.q.DeleteStorageCredential(ctx, id))
 }
 

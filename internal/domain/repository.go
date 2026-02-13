@@ -8,65 +8,65 @@ import (
 // PrincipalRepository provides CRUD operations for principals.
 type PrincipalRepository interface {
 	Create(ctx context.Context, p *Principal) (*Principal, error)
-	GetByID(ctx context.Context, id int64) (*Principal, error)
+	GetByID(ctx context.Context, id string) (*Principal, error)
 	GetByName(ctx context.Context, name string) (*Principal, error)
 	GetByExternalID(ctx context.Context, issuer, externalID string) (*Principal, error)
 	List(ctx context.Context, page PageRequest) ([]Principal, int64, error)
-	Delete(ctx context.Context, id int64) error
-	SetAdmin(ctx context.Context, id int64, isAdmin bool) error
+	Delete(ctx context.Context, id string) error
+	SetAdmin(ctx context.Context, id string, isAdmin bool) error
 }
 
 // GroupRepository provides CRUD operations for groups and membership.
 type GroupRepository interface {
 	Create(ctx context.Context, g *Group) (*Group, error)
-	GetByID(ctx context.Context, id int64) (*Group, error)
+	GetByID(ctx context.Context, id string) (*Group, error)
 	GetByName(ctx context.Context, name string) (*Group, error)
 	List(ctx context.Context, page PageRequest) ([]Group, int64, error)
-	Delete(ctx context.Context, id int64) error
+	Delete(ctx context.Context, id string) error
 	AddMember(ctx context.Context, m *GroupMember) error
 	RemoveMember(ctx context.Context, m *GroupMember) error
-	ListMembers(ctx context.Context, groupID int64, page PageRequest) ([]GroupMember, int64, error)
-	GetGroupsForMember(ctx context.Context, memberType string, memberID int64) ([]Group, error)
+	ListMembers(ctx context.Context, groupID string, page PageRequest) ([]GroupMember, int64, error)
+	GetGroupsForMember(ctx context.Context, memberType string, memberID string) ([]Group, error)
 }
 
 // GrantRepository provides operations for privilege grants.
 type GrantRepository interface {
 	Grant(ctx context.Context, g *PrivilegeGrant) (*PrivilegeGrant, error)
 	Revoke(ctx context.Context, g *PrivilegeGrant) error
-	RevokeByID(ctx context.Context, id int64) error
-	ListForPrincipal(ctx context.Context, principalID int64, principalType string, page PageRequest) ([]PrivilegeGrant, int64, error)
-	ListForSecurable(ctx context.Context, securableType string, securableID int64, page PageRequest) ([]PrivilegeGrant, int64, error)
-	HasPrivilege(ctx context.Context, principalID int64, principalType, securableType string, securableID int64, privilege string) (bool, error)
+	RevokeByID(ctx context.Context, id string) error
+	ListForPrincipal(ctx context.Context, principalID string, principalType string, page PageRequest) ([]PrivilegeGrant, int64, error)
+	ListForSecurable(ctx context.Context, securableType string, securableID string, page PageRequest) ([]PrivilegeGrant, int64, error)
+	HasPrivilege(ctx context.Context, principalID string, principalType, securableType string, securableID string, privilege string) (bool, error)
 }
 
 // RowFilterRepository provides CRUD operations for row filters and bindings.
 type RowFilterRepository interface {
 	Create(ctx context.Context, f *RowFilter) (*RowFilter, error)
-	GetForTable(ctx context.Context, tableID int64, page PageRequest) ([]RowFilter, int64, error)
-	Delete(ctx context.Context, id int64) error
+	GetForTable(ctx context.Context, tableID string, page PageRequest) ([]RowFilter, int64, error)
+	Delete(ctx context.Context, id string) error
 	Bind(ctx context.Context, b *RowFilterBinding) error
 	Unbind(ctx context.Context, b *RowFilterBinding) error
-	ListBindings(ctx context.Context, filterID int64) ([]RowFilterBinding, error)
-	GetForTableAndPrincipal(ctx context.Context, tableID, principalID int64, principalType string) ([]RowFilter, error)
+	ListBindings(ctx context.Context, filterID string) ([]RowFilterBinding, error)
+	GetForTableAndPrincipal(ctx context.Context, tableID, principalID string, principalType string) ([]RowFilter, error)
 }
 
 // ColumnMaskRepository provides CRUD operations for column masks and bindings.
 type ColumnMaskRepository interface {
 	Create(ctx context.Context, m *ColumnMask) (*ColumnMask, error)
-	GetForTable(ctx context.Context, tableID int64, page PageRequest) ([]ColumnMask, int64, error)
-	Delete(ctx context.Context, id int64) error
+	GetForTable(ctx context.Context, tableID string, page PageRequest) ([]ColumnMask, int64, error)
+	Delete(ctx context.Context, id string) error
 	Bind(ctx context.Context, b *ColumnMaskBinding) error
 	Unbind(ctx context.Context, b *ColumnMaskBinding) error
-	ListBindings(ctx context.Context, maskID int64) ([]ColumnMaskBinding, error)
-	GetForTableAndPrincipal(ctx context.Context, tableID, principalID int64, principalType string) ([]ColumnMaskWithBinding, error)
+	ListBindings(ctx context.Context, maskID string) ([]ColumnMaskBinding, error)
+	GetForTableAndPrincipal(ctx context.Context, tableID, principalID string, principalType string) ([]ColumnMaskWithBinding, error)
 }
 
 // APIKeyRepository provides CRUD operations for API keys.
 type APIKeyRepository interface {
 	Create(ctx context.Context, key *APIKey) error
 	GetByHash(ctx context.Context, hash string) (*APIKey, *Principal, error)
-	ListByPrincipal(ctx context.Context, principalID int64, page PageRequest) ([]APIKey, int64, error)
-	Delete(ctx context.Context, id int64) error
+	ListByPrincipal(ctx context.Context, principalID string, page PageRequest) ([]APIKey, int64, error)
+	Delete(ctx context.Context, id string) error
 	DeleteExpired(ctx context.Context) (int64, error)
 }
 
@@ -88,9 +88,9 @@ type AuditRepository interface {
 // IntrospectionRepository provides read-only access to DuckLake metadata.
 type IntrospectionRepository interface {
 	ListSchemas(ctx context.Context, page PageRequest) ([]Schema, int64, error)
-	ListTables(ctx context.Context, schemaID int64, page PageRequest) ([]Table, int64, error)
-	GetTable(ctx context.Context, tableID int64) (*Table, error)
-	ListColumns(ctx context.Context, tableID int64, page PageRequest) ([]Column, int64, error)
+	ListTables(ctx context.Context, schemaID string, page PageRequest) ([]Table, int64, error)
+	GetTable(ctx context.Context, tableID string) (*Table, error)
+	ListColumns(ctx context.Context, tableID string, page PageRequest) ([]Column, int64, error)
 	GetTableByName(ctx context.Context, tableName string) (*Table, error)
 	GetSchemaByName(ctx context.Context, schemaName string) (*Schema, error)
 }
@@ -115,7 +115,7 @@ type CatalogRepository interface {
 	UpdateCatalog(ctx context.Context, comment *string) (*CatalogInfo, error)
 	UpdateColumn(ctx context.Context, schemaName, tableName, columnName string, comment *string, props map[string]string) (*ColumnDetail, error)
 	ListColumns(ctx context.Context, schemaName, tableName string, page PageRequest) ([]ColumnDetail, int64, error)
-	SetSchemaStoragePath(ctx context.Context, schemaID int64, path string) error
+	SetSchemaStoragePath(ctx context.Context, schemaID string, path string) error
 }
 
 // QueryHistoryRepository provides query history operations.
@@ -128,7 +128,7 @@ type LineageRepository interface {
 	InsertEdge(ctx context.Context, edge *LineageEdge) error
 	GetUpstream(ctx context.Context, tableName string, page PageRequest) ([]LineageEdge, int64, error)
 	GetDownstream(ctx context.Context, tableName string, page PageRequest) ([]LineageEdge, int64, error)
-	DeleteEdge(ctx context.Context, id int64) error
+	DeleteEdge(ctx context.Context, id string) error
 	PurgeOlderThan(ctx context.Context, before time.Time) (int64, error)
 }
 
@@ -147,42 +147,42 @@ type SearchRepository interface {
 // TagRepository provides CRUD operations for tags and assignments.
 type TagRepository interface {
 	CreateTag(ctx context.Context, tag *Tag) (*Tag, error)
-	GetTag(ctx context.Context, id int64) (*Tag, error)
+	GetTag(ctx context.Context, id string) (*Tag, error)
 	ListTags(ctx context.Context, page PageRequest) ([]Tag, int64, error)
-	DeleteTag(ctx context.Context, id int64) error
+	DeleteTag(ctx context.Context, id string) error
 	AssignTag(ctx context.Context, assignment *TagAssignment) (*TagAssignment, error)
-	UnassignTag(ctx context.Context, id int64) error
-	ListTagsForSecurable(ctx context.Context, securableType string, securableID int64, columnName *string) ([]Tag, error)
-	ListAssignmentsForTag(ctx context.Context, tagID int64) ([]TagAssignment, error)
+	UnassignTag(ctx context.Context, id string) error
+	ListTagsForSecurable(ctx context.Context, securableType string, securableID string, columnName *string) ([]Tag, error)
+	ListAssignmentsForTag(ctx context.Context, tagID string) ([]TagAssignment, error)
 }
 
 // ViewRepository provides CRUD operations for views.
 type ViewRepository interface {
 	Create(ctx context.Context, view *ViewDetail) (*ViewDetail, error)
-	GetByName(ctx context.Context, schemaID int64, viewName string) (*ViewDetail, error)
-	List(ctx context.Context, schemaID int64, page PageRequest) ([]ViewDetail, int64, error)
-	Delete(ctx context.Context, schemaID int64, viewName string) error
-	Update(ctx context.Context, schemaID int64, viewName string, comment *string, props map[string]string, viewDef *string) (*ViewDetail, error)
+	GetByName(ctx context.Context, schemaID string, viewName string) (*ViewDetail, error)
+	List(ctx context.Context, schemaID string, page PageRequest) ([]ViewDetail, int64, error)
+	Delete(ctx context.Context, schemaID string, viewName string) error
+	Update(ctx context.Context, schemaID string, viewName string, comment *string, props map[string]string, viewDef *string) (*ViewDetail, error)
 }
 
 // StorageCredentialRepository provides CRUD operations for storage credentials.
 type StorageCredentialRepository interface {
 	Create(ctx context.Context, cred *StorageCredential) (*StorageCredential, error)
-	GetByID(ctx context.Context, id int64) (*StorageCredential, error)
+	GetByID(ctx context.Context, id string) (*StorageCredential, error)
 	GetByName(ctx context.Context, name string) (*StorageCredential, error)
 	List(ctx context.Context, page PageRequest) ([]StorageCredential, int64, error)
-	Update(ctx context.Context, id int64, req UpdateStorageCredentialRequest) (*StorageCredential, error)
-	Delete(ctx context.Context, id int64) error
+	Update(ctx context.Context, id string, req UpdateStorageCredentialRequest) (*StorageCredential, error)
+	Delete(ctx context.Context, id string) error
 }
 
 // ExternalLocationRepository provides CRUD operations for external locations.
 type ExternalLocationRepository interface {
 	Create(ctx context.Context, loc *ExternalLocation) (*ExternalLocation, error)
-	GetByID(ctx context.Context, id int64) (*ExternalLocation, error)
+	GetByID(ctx context.Context, id string) (*ExternalLocation, error)
 	GetByName(ctx context.Context, name string) (*ExternalLocation, error)
 	List(ctx context.Context, page PageRequest) ([]ExternalLocation, int64, error)
-	Update(ctx context.Context, id int64, req UpdateExternalLocationRequest) (*ExternalLocation, error)
-	Delete(ctx context.Context, id int64) error
+	Update(ctx context.Context, id string, req UpdateExternalLocationRequest) (*ExternalLocation, error)
+	Delete(ctx context.Context, id string) error
 }
 
 // VolumeRepository provides CRUD operations for volumes.
@@ -190,15 +190,15 @@ type VolumeRepository interface {
 	Create(ctx context.Context, vol *Volume) (*Volume, error)
 	GetByName(ctx context.Context, schemaName, name string) (*Volume, error)
 	List(ctx context.Context, schemaName string, page PageRequest) ([]Volume, int64, error)
-	Update(ctx context.Context, id int64, req UpdateVolumeRequest) (*Volume, error)
-	Delete(ctx context.Context, id int64) error
+	Update(ctx context.Context, id string, req UpdateVolumeRequest) (*Volume, error)
+	Delete(ctx context.Context, id string) error
 }
 
 // ExternalTableRepository provides CRUD operations for external tables.
 type ExternalTableRepository interface {
 	Create(ctx context.Context, et *ExternalTableRecord) (*ExternalTableRecord, error)
 	GetByName(ctx context.Context, schemaName, tableName string) (*ExternalTableRecord, error)
-	GetByID(ctx context.Context, id int64) (*ExternalTableRecord, error)
+	GetByID(ctx context.Context, id string) (*ExternalTableRecord, error)
 	GetByTableName(ctx context.Context, tableName string) (*ExternalTableRecord, error)
 	List(ctx context.Context, schemaName string, page PageRequest) ([]ExternalTableRecord, int64, error)
 	ListAll(ctx context.Context) ([]ExternalTableRecord, error)
@@ -209,28 +209,28 @@ type ExternalTableRepository interface {
 // CatalogRegistrationRepository provides CRUD operations for catalog registrations.
 type CatalogRegistrationRepository interface {
 	Create(ctx context.Context, reg *CatalogRegistration) (*CatalogRegistration, error)
-	GetByID(ctx context.Context, id int64) (*CatalogRegistration, error)
+	GetByID(ctx context.Context, id string) (*CatalogRegistration, error)
 	GetByName(ctx context.Context, name string) (*CatalogRegistration, error)
 	List(ctx context.Context, page PageRequest) ([]CatalogRegistration, int64, error)
-	Update(ctx context.Context, id int64, req UpdateCatalogRegistrationRequest) (*CatalogRegistration, error)
-	Delete(ctx context.Context, id int64) error
-	UpdateStatus(ctx context.Context, id int64, status CatalogStatus, message string) error
+	Update(ctx context.Context, id string, req UpdateCatalogRegistrationRequest) (*CatalogRegistration, error)
+	Delete(ctx context.Context, id string) error
+	UpdateStatus(ctx context.Context, id string, status CatalogStatus, message string) error
 	GetDefault(ctx context.Context) (*CatalogRegistration, error)
-	SetDefault(ctx context.Context, id int64) error
+	SetDefault(ctx context.Context, id string) error
 }
 
 // ComputeEndpointRepository provides CRUD operations for compute endpoints and assignments.
 type ComputeEndpointRepository interface {
 	Create(ctx context.Context, ep *ComputeEndpoint) (*ComputeEndpoint, error)
-	GetByID(ctx context.Context, id int64) (*ComputeEndpoint, error)
+	GetByID(ctx context.Context, id string) (*ComputeEndpoint, error)
 	GetByName(ctx context.Context, name string) (*ComputeEndpoint, error)
 	List(ctx context.Context, page PageRequest) ([]ComputeEndpoint, int64, error)
-	Update(ctx context.Context, id int64, req UpdateComputeEndpointRequest) (*ComputeEndpoint, error)
-	Delete(ctx context.Context, id int64) error
-	UpdateStatus(ctx context.Context, id int64, status string) error
+	Update(ctx context.Context, id string, req UpdateComputeEndpointRequest) (*ComputeEndpoint, error)
+	Delete(ctx context.Context, id string) error
+	UpdateStatus(ctx context.Context, id string, status string) error
 	Assign(ctx context.Context, a *ComputeAssignment) (*ComputeAssignment, error)
-	Unassign(ctx context.Context, id int64) error
-	ListAssignments(ctx context.Context, endpointID int64, page PageRequest) ([]ComputeAssignment, int64, error)
-	GetDefaultForPrincipal(ctx context.Context, principalID int64, principalType string) (*ComputeEndpoint, error)
-	GetAssignmentsForPrincipal(ctx context.Context, principalID int64, principalType string) ([]ComputeEndpoint, error)
+	Unassign(ctx context.Context, id string) error
+	ListAssignments(ctx context.Context, endpointID string, page PageRequest) ([]ComputeAssignment, int64, error)
+	GetDefaultForPrincipal(ctx context.Context, principalID string, principalType string) (*ComputeEndpoint, error)
+	GetAssignmentsForPrincipal(ctx context.Context, principalID string, principalType string) ([]ComputeEndpoint, error)
 }

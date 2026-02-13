@@ -4,7 +4,7 @@ import "time"
 
 // LineageEdge represents a relationship between tables discovered from query execution.
 type LineageEdge struct {
-	ID            int64
+	ID            string
 	SourceTable   string
 	TargetTable   *string
 	SourceSchema  string

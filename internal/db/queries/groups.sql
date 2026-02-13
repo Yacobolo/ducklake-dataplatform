@@ -1,6 +1,6 @@
 -- name: CreateGroup :one
-INSERT INTO groups (name, description)
-VALUES (?, ?)
+INSERT INTO groups (id, name, description)
+VALUES (?, ?, ?)
 RETURNING *;
 
 -- name: GetGroup :one

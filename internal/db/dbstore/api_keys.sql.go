@@ -14,7 +14,7 @@ const countAPIKeysForPrincipal = `-- name: CountAPIKeysForPrincipal :one
 SELECT COUNT(*) as cnt FROM api_keys WHERE principal_id = ?
 `
 
-func (q *Queries) CountAPIKeysForPrincipal(ctx context.Context, principalID int64) (int64, error) {
+func (q *Queries) CountAPIKeysForPrincipal(ctx context.Context, principalID string) (int64, error) {
 	row := q.db.QueryRowContext(ctx, countAPIKeysForPrincipal, principalID)
 	var cnt int64
 	err := row.Scan(&cnt)
@@ -22,20 +22,22 @@ func (q *Queries) CountAPIKeysForPrincipal(ctx context.Context, principalID int6
 }
 
 const createAPIKey = `-- name: CreateAPIKey :one
-INSERT INTO api_keys (key_hash, principal_id, name, expires_at)
-VALUES (?, ?, ?, ?)
+INSERT INTO api_keys (id, key_hash, principal_id, name, expires_at)
+VALUES (?, ?, ?, ?, ?)
 RETURNING id, key_hash, principal_id, name, expires_at, created_at
 `
 
 type CreateAPIKeyParams struct {
+	ID          string
 	KeyHash     string
-	PrincipalID int64
+	PrincipalID string
 	Name        string
 	ExpiresAt   sql.NullString
 }
 
 func (q *Queries) CreateAPIKey(ctx context.Context, arg CreateAPIKeyParams) (ApiKey, error) {
 	row := q.db.QueryRowContext(ctx, createAPIKey,
+		arg.ID,
 		arg.KeyHash,
 		arg.PrincipalID,
 		arg.Name,
@@ -57,7 +59,7 @@ const deleteAPIKey = `-- name: DeleteAPIKey :exec
 DELETE FROM api_keys WHERE id = ?
 `
 
-func (q *Queries) DeleteAPIKey(ctx context.Context, id int64) error {
+func (q *Queries) DeleteAPIKey(ctx context.Context, id string) error {
 	_, err := q.db.ExecContext(ctx, deleteAPIKey, id)
 	return err
 }
@@ -77,9 +79,9 @@ WHERE ak.key_hash = ? AND (ak.expires_at IS NULL OR ak.expires_at > datetime('no
 `
 
 type GetAPIKeyByHashRow struct {
-	ID            int64
+	ID            string
 	KeyHash       string
-	PrincipalID   int64
+	PrincipalID   string
 	Name          string
 	ExpiresAt     sql.NullString
 	CreatedAt     string
@@ -105,7 +107,7 @@ const getAPIKeyByID = `-- name: GetAPIKeyByID :one
 SELECT id, key_hash, principal_id, name, expires_at, created_at FROM api_keys WHERE id = ?
 `
 
-func (q *Queries) GetAPIKeyByID(ctx context.Context, id int64) (ApiKey, error) {
+func (q *Queries) GetAPIKeyByID(ctx context.Context, id string) (ApiKey, error) {
 	row := q.db.QueryRowContext(ctx, getAPIKeyByID, id)
 	var i ApiKey
 	err := row.Scan(
@@ -123,7 +125,7 @@ const listAPIKeysForPrincipal = `-- name: ListAPIKeysForPrincipal :many
 SELECT id, key_hash, principal_id, name, expires_at, created_at FROM api_keys WHERE principal_id = ? ORDER BY created_at DESC
 `
 
-func (q *Queries) ListAPIKeysForPrincipal(ctx context.Context, principalID int64) ([]ApiKey, error) {
+func (q *Queries) ListAPIKeysForPrincipal(ctx context.Context, principalID string) ([]ApiKey, error) {
 	rows, err := q.db.QueryContext(ctx, listAPIKeysForPrincipal, principalID)
 	if err != nil {
 		return nil, err
@@ -158,7 +160,7 @@ SELECT id, key_hash, principal_id, name, expires_at, created_at FROM api_keys WH
 `
 
 type ListAPIKeysForPrincipalPaginatedParams struct {
-	PrincipalID int64
+	PrincipalID string
 	Limit       int64
 	Offset      int64
 }

@@ -22,17 +22,23 @@ func (q *Queries) CountTags(ctx context.Context) (int64, error) {
 }
 
 const createTag = `-- name: CreateTag :one
-INSERT INTO tags (key, value, created_by) VALUES (?, ?, ?) RETURNING id, "key", value, created_by, created_at
+INSERT INTO tags (id, key, value, created_by) VALUES (?, ?, ?, ?) RETURNING id, "key", value, created_by, created_at
 `
 
 type CreateTagParams struct {
+	ID        string
 	Key       string
 	Value     sql.NullString
 	CreatedBy string
 }
 
 func (q *Queries) CreateTag(ctx context.Context, arg CreateTagParams) (Tag, error) {
-	row := q.db.QueryRowContext(ctx, createTag, arg.Key, arg.Value, arg.CreatedBy)
+	row := q.db.QueryRowContext(ctx, createTag,
+		arg.ID,
+		arg.Key,
+		arg.Value,
+		arg.CreatedBy,
+	)
 	var i Tag
 	err := row.Scan(
 		&i.ID,
@@ -45,20 +51,22 @@ func (q *Queries) CreateTag(ctx context.Context, arg CreateTagParams) (Tag, erro
 }
 
 const createTagAssignment = `-- name: CreateTagAssignment :one
-INSERT INTO tag_assignments (tag_id, securable_type, securable_id, column_name, assigned_by)
-VALUES (?, ?, ?, ?, ?) RETURNING id, tag_id, securable_type, securable_id, column_name, assigned_by, assigned_at
+INSERT INTO tag_assignments (id, tag_id, securable_type, securable_id, column_name, assigned_by)
+VALUES (?, ?, ?, ?, ?, ?) RETURNING id, tag_id, securable_type, securable_id, column_name, assigned_by, assigned_at
 `
 
 type CreateTagAssignmentParams struct {
-	TagID         int64
+	ID            string
+	TagID         string
 	SecurableType string
-	SecurableID   int64
+	SecurableID   string
 	ColumnName    sql.NullString
 	AssignedBy    string
 }
 
 func (q *Queries) CreateTagAssignment(ctx context.Context, arg CreateTagAssignmentParams) (TagAssignment, error) {
 	row := q.db.QueryRowContext(ctx, createTagAssignment,
+		arg.ID,
 		arg.TagID,
 		arg.SecurableType,
 		arg.SecurableID,
@@ -82,7 +90,7 @@ const deleteTag = `-- name: DeleteTag :exec
 DELETE FROM tags WHERE id = ?
 `
 
-func (q *Queries) DeleteTag(ctx context.Context, id int64) error {
+func (q *Queries) DeleteTag(ctx context.Context, id string) error {
 	_, err := q.db.ExecContext(ctx, deleteTag, id)
 	return err
 }
@@ -91,7 +99,7 @@ const deleteTagAssignment = `-- name: DeleteTagAssignment :exec
 DELETE FROM tag_assignments WHERE id = ?
 `
 
-func (q *Queries) DeleteTagAssignment(ctx context.Context, id int64) error {
+func (q *Queries) DeleteTagAssignment(ctx context.Context, id string) error {
 	_, err := q.db.ExecContext(ctx, deleteTagAssignment, id)
 	return err
 }
@@ -102,7 +110,7 @@ DELETE FROM tag_assignments WHERE securable_type = ? AND securable_id = ?
 
 type DeleteTagAssignmentsBySecurableParams struct {
 	SecurableType string
-	SecurableID   int64
+	SecurableID   string
 }
 
 func (q *Queries) DeleteTagAssignmentsBySecurable(ctx context.Context, arg DeleteTagAssignmentsBySecurableParams) error {
@@ -117,7 +125,7 @@ DELETE FROM tag_assignments WHERE securable_type IN (?, ?) AND securable_id = ?
 type DeleteTagAssignmentsBySecurableTypesParams struct {
 	SecurableType   string
 	SecurableType_2 string
-	SecurableID     int64
+	SecurableID     string
 }
 
 func (q *Queries) DeleteTagAssignmentsBySecurableTypes(ctx context.Context, arg DeleteTagAssignmentsBySecurableTypesParams) error {
@@ -129,7 +137,7 @@ const getTag = `-- name: GetTag :one
 SELECT id, "key", value, created_by, created_at FROM tags WHERE id = ?
 `
 
-func (q *Queries) GetTag(ctx context.Context, id int64) (Tag, error) {
+func (q *Queries) GetTag(ctx context.Context, id string) (Tag, error) {
 	row := q.db.QueryRowContext(ctx, getTag, id)
 	var i Tag
 	err := row.Scan(
@@ -146,7 +154,7 @@ const listAssignmentsForTag = `-- name: ListAssignmentsForTag :many
 SELECT id, tag_id, securable_type, securable_id, column_name, assigned_by, assigned_at FROM tag_assignments WHERE tag_id = ?
 `
 
-func (q *Queries) ListAssignmentsForTag(ctx context.Context, tagID int64) ([]TagAssignment, error) {
+func (q *Queries) ListAssignmentsForTag(ctx context.Context, tagID string) ([]TagAssignment, error) {
 	rows, err := q.db.QueryContext(ctx, listAssignmentsForTag, tagID)
 	if err != nil {
 		return nil, err
@@ -225,7 +233,7 @@ ORDER BY t.key, t.value
 
 type ListTagsForSecurableParams struct {
 	SecurableType string
-	SecurableID   int64
+	SecurableID   string
 	Column3       interface{}
 	ColumnName    sql.NullString
 }

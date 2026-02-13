@@ -2,8 +2,7 @@ ComputeEndpoint:
   type: object
   properties:
     id:
-      type: integer
-      format: int64
+      type: string
     external_id:
       type: string
       format: uuid
@@ -84,17 +83,14 @@ ComputeAssignment:
   type: object
   properties:
     id:
-      type: integer
-      format: int64
+      type: string
     principal_id:
-      type: integer
-      format: int64
+      type: string
     principal_type:
       type: string
       enum: [user, group]
     endpoint_id:
-      type: integer
-      format: int64
+      type: string
     endpoint_name:
       type: string
     is_default:
@@ -110,8 +106,7 @@ CreateComputeAssignmentRequest:
   required: [principal_id, principal_type]
   properties:
     principal_id:
-      type: integer
-      format: int64
+      type: string
     principal_type:
       type: string
       enum: [user, group]

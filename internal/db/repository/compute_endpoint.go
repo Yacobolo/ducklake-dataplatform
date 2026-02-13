@@ -35,6 +35,7 @@ func (r *ComputeEndpointRepo) Create(ctx context.Context, ep *domain.ComputeEndp
 	}
 
 	row, err := r.q.CreateComputeEndpoint(ctx, dbstore.CreateComputeEndpointParams{
+		ID:          newID(),
 		ExternalID:  uuid.New().String(),
 		Name:        ep.Name,
 		Url:         ep.URL,
@@ -51,7 +52,7 @@ func (r *ComputeEndpointRepo) Create(ctx context.Context, ep *domain.ComputeEndp
 }
 
 // GetByID returns a compute endpoint by its ID, decrypting the auth_token.
-func (r *ComputeEndpointRepo) GetByID(ctx context.Context, id int64) (*domain.ComputeEndpoint, error) {
+func (r *ComputeEndpointRepo) GetByID(ctx context.Context, id string) (*domain.ComputeEndpoint, error) {
 	row, err := r.q.GetComputeEndpoint(ctx, id)
 	if err != nil {
 		return nil, mapDBError(err)
@@ -95,7 +96,7 @@ func (r *ComputeEndpointRepo) List(ctx context.Context, page domain.PageRequest)
 }
 
 // Update applies partial updates to a compute endpoint.
-func (r *ComputeEndpointRepo) Update(ctx context.Context, id int64, req domain.UpdateComputeEndpointRequest) (*domain.ComputeEndpoint, error) {
+func (r *ComputeEndpointRepo) Update(ctx context.Context, id string, req domain.UpdateComputeEndpointRequest) (*domain.ComputeEndpoint, error) {
 	current, err := r.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -137,12 +138,12 @@ func (r *ComputeEndpointRepo) Update(ctx context.Context, id int64, req domain.U
 }
 
 // Delete removes a compute endpoint by ID.
-func (r *ComputeEndpointRepo) Delete(ctx context.Context, id int64) error {
+func (r *ComputeEndpointRepo) Delete(ctx context.Context, id string) error {
 	return mapDBError(r.q.DeleteComputeEndpoint(ctx, id))
 }
 
 // UpdateStatus changes the status of a compute endpoint.
-func (r *ComputeEndpointRepo) UpdateStatus(ctx context.Context, id int64, status string) error {
+func (r *ComputeEndpointRepo) UpdateStatus(ctx context.Context, id string, status string) error {
 	return mapDBError(r.q.UpdateComputeEndpointStatus(ctx, dbstore.UpdateComputeEndpointStatusParams{
 		Status: status,
 		ID:     id,
@@ -152,6 +153,7 @@ func (r *ComputeEndpointRepo) UpdateStatus(ctx context.Context, id int64, status
 // Assign creates a compute assignment binding a principal to an endpoint.
 func (r *ComputeEndpointRepo) Assign(ctx context.Context, a *domain.ComputeAssignment) (*domain.ComputeAssignment, error) {
 	row, err := r.q.CreateComputeAssignment(ctx, dbstore.CreateComputeAssignmentParams{
+		ID:            newID(),
 		PrincipalID:   a.PrincipalID,
 		PrincipalType: a.PrincipalType,
 		EndpointID:    a.EndpointID,
@@ -165,12 +167,12 @@ func (r *ComputeEndpointRepo) Assign(ctx context.Context, a *domain.ComputeAssig
 }
 
 // Unassign removes a compute assignment by ID.
-func (r *ComputeEndpointRepo) Unassign(ctx context.Context, id int64) error {
+func (r *ComputeEndpointRepo) Unassign(ctx context.Context, id string) error {
 	return mapDBError(r.q.DeleteComputeAssignment(ctx, id))
 }
 
 // ListAssignments returns a paginated list of assignments for an endpoint.
-func (r *ComputeEndpointRepo) ListAssignments(ctx context.Context, endpointID int64, page domain.PageRequest) ([]domain.ComputeAssignment, int64, error) {
+func (r *ComputeEndpointRepo) ListAssignments(ctx context.Context, endpointID string, page domain.PageRequest) ([]domain.ComputeAssignment, int64, error) {
 	total, err := r.q.CountAssignmentsForEndpoint(ctx, endpointID)
 	if err != nil {
 		return nil, 0, err
@@ -193,7 +195,7 @@ func (r *ComputeEndpointRepo) ListAssignments(ctx context.Context, endpointID in
 }
 
 // GetDefaultForPrincipal returns the default active compute endpoint for a principal.
-func (r *ComputeEndpointRepo) GetDefaultForPrincipal(ctx context.Context, principalID int64, principalType string) (*domain.ComputeEndpoint, error) {
+func (r *ComputeEndpointRepo) GetDefaultForPrincipal(ctx context.Context, principalID string, principalType string) (*domain.ComputeEndpoint, error) {
 	row, err := r.q.GetDefaultEndpointForPrincipal(ctx, dbstore.GetDefaultEndpointForPrincipalParams{
 		PrincipalID:   principalID,
 		PrincipalType: principalType,
@@ -205,7 +207,7 @@ func (r *ComputeEndpointRepo) GetDefaultForPrincipal(ctx context.Context, princi
 }
 
 // GetAssignmentsForPrincipal returns all compute endpoints assigned to a principal.
-func (r *ComputeEndpointRepo) GetAssignmentsForPrincipal(ctx context.Context, principalID int64, principalType string) ([]domain.ComputeEndpoint, error) {
+func (r *ComputeEndpointRepo) GetAssignmentsForPrincipal(ctx context.Context, principalID string, principalType string) ([]domain.ComputeEndpoint, error) {
 	rows, err := r.q.GetAssignmentsForPrincipal(ctx, dbstore.GetAssignmentsForPrincipalParams{
 		PrincipalID:   principalID,
 		PrincipalType: principalType,

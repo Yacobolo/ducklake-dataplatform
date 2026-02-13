@@ -11,19 +11,21 @@ import (
 )
 
 const bindColumnMask = `-- name: BindColumnMask :exec
-INSERT OR IGNORE INTO column_mask_bindings (column_mask_id, principal_id, principal_type, see_original)
-VALUES (?, ?, ?, ?)
+INSERT OR IGNORE INTO column_mask_bindings (id, column_mask_id, principal_id, principal_type, see_original)
+VALUES (?, ?, ?, ?, ?)
 `
 
 type BindColumnMaskParams struct {
-	ColumnMaskID  int64
-	PrincipalID   int64
+	ID            string
+	ColumnMaskID  string
+	PrincipalID   string
 	PrincipalType string
 	SeeOriginal   int64
 }
 
 func (q *Queries) BindColumnMask(ctx context.Context, arg BindColumnMaskParams) error {
 	_, err := q.db.ExecContext(ctx, bindColumnMask,
+		arg.ID,
 		arg.ColumnMaskID,
 		arg.PrincipalID,
 		arg.PrincipalType,
@@ -36,7 +38,7 @@ const countColumnMasksForTable = `-- name: CountColumnMasksForTable :one
 SELECT COUNT(*) as cnt FROM column_masks WHERE table_id = ?
 `
 
-func (q *Queries) CountColumnMasksForTable(ctx context.Context, tableID int64) (int64, error) {
+func (q *Queries) CountColumnMasksForTable(ctx context.Context, tableID string) (int64, error) {
 	row := q.db.QueryRowContext(ctx, countColumnMasksForTable, tableID)
 	var cnt int64
 	err := row.Scan(&cnt)
@@ -44,13 +46,14 @@ func (q *Queries) CountColumnMasksForTable(ctx context.Context, tableID int64) (
 }
 
 const createColumnMask = `-- name: CreateColumnMask :one
-INSERT INTO column_masks (table_id, column_name, mask_expression, description)
-VALUES (?, ?, ?, ?)
+INSERT INTO column_masks (id, table_id, column_name, mask_expression, description)
+VALUES (?, ?, ?, ?, ?)
 RETURNING id, table_id, column_name, mask_expression, description, created_at
 `
 
 type CreateColumnMaskParams struct {
-	TableID        int64
+	ID             string
+	TableID        string
 	ColumnName     string
 	MaskExpression string
 	Description    sql.NullString
@@ -58,6 +61,7 @@ type CreateColumnMaskParams struct {
 
 func (q *Queries) CreateColumnMask(ctx context.Context, arg CreateColumnMaskParams) (ColumnMask, error) {
 	row := q.db.QueryRowContext(ctx, createColumnMask,
+		arg.ID,
 		arg.TableID,
 		arg.ColumnName,
 		arg.MaskExpression,
@@ -79,7 +83,7 @@ const deleteColumnMask = `-- name: DeleteColumnMask :exec
 DELETE FROM column_masks WHERE id = ?
 `
 
-func (q *Queries) DeleteColumnMask(ctx context.Context, id int64) error {
+func (q *Queries) DeleteColumnMask(ctx context.Context, id string) error {
 	_, err := q.db.ExecContext(ctx, deleteColumnMask, id)
 	return err
 }
@@ -88,7 +92,7 @@ const deleteColumnMasksByTable = `-- name: DeleteColumnMasksByTable :exec
 DELETE FROM column_masks WHERE table_id = ?
 `
 
-func (q *Queries) DeleteColumnMasksByTable(ctx context.Context, tableID int64) error {
+func (q *Queries) DeleteColumnMasksByTable(ctx context.Context, tableID string) error {
 	_, err := q.db.ExecContext(ctx, deleteColumnMasksByTable, tableID)
 	return err
 }
@@ -97,7 +101,7 @@ const getColumnMaskBindingsForMask = `-- name: GetColumnMaskBindingsForMask :man
 SELECT id, column_mask_id, principal_id, principal_type, see_original FROM column_mask_bindings WHERE column_mask_id = ?
 `
 
-func (q *Queries) GetColumnMaskBindingsForMask(ctx context.Context, columnMaskID int64) ([]ColumnMaskBinding, error) {
+func (q *Queries) GetColumnMaskBindingsForMask(ctx context.Context, columnMaskID string) ([]ColumnMaskBinding, error) {
 	rows, err := q.db.QueryContext(ctx, getColumnMaskBindingsForMask, columnMaskID)
 	if err != nil {
 		return nil, err
@@ -134,12 +138,12 @@ WHERE cmb.principal_id = ? AND cmb.principal_type = ?
 `
 
 type GetColumnMaskBindingsForPrincipalParams struct {
-	PrincipalID   int64
+	PrincipalID   string
 	PrincipalType string
 }
 
 type GetColumnMaskBindingsForPrincipalRow struct {
-	TableID        int64
+	TableID        string
 	ColumnName     string
 	MaskExpression string
 	SeeOriginal    int64
@@ -181,8 +185,8 @@ WHERE cm.table_id = ? AND cmb.principal_id = ? AND cmb.principal_type = ?
 `
 
 type GetColumnMaskForTableAndPrincipalParams struct {
-	TableID       int64
-	PrincipalID   int64
+	TableID       string
+	PrincipalID   string
 	PrincipalType string
 }
 
@@ -219,7 +223,7 @@ const getColumnMasksForTable = `-- name: GetColumnMasksForTable :many
 SELECT id, table_id, column_name, mask_expression, description, created_at FROM column_masks WHERE table_id = ?
 `
 
-func (q *Queries) GetColumnMasksForTable(ctx context.Context, tableID int64) ([]ColumnMask, error) {
+func (q *Queries) GetColumnMasksForTable(ctx context.Context, tableID string) ([]ColumnMask, error) {
 	rows, err := q.db.QueryContext(ctx, getColumnMasksForTable, tableID)
 	if err != nil {
 		return nil, err
@@ -254,7 +258,7 @@ SELECT id, table_id, column_name, mask_expression, description, created_at FROM 
 `
 
 type ListColumnMasksForTablePaginatedParams struct {
-	TableID int64
+	TableID string
 	Limit   int64
 	Offset  int64
 }
@@ -295,8 +299,8 @@ WHERE column_mask_id = ? AND principal_id = ? AND principal_type = ?
 `
 
 type UnbindColumnMaskParams struct {
-	ColumnMaskID  int64
-	PrincipalID   int64
+	ColumnMaskID  string
+	PrincipalID   string
 	PrincipalType string
 }
 

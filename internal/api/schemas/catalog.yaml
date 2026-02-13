@@ -16,8 +16,7 @@ SchemaDetail:
   type: object
   properties:
     schema_id:
-      type: integer
-      format: int64
+      type: string
     name:
       type: string
     catalog_name:
@@ -103,8 +102,7 @@ TableDetail:
   type: object
   properties:
     table_id:
-      type: integer
-      format: int64
+      type: string
     name:
       type: string
     schema_name:
@@ -286,11 +284,9 @@ ViewDetail:
   type: object
   properties:
     id:
-      type: integer
-      format: int64
+      type: string
     schema_id:
-      type: integer
-      format: int64
+      type: string
     schema_name:
       type: string
     catalog_name:
@@ -356,8 +352,7 @@ VolumeDetail:
   type: object
   properties:
     id:
-      type: integer
-      format: int64
+      type: string
     name:
       type: string
     schema_name:

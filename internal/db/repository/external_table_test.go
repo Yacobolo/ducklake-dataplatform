@@ -38,7 +38,7 @@ func TestExternalTable_CreateAndGet(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.NotNil(t, et)
-	assert.Positive(t, et.ID)
+	assert.NotEmpty(t, et.ID)
 	assert.Equal(t, "analytics", et.SchemaName)
 	assert.Equal(t, "events", et.TableName)
 	assert.Equal(t, "parquet", et.FileFormat)
@@ -180,10 +180,7 @@ func TestExternalTable_UniqueConstraint(t *testing.T) {
 	assert.ErrorAs(t, err, &conflict)
 }
 
-func TestExternalTable_EffectiveTableID(t *testing.T) {
-	et := &domain.ExternalTableRecord{ID: 42}
-	assert.Equal(t, int64(10_000_042), et.EffectiveTableID())
-	assert.True(t, domain.IsExternalTableID(et.EffectiveTableID()))
-	assert.False(t, domain.IsExternalTableID(42))
-	assert.Equal(t, int64(42), domain.ExternalTableRawID(et.EffectiveTableID()))
+func TestExternalTable_IDIsString(t *testing.T) {
+	et := &domain.ExternalTableRecord{ID: "42"}
+	assert.Equal(t, "42", et.ID)
 }

@@ -31,12 +31,13 @@ func (q *Queries) CountCatalogs(ctx context.Context) (int64, error) {
 }
 
 const createCatalog = `-- name: CreateCatalog :one
-INSERT INTO catalogs (name, metastore_type, dsn, data_path, status, status_message, is_default, comment)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO catalogs (id, name, metastore_type, dsn, data_path, status, status_message, is_default, comment)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING id, name, metastore_type, dsn, data_path, status, status_message, is_default, comment, created_at, updated_at
 `
 
 type CreateCatalogParams struct {
+	ID            string
 	Name          string
 	MetastoreType string
 	Dsn           string
@@ -49,6 +50,7 @@ type CreateCatalogParams struct {
 
 func (q *Queries) CreateCatalog(ctx context.Context, arg CreateCatalogParams) (Catalog, error) {
 	row := q.db.QueryRowContext(ctx, createCatalog,
+		arg.ID,
 		arg.Name,
 		arg.MetastoreType,
 		arg.Dsn,
@@ -79,7 +81,7 @@ const deleteCatalog = `-- name: DeleteCatalog :exec
 DELETE FROM catalogs WHERE id = ?
 `
 
-func (q *Queries) DeleteCatalog(ctx context.Context, id int64) error {
+func (q *Queries) DeleteCatalog(ctx context.Context, id string) error {
 	_, err := q.db.ExecContext(ctx, deleteCatalog, id)
 	return err
 }
@@ -88,7 +90,7 @@ const getCatalogByID = `-- name: GetCatalogByID :one
 SELECT id, name, metastore_type, dsn, data_path, status, status_message, is_default, comment, created_at, updated_at FROM catalogs WHERE id = ?
 `
 
-func (q *Queries) GetCatalogByID(ctx context.Context, id int64) (Catalog, error) {
+func (q *Queries) GetCatalogByID(ctx context.Context, id string) (Catalog, error) {
 	row := q.db.QueryRowContext(ctx, getCatalogByID, id)
 	var i Catalog
 	err := row.Scan(
@@ -201,7 +203,7 @@ const setDefaultCatalog = `-- name: SetDefaultCatalog :exec
 UPDATE catalogs SET is_default = 1, updated_at = datetime('now') WHERE id = ?
 `
 
-func (q *Queries) SetDefaultCatalog(ctx context.Context, id int64) error {
+func (q *Queries) SetDefaultCatalog(ctx context.Context, id string) error {
 	_, err := q.db.ExecContext(ctx, setDefaultCatalog, id)
 	return err
 }
@@ -220,7 +222,7 @@ type UpdateCatalogParams struct {
 	Comment  sql.NullString
 	DataPath string
 	Dsn      string
-	ID       int64
+	ID       string
 }
 
 func (q *Queries) UpdateCatalog(ctx context.Context, arg UpdateCatalogParams) (Catalog, error) {
@@ -256,7 +258,7 @@ WHERE id = ?
 type UpdateCatalogStatusParams struct {
 	Status        string
 	StatusMessage sql.NullString
-	ID            int64
+	ID            string
 }
 
 func (q *Queries) UpdateCatalogStatus(ctx context.Context, arg UpdateCatalogStatusParams) error {

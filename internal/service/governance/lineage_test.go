@@ -52,7 +52,7 @@ func TestLineageService_GetUpstream(t *testing.T) {
 		repo := &mockLineageRepo{
 			GetUpstreamFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
 				return []domain.LineageEdge{
-					{ID: 1, SourceTable: "orders", EdgeType: "READ"},
+					{ID: "1", SourceTable: "orders", EdgeType: "READ"},
 				}, 1, nil
 			},
 		}
@@ -87,7 +87,7 @@ func TestLineageService_GetDownstream(t *testing.T) {
 		repo := &mockLineageRepo{
 			GetDownstreamFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
 				return []domain.LineageEdge{
-					{ID: 2, SourceTable: "revenue_summary", EdgeType: "READ"},
+					{ID: "2", SourceTable: "revenue_summary", EdgeType: "READ"},
 				}, 1, nil
 			},
 		}
@@ -123,13 +123,13 @@ func TestLineageService_GetFullLineage(t *testing.T) {
 		repo := &mockLineageRepo{
 			GetUpstreamFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
 				return []domain.LineageEdge{
-					{ID: 1, SourceTable: "main.orders", EdgeType: "READ"},
-					{ID: 2, SourceTable: "main.customers", EdgeType: "READ"},
+					{ID: "1", SourceTable: "main.orders", EdgeType: "READ"},
+					{ID: "2", SourceTable: "main.customers", EdgeType: "READ"},
 				}, 2, nil
 			},
 			GetDownstreamFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
 				return []domain.LineageEdge{
-					{ID: 3, SourceTable: "main.revenue_summary", EdgeType: "READ"},
+					{ID: "3", SourceTable: "main.revenue_summary", EdgeType: "READ"},
 				}, 1, nil
 			},
 		}
@@ -166,7 +166,7 @@ func TestLineageService_GetFullLineage(t *testing.T) {
 	t.Run("downstream_error", func(t *testing.T) {
 		repo := &mockLineageRepo{
 			GetUpstreamFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
-				return []domain.LineageEdge{{ID: 1}}, 1, nil
+				return []domain.LineageEdge{{ID: "1"}}, 1, nil
 			},
 			GetDownstreamFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
 				return nil, 0, errTest
@@ -205,27 +205,27 @@ func TestLineageService_GetFullLineage(t *testing.T) {
 func TestLineageService_DeleteEdge(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockLineageRepo{
-			DeleteEdgeFn: func(_ context.Context, id int64) error {
-				assert.Equal(t, int64(42), id)
+			DeleteEdgeFn: func(_ context.Context, id string) error {
+				assert.Equal(t, "42", id)
 				return nil
 			},
 		}
 		svc := NewLineageService(repo)
 
-		err := svc.DeleteEdge(context.Background(), 42)
+		err := svc.DeleteEdge(context.Background(), "42")
 
 		require.NoError(t, err)
 	})
 
 	t.Run("not_found", func(t *testing.T) {
 		repo := &mockLineageRepo{
-			DeleteEdgeFn: func(_ context.Context, _ int64) error {
+			DeleteEdgeFn: func(_ context.Context, _ string) error {
 				return domain.ErrNotFound("edge not found")
 			},
 		}
 		svc := NewLineageService(repo)
 
-		err := svc.DeleteEdge(context.Background(), 999)
+		err := svc.DeleteEdge(context.Background(), "999")
 
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
@@ -234,13 +234,13 @@ func TestLineageService_DeleteEdge(t *testing.T) {
 
 	t.Run("repo_error", func(t *testing.T) {
 		repo := &mockLineageRepo{
-			DeleteEdgeFn: func(_ context.Context, _ int64) error {
+			DeleteEdgeFn: func(_ context.Context, _ string) error {
 				return errTest
 			},
 		}
 		svc := NewLineageService(repo)
 
-		err := svc.DeleteEdge(context.Background(), 1)
+		err := svc.DeleteEdge(context.Background(), "1")
 
 		require.Error(t, err)
 		assert.ErrorIs(t, err, errTest)

@@ -36,7 +36,7 @@ func TestPrincipalService_Create_AdminAllowed(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "new-principal", p.Name)
 	assert.Equal(t, "user", p.Type)
-	assert.Positive(t, p.ID)
+	assert.NotEmpty(t, p.ID)
 }
 
 func TestPrincipalService_Create_EmptyName(t *testing.T) {

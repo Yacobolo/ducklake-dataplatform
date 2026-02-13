@@ -97,8 +97,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     delete:
       operationId: deleteTag
       summary: Delete a tag
@@ -132,8 +131,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     post:
       operationId: createTagAssignment
       summary: Assign a tag to a securable object
@@ -177,8 +175,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     delete:
       operationId: deleteTagAssignment
       summary: Remove a tag assignment

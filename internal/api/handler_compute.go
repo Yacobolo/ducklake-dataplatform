@@ -19,7 +19,7 @@ type computeEndpointService interface {
 	Delete(ctx context.Context, principal string, name string) error
 	ListAssignments(ctx context.Context, endpointName string, page domain.PageRequest) ([]domain.ComputeAssignment, int64, error)
 	Assign(ctx context.Context, principal string, endpointName string, req domain.CreateComputeAssignmentRequest) (*domain.ComputeAssignment, error)
-	Unassign(ctx context.Context, principal string, assignmentID int64) error
+	Unassign(ctx context.Context, principal string, assignmentID string) error
 	HealthCheck(ctx context.Context, principal string, endpointName string) (*domain.ComputeEndpointHealthResult, error)
 }
 

@@ -53,7 +53,7 @@ func groupToAPI(g domain.Group) Group {
 	}
 }
 
-func groupMemberToAPI(m domain.GroupMember, groupID int64) GroupMember {
+func groupMemberToAPI(m domain.GroupMember, groupID string) GroupMember {
 	return GroupMember{
 		GroupId:    &groupID,
 		MemberType: &m.MemberType,

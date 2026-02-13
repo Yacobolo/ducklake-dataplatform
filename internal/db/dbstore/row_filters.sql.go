@@ -11,18 +11,24 @@ import (
 )
 
 const bindRowFilter = `-- name: BindRowFilter :exec
-INSERT OR IGNORE INTO row_filter_bindings (row_filter_id, principal_id, principal_type)
-VALUES (?, ?, ?)
+INSERT OR IGNORE INTO row_filter_bindings (id, row_filter_id, principal_id, principal_type)
+VALUES (?, ?, ?, ?)
 `
 
 type BindRowFilterParams struct {
-	RowFilterID   int64
-	PrincipalID   int64
+	ID            string
+	RowFilterID   string
+	PrincipalID   string
 	PrincipalType string
 }
 
 func (q *Queries) BindRowFilter(ctx context.Context, arg BindRowFilterParams) error {
-	_, err := q.db.ExecContext(ctx, bindRowFilter, arg.RowFilterID, arg.PrincipalID, arg.PrincipalType)
+	_, err := q.db.ExecContext(ctx, bindRowFilter,
+		arg.ID,
+		arg.RowFilterID,
+		arg.PrincipalID,
+		arg.PrincipalType,
+	)
 	return err
 }
 
@@ -30,7 +36,7 @@ const countRowFiltersForTable = `-- name: CountRowFiltersForTable :one
 SELECT COUNT(*) as cnt FROM row_filters WHERE table_id = ?
 `
 
-func (q *Queries) CountRowFiltersForTable(ctx context.Context, tableID int64) (int64, error) {
+func (q *Queries) CountRowFiltersForTable(ctx context.Context, tableID string) (int64, error) {
 	row := q.db.QueryRowContext(ctx, countRowFiltersForTable, tableID)
 	var cnt int64
 	err := row.Scan(&cnt)
@@ -38,19 +44,25 @@ func (q *Queries) CountRowFiltersForTable(ctx context.Context, tableID int64) (i
 }
 
 const createRowFilter = `-- name: CreateRowFilter :one
-INSERT INTO row_filters (table_id, filter_sql, description)
-VALUES (?, ?, ?)
+INSERT INTO row_filters (id, table_id, filter_sql, description)
+VALUES (?, ?, ?, ?)
 RETURNING id, table_id, filter_sql, description, created_at
 `
 
 type CreateRowFilterParams struct {
-	TableID     int64
+	ID          string
+	TableID     string
 	FilterSql   string
 	Description sql.NullString
 }
 
 func (q *Queries) CreateRowFilter(ctx context.Context, arg CreateRowFilterParams) (RowFilter, error) {
-	row := q.db.QueryRowContext(ctx, createRowFilter, arg.TableID, arg.FilterSql, arg.Description)
+	row := q.db.QueryRowContext(ctx, createRowFilter,
+		arg.ID,
+		arg.TableID,
+		arg.FilterSql,
+		arg.Description,
+	)
 	var i RowFilter
 	err := row.Scan(
 		&i.ID,
@@ -66,7 +78,7 @@ const deleteRowFilter = `-- name: DeleteRowFilter :exec
 DELETE FROM row_filters WHERE id = ?
 `
 
-func (q *Queries) DeleteRowFilter(ctx context.Context, id int64) error {
+func (q *Queries) DeleteRowFilter(ctx context.Context, id string) error {
 	_, err := q.db.ExecContext(ctx, deleteRowFilter, id)
 	return err
 }
@@ -75,7 +87,7 @@ const deleteRowFiltersByTable = `-- name: DeleteRowFiltersByTable :exec
 DELETE FROM row_filters WHERE table_id = ?
 `
 
-func (q *Queries) DeleteRowFiltersByTable(ctx context.Context, tableID int64) error {
+func (q *Queries) DeleteRowFiltersByTable(ctx context.Context, tableID string) error {
 	_, err := q.db.ExecContext(ctx, deleteRowFiltersByTable, tableID)
 	return err
 }
@@ -84,7 +96,7 @@ const getRowFilterBindingsForFilter = `-- name: GetRowFilterBindingsForFilter :m
 SELECT id, row_filter_id, principal_id, principal_type FROM row_filter_bindings WHERE row_filter_id = ?
 `
 
-func (q *Queries) GetRowFilterBindingsForFilter(ctx context.Context, rowFilterID int64) ([]RowFilterBinding, error) {
+func (q *Queries) GetRowFilterBindingsForFilter(ctx context.Context, rowFilterID string) ([]RowFilterBinding, error) {
 	rows, err := q.db.QueryContext(ctx, getRowFilterBindingsForFilter, rowFilterID)
 	if err != nil {
 		return nil, err
@@ -119,7 +131,7 @@ WHERE rfb.principal_id = ? AND rfb.principal_type = ?
 `
 
 type GetRowFiltersForPrincipalParams struct {
-	PrincipalID   int64
+	PrincipalID   string
 	PrincipalType string
 }
 
@@ -156,7 +168,7 @@ const getRowFiltersForTable = `-- name: GetRowFiltersForTable :many
 SELECT id, table_id, filter_sql, description, created_at FROM row_filters WHERE table_id = ?
 `
 
-func (q *Queries) GetRowFiltersForTable(ctx context.Context, tableID int64) ([]RowFilter, error) {
+func (q *Queries) GetRowFiltersForTable(ctx context.Context, tableID string) ([]RowFilter, error) {
 	rows, err := q.db.QueryContext(ctx, getRowFiltersForTable, tableID)
 	if err != nil {
 		return nil, err
@@ -192,8 +204,8 @@ WHERE rf.table_id = ? AND rfb.principal_id = ? AND rfb.principal_type = ?
 `
 
 type GetRowFiltersForTableAndPrincipalParams struct {
-	TableID       int64
-	PrincipalID   int64
+	TableID       string
+	PrincipalID   string
 	PrincipalType string
 }
 
@@ -231,7 +243,7 @@ SELECT id, table_id, filter_sql, description, created_at FROM row_filters WHERE 
 `
 
 type ListRowFiltersForTablePaginatedParams struct {
-	TableID int64
+	TableID string
 	Limit   int64
 	Offset  int64
 }
@@ -271,8 +283,8 @@ WHERE row_filter_id = ? AND principal_id = ? AND principal_type = ?
 `
 
 type UnbindRowFilterParams struct {
-	RowFilterID   int64
-	PrincipalID   int64
+	RowFilterID   string
+	PrincipalID   string
 	PrincipalType string
 }
 

@@ -14,7 +14,7 @@ const countAssignmentsForEndpoint = `-- name: CountAssignmentsForEndpoint :one
 SELECT COUNT(*) FROM compute_assignments WHERE endpoint_id = ?
 `
 
-func (q *Queries) CountAssignmentsForEndpoint(ctx context.Context, endpointID int64) (int64, error) {
+func (q *Queries) CountAssignmentsForEndpoint(ctx context.Context, endpointID string) (int64, error) {
 	row := q.db.QueryRowContext(ctx, countAssignmentsForEndpoint, endpointID)
 	var count int64
 	err := row.Scan(&count)
@@ -34,21 +34,23 @@ func (q *Queries) CountComputeEndpoints(ctx context.Context) (int64, error) {
 
 const createComputeAssignment = `-- name: CreateComputeAssignment :one
 INSERT INTO compute_assignments (
-    principal_id, principal_type, endpoint_id, is_default, fallback_local
-) VALUES (?, ?, ?, ?, ?)
+    id, principal_id, principal_type, endpoint_id, is_default, fallback_local
+) VALUES (?, ?, ?, ?, ?, ?)
 RETURNING id, principal_id, principal_type, endpoint_id, is_default, fallback_local, created_at
 `
 
 type CreateComputeAssignmentParams struct {
-	PrincipalID   int64
+	ID            string
+	PrincipalID   string
 	PrincipalType string
-	EndpointID    int64
+	EndpointID    string
 	IsDefault     int64
 	FallbackLocal int64
 }
 
 func (q *Queries) CreateComputeAssignment(ctx context.Context, arg CreateComputeAssignmentParams) (ComputeAssignment, error) {
 	row := q.db.QueryRowContext(ctx, createComputeAssignment,
+		arg.ID,
 		arg.PrincipalID,
 		arg.PrincipalType,
 		arg.EndpointID,
@@ -70,12 +72,13 @@ func (q *Queries) CreateComputeAssignment(ctx context.Context, arg CreateCompute
 
 const createComputeEndpoint = `-- name: CreateComputeEndpoint :one
 INSERT INTO compute_endpoints (
-    external_id, name, url, type, status, size, max_memory_gb, auth_token, owner
-) VALUES (?, ?, ?, ?, 'INACTIVE', ?, ?, ?, ?)
+    id, external_id, name, url, type, status, size, max_memory_gb, auth_token, owner
+) VALUES (?, ?, ?, ?, ?, 'INACTIVE', ?, ?, ?, ?)
 RETURNING id, external_id, name, url, type, status, size, max_memory_gb, auth_token, owner, created_at, updated_at
 `
 
 type CreateComputeEndpointParams struct {
+	ID          string
 	ExternalID  string
 	Name        string
 	Url         string
@@ -88,6 +91,7 @@ type CreateComputeEndpointParams struct {
 
 func (q *Queries) CreateComputeEndpoint(ctx context.Context, arg CreateComputeEndpointParams) (ComputeEndpoint, error) {
 	row := q.db.QueryRowContext(ctx, createComputeEndpoint,
+		arg.ID,
 		arg.ExternalID,
 		arg.Name,
 		arg.Url,
@@ -119,7 +123,7 @@ const deleteComputeAssignment = `-- name: DeleteComputeAssignment :exec
 DELETE FROM compute_assignments WHERE id = ?
 `
 
-func (q *Queries) DeleteComputeAssignment(ctx context.Context, id int64) error {
+func (q *Queries) DeleteComputeAssignment(ctx context.Context, id string) error {
 	_, err := q.db.ExecContext(ctx, deleteComputeAssignment, id)
 	return err
 }
@@ -128,7 +132,7 @@ const deleteComputeEndpoint = `-- name: DeleteComputeEndpoint :exec
 DELETE FROM compute_endpoints WHERE id = ?
 `
 
-func (q *Queries) DeleteComputeEndpoint(ctx context.Context, id int64) error {
+func (q *Queries) DeleteComputeEndpoint(ctx context.Context, id string) error {
 	_, err := q.db.ExecContext(ctx, deleteComputeEndpoint, id)
 	return err
 }
@@ -143,7 +147,7 @@ ORDER BY ca.is_default DESC, ce.name
 `
 
 type GetAssignmentsForPrincipalParams struct {
-	PrincipalID   int64
+	PrincipalID   string
 	PrincipalType string
 }
 
@@ -187,7 +191,7 @@ const getComputeEndpoint = `-- name: GetComputeEndpoint :one
 SELECT id, external_id, name, url, type, status, size, max_memory_gb, auth_token, owner, created_at, updated_at FROM compute_endpoints WHERE id = ?
 `
 
-func (q *Queries) GetComputeEndpoint(ctx context.Context, id int64) (ComputeEndpoint, error) {
+func (q *Queries) GetComputeEndpoint(ctx context.Context, id string) (ComputeEndpoint, error) {
 	row := q.db.QueryRowContext(ctx, getComputeEndpoint, id)
 	var i ComputeEndpoint
 	err := row.Scan(
@@ -243,7 +247,7 @@ LIMIT 1
 `
 
 type GetDefaultEndpointForPrincipalParams struct {
-	PrincipalID   int64
+	PrincipalID   string
 	PrincipalType string
 }
 
@@ -272,7 +276,7 @@ SELECT id, principal_id, principal_type, endpoint_id, is_default, fallback_local
 `
 
 type ListAssignmentsForEndpointParams struct {
-	EndpointID int64
+	EndpointID string
 	Limit      int64
 	Offset     int64
 }
@@ -399,7 +403,7 @@ type UpdateComputeEndpointParams struct {
 	Size        string
 	MaxMemoryGb sql.NullInt64
 	AuthToken   string
-	ID          int64
+	ID          string
 }
 
 func (q *Queries) UpdateComputeEndpoint(ctx context.Context, arg UpdateComputeEndpointParams) error {
@@ -422,7 +426,7 @@ WHERE id = ?
 
 type UpdateComputeEndpointStatusParams struct {
 	Status string
-	ID     int64
+	ID     string
 }
 
 func (q *Queries) UpdateComputeEndpointStatus(ctx context.Context, arg UpdateComputeEndpointStatusParams) error {

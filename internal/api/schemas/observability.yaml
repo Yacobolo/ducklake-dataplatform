@@ -2,8 +2,7 @@ AuditEntry:
   type: object
   properties:
     id:
-      type: integer
-      format: int64
+      type: string
     principal_name:
       type: string
     action:
@@ -93,8 +92,7 @@ QueryHistoryEntry:
   type: object
   properties:
     id:
-      type: integer
-      format: int64
+      type: string
     principal_name:
       type: string
     original_sql:

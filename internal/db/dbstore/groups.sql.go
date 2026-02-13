@@ -16,9 +16,9 @@ VALUES (?, ?, ?)
 `
 
 type AddGroupMemberParams struct {
-	GroupID    int64
+	GroupID    string
 	MemberType string
-	MemberID   int64
+	MemberID   string
 }
 
 func (q *Queries) AddGroupMember(ctx context.Context, arg AddGroupMemberParams) error {
@@ -30,7 +30,7 @@ const countGroupMembers = `-- name: CountGroupMembers :one
 SELECT COUNT(*) as cnt FROM group_members WHERE group_id = ?
 `
 
-func (q *Queries) CountGroupMembers(ctx context.Context, groupID int64) (int64, error) {
+func (q *Queries) CountGroupMembers(ctx context.Context, groupID string) (int64, error) {
 	row := q.db.QueryRowContext(ctx, countGroupMembers, groupID)
 	var cnt int64
 	err := row.Scan(&cnt)
@@ -49,18 +49,19 @@ func (q *Queries) CountGroups(ctx context.Context) (int64, error) {
 }
 
 const createGroup = `-- name: CreateGroup :one
-INSERT INTO groups (name, description)
-VALUES (?, ?)
+INSERT INTO groups (id, name, description)
+VALUES (?, ?, ?)
 RETURNING id, name, description, created_at
 `
 
 type CreateGroupParams struct {
+	ID          string
 	Name        string
 	Description sql.NullString
 }
 
 func (q *Queries) CreateGroup(ctx context.Context, arg CreateGroupParams) (Group, error) {
-	row := q.db.QueryRowContext(ctx, createGroup, arg.Name, arg.Description)
+	row := q.db.QueryRowContext(ctx, createGroup, arg.ID, arg.Name, arg.Description)
 	var i Group
 	err := row.Scan(
 		&i.ID,
@@ -75,7 +76,7 @@ const deleteGroup = `-- name: DeleteGroup :exec
 DELETE FROM groups WHERE id = ?
 `
 
-func (q *Queries) DeleteGroup(ctx context.Context, id int64) error {
+func (q *Queries) DeleteGroup(ctx context.Context, id string) error {
 	_, err := q.db.ExecContext(ctx, deleteGroup, id)
 	return err
 }
@@ -84,7 +85,7 @@ const getGroup = `-- name: GetGroup :one
 SELECT id, name, description, created_at FROM groups WHERE id = ?
 `
 
-func (q *Queries) GetGroup(ctx context.Context, id int64) (Group, error) {
+func (q *Queries) GetGroup(ctx context.Context, id string) (Group, error) {
 	row := q.db.QueryRowContext(ctx, getGroup, id)
 	var i Group
 	err := row.Scan(
@@ -120,7 +121,7 @@ WHERE gm.member_type = ? AND gm.member_id = ?
 
 type GetGroupsForMemberParams struct {
 	MemberType string
-	MemberID   int64
+	MemberID   string
 }
 
 func (q *Queries) GetGroupsForMember(ctx context.Context, arg GetGroupsForMemberParams) ([]Group, error) {
@@ -155,7 +156,7 @@ const listGroupMembers = `-- name: ListGroupMembers :many
 SELECT group_id, member_type, member_id FROM group_members WHERE group_id = ?
 `
 
-func (q *Queries) ListGroupMembers(ctx context.Context, groupID int64) ([]GroupMember, error) {
+func (q *Queries) ListGroupMembers(ctx context.Context, groupID string) ([]GroupMember, error) {
 	rows, err := q.db.QueryContext(ctx, listGroupMembers, groupID)
 	if err != nil {
 		return nil, err
@@ -183,7 +184,7 @@ SELECT group_id, member_type, member_id FROM group_members WHERE group_id = ? OR
 `
 
 type ListGroupMembersPaginatedParams struct {
-	GroupID int64
+	GroupID string
 	Limit   int64
 	Offset  int64
 }
@@ -286,9 +287,9 @@ WHERE group_id = ? AND member_type = ? AND member_id = ?
 `
 
 type RemoveGroupMemberParams struct {
-	GroupID    int64
+	GroupID    string
 	MemberType string
-	MemberID   int64
+	MemberID   string
 }
 
 func (q *Queries) RemoveGroupMember(ctx context.Context, arg RemoveGroupMemberParams) error {

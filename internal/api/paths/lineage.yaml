@@ -126,8 +126,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     delete:
       operationId: deleteLineageEdge
       summary: Delete a lineage edge

@@ -12,7 +12,7 @@ import (
 // It avoids creating duplicate HTTP clients for the same endpoint.
 type RemoteCache struct {
 	mu      sync.RWMutex
-	entries map[int64]*RemoteExecutor
+	entries map[string]*RemoteExecutor
 	localDB *sql.DB
 }
 
@@ -20,7 +20,7 @@ type RemoteCache struct {
 // the given local DuckDB instance.
 func NewRemoteCache(localDB *sql.DB) *RemoteCache {
 	return &RemoteCache{
-		entries: make(map[int64]*RemoteExecutor),
+		entries: make(map[string]*RemoteExecutor),
 		localDB: localDB,
 	}
 }

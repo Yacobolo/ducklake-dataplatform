@@ -1,6 +1,6 @@
 -- name: CreateView :one
-INSERT INTO views (schema_id, name, view_definition, comment, properties, owner, source_tables)
-VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING *;
+INSERT INTO views (id, schema_id, name, view_definition, comment, properties, owner, source_tables)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING *;
 
 -- name: GetViewByName :one
 SELECT * FROM views WHERE schema_id = ? AND name = ? AND deleted_at IS NULL;

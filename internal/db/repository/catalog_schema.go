@@ -54,15 +54,17 @@ func (r *CatalogRepo) CreateSchema(ctx context.Context, name, comment, owner str
 // NOTE: ducklake_schema is not managed by sqlc.
 func (r *CatalogRepo) GetSchema(ctx context.Context, name string) (*domain.SchemaDetail, error) {
 	var s domain.SchemaDetail
+	var schemaID int64
 	err := r.metaDB.QueryRowContext(ctx,
 		`SELECT schema_id, schema_name FROM ducklake_schema WHERE schema_name = ? AND end_snapshot IS NULL`, name).
-		Scan(&s.SchemaID, &s.Name)
+		Scan(&schemaID, &s.Name)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, domain.ErrNotFound("schema %q not found", name)
 	}
 	if err != nil {
 		return nil, err
 	}
+	s.SchemaID = domain.DuckLakeIDToString(schemaID)
 	s.CatalogName = r.catalogName
 
 	// Join with catalog_metadata via sqlc
@@ -91,9 +93,11 @@ func (r *CatalogRepo) ListSchemas(ctx context.Context, page domain.PageRequest) 
 	var schemas []domain.SchemaDetail
 	for rows.Next() {
 		var s domain.SchemaDetail
-		if err := rows.Scan(&s.SchemaID, &s.Name); err != nil {
+		var schemaID int64
+		if err := rows.Scan(&schemaID, &s.Name); err != nil {
 			return nil, 0, err
 		}
+		s.SchemaID = domain.DuckLakeIDToString(schemaID)
 		s.CatalogName = r.catalogName
 		schemas = append(schemas, s)
 	}
@@ -148,8 +152,10 @@ func (r *CatalogRepo) DeleteSchema(ctx context.Context, name string, force bool)
 
 	// If force, gather table IDs in this schema for governance cleanup before DDL
 	// NOTE: ducklake_table is not managed by sqlc
-	var tableIDs []int64
+	var tableIDs []string
 	if force {
+		// schema.SchemaID is a string but DuckLake schema_id is an integer;
+		// pass the string directly — SQLite will coerce it.
 		rows, err := r.metaDB.QueryContext(ctx,
 			`SELECT table_id FROM ducklake_table WHERE schema_id = ? AND end_snapshot IS NULL`, schema.SchemaID)
 		if err == nil {
@@ -157,7 +163,7 @@ func (r *CatalogRepo) DeleteSchema(ctx context.Context, name string, force bool)
 			for rows.Next() {
 				var tid int64
 				if err := rows.Scan(&tid); err == nil {
-					tableIDs = append(tableIDs, tid)
+					tableIDs = append(tableIDs, domain.DuckLakeIDToString(tid))
 				}
 			}
 			_ = rows.Err() // best-effort scan for cascade cleanup
@@ -262,7 +268,7 @@ func (r *CatalogRepo) DeleteSchema(ctx context.Context, name string, force bool)
 // SetSchemaStoragePath sets the storage path for a schema in DuckLake's metadata.
 // This allows per-schema data paths pointing to different external locations.
 // NOTE: ducklake_schema is not managed by sqlc.
-func (r *CatalogRepo) SetSchemaStoragePath(ctx context.Context, schemaID int64, path string) error {
+func (r *CatalogRepo) SetSchemaStoragePath(ctx context.Context, schemaID string, path string) error {
 	_, err := r.metaDB.ExecContext(ctx,
 		`UPDATE ducklake_schema SET path = ?, path_is_relative = 0 WHERE schema_id = ?`,
 		path, schemaID)

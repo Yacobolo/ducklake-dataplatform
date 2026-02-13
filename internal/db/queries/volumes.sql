@@ -1,6 +1,6 @@
 -- name: CreateVolume :one
-INSERT INTO volumes (name, schema_name, catalog_name, volume_type, storage_location, comment, owner)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+INSERT INTO volumes (id, name, schema_name, catalog_name, volume_type, storage_location, comment, owner)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetVolumeByName :one

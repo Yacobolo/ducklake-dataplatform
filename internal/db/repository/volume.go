@@ -27,6 +27,7 @@ func NewVolumeRepo(db *sql.DB) *VolumeRepo {
 // Create inserts a new volume into the database.
 func (r *VolumeRepo) Create(ctx context.Context, vol *domain.Volume) (*domain.Volume, error) {
 	row, err := r.q.CreateVolume(ctx, dbstore.CreateVolumeParams{
+		ID:              newID(),
 		Name:            vol.Name,
 		SchemaName:      vol.SchemaName,
 		CatalogName:     vol.CatalogName,
@@ -77,7 +78,7 @@ func (r *VolumeRepo) List(ctx context.Context, schemaName string, page domain.Pa
 }
 
 // Update applies partial updates to a volume by ID.
-func (r *VolumeRepo) Update(ctx context.Context, id int64, req domain.UpdateVolumeRequest) (*domain.Volume, error) {
+func (r *VolumeRepo) Update(ctx context.Context, id string, req domain.UpdateVolumeRequest) (*domain.Volume, error) {
 	// Fetch current to merge fields.
 	var current dbstore.Volume
 	row := r.db.QueryRowContext(ctx, "SELECT id, name, schema_name, catalog_name, volume_type, storage_location, comment, owner, created_at, updated_at FROM volumes WHERE id = ?", id)
@@ -123,7 +124,7 @@ func (r *VolumeRepo) Update(ctx context.Context, id int64, req domain.UpdateVolu
 }
 
 // Delete removes a volume by ID.
-func (r *VolumeRepo) Delete(ctx context.Context, id int64) error {
+func (r *VolumeRepo) Delete(ctx context.Context, id string) error {
 	return mapDBError(r.q.DeleteVolume(ctx, id))
 }
 

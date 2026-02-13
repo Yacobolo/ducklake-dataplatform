@@ -1,11 +1,11 @@
 -- name: CreatePrincipal :one
-INSERT INTO principals (name, type, is_admin)
-VALUES (?, ?, ?)
+INSERT INTO principals (id, name, type, is_admin)
+VALUES (?, ?, ?, ?)
 RETURNING *;
 
 -- name: CreatePrincipalWithExternalID :one
-INSERT INTO principals (name, type, is_admin, external_id, external_issuer)
-VALUES (?, ?, ?, ?, ?)
+INSERT INTO principals (id, name, type, is_admin, external_id, external_issuer)
+VALUES (?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetPrincipal :one

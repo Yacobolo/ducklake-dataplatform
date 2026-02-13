@@ -109,8 +109,7 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
         name:
           type: string
         type:
@@ -156,8 +155,7 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
         name:
           type: string
         description:
@@ -179,13 +177,11 @@ components:
       type: object
       properties:
         group_id:
-          type: integer
-          format: int64
+          type: string
         member_type:
           type: string
         member_id:
-          type: integer
-          format: int64
+          type: string
 
     CreateGroupMemberRequest:
       type: object
@@ -194,8 +190,7 @@ components:
         member_type:
           type: string
         member_id:
-          type: integer
-          format: int64
+          type: string
 
     PaginatedGroups:
       type: object
@@ -222,23 +217,19 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
         principal_id:
-          type: integer
-          format: int64
+          type: string
         principal_type:
           type: string
         securable_type:
           type: string
         securable_id:
-          type: integer
-          format: int64
+          type: string
         privilege:
           type: string
         granted_by:
-          type: integer
-          format: int64
+          type: string
           nullable: true
         granted_at:
           type: string
@@ -249,15 +240,13 @@ components:
       required: [principal_id, principal_type, securable_type, securable_id, privilege]
       properties:
         principal_id:
-          type: integer
-          format: int64
+          type: string
         principal_type:
           type: string
         securable_type:
           type: string
         securable_id:
-          type: integer
-          format: int64
+          type: string
         privilege:
           type: string
 
@@ -276,11 +265,9 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
         principal_id:
-          type: integer
-          format: int64
+          type: string
         name:
           type: string
         key_prefix:
@@ -298,8 +285,7 @@ components:
       required: [principal_id, name]
       properties:
         principal_id:
-          type: integer
-          format: int64
+          type: string
         name:
           type: string
         expires_at:
@@ -310,8 +296,7 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
         key:
           type: string
           description: Raw API key (shown only once)
@@ -349,11 +334,9 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
         table_id:
-          type: integer
-          format: int64
+          type: string
         filter_sql:
           type: string
         description:
@@ -367,8 +350,7 @@ components:
       required: [filter_sql]
       properties:
         table_id:
-          type: integer
-          format: int64
+          type: string
           description: Table ID (required when creating via top-level POST /row-filters)
         filter_sql:
           type: string
@@ -380,8 +362,7 @@ components:
       required: [principal_id, principal_type]
       properties:
         principal_id:
-          type: integer
-          format: int64
+          type: string
         principal_type:
           type: string
 
@@ -400,11 +381,9 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
         table_id:
-          type: integer
-          format: int64
+          type: string
         column_name:
           type: string
         mask_expression:
@@ -431,8 +410,7 @@ components:
       required: [principal_id, principal_type]
       properties:
         principal_id:
-          type: integer
-          format: int64
+          type: string
         principal_type:
           type: string
         see_original:
@@ -454,8 +432,7 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
         principal_name:
           type: string
         action:
@@ -562,8 +539,7 @@ components:
       required: [name, metastore_type, dsn, data_path, status]
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
         name:
           type: string
           description: DuckDB catalog alias, used in SQL as catalog.schema.table
@@ -636,8 +612,7 @@ components:
       type: object
       properties:
         schema_id:
-          type: integer
-          format: int64
+          type: string
         name:
           type: string
         catalog_name:
@@ -723,8 +698,7 @@ components:
       type: object
       properties:
         table_id:
-          type: integer
-          format: int64
+          type: string
         name:
           type: string
         schema_name:
@@ -907,8 +881,7 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
         principal_name:
           type: string
         original_sql:
@@ -988,8 +961,7 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
         source_table:
           type: string
         target_table:
@@ -1054,8 +1026,7 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
         key:
           type: string
         value:
@@ -1080,16 +1051,13 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
         tag_id:
-          type: integer
-          format: int64
+          type: string
         securable_type:
           type: string
         securable_id:
-          type: integer
-          format: int64
+          type: string
         column_name:
           type: string
           nullable: true
@@ -1106,8 +1074,7 @@ components:
         securable_type:
           type: string
         securable_id:
-          type: integer
-          format: int64
+          type: string
         column_name:
           type: string
 
@@ -1126,11 +1093,9 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
         schema_id:
-          type: integer
-          format: int64
+          type: string
         schema_name:
           type: string
         catalog_name:
@@ -1197,8 +1162,7 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
         name:
           type: string
         credential_type:
@@ -1316,8 +1280,7 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
         name:
           type: string
         url:
@@ -1388,8 +1351,7 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
         name:
           type: string
         schema_name:
@@ -1524,8 +1486,7 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
         external_id:
           type: string
           format: uuid
@@ -1606,17 +1567,14 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
         principal_id:
-          type: integer
-          format: int64
+          type: string
         principal_type:
           type: string
           enum: [user, group]
         endpoint_id:
-          type: integer
-          format: int64
+          type: string
         endpoint_name:
           type: string
         is_default:
@@ -1632,8 +1590,7 @@ components:
       required: [principal_id, principal_type]
       properties:
         principal_id:
-          type: integer
-          format: int64
+          type: string
         principal_type:
           type: string
           enum: [user, group]
@@ -1785,8 +1742,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     get:
       operationId: getPrincipal
       summary: Get principal by ID
@@ -1842,8 +1798,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     put:
       operationId: updatePrincipalAdmin
       summary: Set or unset admin flag
@@ -1946,8 +1901,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     get:
       operationId: getGroup
       summary: Get group by ID
@@ -2003,8 +1957,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     get:
       operationId: listGroupMembers
       summary: List group members
@@ -2082,8 +2035,7 @@ paths:
           in: query
           required: true
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         '204':
           description: Member removed
@@ -2122,8 +2074,7 @@ paths:
         - name: principal_id
           in: query
           schema:
-            type: integer
-            format: int64
+            type: string
         - name: principal_type
           in: query
           schema:
@@ -2135,8 +2086,7 @@ paths:
         - name: securable_id
           in: query
           schema:
-            type: integer
-            format: int64
+            type: string
         - $ref: '#/components/parameters/MaxResults'
         - $ref: '#/components/parameters/PageToken'
       responses:
@@ -2200,8 +2150,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     delete:
       operationId: deleteGrant
       summary: Revoke a privilege
@@ -2239,8 +2188,7 @@ paths:
           in: query
           required: true
           schema:
-            type: integer
-            format: int64
+            type: string
         - $ref: '#/components/parameters/MaxResults'
         - $ref: '#/components/parameters/PageToken'
       responses:
@@ -2298,8 +2246,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     delete:
       operationId: deleteAPIKey
       summary: Delete an API key
@@ -2358,8 +2305,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     get:
       operationId: listRowFilters
       summary: List row filters for table
@@ -2434,8 +2380,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     delete:
       operationId: deleteRowFilter
       summary: Delete row filter
@@ -2468,8 +2413,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     post:
       operationId: bindRowFilter
       summary: Bind filter to principal
@@ -2516,8 +2460,7 @@ paths:
           in: query
           required: true
           schema:
-            type: integer
-            format: int64
+            type: string
         - name: principal_type
           in: query
           required: true
@@ -2601,8 +2544,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     get:
       operationId: listColumnMasks
       summary: List column masks
@@ -2677,8 +2619,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     delete:
       operationId: deleteColumnMask
       summary: Delete column mask
@@ -2711,8 +2652,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     post:
       operationId: bindColumnMask
       summary: Bind mask to principal
@@ -2759,8 +2699,7 @@ paths:
           in: query
           required: true
           schema:
-            type: integer
-            format: int64
+            type: string
         - name: principal_type
           in: query
           required: true
@@ -3808,8 +3747,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     delete:
       operationId: deleteLineageEdge
       summary: Delete a lineage edge
@@ -3932,8 +3870,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     delete:
       operationId: deleteTag
       summary: Delete a tag
@@ -3966,8 +3903,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     post:
       operationId: createTagAssignment
       summary: Assign a tag to a securable object
@@ -4010,8 +3946,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     delete:
       operationId: deleteTagAssignment
       summary: Remove a tag assignment
@@ -5206,8 +5141,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     delete:
       operationId: deleteComputeAssignment
       summary: Remove a compute assignment

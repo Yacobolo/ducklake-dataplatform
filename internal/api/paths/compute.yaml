@@ -292,8 +292,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     delete:
       operationId: deleteComputeAssignment
       summary: Remove a compute assignment

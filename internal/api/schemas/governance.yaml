@@ -33,8 +33,7 @@ Tag:
   type: object
   properties:
     id:
-      type: integer
-      format: int64
+      type: string
     key:
       type: string
     value:
@@ -59,16 +58,13 @@ TagAssignment:
   type: object
   properties:
     id:
-      type: integer
-      format: int64
+      type: string
     tag_id:
-      type: integer
-      format: int64
+      type: string
     securable_type:
       type: string
     securable_id:
-      type: integer
-      format: int64
+      type: string
     column_name:
       type: string
       nullable: true
@@ -85,8 +81,7 @@ CreateTagAssignmentRequest:
     securable_type:
       type: string
     securable_id:
-      type: integer
-      format: int64
+      type: string
     column_name:
       type: string
 

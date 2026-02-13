@@ -28,7 +28,7 @@ type lineageService interface {
 	GetFullLineage(ctx context.Context, tableName string, page domain.PageRequest) (*domain.LineageNode, error)
 	GetUpstream(ctx context.Context, tableName string, page domain.PageRequest) ([]domain.LineageEdge, int64, error)
 	GetDownstream(ctx context.Context, tableName string, page domain.PageRequest) ([]domain.LineageEdge, int64, error)
-	DeleteEdge(ctx context.Context, id int64) error
+	DeleteEdge(ctx context.Context, id string) error
 	PurgeOlderThan(ctx context.Context, olderThanDays int) (int64, error)
 }
 
@@ -36,9 +36,9 @@ type lineageService interface {
 type tagService interface {
 	ListTags(ctx context.Context, page domain.PageRequest) ([]domain.Tag, int64, error)
 	CreateTag(ctx context.Context, principal string, tag *domain.Tag) (*domain.Tag, error)
-	DeleteTag(ctx context.Context, principal string, id int64) error
+	DeleteTag(ctx context.Context, principal string, id string) error
 	AssignTag(ctx context.Context, principal string, assignment *domain.TagAssignment) (*domain.TagAssignment, error)
-	UnassignTag(ctx context.Context, principal string, id int64) error
+	UnassignTag(ctx context.Context, principal string, id string) error
 }
 
 // === Audit Logs ===

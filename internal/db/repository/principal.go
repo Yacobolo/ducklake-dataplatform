@@ -23,6 +23,7 @@ func NewPrincipalRepo(db *sql.DB) *PrincipalRepo {
 func (r *PrincipalRepo) Create(ctx context.Context, p *domain.Principal) (*domain.Principal, error) {
 	if p.ExternalID != nil {
 		row, err := r.q.CreatePrincipalWithExternalID(ctx, dbstore.CreatePrincipalWithExternalIDParams{
+			ID:             newID(),
 			Name:           p.Name,
 			Type:           p.Type,
 			IsAdmin:        boolToInt(p.IsAdmin),
@@ -35,6 +36,7 @@ func (r *PrincipalRepo) Create(ctx context.Context, p *domain.Principal) (*domai
 		return mapper.PrincipalFromDB(row), nil
 	}
 	row, err := r.q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+		ID:      newID(),
 		Name:    p.Name,
 		Type:    p.Type,
 		IsAdmin: boolToInt(p.IsAdmin),
@@ -46,7 +48,7 @@ func (r *PrincipalRepo) Create(ctx context.Context, p *domain.Principal) (*domai
 }
 
 // GetByID returns a principal by its ID.
-func (r *PrincipalRepo) GetByID(ctx context.Context, id int64) (*domain.Principal, error) {
+func (r *PrincipalRepo) GetByID(ctx context.Context, id string) (*domain.Principal, error) {
 	row, err := r.q.GetPrincipal(ctx, id)
 	if err != nil {
 		return nil, mapDBError(err)
@@ -94,12 +96,12 @@ func (r *PrincipalRepo) List(ctx context.Context, page domain.PageRequest) ([]do
 }
 
 // Delete removes a principal by ID.
-func (r *PrincipalRepo) Delete(ctx context.Context, id int64) error {
+func (r *PrincipalRepo) Delete(ctx context.Context, id string) error {
 	return r.q.DeletePrincipal(ctx, id)
 }
 
 // SetAdmin updates the admin status of a principal.
-func (r *PrincipalRepo) SetAdmin(ctx context.Context, id int64, isAdmin bool) error {
+func (r *PrincipalRepo) SetAdmin(ctx context.Context, id string, isAdmin bool) error {
 	return r.q.SetAdmin(ctx, dbstore.SetAdminParams{
 		IsAdmin: boolToInt(isAdmin),
 		ID:      id,

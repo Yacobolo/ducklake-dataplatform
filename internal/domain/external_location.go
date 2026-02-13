@@ -25,7 +25,7 @@ const (
 // StorageCredential holds cloud storage credentials.
 // Sensitive fields are stored encrypted at rest and decrypted in memory.
 type StorageCredential struct {
-	ID             int64
+	ID             string
 	Name           string
 	CredentialType CredentialType
 
@@ -55,7 +55,7 @@ type StorageCredential struct {
 // ExternalLocation represents a named storage location that can be referenced
 // by schemas. Modeled after Unity Catalog's external locations.
 type ExternalLocation struct {
-	ID             int64
+	ID             string
 	Name           string
 	URL            string // e.g. "s3://bucket/prefix/"
 	CredentialName string // references StorageCredential.Name

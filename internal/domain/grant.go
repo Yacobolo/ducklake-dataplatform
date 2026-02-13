@@ -35,16 +35,16 @@ const (
 )
 
 // CatalogID is the sentinel securable_id for catalog-level grants.
-const CatalogID int64 = 0
+const CatalogID = "00000000-0000-0000-0000-000000000000"
 
 // PrivilegeGrant represents a privilege granted to a principal on a securable.
 type PrivilegeGrant struct {
-	ID            int64
-	PrincipalID   int64
+	ID            string
+	PrincipalID   string
 	PrincipalType string // "user" or "group"
 	SecurableType string // "catalog", "schema", "table"
-	SecurableID   int64
+	SecurableID   string
 	Privilege     string
-	GrantedBy     *int64
+	GrantedBy     *string
 	GrantedAt     time.Time
 }

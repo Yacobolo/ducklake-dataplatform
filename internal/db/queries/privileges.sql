@@ -1,6 +1,6 @@
 -- name: GrantPrivilege :one
-INSERT INTO privilege_grants (principal_id, principal_type, securable_type, securable_id, privilege, granted_by)
-VALUES (?, ?, ?, ?, ?, ?)
+INSERT INTO privilege_grants (id, principal_id, principal_type, securable_type, securable_id, privilege, granted_by)
+VALUES (?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: RevokePrivilege :exec

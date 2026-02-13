@@ -138,7 +138,7 @@ func TestValidateCreateComputeAssignmentRequest(t *testing.T) {
 		{
 			name: "valid_user",
 			req: CreateComputeAssignmentRequest{
-				PrincipalID:   1,
+				PrincipalID:   "1",
 				PrincipalType: "user",
 				IsDefault:     true,
 			},
@@ -147,7 +147,7 @@ func TestValidateCreateComputeAssignmentRequest(t *testing.T) {
 		{
 			name: "valid_group",
 			req: CreateComputeAssignmentRequest{
-				PrincipalID:   5,
+				PrincipalID:   "5",
 				PrincipalType: "group",
 				FallbackLocal: true,
 			},
@@ -164,7 +164,7 @@ func TestValidateCreateComputeAssignmentRequest(t *testing.T) {
 		{
 			name: "zero_principal_id",
 			req: CreateComputeAssignmentRequest{
-				PrincipalID:   0,
+				PrincipalID:   "",
 				PrincipalType: "user",
 			},
 			wantErr: true,
@@ -173,7 +173,7 @@ func TestValidateCreateComputeAssignmentRequest(t *testing.T) {
 		{
 			name: "negative_principal_id",
 			req: CreateComputeAssignmentRequest{
-				PrincipalID:   -1,
+				PrincipalID:   "",
 				PrincipalType: "user",
 			},
 			wantErr: true,
@@ -182,7 +182,7 @@ func TestValidateCreateComputeAssignmentRequest(t *testing.T) {
 		{
 			name: "missing_principal_type",
 			req: CreateComputeAssignmentRequest{
-				PrincipalID: 1,
+				PrincipalID: "1",
 			},
 			wantErr: true,
 			errMsg:  "principal_type is required",
@@ -190,7 +190,7 @@ func TestValidateCreateComputeAssignmentRequest(t *testing.T) {
 		{
 			name: "invalid_principal_type",
 			req: CreateComputeAssignmentRequest{
-				PrincipalID:   1,
+				PrincipalID:   "1",
 				PrincipalType: "role",
 			},
 			wantErr: true,

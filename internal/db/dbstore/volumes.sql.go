@@ -21,12 +21,13 @@ func (q *Queries) CountVolumes(ctx context.Context, schemaName string) (int64, e
 }
 
 const createVolume = `-- name: CreateVolume :one
-INSERT INTO volumes (name, schema_name, catalog_name, volume_type, storage_location, comment, owner)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+INSERT INTO volumes (id, name, schema_name, catalog_name, volume_type, storage_location, comment, owner)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING id, name, schema_name, catalog_name, volume_type, storage_location, comment, owner, created_at, updated_at
 `
 
 type CreateVolumeParams struct {
+	ID              string
 	Name            string
 	SchemaName      string
 	CatalogName     string
@@ -38,6 +39,7 @@ type CreateVolumeParams struct {
 
 func (q *Queries) CreateVolume(ctx context.Context, arg CreateVolumeParams) (Volume, error) {
 	row := q.db.QueryRowContext(ctx, createVolume,
+		arg.ID,
 		arg.Name,
 		arg.SchemaName,
 		arg.CatalogName,
@@ -66,7 +68,7 @@ const deleteVolume = `-- name: DeleteVolume :exec
 DELETE FROM volumes WHERE id = ?
 `
 
-func (q *Queries) DeleteVolume(ctx context.Context, id int64) error {
+func (q *Queries) DeleteVolume(ctx context.Context, id string) error {
 	_, err := q.db.ExecContext(ctx, deleteVolume, id)
 	return err
 }
@@ -164,7 +166,7 @@ type UpdateVolumeParams struct {
 	Name    string
 	Comment string
 	Owner   string
-	ID      int64
+	ID      string
 }
 
 func (q *Queries) UpdateVolume(ctx context.Context, arg UpdateVolumeParams) error {

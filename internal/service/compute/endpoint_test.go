@@ -18,7 +18,7 @@ func newTestComputeEndpointService(repo *mockComputeEndpointRepo, auth *mockAuth
 
 func allowManageCompute() *mockAuthService {
 	return &mockAuthService{
-		CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+		CheckPrivilegeFn: func(_ context.Context, _, _ string, _ string, _ string) (bool, error) {
 			return true, nil
 		},
 	}
@@ -26,7 +26,7 @@ func allowManageCompute() *mockAuthService {
 
 func denyManageCompute() *mockAuthService {
 	return &mockAuthService{
-		CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+		CheckPrivilegeFn: func(_ context.Context, _, _ string, _ string, _ string) (bool, error) {
 			return false, nil
 		},
 	}
@@ -38,7 +38,7 @@ func TestComputeEndpointService_Create(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockComputeEndpointRepo{
 			CreateFn: func(_ context.Context, ep *domain.ComputeEndpoint) (*domain.ComputeEndpoint, error) {
-				ep.ID = 1
+				ep.ID = "1"
 				ep.ExternalID = "uuid-123"
 				ep.Status = "INACTIVE"
 				return ep, nil
@@ -100,7 +100,7 @@ func TestComputeEndpointService_GetByName(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockComputeEndpointRepo{
 			GetByNameFn: func(_ context.Context, name string) (*domain.ComputeEndpoint, error) {
-				return &domain.ComputeEndpoint{ID: 1, Name: name, Type: "REMOTE"}, nil
+				return &domain.ComputeEndpoint{ID: "1", Name: name, Type: "REMOTE"}, nil
 			},
 		}
 		svc := newTestComputeEndpointService(repo, allowManageCompute(), &mockAuditRepo{})
@@ -131,8 +131,8 @@ func TestComputeEndpointService_List(t *testing.T) {
 	repo := &mockComputeEndpointRepo{
 		ListFn: func(_ context.Context, _ domain.PageRequest) ([]domain.ComputeEndpoint, int64, error) {
 			return []domain.ComputeEndpoint{
-				{ID: 1, Name: "ep1"},
-				{ID: 2, Name: "ep2"},
+				{ID: "1", Name: "ep1"},
+				{ID: "2", Name: "ep2"},
 			}, 2, nil
 		},
 	}
@@ -151,9 +151,9 @@ func TestComputeEndpointService_Update(t *testing.T) {
 		newURL := "https://new.example.com"
 		repo := &mockComputeEndpointRepo{
 			GetByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
-				return &domain.ComputeEndpoint{ID: 1, Name: "ep1"}, nil
+				return &domain.ComputeEndpoint{ID: "1", Name: "ep1"}, nil
 			},
-			UpdateFn: func(_ context.Context, id int64, req domain.UpdateComputeEndpointRequest) (*domain.ComputeEndpoint, error) {
+			UpdateFn: func(_ context.Context, id string, req domain.UpdateComputeEndpointRequest) (*domain.ComputeEndpoint, error) {
 				return &domain.ComputeEndpoint{ID: id, Name: "ep1", URL: *req.URL}, nil
 			},
 		}
@@ -196,9 +196,9 @@ func TestComputeEndpointService_Delete(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockComputeEndpointRepo{
 			GetByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
-				return &domain.ComputeEndpoint{ID: 1, Name: "ep1"}, nil
+				return &domain.ComputeEndpoint{ID: "1", Name: "ep1"}, nil
 			},
-			DeleteFn: func(_ context.Context, _ int64) error {
+			DeleteFn: func(_ context.Context, _ string) error {
 				return nil
 			},
 		}
@@ -225,9 +225,9 @@ func TestComputeEndpointService_UpdateStatus(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockComputeEndpointRepo{
 			GetByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
-				return &domain.ComputeEndpoint{ID: 1, Name: "ep1", Status: "INACTIVE"}, nil
+				return &domain.ComputeEndpoint{ID: "1", Name: "ep1", Status: "INACTIVE"}, nil
 			},
-			UpdateStatusFn: func(_ context.Context, _ int64, _ string) error {
+			UpdateStatusFn: func(_ context.Context, _ string, _ string) error {
 				return nil
 			},
 		}
@@ -242,7 +242,7 @@ func TestComputeEndpointService_UpdateStatus(t *testing.T) {
 	t.Run("invalid_status", func(t *testing.T) {
 		repo := &mockComputeEndpointRepo{
 			GetByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
-				return &domain.ComputeEndpoint{ID: 1, Name: "ep1"}, nil
+				return &domain.ComputeEndpoint{ID: "1", Name: "ep1"}, nil
 			},
 		}
 		svc := newTestComputeEndpointService(repo, allowManageCompute(), &mockAuditRepo{})
@@ -258,9 +258,9 @@ func TestComputeEndpointService_UpdateStatus(t *testing.T) {
 			t.Run(status, func(t *testing.T) {
 				repo := &mockComputeEndpointRepo{
 					GetByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
-						return &domain.ComputeEndpoint{ID: 1, Name: "ep1"}, nil
+						return &domain.ComputeEndpoint{ID: "1", Name: "ep1"}, nil
 					},
-					UpdateStatusFn: func(_ context.Context, _ int64, _ string) error {
+					UpdateStatusFn: func(_ context.Context, _ string, _ string) error {
 						return nil
 					},
 				}
@@ -278,10 +278,10 @@ func TestComputeEndpointService_Assign(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockComputeEndpointRepo{
 			GetByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
-				return &domain.ComputeEndpoint{ID: 1, Name: "ep1"}, nil
+				return &domain.ComputeEndpoint{ID: "1", Name: "ep1"}, nil
 			},
 			AssignFn: func(_ context.Context, a *domain.ComputeAssignment) (*domain.ComputeAssignment, error) {
-				a.ID = 10
+				a.ID = "10"
 				return a, nil
 			},
 		}
@@ -289,11 +289,11 @@ func TestComputeEndpointService_Assign(t *testing.T) {
 		svc := newTestComputeEndpointService(repo, allowManageCompute(), audit)
 
 		result, err := svc.Assign(context.Background(), "admin", "ep1", domain.CreateComputeAssignmentRequest{
-			PrincipalID: 5, PrincipalType: "user", IsDefault: true, FallbackLocal: true,
+			PrincipalID: "5", PrincipalType: "user", IsDefault: true, FallbackLocal: true,
 		})
 		require.NoError(t, err)
-		assert.Equal(t, int64(10), result.ID)
-		assert.Equal(t, int64(1), result.EndpointID)
+		assert.Equal(t, "10", result.ID)
+		assert.Equal(t, "1", result.EndpointID)
 		assert.True(t, result.IsDefault)
 		assert.True(t, result.FallbackLocal)
 		assert.True(t, audit.HasAction("ASSIGN_COMPUTE_ENDPOINT"))
@@ -303,7 +303,7 @@ func TestComputeEndpointService_Assign(t *testing.T) {
 		svc := newTestComputeEndpointService(&mockComputeEndpointRepo{}, allowManageCompute(), &mockAuditRepo{})
 
 		_, err := svc.Assign(context.Background(), "admin", "ep1", domain.CreateComputeAssignmentRequest{
-			PrincipalID: 0, PrincipalType: "user",
+			PrincipalID: "", PrincipalType: "user",
 		})
 		require.Error(t, err)
 		var valErr *domain.ValidationError
@@ -314,7 +314,7 @@ func TestComputeEndpointService_Assign(t *testing.T) {
 		svc := newTestComputeEndpointService(&mockComputeEndpointRepo{}, denyManageCompute(), &mockAuditRepo{})
 
 		_, err := svc.Assign(context.Background(), "user1", "ep1", domain.CreateComputeAssignmentRequest{
-			PrincipalID: 5, PrincipalType: "user",
+			PrincipalID: "5", PrincipalType: "user",
 		})
 		require.Error(t, err)
 		var accessDenied *domain.AccessDeniedError
@@ -327,21 +327,21 @@ func TestComputeEndpointService_Assign(t *testing.T) {
 func TestComputeEndpointService_Unassign(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockComputeEndpointRepo{
-			UnassignFn: func(_ context.Context, _ int64) error {
+			UnassignFn: func(_ context.Context, _ string) error {
 				return nil
 			},
 		}
 		audit := &mockAuditRepo{}
 		svc := newTestComputeEndpointService(repo, allowManageCompute(), audit)
 
-		err := svc.Unassign(context.Background(), "admin", 10)
+		err := svc.Unassign(context.Background(), "admin", "10")
 		require.NoError(t, err)
 		assert.True(t, audit.HasAction("UNASSIGN_COMPUTE_ENDPOINT"))
 	})
 
 	t.Run("access_denied", func(t *testing.T) {
 		svc := newTestComputeEndpointService(&mockComputeEndpointRepo{}, denyManageCompute(), &mockAuditRepo{})
-		err := svc.Unassign(context.Background(), "user1", 10)
+		err := svc.Unassign(context.Background(), "user1", "10")
 		require.Error(t, err)
 		var accessDenied *domain.AccessDeniedError
 		assert.ErrorAs(t, err, &accessDenied)
@@ -354,11 +354,11 @@ func TestComputeEndpointService_ListAssignments(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockComputeEndpointRepo{
 			GetByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
-				return &domain.ComputeEndpoint{ID: 1, Name: "ep1"}, nil
+				return &domain.ComputeEndpoint{ID: "1", Name: "ep1"}, nil
 			},
-			ListAssignmentsFn: func(_ context.Context, _ int64, _ domain.PageRequest) ([]domain.ComputeAssignment, int64, error) {
+			ListAssignmentsFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.ComputeAssignment, int64, error) {
 				return []domain.ComputeAssignment{
-					{ID: 1, PrincipalID: 5, PrincipalType: "user", EndpointID: 1},
+					{ID: "1", PrincipalID: "5", PrincipalType: "user", EndpointID: "1"},
 				}, 1, nil
 			},
 		}
@@ -391,7 +391,7 @@ func TestComputeEndpointService_HealthCheck(t *testing.T) {
 	t.Run("local_endpoint_always_ok", func(t *testing.T) {
 		repo := &mockComputeEndpointRepo{
 			GetByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
-				return &domain.ComputeEndpoint{ID: 1, Name: "local-ep", Type: "LOCAL"}, nil
+				return &domain.ComputeEndpoint{ID: "1", Name: "local-ep", Type: "LOCAL"}, nil
 			},
 		}
 		svc := newTestComputeEndpointService(repo, allowManageCompute(), &mockAuditRepo{})
@@ -429,7 +429,7 @@ func TestComputeEndpointService_HealthCheck(t *testing.T) {
 		repo := &mockComputeEndpointRepo{
 			GetByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
 				return &domain.ComputeEndpoint{
-					ID: 1, Name: "remote-ep", Type: "REMOTE",
+					ID: "1", Name: "remote-ep", Type: "REMOTE",
 					URL: "https://127.0.0.1:1", AuthToken: "tok",
 				}, nil
 			},

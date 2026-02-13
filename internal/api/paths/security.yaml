@@ -69,8 +69,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     get:
       operationId: getPrincipal
       summary: Get principal by ID
@@ -127,8 +126,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     put:
       operationId: updatePrincipalAdmin
       summary: Set or unset admin flag
@@ -232,8 +230,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     get:
       operationId: getGroup
       summary: Get group by ID
@@ -290,8 +287,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     get:
       operationId: listGroupMembers
       summary: List group members
@@ -369,8 +365,7 @@ paths:
           in: query
           required: true
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         '204':
           description: Member removed
@@ -409,8 +404,7 @@ paths:
         - name: principal_id
           in: query
           schema:
-            type: integer
-            format: int64
+            type: string
         - name: principal_type
           in: query
           schema:
@@ -422,8 +416,7 @@ paths:
         - name: securable_id
           in: query
           schema:
-            type: integer
-            format: int64
+            type: string
         - $ref: '../schemas/common.yaml#/parameters/MaxResults'
         - $ref: '../schemas/common.yaml#/parameters/PageToken'
       responses:
@@ -488,8 +481,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     delete:
       operationId: deleteGrant
       summary: Revoke a privilege
@@ -527,8 +519,7 @@ paths:
           in: query
           required: true
           schema:
-            type: integer
-            format: int64
+            type: string
         - $ref: '../schemas/common.yaml#/parameters/MaxResults'
         - $ref: '../schemas/common.yaml#/parameters/PageToken'
       responses:
@@ -587,8 +578,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     delete:
       operationId: deleteAPIKey
       summary: Delete an API key
@@ -648,8 +638,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     get:
       operationId: listRowFilters
       summary: List row filters for table
@@ -725,8 +714,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     delete:
       operationId: deleteRowFilter
       summary: Delete row filter
@@ -760,8 +748,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     post:
       operationId: bindRowFilter
       summary: Bind filter to principal
@@ -808,8 +795,7 @@ paths:
           in: query
           required: true
           schema:
-            type: integer
-            format: int64
+            type: string
         - name: principal_type
           in: query
           required: true
@@ -894,8 +880,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     get:
       operationId: listColumnMasks
       summary: List column masks
@@ -971,8 +956,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     delete:
       operationId: deleteColumnMask
       summary: Delete column mask
@@ -1006,8 +990,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
     post:
       operationId: bindColumnMask
       summary: Bind mask to principal
@@ -1054,8 +1037,7 @@ paths:
           in: query
           required: true
           schema:
-            type: integer
-            format: int64
+            type: string
         - name: principal_type
           in: query
           required: true

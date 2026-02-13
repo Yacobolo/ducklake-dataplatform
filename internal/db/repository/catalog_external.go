@@ -106,7 +106,7 @@ func (r *CatalogRepo) externalTableToDetail(et *domain.ExternalTableRecord, sche
 		}
 	}
 	return &domain.TableDetail{
-		TableID:      et.EffectiveTableID(),
+		TableID:      et.ID,
 		Name:         et.TableName,
 		SchemaName:   schemaName,
 		CatalogName:  r.catalogName,
@@ -146,7 +146,7 @@ func (r *CatalogRepo) deleteExternalTable(ctx context.Context, schemaName, table
 	})
 
 	// Cascade governance cleanup using effective table ID
-	tableID := et.EffectiveTableID()
+	tableID := et.ID
 	_ = r.q.DeleteRowFiltersByTable(ctx, tableID)
 	_ = r.q.DeleteColumnMasksByTable(ctx, tableID)
 	_ = r.q.DeleteTagAssignmentsBySecurableTypes(ctx, dbstore.DeleteTagAssignmentsBySecurableTypesParams{

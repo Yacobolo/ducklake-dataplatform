@@ -32,7 +32,7 @@ func TestGrantService_Grant_AdminRequired(t *testing.T) {
 		PrincipalType: "user",
 		Privilege:     "SELECT",
 		SecurableType: "table",
-		SecurableID:   1,
+		SecurableID:   "1",
 	})
 	require.Error(t, err)
 	var accessDenied *domain.AccessDeniedError
@@ -50,17 +50,17 @@ func TestGrantService_Grant_AdminAllowed(t *testing.T) {
 		PrincipalType: "user",
 		Privilege:     "SELECT",
 		SecurableType: "table",
-		SecurableID:   1,
+		SecurableID:   "1",
 	})
 	require.NoError(t, err)
 	assert.Equal(t, "SELECT", grant.Privilege)
-	assert.Positive(t, grant.ID)
+	assert.NotEmpty(t, grant.ID)
 }
 
 func TestGrantService_Revoke_AdminRequired(t *testing.T) {
 	svc, _ := setupGrantService(t)
 
-	err := svc.Revoke(nonAdminCtx(), "user", 1)
+	err := svc.Revoke(nonAdminCtx(), "user", "1")
 	require.Error(t, err)
 	var accessDenied *domain.AccessDeniedError
 	assert.ErrorAs(t, err, &accessDenied)
@@ -77,7 +77,7 @@ func TestGrantService_Revoke_AdminAllowed(t *testing.T) {
 		PrincipalType: "user",
 		Privilege:     "SELECT",
 		SecurableType: "table",
-		SecurableID:   1,
+		SecurableID:   "1",
 	})
 	require.NoError(t, err)
 
@@ -102,11 +102,11 @@ func TestGrantService_Grant_EmptyPrivilege(t *testing.T) {
 	svc, _ := setupGrantService(t)
 
 	_, err := svc.Grant(adminCtx(), "admin-user", &domain.PrivilegeGrant{
-		PrincipalID:   1,
+		PrincipalID:   "1",
 		PrincipalType: "user",
 		Privilege:     "", // empty
 		SecurableType: "table",
-		SecurableID:   1,
+		SecurableID:   "1",
 	})
 	require.Error(t, err)
 	var validationErr *domain.ValidationError

@@ -26,7 +26,7 @@ func NewAPIKeyService(repo domain.APIKeyRepository, audit domain.AuditRepository
 // Create generates a new API key for the given principal.
 // Non-admin users can only create keys for themselves.
 // Returns the raw key (shown once) and the created key metadata.
-func (s *APIKeyService) Create(ctx context.Context, principalID int64, name string, expiresAt *time.Time) (string, *domain.APIKey, error) {
+func (s *APIKeyService) Create(ctx context.Context, principalID string, name string, expiresAt *time.Time) (string, *domain.APIKey, error) {
 	caller, ok := domain.PrincipalFromContext(ctx)
 	if !ok {
 		return "", nil, domain.ErrAccessDenied("authentication required")
@@ -69,19 +69,19 @@ func (s *APIKeyService) Create(ctx context.Context, principalID int64, name stri
 }
 
 // List returns API keys for a principal (without raw key values).
-func (s *APIKeyService) List(ctx context.Context, principalID int64, page domain.PageRequest) ([]domain.APIKey, int64, error) {
+func (s *APIKeyService) List(ctx context.Context, principalID string, page domain.PageRequest) ([]domain.APIKey, int64, error) {
 	return s.repo.ListByPrincipal(ctx, principalID, page)
 }
 
 // Delete removes an API key by ID.
-func (s *APIKeyService) Delete(ctx context.Context, id int64) error {
+func (s *APIKeyService) Delete(ctx context.Context, id string) error {
 	caller := callerName(ctx)
 	if err := s.repo.Delete(ctx, id); err != nil {
 		return err
 	}
 	_ = s.audit.Insert(ctx, &domain.AuditEntry{
 		PrincipalName: caller,
-		Action:        fmt.Sprintf("DELETE_API_KEY(id=%d)", id),
+		Action:        fmt.Sprintf("DELETE_API_KEY(id=%s)", id),
 		Status:        "ALLOWED",
 	})
 	return nil

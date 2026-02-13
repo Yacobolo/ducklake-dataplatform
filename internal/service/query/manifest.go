@@ -171,7 +171,7 @@ func (s *ManifestService) GetManifest(
 // resolveDataFiles queries the DuckLake metastore for Parquet file
 // paths backing the given table. Returns fully-qualified S3 paths and the
 // schema-level storage path (if set), which is used to resolve the presigner.
-func (s *ManifestService) resolveDataFiles(ctx context.Context, catalogName string, tableID int64, schemaName string) ([]string, string, error) {
+func (s *ManifestService) resolveDataFiles(ctx context.Context, catalogName string, tableID string, schemaName string) ([]string, string, error) {
 	metastore, err := s.metastoreFactory.ForCatalog(ctx, catalogName)
 	if err != nil {
 		return nil, "", fmt.Errorf("resolve metastore for catalog %q: %w", catalogName, err)
@@ -198,7 +198,7 @@ func (s *ManifestService) resolveDataFiles(ctx context.Context, catalogName stri
 	}
 
 	if len(paths) == 0 {
-		return nil, "", fmt.Errorf("no data files found for table_id=%d", tableID)
+		return nil, "", fmt.Errorf("no data files found for table_id=%s", tableID)
 	}
 
 	return paths, schemaPath, nil

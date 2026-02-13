@@ -19,7 +19,7 @@ func newTestViewService(viewRepo *mockViewRepo, catalog *mockCatalogRepo, auth *
 
 func TestViewService_CreateView(t *testing.T) {
 	schema := &domain.SchemaDetail{
-		SchemaID:    42,
+		SchemaID:    "42",
 		Name:        "main",
 		CatalogName: "lake",
 	}
@@ -33,7 +33,7 @@ func TestViewService_CreateView(t *testing.T) {
 		viewRepo := &mockViewRepo{
 			CreateFn: func(_ context.Context, v *domain.ViewDetail) (*domain.ViewDetail, error) {
 				return &domain.ViewDetail{
-					ID:             1,
+					ID:             "1",
 					SchemaID:       v.SchemaID,
 					Name:           v.Name,
 					ViewDefinition: v.ViewDefinition,
@@ -49,7 +49,7 @@ func TestViewService_CreateView(t *testing.T) {
 			},
 		}
 		auth := &mockAuthService{
-			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ string, _ string) (bool, error) {
 				return true, nil
 			},
 		}
@@ -70,7 +70,7 @@ func TestViewService_CreateView(t *testing.T) {
 		viewRepo := &mockViewRepo{
 			CreateFn: func(_ context.Context, v *domain.ViewDetail) (*domain.ViewDetail, error) {
 				captured = v
-				return &domain.ViewDetail{ID: 1, Name: v.Name, Owner: v.Owner}, nil
+				return &domain.ViewDetail{ID: "1", Name: v.Name, Owner: v.Owner}, nil
 			},
 		}
 		catalog := &mockCatalogRepo{
@@ -79,7 +79,7 @@ func TestViewService_CreateView(t *testing.T) {
 			},
 		}
 		auth := &mockAuthService{
-			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ string, _ string) (bool, error) {
 				return true, nil
 			},
 		}
@@ -96,7 +96,7 @@ func TestViewService_CreateView(t *testing.T) {
 	t.Run("access_denied", func(t *testing.T) {
 		catalog := &mockCatalogRepo{}
 		auth := &mockAuthService{
-			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ string, _ string) (bool, error) {
 				return false, nil
 			},
 		}
@@ -113,7 +113,7 @@ func TestViewService_CreateView(t *testing.T) {
 	t.Run("auth_check_error", func(t *testing.T) {
 		catalog := &mockCatalogRepo{}
 		auth := &mockAuthService{
-			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ string, _ string) (bool, error) {
 				return false, errTest
 			},
 		}
@@ -133,7 +133,7 @@ func TestViewService_CreateView(t *testing.T) {
 			},
 		}
 		auth := &mockAuthService{
-			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ string, _ string) (bool, error) {
 				return true, nil
 			},
 		}
@@ -159,7 +159,7 @@ func TestViewService_CreateView(t *testing.T) {
 			},
 		}
 		auth := &mockAuthService{
-			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ string, _ string) (bool, error) {
 				return true, nil
 			},
 		}
@@ -175,7 +175,7 @@ func TestViewService_CreateView(t *testing.T) {
 	t.Run("audit_logged", func(t *testing.T) {
 		viewRepo := &mockViewRepo{
 			CreateFn: func(_ context.Context, v *domain.ViewDetail) (*domain.ViewDetail, error) {
-				return &domain.ViewDetail{ID: 1, Name: v.Name, Owner: v.Owner}, nil
+				return &domain.ViewDetail{ID: "1", Name: v.Name, Owner: v.Owner}, nil
 			},
 		}
 		catalog := &mockCatalogRepo{
@@ -184,7 +184,7 @@ func TestViewService_CreateView(t *testing.T) {
 			},
 		}
 		auth := &mockAuthService{
-			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ string, _ string) (bool, error) {
 				return true, nil
 			},
 		}
@@ -204,15 +204,15 @@ func TestViewService_CreateView(t *testing.T) {
 
 func TestViewService_GetView(t *testing.T) {
 	schema := &domain.SchemaDetail{
-		SchemaID:    42,
+		SchemaID:    "42",
 		Name:        "main",
 		CatalogName: "lake",
 	}
 
 	t.Run("happy_path", func(t *testing.T) {
 		viewRepo := &mockViewRepo{
-			GetByNameFn: func(_ context.Context, _ int64, _ string) (*domain.ViewDetail, error) {
-				return &domain.ViewDetail{ID: 1, Name: "v_test"}, nil
+			GetByNameFn: func(_ context.Context, _ string, _ string) (*domain.ViewDetail, error) {
+				return &domain.ViewDetail{ID: "1", Name: "v_test"}, nil
 			},
 		}
 		catalog := &mockCatalogRepo{
@@ -247,7 +247,7 @@ func TestViewService_GetView(t *testing.T) {
 
 	t.Run("view_not_found", func(t *testing.T) {
 		viewRepo := &mockViewRepo{
-			GetByNameFn: func(_ context.Context, _ int64, _ string) (*domain.ViewDetail, error) {
+			GetByNameFn: func(_ context.Context, _ string, _ string) (*domain.ViewDetail, error) {
 				return nil, domain.ErrNotFound("view not found")
 			},
 		}
@@ -270,7 +270,7 @@ func TestViewService_GetView(t *testing.T) {
 
 func TestViewService_ListViews(t *testing.T) {
 	schema := &domain.SchemaDetail{
-		SchemaID:    42,
+		SchemaID:    "42",
 		Name:        "main",
 		CatalogName: "lake",
 	}
@@ -278,10 +278,10 @@ func TestViewService_ListViews(t *testing.T) {
 
 	t.Run("happy_path", func(t *testing.T) {
 		viewRepo := &mockViewRepo{
-			ListFn: func(_ context.Context, _ int64, _ domain.PageRequest) ([]domain.ViewDetail, int64, error) {
+			ListFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.ViewDetail, int64, error) {
 				return []domain.ViewDetail{
-					{ID: 1, Name: "v1"},
-					{ID: 2, Name: "v2"},
+					{ID: "1", Name: "v1"},
+					{ID: "2", Name: "v2"},
 				}, 2, nil
 			},
 		}
@@ -305,7 +305,7 @@ func TestViewService_ListViews(t *testing.T) {
 
 	t.Run("empty_result", func(t *testing.T) {
 		viewRepo := &mockViewRepo{
-			ListFn: func(_ context.Context, _ int64, _ domain.PageRequest) ([]domain.ViewDetail, int64, error) {
+			ListFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.ViewDetail, int64, error) {
 				return []domain.ViewDetail{}, 0, nil
 			},
 		}
@@ -343,14 +343,14 @@ func TestViewService_ListViews(t *testing.T) {
 
 func TestViewService_DeleteView(t *testing.T) {
 	schema := &domain.SchemaDetail{
-		SchemaID:    42,
+		SchemaID:    "42",
 		Name:        "main",
 		CatalogName: "lake",
 	}
 
 	t.Run("happy_path", func(t *testing.T) {
 		viewRepo := &mockViewRepo{
-			DeleteFn: func(_ context.Context, _ int64, _ string) error {
+			DeleteFn: func(_ context.Context, _ string, _ string) error {
 				return nil
 			},
 		}
@@ -360,7 +360,7 @@ func TestViewService_DeleteView(t *testing.T) {
 			},
 		}
 		auth := &mockAuthService{
-			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ string, _ string) (bool, error) {
 				return true, nil
 			},
 		}
@@ -376,7 +376,7 @@ func TestViewService_DeleteView(t *testing.T) {
 
 	t.Run("access_denied", func(t *testing.T) {
 		auth := &mockAuthService{
-			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ string, _ string) (bool, error) {
 				return false, nil
 			},
 		}
@@ -396,7 +396,7 @@ func TestViewService_DeleteView(t *testing.T) {
 			},
 		}
 		auth := &mockAuthService{
-			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ string, _ string) (bool, error) {
 				return true, nil
 			},
 		}
@@ -411,7 +411,7 @@ func TestViewService_DeleteView(t *testing.T) {
 
 	t.Run("repo_delete_error", func(t *testing.T) {
 		viewRepo := &mockViewRepo{
-			DeleteFn: func(_ context.Context, _ int64, _ string) error {
+			DeleteFn: func(_ context.Context, _ string, _ string) error {
 				return errTest
 			},
 		}
@@ -421,7 +421,7 @@ func TestViewService_DeleteView(t *testing.T) {
 			},
 		}
 		auth := &mockAuthService{
-			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ string, _ string) (bool, error) {
 				return true, nil
 			},
 		}

@@ -10,16 +10,16 @@ import (
 )
 
 type ApiKey struct {
-	ID          int64
+	ID          string
 	KeyHash     string
-	PrincipalID int64
+	PrincipalID string
 	Name        string
 	ExpiresAt   sql.NullString
 	CreatedAt   string
 }
 
 type AuditLog struct {
-	ID             int64
+	ID             string
 	PrincipalName  string
 	Action         string
 	StatementType  sql.NullString
@@ -34,7 +34,7 @@ type AuditLog struct {
 }
 
 type Catalog struct {
-	ID            int64
+	ID            string
 	Name          string
 	MetastoreType string
 	Dsn           string
@@ -59,8 +59,8 @@ type CatalogMetadatum struct {
 }
 
 type ColumnMask struct {
-	ID             int64
-	TableID        int64
+	ID             string
+	TableID        string
 	ColumnName     string
 	MaskExpression string
 	Description    sql.NullString
@@ -68,9 +68,9 @@ type ColumnMask struct {
 }
 
 type ColumnMaskBinding struct {
-	ID            int64
-	ColumnMaskID  int64
-	PrincipalID   int64
+	ID            string
+	ColumnMaskID  string
+	PrincipalID   string
 	PrincipalType string
 	SeeOriginal   int64
 }
@@ -84,17 +84,17 @@ type ColumnMetadatum struct {
 }
 
 type ComputeAssignment struct {
-	ID            int64
-	PrincipalID   int64
+	ID            string
+	PrincipalID   string
 	PrincipalType string
-	EndpointID    int64
+	EndpointID    string
 	IsDefault     int64
 	FallbackLocal int64
 	CreatedAt     time.Time
 }
 
 type ComputeEndpoint struct {
-	ID          int64
+	ID          string
 	ExternalID  string
 	Name        string
 	Url         string
@@ -109,7 +109,7 @@ type ComputeEndpoint struct {
 }
 
 type ExternalLocation struct {
-	ID             int64
+	ID             string
 	Name           string
 	Url            string
 	CredentialName string
@@ -122,7 +122,7 @@ type ExternalLocation struct {
 }
 
 type ExternalTable struct {
-	ID           int64
+	ID           string
 	SchemaName   string
 	TableName    string
 	FileFormat   string
@@ -136,28 +136,28 @@ type ExternalTable struct {
 }
 
 type ExternalTableColumn struct {
-	ID              int64
-	ExternalTableID int64
+	ID              string
+	ExternalTableID string
 	ColumnName      string
 	ColumnType      string
 	Position        int64
 }
 
 type Group struct {
-	ID          int64
+	ID          string
 	Name        string
 	Description sql.NullString
 	CreatedAt   string
 }
 
 type GroupMember struct {
-	GroupID    int64
+	GroupID    string
 	MemberType string
-	MemberID   int64
+	MemberID   string
 }
 
 type LineageEdge struct {
-	ID            int64
+	ID            string
 	SourceTable   string
 	TargetTable   sql.NullString
 	EdgeType      string
@@ -169,7 +169,7 @@ type LineageEdge struct {
 }
 
 type Principal struct {
-	ID             int64
+	ID             string
 	Name           string
 	Type           string
 	IsAdmin        int64
@@ -179,33 +179,33 @@ type Principal struct {
 }
 
 type PrivilegeGrant struct {
-	ID            int64
-	PrincipalID   int64
+	ID            string
+	PrincipalID   string
 	PrincipalType string
 	SecurableType string
-	SecurableID   int64
+	SecurableID   string
 	Privilege     string
-	GrantedBy     sql.NullInt64
+	GrantedBy     sql.NullString
 	GrantedAt     string
 }
 
 type RowFilter struct {
-	ID          int64
-	TableID     int64
+	ID          string
+	TableID     string
 	FilterSql   string
 	Description sql.NullString
 	CreatedAt   string
 }
 
 type RowFilterBinding struct {
-	ID            int64
-	RowFilterID   int64
-	PrincipalID   int64
+	ID            string
+	RowFilterID   string
+	PrincipalID   string
 	PrincipalType string
 }
 
 type StorageCredential struct {
-	ID                         int64
+	ID                         string
 	Name                       string
 	CredentialType             string
 	KeyIDEncrypted             string
@@ -235,7 +235,7 @@ type TableStatistic struct {
 }
 
 type Tag struct {
-	ID        int64
+	ID        string
 	Key       string
 	Value     sql.NullString
 	CreatedBy string
@@ -243,18 +243,18 @@ type Tag struct {
 }
 
 type TagAssignment struct {
-	ID            int64
-	TagID         int64
+	ID            string
+	TagID         string
 	SecurableType string
-	SecurableID   int64
+	SecurableID   string
 	ColumnName    sql.NullString
 	AssignedBy    string
 	AssignedAt    string
 }
 
 type View struct {
-	ID             int64
-	SchemaID       int64
+	ID             string
+	SchemaID       string
 	Name           string
 	ViewDefinition string
 	Comment        sql.NullString
@@ -267,7 +267,7 @@ type View struct {
 }
 
 type Volume struct {
-	ID              int64
+	ID              string
 	Name            string
 	SchemaName      string
 	CatalogName     string

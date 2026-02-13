@@ -1,6 +1,6 @@
 -- name: CreateCatalog :one
-INSERT INTO catalogs (name, metastore_type, dsn, data_path, status, status_message, is_default, comment)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO catalogs (id, name, metastore_type, dsn, data_path, status, status_message, is_default, comment)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetCatalogByID :one
