@@ -52,10 +52,13 @@ tasks:
 
   generate-cli:
     desc: Generate CLI commands from OpenAPI spec
+    deps: [bundle-api]
     cmds:
-      - go run ./cmd/cli-gen -spec internal/api/openapi.yaml -config cli-config.yaml -out pkg/cli/gen/
+      - go run ./cmd/cli-gen -spec internal/api/openapi.bundled.yaml -config cli-config.yaml -out pkg/cli/gen/
     sources:
       - internal/api/openapi.yaml
+      - internal/api/paths/*.yaml
+      - internal/api/schemas/*.yaml
       - cli-config.yaml
       - internal/codegen/cli/**/*.go
       - internal/codegen/cli/templates/*.tmpl
