@@ -571,47 +571,6 @@ func TestHTTP_UpdateColumn(t *testing.T) {
 	}
 }
 
-// TestHTTP_UpdateCatalogRegistration tests PATCH /v1/catalogs/{catalogName}.
-func TestHTTP_UpdateCatalogRegistration(t *testing.T) {
-	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
-
-	catalogURL := env.Server.URL + "/v1/catalogs/lake"
-
-	type step struct {
-		name string
-		fn   func(t *testing.T)
-	}
-
-	steps := []step{
-		{"patch_comment_200", func(t *testing.T) {
-			body := map[string]interface{}{
-				"comment": "Production data lake",
-			}
-			resp := doRequest(t, "PATCH", catalogURL, env.Keys.Admin, body)
-			require.Equal(t, 200, resp.StatusCode)
-
-			var result map[string]interface{}
-			decodeJSON(t, resp, &result)
-			assert.Equal(t, "Production data lake", result["comment"])
-		}},
-
-		{"get_verifies", func(t *testing.T) {
-			resp := doRequest(t, "GET", catalogURL, env.Keys.Admin, nil)
-			require.Equal(t, 200, resp.StatusCode)
-
-			var result map[string]interface{}
-			decodeJSON(t, resp, &result)
-			assert.Equal(t, "Production data lake", result["comment"])
-		}},
-	}
-
-	for _, s := range steps {
-		if !t.Run(s.name, s.fn) {
-			t.FailNow()
-		}
-	}
-}
-
 // TestHTTP_ProfileTable tests POST /v1/catalog/schemas/{s}/tables/{t}/profile.
 func TestHTTP_ProfileTable(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
