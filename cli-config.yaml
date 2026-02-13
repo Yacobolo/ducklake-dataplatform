@@ -11,10 +11,7 @@ groups:
         command_path: []
         verb: get
         table_columns: []
-      update-catalog:
-        operation_id: updateCatalog
-        command_path: []
-        verb: update
+
       list-schemas:
         operation_id: listSchemas
         command_path: [schemas]
@@ -534,3 +531,9 @@ groups:
 
 skip_operations:
   - createRowFilterTopLevel
+  - registerCatalog
+  - listCatalogs
+  - getCatalogRegistration
+  - updateCatalogRegistration
+  - deleteCatalogRegistration
+  - setDefaultCatalog

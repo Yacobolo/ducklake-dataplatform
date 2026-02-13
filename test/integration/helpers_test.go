@@ -595,9 +595,8 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 		t.Fatalf("create presigner: %v", err)
 	}
 
-	metastoreRepo := repository.NewMetastoreRepo(metaDB)
 	manifestSvc := query.NewManifestService(
-		metastoreRepo, authSvc, presigner, introspectionRepo, auditRepo,
+		nil, authSvc, presigner, introspectionRepo, auditRepo,
 		nil, nil,
 	)
 
@@ -613,13 +612,13 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 	lineageSvc := governance.NewLineageService(lineageRepo)
 	searchSvc := catalog.NewSearchService(searchRepo, nil)
 	queryHistorySvc := governance.NewQueryHistoryService(queryHistoryRepo)
-	catalogRepo := repository.NewCatalogRepo(metaDB, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
-	viewSvc := catalog.NewViewService(viewRepo, catalogRepo, authSvc, auditRepo)
+	catalogRepoFactory := repository.NewCatalogRepoFactory(metaDB, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	viewSvc := catalog.NewViewService(viewRepo, catalogRepoFactory, authSvc, auditRepo)
 
 	handler := api.NewHandler(
 		querySvc, principalSvc, groupSvc, grantSvc,
 		rowFilterSvc, columnMaskSvc, auditSvc,
-		manifestSvc, nil, // catalogSvc=nil — integration tests only hit /v1/manifest
+		manifestSvc, nil, nil, // catalogSvc=nil, catalogRegSvc=nil — integration tests only hit /v1/manifest
 		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
 		nil,                     // ingestionSvc
 		nil, nil, nil, nil, nil, // storageCredSvc, extLocationSvc, volumeSvc, computeEndpointSvc, apiKeySvc
@@ -720,9 +719,8 @@ func setupLocalExtensionServer(t *testing.T) *testEnv {
 	)
 
 	// LOCAL presigner — returns paths as-is (no S3 presigning)
-	metastoreRepo := repository.NewMetastoreRepo(metaDB)
 	manifestSvc := query.NewManifestService(
-		metastoreRepo, authSvc, &localPresigner{}, introspectionRepo, auditRepo,
+		nil, authSvc, &localPresigner{}, introspectionRepo, auditRepo,
 		nil, nil,
 	)
 
@@ -738,13 +736,13 @@ func setupLocalExtensionServer(t *testing.T) *testEnv {
 	lineageSvc := governance.NewLineageService(lineageRepo)
 	searchSvc := catalog.NewSearchService(searchRepo, nil)
 	queryHistorySvc := governance.NewQueryHistoryService(queryHistoryRepo)
-	catalogRepo := repository.NewCatalogRepo(metaDB, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
-	viewSvc := catalog.NewViewService(viewRepo, catalogRepo, authSvc, auditRepo)
+	catalogRepoFactory := repository.NewCatalogRepoFactory(metaDB, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	viewSvc := catalog.NewViewService(viewRepo, catalogRepoFactory, authSvc, auditRepo)
 
 	handler := api.NewHandler(
 		querySvc, principalSvc, groupSvc, grantSvc,
 		rowFilterSvc, columnMaskSvc, auditSvc,
-		manifestSvc, nil, // catalogSvc=nil — extension tests only hit /v1/manifest
+		manifestSvc, nil, nil, // catalogSvc=nil, catalogRegSvc=nil — extension tests only hit /v1/manifest
 		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
 		nil,                     // ingestionSvc
 		nil, nil, nil, nil, nil, // storageCredSvc, extLocationSvc, volumeSvc, computeEndpointSvc, apiKeySvc
@@ -1090,14 +1088,14 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	// querySvc gets nil engine — no /v1/query support unless WithDuckLake+engine
 	querySvc := query.NewQueryService(nil, auditRepo, nil)
 
-	// catalogRepo with duckDB=nil is safe — GetSchema only reads ducklake_schema from metaDB
-	catalogRepo := repository.NewCatalogRepo(metaDB, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
-	viewSvc := catalog.NewViewService(viewRepo, catalogRepo, authSvc, auditRepo)
+	// catalogRepoFactory with duckDB=nil is safe — GetSchema only reads ducklake_schema from metaDB
+	catalogRepoFactory := repository.NewCatalogRepoFactory(metaDB, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	viewSvc := catalog.NewViewService(viewRepo, catalogRepoFactory, authSvc, auditRepo)
 
 	var duckDB *sql.DB
 	var manifestSvc *query.ManifestService
 	tableStatsRepo := repository.NewTableStatisticsRepo(metaDB)
-	catalogSvc := catalog.NewCatalogService(catalogRepo, authSvc, auditRepo, tagRepo, tableStatsRepo, nil)
+	catalogSvc := catalog.NewCatalogService(catalogRepoFactory, authSvc, auditRepo, tagRepo, tableStatsRepo, nil)
 
 	if opts.WithDuckLake {
 		env := setupLocalDuckLake(t)
@@ -1123,7 +1121,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		apiKeyRepo = repository.NewAPIKeyRepo(metaDB)
 		tagRepo = repository.NewTagRepo(metaDB)
 		lineageRepo = repository.NewLineageRepo(metaDB)
-		searchRepo = repository.NewSearchRepo(metaDB)
+		searchRepo = repository.NewSearchRepo(metaDB, metaDB)
 		queryHistoryRepo = repository.NewQueryHistoryRepo(metaDB)
 		viewRepo = repository.NewViewRepo(metaDB)
 
@@ -1142,13 +1140,13 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		querySvc = query.NewQueryService(nil, auditRepo, nil)
 		tagSvc = governance.NewTagService(tagRepo, auditRepo)
 		lineageSvc = governance.NewLineageService(lineageRepo)
-		searchSvc = catalog.NewSearchService(searchRepo)
+		searchSvc = catalog.NewSearchService(searchRepo, nil)
 		queryHistorySvc = governance.NewQueryHistoryService(queryHistoryRepo)
 
-		catalogRepo = repository.NewCatalogRepo(metaDB, duckDB, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
-		viewSvc = catalog.NewViewService(viewRepo, catalogRepo, authSvc, auditRepo)
+		catalogRepoFactory = repository.NewCatalogRepoFactory(metaDB, duckDB, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+		viewSvc = catalog.NewViewService(viewRepo, catalogRepoFactory, authSvc, auditRepo)
 		tableStatsRepo = repository.NewTableStatisticsRepo(metaDB)
-		catalogSvc = catalog.NewCatalogService(catalogRepo, authSvc, auditRepo, tagRepo, tableStatsRepo, nil)
+		catalogSvc = catalog.NewCatalogService(catalogRepoFactory, authSvc, auditRepo, tagRepo, tableStatsRepo, nil)
 
 		// manifestSvc needs S3 presigner — leave nil for non-S3 tests
 	}
@@ -1180,7 +1178,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		secretMgr := engine.NewDuckDBSecretManager(extDuckDB)
 		extLocationSvc = storage.NewExternalLocationService(
 			extLocationRepo, storageCredRepo, authSvc, auditRepo,
-			secretMgr, secretMgr, "", opts.CatalogAttached, slog.New(slog.NewTextHandler(io.Discard, nil)),
+			secretMgr, slog.New(slog.NewTextHandler(io.Discard, nil)),
 		)
 	}
 
@@ -1234,7 +1232,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	handler := api.NewHandler(
 		querySvc, principalSvc, groupSvc, grantSvc,
 		rowFilterSvc, columnMaskSvc, auditSvc,
-		manifestSvc, catalogSvc,
+		manifestSvc, catalogSvc, nil, // catalogRegSvc
 		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
 		nil,                                 // ingestionSvc
 		storageCredSvc, extLocationSvc, nil, // volumeSvc
@@ -1897,33 +1895,35 @@ func setupMultiTableLocalServer(t *testing.T) *multiTableTestEnv {
 	queryHistoryRepo := repository.NewQueryHistoryRepo(metaDB)
 	viewRepo := repository.NewViewRepo(metaDB)
 
-	authSvc := service.NewAuthorizationService(
+	authSvc := security.NewAuthorizationService(
 		principalRepo, groupRepo, grantRepo,
 		rowFilterRepo, columnMaskRepo, introspectionRepo,
+		nil,
 	)
 
-	manifestSvc := service.NewManifestService(
-		metaDB, authSvc, &localPresigner{}, introspectionRepo, auditRepo,
+	manifestSvc := query.NewManifestService(
+		nil, authSvc, &localPresigner{}, introspectionRepo, auditRepo,
+		nil, nil,
 	)
 
-	querySvc := service.NewQueryService(nil, auditRepo, nil)
-	principalSvc := service.NewPrincipalService(principalRepo, auditRepo)
-	groupSvc := service.NewGroupService(groupRepo, auditRepo)
-	grantSvc := service.NewGrantService(grantRepo, auditRepo)
-	rowFilterSvc := service.NewRowFilterService(rowFilterRepo, auditRepo)
-	columnMaskSvc := service.NewColumnMaskService(columnMaskRepo, auditRepo)
-	auditSvc := service.NewAuditService(auditRepo)
-	tagSvc := service.NewTagService(tagRepo, auditRepo)
-	lineageSvc := service.NewLineageService(lineageRepo)
+	querySvc := query.NewQueryService(nil, auditRepo, nil)
+	principalSvc := security.NewPrincipalService(principalRepo, auditRepo)
+	groupSvc := security.NewGroupService(groupRepo, auditRepo)
+	grantSvc := security.NewGrantService(grantRepo, auditRepo)
+	rowFilterSvc := security.NewRowFilterService(rowFilterRepo, auditRepo)
+	columnMaskSvc := security.NewColumnMaskService(columnMaskRepo, auditRepo)
+	auditSvc := governance.NewAuditService(auditRepo)
+	tagSvc := governance.NewTagService(tagRepo, auditRepo)
+	lineageSvc := governance.NewLineageService(lineageRepo)
 	searchSvc := catalog.NewSearchService(searchRepo, nil)
-	queryHistorySvc := service.NewQueryHistoryService(queryHistoryRepo)
-	catalogRepo := repository.NewCatalogRepo(metaDB, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
-	viewSvc := service.NewViewService(viewRepo, catalogRepo, authSvc, auditRepo)
+	queryHistorySvc := governance.NewQueryHistoryService(queryHistoryRepo)
+	catalogRepoFactory := repository.NewCatalogRepoFactory(metaDB, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	viewSvc := catalog.NewViewService(viewRepo, catalogRepoFactory, authSvc, auditRepo)
 
 	handler := api.NewHandler(
 		querySvc, principalSvc, groupSvc, grantSvc,
 		rowFilterSvc, columnMaskSvc, auditSvc,
-		manifestSvc, nil,
+		manifestSvc, nil, nil, // catalogSvc=nil, catalogRegSvc=nil
 		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
 		nil,
 		nil, nil, nil, nil, nil,
