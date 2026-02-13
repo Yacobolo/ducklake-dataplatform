@@ -36,6 +36,10 @@ func NewQueryService(eng domain.QueryEngine, audit domain.AuditRepository, linea
 
 // Execute runs a SQL query as the given principal and returns structured results.
 func (s *QueryService) Execute(ctx context.Context, principalName, sqlQuery string) (*QueryResult, error) {
+	if strings.TrimSpace(sqlQuery) == "" {
+		return nil, domain.ErrValidation("sql query is required")
+	}
+
 	start := time.Now()
 
 	rows, err := s.engine.Query(ctx, principalName, sqlQuery)

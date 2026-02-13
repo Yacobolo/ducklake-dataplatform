@@ -88,7 +88,7 @@ func (e *SecureEngine) Query(ctx context.Context, principalName, sqlQuery string
 			return nil, fmt.Errorf("privilege check: %w", authErr)
 		}
 		if !allowed {
-			return nil, fmt.Errorf("access denied: %q lacks %s privilege for table-less queries", principalName, requiredPriv)
+			return nil, domain.ErrAccessDenied("%q lacks %s privilege for table-less queries", principalName, requiredPriv)
 		}
 		rows, err := e.execQuery(ctx, principalName, sqlQuery)
 		if err != nil {

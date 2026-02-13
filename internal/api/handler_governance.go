@@ -108,7 +108,7 @@ func (h *APIHandler) SearchCatalog(ctx context.Context, req SearchCatalogRequest
 
 	results, total, err := h.search.Search(ctx, req.Params.Query, req.Params.Type, req.Params.Catalog, page)
 	if err != nil {
-		return nil, err
+		return SearchCatalog500JSONResponse{InternalErrorJSONResponse{Body: Error{Code: 500, Message: err.Error()}, Headers: InternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
 
 	data := make([]SearchResult, len(results))
@@ -256,6 +256,8 @@ func (h *APIHandler) CreateTag(ctx context.Context, req CreateTagRequestObject) 
 	result, err := h.tags.CreateTag(ctx, principal, domReq)
 	if err != nil {
 		switch {
+		case errors.As(err, new(*domain.ValidationError)):
+			return CreateTag400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.ConflictError)):
 			return CreateTag409JSONResponse{ConflictJSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
