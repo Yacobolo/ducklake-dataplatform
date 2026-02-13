@@ -89,11 +89,11 @@ func (h *APIHandler) CreatePrincipal(ctx context.Context, req CreatePrincipalReq
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CreatePrincipal403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: CreatePrincipal403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return CreatePrincipal403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.ValidationError)):
-			return CreatePrincipal400JSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: CreatePrincipal400ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return CreatePrincipal400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.ConflictError)):
-			return CreatePrincipal400JSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: CreatePrincipal400ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return CreatePrincipal400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -110,7 +110,7 @@ func (h *APIHandler) GetPrincipal(ctx context.Context, req GetPrincipalRequestOb
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return GetPrincipal404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GetPrincipal404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return GetPrincipal404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -126,9 +126,9 @@ func (h *APIHandler) DeletePrincipal(ctx context.Context, req DeletePrincipalReq
 	if err := h.principals.Delete(ctx, req.PrincipalId); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return DeletePrincipal403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: DeletePrincipal403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return DeletePrincipal403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return DeletePrincipal404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: DeletePrincipal404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return DeletePrincipal404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -141,9 +141,9 @@ func (h *APIHandler) UpdatePrincipalAdmin(ctx context.Context, req UpdatePrincip
 	if err := h.principals.SetAdmin(ctx, req.PrincipalId, req.Body.IsAdmin); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return UpdatePrincipalAdmin403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: UpdatePrincipalAdmin403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return UpdatePrincipalAdmin403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return UpdatePrincipalAdmin404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: UpdatePrincipalAdmin404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return UpdatePrincipalAdmin404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -181,7 +181,7 @@ func (h *APIHandler) CreateGroup(ctx context.Context, req CreateGroupRequestObje
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CreateGroup403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: CreateGroup403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return CreateGroup403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -198,7 +198,7 @@ func (h *APIHandler) GetGroup(ctx context.Context, req GetGroupRequestObject) (G
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return GetGroup404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GetGroup404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return GetGroup404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -214,7 +214,7 @@ func (h *APIHandler) DeleteGroup(ctx context.Context, req DeleteGroupRequestObje
 	if err := h.groups.Delete(ctx, req.GroupId); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return DeleteGroup403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: DeleteGroup403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return DeleteGroup403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -249,7 +249,7 @@ func (h *APIHandler) CreateGroupMember(ctx context.Context, req CreateGroupMembe
 	}); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CreateGroupMember403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: CreateGroupMember403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return CreateGroupMember403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -266,7 +266,7 @@ func (h *APIHandler) DeleteGroupMember(ctx context.Context, req DeleteGroupMembe
 	}); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return DeleteGroupMember403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: DeleteGroupMember403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return DeleteGroupMember403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -320,7 +320,7 @@ func (h *APIHandler) CreateGrant(ctx context.Context, req CreateGrantRequestObje
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CreateGrant403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: CreateGrant403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return CreateGrant403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -337,9 +337,9 @@ func (h *APIHandler) DeleteGrant(ctx context.Context, req DeleteGrantRequestObje
 	if err := h.grants.Revoke(ctx, principal, req.GrantId); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return DeleteGrant403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: DeleteGrant403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return DeleteGrant403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return DeleteGrant404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: DeleteGrant404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return DeleteGrant404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -381,7 +381,7 @@ func (h *APIHandler) CreateRowFilter(ctx context.Context, req CreateRowFilterReq
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CreateRowFilter403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: CreateRowFilter403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return CreateRowFilter403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -397,7 +397,7 @@ func (h *APIHandler) DeleteRowFilter(ctx context.Context, req DeleteRowFilterReq
 	if err := h.rowFilters.Delete(ctx, req.RowFilterId); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return DeleteRowFilter403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: DeleteRowFilter403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return DeleteRowFilter403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -414,7 +414,7 @@ func (h *APIHandler) BindRowFilter(ctx context.Context, req BindRowFilterRequest
 	}); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return BindRowFilter403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: BindRowFilter403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return BindRowFilter403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -431,7 +431,7 @@ func (h *APIHandler) UnbindRowFilter(ctx context.Context, req UnbindRowFilterReq
 	}); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return UnbindRowFilter403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: UnbindRowFilter403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return UnbindRowFilter403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -442,7 +442,7 @@ func (h *APIHandler) UnbindRowFilter(ctx context.Context, req UnbindRowFilterReq
 // CreateRowFilterTopLevel implements the endpoint for creating a row filter without a table path parameter.
 func (h *APIHandler) CreateRowFilterTopLevel(ctx context.Context, req CreateRowFilterTopLevelRequestObject) (CreateRowFilterTopLevelResponseObject, error) {
 	if req.Body.TableId == nil {
-		return CreateRowFilterTopLevel400JSONResponse{Body: Error{Code: 400, Message: "table_id is required"}, Headers: CreateRowFilterTopLevel400ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+		return CreateRowFilterTopLevel400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: "table_id is required"}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
 	f := &domain.RowFilter{
 		TableID:   *req.Body.TableId,
@@ -456,7 +456,7 @@ func (h *APIHandler) CreateRowFilterTopLevel(ctx context.Context, req CreateRowF
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CreateRowFilterTopLevel403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: CreateRowFilterTopLevel403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return CreateRowFilterTopLevel403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -502,7 +502,7 @@ func (h *APIHandler) CreateColumnMask(ctx context.Context, req CreateColumnMaskR
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CreateColumnMask403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: CreateColumnMask403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return CreateColumnMask403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -518,7 +518,7 @@ func (h *APIHandler) DeleteColumnMask(ctx context.Context, req DeleteColumnMaskR
 	if err := h.columnMasks.Delete(ctx, req.ColumnMaskId); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return DeleteColumnMask403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: DeleteColumnMask403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return DeleteColumnMask403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -540,7 +540,7 @@ func (h *APIHandler) BindColumnMask(ctx context.Context, req BindColumnMaskReque
 	}); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return BindColumnMask403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: BindColumnMask403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return BindColumnMask403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -557,7 +557,7 @@ func (h *APIHandler) UnbindColumnMask(ctx context.Context, req UnbindColumnMaskR
 	}); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return UnbindColumnMask403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: UnbindColumnMask403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return UnbindColumnMask403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}

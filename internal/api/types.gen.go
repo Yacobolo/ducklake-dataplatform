@@ -1204,6 +1204,84 @@ type MaxResults = int32
 // PageToken defines model for PageToken.
 type PageToken = string
 
+// ApiKeyId defines model for apiKeyId.
+type ApiKeyId = string
+
+// AssignmentId defines model for assignmentId.
+type AssignmentId = string
+
+// CatalogName defines model for catalogName.
+type CatalogName = string
+
+// ColumnMaskId defines model for columnMaskId.
+type ColumnMaskId = string
+
+// ColumnName defines model for columnName.
+type ColumnName = string
+
+// CredentialName defines model for credentialName.
+type CredentialName = string
+
+// EdgeId defines model for edgeId.
+type EdgeId = string
+
+// EndpointName defines model for endpointName.
+type EndpointName = string
+
+// GrantId defines model for grantId.
+type GrantId = string
+
+// GroupId defines model for groupId.
+type GroupId = string
+
+// LocationName defines model for locationName.
+type LocationName = string
+
+// PrincipalId defines model for principalId.
+type PrincipalId = string
+
+// RowFilterId defines model for rowFilterId.
+type RowFilterId = string
+
+// SchemaName defines model for schemaName.
+type SchemaName = string
+
+// TableId defines model for tableId.
+type TableId = string
+
+// TableName defines model for tableName.
+type TableName = string
+
+// TagId defines model for tagId.
+type TagId = string
+
+// ViewName defines model for viewName.
+type ViewName = string
+
+// VolumeName defines model for volumeName.
+type VolumeName = string
+
+// BadRequest Standard error response returned by the API on failure.
+type BadRequest = Error
+
+// Conflict Standard error response returned by the API on failure.
+type Conflict = Error
+
+// Forbidden Standard error response returned by the API on failure.
+type Forbidden = Error
+
+// InternalError Standard error response returned by the API on failure.
+type InternalError = Error
+
+// NotFound Standard error response returned by the API on failure.
+type NotFound = Error
+
+// RateLimitExceeded Standard error response returned by the API on failure.
+type RateLimitExceeded = Error
+
+// Unauthorized Standard error response returned by the API on failure.
+type Unauthorized = Error
+
 // ListAPIKeysParams defines parameters for ListAPIKeys.
 type ListAPIKeysParams struct {
 	// PrincipalId Filter by principal identifier.

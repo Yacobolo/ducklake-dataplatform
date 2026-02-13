@@ -203,7 +203,7 @@ func (h *APIHandler) DeleteLineageEdge(ctx context.Context, req DeleteLineageEdg
 	if err := h.lineage.DeleteEdge(ctx, req.EdgeId); err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return DeleteLineageEdge404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: DeleteLineageEdge404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return DeleteLineageEdge404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -216,7 +216,7 @@ func (h *APIHandler) PurgeLineage(ctx context.Context, req PurgeLineageRequestOb
 	deleted, err := h.lineage.PurgeOlderThan(ctx, int(req.Body.OlderThanDays))
 	if err != nil {
 		code := errorCodeFromError(err)
-		return PurgeLineage403JSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: PurgeLineage403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+		return PurgeLineage403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
 	return PurgeLineage200JSONResponse{
 		Body:    PurgeLineageResponse{DeletedCount: &deleted},
@@ -257,7 +257,7 @@ func (h *APIHandler) CreateTag(ctx context.Context, req CreateTagRequestObject) 
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.ConflictError)):
-			return CreateTag409JSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: CreateTag409ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return CreateTag409JSONResponse{ConflictJSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -274,7 +274,7 @@ func (h *APIHandler) DeleteTag(ctx context.Context, req DeleteTagRequestObject) 
 	if err := h.tags.DeleteTag(ctx, principal, req.TagId); err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return DeleteTag404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: DeleteTag404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return DeleteTag404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -295,7 +295,7 @@ func (h *APIHandler) CreateTagAssignment(ctx context.Context, req CreateTagAssig
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.ConflictError)):
-			return CreateTagAssignment409JSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: CreateTagAssignment409ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return CreateTagAssignment409JSONResponse{ConflictJSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}

@@ -19,12 +19,15 @@ func writeTempSpec(t *testing.T, content string) string {
 	return path
 }
 
+// mustLint runs only the custom rules against the given inline spec.
+// It deliberately skips built-in OAS and OWASP rules because their resolved
+// document walk can deadlock in pb33f/doctor on Linux CI under -race.
 func mustLint(t *testing.T, content string) []Violation {
 	t.Helper()
 	path := writeTempSpec(t, content)
 	l, err := New(path)
 	require.NoError(t, err)
-	return l.Run()
+	return l.RunCustomOnly()
 }
 
 func mustLintWithConfig(t *testing.T, content string, cfg *Config) []Violation {
@@ -32,7 +35,7 @@ func mustLintWithConfig(t *testing.T, content string, cfg *Config) []Violation {
 	path := writeTempSpec(t, content)
 	l, err := New(path)
 	require.NoError(t, err)
-	return l.RunWithConfig(cfg)
+	return l.RunCustomOnlyWithConfig(cfg)
 }
 
 func findRule(vs []Violation, ruleID string) []Violation {

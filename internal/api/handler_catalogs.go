@@ -35,13 +35,13 @@ func (h *APIHandler) RegisterCatalog(ctx context.Context, request RegisterCatalo
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return RegisterCatalog403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: RegisterCatalog403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return RegisterCatalog403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.ValidationError)):
-			return RegisterCatalog400JSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: RegisterCatalog400ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return RegisterCatalog400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.ConflictError)):
-			return RegisterCatalog409JSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: RegisterCatalog409ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return RegisterCatalog409JSONResponse{ConflictJSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
-			return RegisterCatalog400JSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: RegisterCatalog400ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return RegisterCatalog400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 	}
 	return RegisterCatalog201JSONResponse{
@@ -80,7 +80,7 @@ func (h *APIHandler) GetCatalogRegistration(ctx context.Context, request GetCata
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return GetCatalogRegistration404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GetCatalogRegistration404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return GetCatalogRegistration404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -103,9 +103,9 @@ func (h *APIHandler) UpdateCatalogRegistration(ctx context.Context, request Upda
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return UpdateCatalogRegistration403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: UpdateCatalogRegistration403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return UpdateCatalogRegistration403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return UpdateCatalogRegistration404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: UpdateCatalogRegistration404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return UpdateCatalogRegistration404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -121,9 +121,9 @@ func (h *APIHandler) DeleteCatalogRegistration(ctx context.Context, request Dele
 	if err := h.catalogRegistration.Delete(ctx, string(request.CatalogName)); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return DeleteCatalogRegistration403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: DeleteCatalogRegistration403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return DeleteCatalogRegistration403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return DeleteCatalogRegistration404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: DeleteCatalogRegistration404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return DeleteCatalogRegistration404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -139,11 +139,11 @@ func (h *APIHandler) SetDefaultCatalog(ctx context.Context, request SetDefaultCa
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return SetDefaultCatalog403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: SetDefaultCatalog403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return SetDefaultCatalog403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return SetDefaultCatalog404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: SetDefaultCatalog404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return SetDefaultCatalog404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.ValidationError)):
-			return SetDefaultCatalog403JSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: SetDefaultCatalog403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return SetDefaultCatalog403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
