@@ -37,6 +37,11 @@ type UpdateVolumeRequest struct {
 	Owner   *string
 }
 
+// Validate checks that the request is well-formed.
+func (r *CreateVolumeRequest) Validate() error {
+	return ValidateCreateVolumeRequest(*r)
+}
+
 // ValidateCreateVolumeRequest validates a create-volume request.
 func ValidateCreateVolumeRequest(req CreateVolumeRequest) error {
 	if req.Name == "" {

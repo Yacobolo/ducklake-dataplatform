@@ -48,3 +48,29 @@ type PrivilegeGrant struct {
 	GrantedBy     *string
 	GrantedAt     time.Time
 }
+
+// CreateGrantRequest holds parameters for granting a privilege.
+type CreateGrantRequest struct {
+	PrincipalID   int64
+	PrincipalType string // "user" or "group"
+	SecurableType string // "catalog", "schema", "table"
+	SecurableID   int64
+	Privilege     string
+}
+
+// Validate checks that the request is well-formed.
+func (r *CreateGrantRequest) Validate() error {
+	if r.PrincipalID <= 0 {
+		return ErrValidation("principal_id is required")
+	}
+	if r.PrincipalType != "user" && r.PrincipalType != "group" {
+		return ErrValidation("principal_type must be 'user' or 'group'")
+	}
+	if r.SecurableType == "" {
+		return ErrValidation("securable_type is required")
+	}
+	if r.Privilege == "" {
+		return ErrValidation("privilege is required")
+	}
+	return nil
+}

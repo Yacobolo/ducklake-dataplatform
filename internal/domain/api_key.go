@@ -12,3 +12,21 @@ type APIKey struct {
 	ExpiresAt   *time.Time
 	CreatedAt   time.Time
 }
+
+// CreateAPIKeyRequest holds parameters for creating a new API key.
+type CreateAPIKeyRequest struct {
+	PrincipalID int64
+	Name        string
+	ExpiresAt   *time.Time
+}
+
+// Validate checks that the request is well-formed.
+func (r *CreateAPIKeyRequest) Validate() error {
+	if r.PrincipalID <= 0 {
+		return ErrValidation("principal_id is required")
+	}
+	if r.Name == "" {
+		return ErrValidation("api key name is required")
+	}
+	return nil
+}

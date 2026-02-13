@@ -64,6 +64,14 @@ type CreateSchemaRequest struct {
 	LocationName string // optional: external location to use for schema storage path
 }
 
+// Validate checks that the request is well-formed.
+func (r *CreateSchemaRequest) Validate() error {
+	if r.Name == "" {
+		return ErrValidation("schema name is required")
+	}
+	return nil
+}
+
 // UpdateSchemaRequest holds parameters for updating schema metadata.
 type UpdateSchemaRequest struct {
 	Comment    *string
@@ -106,6 +114,27 @@ type CreateTableRequest struct {
 	SourcePath   string // required for EXTERNAL
 	FileFormat   string // "parquet" (default) or "csv"; only for EXTERNAL
 	LocationName string // required for EXTERNAL
+}
+
+// Validate checks that the request is well-formed.
+func (r *CreateTableRequest) Validate() error {
+	if r.Name == "" {
+		return ErrValidation("table name is required")
+	}
+	switch r.TableType {
+	case "", TableTypeManaged:
+		// valid
+	case TableTypeExternal:
+		if r.SourcePath == "" {
+			return ErrValidation("source_path is required for EXTERNAL tables")
+		}
+		if r.LocationName == "" {
+			return ErrValidation("location_name is required for EXTERNAL tables")
+		}
+	default:
+		return ErrValidation("unsupported table_type: %q", r.TableType)
+	}
+	return nil
 }
 
 // CreateColumnDef defines a column for table creation.
