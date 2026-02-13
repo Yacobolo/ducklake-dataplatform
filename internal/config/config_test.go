@@ -167,7 +167,7 @@ func TestLoadFromEnv_RateLimitDefaults(t *testing.T) {
 
 	cfg, err := LoadFromEnv()
 	require.NoError(t, err)
-	assert.Equal(t, float64(100), cfg.RateLimitRPS)
+	assert.InDelta(t, float64(100), cfg.RateLimitRPS, 0.001)
 	assert.Equal(t, 200, cfg.RateLimitBurst)
 }
 
@@ -177,7 +177,7 @@ func TestLoadFromEnv_RateLimitCustom(t *testing.T) {
 
 	cfg, err := LoadFromEnv()
 	require.NoError(t, err)
-	assert.Equal(t, 50.5, cfg.RateLimitRPS)
+	assert.InDelta(t, 50.5, cfg.RateLimitRPS, 0.001)
 	assert.Equal(t, 100, cfg.RateLimitBurst)
 }
 

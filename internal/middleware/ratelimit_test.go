@@ -53,6 +53,6 @@ func TestRateLimiter_RejectsOverBurst(t *testing.T) {
 	var body map[string]interface{}
 	err := json.NewDecoder(rec.Body).Decode(&body)
 	require.NoError(t, err)
-	assert.Equal(t, float64(429), body["code"])
+	assert.InDelta(t, float64(429), body["code"], 0.001)
 	assert.Equal(t, "rate limit exceeded", body["message"])
 }
