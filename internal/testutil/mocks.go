@@ -754,3 +754,118 @@ func (m *MockDuckDBExecutor) ExecContext(ctx context.Context, query string) erro
 }
 
 var _ domain.DuckDBExecutor = (*MockDuckDBExecutor)(nil)
+
+// === Volume Repository Mock ===
+
+// MockVolumeRepo implements domain.VolumeRepository for testing.
+type MockVolumeRepo struct {
+	CreateFn    func(ctx context.Context, vol *domain.Volume) (*domain.Volume, error)
+	GetByNameFn func(ctx context.Context, schemaName, name string) (*domain.Volume, error)
+	ListFn      func(ctx context.Context, schemaName string, page domain.PageRequest) ([]domain.Volume, int64, error)
+	UpdateFn    func(ctx context.Context, id string, req domain.UpdateVolumeRequest) (*domain.Volume, error)
+	DeleteFn    func(ctx context.Context, id string) error
+}
+
+// Create implements the interface method for testing.
+func (m *MockVolumeRepo) Create(ctx context.Context, vol *domain.Volume) (*domain.Volume, error) {
+	if m.CreateFn != nil {
+		return m.CreateFn(ctx, vol)
+	}
+	panic("unexpected call to MockVolumeRepo.Create")
+}
+
+// GetByName implements the interface method for testing.
+func (m *MockVolumeRepo) GetByName(ctx context.Context, schemaName, name string) (*domain.Volume, error) {
+	if m.GetByNameFn != nil {
+		return m.GetByNameFn(ctx, schemaName, name)
+	}
+	panic("unexpected call to MockVolumeRepo.GetByName")
+}
+
+// List implements the interface method for testing.
+func (m *MockVolumeRepo) List(ctx context.Context, schemaName string, page domain.PageRequest) ([]domain.Volume, int64, error) {
+	if m.ListFn != nil {
+		return m.ListFn(ctx, schemaName, page)
+	}
+	panic("unexpected call to MockVolumeRepo.List")
+}
+
+// Update implements the interface method for testing.
+func (m *MockVolumeRepo) Update(ctx context.Context, id string, req domain.UpdateVolumeRequest) (*domain.Volume, error) {
+	if m.UpdateFn != nil {
+		return m.UpdateFn(ctx, id, req)
+	}
+	panic("unexpected call to MockVolumeRepo.Update")
+}
+
+// Delete implements the interface method for testing.
+func (m *MockVolumeRepo) Delete(ctx context.Context, id string) error {
+	if m.DeleteFn != nil {
+		return m.DeleteFn(ctx, id)
+	}
+	panic("unexpected call to MockVolumeRepo.Delete")
+}
+
+var _ domain.VolumeRepository = (*MockVolumeRepo)(nil)
+
+// === Introspection Repository Mock ===
+
+// MockIntrospectionRepo implements domain.IntrospectionRepository for testing.
+type MockIntrospectionRepo struct {
+	ListSchemasFn     func(ctx context.Context, page domain.PageRequest) ([]domain.Schema, int64, error)
+	ListTablesFn      func(ctx context.Context, schemaID string, page domain.PageRequest) ([]domain.Table, int64, error)
+	GetTableFn        func(ctx context.Context, tableID string) (*domain.Table, error)
+	ListColumnsFn     func(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.Column, int64, error)
+	GetTableByNameFn  func(ctx context.Context, tableName string) (*domain.Table, error)
+	GetSchemaByNameFn func(ctx context.Context, schemaName string) (*domain.Schema, error)
+}
+
+// ListSchemas implements the interface method for testing.
+func (m *MockIntrospectionRepo) ListSchemas(ctx context.Context, page domain.PageRequest) ([]domain.Schema, int64, error) {
+	if m.ListSchemasFn != nil {
+		return m.ListSchemasFn(ctx, page)
+	}
+	panic("unexpected call to MockIntrospectionRepo.ListSchemas")
+}
+
+// ListTables implements the interface method for testing.
+func (m *MockIntrospectionRepo) ListTables(ctx context.Context, schemaID string, page domain.PageRequest) ([]domain.Table, int64, error) {
+	if m.ListTablesFn != nil {
+		return m.ListTablesFn(ctx, schemaID, page)
+	}
+	panic("unexpected call to MockIntrospectionRepo.ListTables")
+}
+
+// GetTable implements the interface method for testing.
+func (m *MockIntrospectionRepo) GetTable(ctx context.Context, tableID string) (*domain.Table, error) {
+	if m.GetTableFn != nil {
+		return m.GetTableFn(ctx, tableID)
+	}
+	panic("unexpected call to MockIntrospectionRepo.GetTable")
+}
+
+// ListColumns implements the interface method for testing.
+func (m *MockIntrospectionRepo) ListColumns(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.Column, int64, error) {
+	if m.ListColumnsFn != nil {
+		return m.ListColumnsFn(ctx, tableID, page)
+	}
+	panic("unexpected call to MockIntrospectionRepo.ListColumns")
+}
+
+// GetTableByName implements the interface method for testing.
+func (m *MockIntrospectionRepo) GetTableByName(ctx context.Context, tableName string) (*domain.Table, error) {
+	if m.GetTableByNameFn != nil {
+		return m.GetTableByNameFn(ctx, tableName)
+	}
+	panic("unexpected call to MockIntrospectionRepo.GetTableByName")
+}
+
+// GetSchemaByName implements the interface method for testing.
+func (m *MockIntrospectionRepo) GetSchemaByName(ctx context.Context, schemaName string) (*domain.Schema, error) {
+	if m.GetSchemaByNameFn != nil {
+		return m.GetSchemaByNameFn(ctx, schemaName)
+	}
+	panic("unexpected call to MockIntrospectionRepo.GetSchemaByName")
+}
+
+var _ domain.IntrospectionRepository = (*MockIntrospectionRepo)(nil)
