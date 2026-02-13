@@ -209,7 +209,7 @@ func TestFormatValue(t *testing.T) {
 	assert.Equal(t, "hello", formatValue("hello"))
 	assert.Equal(t, "42", formatValue(42))
 	assert.Equal(t, "true", formatValue(true))
-	assert.Equal(t, "", formatValue(nil))
+	assert.Empty(t, formatValue(nil))
 	assert.Equal(t, "3.14", formatValue(3.14))
 }
 

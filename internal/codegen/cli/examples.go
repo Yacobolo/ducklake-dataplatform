@@ -42,9 +42,7 @@ func generateExamples(groupName string, cmdCfg CommandConfig, info *opInfo) []st
 // buildCommandPrefix constructs "duck <group> <subcommand...> <verb>".
 func buildCommandPrefix(groupName string, cmdCfg CommandConfig) string {
 	parts := []string{"duck", groupName}
-	for _, p := range cmdCfg.CommandPath {
-		parts = append(parts, p)
-	}
+	parts = append(parts, cmdCfg.CommandPath...)
 	if cmdCfg.Verb != "" {
 		parts = append(parts, cmdCfg.Verb)
 	}
