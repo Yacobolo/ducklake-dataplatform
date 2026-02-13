@@ -208,7 +208,7 @@ func TestHTTP_ExternalLocationValidation(t *testing.T) {
 		{"name_too_long_400", "POST", "/v1/external-locations", withField(base, "name", strings.Repeat("x", 129)), 400},
 		{"missing_url_400", "POST", "/v1/external-locations", withField(base, "url", ""), 400},
 		{"missing_credential_name_400", "POST", "/v1/external-locations", withField(base, "credential_name", ""), 400},
-		{"invalid_storage_type_400", "POST", "/v1/external-locations", withField(base, "storage_type", "AZURE"), 400},
+		{"invalid_storage_type_400", "POST", "/v1/external-locations", withField(base, "storage_type", "HDFS"), 400},
 		{"nonexistent_credential_400", "POST", "/v1/external-locations", validLocationBody("nc-loc", "nonexistent-cred"), 400},
 		{"get_nonexistent_404", "GET", "/v1/external-locations/nonexistent", nil, 404},
 		{"update_nonexistent_404", "PATCH", "/v1/external-locations/nonexistent", map[string]interface{}{"comment": "x"}, 404},
