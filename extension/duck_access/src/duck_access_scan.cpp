@@ -112,16 +112,13 @@ unique_ptr<TableRef> DuckAccessScan::ReplacementScanFunction(
 			if (mask_it != manifest->column_masks.end()) {
 				// Parse the mask expression and alias it to the column name
 				// e.g., '***' AS "Name"
-				auto mask_sql = mask_it->second + " AS " + KeywordHelper::WriteOptionallyQuoted(col.name);
-				auto expressions = Parser::ParseExpressionList(mask_sql);
-				if (!expressions.empty()) {
-					select_node->select_list.push_back(std::move(expressions[0]));
-				} else {
-					// Fallback: use the column reference unmasked
-					select_node->select_list.push_back(
-						make_uniq<ColumnRefExpression>(col.name)
-					);
+			auto mask_sql = mask_it->second + " AS " + KeywordHelper::WriteOptionallyQuoted(col.name);
+			auto expressions = Parser::ParseExpressionList(mask_sql);
+				if (expressions.empty()) {
+					throw BinderException("duck_access: failed to parse column mask for '%s': expression '%s'",
+					                      col.name, mask_it->second);
 				}
+				select_node->select_list.push_back(std::move(expressions[0]));
 			} else {
 				// No mask — regular column reference
 				select_node->select_list.push_back(

@@ -140,6 +140,30 @@ func TestRowFilterRepo_GetForTableAndPrincipal_Empty(t *testing.T) {
 	assert.Empty(t, filters)
 }
 
+func TestRowFilterRepo_Delete_NotFound(t *testing.T) {
+	repo := setupRowFilterRepo(t)
+	ctx := context.Background()
+
+	err := repo.Delete(ctx, "nonexistent-id")
+	require.Error(t, err)
+	var notFound *domain.NotFoundError
+	assert.ErrorAs(t, err, &notFound)
+}
+
+func TestRowFilterRepo_Unbind_NotFound(t *testing.T) {
+	repo := setupRowFilterRepo(t)
+	ctx := context.Background()
+
+	err := repo.Unbind(ctx, &domain.RowFilterBinding{
+		RowFilterID:   "nonexistent-filter",
+		PrincipalID:   "p-1",
+		PrincipalType: "user",
+	})
+	require.Error(t, err)
+	var notFound *domain.NotFoundError
+	assert.ErrorAs(t, err, &notFound)
+}
+
 func TestRowFilterRepo_Pagination(t *testing.T) {
 	repo := setupRowFilterRepo(t)
 	ctx := context.Background()

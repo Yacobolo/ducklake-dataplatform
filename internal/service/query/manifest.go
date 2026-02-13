@@ -102,10 +102,21 @@ func (s *ManifestService) GetManifest(
 		return nil, domain.ErrAccessDenied("%q lacks SELECT on table %q", principalName, tableName)
 	}
 
-	// 3. Get RLS row filters for this principal on this table
+	// 3. Get RLS row filters for this principal on this table.
+	// Multiple filters are combined with OR (each represents a visibility window),
+	// then collapsed into a single expression. This ensures consistent semantics
+	// between the server-side SQL rewrite engine (InjectMultipleRowFilters) and
+	// the client-side DuckDB extension, which AND-combines manifest entries.
 	rowFilters, err := s.authSvc.GetEffectiveRowFilters(ctx, principalName, tableID)
 	if err != nil {
 		return nil, fmt.Errorf("row filters: %w", err)
+	}
+	if len(rowFilters) > 1 {
+		parts := make([]string, len(rowFilters))
+		for i, f := range rowFilters {
+			parts[i] = "(" + f + ")"
+		}
+		rowFilters = []string{strings.Join(parts, " OR ")}
 	}
 
 	// 4. Get column masks for this principal on this table

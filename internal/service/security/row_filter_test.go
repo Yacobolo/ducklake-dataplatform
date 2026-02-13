@@ -79,7 +79,7 @@ func TestRowFilterService_Create_NonAdminDenied(t *testing.T) {
 	})
 	require.Error(t, err)
 	var denied *domain.AccessDeniedError
-	assert.ErrorAs(t, err, &denied)
+	require.ErrorAs(t, err, &denied)
 }
 
 func TestRowFilterService_Create_ValidationError(t *testing.T) {
@@ -91,7 +91,7 @@ func TestRowFilterService_Create_ValidationError(t *testing.T) {
 	})
 	require.Error(t, err)
 	var validation *domain.ValidationError
-	assert.ErrorAs(t, err, &validation)
+	require.ErrorAs(t, err, &validation)
 }
 
 func TestRowFilterService_Delete_AdminAllowed(t *testing.T) {
@@ -103,11 +103,13 @@ func TestRowFilterService_Delete_AdminAllowed(t *testing.T) {
 			return nil
 		},
 	}
-	svc := NewRowFilterService(repo, &testutil.MockAuditRepo{})
+	audit := &testutil.MockAuditRepo{}
+	svc := NewRowFilterService(repo, audit)
 
 	err := svc.Delete(adminCtx(), "rf-1")
 	require.NoError(t, err)
 	assert.True(t, called)
+	assert.True(t, audit.HasAction("DELETE_ROW_FILTER"))
 }
 
 func TestRowFilterService_Delete_NonAdminDenied(t *testing.T) {
@@ -116,7 +118,7 @@ func TestRowFilterService_Delete_NonAdminDenied(t *testing.T) {
 	err := svc.Delete(nonAdminCtx(), "rf-1")
 	require.Error(t, err)
 	var denied *domain.AccessDeniedError
-	assert.ErrorAs(t, err, &denied)
+	require.ErrorAs(t, err, &denied)
 }
 
 func TestRowFilterService_Bind_AdminAllowed(t *testing.T) {
@@ -127,7 +129,8 @@ func TestRowFilterService_Bind_AdminAllowed(t *testing.T) {
 			return nil
 		},
 	}
-	svc := NewRowFilterService(repo, &testutil.MockAuditRepo{})
+	audit := &testutil.MockAuditRepo{}
+	svc := NewRowFilterService(repo, audit)
 
 	err := svc.Bind(adminCtx(), domain.BindRowFilterRequest{
 		RowFilterID:   "rf-1",
@@ -136,6 +139,7 @@ func TestRowFilterService_Bind_AdminAllowed(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.True(t, called)
+	assert.True(t, audit.HasAction("BIND_ROW_FILTER"))
 }
 
 func TestRowFilterService_Bind_NonAdminDenied(t *testing.T) {
@@ -148,7 +152,7 @@ func TestRowFilterService_Bind_NonAdminDenied(t *testing.T) {
 	})
 	require.Error(t, err)
 	var denied *domain.AccessDeniedError
-	assert.ErrorAs(t, err, &denied)
+	require.ErrorAs(t, err, &denied)
 }
 
 func TestRowFilterService_Unbind_NonAdminDenied(t *testing.T) {
@@ -161,10 +165,10 @@ func TestRowFilterService_Unbind_NonAdminDenied(t *testing.T) {
 	})
 	require.Error(t, err)
 	var denied *domain.AccessDeniedError
-	assert.ErrorAs(t, err, &denied)
+	require.ErrorAs(t, err, &denied)
 }
 
-func TestRowFilterService_GetForTable(t *testing.T) {
+func TestRowFilterService_GetForTable_AdminAllowed(t *testing.T) {
 	repo := &mockRowFilterRepo{
 		GetForTableFn: func(_ context.Context, tableID string, _ domain.PageRequest) ([]domain.RowFilter, int64, error) {
 			return []domain.RowFilter{{ID: "rf-1", TableID: tableID}}, 1, nil
@@ -172,14 +176,22 @@ func TestRowFilterService_GetForTable(t *testing.T) {
 	}
 	svc := NewRowFilterService(repo, &testutil.MockAuditRepo{})
 
-	// No admin check required for reads.
-	filters, total, err := svc.GetForTable(nonAdminCtx(), "t-1", domain.PageRequest{})
+	filters, total, err := svc.GetForTable(adminCtx(), "t-1", domain.PageRequest{})
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), total)
 	assert.Len(t, filters, 1)
 }
 
-func TestRowFilterService_ListBindings(t *testing.T) {
+func TestRowFilterService_GetForTable_NonAdminDenied(t *testing.T) {
+	svc := NewRowFilterService(&mockRowFilterRepo{}, &testutil.MockAuditRepo{})
+
+	_, _, err := svc.GetForTable(nonAdminCtx(), "t-1", domain.PageRequest{})
+	require.Error(t, err)
+	var denied *domain.AccessDeniedError
+	require.ErrorAs(t, err, &denied)
+}
+
+func TestRowFilterService_ListBindings_AdminAllowed(t *testing.T) {
 	repo := &mockRowFilterRepo{
 		ListBindingsFn: func(_ context.Context, filterID string) ([]domain.RowFilterBinding, error) {
 			return []domain.RowFilterBinding{{RowFilterID: filterID}}, nil
@@ -187,7 +199,50 @@ func TestRowFilterService_ListBindings(t *testing.T) {
 	}
 	svc := NewRowFilterService(repo, &testutil.MockAuditRepo{})
 
-	bindings, err := svc.ListBindings(nonAdminCtx(), "rf-1")
+	bindings, err := svc.ListBindings(adminCtx(), "rf-1")
 	require.NoError(t, err)
 	assert.Len(t, bindings, 1)
+}
+
+func TestRowFilterService_ListBindings_NonAdminDenied(t *testing.T) {
+	svc := NewRowFilterService(&mockRowFilterRepo{}, &testutil.MockAuditRepo{})
+
+	_, err := svc.ListBindings(nonAdminCtx(), "rf-1")
+	require.Error(t, err)
+	var denied *domain.AccessDeniedError
+	require.ErrorAs(t, err, &denied)
+}
+
+func TestRowFilterService_Unbind_AdminAllowed(t *testing.T) {
+	called := false
+	repo := &mockRowFilterRepo{
+		UnbindFn: func(_ context.Context, b *domain.RowFilterBinding) error {
+			called = true
+			return nil
+		},
+	}
+	audit := &testutil.MockAuditRepo{}
+	svc := NewRowFilterService(repo, audit)
+
+	err := svc.Unbind(adminCtx(), domain.BindRowFilterRequest{
+		RowFilterID:   "rf-1",
+		PrincipalID:   "p-1",
+		PrincipalType: "user",
+	})
+	require.NoError(t, err)
+	assert.True(t, called)
+	assert.True(t, audit.HasAction("UNBIND_ROW_FILTER"))
+}
+
+func TestRowFilterService_Create_InvalidSQL(t *testing.T) {
+	svc := NewRowFilterService(&mockRowFilterRepo{}, &testutil.MockAuditRepo{})
+
+	_, err := svc.Create(adminCtx(), domain.CreateRowFilterRequest{
+		TableID:   "t-1",
+		FilterSQL: "NOT VALID (((",
+	})
+	require.Error(t, err)
+	var validation *domain.ValidationError
+	require.ErrorAs(t, err, &validation)
+	assert.Contains(t, err.Error(), "filter_sql is not valid SQL")
 }
