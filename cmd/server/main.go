@@ -127,6 +127,9 @@ func run() error {
 		svc.Volume,
 		svc.ComputeEndpoint,
 		svc.APIKey,
+		svc.Notebook,
+		svc.SessionManager,
+		nil, // gitRepos - Phase 4, not yet implemented
 	)
 
 	// Create strict handler wrapper
@@ -202,10 +205,14 @@ func run() error {
 		IdleTimeout:  120 * time.Second,
 	}
 
+	// Start session reaper
+	go application.Services.SessionManager.ReapIdle(ctx)
+
 	// Graceful shutdown: wait for SIGTERM/SIGINT, then drain connections.
 	go func() {
 		<-ctx.Done()
 		logger.Info("shutting down server")
+		application.Services.SessionManager.CloseAll()
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer shutdownCancel()
 		_ = srv.Shutdown(shutdownCtx)

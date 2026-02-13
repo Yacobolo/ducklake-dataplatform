@@ -18,6 +18,7 @@ import (
 	svccompute "duck-demo/internal/service/compute"
 	"duck-demo/internal/service/governance"
 	"duck-demo/internal/service/ingestion"
+	"duck-demo/internal/service/notebook"
 	"duck-demo/internal/service/query"
 	"duck-demo/internal/service/security"
 	"duck-demo/internal/service/storage"
@@ -57,6 +58,8 @@ type Services struct {
 	Volume              *storage.VolumeService
 	ComputeEndpoint     *svccompute.ComputeEndpointService
 	APIKey              *security.APIKeyService
+	Notebook            *notebook.NotebookService
+	SessionManager      *notebook.SessionManager
 }
 
 // App holds the fully-wired application: engine, services, and the
@@ -213,6 +216,12 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 		deps.Logger.Warn("restore secrets failed", "error", err)
 	}
 
+	// === Notebook services ===
+	notebookRepo := repository.NewNotebookRepo(deps.WriteDB)
+	notebookJobRepo := repository.NewNotebookJobRepo(deps.WriteDB)
+	notebookSvc := notebook.NewNotebookService(notebookRepo, auditRepo)
+	sessionMgr := notebook.NewSessionManager(deps.DuckDB, eng, notebookRepo, notebookJobRepo, auditRepo)
+
 	// === API Key ===
 	apiKeyRepo := repository.NewAPIKeyRepo(deps.ReadDB)
 	apiKeySvc := security.NewAPIKeyService(apiKeyRepo, auditRepo)
@@ -240,6 +249,8 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 			Volume:              volumeSvc,
 			ComputeEndpoint:     computeEndpointSvc,
 			APIKey:              apiKeySvc,
+			Notebook:            notebookSvc,
+			SessionManager:      sessionMgr,
 		},
 		Engine:     eng,
 		APIKeyRepo: apiKeyRepo,
