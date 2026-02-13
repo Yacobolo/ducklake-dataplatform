@@ -78,12 +78,13 @@ func (r *CatalogRepo) GetTable(ctx context.Context, schemaName, tableName string
 	}
 
 	var t domain.TableDetail
+	var tableID int64
 	var tablePath sql.NullString
 	var tablePathIsRelative sql.NullInt64
 	err = r.metaDB.QueryRowContext(ctx,
 		`SELECT table_id, table_name, path, path_is_relative FROM ducklake_table WHERE schema_id = ? AND table_name = ? AND end_snapshot IS NULL`,
 		schemaID, tableName).
-		Scan(&t.TableID, &t.Name, &tablePath, &tablePathIsRelative)
+		Scan(&tableID, &t.Name, &tablePath, &tablePathIsRelative)
 	if errors.Is(err, sql.ErrNoRows) {
 		// Fall back to external tables
 		if r.extRepo != nil {
@@ -99,6 +100,7 @@ func (r *CatalogRepo) GetTable(ctx context.Context, schemaName, tableName string
 	if err != nil {
 		return nil, err
 	}
+	t.TableID = domain.DuckLakeIDToString(tableID)
 
 	t.SchemaName = schemaName
 	t.CatalogName = r.catalogName
@@ -152,9 +154,11 @@ func (r *CatalogRepo) ListTables(ctx context.Context, schemaName string, page do
 	var tables []domain.TableDetail
 	for rows.Next() {
 		var t domain.TableDetail
-		if err := rows.Scan(&t.TableID, &t.Name); err != nil {
+		var tblID int64
+		if err := rows.Scan(&tblID, &t.Name); err != nil {
 			return nil, 0, err
 		}
+		t.TableID = domain.DuckLakeIDToString(tblID)
 		t.SchemaName = schemaName
 		t.CatalogName = r.catalogName
 		t.TableType = "MANAGED"

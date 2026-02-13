@@ -22,6 +22,7 @@ func NewRowFilterRepo(db *sql.DB) *RowFilterRepo {
 // Create inserts a new row filter into the database.
 func (r *RowFilterRepo) Create(ctx context.Context, f *domain.RowFilter) (*domain.RowFilter, error) {
 	row, err := r.q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
+		ID:          newID(),
 		TableID:     f.TableID,
 		FilterSql:   f.FilterSQL,
 		Description: sql.NullString{String: f.Description, Valid: f.Description != ""},
@@ -33,7 +34,7 @@ func (r *RowFilterRepo) Create(ctx context.Context, f *domain.RowFilter) (*domai
 }
 
 // GetForTable returns a paginated list of row filters for a table.
-func (r *RowFilterRepo) GetForTable(ctx context.Context, tableID int64, page domain.PageRequest) ([]domain.RowFilter, int64, error) {
+func (r *RowFilterRepo) GetForTable(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.RowFilter, int64, error) {
 	total, err := r.q.CountRowFiltersForTable(ctx, tableID)
 	if err != nil {
 		return nil, 0, err
@@ -52,13 +53,14 @@ func (r *RowFilterRepo) GetForTable(ctx context.Context, tableID int64, page dom
 }
 
 // Delete removes a row filter by ID.
-func (r *RowFilterRepo) Delete(ctx context.Context, id int64) error {
+func (r *RowFilterRepo) Delete(ctx context.Context, id string) error {
 	return r.q.DeleteRowFilter(ctx, id)
 }
 
 // Bind associates a row filter with a principal or group.
 func (r *RowFilterRepo) Bind(ctx context.Context, b *domain.RowFilterBinding) error {
 	return r.q.BindRowFilter(ctx, dbstore.BindRowFilterParams{
+		ID:            newID(),
 		RowFilterID:   b.RowFilterID,
 		PrincipalID:   b.PrincipalID,
 		PrincipalType: b.PrincipalType,
@@ -75,7 +77,7 @@ func (r *RowFilterRepo) Unbind(ctx context.Context, b *domain.RowFilterBinding) 
 }
 
 // ListBindings returns all bindings for a row filter.
-func (r *RowFilterRepo) ListBindings(ctx context.Context, filterID int64) ([]domain.RowFilterBinding, error) {
+func (r *RowFilterRepo) ListBindings(ctx context.Context, filterID string) ([]domain.RowFilterBinding, error) {
 	rows, err := r.q.GetRowFilterBindingsForFilter(ctx, filterID)
 	if err != nil {
 		return nil, err
@@ -84,7 +86,7 @@ func (r *RowFilterRepo) ListBindings(ctx context.Context, filterID int64) ([]dom
 }
 
 // GetForTableAndPrincipal returns row filters bound to a specific table and principal.
-func (r *RowFilterRepo) GetForTableAndPrincipal(ctx context.Context, tableID, principalID int64, principalType string) ([]domain.RowFilter, error) {
+func (r *RowFilterRepo) GetForTableAndPrincipal(ctx context.Context, tableID, principalID string, principalType string) ([]domain.RowFilter, error) {
 	rows, err := r.q.GetRowFiltersForTableAndPrincipal(ctx, dbstore.GetRowFiltersForTableAndPrincipalParams{
 		TableID:       tableID,
 		PrincipalID:   principalID,

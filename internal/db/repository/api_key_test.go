@@ -45,7 +45,7 @@ func TestAPIKeyRepo_CreateAndLookup(t *testing.T) {
 	}
 	err = apiKeyRepo.Create(ctx, key)
 	require.NoError(t, err)
-	assert.Positive(t, key.ID)
+	assert.NotEmpty(t, key.ID)
 	assert.False(t, key.CreatedAt.IsZero())
 
 	// Lookup by hash.

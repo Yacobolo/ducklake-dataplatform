@@ -19,7 +19,7 @@ func TestQueryHistoryService_List(t *testing.T) {
 			Page:          domain.PageRequest{MaxResults: 50},
 		}
 		expected := []domain.QueryHistoryEntry{
-			{ID: 1, PrincipalName: "alice", Status: "ALLOWED", CreatedAt: time.Now()},
+			{ID: "1", PrincipalName: "alice", Status: "ALLOWED", CreatedAt: time.Now()},
 		}
 
 		var capturedFilter domain.QueryHistoryFilter

@@ -157,7 +157,7 @@ func TestHTTP_DeleteLineageEdge(t *testing.T) {
 		fn   func(t *testing.T)
 	}
 
-	var edgeID int64
+	var edgeID string
 
 	steps := []step{
 		{"seed_and_capture_edge_id", func(t *testing.T) {
@@ -179,12 +179,12 @@ func TestHTTP_DeleteLineageEdge(t *testing.T) {
 				"main.del_source", "main.del_target",
 			).Scan(&edgeID)
 			require.NoError(t, err)
-			require.NotZero(t, edgeID, "expected edge ID to be populated after insert")
+			require.NotEmpty(t, edgeID, "expected edge ID to be populated after insert")
 		}},
 
 		{"delete_edge_204", func(t *testing.T) {
 			resp := doRequest(t, "DELETE",
-				fmt.Sprintf("%s/v1/lineage/edges/%d", env.Server.URL, edgeID),
+				fmt.Sprintf("%s/v1/lineage/edges/%s", env.Server.URL, edgeID),
 				env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()
@@ -202,7 +202,7 @@ func TestHTTP_DeleteLineageEdge(t *testing.T) {
 				edges := up.([]interface{})
 				for _, item := range edges {
 					edge := item.(map[string]interface{})
-					assert.NotEqual(t, float64(edgeID), edge["id"],
+					assert.NotEqual(t, edgeID, edge["id"],
 						"deleted edge should not appear in upstream")
 				}
 			}
@@ -212,7 +212,7 @@ func TestHTTP_DeleteLineageEdge(t *testing.T) {
 			// Deleting a nonexistent edge returns 204 (idempotent — the SQL
 			// DELETE succeeds with 0 rows affected and no error).
 			resp := doRequest(t, "DELETE",
-				fmt.Sprintf("%s/v1/lineage/edges/%d", env.Server.URL, 99999),
+				fmt.Sprintf("%s/v1/lineage/edges/%s", env.Server.URL, "nonexistent-id"),
 				env.Keys.Admin, nil)
 			assert.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()

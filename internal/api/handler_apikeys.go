@@ -10,9 +10,9 @@ import (
 
 // apiKeyService defines the API key management operations used by the API handler.
 type apiKeyService interface {
-	Create(ctx context.Context, principalID int64, name string, expiresAt *time.Time) (string, *domain.APIKey, error)
-	List(ctx context.Context, principalID int64, page domain.PageRequest) ([]domain.APIKey, int64, error)
-	Delete(ctx context.Context, id int64) error
+	Create(ctx context.Context, principalID string, name string, expiresAt *time.Time) (string, *domain.APIKey, error)
+	List(ctx context.Context, principalID string, page domain.PageRequest) ([]domain.APIKey, int64, error)
+	Delete(ctx context.Context, id string) error
 	CleanupExpired(ctx context.Context) (int64, error)
 }
 

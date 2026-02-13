@@ -4,7 +4,7 @@ import "time"
 
 // Principal represents a user or service principal in the system.
 type Principal struct {
-	ID             int64
+	ID             string
 	Name           string
 	Type           string // "user" or "service_principal"
 	IsAdmin        bool
@@ -15,7 +15,7 @@ type Principal struct {
 
 // Group represents a named collection of principals.
 type Group struct {
-	ID          int64
+	ID          string
 	Name        string
 	Description string
 	CreatedAt   time.Time
@@ -23,7 +23,7 @@ type Group struct {
 
 // GroupMember represents the membership of a principal in a group.
 type GroupMember struct {
-	GroupID    int64
+	GroupID    string
 	MemberType string // "user" or "group"
-	MemberID   int64
+	MemberID   string
 }

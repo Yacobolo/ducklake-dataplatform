@@ -39,7 +39,7 @@ paths:
                 $ref: '../schemas/compute.yaml#/PaginatedComputeEndpoints'
               example:
                 data:
-                  - id: 1
+                  - id: "550e8400-e29b-41d4-a716-446655440001"
                     external_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
                     name: "prod-endpoint"
                     url: "https://compute.example.com:8080"
@@ -105,7 +105,7 @@ paths:
               schema:
                 $ref: '../schemas/compute.yaml#/ComputeEndpoint'
               example:
-                id: 1
+                id: "550e8400-e29b-41d4-a716-446655440001"
                 external_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
                 name: "prod-endpoint"
                 url: "https://compute.example.com:8080"
@@ -167,7 +167,7 @@ paths:
               schema:
                 $ref: '../schemas/compute.yaml#/ComputeEndpoint'
               example:
-                id: 1
+                id: "550e8400-e29b-41d4-a716-446655440001"
                 external_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
                 name: "prod-endpoint"
                 url: "https://compute.example.com:8080"
@@ -232,7 +232,7 @@ paths:
               schema:
                 $ref: '../schemas/compute.yaml#/ComputeEndpoint'
               example:
-                id: 1
+                id: "550e8400-e29b-41d4-a716-446655440001"
                 external_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
                 name: "prod-endpoint"
                 url: "https://compute.example.com:8080"
@@ -338,10 +338,10 @@ paths:
                 $ref: '../schemas/compute.yaml#/PaginatedComputeAssignments'
               example:
                 data:
-                  - id: 1
-                    principal_id: 3
+                  - id: "550e8400-e29b-41d4-a716-446655440001"
+                    principal_id: "550e8400-e29b-41d4-a716-446655440003"
                     principal_type: "user"
-                    endpoint_id: 1
+                    endpoint_id: "550e8400-e29b-41d4-a716-446655440001"
                     endpoint_name: "prod-endpoint"
                     is_default: true
                     fallback_local: false
@@ -367,7 +367,7 @@ paths:
             schema:
               $ref: '../schemas/compute.yaml#/CreateComputeAssignmentRequest'
             example:
-              principal_id: 3
+              principal_id: "550e8400-e29b-41d4-a716-446655440003"
               principal_type: "user"
               is_default: true
               fallback_local: false
@@ -401,10 +401,10 @@ paths:
               schema:
                 $ref: '../schemas/compute.yaml#/ComputeAssignment'
               example:
-                id: 1
-                principal_id: 3
+                id: "550e8400-e29b-41d4-a716-446655440001"
+                principal_id: "550e8400-e29b-41d4-a716-446655440003"
                 principal_type: "user"
-                endpoint_id: 1
+                endpoint_id: "550e8400-e29b-41d4-a716-446655440001"
                 endpoint_name: "prod-endpoint"
                 is_default: true
                 fallback_local: false

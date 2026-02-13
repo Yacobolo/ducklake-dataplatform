@@ -24,6 +24,7 @@ import (
 
 	_ "github.com/duckdb/duckdb-go/v2"
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -373,45 +374,45 @@ func seedRBAC(t *testing.T, db *sql.DB) apiKeys {
 
 	// --- Principals ---
 	adminUser, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
-		Name: "admin_user", Type: "user", IsAdmin: 1,
+		ID: uuid.New().String(), Name: "admin_user", Type: "user", IsAdmin: 1,
 	})
 	if err != nil {
 		t.Fatalf("create admin_user: %v", err)
 	}
 
 	analyst1, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
-		Name: "analyst1", Type: "user", IsAdmin: 0,
+		ID: uuid.New().String(), Name: "analyst1", Type: "user", IsAdmin: 0,
 	})
 	if err != nil {
 		t.Fatalf("create analyst1: %v", err)
 	}
 
 	researcher1, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
-		Name: "researcher1", Type: "user", IsAdmin: 0,
+		ID: uuid.New().String(), Name: "researcher1", Type: "user", IsAdmin: 0,
 	})
 	if err != nil {
 		t.Fatalf("create researcher1: %v", err)
 	}
 
 	noAccessUser, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
-		Name: "no_access_user", Type: "user", IsAdmin: 0,
+		ID: uuid.New().String(), Name: "no_access_user", Type: "user", IsAdmin: 0,
 	})
 	if err != nil {
 		t.Fatalf("create no_access_user: %v", err)
 	}
 
 	// --- Groups ---
-	adminsGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "admins"})
+	adminsGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{ID: uuid.New().String(), Name: "admins"})
 	if err != nil {
 		t.Fatalf("create admins group: %v", err)
 	}
 
-	analystsGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "analysts"})
+	analystsGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{ID: uuid.New().String(), Name: "analysts"})
 	if err != nil {
 		t.Fatalf("create analysts group: %v", err)
 	}
 
-	researchersGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "researchers"})
+	researchersGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{ID: uuid.New().String(), Name: "researchers"})
 	if err != nil {
 		t.Fatalf("create researchers group: %v", err)
 	}
@@ -436,36 +437,36 @@ func seedRBAC(t *testing.T, db *sql.DB) apiKeys {
 	// --- Grants ---
 	// admins → ALL_PRIVILEGES on catalog
 	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: adminsGroup.ID, PrincipalType: "group",
-		SecurableType: "catalog", SecurableID: 0, Privilege: "ALL_PRIVILEGES",
+		ID: uuid.New().String(), PrincipalID: adminsGroup.ID, PrincipalType: "group",
+		SecurableType: "catalog", SecurableID: "0", Privilege: "ALL_PRIVILEGES",
 	}); err != nil {
 		t.Fatalf("grant admins ALL_PRIVILEGES: %v", err)
 	}
 
 	// analysts → USAGE on schema + SELECT on table
 	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: analystsGroup.ID, PrincipalType: "group",
-		SecurableType: "schema", SecurableID: 0, Privilege: "USAGE",
+		ID: uuid.New().String(), PrincipalID: analystsGroup.ID, PrincipalType: "group",
+		SecurableType: "schema", SecurableID: "0", Privilege: "USAGE",
 	}); err != nil {
 		t.Fatalf("grant analysts USAGE: %v", err)
 	}
 	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: analystsGroup.ID, PrincipalType: "group",
-		SecurableType: "table", SecurableID: 1, Privilege: "SELECT",
+		ID: uuid.New().String(), PrincipalID: analystsGroup.ID, PrincipalType: "group",
+		SecurableType: "table", SecurableID: "1", Privilege: "SELECT",
 	}); err != nil {
 		t.Fatalf("grant analysts SELECT: %v", err)
 	}
 
 	// researchers → USAGE on schema + SELECT on table
 	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: researchersGroup.ID, PrincipalType: "group",
-		SecurableType: "schema", SecurableID: 0, Privilege: "USAGE",
+		ID: uuid.New().String(), PrincipalID: researchersGroup.ID, PrincipalType: "group",
+		SecurableType: "schema", SecurableID: "0", Privilege: "USAGE",
 	}); err != nil {
 		t.Fatalf("grant researchers USAGE: %v", err)
 	}
 	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: researchersGroup.ID, PrincipalType: "group",
-		SecurableType: "table", SecurableID: 1, Privilege: "SELECT",
+		ID: uuid.New().String(), PrincipalID: researchersGroup.ID, PrincipalType: "group",
+		SecurableType: "table", SecurableID: "1", Privilege: "SELECT",
 	}); err != nil {
 		t.Fatalf("grant researchers SELECT: %v", err)
 	}
@@ -473,13 +474,13 @@ func seedRBAC(t *testing.T, db *sql.DB) apiKeys {
 	// --- Row Filters ---
 	// analysts: "Pclass" = 1 on titanic (table_id=1)
 	filter, err := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
-		TableID: 1, FilterSql: `"Pclass" = 1`,
+		ID: uuid.New().String(), TableID: "1", FilterSql: `"Pclass" = 1`,
 	})
 	if err != nil {
 		t.Fatalf("create row filter: %v", err)
 	}
 	if err := q.BindRowFilter(ctx, dbstore.BindRowFilterParams{
-		RowFilterID: filter.ID, PrincipalID: analystsGroup.ID, PrincipalType: "group",
+		ID: uuid.New().String(), RowFilterID: filter.ID, PrincipalID: analystsGroup.ID, PrincipalType: "group",
 	}); err != nil {
 		t.Fatalf("bind row filter to analysts: %v", err)
 	}
@@ -487,21 +488,21 @@ func seedRBAC(t *testing.T, db *sql.DB) apiKeys {
 	// --- Column Masks ---
 	// Name → '***' on titanic (table_id=1)
 	nameMask, err := q.CreateColumnMask(ctx, dbstore.CreateColumnMaskParams{
-		TableID: 1, ColumnName: "Name", MaskExpression: `'***'`,
+		ID: uuid.New().String(), TableID: "1", ColumnName: "Name", MaskExpression: `'***'`,
 	})
 	if err != nil {
 		t.Fatalf("create column mask: %v", err)
 	}
 	// analysts: see_original=0 (Name is masked)
 	if err := q.BindColumnMask(ctx, dbstore.BindColumnMaskParams{
-		ColumnMaskID: nameMask.ID, PrincipalID: analystsGroup.ID,
+		ID: uuid.New().String(), ColumnMaskID: nameMask.ID, PrincipalID: analystsGroup.ID,
 		PrincipalType: "group", SeeOriginal: 0,
 	}); err != nil {
 		t.Fatalf("bind mask to analysts: %v", err)
 	}
 	// researchers: see_original=1 (Name is visible)
 	if err := q.BindColumnMask(ctx, dbstore.BindColumnMaskParams{
-		ColumnMaskID: nameMask.ID, PrincipalID: researchersGroup.ID,
+		ID: uuid.New().String(), ColumnMaskID: nameMask.ID, PrincipalID: researchersGroup.ID,
 		PrincipalType: "group", SeeOriginal: 1,
 	}); err != nil {
 		t.Fatalf("bind mask to researchers: %v", err)
@@ -516,22 +517,22 @@ func seedRBAC(t *testing.T, db *sql.DB) apiKeys {
 	}
 
 	if _, err := q.CreateAPIKey(ctx, dbstore.CreateAPIKeyParams{
-		KeyHash: sha256Hex(keys.Admin), PrincipalID: adminUser.ID, Name: "admin-test",
+		ID: uuid.New().String(), KeyHash: sha256Hex(keys.Admin), PrincipalID: adminUser.ID, Name: "admin-test",
 	}); err != nil {
 		t.Fatalf("create admin API key: %v", err)
 	}
 	if _, err := q.CreateAPIKey(ctx, dbstore.CreateAPIKeyParams{
-		KeyHash: sha256Hex(keys.Analyst), PrincipalID: analyst1.ID, Name: "analyst-test",
+		ID: uuid.New().String(), KeyHash: sha256Hex(keys.Analyst), PrincipalID: analyst1.ID, Name: "analyst-test",
 	}); err != nil {
 		t.Fatalf("create analyst API key: %v", err)
 	}
 	if _, err := q.CreateAPIKey(ctx, dbstore.CreateAPIKeyParams{
-		KeyHash: sha256Hex(keys.Researcher), PrincipalID: researcher1.ID, Name: "researcher-test",
+		ID: uuid.New().String(), KeyHash: sha256Hex(keys.Researcher), PrincipalID: researcher1.ID, Name: "researcher-test",
 	}); err != nil {
 		t.Fatalf("create researcher API key: %v", err)
 	}
 	if _, err := q.CreateAPIKey(ctx, dbstore.CreateAPIKeyParams{
-		KeyHash: sha256Hex(keys.NoAccess), PrincipalID: noAccessUser.ID, Name: "noaccess-test",
+		ID: uuid.New().String(), KeyHash: sha256Hex(keys.NoAccess), PrincipalID: noAccessUser.ID, Name: "noaccess-test",
 	}); err != nil {
 		t.Fatalf("create noaccess API key: %v", err)
 	}
@@ -1461,7 +1462,7 @@ func startTestAgent(t *testing.T) *agentTestEnv {
 }
 
 // lookupPrincipalID finds a principal by name via the API and returns its ID.
-func lookupPrincipalID(t *testing.T, env *httpTestEnv, name string) float64 {
+func lookupPrincipalID(t *testing.T, env *httpTestEnv, name string) string {
 	t.Helper()
 	resp := doRequest(t, "GET", env.Server.URL+"/v1/principals", env.Keys.Admin, nil)
 	if resp.StatusCode != 200 {
@@ -1479,12 +1480,12 @@ func lookupPrincipalID(t *testing.T, env *httpTestEnv, name string) float64 {
 	for _, p := range data {
 		pm, _ := p.(map[string]interface{})
 		if pm["name"] == name {
-			id, _ := pm["id"].(float64)
+			id, _ := pm["id"].(string)
 			return id
 		}
 	}
 	t.Fatalf("principal %q not found", name)
-	return 0
+	return ""
 }
 
 // setupRemoteEndpoint creates and activates a REMOTE compute endpoint pointing
@@ -1572,12 +1573,12 @@ func seedMultiTableRBAC(t *testing.T, db *sql.DB) multiTableKeys {
 
 	// --- dept_viewer: SELECT on departments only ---
 	deptViewer, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
-		Name: "dept_viewer", Type: "user", IsAdmin: 0,
+		ID: uuid.New().String(), Name: "dept_viewer", Type: "user", IsAdmin: 0,
 	})
 	if err != nil {
 		t.Fatalf("create dept_viewer: %v", err)
 	}
-	deptViewerGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "dept_viewers"})
+	deptViewerGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{ID: uuid.New().String(), Name: "dept_viewers"})
 	if err != nil {
 		t.Fatalf("create dept_viewers group: %v", err)
 	}
@@ -1588,26 +1589,26 @@ func seedMultiTableRBAC(t *testing.T, db *sql.DB) multiTableKeys {
 	}
 	// USAGE on schema + SELECT on departments (table_id=2) only
 	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: deptViewerGroup.ID, PrincipalType: "group",
-		SecurableType: "schema", SecurableID: 0, Privilege: "USAGE",
+		ID: uuid.New().String(), PrincipalID: deptViewerGroup.ID, PrincipalType: "group",
+		SecurableType: "schema", SecurableID: "0", Privilege: "USAGE",
 	}); err != nil {
 		t.Fatalf("grant dept_viewers USAGE: %v", err)
 	}
 	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: deptViewerGroup.ID, PrincipalType: "group",
-		SecurableType: "table", SecurableID: 2, Privilege: "SELECT",
+		ID: uuid.New().String(), PrincipalID: deptViewerGroup.ID, PrincipalType: "group",
+		SecurableType: "table", SecurableID: "2", Privilege: "SELECT",
 	}); err != nil {
 		t.Fatalf("grant dept_viewers SELECT on departments: %v", err)
 	}
 
 	// --- us_only_viewer: SELECT on both tables, RLS region='US' on departments, "Embarked"='S' on titanic ---
 	usOnlyViewer, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
-		Name: "us_only_viewer", Type: "user", IsAdmin: 0,
+		ID: uuid.New().String(), Name: "us_only_viewer", Type: "user", IsAdmin: 0,
 	})
 	if err != nil {
 		t.Fatalf("create us_only_viewer: %v", err)
 	}
-	usGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "us_only"})
+	usGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{ID: uuid.New().String(), Name: "us_only"})
 	if err != nil {
 		t.Fatalf("create us_only group: %v", err)
 	}
@@ -1617,57 +1618,57 @@ func seedMultiTableRBAC(t *testing.T, db *sql.DB) multiTableKeys {
 		t.Fatalf("add us_only_viewer to group: %v", err)
 	}
 	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: usGroup.ID, PrincipalType: "group",
-		SecurableType: "schema", SecurableID: 0, Privilege: "USAGE",
+		ID: uuid.New().String(), PrincipalID: usGroup.ID, PrincipalType: "group",
+		SecurableType: "schema", SecurableID: "0", Privilege: "USAGE",
 	}); err != nil {
 		t.Fatalf("grant us_only USAGE: %v", err)
 	}
 	// SELECT on both tables
 	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: usGroup.ID, PrincipalType: "group",
-		SecurableType: "table", SecurableID: 1, Privilege: "SELECT",
+		ID: uuid.New().String(), PrincipalID: usGroup.ID, PrincipalType: "group",
+		SecurableType: "table", SecurableID: "1", Privilege: "SELECT",
 	}); err != nil {
 		t.Fatalf("grant us_only SELECT titanic: %v", err)
 	}
 	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: usGroup.ID, PrincipalType: "group",
-		SecurableType: "table", SecurableID: 2, Privilege: "SELECT",
+		ID: uuid.New().String(), PrincipalID: usGroup.ID, PrincipalType: "group",
+		SecurableType: "table", SecurableID: "2", Privilege: "SELECT",
 	}); err != nil {
 		t.Fatalf("grant us_only SELECT departments: %v", err)
 	}
 	// RLS: region = 'US' on departments (table_id=2)
 	deptFilter, err := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
-		TableID: 2, FilterSql: `"region" = 'US'`,
+		ID: uuid.New().String(), TableID: "2", FilterSql: `"region" = 'US'`,
 	})
 	if err != nil {
 		t.Fatalf("create dept region filter: %v", err)
 	}
 	if err := q.BindRowFilter(ctx, dbstore.BindRowFilterParams{
-		RowFilterID: deptFilter.ID, PrincipalID: usGroup.ID, PrincipalType: "group",
+		ID: uuid.New().String(), RowFilterID: deptFilter.ID, PrincipalID: usGroup.ID, PrincipalType: "group",
 	}); err != nil {
 		t.Fatalf("bind dept filter to us_only: %v", err)
 	}
 	// RLS: "Embarked" = 'S' on titanic (table_id=1)
 	titanicFilter, err := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
-		TableID: 1, FilterSql: `"Embarked" = 'S'`,
+		ID: uuid.New().String(), TableID: "1", FilterSql: `"Embarked" = 'S'`,
 	})
 	if err != nil {
 		t.Fatalf("create titanic embarked filter: %v", err)
 	}
 	if err := q.BindRowFilter(ctx, dbstore.BindRowFilterParams{
-		RowFilterID: titanicFilter.ID, PrincipalID: usGroup.ID, PrincipalType: "group",
+		ID: uuid.New().String(), RowFilterID: titanicFilter.ID, PrincipalID: usGroup.ID, PrincipalType: "group",
 	}); err != nil {
 		t.Fatalf("bind titanic filter to us_only: %v", err)
 	}
 
 	// --- masked_viewer: SELECT on both, column masks on titanic + departments ---
 	maskedViewer, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
-		Name: "masked_viewer", Type: "user", IsAdmin: 0,
+		ID: uuid.New().String(), Name: "masked_viewer", Type: "user", IsAdmin: 0,
 	})
 	if err != nil {
 		t.Fatalf("create masked_viewer: %v", err)
 	}
-	maskedGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "masked_viewers"})
+	maskedGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{ID: uuid.New().String(), Name: "masked_viewers"})
 	if err != nil {
 		t.Fatalf("create masked_viewers group: %v", err)
 	}
@@ -1677,58 +1678,58 @@ func seedMultiTableRBAC(t *testing.T, db *sql.DB) multiTableKeys {
 		t.Fatalf("add masked_viewer to group: %v", err)
 	}
 	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: maskedGroup.ID, PrincipalType: "group",
-		SecurableType: "schema", SecurableID: 0, Privilege: "USAGE",
+		ID: uuid.New().String(), PrincipalID: maskedGroup.ID, PrincipalType: "group",
+		SecurableType: "schema", SecurableID: "0", Privilege: "USAGE",
 	}); err != nil {
 		t.Fatalf("grant masked_viewers USAGE: %v", err)
 	}
 	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: maskedGroup.ID, PrincipalType: "group",
-		SecurableType: "table", SecurableID: 1, Privilege: "SELECT",
+		ID: uuid.New().String(), PrincipalID: maskedGroup.ID, PrincipalType: "group",
+		SecurableType: "table", SecurableID: "1", Privilege: "SELECT",
 	}); err != nil {
 		t.Fatalf("grant masked_viewers SELECT titanic: %v", err)
 	}
 	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: maskedGroup.ID, PrincipalType: "group",
-		SecurableType: "table", SecurableID: 2, Privilege: "SELECT",
+		ID: uuid.New().String(), PrincipalID: maskedGroup.ID, PrincipalType: "group",
+		SecurableType: "table", SecurableID: "2", Privilege: "SELECT",
 	}); err != nil {
 		t.Fatalf("grant masked_viewers SELECT departments: %v", err)
 	}
 	// Column mask: Fare → ROUND("Fare"/10)*10 on titanic
 	fareMask, err := q.CreateColumnMask(ctx, dbstore.CreateColumnMaskParams{
-		TableID: 1, ColumnName: "Fare", MaskExpression: `ROUND("Fare"/10)*10`,
+		ID: uuid.New().String(), TableID: "1", ColumnName: "Fare", MaskExpression: `ROUND("Fare"/10)*10`,
 	})
 	if err != nil {
 		t.Fatalf("create fare mask: %v", err)
 	}
 	if err := q.BindColumnMask(ctx, dbstore.BindColumnMaskParams{
-		ColumnMaskID: fareMask.ID, PrincipalID: maskedGroup.ID,
+		ID: uuid.New().String(), ColumnMaskID: fareMask.ID, PrincipalID: maskedGroup.ID,
 		PrincipalType: "group", SeeOriginal: 0,
 	}); err != nil {
 		t.Fatalf("bind fare mask to masked_viewers: %v", err)
 	}
 	// Column mask: Name → '***' on titanic
 	nameMaskForMasked, err := q.CreateColumnMask(ctx, dbstore.CreateColumnMaskParams{
-		TableID: 1, ColumnName: "Name", MaskExpression: `'***'`,
+		ID: uuid.New().String(), TableID: "1", ColumnName: "Name", MaskExpression: `'***'`,
 	})
 	if err != nil {
 		t.Fatalf("create name mask for masked_viewers: %v", err)
 	}
 	if err := q.BindColumnMask(ctx, dbstore.BindColumnMaskParams{
-		ColumnMaskID: nameMaskForMasked.ID, PrincipalID: maskedGroup.ID,
+		ID: uuid.New().String(), ColumnMaskID: nameMaskForMasked.ID, PrincipalID: maskedGroup.ID,
 		PrincipalType: "group", SeeOriginal: 0,
 	}); err != nil {
 		t.Fatalf("bind name mask to masked_viewers: %v", err)
 	}
 	// Column mask: avg_salary → 0 on departments
 	salaryMask, err := q.CreateColumnMask(ctx, dbstore.CreateColumnMaskParams{
-		TableID: 2, ColumnName: "avg_salary", MaskExpression: `0`,
+		ID: uuid.New().String(), TableID: "2", ColumnName: "avg_salary", MaskExpression: `0`,
 	})
 	if err != nil {
 		t.Fatalf("create salary mask: %v", err)
 	}
 	if err := q.BindColumnMask(ctx, dbstore.BindColumnMaskParams{
-		ColumnMaskID: salaryMask.ID, PrincipalID: maskedGroup.ID,
+		ID: uuid.New().String(), ColumnMaskID: salaryMask.ID, PrincipalID: maskedGroup.ID,
 		PrincipalType: "group", SeeOriginal: 0,
 	}); err != nil {
 		t.Fatalf("bind salary mask to masked_viewers: %v", err)
@@ -1736,12 +1737,12 @@ func seedMultiTableRBAC(t *testing.T, db *sql.DB) multiTableKeys {
 
 	// --- multi_filter_user: SELECT on titanic, TWO RLS filters (Pclass=1 AND Survived=1) ---
 	multiFilterUser, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
-		Name: "multi_filter_user", Type: "user", IsAdmin: 0,
+		ID: uuid.New().String(), Name: "multi_filter_user", Type: "user", IsAdmin: 0,
 	})
 	if err != nil {
 		t.Fatalf("create multi_filter_user: %v", err)
 	}
-	multiFilterGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "multi_filter"})
+	multiFilterGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{ID: uuid.New().String(), Name: "multi_filter"})
 	if err != nil {
 		t.Fatalf("create multi_filter group: %v", err)
 	}
@@ -1751,37 +1752,37 @@ func seedMultiTableRBAC(t *testing.T, db *sql.DB) multiTableKeys {
 		t.Fatalf("add multi_filter_user to group: %v", err)
 	}
 	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: multiFilterGroup.ID, PrincipalType: "group",
-		SecurableType: "schema", SecurableID: 0, Privilege: "USAGE",
+		ID: uuid.New().String(), PrincipalID: multiFilterGroup.ID, PrincipalType: "group",
+		SecurableType: "schema", SecurableID: "0", Privilege: "USAGE",
 	}); err != nil {
 		t.Fatalf("grant multi_filter USAGE: %v", err)
 	}
 	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: multiFilterGroup.ID, PrincipalType: "group",
-		SecurableType: "table", SecurableID: 1, Privilege: "SELECT",
+		ID: uuid.New().String(), PrincipalID: multiFilterGroup.ID, PrincipalType: "group",
+		SecurableType: "table", SecurableID: "1", Privilege: "SELECT",
 	}); err != nil {
 		t.Fatalf("grant multi_filter SELECT titanic: %v", err)
 	}
 	// Two RLS filters on titanic
 	pclassFilter, err := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
-		TableID: 1, FilterSql: `"Pclass" = 1`,
+		ID: uuid.New().String(), TableID: "1", FilterSql: `"Pclass" = 1`,
 	})
 	if err != nil {
 		t.Fatalf("create pclass filter: %v", err)
 	}
 	if err := q.BindRowFilter(ctx, dbstore.BindRowFilterParams{
-		RowFilterID: pclassFilter.ID, PrincipalID: multiFilterGroup.ID, PrincipalType: "group",
+		ID: uuid.New().String(), RowFilterID: pclassFilter.ID, PrincipalID: multiFilterGroup.ID, PrincipalType: "group",
 	}); err != nil {
 		t.Fatalf("bind pclass filter to multi_filter: %v", err)
 	}
 	survivedFilter, err := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
-		TableID: 1, FilterSql: `"Survived" = 1`,
+		ID: uuid.New().String(), TableID: "1", FilterSql: `"Survived" = 1`,
 	})
 	if err != nil {
 		t.Fatalf("create survived filter: %v", err)
 	}
 	if err := q.BindRowFilter(ctx, dbstore.BindRowFilterParams{
-		RowFilterID: survivedFilter.ID, PrincipalID: multiFilterGroup.ID, PrincipalType: "group",
+		ID: uuid.New().String(), RowFilterID: survivedFilter.ID, PrincipalID: multiFilterGroup.ID, PrincipalType: "group",
 	}); err != nil {
 		t.Fatalf("bind survived filter to multi_filter: %v", err)
 	}
@@ -1793,22 +1794,22 @@ func seedMultiTableRBAC(t *testing.T, db *sql.DB) multiTableKeys {
 	multiFilterKey := "test-multifilter-key"
 
 	if _, err := q.CreateAPIKey(ctx, dbstore.CreateAPIKeyParams{
-		KeyHash: sha256Hex(deptViewerKey), PrincipalID: deptViewer.ID, Name: "deptviewer-test",
+		ID: uuid.New().String(), KeyHash: sha256Hex(deptViewerKey), PrincipalID: deptViewer.ID, Name: "deptviewer-test",
 	}); err != nil {
 		t.Fatalf("create dept_viewer API key: %v", err)
 	}
 	if _, err := q.CreateAPIKey(ctx, dbstore.CreateAPIKeyParams{
-		KeyHash: sha256Hex(usOnlyKey), PrincipalID: usOnlyViewer.ID, Name: "usonly-test",
+		ID: uuid.New().String(), KeyHash: sha256Hex(usOnlyKey), PrincipalID: usOnlyViewer.ID, Name: "usonly-test",
 	}); err != nil {
 		t.Fatalf("create us_only_viewer API key: %v", err)
 	}
 	if _, err := q.CreateAPIKey(ctx, dbstore.CreateAPIKeyParams{
-		KeyHash: sha256Hex(maskedKey), PrincipalID: maskedViewer.ID, Name: "masked-test",
+		ID: uuid.New().String(), KeyHash: sha256Hex(maskedKey), PrincipalID: maskedViewer.ID, Name: "masked-test",
 	}); err != nil {
 		t.Fatalf("create masked_viewer API key: %v", err)
 	}
 	if _, err := q.CreateAPIKey(ctx, dbstore.CreateAPIKeyParams{
-		KeyHash: sha256Hex(multiFilterKey), PrincipalID: multiFilterUser.ID, Name: "multifilter-test",
+		ID: uuid.New().String(), KeyHash: sha256Hex(multiFilterKey), PrincipalID: multiFilterUser.ID, Name: "multifilter-test",
 	}); err != nil {
 		t.Fatalf("create multi_filter_user API key: %v", err)
 	}
@@ -1944,7 +1945,7 @@ func setupMultiTableLocalServer(t *testing.T) *multiTableTestEnv {
 
 // assignToEndpoint creates a default compute assignment for the given principal
 // to the named endpoint. Uses the admin API key.
-func assignToEndpoint(t *testing.T, env *httpTestEnv, endpointName string, principalID float64, principalType string) {
+func assignToEndpoint(t *testing.T, env *httpTestEnv, endpointName string, principalID string, principalType string) {
 	t.Helper()
 
 	resp := doRequest(t, "POST",

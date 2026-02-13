@@ -8,6 +8,8 @@ import (
 
 	dbstore "duck-demo/internal/db/dbstore"
 	"duck-demo/internal/domain"
+
+	"github.com/google/uuid"
 )
 
 const timeLayout = "2006-01-02 15:04:05"
@@ -150,7 +152,7 @@ func GrantFromDB(g dbstore.PrivilegeGrant) *domain.PrivilegeGrant {
 		SecurableType: g.SecurableType,
 		SecurableID:   g.SecurableID,
 		Privilege:     g.Privilege,
-		GrantedBy:     ptrInt(g.GrantedBy),
+		GrantedBy:     ptrStr(g.GrantedBy),
 		GrantedAt:     parseTime(g.GrantedAt),
 	}
 }
@@ -282,6 +284,7 @@ func AuditEntriesToDBParams(e *domain.AuditEntry) dbstore.InsertAuditLogParams {
 		}
 	}
 	return dbstore.InsertAuditLogParams{
+		ID:             uuid.New().String(),
 		PrincipalName:  e.PrincipalName,
 		Action:         e.Action,
 		StatementType:  nullStr(e.StatementType),

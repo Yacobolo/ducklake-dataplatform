@@ -18,7 +18,7 @@ import (
 func TestWorkflow_RBAC_FullCycle(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
 
-	var principalID, groupID, grantID float64
+	var principalID, groupID, grantID string
 
 	type step struct {
 		name string
@@ -32,7 +32,7 @@ func TestWorkflow_RBAC_FullCycle(t *testing.T) {
 
 			var result map[string]interface{}
 			decodeJSON(t, resp, &result)
-			principalID = result["id"].(float64)
+			principalID = result["id"].(string)
 		}},
 		{"create_group", func(t *testing.T) {
 			body := map[string]interface{}{"name": "rbac-cycle-group", "description": "workflow test group"}
@@ -41,13 +41,13 @@ func TestWorkflow_RBAC_FullCycle(t *testing.T) {
 
 			var result map[string]interface{}
 			decodeJSON(t, resp, &result)
-			groupID = result["id"].(float64)
+			groupID = result["id"].(string)
 		}},
 		{"add_principal_to_group", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/groups/%d/members", env.Server.URL, int64(groupID))
+			url := fmt.Sprintf("%s/v1/groups/%s/members", env.Server.URL, groupID)
 			body := map[string]interface{}{
 				"member_type": "user",
-				"member_id":   int64(principalID),
+				"member_id":   principalID,
 			}
 			resp := doRequest(t, "POST", url, env.Keys.Admin, body)
 			require.Equal(t, 204, resp.StatusCode)
@@ -55,21 +55,21 @@ func TestWorkflow_RBAC_FullCycle(t *testing.T) {
 		}},
 		{"grant_select_to_group", func(t *testing.T) {
 			body := map[string]interface{}{
-				"principal_id":   int64(groupID),
+				"principal_id":   groupID,
 				"principal_type": "group",
 				"securable_type": "table",
-				"securable_id":   1, // titanic
+				"securable_id":   "1", // titanic
 				"privilege":      "SELECT",
 			}
 			resp := doRequest(t, "POST", env.Server.URL+"/v1/grants", env.Keys.Admin, body)
 			require.Equal(t, 201, resp.StatusCode)
 			var result map[string]interface{}
 			decodeJSON(t, resp, &result)
-			grantID = result["id"].(float64)
+			grantID = result["id"].(string)
 		}},
 		{"verify_grant_listed", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/grants?principal_id=%d&principal_type=group",
-				env.Server.URL, int64(groupID))
+			url := fmt.Sprintf("%s/v1/grants?principal_id=%s&principal_type=group",
+				env.Server.URL, groupID)
 			resp := doRequest(t, "GET", url, env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
@@ -89,14 +89,14 @@ func TestWorkflow_RBAC_FullCycle(t *testing.T) {
 			assert.True(t, found, "expected SELECT grant on table")
 		}},
 		{"revoke_select_from_group", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/grants/%d", env.Server.URL, int64(grantID))
+			url := fmt.Sprintf("%s/v1/grants/%s", env.Server.URL, grantID)
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()
 		}},
 		{"verify_grant_revoked", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/grants?principal_id=%d&principal_type=group",
-				env.Server.URL, int64(groupID))
+			url := fmt.Sprintf("%s/v1/grants?principal_id=%s&principal_type=group",
+				env.Server.URL, groupID)
 			resp := doRequest(t, "GET", url, env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
@@ -127,14 +127,14 @@ func TestWorkflow_GroupInheritance(t *testing.T) {
 	require.Equal(t, 201, pResp.StatusCode)
 	var pResult map[string]interface{}
 	decodeJSON(t, pResp, &pResult)
-	userID := int64(pResult["id"].(float64))
+	userID := pResult["id"].(string)
 
 	gResp := doRequest(t, "POST", env.Server.URL+"/v1/groups", env.Keys.Admin,
 		map[string]interface{}{"name": "inherit-group"})
 	require.Equal(t, 201, gResp.StatusCode)
 	var gResult map[string]interface{}
 	decodeJSON(t, gResp, &gResult)
-	groupID := int64(gResult["id"].(float64))
+	groupID := gResult["id"].(string)
 
 	// Grant to group
 	resp := doRequest(t, "POST", env.Server.URL+"/v1/grants", env.Keys.Admin,
@@ -142,14 +142,14 @@ func TestWorkflow_GroupInheritance(t *testing.T) {
 			"principal_id":   groupID,
 			"principal_type": "group",
 			"securable_type": "catalog",
-			"securable_id":   0,
+			"securable_id":   "0",
 			"privilege":      "ALL_PRIVILEGES",
 		})
 	require.Equal(t, 201, resp.StatusCode)
 	_ = resp.Body.Close()
 
 	t.Run("add_to_group", func(t *testing.T) {
-		url := fmt.Sprintf("%s/v1/groups/%d/members", env.Server.URL, groupID)
+		url := fmt.Sprintf("%s/v1/groups/%s/members", env.Server.URL, groupID)
 		body := map[string]interface{}{"member_type": "user", "member_id": userID}
 		resp := doRequest(t, "POST", url, env.Keys.Admin, body)
 		require.Equal(t, 204, resp.StatusCode)
@@ -157,7 +157,7 @@ func TestWorkflow_GroupInheritance(t *testing.T) {
 	})
 
 	t.Run("verify_membership", func(t *testing.T) {
-		url := fmt.Sprintf("%s/v1/groups/%d/members", env.Server.URL, groupID)
+		url := fmt.Sprintf("%s/v1/groups/%s/members", env.Server.URL, groupID)
 		resp := doRequest(t, "GET", url, env.Keys.Admin, nil)
 		require.Equal(t, 200, resp.StatusCode)
 
@@ -166,18 +166,18 @@ func TestWorkflow_GroupInheritance(t *testing.T) {
 		data := result["data"].([]interface{})
 		require.Len(t, data, 1)
 		member := data[0].(map[string]interface{})
-		assert.InDelta(t, float64(userID), member["member_id"], 0)
+		assert.Equal(t, userID, member["member_id"])
 	})
 
 	t.Run("remove_from_group", func(t *testing.T) {
-		url := fmt.Sprintf("%s/v1/groups/%d/members?member_type=user&member_id=%d", env.Server.URL, groupID, userID)
+		url := fmt.Sprintf("%s/v1/groups/%s/members?member_type=user&member_id=%s", env.Server.URL, groupID, userID)
 		resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 		require.Equal(t, 204, resp.StatusCode)
 		_ = resp.Body.Close()
 	})
 
 	t.Run("verify_no_members", func(t *testing.T) {
-		url := fmt.Sprintf("%s/v1/groups/%d/members", env.Server.URL, groupID)
+		url := fmt.Sprintf("%s/v1/groups/%s/members", env.Server.URL, groupID)
 		resp := doRequest(t, "GET", url, env.Keys.Admin, nil)
 		require.Equal(t, 200, resp.StatusCode)
 
@@ -196,7 +196,7 @@ func TestWorkflow_RLS_Lifecycle(t *testing.T) {
 	analystsGroup, err := q.GetGroupByName(context.Background(), "analysts")
 	require.NoError(t, err)
 
-	var filterID float64
+	var filterID string
 
 	type step struct {
 		name string
@@ -213,10 +213,10 @@ func TestWorkflow_RLS_Lifecycle(t *testing.T) {
 
 			var result map[string]interface{}
 			decodeJSON(t, resp, &result)
-			filterID = result["id"].(float64)
+			filterID = result["id"].(string)
 		}},
 		{"bind_to_group", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/row-filters/%d/bindings", env.Server.URL, int64(filterID))
+			url := fmt.Sprintf("%s/v1/row-filters/%s/bindings", env.Server.URL, filterID)
 			body := map[string]interface{}{
 				"principal_id":   analystsGroup.ID,
 				"principal_type": "group",
@@ -235,7 +235,7 @@ func TestWorkflow_RLS_Lifecycle(t *testing.T) {
 			found := false
 			for _, item := range data {
 				f := item.(map[string]interface{})
-				if f["id"].(float64) == filterID {
+				if f["id"].(string) == filterID {
 					found = true
 					assert.Equal(t, `"Survived" = 1`, f["filter_sql"])
 				}
@@ -243,14 +243,14 @@ func TestWorkflow_RLS_Lifecycle(t *testing.T) {
 			assert.True(t, found, "new filter should appear in list")
 		}},
 		{"unbind_from_group", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/row-filters/%d/bindings?principal_id=%d&principal_type=group",
-				env.Server.URL, int64(filterID), analystsGroup.ID)
+			url := fmt.Sprintf("%s/v1/row-filters/%s/bindings?principal_id=%s&principal_type=group",
+				env.Server.URL, filterID, analystsGroup.ID)
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()
 		}},
 		{"delete_filter", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/row-filters/%d", env.Server.URL, int64(filterID))
+			url := fmt.Sprintf("%s/v1/row-filters/%s", env.Server.URL, filterID)
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()
@@ -271,7 +271,7 @@ func TestWorkflow_ColumnMask_Lifecycle(t *testing.T) {
 	researcher, err := q.GetPrincipalByName(context.Background(), "researcher1")
 	require.NoError(t, err)
 
-	var maskID float64
+	var maskID string
 
 	type step struct {
 		name string
@@ -289,10 +289,10 @@ func TestWorkflow_ColumnMask_Lifecycle(t *testing.T) {
 
 			var result map[string]interface{}
 			decodeJSON(t, resp, &result)
-			maskID = result["id"].(float64)
+			maskID = result["id"].(string)
 		}},
 		{"bind_analyst_see_original_false", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/column-masks/%d/bindings", env.Server.URL, int64(maskID))
+			url := fmt.Sprintf("%s/v1/column-masks/%s/bindings", env.Server.URL, maskID)
 			body := map[string]interface{}{
 				"principal_id":   analyst.ID,
 				"principal_type": "user",
@@ -303,7 +303,7 @@ func TestWorkflow_ColumnMask_Lifecycle(t *testing.T) {
 			_ = resp.Body.Close()
 		}},
 		{"bind_researcher_see_original_true", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/column-masks/%d/bindings", env.Server.URL, int64(maskID))
+			url := fmt.Sprintf("%s/v1/column-masks/%s/bindings", env.Server.URL, maskID)
 			body := map[string]interface{}{
 				"principal_id":   researcher.ID,
 				"principal_type": "user",
@@ -323,7 +323,7 @@ func TestWorkflow_ColumnMask_Lifecycle(t *testing.T) {
 			found := false
 			for _, item := range data {
 				m := item.(map[string]interface{})
-				if m["id"].(float64) == maskID {
+				if m["id"].(string) == maskID {
 					found = true
 					assert.Equal(t, "Fare", m["column_name"])
 					assert.Equal(t, "0.0", m["mask_expression"])
@@ -332,21 +332,21 @@ func TestWorkflow_ColumnMask_Lifecycle(t *testing.T) {
 			assert.True(t, found, "new mask should appear in list")
 		}},
 		{"cleanup_unbind_analyst", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/column-masks/%d/bindings?principal_id=%d&principal_type=user",
-				env.Server.URL, int64(maskID), analyst.ID)
+			url := fmt.Sprintf("%s/v1/column-masks/%s/bindings?principal_id=%s&principal_type=user",
+				env.Server.URL, maskID, analyst.ID)
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()
 		}},
 		{"cleanup_unbind_researcher", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/column-masks/%d/bindings?principal_id=%d&principal_type=user",
-				env.Server.URL, int64(maskID), researcher.ID)
+			url := fmt.Sprintf("%s/v1/column-masks/%s/bindings?principal_id=%s&principal_type=user",
+				env.Server.URL, maskID, researcher.ID)
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()
 		}},
 		{"cleanup_delete_mask", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/column-masks/%d", env.Server.URL, int64(maskID))
+			url := fmt.Sprintf("%s/v1/column-masks/%s", env.Server.URL, maskID)
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()
@@ -382,7 +382,7 @@ func TestWorkflow_ManagementEndpointsAuthzEnforced(t *testing.T) {
 			"principal_id":   analyst.ID,
 			"principal_type": "user",
 			"securable_type": "catalog",
-			"securable_id":   0,
+			"securable_id":   "0",
 			"privilege":      "ALL_PRIVILEGES",
 		}
 		resp := doRequest(t, "POST", env.Server.URL+"/v1/grants", env.Keys.Analyst, body)

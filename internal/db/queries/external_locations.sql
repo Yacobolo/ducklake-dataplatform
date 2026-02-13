@@ -1,6 +1,6 @@
 -- name: CreateExternalLocation :one
-INSERT INTO external_locations (name, url, credential_name, storage_type, comment, owner, read_only)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+INSERT INTO external_locations (id, name, url, credential_name, storage_type, comment, owner, read_only)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetExternalLocation :one

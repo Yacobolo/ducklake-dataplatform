@@ -18,7 +18,7 @@ func TestTagService_CreateTag(t *testing.T) {
 		repo := &mockTagRepo{
 			CreateTagFn: func(_ context.Context, tag *domain.Tag) (*domain.Tag, error) {
 				return &domain.Tag{
-					ID:        1,
+					ID:        "1",
 					Key:       tag.Key,
 					Value:     tag.Value,
 					CreatedBy: tag.CreatedBy,
@@ -60,27 +60,27 @@ func TestTagService_CreateTag(t *testing.T) {
 func TestTagService_GetTag(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockTagRepo{
-			GetTagFn: func(_ context.Context, id int64) (*domain.Tag, error) {
+			GetTagFn: func(_ context.Context, id string) (*domain.Tag, error) {
 				return &domain.Tag{ID: id, Key: "env"}, nil
 			},
 		}
 		svc := NewTagService(repo, &mockAuditRepo{})
 
-		result, err := svc.GetTag(context.Background(), 1)
+		result, err := svc.GetTag(context.Background(), "1")
 
 		require.NoError(t, err)
-		assert.Equal(t, int64(1), result.ID)
+		assert.Equal(t, "1", result.ID)
 	})
 
 	t.Run("not_found", func(t *testing.T) {
 		repo := &mockTagRepo{
-			GetTagFn: func(_ context.Context, _ int64) (*domain.Tag, error) {
+			GetTagFn: func(_ context.Context, _ string) (*domain.Tag, error) {
 				return nil, domain.ErrNotFound("tag not found")
 			},
 		}
 		svc := NewTagService(repo, &mockAuditRepo{})
 
-		_, err := svc.GetTag(context.Background(), 999)
+		_, err := svc.GetTag(context.Background(), "999")
 
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
@@ -94,7 +94,7 @@ func TestTagService_ListTags(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockTagRepo{
 			ListTagsFn: func(_ context.Context, _ domain.PageRequest) ([]domain.Tag, int64, error) {
-				return []domain.Tag{{ID: 1, Key: "env"}, {ID: 2, Key: "pii"}}, 2, nil
+				return []domain.Tag{{ID: "1", Key: "env"}, {ID: "2", Key: "pii"}}, 2, nil
 			},
 		}
 		svc := NewTagService(repo, &mockAuditRepo{})
@@ -127,14 +127,14 @@ func TestTagService_ListTags(t *testing.T) {
 func TestTagService_DeleteTag(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockTagRepo{
-			DeleteTagFn: func(_ context.Context, _ int64) error {
+			DeleteTagFn: func(_ context.Context, _ string) error {
 				return nil
 			},
 		}
 		audit := &mockAuditRepo{}
 		svc := NewTagService(repo, audit)
 
-		err := svc.DeleteTag(ctxWithPrincipal("alice"), "alice", 1)
+		err := svc.DeleteTag(ctxWithPrincipal("alice"), "alice", "1")
 
 		require.NoError(t, err)
 		assert.True(t, audit.HasAction("DELETE_TAG"))
@@ -142,14 +142,14 @@ func TestTagService_DeleteTag(t *testing.T) {
 
 	t.Run("repo_error", func(t *testing.T) {
 		repo := &mockTagRepo{
-			DeleteTagFn: func(_ context.Context, _ int64) error {
+			DeleteTagFn: func(_ context.Context, _ string) error {
 				return errTest
 			},
 		}
 		audit := &mockAuditRepo{}
 		svc := NewTagService(repo, audit)
 
-		err := svc.DeleteTag(ctxWithPrincipal("alice"), "alice", 1)
+		err := svc.DeleteTag(ctxWithPrincipal("alice"), "alice", "1")
 
 		require.Error(t, err)
 		require.ErrorIs(t, err, errTest)
@@ -166,7 +166,7 @@ func TestTagService_AssignTag(t *testing.T) {
 			AssignTagFn: func(_ context.Context, a *domain.TagAssignment) (*domain.TagAssignment, error) {
 				captured = a
 				return &domain.TagAssignment{
-					ID:            1,
+					ID:            "1",
 					TagID:         a.TagID,
 					SecurableType: a.SecurableType,
 					SecurableID:   a.SecurableID,
@@ -179,9 +179,9 @@ func TestTagService_AssignTag(t *testing.T) {
 		svc := NewTagService(repo, audit)
 
 		result, err := svc.AssignTag(ctxWithPrincipal("bob"), "bob", &domain.TagAssignment{
-			TagID:         1,
+			TagID:         "1",
 			SecurableType: "table",
-			SecurableID:   42,
+			SecurableID:   "42",
 		})
 
 		require.NoError(t, err)
@@ -199,7 +199,7 @@ func TestTagService_AssignTag(t *testing.T) {
 		audit := &mockAuditRepo{}
 		svc := NewTagService(repo, audit)
 
-		_, err := svc.AssignTag(ctxWithPrincipal("bob"), "bob", &domain.TagAssignment{TagID: 1})
+		_, err := svc.AssignTag(ctxWithPrincipal("bob"), "bob", &domain.TagAssignment{TagID: "1"})
 
 		require.Error(t, err)
 		require.ErrorIs(t, err, errTest)
@@ -212,14 +212,14 @@ func TestTagService_AssignTag(t *testing.T) {
 func TestTagService_UnassignTag(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockTagRepo{
-			UnassignTagFn: func(_ context.Context, _ int64) error {
+			UnassignTagFn: func(_ context.Context, _ string) error {
 				return nil
 			},
 		}
 		audit := &mockAuditRepo{}
 		svc := NewTagService(repo, audit)
 
-		err := svc.UnassignTag(ctxWithPrincipal("alice"), "alice", 1)
+		err := svc.UnassignTag(ctxWithPrincipal("alice"), "alice", "1")
 
 		require.NoError(t, err)
 		assert.True(t, audit.HasAction("UNASSIGN_TAG"))
@@ -227,14 +227,14 @@ func TestTagService_UnassignTag(t *testing.T) {
 
 	t.Run("repo_error", func(t *testing.T) {
 		repo := &mockTagRepo{
-			UnassignTagFn: func(_ context.Context, _ int64) error {
+			UnassignTagFn: func(_ context.Context, _ string) error {
 				return errTest
 			},
 		}
 		audit := &mockAuditRepo{}
 		svc := NewTagService(repo, audit)
 
-		err := svc.UnassignTag(ctxWithPrincipal("alice"), "alice", 1)
+		err := svc.UnassignTag(ctxWithPrincipal("alice"), "alice", "1")
 
 		require.Error(t, err)
 		require.ErrorIs(t, err, errTest)
@@ -246,13 +246,13 @@ func TestTagService_UnassignTag(t *testing.T) {
 
 func TestTagService_ListTagsForSecurable(t *testing.T) {
 	repo := &mockTagRepo{
-		ListTagsForSecurableFn: func(_ context.Context, _ string, _ int64, _ *string) ([]domain.Tag, error) {
-			return []domain.Tag{{ID: 1, Key: "env"}}, nil
+		ListTagsForSecurableFn: func(_ context.Context, _ string, _ string, _ *string) ([]domain.Tag, error) {
+			return []domain.Tag{{ID: "1", Key: "env"}}, nil
 		},
 	}
 	svc := NewTagService(repo, &mockAuditRepo{})
 
-	tags, err := svc.ListTagsForSecurable(context.Background(), "table", 1, nil)
+	tags, err := svc.ListTagsForSecurable(context.Background(), "table", "1", nil)
 
 	require.NoError(t, err)
 	assert.Len(t, tags, 1)
@@ -262,13 +262,13 @@ func TestTagService_ListTagsForSecurable(t *testing.T) {
 
 func TestTagService_ListAssignmentsForTag(t *testing.T) {
 	repo := &mockTagRepo{
-		ListAssignmentsForTagFn: func(_ context.Context, _ int64) ([]domain.TagAssignment, error) {
-			return []domain.TagAssignment{{ID: 1, TagID: 1, SecurableType: "table"}}, nil
+		ListAssignmentsForTagFn: func(_ context.Context, _ string) ([]domain.TagAssignment, error) {
+			return []domain.TagAssignment{{ID: "1", TagID: "1", SecurableType: "table"}}, nil
 		},
 	}
 	svc := NewTagService(repo, &mockAuditRepo{})
 
-	assignments, err := svc.ListAssignmentsForTag(context.Background(), 1)
+	assignments, err := svc.ListAssignmentsForTag(context.Background(), "1")
 
 	require.NoError(t, err)
 	assert.Len(t, assignments, 1)
@@ -320,7 +320,7 @@ func TestTagService_CreateTag_ClassificationValidation(t *testing.T) {
 	t.Run("valid classification passes", func(t *testing.T) {
 		repo := &mockTagRepo{
 			CreateTagFn: func(_ context.Context, tag *domain.Tag) (*domain.Tag, error) {
-				return &domain.Tag{ID: 1, Key: tag.Key, Value: tag.Value, CreatedBy: tag.CreatedBy, CreatedAt: time.Now()}, nil
+				return &domain.Tag{ID: "1", Key: tag.Key, Value: tag.Value, CreatedBy: tag.CreatedBy, CreatedAt: time.Now()}, nil
 			},
 		}
 		audit := &mockAuditRepo{}

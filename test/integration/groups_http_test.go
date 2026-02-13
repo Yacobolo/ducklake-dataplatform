@@ -14,7 +14,7 @@ import (
 func TestHTTP_GroupCRUD(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{})
 
-	var groupID float64
+	var groupID string
 
 	type step struct {
 		name string
@@ -32,12 +32,12 @@ func TestHTTP_GroupCRUD(t *testing.T) {
 			var result map[string]interface{}
 			decodeJSON(t, resp, &result)
 			require.NotNil(t, result["id"])
-			groupID = result["id"].(float64)
+			groupID = result["id"].(string)
 			assert.Equal(t, "test-group-crud", result["name"])
 			assert.Equal(t, "a test group", result["description"])
 		}},
 		{"get_by_id", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/groups/%d", env.Server.URL, int64(groupID))
+			url := fmt.Sprintf("%s/v1/groups/%s", env.Server.URL, groupID)
 			resp := doRequest(t, "GET", url, env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
@@ -56,13 +56,13 @@ func TestHTTP_GroupCRUD(t *testing.T) {
 			assert.GreaterOrEqual(t, len(data), 4)
 		}},
 		{"delete", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/groups/%d", env.Server.URL, int64(groupID))
+			url := fmt.Sprintf("%s/v1/groups/%s", env.Server.URL, groupID)
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()
 		}},
 		{"get_after_delete_404", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/groups/%d", env.Server.URL, int64(groupID))
+			url := fmt.Sprintf("%s/v1/groups/%s", env.Server.URL, groupID)
 			resp := doRequest(t, "GET", url, env.Keys.Admin, nil)
 			assert.Equal(t, 404, resp.StatusCode)
 			_ = resp.Body.Close()
@@ -83,17 +83,17 @@ func TestHTTP_GroupMembership(t *testing.T) {
 	require.Equal(t, 201, resp.StatusCode)
 	var groupResult map[string]interface{}
 	decodeJSON(t, resp, &groupResult)
-	groupID := int64(groupResult["id"].(float64))
+	groupID := groupResult["id"].(string)
 
 	// Create two principals to add as members
-	var memberIDs [2]int64
+	var memberIDs [2]string
 	for i := 0; i < 2; i++ {
 		body := map[string]interface{}{"name": fmt.Sprintf("member-%d", i), "type": "user"}
 		resp := doRequest(t, "POST", env.Server.URL+"/v1/principals", env.Keys.Admin, body)
 		require.Equal(t, 201, resp.StatusCode)
 		var result map[string]interface{}
 		decodeJSON(t, resp, &result)
-		memberIDs[i] = int64(result["id"].(float64))
+		memberIDs[i] = result["id"].(string)
 	}
 
 	type step struct {
@@ -102,7 +102,7 @@ func TestHTTP_GroupMembership(t *testing.T) {
 	}
 	steps := []step{
 		{"add_first_member", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/groups/%d/members", env.Server.URL, groupID)
+			url := fmt.Sprintf("%s/v1/groups/%s/members", env.Server.URL, groupID)
 			body := map[string]interface{}{
 				"member_type": "user",
 				"member_id":   memberIDs[0],
@@ -112,7 +112,7 @@ func TestHTTP_GroupMembership(t *testing.T) {
 			_ = resp.Body.Close()
 		}},
 		{"add_second_member", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/groups/%d/members", env.Server.URL, groupID)
+			url := fmt.Sprintf("%s/v1/groups/%s/members", env.Server.URL, groupID)
 			body := map[string]interface{}{
 				"member_type": "user",
 				"member_id":   memberIDs[1],
@@ -122,7 +122,7 @@ func TestHTTP_GroupMembership(t *testing.T) {
 			_ = resp.Body.Close()
 		}},
 		{"list_members_both", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/groups/%d/members", env.Server.URL, groupID)
+			url := fmt.Sprintf("%s/v1/groups/%s/members", env.Server.URL, groupID)
 			resp := doRequest(t, "GET", url, env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
@@ -132,13 +132,13 @@ func TestHTTP_GroupMembership(t *testing.T) {
 			assert.Len(t, data, 2)
 		}},
 		{"remove_member", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/groups/%d/members?member_type=user&member_id=%d", env.Server.URL, groupID, memberIDs[0])
+			url := fmt.Sprintf("%s/v1/groups/%s/members?member_type=user&member_id=%s", env.Server.URL, groupID, memberIDs[0])
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()
 		}},
 		{"list_members_one", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/groups/%d/members", env.Server.URL, groupID)
+			url := fmt.Sprintf("%s/v1/groups/%s/members", env.Server.URL, groupID)
 			resp := doRequest(t, "GET", url, env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 

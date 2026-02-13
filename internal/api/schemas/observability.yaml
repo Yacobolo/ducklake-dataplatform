@@ -3,10 +3,9 @@ AuditEntry:
   type: object
   properties:
     id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     principal_name:
       type: string
       maxLength: 255
@@ -146,10 +145,9 @@ QueryHistoryEntry:
   type: object
   properties:
     id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     principal_name:
       type: string
       maxLength: 255

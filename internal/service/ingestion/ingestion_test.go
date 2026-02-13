@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -204,7 +205,7 @@ func (e *testError) Error() string { return e.msg }
 func TestIngestion_CommitEmptyKeys(t *testing.T) {
 	svc, _, q, ctx := setupIngestionTest(t)
 
-	_, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	_, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{ID: uuid.New().String(),
 		Name: "writer", Type: "user", IsAdmin: 1,
 	})
 	require.NoError(t, err)
@@ -221,7 +222,7 @@ func TestIngestion_CommitEmptyKeys(t *testing.T) {
 func TestIngestion_LoadEmptyPaths(t *testing.T) {
 	svc, _, q, ctx := setupIngestionTest(t)
 
-	_, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	_, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{ID: uuid.New().String(),
 		Name: "writer", Type: "user", IsAdmin: 1,
 	})
 	require.NoError(t, err)
@@ -239,7 +240,7 @@ func TestIngestion_AccessDenied(t *testing.T) {
 	svc, _, q, ctx := setupIngestionTest(t)
 
 	// Create a user with NO grants
-	_, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	_, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{ID: uuid.New().String(),
 		Name: "no_access", Type: "user", IsAdmin: 0,
 	})
 	require.NoError(t, err)
@@ -278,7 +279,7 @@ func TestIngestion_AccessDenied(t *testing.T) {
 func TestIngestion_TableNotFound(t *testing.T) {
 	svc, _, q, ctx := setupIngestionTest(t)
 
-	_, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	_, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{ID: uuid.New().String(),
 		Name: "writer", Type: "user", IsAdmin: 1,
 	})
 	require.NoError(t, err)
@@ -295,7 +296,7 @@ func TestIngestion_TableNotFound(t *testing.T) {
 func TestIngestion_AdminPassesAuthCheck(t *testing.T) {
 	svc, _, q, ctx := setupIngestionTest(t)
 
-	_, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	_, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{ID: uuid.New().String(),
 		Name: "admin", Type: "user", IsAdmin: 1,
 	})
 	require.NoError(t, err)
@@ -314,21 +315,21 @@ func TestIngestion_AdminPassesAuthCheck(t *testing.T) {
 func TestIngestion_UserWithInsertGrant(t *testing.T) {
 	svc, _, q, ctx := setupIngestionTest(t)
 
-	user, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+	user, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{ID: uuid.New().String(),
 		Name: "inserter", Type: "user", IsAdmin: 0,
 	})
 	require.NoError(t, err)
 
 	// Grant USAGE on schema + INSERT on table
 	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: user.ID, PrincipalType: "user",
-		SecurableType: domain.SecurableSchema, SecurableID: 0,
+		ID: uuid.New().String(), PrincipalID: user.ID, PrincipalType: "user",
+		SecurableType: domain.SecurableSchema, SecurableID: "0",
 		Privilege: domain.PrivUsage,
 	})
 	require.NoError(t, err)
 	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: user.ID, PrincipalType: "user",
-		SecurableType: domain.SecurableTable, SecurableID: 1, // titanic
+		ID: uuid.New().String(), PrincipalID: user.ID, PrincipalType: "user",
+		SecurableType: domain.SecurableTable, SecurableID: "1", // titanic
 		Privilege: domain.PrivInsert,
 	})
 	require.NoError(t, err)

@@ -24,7 +24,7 @@ func TestExternalLocationService_Create(t *testing.T) {
 	}
 
 	testCred := &domain.StorageCredential{
-		ID:             1,
+		ID:             "1",
 		Name:           "my-cred",
 		CredentialType: domain.CredentialTypeS3,
 		KeyID:          "AKID",
@@ -45,7 +45,7 @@ func TestExternalLocationService_Create(t *testing.T) {
 		locRepo := &mockExternalLocationRepo{
 			CreateFn: func(_ context.Context, loc *domain.ExternalLocation) (*domain.ExternalLocation, error) {
 				return &domain.ExternalLocation{
-					ID:             1,
+					ID:             "1",
 					Name:           loc.Name,
 					URL:            loc.URL,
 					CredentialName: loc.CredentialName,
@@ -59,7 +59,7 @@ func TestExternalLocationService_Create(t *testing.T) {
 			},
 		}
 		auth := &mockAuthService{
-			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ string, _ string) (bool, error) {
 				return true, nil
 			},
 		}
@@ -79,7 +79,7 @@ func TestExternalLocationService_Create(t *testing.T) {
 
 	t.Run("access_denied", func(t *testing.T) {
 		auth := &mockAuthService{
-			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ string, _ string) (bool, error) {
 				return false, nil
 			},
 		}
@@ -97,7 +97,7 @@ func TestExternalLocationService_Create(t *testing.T) {
 
 	t.Run("validation_error", func(t *testing.T) {
 		auth := &mockAuthService{
-			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ string, _ string) (bool, error) {
 				return true, nil
 			},
 		}
@@ -120,7 +120,7 @@ func TestExternalLocationService_Create(t *testing.T) {
 			},
 		}
 		auth := &mockAuthService{
-			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ string, _ string) (bool, error) {
 				return true, nil
 			},
 		}
@@ -147,7 +147,7 @@ func TestExternalLocationService_Create(t *testing.T) {
 			},
 		}
 		auth := &mockAuthService{
-			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ string, _ string) (bool, error) {
 				return true, nil
 			},
 		}
@@ -165,7 +165,7 @@ func TestExternalLocationService_GetByName(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockExternalLocationRepo{
 			GetByNameFn: func(_ context.Context, name string) (*domain.ExternalLocation, error) {
-				return &domain.ExternalLocation{ID: 1, Name: name, URL: "s3://bucket/path/"}, nil
+				return &domain.ExternalLocation{ID: "1", Name: name, URL: "s3://bucket/path/"}, nil
 			},
 		}
 		svc := NewExternalLocationService(repo, &mockStorageCredentialRepo{}, &mockAuthService{}, &mockAuditRepo{}, nil, discardLogger())
@@ -199,8 +199,8 @@ func TestExternalLocationService_List(t *testing.T) {
 		repo := &mockExternalLocationRepo{
 			ListFn: func(_ context.Context, _ domain.PageRequest) ([]domain.ExternalLocation, int64, error) {
 				return []domain.ExternalLocation{
-					{ID: 1, Name: "loc-1"},
-					{ID: 2, Name: "loc-2"},
+					{ID: "1", Name: "loc-1"},
+					{ID: "2", Name: "loc-2"},
 				}, 2, nil
 			},
 		}
@@ -226,14 +226,14 @@ func TestExternalLocationService_Delete(t *testing.T) {
 
 		locRepo := &mockExternalLocationRepo{
 			GetByNameFn: func(_ context.Context, _ string) (*domain.ExternalLocation, error) {
-				return &domain.ExternalLocation{ID: 1, Name: "my-loc", CredentialName: "my-cred"}, nil
+				return &domain.ExternalLocation{ID: "1", Name: "my-loc", CredentialName: "my-cred"}, nil
 			},
-			DeleteFn: func(_ context.Context, _ int64) error {
+			DeleteFn: func(_ context.Context, _ string) error {
 				return nil
 			},
 		}
 		auth := &mockAuthService{
-			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ string, _ string) (bool, error) {
 				return true, nil
 			},
 		}
@@ -249,7 +249,7 @@ func TestExternalLocationService_Delete(t *testing.T) {
 
 	t.Run("access_denied", func(t *testing.T) {
 		auth := &mockAuthService{
-			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ int64, _ string) (bool, error) {
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ string, _ string) (bool, error) {
 				return false, nil
 			},
 		}
@@ -288,7 +288,7 @@ func TestExternalLocationService_RestoreSecrets(t *testing.T) {
 		locRepo := &mockExternalLocationRepo{
 			ListFn: func(_ context.Context, _ domain.PageRequest) ([]domain.ExternalLocation, int64, error) {
 				return []domain.ExternalLocation{
-					{ID: 1, Name: "loc-1", URL: "s3://bucket/data/"},
+					{ID: "1", Name: "loc-1", URL: "s3://bucket/data/"},
 				}, 1, nil
 			},
 		}

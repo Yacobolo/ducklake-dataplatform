@@ -17,7 +17,7 @@ func TestRemoteCache_GetOrCreate(t *testing.T) {
 	cache := NewRemoteCache(localDB)
 
 	ep := &domain.ComputeEndpoint{
-		ID:        1,
+		ID:        "1",
 		Name:      "test-ep",
 		URL:       "https://compute-1.example.com:9443",
 		AuthToken: "secret",
@@ -38,7 +38,7 @@ func TestRemoteCache_GetOrCreate(t *testing.T) {
 
 	t.Run("different_endpoints_different_executors", func(t *testing.T) {
 		ep2 := &domain.ComputeEndpoint{
-			ID:        2,
+			ID:        "2",
 			Name:      "other-ep",
 			URL:       "https://compute-2.example.com:9443",
 			AuthToken: "other-secret",

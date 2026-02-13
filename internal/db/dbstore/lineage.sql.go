@@ -64,7 +64,7 @@ const deleteLineageEdge = `-- name: DeleteLineageEdge :exec
 DELETE FROM lineage_edges WHERE id = ?
 `
 
-func (q *Queries) DeleteLineageEdge(ctx context.Context, id int64) error {
+func (q *Queries) DeleteLineageEdge(ctx context.Context, id string) error {
 	_, err := q.db.ExecContext(ctx, deleteLineageEdge, id)
 	return err
 }
@@ -180,11 +180,12 @@ func (q *Queries) GetUpstreamLineage(ctx context.Context, arg GetUpstreamLineage
 }
 
 const insertLineageEdge = `-- name: InsertLineageEdge :exec
-INSERT INTO lineage_edges (source_table, target_table, edge_type, principal_name, query_hash, source_schema, target_schema)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+INSERT INTO lineage_edges (id, source_table, target_table, edge_type, principal_name, query_hash, source_schema, target_schema)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type InsertLineageEdgeParams struct {
+	ID            string
 	SourceTable   string
 	TargetTable   sql.NullString
 	EdgeType      string
@@ -196,6 +197,7 @@ type InsertLineageEdgeParams struct {
 
 func (q *Queries) InsertLineageEdge(ctx context.Context, arg InsertLineageEdgeParams) error {
 	_, err := q.db.ExecContext(ctx, insertLineageEdge,
+		arg.ID,
 		arg.SourceTable,
 		arg.TargetTable,
 		arg.EdgeType,

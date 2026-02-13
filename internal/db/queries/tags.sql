@@ -1,5 +1,5 @@
 -- name: CreateTag :one
-INSERT INTO tags (key, value, created_by) VALUES (?, ?, ?) RETURNING *;
+INSERT INTO tags (id, key, value, created_by) VALUES (?, ?, ?, ?) RETURNING *;
 
 -- name: GetTag :one
 SELECT * FROM tags WHERE id = ?;
@@ -14,8 +14,8 @@ SELECT COUNT(*) as cnt FROM tags;
 DELETE FROM tags WHERE id = ?;
 
 -- name: CreateTagAssignment :one
-INSERT INTO tag_assignments (tag_id, securable_type, securable_id, column_name, assigned_by)
-VALUES (?, ?, ?, ?, ?) RETURNING *;
+INSERT INTO tag_assignments (id, tag_id, securable_type, securable_id, column_name, assigned_by)
+VALUES (?, ?, ?, ?, ?, ?) RETURNING *;
 
 -- name: DeleteTagAssignment :exec
 DELETE FROM tag_assignments WHERE id = ?;

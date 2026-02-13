@@ -27,6 +27,7 @@ var _ domain.ExternalTableRepository = (*ExternalTableRepo)(nil)
 // Create inserts a new external table record and its columns.
 func (r *ExternalTableRepo) Create(ctx context.Context, et *domain.ExternalTableRecord) (*domain.ExternalTableRecord, error) {
 	row, err := r.q.CreateExternalTable(ctx, dbstore.CreateExternalTableParams{
+		ID:           newID(),
 		SchemaName:   et.SchemaName,
 		TableName:    et.TableName,
 		FileFormat:   et.FileFormat,
@@ -42,6 +43,7 @@ func (r *ExternalTableRepo) Create(ctx context.Context, et *domain.ExternalTable
 	// Insert columns
 	for _, col := range et.Columns {
 		if err := r.q.InsertExternalTableColumn(ctx, dbstore.InsertExternalTableColumnParams{
+			ID:              newID(),
 			ExternalTableID: row.ID,
 			ColumnName:      col.ColumnName,
 			ColumnType:      col.ColumnType,
@@ -73,7 +75,7 @@ func (r *ExternalTableRepo) GetByName(ctx context.Context, schemaName, tableName
 }
 
 // GetByID retrieves an external table by its raw SQLite ID.
-func (r *ExternalTableRepo) GetByID(ctx context.Context, id int64) (*domain.ExternalTableRecord, error) {
+func (r *ExternalTableRepo) GetByID(ctx context.Context, id string) (*domain.ExternalTableRecord, error) {
 	row, err := r.q.GetExternalTableByID(ctx, id)
 	if err != nil {
 		return nil, mapDBError(err)
@@ -162,7 +164,7 @@ func (r *ExternalTableRepo) DeleteBySchema(ctx context.Context, schemaName strin
 
 // --- helpers ---
 
-func (r *ExternalTableRepo) loadColumns(ctx context.Context, externalTableID int64) ([]domain.ExternalTableColumn, error) {
+func (r *ExternalTableRepo) loadColumns(ctx context.Context, externalTableID string) ([]domain.ExternalTableColumn, error) {
 	rows, err := r.q.ListExternalTableColumns(ctx, externalTableID)
 	if err != nil {
 		return nil, err

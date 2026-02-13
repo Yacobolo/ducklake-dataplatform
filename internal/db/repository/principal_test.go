@@ -30,7 +30,7 @@ func TestPrincipalRepo_CRUD(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.NotNil(t, p)
-	assert.Positive(t, p.ID)
+	assert.NotEmpty(t, p.ID)
 	assert.Equal(t, "alice", p.Name)
 	assert.Equal(t, "user", p.Type)
 	assert.False(t, p.IsAdmin)

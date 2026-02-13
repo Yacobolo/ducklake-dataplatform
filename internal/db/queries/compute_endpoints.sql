@@ -1,7 +1,7 @@
 -- name: CreateComputeEndpoint :one
 INSERT INTO compute_endpoints (
-    external_id, name, url, type, status, size, max_memory_gb, auth_token, owner
-) VALUES (?, ?, ?, ?, 'INACTIVE', ?, ?, ?, ?)
+    id, external_id, name, url, type, status, size, max_memory_gb, auth_token, owner
+) VALUES (?, ?, ?, ?, ?, 'INACTIVE', ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetComputeEndpoint :one
@@ -36,8 +36,8 @@ DELETE FROM compute_endpoints WHERE id = ?;
 
 -- name: CreateComputeAssignment :one
 INSERT INTO compute_assignments (
-    principal_id, principal_type, endpoint_id, is_default, fallback_local
-) VALUES (?, ?, ?, ?, ?)
+    id, principal_id, principal_type, endpoint_id, is_default, fallback_local
+) VALUES (?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: DeleteComputeAssignment :exec

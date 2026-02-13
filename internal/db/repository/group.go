@@ -22,6 +22,7 @@ func NewGroupRepo(db *sql.DB) *GroupRepo {
 // Create inserts a new group into the database.
 func (r *GroupRepo) Create(ctx context.Context, g *domain.Group) (*domain.Group, error) {
 	row, err := r.q.CreateGroup(ctx, dbstore.CreateGroupParams{
+		ID:          newID(),
 		Name:        g.Name,
 		Description: sql.NullString{String: g.Description, Valid: g.Description != ""},
 	})
@@ -32,7 +33,7 @@ func (r *GroupRepo) Create(ctx context.Context, g *domain.Group) (*domain.Group,
 }
 
 // GetByID returns a group by its ID.
-func (r *GroupRepo) GetByID(ctx context.Context, id int64) (*domain.Group, error) {
+func (r *GroupRepo) GetByID(ctx context.Context, id string) (*domain.Group, error) {
 	row, err := r.q.GetGroup(ctx, id)
 	if err != nil {
 		return nil, mapDBError(err)
@@ -68,7 +69,7 @@ func (r *GroupRepo) List(ctx context.Context, page domain.PageRequest) ([]domain
 }
 
 // Delete removes a group by ID.
-func (r *GroupRepo) Delete(ctx context.Context, id int64) error {
+func (r *GroupRepo) Delete(ctx context.Context, id string) error {
 	return r.q.DeleteGroup(ctx, id)
 }
 
@@ -91,7 +92,7 @@ func (r *GroupRepo) RemoveMember(ctx context.Context, m *domain.GroupMember) err
 }
 
 // ListMembers returns a paginated list of members in a group.
-func (r *GroupRepo) ListMembers(ctx context.Context, groupID int64, page domain.PageRequest) ([]domain.GroupMember, int64, error) {
+func (r *GroupRepo) ListMembers(ctx context.Context, groupID string, page domain.PageRequest) ([]domain.GroupMember, int64, error) {
 	total, err := r.q.CountGroupMembers(ctx, groupID)
 	if err != nil {
 		return nil, 0, err
@@ -110,7 +111,7 @@ func (r *GroupRepo) ListMembers(ctx context.Context, groupID int64, page domain.
 }
 
 // GetGroupsForMember returns all groups that the given member belongs to.
-func (r *GroupRepo) GetGroupsForMember(ctx context.Context, memberType string, memberID int64) ([]domain.Group, error) {
+func (r *GroupRepo) GetGroupsForMember(ctx context.Context, memberType string, memberID string) ([]domain.Group, error) {
 	rows, err := r.q.GetGroupsForMember(ctx, dbstore.GetGroupsForMemberParams{
 		MemberType: memberType,
 		MemberID:   memberID,

@@ -1,11 +1,11 @@
 -- name: CreateStorageCredential :one
 INSERT INTO storage_credentials (
-    name, credential_type,
+    id, name, credential_type,
     key_id_encrypted, secret_encrypted, endpoint, region, url_style,
     azure_account_name, azure_account_key_encrypted, azure_client_id, azure_tenant_id, azure_client_secret_encrypted,
     gcs_key_file_path,
     comment, owner
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetStorageCredential :one

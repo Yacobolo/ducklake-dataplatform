@@ -24,10 +24,9 @@ SchemaDetail:
   type: object
   properties:
     schema_id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     name:
       type: string
       maxLength: 255
@@ -150,10 +149,9 @@ TableDetail:
   type: object
   properties:
     table_id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     name:
       type: string
       maxLength: 255
@@ -429,15 +427,13 @@ ViewDetail:
   type: object
   properties:
     id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     schema_id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     schema_name:
       type: string
       maxLength: 255
@@ -543,10 +539,9 @@ VolumeDetail:
   type: object
   properties:
     id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     name:
       type: string
       maxLength: 255
@@ -644,10 +639,9 @@ CatalogRegistration:
   required: [name, metastore_type, dsn, data_path, status]
   properties:
     id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     name:
       type: string
       description: DuckDB catalog alias, used in SQL as catalog.schema.table

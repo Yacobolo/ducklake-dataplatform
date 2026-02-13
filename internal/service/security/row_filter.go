@@ -38,12 +38,12 @@ func (s *RowFilterService) Create(ctx context.Context, _ string, f *domain.RowFi
 }
 
 // GetForTable returns a paginated list of row filters for a table.
-func (s *RowFilterService) GetForTable(ctx context.Context, tableID int64, page domain.PageRequest) ([]domain.RowFilter, int64, error) {
+func (s *RowFilterService) GetForTable(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.RowFilter, int64, error) {
 	return s.repo.GetForTable(ctx, tableID, page)
 }
 
 // Delete removes a row filter by ID. Requires admin privileges.
-func (s *RowFilterService) Delete(ctx context.Context, id int64) error {
+func (s *RowFilterService) Delete(ctx context.Context, id string) error {
 	if err := requireAdmin(ctx); err != nil {
 		return err
 	}
@@ -67,6 +67,6 @@ func (s *RowFilterService) Unbind(ctx context.Context, b *domain.RowFilterBindin
 }
 
 // ListBindings returns all bindings for a row filter.
-func (s *RowFilterService) ListBindings(ctx context.Context, filterID int64) ([]domain.RowFilterBinding, error) {
+func (s *RowFilterService) ListBindings(ctx context.Context, filterID string) ([]domain.RowFilterBinding, error) {
 	return s.repo.ListBindings(ctx, filterID)
 }

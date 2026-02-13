@@ -50,7 +50,7 @@ func (s *LineageService) GetFullLineage(ctx context.Context, tableName string, p
 }
 
 // DeleteEdge removes a lineage edge by ID.
-func (s *LineageService) DeleteEdge(ctx context.Context, id int64) error {
+func (s *LineageService) DeleteEdge(ctx context.Context, id string) error {
 	return s.repo.DeleteEdge(ctx, id)
 }
 

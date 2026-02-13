@@ -319,104 +319,94 @@ parameters:
       maxLength: 255
       pattern: '^\S+$'
 
-  # --- Integer ID path parameters ---
+  # --- UUID string ID path parameters ---
   principalId:
     name: principalId
     in: path
     required: true
     description: Unique identifier of the principal.
     schema:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
   groupId:
     name: groupId
     in: path
     required: true
     description: Unique identifier of the group.
     schema:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
   grantId:
     name: grantId
     in: path
     required: true
     description: Unique identifier of the grant.
     schema:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
   apiKeyId:
     name: apiKeyId
     in: path
     required: true
     description: Unique identifier of the API key.
     schema:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
   tableId:
     name: tableId
     in: path
     required: true
     description: Unique identifier of the table.
     schema:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
   rowFilterId:
     name: rowFilterId
     in: path
     required: true
     description: Unique identifier of the row filter.
     schema:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
   columnMaskId:
     name: columnMaskId
     in: path
     required: true
     description: Unique identifier of the column mask.
     schema:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
   tagId:
     name: tagId
     in: path
     required: true
     description: Unique identifier of the tag.
     schema:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
   assignmentId:
     name: assignmentId
     in: path
     required: true
     description: Unique identifier of the assignment.
     schema:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
   edgeId:
     name: edgeId
     in: path
     required: true
     description: Unique identifier of the lineage edge.
     schema:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36

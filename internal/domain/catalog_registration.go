@@ -23,7 +23,7 @@ const (
 
 // CatalogRegistration represents a registered DuckLake catalog with its own metastore.
 type CatalogRegistration struct {
-	ID            int64
+	ID            string
 	Name          string // DuckDB catalog alias, used in SQL: catalog.schema.table
 	MetastoreType MetastoreType
 	DSN           string // file path (sqlite) or connection string (postgres)

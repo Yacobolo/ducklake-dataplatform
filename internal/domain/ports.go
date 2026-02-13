@@ -30,11 +30,11 @@ type CatalogAttacher interface {
 // AuthorizationService defines the interface for permission checking.
 // The engine depends on this interface rather than a concrete service type.
 type AuthorizationService interface {
-	LookupTableID(ctx context.Context, tableName string) (tableID, schemaID int64, isExternal bool, err error)
-	CheckPrivilege(ctx context.Context, principalName, securableType string, securableID int64, privilege string) (bool, error)
-	GetEffectiveRowFilters(ctx context.Context, principalName string, tableID int64) ([]string, error)
-	GetEffectiveColumnMasks(ctx context.Context, principalName string, tableID int64) (map[string]string, error)
-	GetTableColumnNames(ctx context.Context, tableID int64) ([]string, error)
+	LookupTableID(ctx context.Context, tableName string) (tableID, schemaID string, isExternal bool, err error)
+	CheckPrivilege(ctx context.Context, principalName, securableType string, securableID string, privilege string) (bool, error)
+	GetEffectiveRowFilters(ctx context.Context, principalName string, tableID string) ([]string, error)
+	GetEffectiveColumnMasks(ctx context.Context, principalName string, tableID string) (map[string]string, error)
+	GetTableColumnNames(ctx context.Context, tableID string) ([]string, error)
 }
 
 // DuckDBExecutor executes raw SQL statements against DuckDB.
@@ -58,5 +58,5 @@ type MetastoreQuerier interface {
 	ReadSchemaPath(ctx context.Context, schemaName string) (string, error)
 	// ListDataFiles returns the active Parquet file paths for a table.
 	// Returns paths and whether each path is relative to the data_path.
-	ListDataFiles(ctx context.Context, tableID int64) (paths []string, pathIsRelative []bool, err error)
+	ListDataFiles(ctx context.Context, tableID string) (paths []string, pathIsRelative []bool, err error)
 }

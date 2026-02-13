@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
 	_ "github.com/duckdb/duckdb-go/v2"
@@ -79,16 +80,16 @@ func setupTestServer(t *testing.T, principalName string) *httptest.Server {
 	ctx := context.Background()
 	q := dbstore.New(metaDB)
 
-	adminUser, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{Name: "admin_user", Type: "user", IsAdmin: 1})
+	adminUser, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{ID: uuid.New().String(), Name: "admin_user", Type: "user", IsAdmin: 1})
 	require.NoError(t, err)
-	analyst, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{Name: "analyst1", Type: "user", IsAdmin: 0})
+	analyst, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{ID: uuid.New().String(), Name: "analyst1", Type: "user", IsAdmin: 0})
 	require.NoError(t, err)
-	_, err = q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{Name: "no_access_user", Type: "user", IsAdmin: 0})
+	_, err = q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{ID: uuid.New().String(), Name: "no_access_user", Type: "user", IsAdmin: 0})
 	require.NoError(t, err)
 
-	adminsGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "admins"})
+	adminsGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{ID: uuid.New().String(), Name: "admins"})
 	require.NoError(t, err)
-	analystsGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "analysts"})
+	analystsGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{ID: uuid.New().String(), Name: "analysts"})
 	require.NoError(t, err)
 
 	err = q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{GroupID: adminsGroup.ID, MemberType: "user", MemberID: adminUser.ID})
@@ -97,25 +98,25 @@ func setupTestServer(t *testing.T, principalName string) *httptest.Server {
 	require.NoError(t, err)
 
 	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: adminsGroup.ID, PrincipalType: "group",
-		SecurableType: "catalog", SecurableID: 0, Privilege: "ALL_PRIVILEGES",
+		ID: uuid.New().String(), PrincipalID: adminsGroup.ID, PrincipalType: "group",
+		SecurableType: "catalog", SecurableID: "0", Privilege: "ALL_PRIVILEGES",
 	})
 	require.NoError(t, err)
 	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: analystsGroup.ID, PrincipalType: "group",
-		SecurableType: "schema", SecurableID: 0, Privilege: "USAGE",
+		ID: uuid.New().String(), PrincipalID: analystsGroup.ID, PrincipalType: "group",
+		SecurableType: "schema", SecurableID: "0", Privilege: "USAGE",
 	})
 	require.NoError(t, err)
 	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: analystsGroup.ID, PrincipalType: "group",
-		SecurableType: "table", SecurableID: 1, Privilege: "SELECT",
+		ID: uuid.New().String(), PrincipalID: analystsGroup.ID, PrincipalType: "group",
+		SecurableType: "table", SecurableID: "1", Privilege: "SELECT",
 	})
 	require.NoError(t, err)
 
 	// Row filter for analysts
-	filter, err := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{TableID: 1, FilterSql: `"Pclass" = 1`})
+	filter, err := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{ID: uuid.New().String(), TableID: "1", FilterSql: `"Pclass" = 1`})
 	require.NoError(t, err)
-	err = q.BindRowFilter(ctx, dbstore.BindRowFilterParams{RowFilterID: filter.ID, PrincipalID: analystsGroup.ID, PrincipalType: "group"})
+	err = q.BindRowFilter(ctx, dbstore.BindRowFilterParams{ID: uuid.New().String(), RowFilterID: filter.ID, PrincipalID: analystsGroup.ID, PrincipalType: "group"})
 	require.NoError(t, err)
 
 	// Build repositories and services
@@ -271,7 +272,7 @@ func TestAPI_CreateAndDeletePrincipal(t *testing.T) {
 	}
 
 	// Delete
-	req, err = http.NewRequestWithContext(ctx, "DELETE", srv.URL+"/principals/"+itoa(*p.Id), nil)
+	req, err = http.NewRequestWithContext(ctx, "DELETE", srv.URL+"/principals/"+*p.Id, nil)
 	require.NoError(t, err)
 	resp2, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -315,10 +316,6 @@ func TestAPI_AuditLogs(t *testing.T) {
 	if auditResult.Data != nil {
 		t.Logf("got %d audit entries", len(*auditResult.Data))
 	}
-}
-
-func itoa(i int64) string {
-	return fmt.Sprintf("%d", i)
 }
 
 // setupCatalogTestServer creates a test server wired with a mockCatalogRepo.
@@ -370,16 +367,16 @@ func setupCatalogTestServer(t *testing.T, principalName string, mockRepo *mockCa
 	ctx := context.Background()
 	q := dbstore.New(metaDB)
 
-	adminUser, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{Name: "admin_user", Type: "user", IsAdmin: 1})
+	adminUser, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{ID: uuid.New().String(), Name: "admin_user", Type: "user", IsAdmin: 1})
 	require.NoError(t, err)
-	analyst, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{Name: "analyst1", Type: "user", IsAdmin: 0})
+	analyst, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{ID: uuid.New().String(), Name: "analyst1", Type: "user", IsAdmin: 0})
 	require.NoError(t, err)
-	_, err = q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{Name: "no_access_user", Type: "user", IsAdmin: 0})
+	_, err = q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{ID: uuid.New().String(), Name: "no_access_user", Type: "user", IsAdmin: 0})
 	require.NoError(t, err)
 
-	adminsGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "admins"})
+	adminsGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{ID: uuid.New().String(), Name: "admins"})
 	require.NoError(t, err)
-	analystsGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "analysts"})
+	analystsGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{ID: uuid.New().String(), Name: "analysts"})
 	require.NoError(t, err)
 
 	err = q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{GroupID: adminsGroup.ID, MemberType: "user", MemberID: adminUser.ID})
@@ -388,18 +385,18 @@ func setupCatalogTestServer(t *testing.T, principalName string, mockRepo *mockCa
 	require.NoError(t, err)
 
 	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: adminsGroup.ID, PrincipalType: "group",
-		SecurableType: "catalog", SecurableID: 0, Privilege: "ALL_PRIVILEGES",
+		ID: uuid.New().String(), PrincipalID: adminsGroup.ID, PrincipalType: "group",
+		SecurableType: "catalog", SecurableID: "0", Privilege: "ALL_PRIVILEGES",
 	})
 	require.NoError(t, err)
 	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: analystsGroup.ID, PrincipalType: "group",
-		SecurableType: "schema", SecurableID: 0, Privilege: "USAGE",
+		ID: uuid.New().String(), PrincipalID: analystsGroup.ID, PrincipalType: "group",
+		SecurableType: "schema", SecurableID: "0", Privilege: "USAGE",
 	})
 	require.NoError(t, err)
 	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: analystsGroup.ID, PrincipalType: "group",
-		SecurableType: "table", SecurableID: 1, Privilege: "SELECT",
+		ID: uuid.New().String(), PrincipalID: analystsGroup.ID, PrincipalType: "group",
+		SecurableType: "table", SecurableID: "1", Privilege: "SELECT",
 	})
 	require.NoError(t, err)
 
@@ -1327,7 +1324,7 @@ func TestAPI_AdminGuards(t *testing.T) {
 			name:   "create grant requires admin",
 			method: http.MethodPost,
 			path:   "/grants",
-			body:   `{"principal_id":1,"principal_type":"user","privilege":"SELECT","securable_type":"table","securable_id":1}`,
+			body:   `{"principal_id":"1","principal_type":"user","privilege":"SELECT","securable_type":"table","securable_id":"1"}`,
 			want:   http.StatusForbidden,
 		},
 		{
@@ -1388,7 +1385,7 @@ func TestAPI_APIKey_CRUD(t *testing.T) {
 	require.NotNil(t, p.Id)
 
 	// Create API key.
-	body := fmt.Sprintf(`{"principal_id":%d,"name":"test-key"}`, *p.Id)
+	body := fmt.Sprintf(`{"principal_id":"%s","name":"test-key"}`, *p.Id)
 	resp2 := doRequest(t, http.MethodPost, srv.URL+"/api-keys", body)
 	require.Equal(t, http.StatusCreated, resp2.StatusCode)
 	keyResp := decodeJSON[CreateAPIKeyResponse](t, resp2)
@@ -1397,7 +1394,7 @@ func TestAPI_APIKey_CRUD(t *testing.T) {
 	require.NotNil(t, keyResp.Id)
 
 	// List API keys.
-	listURL := fmt.Sprintf("%s/api-keys?principal_id=%d", srv.URL, *p.Id)
+	listURL := fmt.Sprintf("%s/api-keys?principal_id=%s", srv.URL, *p.Id)
 	resp3 := doRequest(t, http.MethodGet, listURL, "")
 	require.Equal(t, http.StatusOK, resp3.StatusCode)
 	listResp := decodeJSON[PaginatedAPIKeys](t, resp3)
@@ -1409,7 +1406,7 @@ func TestAPI_APIKey_CRUD(t *testing.T) {
 	require.Equal(t, "test-key", *item.Name)
 
 	// Delete API key.
-	deleteURL := fmt.Sprintf("%s/api-keys/%d", srv.URL, *keyResp.Id)
+	deleteURL := fmt.Sprintf("%s/api-keys/%s", srv.URL, *keyResp.Id)
 	resp4 := doRequest(t, http.MethodDelete, deleteURL, "")
 	defer resp4.Body.Close() //nolint:errcheck
 	require.Equal(t, http.StatusNoContent, resp4.StatusCode)

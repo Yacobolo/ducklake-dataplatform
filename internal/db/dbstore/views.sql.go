@@ -14,7 +14,7 @@ const countViews = `-- name: CountViews :one
 SELECT COUNT(*) as cnt FROM views WHERE schema_id = ? AND deleted_at IS NULL
 `
 
-func (q *Queries) CountViews(ctx context.Context, schemaID int64) (int64, error) {
+func (q *Queries) CountViews(ctx context.Context, schemaID string) (int64, error) {
 	row := q.db.QueryRowContext(ctx, countViews, schemaID)
 	var cnt int64
 	err := row.Scan(&cnt)
@@ -22,12 +22,13 @@ func (q *Queries) CountViews(ctx context.Context, schemaID int64) (int64, error)
 }
 
 const createView = `-- name: CreateView :one
-INSERT INTO views (schema_id, name, view_definition, comment, properties, owner, source_tables)
-VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id, schema_id, name, view_definition, comment, properties, owner, source_tables, created_at, updated_at, deleted_at
+INSERT INTO views (id, schema_id, name, view_definition, comment, properties, owner, source_tables)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, schema_id, name, view_definition, comment, properties, owner, source_tables, created_at, updated_at, deleted_at
 `
 
 type CreateViewParams struct {
-	SchemaID       int64
+	ID             string
+	SchemaID       string
 	Name           string
 	ViewDefinition string
 	Comment        sql.NullString
@@ -38,6 +39,7 @@ type CreateViewParams struct {
 
 func (q *Queries) CreateView(ctx context.Context, arg CreateViewParams) (View, error) {
 	row := q.db.QueryRowContext(ctx, createView,
+		arg.ID,
 		arg.SchemaID,
 		arg.Name,
 		arg.ViewDefinition,
@@ -68,7 +70,7 @@ UPDATE views SET deleted_at = datetime('now') WHERE schema_id = ? AND name = ?
 `
 
 type DeleteViewParams struct {
-	SchemaID int64
+	SchemaID string
 	Name     string
 }
 
@@ -81,7 +83,7 @@ const deleteViewsBySchema = `-- name: DeleteViewsBySchema :exec
 UPDATE views SET deleted_at = datetime('now') WHERE schema_id = ?
 `
 
-func (q *Queries) DeleteViewsBySchema(ctx context.Context, schemaID int64) error {
+func (q *Queries) DeleteViewsBySchema(ctx context.Context, schemaID string) error {
 	_, err := q.db.ExecContext(ctx, deleteViewsBySchema, schemaID)
 	return err
 }
@@ -91,7 +93,7 @@ SELECT id, schema_id, name, view_definition, comment, properties, owner, source_
 `
 
 type GetViewByNameParams struct {
-	SchemaID int64
+	SchemaID string
 	Name     string
 }
 
@@ -119,7 +121,7 @@ SELECT id, schema_id, name, view_definition, comment, properties, owner, source_
 `
 
 type ListViewsParams struct {
-	SchemaID int64
+	SchemaID string
 	Limit    int64
 	Offset   int64
 }
@@ -169,7 +171,7 @@ type UpdateViewParams struct {
 	Properties     sql.NullString
 	ViewDefinition string
 	SourceTables   sql.NullString
-	SchemaID       int64
+	SchemaID       string
 	Name           string
 }
 

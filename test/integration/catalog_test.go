@@ -41,8 +41,8 @@ func TestCatalog_SchemaCRUD(t *testing.T) {
 				if s.CatalogName != "lake" {
 					t.Errorf("CatalogName = %q, want %q", s.CatalogName, "lake")
 				}
-				if s.SchemaID <= 0 {
-					t.Errorf("SchemaID = %d, want > 0", s.SchemaID)
+				if s.SchemaID == "" {
+					t.Errorf("SchemaID = %s, want non-empty", s.SchemaID)
 				}
 				if s.Comment != "test schema" {
 					t.Errorf("Comment = %q, want %q", s.Comment, "test schema")

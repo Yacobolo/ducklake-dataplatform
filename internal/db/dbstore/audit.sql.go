@@ -77,11 +77,12 @@ func (q *Queries) CountQueryHistory(ctx context.Context, arg CountQueryHistoryPa
 }
 
 const insertAuditLog = `-- name: InsertAuditLog :exec
-INSERT INTO audit_log (principal_name, action, statement_type, original_sql, rewritten_sql, tables_accessed, status, error_message, duration_ms, rows_returned)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO audit_log (id, principal_name, action, statement_type, original_sql, rewritten_sql, tables_accessed, status, error_message, duration_ms, rows_returned)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type InsertAuditLogParams struct {
+	ID             string
 	PrincipalName  string
 	Action         string
 	StatementType  sql.NullString
@@ -96,6 +97,7 @@ type InsertAuditLogParams struct {
 
 func (q *Queries) InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error {
 	_, err := q.db.ExecContext(ctx, insertAuditLog,
+		arg.ID,
 		arg.PrincipalName,
 		arg.Action,
 		arg.StatementType,

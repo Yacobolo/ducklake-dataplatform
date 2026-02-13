@@ -51,10 +51,9 @@ Tag:
   type: object
   properties:
     id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     key:
       type: string
       maxLength: 255
@@ -93,24 +92,21 @@ TagAssignment:
   type: object
   properties:
     id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     tag_id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     securable_type:
       type: string
       maxLength: 64
       pattern: '^\S+$'
     securable_id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     column_name:
       type: string
       nullable: true
@@ -136,10 +132,9 @@ CreateTagAssignmentRequest:
       maxLength: 64
       pattern: '^\S+$'
     securable_id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     column_name:
       type: string
       maxLength: 255

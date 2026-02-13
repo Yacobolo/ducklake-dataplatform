@@ -4,8 +4,8 @@ import "time"
 
 // ViewDetail represents a view in the catalog.
 type ViewDetail struct {
-	ID             int64
-	SchemaID       int64
+	ID             string
+	SchemaID       string
 	SchemaName     string
 	CatalogName    string
 	Name           string

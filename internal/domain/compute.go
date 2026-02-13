@@ -8,7 +8,7 @@ import (
 
 // ComputeEndpoint represents a SQL compute resource (local or remote DuckDB instance).
 type ComputeEndpoint struct {
-	ID          int64
+	ID          string
 	ExternalID  string // UUID for logs/external integrations
 	Name        string // unique, e.g. "analytics-xl"
 	URL         string // e.g. "https://compute-1.example.com:9443"
@@ -24,10 +24,10 @@ type ComputeEndpoint struct {
 
 // ComputeAssignment binds a principal to a compute endpoint.
 type ComputeAssignment struct {
-	ID            int64
-	PrincipalID   int64
+	ID            string
+	PrincipalID   string
 	PrincipalType string // "user" or "group"
-	EndpointID    int64
+	EndpointID    string
 	EndpointName  string // populated on reads (from join)
 	IsDefault     bool
 	FallbackLocal bool // if true, fall back to local compute when remote is unavailable
@@ -82,7 +82,7 @@ func ValidateCreateComputeEndpointRequest(r CreateComputeEndpointRequest) error 
 
 // CreateComputeAssignmentRequest holds parameters for assigning a principal to an endpoint.
 type CreateComputeAssignmentRequest struct {
-	PrincipalID   int64
+	PrincipalID   string
 	PrincipalType string
 	IsDefault     bool
 	FallbackLocal bool
@@ -90,7 +90,7 @@ type CreateComputeAssignmentRequest struct {
 
 // ValidateCreateComputeAssignmentRequest validates the assignment create request.
 func ValidateCreateComputeAssignmentRequest(r CreateComputeAssignmentRequest) error {
-	if r.PrincipalID <= 0 {
+	if r.PrincipalID == "" {
 		return ErrValidation("principal_id is required")
 	}
 	switch r.PrincipalType {

@@ -36,7 +36,7 @@ func TestGroupService_Create_AdminAllowed(t *testing.T) {
 	g, err := svc.Create(adminCtx(), &domain.Group{Name: "engineering"})
 	require.NoError(t, err)
 	assert.Equal(t, "engineering", g.Name)
-	assert.Positive(t, g.ID)
+	assert.NotEmpty(t, g.ID)
 }
 
 func TestGroupService_Create_EmptyName(t *testing.T) {

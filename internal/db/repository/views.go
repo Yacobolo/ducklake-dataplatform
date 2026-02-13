@@ -26,6 +26,7 @@ func (r *ViewRepo) Create(ctx context.Context, view *domain.ViewDetail) (*domain
 	sourcesJSON, _ := json.Marshal(view.SourceTables)
 
 	row, err := r.q.CreateView(ctx, dbstore.CreateViewParams{
+		ID:             newID(),
 		SchemaID:       view.SchemaID,
 		Name:           view.Name,
 		ViewDefinition: view.ViewDefinition,
@@ -41,7 +42,7 @@ func (r *ViewRepo) Create(ctx context.Context, view *domain.ViewDetail) (*domain
 }
 
 // GetByName returns a view by schema ID and name.
-func (r *ViewRepo) GetByName(ctx context.Context, schemaID int64, viewName string) (*domain.ViewDetail, error) {
+func (r *ViewRepo) GetByName(ctx context.Context, schemaID string, viewName string) (*domain.ViewDetail, error) {
 	row, err := r.q.GetViewByName(ctx, dbstore.GetViewByNameParams{
 		SchemaID: schemaID,
 		Name:     viewName,
@@ -53,7 +54,7 @@ func (r *ViewRepo) GetByName(ctx context.Context, schemaID int64, viewName strin
 }
 
 // List returns a paginated list of views in a schema.
-func (r *ViewRepo) List(ctx context.Context, schemaID int64, page domain.PageRequest) ([]domain.ViewDetail, int64, error) {
+func (r *ViewRepo) List(ctx context.Context, schemaID string, page domain.PageRequest) ([]domain.ViewDetail, int64, error) {
 	total, err := r.q.CountViews(ctx, schemaID)
 	if err != nil {
 		return nil, 0, err
@@ -74,7 +75,7 @@ func (r *ViewRepo) List(ctx context.Context, schemaID int64, page domain.PageReq
 }
 
 // Delete removes a view by schema ID and name.
-func (r *ViewRepo) Delete(ctx context.Context, schemaID int64, viewName string) error {
+func (r *ViewRepo) Delete(ctx context.Context, schemaID string, viewName string) error {
 	return r.q.DeleteView(ctx, dbstore.DeleteViewParams{
 		SchemaID: schemaID,
 		Name:     viewName,
@@ -82,7 +83,7 @@ func (r *ViewRepo) Delete(ctx context.Context, schemaID int64, viewName string) 
 }
 
 // Update applies partial updates to a view's metadata and definition.
-func (r *ViewRepo) Update(ctx context.Context, schemaID int64, viewName string, comment *string, props map[string]string, viewDef *string) (*domain.ViewDetail, error) {
+func (r *ViewRepo) Update(ctx context.Context, schemaID string, viewName string, comment *string, props map[string]string, viewDef *string) (*domain.ViewDetail, error) {
 	// Verify view exists
 	existing, err := r.GetByName(ctx, schemaID, viewName)
 	if err != nil {

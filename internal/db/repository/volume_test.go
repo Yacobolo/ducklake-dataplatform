@@ -34,7 +34,7 @@ func TestVolume_CreateAndGet(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.NotNil(t, vol)
-	assert.Positive(t, vol.ID)
+	assert.NotEmpty(t, vol.ID)
 	assert.Equal(t, "my_volume", vol.Name)
 	assert.Equal(t, "analytics", vol.SchemaName)
 	assert.Equal(t, "lake", vol.CatalogName)

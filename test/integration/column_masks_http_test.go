@@ -23,7 +23,7 @@ func TestHTTP_ColumnMaskCRUD(t *testing.T) {
 	researcher, err := q.GetPrincipalByName(context.Background(), "researcher1")
 	require.NoError(t, err)
 
-	var maskID float64
+	var maskID string
 
 	type step struct {
 		name string
@@ -42,7 +42,7 @@ func TestHTTP_ColumnMaskCRUD(t *testing.T) {
 			var result map[string]interface{}
 			decodeJSON(t, resp, &result)
 			require.NotNil(t, result["id"])
-			maskID = result["id"].(float64)
+			maskID = result["id"].(string)
 			assert.Equal(t, "Ticket", result["column_name"])
 			assert.Equal(t, "'REDACTED'", result["mask_expression"])
 		}},
@@ -57,7 +57,7 @@ func TestHTTP_ColumnMaskCRUD(t *testing.T) {
 			assert.GreaterOrEqual(t, len(data), 2)
 		}},
 		{"bind_see_original_false", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/column-masks/%d/bindings", env.Server.URL, int64(maskID))
+			url := fmt.Sprintf("%s/v1/column-masks/%s/bindings", env.Server.URL, maskID)
 			body := map[string]interface{}{
 				"principal_id":   analyst.ID,
 				"principal_type": "user",
@@ -68,7 +68,7 @@ func TestHTTP_ColumnMaskCRUD(t *testing.T) {
 			_ = resp.Body.Close()
 		}},
 		{"bind_see_original_true", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/column-masks/%d/bindings", env.Server.URL, int64(maskID))
+			url := fmt.Sprintf("%s/v1/column-masks/%s/bindings", env.Server.URL, maskID)
 			body := map[string]interface{}{
 				"principal_id":   researcher.ID,
 				"principal_type": "user",
@@ -79,21 +79,21 @@ func TestHTTP_ColumnMaskCRUD(t *testing.T) {
 			_ = resp.Body.Close()
 		}},
 		{"unbind_analyst", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/column-masks/%d/bindings?principal_id=%d&principal_type=user",
-				env.Server.URL, int64(maskID), analyst.ID)
+			url := fmt.Sprintf("%s/v1/column-masks/%s/bindings?principal_id=%s&principal_type=user",
+				env.Server.URL, maskID, analyst.ID)
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()
 		}},
 		{"unbind_researcher", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/column-masks/%d/bindings?principal_id=%d&principal_type=user",
-				env.Server.URL, int64(maskID), researcher.ID)
+			url := fmt.Sprintf("%s/v1/column-masks/%s/bindings?principal_id=%s&principal_type=user",
+				env.Server.URL, maskID, researcher.ID)
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()
 		}},
 		{"delete", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/column-masks/%d", env.Server.URL, int64(maskID))
+			url := fmt.Sprintf("%s/v1/column-masks/%s", env.Server.URL, maskID)
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()
@@ -108,7 +108,7 @@ func TestHTTP_ColumnMaskCRUD(t *testing.T) {
 			// Verify our mask is gone
 			for _, item := range data {
 				m := item.(map[string]interface{})
-				assert.NotEqual(t, maskID, m["id"].(float64), "deleted mask should not appear")
+				assert.NotEqual(t, maskID, m["id"].(string), "deleted mask should not appear")
 			}
 		}},
 	}

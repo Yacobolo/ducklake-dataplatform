@@ -37,7 +37,7 @@ func (s *TagService) CreateTag(ctx context.Context, principal string, tag *domai
 }
 
 // GetTag returns a tag by ID.
-func (s *TagService) GetTag(ctx context.Context, id int64) (*domain.Tag, error) {
+func (s *TagService) GetTag(ctx context.Context, id string) (*domain.Tag, error) {
 	return s.repo.GetTag(ctx, id)
 }
 
@@ -47,13 +47,13 @@ func (s *TagService) ListTags(ctx context.Context, page domain.PageRequest) ([]d
 }
 
 // DeleteTag deletes a tag by ID.
-func (s *TagService) DeleteTag(ctx context.Context, principal string, id int64) error {
+func (s *TagService) DeleteTag(ctx context.Context, principal string, id string) error {
 
 	if err := s.repo.DeleteTag(ctx, id); err != nil {
 		return err
 	}
 
-	s.logAudit(ctx, principal, "DELETE_TAG", fmt.Sprintf("Deleted tag %d", id))
+	s.logAudit(ctx, principal, "DELETE_TAG", fmt.Sprintf("Deleted tag %s", id))
 	return nil
 }
 
@@ -66,28 +66,28 @@ func (s *TagService) AssignTag(ctx context.Context, principal string, assignment
 		return nil, err
 	}
 
-	s.logAudit(ctx, principal, "ASSIGN_TAG", fmt.Sprintf("Assigned tag %d to %s %d", assignment.TagID, assignment.SecurableType, assignment.SecurableID))
+	s.logAudit(ctx, principal, "ASSIGN_TAG", fmt.Sprintf("Assigned tag %s to %s %s", assignment.TagID, assignment.SecurableType, assignment.SecurableID))
 	return result, nil
 }
 
 // UnassignTag removes a tag assignment.
-func (s *TagService) UnassignTag(ctx context.Context, principal string, id int64) error {
+func (s *TagService) UnassignTag(ctx context.Context, principal string, id string) error {
 
 	if err := s.repo.UnassignTag(ctx, id); err != nil {
 		return err
 	}
 
-	s.logAudit(ctx, principal, "UNASSIGN_TAG", fmt.Sprintf("Removed tag assignment %d", id))
+	s.logAudit(ctx, principal, "UNASSIGN_TAG", fmt.Sprintf("Removed tag assignment %s", id))
 	return nil
 }
 
 // ListTagsForSecurable returns all tags assigned to a securable object.
-func (s *TagService) ListTagsForSecurable(ctx context.Context, securableType string, securableID int64, columnName *string) ([]domain.Tag, error) {
+func (s *TagService) ListTagsForSecurable(ctx context.Context, securableType string, securableID string, columnName *string) ([]domain.Tag, error) {
 	return s.repo.ListTagsForSecurable(ctx, securableType, securableID, columnName)
 }
 
 // ListAssignmentsForTag returns all assignments for a given tag.
-func (s *TagService) ListAssignmentsForTag(ctx context.Context, tagID int64) ([]domain.TagAssignment, error) {
+func (s *TagService) ListAssignmentsForTag(ctx context.Context, tagID string) ([]domain.TagAssignment, error) {
 	return s.repo.ListAssignmentsForTag(ctx, tagID)
 }
 

@@ -48,7 +48,7 @@ func (r *MetastoreRepo) ReadSchemaPath(ctx context.Context, schemaName string) (
 }
 
 // ListDataFiles returns the file paths and relative flags for active data files of the given table.
-func (r *MetastoreRepo) ListDataFiles(ctx context.Context, tableID int64) ([]string, []bool, error) {
+func (r *MetastoreRepo) ListDataFiles(ctx context.Context, tableID string) ([]string, []bool, error) {
 	rows, err := r.db.QueryContext(ctx,
 		`SELECT path, path_is_relative FROM ducklake_data_file
 		 WHERE table_id = ? AND end_snapshot IS NULL`, tableID)

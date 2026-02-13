@@ -4,7 +4,7 @@ import "time"
 
 // AuditEntry represents a single audit log record.
 type AuditEntry struct {
-	ID             int64
+	ID             string
 	PrincipalName  string
 	Action         string
 	StatementType  *string

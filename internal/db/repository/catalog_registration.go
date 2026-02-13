@@ -26,6 +26,7 @@ var _ domain.CatalogRegistrationRepository = (*CatalogRegistrationRepo)(nil)
 // Create persists a new catalog registration.
 func (r *CatalogRegistrationRepo) Create(ctx context.Context, reg *domain.CatalogRegistration) (*domain.CatalogRegistration, error) {
 	row, err := r.q.CreateCatalog(ctx, dbstore.CreateCatalogParams{
+		ID:            newID(),
 		Name:          reg.Name,
 		MetastoreType: string(reg.MetastoreType),
 		Dsn:           reg.DSN,
@@ -42,7 +43,7 @@ func (r *CatalogRegistrationRepo) Create(ctx context.Context, reg *domain.Catalo
 }
 
 // GetByID returns a catalog registration by ID.
-func (r *CatalogRegistrationRepo) GetByID(ctx context.Context, id int64) (*domain.CatalogRegistration, error) {
+func (r *CatalogRegistrationRepo) GetByID(ctx context.Context, id string) (*domain.CatalogRegistration, error) {
 	row, err := r.q.GetCatalogByID(ctx, id)
 	if err != nil {
 		return nil, mapDBError(err)
@@ -82,7 +83,7 @@ func (r *CatalogRegistrationRepo) List(ctx context.Context, page domain.PageRequ
 }
 
 // Update updates a catalog registration.
-func (r *CatalogRegistrationRepo) Update(ctx context.Context, id int64, req domain.UpdateCatalogRegistrationRequest) (*domain.CatalogRegistration, error) {
+func (r *CatalogRegistrationRepo) Update(ctx context.Context, id string, req domain.UpdateCatalogRegistrationRequest) (*domain.CatalogRegistration, error) {
 	// We need to pass proper COALESCE-friendly values
 	params := dbstore.UpdateCatalogParams{
 		ID: id,
@@ -105,12 +106,12 @@ func (r *CatalogRegistrationRepo) Update(ctx context.Context, id int64, req doma
 }
 
 // Delete removes a catalog registration.
-func (r *CatalogRegistrationRepo) Delete(ctx context.Context, id int64) error {
+func (r *CatalogRegistrationRepo) Delete(ctx context.Context, id string) error {
 	return r.q.DeleteCatalog(ctx, id)
 }
 
 // UpdateStatus updates the status and status message of a catalog registration.
-func (r *CatalogRegistrationRepo) UpdateStatus(ctx context.Context, id int64, status domain.CatalogStatus, message string) error {
+func (r *CatalogRegistrationRepo) UpdateStatus(ctx context.Context, id string, status domain.CatalogStatus, message string) error {
 	return r.q.UpdateCatalogStatus(ctx, dbstore.UpdateCatalogStatusParams{
 		ID:            id,
 		Status:        string(status),
@@ -128,7 +129,7 @@ func (r *CatalogRegistrationRepo) GetDefault(ctx context.Context) (*domain.Catal
 }
 
 // SetDefault clears the current default and sets the given catalog as default.
-func (r *CatalogRegistrationRepo) SetDefault(ctx context.Context, id int64) error {
+func (r *CatalogRegistrationRepo) SetDefault(ctx context.Context, id string) error {
 	if err := r.q.ClearDefaultCatalog(ctx); err != nil {
 		return err
 	}

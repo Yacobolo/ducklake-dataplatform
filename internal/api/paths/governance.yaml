@@ -115,7 +115,7 @@ paths:
                 $ref: '../schemas/governance.yaml#/PaginatedTags'
               example:
                 data:
-                  - id: 1
+                  - id: "550e8400-e29b-41d4-a716-446655440001"
                     key: "pii"
                     value: "email"
                     created_by: "admin"
@@ -171,7 +171,7 @@ paths:
               schema:
                 $ref: '../schemas/governance.yaml#/Tag'
               example:
-                id: 1
+                id: "550e8400-e29b-41d4-a716-446655440001"
                 key: "pii"
                 value: "email"
                 created_by: "admin"
@@ -249,7 +249,7 @@ paths:
               $ref: '../schemas/governance.yaml#/CreateTagAssignmentRequest'
             example:
               securable_type: "table"
-              securable_id: 5
+              securable_id: "550e8400-e29b-41d4-a716-446655440005"
               column_name: "email"
       responses:
         '201':
@@ -281,10 +281,10 @@ paths:
               schema:
                 $ref: '../schemas/governance.yaml#/TagAssignment'
               example:
-                id: 1
-                tag_id: 1
+                id: "550e8400-e29b-41d4-a716-446655440001"
+                tag_id: "550e8400-e29b-41d4-a716-446655440001"
                 securable_type: "table"
-                securable_id: 5
+                securable_id: "550e8400-e29b-41d4-a716-446655440005"
                 column_name: "email"
                 assigned_by: "admin"
                 assigned_at: "2025-01-15T09:30:00Z"
@@ -385,7 +385,7 @@ paths:
                 $ref: '../schemas/governance.yaml#/PaginatedTags'
               example:
                 data:
-                  - id: 1
+                  - id: "550e8400-e29b-41d4-a716-446655440001"
                     key: "pii"
                     value: "email"
                     created_by: "admin"

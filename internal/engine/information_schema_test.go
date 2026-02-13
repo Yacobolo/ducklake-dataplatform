@@ -75,7 +75,7 @@ func (m *mockEngineCatalog) UpdateCatalog(_ context.Context, _ *string) (*domain
 func (m *mockEngineCatalog) UpdateColumn(_ context.Context, _, _, _ string, _ *string, _ map[string]string) (*domain.ColumnDetail, error) {
 	panic("unexpected call")
 }
-func (m *mockEngineCatalog) SetSchemaStoragePath(_ context.Context, _ int64, _ string) error {
+func (m *mockEngineCatalog) SetSchemaStoragePath(_ context.Context, _ string, _ string) error {
 	return nil
 }
 func (m *mockEngineCatalog) CreateExternalTable(_ context.Context, _ string, _ domain.CreateTableRequest, _ string) (*domain.TableDetail, error) {
@@ -106,7 +106,7 @@ type mockCatalogLister struct {
 func (m *mockCatalogLister) Create(_ context.Context, _ *domain.CatalogRegistration) (*domain.CatalogRegistration, error) {
 	panic("unexpected call")
 }
-func (m *mockCatalogLister) GetByID(_ context.Context, _ int64) (*domain.CatalogRegistration, error) {
+func (m *mockCatalogLister) GetByID(_ context.Context, _ string) (*domain.CatalogRegistration, error) {
 	panic("unexpected call")
 }
 func (m *mockCatalogLister) GetByName(_ context.Context, _ string) (*domain.CatalogRegistration, error) {
@@ -115,19 +115,19 @@ func (m *mockCatalogLister) GetByName(_ context.Context, _ string) (*domain.Cata
 func (m *mockCatalogLister) List(_ context.Context, _ domain.PageRequest) ([]domain.CatalogRegistration, int64, error) {
 	return m.registrations, int64(len(m.registrations)), nil
 }
-func (m *mockCatalogLister) Update(_ context.Context, _ int64, _ domain.UpdateCatalogRegistrationRequest) (*domain.CatalogRegistration, error) {
+func (m *mockCatalogLister) Update(_ context.Context, _ string, _ domain.UpdateCatalogRegistrationRequest) (*domain.CatalogRegistration, error) {
 	panic("unexpected call")
 }
-func (m *mockCatalogLister) Delete(_ context.Context, _ int64) error {
+func (m *mockCatalogLister) Delete(_ context.Context, _ string) error {
 	panic("unexpected call")
 }
-func (m *mockCatalogLister) UpdateStatus(_ context.Context, _ int64, _ domain.CatalogStatus, _ string) error {
+func (m *mockCatalogLister) UpdateStatus(_ context.Context, _ string, _ domain.CatalogStatus, _ string) error {
 	panic("unexpected call")
 }
 func (m *mockCatalogLister) GetDefault(_ context.Context) (*domain.CatalogRegistration, error) {
 	panic("unexpected call")
 }
-func (m *mockCatalogLister) SetDefault(_ context.Context, _ int64) error {
+func (m *mockCatalogLister) SetDefault(_ context.Context, _ string) error {
 	panic("unexpected call")
 }
 
@@ -178,8 +178,8 @@ func TestBuildSchemataRows(t *testing.T) {
 		catalog := &mockEngineCatalog{
 			listSchemasFn: func(_ context.Context, _ domain.PageRequest) ([]domain.SchemaDetail, int64, error) {
 				return []domain.SchemaDetail{
-					{SchemaID: 1, Name: "main", CatalogName: "lake", Owner: "admin"},
-					{SchemaID: 2, Name: "staging", CatalogName: "lake", Owner: "etl"},
+					{SchemaID: "1", Name: "main", CatalogName: "lake", Owner: "admin"},
+					{SchemaID: "2", Name: "staging", CatalogName: "lake", Owner: "etl"},
 				}, 2, nil
 			},
 		}
@@ -230,14 +230,14 @@ func TestBuildSchemataRows(t *testing.T) {
 		lakeCatalog := &mockEngineCatalog{
 			listSchemasFn: func(_ context.Context, _ domain.PageRequest) ([]domain.SchemaDetail, int64, error) {
 				return []domain.SchemaDetail{
-					{SchemaID: 1, Name: "main", CatalogName: "lake", Owner: "admin"},
+					{SchemaID: "1", Name: "main", CatalogName: "lake", Owner: "admin"},
 				}, 1, nil
 			},
 		}
 		analyticsCatalog := &mockEngineCatalog{
 			listSchemasFn: func(_ context.Context, _ domain.PageRequest) ([]domain.SchemaDetail, int64, error) {
 				return []domain.SchemaDetail{
-					{SchemaID: 1, Name: "raw", CatalogName: "analytics", Owner: "data_eng"},
+					{SchemaID: "1", Name: "raw", CatalogName: "analytics", Owner: "data_eng"},
 				}, 1, nil
 			},
 		}
@@ -276,8 +276,8 @@ func TestBuildTablesRows(t *testing.T) {
 		catalog := &mockEngineCatalog{
 			listSchemasFn: func(_ context.Context, _ domain.PageRequest) ([]domain.SchemaDetail, int64, error) {
 				return []domain.SchemaDetail{
-					{SchemaID: 1, Name: "main", CatalogName: "lake"},
-					{SchemaID: 2, Name: "staging", CatalogName: "lake"},
+					{SchemaID: "1", Name: "main", CatalogName: "lake"},
+					{SchemaID: "2", Name: "staging", CatalogName: "lake"},
 				}, 2, nil
 			},
 			listTablesFn: func(_ context.Context, schemaName string, _ domain.PageRequest) ([]domain.TableDetail, int64, error) {
@@ -321,8 +321,8 @@ func TestBuildTablesRows(t *testing.T) {
 		catalog := &mockEngineCatalog{
 			listSchemasFn: func(_ context.Context, _ domain.PageRequest) ([]domain.SchemaDetail, int64, error) {
 				return []domain.SchemaDetail{
-					{SchemaID: 1, Name: "broken", CatalogName: "lake"},
-					{SchemaID: 2, Name: "good", CatalogName: "lake"},
+					{SchemaID: "1", Name: "broken", CatalogName: "lake"},
+					{SchemaID: "2", Name: "good", CatalogName: "lake"},
 				}, 2, nil
 			},
 			listTablesFn: func(_ context.Context, schemaName string, _ domain.PageRequest) ([]domain.TableDetail, int64, error) {
@@ -349,7 +349,7 @@ func TestBuildColumnsRows(t *testing.T) {
 		catalog := &mockEngineCatalog{
 			listSchemasFn: func(_ context.Context, _ domain.PageRequest) ([]domain.SchemaDetail, int64, error) {
 				return []domain.SchemaDetail{
-					{SchemaID: 1, Name: "main", CatalogName: "lake"},
+					{SchemaID: "1", Name: "main", CatalogName: "lake"},
 				}, 1, nil
 			},
 			listTablesFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.TableDetail, int64, error) {
@@ -380,7 +380,7 @@ func TestBuildColumnsRows(t *testing.T) {
 		catalog := &mockEngineCatalog{
 			listSchemasFn: func(_ context.Context, _ domain.PageRequest) ([]domain.SchemaDetail, int64, error) {
 				return []domain.SchemaDetail{
-					{SchemaID: 1, Name: "main", CatalogName: "lake"},
+					{SchemaID: "1", Name: "main", CatalogName: "lake"},
 				}, 1, nil
 			},
 			listTablesFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.TableDetail, int64, error) {
@@ -412,7 +412,7 @@ func TestInformationSchema_ConcurrentQueries(t *testing.T) {
 	catalog := &mockEngineCatalog{
 		listSchemasFn: func(_ context.Context, _ domain.PageRequest) ([]domain.SchemaDetail, int64, error) {
 			return []domain.SchemaDetail{
-				{SchemaID: 1, Name: "main", CatalogName: "lake", Owner: "admin"},
+				{SchemaID: "1", Name: "main", CatalogName: "lake", Owner: "admin"},
 			}, 1, nil
 		},
 		listTablesFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.TableDetail, int64, error) {

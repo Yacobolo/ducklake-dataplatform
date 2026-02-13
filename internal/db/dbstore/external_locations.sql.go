@@ -21,12 +21,13 @@ func (q *Queries) CountExternalLocations(ctx context.Context) (int64, error) {
 }
 
 const createExternalLocation = `-- name: CreateExternalLocation :one
-INSERT INTO external_locations (name, url, credential_name, storage_type, comment, owner, read_only)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+INSERT INTO external_locations (id, name, url, credential_name, storage_type, comment, owner, read_only)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING id, name, url, credential_name, storage_type, comment, owner, read_only, created_at, updated_at
 `
 
 type CreateExternalLocationParams struct {
+	ID             string
 	Name           string
 	Url            string
 	CredentialName string
@@ -38,6 +39,7 @@ type CreateExternalLocationParams struct {
 
 func (q *Queries) CreateExternalLocation(ctx context.Context, arg CreateExternalLocationParams) (ExternalLocation, error) {
 	row := q.db.QueryRowContext(ctx, createExternalLocation,
+		arg.ID,
 		arg.Name,
 		arg.Url,
 		arg.CredentialName,
@@ -66,7 +68,7 @@ const deleteExternalLocation = `-- name: DeleteExternalLocation :exec
 DELETE FROM external_locations WHERE id = ?
 `
 
-func (q *Queries) DeleteExternalLocation(ctx context.Context, id int64) error {
+func (q *Queries) DeleteExternalLocation(ctx context.Context, id string) error {
 	_, err := q.db.ExecContext(ctx, deleteExternalLocation, id)
 	return err
 }
@@ -75,7 +77,7 @@ const getExternalLocation = `-- name: GetExternalLocation :one
 SELECT id, name, url, credential_name, storage_type, comment, owner, read_only, created_at, updated_at FROM external_locations WHERE id = ?
 `
 
-func (q *Queries) GetExternalLocation(ctx context.Context, id int64) (ExternalLocation, error) {
+func (q *Queries) GetExternalLocation(ctx context.Context, id string) (ExternalLocation, error) {
 	row := q.db.QueryRowContext(ctx, getExternalLocation, id)
 	var i ExternalLocation
 	err := row.Scan(
@@ -175,7 +177,7 @@ type UpdateExternalLocationParams struct {
 	Comment        string
 	Owner          string
 	ReadOnly       int64
-	ID             int64
+	ID             string
 }
 
 func (q *Queries) UpdateExternalLocation(ctx context.Context, arg UpdateExternalLocationParams) error {

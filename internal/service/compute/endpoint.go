@@ -189,13 +189,13 @@ func (s *ComputeEndpointService) Assign(ctx context.Context, principal string, e
 	}
 
 	s.logAudit(ctx, principal, "ASSIGN_COMPUTE_ENDPOINT",
-		fmt.Sprintf("Assigned principal %d (%s) to compute endpoint %q", req.PrincipalID, req.PrincipalType, endpointName))
+		fmt.Sprintf("Assigned principal %s (%s) to compute endpoint %q", req.PrincipalID, req.PrincipalType, endpointName))
 	return result, nil
 }
 
 // Unassign removes a compute assignment.
 // Requires MANAGE_COMPUTE on catalog.
-func (s *ComputeEndpointService) Unassign(ctx context.Context, principal string, assignmentID int64) error {
+func (s *ComputeEndpointService) Unassign(ctx context.Context, principal string, assignmentID string) error {
 	if err := s.requirePrivilege(ctx, principal, domain.PrivManageCompute); err != nil {
 		return err
 	}
@@ -205,7 +205,7 @@ func (s *ComputeEndpointService) Unassign(ctx context.Context, principal string,
 	}
 
 	s.logAudit(ctx, principal, "UNASSIGN_COMPUTE_ENDPOINT",
-		fmt.Sprintf("Removed compute assignment %d", assignmentID))
+		fmt.Sprintf("Removed compute assignment %s", assignmentID))
 	return nil
 }
 

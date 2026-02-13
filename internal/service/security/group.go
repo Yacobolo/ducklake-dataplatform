@@ -35,7 +35,7 @@ func (s *GroupService) Create(ctx context.Context, g *domain.Group) (*domain.Gro
 }
 
 // GetByID returns a group by ID.
-func (s *GroupService) GetByID(ctx context.Context, id int64) (*domain.Group, error) {
+func (s *GroupService) GetByID(ctx context.Context, id string) (*domain.Group, error) {
 	return s.repo.GetByID(ctx, id)
 }
 
@@ -45,14 +45,14 @@ func (s *GroupService) List(ctx context.Context, page domain.PageRequest) ([]dom
 }
 
 // Delete removes a group by ID. Requires admin privileges.
-func (s *GroupService) Delete(ctx context.Context, id int64) error {
+func (s *GroupService) Delete(ctx context.Context, id string) error {
 	if err := requireAdmin(ctx); err != nil {
 		return err
 	}
 	if err := s.repo.Delete(ctx, id); err != nil {
 		return err
 	}
-	s.logAudit(ctx, fmt.Sprintf("DELETE_GROUP(id=%d)", id))
+	s.logAudit(ctx, fmt.Sprintf("DELETE_GROUP(id=%s)", id))
 	return nil
 }
 
@@ -64,7 +64,7 @@ func (s *GroupService) AddMember(ctx context.Context, m *domain.GroupMember) err
 	if err := s.repo.AddMember(ctx, m); err != nil {
 		return err
 	}
-	s.logAudit(ctx, fmt.Sprintf("ADD_GROUP_MEMBER(group=%d, member=%d)", m.GroupID, m.MemberID))
+	s.logAudit(ctx, fmt.Sprintf("ADD_GROUP_MEMBER(group=%s, member=%s)", m.GroupID, m.MemberID))
 	return nil
 }
 
@@ -76,12 +76,12 @@ func (s *GroupService) RemoveMember(ctx context.Context, m *domain.GroupMember) 
 	if err := s.repo.RemoveMember(ctx, m); err != nil {
 		return err
 	}
-	s.logAudit(ctx, fmt.Sprintf("REMOVE_GROUP_MEMBER(group=%d, member=%d)", m.GroupID, m.MemberID))
+	s.logAudit(ctx, fmt.Sprintf("REMOVE_GROUP_MEMBER(group=%s, member=%s)", m.GroupID, m.MemberID))
 	return nil
 }
 
 // ListMembers returns a paginated list of members in a group.
-func (s *GroupService) ListMembers(ctx context.Context, groupID int64, page domain.PageRequest) ([]domain.GroupMember, int64, error) {
+func (s *GroupService) ListMembers(ctx context.Context, groupID string, page domain.PageRequest) ([]domain.GroupMember, int64, error) {
 	return s.repo.ListMembers(ctx, groupID, page)
 }
 

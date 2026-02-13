@@ -22,28 +22,28 @@ func seedCatalog(ctx context.Context, cat *security.AuthorizationService, q *dbs
 
 	// --- Principals ---
 	adminUser, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
-		Name: "admin_user", Type: "user", IsAdmin: 1,
+		ID: domain.NewID(), Name: "admin_user", Type: "user", IsAdmin: 1,
 	})
 	if err != nil {
 		return fmt.Errorf("create admin_user: %w", err)
 	}
 
 	analyst1, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
-		Name: "analyst1", Type: "user", IsAdmin: 0,
+		ID: domain.NewID(), Name: "analyst1", Type: "user", IsAdmin: 0,
 	})
 	if err != nil {
 		return fmt.Errorf("create analyst1: %w", err)
 	}
 
 	researcher1, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
-		Name: "researcher1", Type: "user", IsAdmin: 0,
+		ID: domain.NewID(), Name: "researcher1", Type: "user", IsAdmin: 0,
 	})
 	if err != nil {
 		return fmt.Errorf("create researcher1: %w", err)
 	}
 
 	_, err = q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
-		Name: "no_access_user", Type: "user", IsAdmin: 0,
+		ID: domain.NewID(), Name: "no_access_user", Type: "user", IsAdmin: 0,
 	})
 	if err != nil {
 		return fmt.Errorf("create no_access_user: %w", err)
@@ -51,6 +51,7 @@ func seedCatalog(ctx context.Context, cat *security.AuthorizationService, q *dbs
 
 	// --- Groups ---
 	adminsGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{
+		ID:          domain.NewID(),
 		Name:        "admins",
 		Description: sql.NullString{String: "Administrators with full access", Valid: true},
 	})
@@ -59,6 +60,7 @@ func seedCatalog(ctx context.Context, cat *security.AuthorizationService, q *dbs
 	}
 
 	firstClassGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{
+		ID:          domain.NewID(),
 		Name:        "first_class_analysts",
 		Description: sql.NullString{String: "Analysts restricted to first-class passengers", Valid: true},
 	})
@@ -67,6 +69,7 @@ func seedCatalog(ctx context.Context, cat *security.AuthorizationService, q *dbs
 	}
 
 	survivorGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{
+		ID:          domain.NewID(),
 		Name:        "survivor_researchers",
 		Description: sql.NullString{String: "Researchers restricted to survivors", Valid: true},
 	})
@@ -104,7 +107,7 @@ func seedCatalog(ctx context.Context, cat *security.AuthorizationService, q *dbs
 
 	// --- Privilege grants ---
 	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: adminsGroup.ID, PrincipalType: "group",
+		ID: domain.NewID(), PrincipalID: adminsGroup.ID, PrincipalType: "group",
 		SecurableType: domain.SecurableCatalog, SecurableID: domain.CatalogID,
 		Privilege: domain.PrivAllPrivileges,
 	})
@@ -113,7 +116,7 @@ func seedCatalog(ctx context.Context, cat *security.AuthorizationService, q *dbs
 	}
 
 	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: firstClassGroup.ID, PrincipalType: "group",
+		ID: domain.NewID(), PrincipalID: firstClassGroup.ID, PrincipalType: "group",
 		SecurableType: domain.SecurableSchema, SecurableID: schemaID,
 		Privilege: domain.PrivUsage,
 	})
@@ -121,7 +124,7 @@ func seedCatalog(ctx context.Context, cat *security.AuthorizationService, q *dbs
 		return fmt.Errorf("grant first_class USAGE: %w", err)
 	}
 	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: firstClassGroup.ID, PrincipalType: "group",
+		ID: domain.NewID(), PrincipalID: firstClassGroup.ID, PrincipalType: "group",
 		SecurableType: domain.SecurableTable, SecurableID: titanicID,
 		Privilege: domain.PrivSelect,
 	})
@@ -130,7 +133,7 @@ func seedCatalog(ctx context.Context, cat *security.AuthorizationService, q *dbs
 	}
 
 	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: survivorGroup.ID, PrincipalType: "group",
+		ID: domain.NewID(), PrincipalID: survivorGroup.ID, PrincipalType: "group",
 		SecurableType: domain.SecurableSchema, SecurableID: schemaID,
 		Privilege: domain.PrivUsage,
 	})
@@ -138,7 +141,7 @@ func seedCatalog(ctx context.Context, cat *security.AuthorizationService, q *dbs
 		return fmt.Errorf("grant survivor USAGE: %w", err)
 	}
 	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: survivorGroup.ID, PrincipalType: "group",
+		ID: domain.NewID(), PrincipalID: survivorGroup.ID, PrincipalType: "group",
 		SecurableType: domain.SecurableTable, SecurableID: titanicID,
 		Privilege: domain.PrivSelect,
 	})
@@ -148,6 +151,7 @@ func seedCatalog(ctx context.Context, cat *security.AuthorizationService, q *dbs
 
 	// --- Row filters ---
 	firstClassFilter, err := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
+		ID:          domain.NewID(),
 		TableID:     titanicID,
 		FilterSql:   `"Pclass" = 1`,
 		Description: sql.NullString{String: "Only first-class passengers", Valid: true},
@@ -156,13 +160,14 @@ func seedCatalog(ctx context.Context, cat *security.AuthorizationService, q *dbs
 		return fmt.Errorf("create first-class row filter: %w", err)
 	}
 	if err := q.BindRowFilter(ctx, dbstore.BindRowFilterParams{
-		RowFilterID: firstClassFilter.ID, PrincipalID: firstClassGroup.ID, PrincipalType: "group",
+		ID: domain.NewID(), RowFilterID: firstClassFilter.ID, PrincipalID: firstClassGroup.ID, PrincipalType: "group",
 	}); err != nil {
 		return fmt.Errorf("bind first-class row filter: %w", err)
 	}
 
 	// --- Column masks ---
 	nameMask, err := q.CreateColumnMask(ctx, dbstore.CreateColumnMaskParams{
+		ID:             domain.NewID(),
 		TableID:        titanicID,
 		ColumnName:     "Name",
 		MaskExpression: `'***'`,
@@ -172,13 +177,13 @@ func seedCatalog(ctx context.Context, cat *security.AuthorizationService, q *dbs
 		return fmt.Errorf("create Name column mask: %w", err)
 	}
 	if err := q.BindColumnMask(ctx, dbstore.BindColumnMaskParams{
-		ColumnMaskID: nameMask.ID, PrincipalID: firstClassGroup.ID,
+		ID: domain.NewID(), ColumnMaskID: nameMask.ID, PrincipalID: firstClassGroup.ID,
 		PrincipalType: "group", SeeOriginal: 0,
 	}); err != nil {
 		return fmt.Errorf("bind Name mask for analysts: %w", err)
 	}
 	if err := q.BindColumnMask(ctx, dbstore.BindColumnMaskParams{
-		ColumnMaskID: nameMask.ID, PrincipalID: survivorGroup.ID,
+		ID: domain.NewID(), ColumnMaskID: nameMask.ID, PrincipalID: survivorGroup.ID,
 		PrincipalType: "group", SeeOriginal: 1,
 	}); err != nil {
 		return fmt.Errorf("bind Name mask for researchers: %w", err)

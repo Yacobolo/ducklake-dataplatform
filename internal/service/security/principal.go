@@ -43,7 +43,7 @@ func (s *PrincipalService) Create(ctx context.Context, p *domain.Principal) (*do
 }
 
 // GetByID returns a principal by ID.
-func (s *PrincipalService) GetByID(ctx context.Context, id int64) (*domain.Principal, error) {
+func (s *PrincipalService) GetByID(ctx context.Context, id string) (*domain.Principal, error) {
 	return s.repo.GetByID(ctx, id)
 }
 
@@ -58,7 +58,7 @@ func (s *PrincipalService) List(ctx context.Context, page domain.PageRequest) ([
 }
 
 // Delete removes a principal by ID. Requires admin privileges.
-func (s *PrincipalService) Delete(ctx context.Context, id int64) error {
+func (s *PrincipalService) Delete(ctx context.Context, id string) error {
 	if err := requireAdmin(ctx); err != nil {
 		return err
 	}
@@ -74,7 +74,7 @@ func (s *PrincipalService) Delete(ctx context.Context, id int64) error {
 }
 
 // SetAdmin updates the admin status of a principal. Requires admin privileges.
-func (s *PrincipalService) SetAdmin(ctx context.Context, id int64, isAdmin bool) error {
+func (s *PrincipalService) SetAdmin(ctx context.Context, id string, isAdmin bool) error {
 	if err := requireAdmin(ctx); err != nil {
 		return err
 	}

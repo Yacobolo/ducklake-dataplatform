@@ -22,12 +22,13 @@ func (q *Queries) CountExternalTables(ctx context.Context, schemaName string) (i
 }
 
 const createExternalTable = `-- name: CreateExternalTable :one
-INSERT INTO external_tables (schema_name, table_name, file_format, source_path, location_name, comment, owner)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+INSERT INTO external_tables (id, schema_name, table_name, file_format, source_path, location_name, comment, owner)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING id, schema_name, table_name, file_format, source_path, location_name, comment, owner, created_at, updated_at, deleted_at
 `
 
 type CreateExternalTableParams struct {
+	ID           string
 	SchemaName   string
 	TableName    string
 	FileFormat   string
@@ -39,6 +40,7 @@ type CreateExternalTableParams struct {
 
 func (q *Queries) CreateExternalTable(ctx context.Context, arg CreateExternalTableParams) (ExternalTable, error) {
 	row := q.db.QueryRowContext(ctx, createExternalTable,
+		arg.ID,
 		arg.SchemaName,
 		arg.TableName,
 		arg.FileFormat,
@@ -69,7 +71,7 @@ DELETE FROM external_table_columns
 WHERE external_table_id = ?
 `
 
-func (q *Queries) DeleteExternalTableColumns(ctx context.Context, externalTableID int64) error {
+func (q *Queries) DeleteExternalTableColumns(ctx context.Context, externalTableID string) error {
 	_, err := q.db.ExecContext(ctx, deleteExternalTableColumns, externalTableID)
 	return err
 }
@@ -79,7 +81,7 @@ SELECT id, schema_name, table_name, file_format, source_path, location_name, com
 WHERE id = ? AND deleted_at IS NULL
 `
 
-func (q *Queries) GetExternalTableByID(ctx context.Context, id int64) (ExternalTable, error) {
+func (q *Queries) GetExternalTableByID(ctx context.Context, id string) (ExternalTable, error) {
 	row := q.db.QueryRowContext(ctx, getExternalTableByID, id)
 	var i ExternalTable
 	err := row.Scan(
@@ -152,12 +154,13 @@ func (q *Queries) GetExternalTableByTableName(ctx context.Context, tableName str
 }
 
 const insertExternalTableColumn = `-- name: InsertExternalTableColumn :exec
-INSERT INTO external_table_columns (external_table_id, column_name, column_type, position)
-VALUES (?, ?, ?, ?)
+INSERT INTO external_table_columns (id, external_table_id, column_name, column_type, position)
+VALUES (?, ?, ?, ?, ?)
 `
 
 type InsertExternalTableColumnParams struct {
-	ExternalTableID int64
+	ID              string
+	ExternalTableID string
 	ColumnName      string
 	ColumnType      string
 	Position        int64
@@ -165,6 +168,7 @@ type InsertExternalTableColumnParams struct {
 
 func (q *Queries) InsertExternalTableColumn(ctx context.Context, arg InsertExternalTableColumnParams) error {
 	_, err := q.db.ExecContext(ctx, insertExternalTableColumn,
+		arg.ID,
 		arg.ExternalTableID,
 		arg.ColumnName,
 		arg.ColumnType,
@@ -219,7 +223,7 @@ WHERE external_table_id = ?
 ORDER BY position
 `
 
-func (q *Queries) ListExternalTableColumns(ctx context.Context, externalTableID int64) ([]ExternalTableColumn, error) {
+func (q *Queries) ListExternalTableColumns(ctx context.Context, externalTableID string) ([]ExternalTableColumn, error) {
 	rows, err := q.db.QueryContext(ctx, listExternalTableColumns, externalTableID)
 	if err != nil {
 		return nil, err

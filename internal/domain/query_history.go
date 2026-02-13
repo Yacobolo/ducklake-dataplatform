@@ -4,7 +4,7 @@ import "time"
 
 // QueryHistoryEntry represents a single query execution record.
 type QueryHistoryEntry struct {
-	ID             int64
+	ID             string
 	PrincipalName  string
 	OriginalSQL    *string
 	RewrittenSQL   *string

@@ -33,7 +33,7 @@ func TestAPIKeyService_Create(t *testing.T) {
 	assert.NotEmpty(t, rawKey)
 	assert.Len(t, rawKey, 64) // 32 bytes hex encoded
 	assert.Equal(t, "my-api-key", key.Name)
-	assert.Positive(t, key.ID)
+	assert.NotEmpty(t, key.ID)
 	assert.Nil(t, key.ExpiresAt)
 }
 
@@ -52,7 +52,7 @@ func TestAPIKeyService_Create_WithExpiry(t *testing.T) {
 func TestAPIKeyService_Create_EmptyName(t *testing.T) {
 	svc, _ := setupAPIKeyService(t)
 
-	_, _, err := svc.Create(adminCtx(), 1, "", nil)
+	_, _, err := svc.Create(adminCtx(), "1", "", nil)
 	require.Error(t, err)
 	var validationErr *domain.ValidationError
 	assert.ErrorAs(t, err, &validationErr)
@@ -61,7 +61,7 @@ func TestAPIKeyService_Create_EmptyName(t *testing.T) {
 func TestAPIKeyService_Create_Unauthenticated(t *testing.T) {
 	svc, _ := setupAPIKeyService(t)
 
-	_, _, err := svc.Create(ctx, 1, "key", nil)
+	_, _, err := svc.Create(ctx, "1", "key", nil)
 	require.Error(t, err)
 	var accessDenied *domain.AccessDeniedError
 	assert.ErrorAs(t, err, &accessDenied)

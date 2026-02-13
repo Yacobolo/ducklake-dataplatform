@@ -3,13 +3,12 @@ ComputeEndpoint:
   type: object
   properties:
     id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     external_id:
       type: string
-      format: uuid
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
     name:
       type: string
@@ -121,23 +120,20 @@ ComputeAssignment:
   type: object
   properties:
     id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     principal_id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     principal_type:
       type: string
       enum: [user, group]
     endpoint_id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     endpoint_name:
       type: string
       maxLength: 255
@@ -158,10 +154,9 @@ CreateComputeAssignmentRequest:
   required: [principal_id, principal_type]
   properties:
     principal_id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     principal_type:
       type: string
       enum: [user, group]

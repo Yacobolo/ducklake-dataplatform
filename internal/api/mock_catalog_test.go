@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"sync"
 	"time"
@@ -29,6 +30,12 @@ func newMockCatalogRepo() *mockCatalogRepo {
 		metadata: make(map[string]map[string]string),
 		nextID:   1,
 	}
+}
+
+func (m *mockCatalogRepo) allocID() string {
+	id := fmt.Sprintf("%d", m.nextID)
+	m.nextID++
+	return id
 }
 
 func (m *mockCatalogRepo) validateIdentifier(name string) error {
@@ -73,7 +80,7 @@ func (m *mockCatalogRepo) CreateSchema(_ context.Context, name, comment, owner s
 
 	now := time.Now()
 	s := domain.SchemaDetail{
-		SchemaID:    m.nextID,
+		SchemaID:    m.allocID(),
 		Name:        name,
 		CatalogName: "lake",
 		Comment:     comment,
@@ -81,7 +88,6 @@ func (m *mockCatalogRepo) CreateSchema(_ context.Context, name, comment, owner s
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}
-	m.nextID++
 	m.schemas[name] = s
 	return &s, nil
 }
@@ -216,7 +222,7 @@ func (m *mockCatalogRepo) CreateTable(_ context.Context, schemaName string, req 
 
 	now := time.Now()
 	t := domain.TableDetail{
-		TableID:     m.nextID,
+		TableID:     m.allocID(),
 		Name:        req.Name,
 		SchemaName:  schemaName,
 		CatalogName: "lake",
@@ -227,7 +233,6 @@ func (m *mockCatalogRepo) CreateTable(_ context.Context, schemaName string, req 
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}
-	m.nextID++
 	m.tables[key] = t
 	m.columns[key] = cols
 	return &t, nil
@@ -402,7 +407,7 @@ func (m *mockCatalogRepo) UpdateColumn(_ context.Context, schemaName, tableName,
 	return nil, domain.ErrNotFound("column %q not found", columnName)
 }
 
-func (m *mockCatalogRepo) SetSchemaStoragePath(_ context.Context, _ int64, _ string) error {
+func (m *mockCatalogRepo) SetSchemaStoragePath(_ context.Context, _ string, _ string) error {
 	return nil
 }
 
@@ -425,13 +430,11 @@ func (m *mockCatalogRepo) addSchema(name string) {
 	defer m.mu.Unlock()
 	now := time.Now()
 	m.schemas[name] = domain.SchemaDetail{
-		SchemaID:    m.nextID,
+		SchemaID:    m.allocID(),
 		Name:        name,
 		CatalogName: "lake",
 		CreatedAt:   now,
-		UpdatedAt:   now,
 	}
-	m.nextID++
 }
 
 // addTable is a test helper to prepopulate the mock with a table.
@@ -441,15 +444,13 @@ func (m *mockCatalogRepo) addTable(schemaName, tableName string, cols []domain.C
 	key := schemaName + "." + tableName
 	now := time.Now()
 	m.tables[key] = domain.TableDetail{
-		TableID:     m.nextID,
+		TableID:     m.allocID(),
 		Name:        tableName,
 		SchemaName:  schemaName,
 		CatalogName: "lake",
 		TableType:   "MANAGED",
 		Columns:     cols,
 		CreatedAt:   now,
-		UpdatedAt:   now,
 	}
 	m.columns[key] = cols
-	m.nextID++
 }

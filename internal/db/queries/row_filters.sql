@@ -1,6 +1,6 @@
 -- name: CreateRowFilter :one
-INSERT INTO row_filters (table_id, filter_sql, description)
-VALUES (?, ?, ?)
+INSERT INTO row_filters (id, table_id, filter_sql, description)
+VALUES (?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetRowFiltersForTable :many
@@ -10,8 +10,8 @@ SELECT * FROM row_filters WHERE table_id = ?;
 DELETE FROM row_filters WHERE id = ?;
 
 -- name: BindRowFilter :exec
-INSERT OR IGNORE INTO row_filter_bindings (row_filter_id, principal_id, principal_type)
-VALUES (?, ?, ?);
+INSERT OR IGNORE INTO row_filter_bindings (id, row_filter_id, principal_id, principal_type)
+VALUES (?, ?, ?, ?);
 
 -- name: UnbindRowFilter :exec
 DELETE FROM row_filter_bindings

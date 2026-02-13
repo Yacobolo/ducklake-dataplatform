@@ -47,7 +47,7 @@ paths:
               schema:
                 $ref: '../schemas/catalog.yaml#/CatalogRegistration'
               example:
-                id: 1
+                id: "550e8400-e29b-41d4-a716-446655440001"
                 name: analytics
                 metastore_type: sqlite
                 dsn: /data/analytics.db
@@ -150,7 +150,7 @@ paths:
               schema:
                 $ref: '../schemas/catalog.yaml#/CatalogRegistration'
               example:
-                id: 1
+                id: "550e8400-e29b-41d4-a716-446655440001"
                 name: analytics
                 metastore_type: sqlite
                 dsn: /data/analytics.db
@@ -409,7 +409,7 @@ paths:
                 $ref: '../schemas/catalog.yaml#/PaginatedSchemaDetails'
               example:
                 data:
-                - schema_id: 1
+                - schema_id: "550e8400-e29b-41d4-a716-446655440001"
                   name: main
                   catalog_name: ducklake
                   comment: Default schema
@@ -471,7 +471,7 @@ paths:
               schema:
                 $ref: '../schemas/catalog.yaml#/SchemaDetail'
               example:
-                schema_id: 1
+                schema_id: "550e8400-e29b-41d4-a716-446655440001"
                 name: main
                 catalog_name: ducklake
                 comment: Default schema
@@ -532,7 +532,7 @@ paths:
               schema:
                 $ref: '../schemas/catalog.yaml#/SchemaDetail'
               example:
-                schema_id: 1
+                schema_id: "550e8400-e29b-41d4-a716-446655440001"
                 name: main
                 catalog_name: ducklake
                 comment: Default schema
@@ -596,7 +596,7 @@ paths:
               schema:
                 $ref: '../schemas/catalog.yaml#/SchemaDetail'
               example:
-                schema_id: 1
+                schema_id: "550e8400-e29b-41d4-a716-446655440001"
                 name: main
                 catalog_name: ducklake
                 comment: Default schema
@@ -712,7 +712,7 @@ paths:
                 $ref: '../schemas/catalog.yaml#/PaginatedTableDetails'
               example:
                 data:
-                - table_id: 1
+                - table_id: "550e8400-e29b-41d4-a716-446655440001"
                   name: users
                   schema_name: main
                   catalog_name: ducklake
@@ -781,7 +781,7 @@ paths:
               schema:
                 $ref: '../schemas/catalog.yaml#/TableDetail'
               example:
-                table_id: 1
+                table_id: "550e8400-e29b-41d4-a716-446655440001"
                 name: users
                 schema_name: main
                 catalog_name: ducklake
@@ -852,7 +852,7 @@ paths:
               schema:
                 $ref: '../schemas/catalog.yaml#/TableDetail'
               example:
-                table_id: 1
+                table_id: "550e8400-e29b-41d4-a716-446655440001"
                 name: users
                 schema_name: main
                 catalog_name: ducklake
@@ -924,7 +924,7 @@ paths:
               schema:
                 $ref: '../schemas/catalog.yaml#/TableDetail'
               example:
-                table_id: 1
+                table_id: "550e8400-e29b-41d4-a716-446655440001"
                 name: users
                 schema_name: main
                 catalog_name: ducklake
@@ -1231,8 +1231,8 @@ paths:
                 $ref: '../schemas/catalog.yaml#/PaginatedViewDetails'
               example:
                 data:
-                - id: 1
-                  schema_id: 1
+                - id: "550e8400-e29b-41d4-a716-446655440001"
+                  schema_id: "550e8400-e29b-41d4-a716-446655440001"
                   schema_name: main
                   catalog_name: ducklake
                   name: active_users
@@ -1299,8 +1299,8 @@ paths:
               schema:
                 $ref: '../schemas/catalog.yaml#/ViewDetail'
               example:
-                id: 1
-                schema_id: 1
+                id: "550e8400-e29b-41d4-a716-446655440001"
+                schema_id: "550e8400-e29b-41d4-a716-446655440001"
                 schema_name: main
                 catalog_name: ducklake
                 name: active_users
@@ -1364,8 +1364,8 @@ paths:
               schema:
                 $ref: '../schemas/catalog.yaml#/ViewDetail'
               example:
-                id: 1
-                schema_id: 1
+                id: "550e8400-e29b-41d4-a716-446655440001"
+                schema_id: "550e8400-e29b-41d4-a716-446655440001"
                 schema_name: main
                 catalog_name: ducklake
                 name: active_users
@@ -1430,8 +1430,8 @@ paths:
               schema:
                 $ref: '../schemas/catalog.yaml#/ViewDetail'
               example:
-                id: 1
-                schema_id: 1
+                id: "550e8400-e29b-41d4-a716-446655440001"
+                schema_id: "550e8400-e29b-41d4-a716-446655440001"
                 schema_name: main
                 catalog_name: ducklake
                 name: active_users
@@ -1540,7 +1540,7 @@ paths:
                 $ref: '../schemas/catalog.yaml#/PaginatedVolumes'
               example:
                 data:
-                - id: 1
+                - id: "550e8400-e29b-41d4-a716-446655440001"
                   name: raw_data
                   schema_name: main
                   catalog_name: ducklake
@@ -1609,7 +1609,7 @@ paths:
               schema:
                 $ref: '../schemas/catalog.yaml#/VolumeDetail'
               example:
-                id: 1
+                id: "550e8400-e29b-41d4-a716-446655440001"
                 name: raw_data
                 schema_name: main
                 catalog_name: ducklake
@@ -1672,7 +1672,7 @@ paths:
               schema:
                 $ref: '../schemas/catalog.yaml#/VolumeDetail'
               example:
-                id: 1
+                id: "550e8400-e29b-41d4-a716-446655440001"
                 name: raw_data
                 schema_name: main
                 catalog_name: ducklake
@@ -1736,7 +1736,7 @@ paths:
               schema:
                 $ref: '../schemas/catalog.yaml#/VolumeDetail'
               example:
-                id: 1
+                id: "550e8400-e29b-41d4-a716-446655440001"
                 name: raw_data
                 schema_name: main
                 catalog_name: ducklake

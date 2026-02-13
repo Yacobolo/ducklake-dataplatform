@@ -136,7 +136,7 @@ paths:
                 $ref: '../schemas/observability.yaml#/PaginatedAuditLogs'
               example:
                 data:
-                  - id: 1
+                  - id: "550e8400-e29b-41d4-a716-446655440001"
                     principal_name: "analyst@acme.com"
                     action: QUERY
                     statement_type: SELECT
@@ -275,7 +275,7 @@ paths:
                 $ref: '../schemas/observability.yaml#/PaginatedQueryHistoryEntries'
               example:
                 data:
-                  - id: 1
+                  - id: "550e8400-e29b-41d4-a716-446655440001"
                     principal_name: "analyst@acme.com"
                     original_sql: "SELECT id, name FROM main.users LIMIT 10"
                     rewritten_sql: "SELECT id, name FROM main.users WHERE department = 'engineering' LIMIT 10"

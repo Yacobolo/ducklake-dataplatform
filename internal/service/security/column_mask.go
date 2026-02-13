@@ -41,12 +41,12 @@ func (s *ColumnMaskService) Create(ctx context.Context, _ string, m *domain.Colu
 }
 
 // GetForTable returns a paginated list of column masks for a table.
-func (s *ColumnMaskService) GetForTable(ctx context.Context, tableID int64, page domain.PageRequest) ([]domain.ColumnMask, int64, error) {
+func (s *ColumnMaskService) GetForTable(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.ColumnMask, int64, error) {
 	return s.repo.GetForTable(ctx, tableID, page)
 }
 
 // Delete removes a column mask by ID. Requires admin privileges.
-func (s *ColumnMaskService) Delete(ctx context.Context, id int64) error {
+func (s *ColumnMaskService) Delete(ctx context.Context, id string) error {
 	if err := requireAdmin(ctx); err != nil {
 		return err
 	}
@@ -70,6 +70,6 @@ func (s *ColumnMaskService) Unbind(ctx context.Context, b *domain.ColumnMaskBind
 }
 
 // ListBindings returns all bindings for a column mask.
-func (s *ColumnMaskService) ListBindings(ctx context.Context, maskID int64) ([]domain.ColumnMaskBinding, error) {
+func (s *ColumnMaskService) ListBindings(ctx context.Context, maskID string) ([]domain.ColumnMaskBinding, error) {
 	return s.repo.ListBindings(ctx, maskID)
 }

@@ -71,9 +71,9 @@ func NewAuthorizationService(
 
 // resolveGroupIDs returns the set of group IDs a principal belongs to,
 // including nested groups (transitive closure).
-func (s *AuthorizationService) resolveGroupIDs(ctx context.Context, principalID int64) ([]int64, error) {
-	visited := map[int64]bool{}
-	queue := []int64{principalID}
+func (s *AuthorizationService) resolveGroupIDs(ctx context.Context, principalID string) ([]string, error) {
+	visited := map[string]bool{}
+	queue := []string{principalID}
 	memberType := "user"
 
 	for len(queue) > 0 {
@@ -82,7 +82,7 @@ func (s *AuthorizationService) resolveGroupIDs(ctx context.Context, principalID 
 
 		groups, err := s.groups.GetGroupsForMember(ctx, memberType, current)
 		if err != nil {
-			return nil, fmt.Errorf("resolve groups for %d: %w", current, err)
+			return nil, fmt.Errorf("resolve groups for %s: %w", current, err)
 		}
 
 		for _, g := range groups {
@@ -94,7 +94,7 @@ func (s *AuthorizationService) resolveGroupIDs(ctx context.Context, principalID 
 		memberType = "group"
 	}
 
-	ids := make([]int64, 0, len(visited))
+	ids := make([]string, 0, len(visited))
 	for id := range visited {
 		ids = append(ids, id)
 	}
@@ -102,9 +102,8 @@ func (s *AuthorizationService) resolveGroupIDs(ctx context.Context, principalID 
 }
 
 // LookupTableID resolves a table name to its table_id and schema_id.
-// For external tables, the returned tableID is offset by ExternalTableIDOffset
-// and isExternal is true.
-func (s *AuthorizationService) LookupTableID(ctx context.Context, tableName string) (tableID, schemaID int64, isExternal bool, err error) {
+// For external tables, isExternal is true.
+func (s *AuthorizationService) LookupTableID(ctx context.Context, tableName string) (tableID, schemaID string, isExternal bool, err error) {
 	// Try DuckLake first
 	t, err := s.introspection.GetTableByName(ctx, tableName)
 	if err == nil {
@@ -118,28 +117,28 @@ func (s *AuthorizationService) LookupTableID(ctx context.Context, tableName stri
 			// Resolve schema ID via introspection
 			sch, schErr := s.introspection.GetSchemaByName(ctx, et.SchemaName)
 			if schErr == nil {
-				return et.EffectiveTableID(), sch.ID, true, nil
+				return et.ID, sch.ID, true, nil
 			}
 			// Schema exists in external table metadata but not in DuckLake;
-			// return the external table ID with schema ID 0
-			return et.EffectiveTableID(), 0, true, nil
+			// return the external table ID with empty schema ID
+			return et.ID, "", true, nil
 		}
 	}
 
-	return 0, 0, false, fmt.Errorf("table %q not found in catalog", tableName)
+	return "", "", false, fmt.Errorf("table %q not found in catalog", tableName)
 }
 
 // LookupSchemaID resolves a schema name to its DuckLake schema_id.
-func (s *AuthorizationService) LookupSchemaID(ctx context.Context, schemaName string) (int64, error) {
+func (s *AuthorizationService) LookupSchemaID(ctx context.Context, schemaName string) (string, error) {
 	sch, err := s.introspection.GetSchemaByName(ctx, schemaName)
 	if err != nil {
-		return 0, fmt.Errorf("schema %q not found in catalog", schemaName)
+		return "", fmt.Errorf("schema %q not found in catalog", schemaName)
 	}
 	return sch.ID, nil
 }
 
 // hasGrant checks if any of the given identities has a specific grant.
-func (s *AuthorizationService) hasGrant(ctx context.Context, principalID int64, groupIDs []int64, securableType string, securableID int64, privilege string) (bool, error) {
+func (s *AuthorizationService) hasGrant(ctx context.Context, principalID string, groupIDs []string, securableType string, securableID string, privilege string) (bool, error) {
 	// Check direct user grant
 	ok, err := s.grants.HasPrivilege(ctx, principalID, "user", securableType, securableID, privilege)
 	if err != nil {
@@ -168,7 +167,7 @@ func (s *AuthorizationService) hasGrant(ctx context.Context, principalID int64, 
 //  2. USAGE gate on parent schema (for table-level checks)
 //  3. Walk up hierarchy: table -> schema -> catalog
 //  4. ALL_PRIVILEGES expansion
-func (s *AuthorizationService) CheckPrivilege(ctx context.Context, principalName string, securableType string, securableID int64, privilege string) (bool, error) {
+func (s *AuthorizationService) CheckPrivilege(ctx context.Context, principalName string, securableType string, securableID string, privilege string) (bool, error) {
 	principal, err := s.principals.GetByName(ctx, principalName)
 	if err != nil {
 		return false, fmt.Errorf("principal %q not found", principalName)
@@ -188,7 +187,7 @@ func (s *AuthorizationService) CheckPrivilege(ctx context.Context, principalName
 	return s.checkPrivilegeForIdentities(ctx, principal.ID, groupIDs, securableType, securableID, privilege)
 }
 
-func (s *AuthorizationService) checkPrivilegeForIdentities(ctx context.Context, principalID int64, groupIDs []int64, securableType string, securableID int64, privilege string) (bool, error) {
+func (s *AuthorizationService) checkPrivilegeForIdentities(ctx context.Context, principalID string, groupIDs []string, securableType string, securableID string, privilege string) (bool, error) {
 	switch securableType {
 	case domain.SecurableTable:
 		return s.checkTablePrivilege(ctx, principalID, groupIDs, securableID, privilege)
@@ -203,30 +202,26 @@ func (s *AuthorizationService) checkPrivilegeForIdentities(ctx context.Context, 
 	}
 }
 
-func (s *AuthorizationService) checkTablePrivilege(ctx context.Context, principalID int64, groupIDs []int64, tableID int64, privilege string) (bool, error) {
-	var schemaID int64
+func (s *AuthorizationService) checkTablePrivilege(ctx context.Context, principalID string, groupIDs []string, tableID string, privilege string) (bool, error) {
+	var schemaID string
 
-	if domain.IsExternalTableID(tableID) {
-		// External table: resolve schema via external table repo
-		if s.extTableRepo == nil {
-			return false, fmt.Errorf("external table repository not configured")
+	// Try managed table first
+	switch table, err := s.introspection.GetTable(ctx, tableID); {
+	case err == nil:
+		schemaID = table.SchemaID
+	case s.extTableRepo != nil:
+		// Try external table
+		et, extErr := s.extTableRepo.GetByID(ctx, tableID)
+		if extErr != nil {
+			return false, fmt.Errorf("lookup table %s: %w", tableID, err)
 		}
-		et, err := s.extTableRepo.GetByID(ctx, domain.ExternalTableRawID(tableID))
-		if err != nil {
-			return false, fmt.Errorf("lookup external table %d: %w", tableID, err)
-		}
-		sch, err := s.introspection.GetSchemaByName(ctx, et.SchemaName)
-		if err != nil {
-			return false, fmt.Errorf("lookup schema %q for external table: %w", et.SchemaName, err)
+		sch, schErr := s.introspection.GetSchemaByName(ctx, et.SchemaName)
+		if schErr != nil {
+			return false, fmt.Errorf("lookup schema %q for external table: %w", et.SchemaName, schErr)
 		}
 		schemaID = sch.ID
-	} else {
-		// Managed table: resolve via introspection
-		table, err := s.introspection.GetTable(ctx, tableID)
-		if err != nil {
-			return false, fmt.Errorf("lookup schema for table %d: %w", tableID, err)
-		}
-		schemaID = table.SchemaID
+	default:
+		return false, fmt.Errorf("lookup table %s: %w", tableID, err)
 	}
 
 	// USAGE gate: must have USAGE on the schema
@@ -254,7 +249,7 @@ func (s *AuthorizationService) checkTablePrivilege(ctx context.Context, principa
 	return s.hasGrant(ctx, principalID, groupIDs, domain.SecurableCatalog, domain.CatalogID, privilege)
 }
 
-func (s *AuthorizationService) checkSchemaPrivilege(ctx context.Context, principalID int64, groupIDs []int64, schemaID int64, privilege string) (bool, error) {
+func (s *AuthorizationService) checkSchemaPrivilege(ctx context.Context, principalID string, groupIDs []string, schemaID string, privilege string) (bool, error) {
 	ok, err := s.hasGrant(ctx, principalID, groupIDs, domain.SecurableSchema, schemaID, privilege)
 	if err != nil || ok {
 		return ok, err
@@ -264,7 +259,7 @@ func (s *AuthorizationService) checkSchemaPrivilege(ctx context.Context, princip
 
 // checkCatalogScopedPrivilege checks a privilege on a catalog-scoped securable
 // (external_location, storage_credential, volume). These inherit from catalog.
-func (s *AuthorizationService) checkCatalogScopedPrivilege(ctx context.Context, principalID int64, groupIDs []int64, securableType string, securableID int64, privilege string) (bool, error) {
+func (s *AuthorizationService) checkCatalogScopedPrivilege(ctx context.Context, principalID string, groupIDs []string, securableType string, securableID string, privilege string) (bool, error) {
 	// Check direct grant on the securable itself
 	ok, err := s.hasGrant(ctx, principalID, groupIDs, securableType, securableID, privilege)
 	if err != nil || ok {
@@ -276,7 +271,7 @@ func (s *AuthorizationService) checkCatalogScopedPrivilege(ctx context.Context, 
 
 // GetEffectiveRowFilters returns all SQL filter expressions for a table that
 // apply to the principal (or any of their groups). Returns nil if no filters apply.
-func (s *AuthorizationService) GetEffectiveRowFilters(ctx context.Context, principalName string, tableID int64) ([]string, error) {
+func (s *AuthorizationService) GetEffectiveRowFilters(ctx context.Context, principalName string, tableID string) ([]string, error) {
 	principal, err := s.principals.GetByName(ctx, principalName)
 	if err != nil {
 		return nil, err
@@ -287,7 +282,7 @@ func (s *AuthorizationService) GetEffectiveRowFilters(ctx context.Context, princ
 		return nil, nil
 	}
 
-	seen := map[int64]bool{}
+	seen := map[string]bool{}
 	var filters []string
 
 	// Check direct user bindings
@@ -329,7 +324,7 @@ func (s *AuthorizationService) GetEffectiveRowFilters(ctx context.Context, princ
 
 // GetEffectiveColumnMasks returns a map of column_name -> mask_expression for
 // columns the principal should see masked on the given table.
-func (s *AuthorizationService) GetEffectiveColumnMasks(ctx context.Context, principalName string, tableID int64) (map[string]string, error) {
+func (s *AuthorizationService) GetEffectiveColumnMasks(ctx context.Context, principalName string, tableID string) (map[string]string, error) {
 	principal, err := s.principals.GetByName(ctx, principalName)
 	if err != nil {
 		return nil, err
@@ -381,10 +376,10 @@ func (s *AuthorizationService) GetEffectiveColumnMasks(ctx context.Context, prin
 
 // GetTableColumnNames returns the ordered list of column names for a table.
 // This is used by the engine to expand SELECT * before applying column masks.
-func (s *AuthorizationService) GetTableColumnNames(ctx context.Context, tableID int64) ([]string, error) {
+func (s *AuthorizationService) GetTableColumnNames(ctx context.Context, tableID string) ([]string, error) {
 	cols, _, err := s.introspection.ListColumns(ctx, tableID, domain.PageRequest{MaxResults: 10000})
 	if err != nil {
-		return nil, fmt.Errorf("list columns for table %d: %w", tableID, err)
+		return nil, fmt.Errorf("list columns for table %s: %w", tableID, err)
 	}
 	names := make([]string, len(cols))
 	for i, c := range cols {

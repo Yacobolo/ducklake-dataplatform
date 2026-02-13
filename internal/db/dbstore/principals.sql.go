@@ -22,19 +22,25 @@ func (q *Queries) CountPrincipals(ctx context.Context) (int64, error) {
 }
 
 const createPrincipal = `-- name: CreatePrincipal :one
-INSERT INTO principals (name, type, is_admin)
-VALUES (?, ?, ?)
+INSERT INTO principals (id, name, type, is_admin)
+VALUES (?, ?, ?, ?)
 RETURNING id, name, type, is_admin, created_at, external_id, external_issuer
 `
 
 type CreatePrincipalParams struct {
+	ID      string
 	Name    string
 	Type    string
 	IsAdmin int64
 }
 
 func (q *Queries) CreatePrincipal(ctx context.Context, arg CreatePrincipalParams) (Principal, error) {
-	row := q.db.QueryRowContext(ctx, createPrincipal, arg.Name, arg.Type, arg.IsAdmin)
+	row := q.db.QueryRowContext(ctx, createPrincipal,
+		arg.ID,
+		arg.Name,
+		arg.Type,
+		arg.IsAdmin,
+	)
 	var i Principal
 	err := row.Scan(
 		&i.ID,
@@ -49,12 +55,13 @@ func (q *Queries) CreatePrincipal(ctx context.Context, arg CreatePrincipalParams
 }
 
 const createPrincipalWithExternalID = `-- name: CreatePrincipalWithExternalID :one
-INSERT INTO principals (name, type, is_admin, external_id, external_issuer)
-VALUES (?, ?, ?, ?, ?)
+INSERT INTO principals (id, name, type, is_admin, external_id, external_issuer)
+VALUES (?, ?, ?, ?, ?, ?)
 RETURNING id, name, type, is_admin, created_at, external_id, external_issuer
 `
 
 type CreatePrincipalWithExternalIDParams struct {
+	ID             string
 	Name           string
 	Type           string
 	IsAdmin        int64
@@ -64,6 +71,7 @@ type CreatePrincipalWithExternalIDParams struct {
 
 func (q *Queries) CreatePrincipalWithExternalID(ctx context.Context, arg CreatePrincipalWithExternalIDParams) (Principal, error) {
 	row := q.db.QueryRowContext(ctx, createPrincipalWithExternalID,
+		arg.ID,
 		arg.Name,
 		arg.Type,
 		arg.IsAdmin,
@@ -87,7 +95,7 @@ const deletePrincipal = `-- name: DeletePrincipal :exec
 DELETE FROM principals WHERE id = ?
 `
 
-func (q *Queries) DeletePrincipal(ctx context.Context, id int64) error {
+func (q *Queries) DeletePrincipal(ctx context.Context, id string) error {
 	_, err := q.db.ExecContext(ctx, deletePrincipal, id)
 	return err
 }
@@ -96,7 +104,7 @@ const getPrincipal = `-- name: GetPrincipal :one
 SELECT id, name, type, is_admin, created_at, external_id, external_issuer FROM principals WHERE id = ?
 `
 
-func (q *Queries) GetPrincipal(ctx context.Context, id int64) (Principal, error) {
+func (q *Queries) GetPrincipal(ctx context.Context, id string) (Principal, error) {
 	row := q.db.QueryRowContext(ctx, getPrincipal, id)
 	var i Principal
 	err := row.Scan(
@@ -237,7 +245,7 @@ UPDATE principals SET is_admin = ? WHERE id = ?
 
 type SetAdminParams struct {
 	IsAdmin int64
-	ID      int64
+	ID      string
 }
 
 func (q *Queries) SetAdmin(ctx context.Context, arg SetAdminParams) error {

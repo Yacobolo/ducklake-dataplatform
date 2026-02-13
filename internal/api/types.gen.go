@@ -5,8 +5,6 @@ package api
 
 import (
 	"time"
-
-	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 const (
@@ -222,10 +220,10 @@ const (
 type APIKeyInfo struct {
 	CreatedAt   *time.Time `json:"created_at,omitempty"`
 	ExpiresAt   *time.Time `json:"expires_at"`
-	Id          *int64     `json:"id,omitempty"`
+	Id          *string    `json:"id,omitempty"`
 	KeyPrefix   *string    `json:"key_prefix,omitempty"`
 	Name        *string    `json:"name,omitempty"`
-	PrincipalId *int64     `json:"principal_id,omitempty"`
+	PrincipalId *string    `json:"principal_id,omitempty"`
 }
 
 // AuditEntry A record of an auditable action performed by a principal.
@@ -234,7 +232,7 @@ type AuditEntry struct {
 	CreatedAt      *time.Time `json:"created_at,omitempty"`
 	DurationMs     *int64     `json:"duration_ms"`
 	ErrorMessage   *string    `json:"error_message"`
-	Id             *int64     `json:"id,omitempty"`
+	Id             *string    `json:"id,omitempty"`
 	OriginalSql    *string    `json:"original_sql"`
 	PrincipalName  *string    `json:"principal_name,omitempty"`
 	RewrittenSql   *string    `json:"rewritten_sql"`
@@ -260,9 +258,9 @@ type CatalogRegistration struct {
 	DataPath string `json:"data_path"`
 
 	// Dsn File path (sqlite) or connection string (postgres)
-	Dsn       string `json:"dsn"`
-	Id        *int64 `json:"id,omitempty"`
-	IsDefault *bool  `json:"is_default,omitempty"`
+	Dsn       string  `json:"dsn"`
+	Id        *string `json:"id,omitempty"`
+	IsDefault *bool   `json:"is_default,omitempty"`
 
 	// MetastoreType Type of metastore backend
 	MetastoreType CatalogRegistrationMetastoreType `json:"metastore_type"`
@@ -309,14 +307,14 @@ type ColumnMask struct {
 	ColumnName     *string    `json:"column_name,omitempty"`
 	CreatedAt      *time.Time `json:"created_at,omitempty"`
 	Description    *string    `json:"description,omitempty"`
-	Id             *int64     `json:"id,omitempty"`
+	Id             *string    `json:"id,omitempty"`
 	MaskExpression *string    `json:"mask_expression,omitempty"`
-	TableId        *int64     `json:"table_id,omitempty"`
+	TableId        *string    `json:"table_id,omitempty"`
 }
 
 // ColumnMaskBindingRequest Request body for binding a column mask to a principal.
 type ColumnMaskBindingRequest struct {
-	PrincipalId   int64                                 `json:"principal_id"`
+	PrincipalId   string                                `json:"principal_id"`
 	PrincipalType ColumnMaskBindingRequestPrincipalType `json:"principal_type"`
 	SeeOriginal   *bool                                 `json:"see_original,omitempty"`
 }
@@ -336,12 +334,12 @@ type CommitIngestionRequest struct {
 // ComputeAssignment An assignment linking a principal (user or group) to a compute endpoint.
 type ComputeAssignment struct {
 	CreatedAt     *time.Time                      `json:"created_at,omitempty"`
-	EndpointId    *int64                          `json:"endpoint_id,omitempty"`
+	EndpointId    *string                         `json:"endpoint_id,omitempty"`
 	EndpointName  *string                         `json:"endpoint_name,omitempty"`
 	FallbackLocal *bool                           `json:"fallback_local,omitempty"`
-	Id            *int64                          `json:"id,omitempty"`
+	Id            *string                         `json:"id,omitempty"`
 	IsDefault     *bool                           `json:"is_default,omitempty"`
-	PrincipalId   *int64                          `json:"principal_id,omitempty"`
+	PrincipalId   *string                         `json:"principal_id,omitempty"`
 	PrincipalType *ComputeAssignmentPrincipalType `json:"principal_type,omitempty"`
 }
 
@@ -351,8 +349,8 @@ type ComputeAssignmentPrincipalType string
 // ComputeEndpoint A compute endpoint representing a DuckDB execution environment, either local or remote.
 type ComputeEndpoint struct {
 	CreatedAt   *time.Time             `json:"created_at,omitempty"`
-	ExternalId  *openapi_types.UUID    `json:"external_id,omitempty"`
-	Id          *int64                 `json:"id,omitempty"`
+	ExternalId  *string                `json:"external_id,omitempty"`
+	Id          *string                `json:"id,omitempty"`
 	MaxMemoryGb *int64                 `json:"max_memory_gb,omitempty"`
 	Name        *string                `json:"name,omitempty"`
 	Owner       *string                `json:"owner,omitempty"`
@@ -397,14 +395,14 @@ type ComputeEndpointHealth struct {
 type CreateAPIKeyRequest struct {
 	ExpiresAt   *time.Time `json:"expires_at,omitempty"`
 	Name        string     `json:"name"`
-	PrincipalId int64      `json:"principal_id"`
+	PrincipalId string     `json:"principal_id"`
 }
 
 // CreateAPIKeyResponse Response returned after creating an API key, including the raw secret shown only once.
 type CreateAPIKeyResponse struct {
 	CreatedAt *time.Time `json:"created_at,omitempty"`
 	ExpiresAt *time.Time `json:"expires_at"`
-	Id        *int64     `json:"id,omitempty"`
+	Id        *string    `json:"id,omitempty"`
 
 	// Key Raw API key (shown only once)
 	Key       *string `json:"key,omitempty"`
@@ -441,7 +439,7 @@ type CreateColumnRequest struct {
 type CreateComputeAssignmentRequest struct {
 	FallbackLocal *bool                                       `json:"fallback_local,omitempty"`
 	IsDefault     *bool                                       `json:"is_default,omitempty"`
-	PrincipalId   int64                                       `json:"principal_id"`
+	PrincipalId   string                                      `json:"principal_id"`
 	PrincipalType CreateComputeAssignmentRequestPrincipalType `json:"principal_type"`
 }
 
@@ -480,10 +478,10 @@ type CreateExternalLocationRequestStorageType string
 
 // CreateGrantRequest Request body for creating a new privilege grant.
 type CreateGrantRequest struct {
-	PrincipalId   int64                           `json:"principal_id"`
+	PrincipalId   string                          `json:"principal_id"`
 	PrincipalType CreateGrantRequestPrincipalType `json:"principal_type"`
 	Privilege     string                          `json:"privilege"`
-	SecurableId   int64                           `json:"securable_id"`
+	SecurableId   string                          `json:"securable_id"`
 	SecurableType string                          `json:"securable_type"`
 }
 
@@ -492,7 +490,7 @@ type CreateGrantRequestPrincipalType string
 
 // CreateGroupMemberRequest Request body for adding a member to a group.
 type CreateGroupMemberRequest struct {
-	MemberId   int64                              `json:"member_id"`
+	MemberId   string                             `json:"member_id"`
 	MemberType CreateGroupMemberRequestMemberType `json:"member_type"`
 }
 
@@ -521,7 +519,7 @@ type CreateRowFilterRequest struct {
 	FilterSql   string  `json:"filter_sql"`
 
 	// TableId Table ID (required when creating via top-level POST /row-filters)
-	TableId *int64 `json:"table_id,omitempty"`
+	TableId *string `json:"table_id,omitempty"`
 }
 
 // CreateSchemaRequest Request body for creating a new schema.
@@ -584,7 +582,7 @@ type CreateTableRequestTableType string
 // CreateTagAssignmentRequest Request payload for creating a new tag assignment on a securable object.
 type CreateTagAssignmentRequest struct {
 	ColumnName    *string `json:"column_name,omitempty"`
-	SecurableId   int64   `json:"securable_id"`
+	SecurableId   string  `json:"securable_id"`
 	SecurableType string  `json:"securable_type"`
 }
 
@@ -625,7 +623,7 @@ type ExternalLocation struct {
 	Comment        *string    `json:"comment,omitempty"`
 	CreatedAt      *time.Time `json:"created_at,omitempty"`
 	CredentialName *string    `json:"credential_name,omitempty"`
-	Id             *int64     `json:"id,omitempty"`
+	Id             *string    `json:"id,omitempty"`
 	Name           *string    `json:"name,omitempty"`
 	Owner          *string    `json:"owner,omitempty"`
 	ReadOnly       *bool      `json:"read_only,omitempty"`
@@ -638,14 +636,14 @@ type ExternalLocation struct {
 type Group struct {
 	CreatedAt   *time.Time `json:"created_at,omitempty"`
 	Description *string    `json:"description,omitempty"`
-	Id          *int64     `json:"id,omitempty"`
+	Id          *string    `json:"id,omitempty"`
 	Name        *string    `json:"name,omitempty"`
 }
 
 // GroupMember Represents a principal's membership in a group.
 type GroupMember struct {
-	GroupId    *int64                 `json:"group_id,omitempty"`
-	MemberId   *int64                 `json:"member_id,omitempty"`
+	GroupId    *string                `json:"group_id,omitempty"`
+	MemberId   *string                `json:"member_id,omitempty"`
 	MemberType *GroupMemberMemberType `json:"member_type,omitempty"`
 }
 
@@ -678,7 +676,7 @@ type LineageEdge struct {
 
 	// EdgeType Edge type: READ, WRITE, READ_WRITE
 	EdgeType      *LineageEdgeEdgeType `json:"edge_type,omitempty"`
-	Id            *int64               `json:"id,omitempty"`
+	Id            *string              `json:"id,omitempty"`
 	PrincipalName *string              `json:"principal_name,omitempty"`
 
 	// SourceSchema Schema of the source table
@@ -871,7 +869,7 @@ type PaginatedVolumes struct {
 // Principal A security principal representing a user or service account.
 type Principal struct {
 	CreatedAt *time.Time     `json:"created_at,omitempty"`
-	Id        *int64         `json:"id,omitempty"`
+	Id        *string        `json:"id,omitempty"`
 	IsAdmin   *bool          `json:"is_admin,omitempty"`
 	Name      *string        `json:"name,omitempty"`
 	Type      *PrincipalType `json:"type,omitempty"`
@@ -883,12 +881,12 @@ type PrincipalType string
 // PrivilegeGrant A privilege grant linking a principal to a securable resource with a specific permission.
 type PrivilegeGrant struct {
 	GrantedAt     *time.Time                   `json:"granted_at,omitempty"`
-	GrantedBy     *int64                       `json:"granted_by"`
-	Id            *int64                       `json:"id,omitempty"`
-	PrincipalId   *int64                       `json:"principal_id,omitempty"`
+	GrantedBy     *string                      `json:"granted_by"`
+	Id            *string                      `json:"id,omitempty"`
+	PrincipalId   *string                      `json:"principal_id,omitempty"`
 	PrincipalType *PrivilegeGrantPrincipalType `json:"principal_type,omitempty"`
 	Privilege     *string                      `json:"privilege,omitempty"`
-	SecurableId   *int64                       `json:"securable_id,omitempty"`
+	SecurableId   *string                      `json:"securable_id,omitempty"`
 	SecurableType *string                      `json:"securable_type,omitempty"`
 }
 
@@ -911,7 +909,7 @@ type QueryHistoryEntry struct {
 	CreatedAt      *time.Time `json:"created_at,omitempty"`
 	DurationMs     *int64     `json:"duration_ms"`
 	ErrorMessage   *string    `json:"error_message"`
-	Id             *int64     `json:"id,omitempty"`
+	Id             *string    `json:"id,omitempty"`
 	OriginalSql    *string    `json:"original_sql"`
 	PrincipalName  *string    `json:"principal_name,omitempty"`
 	RewrittenSql   *string    `json:"rewritten_sql"`
@@ -938,13 +936,13 @@ type RowFilter struct {
 	CreatedAt   *time.Time `json:"created_at,omitempty"`
 	Description *string    `json:"description,omitempty"`
 	FilterSql   *string    `json:"filter_sql,omitempty"`
-	Id          *int64     `json:"id,omitempty"`
-	TableId     *int64     `json:"table_id,omitempty"`
+	Id          *string    `json:"id,omitempty"`
+	TableId     *string    `json:"table_id,omitempty"`
 }
 
 // RowFilterBindingRequest Request body for binding a row filter to a principal.
 type RowFilterBindingRequest struct {
-	PrincipalId   int64                                `json:"principal_id"`
+	PrincipalId   string                               `json:"principal_id"`
 	PrincipalType RowFilterBindingRequestPrincipalType `json:"principal_type"`
 }
 
@@ -960,7 +958,7 @@ type SchemaDetail struct {
 	Name        *string            `json:"name,omitempty"`
 	Owner       *string            `json:"owner,omitempty"`
 	Properties  *map[string]string `json:"properties,omitempty"`
-	SchemaId    *int64             `json:"schema_id,omitempty"`
+	SchemaId    *string            `json:"schema_id,omitempty"`
 	Tags        *[]Tag             `json:"tags,omitempty"`
 	UpdatedAt   *time.Time         `json:"updated_at,omitempty"`
 }
@@ -992,7 +990,7 @@ type StorageCredential struct {
 	CredentialType   *StorageCredentialCredentialType `json:"credential_type,omitempty"`
 	Endpoint         *string                          `json:"endpoint,omitempty"`
 	GcsKeyFilePath   *string                          `json:"gcs_key_file_path,omitempty"`
-	Id               *int64                           `json:"id,omitempty"`
+	Id               *string                          `json:"id,omitempty"`
 	Name             *string                          `json:"name,omitempty"`
 	Owner            *string                          `json:"owner,omitempty"`
 	Region           *string                          `json:"region,omitempty"`
@@ -1029,7 +1027,7 @@ type TableDetail struct {
 
 	// StoragePath Resolved DuckLake data path for MANAGED tables.
 	StoragePath *string    `json:"storage_path,omitempty"`
-	TableId     *int64     `json:"table_id,omitempty"`
+	TableId     *string    `json:"table_id,omitempty"`
 	TableType   *string    `json:"table_type,omitempty"`
 	Tags        *[]Tag     `json:"tags,omitempty"`
 	UpdatedAt   *time.Time `json:"updated_at,omitempty"`
@@ -1048,7 +1046,7 @@ type TableStatistics struct {
 type Tag struct {
 	CreatedAt *time.Time `json:"created_at,omitempty"`
 	CreatedBy *string    `json:"created_by,omitempty"`
-	Id        *int64     `json:"id,omitempty"`
+	Id        *string    `json:"id,omitempty"`
 	Key       *string    `json:"key,omitempty"`
 	Value     *string    `json:"value"`
 }
@@ -1058,10 +1056,10 @@ type TagAssignment struct {
 	AssignedAt    *time.Time `json:"assigned_at,omitempty"`
 	AssignedBy    *string    `json:"assigned_by,omitempty"`
 	ColumnName    *string    `json:"column_name"`
-	Id            *int64     `json:"id,omitempty"`
-	SecurableId   *int64     `json:"securable_id,omitempty"`
+	Id            *string    `json:"id,omitempty"`
+	SecurableId   *string    `json:"securable_id,omitempty"`
 	SecurableType *string    `json:"securable_type,omitempty"`
-	TagId         *int64     `json:"tag_id,omitempty"`
+	TagId         *string    `json:"tag_id,omitempty"`
 }
 
 // UpdateCatalogRegistrationRequest Request body for updating a catalog registration.
@@ -1172,11 +1170,11 @@ type ViewDetail struct {
 	CatalogName    *string            `json:"catalog_name,omitempty"`
 	Comment        *string            `json:"comment"`
 	CreatedAt      *time.Time         `json:"created_at,omitempty"`
-	Id             *int64             `json:"id,omitempty"`
+	Id             *string            `json:"id,omitempty"`
 	Name           *string            `json:"name,omitempty"`
 	Owner          *string            `json:"owner,omitempty"`
 	Properties     *map[string]string `json:"properties,omitempty"`
-	SchemaId       *int64             `json:"schema_id,omitempty"`
+	SchemaId       *string            `json:"schema_id,omitempty"`
 	SchemaName     *string            `json:"schema_name,omitempty"`
 	SourceTables   *[]string          `json:"source_tables,omitempty"`
 	UpdatedAt      *time.Time         `json:"updated_at,omitempty"`
@@ -1188,7 +1186,7 @@ type VolumeDetail struct {
 	CatalogName     *string                 `json:"catalog_name,omitempty"`
 	Comment         *string                 `json:"comment,omitempty"`
 	CreatedAt       *time.Time              `json:"created_at,omitempty"`
-	Id              *int64                  `json:"id,omitempty"`
+	Id              *string                 `json:"id,omitempty"`
 	Name            *string                 `json:"name,omitempty"`
 	Owner           *string                 `json:"owner,omitempty"`
 	SchemaName      *string                 `json:"schema_name,omitempty"`
@@ -1207,16 +1205,16 @@ type MaxResults = int32
 type PageToken = string
 
 // ApiKeyId defines model for apiKeyId.
-type ApiKeyId = int64
+type ApiKeyId = string
 
 // AssignmentId defines model for assignmentId.
-type AssignmentId = int64
+type AssignmentId = string
 
 // CatalogName defines model for catalogName.
 type CatalogName = string
 
 // ColumnMaskId defines model for columnMaskId.
-type ColumnMaskId = int64
+type ColumnMaskId = string
 
 // ColumnName defines model for columnName.
 type ColumnName = string
@@ -1225,37 +1223,37 @@ type ColumnName = string
 type CredentialName = string
 
 // EdgeId defines model for edgeId.
-type EdgeId = int64
+type EdgeId = string
 
 // EndpointName defines model for endpointName.
 type EndpointName = string
 
 // GrantId defines model for grantId.
-type GrantId = int64
+type GrantId = string
 
 // GroupId defines model for groupId.
-type GroupId = int64
+type GroupId = string
 
 // LocationName defines model for locationName.
 type LocationName = string
 
 // PrincipalId defines model for principalId.
-type PrincipalId = int64
+type PrincipalId = string
 
 // RowFilterId defines model for rowFilterId.
-type RowFilterId = int64
+type RowFilterId = string
 
 // SchemaName defines model for schemaName.
 type SchemaName = string
 
 // TableId defines model for tableId.
-type TableId = int64
+type TableId = string
 
 // TableName defines model for tableName.
 type TableName = string
 
 // TagId defines model for tagId.
-type TagId = int64
+type TagId = string
 
 // ViewName defines model for viewName.
 type ViewName = string
@@ -1287,7 +1285,7 @@ type Unauthorized = Error
 // ListAPIKeysParams defines parameters for ListAPIKeys.
 type ListAPIKeysParams struct {
 	// PrincipalId Filter by principal identifier.
-	PrincipalId int64 `form:"principal_id" json:"principal_id"`
+	PrincipalId string `form:"principal_id" json:"principal_id"`
 
 	// MaxResults Maximum number of results to return per page.
 	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
@@ -1386,7 +1384,7 @@ type ListClassificationsParams struct {
 // UnbindColumnMaskParams defines parameters for UnbindColumnMask.
 type UnbindColumnMaskParams struct {
 	// PrincipalId Filter by principal identifier.
-	PrincipalId int64 `form:"principal_id" json:"principal_id"`
+	PrincipalId string `form:"principal_id" json:"principal_id"`
 
 	// PrincipalType Filter by principal type.
 	PrincipalType UnbindColumnMaskParamsPrincipalType `form:"principal_type" json:"principal_type"`
@@ -1425,7 +1423,7 @@ type ListExternalLocationsParams struct {
 // ListGrantsParams defines parameters for ListGrants.
 type ListGrantsParams struct {
 	// PrincipalId Filter by principal identifier.
-	PrincipalId *int64 `form:"principal_id,omitempty" json:"principal_id,omitempty"`
+	PrincipalId *string `form:"principal_id,omitempty" json:"principal_id,omitempty"`
 
 	// PrincipalType Filter by principal type.
 	PrincipalType *ListGrantsParamsPrincipalType `form:"principal_type,omitempty" json:"principal_type,omitempty"`
@@ -1434,7 +1432,7 @@ type ListGrantsParams struct {
 	SecurableType *string `form:"securable_type,omitempty" json:"securable_type,omitempty"`
 
 	// SecurableId Filter by securable resource identifier.
-	SecurableId *int64 `form:"securable_id,omitempty" json:"securable_id,omitempty"`
+	SecurableId *string `form:"securable_id,omitempty" json:"securable_id,omitempty"`
 
 	// MaxResults Maximum number of results to return per page.
 	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
@@ -1461,7 +1459,7 @@ type DeleteGroupMemberParams struct {
 	MemberType DeleteGroupMemberParamsMemberType `form:"member_type" json:"member_type"`
 
 	// MemberId Identifier of the member to remove.
-	MemberId int64 `form:"member_id" json:"member_id"`
+	MemberId string `form:"member_id" json:"member_id"`
 }
 
 // DeleteGroupMemberParamsMemberType defines parameters for DeleteGroupMember.
@@ -1536,7 +1534,7 @@ type ListQueryHistoryParams struct {
 // UnbindRowFilterParams defines parameters for UnbindRowFilter.
 type UnbindRowFilterParams struct {
 	// PrincipalId Filter by principal identifier.
-	PrincipalId int64 `form:"principal_id" json:"principal_id"`
+	PrincipalId string `form:"principal_id" json:"principal_id"`
 
 	// PrincipalType Filter by principal type.
 	PrincipalType UnbindRowFilterParamsPrincipalType `form:"principal_type" json:"principal_type"`

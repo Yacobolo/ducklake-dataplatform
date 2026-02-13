@@ -22,16 +22,17 @@ func (q *Queries) CountStorageCredentials(ctx context.Context) (int64, error) {
 
 const createStorageCredential = `-- name: CreateStorageCredential :one
 INSERT INTO storage_credentials (
-    name, credential_type,
+    id, name, credential_type,
     key_id_encrypted, secret_encrypted, endpoint, region, url_style,
     azure_account_name, azure_account_key_encrypted, azure_client_id, azure_tenant_id, azure_client_secret_encrypted,
     gcs_key_file_path,
     comment, owner
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING id, name, credential_type, key_id_encrypted, secret_encrypted, endpoint, region, url_style, comment, owner, created_at, updated_at, azure_account_name, azure_account_key_encrypted, azure_client_id, azure_tenant_id, azure_client_secret_encrypted, gcs_key_file_path
 `
 
 type CreateStorageCredentialParams struct {
+	ID                         string
 	Name                       string
 	CredentialType             string
 	KeyIDEncrypted             string
@@ -51,6 +52,7 @@ type CreateStorageCredentialParams struct {
 
 func (q *Queries) CreateStorageCredential(ctx context.Context, arg CreateStorageCredentialParams) (StorageCredential, error) {
 	row := q.db.QueryRowContext(ctx, createStorageCredential,
+		arg.ID,
 		arg.Name,
 		arg.CredentialType,
 		arg.KeyIDEncrypted,
@@ -95,7 +97,7 @@ const deleteStorageCredential = `-- name: DeleteStorageCredential :exec
 DELETE FROM storage_credentials WHERE id = ?
 `
 
-func (q *Queries) DeleteStorageCredential(ctx context.Context, id int64) error {
+func (q *Queries) DeleteStorageCredential(ctx context.Context, id string) error {
 	_, err := q.db.ExecContext(ctx, deleteStorageCredential, id)
 	return err
 }
@@ -104,7 +106,7 @@ const getStorageCredential = `-- name: GetStorageCredential :one
 SELECT id, name, credential_type, key_id_encrypted, secret_encrypted, endpoint, region, url_style, comment, owner, created_at, updated_at, azure_account_name, azure_account_key_encrypted, azure_client_id, azure_tenant_id, azure_client_secret_encrypted, gcs_key_file_path FROM storage_credentials WHERE id = ?
 `
 
-func (q *Queries) GetStorageCredential(ctx context.Context, id int64) (StorageCredential, error) {
+func (q *Queries) GetStorageCredential(ctx context.Context, id string) (StorageCredential, error) {
 	row := q.db.QueryRowContext(ctx, getStorageCredential, id)
 	var i StorageCredential
 	err := row.Scan(
@@ -242,7 +244,7 @@ type UpdateStorageCredentialParams struct {
 	AzureClientSecretEncrypted string
 	GcsKeyFilePath             string
 	Comment                    string
-	ID                         int64
+	ID                         string
 }
 
 func (q *Queries) UpdateStorageCredential(ctx context.Context, arg UpdateStorageCredentialParams) error {

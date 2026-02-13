@@ -29,7 +29,7 @@ func (r *CatalogRepo) resolveSchemaID(ctx context.Context, schemaName string) (i
 // cascadeDeleteTableGrants removes row filters, column masks, and tag
 // assignments for a single table. It logs warnings on failure but does not
 // return errors (best-effort cascade cleanup).
-func (r *CatalogRepo) cascadeDeleteTableGrants(ctx context.Context, qtx *dbstore.Queries, tableID int64, logLabel string) {
+func (r *CatalogRepo) cascadeDeleteTableGrants(ctx context.Context, qtx *dbstore.Queries, tableID string, logLabel string) {
 	if err := qtx.DeleteRowFiltersByTable(ctx, tableID); err != nil {
 		r.logger.Warn("cascade cleanup: delete row filters", logLabel, tableID, "error", err)
 	}
@@ -73,7 +73,7 @@ func (r *CatalogRepo) resolveStoragePath(ctx context.Context, schemaPath, tableP
 }
 
 // loadColumns reads columns from ducklake_column (not managed by sqlc).
-func (r *CatalogRepo) loadColumns(ctx context.Context, tableID int64) ([]domain.ColumnDetail, error) {
+func (r *CatalogRepo) loadColumns(ctx context.Context, tableID string) ([]domain.ColumnDetail, error) {
 	rows, err := r.metaDB.QueryContext(ctx,
 		`SELECT column_name, column_type, column_id, COALESCE(nulls_allowed, 1) FROM ducklake_column WHERE table_id = ? AND end_snapshot IS NULL ORDER BY column_id`,
 		tableID)

@@ -15,10 +15,10 @@ import (
 func TestHTTP_TagCRUD(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
 
-	var tagID int64
-	var tagNoValueID int64
-	var assignmentID int64
-	var columnAssignmentID int64
+	var tagID string
+	var tagNoValueID string
+	var assignmentID string
+	var columnAssignmentID string
 
 	type step struct {
 		name string
@@ -39,7 +39,7 @@ func TestHTTP_TagCRUD(t *testing.T) {
 			assert.Equal(t, "production", result["value"])
 			assert.NotEmpty(t, result["created_by"])
 			assert.NotNil(t, result["id"])
-			tagID = int64(result["id"].(float64))
+			tagID = result["id"].(string)
 		}},
 
 		{"create_tag_no_value", func(t *testing.T) {
@@ -52,7 +52,7 @@ func TestHTTP_TagCRUD(t *testing.T) {
 			decodeJSON(t, resp, &result)
 			assert.Equal(t, "pii", result["key"])
 			assert.Nil(t, result["value"])
-			tagNoValueID = int64(result["id"].(float64))
+			tagNoValueID = result["id"].(string)
 			_ = tagNoValueID // used later if needed
 		}},
 
@@ -77,27 +77,27 @@ func TestHTTP_TagCRUD(t *testing.T) {
 
 		{"assign_tag_to_table", func(t *testing.T) {
 			resp := doRequest(t, "POST",
-				fmt.Sprintf("%s/v1/tags/%d/assignments", env.Server.URL, tagID),
+				fmt.Sprintf("%s/v1/tags/%s/assignments", env.Server.URL, tagID),
 				env.Keys.Admin, map[string]interface{}{
 					"securable_type": "table",
-					"securable_id":   1,
+					"securable_id":   "1",
 				})
 			require.Equal(t, 201, resp.StatusCode)
 
 			var result map[string]interface{}
 			decodeJSON(t, resp, &result)
-			assert.InDelta(t, float64(tagID), result["tag_id"], 0)
+			assert.Equal(t, tagID, result["tag_id"])
 			assert.Equal(t, "table", result["securable_type"])
-			assert.InDelta(t, float64(1), result["securable_id"], 0)
-			assignmentID = int64(result["id"].(float64))
+			assert.Equal(t, "1", result["securable_id"])
+			assignmentID = result["id"].(string)
 		}},
 
 		{"assign_tag_to_column", func(t *testing.T) {
 			resp := doRequest(t, "POST",
-				fmt.Sprintf("%s/v1/tags/%d/assignments", env.Server.URL, tagID),
+				fmt.Sprintf("%s/v1/tags/%s/assignments", env.Server.URL, tagID),
 				env.Keys.Admin, map[string]interface{}{
 					"securable_type": "table",
-					"securable_id":   1,
+					"securable_id":   "1",
 					"column_name":    "Name",
 				})
 			require.Equal(t, 201, resp.StatusCode)
@@ -105,17 +105,17 @@ func TestHTTP_TagCRUD(t *testing.T) {
 			var result map[string]interface{}
 			decodeJSON(t, resp, &result)
 			assert.Equal(t, "Name", result["column_name"])
-			columnAssignmentID = int64(result["id"].(float64))
+			columnAssignmentID = result["id"].(string)
 			_ = columnAssignmentID
 		}},
 
 		{"assign_tag_to_column_duplicate_409", func(t *testing.T) {
 			// Duplicate the column-level assignment (column_name="Name") — should conflict
 			resp := doRequest(t, "POST",
-				fmt.Sprintf("%s/v1/tags/%d/assignments", env.Server.URL, tagID),
+				fmt.Sprintf("%s/v1/tags/%s/assignments", env.Server.URL, tagID),
 				env.Keys.Admin, map[string]interface{}{
 					"securable_type": "table",
-					"securable_id":   1,
+					"securable_id":   "1",
 					"column_name":    "Name",
 				})
 			defer resp.Body.Close() //nolint:errcheck
@@ -124,7 +124,7 @@ func TestHTTP_TagCRUD(t *testing.T) {
 
 		{"unassign_tag", func(t *testing.T) {
 			resp := doRequest(t, "DELETE",
-				fmt.Sprintf("%s/v1/tag-assignments/%d", env.Server.URL, assignmentID),
+				fmt.Sprintf("%s/v1/tag-assignments/%s", env.Server.URL, assignmentID),
 				env.Keys.Admin, nil)
 			defer resp.Body.Close() //nolint:errcheck
 			require.Equal(t, 204, resp.StatusCode)
@@ -132,7 +132,7 @@ func TestHTTP_TagCRUD(t *testing.T) {
 
 		{"delete_tag", func(t *testing.T) {
 			resp := doRequest(t, "DELETE",
-				fmt.Sprintf("%s/v1/tags/%d", env.Server.URL, tagID),
+				fmt.Sprintf("%s/v1/tags/%s", env.Server.URL, tagID),
 				env.Keys.Admin, nil)
 			defer resp.Body.Close() //nolint:errcheck
 			require.Equal(t, 204, resp.StatusCode)
@@ -142,7 +142,7 @@ func TestHTTP_TagCRUD(t *testing.T) {
 			// Deleting an already-deleted tag returns 204 (idempotent — the SQL
 			// DELETE succeeds with 0 rows affected and no error).
 			resp := doRequest(t, "DELETE",
-				fmt.Sprintf("%s/v1/tags/%d", env.Server.URL, tagID),
+				fmt.Sprintf("%s/v1/tags/%s", env.Server.URL, tagID),
 				env.Keys.Admin, nil)
 			defer resp.Body.Close() //nolint:errcheck
 			require.Equal(t, 204, resp.StatusCode)
@@ -223,7 +223,7 @@ func TestHTTP_ListClassifications(t *testing.T) {
 func TestHTTP_TagAnyUserCanManage(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
 
-	var tagID int64
+	var tagID string
 
 	type step struct {
 		name string
@@ -240,12 +240,12 @@ func TestHTTP_TagAnyUserCanManage(t *testing.T) {
 
 			var result map[string]interface{}
 			decodeJSON(t, resp, &result)
-			tagID = int64(result["id"].(float64))
+			tagID = result["id"].(string)
 		}},
 
 		{"analyst_deletes_tag", func(t *testing.T) {
 			resp := doRequest(t, "DELETE",
-				fmt.Sprintf("%s/v1/tags/%d", env.Server.URL, tagID),
+				fmt.Sprintf("%s/v1/tags/%s", env.Server.URL, tagID),
 				env.Keys.Analyst, nil)
 			defer resp.Body.Close() //nolint:errcheck
 			require.Equal(t, 204, resp.StatusCode)

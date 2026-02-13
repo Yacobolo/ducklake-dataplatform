@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	_ "github.com/duckdb/duckdb-go/v2"
+	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/require"
 
@@ -162,20 +163,20 @@ func TestDuckLakeRBACIntegration(t *testing.T) {
 
 	// Seed principals and grants
 	adminUser, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
-		Name: "admin", Type: "user", IsAdmin: 1,
+		ID: uuid.New().String(), Name: "admin", Type: "user", IsAdmin: 1,
 	})
 	if err != nil {
 		t.Fatalf("create admin: %v", err)
 	}
 
 	analyst, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
-		Name: "first_class_analyst", Type: "user", IsAdmin: 0,
+		ID: uuid.New().String(), Name: "first_class_analyst", Type: "user", IsAdmin: 0,
 	})
 	if err != nil {
 		t.Fatalf("create analyst: %v", err)
 	}
 	_, err = q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
-		Name: "no_access", Type: "user", IsAdmin: 0,
+		ID: uuid.New().String(), Name: "no_access", Type: "user", IsAdmin: 0,
 	})
 	if err != nil {
 		t.Fatalf("create no_access: %v", err)
@@ -192,7 +193,7 @@ func TestDuckLakeRBACIntegration(t *testing.T) {
 	}
 
 	// Create group for analysts
-	analystsGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{Name: "analysts"})
+	analystsGroup, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{ID: uuid.New().String(), Name: "analysts"})
 	if err != nil {
 		t.Fatalf("create group: %v", err)
 	}
@@ -205,8 +206,8 @@ func TestDuckLakeRBACIntegration(t *testing.T) {
 
 	// Grant admin ALL_PRIVILEGES on catalog
 	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: adminUser.ID, PrincipalType: "user",
-		SecurableType: "catalog", SecurableID: 0,
+		ID: uuid.New().String(), PrincipalID: adminUser.ID, PrincipalType: "user",
+		SecurableType: "catalog", SecurableID: "0",
 		Privilege: "ALL_PRIVILEGES",
 	})
 	if err != nil {
@@ -215,7 +216,7 @@ func TestDuckLakeRBACIntegration(t *testing.T) {
 
 	// Grant analysts USAGE + SELECT
 	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: analystsGroup.ID, PrincipalType: "group",
+		ID: uuid.New().String(), PrincipalID: analystsGroup.ID, PrincipalType: "group",
 		SecurableType: "schema", SecurableID: schemaID,
 		Privilege: "USAGE",
 	})
@@ -223,7 +224,7 @@ func TestDuckLakeRBACIntegration(t *testing.T) {
 		t.Fatalf("grant usage: %v", err)
 	}
 	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
-		PrincipalID: analystsGroup.ID, PrincipalType: "group",
+		ID: uuid.New().String(), PrincipalID: analystsGroup.ID, PrincipalType: "group",
 		SecurableType: "table", SecurableID: titanicID,
 		Privilege: "SELECT",
 	})
@@ -233,14 +234,14 @@ func TestDuckLakeRBACIntegration(t *testing.T) {
 
 	// Row filter
 	filter, err := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
-		TableID:   titanicID,
+		ID: uuid.New().String(), TableID: titanicID,
 		FilterSql: `"Pclass" = 1`,
 	})
 	if err != nil {
 		t.Fatalf("create row filter: %v", err)
 	}
 	err = q.BindRowFilter(ctx, dbstore.BindRowFilterParams{
-		RowFilterID: filter.ID, PrincipalID: analystsGroup.ID, PrincipalType: "group",
+		ID: uuid.New().String(), RowFilterID: filter.ID, PrincipalID: analystsGroup.ID, PrincipalType: "group",
 	})
 	if err != nil {
 		t.Fatalf("bind row filter: %v", err)

@@ -36,6 +36,7 @@ func (r *APIKeyRepo) LookupPrincipalByAPIKeyHash(ctx context.Context, keyHash st
 // Create inserts a new API key into the database.
 func (r *APIKeyRepo) Create(ctx context.Context, key *domain.APIKey) error {
 	params := dbstore.CreateAPIKeyParams{
+		ID:          newID(),
 		KeyHash:     key.KeyHash,
 		PrincipalID: key.PrincipalID,
 		Name:        key.Name,
@@ -68,7 +69,7 @@ func (r *APIKeyRepo) GetByHash(ctx context.Context, hash string) (*domain.APIKey
 }
 
 // ListByPrincipal returns a paginated list of API keys for a principal.
-func (r *APIKeyRepo) ListByPrincipal(ctx context.Context, principalID int64, page domain.PageRequest) ([]domain.APIKey, int64, error) {
+func (r *APIKeyRepo) ListByPrincipal(ctx context.Context, principalID string, page domain.PageRequest) ([]domain.APIKey, int64, error) {
 	total, err := r.q.CountAPIKeysForPrincipal(ctx, principalID)
 	if err != nil {
 		return nil, 0, err
@@ -89,7 +90,7 @@ func (r *APIKeyRepo) ListByPrincipal(ctx context.Context, principalID int64, pag
 }
 
 // Delete removes an API key by ID.
-func (r *APIKeyRepo) Delete(ctx context.Context, id int64) error {
+func (r *APIKeyRepo) Delete(ctx context.Context, id string) error {
 	return r.q.DeleteAPIKey(ctx, id)
 }
 

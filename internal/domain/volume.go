@@ -10,7 +10,7 @@ const (
 
 // Volume represents a governed storage container for unstructured files.
 type Volume struct {
-	ID              int64
+	ID              string
 	Name            string
 	SchemaName      string
 	CatalogName     string

@@ -38,7 +38,7 @@ func (s *GrantService) Grant(ctx context.Context, _ string, g *domain.PrivilegeG
 }
 
 // Revoke removes a privilege grant by ID. Requires admin privileges.
-func (s *GrantService) Revoke(ctx context.Context, _ string, grantID int64) error {
+func (s *GrantService) Revoke(ctx context.Context, _ string, grantID string) error {
 	if err := requireAdmin(ctx); err != nil {
 		return err
 	}
@@ -54,11 +54,11 @@ func (s *GrantService) Revoke(ctx context.Context, _ string, grantID int64) erro
 }
 
 // ListForPrincipal returns grants assigned to a specific principal.
-func (s *GrantService) ListForPrincipal(ctx context.Context, principalID int64, principalType string, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error) {
+func (s *GrantService) ListForPrincipal(ctx context.Context, principalID string, principalType string, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error) {
 	return s.repo.ListForPrincipal(ctx, principalID, principalType, page)
 }
 
 // ListForSecurable returns grants on a specific securable object.
-func (s *GrantService) ListForSecurable(ctx context.Context, securableType string, securableID int64, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error) {
+func (s *GrantService) ListForSecurable(ctx context.Context, securableType string, securableID string, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error) {
 	return s.repo.ListForSecurable(ctx, securableType, securableID, page)
 }

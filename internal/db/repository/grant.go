@@ -21,11 +21,12 @@ func NewGrantRepo(db *sql.DB) *GrantRepo {
 
 // Grant creates a new privilege grant.
 func (r *GrantRepo) Grant(ctx context.Context, g *domain.PrivilegeGrant) (*domain.PrivilegeGrant, error) {
-	grantedBy := sql.NullInt64{}
+	grantedBy := sql.NullString{}
 	if g.GrantedBy != nil {
-		grantedBy = sql.NullInt64{Int64: *g.GrantedBy, Valid: true}
+		grantedBy = sql.NullString{String: *g.GrantedBy, Valid: true}
 	}
 	row, err := r.q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		ID:            domain.NewID(),
 		PrincipalID:   g.PrincipalID,
 		PrincipalType: g.PrincipalType,
 		SecurableType: g.SecurableType,
@@ -51,12 +52,12 @@ func (r *GrantRepo) Revoke(ctx context.Context, g *domain.PrivilegeGrant) error 
 }
 
 // RevokeByID removes a privilege grant by its ID.
-func (r *GrantRepo) RevokeByID(ctx context.Context, id int64) error {
+func (r *GrantRepo) RevokeByID(ctx context.Context, id string) error {
 	return r.q.RevokePrivilegeByID(ctx, id)
 }
 
 // ListForPrincipal returns a paginated list of grants for a specific principal.
-func (r *GrantRepo) ListForPrincipal(ctx context.Context, principalID int64, principalType string, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error) {
+func (r *GrantRepo) ListForPrincipal(ctx context.Context, principalID string, principalType string, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error) {
 	total, err := r.q.CountGrantsForPrincipal(ctx, dbstore.CountGrantsForPrincipalParams{
 		PrincipalID:   principalID,
 		PrincipalType: principalType,
@@ -79,7 +80,7 @@ func (r *GrantRepo) ListForPrincipal(ctx context.Context, principalID int64, pri
 }
 
 // ListForSecurable returns a paginated list of grants on a specific securable object.
-func (r *GrantRepo) ListForSecurable(ctx context.Context, securableType string, securableID int64, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error) {
+func (r *GrantRepo) ListForSecurable(ctx context.Context, securableType string, securableID string, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error) {
 	total, err := r.q.CountGrantsForSecurable(ctx, dbstore.CountGrantsForSecurableParams{
 		SecurableType: securableType,
 		SecurableID:   securableID,
@@ -102,7 +103,7 @@ func (r *GrantRepo) ListForSecurable(ctx context.Context, securableType string, 
 }
 
 // HasPrivilege checks whether a principal has a specific privilege on a securable.
-func (r *GrantRepo) HasPrivilege(ctx context.Context, principalID int64, principalType, securableType string, securableID int64, privilege string) (bool, error) {
+func (r *GrantRepo) HasPrivilege(ctx context.Context, principalID string, principalType, securableType string, securableID string, privilege string) (bool, error) {
 	cnt, err := r.q.CheckDirectGrantAny(ctx, dbstore.CheckDirectGrantAnyParams{
 		PrincipalID:   principalID,
 		PrincipalType: principalType,

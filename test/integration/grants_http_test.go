@@ -20,16 +20,16 @@ func TestHTTP_GrantRevoke(t *testing.T) {
 	require.Equal(t, 201, pResp.StatusCode)
 	var pResult map[string]interface{}
 	decodeJSON(t, pResp, &pResult)
-	userID := int64(pResult["id"].(float64))
+	userID := pResult["id"].(string)
 
 	gResp := doRequest(t, "POST", env.Server.URL+"/v1/groups", env.Keys.Admin,
 		map[string]interface{}{"name": "grant-test-group"})
 	require.Equal(t, 201, gResp.StatusCode)
 	var gResult map[string]interface{}
 	decodeJSON(t, gResp, &gResult)
-	groupID := int64(gResult["id"].(float64))
+	groupID := gResult["id"].(string)
 
-	var grantID float64
+	var grantID string
 
 	type step struct {
 		name string
@@ -41,7 +41,7 @@ func TestHTTP_GrantRevoke(t *testing.T) {
 				"principal_id":   userID,
 				"principal_type": "user",
 				"securable_type": "table",
-				"securable_id":   1, // titanic table
+				"securable_id":   "1", // titanic table
 				"privilege":      "SELECT",
 			}
 			resp := doRequest(t, "POST", env.Server.URL+"/v1/grants", env.Keys.Admin, body)
@@ -50,7 +50,7 @@ func TestHTTP_GrantRevoke(t *testing.T) {
 			var result map[string]interface{}
 			decodeJSON(t, resp, &result)
 			require.NotNil(t, result["id"])
-			grantID = result["id"].(float64)
+			grantID = result["id"].(string)
 			assert.Equal(t, "SELECT", result["privilege"])
 		}},
 		{"grant_to_group", func(t *testing.T) {
@@ -58,7 +58,7 @@ func TestHTTP_GrantRevoke(t *testing.T) {
 				"principal_id":   groupID,
 				"principal_type": "group",
 				"securable_type": "schema",
-				"securable_id":   0, // main schema
+				"securable_id":   "0", // main schema
 				"privilege":      "USAGE",
 			}
 			resp := doRequest(t, "POST", env.Server.URL+"/v1/grants", env.Keys.Admin, body)
@@ -66,7 +66,7 @@ func TestHTTP_GrantRevoke(t *testing.T) {
 			_ = resp.Body.Close()
 		}},
 		{"list_by_principal", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/grants?principal_id=%d&principal_type=user",
+			url := fmt.Sprintf("%s/v1/grants?principal_id=%s&principal_type=user",
 				env.Server.URL, userID)
 			resp := doRequest(t, "GET", url, env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
@@ -89,13 +89,13 @@ func TestHTTP_GrantRevoke(t *testing.T) {
 			assert.GreaterOrEqual(t, len(data), 1)
 		}},
 		{"revoke", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/grants/%d", env.Server.URL, int64(grantID))
+			url := fmt.Sprintf("%s/v1/grants/%s", env.Server.URL, grantID)
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()
 		}},
 		{"list_after_revoke", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/grants?principal_id=%d&principal_type=user",
+			url := fmt.Sprintf("%s/v1/grants?principal_id=%s&principal_type=user",
 				env.Server.URL, userID)
 			resp := doRequest(t, "GET", url, env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
@@ -122,14 +122,14 @@ func TestHTTP_GrantAllPrivileges(t *testing.T) {
 	require.Equal(t, 201, pResp.StatusCode)
 	var pResult map[string]interface{}
 	decodeJSON(t, pResp, &pResult)
-	userID := int64(pResult["id"].(float64))
+	userID := pResult["id"].(string)
 
 	// Grant ALL_PRIVILEGES on catalog (securable_id=0)
 	body := map[string]interface{}{
 		"principal_id":   userID,
 		"principal_type": "user",
 		"securable_type": "catalog",
-		"securable_id":   0,
+		"securable_id":   "0",
 		"privilege":      "ALL_PRIVILEGES",
 	}
 	resp := doRequest(t, "POST", env.Server.URL+"/v1/grants", env.Keys.Admin, body)
@@ -137,7 +137,7 @@ func TestHTTP_GrantAllPrivileges(t *testing.T) {
 	_ = resp.Body.Close()
 
 	// Verify the grant appears in list
-	url := fmt.Sprintf("%s/v1/grants?principal_id=%d&principal_type=user", env.Server.URL, userID)
+	url := fmt.Sprintf("%s/v1/grants?principal_id=%s&principal_type=user", env.Server.URL, userID)
 	resp2 := doRequest(t, "GET", url, env.Keys.Admin, nil)
 	require.Equal(t, 200, resp2.StatusCode)
 	var result map[string]interface{}

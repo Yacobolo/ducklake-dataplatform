@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/google/uuid"
-
 	"duck-demo/internal/domain"
 	"duck-demo/internal/middleware"
 )
@@ -19,7 +17,7 @@ type computeEndpointService interface {
 	Delete(ctx context.Context, principal string, name string) error
 	ListAssignments(ctx context.Context, endpointName string, page domain.PageRequest) ([]domain.ComputeAssignment, int64, error)
 	Assign(ctx context.Context, principal string, endpointName string, req domain.CreateComputeAssignmentRequest) (*domain.ComputeAssignment, error)
-	Unassign(ctx context.Context, principal string, assignmentID int64) error
+	Unassign(ctx context.Context, principal string, assignmentID string) error
 	HealthCheck(ctx context.Context, principal string, endpointName string) (*domain.ComputeEndpointHealthResult, error)
 }
 
@@ -276,10 +274,9 @@ func computeEndpointToAPI(ep domain.ComputeEndpoint) ComputeEndpoint {
 	ut := ep.UpdatedAt
 	t := ComputeEndpointType(ep.Type)
 	st := ComputeEndpointStatus(ep.Status)
-	extID, _ := uuid.Parse(ep.ExternalID)
 	resp := ComputeEndpoint{
 		Id:         &ep.ID,
-		ExternalId: &extID,
+		ExternalId: &ep.ExternalID,
 		Name:       &ep.Name,
 		Url:        &ep.URL,
 		Type:       &t,

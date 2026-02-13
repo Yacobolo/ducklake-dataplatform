@@ -3,10 +3,9 @@ Principal:
   type: object
   properties:
     id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     name:
       type: string
       maxLength: 255
@@ -69,10 +68,9 @@ Group:
   type: object
   properties:
     id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     name:
       type: string
       maxLength: 255
@@ -106,19 +104,17 @@ GroupMember:
   type: object
   properties:
     group_id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     member_type:
       type: string
       maxLength: 64
       enum: [user, group]
     member_id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
 
 CreateGroupMemberRequest:
   description: Request body for adding a member to a group.
@@ -131,10 +127,9 @@ CreateGroupMemberRequest:
       maxLength: 64
       enum: [user, group]
     member_id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
 
 PaginatedGroups:
   description: Paginated list of groups.
@@ -169,15 +164,13 @@ PrivilegeGrant:
   type: object
   properties:
     id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     principal_id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     principal_type:
       type: string
       maxLength: 64
@@ -187,20 +180,18 @@ PrivilegeGrant:
       maxLength: 64
       pattern: '^\S+$'
     securable_id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     privilege:
       type: string
       maxLength: 64
       pattern: '^\S+$'
     granted_by:
-      type: integer
-      format: int64
+      type: string
       nullable: true
-      minimum: 1
-      maximum: 9223372036854775807
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     granted_at:
       type: string
       format: date-time
@@ -213,10 +204,9 @@ CreateGrantRequest:
   required: [principal_id, principal_type, securable_type, securable_id, privilege]
   properties:
     principal_id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     principal_type:
       type: string
       maxLength: 64
@@ -226,10 +216,9 @@ CreateGrantRequest:
       maxLength: 64
       pattern: '^\S+$'
     securable_id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     privilege:
       type: string
       maxLength: 64
@@ -254,15 +243,13 @@ APIKeyInfo:
   type: object
   properties:
     id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     principal_id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     name:
       type: string
       maxLength: 255
@@ -288,10 +275,9 @@ CreateAPIKeyRequest:
   required: [principal_id, name]
   properties:
     principal_id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     name:
       type: string
       maxLength: 255
@@ -306,10 +292,9 @@ CreateAPIKeyResponse:
   type: object
   properties:
     id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     key:
       type: string
       description: Raw API key (shown only once)
@@ -362,15 +347,13 @@ RowFilter:
   type: object
   properties:
     id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     table_id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     filter_sql:
       type: string
       maxLength: 65536
@@ -391,11 +374,10 @@ CreateRowFilterRequest:
   required: [filter_sql]
   properties:
     table_id:
-      type: integer
-      format: int64
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
       description: Table ID (required when creating via top-level POST /row-filters)
-      minimum: 1
-      maximum: 9223372036854775807
     filter_sql:
       type: string
       maxLength: 65536
@@ -412,10 +394,9 @@ RowFilterBindingRequest:
   required: [principal_id, principal_type]
   properties:
     principal_id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     principal_type:
       type: string
       maxLength: 64
@@ -440,15 +421,13 @@ ColumnMask:
   type: object
   properties:
     id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     table_id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     column_name:
       type: string
       maxLength: 255
@@ -492,10 +471,9 @@ ColumnMaskBindingRequest:
   required: [principal_id, principal_type]
   properties:
     principal_id:
-      type: integer
-      format: int64
-      minimum: 1
-      maximum: 9223372036854775807
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
     principal_type:
       type: string
       maxLength: 64

@@ -40,7 +40,7 @@ func TestComputeEndpoint_CreateAndGet(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, created)
 
-		assert.Positive(t, created.ID)
+		assert.NotEmpty(t, created.ID)
 		assert.NotEmpty(t, created.ExternalID)
 		assert.Equal(t, "analytics-xl", created.Name)
 		assert.Equal(t, "https://compute-1.example.com:9443", created.URL)
@@ -106,7 +106,7 @@ func TestComputeEndpoint_CreateAndGet(t *testing.T) {
 	})
 
 	t.Run("get_nonexistent_id", func(t *testing.T) {
-		_, err := repo.GetByID(ctx, 99999)
+		_, err := repo.GetByID(ctx, "99999")
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
 		assert.ErrorAs(t, err, &notFound)
@@ -190,7 +190,7 @@ func TestComputeEndpoint_Update(t *testing.T) {
 
 	t.Run("update_nonexistent", func(t *testing.T) {
 		url := "https://x.com"
-		_, err := repo.Update(ctx, 99999, domain.UpdateComputeEndpointRequest{URL: &url})
+		_, err := repo.Update(ctx, "99999", domain.UpdateComputeEndpointRequest{URL: &url})
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
 		assert.ErrorAs(t, err, &notFound)
@@ -250,7 +250,7 @@ func TestComputeAssignment_CRUD(t *testing.T) {
 
 	t.Run("assign_and_list", func(t *testing.T) {
 		a, err := repo.Assign(ctx, &domain.ComputeAssignment{
-			PrincipalID:   1,
+			PrincipalID:   "1",
 			PrincipalType: "user",
 			EndpointID:    ep.ID,
 			IsDefault:     true,
@@ -258,8 +258,8 @@ func TestComputeAssignment_CRUD(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.NotNil(t, a)
-		assert.Positive(t, a.ID)
-		assert.Equal(t, int64(1), a.PrincipalID)
+		assert.NotEmpty(t, a.ID)
+		assert.Equal(t, "1", a.PrincipalID)
 		assert.Equal(t, "user", a.PrincipalType)
 		assert.Equal(t, ep.ID, a.EndpointID)
 		assert.True(t, a.IsDefault)
@@ -273,7 +273,7 @@ func TestComputeAssignment_CRUD(t *testing.T) {
 
 	t.Run("duplicate_assignment_conflict", func(t *testing.T) {
 		_, err := repo.Assign(ctx, &domain.ComputeAssignment{
-			PrincipalID:   1,
+			PrincipalID:   "1",
 			PrincipalType: "user",
 			EndpointID:    ep.ID,
 			IsDefault:     true,
@@ -284,7 +284,7 @@ func TestComputeAssignment_CRUD(t *testing.T) {
 	})
 
 	t.Run("get_default_for_principal", func(t *testing.T) {
-		got, err := repo.GetDefaultForPrincipal(ctx, 1, "user")
+		got, err := repo.GetDefaultForPrincipal(ctx, "1", "user")
 		require.NoError(t, err)
 		require.NotNil(t, got)
 		assert.Equal(t, ep.ID, got.ID)
@@ -292,21 +292,21 @@ func TestComputeAssignment_CRUD(t *testing.T) {
 	})
 
 	t.Run("get_default_nonexistent_principal", func(t *testing.T) {
-		_, err := repo.GetDefaultForPrincipal(ctx, 999, "user")
+		_, err := repo.GetDefaultForPrincipal(ctx, "999", "user")
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
 		assert.ErrorAs(t, err, &notFound)
 	})
 
 	t.Run("get_assignments_for_principal", func(t *testing.T) {
-		eps, err := repo.GetAssignmentsForPrincipal(ctx, 1, "user")
+		eps, err := repo.GetAssignmentsForPrincipal(ctx, "1", "user")
 		require.NoError(t, err)
 		require.Len(t, eps, 1)
 		assert.Equal(t, "assign-test", eps[0].Name)
 	})
 
 	t.Run("get_assignments_nonexistent_principal", func(t *testing.T) {
-		eps, err := repo.GetAssignmentsForPrincipal(ctx, 999, "user")
+		eps, err := repo.GetAssignmentsForPrincipal(ctx, "999", "user")
 		require.NoError(t, err)
 		assert.Empty(t, eps)
 	})
@@ -338,12 +338,12 @@ func TestComputeAssignment_CascadeDelete(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = repo.Assign(ctx, &domain.ComputeAssignment{
-		PrincipalID: 1, PrincipalType: "user", EndpointID: ep.ID, IsDefault: true,
+		PrincipalID: "1", PrincipalType: "user", EndpointID: ep.ID, IsDefault: true,
 	})
 	require.NoError(t, err)
 
 	_, err = repo.Assign(ctx, &domain.ComputeAssignment{
-		PrincipalID: 2, PrincipalType: "group", EndpointID: ep.ID, IsDefault: true,
+		PrincipalID: "2", PrincipalType: "group", EndpointID: ep.ID, IsDefault: true,
 	})
 	require.NoError(t, err)
 

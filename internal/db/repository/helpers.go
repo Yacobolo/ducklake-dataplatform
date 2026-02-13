@@ -6,8 +6,15 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/google/uuid"
+
 	"duck-demo/internal/domain"
 )
+
+// newID generates a new UUID string for use as a primary key.
+func newID() string {
+	return uuid.New().String()
+}
 
 func boolToInt(b bool) int64 {
 	if b {

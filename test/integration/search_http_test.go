@@ -172,7 +172,7 @@ func TestHTTP_SearchByComment(t *testing.T) {
 func TestHTTP_SearchByTag(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
 
-	var tagID int64
+	var tagID string
 
 	type step struct {
 		name string
@@ -190,15 +190,15 @@ func TestHTTP_SearchByTag(t *testing.T) {
 
 			var result map[string]interface{}
 			decodeJSON(t, resp, &result)
-			tagID = int64(result["id"].(float64))
+			tagID = result["id"].(string)
 		}},
 
 		{"assign_tag_to_table", func(t *testing.T) {
 			resp := doRequest(t, "POST",
-				fmt.Sprintf("%s/v1/tags/%d/assignments", env.Server.URL, tagID),
+				fmt.Sprintf("%s/v1/tags/%s/assignments", env.Server.URL, tagID),
 				env.Keys.Admin, map[string]interface{}{
 					"securable_type": "table",
-					"securable_id":   1, // titanic table_id
+					"securable_id":   "1", // titanic table_id
 				})
 			require.Equal(t, 201, resp.StatusCode)
 			_ = resp.Body.Close()

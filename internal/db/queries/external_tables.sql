@@ -1,6 +1,6 @@
 -- name: CreateExternalTable :one
-INSERT INTO external_tables (schema_name, table_name, file_format, source_path, location_name, comment, owner)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+INSERT INTO external_tables (id, schema_name, table_name, file_format, source_path, location_name, comment, owner)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetExternalTableByName :one
@@ -41,8 +41,8 @@ SET comment = CASE WHEN @set_comment = 1 THEN @comment ELSE comment END,
 WHERE schema_name = @schema_name AND table_name = @table_name AND deleted_at IS NULL;
 
 -- name: InsertExternalTableColumn :exec
-INSERT INTO external_table_columns (external_table_id, column_name, column_type, position)
-VALUES (?, ?, ?, ?);
+INSERT INTO external_table_columns (id, external_table_id, column_name, column_type, position)
+VALUES (?, ?, ?, ?, ?);
 
 -- name: ListExternalTableColumns :many
 SELECT * FROM external_table_columns

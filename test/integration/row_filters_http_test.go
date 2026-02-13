@@ -22,7 +22,7 @@ func TestHTTP_RowFilterCRUD(t *testing.T) {
 	analyst, err := q.GetPrincipalByName(context.Background(), "analyst1")
 	require.NoError(t, err)
 
-	var filterID float64
+	var filterID string
 
 	type step struct {
 		name string
@@ -40,7 +40,7 @@ func TestHTTP_RowFilterCRUD(t *testing.T) {
 			var result map[string]interface{}
 			decodeJSON(t, resp, &result)
 			require.NotNil(t, result["id"])
-			filterID = result["id"].(float64)
+			filterID = result["id"].(string)
 			assert.Equal(t, `"Age" > 30`, result["filter_sql"])
 			assert.Equal(t, "age filter", result["description"])
 		}},
@@ -55,7 +55,7 @@ func TestHTTP_RowFilterCRUD(t *testing.T) {
 			assert.GreaterOrEqual(t, len(data), 2)
 		}},
 		{"bind_to_user", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/row-filters/%d/bindings", env.Server.URL, int64(filterID))
+			url := fmt.Sprintf("%s/v1/row-filters/%s/bindings", env.Server.URL, filterID)
 			body := map[string]interface{}{
 				"principal_id":   analyst.ID,
 				"principal_type": "user",
@@ -65,14 +65,14 @@ func TestHTTP_RowFilterCRUD(t *testing.T) {
 			_ = resp.Body.Close()
 		}},
 		{"unbind", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/row-filters/%d/bindings?principal_id=%d&principal_type=user",
-				env.Server.URL, int64(filterID), analyst.ID)
+			url := fmt.Sprintf("%s/v1/row-filters/%s/bindings?principal_id=%s&principal_type=user",
+				env.Server.URL, filterID, analyst.ID)
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()
 		}},
 		{"delete", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/row-filters/%d", env.Server.URL, int64(filterID))
+			url := fmt.Sprintf("%s/v1/row-filters/%s", env.Server.URL, filterID)
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()
@@ -88,7 +88,7 @@ func TestHTTP_RowFilterCRUD(t *testing.T) {
 			found := false
 			for _, item := range data {
 				f := item.(map[string]interface{})
-				if f["id"].(float64) == filterID {
+				if f["id"].(string) == filterID {
 					found = true
 				}
 			}

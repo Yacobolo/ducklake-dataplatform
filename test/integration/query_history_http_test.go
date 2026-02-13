@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -22,6 +23,7 @@ func seedQueryHistoryEntries(t *testing.T, env *httpTestEnv) {
 
 	entries := []dbstore.InsertAuditLogParams{
 		{
+			ID:             uuid.New().String(),
 			PrincipalName:  "admin_user",
 			Action:         "QUERY",
 			StatementType:  sql.NullString{String: "SELECT", Valid: true},
@@ -33,6 +35,7 @@ func seedQueryHistoryEntries(t *testing.T, env *httpTestEnv) {
 			RowsReturned:   sql.NullInt64{Int64: 10, Valid: true},
 		},
 		{
+			ID:             uuid.New().String(),
 			PrincipalName:  "analyst1",
 			Action:         "QUERY",
 			StatementType:  sql.NullString{String: "SELECT", Valid: true},
@@ -43,6 +46,7 @@ func seedQueryHistoryEntries(t *testing.T, env *httpTestEnv) {
 			RowsReturned:   sql.NullInt64{Int64: 5, Valid: true},
 		},
 		{
+			ID:            uuid.New().String(),
 			PrincipalName: "admin_user",
 			Action:        "QUERY",
 			StatementType: sql.NullString{String: "SELECT", Valid: true},

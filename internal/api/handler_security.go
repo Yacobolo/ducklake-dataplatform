@@ -12,44 +12,44 @@ import (
 type principalService interface {
 	List(ctx context.Context, page domain.PageRequest) ([]domain.Principal, int64, error)
 	Create(ctx context.Context, p *domain.Principal) (*domain.Principal, error)
-	GetByID(ctx context.Context, id int64) (*domain.Principal, error)
-	Delete(ctx context.Context, id int64) error
-	SetAdmin(ctx context.Context, id int64, isAdmin bool) error
+	GetByID(ctx context.Context, id string) (*domain.Principal, error)
+	Delete(ctx context.Context, id string) error
+	SetAdmin(ctx context.Context, id string, isAdmin bool) error
 }
 
 // groupService defines the group operations used by the API handler.
 type groupService interface {
 	List(ctx context.Context, page domain.PageRequest) ([]domain.Group, int64, error)
 	Create(ctx context.Context, g *domain.Group) (*domain.Group, error)
-	GetByID(ctx context.Context, id int64) (*domain.Group, error)
-	Delete(ctx context.Context, id int64) error
-	ListMembers(ctx context.Context, groupID int64, page domain.PageRequest) ([]domain.GroupMember, int64, error)
+	GetByID(ctx context.Context, id string) (*domain.Group, error)
+	Delete(ctx context.Context, id string) error
+	ListMembers(ctx context.Context, groupID string, page domain.PageRequest) ([]domain.GroupMember, int64, error)
 	AddMember(ctx context.Context, m *domain.GroupMember) error
 	RemoveMember(ctx context.Context, m *domain.GroupMember) error
 }
 
 // grantService defines the grant operations used by the API handler.
 type grantService interface {
-	ListForPrincipal(ctx context.Context, principalID int64, principalType string, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error)
-	ListForSecurable(ctx context.Context, securableType string, securableID int64, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error)
+	ListForPrincipal(ctx context.Context, principalID string, principalType string, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error)
+	ListForSecurable(ctx context.Context, securableType string, securableID string, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error)
 	Grant(ctx context.Context, principal string, g *domain.PrivilegeGrant) (*domain.PrivilegeGrant, error)
-	Revoke(ctx context.Context, principal string, grantID int64) error
+	Revoke(ctx context.Context, principal string, grantID string) error
 }
 
 // rowFilterService defines the row filter operations used by the API handler.
 type rowFilterService interface {
-	GetForTable(ctx context.Context, tableID int64, page domain.PageRequest) ([]domain.RowFilter, int64, error)
+	GetForTable(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.RowFilter, int64, error)
 	Create(ctx context.Context, principal string, f *domain.RowFilter) (*domain.RowFilter, error)
-	Delete(ctx context.Context, id int64) error
+	Delete(ctx context.Context, id string) error
 	Bind(ctx context.Context, b *domain.RowFilterBinding) error
 	Unbind(ctx context.Context, b *domain.RowFilterBinding) error
 }
 
 // columnMaskService defines the column mask operations used by the API handler.
 type columnMaskService interface {
-	GetForTable(ctx context.Context, tableID int64, page domain.PageRequest) ([]domain.ColumnMask, int64, error)
+	GetForTable(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.ColumnMask, int64, error)
 	Create(ctx context.Context, principal string, m *domain.ColumnMask) (*domain.ColumnMask, error)
-	Delete(ctx context.Context, id int64) error
+	Delete(ctx context.Context, id string) error
 	Bind(ctx context.Context, b *domain.ColumnMaskBinding) error
 	Unbind(ctx context.Context, b *domain.ColumnMaskBinding) error
 }

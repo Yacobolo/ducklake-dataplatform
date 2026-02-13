@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	_ "github.com/duckdb/duckdb-go/v2"
+	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -74,26 +75,26 @@ func setupTestCatalog(t *testing.T) *security.AuthorizationService {
 
 	// Create principals
 	adminUser, err := q.CreatePrincipal(setupCtx, dbstore.CreatePrincipalParams{
-		Name: "admin", Type: "user", IsAdmin: 1,
+		ID: uuid.New().String(), Name: "admin", Type: "user", IsAdmin: 1,
 	})
 	require.NoError(t, err)
 	analyst, err := q.CreatePrincipal(setupCtx, dbstore.CreatePrincipalParams{
-		Name: "first_class_analyst", Type: "user", IsAdmin: 0,
+		ID: uuid.New().String(), Name: "first_class_analyst", Type: "user", IsAdmin: 0,
 	})
 	require.NoError(t, err)
 	survivor, err := q.CreatePrincipal(setupCtx, dbstore.CreatePrincipalParams{
-		Name: "survivor_researcher", Type: "user", IsAdmin: 0,
+		ID: uuid.New().String(), Name: "survivor_researcher", Type: "user", IsAdmin: 0,
 	})
 	require.NoError(t, err)
 	_, err = q.CreatePrincipal(setupCtx, dbstore.CreatePrincipalParams{
-		Name: "no_access", Type: "user", IsAdmin: 0,
+		ID: uuid.New().String(), Name: "no_access", Type: "user", IsAdmin: 0,
 	})
 	require.NoError(t, err)
 
 	// Create groups
-	analystsGroup, err := q.CreateGroup(setupCtx, dbstore.CreateGroupParams{Name: "analysts"})
+	analystsGroup, err := q.CreateGroup(setupCtx, dbstore.CreateGroupParams{ID: uuid.New().String(), Name: "analysts"})
 	require.NoError(t, err)
-	survivorGroup, err := q.CreateGroup(setupCtx, dbstore.CreateGroupParams{Name: "survivors"})
+	survivorGroup, err := q.CreateGroup(setupCtx, dbstore.CreateGroupParams{ID: uuid.New().String(), Name: "survivors"})
 	require.NoError(t, err)
 
 	// Add members to groups
@@ -108,44 +109,44 @@ func setupTestCatalog(t *testing.T) *security.AuthorizationService {
 
 	// Grant privileges
 	_, err = q.GrantPrivilege(setupCtx, dbstore.GrantPrivilegeParams{
-		PrincipalID: adminUser.ID, PrincipalType: "user",
-		SecurableType: "catalog", SecurableID: 0,
+		ID: uuid.New().String(), PrincipalID: adminUser.ID, PrincipalType: "user",
+		SecurableType: "catalog", SecurableID: "0",
 		Privilege: "ALL_PRIVILEGES",
 	})
 	require.NoError(t, err)
 	_, err = q.GrantPrivilege(setupCtx, dbstore.GrantPrivilegeParams{
-		PrincipalID: analystsGroup.ID, PrincipalType: "group",
-		SecurableType: "schema", SecurableID: 0,
+		ID: uuid.New().String(), PrincipalID: analystsGroup.ID, PrincipalType: "group",
+		SecurableType: "schema", SecurableID: "0",
 		Privilege: "USAGE",
 	})
 	require.NoError(t, err)
 	_, err = q.GrantPrivilege(setupCtx, dbstore.GrantPrivilegeParams{
-		PrincipalID: analystsGroup.ID, PrincipalType: "group",
-		SecurableType: "table", SecurableID: 1,
+		ID: uuid.New().String(), PrincipalID: analystsGroup.ID, PrincipalType: "group",
+		SecurableType: "table", SecurableID: "1",
 		Privilege: "SELECT",
 	})
 	require.NoError(t, err)
 	_, err = q.GrantPrivilege(setupCtx, dbstore.GrantPrivilegeParams{
-		PrincipalID: survivorGroup.ID, PrincipalType: "group",
-		SecurableType: "schema", SecurableID: 0,
+		ID: uuid.New().String(), PrincipalID: survivorGroup.ID, PrincipalType: "group",
+		SecurableType: "schema", SecurableID: "0",
 		Privilege: "USAGE",
 	})
 	require.NoError(t, err)
 	_, err = q.GrantPrivilege(setupCtx, dbstore.GrantPrivilegeParams{
-		PrincipalID: survivorGroup.ID, PrincipalType: "group",
-		SecurableType: "table", SecurableID: 1,
+		ID: uuid.New().String(), PrincipalID: survivorGroup.ID, PrincipalType: "group",
+		SecurableType: "table", SecurableID: "1",
 		Privilege: "SELECT",
 	})
 	require.NoError(t, err)
 
 	// Row filter: Pclass = 1 for analysts
 	firstClassFilter, err := q.CreateRowFilter(setupCtx, dbstore.CreateRowFilterParams{
-		TableID:   1,
+		ID: uuid.New().String(), TableID: "1",
 		FilterSql: `"Pclass" = 1`,
 	})
 	require.NoError(t, err)
 	err = q.BindRowFilter(setupCtx, dbstore.BindRowFilterParams{
-		RowFilterID: firstClassFilter.ID, PrincipalID: analystsGroup.ID, PrincipalType: "group",
+		ID: uuid.New().String(), RowFilterID: firstClassFilter.ID, PrincipalID: analystsGroup.ID, PrincipalType: "group",
 	})
 	require.NoError(t, err)
 

@@ -23,6 +23,7 @@ func NewLineageRepo(db *sql.DB) *LineageRepo {
 // InsertEdge records a new lineage edge between tables.
 func (r *LineageRepo) InsertEdge(ctx context.Context, edge *domain.LineageEdge) error {
 	return r.q.InsertLineageEdge(ctx, dbstore.InsertLineageEdgeParams{
+		ID:            newID(),
 		SourceTable:   edge.SourceTable,
 		TargetTable:   mapper.NullStrFromPtr(edge.TargetTable),
 		EdgeType:      edge.EdgeType,
@@ -80,7 +81,7 @@ func (r *LineageRepo) GetDownstream(ctx context.Context, tableName string, page 
 }
 
 // DeleteEdge removes a lineage edge by ID.
-func (r *LineageRepo) DeleteEdge(ctx context.Context, id int64) error {
+func (r *LineageRepo) DeleteEdge(ctx context.Context, id string) error {
 	// sqlc DeleteLineageEdge doesn't return rows affected, so we need to check existence
 	return r.q.DeleteLineageEdge(ctx, id)
 }
