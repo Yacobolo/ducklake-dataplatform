@@ -170,9 +170,8 @@ func TestWorkflow_GroupInheritance(t *testing.T) {
 	})
 
 	t.Run("remove_from_group", func(t *testing.T) {
-		url := fmt.Sprintf("%s/v1/groups/%d/members", env.Server.URL, groupID)
-		body := map[string]interface{}{"member_type": "user", "member_id": userID}
-		resp := doRequest(t, "DELETE", url, env.Keys.Admin, body)
+		url := fmt.Sprintf("%s/v1/groups/%d/members?member_type=user&member_id=%d", env.Server.URL, groupID, userID)
+		resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 		require.Equal(t, 204, resp.StatusCode)
 		_ = resp.Body.Close()
 	})
