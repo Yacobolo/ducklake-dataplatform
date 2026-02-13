@@ -106,6 +106,8 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/catalog.yaml#/CatalogRegistrationList'
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
         '401':
           $ref: '../schemas/responses.yaml#/responses/Unauthorized'
         '429':
@@ -281,8 +283,7 @@ paths:
           application/json:
             schema:
               $ref: '../schemas/catalog.yaml#/SetDefaultCatalogRequest'
-            example:
-              is_default: true
+            example: {}
       responses:
         '200':
           description: Catalog set as default
