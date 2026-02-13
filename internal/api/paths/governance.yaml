@@ -21,6 +21,13 @@ paths:
             type: string
             maxLength: 64
             pattern: '^\S+$'
+        - name: catalog
+          in: query
+          description: Scope search to a specific catalog (defaults to the default catalog).
+          schema:
+            type: string
+            maxLength: 255
+            pattern: '^\S+$'
         - $ref: '../schemas/common.yaml#/parameters/MaxResults'
         - $ref: '../schemas/common.yaml#/parameters/PageToken'
       responses:

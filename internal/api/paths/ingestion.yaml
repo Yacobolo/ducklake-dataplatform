@@ -1,6 +1,14 @@
 paths:
-  /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url:
+  /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url:
     parameters:
+      - name: catalogName
+        in: path
+        required: true
+        description: Name of the catalog to operate on.
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^S+$'
       - name: schemaName
         in: path
         required: true
@@ -20,7 +28,7 @@ paths:
     post:
       operationId: createUploadUrl
       summary: Get a presigned URL for uploading a Parquet file
-      tags: [Ingestion]
+      tags: [Catalogs]
       description: >
         Returns a presigned PUT URL that the client can use to upload a Parquet file
         directly to S3. The file can then be registered via the commit endpoint.
@@ -260,8 +268,16 @@ paths:
                 code: 404
                 message: "Resource not found"
 
-  /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/commit:
+  /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/commit:
     parameters:
+      - name: catalogName
+        in: path
+        required: true
+        description: Name of the catalog to operate on.
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^S+$'
       - name: schemaName
         in: path
         required: true
@@ -281,7 +297,7 @@ paths:
     post:
       operationId: commitTableIngestion
       summary: Register uploaded Parquet files in DuckLake
-      tags: [Ingestion]
+      tags: [Catalogs]
       description: >
         Registers previously uploaded files (from upload-url) in the DuckLake catalog.
         DuckLake validates schema compatibility, extracts column statistics, and
@@ -527,8 +543,16 @@ paths:
                 code: 404
                 message: "Resource not found"
 
-  /catalog/schemas/{schemaName}/tables/{tableName}/ingestion/load:
+  /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/load:
     parameters:
+      - name: catalogName
+        in: path
+        required: true
+        description: Name of the catalog to operate on.
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^S+$'
       - name: schemaName
         in: path
         required: true
@@ -548,7 +572,7 @@ paths:
     post:
       operationId: loadTableExternalFiles
       summary: Register existing S3 files in DuckLake
-      tags: [Ingestion]
+      tags: [Catalogs]
       description: >
         Registers existing S3 files or globs in the DuckLake catalog. Paths without
         an s3:// prefix are treated as relative to the lake data path. DuckLake validates

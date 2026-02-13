@@ -431,7 +431,16 @@ paths:
                 code: 401
                 message: "Authentication required"
 
-  /metastore/summary:
+  /catalogs/{catalogName}/metastore/summary:
+    parameters:
+      - name: catalogName
+        in: path
+        required: true
+        description: Name of the catalog.
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^S+$'
     get:
       operationId: getMetastoreSummary
       summary: Get metastore summary

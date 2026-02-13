@@ -1,10 +1,1118 @@
 paths:
-  /catalog:
+  /catalogs:
+    post:
+      operationId: registerCatalog
+      summary: Register a new catalog
+      tags: [Catalogs]
+      description: Registers a new DuckLake catalog with the platform.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/catalog.yaml#/CreateCatalogRequest'
+            example:
+              name: analytics
+              metastore_type: sqlite
+              dsn: /data/analytics.db
+              data_path: s3://my-bucket/analytics/
+              comment: Analytics data catalog
+      responses:
+        '201':
+          description: Catalog registered
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/catalog.yaml#/CatalogRegistration'
+              example:
+                id: 1
+                name: analytics
+                metastore_type: sqlite
+                dsn: /data/analytics.db
+                data_path: s3://my-bucket/analytics/
+                status: ACTIVE
+                is_default: false
+                comment: Analytics data catalog
+                created_at: '2025-01-15T09:30:00Z'
+                updated_at: '2025-01-15T09:30:00Z'
+        '400':
+          description: Validation error
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '401':
+          description: Unauthorized
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '403':
+          description: Access denied
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '409':
+          description: Conflict - catalog with this name already exists
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '429':
+          description: Rate limit exceeded. Retry after the indicated duration.
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying the request.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 3600
+                format: int32
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '500':
+          description: Internal server error.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+    get:
+      operationId: listCatalogs
+      summary: List all registered catalogs
+      tags: [Catalogs]
+      description: Returns a list of all registered catalogs.
+      parameters:
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
+      responses:
+        '200':
+          description: List of catalogs
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/catalog.yaml#/CatalogRegistrationList'
+        '401':
+          description: Unauthorized
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '429':
+          description: Rate limit exceeded. Retry after the indicated duration.
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying the request.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 3600
+                format: int32
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '500':
+          description: Internal server error.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+  /catalogs/{catalogName}:
+    parameters:
+      - name: catalogName
+        in: path
+        required: true
+        description: Name of the catalog to operate on.
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
+    get:
+      operationId: getCatalogRegistration
+      summary: Get a catalog registration by name
+      tags: [Catalogs]
+      description: Returns the registration details for a specific catalog.
+      responses:
+        '200':
+          description: Catalog registration details
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/catalog.yaml#/CatalogRegistration'
+              example:
+                id: 1
+                name: analytics
+                metastore_type: sqlite
+                dsn: /data/analytics.db
+                data_path: s3://my-bucket/analytics/
+                status: ACTIVE
+                is_default: true
+                comment: Analytics data catalog
+                created_at: '2025-01-15T09:30:00Z'
+                updated_at: '2025-01-15T09:30:00Z'
+        '404':
+          description: Not found
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '401':
+          description: Unauthorized
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '429':
+          description: Rate limit exceeded. Retry after the indicated duration.
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying the request.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 3600
+                format: int32
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '500':
+          description: Internal server error.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+    patch:
+      operationId: updateCatalogRegistration
+      summary: Update a catalog registration
+      tags: [Catalogs]
+      description: Updates the registration details for a catalog.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/catalog.yaml#/UpdateCatalogRegistrationRequest'
+            example:
+              comment: Updated analytics catalog
+              data_path: s3://new-bucket/analytics/
+      responses:
+        '200':
+          description: Updated catalog registration
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/catalog.yaml#/CatalogRegistration'
+        '403':
+          description: Access denied
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '404':
+          description: Not found
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '401':
+          description: Unauthorized
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '429':
+          description: Rate limit exceeded. Retry after the indicated duration.
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying the request.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 3600
+                format: int32
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '500':
+          description: Internal server error.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+    delete:
+      operationId: deleteCatalogRegistration
+      summary: Delete a catalog registration
+      tags: [Catalogs]
+      description: Removes a catalog registration. Does not delete the underlying data.
+      responses:
+        '204':
+          description: Deleted
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+        '403':
+          description: Access denied
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '404':
+          description: Not found
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '401':
+          description: Unauthorized
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '429':
+          description: Rate limit exceeded. Retry after the indicated duration.
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying the request.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 3600
+                format: int32
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '500':
+          description: Internal server error.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+  /catalogs/{catalogName}/set-default:
+    parameters:
+      - name: catalogName
+        in: path
+        required: true
+        description: Name of the catalog to set as default.
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
+    post:
+      operationId: setDefaultCatalog
+      summary: Set a catalog as the default
+      tags: [Catalogs]
+      description: Sets the specified catalog as the default catalog for the platform.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/catalog.yaml#/SetDefaultCatalogRequest'
+      responses:
+        '200':
+          description: Catalog set as default
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/catalog.yaml#/CatalogRegistration'
+        '403':
+          description: Access denied
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '404':
+          description: Not found
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '401':
+          description: Unauthorized
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '429':
+          description: Rate limit exceeded. Retry after the indicated duration.
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying the request.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 3600
+                format: int32
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+        '500':
+          description: Internal server error.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+  /catalogs/{catalogName}/info:
+    parameters:
+      - name: catalogName
+        in: path
+        required: true
+        description: Name of the catalog to operate on.
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
     get:
       operationId: getCatalog
       summary: Get catalog info
-      tags: [Catalog]
-      description: Returns information about the single DuckLake catalog.
+      tags: [Catalogs]
+      description: Returns information about a DuckLake catalog.
       responses:
         '200':
           description: Catalog information
@@ -39,6 +1147,37 @@ paths:
                 comment: Primary analytics catalog
                 created_at: '2025-01-15T09:30:00Z'
                 updated_at: '2025-01-20T11:00:00Z'
+        '404':
+          description: Catalog not found.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: 'Catalog not found'
         '400':
           description: Invalid request parameters.
           headers:
@@ -167,222 +1306,22 @@ paths:
               example:
                 code: 401
                 message: 'Authentication required: missing or invalid token'
-    patch:
-      operationId: updateCatalog
-      summary: Update catalog metadata
-      description: Updates the metadata of the DuckLake catalog, such as its display name or comment.
-      tags: [Catalog]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '../schemas/catalog.yaml#/UpdateCatalogRequest'
-            example:
-              comment: Updated analytics catalog description
-      responses:
-        '200':
-          description: Updated catalog
-          headers:
-            X-RateLimit-Limit:
-              description: Maximum requests allowed in the current window.
-              schema:
-                type: integer
-                minimum: 1
-                maximum: 1000000
-                format: int32
-            X-RateLimit-Remaining:
-              description: Requests remaining in the current window.
-              schema:
-                type: integer
-                minimum: 0
-                maximum: 1000000
-                format: int32
-            X-RateLimit-Reset:
-              description: UTC epoch seconds when the rate limit resets.
-              schema:
-                type: integer
-                minimum: 0
-                maximum: 4102444800
-                format: int64
-          content:
-            application/json:
-              schema:
-                $ref: '../schemas/catalog.yaml#/CatalogInfo'
-              example:
-                name: ducklake
-                comment: Primary analytics catalog
-                created_at: '2025-01-15T09:30:00Z'
-                updated_at: '2025-01-20T11:00:00Z'
-        '400':
-          description: Invalid request parameters or malformed request body.
-          headers:
-            X-RateLimit-Limit:
-              description: Maximum requests allowed in the current window.
-              schema:
-                type: integer
-                minimum: 1
-                maximum: 1000000
-                format: int32
-            X-RateLimit-Remaining:
-              description: Requests remaining in the current window.
-              schema:
-                type: integer
-                minimum: 0
-                maximum: 1000000
-                format: int32
-            X-RateLimit-Reset:
-              description: UTC epoch seconds when the rate limit resets.
-              schema:
-                type: integer
-                minimum: 0
-                maximum: 4102444800
-                format: int64
-          content:
-            application/json:
-              schema:
-                $ref: '../schemas/common.yaml#/Error'
-              example:
-                code: 400
-                message: 'Invalid request: name is required'
-        '403':
-          description: Access denied
-          headers:
-            X-RateLimit-Limit:
-              description: Maximum requests allowed in the current window.
-              schema:
-                type: integer
-                minimum: 1
-                maximum: 1000000
-                format: int32
-            X-RateLimit-Remaining:
-              description: Requests remaining in the current window.
-              schema:
-                type: integer
-                minimum: 0
-                maximum: 1000000
-                format: int32
-            X-RateLimit-Reset:
-              description: UTC epoch seconds when the rate limit resets.
-              schema:
-                type: integer
-                minimum: 0
-                maximum: 4102444800
-                format: int64
-          content:
-            application/json:
-              schema:
-                $ref: '../schemas/common.yaml#/Error'
-              example:
-                code: 403
-                message: 'Access denied: insufficient privileges'
-        '429':
-          description: Rate limit exceeded. Retry after the indicated duration.
-          headers:
-            Retry-After:
-              description: Seconds to wait before retrying the request.
-              schema:
-                type: integer
-                minimum: 1
-                maximum: 3600
-                format: int32
-            X-RateLimit-Limit:
-              description: Maximum requests allowed in the current window.
-              schema:
-                type: integer
-                minimum: 1
-                maximum: 1000000
-                format: int32
-            X-RateLimit-Remaining:
-              description: Requests remaining in the current window.
-              schema:
-                type: integer
-                minimum: 0
-                maximum: 1000000
-                format: int32
-            X-RateLimit-Reset:
-              description: UTC epoch seconds when the rate limit resets.
-              schema:
-                type: integer
-                minimum: 0
-                maximum: 4102444800
-                format: int64
-          content:
-            application/json:
-              schema:
-                $ref: '../schemas/common.yaml#/Error'
-              example:
-                code: 429
-                message: 'Rate limit exceeded: retry after 30 seconds'
-        '500':
-          description: An unexpected internal server error occurred.
-          headers:
-            X-RateLimit-Limit:
-              description: Maximum requests allowed in the current window.
-              schema:
-                type: integer
-                minimum: 1
-                maximum: 1000000
-                format: int32
-            X-RateLimit-Remaining:
-              description: Requests remaining in the current window.
-              schema:
-                type: integer
-                minimum: 0
-                maximum: 1000000
-                format: int32
-            X-RateLimit-Reset:
-              description: UTC epoch seconds when the rate limit resets.
-              schema:
-                type: integer
-                minimum: 0
-                maximum: 4102444800
-                format: int64
-          content:
-            application/json:
-              schema:
-                $ref: '../schemas/common.yaml#/Error'
-              example:
-                code: 500
-                message: 'Internal server error: please try again later'
-        '401':
-          description: Unauthorized
-          headers:
-            X-RateLimit-Limit:
-              description: Maximum requests allowed in the current window.
-              schema:
-                type: integer
-                minimum: 1
-                maximum: 1000000
-                format: int32
-            X-RateLimit-Remaining:
-              description: Requests remaining in the current window.
-              schema:
-                type: integer
-                minimum: 0
-                maximum: 1000000
-                format: int32
-            X-RateLimit-Reset:
-              description: UTC epoch seconds when the rate limit resets.
-              schema:
-                type: integer
-                minimum: 0
-                maximum: 4102444800
-                format: int64
-          content:
-            application/json:
-              schema:
-                $ref: '../schemas/common.yaml#/Error'
-              example:
-                code: 401
-                message: 'Authentication required: missing or invalid token'
 
-  /catalog/schemas:
+  /catalogs/{catalogName}/schemas:
+    parameters:
+      - name: catalogName
+        in: path
+        required: true
+        description: Name of the catalog to operate on.
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
     get:
       operationId: listSchemas
       summary: List schemas in the catalog
       description: Returns a paginated list of all schemas defined in the catalog.
-      tags: [Catalog]
+      tags: [Catalogs]
       parameters:
         - $ref: '../schemas/common.yaml#/parameters/MaxResults'
         - $ref: '../schemas/common.yaml#/parameters/PageToken'
@@ -559,7 +1498,7 @@ paths:
       operationId: createSchema
       summary: Create a new schema
       description: Creates a new schema in the catalog with the specified name and optional properties.
-      tags: [Catalog]
+      tags: [Catalogs]
       requestBody:
         required: true
         content:
@@ -802,8 +1741,16 @@ paths:
                 code: 401
                 message: 'Authentication required: missing or invalid token'
 
-  /catalog/schemas/{schemaName}:
+  /catalogs/{catalogName}/schemas/{schemaName}:
     parameters:
+      - name: catalogName
+        in: path
+        required: true
+        description: Name of the catalog to operate on.
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
       - name: schemaName
         in: path
         required: true
@@ -816,7 +1763,7 @@ paths:
       operationId: getSchema
       summary: Get a schema by name
       description: Retrieves the details of a specific schema by its name.
-      tags: [Catalog]
+      tags: [Catalogs]
       responses:
         '200':
           description: Schema details
@@ -1019,7 +1966,7 @@ paths:
       operationId: updateSchema
       summary: Update schema metadata
       description: Updates the metadata of an existing schema, such as its comment or properties.
-      tags: [Catalog]
+      tags: [Catalogs]
       requestBody:
         required: true
         content:
@@ -1266,7 +2213,7 @@ paths:
       operationId: deleteSchema
       summary: Delete a schema
       description: Permanently removes a schema from the catalog. Use the force parameter to delete schemas that still contain tables.
-      tags: [Catalog]
+      tags: [Catalogs]
       parameters:
         - name: force
           in: query
@@ -1521,8 +2468,16 @@ paths:
                 code: 401
                 message: 'Authentication required: missing or invalid token'
 
-  /catalog/schemas/{schemaName}/tables:
+  /catalogs/{catalogName}/schemas/{schemaName}/tables:
     parameters:
+      - name: catalogName
+        in: path
+        required: true
+        description: Name of the catalog to operate on.
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
       - name: schemaName
         in: path
         required: true
@@ -1535,7 +2490,7 @@ paths:
       operationId: listTables
       summary: List tables in a schema
       description: Returns a paginated list of all tables within the specified schema.
-      tags: [Catalog]
+      tags: [Catalogs]
       parameters:
         - $ref: '../schemas/common.yaml#/parameters/MaxResults'
         - $ref: '../schemas/common.yaml#/parameters/PageToken'
@@ -1743,7 +2698,7 @@ paths:
       operationId: createTable
       summary: Create a new table in a schema
       description: Creates a new table with the specified columns and properties within the given schema.
-      tags: [Catalog]
+      tags: [Catalogs]
       requestBody:
         required: true
         content:
@@ -2000,8 +2955,16 @@ paths:
                 code: 401
                 message: 'Authentication required: missing or invalid token'
 
-  /catalog/schemas/{schemaName}/tables/{tableName}:
+  /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}:
     parameters:
+      - name: catalogName
+        in: path
+        required: true
+        description: Name of the catalog to operate on.
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
       - name: schemaName
         in: path
         required: true
@@ -2022,7 +2985,7 @@ paths:
       operationId: getTable
       summary: Get a table by name
       description: Retrieves the details of a specific table, including its column definitions.
-      tags: [Catalog]
+      tags: [Catalogs]
       responses:
         '200':
           description: Table details including columns
@@ -2234,7 +3197,7 @@ paths:
       operationId: updateTable
       summary: Update table metadata
       description: Updates the metadata of an existing table, such as its comment or properties.
-      tags: [Catalog]
+      tags: [Catalogs]
       requestBody:
         required: true
         content:
@@ -2489,7 +3452,7 @@ paths:
       operationId: deleteTable
       summary: Delete a table
       description: Permanently removes a table and all its data from the schema.
-      tags: [Catalog]
+      tags: [Catalogs]
       responses:
         '204':
           description: Table deleted
@@ -2706,8 +3669,16 @@ paths:
                 code: 401
                 message: 'Authentication required: missing or invalid token'
 
-  /catalog/schemas/{schemaName}/tables/{tableName}/columns:
+  /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns:
     parameters:
+      - name: catalogName
+        in: path
+        required: true
+        description: Name of the catalog to operate on.
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
       - name: schemaName
         in: path
         required: true
@@ -2728,7 +3699,7 @@ paths:
       operationId: listTableColumns
       summary: List columns of a table
       description: Returns a paginated list of all columns defined in the specified table.
-      tags: [Catalog]
+      tags: [Catalogs]
       parameters:
         - $ref: '../schemas/common.yaml#/parameters/MaxResults'
         - $ref: '../schemas/common.yaml#/parameters/PageToken'
@@ -2934,8 +3905,16 @@ paths:
                 code: 401
                 message: 'Authentication required: missing or invalid token'
 
-  /catalog/schemas/{schemaName}/tables/{tableName}/columns/{columnName}:
+  /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns/{columnName}:
     parameters:
+      - name: catalogName
+        in: path
+        required: true
+        description: Name of the catalog to operate on.
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
       - name: schemaName
         in: path
         required: true
@@ -2964,7 +3943,7 @@ paths:
       operationId: updateColumn
       summary: Update column metadata
       description: Updates the metadata of a specific column, such as its comment or nullable flag.
-      tags: [Catalog]
+      tags: [Catalogs]
       requestBody:
         required: true
         content:
@@ -3202,8 +4181,16 @@ paths:
                 code: 401
                 message: 'Authentication required: missing or invalid token'
 
-  /catalog/schemas/{schemaName}/tables/{tableName}/profile:
+  /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/profile:
     parameters:
+      - name: catalogName
+        in: path
+        required: true
+        description: Name of the catalog to operate on.
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
       - name: schemaName
         in: path
         required: true
@@ -3223,7 +4210,7 @@ paths:
     post:
       operationId: profileTable
       summary: Profile a table to collect statistics
-      tags: [Catalog]
+      tags: [Catalogs]
       description: Runs profiling queries and stores statistics (row count, column count, size).
       responses:
         '200':
@@ -3451,8 +4438,16 @@ paths:
                 code: 401
                 message: 'Authentication required: missing or invalid token'
 
-  /catalog/schemas/{schemaName}/views:
+  /catalogs/{catalogName}/schemas/{schemaName}/views:
     parameters:
+      - name: catalogName
+        in: path
+        required: true
+        description: Name of the catalog to operate on.
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
       - name: schemaName
         in: path
         required: true
@@ -3465,7 +4460,7 @@ paths:
       operationId: listViews
       summary: List views in a schema
       description: Returns a paginated list of all views defined within the specified schema.
-      tags: [Catalog]
+      tags: [Catalogs]
       parameters:
         - $ref: '../schemas/common.yaml#/parameters/MaxResults'
         - $ref: '../schemas/common.yaml#/parameters/PageToken'
@@ -3676,7 +4671,7 @@ paths:
       operationId: createView
       summary: Create a view in a schema
       description: Creates a new view with the specified SQL definition within the given schema.
-      tags: [Catalog]
+      tags: [Catalogs]
       requestBody:
         required: true
         content:
@@ -3923,8 +4918,16 @@ paths:
                 code: 401
                 message: 'Authentication required: missing or invalid token'
 
-  /catalog/schemas/{schemaName}/views/{viewName}:
+  /catalogs/{catalogName}/schemas/{schemaName}/views/{viewName}:
     parameters:
+      - name: catalogName
+        in: path
+        required: true
+        description: Name of the catalog to operate on.
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
       - name: schemaName
         in: path
         required: true
@@ -3945,7 +4948,7 @@ paths:
       operationId: getView
       summary: Get a view by name
       description: Retrieves the details of a specific view, including its SQL definition.
-      tags: [Catalog]
+      tags: [Catalogs]
       responses:
         '200':
           description: View details
@@ -4151,7 +5154,7 @@ paths:
       operationId: updateView
       summary: Update a view's metadata
       description: Updates the metadata of an existing view, such as its comment or SQL definition.
-      tags: [Catalog]
+      tags: [Catalogs]
       requestBody:
         required: true
         content:
@@ -4400,7 +5403,7 @@ paths:
       operationId: deleteView
       summary: Delete a view
       description: Permanently removes a view from the schema.
-      tags: [Catalog]
+      tags: [Catalogs]
       responses:
         '204':
           description: View deleted
@@ -4617,8 +5620,16 @@ paths:
                 code: 401
                 message: 'Authentication required: missing or invalid token'
 
-  /catalog/schemas/{schemaName}/volumes:
+  /catalogs/{catalogName}/schemas/{schemaName}/volumes:
     parameters:
+      - name: catalogName
+        in: path
+        required: true
+        description: Name of the catalog to operate on.
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
       - name: schemaName
         in: path
         required: true
@@ -4631,7 +5642,7 @@ paths:
       operationId: listVolumes
       summary: List volumes in a schema
       description: Returns a paginated list of all volumes defined within the specified schema.
-      tags: [Catalog]
+      tags: [Catalogs]
       parameters:
         - $ref: '../schemas/common.yaml#/parameters/MaxResults'
         - $ref: '../schemas/common.yaml#/parameters/PageToken'
@@ -4839,7 +5850,7 @@ paths:
     post:
       operationId: createVolume
       summary: Create a volume in a schema
-      tags: [Catalog]
+      tags: [Catalogs]
       description: >
         Creates a new volume. EXTERNAL volumes require a storage_location.
         MANAGED volumes auto-generate a storage location.
@@ -5088,8 +6099,16 @@ paths:
                 code: 401
                 message: 'Authentication required: missing or invalid token'
 
-  /catalog/schemas/{schemaName}/volumes/{volumeName}:
+  /catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}:
     parameters:
+      - name: catalogName
+        in: path
+        required: true
+        description: Name of the catalog to operate on.
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
       - name: schemaName
         in: path
         required: true
@@ -5110,7 +6129,7 @@ paths:
       operationId: getVolume
       summary: Get a volume by name
       description: Retrieves the details of a specific volume by its name within the schema.
-      tags: [Catalog]
+      tags: [Catalogs]
       responses:
         '200':
           description: Volume details
@@ -5314,7 +6333,7 @@ paths:
       operationId: updateVolume
       summary: Update a volume
       description: Updates volume fields. Requires CREATE_VOLUME on catalog.
-      tags: [Catalog]
+      tags: [Catalogs]
       requestBody:
         required: true
         content:
@@ -5776,4 +6795,4 @@ paths:
               example:
                 code: 401
                 message: 'Authentication required: missing or invalid token'
-      tags: [Catalog]
+      tags: [Catalogs]
