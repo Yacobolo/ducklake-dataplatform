@@ -23,8 +23,8 @@ jobs:
         with:
           version: v2.7
 
-  test:
-    name: Test
+  test-unit:
+    name: Unit Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -40,8 +40,23 @@ jobs:
           go install gotest.tools/gotestsum@latest
       - name: Bundle OpenAPI spec
         run: task bundle-api
-      - name: Run tests
-        run: task test
+      - name: Run unit tests
+        run: task test:unit
+
+  test-integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.7"
+      - name: Install tools
+        run: |
+          go install github.com/go-task/task/v3/cmd/task@latest
+          go install gotest.tools/gotestsum@latest
+      - name: Run integration tests
+        run: task test:integration
 
   build:
     name: Build & Vet
