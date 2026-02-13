@@ -72,6 +72,7 @@ SchemaDetail:
 CreateSchemaRequest:
   description: Request body for creating a new schema.
   type: object
+  additionalProperties: false
   required: [name]
   properties:
     name:
@@ -97,6 +98,7 @@ CreateSchemaRequest:
 UpdateSchemaRequest:
   description: Request body for updating an existing schema.
   type: object
+  additionalProperties: false
   properties:
     comment:
       type: string
@@ -112,6 +114,7 @@ UpdateSchemaRequest:
 UpdateTableRequest:
   description: Request body for updating an existing table.
   type: object
+  additionalProperties: false
   properties:
     comment:
       type: string
@@ -131,6 +134,7 @@ UpdateTableRequest:
 UpdateCatalogRequest:
   description: Request body for updating catalog metadata.
   type: object
+  additionalProperties: false
   properties:
     comment:
       type: string
@@ -270,6 +274,7 @@ ColumnDetail:
 CreateTableRequest:
   description: Request body for creating a new table (managed or external).
   type: object
+  additionalProperties: false
   required: [name]
   properties:
     name:
@@ -310,6 +315,7 @@ CreateTableRequest:
 CreateColumnRequest:
   description: Request body for defining a column when creating a table.
   type: object
+  additionalProperties: false
   required: [name, type]
   properties:
     name:
@@ -324,6 +330,7 @@ CreateColumnRequest:
 UpdateColumnRequest:
   description: Request body for updating column metadata.
   type: object
+  additionalProperties: false
   properties:
     comment:
       type: string
@@ -491,6 +498,7 @@ ViewDetail:
 CreateViewRequest:
   description: Request body for creating a new view.
   type: object
+  additionalProperties: false
   required: [name, view_definition]
   properties:
     name:
@@ -509,6 +517,7 @@ CreateViewRequest:
 UpdateViewRequest:
   description: Request body for updating an existing view.
   type: object
+  additionalProperties: false
   properties:
     comment:
       type: string
@@ -587,6 +596,7 @@ VolumeDetail:
 CreateVolumeRequest:
   description: Request body for creating a new volume.
   type: object
+  additionalProperties: false
   required: [name, volume_type]
   properties:
     name:
@@ -609,6 +619,7 @@ CreateVolumeRequest:
 UpdateVolumeRequest:
   description: Request body for updating an existing volume.
   type: object
+  additionalProperties: false
   properties:
     new_name:
       type: string

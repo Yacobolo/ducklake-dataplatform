@@ -76,6 +76,7 @@ Tag:
 CreateTagRequest:
   description: Request payload for creating a new tag.
   type: object
+  additionalProperties: false
   required: [key]
   properties:
     key:
@@ -127,6 +128,7 @@ TagAssignment:
 CreateTagAssignmentRequest:
   description: Request payload for creating a new tag assignment on a securable object.
   type: object
+  additionalProperties: false
   required: [securable_type, securable_id]
   properties:
     securable_type:

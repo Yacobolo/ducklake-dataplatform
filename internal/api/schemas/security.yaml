@@ -25,6 +25,7 @@ Principal:
 CreatePrincipalRequest:
   description: Request body for creating a new principal.
   type: object
+  additionalProperties: false
   required: [name]
   properties:
     name:
@@ -43,6 +44,7 @@ CreatePrincipalRequest:
 UpdatePrincipalAdminRequest:
   description: Request body for updating a principal's admin status.
   type: object
+  additionalProperties: false
   required: [is_admin]
   properties:
     is_admin:
@@ -87,6 +89,7 @@ Group:
 CreateGroupRequest:
   description: Request body for creating a new group.
   type: object
+  additionalProperties: false
   required: [name]
   properties:
     name:
@@ -120,6 +123,7 @@ GroupMember:
 CreateGroupMemberRequest:
   description: Request body for adding a member to a group.
   type: object
+  additionalProperties: false
   required: [member_type, member_id]
   properties:
     member_type:
@@ -205,6 +209,7 @@ PrivilegeGrant:
 CreateGrantRequest:
   description: Request body for creating a new privilege grant.
   type: object
+  additionalProperties: false
   required: [principal_id, principal_type, securable_type, securable_id, privilege]
   properties:
     principal_id:
@@ -279,6 +284,7 @@ APIKeyInfo:
 CreateAPIKeyRequest:
   description: Request body for creating a new API key.
   type: object
+  additionalProperties: false
   required: [principal_id, name]
   properties:
     principal_id:
@@ -381,6 +387,7 @@ RowFilter:
 CreateRowFilterRequest:
   description: Request body for creating a new row-level security filter.
   type: object
+  additionalProperties: false
   required: [filter_sql]
   properties:
     table_id:
@@ -401,6 +408,7 @@ CreateRowFilterRequest:
 RowFilterBindingRequest:
   description: Request body for binding a row filter to a principal.
   type: object
+  additionalProperties: false
   required: [principal_id, principal_type]
   properties:
     principal_id:
@@ -461,6 +469,7 @@ ColumnMask:
 CreateColumnMaskRequest:
   description: Request body for creating a new column mask.
   type: object
+  additionalProperties: false
   required: [column_name, mask_expression]
   properties:
     column_name:
@@ -479,6 +488,7 @@ CreateColumnMaskRequest:
 ColumnMaskBindingRequest:
   description: Request body for binding a column mask to a principal.
   type: object
+  additionalProperties: false
   required: [principal_id, principal_type]
   properties:
     principal_id:

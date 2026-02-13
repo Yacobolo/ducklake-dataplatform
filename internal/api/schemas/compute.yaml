@@ -49,6 +49,7 @@ ComputeEndpoint:
 CreateComputeEndpointRequest:
   description: Request payload for creating a new compute endpoint.
   type: object
+  additionalProperties: false
   required: [name, url, type]
   properties:
     name:
@@ -79,6 +80,7 @@ CreateComputeEndpointRequest:
 UpdateComputeEndpointRequest:
   description: Request payload for updating an existing compute endpoint.
   type: object
+  additionalProperties: false
   properties:
     url:
       type: string
@@ -152,6 +154,7 @@ ComputeAssignment:
 CreateComputeAssignmentRequest:
   description: Request payload for creating a new compute assignment for a principal.
   type: object
+  additionalProperties: false
   required: [principal_id, principal_type]
   properties:
     principal_id:

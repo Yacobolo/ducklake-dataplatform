@@ -24,7 +24,7 @@ type ingestionService interface {
 // CreateUploadUrl implements the endpoint for generating a pre-signed upload URL.
 func (h *APIHandler) CreateUploadUrl(ctx context.Context, request CreateUploadUrlRequestObject) (CreateUploadUrlResponseObject, error) {
 	if h.ingestion == nil {
-		return CreateUploadUrl400JSONResponse{Code: 400, Message: "ingestion not available (S3 not configured)"}, nil
+		return CreateUploadUrl400JSONResponse{Body: Error{Code: 400, Message: "ingestion not available (S3 not configured)"}, Headers: CreateUploadUrl400ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 	}
 
 	principal := principalFromCtx(ctx)
@@ -32,26 +32,29 @@ func (h *APIHandler) CreateUploadUrl(ctx context.Context, request CreateUploadUr
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return CreateUploadUrl404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return CreateUploadUrl404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: CreateUploadUrl404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CreateUploadUrl403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return CreateUploadUrl403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: CreateUploadUrl403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
-			return CreateUploadUrl400JSONResponse{Code: 400, Message: err.Error()}, nil
+			return CreateUploadUrl400JSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: CreateUploadUrl400ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		}
 	}
 
 	t := result.ExpiresAt
 	return CreateUploadUrl200JSONResponse{
-		UploadUrl: &result.UploadURL,
-		S3Key:     &result.S3Key,
-		ExpiresAt: &t,
+		Body: UploadUrlResponse{
+			UploadUrl: &result.UploadURL,
+			S3Key:     &result.S3Key,
+			ExpiresAt: &t,
+		},
+		Headers: CreateUploadUrl200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // CommitTableIngestion implements the endpoint for committing uploaded files to a table.
 func (h *APIHandler) CommitTableIngestion(ctx context.Context, request CommitTableIngestionRequestObject) (CommitTableIngestionResponseObject, error) {
 	if h.ingestion == nil {
-		return CommitTableIngestion400JSONResponse{Code: 400, Message: "ingestion not available (S3 not configured)"}, nil
+		return CommitTableIngestion400JSONResponse{Body: Error{Code: 400, Message: "ingestion not available (S3 not configured)"}, Headers: CommitTableIngestion400ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 	}
 
 	opts := domain.IngestionOptions{}
@@ -69,30 +72,33 @@ func (h *APIHandler) CommitTableIngestion(ctx context.Context, request CommitTab
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return CommitTableIngestion404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return CommitTableIngestion404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: CommitTableIngestion404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CommitTableIngestion403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return CommitTableIngestion403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: CommitTableIngestion403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, new(*domain.ValidationError)):
-			return CommitTableIngestion400JSONResponse{Code: 400, Message: err.Error()}, nil
+			return CommitTableIngestion400JSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: CommitTableIngestion400ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
-			return CommitTableIngestion400JSONResponse{Code: 400, Message: err.Error()}, nil
+			return CommitTableIngestion400JSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: CommitTableIngestion400ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		}
 	}
 
 	filesRegistered := int64(result.FilesRegistered)
 	filesSkipped := int64(result.FilesSkipped)
 	return CommitTableIngestion200JSONResponse{
-		FilesRegistered: &filesRegistered,
-		FilesSkipped:    &filesSkipped,
-		Schema:          &result.Schema,
-		Table:           &result.Table,
+		Body: IngestionResult{
+			FilesRegistered: &filesRegistered,
+			FilesSkipped:    &filesSkipped,
+			Schema:          &result.Schema,
+			Table:           &result.Table,
+		},
+		Headers: CommitTableIngestion200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // LoadTableExternalFiles implements the endpoint for loading external files into a table.
 func (h *APIHandler) LoadTableExternalFiles(ctx context.Context, request LoadTableExternalFilesRequestObject) (LoadTableExternalFilesResponseObject, error) {
 	if h.ingestion == nil {
-		return LoadTableExternalFiles400JSONResponse{Code: 400, Message: "ingestion not available (S3 not configured)"}, nil
+		return LoadTableExternalFiles400JSONResponse{Body: Error{Code: 400, Message: "ingestion not available (S3 not configured)"}, Headers: LoadTableExternalFiles400ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 	}
 
 	opts := domain.IngestionOptions{}
@@ -110,22 +116,25 @@ func (h *APIHandler) LoadTableExternalFiles(ctx context.Context, request LoadTab
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return LoadTableExternalFiles404JSONResponse{Code: 404, Message: err.Error()}, nil
+			return LoadTableExternalFiles404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: LoadTableExternalFiles404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return LoadTableExternalFiles403JSONResponse{Code: 403, Message: err.Error()}, nil
+			return LoadTableExternalFiles403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: LoadTableExternalFiles403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		case errors.As(err, new(*domain.ValidationError)):
-			return LoadTableExternalFiles400JSONResponse{Code: 400, Message: err.Error()}, nil
+			return LoadTableExternalFiles400JSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: LoadTableExternalFiles400ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
-			return LoadTableExternalFiles400JSONResponse{Code: 400, Message: err.Error()}, nil
+			return LoadTableExternalFiles400JSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: LoadTableExternalFiles400ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		}
 	}
 
 	filesRegistered := int64(result.FilesRegistered)
 	filesSkipped := int64(result.FilesSkipped)
 	return LoadTableExternalFiles200JSONResponse{
-		FilesRegistered: &filesRegistered,
-		FilesSkipped:    &filesSkipped,
-		Schema:          &result.Schema,
-		Table:           &result.Table,
+		Body: IngestionResult{
+			FilesRegistered: &filesRegistered,
+			FilesSkipped:    &filesSkipped,
+			Schema:          &result.Schema,
+			Table:           &result.Table,
+		},
+		Headers: LoadTableExternalFiles200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }

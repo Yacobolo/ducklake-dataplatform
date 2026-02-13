@@ -30,7 +30,7 @@ func (h *APIHandler) ExecuteQuery(ctx context.Context, req ExecuteQueryRequestOb
 	result, err := h.query.Execute(ctx, principal, req.Body.Sql)
 	if err != nil {
 		code := int32(errorCodeFromError(err))
-		return ExecuteQuery403JSONResponse{Code: code, Message: err.Error()}, nil
+		return ExecuteQuery403JSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: ExecuteQuery403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 	}
 
 	rows := make([][]interface{}, len(result.Rows))
@@ -44,9 +44,12 @@ func (h *APIHandler) ExecuteQuery(ctx context.Context, req ExecuteQueryRequestOb
 	rowCount := int64(result.RowCount)
 
 	return ExecuteQuery200JSONResponse{
-		Columns:  &result.Columns,
-		Rows:     &rows,
-		RowCount: &rowCount,
+		Body: QueryResult{
+			Columns:  &result.Columns,
+			Rows:     &rows,
+			RowCount: &rowCount,
+		},
+		Headers: ExecuteQuery200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -66,9 +69,9 @@ func (h *APIHandler) CreateManifest(ctx context.Context, req CreateManifestReque
 		code := int32(errorCodeFromError(err))
 		switch code {
 		case http.StatusNotFound:
-			return CreateManifest404JSONResponse{Code: code, Message: err.Error()}, nil
+			return CreateManifest404JSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: CreateManifest404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		default:
-			return CreateManifest403JSONResponse{Code: code, Message: err.Error()}, nil
+			return CreateManifest403JSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: CreateManifest403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 		}
 	}
 
@@ -80,12 +83,15 @@ func (h *APIHandler) CreateManifest(ctx context.Context, req CreateManifestReque
 	}
 
 	return CreateManifest200JSONResponse{
-		Table:       &result.Table,
-		Schema:      &result.Schema,
-		Columns:     &cols,
-		Files:       &result.Files,
-		RowFilters:  &result.RowFilters,
-		ColumnMasks: &result.ColumnMasks,
-		ExpiresAt:   &result.ExpiresAt,
+		Body: ManifestResponse{
+			Table:       &result.Table,
+			Schema:      &result.Schema,
+			Columns:     &cols,
+			Files:       &result.Files,
+			RowFilters:  &result.RowFilters,
+			ColumnMasks: &result.ColumnMasks,
+			ExpiresAt:   &result.ExpiresAt,
+		},
+		Headers: CreateManifest200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }

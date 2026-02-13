@@ -1,6 +1,7 @@
 UploadUrlRequest:
   description: Request to obtain a presigned URL for uploading a Parquet file.
   type: object
+  additionalProperties: false
   properties:
     filename:
       type: string
@@ -44,6 +45,7 @@ IngestionOptions:
 CommitIngestionRequest:
   description: Request to commit previously uploaded files into a target table.
   type: object
+  additionalProperties: false
   required: [s3_keys]
   properties:
     s3_keys:
@@ -60,6 +62,7 @@ CommitIngestionRequest:
 LoadExternalRequest:
   description: Request to load data from external S3 paths or globs into a table.
   type: object
+  additionalProperties: false
   required: [paths]
   properties:
     paths:

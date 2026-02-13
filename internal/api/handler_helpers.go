@@ -321,3 +321,10 @@ func optStr(s string) *string {
 	}
 	return &s
 }
+
+// Default rate-limit header values used by all success responses.
+const (
+	defaultRateLimitLimit     = 1000
+	defaultRateLimitRemaining = 999
+	defaultRateLimitReset     = 0
+)

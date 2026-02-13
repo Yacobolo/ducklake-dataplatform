@@ -65,6 +65,7 @@ StorageCredential:
 CreateStorageCredentialRequest:
   description: Request payload for creating a new storage credential.
   type: object
+  additionalProperties: false
   required: [name, credential_type]
   properties:
     name:
@@ -130,6 +131,7 @@ CreateStorageCredentialRequest:
 UpdateStorageCredentialRequest:
   description: Request payload for updating an existing storage credential.
   type: object
+  additionalProperties: false
   properties:
     # S3 fields
     key_id:
@@ -244,6 +246,7 @@ ExternalLocation:
 CreateExternalLocationRequest:
   description: Request payload for creating a new external location.
   type: object
+  additionalProperties: false
   required: [name, url, credential_name]
   properties:
     name:
@@ -273,6 +276,7 @@ CreateExternalLocationRequest:
 UpdateExternalLocationRequest:
   description: Request payload for updating an existing external location.
   type: object
+  additionalProperties: false
   properties:
     url:
       type: string
