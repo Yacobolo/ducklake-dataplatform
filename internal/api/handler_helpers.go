@@ -10,7 +10,7 @@ import (
 func pageFromParams(maxResults *MaxResults, pageToken *PageToken) domain.PageRequest {
 	p := domain.PageRequest{}
 	if maxResults != nil {
-		p.MaxResults = *maxResults
+		p.MaxResults = int(*maxResults)
 	}
 	if pageToken != nil {
 		p.PageToken = *pageToken
@@ -34,10 +34,11 @@ func errorCodeFromError(err error) int {
 
 func principalToAPI(p domain.Principal) Principal {
 	t := p.CreatedAt
+	pt := PrincipalType(p.Type)
 	return Principal{
 		Id:        &p.ID,
 		Name:      &p.Name,
-		Type:      &p.Type,
+		Type:      &pt,
 		IsAdmin:   &p.IsAdmin,
 		CreatedAt: &t,
 	}
@@ -54,19 +55,21 @@ func groupToAPI(g domain.Group) Group {
 }
 
 func groupMemberToAPI(m domain.GroupMember, groupID int64) GroupMember {
+	mt := GroupMemberMemberType(m.MemberType)
 	return GroupMember{
 		GroupId:    &groupID,
-		MemberType: &m.MemberType,
+		MemberType: &mt,
 		MemberId:   &m.MemberID,
 	}
 }
 
 func grantToAPI(g domain.PrivilegeGrant) PrivilegeGrant {
 	t := g.GrantedAt
+	pt := PrivilegeGrantPrincipalType(g.PrincipalType)
 	return PrivilegeGrant{
 		Id:            &g.ID,
 		PrincipalId:   &g.PrincipalID,
-		PrincipalType: &g.PrincipalType,
+		PrincipalType: &pt,
 		SecurableType: &g.SecurableType,
 		SecurableId:   &g.SecurableID,
 		Privilege:     &g.Privilege,
@@ -186,10 +189,11 @@ func tableDetailToAPI(t domain.TableDetail) TableDetail {
 }
 
 func columnDetailToAPI(c domain.ColumnDetail) ColumnDetail {
+	pos := int32(c.Position)
 	return ColumnDetail{
 		Name:       &c.Name,
 		Type:       &c.Type,
-		Position:   &c.Position,
+		Position:   &pos,
 		Nullable:   &c.Nullable,
 		Comment:    &c.Comment,
 		Properties: &c.Properties,
@@ -226,13 +230,14 @@ func searchResultToAPI(r domain.SearchResult) SearchResult {
 
 func lineageEdgeToAPI(e domain.LineageEdge) LineageEdge {
 	t := e.CreatedAt
+	et := LineageEdgeEdgeType(e.EdgeType)
 	return LineageEdge{
 		Id:            &e.ID,
 		SourceTable:   &e.SourceTable,
 		TargetTable:   e.TargetTable,
 		SourceSchema:  strPtrIfNonEmpty(e.SourceSchema),
 		TargetSchema:  strPtrIfNonEmpty(e.TargetSchema),
-		EdgeType:      &e.EdgeType,
+		EdgeType:      &et,
 		PrincipalName: &e.PrincipalName,
 		CreatedAt:     &t,
 	}

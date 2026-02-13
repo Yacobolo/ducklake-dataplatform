@@ -71,6 +71,8 @@ paths:
         schema:
           type: integer
           format: int64
+          minimum: 1
+          maximum: 9223372036854775807
     get:
       operationId: getPrincipal
       summary: Get principal by ID
@@ -129,6 +131,8 @@ paths:
         schema:
           type: integer
           format: int64
+          minimum: 1
+          maximum: 9223372036854775807
     put:
       operationId: updatePrincipalAdmin
       summary: Set or unset admin flag
@@ -234,6 +238,8 @@ paths:
         schema:
           type: integer
           format: int64
+          minimum: 1
+          maximum: 9223372036854775807
     get:
       operationId: getGroup
       summary: Get group by ID
@@ -292,6 +298,8 @@ paths:
         schema:
           type: integer
           format: int64
+          minimum: 1
+          maximum: 9223372036854775807
     get:
       operationId: listGroupMembers
       summary: List group members
@@ -365,12 +373,15 @@ paths:
           required: true
           schema:
             type: string
+            enum: [user, group]
         - name: member_id
           in: query
           required: true
           schema:
             type: integer
             format: int64
+            minimum: 1
+            maximum: 9223372036854775807
       responses:
         '204':
           description: Member removed
@@ -411,19 +422,26 @@ paths:
           schema:
             type: integer
             format: int64
+            minimum: 1
+            maximum: 9223372036854775807
         - name: principal_type
           in: query
           schema:
             type: string
+            enum: [user, group]
         - name: securable_type
           in: query
           schema:
             type: string
+            maxLength: 255
+            pattern: '^\S+$'
         - name: securable_id
           in: query
           schema:
             type: integer
             format: int64
+            minimum: 1
+            maximum: 9223372036854775807
         - $ref: '../schemas/common.yaml#/parameters/MaxResults'
         - $ref: '../schemas/common.yaml#/parameters/PageToken'
       responses:
@@ -490,6 +508,8 @@ paths:
         schema:
           type: integer
           format: int64
+          minimum: 1
+          maximum: 9223372036854775807
     delete:
       operationId: deleteGrant
       summary: Revoke a privilege
@@ -529,6 +549,8 @@ paths:
           schema:
             type: integer
             format: int64
+            minimum: 1
+            maximum: 9223372036854775807
         - $ref: '../schemas/common.yaml#/parameters/MaxResults'
         - $ref: '../schemas/common.yaml#/parameters/PageToken'
       responses:
@@ -589,6 +611,8 @@ paths:
         schema:
           type: integer
           format: int64
+          minimum: 1
+          maximum: 9223372036854775807
     delete:
       operationId: deleteAPIKey
       summary: Delete an API key
@@ -650,6 +674,8 @@ paths:
         schema:
           type: integer
           format: int64
+          minimum: 1
+          maximum: 9223372036854775807
     get:
       operationId: listRowFilters
       summary: List row filters for table
@@ -727,6 +753,8 @@ paths:
         schema:
           type: integer
           format: int64
+          minimum: 1
+          maximum: 9223372036854775807
     delete:
       operationId: deleteRowFilter
       summary: Delete row filter
@@ -762,6 +790,8 @@ paths:
         schema:
           type: integer
           format: int64
+          minimum: 1
+          maximum: 9223372036854775807
     post:
       operationId: bindRowFilter
       summary: Bind filter to principal
@@ -810,11 +840,14 @@ paths:
           schema:
             type: integer
             format: int64
+            minimum: 1
+            maximum: 9223372036854775807
         - name: principal_type
           in: query
           required: true
           schema:
             type: string
+            enum: [user, group]
       responses:
         '204':
           description: Unbound
@@ -896,6 +929,8 @@ paths:
         schema:
           type: integer
           format: int64
+          minimum: 1
+          maximum: 9223372036854775807
     get:
       operationId: listColumnMasks
       summary: List column masks
@@ -973,6 +1008,8 @@ paths:
         schema:
           type: integer
           format: int64
+          minimum: 1
+          maximum: 9223372036854775807
     delete:
       operationId: deleteColumnMask
       summary: Delete column mask
@@ -1008,6 +1045,8 @@ paths:
         schema:
           type: integer
           format: int64
+          minimum: 1
+          maximum: 9223372036854775807
     post:
       operationId: bindColumnMask
       summary: Bind mask to principal
@@ -1056,11 +1095,14 @@ paths:
           schema:
             type: integer
             format: int64
+            minimum: 1
+            maximum: 9223372036854775807
         - name: principal_type
           in: query
           required: true
           schema:
             type: string
+            enum: [user, group]
       responses:
         '204':
           description: Unbound

@@ -6,11 +6,15 @@ paths:
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
       - name: tableName
         in: path
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
     get: # apilint:ignore OAL025
       operationId: getTableLineage
       summary: Get full lineage for a table
@@ -47,11 +51,15 @@ paths:
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
       - name: tableName
         in: path
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
     get:
       operationId: getUpstreamLineage
       summary: Get upstream lineage for a table
@@ -87,11 +95,15 @@ paths:
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
       - name: tableName
         in: path
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
     get:
       operationId: getDownstreamLineage
       summary: Get downstream lineage for a table
@@ -128,6 +140,8 @@ paths:
         schema:
           type: integer
           format: int64
+          minimum: 1
+          maximum: 9223372036854775807
     delete:
       operationId: deleteLineageEdge
       summary: Delete a lineage edge

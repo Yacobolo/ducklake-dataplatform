@@ -120,6 +120,8 @@ paths:
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
     get:
       operationId: getSchema
       summary: Get a schema by name
@@ -225,6 +227,8 @@ paths:
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
     get:
       operationId: listTables
       summary: List tables in a schema
@@ -301,11 +305,15 @@ paths:
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
       - name: tableName
         in: path
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
     get:
       operationId: getTable
       summary: Get a table by name
@@ -398,11 +406,15 @@ paths:
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
       - name: tableName
         in: path
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
     get:
       operationId: listTableColumns
       summary: List columns of a table
@@ -438,16 +450,22 @@ paths:
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
       - name: tableName
         in: path
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
       - name: columnName
         in: path
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
     patch:
       operationId: updateColumn
       summary: Update column metadata
@@ -492,11 +510,15 @@ paths:
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
       - name: tableName
         in: path
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
     post:
       operationId: profileTable
       summary: Profile a table to collect statistics
@@ -536,6 +558,8 @@ paths:
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
     get:
       operationId: listViews
       summary: List views in a schema
@@ -612,11 +636,15 @@ paths:
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
       - name: viewName
         in: path
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
     get:
       operationId: getView
       summary: Get a view by name
@@ -709,6 +737,8 @@ paths:
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
     get:
       operationId: listVolumes
       summary: List volumes in a schema
@@ -789,11 +819,15 @@ paths:
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
       - name: volumeName
         in: path
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
     get:
       operationId: getVolume
       summary: Get a volume by name

@@ -79,9 +79,11 @@ func (h *APIHandler) CommitTableIngestion(ctx context.Context, request CommitTab
 		}
 	}
 
+	filesRegistered := int64(result.FilesRegistered)
+	filesSkipped := int64(result.FilesSkipped)
 	return CommitTableIngestion200JSONResponse{
-		FilesRegistered: &result.FilesRegistered,
-		FilesSkipped:    &result.FilesSkipped,
+		FilesRegistered: &filesRegistered,
+		FilesSkipped:    &filesSkipped,
 		Schema:          &result.Schema,
 		Table:           &result.Table,
 	}, nil
@@ -118,9 +120,11 @@ func (h *APIHandler) LoadTableExternalFiles(ctx context.Context, request LoadTab
 		}
 	}
 
+	filesRegistered := int64(result.FilesRegistered)
+	filesSkipped := int64(result.FilesSkipped)
 	return LoadTableExternalFiles200JSONResponse{
-		FilesRegistered: &result.FilesRegistered,
-		FilesSkipped:    &result.FilesSkipped,
+		FilesRegistered: &filesRegistered,
+		FilesSkipped:    &filesSkipped,
 		Schema:          &result.Schema,
 		Table:           &result.Table,
 	}, nil

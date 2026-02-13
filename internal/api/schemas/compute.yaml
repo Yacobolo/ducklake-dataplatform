@@ -1,16 +1,24 @@
 ComputeEndpoint:
+  description: A compute endpoint representing a DuckDB execution environment, either local or remote.
   type: object
   properties:
     id:
       type: integer
       format: int64
+      minimum: 1
+      maximum: 9223372036854775807
     external_id:
       type: string
       format: uuid
+      maxLength: 36
     name:
       type: string
+      maxLength: 255
+      pattern: '^\S.*$'
     url:
       type: string
+      maxLength: 2048
+      format: uri
     type:
       type: string
       enum: [LOCAL, REMOTE]
@@ -23,23 +31,34 @@ ComputeEndpoint:
     max_memory_gb:
       type: integer
       format: int64
+      minimum: 0
+      maximum: 9223372036854775807
     owner:
       type: string
+      maxLength: 255
+      pattern: '^\S.*$'
     created_at:
       type: string
       format: date-time
+      maxLength: 64
     updated_at:
       type: string
       format: date-time
+      maxLength: 64
 
 CreateComputeEndpointRequest:
+  description: Request payload for creating a new compute endpoint.
   type: object
   required: [name, url, type]
   properties:
     name:
       type: string
+      maxLength: 255
+      pattern: '^\S.*$'
     url:
       type: string
+      maxLength: 2048
+      format: uri
     type:
       type: string
       enum: [LOCAL, REMOTE]
@@ -49,54 +68,78 @@ CreateComputeEndpointRequest:
     max_memory_gb:
       type: integer
       format: int64
+      minimum: 0
+      maximum: 9223372036854775807
     auth_token:
       type: string
       description: Pre-shared secret for remote agent authentication.
+      maxLength: 512
+      pattern: '^\S+$'
 
 UpdateComputeEndpointRequest:
+  description: Request payload for updating an existing compute endpoint.
   type: object
   properties:
     url:
       type: string
+      maxLength: 2048
+      format: uri
     size:
       type: string
       enum: [SMALL, MEDIUM, LARGE]
     max_memory_gb:
       type: integer
       format: int64
+      minimum: 0
+      maximum: 9223372036854775807
     auth_token:
       type: string
+      maxLength: 512
+      pattern: '^\S+$'
     status:
       type: string
       enum: [ACTIVE, INACTIVE, STARTING, STOPPING, ERROR]
 
 PaginatedComputeEndpoints:
+  description: A paginated list of compute endpoints.
   type: object
   properties:
     data:
       type: array
+      maxItems: 1000
       items:
         $ref: '#/ComputeEndpoint'
     next_page_token:
       type: string
+      maxLength: 4096
+      pattern: '^\S+$'
 
 ComputeAssignment:
+  description: An assignment linking a principal (user or group) to a compute endpoint.
   type: object
   properties:
     id:
       type: integer
       format: int64
+      minimum: 1
+      maximum: 9223372036854775807
     principal_id:
       type: integer
       format: int64
+      minimum: 1
+      maximum: 9223372036854775807
     principal_type:
       type: string
       enum: [user, group]
     endpoint_id:
       type: integer
       format: int64
+      minimum: 1
+      maximum: 9223372036854775807
     endpoint_name:
       type: string
+      maxLength: 255
+      pattern: '^\S.*$'
     is_default:
       type: boolean
     fallback_local:
@@ -104,14 +147,18 @@ ComputeAssignment:
     created_at:
       type: string
       format: date-time
+      maxLength: 64
 
 CreateComputeAssignmentRequest:
+  description: Request payload for creating a new compute assignment for a principal.
   type: object
   required: [principal_id, principal_type]
   properties:
     principal_id:
       type: integer
       format: int64
+      minimum: 1
+      maximum: 9223372036854775807
     principal_type:
       type: string
       enum: [user, group]
@@ -123,33 +170,53 @@ CreateComputeAssignmentRequest:
       default: false
 
 PaginatedComputeAssignments:
+  description: A paginated list of compute assignments.
   type: object
   properties:
     data:
       type: array
+      maxItems: 1000
       items:
         $ref: '#/ComputeAssignment'
     next_page_token:
       type: string
+      maxLength: 4096
+      pattern: '^\S+$'
 
 ComputeEndpointHealth:
+  description: Health and resource usage information for a compute endpoint.
   type: object
   properties:
     status:
       type: string
       description: Health status (e.g. "ok")
+      maxLength: 64
+      pattern: '^\S+$'
     uptime_seconds:
       type: integer
       description: Agent uptime in seconds
+      format: int32
+      minimum: 0
+      maximum: 2147483647
     duckdb_version:
       type: string
       description: DuckDB version running on the agent
+      maxLength: 64
+      pattern: '^\S+$'
     memory_used_mb:
       type: integer
       description: Current memory usage in MB
+      format: int32
+      minimum: 0
+      maximum: 2147483647
     max_memory_gb:
       type: integer
       description: Maximum memory limit in GB
+      format: int32
+      minimum: 0
+      maximum: 2147483647
     endpoint_name:
       type: string
       description: Name of the compute endpoint
+      maxLength: 255
+      pattern: '^\S.*$'

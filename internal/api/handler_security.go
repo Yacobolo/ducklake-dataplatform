@@ -77,7 +77,7 @@ func (h *APIHandler) CreatePrincipal(ctx context.Context, req CreatePrincipalReq
 		Name: req.Body.Name,
 	}
 	if req.Body.Type != nil {
-		p.Type = *req.Body.Type
+		p.Type = string(*req.Body.Type)
 	}
 	if req.Body.IsAdmin != nil {
 		p.IsAdmin = *req.Body.IsAdmin
@@ -223,7 +223,7 @@ func (h *APIHandler) ListGroupMembers(ctx context.Context, req ListGroupMembersR
 func (h *APIHandler) CreateGroupMember(ctx context.Context, req CreateGroupMemberRequestObject) (CreateGroupMemberResponseObject, error) {
 	if err := h.groups.AddMember(ctx, &domain.GroupMember{
 		GroupID:    req.GroupId,
-		MemberType: req.Body.MemberType,
+		MemberType: string(req.Body.MemberType),
 		MemberID:   req.Body.MemberId,
 	}); err != nil {
 		switch {
@@ -240,7 +240,7 @@ func (h *APIHandler) CreateGroupMember(ctx context.Context, req CreateGroupMembe
 func (h *APIHandler) DeleteGroupMember(ctx context.Context, req DeleteGroupMemberRequestObject) (DeleteGroupMemberResponseObject, error) {
 	if err := h.groups.RemoveMember(ctx, &domain.GroupMember{
 		GroupID:    req.GroupId,
-		MemberType: req.Params.MemberType,
+		MemberType: string(req.Params.MemberType),
 		MemberID:   req.Params.MemberId,
 	}); err != nil {
 		switch {
@@ -264,7 +264,7 @@ func (h *APIHandler) ListGrants(ctx context.Context, req ListGrantsRequestObject
 
 	switch {
 	case req.Params.PrincipalId != nil && req.Params.PrincipalType != nil:
-		grants, total, err = h.grants.ListForPrincipal(ctx, *req.Params.PrincipalId, *req.Params.PrincipalType, page)
+		grants, total, err = h.grants.ListForPrincipal(ctx, *req.Params.PrincipalId, string(*req.Params.PrincipalType), page)
 	case req.Params.SecurableType != nil && req.Params.SecurableId != nil:
 		grants, total, err = h.grants.ListForSecurable(ctx, *req.Params.SecurableType, *req.Params.SecurableId, page)
 	default:
@@ -286,7 +286,7 @@ func (h *APIHandler) ListGrants(ctx context.Context, req ListGrantsRequestObject
 func (h *APIHandler) CreateGrant(ctx context.Context, req CreateGrantRequestObject) (CreateGrantResponseObject, error) {
 	g := &domain.PrivilegeGrant{
 		PrincipalID:   req.Body.PrincipalId,
-		PrincipalType: req.Body.PrincipalType,
+		PrincipalType: string(req.Body.PrincipalType),
 		SecurableType: req.Body.SecurableType,
 		SecurableID:   req.Body.SecurableId,
 		Privilege:     req.Body.Privilege,
@@ -377,7 +377,7 @@ func (h *APIHandler) BindRowFilter(ctx context.Context, req BindRowFilterRequest
 	if err := h.rowFilters.Bind(ctx, &domain.RowFilterBinding{
 		RowFilterID:   req.RowFilterId,
 		PrincipalID:   req.Body.PrincipalId,
-		PrincipalType: req.Body.PrincipalType,
+		PrincipalType: string(req.Body.PrincipalType),
 	}); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
@@ -394,7 +394,7 @@ func (h *APIHandler) UnbindRowFilter(ctx context.Context, req UnbindRowFilterReq
 	if err := h.rowFilters.Unbind(ctx, &domain.RowFilterBinding{
 		RowFilterID:   req.RowFilterId,
 		PrincipalID:   req.Params.PrincipalId,
-		PrincipalType: req.Params.PrincipalType,
+		PrincipalType: string(req.Params.PrincipalType),
 	}); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
@@ -493,7 +493,7 @@ func (h *APIHandler) BindColumnMask(ctx context.Context, req BindColumnMaskReque
 	if err := h.columnMasks.Bind(ctx, &domain.ColumnMaskBinding{
 		ColumnMaskID:  req.ColumnMaskId,
 		PrincipalID:   req.Body.PrincipalId,
-		PrincipalType: req.Body.PrincipalType,
+		PrincipalType: string(req.Body.PrincipalType),
 		SeeOriginal:   seeOriginal,
 	}); err != nil {
 		switch {
@@ -511,7 +511,7 @@ func (h *APIHandler) UnbindColumnMask(ctx context.Context, req UnbindColumnMaskR
 	if err := h.columnMasks.Unbind(ctx, &domain.ColumnMaskBinding{
 		ColumnMaskID:  req.ColumnMaskId,
 		PrincipalID:   req.Params.PrincipalId,
-		PrincipalType: req.Params.PrincipalType,
+		PrincipalType: string(req.Params.PrincipalType),
 	}); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):

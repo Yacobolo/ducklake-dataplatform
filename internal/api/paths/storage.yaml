@@ -72,6 +72,8 @@ paths:
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
     get:
       operationId: getStorageCredential
       summary: Get a storage credential by name
@@ -235,6 +237,8 @@ paths:
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
     get:
       operationId: getExternalLocation
       summary: Get an external location by name

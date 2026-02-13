@@ -7,7 +7,8 @@ info:
     and Unity Catalog-compatible catalog management.
 
 servers:
-  - url: /v1
+  - url: https://api.example.com/v1
+    description: Production API server
 
 security:
   - BearerAuth: []
@@ -41,10 +42,13 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: >-
+        JWT Bearer token authentication conforming to RFC8725 best practices.
     ApiKeyAuth:
       type: apiKey
       in: header
       name: X-API-Key
+      description: API key authentication via the X-API-Key header.
 
   parameters:
     MaxResults:

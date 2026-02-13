@@ -29,17 +29,24 @@ func (h *APIHandler) ExecuteQuery(ctx context.Context, req ExecuteQueryRequestOb
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	result, err := h.query.Execute(ctx, principal, req.Body.Sql)
 	if err != nil {
-		code := errorCodeFromError(err)
+		code := int32(errorCodeFromError(err))
 		return ExecuteQuery403JSONResponse{Code: code, Message: err.Error()}, nil
 	}
 
 	rows := make([][]interface{}, len(result.Rows))
-	copy(rows, result.Rows)
+	for i, row := range result.Rows {
+		mapped := make([]interface{}, len(row))
+		for j, val := range row {
+			mapped[j] = val
+		}
+		rows[i] = mapped
+	}
+	rowCount := int64(result.RowCount)
 
 	return ExecuteQuery200JSONResponse{
 		Columns:  &result.Columns,
 		Rows:     &rows,
-		RowCount: &result.RowCount,
+		RowCount: &rowCount,
 	}, nil
 }
 
@@ -56,7 +63,7 @@ func (h *APIHandler) CreateManifest(ctx context.Context, req CreateManifestReque
 	// to let the service resolve the default catalog.
 	result, err := h.manifest.GetManifest(ctx, principal, "", schemaName, req.Body.Table)
 	if err != nil {
-		code := errorCodeFromError(err)
+		code := int32(errorCodeFromError(err))
 		switch code {
 		case http.StatusNotFound:
 			return CreateManifest404JSONResponse{Code: code, Message: err.Error()}, nil

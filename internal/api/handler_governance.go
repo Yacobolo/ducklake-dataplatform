@@ -195,9 +195,9 @@ func (h *APIHandler) DeleteLineageEdge(ctx context.Context, req DeleteLineageEdg
 
 // PurgeLineage implements the endpoint for purging lineage data older than a threshold.
 func (h *APIHandler) PurgeLineage(ctx context.Context, req PurgeLineageRequestObject) (PurgeLineageResponseObject, error) {
-	deleted, err := h.lineage.PurgeOlderThan(ctx, req.Body.OlderThanDays)
+	deleted, err := h.lineage.PurgeOlderThan(ctx, int(req.Body.OlderThanDays))
 	if err != nil {
-		code := errorCodeFromError(err)
+		code := int32(errorCodeFromError(err))
 		return PurgeLineage403JSONResponse{Code: code, Message: err.Error()}, nil
 	}
 	return PurgeLineage200JSONResponse{DeletedCount: &deleted}, nil

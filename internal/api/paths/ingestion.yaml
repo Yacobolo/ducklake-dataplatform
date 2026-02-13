@@ -6,11 +6,15 @@ paths:
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
       - name: tableName
         in: path
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
     post:
       operationId: createUploadUrl
       summary: Get a presigned URL for uploading a Parquet file
@@ -65,11 +69,15 @@ paths:
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
       - name: tableName
         in: path
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
     post:
       operationId: commitTableIngestion
       summary: Register uploaded Parquet files in DuckLake
@@ -124,11 +132,15 @@ paths:
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
       - name: tableName
         in: path
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
     post:
       operationId: loadTableExternalFiles
       summary: Register existing S3 files in DuckLake

@@ -57,14 +57,20 @@ paths:
           in: query
           schema:
             type: string
+            maxLength: 255
+            pattern: '^\S+$'
         - name: action
           in: query
           schema:
             type: string
+            maxLength: 64
+            pattern: '^\S+$'
         - name: status
           in: query
           schema:
             type: string
+            maxLength: 64
+            pattern: '^\S+$'
         - $ref: '../schemas/common.yaml#/parameters/MaxResults'
         - $ref: '../schemas/common.yaml#/parameters/PageToken'
       responses:
@@ -113,20 +119,26 @@ paths:
           in: query
           schema:
             type: string
+            maxLength: 255
+            pattern: '^\S+$'
         - name: status
           in: query
           schema:
             type: string
+            maxLength: 64
+            pattern: '^\S+$'
         - name: from
           in: query
           schema:
             type: string
             format: date-time
+            maxLength: 64
         - name: to
           in: query
           schema:
             type: string
             format: date-time
+            maxLength: 64
         - $ref: '../schemas/common.yaml#/parameters/MaxResults'
         - $ref: '../schemas/common.yaml#/parameters/PageToken'
       responses:

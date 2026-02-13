@@ -72,6 +72,8 @@ paths:
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
     get:
       operationId: getComputeEndpoint
       summary: Get a compute endpoint by name
@@ -166,6 +168,8 @@ paths:
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
     get:
       operationId: listComputeAssignments
       summary: List assignments for a compute endpoint
@@ -243,6 +247,8 @@ paths:
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
     get:
       operationId: getComputeEndpointHealth
       summary: Check health of a compute endpoint
@@ -288,12 +294,16 @@ paths:
         required: true
         schema:
           type: string
+          maxLength: 255
+          pattern: '^\S+$'
       - name: assignmentId
         in: path
         required: true
         schema:
           type: integer
           format: int64
+          minimum: 1
+          maximum: 9223372036854775807
     delete:
       operationId: deleteComputeAssignment
       summary: Remove a compute assignment
