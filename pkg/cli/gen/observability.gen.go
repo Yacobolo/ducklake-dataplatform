@@ -39,6 +39,7 @@ func newObservabilityCmd(client *Client) *cobra.Command {
 		c := &cobra.Command{
 			Use:   "list",
 			Short: "Query audit logs",
+			Long:  "Retrieves paginated audit log entries, optionally filtered by principal, action, or status.",
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -112,11 +113,11 @@ func newObservabilityCmd(client *Client) *cobra.Command {
 				return nil
 			},
 		}
-		c.Flags().String("action", "", "")
+		c.Flags().String("action", "", "Filter by audit action type.")
 		c.Flags().Int64("max-results", 100, "Maximum number of results to return per page.")
 		c.Flags().String("page-token", "", "Opaque pagination token from a previous response.")
-		c.Flags().String("principal-name", "", "")
-		c.Flags().String("status", "", "")
+		c.Flags().String("principal-name", "", "Filter by principal name.")
+		c.Flags().String("status", "", "Filter by status.")
 
 		// Apply overrides
 		if fn, ok := runOverrides["listAuditLogs"]; ok {
@@ -133,6 +134,7 @@ func newObservabilityCmd(client *Client) *cobra.Command {
 		c := &cobra.Command{
 			Use:   "list",
 			Short: "List query execution history",
+			Long:  "Retrieves paginated query execution history, optionally filtered by principal, status, or time range.",
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -210,12 +212,12 @@ func newObservabilityCmd(client *Client) *cobra.Command {
 				return nil
 			},
 		}
-		c.Flags().String("from", "", "")
+		c.Flags().String("from", "", "Start of the time range filter (ISO 8601 datetime).")
 		c.Flags().Int64("max-results", 100, "Maximum number of results to return per page.")
 		c.Flags().String("page-token", "", "Opaque pagination token from a previous response.")
-		c.Flags().String("principal-name", "", "")
-		c.Flags().String("status", "", "")
-		c.Flags().String("to", "", "")
+		c.Flags().String("principal-name", "", "Filter by principal name.")
+		c.Flags().String("status", "", "Filter by status.")
+		c.Flags().String("to", "", "End of the time range filter (ISO 8601 datetime).")
 
 		// Apply overrides
 		if fn, ok := runOverrides["listQueryHistory"]; ok {
@@ -236,8 +238,12 @@ func newObservabilityCmd(client *Client) *cobra.Command {
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
-				urlPath := "/metastore/summary"
+				urlPath := "/catalogs/{catalogName}/metastore/summary"
 				query := url.Values{}
+				if cmd.Flags().Changed("catalog-name") {
+					v, _ := cmd.Flags().GetString("catalog-name")
+					query.Set("catalogName", v)
+				}
 
 				// Execute request
 				resp, err := client.Do("GET", urlPath, query, nil)
@@ -284,6 +290,8 @@ func newObservabilityCmd(client *Client) *cobra.Command {
 				return nil
 			},
 		}
+		c.Flags().String("catalog-name", "", "Name of the catalog.")
+		_ = c.MarkFlagRequired("catalog-name")
 
 		// Apply overrides
 		if fn, ok := runOverrides["getMetastoreSummary"]; ok {

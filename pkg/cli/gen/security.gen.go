@@ -62,9 +62,11 @@ func newSecurityCmd(client *Client) *cobra.Command {
 	// createGroupMember
 	{
 		c := &cobra.Command{
-			Use:   "add <group-id>",
-			Short: "Add member to group",
-			Args:  cobra.ExactArgs(1),
+			Use:     "add <group-id>",
+			Short:   "Add member to group",
+			Long:    "Adds a user or nested group as a member of the specified group.",
+			Example: "duck security members add <group-id> --member-id 550e8400-e29b-41d4-a716-446655440002 --member-type user",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				urlPath := "/groups/{groupId}/members"
 				urlPath = strings.Replace(urlPath, "{groupId}", args[0], 1)
@@ -95,7 +97,7 @@ func newSecurityCmd(client *Client) *cobra.Command {
 				} else {
 					m := map[string]interface{}{}
 					if cmd.Flags().Changed("member-id") {
-						v, _ := cmd.Flags().GetInt64("member-id")
+						v, _ := cmd.Flags().GetString("member-id")
 						m["member_id"] = v
 					}
 					if cmd.Flags().Changed("member-type") {
@@ -120,7 +122,7 @@ func newSecurityCmd(client *Client) *cobra.Command {
 			},
 		}
 		c.Flags().String("json", "", "JSON input (raw string or @filename or - for stdin)")
-		c.Flags().Int64("member-id", 0, "")
+		c.Flags().String("member-id", "", "")
 		_ = c.MarkFlagRequired("member-id")
 		c.Flags().String("member-type", "", "")
 		_ = c.MarkFlagRequired("member-type")
@@ -138,9 +140,11 @@ func newSecurityCmd(client *Client) *cobra.Command {
 	// bindColumnMask
 	{
 		c := &cobra.Command{
-			Use:   "bind <column-mask-id>",
-			Short: "Bind mask to principal",
-			Args:  cobra.ExactArgs(1),
+			Use:     "bind <column-mask-id>",
+			Short:   "Bind mask to principal",
+			Long:    "Associates a column masking rule with a principal, so that the mask is applied when the principal queries the table.",
+			Example: "duck security column-masks bind <column-mask-id> --principal-id 550e8400-e29b-41d4-a716-446655440002 --principal-type user",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				urlPath := "/column-masks/{columnMaskId}/bindings"
 				urlPath = strings.Replace(urlPath, "{columnMaskId}", args[0], 1)
@@ -171,7 +175,7 @@ func newSecurityCmd(client *Client) *cobra.Command {
 				} else {
 					m := map[string]interface{}{}
 					if cmd.Flags().Changed("principal-id") {
-						v, _ := cmd.Flags().GetInt64("principal-id")
+						v, _ := cmd.Flags().GetString("principal-id")
 						m["principal_id"] = v
 					}
 					if cmd.Flags().Changed("principal-type") {
@@ -200,7 +204,7 @@ func newSecurityCmd(client *Client) *cobra.Command {
 			},
 		}
 		c.Flags().String("json", "", "JSON input (raw string or @filename or - for stdin)")
-		c.Flags().Int64("principal-id", 0, "")
+		c.Flags().String("principal-id", "", "")
 		_ = c.MarkFlagRequired("principal-id")
 		c.Flags().String("principal-type", "", "")
 		_ = c.MarkFlagRequired("principal-type")
@@ -219,9 +223,11 @@ func newSecurityCmd(client *Client) *cobra.Command {
 	// bindRowFilter
 	{
 		c := &cobra.Command{
-			Use:   "bind <row-filter-id>",
-			Short: "Bind filter to principal",
-			Args:  cobra.ExactArgs(1),
+			Use:     "bind <row-filter-id>",
+			Short:   "Bind filter to principal",
+			Long:    "Associates a row-level security filter with a principal, so that the filter is applied when the principal queries the table.",
+			Example: "duck security row-filters bind <row-filter-id> --principal-id 550e8400-e29b-41d4-a716-446655440002 --principal-type user",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				urlPath := "/row-filters/{rowFilterId}/bindings"
 				urlPath = strings.Replace(urlPath, "{rowFilterId}", args[0], 1)
@@ -252,7 +258,7 @@ func newSecurityCmd(client *Client) *cobra.Command {
 				} else {
 					m := map[string]interface{}{}
 					if cmd.Flags().Changed("principal-id") {
-						v, _ := cmd.Flags().GetInt64("principal-id")
+						v, _ := cmd.Flags().GetString("principal-id")
 						m["principal_id"] = v
 					}
 					if cmd.Flags().Changed("principal-type") {
@@ -277,7 +283,7 @@ func newSecurityCmd(client *Client) *cobra.Command {
 			},
 		}
 		c.Flags().String("json", "", "JSON input (raw string or @filename or - for stdin)")
-		c.Flags().Int64("principal-id", 0, "")
+		c.Flags().String("principal-id", "", "")
 		_ = c.MarkFlagRequired("principal-id")
 		c.Flags().String("principal-type", "", "")
 		_ = c.MarkFlagRequired("principal-type")
@@ -297,6 +303,7 @@ func newSecurityCmd(client *Client) *cobra.Command {
 		c := &cobra.Command{
 			Use:   "cleanup",
 			Short: "Delete all expired API keys (admin only)",
+			Long:  "Removes all API keys that have passed their expiration date. Only administrators can perform this operation.",
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -362,8 +369,10 @@ func newSecurityCmd(client *Client) *cobra.Command {
 	// createAPIKey
 	{
 		c := &cobra.Command{
-			Use:   "create",
-			Short: "Create a new API key",
+			Use:     "create",
+			Short:   "Create a new API key",
+			Long:    "Generates a new API key for the specified principal. The raw key value is returned only in this response and cannot be retrieved later.",
+			Example: "duck security api-keys create --expires-at 2026-01-15T09:30:00Z --name ci-pipeline-key --principal-id 550e8400-e29b-41d4-a716-446655440002",
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -403,7 +412,7 @@ func newSecurityCmd(client *Client) *cobra.Command {
 						m["name"] = v
 					}
 					if cmd.Flags().Changed("principal-id") {
-						v, _ := cmd.Flags().GetInt64("principal-id")
+						v, _ := cmd.Flags().GetString("principal-id")
 						m["principal_id"] = v
 					}
 					if len(m) > 0 {
@@ -460,7 +469,7 @@ func newSecurityCmd(client *Client) *cobra.Command {
 		c.Flags().String("json", "", "JSON input (raw string or @filename or - for stdin)")
 		c.Flags().String("name", "", "")
 		_ = c.MarkFlagRequired("name")
-		c.Flags().Int64("principal-id", 0, "")
+		c.Flags().String("principal-id", "", "")
 		_ = c.MarkFlagRequired("principal-id")
 
 		// Apply overrides
@@ -476,9 +485,11 @@ func newSecurityCmd(client *Client) *cobra.Command {
 	// createColumnMask
 	{
 		c := &cobra.Command{
-			Use:   "create <table-id>",
-			Short: "Create column mask",
-			Args:  cobra.ExactArgs(1),
+			Use:     "create <table-id>",
+			Short:   "Create column mask",
+			Long:    "Creates a new column masking rule for the specified table. The mask expression defines how column values are transformed.",
+			Example: "duck security column-masks create <table-id> --column-name email --description \"Mask email local part\" --mask-expression \"'***@' || split_part(email, '@', 2)\"",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -592,8 +603,10 @@ func newSecurityCmd(client *Client) *cobra.Command {
 	// createGrant
 	{
 		c := &cobra.Command{
-			Use:   "create",
-			Short: "Grant a privilege",
+			Use:     "create",
+			Short:   "Grant a privilege",
+			Long:    "Creates a new privilege grant for a principal on a securable resource. Returns the created grant.",
+			Example: "duck security grants create --principal-id 550e8400-e29b-41d4-a716-446655440002 --principal-type user --privilege USE_SCHEMA --securable-id 550e8400-e29b-41d4-a716-446655440001 --securable-type schema",
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -625,7 +638,7 @@ func newSecurityCmd(client *Client) *cobra.Command {
 				} else {
 					m := map[string]interface{}{}
 					if cmd.Flags().Changed("principal-id") {
-						v, _ := cmd.Flags().GetInt64("principal-id")
+						v, _ := cmd.Flags().GetString("principal-id")
 						m["principal_id"] = v
 					}
 					if cmd.Flags().Changed("principal-type") {
@@ -637,7 +650,7 @@ func newSecurityCmd(client *Client) *cobra.Command {
 						m["privilege"] = v
 					}
 					if cmd.Flags().Changed("securable-id") {
-						v, _ := cmd.Flags().GetInt64("securable-id")
+						v, _ := cmd.Flags().GetString("securable-id")
 						m["securable_id"] = v
 					}
 					if cmd.Flags().Changed("securable-type") {
@@ -695,13 +708,13 @@ func newSecurityCmd(client *Client) *cobra.Command {
 			},
 		}
 		c.Flags().String("json", "", "JSON input (raw string or @filename or - for stdin)")
-		c.Flags().Int64("principal-id", 0, "")
+		c.Flags().String("principal-id", "", "")
 		_ = c.MarkFlagRequired("principal-id")
 		c.Flags().String("principal-type", "", "")
 		_ = c.MarkFlagRequired("principal-type")
 		c.Flags().String("privilege", "", "")
 		_ = c.MarkFlagRequired("privilege")
-		c.Flags().Int64("securable-id", 0, "")
+		c.Flags().String("securable-id", "", "")
 		_ = c.MarkFlagRequired("securable-id")
 		c.Flags().String("securable-type", "", "")
 		_ = c.MarkFlagRequired("securable-type")
@@ -719,9 +732,11 @@ func newSecurityCmd(client *Client) *cobra.Command {
 	// createGroup
 	{
 		c := &cobra.Command{
-			Use:   "create <name>",
-			Short: "Create a group",
-			Args:  cobra.ExactArgs(1),
+			Use:     "create <name>",
+			Short:   "Create a group",
+			Long:    "Creates a new group with the specified name. Returns the created group with its generated identifier.",
+			Example: "duck security groups create engineering --description \"Engineering team\"",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -823,9 +838,11 @@ func newSecurityCmd(client *Client) *cobra.Command {
 	// createPrincipal
 	{
 		c := &cobra.Command{
-			Use:   "create <name>",
-			Short: "Create a principal",
-			Args:  cobra.ExactArgs(1),
+			Use:     "create <name>",
+			Short:   "Create a principal",
+			Long:    "Creates a new principal with the specified name and optional type. Returns the created principal with its generated identifier.",
+			Example: "duck security principals create alice --type user",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -932,9 +949,11 @@ func newSecurityCmd(client *Client) *cobra.Command {
 	// createRowFilter
 	{
 		c := &cobra.Command{
-			Use:   "create <table-id>",
-			Short: "Create row filter",
-			Args:  cobra.ExactArgs(1),
+			Use:     "create <table-id>",
+			Short:   "Create row filter",
+			Long:    "Creates a new row-level security filter for the specified table. The filter expression defines which rows are visible.",
+			Example: "duck security row-filters create <table-id> --description \"Restrict to US East region\" --filter-sql \"region = 'us-east-1'\" --table-id 550e8400-e29b-41d4-a716-446655440005",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -975,7 +994,7 @@ func newSecurityCmd(client *Client) *cobra.Command {
 						m["filter_sql"] = v
 					}
 					if cmd.Flags().Changed("table-id") {
-						v, _ := cmd.Flags().GetInt64("table-id")
+						v, _ := cmd.Flags().GetString("table-id")
 						m["table_id"] = v
 					}
 					if len(m) > 0 {
@@ -1032,7 +1051,7 @@ func newSecurityCmd(client *Client) *cobra.Command {
 		c.Flags().String("filter-sql", "", "")
 		_ = c.MarkFlagRequired("filter-sql")
 		c.Flags().String("json", "", "JSON input (raw string or @filename or - for stdin)")
-		c.Flags().Int64("table-id", 0, "Table ID (required when creating via top-level POST /row-filters)")
+		c.Flags().String("table-id", "", "Table ID (required when creating via top-level POST /row-filters)")
 
 		// Apply overrides
 		if fn, ok := runOverrides["createRowFilter"]; ok {
@@ -1047,9 +1066,11 @@ func newSecurityCmd(client *Client) *cobra.Command {
 	// deleteAPIKey
 	{
 		c := &cobra.Command{
-			Use:   "delete <api-key-id>",
-			Short: "Delete an API key",
-			Args:  cobra.ExactArgs(1),
+			Use:     "delete <api-key-id>",
+			Short:   "Delete an API key",
+			Long:    "Permanently deletes an API key, immediately revoking access for any client using it.",
+			Example: "duck security api-keys delete <api-key-id>",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				if !cmd.Flags().Changed("yes") {
 					if !ConfirmPrompt("Are you sure?") {
@@ -1087,9 +1108,11 @@ func newSecurityCmd(client *Client) *cobra.Command {
 	// deleteColumnMask
 	{
 		c := &cobra.Command{
-			Use:   "delete <column-mask-id>",
-			Short: "Delete column mask",
-			Args:  cobra.ExactArgs(1),
+			Use:     "delete <column-mask-id>",
+			Short:   "Delete column mask",
+			Long:    "Permanently removes a column masking rule and all its principal bindings.",
+			Example: "duck security column-masks delete <column-mask-id>",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				if !cmd.Flags().Changed("yes") {
 					if !ConfirmPrompt("Are you sure?") {
@@ -1127,9 +1150,11 @@ func newSecurityCmd(client *Client) *cobra.Command {
 	// deleteGroup
 	{
 		c := &cobra.Command{
-			Use:   "delete <group-id>",
-			Short: "Delete a group",
-			Args:  cobra.ExactArgs(1),
+			Use:     "delete <group-id>",
+			Short:   "Delete a group",
+			Long:    "Permanently removes a group from the system. All memberships and associated grants are also removed.",
+			Example: "duck security groups delete <group-id>",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				if !cmd.Flags().Changed("yes") {
 					if !ConfirmPrompt("Are you sure?") {
@@ -1167,9 +1192,11 @@ func newSecurityCmd(client *Client) *cobra.Command {
 	// deletePrincipal
 	{
 		c := &cobra.Command{
-			Use:   "delete <principal-id>",
-			Short: "Delete a principal",
-			Args:  cobra.ExactArgs(1),
+			Use:     "delete <principal-id>",
+			Short:   "Delete a principal",
+			Long:    "Permanently removes a principal from the system. Associated grants and group memberships are also removed.",
+			Example: "duck security principals delete <principal-id>",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				if !cmd.Flags().Changed("yes") {
 					if !ConfirmPrompt("Are you sure?") {
@@ -1207,9 +1234,11 @@ func newSecurityCmd(client *Client) *cobra.Command {
 	// deleteRowFilter
 	{
 		c := &cobra.Command{
-			Use:   "delete <row-filter-id>",
-			Short: "Delete row filter",
-			Args:  cobra.ExactArgs(1),
+			Use:     "delete <row-filter-id>",
+			Short:   "Delete row filter",
+			Long:    "Permanently removes a row-level security filter and all its principal bindings.",
+			Example: "duck security row-filters delete <row-filter-id>",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				if !cmd.Flags().Changed("yes") {
 					if !ConfirmPrompt("Are you sure?") {
@@ -1247,9 +1276,11 @@ func newSecurityCmd(client *Client) *cobra.Command {
 	// getGroup
 	{
 		c := &cobra.Command{
-			Use:   "get <group-id>",
-			Short: "Get group by ID",
-			Args:  cobra.ExactArgs(1),
+			Use:     "get <group-id>",
+			Short:   "Get group by ID",
+			Long:    "Retrieves the details of a specific group by its unique identifier.",
+			Example: "duck security groups get <group-id>",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -1316,9 +1347,11 @@ func newSecurityCmd(client *Client) *cobra.Command {
 	// getPrincipal
 	{
 		c := &cobra.Command{
-			Use:   "get <principal-id>",
-			Short: "Get principal by ID",
-			Args:  cobra.ExactArgs(1),
+			Use:     "get <principal-id>",
+			Short:   "Get principal by ID",
+			Long:    "Retrieves the details of a specific principal by its unique identifier.",
+			Example: "duck security principals get <principal-id>",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -1387,6 +1420,7 @@ func newSecurityCmd(client *Client) *cobra.Command {
 		c := &cobra.Command{
 			Use:   "list",
 			Short: "List API keys for a principal",
+			Long:  "Returns a paginated list of API keys associated with the specified principal. Raw key values are not included.",
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -1401,8 +1435,8 @@ func newSecurityCmd(client *Client) *cobra.Command {
 					query.Set("page_token", v)
 				}
 				if cmd.Flags().Changed("principal-id") {
-					v, _ := cmd.Flags().GetInt64("principal-id")
-					query.Set("principal_id", fmt.Sprintf("%d", v))
+					v, _ := cmd.Flags().GetString("principal-id")
+					query.Set("principal_id", v)
 				}
 
 				// Execute request
@@ -1454,7 +1488,7 @@ func newSecurityCmd(client *Client) *cobra.Command {
 		}
 		c.Flags().Int64("max-results", 100, "Maximum number of results to return per page.")
 		c.Flags().String("page-token", "", "Opaque pagination token from a previous response.")
-		c.Flags().Int64("principal-id", 0, "")
+		c.Flags().String("principal-id", "", "Filter by principal identifier.")
 		_ = c.MarkFlagRequired("principal-id")
 
 		// Apply overrides
@@ -1470,9 +1504,11 @@ func newSecurityCmd(client *Client) *cobra.Command {
 	// listColumnMasks
 	{
 		c := &cobra.Command{
-			Use:   "list <table-id>",
-			Short: "List column masks",
-			Args:  cobra.ExactArgs(1),
+			Use:     "list <table-id>",
+			Short:   "List column masks",
+			Long:    "Returns a paginated list of all column masking rules defined for the specified table.",
+			Example: "duck security column-masks list <table-id>",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -1553,6 +1589,7 @@ func newSecurityCmd(client *Client) *cobra.Command {
 		c := &cobra.Command{
 			Use:   "list",
 			Short: "List grants",
+			Long:  "Returns a paginated list of privilege grants, optionally filtered by principal or securable.",
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -1567,16 +1604,16 @@ func newSecurityCmd(client *Client) *cobra.Command {
 					query.Set("page_token", v)
 				}
 				if cmd.Flags().Changed("principal-id") {
-					v, _ := cmd.Flags().GetInt64("principal-id")
-					query.Set("principal_id", fmt.Sprintf("%d", v))
+					v, _ := cmd.Flags().GetString("principal-id")
+					query.Set("principal_id", v)
 				}
 				if cmd.Flags().Changed("principal-type") {
 					v, _ := cmd.Flags().GetString("principal-type")
 					query.Set("principal_type", v)
 				}
 				if cmd.Flags().Changed("securable-id") {
-					v, _ := cmd.Flags().GetInt64("securable-id")
-					query.Set("securable_id", fmt.Sprintf("%d", v))
+					v, _ := cmd.Flags().GetString("securable-id")
+					query.Set("securable_id", v)
 				}
 				if cmd.Flags().Changed("securable-type") {
 					v, _ := cmd.Flags().GetString("securable-type")
@@ -1632,10 +1669,10 @@ func newSecurityCmd(client *Client) *cobra.Command {
 		}
 		c.Flags().Int64("max-results", 100, "Maximum number of results to return per page.")
 		c.Flags().String("page-token", "", "Opaque pagination token from a previous response.")
-		c.Flags().Int64("principal-id", 0, "")
-		c.Flags().String("principal-type", "", "")
-		c.Flags().Int64("securable-id", 0, "")
-		c.Flags().String("securable-type", "", "")
+		c.Flags().String("principal-id", "", "Filter by principal identifier.")
+		c.Flags().String("principal-type", "", "Filter by principal type.")
+		c.Flags().String("securable-id", "", "Filter by securable resource identifier.")
+		c.Flags().String("securable-type", "", "Filter by securable resource type.")
 
 		// Apply overrides
 		if fn, ok := runOverrides["listGrants"]; ok {
@@ -1650,9 +1687,11 @@ func newSecurityCmd(client *Client) *cobra.Command {
 	// listGroupMembers
 	{
 		c := &cobra.Command{
-			Use:   "list <group-id>",
-			Short: "List group members",
-			Args:  cobra.ExactArgs(1),
+			Use:     "list <group-id>",
+			Short:   "List group members",
+			Long:    "Returns a paginated list of all members (users and nested groups) belonging to the specified group.",
+			Example: "duck security members list <group-id>",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -1733,6 +1772,7 @@ func newSecurityCmd(client *Client) *cobra.Command {
 		c := &cobra.Command{
 			Use:   "list",
 			Short: "List all groups",
+			Long:  "Returns a paginated list of all groups defined in the system.",
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -1812,6 +1852,7 @@ func newSecurityCmd(client *Client) *cobra.Command {
 		c := &cobra.Command{
 			Use:   "list",
 			Short: "List all principals",
+			Long:  "Returns a paginated list of all principals (users and service accounts) in the system.",
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -1889,9 +1930,11 @@ func newSecurityCmd(client *Client) *cobra.Command {
 	// listRowFilters
 	{
 		c := &cobra.Command{
-			Use:   "list <table-id>",
-			Short: "List row filters for table",
-			Args:  cobra.ExactArgs(1),
+			Use:     "list <table-id>",
+			Short:   "List row filters for table",
+			Long:    "Returns a paginated list of all row-level security filters defined for the specified table.",
+			Example: "duck security row-filters list <table-id>",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -1970,16 +2013,18 @@ func newSecurityCmd(client *Client) *cobra.Command {
 	// deleteGroupMember
 	{
 		c := &cobra.Command{
-			Use:   "remove <group-id>",
-			Short: "Remove member from group",
-			Args:  cobra.ExactArgs(1),
+			Use:     "remove <group-id>",
+			Short:   "Remove member from group",
+			Long:    "Removes a specific user or nested group from the specified group.",
+			Example: "duck security members remove <group-id>",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				urlPath := "/groups/{groupId}/members"
 				urlPath = strings.Replace(urlPath, "{groupId}", args[0], 1)
 				query := url.Values{}
 				if cmd.Flags().Changed("member-id") {
-					v, _ := cmd.Flags().GetInt64("member-id")
-					query.Set("member_id", fmt.Sprintf("%d", v))
+					v, _ := cmd.Flags().GetString("member-id")
+					query.Set("member_id", v)
 				}
 				if cmd.Flags().Changed("member-type") {
 					v, _ := cmd.Flags().GetString("member-type")
@@ -1998,9 +2043,9 @@ func newSecurityCmd(client *Client) *cobra.Command {
 				return nil
 			},
 		}
-		c.Flags().Int64("member-id", 0, "")
+		c.Flags().String("member-id", "", "Identifier of the member to remove.")
 		_ = c.MarkFlagRequired("member-id")
-		c.Flags().String("member-type", "", "")
+		c.Flags().String("member-type", "", "Type of the group member (user or group).")
 		_ = c.MarkFlagRequired("member-type")
 
 		// Apply overrides
@@ -2016,9 +2061,11 @@ func newSecurityCmd(client *Client) *cobra.Command {
 	// deleteGrant
 	{
 		c := &cobra.Command{
-			Use:   "revoke <grant-id>",
-			Short: "Revoke a privilege",
-			Args:  cobra.ExactArgs(1),
+			Use:     "revoke <grant-id>",
+			Short:   "Revoke a privilege",
+			Long:    "Revokes a previously granted privilege by deleting the grant record.",
+			Example: "duck security grants revoke <grant-id>",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				urlPath := "/grants/{grantId}"
 				urlPath = strings.Replace(urlPath, "{grantId}", args[0], 1)
@@ -2050,9 +2097,11 @@ func newSecurityCmd(client *Client) *cobra.Command {
 	// updatePrincipalAdmin
 	{
 		c := &cobra.Command{
-			Use:   "set-admin <principal-id>",
-			Short: "Set or unset admin flag",
-			Args:  cobra.ExactArgs(1),
+			Use:     "set-admin <principal-id>",
+			Short:   "Set or unset admin flag",
+			Long:    "Updates the admin status of a principal. Only existing admins can promote or demote other principals.",
+			Example: "duck security principals set-admin <principal-id> --is-admin",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				urlPath := "/principals/{principalId}/admin"
 				urlPath = strings.Replace(urlPath, "{principalId}", args[0], 1)
@@ -2120,16 +2169,18 @@ func newSecurityCmd(client *Client) *cobra.Command {
 	// unbindColumnMask
 	{
 		c := &cobra.Command{
-			Use:   "unbind <column-mask-id>",
-			Short: "Unbind mask from principal",
-			Args:  cobra.ExactArgs(1),
+			Use:     "unbind <column-mask-id>",
+			Short:   "Unbind mask from principal",
+			Long:    "Removes the association between a column masking rule and a principal.",
+			Example: "duck security column-masks unbind <column-mask-id>",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				urlPath := "/column-masks/{columnMaskId}/bindings"
 				urlPath = strings.Replace(urlPath, "{columnMaskId}", args[0], 1)
 				query := url.Values{}
 				if cmd.Flags().Changed("principal-id") {
-					v, _ := cmd.Flags().GetInt64("principal-id")
-					query.Set("principal_id", fmt.Sprintf("%d", v))
+					v, _ := cmd.Flags().GetString("principal-id")
+					query.Set("principal_id", v)
 				}
 				if cmd.Flags().Changed("principal-type") {
 					v, _ := cmd.Flags().GetString("principal-type")
@@ -2148,9 +2199,9 @@ func newSecurityCmd(client *Client) *cobra.Command {
 				return nil
 			},
 		}
-		c.Flags().Int64("principal-id", 0, "")
+		c.Flags().String("principal-id", "", "Filter by principal identifier.")
 		_ = c.MarkFlagRequired("principal-id")
-		c.Flags().String("principal-type", "", "")
+		c.Flags().String("principal-type", "", "Filter by principal type.")
 		_ = c.MarkFlagRequired("principal-type")
 
 		// Apply overrides
@@ -2166,16 +2217,18 @@ func newSecurityCmd(client *Client) *cobra.Command {
 	// unbindRowFilter
 	{
 		c := &cobra.Command{
-			Use:   "unbind <row-filter-id>",
-			Short: "Unbind filter from principal",
-			Args:  cobra.ExactArgs(1),
+			Use:     "unbind <row-filter-id>",
+			Short:   "Unbind filter from principal",
+			Long:    "Removes the association between a row-level security filter and a principal.",
+			Example: "duck security row-filters unbind <row-filter-id>",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				urlPath := "/row-filters/{rowFilterId}/bindings"
 				urlPath = strings.Replace(urlPath, "{rowFilterId}", args[0], 1)
 				query := url.Values{}
 				if cmd.Flags().Changed("principal-id") {
-					v, _ := cmd.Flags().GetInt64("principal-id")
-					query.Set("principal_id", fmt.Sprintf("%d", v))
+					v, _ := cmd.Flags().GetString("principal-id")
+					query.Set("principal_id", v)
 				}
 				if cmd.Flags().Changed("principal-type") {
 					v, _ := cmd.Flags().GetString("principal-type")
@@ -2194,9 +2247,9 @@ func newSecurityCmd(client *Client) *cobra.Command {
 				return nil
 			},
 		}
-		c.Flags().Int64("principal-id", 0, "")
+		c.Flags().String("principal-id", "", "Filter by principal identifier.")
 		_ = c.MarkFlagRequired("principal-id")
-		c.Flags().String("principal-type", "", "")
+		c.Flags().String("principal-type", "", "Filter by principal type.")
 		_ = c.MarkFlagRequired("principal-type")
 
 		// Apply overrides

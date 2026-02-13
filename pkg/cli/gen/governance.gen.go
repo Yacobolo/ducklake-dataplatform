@@ -38,8 +38,10 @@ func newGovernanceCmd(client *Client) *cobra.Command {
 	// createTag
 	{
 		c := &cobra.Command{
-			Use:   "create",
-			Short: "Create a tag",
+			Use:     "create",
+			Short:   "Create a tag",
+			Long:    "Creates a new tag for classifying and annotating catalog objects.",
+			Example: "duck governance tags create --key pii --value email",
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -146,9 +148,11 @@ func newGovernanceCmd(client *Client) *cobra.Command {
 	// createTagAssignment
 	{
 		c := &cobra.Command{
-			Use:   "create <tag-id>",
-			Short: "Assign a tag to a securable object",
-			Args:  cobra.ExactArgs(1),
+			Use:     "create <tag-id>",
+			Short:   "Assign a tag to a securable object",
+			Long:    "Creates an assignment linking a tag to a specific securable catalog object.",
+			Example: "duck governance tag-assignments create <tag-id> --column-name email --securable-id 550e8400-e29b-41d4-a716-446655440005 --securable-type table",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -185,7 +189,7 @@ func newGovernanceCmd(client *Client) *cobra.Command {
 						m["column_name"] = v
 					}
 					if cmd.Flags().Changed("securable-id") {
-						v, _ := cmd.Flags().GetInt64("securable-id")
+						v, _ := cmd.Flags().GetString("securable-id")
 						m["securable_id"] = v
 					}
 					if cmd.Flags().Changed("securable-type") {
@@ -244,7 +248,7 @@ func newGovernanceCmd(client *Client) *cobra.Command {
 		}
 		c.Flags().String("column-name", "", "")
 		c.Flags().String("json", "", "JSON input (raw string or @filename or - for stdin)")
-		c.Flags().Int64("securable-id", 0, "")
+		c.Flags().String("securable-id", "", "")
 		_ = c.MarkFlagRequired("securable-id")
 		c.Flags().String("securable-type", "", "")
 		_ = c.MarkFlagRequired("securable-type")
@@ -262,9 +266,11 @@ func newGovernanceCmd(client *Client) *cobra.Command {
 	// deleteTag
 	{
 		c := &cobra.Command{
-			Use:   "delete <tag-id>",
-			Short: "Delete a tag",
-			Args:  cobra.ExactArgs(1),
+			Use:     "delete <tag-id>",
+			Short:   "Delete a tag",
+			Long:    "Permanently deletes a tag and all of its assignments from the catalog.",
+			Example: "duck governance tags delete <tag-id>",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				if !cmd.Flags().Changed("yes") {
 					if !ConfirmPrompt("Are you sure?") {
@@ -302,9 +308,11 @@ func newGovernanceCmd(client *Client) *cobra.Command {
 	// deleteTagAssignment
 	{
 		c := &cobra.Command{
-			Use:   "delete <assignment-id>",
-			Short: "Remove a tag assignment",
-			Args:  cobra.ExactArgs(1),
+			Use:     "delete <assignment-id>",
+			Short:   "Remove a tag assignment",
+			Long:    "Removes a tag assignment, unlinking the tag from the securable object.",
+			Example: "duck governance tag-assignments delete <assignment-id>",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				if !cmd.Flags().Changed("yes") {
 					if !ConfirmPrompt("Are you sure?") {
@@ -424,6 +432,7 @@ func newGovernanceCmd(client *Client) *cobra.Command {
 		c := &cobra.Command{
 			Use:   "list",
 			Short: "List all tags",
+			Long:  "Returns a paginated list of all tags defined in the catalog.",
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -509,6 +518,10 @@ func newGovernanceCmd(client *Client) *cobra.Command {
 				_ = outputFlag
 				urlPath := "/search"
 				query := url.Values{}
+				if cmd.Flags().Changed("catalog") {
+					v, _ := cmd.Flags().GetString("catalog")
+					query.Set("catalog", v)
+				}
 				if cmd.Flags().Changed("max-results") {
 					v, _ := cmd.Flags().GetInt64("max-results")
 					query.Set("max_results", fmt.Sprintf("%d", v))
@@ -573,9 +586,10 @@ func newGovernanceCmd(client *Client) *cobra.Command {
 				return nil
 			},
 		}
+		c.Flags().String("catalog", "", "Scope search to a specific catalog (defaults to the default catalog).")
 		c.Flags().Int64("max-results", 100, "Maximum number of results to return per page.")
 		c.Flags().String("page-token", "", "Opaque pagination token from a previous response.")
-		c.Flags().String("query", "", "")
+		c.Flags().String("query", "", "Search query string to match against catalog objects.")
 		_ = c.MarkFlagRequired("query")
 		c.Flags().String("type", "", "Filter by object type: schema, table, or column")
 

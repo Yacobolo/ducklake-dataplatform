@@ -20,9 +20,10 @@ func newManifestCmd(client *Client) *cobra.Command {
 	// createManifest
 	{
 		c := &cobra.Command{
-			Use:   "create",
-			Short: "Create table manifest with presigned URLs and security policies",
-			Long:  "Returns presigned S3 URLs for the Parquet files backing a table, along with RLS row filters and column masks for the authenticated principal. Used by the duck_access DuckDB extension for secure client-side querying.\n",
+			Use:     "create",
+			Short:   "Create table manifest with presigned URLs and security policies",
+			Long:    "Returns presigned S3 URLs for the Parquet files backing a table, along with RLS row filters and column masks for the authenticated principal. Used by the duck_access DuckDB extension for secure client-side querying.\n",
+			Example: "duck manifest create --schema main --table users",
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag

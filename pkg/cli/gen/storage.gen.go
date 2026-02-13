@@ -32,10 +32,11 @@ func newStorageCmd(client *Client) *cobra.Command {
 	// createStorageCredential
 	{
 		c := &cobra.Command{
-			Use:   "create <name>",
-			Short: "Create a storage credential",
-			Long:  "Creates a new storage credential. Requires ALL_PRIVILEGES on catalog.",
-			Args:  cobra.ExactArgs(1),
+			Use:     "create <name>",
+			Short:   "Create a storage credential",
+			Long:    "Creates a new storage credential. Requires ALL_PRIVILEGES on catalog.",
+			Example: "duck storage credentials create aws-prod-creds --credential-type S3 --endpoint s3.amazonaws.com --key-id AKIAIOSFODNN7EXAMPLE --region us-east-1 --secret wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY --url-style path",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -198,10 +199,11 @@ func newStorageCmd(client *Client) *cobra.Command {
 	// createExternalLocation
 	{
 		c := &cobra.Command{
-			Use:   "create <name>",
-			Short: "Create an external location",
-			Long:  "Creates a new external location and configures DuckDB with the associated credential. If this is the first location, the DuckLake catalog is attached. Requires ALL_PRIVILEGES on catalog.\n",
-			Args:  cobra.ExactArgs(1),
+			Use:     "create <name>",
+			Short:   "Create an external location",
+			Long:    "Creates a new external location and configures DuckDB with the associated credential. If this is the first location, the DuckLake catalog is attached. Requires ALL_PRIVILEGES on catalog.\n",
+			Example: "duck storage locations create prod-datalake --comment \"Production data lake\" --credential-name aws-prod-creds --storage-type S3 --url s3://acme-datalake/warehouse/",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -325,10 +327,11 @@ func newStorageCmd(client *Client) *cobra.Command {
 	// deleteStorageCredential
 	{
 		c := &cobra.Command{
-			Use:   "delete <credential-name>",
-			Short: "Delete a storage credential",
-			Long:  "Deletes a credential. Requires ALL_PRIVILEGES on catalog.",
-			Args:  cobra.ExactArgs(1),
+			Use:     "delete <credential-name>",
+			Short:   "Delete a storage credential",
+			Long:    "Deletes a credential. Requires ALL_PRIVILEGES on catalog.",
+			Example: "duck storage credentials delete <credential-name>",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				if !cmd.Flags().Changed("yes") {
 					if !ConfirmPrompt("Are you sure?") {
@@ -366,10 +369,11 @@ func newStorageCmd(client *Client) *cobra.Command {
 	// deleteExternalLocation
 	{
 		c := &cobra.Command{
-			Use:   "delete <location-name>",
-			Short: "Delete an external location",
-			Long:  "Deletes a location and drops the associated DuckDB secret. Requires ALL_PRIVILEGES on catalog.",
-			Args:  cobra.ExactArgs(1),
+			Use:     "delete <location-name>",
+			Short:   "Delete an external location",
+			Long:    "Deletes a location and drops the associated DuckDB secret. Requires ALL_PRIVILEGES on catalog.",
+			Example: "duck storage locations delete <location-name>",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				if !cmd.Flags().Changed("yes") {
 					if !ConfirmPrompt("Are you sure?") {
@@ -407,10 +411,11 @@ func newStorageCmd(client *Client) *cobra.Command {
 	// getStorageCredential
 	{
 		c := &cobra.Command{
-			Use:   "get <credential-name>",
-			Short: "Get a storage credential by name",
-			Long:  "Returns credential metadata. Sensitive fields (key_id, secret) are never returned.",
-			Args:  cobra.ExactArgs(1),
+			Use:     "get <credential-name>",
+			Short:   "Get a storage credential by name",
+			Long:    "Returns credential metadata. Sensitive fields (key_id, secret) are never returned.",
+			Example: "duck storage credentials get <credential-name>",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -477,9 +482,11 @@ func newStorageCmd(client *Client) *cobra.Command {
 	// getExternalLocation
 	{
 		c := &cobra.Command{
-			Use:   "get <location-name>",
-			Short: "Get an external location by name",
-			Args:  cobra.ExactArgs(1),
+			Use:     "get <location-name>",
+			Short:   "Get an external location by name",
+			Long:    "Retrieves the details of a specific external location identified by its name.",
+			Example: "duck storage locations get <location-name>",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -628,6 +635,7 @@ func newStorageCmd(client *Client) *cobra.Command {
 		c := &cobra.Command{
 			Use:   "list",
 			Short: "List external locations",
+			Long:  "Returns a paginated list of external locations configured for remote storage access.",
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -705,10 +713,11 @@ func newStorageCmd(client *Client) *cobra.Command {
 	// updateStorageCredential
 	{
 		c := &cobra.Command{
-			Use:   "update <credential-name>",
-			Short: "Update a storage credential",
-			Long:  "Updates credential fields. Requires ALL_PRIVILEGES on catalog.",
-			Args:  cobra.ExactArgs(1),
+			Use:     "update <credential-name>",
+			Short:   "Update a storage credential",
+			Long:    "Updates credential fields. Requires ALL_PRIVILEGES on catalog.",
+			Example: "duck storage credentials update <credential-name> --key-id AKIAIOSFODNN7RENEWED --region us-west-2 --secret newJalrXUtnFEMI/K7MDENG/bPxRfiCYNEWKEY",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -865,10 +874,11 @@ func newStorageCmd(client *Client) *cobra.Command {
 	// updateExternalLocation
 	{
 		c := &cobra.Command{
-			Use:   "update <location-name>",
-			Short: "Update an external location",
-			Long:  "Updates location fields. Requires ALL_PRIVILEGES on catalog.",
-			Args:  cobra.ExactArgs(1),
+			Use:     "update <location-name>",
+			Short:   "Update an external location",
+			Long:    "Updates location fields. Requires ALL_PRIVILEGES on catalog.",
+			Example: "duck storage locations update <location-name> --comment \"Updated production data lake path\" --credential-name aws-prod-creds --url s3://acme-datalake/warehouse-v2/",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag

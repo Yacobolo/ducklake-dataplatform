@@ -20,17 +20,22 @@ func newIngestionCmd(client *Client) *cobra.Command {
 	// commitTableIngestion
 	{
 		c := &cobra.Command{
-			Use:   "commit <schema-name> <table-name>",
-			Short: "Register uploaded Parquet files in DuckLake",
-			Long:  "Registers previously uploaded files (from upload-url) in the DuckLake catalog. DuckLake validates schema compatibility, extracts column statistics, and registers files atomically. Requires INSERT privilege on the target table.\n",
-			Args:  cobra.ExactArgs(2),
+			Use:     "commit <schema-name> <table-name>",
+			Short:   "Register uploaded Parquet files in DuckLake",
+			Long:    "Registers previously uploaded files (from upload-url) in the DuckLake catalog. DuckLake validates schema compatibility, extracts column statistics, and registers files atomically. Requires INSERT privilege on the target table.\n",
+			Example: "duck ingestion commit <schema-name> <table-name> --ignore-extra-columns --s3-keys uploads/2025/01/events-part1.parquet,uploads/2025/01/events-part2.parquet",
+			Args:    cobra.ExactArgs(2),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
-				urlPath := "/catalog/schemas/{schemaName}/tables/{tableName}/ingestion/commit"
+				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/commit"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				urlPath = strings.Replace(urlPath, "{tableName}", args[1], 1)
 				query := url.Values{}
+				if cmd.Flags().Changed("catalog-name") {
+					v, _ := cmd.Flags().GetString("catalog-name")
+					query.Set("catalogName", v)
+				}
 				// Build request body
 				var body interface{}
 				jsonInput, _ := cmd.Flags().GetString("json")
@@ -127,6 +132,8 @@ func newIngestionCmd(client *Client) *cobra.Command {
 			},
 		}
 		c.Flags().Bool("allow-missing-columns", false, "Allow columns in the table that are missing from the Parquet file.")
+		c.Flags().String("catalog-name", "", "Name of the catalog.")
+		_ = c.MarkFlagRequired("catalog-name")
 		c.Flags().Bool("ignore-extra-columns", false, "Ignore columns in the Parquet file not present in the table.")
 		c.Flags().String("json", "", "JSON input (raw string or @filename or - for stdin)")
 		c.Flags().StringSlice("s3-keys", nil, "S3 keys returned from upload-url to register.")
@@ -145,17 +152,22 @@ func newIngestionCmd(client *Client) *cobra.Command {
 	// loadTableExternalFiles
 	{
 		c := &cobra.Command{
-			Use:   "load <schema-name> <table-name>",
-			Short: "Register existing S3 files in DuckLake",
-			Long:  "Registers existing S3 files or globs in the DuckLake catalog. Paths without an s3:// prefix are treated as relative to the lake data path. DuckLake validates schema compatibility, extracts column statistics, and registers files atomically. Requires INSERT privilege on the target table.\n",
-			Args:  cobra.ExactArgs(2),
+			Use:     "load <schema-name> <table-name>",
+			Short:   "Register existing S3 files in DuckLake",
+			Long:    "Registers existing S3 files or globs in the DuckLake catalog. Paths without an s3:// prefix are treated as relative to the lake data path. DuckLake validates schema compatibility, extracts column statistics, and registers files atomically. Requires INSERT privilege on the target table.\n",
+			Example: "duck ingestion load <schema-name> <table-name> --paths s3://acme-datalake/raw/events/2025/01/*.parquet",
+			Args:    cobra.ExactArgs(2),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
-				urlPath := "/catalog/schemas/{schemaName}/tables/{tableName}/ingestion/load"
+				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/load"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				urlPath = strings.Replace(urlPath, "{tableName}", args[1], 1)
 				query := url.Values{}
+				if cmd.Flags().Changed("catalog-name") {
+					v, _ := cmd.Flags().GetString("catalog-name")
+					query.Set("catalogName", v)
+				}
 				// Build request body
 				var body interface{}
 				jsonInput, _ := cmd.Flags().GetString("json")
@@ -252,6 +264,8 @@ func newIngestionCmd(client *Client) *cobra.Command {
 			},
 		}
 		c.Flags().Bool("allow-missing-columns", false, "Allow columns in the table that are missing from the Parquet file.")
+		c.Flags().String("catalog-name", "", "Name of the catalog.")
+		_ = c.MarkFlagRequired("catalog-name")
 		c.Flags().Bool("ignore-extra-columns", false, "Ignore columns in the Parquet file not present in the table.")
 		c.Flags().String("json", "", "JSON input (raw string or @filename or - for stdin)")
 		c.Flags().StringSlice("paths", nil, "S3 paths or globs to register.")
@@ -270,17 +284,22 @@ func newIngestionCmd(client *Client) *cobra.Command {
 	// createUploadUrl
 	{
 		c := &cobra.Command{
-			Use:   "upload-url <schema-name> <table-name>",
-			Short: "Get a presigned URL for uploading a Parquet file",
-			Long:  "Returns a presigned PUT URL that the client can use to upload a Parquet file directly to S3. The file can then be registered via the commit endpoint. Requires INSERT privilege on the target table.\n",
-			Args:  cobra.ExactArgs(2),
+			Use:     "upload-url <schema-name> <table-name>",
+			Short:   "Get a presigned URL for uploading a Parquet file",
+			Long:    "Returns a presigned PUT URL that the client can use to upload a Parquet file directly to S3. The file can then be registered via the commit endpoint. Requires INSERT privilege on the target table.\n",
+			Example: "duck ingestion upload-url <schema-name> <table-name> --filename events-2025-01-15.parquet",
+			Args:    cobra.ExactArgs(2),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
-				urlPath := "/catalog/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url"
+				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				urlPath = strings.Replace(urlPath, "{tableName}", args[1], 1)
 				query := url.Values{}
+				if cmd.Flags().Changed("catalog-name") {
+					v, _ := cmd.Flags().GetString("catalog-name")
+					query.Set("catalogName", v)
+				}
 				// Build request body
 				var body interface{}
 				jsonInput, _ := cmd.Flags().GetString("json")
@@ -360,6 +379,8 @@ func newIngestionCmd(client *Client) *cobra.Command {
 				return nil
 			},
 		}
+		c.Flags().String("catalog-name", "", "Name of the catalog.")
+		_ = c.MarkFlagRequired("catalog-name")
 		c.Flags().String("filename", "", "Optional filename hint for the uploaded file.")
 		c.Flags().String("json", "", "JSON input (raw string or @filename or - for stdin)")
 

@@ -20,8 +20,10 @@ func newQueryCmd(client *Client) *cobra.Command {
 	// executeQuery
 	{
 		c := &cobra.Command{
-			Use:   "execute",
-			Short: "Execute SQL as authenticated principal",
+			Use:     "execute",
+			Short:   "Execute SQL as authenticated principal",
+			Long:    "Executes a SQL query against the DuckDB engine using the authenticated principal's permissions and security policies.",
+			Example: "duck query --sql \"SELECT id, name FROM main.users LIMIT 10\"",
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag

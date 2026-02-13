@@ -26,10 +26,11 @@ func newItemsCmd(client *Client) *cobra.Command {
 	// deleteItem
 	{
 		c := &cobra.Command{
-			Use:   "delete <item-id>",
-			Short: "Delete an item",
-			Long:  "Deletes an item by ID.",
-			Args:  cobra.ExactArgs(1),
+			Use:     "delete <item-id>",
+			Short:   "Delete an item",
+			Long:    "Deletes an item by ID.",
+			Example: "duck items items delete <item-id>",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				if !cmd.Flags().Changed("yes") {
 					if !ConfirmPrompt("Are you sure?") {
@@ -67,10 +68,11 @@ func newItemsCmd(client *Client) *cobra.Command {
 	// getItem
 	{
 		c := &cobra.Command{
-			Use:   "get <item-id>",
-			Short: "Get an item",
-			Long:  "Returns a single item by ID.",
-			Args:  cobra.ExactArgs(1),
+			Use:     "get <item-id>",
+			Short:   "Get an item",
+			Long:    "Returns a single item by ID.",
+			Example: "duck items items get <item-id>",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag

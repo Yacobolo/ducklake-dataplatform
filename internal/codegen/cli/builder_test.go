@@ -679,6 +679,103 @@ func TestBuildCommandModel(t *testing.T) {
 		assert.True(t, found, "compound flag columns should be in flags")
 	})
 
+	t.Run("auto-generated examples from body example", func(t *testing.T) {
+		op := &openapi3.Operation{
+			OperationID: "createTask",
+			Summary:     "Create a task",
+			Responses:   &openapi3.Responses{},
+			RequestBody: &openapi3.RequestBodyRef{
+				Value: &openapi3.RequestBody{
+					Content: openapi3.Content{
+						"application/json": &openapi3.MediaType{
+							Example: map[string]interface{}{
+								"name":        "my-task",
+								"description": "A sample task",
+								"priority":    1,
+							},
+							Schema: &openapi3.SchemaRef{
+								Value: &openapi3.Schema{
+									Type:     func() *openapi3.Types { t := openapi3.Types{"object"}; return &t }(),
+									Required: []string{"name"},
+									Properties: openapi3.Schemas{
+										"name":        &openapi3.SchemaRef{Value: makeSchema("string")},
+										"description": &openapi3.SchemaRef{Value: makeSchema("string")},
+										"priority":    &openapi3.SchemaRef{Value: makeSchema("integer")},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		op.Responses.Set("201", makeResponse("Created"))
+
+		info := &opInfo{
+			method:  "POST",
+			urlPath: "/tasks",
+			op:      op,
+		}
+		cmdCfg := CommandConfig{
+			OperationID: "createTask",
+			CommandPath: []string{"tasks"},
+			Verb:        "create",
+		}
+
+		cm, err := buildCommandModel("test", "create-task", cmdCfg, info, nil)
+		require.NoError(t, err)
+
+		assert.NotEmpty(t, cm.Examples, "should have auto-generated examples")
+		assert.Contains(t, cm.Examples[0], "duck test tasks create")
+		assert.Contains(t, cm.Examples[0], "--name my-task")
+		assert.Contains(t, cm.Examples[0], "--priority 1")
+	})
+
+	t.Run("config examples take precedence over auto-generated", func(t *testing.T) {
+		op := &openapi3.Operation{
+			OperationID: "createTask",
+			Summary:     "Create a task",
+			Responses:   &openapi3.Responses{},
+			RequestBody: &openapi3.RequestBodyRef{
+				Value: &openapi3.RequestBody{
+					Content: openapi3.Content{
+						"application/json": &openapi3.MediaType{
+							Example: map[string]interface{}{
+								"name": "my-task",
+							},
+							Schema: &openapi3.SchemaRef{
+								Value: &openapi3.Schema{
+									Type: func() *openapi3.Types { t := openapi3.Types{"object"}; return &t }(),
+									Properties: openapi3.Schemas{
+										"name": &openapi3.SchemaRef{Value: makeSchema("string")},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		op.Responses.Set("201", makeResponse("Created"))
+
+		info := &opInfo{
+			method:  "POST",
+			urlPath: "/tasks",
+			op:      op,
+		}
+		cmdCfg := CommandConfig{
+			OperationID: "createTask",
+			CommandPath: []string{"tasks"},
+			Verb:        "create",
+			Examples:    []string{"duck test tasks create --name custom-example"},
+		}
+
+		cm, err := buildCommandModel("test", "create-task", cmdCfg, info, nil)
+		require.NoError(t, err)
+
+		assert.Equal(t, []string{"duck test tasks create --name custom-example"}, cm.Examples)
+	})
+
 	t.Run("positional arg not required in spec errors", func(t *testing.T) {
 		op := &openapi3.Operation{
 			OperationID: "getItem",
