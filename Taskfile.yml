@@ -85,9 +85,18 @@ tasks:
       - go build -o bin/compute-agent ./cmd/compute-agent
 
   test:
-    desc: Run all tests (package summary, shows failures inline)
+    desc: Run all tests (unit + integration)
+    deps: [test:unit, test:integration]
+
+  test:unit:
+    desc: Run unit tests (package summary, shows failures inline)
     cmds:
       - gotestsum --format pkgname-and-test-fails -- -race ./...
+
+  test:integration:
+    desc: Run integration tests (package summary, shows failures inline)
+    cmds:
+      - gotestsum --format pkgname-and-test-fails -- -tags integration -timeout 120s ./test/integration/...
 
   vet:
     desc: Run go vet
@@ -117,6 +126,5 @@ tasks:
       - git diff --exit-code pkg/cli/gen/ internal/api/types.gen.go internal/api/server.gen.go
 
   integration-test:
-    desc: Run integration tests (package summary, shows failures inline)
-    cmds:
-      - gotestsum --format pkgname-and-test-fails -- -tags integration -timeout 120s ./test/integration/...
+    desc: "Run integration tests (alias for test:integration)"
+    deps: [test:integration]
