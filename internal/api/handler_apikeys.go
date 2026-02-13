@@ -24,9 +24,9 @@ func (h *APIHandler) CreateAPIKey(ctx context.Context, req CreateAPIKeyRequestOb
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.ValidationError)):
-			return CreateAPIKey400JSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: CreateAPIKey400ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return CreateAPIKey400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CreateAPIKey403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: CreateAPIKey403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return CreateAPIKey403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -71,7 +71,7 @@ func (h *APIHandler) DeleteAPIKey(ctx context.Context, req DeleteAPIKeyRequestOb
 	if err := h.apiKeys.Delete(ctx, req.ApiKeyId); err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return DeleteAPIKey404JSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: DeleteAPIKey404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return DeleteAPIKey404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -85,7 +85,7 @@ func (h *APIHandler) CleanupExpiredAPIKeys(ctx context.Context, _ CleanupExpired
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CleanupExpiredAPIKeys403JSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: CleanupExpiredAPIKeys403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return CleanupExpiredAPIKeys403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}

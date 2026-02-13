@@ -30,7 +30,7 @@ func (h *APIHandler) ExecuteQuery(ctx context.Context, req ExecuteQueryRequestOb
 	result, err := h.query.Execute(ctx, principal, req.Body.Sql)
 	if err != nil {
 		code := errorCodeFromError(err)
-		return ExecuteQuery403JSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: ExecuteQuery403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+		return ExecuteQuery403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
 
 	rows := make([][]interface{}, len(result.Rows))
@@ -67,9 +67,9 @@ func (h *APIHandler) CreateManifest(ctx context.Context, req CreateManifestReque
 		code := errorCodeFromError(err)
 		switch code {
 		case http.StatusNotFound:
-			return CreateManifest404JSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: CreateManifest404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return CreateManifest404JSONResponse{NotFoundJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
-			return CreateManifest403JSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: CreateManifest403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return CreateManifest403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 	}
 
