@@ -55,9 +55,6 @@ func (r *ResolveOrProvisionRequest) Validate() error {
 	if r.ExternalID == "" {
 		return ErrValidation("external_id is required")
 	}
-	if r.Issuer == "" {
-		return ErrValidation("issuer is required")
-	}
 	return nil
 }
 

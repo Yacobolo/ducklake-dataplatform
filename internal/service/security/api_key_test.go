@@ -25,10 +25,10 @@ func setupAPIKeyService(t *testing.T) (*APIKeyService, *PrincipalService) {
 func TestAPIKeyService_Create(t *testing.T) {
 	svc, principalSvc := setupAPIKeyService(t)
 
-	p, err := principalSvc.Create(adminCtx(), &domain.Principal{Name: "keyowner", Type: "user"})
+	p, err := principalSvc.Create(adminCtx(), domain.CreatePrincipalRequest{Name: "keyowner", Type: "user"})
 	require.NoError(t, err)
 
-	rawKey, key, err := svc.Create(adminCtx(), p.ID, "my-api-key", nil)
+	rawKey, key, err := svc.Create(adminCtx(), domain.CreateAPIKeyRequest{PrincipalID: p.ID, Name: "my-api-key"})
 	require.NoError(t, err)
 	assert.NotEmpty(t, rawKey)
 	assert.Len(t, rawKey, 64) // 32 bytes hex encoded
@@ -40,11 +40,11 @@ func TestAPIKeyService_Create(t *testing.T) {
 func TestAPIKeyService_Create_WithExpiry(t *testing.T) {
 	svc, principalSvc := setupAPIKeyService(t)
 
-	p, err := principalSvc.Create(adminCtx(), &domain.Principal{Name: "keyowner", Type: "user"})
+	p, err := principalSvc.Create(adminCtx(), domain.CreatePrincipalRequest{Name: "keyowner", Type: "user"})
 	require.NoError(t, err)
 
 	expiry := time.Now().Add(24 * time.Hour)
-	_, key, err := svc.Create(adminCtx(), p.ID, "expiring-key", &expiry)
+	_, key, err := svc.Create(adminCtx(), domain.CreateAPIKeyRequest{PrincipalID: p.ID, Name: "expiring-key", ExpiresAt: &expiry})
 	require.NoError(t, err)
 	assert.NotNil(t, key.ExpiresAt)
 }
@@ -52,7 +52,7 @@ func TestAPIKeyService_Create_WithExpiry(t *testing.T) {
 func TestAPIKeyService_Create_EmptyName(t *testing.T) {
 	svc, _ := setupAPIKeyService(t)
 
-	_, _, err := svc.Create(adminCtx(), "1", "", nil)
+	_, _, err := svc.Create(adminCtx(), domain.CreateAPIKeyRequest{PrincipalID: "1", Name: ""})
 	require.Error(t, err)
 	var validationErr *domain.ValidationError
 	assert.ErrorAs(t, err, &validationErr)
@@ -61,7 +61,7 @@ func TestAPIKeyService_Create_EmptyName(t *testing.T) {
 func TestAPIKeyService_Create_Unauthenticated(t *testing.T) {
 	svc, _ := setupAPIKeyService(t)
 
-	_, _, err := svc.Create(ctx, "1", "key", nil)
+	_, _, err := svc.Create(ctx, domain.CreateAPIKeyRequest{PrincipalID: "1", Name: "key"})
 	require.Error(t, err)
 	var accessDenied *domain.AccessDeniedError
 	assert.ErrorAs(t, err, &accessDenied)
@@ -70,12 +70,12 @@ func TestAPIKeyService_Create_Unauthenticated(t *testing.T) {
 func TestAPIKeyService_List(t *testing.T) {
 	svc, principalSvc := setupAPIKeyService(t)
 
-	p, err := principalSvc.Create(adminCtx(), &domain.Principal{Name: "listowner", Type: "user"})
+	p, err := principalSvc.Create(adminCtx(), domain.CreatePrincipalRequest{Name: "listowner", Type: "user"})
 	require.NoError(t, err)
 
 	// Create two keys.
 	for _, name := range []string{"key-1", "key-2"} {
-		_, _, err := svc.Create(adminCtx(), p.ID, name, nil)
+		_, _, err := svc.Create(adminCtx(), domain.CreateAPIKeyRequest{PrincipalID: p.ID, Name: name})
 		require.NoError(t, err)
 	}
 
@@ -88,10 +88,10 @@ func TestAPIKeyService_List(t *testing.T) {
 func TestAPIKeyService_Delete(t *testing.T) {
 	svc, principalSvc := setupAPIKeyService(t)
 
-	p, err := principalSvc.Create(adminCtx(), &domain.Principal{Name: "delowner", Type: "user"})
+	p, err := principalSvc.Create(adminCtx(), domain.CreatePrincipalRequest{Name: "delowner", Type: "user"})
 	require.NoError(t, err)
 
-	_, key, err := svc.Create(adminCtx(), p.ID, "to-delete", nil)
+	_, key, err := svc.Create(adminCtx(), domain.CreateAPIKeyRequest{PrincipalID: p.ID, Name: "to-delete"})
 	require.NoError(t, err)
 
 	err = svc.Delete(adminCtx(), key.ID)
