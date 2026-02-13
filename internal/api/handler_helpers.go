@@ -1,10 +1,23 @@
 package api
 
 import (
+	"math"
+
 	"duck-demo/internal/domain"
 )
 
 // --- helpers ---
+
+// safeIntToInt32 converts an int to int32 clamping to [math.MinInt32, math.MaxInt32].
+func safeIntToInt32(v int) int32 {
+	if v > math.MaxInt32 {
+		return math.MaxInt32
+	}
+	if v < math.MinInt32 {
+		return math.MinInt32
+	}
+	return int32(v)
+}
 
 // pageFromParams extracts a PageRequest from optional max_results/page_token params.
 func pageFromParams(maxResults *MaxResults, pageToken *PageToken) domain.PageRequest {
@@ -26,8 +39,8 @@ func httpStatusFromError(err error) int {
 
 // errorCodeFromError returns the HTTP status code for building error JSON responses.
 // This is a convenience alias for use in handler methods.
-func errorCodeFromError(err error) int {
-	return httpStatusFromError(err)
+func errorCodeFromError(err error) int32 {
+	return int32(httpStatusFromError(err)) //nolint:gosec // HTTP status codes are always in [100,599]
 }
 
 // === Mapping helpers ===
@@ -189,7 +202,7 @@ func tableDetailToAPI(t domain.TableDetail) TableDetail {
 }
 
 func columnDetailToAPI(c domain.ColumnDetail) ColumnDetail {
-	pos := int32(c.Position)
+	pos := safeIntToInt32(c.Position)
 	return ColumnDetail{
 		Name:       &c.Name,
 		Type:       &c.Type,

@@ -38,17 +38,6 @@ func yGet(m *yaml.Node, key string) *yaml.Node {
 	return nil
 }
 
-func yKeys(m *yaml.Node) []string {
-	if m == nil || m.Kind != yaml.MappingNode {
-		return nil
-	}
-	var keys []string
-	for i := 0; i < len(m.Content)-1; i += 2 {
-		keys = append(keys, m.Content[i].Value)
-	}
-	return keys
-}
-
 func yOpID(op *yaml.Node) string {
 	n := yGet(op, "operationId")
 	if n != nil {

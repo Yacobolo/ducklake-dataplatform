@@ -590,7 +590,7 @@ paths:
 `
 	vs := findRule(mustLint(t, spec), "check-pagination-schema-match")
 	// Rule is disabled in ruleset.yaml — lineage endpoints use pagination params for depth control.
-	require.Len(t, vs, 0)
+	require.Empty(t, vs)
 }
 
 func TestCheckPaginationSchemaMatch_WithPaginated(t *testing.T) {
@@ -745,7 +745,7 @@ func TestLintActualSpec(t *testing.T) {
 
 	vs := l.Run()
 	// Verify the linter found violations (built-in + OWASP + custom should all fire).
-	assert.Greater(t, len(vs), 0, "expected violations from the actual spec")
+	assert.NotEmpty(t, vs, "expected violations from the actual spec")
 
 	errors := Filter(vs, SeverityError)
 	warnings := Filter(vs, SeverityWarning)

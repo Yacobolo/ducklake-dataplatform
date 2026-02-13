@@ -29,16 +29,14 @@ func (h *APIHandler) ExecuteQuery(ctx context.Context, req ExecuteQueryRequestOb
 	principal, _ := middleware.PrincipalFromContext(ctx)
 	result, err := h.query.Execute(ctx, principal, req.Body.Sql)
 	if err != nil {
-		code := int32(errorCodeFromError(err))
+		code := errorCodeFromError(err)
 		return ExecuteQuery403JSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: ExecuteQuery403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 	}
 
 	rows := make([][]interface{}, len(result.Rows))
 	for i, row := range result.Rows {
 		mapped := make([]interface{}, len(row))
-		for j, val := range row {
-			mapped[j] = val
-		}
+		copy(mapped, row)
 		rows[i] = mapped
 	}
 	rowCount := int64(result.RowCount)
@@ -66,7 +64,7 @@ func (h *APIHandler) CreateManifest(ctx context.Context, req CreateManifestReque
 	// to let the service resolve the default catalog.
 	result, err := h.manifest.GetManifest(ctx, principal, "", schemaName, req.Body.Table)
 	if err != nil {
-		code := int32(errorCodeFromError(err))
+		code := errorCodeFromError(err)
 		switch code {
 		case http.StatusNotFound:
 			return CreateManifest404JSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: CreateManifest404ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil

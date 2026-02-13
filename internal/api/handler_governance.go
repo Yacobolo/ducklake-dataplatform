@@ -215,7 +215,7 @@ func (h *APIHandler) DeleteLineageEdge(ctx context.Context, req DeleteLineageEdg
 func (h *APIHandler) PurgeLineage(ctx context.Context, req PurgeLineageRequestObject) (PurgeLineageResponseObject, error) {
 	deleted, err := h.lineage.PurgeOlderThan(ctx, int(req.Body.OlderThanDays))
 	if err != nil {
-		code := int32(errorCodeFromError(err))
+		code := errorCodeFromError(err)
 		return PurgeLineage403JSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: PurgeLineage403ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 	}
 	return PurgeLineage200JSONResponse{

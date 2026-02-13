@@ -225,17 +225,17 @@ func (h *APIHandler) GetComputeEndpointHealth(ctx context.Context, req GetComput
 
 	var uptimeSeconds *int32
 	if result.UptimeSeconds != nil {
-		v := int32(*result.UptimeSeconds)
+		v := safeIntToInt32(*result.UptimeSeconds)
 		uptimeSeconds = &v
 	}
 	var memoryUsedMb *int32
 	if result.MemoryUsedMb != nil {
-		v := int32(*result.MemoryUsedMb)
+		v := safeIntToInt32(*result.MemoryUsedMb)
 		memoryUsedMb = &v
 	}
 	var maxMemoryGb *int32
 	if result.MaxMemoryGb != nil {
-		v := int32(*result.MaxMemoryGb)
+		v := safeIntToInt32(*result.MaxMemoryGb)
 		maxMemoryGb = &v
 	}
 	return GetComputeEndpointHealth200JSONResponse{
