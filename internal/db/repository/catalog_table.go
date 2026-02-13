@@ -1,4 +1,3 @@
-// Table and column CRUD operations for CatalogRepo.
 package repository
 
 import (

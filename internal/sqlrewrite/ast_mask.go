@@ -1,4 +1,3 @@
-// ast_mask.go — Column masking: rewrite SELECT targets to apply mask expressions.
 package sqlrewrite
 
 import (

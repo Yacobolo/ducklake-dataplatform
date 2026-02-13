@@ -1,4 +1,3 @@
-// ast_inject.go — AST walkers that inject WHERE clause filters into SELECT statements.
 package sqlrewrite
 
 import (

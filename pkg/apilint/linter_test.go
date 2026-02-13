@@ -1,6 +1,7 @@
 package apilint
 
 import (
+	"context"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -1487,7 +1488,7 @@ func TestLintActualSpec(t *testing.T) {
 		if _, err := os.Stat(sourcePath); os.IsNotExist(err) {
 			t.Skip("openapi.yaml not found at expected path")
 		}
-		cmd := exec.Command("npx", "--yes", "@redocly/cli", "bundle", sourcePath, "-o", bundledPath)
+		cmd := exec.CommandContext(context.Background(), "npx", "--yes", "@redocly/cli", "bundle", sourcePath, "-o", bundledPath)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
 			t.Skipf("failed to bundle spec (install @redocly/cli): %s: %v", out, err)

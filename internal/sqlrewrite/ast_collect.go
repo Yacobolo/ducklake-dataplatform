@@ -1,4 +1,3 @@
-// ast_collect.go — AST walkers that collect table names from parse trees.
 package sqlrewrite
 
 import (

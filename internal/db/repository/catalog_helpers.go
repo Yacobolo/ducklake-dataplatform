@@ -1,4 +1,3 @@
-// Shared helpers for CatalogRepo operations.
 package repository
 
 import (

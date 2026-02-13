@@ -1,4 +1,3 @@
-// ast_builders.go — AST node constructors for building filter expressions.
 package sqlrewrite
 
 import (

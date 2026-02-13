@@ -1,4 +1,3 @@
-// Schema CRUD operations for CatalogRepo.
 package repository
 
 import (

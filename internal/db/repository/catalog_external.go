@@ -1,4 +1,3 @@
-// External table operations for CatalogRepo.
 package repository
 
 import (
