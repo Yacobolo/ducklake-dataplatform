@@ -58,6 +58,17 @@ type CatalogMetadatum struct {
 	DeletedAt     sql.NullString
 }
 
+type Cell struct {
+	ID         string
+	NotebookID string
+	CellType   string
+	Content    string
+	Position   int64
+	LastResult sql.NullString
+	CreatedAt  string
+	UpdatedAt  string
+}
+
 type ColumnMask struct {
 	ID             string
 	TableID        string
@@ -144,6 +155,20 @@ type ExternalTableColumn struct {
 	Position        int64
 }
 
+type GitRepo struct {
+	ID            string
+	Url           string
+	Branch        string
+	Path          string
+	AuthToken     string
+	WebhookSecret sql.NullString
+	Owner         string
+	LastSyncAt    sql.NullString
+	LastCommit    sql.NullString
+	CreatedAt     string
+	UpdatedAt     string
+}
+
 type Group struct {
 	ID          string
 	Name        string
@@ -167,6 +192,28 @@ type LineageEdge struct {
 	CreatedAt     string
 	SourceSchema  sql.NullString
 	TargetSchema  sql.NullString
+}
+
+type Notebook struct {
+	ID          string
+	Name        string
+	Description sql.NullString
+	Owner       string
+	CreatedAt   string
+	UpdatedAt   string
+	GitRepoID   sql.NullString
+	GitPath     sql.NullString
+}
+
+type NotebookJob struct {
+	ID         string
+	NotebookID string
+	SessionID  string
+	State      string
+	Result     sql.NullString
+	Error      sql.NullString
+	CreatedAt  string
+	UpdatedAt  string
 }
 
 type Principal struct {
