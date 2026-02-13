@@ -5,10 +5,13 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	_ "github.com/duckdb/duckdb-go/v2"
@@ -41,7 +44,8 @@ func main() {
 }
 
 func run() error {
-	ctx := context.Background()
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
+	defer cancel()
 
 	// Load .env file (if present) — no logger yet, so use stderr directly.
 	if err := config.LoadDotEnv(".env"); err != nil {
@@ -132,6 +136,13 @@ func run() error {
 	r.Use(chimw.Logger)
 	r.Use(chimw.Recoverer)
 
+	// Health check endpoint — no auth required, used by load balancers / K8s probes
+	r.Get("/healthz", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+	})
+
 	// Public endpoints — no auth required
 	r.Get("/openapi.json", func(w http.ResponseWriter, _ *http.Request) {
 		swagger, err := api.GetSwagger()
@@ -176,7 +187,17 @@ func run() error {
 		WriteTimeout: 60 * time.Second,
 		IdleTimeout:  120 * time.Second,
 	}
-	if err := srv.ListenAndServe(); err != nil {
+
+	// Graceful shutdown: wait for SIGTERM/SIGINT, then drain connections.
+	go func() {
+		<-ctx.Done()
+		logger.Info("shutting down server")
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer shutdownCancel()
+		_ = srv.Shutdown(shutdownCtx)
+	}()
+
+	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return fmt.Errorf("server: %w", err)
 	}
 	return nil
