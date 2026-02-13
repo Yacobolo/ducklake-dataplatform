@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"duck-demo/internal/domain"
 	"duck-demo/internal/middleware"
@@ -228,9 +227,6 @@ func (h *APIHandler) CreateExternalLocation(ctx context.Context, req CreateExter
 		CredentialName: req.Body.CredentialName,
 	}
 	if req.Body.StorageType != nil {
-		if *req.Body.StorageType != CreateExternalLocationRequestStorageTypeS3 {
-			return CreateExternalLocation400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: fmt.Sprintf("unsupported storage type %q; supported: S3", string(*req.Body.StorageType))}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		}
 		domReq.StorageType = domain.StorageType(*req.Body.StorageType)
 	}
 	if req.Body.Comment != nil {
