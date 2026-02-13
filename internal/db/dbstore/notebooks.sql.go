@@ -199,19 +199,19 @@ func (q *Queries) ListCells(ctx context.Context, notebookID string) ([]Cell, err
 
 const listNotebooks = `-- name: ListNotebooks :many
 SELECT id, name, description, owner, created_at, updated_at, git_repo_id, git_path FROM notebooks
-WHERE (?3 IS NULL OR owner = ?3)
+WHERE (?1 IS NULL OR owner = ?1)
 ORDER BY updated_at DESC
-LIMIT ? OFFSET ?
+LIMIT ?3 OFFSET ?2
 `
 
 type ListNotebooksParams struct {
 	Owner  interface{}
-	Limit  int64
 	Offset int64
+	Limit  int64
 }
 
 func (q *Queries) ListNotebooks(ctx context.Context, arg ListNotebooksParams) ([]Notebook, error) {
-	rows, err := q.db.QueryContext(ctx, listNotebooks, arg.Owner, arg.Limit, arg.Offset)
+	rows, err := q.db.QueryContext(ctx, listNotebooks, arg.Owner, arg.Offset, arg.Limit)
 	if err != nil {
 		return nil, err
 	}

@@ -869,3 +869,203 @@ func (m *MockIntrospectionRepo) GetSchemaByName(ctx context.Context, schemaName 
 }
 
 var _ domain.IntrospectionRepository = (*MockIntrospectionRepo)(nil)
+
+// === Notebook Repository Mock ===
+
+// MockNotebookRepo implements domain.NotebookRepository for testing.
+type MockNotebookRepo struct {
+	CreateNotebookFn   func(ctx context.Context, nb *domain.Notebook) (*domain.Notebook, error)
+	GetNotebookFn      func(ctx context.Context, id string) (*domain.Notebook, error)
+	ListNotebooksFn    func(ctx context.Context, owner *string, page domain.PageRequest) ([]domain.Notebook, int64, error)
+	UpdateNotebookFn   func(ctx context.Context, id string, req domain.UpdateNotebookRequest) (*domain.Notebook, error)
+	DeleteNotebookFn   func(ctx context.Context, id string) error
+	CreateCellFn       func(ctx context.Context, cell *domain.Cell) (*domain.Cell, error)
+	GetCellFn          func(ctx context.Context, id string) (*domain.Cell, error)
+	ListCellsFn        func(ctx context.Context, notebookID string) ([]domain.Cell, error)
+	UpdateCellFn       func(ctx context.Context, id string, req domain.UpdateCellRequest) (*domain.Cell, error)
+	DeleteCellFn       func(ctx context.Context, id string) error
+	UpdateCellResultFn func(ctx context.Context, cellID string, result *string) error
+	ReorderCellsFn     func(ctx context.Context, notebookID string, cellIDs []string) error
+	GetMaxPositionFn   func(ctx context.Context, notebookID string) (int, error)
+}
+
+func (m *MockNotebookRepo) CreateNotebook(ctx context.Context, nb *domain.Notebook) (*domain.Notebook, error) {
+	if m.CreateNotebookFn != nil {
+		return m.CreateNotebookFn(ctx, nb)
+	}
+	panic("unexpected call to MockNotebookRepo.CreateNotebook")
+}
+
+func (m *MockNotebookRepo) GetNotebook(ctx context.Context, id string) (*domain.Notebook, error) {
+	if m.GetNotebookFn != nil {
+		return m.GetNotebookFn(ctx, id)
+	}
+	panic("unexpected call to MockNotebookRepo.GetNotebook")
+}
+
+func (m *MockNotebookRepo) ListNotebooks(ctx context.Context, owner *string, page domain.PageRequest) ([]domain.Notebook, int64, error) {
+	if m.ListNotebooksFn != nil {
+		return m.ListNotebooksFn(ctx, owner, page)
+	}
+	panic("unexpected call to MockNotebookRepo.ListNotebooks")
+}
+
+func (m *MockNotebookRepo) UpdateNotebook(ctx context.Context, id string, req domain.UpdateNotebookRequest) (*domain.Notebook, error) {
+	if m.UpdateNotebookFn != nil {
+		return m.UpdateNotebookFn(ctx, id, req)
+	}
+	panic("unexpected call to MockNotebookRepo.UpdateNotebook")
+}
+
+func (m *MockNotebookRepo) DeleteNotebook(ctx context.Context, id string) error {
+	if m.DeleteNotebookFn != nil {
+		return m.DeleteNotebookFn(ctx, id)
+	}
+	panic("unexpected call to MockNotebookRepo.DeleteNotebook")
+}
+
+func (m *MockNotebookRepo) CreateCell(ctx context.Context, cell *domain.Cell) (*domain.Cell, error) {
+	if m.CreateCellFn != nil {
+		return m.CreateCellFn(ctx, cell)
+	}
+	panic("unexpected call to MockNotebookRepo.CreateCell")
+}
+
+func (m *MockNotebookRepo) GetCell(ctx context.Context, id string) (*domain.Cell, error) {
+	if m.GetCellFn != nil {
+		return m.GetCellFn(ctx, id)
+	}
+	panic("unexpected call to MockNotebookRepo.GetCell")
+}
+
+func (m *MockNotebookRepo) ListCells(ctx context.Context, notebookID string) ([]domain.Cell, error) {
+	if m.ListCellsFn != nil {
+		return m.ListCellsFn(ctx, notebookID)
+	}
+	panic("unexpected call to MockNotebookRepo.ListCells")
+}
+
+func (m *MockNotebookRepo) UpdateCell(ctx context.Context, id string, req domain.UpdateCellRequest) (*domain.Cell, error) {
+	if m.UpdateCellFn != nil {
+		return m.UpdateCellFn(ctx, id, req)
+	}
+	panic("unexpected call to MockNotebookRepo.UpdateCell")
+}
+
+func (m *MockNotebookRepo) DeleteCell(ctx context.Context, id string) error {
+	if m.DeleteCellFn != nil {
+		return m.DeleteCellFn(ctx, id)
+	}
+	panic("unexpected call to MockNotebookRepo.DeleteCell")
+}
+
+func (m *MockNotebookRepo) UpdateCellResult(ctx context.Context, cellID string, result *string) error {
+	if m.UpdateCellResultFn != nil {
+		return m.UpdateCellResultFn(ctx, cellID, result)
+	}
+	return nil // default no-op like audit
+}
+
+func (m *MockNotebookRepo) ReorderCells(ctx context.Context, notebookID string, cellIDs []string) error {
+	if m.ReorderCellsFn != nil {
+		return m.ReorderCellsFn(ctx, notebookID, cellIDs)
+	}
+	panic("unexpected call to MockNotebookRepo.ReorderCells")
+}
+
+func (m *MockNotebookRepo) GetMaxPosition(ctx context.Context, notebookID string) (int, error) {
+	if m.GetMaxPositionFn != nil {
+		return m.GetMaxPositionFn(ctx, notebookID)
+	}
+	panic("unexpected call to MockNotebookRepo.GetMaxPosition")
+}
+
+var _ domain.NotebookRepository = (*MockNotebookRepo)(nil)
+
+// === Notebook Job Repository Mock ===
+
+// MockNotebookJobRepo implements domain.NotebookJobRepository for testing.
+type MockNotebookJobRepo struct {
+	CreateJobFn      func(ctx context.Context, job *domain.NotebookJob) (*domain.NotebookJob, error)
+	GetJobFn         func(ctx context.Context, id string) (*domain.NotebookJob, error)
+	ListJobsFn       func(ctx context.Context, notebookID string, page domain.PageRequest) ([]domain.NotebookJob, int64, error)
+	UpdateJobStateFn func(ctx context.Context, id string, state domain.JobState, result *string, errMsg *string) error
+}
+
+func (m *MockNotebookJobRepo) CreateJob(ctx context.Context, job *domain.NotebookJob) (*domain.NotebookJob, error) {
+	if m.CreateJobFn != nil {
+		return m.CreateJobFn(ctx, job)
+	}
+	panic("unexpected call to MockNotebookJobRepo.CreateJob")
+}
+
+func (m *MockNotebookJobRepo) GetJob(ctx context.Context, id string) (*domain.NotebookJob, error) {
+	if m.GetJobFn != nil {
+		return m.GetJobFn(ctx, id)
+	}
+	panic("unexpected call to MockNotebookJobRepo.GetJob")
+}
+
+func (m *MockNotebookJobRepo) ListJobs(ctx context.Context, notebookID string, page domain.PageRequest) ([]domain.NotebookJob, int64, error) {
+	if m.ListJobsFn != nil {
+		return m.ListJobsFn(ctx, notebookID, page)
+	}
+	panic("unexpected call to MockNotebookJobRepo.ListJobs")
+}
+
+func (m *MockNotebookJobRepo) UpdateJobState(ctx context.Context, id string, state domain.JobState, result *string, errMsg *string) error {
+	if m.UpdateJobStateFn != nil {
+		return m.UpdateJobStateFn(ctx, id, state, result, errMsg)
+	}
+	return nil // default no-op
+}
+
+var _ domain.NotebookJobRepository = (*MockNotebookJobRepo)(nil)
+
+// === Git Repo Repository Mock ===
+
+// MockGitRepoRepo implements domain.GitRepoRepository for testing.
+type MockGitRepoRepo struct {
+	CreateFn           func(ctx context.Context, repo *domain.GitRepo) (*domain.GitRepo, error)
+	GetByIDFn          func(ctx context.Context, id string) (*domain.GitRepo, error)
+	ListFn             func(ctx context.Context, page domain.PageRequest) ([]domain.GitRepo, int64, error)
+	DeleteFn           func(ctx context.Context, id string) error
+	UpdateSyncStatusFn func(ctx context.Context, id string, commitSHA string, syncedAt time.Time) error
+}
+
+func (m *MockGitRepoRepo) Create(ctx context.Context, repo *domain.GitRepo) (*domain.GitRepo, error) {
+	if m.CreateFn != nil {
+		return m.CreateFn(ctx, repo)
+	}
+	panic("unexpected call to MockGitRepoRepo.Create")
+}
+
+func (m *MockGitRepoRepo) GetByID(ctx context.Context, id string) (*domain.GitRepo, error) {
+	if m.GetByIDFn != nil {
+		return m.GetByIDFn(ctx, id)
+	}
+	panic("unexpected call to MockGitRepoRepo.GetByID")
+}
+
+func (m *MockGitRepoRepo) List(ctx context.Context, page domain.PageRequest) ([]domain.GitRepo, int64, error) {
+	if m.ListFn != nil {
+		return m.ListFn(ctx, page)
+	}
+	panic("unexpected call to MockGitRepoRepo.List")
+}
+
+func (m *MockGitRepoRepo) Delete(ctx context.Context, id string) error {
+	if m.DeleteFn != nil {
+		return m.DeleteFn(ctx, id)
+	}
+	panic("unexpected call to MockGitRepoRepo.Delete")
+}
+
+func (m *MockGitRepoRepo) UpdateSyncStatus(ctx context.Context, id string, commitSHA string, syncedAt time.Time) error {
+	if m.UpdateSyncStatusFn != nil {
+		return m.UpdateSyncStatusFn(ctx, id, commitSHA, syncedAt)
+	}
+	panic("unexpected call to MockGitRepoRepo.UpdateSyncStatus")
+}
+
+var _ domain.GitRepoRepository = (*MockGitRepoRepo)(nil)

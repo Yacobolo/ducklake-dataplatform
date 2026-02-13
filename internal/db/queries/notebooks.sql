@@ -10,7 +10,7 @@ SELECT * FROM notebooks WHERE id = ?;
 SELECT * FROM notebooks
 WHERE (sqlc.narg('owner') IS NULL OR owner = sqlc.narg('owner'))
 ORDER BY updated_at DESC
-LIMIT ? OFFSET ?;
+LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 
 -- name: CountNotebooks :one
 SELECT COUNT(*) FROM notebooks
