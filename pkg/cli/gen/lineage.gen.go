@@ -32,9 +32,11 @@ func newLineageCmd(client *Client) *cobra.Command {
 	// deleteLineageEdge
 	{
 		c := &cobra.Command{
-			Use:   "delete <edge-id>",
-			Short: "Delete a lineage edge",
-			Args:  cobra.ExactArgs(1),
+			Use:     "delete <edge-id>",
+			Short:   "Delete a lineage edge",
+			Long:    "Permanently removes a lineage edge by its identifier.",
+			Example: "duck lineage edges delete <edge-id>",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				if !cmd.Flags().Changed("yes") {
 					if !ConfirmPrompt("Are you sure?") {
@@ -72,9 +74,11 @@ func newLineageCmd(client *Client) *cobra.Command {
 	// getDownstreamLineage
 	{
 		c := &cobra.Command{
-			Use:   "downstream <schema-name> <table-name>",
-			Short: "Get downstream lineage for a table",
-			Args:  cobra.ExactArgs(2),
+			Use:     "downstream <schema-name> <table-name>",
+			Short:   "Get downstream lineage for a table",
+			Long:    "Returns the downstream lineage edges representing tables and views that depend on the specified table.",
+			Example: "duck lineage tables downstream <schema-name> <table-name>",
+			Args:    cobra.ExactArgs(2),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -154,10 +158,11 @@ func newLineageCmd(client *Client) *cobra.Command {
 	// getTableLineage
 	{
 		c := &cobra.Command{
-			Use:   "get <schema-name> <table-name>",
-			Short: "Get full lineage for a table",
-			Long:  "Returns both upstream and downstream lineage edges for a table. Pagination params control edge depth, not list pagination.",
-			Args:  cobra.ExactArgs(2),
+			Use:     "get <schema-name> <table-name>",
+			Short:   "Get full lineage for a table",
+			Long:    "Returns both upstream and downstream lineage edges for a table. Pagination params control edge depth, not list pagination.",
+			Example: "duck lineage tables get <schema-name> <table-name>",
+			Args:    cobra.ExactArgs(2),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -235,9 +240,10 @@ func newLineageCmd(client *Client) *cobra.Command {
 	// purgeLineage
 	{
 		c := &cobra.Command{
-			Use:   "purge",
-			Short: "Purge old lineage edges",
-			Long:  "Delete lineage edges older than the specified number of days.",
+			Use:     "purge",
+			Short:   "Purge old lineage edges",
+			Long:    "Delete lineage edges older than the specified number of days.",
+			Example: "duck lineage purge --older-than-days 90",
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -345,9 +351,11 @@ func newLineageCmd(client *Client) *cobra.Command {
 	// getUpstreamLineage
 	{
 		c := &cobra.Command{
-			Use:   "upstream <schema-name> <table-name>",
-			Short: "Get upstream lineage for a table",
-			Args:  cobra.ExactArgs(2),
+			Use:     "upstream <schema-name> <table-name>",
+			Short:   "Get upstream lineage for a table",
+			Long:    "Returns the upstream lineage edges representing data sources that feed into the specified table.",
+			Example: "duck lineage tables upstream <schema-name> <table-name>",
+			Args:    cobra.ExactArgs(2),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag

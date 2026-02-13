@@ -32,10 +32,11 @@ func newComputeCmd(client *Client) *cobra.Command {
 	// createComputeAssignment
 	{
 		c := &cobra.Command{
-			Use:   "create <endpoint-name>",
-			Short: "Assign a principal to a compute endpoint",
-			Long:  "Creates a compute assignment. Requires MANAGE_COMPUTE on catalog.",
-			Args:  cobra.ExactArgs(1),
+			Use:     "create <endpoint-name>",
+			Short:   "Assign a principal to a compute endpoint",
+			Long:    "Creates a compute assignment. Requires MANAGE_COMPUTE on catalog.",
+			Example: "duck compute assignments create <endpoint-name> --is-default --principal-id 550e8400-e29b-41d4-a716-446655440003 --principal-type user",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -76,7 +77,7 @@ func newComputeCmd(client *Client) *cobra.Command {
 						m["is_default"] = v
 					}
 					if cmd.Flags().Changed("principal-id") {
-						v, _ := cmd.Flags().GetInt64("principal-id")
+						v, _ := cmd.Flags().GetString("principal-id")
 						m["principal_id"] = v
 					}
 					if cmd.Flags().Changed("principal-type") {
@@ -136,7 +137,7 @@ func newComputeCmd(client *Client) *cobra.Command {
 		c.Flags().Bool("fallback-local", false, "")
 		c.Flags().Bool("is-default", true, "")
 		c.Flags().String("json", "", "JSON input (raw string or @filename or - for stdin)")
-		c.Flags().Int64("principal-id", 0, "")
+		c.Flags().String("principal-id", "", "")
 		_ = c.MarkFlagRequired("principal-id")
 		c.Flags().String("principal-type", "", "")
 		_ = c.MarkFlagRequired("principal-type")
@@ -154,10 +155,11 @@ func newComputeCmd(client *Client) *cobra.Command {
 	// createComputeEndpoint
 	{
 		c := &cobra.Command{
-			Use:   "create <name>",
-			Short: "Create a compute endpoint",
-			Long:  "Creates a new compute endpoint. Requires MANAGE_COMPUTE on catalog.",
-			Args:  cobra.ExactArgs(1),
+			Use:     "create <name>",
+			Short:   "Create a compute endpoint",
+			Long:    "Creates a new compute endpoint. Requires MANAGE_COMPUTE on catalog.",
+			Example: "duck compute endpoints create prod-endpoint --auth-token dck_a1b2c3d4e5f6g7h8i9j0 --max-memory-gb 64 --size LARGE --type REMOTE --url https://compute.example.com:8080",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -281,10 +283,11 @@ func newComputeCmd(client *Client) *cobra.Command {
 	// deleteComputeAssignment
 	{
 		c := &cobra.Command{
-			Use:   "delete <endpoint-name> <assignment-id>",
-			Short: "Remove a compute assignment",
-			Long:  "Removes a compute assignment. Requires MANAGE_COMPUTE on catalog.",
-			Args:  cobra.ExactArgs(2),
+			Use:     "delete <endpoint-name> <assignment-id>",
+			Short:   "Remove a compute assignment",
+			Long:    "Removes a compute assignment. Requires MANAGE_COMPUTE on catalog.",
+			Example: "duck compute assignments delete <endpoint-name> <assignment-id>",
+			Args:    cobra.ExactArgs(2),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				if !cmd.Flags().Changed("yes") {
 					if !ConfirmPrompt("Are you sure?") {
@@ -323,10 +326,11 @@ func newComputeCmd(client *Client) *cobra.Command {
 	// deleteComputeEndpoint
 	{
 		c := &cobra.Command{
-			Use:   "delete <endpoint-name>",
-			Short: "Delete a compute endpoint",
-			Long:  "Deletes a compute endpoint. Requires MANAGE_COMPUTE on catalog.",
-			Args:  cobra.ExactArgs(1),
+			Use:     "delete <endpoint-name>",
+			Short:   "Delete a compute endpoint",
+			Long:    "Deletes a compute endpoint. Requires MANAGE_COMPUTE on catalog.",
+			Example: "duck compute endpoints delete <endpoint-name>",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				if !cmd.Flags().Changed("yes") {
 					if !ConfirmPrompt("Are you sure?") {
@@ -364,10 +368,11 @@ func newComputeCmd(client *Client) *cobra.Command {
 	// getComputeEndpointHealth
 	{
 		c := &cobra.Command{
-			Use:   "health <endpoint-name>",
-			Short: "Check health of a compute endpoint",
-			Long:  "Proxies a health check to the remote compute agent. Requires MANAGE_COMPUTE on catalog.",
-			Args:  cobra.ExactArgs(1),
+			Use:     "health <endpoint-name>",
+			Short:   "Check health of a compute endpoint",
+			Long:    "Proxies a health check to the remote compute agent. Requires MANAGE_COMPUTE on catalog.",
+			Example: "duck compute endpoints health <endpoint-name>",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -434,9 +439,11 @@ func newComputeCmd(client *Client) *cobra.Command {
 	// getComputeEndpoint
 	{
 		c := &cobra.Command{
-			Use:   "get <endpoint-name>",
-			Short: "Get a compute endpoint by name",
-			Args:  cobra.ExactArgs(1),
+			Use:     "get <endpoint-name>",
+			Short:   "Get a compute endpoint by name",
+			Long:    "Retrieves the details of a specific compute endpoint identified by its name.",
+			Example: "duck compute endpoints get <endpoint-name>",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -503,9 +510,11 @@ func newComputeCmd(client *Client) *cobra.Command {
 	// listComputeAssignments
 	{
 		c := &cobra.Command{
-			Use:   "list <endpoint-name>",
-			Short: "List assignments for a compute endpoint",
-			Args:  cobra.ExactArgs(1),
+			Use:     "list <endpoint-name>",
+			Short:   "List assignments for a compute endpoint",
+			Long:    "Returns a paginated list of principal assignments for the specified compute endpoint.",
+			Example: "duck compute assignments list <endpoint-name>",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
@@ -664,10 +673,11 @@ func newComputeCmd(client *Client) *cobra.Command {
 	// updateComputeEndpoint
 	{
 		c := &cobra.Command{
-			Use:   "update <endpoint-name>",
-			Short: "Update a compute endpoint",
-			Long:  "Updates compute endpoint fields. Requires MANAGE_COMPUTE on catalog.",
-			Args:  cobra.ExactArgs(1),
+			Use:     "update <endpoint-name>",
+			Short:   "Update a compute endpoint",
+			Long:    "Updates compute endpoint fields. Requires MANAGE_COMPUTE on catalog.",
+			Example: "duck compute endpoints update <endpoint-name> --max-memory-gb 128 --size LARGE --status ACTIVE --url https://compute-v2.example.com:8080",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag

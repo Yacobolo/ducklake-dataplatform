@@ -50,14 +50,20 @@ func newCatalogCmd(client *Client) *cobra.Command {
 	// createSchema
 	{
 		c := &cobra.Command{
-			Use:   "create <name>",
-			Short: "Create a new schema",
-			Args:  cobra.ExactArgs(1),
+			Use:     "create <name>",
+			Short:   "Create a new schema",
+			Long:    "Creates a new schema in the catalog with the specified name and optional properties.",
+			Example: "duck catalog schemas create analytics --comment \"Analytics data schema\"",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
-				urlPath := "/catalog/schemas"
+				urlPath := "/catalogs/{catalogName}/schemas"
 				query := url.Values{}
+				if cmd.Flags().Changed("catalog-name") {
+					v, _ := cmd.Flags().GetString("catalog-name")
+					query.Set("catalogName", v)
+				}
 				// Build request body
 				var body interface{}
 				jsonInput, _ := cmd.Flags().GetString("json")
@@ -146,6 +152,8 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				return nil
 			},
 		}
+		c.Flags().String("catalog-name", "", "Name of the catalog.")
+		_ = c.MarkFlagRequired("catalog-name")
 		c.Flags().String("comment", "", "")
 		c.Flags().String("json", "", "JSON input (raw string or @filename or - for stdin)")
 		c.Flags().String("location-name", "", "Optional external location name to use for schema storage path.")
@@ -164,15 +172,21 @@ func newCatalogCmd(client *Client) *cobra.Command {
 	// createTable
 	{
 		c := &cobra.Command{
-			Use:   "create <schema-name>",
-			Short: "Create a new table in a schema",
-			Args:  cobra.ExactArgs(1),
+			Use:     "create <schema-name>",
+			Short:   "Create a new table in a schema",
+			Long:    "Creates a new table with the specified columns and properties within the given schema.",
+			Example: "duck catalog tables create <schema-name> --columns id:BIGINT --columns email:VARCHAR --comment \"User accounts table\" --name users",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
-				urlPath := "/catalog/schemas/{schemaName}/tables"
+				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/tables"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				query := url.Values{}
+				if cmd.Flags().Changed("catalog-name") {
+					v, _ := cmd.Flags().GetString("catalog-name")
+					query.Set("catalogName", v)
+				}
 				// Build request body
 				var body interface{}
 				jsonInput, _ := cmd.Flags().GetString("json")
@@ -288,6 +302,8 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				return nil
 			},
 		}
+		c.Flags().String("catalog-name", "", "Name of the catalog.")
+		_ = c.MarkFlagRequired("catalog-name")
 		c.Flags().StringSlice("columns", nil, "Compound flag: columns (format: name:type)")
 		c.Flags().String("comment", "", "")
 		c.Flags().String("file-format", "parquet", "File format of the external data. Required for EXTERNAL tables.")
@@ -311,15 +327,21 @@ func newCatalogCmd(client *Client) *cobra.Command {
 	// createView
 	{
 		c := &cobra.Command{
-			Use:   "create <schema-name>",
-			Short: "Create a view in a schema",
-			Args:  cobra.ExactArgs(1),
+			Use:     "create <schema-name>",
+			Short:   "Create a view in a schema",
+			Long:    "Creates a new view with the specified SQL definition within the given schema.",
+			Example: "duck catalog views create <schema-name> --comment \"Active users view\" --name active_users --view-definition \"SELECT * FROM main.users WHERE active = true\"",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
-				urlPath := "/catalog/schemas/{schemaName}/views"
+				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/views"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				query := url.Values{}
+				if cmd.Flags().Changed("catalog-name") {
+					v, _ := cmd.Flags().GetString("catalog-name")
+					query.Set("catalogName", v)
+				}
 				// Build request body
 				var body interface{}
 				jsonInput, _ := cmd.Flags().GetString("json")
@@ -407,6 +429,8 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				return nil
 			},
 		}
+		c.Flags().String("catalog-name", "", "Name of the catalog.")
+		_ = c.MarkFlagRequired("catalog-name")
 		c.Flags().String("comment", "", "")
 		c.Flags().String("json", "", "JSON input (raw string or @filename or - for stdin)")
 		c.Flags().String("name", "", "")
@@ -427,16 +451,21 @@ func newCatalogCmd(client *Client) *cobra.Command {
 	// createVolume
 	{
 		c := &cobra.Command{
-			Use:   "create <schema-name>",
-			Short: "Create a volume in a schema",
-			Long:  "Creates a new volume. EXTERNAL volumes require a storage_location. MANAGED volumes auto-generate a storage location. Requires CREATE_VOLUME on catalog.\n",
-			Args:  cobra.ExactArgs(1),
+			Use:     "create <schema-name>",
+			Short:   "Create a volume in a schema",
+			Long:    "Creates a new volume. EXTERNAL volumes require a storage_location. MANAGED volumes auto-generate a storage location. Requires CREATE_VOLUME on catalog.\n",
+			Example: "duck catalog volumes create <schema-name> --comment \"Raw data ingestion volume\" --name raw_data --volume-type MANAGED",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
-				urlPath := "/catalog/schemas/{schemaName}/volumes"
+				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/volumes"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				query := url.Values{}
+				if cmd.Flags().Changed("catalog-name") {
+					v, _ := cmd.Flags().GetString("catalog-name")
+					query.Set("catalogName", v)
+				}
 				// Build request body
 				var body interface{}
 				jsonInput, _ := cmd.Flags().GetString("json")
@@ -528,6 +557,8 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				return nil
 			},
 		}
+		c.Flags().String("catalog-name", "", "Name of the catalog.")
+		_ = c.MarkFlagRequired("catalog-name")
 		c.Flags().String("comment", "", "")
 		c.Flags().String("json", "", "JSON input (raw string or @filename or - for stdin)")
 		c.Flags().String("name", "", "")
@@ -549,18 +580,24 @@ func newCatalogCmd(client *Client) *cobra.Command {
 	// deleteSchema
 	{
 		c := &cobra.Command{
-			Use:   "delete <schema-name>",
-			Short: "Delete a schema",
-			Args:  cobra.ExactArgs(1),
+			Use:     "delete <schema-name>",
+			Short:   "Delete a schema",
+			Long:    "Permanently removes a schema from the catalog. Use the force parameter to delete schemas that still contain tables.",
+			Example: "duck catalog schemas delete <schema-name>",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				if !cmd.Flags().Changed("yes") {
 					if !ConfirmPrompt("Are you sure?") {
 						return nil
 					}
 				}
-				urlPath := "/catalog/schemas/{schemaName}"
+				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				query := url.Values{}
+				if cmd.Flags().Changed("catalog-name") {
+					v, _ := cmd.Flags().GetString("catalog-name")
+					query.Set("catalogName", v)
+				}
 				if cmd.Flags().Changed("force") {
 					v, _ := cmd.Flags().GetBool("force")
 					query.Set("force", fmt.Sprintf("%t", v))
@@ -578,6 +615,8 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				return nil
 			},
 		}
+		c.Flags().String("catalog-name", "", "Name of the catalog.")
+		_ = c.MarkFlagRequired("catalog-name")
 		c.Flags().Bool("force", false, "Force deletion even if the schema contains tables.")
 		c.Flags().Bool("yes", false, "Skip confirmation prompt")
 
@@ -594,19 +633,25 @@ func newCatalogCmd(client *Client) *cobra.Command {
 	// deleteTable
 	{
 		c := &cobra.Command{
-			Use:   "delete <schema-name> <table-name>",
-			Short: "Delete a table",
-			Args:  cobra.ExactArgs(2),
+			Use:     "delete <schema-name> <table-name>",
+			Short:   "Delete a table",
+			Long:    "Permanently removes a table and all its data from the schema.",
+			Example: "duck catalog tables delete <schema-name> <table-name>",
+			Args:    cobra.ExactArgs(2),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				if !cmd.Flags().Changed("yes") {
 					if !ConfirmPrompt("Are you sure?") {
 						return nil
 					}
 				}
-				urlPath := "/catalog/schemas/{schemaName}/tables/{tableName}"
+				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				urlPath = strings.Replace(urlPath, "{tableName}", args[1], 1)
 				query := url.Values{}
+				if cmd.Flags().Changed("catalog-name") {
+					v, _ := cmd.Flags().GetString("catalog-name")
+					query.Set("catalogName", v)
+				}
 
 				// Execute request
 				resp, err := client.Do("DELETE", urlPath, query, nil)
@@ -620,6 +665,8 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				return nil
 			},
 		}
+		c.Flags().String("catalog-name", "", "Name of the catalog.")
+		_ = c.MarkFlagRequired("catalog-name")
 		c.Flags().Bool("yes", false, "Skip confirmation prompt")
 
 		// Apply overrides
@@ -635,19 +682,25 @@ func newCatalogCmd(client *Client) *cobra.Command {
 	// deleteView
 	{
 		c := &cobra.Command{
-			Use:   "delete <schema-name> <view-name>",
-			Short: "Delete a view",
-			Args:  cobra.ExactArgs(2),
+			Use:     "delete <schema-name> <view-name>",
+			Short:   "Delete a view",
+			Long:    "Permanently removes a view from the schema.",
+			Example: "duck catalog views delete <schema-name> <view-name>",
+			Args:    cobra.ExactArgs(2),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				if !cmd.Flags().Changed("yes") {
 					if !ConfirmPrompt("Are you sure?") {
 						return nil
 					}
 				}
-				urlPath := "/catalog/schemas/{schemaName}/views/{viewName}"
+				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/views/{viewName}"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				urlPath = strings.Replace(urlPath, "{viewName}", args[1], 1)
 				query := url.Values{}
+				if cmd.Flags().Changed("catalog-name") {
+					v, _ := cmd.Flags().GetString("catalog-name")
+					query.Set("catalogName", v)
+				}
 
 				// Execute request
 				resp, err := client.Do("DELETE", urlPath, query, nil)
@@ -661,6 +714,8 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				return nil
 			},
 		}
+		c.Flags().String("catalog-name", "", "Name of the catalog.")
+		_ = c.MarkFlagRequired("catalog-name")
 		c.Flags().Bool("yes", false, "Skip confirmation prompt")
 
 		// Apply overrides
@@ -676,20 +731,25 @@ func newCatalogCmd(client *Client) *cobra.Command {
 	// deleteVolume
 	{
 		c := &cobra.Command{
-			Use:   "delete <schema-name> <volume-name>",
-			Short: "Delete a volume",
-			Long:  "Deletes a volume. Requires CREATE_VOLUME on catalog.",
-			Args:  cobra.ExactArgs(2),
+			Use:     "delete <schema-name> <volume-name>",
+			Short:   "Delete a volume",
+			Long:    "Deletes a volume. Requires CREATE_VOLUME on catalog.",
+			Example: "duck catalog volumes delete <schema-name> <volume-name>",
+			Args:    cobra.ExactArgs(2),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				if !cmd.Flags().Changed("yes") {
 					if !ConfirmPrompt("Are you sure?") {
 						return nil
 					}
 				}
-				urlPath := "/catalog/schemas/{schemaName}/volumes/{volumeName}"
+				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				urlPath = strings.Replace(urlPath, "{volumeName}", args[1], 1)
 				query := url.Values{}
+				if cmd.Flags().Changed("catalog-name") {
+					v, _ := cmd.Flags().GetString("catalog-name")
+					query.Set("catalogName", v)
+				}
 
 				// Execute request
 				resp, err := client.Do("DELETE", urlPath, query, nil)
@@ -703,6 +763,8 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				return nil
 			},
 		}
+		c.Flags().String("catalog-name", "", "Name of the catalog.")
+		_ = c.MarkFlagRequired("catalog-name")
 		c.Flags().Bool("yes", false, "Skip confirmation prompt")
 
 		// Apply overrides
@@ -720,12 +782,16 @@ func newCatalogCmd(client *Client) *cobra.Command {
 		c := &cobra.Command{
 			Use:   "get",
 			Short: "Get catalog info",
-			Long:  "Returns information about the single DuckLake catalog.",
+			Long:  "Returns information about a DuckLake catalog.",
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
-				urlPath := "/catalog"
+				urlPath := "/catalogs/{catalogName}/info"
 				query := url.Values{}
+				if cmd.Flags().Changed("catalog-name") {
+					v, _ := cmd.Flags().GetString("catalog-name")
+					query.Set("catalogName", v)
+				}
 
 				// Execute request
 				resp, err := client.Do("GET", urlPath, query, nil)
@@ -772,6 +838,8 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				return nil
 			},
 		}
+		c.Flags().String("catalog-name", "", "Name of the catalog.")
+		_ = c.MarkFlagRequired("catalog-name")
 
 		// Apply overrides
 		if fn, ok := runOverrides["getCatalog"]; ok {
@@ -786,15 +854,21 @@ func newCatalogCmd(client *Client) *cobra.Command {
 	// getSchema
 	{
 		c := &cobra.Command{
-			Use:   "get <schema-name>",
-			Short: "Get a schema by name",
-			Args:  cobra.ExactArgs(1),
+			Use:     "get <schema-name>",
+			Short:   "Get a schema by name",
+			Long:    "Retrieves the details of a specific schema by its name.",
+			Example: "duck catalog schemas get <schema-name>",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
-				urlPath := "/catalog/schemas/{schemaName}"
+				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				query := url.Values{}
+				if cmd.Flags().Changed("catalog-name") {
+					v, _ := cmd.Flags().GetString("catalog-name")
+					query.Set("catalogName", v)
+				}
 
 				// Execute request
 				resp, err := client.Do("GET", urlPath, query, nil)
@@ -841,6 +915,8 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				return nil
 			},
 		}
+		c.Flags().String("catalog-name", "", "Name of the catalog.")
+		_ = c.MarkFlagRequired("catalog-name")
 
 		// Apply overrides
 		if fn, ok := runOverrides["getSchema"]; ok {
@@ -855,16 +931,22 @@ func newCatalogCmd(client *Client) *cobra.Command {
 	// getTable
 	{
 		c := &cobra.Command{
-			Use:   "get <schema-name> <table-name>",
-			Short: "Get a table by name",
-			Args:  cobra.ExactArgs(2),
+			Use:     "get <schema-name> <table-name>",
+			Short:   "Get a table by name",
+			Long:    "Retrieves the details of a specific table, including its column definitions.",
+			Example: "duck catalog tables get <schema-name> <table-name>",
+			Args:    cobra.ExactArgs(2),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
-				urlPath := "/catalog/schemas/{schemaName}/tables/{tableName}"
+				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				urlPath = strings.Replace(urlPath, "{tableName}", args[1], 1)
 				query := url.Values{}
+				if cmd.Flags().Changed("catalog-name") {
+					v, _ := cmd.Flags().GetString("catalog-name")
+					query.Set("catalogName", v)
+				}
 
 				// Execute request
 				resp, err := client.Do("GET", urlPath, query, nil)
@@ -911,6 +993,8 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				return nil
 			},
 		}
+		c.Flags().String("catalog-name", "", "Name of the catalog.")
+		_ = c.MarkFlagRequired("catalog-name")
 
 		// Apply overrides
 		if fn, ok := runOverrides["getTable"]; ok {
@@ -925,16 +1009,22 @@ func newCatalogCmd(client *Client) *cobra.Command {
 	// getView
 	{
 		c := &cobra.Command{
-			Use:   "get <schema-name> <view-name>",
-			Short: "Get a view by name",
-			Args:  cobra.ExactArgs(2),
+			Use:     "get <schema-name> <view-name>",
+			Short:   "Get a view by name",
+			Long:    "Retrieves the details of a specific view, including its SQL definition.",
+			Example: "duck catalog views get <schema-name> <view-name>",
+			Args:    cobra.ExactArgs(2),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
-				urlPath := "/catalog/schemas/{schemaName}/views/{viewName}"
+				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/views/{viewName}"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				urlPath = strings.Replace(urlPath, "{viewName}", args[1], 1)
 				query := url.Values{}
+				if cmd.Flags().Changed("catalog-name") {
+					v, _ := cmd.Flags().GetString("catalog-name")
+					query.Set("catalogName", v)
+				}
 
 				// Execute request
 				resp, err := client.Do("GET", urlPath, query, nil)
@@ -981,6 +1071,8 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				return nil
 			},
 		}
+		c.Flags().String("catalog-name", "", "Name of the catalog.")
+		_ = c.MarkFlagRequired("catalog-name")
 
 		// Apply overrides
 		if fn, ok := runOverrides["getView"]; ok {
@@ -995,16 +1087,22 @@ func newCatalogCmd(client *Client) *cobra.Command {
 	// getVolume
 	{
 		c := &cobra.Command{
-			Use:   "get <schema-name> <volume-name>",
-			Short: "Get a volume by name",
-			Args:  cobra.ExactArgs(2),
+			Use:     "get <schema-name> <volume-name>",
+			Short:   "Get a volume by name",
+			Long:    "Retrieves the details of a specific volume by its name within the schema.",
+			Example: "duck catalog volumes get <schema-name> <volume-name>",
+			Args:    cobra.ExactArgs(2),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
-				urlPath := "/catalog/schemas/{schemaName}/volumes/{volumeName}"
+				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				urlPath = strings.Replace(urlPath, "{volumeName}", args[1], 1)
 				query := url.Values{}
+				if cmd.Flags().Changed("catalog-name") {
+					v, _ := cmd.Flags().GetString("catalog-name")
+					query.Set("catalogName", v)
+				}
 
 				// Execute request
 				resp, err := client.Do("GET", urlPath, query, nil)
@@ -1051,6 +1149,8 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				return nil
 			},
 		}
+		c.Flags().String("catalog-name", "", "Name of the catalog.")
+		_ = c.MarkFlagRequired("catalog-name")
 
 		// Apply overrides
 		if fn, ok := runOverrides["getVolume"]; ok {
@@ -1067,11 +1167,16 @@ func newCatalogCmd(client *Client) *cobra.Command {
 		c := &cobra.Command{
 			Use:   "list",
 			Short: "List schemas in the catalog",
+			Long:  "Returns a paginated list of all schemas defined in the catalog.",
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
-				urlPath := "/catalog/schemas"
+				urlPath := "/catalogs/{catalogName}/schemas"
 				query := url.Values{}
+				if cmd.Flags().Changed("catalog-name") {
+					v, _ := cmd.Flags().GetString("catalog-name")
+					query.Set("catalogName", v)
+				}
 				if cmd.Flags().Changed("max-results") {
 					v, _ := cmd.Flags().GetInt64("max-results")
 					query.Set("max_results", fmt.Sprintf("%d", v))
@@ -1128,6 +1233,8 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				return nil
 			},
 		}
+		c.Flags().String("catalog-name", "", "Name of the catalog.")
+		_ = c.MarkFlagRequired("catalog-name")
 		c.Flags().Int64("max-results", 100, "Maximum number of results to return per page.")
 		c.Flags().String("page-token", "", "Opaque pagination token from a previous response.")
 
@@ -1144,16 +1251,22 @@ func newCatalogCmd(client *Client) *cobra.Command {
 	// listTableColumns
 	{
 		c := &cobra.Command{
-			Use:   "list <schema-name> <table-name>",
-			Short: "List columns of a table",
-			Args:  cobra.ExactArgs(2),
+			Use:     "list <schema-name> <table-name>",
+			Short:   "List columns of a table",
+			Long:    "Returns a paginated list of all columns defined in the specified table.",
+			Example: "duck catalog columns list <schema-name> <table-name>",
+			Args:    cobra.ExactArgs(2),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
-				urlPath := "/catalog/schemas/{schemaName}/tables/{tableName}/columns"
+				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				urlPath = strings.Replace(urlPath, "{tableName}", args[1], 1)
 				query := url.Values{}
+				if cmd.Flags().Changed("catalog-name") {
+					v, _ := cmd.Flags().GetString("catalog-name")
+					query.Set("catalogName", v)
+				}
 				if cmd.Flags().Changed("max-results") {
 					v, _ := cmd.Flags().GetInt64("max-results")
 					query.Set("max_results", fmt.Sprintf("%d", v))
@@ -1210,6 +1323,8 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				return nil
 			},
 		}
+		c.Flags().String("catalog-name", "", "Name of the catalog.")
+		_ = c.MarkFlagRequired("catalog-name")
 		c.Flags().Int64("max-results", 100, "Maximum number of results to return per page.")
 		c.Flags().String("page-token", "", "Opaque pagination token from a previous response.")
 
@@ -1226,15 +1341,21 @@ func newCatalogCmd(client *Client) *cobra.Command {
 	// listTables
 	{
 		c := &cobra.Command{
-			Use:   "list <schema-name>",
-			Short: "List tables in a schema",
-			Args:  cobra.ExactArgs(1),
+			Use:     "list <schema-name>",
+			Short:   "List tables in a schema",
+			Long:    "Returns a paginated list of all tables within the specified schema.",
+			Example: "duck catalog tables list <schema-name>",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
-				urlPath := "/catalog/schemas/{schemaName}/tables"
+				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/tables"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				query := url.Values{}
+				if cmd.Flags().Changed("catalog-name") {
+					v, _ := cmd.Flags().GetString("catalog-name")
+					query.Set("catalogName", v)
+				}
 				if cmd.Flags().Changed("max-results") {
 					v, _ := cmd.Flags().GetInt64("max-results")
 					query.Set("max_results", fmt.Sprintf("%d", v))
@@ -1291,6 +1412,8 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				return nil
 			},
 		}
+		c.Flags().String("catalog-name", "", "Name of the catalog.")
+		_ = c.MarkFlagRequired("catalog-name")
 		c.Flags().Int64("max-results", 100, "Maximum number of results to return per page.")
 		c.Flags().String("page-token", "", "Opaque pagination token from a previous response.")
 
@@ -1307,15 +1430,21 @@ func newCatalogCmd(client *Client) *cobra.Command {
 	// listViews
 	{
 		c := &cobra.Command{
-			Use:   "list <schema-name>",
-			Short: "List views in a schema",
-			Args:  cobra.ExactArgs(1),
+			Use:     "list <schema-name>",
+			Short:   "List views in a schema",
+			Long:    "Returns a paginated list of all views defined within the specified schema.",
+			Example: "duck catalog views list <schema-name>",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
-				urlPath := "/catalog/schemas/{schemaName}/views"
+				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/views"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				query := url.Values{}
+				if cmd.Flags().Changed("catalog-name") {
+					v, _ := cmd.Flags().GetString("catalog-name")
+					query.Set("catalogName", v)
+				}
 				if cmd.Flags().Changed("max-results") {
 					v, _ := cmd.Flags().GetInt64("max-results")
 					query.Set("max_results", fmt.Sprintf("%d", v))
@@ -1372,6 +1501,8 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				return nil
 			},
 		}
+		c.Flags().String("catalog-name", "", "Name of the catalog.")
+		_ = c.MarkFlagRequired("catalog-name")
 		c.Flags().Int64("max-results", 100, "Maximum number of results to return per page.")
 		c.Flags().String("page-token", "", "Opaque pagination token from a previous response.")
 
@@ -1388,15 +1519,21 @@ func newCatalogCmd(client *Client) *cobra.Command {
 	// listVolumes
 	{
 		c := &cobra.Command{
-			Use:   "list <schema-name>",
-			Short: "List volumes in a schema",
-			Args:  cobra.ExactArgs(1),
+			Use:     "list <schema-name>",
+			Short:   "List volumes in a schema",
+			Long:    "Returns a paginated list of all volumes defined within the specified schema.",
+			Example: "duck catalog volumes list <schema-name>",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
-				urlPath := "/catalog/schemas/{schemaName}/volumes"
+				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/volumes"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				query := url.Values{}
+				if cmd.Flags().Changed("catalog-name") {
+					v, _ := cmd.Flags().GetString("catalog-name")
+					query.Set("catalogName", v)
+				}
 				if cmd.Flags().Changed("max-results") {
 					v, _ := cmd.Flags().GetInt64("max-results")
 					query.Set("max_results", fmt.Sprintf("%d", v))
@@ -1453,6 +1590,8 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				return nil
 			},
 		}
+		c.Flags().String("catalog-name", "", "Name of the catalog.")
+		_ = c.MarkFlagRequired("catalog-name")
 		c.Flags().Int64("max-results", 100, "Maximum number of results to return per page.")
 		c.Flags().String("page-token", "", "Opaque pagination token from a previous response.")
 
@@ -1469,17 +1608,22 @@ func newCatalogCmd(client *Client) *cobra.Command {
 	// profileTable
 	{
 		c := &cobra.Command{
-			Use:   "profile <schema-name> <table-name>",
-			Short: "Profile a table to collect statistics",
-			Long:  "Runs profiling queries and stores statistics (row count, column count, size).",
-			Args:  cobra.ExactArgs(2),
+			Use:     "profile <schema-name> <table-name>",
+			Short:   "Profile a table to collect statistics",
+			Long:    "Runs profiling queries and stores statistics (row count, column count, size).",
+			Example: "duck catalog tables profile <schema-name> <table-name>",
+			Args:    cobra.ExactArgs(2),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
-				urlPath := "/catalog/schemas/{schemaName}/tables/{tableName}/profile"
+				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/profile"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				urlPath = strings.Replace(urlPath, "{tableName}", args[1], 1)
 				query := url.Values{}
+				if cmd.Flags().Changed("catalog-name") {
+					v, _ := cmd.Flags().GetString("catalog-name")
+					query.Set("catalogName", v)
+				}
 
 				// Execute request
 				resp, err := client.Do("POST", urlPath, query, nil)
@@ -1526,6 +1670,8 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				return nil
 			},
 		}
+		c.Flags().String("catalog-name", "", "Name of the catalog.")
+		_ = c.MarkFlagRequired("catalog-name")
 
 		// Apply overrides
 		if fn, ok := runOverrides["profileTable"]; ok {
@@ -1537,122 +1683,26 @@ func newCatalogCmd(client *Client) *cobra.Command {
 		tablesCmd.AddCommand(c)
 	}
 
-	// updateCatalog
-	{
-		c := &cobra.Command{
-			Use:   "update",
-			Short: "Update catalog metadata",
-			RunE: func(cmd *cobra.Command, args []string) error {
-				outputFlag, _ := cmd.Flags().GetString("output")
-				_ = outputFlag
-				urlPath := "/catalog"
-				query := url.Values{}
-				// Build request body
-				var body interface{}
-				jsonInput, _ := cmd.Flags().GetString("json")
-				if jsonInput != "" {
-					var raw interface{}
-					jsonData := jsonInput
-					if jsonInput == "-" {
-						data, err := os.ReadFile("/dev/stdin")
-						if err != nil {
-							return fmt.Errorf("read stdin: %w", err)
-						}
-						jsonData = string(data)
-					} else if strings.HasPrefix(jsonInput, "@") {
-						data, err := os.ReadFile(jsonInput[1:])
-						if err != nil {
-							return fmt.Errorf("read file: %w", err)
-						}
-						jsonData = string(data)
-					}
-					if err := json.Unmarshal([]byte(jsonData), &raw); err != nil {
-						return fmt.Errorf("parse JSON input: %w", err)
-					}
-					body = raw
-				} else {
-					m := map[string]interface{}{}
-					if cmd.Flags().Changed("comment") {
-						v, _ := cmd.Flags().GetString("comment")
-						m["comment"] = v
-					}
-					if len(m) > 0 {
-						body = m
-					}
-				}
-
-				// Execute request
-				resp, err := client.Do("PATCH", urlPath, query, body)
-				if err != nil {
-					return err
-				}
-				if err := CheckError(resp); err != nil {
-					return err
-				}
-				respBody, err := ReadBody(resp)
-				if err != nil {
-					return fmt.Errorf("read response: %w", err)
-				}
-
-				// Handle --quiet
-				quiet, _ := cmd.Root().PersistentFlags().GetBool("quiet")
-				if quiet {
-					var data map[string]interface{}
-					if err := json.Unmarshal(respBody, &data); err == nil {
-						// Try common ID fields
-						for _, key := range []string{"id", "name", "key"} {
-							if v, ok := data[key]; ok {
-								fmt.Fprintln(os.Stdout, v)
-								return nil
-							}
-						}
-					}
-					fmt.Fprintln(os.Stdout, string(respBody))
-					return nil
-				}
-
-				switch OutputFormat(outputFlag) {
-				case OutputJSON:
-					var pretty interface{}
-					json.Unmarshal(respBody, &pretty)
-					return PrintJSON(os.Stdout, pretty)
-				default:
-					var data map[string]interface{}
-					if err := json.Unmarshal(respBody, &data); err != nil {
-						return fmt.Errorf("parse response: %w", err)
-					}
-					PrintDetail(os.Stdout, data)
-				}
-				return nil
-			},
-		}
-		c.Flags().String("comment", "", "")
-		c.Flags().String("json", "", "JSON input (raw string or @filename or - for stdin)")
-
-		// Apply overrides
-		if fn, ok := runOverrides["updateCatalog"]; ok {
-			c.RunE = fn(client)
-		}
-		if fn, ok := commandOverrides["updateCatalog"]; ok {
-			fn(c)
-		}
-		cmd.AddCommand(c)
-	}
-
 	// updateColumn
 	{
 		c := &cobra.Command{
-			Use:   "update <schema-name> <table-name> <column-name>",
-			Short: "Update column metadata",
-			Args:  cobra.ExactArgs(3),
+			Use:     "update <schema-name> <table-name> <column-name>",
+			Short:   "Update column metadata",
+			Long:    "Updates the metadata of a specific column, such as its comment or nullable flag.",
+			Example: "duck catalog columns update <schema-name> <table-name> <column-name> --comment \"Updated column description\"",
+			Args:    cobra.ExactArgs(3),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
-				urlPath := "/catalog/schemas/{schemaName}/tables/{tableName}/columns/{columnName}"
+				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns/{columnName}"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				urlPath = strings.Replace(urlPath, "{tableName}", args[1], 1)
 				urlPath = strings.Replace(urlPath, "{columnName}", args[2], 1)
 				query := url.Values{}
+				if cmd.Flags().Changed("catalog-name") {
+					v, _ := cmd.Flags().GetString("catalog-name")
+					query.Set("catalogName", v)
+				}
 				// Build request body
 				var body interface{}
 				jsonInput, _ := cmd.Flags().GetString("json")
@@ -1736,6 +1786,8 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				return nil
 			},
 		}
+		c.Flags().String("catalog-name", "", "Name of the catalog.")
+		_ = c.MarkFlagRequired("catalog-name")
 		c.Flags().String("comment", "", "")
 		c.Flags().String("json", "", "JSON input (raw string or @filename or - for stdin)")
 		c.Flags().StringSlice("properties", nil, "properties (key=value pairs)")
@@ -1753,15 +1805,21 @@ func newCatalogCmd(client *Client) *cobra.Command {
 	// updateSchema
 	{
 		c := &cobra.Command{
-			Use:   "update <schema-name>",
-			Short: "Update schema metadata",
-			Args:  cobra.ExactArgs(1),
+			Use:     "update <schema-name>",
+			Short:   "Update schema metadata",
+			Long:    "Updates the metadata of an existing schema, such as its comment or properties.",
+			Example: "duck catalog schemas update <schema-name> --comment \"Updated schema description\" --properties team=data-eng",
+			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
-				urlPath := "/catalog/schemas/{schemaName}"
+				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				query := url.Values{}
+				if cmd.Flags().Changed("catalog-name") {
+					v, _ := cmd.Flags().GetString("catalog-name")
+					query.Set("catalogName", v)
+				}
 				// Build request body
 				var body interface{}
 				jsonInput, _ := cmd.Flags().GetString("json")
@@ -1845,6 +1903,8 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				return nil
 			},
 		}
+		c.Flags().String("catalog-name", "", "Name of the catalog.")
+		_ = c.MarkFlagRequired("catalog-name")
 		c.Flags().String("comment", "", "")
 		c.Flags().String("json", "", "JSON input (raw string or @filename or - for stdin)")
 		c.Flags().StringSlice("properties", nil, "properties (key=value pairs)")
@@ -1862,16 +1922,22 @@ func newCatalogCmd(client *Client) *cobra.Command {
 	// updateTable
 	{
 		c := &cobra.Command{
-			Use:   "update <schema-name> <table-name>",
-			Short: "Update table metadata",
-			Args:  cobra.ExactArgs(2),
+			Use:     "update <schema-name> <table-name>",
+			Short:   "Update table metadata",
+			Long:    "Updates the metadata of an existing table, such as its comment or properties.",
+			Example: "duck catalog tables update <schema-name> <table-name> --comment \"Updated table description\" --owner alice",
+			Args:    cobra.ExactArgs(2),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
-				urlPath := "/catalog/schemas/{schemaName}/tables/{tableName}"
+				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				urlPath = strings.Replace(urlPath, "{tableName}", args[1], 1)
 				query := url.Values{}
+				if cmd.Flags().Changed("catalog-name") {
+					v, _ := cmd.Flags().GetString("catalog-name")
+					query.Set("catalogName", v)
+				}
 				// Build request body
 				var body interface{}
 				jsonInput, _ := cmd.Flags().GetString("json")
@@ -1959,6 +2025,8 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				return nil
 			},
 		}
+		c.Flags().String("catalog-name", "", "Name of the catalog.")
+		_ = c.MarkFlagRequired("catalog-name")
 		c.Flags().String("comment", "", "")
 		c.Flags().String("json", "", "JSON input (raw string or @filename or - for stdin)")
 		c.Flags().String("owner", "", "")
@@ -1977,16 +2045,22 @@ func newCatalogCmd(client *Client) *cobra.Command {
 	// updateView
 	{
 		c := &cobra.Command{
-			Use:   "update <schema-name> <view-name>",
-			Short: "Update a view's metadata",
-			Args:  cobra.ExactArgs(2),
+			Use:     "update <schema-name> <view-name>",
+			Short:   "Update a view's metadata",
+			Long:    "Updates the metadata of an existing view, such as its comment or SQL definition.",
+			Example: "duck catalog views update <schema-name> <view-name> --comment \"Updated view description\" --view-definition \"SELECT * FROM main.users WHERE active = true AND verified = true\"",
+			Args:    cobra.ExactArgs(2),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
-				urlPath := "/catalog/schemas/{schemaName}/views/{viewName}"
+				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/views/{viewName}"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				urlPath = strings.Replace(urlPath, "{viewName}", args[1], 1)
 				query := url.Values{}
+				if cmd.Flags().Changed("catalog-name") {
+					v, _ := cmd.Flags().GetString("catalog-name")
+					query.Set("catalogName", v)
+				}
 				// Build request body
 				var body interface{}
 				jsonInput, _ := cmd.Flags().GetString("json")
@@ -2074,6 +2148,8 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				return nil
 			},
 		}
+		c.Flags().String("catalog-name", "", "Name of the catalog.")
+		_ = c.MarkFlagRequired("catalog-name")
 		c.Flags().String("comment", "", "")
 		c.Flags().String("json", "", "JSON input (raw string or @filename or - for stdin)")
 		c.Flags().StringSlice("properties", nil, "properties (key=value pairs)")
@@ -2092,17 +2168,22 @@ func newCatalogCmd(client *Client) *cobra.Command {
 	// updateVolume
 	{
 		c := &cobra.Command{
-			Use:   "update <schema-name> <volume-name>",
-			Short: "Update a volume",
-			Long:  "Updates volume fields. Requires CREATE_VOLUME on catalog.",
-			Args:  cobra.ExactArgs(2),
+			Use:     "update <schema-name> <volume-name>",
+			Short:   "Update a volume",
+			Long:    "Updates volume fields. Requires CREATE_VOLUME on catalog.",
+			Example: "duck catalog volumes update <schema-name> <volume-name> --comment \"Updated volume description\" --new-name raw_data_v2",
+			Args:    cobra.ExactArgs(2),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
-				urlPath := "/catalog/schemas/{schemaName}/volumes/{volumeName}"
+				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				urlPath = strings.Replace(urlPath, "{volumeName}", args[1], 1)
 				query := url.Values{}
+				if cmd.Flags().Changed("catalog-name") {
+					v, _ := cmd.Flags().GetString("catalog-name")
+					query.Set("catalogName", v)
+				}
 				// Build request body
 				var body interface{}
 				jsonInput, _ := cmd.Flags().GetString("json")
@@ -2190,6 +2271,8 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				return nil
 			},
 		}
+		c.Flags().String("catalog-name", "", "Name of the catalog.")
+		_ = c.MarkFlagRequired("catalog-name")
 		c.Flags().String("comment", "", "")
 		c.Flags().String("json", "", "JSON input (raw string or @filename or - for stdin)")
 		c.Flags().String("new-name", "", "")
