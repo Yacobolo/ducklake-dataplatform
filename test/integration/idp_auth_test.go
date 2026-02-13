@@ -295,8 +295,8 @@ func TestAdminGuard_NonAdminBlocked(t *testing.T) {
 		{"create_group", "POST", "/v1/groups", map[string]interface{}{"name": "guard-test-group"}},
 		{"delete_group", "DELETE", "/v1/groups/1", nil},
 		{"create_grant", "POST", "/v1/grants", map[string]interface{}{
-			"principal_id": 1, "principal_type": "user",
-			"securable_type": "catalog", "securable_id": 0, "privilege": "ALL_PRIVILEGES",
+			"principal_id": "1", "principal_type": "user",
+			"securable_type": "catalog", "securable_id": "0", "privilege": "ALL_PRIVILEGES",
 		}},
 		{"revoke_grant", "DELETE", "/v1/grants/1", nil},
 	}
@@ -323,7 +323,7 @@ func TestAdminGuard_AdminAllowed(t *testing.T) {
 
 	var result map[string]interface{}
 	decodeJSON(t, resp, &result)
-	userID := int64(result["id"].(float64))
+	userID := result["id"].(string)
 
 	// Create a group (admin action).
 	body2 := map[string]interface{}{"name": "admin-guard-allowed-group"}
@@ -332,14 +332,14 @@ func TestAdminGuard_AdminAllowed(t *testing.T) {
 	_ = resp2.Body.Close()
 
 	// Set admin (admin action).
-	url := fmt.Sprintf("%s/v1/principals/%d/admin", env.Server.URL, userID)
+	url := fmt.Sprintf("%s/v1/principals/%s/admin", env.Server.URL, userID)
 	body3 := map[string]interface{}{"is_admin": true}
 	resp3 := doRequest(t, "PUT", url, env.Keys.Admin, body3)
 	require.Equal(t, 204, resp3.StatusCode)
 	_ = resp3.Body.Close()
 
 	// Delete principal (admin action).
-	url2 := fmt.Sprintf("%s/v1/principals/%d", env.Server.URL, userID)
+	url2 := fmt.Sprintf("%s/v1/principals/%s", env.Server.URL, userID)
 	resp4 := doRequest(t, "DELETE", url2, env.Keys.Admin, nil)
 	require.Equal(t, 204, resp4.StatusCode)
 	_ = resp4.Body.Close()
@@ -390,15 +390,15 @@ func TestAPIKey_FullLifecycle(t *testing.T) {
 	decodeJSON(t, resp, &listResult)
 	data := listResult["data"].([]interface{})
 
-	var adminPrincipalID int64
+	var adminPrincipalID string
 	for _, item := range data {
 		p := item.(map[string]interface{})
 		if p["name"].(string) == "admin_user" {
-			adminPrincipalID = int64(p["id"].(float64))
+			adminPrincipalID = p["id"].(string)
 			break
 		}
 	}
-	require.NotZero(t, adminPrincipalID, "admin_user principal should exist")
+	require.NotEmpty(t, adminPrincipalID, "admin_user principal should exist")
 
 	// Step 1: Create an API key via the endpoint.
 	createBody := map[string]interface{}{
@@ -413,11 +413,11 @@ func TestAPIKey_FullLifecycle(t *testing.T) {
 	require.NoError(t, json.Unmarshal(respBody, &createResult))
 	rawKey, ok := createResult["key"].(string)
 	require.True(t, ok && rawKey != "", "response should include the raw API key")
-	keyID := int64(createResult["id"].(float64))
-	require.NotZero(t, keyID)
+	keyID := createResult["id"].(string)
+	require.NotEmpty(t, keyID)
 
 	// Step 2: List API keys — should include the new key (without raw value).
-	listURL := fmt.Sprintf("%s/v1/api-keys?principal_id=%d", env.Server.URL, adminPrincipalID)
+	listURL := fmt.Sprintf("%s/v1/api-keys?principal_id=%s", env.Server.URL, adminPrincipalID)
 	resp3 := doRequest(t, "GET", listURL, env.Keys.Admin, nil)
 	require.Equal(t, 200, resp3.StatusCode)
 
@@ -446,7 +446,7 @@ func TestAPIKey_FullLifecycle(t *testing.T) {
 	_ = resp4.Body.Close()
 
 	// Step 4: Delete the API key.
-	deleteURL := fmt.Sprintf("%s/v1/api-keys/%d", env.Server.URL, keyID)
+	deleteURL := fmt.Sprintf("%s/v1/api-keys/%s", env.Server.URL, keyID)
 	resp5 := doRequest(t, "DELETE", deleteURL, env.Keys.Admin, nil)
 	require.Equal(t, 204, resp5.StatusCode)
 	_ = resp5.Body.Close()
@@ -474,15 +474,15 @@ func TestAPIKey_WithExpiry(t *testing.T) {
 	decodeJSON(t, resp, &listResult)
 	data := listResult["data"].([]interface{})
 
-	var adminPrincipalID int64
+	var adminPrincipalID string
 	for _, item := range data {
 		p := item.(map[string]interface{})
 		if p["name"].(string) == "admin_user" {
-			adminPrincipalID = int64(p["id"].(float64))
+			adminPrincipalID = p["id"].(string)
 			break
 		}
 	}
-	require.NotZero(t, adminPrincipalID)
+	require.NotEmpty(t, adminPrincipalID)
 
 	// Create an API key with future expiry.
 	futureExpiry := time.Now().Add(24 * time.Hour).Format(time.RFC3339)
@@ -546,15 +546,15 @@ func TestKeyRotation(t *testing.T) {
 	decodeJSON(t, resp, &listResult)
 	data := listResult["data"].([]interface{})
 
-	var adminPrincipalID int64
+	var adminPrincipalID string
 	for _, item := range data {
 		p := item.(map[string]interface{})
 		if p["name"].(string) == "admin_user" {
-			adminPrincipalID = int64(p["id"].(float64))
+			adminPrincipalID = p["id"].(string)
 			break
 		}
 	}
-	require.NotZero(t, adminPrincipalID)
+	require.NotEmpty(t, adminPrincipalID)
 
 	// Create "old" key.
 	createBody := map[string]interface{}{
@@ -566,7 +566,7 @@ func TestKeyRotation(t *testing.T) {
 	var oldResult map[string]interface{}
 	decodeJSON(t, resp2, &oldResult)
 	oldKey := oldResult["key"].(string)
-	oldKeyID := int64(oldResult["id"].(float64))
+	oldKeyID := oldResult["id"].(string)
 
 	// Verify old key works.
 	resp3 := doRequest(t, "GET", env.Server.URL+"/v1/principals", oldKey, nil)
@@ -590,7 +590,7 @@ func TestKeyRotation(t *testing.T) {
 	_ = resp5.Body.Close()
 
 	// Delete old key.
-	deleteURL := fmt.Sprintf("%s/v1/api-keys/%d", env.Server.URL, oldKeyID)
+	deleteURL := fmt.Sprintf("%s/v1/api-keys/%s", env.Server.URL, oldKeyID)
 	resp6 := doRequest(t, "DELETE", deleteURL, env.Keys.Admin, nil)
 	require.Equal(t, 204, resp6.StatusCode)
 	_ = resp6.Body.Close()
@@ -636,15 +636,15 @@ func TestMixedAuth_JWTUserCreatesAPIKey(t *testing.T) {
 	decodeJSON(t, resp2, &listResult)
 	data := listResult["data"].([]interface{})
 
-	var userID int64
+	var userID string
 	for _, item := range data {
 		p := item.(map[string]interface{})
 		if p["name"].(string) == mixedSub {
-			userID = int64(p["id"].(float64))
+			userID = p["id"].(string)
 			break
 		}
 	}
-	require.NotZero(t, userID, "JIT-provisioned principal should exist")
+	require.NotEmpty(t, userID, "JIT-provisioned principal should exist")
 
 	// Step 3: Admin creates an API key for the user.
 	createKeyBody := map[string]interface{}{

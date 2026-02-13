@@ -318,10 +318,6 @@ func TestAPI_AuditLogs(t *testing.T) {
 	}
 }
 
-func itoa(i int64) string {
-	return fmt.Sprintf("%d", i)
-}
-
 // setupCatalogTestServer creates a test server wired with a mockCatalogRepo.
 // It has the same RBAC seed data as setupTestServer (admin_user with ALL_PRIVILEGES,
 // analyst1 with USAGE/SELECT, no_access_user with nothing) but uses a mock catalog

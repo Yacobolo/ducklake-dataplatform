@@ -8,11 +8,6 @@ import (
 	"duck-demo/internal/domain"
 )
 
-// scanDuckLakeID scans an integer ID from DuckLake and converts it to a string.
-func scanDuckLakeID(val *int64) string {
-	return domain.DuckLakeIDToString(*val)
-}
-
 // IntrospectionRepo queries DuckLake metadata tables directly.
 type IntrospectionRepo struct {
 	db *sql.DB

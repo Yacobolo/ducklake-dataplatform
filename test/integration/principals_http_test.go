@@ -14,7 +14,7 @@ import (
 func TestHTTP_PrincipalCRUD(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{})
 
-	var createdID float64
+	var createdID string
 
 	type step struct {
 		name string
@@ -29,7 +29,7 @@ func TestHTTP_PrincipalCRUD(t *testing.T) {
 			var result map[string]interface{}
 			decodeJSON(t, resp, &result)
 			require.NotNil(t, result["id"])
-			createdID = result["id"].(float64)
+			createdID = result["id"].(string)
 			assert.Equal(t, "test-user-crud", result["name"])
 			assert.Equal(t, "user", result["type"])
 			assert.Equal(t, false, result["is_admin"])
@@ -44,7 +44,7 @@ func TestHTTP_PrincipalCRUD(t *testing.T) {
 			assert.Equal(t, "service_principal", result["type"])
 		}},
 		{"get_by_id", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/principals/%d", env.Server.URL, int64(createdID))
+			url := fmt.Sprintf("%s/v1/principals/%s", env.Server.URL, createdID)
 			resp := doRequest(t, "GET", url, env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
@@ -63,14 +63,14 @@ func TestHTTP_PrincipalCRUD(t *testing.T) {
 			assert.GreaterOrEqual(t, len(data), 6)
 		}},
 		{"set_admin_true", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/principals/%d/admin", env.Server.URL, int64(createdID))
+			url := fmt.Sprintf("%s/v1/principals/%s/admin", env.Server.URL, createdID)
 			body := map[string]interface{}{"is_admin": true}
 			resp := doRequest(t, "PUT", url, env.Keys.Admin, body)
 			require.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()
 
 			// Verify by fetching the principal
-			getURL := fmt.Sprintf("%s/v1/principals/%d", env.Server.URL, int64(createdID))
+			getURL := fmt.Sprintf("%s/v1/principals/%s", env.Server.URL, createdID)
 			resp2 := doRequest(t, "GET", getURL, env.Keys.Admin, nil)
 			require.Equal(t, 200, resp2.StatusCode)
 
@@ -79,20 +79,20 @@ func TestHTTP_PrincipalCRUD(t *testing.T) {
 			assert.Equal(t, true, result["is_admin"])
 		}},
 		{"set_admin_false", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/principals/%d/admin", env.Server.URL, int64(createdID))
+			url := fmt.Sprintf("%s/v1/principals/%s/admin", env.Server.URL, createdID)
 			body := map[string]interface{}{"is_admin": false}
 			resp := doRequest(t, "PUT", url, env.Keys.Admin, body)
 			require.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()
 		}},
 		{"delete", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/principals/%d", env.Server.URL, int64(createdID))
+			url := fmt.Sprintf("%s/v1/principals/%s", env.Server.URL, createdID)
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()
 		}},
 		{"get_after_delete_404", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/principals/%d", env.Server.URL, int64(createdID))
+			url := fmt.Sprintf("%s/v1/principals/%s", env.Server.URL, createdID)
 			resp := doRequest(t, "GET", url, env.Keys.Admin, nil)
 			assert.Equal(t, 404, resp.StatusCode)
 			_ = resp.Body.Close()

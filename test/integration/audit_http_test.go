@@ -47,17 +47,17 @@ func TestHTTP_AuditLogs_Operations(t *testing.T) {
 			decodeJSON(t, resp, &listResult)
 			data := listResult["data"].([]interface{})
 
-			var principalID int64
+			var principalID string
 			for _, item := range data {
 				p := item.(map[string]interface{})
 				if p["name"] == "audit-test-principal" {
-					principalID = int64(p["id"].(float64))
+					principalID = p["id"].(string)
 					break
 				}
 			}
-			require.NotZero(t, principalID)
+			require.NotEmpty(t, principalID)
 
-			url := fmt.Sprintf("%s/v1/principals/%d/admin", env.Server.URL, principalID)
+			url := fmt.Sprintf("%s/v1/principals/%s/admin", env.Server.URL, principalID)
 			body := map[string]interface{}{"is_admin": true}
 			resp2 := doRequest(t, "PUT", url, env.Keys.Admin, body)
 			require.Equal(t, 204, resp2.StatusCode)
@@ -81,17 +81,17 @@ func TestHTTP_AuditLogs_Operations(t *testing.T) {
 			decodeJSON(t, resp, &listResult)
 			data := listResult["data"].([]interface{})
 
-			var principalID int64
+			var principalID string
 			for _, item := range data {
 				p := item.(map[string]interface{})
 				if p["name"] == "audit-test-principal" {
-					principalID = int64(p["id"].(float64))
+					principalID = p["id"].(string)
 					break
 				}
 			}
-			require.NotZero(t, principalID)
+			require.NotEmpty(t, principalID)
 
-			url := fmt.Sprintf("%s/v1/principals/%d", env.Server.URL, principalID)
+			url := fmt.Sprintf("%s/v1/principals/%s", env.Server.URL, principalID)
 			resp2 := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp2.StatusCode)
 			_ = resp2.Body.Close()

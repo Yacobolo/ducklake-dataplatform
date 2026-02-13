@@ -626,7 +626,7 @@ func TestHTTP_ProfileTable(t *testing.T) {
 func TestHTTP_TagsInSchemaResponse(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
 
-	var tagID int64
+	var tagID string
 
 	type step struct {
 		name string
@@ -643,15 +643,15 @@ func TestHTTP_TagsInSchemaResponse(t *testing.T) {
 
 			var result map[string]interface{}
 			decodeJSON(t, resp, &result)
-			tagID = int64(result["id"].(float64))
+			tagID = result["id"].(string)
 		}},
 
 		{"assign_tag_to_schema", func(t *testing.T) {
 			resp := doRequest(t, "POST",
-				fmt.Sprintf("%s/v1/tags/%d/assignments", env.Server.URL, tagID),
+				fmt.Sprintf("%s/v1/tags/%s/assignments", env.Server.URL, tagID),
 				env.Keys.Admin, map[string]interface{}{
 					"securable_type": "schema",
-					"securable_id":   0, // schema_id=0 for "main"
+					"securable_id":   "0", // schema_id=0 for "main"
 				})
 			require.Equal(t, 201, resp.StatusCode)
 			_ = resp.Body.Close()
@@ -693,7 +693,7 @@ func TestHTTP_TagsInSchemaResponse(t *testing.T) {
 func TestHTTP_TagsInTableResponse(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
 
-	var tagID int64
+	var tagID string
 
 	type step struct {
 		name string
@@ -710,15 +710,15 @@ func TestHTTP_TagsInTableResponse(t *testing.T) {
 
 			var result map[string]interface{}
 			decodeJSON(t, resp, &result)
-			tagID = int64(result["id"].(float64))
+			tagID = result["id"].(string)
 		}},
 
 		{"assign_tag_to_table", func(t *testing.T) {
 			resp := doRequest(t, "POST",
-				fmt.Sprintf("%s/v1/tags/%d/assignments", env.Server.URL, tagID),
+				fmt.Sprintf("%s/v1/tags/%s/assignments", env.Server.URL, tagID),
 				env.Keys.Admin, map[string]interface{}{
 					"securable_type": "table",
-					"securable_id":   1, // table_id=1 for "titanic"
+					"securable_id":   "1", // table_id=1 for "titanic"
 				})
 			require.Equal(t, 201, resp.StatusCode)
 			_ = resp.Body.Close()
@@ -761,7 +761,7 @@ func TestHTTP_TagsInTableResponse(t *testing.T) {
 func TestHTTP_CascadeDeleteVerifiesGovernanceRecords(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{WithDuckLake: true})
 
-	var tagID int64
+	var tagID string
 
 	type step struct {
 		name string
@@ -797,7 +797,7 @@ func TestHTTP_CascadeDeleteVerifiesGovernanceRecords(t *testing.T) {
 			require.Equal(t, 201, resp.StatusCode)
 			var tag map[string]interface{}
 			decodeJSON(t, resp, &tag)
-			tagID = int64(tag["id"].(float64))
+			tagID = tag["id"].(string)
 
 			// Get the table to find its table_id
 			resp2 := doRequest(t, "GET",
@@ -806,11 +806,11 @@ func TestHTTP_CascadeDeleteVerifiesGovernanceRecords(t *testing.T) {
 			require.Equal(t, 200, resp2.StatusCode)
 			var table map[string]interface{}
 			decodeJSON(t, resp2, &table)
-			tableID := int64(table["table_id"].(float64))
+			tableID := table["table_id"].(string)
 
 			// Assign tag to table
 			resp3 := doRequest(t, "POST",
-				fmt.Sprintf("%s/v1/tags/%d/assignments", env.Server.URL, tagID),
+				fmt.Sprintf("%s/v1/tags/%s/assignments", env.Server.URL, tagID),
 				env.Keys.Admin, map[string]interface{}{
 					"securable_type": "table",
 					"securable_id":   tableID,

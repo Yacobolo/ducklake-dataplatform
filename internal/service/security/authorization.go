@@ -206,10 +206,10 @@ func (s *AuthorizationService) checkTablePrivilege(ctx context.Context, principa
 	var schemaID string
 
 	// Try managed table first
-	table, err := s.introspection.GetTable(ctx, tableID)
-	if err == nil {
+	switch table, err := s.introspection.GetTable(ctx, tableID); {
+	case err == nil:
 		schemaID = table.SchemaID
-	} else if s.extTableRepo != nil {
+	case s.extTableRepo != nil:
 		// Try external table
 		et, extErr := s.extTableRepo.GetByID(ctx, tableID)
 		if extErr != nil {
@@ -220,7 +220,7 @@ func (s *AuthorizationService) checkTablePrivilege(ctx context.Context, principa
 			return false, fmt.Errorf("lookup schema %q for external table: %w", et.SchemaName, schErr)
 		}
 		schemaID = sch.ID
-	} else {
+	default:
 		return false, fmt.Errorf("lookup table %s: %w", tableID, err)
 	}
 

@@ -215,7 +215,7 @@ func TestHTTP_ComputeAssignmentCRUD(t *testing.T) {
 	adminID := lookupPrincipalID(t, env, "admin_user")
 	require.NotZero(t, adminID)
 
-	var assignmentID float64
+	var assignmentID string
 
 	t.Run("create_assignment", func(t *testing.T) {
 		body := map[string]interface{}{
@@ -230,7 +230,7 @@ func TestHTTP_ComputeAssignmentCRUD(t *testing.T) {
 		decodeJSON(t, resp, &result)
 		assert.Equal(t, adminID, result["principal_id"])
 		assert.Equal(t, true, result["is_default"])
-		assignmentID = result["id"].(float64)
+		assignmentID = result["id"].(string)
 	})
 
 	t.Run("list_assignments", func(t *testing.T) {
@@ -245,8 +245,8 @@ func TestHTTP_ComputeAssignmentCRUD(t *testing.T) {
 
 	t.Run("delete_assignment", func(t *testing.T) {
 		resp := doRequest(t, "DELETE",
-			fmt.Sprintf("%s/v1/compute-endpoints/assign-ep/assignments/%d",
-				env.Server.URL, int64(assignmentID)),
+			fmt.Sprintf("%s/v1/compute-endpoints/assign-ep/assignments/%s",
+				env.Server.URL, assignmentID),
 			env.Keys.Admin, nil)
 		require.Equal(t, 204, resp.StatusCode)
 		_ = resp.Body.Close()
@@ -426,7 +426,7 @@ func TestHTTP_ComputeUnassignReverts(t *testing.T) {
 	require.Equal(t, 201, resp.StatusCode)
 	var assignResult map[string]interface{}
 	decodeJSON(t, resp, &assignResult)
-	assignmentID := int64(assignResult["id"].(float64))
+	assignmentID := assignResult["id"].(string)
 
 	// Query via remote — should succeed
 	resp = doRequest(t, "POST", env.Server.URL+"/v1/query", env.Keys.Admin,
@@ -436,7 +436,7 @@ func TestHTTP_ComputeUnassignReverts(t *testing.T) {
 
 	// Unassign
 	resp = doRequest(t, "DELETE",
-		fmt.Sprintf("%s/v1/compute-endpoints/revert-ep/assignments/%d", env.Server.URL, assignmentID),
+		fmt.Sprintf("%s/v1/compute-endpoints/revert-ep/assignments/%s", env.Server.URL, assignmentID),
 		env.Keys.Admin, nil)
 	require.Equal(t, 204, resp.StatusCode)
 	_ = resp.Body.Close()
