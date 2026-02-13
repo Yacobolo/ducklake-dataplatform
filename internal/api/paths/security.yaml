@@ -37,6 +37,47 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/security.yaml#/PaginatedPrincipals'
+              example:
+                data:
+                - id: 1
+                  name: alice
+                  type: user
+                  is_admin: false
+                  created_at: '2025-01-15T09:30:00Z'
+                - id: 2
+                  name: bob
+                  type: user
+                  is_admin: true
+                  created_at: '2025-01-16T14:00:00Z'
+                next_page_token: eyJpZCI6MTB9
+        '400':
+          description: Invalid request parameters.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -72,6 +113,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: 'Rate limit exceeded: retry after 30 seconds'
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -100,6 +144,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: 'Internal server error: please try again later'
         '401':
           description: Unauthorized
           headers:
@@ -128,6 +175,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: 'Authentication required: missing or invalid token'
     post:
       operationId: createPrincipal
       summary: Create a principal
@@ -139,6 +189,10 @@ paths:
           application/json:
             schema:
               $ref: '../schemas/security.yaml#/CreatePrincipalRequest'
+            example:
+              name: alice
+              type: user
+              is_admin: false
       responses:
         '201':
           description: Created principal
@@ -168,6 +222,12 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/security.yaml#/Principal'
+              example:
+                id: 1
+                name: alice
+                type: user
+                is_admin: false
+                created_at: '2025-01-15T09:30:00Z'
         '400':
           description: Validation error
           headers:
@@ -196,6 +256,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 400
+                message: 'Invalid request: name is required'
         '403':
           description: Access denied
           headers:
@@ -224,6 +287,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: 'Access denied: insufficient privileges'
         '409':
           description: Conflict
           headers:
@@ -252,6 +318,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 409
+                message: 'Conflict: resource already exists'
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -287,6 +356,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: 'Rate limit exceeded: retry after 30 seconds'
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -315,6 +387,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: 'Internal server error: please try again later'
         '401':
           description: Unauthorized
           headers:
@@ -343,6 +418,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: 'Authentication required: missing or invalid token'
 
   /principals/{principalId}:
     parameters:
@@ -389,6 +467,40 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/security.yaml#/Principal'
+              example:
+                id: 1
+                name: alice
+                type: user
+                is_admin: false
+                created_at: '2025-01-15T09:30:00Z'
+        '400':
+          description: Invalid request parameters.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
         '404':
           description: Not found
           headers:
@@ -417,6 +529,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: Resource not found
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -452,6 +567,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: 'Rate limit exceeded: retry after 30 seconds'
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -480,6 +598,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: 'Internal server error: please try again later'
         '401':
           description: Unauthorized
           headers:
@@ -508,6 +629,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: 'Authentication required: missing or invalid token'
     delete:
       operationId: deletePrincipal
       summary: Delete a principal
@@ -538,6 +662,34 @@ paths:
                 minimum: 0
                 maximum: 4102444800
                 format: int64
+        '400':
+          description: Invalid request parameters.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
         '403':
           description: Access denied
           headers:
@@ -566,6 +718,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: 'Access denied: insufficient privileges'
         '404':
           description: Not found
           headers:
@@ -594,6 +749,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: Resource not found
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -629,6 +787,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: 'Rate limit exceeded: retry after 30 seconds'
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -657,6 +818,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: 'Internal server error: please try again later'
         '401':
           description: Unauthorized
           headers:
@@ -685,6 +849,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: 'Authentication required: missing or invalid token'
 
   /principals/{principalId}/admin:
     parameters:
@@ -708,6 +875,8 @@ paths:
           application/json:
             schema:
               $ref: '../schemas/security.yaml#/UpdatePrincipalAdminRequest'
+            example:
+              is_admin: true
       responses:
         '204':
           description: Updated
@@ -761,6 +930,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 400
+                message: 'Invalid request: name is required'
         '403':
           description: Access denied
           headers:
@@ -789,6 +961,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: 'Access denied: insufficient privileges'
         '404':
           description: Not found
           headers:
@@ -817,6 +992,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: Resource not found
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -852,6 +1030,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: 'Rate limit exceeded: retry after 30 seconds'
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -880,6 +1061,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: 'Internal server error: please try again later'
         '401':
           description: Unauthorized
           headers:
@@ -908,6 +1092,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: 'Authentication required: missing or invalid token'
 
   /groups:
     get:
@@ -947,6 +1134,45 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/security.yaml#/PaginatedGroups'
+              example:
+                data:
+                - id: 1
+                  name: engineering
+                  description: Engineering team
+                  created_at: '2025-01-15T09:30:00Z'
+                - id: 2
+                  name: data-science
+                  description: Data science team
+                  created_at: '2025-01-16T14:00:00Z'
+                next_page_token: eyJpZCI6MTB9
+        '400':
+          description: Invalid request parameters.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -982,6 +1208,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: 'Rate limit exceeded: retry after 30 seconds'
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -1010,6 +1239,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: 'Internal server error: please try again later'
         '401':
           description: Unauthorized
           headers:
@@ -1038,6 +1270,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: 'Authentication required: missing or invalid token'
     post:
       operationId: createGroup
       summary: Create a group
@@ -1049,6 +1284,9 @@ paths:
           application/json:
             schema:
               $ref: '../schemas/security.yaml#/CreateGroupRequest'
+            example:
+              name: engineering
+              description: Engineering team
       responses:
         '201':
           description: Created group
@@ -1078,6 +1316,11 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/security.yaml#/Group'
+              example:
+                id: 1
+                name: engineering
+                description: Engineering team
+                created_at: '2025-01-15T09:30:00Z'
         '400':
           description: Validation error
           headers:
@@ -1106,6 +1349,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 400
+                message: 'Invalid request: name is required'
         '403':
           description: Access denied
           headers:
@@ -1134,6 +1380,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: 'Access denied: insufficient privileges'
         '409':
           description: Conflict
           headers:
@@ -1162,6 +1411,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 409
+                message: 'Conflict: resource already exists'
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -1197,6 +1449,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: 'Rate limit exceeded: retry after 30 seconds'
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -1225,6 +1480,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: 'Internal server error: please try again later'
         '401':
           description: Unauthorized
           headers:
@@ -1253,6 +1511,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: 'Authentication required: missing or invalid token'
 
   /groups/{groupId}:
     parameters:
@@ -1299,6 +1560,39 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/security.yaml#/Group'
+              example:
+                id: 1
+                name: engineering
+                description: Engineering team
+                created_at: '2025-01-15T09:30:00Z'
+        '400':
+          description: Invalid request parameters.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
         '404':
           description: Not found
           headers:
@@ -1327,6 +1621,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: Resource not found
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -1362,6 +1659,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: 'Rate limit exceeded: retry after 30 seconds'
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -1390,6 +1690,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: 'Internal server error: please try again later'
         '401':
           description: Unauthorized
           headers:
@@ -1418,6 +1721,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: 'Authentication required: missing or invalid token'
     delete:
       operationId: deleteGroup
       summary: Delete a group
@@ -1448,6 +1754,34 @@ paths:
                 minimum: 0
                 maximum: 4102444800
                 format: int64
+        '400':
+          description: Invalid request parameters.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
         '403':
           description: Access denied
           headers:
@@ -1476,6 +1810,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: 'Access denied: insufficient privileges'
         '404':
           description: Not found
           headers:
@@ -1504,6 +1841,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: Resource not found
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -1539,6 +1879,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: 'Rate limit exceeded: retry after 30 seconds'
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -1567,6 +1910,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: 'Internal server error: please try again later'
         '401':
           description: Unauthorized
           headers:
@@ -1595,6 +1941,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: 'Authentication required: missing or invalid token'
 
   /groups/{groupId}/members:
     parameters:
@@ -1644,6 +1993,43 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/security.yaml#/PaginatedGroupMembers'
+              example:
+                data:
+                - group_id: 1
+                  member_type: user
+                  member_id: 2
+                - group_id: 1
+                  member_type: group
+                  member_id: 3
+                next_page_token: eyJpZCI6MTB9
+        '400':
+          description: Invalid request parameters.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
         '404':
           description: Group not found
           headers:
@@ -1672,6 +2058,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: Resource not found
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -1707,6 +2096,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: 'Rate limit exceeded: retry after 30 seconds'
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -1735,6 +2127,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: 'Internal server error: please try again later'
         '401':
           description: Unauthorized
           headers:
@@ -1763,6 +2158,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: 'Authentication required: missing or invalid token'
     post:
       operationId: createGroupMember
       summary: Add member to group
@@ -1774,6 +2172,9 @@ paths:
           application/json:
             schema:
               $ref: '../schemas/security.yaml#/CreateGroupMemberRequest'
+            example:
+              member_type: user
+              member_id: 2
       responses:
         '204':
           description: Member added
@@ -1827,6 +2228,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 400
+                message: 'Invalid request: name is required'
         '403':
           description: Access denied
           headers:
@@ -1855,6 +2259,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: 'Access denied: insufficient privileges'
         '404':
           description: Group not found
           headers:
@@ -1883,6 +2290,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: Resource not found
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -1918,6 +2328,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: 'Rate limit exceeded: retry after 30 seconds'
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -1946,6 +2359,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: 'Internal server error: please try again later'
         '401':
           description: Unauthorized
           headers:
@@ -1974,6 +2390,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: 'Authentication required: missing or invalid token'
     delete:
       operationId: deleteGroupMember
       summary: Remove member from group
@@ -2049,6 +2468,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 400
+                message: 'Invalid request: name is required'
         '403':
           description: Access denied
           headers:
@@ -2077,6 +2499,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: 'Access denied: insufficient privileges'
         '404':
           description: Group or member not found
           headers:
@@ -2105,6 +2530,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: Resource not found
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -2140,6 +2568,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: 'Rate limit exceeded: retry after 30 seconds'
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -2168,6 +2599,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: 'Internal server error: please try again later'
         '401':
           description: Unauthorized
           headers:
@@ -2196,6 +2630,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: 'Authentication required: missing or invalid token'
 
   /grants:
     get:
@@ -2264,6 +2701,45 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/security.yaml#/PaginatedGrants'
+              example:
+                data:
+                - id: 1
+                  principal_id: 2
+                  principal_type: user
+                  securable_type: schema
+                  securable_id: 1
+                  privilege: USE_SCHEMA
+                  granted_by: 1
+                  granted_at: '2025-01-15T09:30:00Z'
+                next_page_token: eyJpZCI6MTB9
+        '400':
+          description: Invalid request parameters.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -2299,6 +2775,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: 'Rate limit exceeded: retry after 30 seconds'
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -2327,6 +2806,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: 'Internal server error: please try again later'
         '401':
           description: Unauthorized
           headers:
@@ -2355,6 +2837,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: 'Authentication required: missing or invalid token'
     post:
       operationId: createGrant
       summary: Grant a privilege
@@ -2366,6 +2851,12 @@ paths:
           application/json:
             schema:
               $ref: '../schemas/security.yaml#/CreateGrantRequest'
+            example:
+              principal_id: 2
+              principal_type: user
+              securable_type: schema
+              securable_id: 1
+              privilege: USE_SCHEMA
       responses:
         '201':
           description: Granted
@@ -2395,6 +2886,15 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/security.yaml#/PrivilegeGrant'
+              example:
+                id: 1
+                principal_id: 2
+                principal_type: user
+                securable_type: schema
+                securable_id: 1
+                privilege: USE_SCHEMA
+                granted_by: 1
+                granted_at: '2025-01-15T09:30:00Z'
         '400':
           description: Validation error
           headers:
@@ -2423,6 +2923,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 400
+                message: 'Invalid request: name is required'
         '403':
           description: Access denied
           headers:
@@ -2451,6 +2954,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: 'Access denied: insufficient privileges'
         '409':
           description: Grant already exists
           headers:
@@ -2479,6 +2985,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 409
+                message: 'Conflict: resource already exists'
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -2514,6 +3023,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: 'Rate limit exceeded: retry after 30 seconds'
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -2542,6 +3054,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: 'Internal server error: please try again later'
         '401':
           description: Unauthorized
           headers:
@@ -2570,6 +3085,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: 'Authentication required: missing or invalid token'
 
   /grants/{grantId}:
     parameters:
@@ -2612,6 +3130,34 @@ paths:
                 minimum: 0
                 maximum: 4102444800
                 format: int64
+        '400':
+          description: Invalid request parameters.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
         '403':
           description: Access denied
           headers:
@@ -2640,6 +3186,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: 'Access denied: insufficient privileges'
         '404':
           description: Grant not found
           headers:
@@ -2668,6 +3217,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: Resource not found
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -2703,6 +3255,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: 'Rate limit exceeded: retry after 30 seconds'
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -2731,6 +3286,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: 'Internal server error: please try again later'
         '401':
           description: Unauthorized
           headers:
@@ -2759,6 +3317,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: 'Authentication required: missing or invalid token'
 
   /api-keys:
     get:
@@ -2807,6 +3368,43 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/security.yaml#/PaginatedAPIKeys'
+              example:
+                data:
+                - id: 1
+                  principal_id: 2
+                  name: ci-pipeline-key
+                  key_prefix: dk_live_abc1
+                  expires_at: '2026-01-15T09:30:00Z'
+                  created_at: '2025-01-15T09:30:00Z'
+                next_page_token: eyJpZCI6MTB9
+        '400':
+          description: Invalid request parameters.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -2842,6 +3440,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: 'Rate limit exceeded: retry after 30 seconds'
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -2870,6 +3471,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: 'Internal server error: please try again later'
         '401':
           description: Unauthorized
           headers:
@@ -2898,6 +3502,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: 'Authentication required: missing or invalid token'
     post:
       operationId: createAPIKey
       summary: Create a new API key
@@ -2909,6 +3516,10 @@ paths:
           application/json:
             schema:
               $ref: '../schemas/security.yaml#/CreateAPIKeyRequest'
+            example:
+              principal_id: 2
+              name: ci-pipeline-key
+              expires_at: '2026-01-15T09:30:00Z'
       responses:
         '201':
           description: API key created (raw key shown only once)
@@ -2938,6 +3549,13 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/security.yaml#/CreateAPIKeyResponse'
+              example:
+                id: 1
+                key: dk_live_abc123def456ghi789
+                name: ci-pipeline-key
+                key_prefix: dk_live_abc1
+                expires_at: '2026-01-15T09:30:00Z'
+                created_at: '2025-01-15T09:30:00Z'
         '400':
           description: Validation error
           headers:
@@ -2966,6 +3584,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 400
+                message: 'Invalid request: name is required'
         '403':
           description: Access denied
           headers:
@@ -2994,6 +3615,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: 'Access denied: insufficient privileges'
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -3029,6 +3653,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: 'Rate limit exceeded: retry after 30 seconds'
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -3057,6 +3684,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: 'Internal server error: please try again later'
         '401':
           description: Unauthorized
           headers:
@@ -3085,6 +3715,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: 'Authentication required: missing or invalid token'
 
   /api-keys/{apiKeyId}:
     parameters:
@@ -3127,6 +3760,34 @@ paths:
                 minimum: 0
                 maximum: 4102444800
                 format: int64
+        '400':
+          description: Invalid request parameters.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
         '404':
           description: Not found
           headers:
@@ -3155,6 +3816,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: Resource not found
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -3190,6 +3854,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: 'Rate limit exceeded: retry after 30 seconds'
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -3218,6 +3885,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: 'Internal server error: please try again later'
         '401':
           description: Unauthorized
           headers:
@@ -3246,6 +3916,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: 'Authentication required: missing or invalid token'
         '403':
           description: Access denied
           headers:
@@ -3274,6 +3947,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: 'Access denied: insufficient privileges'
 
   /api-keys/cleanup:
     post:
@@ -3310,6 +3986,36 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/security.yaml#/CleanupAPIKeysResponse'
+              example:
+                deleted_count: 3
+        '400':
+          description: Invalid request parameters.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
         '403':
           description: Access denied
           headers:
@@ -3338,6 +4044,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: 'Access denied: insufficient privileges'
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -3373,6 +4082,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: 'Rate limit exceeded: retry after 30 seconds'
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -3401,6 +4113,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: 'Internal server error: please try again later'
         '401':
           description: Unauthorized
           headers:
@@ -3429,6 +4144,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: 'Authentication required: missing or invalid token'
 
   /tables/{tableId}/row-filters:
     parameters:
@@ -3478,6 +4196,42 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/security.yaml#/PaginatedRowFilters'
+              example:
+                data:
+                - id: 1
+                  table_id: 5
+                  filter_sql: region = 'us-east-1'
+                  description: Restrict to US East region
+                  created_at: '2025-01-15T09:30:00Z'
+                next_page_token: eyJpZCI6MTB9
+        '400':
+          description: Invalid request parameters.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
         '404':
           description: Table not found
           headers:
@@ -3506,6 +4260,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: Resource not found
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -3541,6 +4298,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: 'Rate limit exceeded: retry after 30 seconds'
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -3569,6 +4329,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: 'Internal server error: please try again later'
         '401':
           description: Unauthorized
           headers:
@@ -3597,6 +4360,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: 'Authentication required: missing or invalid token'
     post:
       operationId: createRowFilter
       summary: Create row filter
@@ -3608,6 +4374,10 @@ paths:
           application/json:
             schema:
               $ref: '../schemas/security.yaml#/CreateRowFilterRequest'
+            example:
+              table_id: 5
+              filter_sql: region = 'us-east-1'
+              description: Restrict to US East region
       responses:
         '201':
           description: Created filter
@@ -3637,6 +4407,12 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/security.yaml#/RowFilter'
+              example:
+                id: 1
+                table_id: 5
+                filter_sql: region = 'us-east-1'
+                description: Restrict to US East region
+                created_at: '2025-01-15T09:30:00Z'
         '400':
           description: Validation error
           headers:
@@ -3665,6 +4441,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 400
+                message: 'Invalid request: name is required'
         '403':
           description: Access denied
           headers:
@@ -3693,6 +4472,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: 'Access denied: insufficient privileges'
         '404':
           description: Table not found
           headers:
@@ -3721,6 +4503,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: Resource not found
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -3756,6 +4541,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: 'Rate limit exceeded: retry after 30 seconds'
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -3784,6 +4572,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: 'Internal server error: please try again later'
         '401':
           description: Unauthorized
           headers:
@@ -3812,6 +4603,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: 'Authentication required: missing or invalid token'
 
   /row-filters/{rowFilterId}:
     parameters:
@@ -3854,6 +4648,34 @@ paths:
                 minimum: 0
                 maximum: 4102444800
                 format: int64
+        '400':
+          description: Invalid request parameters.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
         '403':
           description: Access denied
           headers:
@@ -3882,6 +4704,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: 'Access denied: insufficient privileges'
         '404':
           description: Not found
           headers:
@@ -3910,6 +4735,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: Resource not found
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -3945,6 +4773,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: 'Rate limit exceeded: retry after 30 seconds'
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -3973,6 +4804,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: 'Internal server error: please try again later'
         '401':
           description: Unauthorized
           headers:
@@ -4001,6 +4835,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: 'Authentication required: missing or invalid token'
 
   /row-filters/{rowFilterId}/bindings:
     parameters:
@@ -4024,6 +4861,9 @@ paths:
           application/json:
             schema:
               $ref: '../schemas/security.yaml#/RowFilterBindingRequest'
+            example:
+              principal_id: 2
+              principal_type: user
       responses:
         '204':
           description: Bound
@@ -4077,6 +4917,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 400
+                message: 'Invalid request: name is required'
         '403':
           description: Access denied
           headers:
@@ -4105,6 +4948,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: 'Access denied: insufficient privileges'
         '404':
           description: Row filter not found
           headers:
@@ -4133,6 +4979,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: Resource not found
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -4168,6 +5017,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: 'Rate limit exceeded: retry after 30 seconds'
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -4196,6 +5048,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: 'Internal server error: please try again later'
         '401':
           description: Unauthorized
           headers:
@@ -4224,6 +5079,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: 'Authentication required: missing or invalid token'
     delete:
       operationId: unbindRowFilter
       summary: Unbind filter from principal
@@ -4299,6 +5157,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 400
+                message: 'Invalid request: name is required'
         '403':
           description: Access denied
           headers:
@@ -4327,6 +5188,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: 'Access denied: insufficient privileges'
         '404':
           description: Row filter not found
           headers:
@@ -4355,6 +5219,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: Resource not found
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -4390,6 +5257,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: 'Rate limit exceeded: retry after 30 seconds'
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -4418,6 +5288,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: 'Internal server error: please try again later'
         '401':
           description: Unauthorized
           headers:
@@ -4446,6 +5319,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: 'Authentication required: missing or invalid token'
 
   /row-filters:
     post:
@@ -4459,6 +5335,10 @@ paths:
           application/json:
             schema:
               $ref: '../schemas/security.yaml#/CreateRowFilterRequest'
+            example:
+              table_id: 5
+              filter_sql: region = 'us-east-1'
+              description: Restrict to US East region
       responses:
         '201':
           description: Created filter
@@ -4488,6 +5368,12 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/security.yaml#/RowFilter'
+              example:
+                id: 1
+                table_id: 5
+                filter_sql: region = 'us-east-1'
+                description: Restrict to US East region
+                created_at: '2025-01-15T09:30:00Z'
         '400':
           description: Validation error
           headers:
@@ -4516,6 +5402,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 400
+                message: 'Invalid request: name is required'
         '403':
           description: Access denied
           headers:
@@ -4544,6 +5433,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: 'Access denied: insufficient privileges'
         '404':
           description: Table not found
           headers:
@@ -4572,6 +5464,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: Resource not found
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -4607,6 +5502,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: 'Rate limit exceeded: retry after 30 seconds'
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -4635,6 +5533,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: 'Internal server error: please try again later'
         '401':
           description: Unauthorized
           headers:
@@ -4663,6 +5564,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: 'Authentication required: missing or invalid token'
 
   /tables/{tableId}/column-masks:
     parameters:
@@ -4712,6 +5616,43 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/security.yaml#/PaginatedColumnMasks'
+              example:
+                data:
+                - id: 1
+                  table_id: 5
+                  column_name: email
+                  mask_expression: '''***@'' || split_part(email, ''@'', 2)'
+                  description: Mask email local part
+                  created_at: '2025-01-15T09:30:00Z'
+                next_page_token: eyJpZCI6MTB9
+        '400':
+          description: Invalid request parameters.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
         '404':
           description: Table not found
           headers:
@@ -4740,6 +5681,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: Resource not found
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -4775,6 +5719,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: 'Rate limit exceeded: retry after 30 seconds'
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -4803,6 +5750,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: 'Internal server error: please try again later'
         '401':
           description: Unauthorized
           headers:
@@ -4831,6 +5781,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: 'Authentication required: missing or invalid token'
     post:
       operationId: createColumnMask
       summary: Create column mask
@@ -4842,6 +5795,10 @@ paths:
           application/json:
             schema:
               $ref: '../schemas/security.yaml#/CreateColumnMaskRequest'
+            example:
+              column_name: email
+              mask_expression: '''***@'' || split_part(email, ''@'', 2)'
+              description: Mask email local part
       responses:
         '201':
           description: Created mask
@@ -4871,6 +5828,13 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/security.yaml#/ColumnMask'
+              example:
+                id: 1
+                table_id: 5
+                column_name: email
+                mask_expression: '''***@'' || split_part(email, ''@'', 2)'
+                description: Mask email local part
+                created_at: '2025-01-15T09:30:00Z'
         '400':
           description: Validation error
           headers:
@@ -4899,6 +5863,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 400
+                message: 'Invalid request: name is required'
         '403':
           description: Access denied
           headers:
@@ -4927,6 +5894,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: 'Access denied: insufficient privileges'
         '404':
           description: Table not found
           headers:
@@ -4955,6 +5925,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: Resource not found
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -4990,6 +5963,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: 'Rate limit exceeded: retry after 30 seconds'
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -5018,6 +5994,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: 'Internal server error: please try again later'
         '401':
           description: Unauthorized
           headers:
@@ -5046,6 +6025,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: 'Authentication required: missing or invalid token'
 
   /column-masks/{columnMaskId}:
     parameters:
@@ -5088,6 +6070,34 @@ paths:
                 minimum: 0
                 maximum: 4102444800
                 format: int64
+        '400':
+          description: Invalid request parameters.
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/common.yaml#/Error'
         '403':
           description: Access denied
           headers:
@@ -5116,6 +6126,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: 'Access denied: insufficient privileges'
         '404':
           description: Not found
           headers:
@@ -5144,6 +6157,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: Resource not found
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -5179,6 +6195,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: 'Rate limit exceeded: retry after 30 seconds'
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -5207,6 +6226,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: 'Internal server error: please try again later'
         '401':
           description: Unauthorized
           headers:
@@ -5235,6 +6257,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: 'Authentication required: missing or invalid token'
 
   /column-masks/{columnMaskId}/bindings:
     parameters:
@@ -5258,6 +6283,10 @@ paths:
           application/json:
             schema:
               $ref: '../schemas/security.yaml#/ColumnMaskBindingRequest'
+            example:
+              principal_id: 2
+              principal_type: user
+              see_original: false
       responses:
         '204':
           description: Bound
@@ -5311,6 +6340,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 400
+                message: 'Invalid request: name is required'
         '403':
           description: Access denied
           headers:
@@ -5339,6 +6371,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: 'Access denied: insufficient privileges'
         '404':
           description: Column mask not found
           headers:
@@ -5367,6 +6402,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: Resource not found
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -5402,6 +6440,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: 'Rate limit exceeded: retry after 30 seconds'
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -5430,6 +6471,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: 'Internal server error: please try again later'
         '401':
           description: Unauthorized
           headers:
@@ -5458,6 +6502,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: 'Authentication required: missing or invalid token'
     delete:
       operationId: unbindColumnMask
       summary: Unbind mask from principal
@@ -5533,6 +6580,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 400
+                message: 'Invalid request: name is required'
         '403':
           description: Access denied
           headers:
@@ -5561,6 +6611,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: 'Access denied: insufficient privileges'
         '404':
           description: Column mask not found
           headers:
@@ -5589,6 +6642,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: Resource not found
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -5624,6 +6680,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: 'Rate limit exceeded: retry after 30 seconds'
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -5652,6 +6711,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: 'Internal server error: please try again later'
         '401':
           description: Unauthorized
           headers:
@@ -5680,3 +6742,6 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: 'Authentication required: missing or invalid token'

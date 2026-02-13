@@ -15,6 +15,9 @@ paths:
           application/json:
             schema:
               $ref: '../schemas/observability.yaml#/ManifestRequest'
+            example:
+              table: "users"
+              schema: "main"
       responses:
         '200':
           description: Manifest with presigned URLs and security policies
@@ -44,6 +47,21 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/observability.yaml#/ManifestResponse'
+              example:
+                table: "users"
+                schema: "main"
+                columns:
+                  - name: "id"
+                    type: "INTEGER"
+                  - name: "email"
+                    type: "VARCHAR"
+                files:
+                  - "https://s3.amazonaws.com/acme-datalake/main/users/part-0001.parquet?X-Amz-Expires=3600"
+                row_filters:
+                  - "department = 'engineering'"
+                column_masks:
+                  email: "'***@' || split_part(email, '@', 2)"
+                expires_at: "2025-01-15T10:30:00Z"
         '400':
           description: Invalid request parameters or malformed request body.
           headers:
@@ -72,6 +90,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 400
+                message: "Invalid request: field 'name' is required"
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -107,6 +128,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: "Rate limit exceeded, retry after 30 seconds"
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -135,6 +159,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: "An unexpected error occurred"
         '401':
           description: Unauthorized
           headers:
@@ -163,6 +190,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: "Authentication required"
         '403':
           description: Access denied
           headers:
@@ -191,6 +221,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: "Insufficient privileges to perform this operation"
         '404':
           description: Table not found
           headers:
@@ -219,6 +252,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: "Resource not found"
 
   /audit-logs:
     get:
@@ -279,6 +315,21 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/observability.yaml#/PaginatedAuditLogs'
+              example:
+                data:
+                  - id: 1
+                    principal_name: "analyst@acme.com"
+                    action: QUERY
+                    statement_type: SELECT
+                    original_sql: "SELECT id, name FROM main.users LIMIT 10"
+                    rewritten_sql: "SELECT id, name FROM main.users WHERE department = 'engineering' LIMIT 10"
+                    tables_accessed:
+                      - "main.users"
+                    status: SUCCESS
+                    error_message: null
+                    duration_ms: 42
+                    created_at: "2025-01-15T09:30:00Z"
+                next_page_token: "eyJpZCI6MTB9"
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -314,6 +365,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: "Rate limit exceeded, retry after 30 seconds"
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -342,6 +396,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: "An unexpected error occurred"
         '401':
           description: Unauthorized
           headers:
@@ -370,6 +427,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: "Authentication required"
 
   /metastore/summary:
     get:
@@ -406,6 +466,13 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/catalog.yaml#/MetastoreSummary'
+              example:
+                catalog_name: "acme_warehouse"
+                metastore_type: "ducklake"
+                storage_backend: S3
+                data_path: "s3://acme-datalake/warehouse/"
+                schema_count: 5
+                table_count: 42
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -441,6 +508,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: "Rate limit exceeded, retry after 30 seconds"
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -469,6 +539,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: "An unexpected error occurred"
         '401':
           description: Unauthorized
           headers:
@@ -497,6 +570,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: "Authentication required"
 
   /query-history:
     get:
@@ -564,6 +640,21 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/observability.yaml#/PaginatedQueryHistoryEntries'
+              example:
+                data:
+                  - id: 1
+                    principal_name: "analyst@acme.com"
+                    original_sql: "SELECT id, name FROM main.users LIMIT 10"
+                    rewritten_sql: "SELECT id, name FROM main.users WHERE department = 'engineering' LIMIT 10"
+                    statement_type: SELECT
+                    tables_accessed:
+                      - "main.users"
+                    status: SUCCESS
+                    error_message: null
+                    duration_ms: 42
+                    rows_returned: 10
+                    created_at: "2025-01-15T09:30:00Z"
+                next_page_token: "eyJpZCI6MTB9"
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -599,6 +690,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: "Rate limit exceeded, retry after 30 seconds"
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -627,6 +721,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: "An unexpected error occurred"
         '401':
           description: Unauthorized
           headers:
@@ -655,3 +752,6 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: "Authentication required"

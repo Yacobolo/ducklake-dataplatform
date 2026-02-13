@@ -54,6 +54,26 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/lineage.yaml#/LineageNode'
+              example:
+                table_name: "analytics.page_views"
+                upstream:
+                  - id: 1
+                    source_table: "raw_events"
+                    target_table: "page_views"
+                    source_schema: "main"
+                    target_schema: "analytics"
+                    edge_type: READ
+                    principal_name: "etl-service"
+                    created_at: "2025-01-15T09:30:00Z"
+                downstream:
+                  - id: 2
+                    source_table: "page_views"
+                    target_table: "daily_metrics"
+                    source_schema: "analytics"
+                    target_schema: "reporting"
+                    edge_type: READ
+                    principal_name: "etl-service"
+                    created_at: "2025-01-15T09:30:00Z"
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -89,6 +109,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: "Rate limit exceeded, retry after 30 seconds"
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -117,6 +140,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: "An unexpected error occurred"
         '401':
           description: Unauthorized
           headers:
@@ -145,6 +171,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: "Authentication required"
         '404':
           description: Not found
           headers:
@@ -173,6 +202,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: "Resource not found"
 
   /lineage/tables/{schemaName}/{tableName}/upstream:
     parameters:
@@ -229,6 +261,17 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/lineage.yaml#/PaginatedLineageEdges'
+              example:
+                data:
+                  - id: 1
+                    source_table: "raw_events"
+                    target_table: "page_views"
+                    source_schema: "main"
+                    target_schema: "analytics"
+                    edge_type: READ
+                    principal_name: "etl-service"
+                    created_at: "2025-01-15T09:30:00Z"
+                next_page_token: "eyJpZCI6MTB9"
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -264,6 +307,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: "Rate limit exceeded, retry after 30 seconds"
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -292,6 +338,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: "An unexpected error occurred"
         '401':
           description: Unauthorized
           headers:
@@ -320,6 +369,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: "Authentication required"
         '404':
           description: Not found
           headers:
@@ -348,6 +400,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: "Resource not found"
 
   /lineage/tables/{schemaName}/{tableName}/downstream:
     parameters:
@@ -404,6 +459,17 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/lineage.yaml#/PaginatedLineageEdges'
+              example:
+                data:
+                  - id: 1
+                    source_table: "raw_events"
+                    target_table: "page_views"
+                    source_schema: "main"
+                    target_schema: "analytics"
+                    edge_type: READ
+                    principal_name: "etl-service"
+                    created_at: "2025-01-15T09:30:00Z"
+                next_page_token: "eyJpZCI6MTB9"
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -439,6 +505,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: "Rate limit exceeded, retry after 30 seconds"
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -467,6 +536,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: "An unexpected error occurred"
         '401':
           description: Unauthorized
           headers:
@@ -495,6 +567,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: "Authentication required"
         '404':
           description: Not found
           headers:
@@ -523,6 +598,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: "Resource not found"
 
   /lineage/edges/{edgeId}:
     parameters:
@@ -600,6 +678,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: "Rate limit exceeded, retry after 30 seconds"
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -628,6 +709,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: "An unexpected error occurred"
         '401':
           description: Unauthorized
           headers:
@@ -656,6 +740,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: "Authentication required"
         '403':
           description: Access denied
           headers:
@@ -684,6 +771,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: "Insufficient privileges to perform this operation"
         '404':
           description: Not found
           headers:
@@ -712,6 +802,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: "Resource not found"
 
   /lineage/purge:
     post:
@@ -725,6 +818,8 @@ paths:
           application/json:
             schema:
               $ref: '../schemas/lineage.yaml#/PurgeLineageRequest'
+            example:
+              older_than_days: 90
       responses:
         '200':
           description: Purge result
@@ -754,6 +849,8 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/lineage.yaml#/PurgeLineageResponse'
+              example:
+                deleted_count: 42
         '400':
           description: Invalid request parameters or malformed request body.
           headers:
@@ -782,6 +879,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 400
+                message: "Invalid request: field 'name' is required"
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -817,6 +917,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: "Rate limit exceeded, retry after 30 seconds"
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -845,6 +948,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: "An unexpected error occurred"
         '401':
           description: Unauthorized
           headers:
@@ -873,6 +979,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: "Authentication required"
         '403':
           description: Access denied
           headers:
@@ -901,3 +1010,6 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: "Insufficient privileges to perform this operation"

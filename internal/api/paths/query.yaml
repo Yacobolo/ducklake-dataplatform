@@ -11,6 +11,8 @@ paths:
           application/json:
             schema:
               $ref: '../schemas/common.yaml#/QueryRequest'
+            example:
+              sql: "SELECT id, name FROM main.users LIMIT 10"
       responses:
         '200':
           description: Query result
@@ -40,6 +42,15 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/QueryResult'
+              example:
+                columns:
+                  - "id"
+                  - "name"
+                  - "email"
+                rows:
+                  - [1, "Alice Johnson", "alice@acme.com"]
+                  - [2, "Bob Smith", "bob@acme.com"]
+                row_count: 2
         '400':
           description: Invalid request parameters or malformed request body.
           headers:
@@ -68,6 +79,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 400
+                message: "Invalid request: field 'name' is required"
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -103,6 +117,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: "Rate limit exceeded, retry after 30 seconds"
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -131,6 +148,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: "An unexpected error occurred"
         '401':
           description: Unauthorized
           headers:
@@ -159,6 +179,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: "Authentication required"
         '403':
           description: Access denied
           headers:
@@ -187,3 +210,6 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: "Insufficient privileges to perform this operation"

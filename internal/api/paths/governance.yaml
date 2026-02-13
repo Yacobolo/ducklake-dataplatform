@@ -52,6 +52,15 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/governance.yaml#/PaginatedSearchResults'
+              example:
+                data:
+                  - type: "table"
+                    name: "users"
+                    schema_name: "main"
+                    table_name: "users"
+                    comment: "Core user accounts table"
+                    match_field: "name"
+                next_page_token: "eyJpZCI6MTB9"
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -87,6 +96,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: "Rate limit exceeded, retry after 30 seconds"
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -115,6 +127,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: "An unexpected error occurred"
         '401':
           description: Unauthorized
           headers:
@@ -143,6 +158,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: "Authentication required"
 
   /tags:
     get:
@@ -182,6 +200,14 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/governance.yaml#/PaginatedTags'
+              example:
+                data:
+                  - id: 1
+                    key: "pii"
+                    value: "email"
+                    created_by: "admin"
+                    created_at: "2025-01-15T09:30:00Z"
+                next_page_token: "eyJpZCI6MTB9"
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -217,6 +243,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: "Rate limit exceeded, retry after 30 seconds"
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -245,6 +274,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: "An unexpected error occurred"
         '401':
           description: Unauthorized
           headers:
@@ -273,6 +305,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: "Authentication required"
     post:
       operationId: createTag
       summary: Create a tag
@@ -284,6 +319,9 @@ paths:
           application/json:
             schema:
               $ref: '../schemas/governance.yaml#/CreateTagRequest'
+            example:
+              key: "pii"
+              value: "email"
       responses:
         '201':
           description: Created tag
@@ -313,6 +351,12 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/governance.yaml#/Tag'
+              example:
+                id: 1
+                key: "pii"
+                value: "email"
+                created_by: "admin"
+                created_at: "2025-01-15T09:30:00Z"
         '400':
           description: Invalid request parameters or malformed request body.
           headers:
@@ -341,6 +385,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 400
+                message: "Invalid request: field 'name' is required"
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -376,6 +423,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: "Rate limit exceeded, retry after 30 seconds"
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -404,6 +454,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: "An unexpected error occurred"
         '401':
           description: Unauthorized
           headers:
@@ -432,6 +485,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: "Authentication required"
         '403':
           description: Access denied
           headers:
@@ -460,6 +516,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: "Insufficient privileges to perform this operation"
         '409':
           description: Tag already exists
           headers:
@@ -488,6 +547,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 409
+                message: "Resource already exists"
 
   /tags/{tagId}:
     parameters:
@@ -565,6 +627,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: "Rate limit exceeded, retry after 30 seconds"
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -593,6 +658,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: "An unexpected error occurred"
         '401':
           description: Unauthorized
           headers:
@@ -621,6 +689,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: "Authentication required"
         '403':
           description: Access denied
           headers:
@@ -649,6 +720,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: "Insufficient privileges to perform this operation"
         '404':
           description: Not found
           headers:
@@ -677,6 +751,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: "Resource not found"
 
   /tags/{tagId}/assignments:
     parameters:
@@ -700,6 +777,10 @@ paths:
           application/json:
             schema:
               $ref: '../schemas/governance.yaml#/CreateTagAssignmentRequest'
+            example:
+              securable_type: "table"
+              securable_id: 5
+              column_name: "email"
       responses:
         '201':
           description: Tag assigned
@@ -729,6 +810,14 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/governance.yaml#/TagAssignment'
+              example:
+                id: 1
+                tag_id: 1
+                securable_type: "table"
+                securable_id: 5
+                column_name: "email"
+                assigned_by: "admin"
+                assigned_at: "2025-01-15T09:30:00Z"
         '400':
           description: Invalid request parameters or malformed request body.
           headers:
@@ -757,6 +846,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 400
+                message: "Invalid request: field 'name' is required"
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -792,6 +884,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: "Rate limit exceeded, retry after 30 seconds"
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -820,6 +915,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: "An unexpected error occurred"
         '401':
           description: Unauthorized
           headers:
@@ -848,6 +946,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: "Authentication required"
         '403':
           description: Access denied
           headers:
@@ -876,6 +977,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: "Insufficient privileges to perform this operation"
         '409':
           description: Tag already assigned
           headers:
@@ -904,6 +1008,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 409
+                message: "Resource already exists"
 
   /tag-assignments/{assignmentId}:
     parameters:
@@ -981,6 +1088,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: "Rate limit exceeded, retry after 30 seconds"
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -1009,6 +1119,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: "An unexpected error occurred"
         '401':
           description: Unauthorized
           headers:
@@ -1037,6 +1150,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: "Authentication required"
         '403':
           description: Access denied
           headers:
@@ -1065,6 +1181,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 403
+                message: "Insufficient privileges to perform this operation"
         '404':
           description: Not found
           headers:
@@ -1093,6 +1212,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 404
+                message: "Resource not found"
 
   /classifications:
     get:
@@ -1132,6 +1254,14 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/governance.yaml#/PaginatedTags'
+              example:
+                data:
+                  - id: 1
+                    key: "pii"
+                    value: "email"
+                    created_by: "admin"
+                    created_at: "2025-01-15T09:30:00Z"
+                next_page_token: "eyJpZCI6MTB9"
         '429':
           description: Rate limit exceeded. Retry after the indicated duration.
           headers:
@@ -1167,6 +1297,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 429
+                message: "Rate limit exceeded, retry after 30 seconds"
         '500':
           description: An unexpected internal server error occurred.
           headers:
@@ -1195,6 +1328,9 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 500
+                message: "An unexpected error occurred"
         '401':
           description: Unauthorized
           headers:
@@ -1223,3 +1359,6 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/common.yaml#/Error'
+              example:
+                code: 401
+                message: "Authentication required"

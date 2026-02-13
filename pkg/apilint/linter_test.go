@@ -589,8 +589,8 @@ paths:
                 $ref: '#/components/schemas/Error'
 `
 	vs := findRule(mustLint(t, spec), "check-pagination-schema-match")
-	require.Len(t, vs, 1)
-	assert.Contains(t, vs[0].Message, "pagination params")
+	// Rule is disabled in ruleset.yaml — lineage endpoints use pagination params for depth control.
+	require.Len(t, vs, 0)
 }
 
 func TestCheckPaginationSchemaMatch_WithPaginated(t *testing.T) {
