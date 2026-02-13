@@ -106,6 +106,8 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/catalog.yaml#/CatalogRegistrationList'
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
         '401':
           $ref: '../schemas/responses.yaml#/responses/Unauthorized'
         '429':
@@ -160,6 +162,8 @@ paths:
                 comment: Analytics data catalog
                 created_at: '2025-01-15T09:30:00Z'
                 updated_at: '2025-01-15T09:30:00Z'
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
         '401':
           $ref: '../schemas/responses.yaml#/responses/Unauthorized'
         '404':
@@ -211,6 +215,8 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/catalog.yaml#/CatalogRegistration'
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
         '401':
           $ref: '../schemas/responses.yaml#/responses/Unauthorized'
         '403':
@@ -251,6 +257,8 @@ paths:
                 minimum: 0
                 maximum: 4102444800
                 format: int64
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
         '401':
           $ref: '../schemas/responses.yaml#/responses/Unauthorized'
         '403':
@@ -275,6 +283,7 @@ paths:
           application/json:
             schema:
               $ref: '../schemas/catalog.yaml#/SetDefaultCatalogRequest'
+            example: {}
       responses:
         '200':
           description: Catalog set as default
@@ -304,6 +313,19 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/catalog.yaml#/CatalogRegistration'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440001"
+                name: analytics
+                metastore_type: sqlite
+                dsn: /data/analytics.db
+                data_path: s3://my-bucket/analytics/
+                status: ACTIVE
+                is_default: true
+                comment: Analytics data catalog
+                created_at: '2025-01-15T09:30:00Z'
+                updated_at: '2025-01-15T09:30:00Z'
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
         '401':
           $ref: '../schemas/responses.yaml#/responses/Unauthorized'
         '403':
@@ -423,6 +445,8 @@ paths:
           $ref: '../schemas/responses.yaml#/responses/BadRequest'
         '401':
           $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
         '429':
           $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
         '500':

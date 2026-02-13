@@ -58,13 +58,22 @@ rules:
   no-unnecessary-combinator: warn
   oas3-no-$ref-siblings: warn
   oas3-api-servers: warn
-  # Downgraded: 2215 violations from identical rate-limit header descriptions.
-  # Expected repetition — not fixable without major restructuring.
-  description-duplication: info
+  # Suppressed: bundler inlines shared $ref responses, causing identical
+  # rate-limit header descriptions to repeat ~100x. Not fixable in source.
+  description-duplication: off
 
   # Warnings — housekeeping
   oas3-unused-component: warn
-  operation-description: info
+  # Suppressed: fires on every requestBody missing a description field.
+  # Operations already have top-level descriptions; low value, high noise.
+  operation-description: off
+  # Suppressed: QueryResult.rows cell schema is intentionally untyped (items: {})
+  # to represent heterogeneous values. Adding a type would be incorrect.
+  oas-missing-type: off
+  # Downgraded: property-level missing examples are noisy; top-level media type
+  # examples already cover most endpoints. Only media-type-level violations
+  # (the genuine ones) are surfaced at warning level by vacuum.
+  oas3-missing-example: info
 
   # Suppressed: integer IDs are deliberate (SQLite autoincrement + DuckDB introspection).
   # TODO: Migrate to string UUIDs in a future project.
