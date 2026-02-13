@@ -92,19 +92,25 @@ func buildCommandModel(groupName, _ string, cmdCfg CommandConfig, info *opInfo, 
 	positionalSet := toSet(cmdCfg.PositionalArgs)
 
 	cm := &CommandModel{
-		OperationID:    cmdCfg.OperationID,
-		GroupName:      groupName,
-		CommandPath:    cmdCfg.CommandPath,
-		Verb:           cmdCfg.Verb,
-		Short:          info.op.Summary,
-		Long:           info.op.Description,
-		Examples:       cmdCfg.Examples,
-		Method:         info.method,
+		OperationID: cmdCfg.OperationID,
+		GroupName:   groupName,
+		CommandPath: cmdCfg.CommandPath,
+		Verb:        cmdCfg.Verb,
+		Short:       info.op.Summary,
+		Long:        info.op.Description,
+		Examples:    cmdCfg.Examples,
+		Method:      info.method,
+
 		URLPath:        info.urlPath,
 		PositionalArgs: cmdCfg.PositionalArgs,
 		Confirm:        cmdCfg.Confirm,
 		FlattenFields:  cmdCfg.FlattenFields,
 		CompoundFlags:  cmdCfg.CompoundFlags,
+	}
+
+	// Auto-generate examples from spec if config doesn't provide any
+	if len(cm.Examples) == 0 {
+		cm.Examples = generateExamples(groupName, cmdCfg, info)
 	}
 
 	// Compute Use string
