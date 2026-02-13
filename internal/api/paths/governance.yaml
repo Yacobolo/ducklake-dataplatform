@@ -68,6 +68,8 @@ paths:
                     comment: "Core user accounts table"
                     match_field: "name"
                 next_page_token: "eyJpZCI6MTB9"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
         '401':
           $ref: '../schemas/responses.yaml#/responses/Unauthorized'
         '429':
@@ -121,6 +123,8 @@ paths:
                     created_by: "admin"
                     created_at: "2025-01-15T09:30:00Z"
                 next_page_token: "eyJpZCI6MTB9"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
         '401':
           $ref: '../schemas/responses.yaml#/responses/Unauthorized'
         '429':
@@ -222,6 +226,8 @@ paths:
                 minimum: 0
                 maximum: 4102444800
                 format: int64
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
         '401':
           $ref: '../schemas/responses.yaml#/responses/Unauthorized'
         '403':
@@ -334,6 +340,8 @@ paths:
                 minimum: 0
                 maximum: 4102444800
                 format: int64
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
         '401':
           $ref: '../schemas/responses.yaml#/responses/Unauthorized'
         '403':
@@ -391,6 +399,8 @@ paths:
                     created_by: "admin"
                     created_at: "2025-01-15T09:30:00Z"
                 next_page_token: "eyJpZCI6MTB9"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
         '401':
           $ref: '../schemas/responses.yaml#/responses/Unauthorized'
         '429':

@@ -59,7 +59,9 @@ paths:
                     target_schema: "reporting"
                     edge_type: READ
                     principal_name: "etl-service"
-                    created_at: "2025-01-15T09:30:00Z"
+                     created_at: "2025-01-15T09:30:00Z"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
         '401':
           $ref: '../schemas/responses.yaml#/responses/Unauthorized'
         '404':
@@ -121,6 +123,8 @@ paths:
                     principal_name: "etl-service"
                     created_at: "2025-01-15T09:30:00Z"
                 next_page_token: "eyJpZCI6MTB9"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
         '401':
           $ref: '../schemas/responses.yaml#/responses/Unauthorized'
         '404':
@@ -182,6 +186,8 @@ paths:
                     principal_name: "etl-service"
                     created_at: "2025-01-15T09:30:00Z"
                 next_page_token: "eyJpZCI6MTB9"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
         '401':
           $ref: '../schemas/responses.yaml#/responses/Unauthorized'
         '404':
@@ -224,6 +230,8 @@ paths:
                 minimum: 0
                 maximum: 4102444800
                 format: int64
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
         '401':
           $ref: '../schemas/responses.yaml#/responses/Unauthorized'
         '403':

@@ -51,6 +51,8 @@ paths:
                     created_at: "2025-01-15T09:30:00Z"
                     updated_at: "2025-01-15T09:30:00Z"
                 next_page_token: "eyJpZCI6MTB9"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
         '401':
           $ref: '../schemas/responses.yaml#/responses/Unauthorized'
         '429':
@@ -178,6 +180,8 @@ paths:
                 owner: "admin"
                 created_at: "2025-01-15T09:30:00Z"
                 updated_at: "2025-01-15T09:30:00Z"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
         '401':
           $ref: '../schemas/responses.yaml#/responses/Unauthorized'
         '404':
@@ -285,6 +289,8 @@ paths:
                 minimum: 0
                 maximum: 4102444800
                 format: int64
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
         '401':
           $ref: '../schemas/responses.yaml#/responses/Unauthorized'
         '403':
@@ -347,6 +353,8 @@ paths:
                     fallback_local: false
                     created_at: "2025-01-15T09:30:00Z"
                 next_page_token: "eyJpZCI6MTB9"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
         '401':
           $ref: '../schemas/responses.yaml#/responses/Unauthorized'
         '404':
@@ -466,6 +474,8 @@ paths:
                 memory_used_mb: 2048
                 max_memory_gb: 64
                 endpoint_name: "prod-endpoint"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
         '401':
           $ref: '../schemas/responses.yaml#/responses/Unauthorized'
         '403':
@@ -542,6 +552,8 @@ paths:
                 minimum: 0
                 maximum: 4102444800
                 format: int64
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
         '401':
           $ref: '../schemas/responses.yaml#/responses/Unauthorized'
         '403':
