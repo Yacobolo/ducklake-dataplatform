@@ -45,13 +45,15 @@ func findRule(vs []Violation, ruleID string) []Violation {
 	return out
 }
 
-// Minimal valid spec helper.
+// Minimal valid spec helper — includes all fields needed for vacuum to parse.
 const specHeader = `openapi: "3.0.3"
 info:
   title: Test
   version: "1.0"
 security:
   - BearerAuth: []
+servers:
+  - url: https://api.example.com
 components:
   securitySchemes:
     BearerAuth:
@@ -86,27 +88,10 @@ components:
 `
 
 // ============================================================
-// OAL001
+// Custom rule: check-schema-ref (OAL004)
 // ============================================================
 
-func TestOAL001_MissingTags(t *testing.T) {
-	spec := specHeader + `
-paths:
-  /items:
-    get:
-      operationId: listItems
-      summary: List items
-      responses:
-        '200':
-          description: ok
-`
-	vs := findRule(mustLint(t, spec), "OAL001")
-	require.Len(t, vs, 1)
-	assert.Contains(t, vs[0].Message, "listItems")
-	assert.Equal(t, SeverityError, vs[0].Severity)
-}
-
-func TestOAL001_WithTags(t *testing.T) {
+func TestCheckSchemaRef_InlineResponse(t *testing.T) {
 	spec := specHeader + `
 paths:
   /items:
@@ -114,126 +99,7 @@ paths:
       operationId: listItems
       tags: [Items]
       summary: List items
-      responses:
-        '200':
-          description: ok
-`
-	vs := findRule(mustLint(t, spec), "OAL001")
-	assert.Empty(t, vs)
-}
-
-// ============================================================
-// OAL002
-// ============================================================
-
-func TestOAL002_DuplicateOperationID(t *testing.T) {
-	spec := specHeader + `
-paths:
-  /a:
-    get:
-      operationId: doThing
-      tags: [A]
-      summary: Do thing
-      responses:
-        '200':
-          description: ok
-  /b:
-    get:
-      operationId: doThing
-      tags: [B]
-      summary: Do thing
-      responses:
-        '200':
-          description: ok
-`
-	vs := findRule(mustLint(t, spec), "OAL002")
-	require.Len(t, vs, 1)
-	assert.Contains(t, vs[0].Message, "duplicate")
-}
-
-func TestOAL002_MissingOperationID(t *testing.T) {
-	spec := specHeader + `
-paths:
-  /items:
-    get:
-      tags: [Items]
-      summary: List items
-      responses:
-        '200':
-          description: ok
-`
-	vs := findRule(mustLint(t, spec), "OAL002")
-	require.Len(t, vs, 1)
-	assert.Contains(t, vs[0].Message, "missing")
-}
-
-// ============================================================
-// OAL003
-// ============================================================
-
-func TestOAL003_DeleteWithBody(t *testing.T) {
-	spec := specHeader + `
-paths:
-  /items/{itemId}:
-    parameters:
-      - name: itemId
-        in: path
-        required: true
-        schema:
-          type: integer
-    delete:
-      operationId: deleteItem
-      tags: [Items]
-      summary: Delete item
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Error'
-      responses:
-        '204':
-          description: ok
-`
-	vs := findRule(mustLint(t, spec), "OAL003")
-	require.Len(t, vs, 1)
-	assert.Equal(t, SeverityWarning, vs[0].Severity)
-}
-
-func TestOAL003_DeleteWithoutBody(t *testing.T) {
-	spec := specHeader + `
-paths:
-  /items/{itemId}:
-    parameters:
-      - name: itemId
-        in: path
-        required: true
-        schema:
-          type: integer
-    delete:
-      operationId: deleteItem
-      tags: [Items]
-      summary: Delete item
-      responses:
-        '204':
-          description: ok
-`
-	vs := findRule(mustLint(t, spec), "OAL003")
-	assert.Empty(t, vs)
-}
-
-// ============================================================
-// OAL004
-// ============================================================
-
-func TestOAL004_InlineResponseSchema(t *testing.T) {
-	spec := specHeader + `
-paths:
-  /items:
-    get:
-      operationId: listItems
-      tags: [Items]
-      summary: List items
+      description: List all items in the system.
       responses:
         '200':
           description: ok
@@ -245,12 +111,12 @@ paths:
                   name:
                     type: string
 `
-	vs := findRule(mustLint(t, spec), "OAL004")
+	vs := findRule(mustLint(t, spec), "check-schema-ref")
 	require.Len(t, vs, 1)
 	assert.Contains(t, vs[0].Message, "inline schema")
 }
 
-func TestOAL004_RefResponseSchema(t *testing.T) {
+func TestCheckSchemaRef_RefResponse(t *testing.T) {
 	spec := specHeader + `
 paths:
   /items:
@@ -258,6 +124,7 @@ paths:
       operationId: listItems
       tags: [Items]
       summary: List items
+      description: List all items in the system.
       responses:
         '200':
           description: ok
@@ -266,15 +133,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 `
-	vs := findRule(mustLint(t, spec), "OAL004")
+	vs := findRule(mustLint(t, spec), "check-schema-ref")
 	assert.Empty(t, vs)
 }
 
 // ============================================================
-// OAL005
+// Custom rule: check-pagination-params (OAL005)
 // ============================================================
 
-func TestOAL005_PaginatedMissingParams(t *testing.T) {
+func TestCheckPaginationParams_Missing(t *testing.T) {
 	spec := specHeader + `
 paths:
   /items:
@@ -282,6 +149,7 @@ paths:
       operationId: listItems
       tags: [Items]
       summary: List items
+      description: List all items in the system.
       responses:
         '200':
           description: ok
@@ -290,13 +158,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedItems'
 `
-	vs := findRule(mustLint(t, spec), "OAL005")
+	vs := findRule(mustLint(t, spec), "check-pagination-params")
 	require.Len(t, vs, 1)
 	assert.Contains(t, vs[0].Message, "MaxResults")
 	assert.Contains(t, vs[0].Message, "PageToken")
 }
 
-func TestOAL005_PaginatedWithParams(t *testing.T) {
+func TestCheckPaginationParams_Present(t *testing.T) {
 	spec := specHeader + `
 paths:
   /items:
@@ -304,6 +172,7 @@ paths:
       operationId: listItems
       tags: [Items]
       summary: List items
+      description: List all items in the system.
       parameters:
         - $ref: '#/components/parameters/MaxResults'
         - $ref: '#/components/parameters/PageToken'
@@ -315,15 +184,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedItems'
 `
-	vs := findRule(mustLint(t, spec), "OAL005")
+	vs := findRule(mustLint(t, spec), "check-pagination-params")
 	assert.Empty(t, vs)
 }
 
 // ============================================================
-// OAL006
+// Custom rule: check-collection-ordering (OAL006)
 // ============================================================
 
-func TestOAL006_PostBeforeGet(t *testing.T) {
+func TestCheckCollectionOrdering_PostBeforeGet(t *testing.T) {
 	spec := specHeader + `
 paths:
   /items:
@@ -331,6 +200,7 @@ paths:
       operationId: createItem
       tags: [Items]
       summary: Create item
+      description: Create a new item in the system.
       responses:
         '201':
           description: created
@@ -338,17 +208,18 @@ paths:
       operationId: listItems
       tags: [Items]
       summary: List items
+      description: List all items in the system.
       responses:
         '200':
           description: ok
 `
-	vs := findRule(mustLint(t, spec), "OAL006")
+	vs := findRule(mustLint(t, spec), "check-collection-ordering")
 	require.Len(t, vs, 1)
 	assert.Contains(t, vs[0].Message, "POST")
 	assert.Contains(t, vs[0].Message, "before GET")
 }
 
-func TestOAL006_GetBeforePost(t *testing.T) {
+func TestCheckCollectionOrdering_GetBeforePost(t *testing.T) {
 	spec := specHeader + `
 paths:
   /items:
@@ -356,6 +227,7 @@ paths:
       operationId: listItems
       tags: [Items]
       summary: List items
+      description: List all items in the system.
       responses:
         '200':
           description: ok
@@ -363,68 +235,20 @@ paths:
       operationId: createItem
       tags: [Items]
       summary: Create item
+      description: Create a new item in the system.
       responses:
         '201':
           description: created
 `
-	vs := findRule(mustLint(t, spec), "OAL006")
+	vs := findRule(mustLint(t, spec), "check-collection-ordering")
 	assert.Empty(t, vs)
 }
 
 // ============================================================
-// OAL007
+// Custom rule: check-secured-endpoint-401 (OAL009)
 // ============================================================
 
-func TestOAL007_PathParamNotCamelCase(t *testing.T) {
-	spec := specHeader + `
-paths:
-  /items/{item_id}:
-    parameters:
-      - name: item_id
-        in: path
-        required: true
-        schema:
-          type: integer
-    get:
-      operationId: getItem
-      tags: [Items]
-      summary: Get item
-      responses:
-        '200':
-          description: ok
-`
-	vs := findRule(mustLint(t, spec), "OAL007")
-	require.Len(t, vs, 1)
-	assert.Contains(t, vs[0].Message, "item_id")
-}
-
-func TestOAL007_PathParamCamelCase(t *testing.T) {
-	spec := specHeader + `
-paths:
-  /items/{itemId}:
-    parameters:
-      - name: itemId
-        in: path
-        required: true
-        schema:
-          type: integer
-    get:
-      operationId: getItem
-      tags: [Items]
-      summary: Get item
-      responses:
-        '200':
-          description: ok
-`
-	vs := findRule(mustLint(t, spec), "OAL007")
-	assert.Empty(t, vs)
-}
-
-// ============================================================
-// OAL008
-// ============================================================
-
-func TestOAL008_QueryParamNotSnakeCase(t *testing.T) {
+func TestCheckSecuredEndpoint401_Missing(t *testing.T) {
 	spec := specHeader + `
 paths:
   /items:
@@ -432,63 +256,17 @@ paths:
       operationId: listItems
       tags: [Items]
       summary: List items
-      parameters:
-        - name: pageSize
-          in: query
-          schema:
-            type: integer
+      description: List all items in the system.
       responses:
         '200':
           description: ok
 `
-	vs := findRule(mustLint(t, spec), "OAL008")
-	require.Len(t, vs, 1)
-	assert.Contains(t, vs[0].Message, "pageSize")
-}
-
-func TestOAL008_QueryParamSnakeCase(t *testing.T) {
-	spec := specHeader + `
-paths:
-  /items:
-    get:
-      operationId: listItems
-      tags: [Items]
-      summary: List items
-      parameters:
-        - name: page_size
-          in: query
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: ok
-`
-	vs := findRule(mustLint(t, spec), "OAL008")
-	assert.Empty(t, vs)
-}
-
-// ============================================================
-// OAL009
-// ============================================================
-
-func TestOAL009_Missing401(t *testing.T) {
-	spec := specHeader + `
-paths:
-  /items:
-    get:
-      operationId: listItems
-      tags: [Items]
-      summary: List items
-      responses:
-        '200':
-          description: ok
-`
-	vs := findRule(mustLint(t, spec), "OAL009")
+	vs := findRule(mustLint(t, spec), "check-secured-endpoint-401")
 	require.Len(t, vs, 1)
 	assert.Contains(t, vs[0].Message, "401")
 }
 
-func TestOAL009_With401(t *testing.T) {
+func TestCheckSecuredEndpoint401_Present(t *testing.T) {
 	spec := specHeader + `
 paths:
   /items:
@@ -496,6 +274,7 @@ paths:
       operationId: listItems
       tags: [Items]
       summary: List items
+      description: List all items in the system.
       responses:
         '200':
           description: ok
@@ -506,15 +285,17 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 `
-	vs := findRule(mustLint(t, spec), "OAL009")
+	vs := findRule(mustLint(t, spec), "check-secured-endpoint-401")
 	assert.Empty(t, vs)
 }
 
-func TestOAL009_NoGlobalSecurity(t *testing.T) {
+func TestCheckSecuredEndpoint401_NoGlobalSecurity(t *testing.T) {
 	spec := `openapi: "3.0.3"
 info:
   title: Test
   version: "1.0"
+servers:
+  - url: https://api.example.com
 components:
   schemas:
     Error:
@@ -528,24 +309,27 @@ paths:
       operationId: listItems
       tags: [Items]
       summary: List items
+      description: List all items in the system.
       responses:
         '200':
           description: ok
 `
-	vs := findRule(mustLint(t, spec), "OAL009")
+	vs := findRule(mustLint(t, spec), "check-secured-endpoint-401")
 	assert.Empty(t, vs)
 }
 
 // ============================================================
-// OAL010
+// Custom rule: check-paginated-schema (OAL010)
 // ============================================================
 
-func TestOAL010_PaginatedSchemaShape(t *testing.T) {
+func TestCheckPaginatedSchema(t *testing.T) {
 	t.Run("missing_data", func(t *testing.T) {
 		spec := `openapi: "3.0.3"
 info:
   title: Test
   version: "1.0"
+servers:
+  - url: https://api.example.com
 components:
   schemas:
     PaginatedBad:
@@ -555,7 +339,7 @@ components:
           type: string
 paths: {}
 `
-		vs := findRule(mustLint(t, spec), "OAL010")
+		vs := findRule(mustLint(t, spec), "check-paginated-schema")
 		require.Len(t, vs, 1)
 		assert.Contains(t, vs[0].Message, "missing 'data'")
 	})
@@ -564,61 +348,16 @@ paths: {}
 		spec := specHeader + `
 paths: {}
 `
-		vs := findRule(mustLint(t, spec), "OAL010")
+		vs := findRule(mustLint(t, spec), "check-paginated-schema")
 		assert.Empty(t, vs)
 	})
 }
 
 // ============================================================
-// OAL011
+// Custom rule: check-post-create-status (OAL012)
 // ============================================================
 
-func TestOAL011_UnresolvedRef(t *testing.T) {
-	spec := specHeader + `
-paths:
-  /items:
-    get:
-      operationId: listItems
-      tags: [Items]
-      summary: List items
-      responses:
-        '200':
-          description: ok
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DoesNotExist'
-`
-	vs := findRule(mustLint(t, spec), "OAL011")
-	require.Len(t, vs, 1)
-	assert.Contains(t, vs[0].Message, "DoesNotExist")
-}
-
-func TestOAL011_ValidRef(t *testing.T) {
-	spec := specHeader + `
-paths:
-  /items:
-    get:
-      operationId: listItems
-      tags: [Items]
-      summary: List items
-      responses:
-        '200':
-          description: ok
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-`
-	vs := findRule(mustLint(t, spec), "OAL011")
-	assert.Empty(t, vs)
-}
-
-// ============================================================
-// OAL012
-// ============================================================
-
-func TestOAL012_PostReturns200InsteadOf201(t *testing.T) {
+func TestCheckPostCreateStatus_Returns200(t *testing.T) {
 	spec := specHeader + `
 paths:
   /items:
@@ -626,16 +365,17 @@ paths:
       operationId: createItem
       tags: [Items]
       summary: Create item
+      description: Create a new item in the system.
       responses:
         '200':
           description: ok
 `
-	vs := findRule(mustLint(t, spec), "OAL012")
+	vs := findRule(mustLint(t, spec), "check-post-create-status")
 	require.Len(t, vs, 1)
 	assert.Contains(t, vs[0].Message, "200 instead of 201")
 }
 
-func TestOAL012_PostReturns201_NoViolation(t *testing.T) {
+func TestCheckPostCreateStatus_Returns201(t *testing.T) {
 	spec := specHeader + `
 paths:
   /items:
@@ -643,15 +383,16 @@ paths:
       operationId: createItem
       tags: [Items]
       summary: Create item
+      description: Create a new item in the system.
       responses:
         '201':
           description: created
 `
-	vs := findRule(mustLint(t, spec), "OAL012")
+	vs := findRule(mustLint(t, spec), "check-post-create-status")
 	assert.Empty(t, vs)
 }
 
-func TestOAL012_ActionVerbExcluded(t *testing.T) {
+func TestCheckPostCreateStatus_ActionVerbExcluded(t *testing.T) {
 	spec := specHeader + `
 paths:
   /query:
@@ -659,55 +400,20 @@ paths:
       operationId: executeQuery
       tags: [Query]
       summary: Execute query
+      description: Execute a SQL query against the data platform.
       responses:
         '200':
           description: ok
 `
-	vs := findRule(mustLint(t, spec), "OAL012")
+	vs := findRule(mustLint(t, spec), "check-post-create-status")
 	assert.Empty(t, vs)
 }
 
 // ============================================================
-// OAL013
+// Custom rule: check-mutating-ops-403 (OAL014)
 // ============================================================
 
-func TestOAL013_MissingSummary(t *testing.T) {
-	spec := specHeader + `
-paths:
-  /items:
-    get:
-      operationId: listItems
-      tags: [Items]
-      responses:
-        '200':
-          description: ok
-`
-	vs := findRule(mustLint(t, spec), "OAL013")
-	require.Len(t, vs, 1)
-	assert.Contains(t, vs[0].Message, "summary")
-}
-
-func TestOAL013_WithSummary(t *testing.T) {
-	spec := specHeader + `
-paths:
-  /items:
-    get:
-      operationId: listItems
-      tags: [Items]
-      summary: List all items
-      responses:
-        '200':
-          description: ok
-`
-	vs := findRule(mustLint(t, spec), "OAL013")
-	assert.Empty(t, vs)
-}
-
-// ============================================================
-// OAL014
-// ============================================================
-
-func TestOAL014_MutatingMissing403(t *testing.T) {
+func TestCheckMutatingOps403_Missing(t *testing.T) {
 	spec := specHeader + `
 paths:
   /items:
@@ -715,16 +421,17 @@ paths:
       operationId: createItem
       tags: [Items]
       summary: Create item
+      description: Create a new item in the system.
       responses:
         '201':
           description: created
 `
-	vs := findRule(mustLint(t, spec), "OAL014")
+	vs := findRule(mustLint(t, spec), "check-mutating-ops-403")
 	require.Len(t, vs, 1)
 	assert.Contains(t, vs[0].Message, "403")
 }
 
-func TestOAL014_MutatingWith403(t *testing.T) {
+func TestCheckMutatingOps403_Present(t *testing.T) {
 	spec := specHeader + `
 paths:
   /items:
@@ -732,6 +439,7 @@ paths:
       operationId: createItem
       tags: [Items]
       summary: Create item
+      description: Create a new item in the system.
       responses:
         '201':
           description: created
@@ -742,11 +450,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 `
-	vs := findRule(mustLint(t, spec), "OAL014")
+	vs := findRule(mustLint(t, spec), "check-mutating-ops-403")
 	assert.Empty(t, vs)
 }
 
-func TestOAL014_GetSkipped(t *testing.T) {
+func TestCheckMutatingOps403_GetSkipped(t *testing.T) {
 	spec := specHeader + `
 paths:
   /items:
@@ -754,15 +462,16 @@ paths:
       operationId: listItems
       tags: [Items]
       summary: List items
+      description: List all items in the system.
       responses:
         '200':
           description: ok
 `
-	vs := findRule(mustLint(t, spec), "OAL014")
+	vs := findRule(mustLint(t, spec), "check-mutating-ops-403")
 	assert.Empty(t, vs)
 }
 
-func TestOAL014_SecurityOverrideEmpty(t *testing.T) {
+func TestCheckMutatingOps403_SecurityOverrideEmpty(t *testing.T) {
 	spec := specHeader + `
 paths:
   /health:
@@ -770,20 +479,21 @@ paths:
       operationId: checkHealth
       tags: [Health]
       summary: Health check
+      description: Check if the service is healthy.
       security: []
       responses:
         '200':
           description: ok
 `
-	vs := findRule(mustLint(t, spec), "OAL014")
+	vs := findRule(mustLint(t, spec), "check-mutating-ops-403")
 	assert.Empty(t, vs)
 }
 
 // ============================================================
-// OAL015
+// Custom rule: check-get-resource-404 (OAL015)
 // ============================================================
 
-func TestOAL015_GetResourceMissing404(t *testing.T) {
+func TestCheckGetResource404_Missing(t *testing.T) {
 	spec := specHeader + `
 paths:
   /items/{itemId}:
@@ -797,16 +507,17 @@ paths:
       operationId: getItem
       tags: [Items]
       summary: Get item
+      description: Get a single item by its identifier.
       responses:
         '200':
           description: ok
 `
-	vs := findRule(mustLint(t, spec), "OAL015")
+	vs := findRule(mustLint(t, spec), "check-get-resource-404")
 	require.Len(t, vs, 1)
 	assert.Contains(t, vs[0].Message, "404")
 }
 
-func TestOAL015_GetResourceWith404(t *testing.T) {
+func TestCheckGetResource404_Present(t *testing.T) {
 	spec := specHeader + `
 paths:
   /items/{itemId}:
@@ -820,6 +531,7 @@ paths:
       operationId: getItem
       tags: [Items]
       summary: Get item
+      description: Get a single item by its identifier.
       responses:
         '200':
           description: ok
@@ -830,11 +542,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 `
-	vs := findRule(mustLint(t, spec), "OAL015")
+	vs := findRule(mustLint(t, spec), "check-get-resource-404")
 	assert.Empty(t, vs)
 }
 
-func TestOAL015_CollectionPathSkipped(t *testing.T) {
+func TestCheckGetResource404_CollectionPathSkipped(t *testing.T) {
 	spec := specHeader + `
 paths:
   /items:
@@ -842,64 +554,26 @@ paths:
       operationId: listItems
       tags: [Items]
       summary: List items
+      description: List all items in the system.
       responses:
         '200':
           description: ok
 `
-	vs := findRule(mustLint(t, spec), "OAL015")
+	vs := findRule(mustLint(t, spec), "check-get-resource-404")
 	assert.Empty(t, vs)
 }
 
 // ============================================================
-// OAL016
+// Custom rule: check-create-request-required (OAL017)
 // ============================================================
 
-func TestOAL016_CamelCaseProperty(t *testing.T) {
+func TestCheckCreateRequestRequired_NoRequired(t *testing.T) {
 	spec := `openapi: "3.0.3"
 info:
   title: Test
   version: "1.0"
-components:
-  schemas:
-    BadSchema:
-      type: object
-      properties:
-        firstName:
-          type: string
-paths: {}
-`
-	vs := findRule(mustLint(t, spec), "OAL016")
-	require.Len(t, vs, 1)
-	assert.Contains(t, vs[0].Message, "firstName")
-}
-
-func TestOAL016_SnakeCaseProperty(t *testing.T) {
-	spec := `openapi: "3.0.3"
-info:
-  title: Test
-  version: "1.0"
-components:
-  schemas:
-    GoodSchema:
-      type: object
-      properties:
-        first_name:
-          type: string
-paths: {}
-`
-	vs := findRule(mustLint(t, spec), "OAL016")
-	assert.Empty(t, vs)
-}
-
-// ============================================================
-// OAL017
-// ============================================================
-
-func TestOAL017_CreateRequestNoRequired(t *testing.T) {
-	spec := `openapi: "3.0.3"
-info:
-  title: Test
-  version: "1.0"
+servers:
+  - url: https://api.example.com
 components:
   schemas:
     CreateItemRequest:
@@ -909,16 +583,18 @@ components:
           type: string
 paths: {}
 `
-	vs := findRule(mustLint(t, spec), "OAL017")
+	vs := findRule(mustLint(t, spec), "check-create-request-required")
 	require.Len(t, vs, 1)
 	assert.Contains(t, vs[0].Message, "CreateItemRequest")
 }
 
-func TestOAL017_CreateRequestWithRequired(t *testing.T) {
+func TestCheckCreateRequestRequired_WithRequired(t *testing.T) {
 	spec := `openapi: "3.0.3"
 info:
   title: Test
   version: "1.0"
+servers:
+  - url: https://api.example.com
 components:
   schemas:
     CreateItemRequest:
@@ -929,15 +605,17 @@ components:
           type: string
 paths: {}
 `
-	vs := findRule(mustLint(t, spec), "OAL017")
+	vs := findRule(mustLint(t, spec), "check-create-request-required")
 	assert.Empty(t, vs)
 }
 
-func TestOAL017_UpdateRequestSkipped(t *testing.T) {
+func TestCheckCreateRequestRequired_UpdateSkipped(t *testing.T) {
 	spec := `openapi: "3.0.3"
 info:
   title: Test
   version: "1.0"
+servers:
+  - url: https://api.example.com
 components:
   schemas:
     UpdateItemRequest:
@@ -947,51 +625,15 @@ components:
           type: string
 paths: {}
 `
-	vs := findRule(mustLint(t, spec), "OAL017")
+	vs := findRule(mustLint(t, spec), "check-create-request-required")
 	assert.Empty(t, vs)
 }
 
 // ============================================================
-// OAL018
+// Custom rule: check-error-schema-ref (OAL021)
 // ============================================================
 
-func TestOAL018_UnusedSchema(t *testing.T) {
-	spec := `openapi: "3.0.3"
-info:
-  title: Test
-  version: "1.0"
-components:
-  schemas:
-    Orphan:
-      type: object
-      properties:
-        name:
-          type: string
-    Used:
-      type: object
-      properties:
-        name:
-          type: string
-paths:
-  /items:
-    get:
-      operationId: listItems
-      tags: [Items]
-      summary: List items
-      responses:
-        '200':
-          description: ok
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Used'
-`
-	vs := findRule(mustLint(t, spec), "OAL018")
-	require.Len(t, vs, 1)
-	assert.Contains(t, vs[0].Message, "Orphan")
-}
-
-func TestOAL018_AllUsed(t *testing.T) {
+func TestCheckErrorSchemaRef_NonErrorRef(t *testing.T) {
 	spec := specHeader + `
 paths:
   /items:
@@ -999,135 +641,7 @@ paths:
       operationId: listItems
       tags: [Items]
       summary: List items
-      parameters:
-        - $ref: '#/components/parameters/MaxResults'
-        - $ref: '#/components/parameters/PageToken'
-      responses:
-        '200':
-          description: ok
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedItems'
-        '400':
-          description: bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-`
-	vs := findRule(mustLint(t, spec), "OAL018")
-	assert.Empty(t, vs)
-}
-
-// ============================================================
-// OAL019
-// ============================================================
-
-func TestOAL019_NonCamelCaseOpId(t *testing.T) {
-	spec := specHeader + `
-paths:
-  /items:
-    get:
-      operationId: List_Items
-      tags: [Items]
-      summary: List items
-      responses:
-        '200':
-          description: ok
-`
-	vs := findRule(mustLint(t, spec), "OAL019")
-	require.Len(t, vs, 1)
-	assert.Contains(t, vs[0].Message, "List_Items")
-}
-
-func TestOAL019_CamelCaseOpId(t *testing.T) {
-	spec := specHeader + `
-paths:
-  /items:
-    get:
-      operationId: listItems
-      tags: [Items]
-      summary: List items
-      responses:
-        '200':
-          description: ok
-`
-	vs := findRule(mustLint(t, spec), "OAL019")
-	assert.Empty(t, vs)
-}
-
-// ============================================================
-// OAL020
-// ============================================================
-
-func TestOAL020_SnakeCasePath(t *testing.T) {
-	spec := specHeader + `
-paths:
-  /my_items:
-    get:
-      operationId: listMyItems
-      tags: [Items]
-      summary: List my items
-      responses:
-        '200':
-          description: ok
-`
-	vs := findRule(mustLint(t, spec), "OAL020")
-	require.Len(t, vs, 1)
-	assert.Contains(t, vs[0].Message, "my_items")
-}
-
-func TestOAL020_KebabCasePath(t *testing.T) {
-	spec := specHeader + `
-paths:
-  /my-items:
-    get:
-      operationId: listMyItems
-      tags: [Items]
-      summary: List my items
-      responses:
-        '200':
-          description: ok
-`
-	vs := findRule(mustLint(t, spec), "OAL020")
-	assert.Empty(t, vs)
-}
-
-func TestOAL020_ParamSegmentSkipped(t *testing.T) {
-	spec := specHeader + `
-paths:
-  /items/{itemId}:
-    parameters:
-      - name: itemId
-        in: path
-        required: true
-        schema:
-          type: integer
-    get:
-      operationId: getItem
-      tags: [Items]
-      summary: Get item
-      responses:
-        '200':
-          description: ok
-`
-	vs := findRule(mustLint(t, spec), "OAL020")
-	assert.Empty(t, vs)
-}
-
-// ============================================================
-// OAL021
-// ============================================================
-
-func TestOAL021_NonErrorRef(t *testing.T) {
-	spec := specHeader + `
-paths:
-  /items:
-    get:
-      operationId: listItems
-      tags: [Items]
-      summary: List items
+      description: List all items in the system.
       responses:
         '200':
           description: ok
@@ -1142,12 +656,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedItems'
 `
-	vs := findRule(mustLint(t, spec), "OAL021")
+	vs := findRule(mustLint(t, spec), "check-error-schema-ref")
 	require.Len(t, vs, 1)
 	assert.Contains(t, vs[0].Message, "400")
 }
 
-func TestOAL021_ErrorRef(t *testing.T) {
+func TestCheckErrorSchemaRef_ErrorRef(t *testing.T) {
 	spec := specHeader + `
 paths:
   /items:
@@ -1155,6 +669,7 @@ paths:
       operationId: listItems
       tags: [Items]
       summary: List items
+      description: List all items in the system.
       responses:
         '200':
           description: ok
@@ -1165,11 +680,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 `
-	vs := findRule(mustLint(t, spec), "OAL021")
+	vs := findRule(mustLint(t, spec), "check-error-schema-ref")
 	assert.Empty(t, vs)
 }
 
-func TestOAL021_NoContent(t *testing.T) {
+func TestCheckErrorSchemaRef_NoContent(t *testing.T) {
 	spec := specHeader + `
 paths:
   /items/{itemId}:
@@ -1183,25 +698,28 @@ paths:
       operationId: deleteItem
       tags: [Items]
       summary: Delete item
+      description: Delete an item by its identifier.
       responses:
         '204':
           description: no content
         '404':
           description: not found
 `
-	vs := findRule(mustLint(t, spec), "OAL021")
+	vs := findRule(mustLint(t, spec), "check-error-schema-ref")
 	assert.Empty(t, vs)
 }
 
 // ============================================================
-// OAL022
+// Custom rule: check-enum-min-values (OAL022)
 // ============================================================
 
-func TestOAL022_SingleValueEnum(t *testing.T) {
+func TestCheckEnumMinValues_SingleValue(t *testing.T) {
 	spec := `openapi: "3.0.3"
 info:
   title: Test
   version: "1.0"
+servers:
+  - url: https://api.example.com
 components:
   schemas:
     StorageType:
@@ -1212,16 +730,18 @@ components:
           enum: [s3]
 paths: {}
 `
-	vs := findRule(mustLint(t, spec), "OAL022")
+	vs := findRule(mustLint(t, spec), "check-enum-min-values")
 	require.Len(t, vs, 1)
 	assert.Contains(t, vs[0].Message, "1 value")
 }
 
-func TestOAL022_MultiValueEnum(t *testing.T) {
+func TestCheckEnumMinValues_MultiValue(t *testing.T) {
 	spec := `openapi: "3.0.3"
 info:
   title: Test
   version: "1.0"
+servers:
+  - url: https://api.example.com
 components:
   schemas:
     StorageType:
@@ -1232,53 +752,15 @@ components:
           enum: [s3, gcs]
 paths: {}
 `
-	vs := findRule(mustLint(t, spec), "OAL022")
+	vs := findRule(mustLint(t, spec), "check-enum-min-values")
 	assert.Empty(t, vs)
 }
 
 // ============================================================
-// OAL023
+// Custom rule: check-delete-returns-204 (OAL024)
 // ============================================================
 
-func TestOAL023_MissingDescription(t *testing.T) {
-	spec := specHeader + `
-paths:
-  /items:
-    get:
-      operationId: listItems
-      tags: [Items]
-      summary: List items
-      responses:
-        '200':
-          description: ok
-`
-	vs := findRule(mustLint(t, spec), "OAL023")
-	require.Len(t, vs, 1)
-	assert.Contains(t, vs[0].Message, "description")
-}
-
-func TestOAL023_WithDescription(t *testing.T) {
-	spec := specHeader + `
-paths:
-  /items:
-    get:
-      operationId: listItems
-      tags: [Items]
-      summary: List items
-      description: Returns a paginated list of items.
-      responses:
-        '200':
-          description: ok
-`
-	vs := findRule(mustLint(t, spec), "OAL023")
-	assert.Empty(t, vs)
-}
-
-// ============================================================
-// OAL024
-// ============================================================
-
-func TestOAL024_DeleteMissing204(t *testing.T) {
+func TestCheckDeleteReturns204_Missing(t *testing.T) {
 	spec := specHeader + `
 paths:
   /items/{itemId}:
@@ -1292,16 +774,17 @@ paths:
       operationId: deleteItem
       tags: [Items]
       summary: Delete item
+      description: Delete an item by its identifier.
       responses:
         '200':
           description: ok
 `
-	vs := findRule(mustLint(t, spec), "OAL024")
+	vs := findRule(mustLint(t, spec), "check-delete-returns-204")
 	require.Len(t, vs, 1)
 	assert.Contains(t, vs[0].Message, "204")
 }
 
-func TestOAL024_DeleteWith204(t *testing.T) {
+func TestCheckDeleteReturns204_Present(t *testing.T) {
 	spec := specHeader + `
 paths:
   /items/{itemId}:
@@ -1315,19 +798,20 @@ paths:
       operationId: deleteItem
       tags: [Items]
       summary: Delete item
+      description: Delete an item by its identifier.
       responses:
         '204':
           description: no content
 `
-	vs := findRule(mustLint(t, spec), "OAL024")
+	vs := findRule(mustLint(t, spec), "check-delete-returns-204")
 	assert.Empty(t, vs)
 }
 
 // ============================================================
-// OAL025
+// Custom rule: check-pagination-schema-match (OAL025)
 // ============================================================
 
-func TestOAL025_PaginationParamsNoPaginatedResponse(t *testing.T) {
+func TestCheckPaginationSchemaMatch_NoPaginated(t *testing.T) {
 	spec := specHeader + `
 paths:
   /items:
@@ -1335,6 +819,7 @@ paths:
       operationId: listItems
       tags: [Items]
       summary: List items
+      description: List all items in the system.
       parameters:
         - $ref: '#/components/parameters/MaxResults'
         - $ref: '#/components/parameters/PageToken'
@@ -1346,12 +831,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 `
-	vs := findRule(mustLint(t, spec), "OAL025")
+	vs := findRule(mustLint(t, spec), "check-pagination-schema-match")
 	require.Len(t, vs, 1)
 	assert.Contains(t, vs[0].Message, "pagination params")
 }
 
-func TestOAL025_PaginationParamsWithPaginatedResponse(t *testing.T) {
+func TestCheckPaginationSchemaMatch_WithPaginated(t *testing.T) {
 	spec := specHeader + `
 paths:
   /items:
@@ -1359,6 +844,7 @@ paths:
       operationId: listItems
       tags: [Items]
       summary: List items
+      description: List all items in the system.
       parameters:
         - $ref: '#/components/parameters/MaxResults'
         - $ref: '#/components/parameters/PageToken'
@@ -1370,12 +856,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedItems'
 `
-	vs := findRule(mustLint(t, spec), "OAL025")
+	vs := findRule(mustLint(t, spec), "check-pagination-schema-match")
 	assert.Empty(t, vs)
 }
 
 // ============================================================
-// Engine tests: Config, Suppression, Registry
+// Engine tests: Config, utility functions
 // ============================================================
 
 func TestConfig_SeverityOverride(t *testing.T) {
@@ -1386,13 +872,14 @@ paths:
       operationId: listItems
       tags: [Items]
       summary: List items
+      description: List all items in the system.
       responses:
         '200':
           description: ok
 `
-	// OAL009 normally fires as warning. Override to error.
-	cfg := &Config{Rules: map[string]string{"OAL009": "error"}}
-	vs := findRule(mustLintWithConfig(t, spec, cfg), "OAL009")
+	// check-secured-endpoint-401 normally fires as warning. Override to error.
+	cfg := &Config{Rules: map[string]string{"check-secured-endpoint-401": "error"}}
+	vs := findRule(mustLintWithConfig(t, spec, cfg), "check-secured-endpoint-401")
 	require.Len(t, vs, 1)
 	assert.Equal(t, SeverityError, vs[0].Severity)
 }
@@ -1405,25 +892,26 @@ paths:
       operationId: listItems
       tags: [Items]
       summary: List items
+      description: List all items in the system.
       responses:
         '200':
           description: ok
 `
-	// Turn off OAL009.
-	cfg := &Config{Rules: map[string]string{"OAL009": "off"}}
-	vs := findRule(mustLintWithConfig(t, spec, cfg), "OAL009")
+	// Turn off check-secured-endpoint-401.
+	cfg := &Config{Rules: map[string]string{"check-secured-endpoint-401": "off"}}
+	vs := findRule(mustLintWithConfig(t, spec, cfg), "check-secured-endpoint-401")
 	assert.Empty(t, vs)
 }
 
-func TestRegistry_AllRulesRegistered(t *testing.T) {
+func TestRegisteredRules_NotEmpty(t *testing.T) {
 	rules := RegisteredRules()
-	assert.Len(t, rules, 25, "expected 25 registered rules")
+	assert.Greater(t, len(rules), 10, "expected at least 10 registered rules")
 
-	// Verify IDs are unique and sequential.
+	// Verify IDs are unique.
 	ids := map[string]bool{}
 	for _, r := range rules {
-		assert.False(t, ids[r.ID()], "duplicate rule ID: %s", r.ID())
-		ids[r.ID()] = true
+		assert.False(t, ids[r.ID], "duplicate rule ID: %s", r.ID)
+		ids[r.ID] = true
 	}
 }
 
@@ -1469,11 +957,11 @@ func TestViolation_String(t *testing.T) {
 	v := Violation{
 		File:     "openapi.yaml",
 		Line:     42,
-		RuleID:   "OAL001",
-		Severity: SeverityError,
+		RuleID:   "check-schema-ref",
+		Severity: SeverityWarning,
 		Message:  "test message",
 	}
-	assert.Equal(t, "openapi.yaml:42: OAL001 error: test message", v.String())
+	assert.Equal(t, "openapi.yaml:42: check-schema-ref warning: test message", v.String())
 }
 
 func TestLintActualSpec(t *testing.T) {

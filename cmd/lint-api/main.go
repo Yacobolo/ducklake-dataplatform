@@ -127,7 +127,7 @@ func printRules() {
 	_, _ = fmt.Fprintf(w, "ID\tSEVERITY\tDESCRIPTION\n")
 	_, _ = fmt.Fprintf(w, "--\t--------\t-----------\n")
 	for _, r := range rules {
-		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\n", r.ID(), r.DefaultSeverity(), r.Description())
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\n", r.ID, r.Severity, r.Description)
 	}
 	_ = w.Flush()
 }

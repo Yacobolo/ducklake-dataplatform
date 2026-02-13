@@ -1,0 +1,209 @@
+# Vacuum ruleset for duck-demo OpenAPI spec.
+#
+# Start from "off" so only the rules listed below are active.
+# Custom Go functions (Bucket 3) are registered programmatically;
+# their rule entries appear under "# === Custom rules ===".
+#
+# For built-in rules, use the shorthand string format to set severity.
+# For custom rules, use the full object format with given/then.
+
+extends:
+  - - "vacuum:oas"
+    - "off"
+
+rules:
+
+  # ================================================================
+  # Bucket 1 — Direct replacements for old hand-written rules
+  # ================================================================
+
+  operation-tags: error               # OAL001
+  operation-operationId: error        # OAL002
+  operation-operationId-unique: error # OAL002
+  no-request-body: warn               # OAL003
+  resolving-references: error         # OAL011
+  oas3-unused-component: info         # OAL018
+  paths-kebab-case: error             # OAL020
+  operation-description: info         # OAL023
+
+  # ================================================================
+  # Bucket 2 — Expressible via vacuum core functions
+  # ================================================================
+
+  # OAL013 — operations must have a summary
+  operation-summary:
+    description: "Operations must have a summary"
+    given: "$.paths[*][get,post,put,patch,delete]"
+    severity: warn
+    then:
+      field: summary
+      function: truthy
+
+  # OAL019 — operationId must be lowerCamelCase
+  operation-id-camel-case:
+    description: "operationId should be lowerCamelCase"
+    given: "$.paths[*][get,post,put,patch,delete]"
+    severity: info
+    then:
+      field: operationId
+      function: casing
+      functionOptions:
+        type: camel
+
+  # ================================================================
+  # New vacuum built-in rules to adopt
+  # ================================================================
+
+  no-ambiguous-paths: error
+  path-not-include-query: error
+  no-http-verbs-in-path: warn
+  path-keys-no-trailing-slash: warn
+  operation-success-response: warn
+  duplicate-paths: error
+  typed-enum: warn
+  duplicated-entry-in-enum: error
+  no-unnecessary-combinator: warn
+  oas3-no-$ref-siblings: warn
+  no-eval-in-markdown: error
+  no-script-tags-in-markdown: error
+  oas3-api-servers: warn
+  description-duplication: warn
+
+  # ================================================================
+  # Custom rules — backed by Go functions registered at runtime
+  # ================================================================
+
+  # OAL004 — response + request schemas must use $ref
+  check-schema-ref:
+    description: "Response and request body schemas must use $ref (no inline anonymous objects)"
+    given: "$"
+    severity: warn
+    resolved: false
+    then:
+      function: checkSchemaRef
+
+  # OAL005 — paginated GET endpoints must include MaxResults + PageToken
+  check-pagination-params:
+    description: "Paginated GET endpoints must include MaxResults + PageToken params"
+    given: "$"
+    severity: error
+    resolved: false
+    then:
+      function: checkPaginationParams
+
+  # OAL006 — GET before POST ordering on collection paths
+  check-collection-ordering:
+    description: "On collection paths, GET should be declared before POST"
+    given: "$"
+    severity: info
+    resolved: false
+    then:
+      function: checkCollectionOrdering
+
+  # OAL009 — secured endpoints should include 401
+  check-secured-endpoint-401:
+    description: "Secured endpoints should include 401 response"
+    given: "$"
+    severity: warn
+    resolved: false
+    then:
+      function: checkSecuredEndpoint401
+
+  # OAL010 — Paginated* schema structure
+  check-paginated-schema:
+    description: "Paginated schemas must have data (array) + next_page_token (string)"
+    given: "$"
+    severity: error
+    resolved: false
+    then:
+      function: checkPaginatedSchema
+
+  # OAL012 — POST create should return 201
+  check-post-create-status:
+    description: "POST-create endpoints should return 201 (not 200)"
+    given: "$"
+    severity: warn
+    resolved: false
+    then:
+      function: checkPostCreateStatus
+
+  # OAL014 — mutating ops should include 403
+  check-mutating-ops-403:
+    description: "Mutating operations should include 403 response"
+    given: "$"
+    severity: warn
+    resolved: false
+    then:
+      function: checkMutatingOps403
+
+  # OAL015 — GET resource paths should include 404
+  check-get-resource-404:
+    description: "GET operations on resource paths should include 404 response"
+    given: "$"
+    severity: warn
+    resolved: false
+    then:
+      function: checkGetResource404
+
+  # OAL017 — Create*Request schemas should have required
+  check-create-request-required:
+    description: "Create*Request schemas should have a required array"
+    given: "$"
+    severity: info
+    resolved: false
+    then:
+      function: checkCreateRequestRequired
+
+  # OAL021 — error responses should use Error schema
+  check-error-schema-ref:
+    description: "Error responses should reference the standard Error schema"
+    given: "$"
+    severity: warn
+    resolved: false
+    then:
+      function: checkErrorSchemaRef
+
+  # OAL022 — enums should have >= 2 values
+  check-enum-min-values:
+    description: "Enums should have at least 2 values"
+    given: "$"
+    severity: info
+    resolved: false
+    then:
+      function: checkEnumMinValues
+
+  # OAL024 — DELETE should include 204
+  check-delete-returns-204:
+    description: "DELETE operations should include 204 response"
+    given: "$"
+    severity: warn
+    resolved: false
+    then:
+      function: checkDeleteReturns204
+
+  # OAL025 — pagination params should match Paginated* response
+  check-pagination-schema-match:
+    description: "GET with pagination params should return a Paginated* schema"
+    given: "$"
+    severity: warn
+    resolved: false
+    then:
+      function: checkPaginationSchemaMatch
+
+  # NEW — oneOf/anyOf should have discriminator
+  check-discriminator-required:
+    description: "Every oneOf/anyOf must have a discriminator object for clean codegen"
+    given: "$"
+    severity: warn
+    resolved: false
+    then:
+      function: checkDiscriminatorRequired
+
+  # NEW — system fields should be readOnly
+  check-read-only-system-fields:
+    description: "System-generated fields (id, created_at, updated_at) should be readOnly"
+    given: "$"
+    severity: info
+    resolved: false
+    then:
+      function: checkReadOnlySystemFields
