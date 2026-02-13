@@ -187,7 +187,7 @@ func run() error {
 
 	// Authenticated API routes under /v1 prefix
 	r.Route("/v1", func(r chi.Router) {
-		r.Use(middleware.AuthMiddleware([]byte(cfg.JWTSecret), application.APIKeyRepo))
+		r.Use(middleware.AuthMiddleware([]byte(cfg.JWTSecret), application.APIKeyRepo, application.PrincipalRepo))
 		api.HandlerFromMux(strictHandler, r)
 	})
 

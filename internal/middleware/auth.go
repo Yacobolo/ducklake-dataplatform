@@ -238,14 +238,15 @@ func PrincipalFromContext(ctx context.Context) (string, bool) {
 
 // AuthMiddleware is a backward-compatible wrapper that creates an Authenticator
 // with a shared-secret JWT validator. Used when OIDC is not configured.
-func AuthMiddleware(jwtSecret []byte, apiKeys APIKeyLookup) func(http.Handler) http.Handler {
+func AuthMiddleware(jwtSecret []byte, apiKeys APIKeyLookup, principals PrincipalLookup) func(http.Handler) http.Handler {
 	var validator JWTValidator
 	if len(jwtSecret) > 0 {
 		validator = NewSharedSecretValidator(string(jwtSecret))
 	}
 	auth := &Authenticator{
-		jwtValidator: validator,
-		apiKeyLookup: apiKeys,
+		jwtValidator:  validator,
+		apiKeyLookup:  apiKeys,
+		principalRepo: principals,
 		cfg: config.AuthConfig{
 			APIKeyEnabled: true,
 			APIKeyHeader:  "X-API-Key",
