@@ -19,8 +19,16 @@ func NewTagService(repo domain.TagRepository, audit domain.AuditRepository) *Tag
 }
 
 // CreateTag creates a new tag definition.
-func (s *TagService) CreateTag(ctx context.Context, principal string, tag *domain.Tag) (*domain.Tag, error) {
-	tag.CreatedBy = principal
+func (s *TagService) CreateTag(ctx context.Context, principal string, req domain.CreateTagRequest) (*domain.Tag, error) {
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+
+	tag := &domain.Tag{
+		Key:       req.Key,
+		Value:     req.Value,
+		CreatedBy: principal,
+	}
 
 	// Validate classification tag values
 	if err := validateClassificationTag(tag); err != nil {
@@ -32,7 +40,7 @@ func (s *TagService) CreateTag(ctx context.Context, principal string, tag *domai
 		return nil, err
 	}
 
-	s.logAudit(ctx, principal, "CREATE_TAG", fmt.Sprintf("Created tag %q", tag.Key))
+	s.logAudit(ctx, principal, "CREATE_TAG", fmt.Sprintf("Created tag %q", req.Key))
 	return result, nil
 }
 
@@ -58,15 +66,25 @@ func (s *TagService) DeleteTag(ctx context.Context, principal string, id string)
 }
 
 // AssignTag assigns a tag to a securable object.
-func (s *TagService) AssignTag(ctx context.Context, principal string, assignment *domain.TagAssignment) (*domain.TagAssignment, error) {
-	assignment.AssignedBy = principal
+func (s *TagService) AssignTag(ctx context.Context, principal string, req domain.AssignTagRequest) (*domain.TagAssignment, error) {
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+
+	assignment := &domain.TagAssignment{
+		TagID:         req.TagID,
+		SecurableType: req.SecurableType,
+		SecurableID:   req.SecurableID,
+		ColumnName:    req.ColumnName,
+		AssignedBy:    principal,
+	}
 
 	result, err := s.repo.AssignTag(ctx, assignment)
 	if err != nil {
 		return nil, err
 	}
 
-	s.logAudit(ctx, principal, "ASSIGN_TAG", fmt.Sprintf("Assigned tag %s to %s %s", assignment.TagID, assignment.SecurableType, assignment.SecurableID))
+	s.logAudit(ctx, principal, "ASSIGN_TAG", fmt.Sprintf("Assigned tag %s to %s %s", req.TagID, req.SecurableType, req.SecurableID))
 	return result, nil
 }
 

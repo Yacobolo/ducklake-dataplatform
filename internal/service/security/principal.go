@@ -21,18 +21,17 @@ func NewPrincipalService(repo domain.PrincipalRepository, audit domain.AuditRepo
 }
 
 // Create validates and persists a new principal. Requires admin privileges.
-func (s *PrincipalService) Create(ctx context.Context, p *domain.Principal) (*domain.Principal, error) {
+func (s *PrincipalService) Create(ctx context.Context, req domain.CreatePrincipalRequest) (*domain.Principal, error) {
 	if err := requireAdmin(ctx); err != nil {
 		return nil, err
 	}
-	if p.Name == "" {
-		return nil, domain.ErrValidation("principal name is required")
+	if err := req.Validate(); err != nil {
+		return nil, err
 	}
-	if p.Type == "" {
-		p.Type = "user"
-	}
-	if p.Type != "user" && p.Type != "service_principal" {
-		return nil, domain.ErrValidation("type must be 'user' or 'service_principal'")
+	p := &domain.Principal{
+		Name:    req.Name,
+		Type:    req.Type,
+		IsAdmin: req.IsAdmin,
 	}
 	result, err := s.repo.Create(ctx, p)
 	if err != nil {
@@ -94,9 +93,13 @@ func (s *PrincipalService) SetAdmin(ctx context.Context, id string, isAdmin bool
 
 // ResolveOrProvision resolves an existing principal by external identity,
 // or creates a new one via JIT provisioning.
-func (s *PrincipalService) ResolveOrProvision(ctx context.Context, issuer, externalID, displayName string, isBootstrap bool) (*domain.Principal, error) {
+func (s *PrincipalService) ResolveOrProvision(ctx context.Context, req domain.ResolveOrProvisionRequest) (*domain.Principal, error) {
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+
 	// Try to find existing principal by external ID.
-	p, err := s.repo.GetByExternalID(ctx, issuer, externalID)
+	p, err := s.repo.GetByExternalID(ctx, req.Issuer, req.ExternalID)
 	if err == nil {
 		return p, nil
 	}
@@ -106,17 +109,17 @@ func (s *PrincipalService) ResolveOrProvision(ctx context.Context, issuer, exter
 	}
 
 	// JIT provisioning: create a new principal.
-	name := sanitizeName(displayName)
+	name := sanitizeName(req.DisplayName)
 	if name == "" {
-		name = sanitizeName(externalID)
+		name = sanitizeName(req.ExternalID)
 	}
 
 	newPrincipal := &domain.Principal{
 		Name:           name,
 		Type:           "user",
-		IsAdmin:        isBootstrap,
-		ExternalID:     &externalID,
-		ExternalIssuer: &issuer,
+		IsAdmin:        req.IsBootstrap,
+		ExternalID:     &req.ExternalID,
+		ExternalIssuer: &req.Issuer,
 	}
 
 	result, err := s.repo.Create(ctx, newPrincipal)
@@ -124,7 +127,7 @@ func (s *PrincipalService) ResolveOrProvision(ctx context.Context, issuer, exter
 		// Handle race condition: another request provisioned between our check and create.
 		var conflict *domain.ConflictError
 		if errors.As(err, &conflict) {
-			return s.repo.GetByExternalID(ctx, issuer, externalID)
+			return s.repo.GetByExternalID(ctx, req.Issuer, req.ExternalID)
 		}
 		return nil, fmt.Errorf("provision principal: %w", err)
 	}

@@ -77,17 +77,17 @@ func (r *CreateGroupRequest) Validate() error {
 
 // AddGroupMemberRequest holds parameters for adding a member to a group.
 type AddGroupMemberRequest struct {
-	GroupID    int64
+	GroupID    string
 	MemberType string // "user" or "group"
-	MemberID   int64
+	MemberID   string
 }
 
 // Validate checks that the request is well-formed.
 func (r *AddGroupMemberRequest) Validate() error {
-	if r.GroupID <= 0 {
+	if r.GroupID == "" {
 		return ErrValidation("group_id is required")
 	}
-	if r.MemberID <= 0 {
+	if r.MemberID == "" {
 		return ErrValidation("member_id is required")
 	}
 	if r.MemberType != "user" && r.MemberType != "group" {
@@ -98,17 +98,17 @@ func (r *AddGroupMemberRequest) Validate() error {
 
 // RemoveGroupMemberRequest holds parameters for removing a member from a group.
 type RemoveGroupMemberRequest struct {
-	GroupID    int64
+	GroupID    string
 	MemberType string // "user" or "group"
-	MemberID   int64
+	MemberID   string
 }
 
 // Validate checks that the request is well-formed.
 func (r *RemoveGroupMemberRequest) Validate() error {
-	if r.GroupID <= 0 {
+	if r.GroupID == "" {
 		return ErrValidation("group_id is required")
 	}
-	if r.MemberID <= 0 {
+	if r.MemberID == "" {
 		return ErrValidation("member_id is required")
 	}
 	if r.MemberType != "user" && r.MemberType != "group" {

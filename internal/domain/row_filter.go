@@ -13,14 +13,14 @@ type RowFilter struct {
 
 // CreateRowFilterRequest holds parameters for creating a row filter.
 type CreateRowFilterRequest struct {
-	TableID     int64
+	TableID     string
 	FilterSQL   string
 	Description string
 }
 
 // Validate checks that the request is well-formed.
 func (r *CreateRowFilterRequest) Validate() error {
-	if r.TableID <= 0 {
+	if r.TableID == "" {
 		return ErrValidation("table_id is required")
 	}
 	if r.FilterSQL == "" {
@@ -31,17 +31,17 @@ func (r *CreateRowFilterRequest) Validate() error {
 
 // BindRowFilterRequest holds parameters for binding a row filter to a principal.
 type BindRowFilterRequest struct {
-	RowFilterID   int64
-	PrincipalID   int64
+	RowFilterID   string
+	PrincipalID   string
 	PrincipalType string // "user" or "group"
 }
 
 // Validate checks that the request is well-formed.
 func (r *BindRowFilterRequest) Validate() error {
-	if r.RowFilterID <= 0 {
+	if r.RowFilterID == "" {
 		return ErrValidation("row_filter_id is required")
 	}
-	if r.PrincipalID <= 0 {
+	if r.PrincipalID == "" {
 		return ErrValidation("principal_id is required")
 	}
 	if r.PrincipalType != "user" && r.PrincipalType != "group" {

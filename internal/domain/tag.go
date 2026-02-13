@@ -27,15 +27,15 @@ func (r *CreateTagRequest) Validate() error {
 
 // AssignTagRequest holds parameters for assigning a tag to a securable.
 type AssignTagRequest struct {
-	TagID         int64
+	TagID         string
 	SecurableType string // "schema", "table", "column"
-	SecurableID   int64
+	SecurableID   string
 	ColumnName    *string
 }
 
 // Validate checks that the request is well-formed.
 func (r *AssignTagRequest) Validate() error {
-	if r.TagID <= 0 {
+	if r.TagID == "" {
 		return ErrValidation("tag_id is required")
 	}
 	if r.SecurableType == "" {

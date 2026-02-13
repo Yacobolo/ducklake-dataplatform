@@ -65,7 +65,7 @@ type stubProvisioner struct {
 	called bool
 }
 
-func (s *stubProvisioner) ResolveOrProvision(_ context.Context, _, _, _ string, _ bool) (*domain.Principal, error) {
+func (s *stubProvisioner) ResolveOrProvision(_ context.Context, _ domain.ResolveOrProvisionRequest) (*domain.Principal, error) {
 	s.called = true
 	return s.result, s.err
 }

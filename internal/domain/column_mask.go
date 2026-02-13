@@ -14,7 +14,7 @@ type ColumnMask struct {
 
 // CreateColumnMaskRequest holds parameters for creating a column mask.
 type CreateColumnMaskRequest struct {
-	TableID        int64
+	TableID        string
 	ColumnName     string
 	MaskExpression string
 	Description    string
@@ -22,7 +22,7 @@ type CreateColumnMaskRequest struct {
 
 // Validate checks that the request is well-formed.
 func (r *CreateColumnMaskRequest) Validate() error {
-	if r.TableID <= 0 {
+	if r.TableID == "" {
 		return ErrValidation("table_id is required")
 	}
 	if r.ColumnName == "" {
@@ -36,18 +36,18 @@ func (r *CreateColumnMaskRequest) Validate() error {
 
 // BindColumnMaskRequest holds parameters for binding a column mask to a principal.
 type BindColumnMaskRequest struct {
-	ColumnMaskID  int64
-	PrincipalID   int64
+	ColumnMaskID  string
+	PrincipalID   string
 	PrincipalType string // "user" or "group"
 	SeeOriginal   bool
 }
 
 // Validate checks that the request is well-formed.
 func (r *BindColumnMaskRequest) Validate() error {
-	if r.ColumnMaskID <= 0 {
+	if r.ColumnMaskID == "" {
 		return ErrValidation("column_mask_id is required")
 	}
-	if r.PrincipalID <= 0 {
+	if r.PrincipalID == "" {
 		return ErrValidation("principal_id is required")
 	}
 	if r.PrincipalType != "user" && r.PrincipalType != "group" {

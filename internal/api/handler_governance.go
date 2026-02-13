@@ -35,9 +35,9 @@ type lineageService interface {
 // tagService defines the tag operations used by the API handler.
 type tagService interface {
 	ListTags(ctx context.Context, page domain.PageRequest) ([]domain.Tag, int64, error)
-	CreateTag(ctx context.Context, principal string, tag *domain.Tag) (*domain.Tag, error)
+	CreateTag(ctx context.Context, principal string, req domain.CreateTagRequest) (*domain.Tag, error)
 	DeleteTag(ctx context.Context, principal string, id string) error
-	AssignTag(ctx context.Context, principal string, assignment *domain.TagAssignment) (*domain.TagAssignment, error)
+	AssignTag(ctx context.Context, principal string, req domain.AssignTagRequest) (*domain.TagAssignment, error)
 	UnassignTag(ctx context.Context, principal string, id string) error
 }
 
@@ -248,12 +248,12 @@ func (h *APIHandler) ListTags(ctx context.Context, req ListTagsRequestObject) (L
 
 // CreateTag implements the endpoint for creating a new tag.
 func (h *APIHandler) CreateTag(ctx context.Context, req CreateTagRequestObject) (CreateTagResponseObject, error) {
-	tag := &domain.Tag{
+	domReq := domain.CreateTagRequest{
 		Key:   req.Body.Key,
 		Value: req.Body.Value,
 	}
 	principal, _ := middleware.PrincipalFromContext(ctx)
-	result, err := h.tags.CreateTag(ctx, principal, tag)
+	result, err := h.tags.CreateTag(ctx, principal, domReq)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.ConflictError)):
@@ -284,14 +284,14 @@ func (h *APIHandler) DeleteTag(ctx context.Context, req DeleteTagRequestObject) 
 
 // CreateTagAssignment implements the endpoint for assigning a tag to a securable object.
 func (h *APIHandler) CreateTagAssignment(ctx context.Context, req CreateTagAssignmentRequestObject) (CreateTagAssignmentResponseObject, error) {
-	assignment := &domain.TagAssignment{
+	domReq := domain.AssignTagRequest{
 		TagID:         req.TagId,
 		SecurableType: req.Body.SecurableType,
 		SecurableID:   req.Body.SecurableId,
 		ColumnName:    req.Body.ColumnName,
 	}
 	principal, _ := middleware.PrincipalFromContext(ctx)
-	result, err := h.tags.AssignTag(ctx, principal, assignment)
+	result, err := h.tags.AssignTag(ctx, principal, domReq)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.ConflictError)):

@@ -51,16 +51,16 @@ type PrivilegeGrant struct {
 
 // CreateGrantRequest holds parameters for granting a privilege.
 type CreateGrantRequest struct {
-	PrincipalID   int64
+	PrincipalID   string
 	PrincipalType string // "user" or "group"
 	SecurableType string // "catalog", "schema", "table"
-	SecurableID   int64
+	SecurableID   string
 	Privilege     string
 }
 
 // Validate checks that the request is well-formed.
 func (r *CreateGrantRequest) Validate() error {
-	if r.PrincipalID <= 0 {
+	if r.PrincipalID == "" {
 		return ErrValidation("principal_id is required")
 	}
 	if r.PrincipalType != "user" && r.PrincipalType != "group" {

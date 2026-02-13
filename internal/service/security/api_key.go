@@ -7,7 +7,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"time"
 
 	"duck-demo/internal/domain"
 )
@@ -26,14 +25,14 @@ func NewAPIKeyService(repo domain.APIKeyRepository, audit domain.AuditRepository
 // Create generates a new API key for the given principal.
 // Non-admin users can only create keys for themselves.
 // Returns the raw key (shown once) and the created key metadata.
-func (s *APIKeyService) Create(ctx context.Context, principalID string, name string, expiresAt *time.Time) (string, *domain.APIKey, error) {
+func (s *APIKeyService) Create(ctx context.Context, req domain.CreateAPIKeyRequest) (string, *domain.APIKey, error) {
 	caller, ok := domain.PrincipalFromContext(ctx)
 	if !ok {
 		return "", nil, domain.ErrAccessDenied("authentication required")
 	}
 
-	if name == "" {
-		return "", nil, domain.ErrValidation("api key name is required")
+	if err := req.Validate(); err != nil {
+		return "", nil, err
 	}
 
 	// Generate a cryptographically secure random key.
@@ -48,11 +47,11 @@ func (s *APIKeyService) Create(ctx context.Context, principalID string, name str
 	hashStr := hex.EncodeToString(hash[:])
 
 	key := &domain.APIKey{
-		PrincipalID: principalID,
-		Name:        name,
+		PrincipalID: req.PrincipalID,
+		Name:        req.Name,
 		KeyPrefix:   rawKey[:8],
 		KeyHash:     hashStr,
-		ExpiresAt:   expiresAt,
+		ExpiresAt:   req.ExpiresAt,
 	}
 
 	if err := s.repo.Create(ctx, key); err != nil {
@@ -61,7 +60,7 @@ func (s *APIKeyService) Create(ctx context.Context, principalID string, name str
 
 	_ = s.audit.Insert(ctx, &domain.AuditEntry{
 		PrincipalName: caller.Name,
-		Action:        fmt.Sprintf("CREATE_API_KEY(name=%s)", name),
+		Action:        fmt.Sprintf("CREATE_API_KEY(name=%s)", req.Name),
 		Status:        "ALLOWED",
 	})
 
