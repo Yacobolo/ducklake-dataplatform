@@ -113,7 +113,7 @@ func TestHTTP_PrincipalErrors(t *testing.T) {
 		wantStatus int
 	}{
 		{"create_empty_name_400", map[string]interface{}{"name": "", "type": "user"}, 400},
-		{"create_duplicate_name_409", map[string]interface{}{"name": "admin_user", "type": "user"}, 400},
+		{"create_duplicate_name_409", map[string]interface{}{"name": "admin_user", "type": "user"}, 409},
 	}
 
 	for _, tc := range tests {

@@ -1128,6 +1128,8 @@ paths:
           $ref: '../schemas/responses.yaml#/responses/InternalError'
         '401':
           $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
     post:
       operationId: createRowFilter
       summary: Create row filter

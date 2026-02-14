@@ -93,7 +93,7 @@ func (h *APIHandler) CreatePrincipal(ctx context.Context, req CreatePrincipalReq
 		case errors.As(err, new(*domain.ValidationError)):
 			return CreatePrincipal400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.ConflictError)):
-			return CreatePrincipal400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return CreatePrincipal409JSONResponse{ConflictJSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -289,7 +289,7 @@ func (h *APIHandler) ListGrants(ctx context.Context, req ListGrantsRequestObject
 	case req.Params.SecurableType != nil && req.Params.SecurableId != nil:
 		grants, total, err = h.grants.ListForSecurable(ctx, *req.Params.SecurableType, *req.Params.SecurableId, page)
 	default:
-		grants = []domain.PrivilegeGrant{}
+		return ListGrants400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: "either principal_id+principal_type or securable_type+securable_id query parameters are required"}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
 	if err != nil {
 		return nil, err
@@ -355,7 +355,7 @@ func (h *APIHandler) ListRowFilters(ctx context.Context, req ListRowFiltersReque
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return ListRowFilters401JSONResponse{UnauthorizedJSONResponse{Body: Error{Code: 401, Message: err.Error()}, Headers: UnauthorizedResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return ListRowFilters403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}

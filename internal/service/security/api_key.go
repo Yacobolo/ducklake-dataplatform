@@ -78,13 +78,29 @@ func (s *APIKeyService) List(ctx context.Context, principalID string, page domai
 }
 
 // Delete removes an API key by ID.
+// The caller must be the key owner or an admin.
 func (s *APIKeyService) Delete(ctx context.Context, id string) error {
-	caller := callerName(ctx)
+	caller, ok := domain.PrincipalFromContext(ctx)
+	if !ok {
+		return domain.ErrAccessDenied("authentication required")
+	}
+
+	// Look up the API key to verify ownership.
+	key, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	// Allow deletion only if the caller owns the key or is an admin.
+	if !caller.IsAdmin && caller.ID != key.PrincipalID {
+		return domain.ErrAccessDenied("only the key owner or an admin can delete this API key")
+	}
+
 	if err := s.repo.Delete(ctx, id); err != nil {
 		return err
 	}
 	_ = s.audit.Insert(ctx, &domain.AuditEntry{
-		PrincipalName: caller,
+		PrincipalName: caller.Name,
 		Action:        fmt.Sprintf("DELETE_API_KEY(id=%s)", id),
 		Status:        "ALLOWED",
 	})

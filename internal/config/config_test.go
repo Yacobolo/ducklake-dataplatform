@@ -181,6 +181,119 @@ func TestLoadFromEnv_RateLimitCustom(t *testing.T) {
 	assert.Equal(t, 100, cfg.RateLimitBurst)
 }
 
+func TestLoadFromEnv_CORSDefaultWildcard(t *testing.T) {
+	t.Setenv("CORS_ALLOWED_ORIGINS", "")
+
+	cfg, err := LoadFromEnv()
+	require.NoError(t, err)
+	assert.Equal(t, []string{"*"}, cfg.CORSAllowedOrigins)
+}
+
+func TestLoadFromEnv_CORSCustomOrigins(t *testing.T) {
+	t.Setenv("CORS_ALLOWED_ORIGINS", "https://app.example.com, https://admin.example.com")
+
+	cfg, err := LoadFromEnv()
+	require.NoError(t, err)
+	assert.Equal(t, []string{"https://app.example.com", "https://admin.example.com"}, cfg.CORSAllowedOrigins)
+}
+
+func TestLoadFromEnv_CORSSingleOrigin(t *testing.T) {
+	t.Setenv("CORS_ALLOWED_ORIGINS", "https://only.example.com")
+
+	cfg, err := LoadFromEnv()
+	require.NoError(t, err)
+	assert.Equal(t, []string{"https://only.example.com"}, cfg.CORSAllowedOrigins)
+}
+
+func TestLoadDotEnv_StripsDoubleQuotes(t *testing.T) {
+	tmpDir := t.TempDir()
+	envFile := filepath.Join(tmpDir, ".env")
+
+	err := os.WriteFile(envFile, []byte(`TEST_QUOTED_KEY="quoted_value"`+"\n"), 0644)
+	require.NoError(t, err)
+
+	require.NoError(t, LoadDotEnv(envFile))
+
+	assert.Equal(t, "quoted_value", os.Getenv("TEST_QUOTED_KEY"))
+	_ = os.Unsetenv("TEST_QUOTED_KEY")
+}
+
+func TestLoadDotEnv_StripsSingleQuotes(t *testing.T) {
+	tmpDir := t.TempDir()
+	envFile := filepath.Join(tmpDir, ".env")
+
+	err := os.WriteFile(envFile, []byte("TEST_SINGLE_QUOTED='single_value'\n"), 0644)
+	require.NoError(t, err)
+
+	require.NoError(t, LoadDotEnv(envFile))
+
+	assert.Equal(t, "single_value", os.Getenv("TEST_SINGLE_QUOTED"))
+	_ = os.Unsetenv("TEST_SINGLE_QUOTED")
+}
+
+func TestLoadDotEnv_NoStripMismatchedQuotes(t *testing.T) {
+	tmpDir := t.TempDir()
+	envFile := filepath.Join(tmpDir, ".env")
+
+	err := os.WriteFile(envFile, []byte(`TEST_MISMATCHED="mismatched'`+"\n"), 0644)
+	require.NoError(t, err)
+
+	require.NoError(t, LoadDotEnv(envFile))
+
+	assert.Equal(t, `"mismatched'`, os.Getenv("TEST_MISMATCHED"))
+	_ = os.Unsetenv("TEST_MISMATCHED")
+}
+
+func TestLoadDotEnv_EmptyQuotedValue(t *testing.T) {
+	tmpDir := t.TempDir()
+	envFile := filepath.Join(tmpDir, ".env")
+
+	err := os.WriteFile(envFile, []byte(`TEST_EMPTY_QUOTED=""`+"\n"), 0644)
+	require.NoError(t, err)
+
+	require.NoError(t, LoadDotEnv(envFile))
+
+	assert.Empty(t, os.Getenv("TEST_EMPTY_QUOTED"))
+	_ = os.Unsetenv("TEST_EMPTY_QUOTED")
+}
+
+func TestLoadDotEnv_InternalQuotesPreserved(t *testing.T) {
+	tmpDir := t.TempDir()
+	envFile := filepath.Join(tmpDir, ".env")
+
+	err := os.WriteFile(envFile, []byte(`TEST_INTERNAL="value with \"inner\" quotes"`+"\n"), 0644)
+	require.NoError(t, err)
+
+	require.NoError(t, LoadDotEnv(envFile))
+
+	assert.Equal(t, `value with \"inner\" quotes`, os.Getenv("TEST_INTERNAL"))
+	_ = os.Unsetenv("TEST_INTERNAL")
+}
+
+func TestStripQuotes(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{name: "double quotes", input: `"hello"`, want: "hello"},
+		{name: "single quotes", input: `'hello'`, want: "hello"},
+		{name: "no quotes", input: "hello", want: "hello"},
+		{name: "empty string", input: "", want: ""},
+		{name: "single char", input: `"`, want: `"`},
+		{name: "mismatched quotes", input: `"hello'`, want: `"hello'`},
+		{name: "empty double quotes", input: `""`, want: ""},
+		{name: "empty single quotes", input: `''`, want: ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := stripQuotes(tt.input)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestLoadDotEnv_EnvVarPrecedence(t *testing.T) {
 	t.Setenv("TEST_PRECEDENCE_KEY", "from_env")
 

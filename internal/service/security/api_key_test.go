@@ -103,6 +103,68 @@ func TestAPIKeyService_Delete(t *testing.T) {
 	assert.Empty(t, keys)
 }
 
+func TestAPIKeyService_Delete_OwnerCanDelete(t *testing.T) {
+	svc, principalSvc := setupAPIKeyService(t)
+
+	// Create the principal that will own the key.
+	p, err := principalSvc.Create(adminCtx(), domain.CreatePrincipalRequest{Name: "key-owner", Type: "user"})
+	require.NoError(t, err)
+
+	// Create a key as admin.
+	_, key, err := svc.Create(adminCtx(), domain.CreateAPIKeyRequest{PrincipalID: p.ID, Name: "owner-key"})
+	require.NoError(t, err)
+
+	// Delete as the owner — should succeed.
+	ownerCtx := principalCtx(p.ID, p.Name, false)
+	err = svc.Delete(ownerCtx, key.ID)
+	require.NoError(t, err)
+
+	keys, total, err := svc.List(ctx, p.ID, domain.PageRequest{})
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), total)
+	assert.Empty(t, keys)
+}
+
+func TestAPIKeyService_Delete_AdminCanDeleteOthers(t *testing.T) {
+	svc, principalSvc := setupAPIKeyService(t)
+
+	p, err := principalSvc.Create(adminCtx(), domain.CreatePrincipalRequest{Name: "other-owner", Type: "user"})
+	require.NoError(t, err)
+
+	_, key, err := svc.Create(adminCtx(), domain.CreateAPIKeyRequest{PrincipalID: p.ID, Name: "admin-deletable"})
+	require.NoError(t, err)
+
+	// Admin can delete any key.
+	err = svc.Delete(adminCtx(), key.ID)
+	require.NoError(t, err)
+}
+
+func TestAPIKeyService_Delete_NonOwnerDenied(t *testing.T) {
+	svc, principalSvc := setupAPIKeyService(t)
+
+	owner, err := principalSvc.Create(adminCtx(), domain.CreatePrincipalRequest{Name: "actual-owner", Type: "user"})
+	require.NoError(t, err)
+
+	_, key, err := svc.Create(adminCtx(), domain.CreateAPIKeyRequest{PrincipalID: owner.ID, Name: "protected-key"})
+	require.NoError(t, err)
+
+	// Another non-admin user tries to delete — should be denied.
+	otherCtx := principalCtx("other-id", "other-user", false)
+	err = svc.Delete(otherCtx, key.ID)
+	require.Error(t, err)
+	var accessDenied *domain.AccessDeniedError
+	assert.ErrorAs(t, err, &accessDenied)
+}
+
+func TestAPIKeyService_Delete_Unauthenticated(t *testing.T) {
+	svc, _ := setupAPIKeyService(t)
+
+	err := svc.Delete(ctx, "some-id")
+	require.Error(t, err)
+	var accessDenied *domain.AccessDeniedError
+	assert.ErrorAs(t, err, &accessDenied)
+}
+
 func TestAPIKeyService_CleanupExpired_AdminRequired(t *testing.T) {
 	svc, _ := setupAPIKeyService(t)
 

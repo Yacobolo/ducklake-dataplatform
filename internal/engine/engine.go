@@ -26,6 +26,11 @@ type SecureEngine struct {
 // and authorization service (backed by the SQLite metastore).
 // When resolver is nil the engine falls back to the local *sql.DB for all queries.
 func NewSecureEngine(db *sql.DB, cat domain.AuthorizationService, resolver domain.ComputeResolver, infoSchema *InformationSchemaProvider, logger *slog.Logger) *SecureEngine {
+	// Inject the authorization service into the information_schema provider
+	// so it can filter results based on the caller's RBAC grants.
+	if infoSchema != nil && cat != nil {
+		infoSchema.SetAuthorizationService(cat)
+	}
 	return &SecureEngine{db: db, catalog: cat, resolver: resolver, infoSchema: infoSchema, logger: logger}
 }
 
@@ -104,8 +109,8 @@ func (e *SecureEngine) rewriteQuery(ctx context.Context, principalName, sqlQuery
 			return "", domain.ErrAccessDenied("principal %q lacks %s on table %q", principalName, requiredPriv, tableName)
 		}
 
-		// Get row filters (only for SELECT)
-		if stmtType == sqlrewrite.StmtSelect {
+		// Get row filters (for SELECT, UPDATE, and DELETE)
+		if stmtType == sqlrewrite.StmtSelect || stmtType == sqlrewrite.StmtUpdate || stmtType == sqlrewrite.StmtDelete {
 			filters, err := e.catalog.GetEffectiveRowFilters(ctx, principalName, tableID)
 			if err != nil {
 				return "", fmt.Errorf("row filter: %w", err)
@@ -116,8 +121,10 @@ func (e *SecureEngine) rewriteQuery(ctx context.Context, principalName, sqlQuery
 					return "", fmt.Errorf("inject row filter: %w", err)
 				}
 			}
+		}
 
-			// Get column masks
+		// Get column masks (SELECT only — masking does not apply to UPDATE/DELETE)
+		if stmtType == sqlrewrite.StmtSelect {
 			masks, err := e.catalog.GetEffectiveColumnMasks(ctx, principalName, tableID)
 			if err != nil {
 				return "", fmt.Errorf("column masks: %w", err)
@@ -136,7 +143,7 @@ func (e *SecureEngine) rewriteQuery(ctx context.Context, principalName, sqlQuery
 		}
 	}
 
-	e.logger.Info("query rewritten", "principal", principalName, "statement", stmtType, "tables", tables, "sql", rewritten)
+	e.logger.Debug("query rewritten", "principal", principalName, "statement", stmtType, "tables", tables, "sql", rewritten)
 
 	return rewritten, nil
 }
@@ -156,7 +163,7 @@ func (e *SecureEngine) rewriteQuery(ctx context.Context, principalName, sqlQuery
 func (e *SecureEngine) Query(ctx context.Context, principalName, sqlQuery string) (*sql.Rows, error) {
 	// Intercept information_schema queries
 	if e.infoSchema != nil && IsInformationSchemaQuery(sqlQuery) {
-		return e.infoSchema.HandleQuery(ctx, e.db, sqlQuery)
+		return e.infoSchema.HandleQuery(ctx, e.db, principalName, sqlQuery)
 	}
 
 	rewritten, err := e.rewriteQuery(ctx, principalName, sqlQuery)
@@ -176,7 +183,7 @@ func (e *SecureEngine) Query(ctx context.Context, principalName, sqlQuery string
 // temp table state across cell executions.
 func (e *SecureEngine) QueryOnConn(ctx context.Context, conn *sql.Conn, principalName, sqlQuery string) (*sql.Rows, error) {
 	if e.infoSchema != nil && IsInformationSchemaQuery(sqlQuery) {
-		return e.infoSchema.HandleQuery(ctx, e.db, sqlQuery)
+		return e.infoSchema.HandleQuery(ctx, e.db, principalName, sqlQuery)
 	}
 
 	rewritten, err := e.rewriteQuery(ctx, principalName, sqlQuery)

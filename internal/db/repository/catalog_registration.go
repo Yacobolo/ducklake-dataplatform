@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	dbstore "duck-demo/internal/db/dbstore"
 	"duck-demo/internal/db/mapper"
@@ -12,12 +13,13 @@ import (
 // CatalogRegistrationRepo implements domain.CatalogRegistrationRepository
 // using the control plane SQLite database via sqlc-generated queries.
 type CatalogRegistrationRepo struct {
-	q *dbstore.Queries
+	db *sql.DB
+	q  *dbstore.Queries
 }
 
 // NewCatalogRegistrationRepo creates a new CatalogRegistrationRepo.
 func NewCatalogRegistrationRepo(db *sql.DB) *CatalogRegistrationRepo {
-	return &CatalogRegistrationRepo{q: dbstore.New(db)}
+	return &CatalogRegistrationRepo{db: db, q: dbstore.New(db)}
 }
 
 // Compile-time interface check.
@@ -129,9 +131,21 @@ func (r *CatalogRegistrationRepo) GetDefault(ctx context.Context) (*domain.Catal
 }
 
 // SetDefault clears the current default and sets the given catalog as default.
+// Both operations run in a single transaction to prevent race conditions that
+// could result in zero or multiple defaults.
 func (r *CatalogRegistrationRepo) SetDefault(ctx context.Context, id string) error {
-	if err := r.q.ClearDefaultCatalog(ctx); err != nil {
-		return err
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin set-default tx: %w", err)
 	}
-	return r.q.SetDefaultCatalog(ctx, id)
+	defer tx.Rollback() //nolint:errcheck
+
+	qtx := r.q.WithTx(tx)
+	if err := qtx.ClearDefaultCatalog(ctx); err != nil {
+		return fmt.Errorf("clear default catalog: %w", err)
+	}
+	if err := qtx.SetDefaultCatalog(ctx, id); err != nil {
+		return fmt.Errorf("set default catalog: %w", err)
+	}
+	return tx.Commit()
 }

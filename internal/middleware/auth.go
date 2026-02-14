@@ -146,9 +146,14 @@ func (a *Authenticator) authenticateJWT(ctx context.Context, tokenStr string) (*
 				Type:    p.Type,
 			}, nil
 		}
+		// Principal repo is configured but lookup failed — deny access
+		// instead of creating a principal with empty ID.
+		a.logger.Warn("JWT principal not resolvable", "display_name", displayName, "error", err)
+		return nil, fmt.Errorf("principal %q not found", displayName)
 	}
 
-	// Fallback: use the display name directly (backward compat with shared secret).
+	// No provisioner and no principal repo (legacy shared-secret dev mode):
+	// allow with display name only. This is the backward-compatible path.
 	return &domain.ContextPrincipal{
 		Name: displayName,
 		Type: "user",

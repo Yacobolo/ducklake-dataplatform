@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"time"
 
 	dbstore "duck-demo/internal/db/dbstore"
@@ -117,11 +118,22 @@ func (r *CatalogRepo) enrichSchemaMetadata(ctx context.Context, s *domain.Schema
 	if row.Properties.Valid {
 		_ = json.Unmarshal([]byte(row.Properties.String), &s.Properties)
 	}
-	s.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", row.CreatedAt)
-	s.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", row.UpdatedAt)
+	if t, err := time.Parse("2006-01-02 15:04:05", row.CreatedAt); err == nil {
+		s.CreatedAt = t
+	} else {
+		slog.Default().Warn("failed to parse schema created_at", "value", row.CreatedAt, "error", err)
+	}
+	if t, err := time.Parse("2006-01-02 15:04:05", row.UpdatedAt); err == nil {
+		s.UpdatedAt = t
+	} else {
+		slog.Default().Warn("failed to parse schema updated_at", "value", row.UpdatedAt, "error", err)
+	}
 	if row.DeletedAt.Valid {
-		t, _ := time.Parse("2006-01-02 15:04:05", row.DeletedAt.String)
-		s.DeletedAt = &t
+		if t, err := time.Parse("2006-01-02 15:04:05", row.DeletedAt.String); err == nil {
+			s.DeletedAt = &t
+		} else {
+			slog.Default().Warn("failed to parse schema deleted_at", "value", row.DeletedAt.String, "error", err)
+		}
 	}
 }
 
@@ -144,11 +156,22 @@ func (r *CatalogRepo) enrichTableMetadata(ctx context.Context, t *domain.TableDe
 	if row.Properties.Valid {
 		_ = json.Unmarshal([]byte(row.Properties.String), &t.Properties)
 	}
-	t.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", row.CreatedAt)
-	t.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", row.UpdatedAt)
+	if ct, err := time.Parse("2006-01-02 15:04:05", row.CreatedAt); err == nil {
+		t.CreatedAt = ct
+	} else {
+		slog.Default().Warn("failed to parse table created_at", "value", row.CreatedAt, "error", err)
+	}
+	if ut, err := time.Parse("2006-01-02 15:04:05", row.UpdatedAt); err == nil {
+		t.UpdatedAt = ut
+	} else {
+		slog.Default().Warn("failed to parse table updated_at", "value", row.UpdatedAt, "error", err)
+	}
 	if row.DeletedAt.Valid {
-		dt, _ := time.Parse("2006-01-02 15:04:05", row.DeletedAt.String)
-		t.DeletedAt = &dt
+		if dt, err := time.Parse("2006-01-02 15:04:05", row.DeletedAt.String); err == nil {
+			t.DeletedAt = &dt
+		} else {
+			slog.Default().Warn("failed to parse table deleted_at", "value", row.DeletedAt.String, "error", err)
+		}
 	}
 }
 

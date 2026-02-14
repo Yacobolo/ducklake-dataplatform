@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"time"
 
 	dbstore "duck-demo/internal/db/dbstore"
@@ -199,11 +200,22 @@ func (r *ExternalTableRepo) toDomain(row dbstore.ExternalTable) *domain.External
 		Comment:      row.Comment,
 		Owner:        row.Owner,
 	}
-	et.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", row.CreatedAt)
-	et.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", row.UpdatedAt)
+	if t, err := time.Parse("2006-01-02 15:04:05", row.CreatedAt); err == nil {
+		et.CreatedAt = t
+	} else {
+		slog.Default().Warn("failed to parse external_table created_at", "value", row.CreatedAt, "error", err)
+	}
+	if t, err := time.Parse("2006-01-02 15:04:05", row.UpdatedAt); err == nil {
+		et.UpdatedAt = t
+	} else {
+		slog.Default().Warn("failed to parse external_table updated_at", "value", row.UpdatedAt, "error", err)
+	}
 	if row.DeletedAt.Valid {
-		t, _ := time.Parse("2006-01-02 15:04:05", row.DeletedAt.String)
-		et.DeletedAt = &t
+		if t, err := time.Parse("2006-01-02 15:04:05", row.DeletedAt.String); err == nil {
+			et.DeletedAt = &t
+		} else {
+			slog.Default().Warn("failed to parse external_table deleted_at", "value", row.DeletedAt.String, "error", err)
+		}
 	}
 	return et
 }

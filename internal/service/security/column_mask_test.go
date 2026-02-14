@@ -182,7 +182,7 @@ func TestColumnMaskService_Unbind_NonAdminDenied(t *testing.T) {
 	assert.ErrorAs(t, err, &denied)
 }
 
-func TestColumnMaskService_GetForTable(t *testing.T) {
+func TestColumnMaskService_GetForTable_AdminAllowed(t *testing.T) {
 	repo := &mockColumnMaskRepo{
 		GetForTableFn: func(_ context.Context, tableID string, _ domain.PageRequest) ([]domain.ColumnMask, int64, error) {
 			return []domain.ColumnMask{{ID: "cm-1", TableID: tableID}}, 1, nil
@@ -190,8 +190,17 @@ func TestColumnMaskService_GetForTable(t *testing.T) {
 	}
 	svc := NewColumnMaskService(repo, &testutil.MockAuditRepo{})
 
-	masks, total, err := svc.GetForTable(nonAdminCtx(), "t-1", domain.PageRequest{})
+	masks, total, err := svc.GetForTable(adminCtx(), "t-1", domain.PageRequest{})
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), total)
 	assert.Len(t, masks, 1)
+}
+
+func TestColumnMaskService_GetForTable_NonAdminDenied(t *testing.T) {
+	svc := NewColumnMaskService(&mockColumnMaskRepo{}, &testutil.MockAuditRepo{})
+
+	_, _, err := svc.GetForTable(nonAdminCtx(), "t-1", domain.PageRequest{})
+	require.Error(t, err)
+	var denied *domain.AccessDeniedError
+	assert.ErrorAs(t, err, &denied)
 }

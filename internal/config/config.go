@@ -67,6 +67,9 @@ type Config struct {
 	RateLimitRPS   float64 // sustained requests per second (default 100)
 	RateLimitBurst int     // burst capacity (default 200)
 
+	// CORS
+	CORSAllowedOrigins []string // allowed origins for CORS (default: ["*"])
+
 	// Auth holds identity provider and authentication configuration.
 	Auth AuthConfig
 
@@ -141,6 +144,15 @@ func LoadFromEnv() (*Config, error) {
 		cfg.S3Bucket = &v
 	}
 
+	// CORS
+	if v := os.Getenv("CORS_ALLOWED_ORIGINS"); v != "" {
+		origins := strings.Split(v, ",")
+		for i := range origins {
+			origins[i] = strings.TrimSpace(origins[i])
+		}
+		cfg.CORSAllowedOrigins = origins
+	}
+
 	// Auth config
 	cfg.Auth = AuthConfig{
 		IssuerURL:      os.Getenv("AUTH_ISSUER_URL"),
@@ -205,6 +217,9 @@ func LoadFromEnv() (*Config, error) {
 	if cfg.RateLimitBurst == 0 {
 		cfg.RateLimitBurst = 200
 	}
+	if len(cfg.CORSAllowedOrigins) == 0 {
+		cfg.CORSAllowedOrigins = []string{"*"}
+	}
 
 	// Production mode: insecure defaults are fatal errors.
 	if cfg.IsProduction() {
@@ -243,6 +258,7 @@ func LoadDotEnv(path string) error {
 		}
 		key = strings.TrimSpace(key)
 		value = strings.TrimSpace(value)
+		value = stripQuotes(value)
 		// Only set if not already in the environment (env vars take precedence)
 		if os.Getenv(key) == "" {
 			if err := os.Setenv(key, value); err != nil {
@@ -251,4 +267,15 @@ func LoadDotEnv(path string) error {
 		}
 	}
 	return scanner.Err()
+}
+
+// stripQuotes removes surrounding double or single quotes from a value.
+// Only strips if both the first and last characters are matching quotes.
+func stripQuotes(s string) string {
+	if len(s) >= 2 {
+		if (s[0] == '"' && s[len(s)-1] == '"') || (s[0] == '\'' && s[len(s)-1] == '\'') {
+			return s[1 : len(s)-1]
+		}
+	}
+	return s
 }

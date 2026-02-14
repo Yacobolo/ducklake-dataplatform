@@ -24,10 +24,10 @@ type notebookService interface {
 // sessionService defines session and execution operations.
 type sessionService interface {
 	CreateSession(ctx context.Context, notebookID, principal string) (*domain.NotebookSession, error)
-	CloseSession(ctx context.Context, sessionID string) error
-	ExecuteCell(ctx context.Context, sessionID, cellID string) (*domain.CellExecutionResult, error)
-	RunAll(ctx context.Context, sessionID string) (*domain.RunAllResult, error)
-	RunAllAsync(ctx context.Context, sessionID string) (*domain.NotebookJob, error)
+	CloseSession(ctx context.Context, sessionID string, principalName ...string) error
+	ExecuteCell(ctx context.Context, sessionID, cellID string, principalName ...string) (*domain.CellExecutionResult, error)
+	RunAll(ctx context.Context, sessionID string, principalName ...string) (*domain.RunAllResult, error)
+	RunAllAsync(ctx context.Context, sessionID string, principalName ...string) (*domain.NotebookJob, error)
 	GetJob(ctx context.Context, jobID string) (*domain.NotebookJob, error)
 	ListJobs(ctx context.Context, notebookID string, page domain.PageRequest) ([]domain.NotebookJob, int64, error)
 }
@@ -306,7 +306,8 @@ func (h *APIHandler) CreateNotebookSession(ctx context.Context, req CreateNotebo
 
 // CloseNotebookSession implements the endpoint for closing a notebook session.
 func (h *APIHandler) CloseNotebookSession(ctx context.Context, req CloseNotebookSessionRequestObject) (CloseNotebookSessionResponseObject, error) {
-	if err := h.sessions.CloseSession(ctx, req.SessionId); err != nil {
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	if err := h.sessions.CloseSession(ctx, req.SessionId, principal); err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
 			return CloseNotebookSession404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
@@ -319,7 +320,8 @@ func (h *APIHandler) CloseNotebookSession(ctx context.Context, req CloseNotebook
 
 // ExecuteCell implements the endpoint for executing a single cell in a session.
 func (h *APIHandler) ExecuteCell(ctx context.Context, req ExecuteCellRequestObject) (ExecuteCellResponseObject, error) {
-	result, err := h.sessions.ExecuteCell(ctx, req.SessionId, req.CellId)
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	result, err := h.sessions.ExecuteCell(ctx, req.SessionId, req.CellId, principal)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
@@ -340,7 +342,8 @@ func (h *APIHandler) ExecuteCell(ctx context.Context, req ExecuteCellRequestObje
 
 // RunAllCells implements the endpoint for executing all SQL cells synchronously.
 func (h *APIHandler) RunAllCells(ctx context.Context, req RunAllCellsRequestObject) (RunAllCellsResponseObject, error) {
-	result, err := h.sessions.RunAll(ctx, req.SessionId)
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	result, err := h.sessions.RunAll(ctx, req.SessionId, principal)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
@@ -357,7 +360,8 @@ func (h *APIHandler) RunAllCells(ctx context.Context, req RunAllCellsRequestObje
 
 // RunAllCellsAsync implements the endpoint for starting async execution of all cells.
 func (h *APIHandler) RunAllCellsAsync(ctx context.Context, req RunAllCellsAsyncRequestObject) (RunAllCellsAsyncResponseObject, error) {
-	result, err := h.sessions.RunAllAsync(ctx, req.SessionId)
+	principal, _ := middleware.PrincipalFromContext(ctx)
+	result, err := h.sessions.RunAllAsync(ctx, req.SessionId, principal)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):

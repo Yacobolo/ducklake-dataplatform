@@ -164,11 +164,12 @@ func TestNotebookRepo_CellCRUD(t *testing.T) {
 		assert.Equal(t, nb.ID, got.NotebookID)
 	})
 
-	t.Run("auto-position when zero", func(t *testing.T) {
+	t.Run("auto-position when negative", func(t *testing.T) {
 		cell1, err := repo.CreateCell(ctx, &domain.Cell{
 			NotebookID: nb.ID,
 			CellType:   domain.CellTypeSQL,
 			Content:    "SELECT 2",
+			Position:   -1, // auto-assign
 		})
 		require.NoError(t, err)
 
@@ -176,11 +177,23 @@ func TestNotebookRepo_CellCRUD(t *testing.T) {
 			NotebookID: nb.ID,
 			CellType:   domain.CellTypeMarkdown,
 			Content:    "# Title",
+			Position:   -1, // auto-assign
 		})
 		require.NoError(t, err)
 
 		// Second cell should have position > first
 		assert.Greater(t, cell2.Position, cell1.Position)
+	})
+
+	t.Run("explicit position 0 is respected", func(t *testing.T) {
+		cell, err := repo.CreateCell(ctx, &domain.Cell{
+			NotebookID: nb.ID,
+			CellType:   domain.CellTypeSQL,
+			Content:    "SELECT 'pos zero'",
+			Position:   0,
+		})
+		require.NoError(t, err)
+		assert.Equal(t, 0, cell.Position, "position 0 should be stored as-is, not auto-assigned")
 	})
 
 	t.Run("list cells", func(t *testing.T) {
@@ -301,6 +314,52 @@ func TestNotebookRepo_ReorderCells(t *testing.T) {
 		require.Error(t, err)
 		var validationErr *domain.ValidationError
 		assert.ErrorAs(t, err, &validationErr)
+	})
+}
+
+func TestNotebookRepo_CellPosition_ZeroVsAutoAssign(t *testing.T) {
+	repo := setupNotebookRepo(t)
+	ctx := context.Background()
+
+	nb, err := repo.CreateNotebook(ctx, &domain.Notebook{Name: "PosTestNB", Owner: "alice"})
+	require.NoError(t, err)
+
+	t.Run("position 0 is stored as 0", func(t *testing.T) {
+		cell, err := repo.CreateCell(ctx, &domain.Cell{
+			NotebookID: nb.ID,
+			CellType:   domain.CellTypeSQL,
+			Content:    "SELECT 'at zero'",
+			Position:   0,
+		})
+		require.NoError(t, err)
+		assert.Equal(t, 0, cell.Position)
+
+		// Verify via GetCell too
+		got, err := repo.GetCell(ctx, cell.ID)
+		require.NoError(t, err)
+		assert.Equal(t, 0, got.Position)
+	})
+
+	t.Run("negative position triggers auto-assign", func(t *testing.T) {
+		cell, err := repo.CreateCell(ctx, &domain.Cell{
+			NotebookID: nb.ID,
+			CellType:   domain.CellTypeSQL,
+			Content:    "SELECT 'auto'",
+			Position:   -1,
+		})
+		require.NoError(t, err)
+		assert.Positive(t, cell.Position, "auto-assigned position should be > 0 when cells exist")
+	})
+
+	t.Run("explicit positive position is respected", func(t *testing.T) {
+		cell, err := repo.CreateCell(ctx, &domain.Cell{
+			NotebookID: nb.ID,
+			CellType:   domain.CellTypeSQL,
+			Content:    "SELECT 'at 42'",
+			Position:   42,
+		})
+		require.NoError(t, err)
+		assert.Equal(t, 42, cell.Position)
 	})
 }
 

@@ -2,11 +2,12 @@ package api
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
-	"duck-demo/internal/service/query"
-
+	"duck-demo/internal/domain"
 	"duck-demo/internal/middleware"
+	"duck-demo/internal/service/query"
 )
 
 // queryService defines the query operations used by the API handler.
@@ -73,11 +74,16 @@ func (h *APIHandler) CreateManifest(ctx context.Context, req CreateManifestReque
 	result, err := h.manifest.GetManifest(ctx, principal, "", schemaName, req.Body.Table)
 	if err != nil {
 		code := errorCodeFromError(err)
-		switch code {
-		case http.StatusNotFound:
-			return CreateManifest404JSONResponse{NotFoundJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		msg := err.Error()
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
+			return CreateManifest404JSONResponse{NotFoundJSONResponse{Body: Error{Code: code, Message: msg}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return CreateManifest403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: code, Message: msg}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		case errors.As(err, new(*domain.ValidationError)):
+			return CreateManifest400JSONResponse{BadRequestJSONResponse{Body: Error{Code: code, Message: msg}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
-			return CreateManifest403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return CreateManifest500JSONResponse{InternalErrorJSONResponse{Body: Error{Code: code, Message: msg}, Headers: InternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 	}
 

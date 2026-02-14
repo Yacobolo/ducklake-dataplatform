@@ -2,8 +2,10 @@ package middleware
 
 import (
 	"encoding/json"
+	"net"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"golang.org/x/time/rate"
@@ -17,14 +19,48 @@ type RateLimitConfig struct {
 	Burst int
 }
 
-// RateLimiter returns an HTTP middleware that enforces a global token-bucket
+// clientLimiter tracks a per-client rate limiter and when it was last seen.
+type clientLimiter struct {
+	limiter  *rate.Limiter
+	lastSeen time.Time
+}
+
+// RateLimiter returns an HTTP middleware that enforces a per-client token-bucket
 // rate limit. When the limit is exceeded, it responds with 429 Too Many Requests
 // and sets standard rate-limit headers.
 func RateLimiter(cfg RateLimitConfig) func(http.Handler) http.Handler {
-	limiter := rate.NewLimiter(rate.Limit(cfg.RequestsPerSecond), cfg.Burst)
+	var clients sync.Map // map[string]*clientLimiter
+
+	// Background cleanup: remove stale entries every 5 minutes.
+	go func() {
+		for {
+			time.Sleep(5 * time.Minute)
+			clients.Range(func(key, value any) bool {
+				cl := value.(*clientLimiter)
+				if time.Since(cl.lastSeen) > 10*time.Minute {
+					clients.Delete(key)
+				}
+				return true
+			})
+		}
+	}()
+
+	getLimiter := func(ip string) *rate.Limiter {
+		if v, ok := clients.Load(ip); ok {
+			cl := v.(*clientLimiter)
+			cl.lastSeen = time.Now()
+			return cl.limiter
+		}
+		limiter := rate.NewLimiter(rate.Limit(cfg.RequestsPerSecond), cfg.Burst)
+		clients.Store(ip, &clientLimiter{limiter: limiter, lastSeen: time.Now()})
+		return limiter
+	}
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ip := clientIP(r)
+			limiter := getLimiter(ip)
+
 			reservation := limiter.Reserve()
 			if !reservation.OK() {
 				// Limiter cannot grant the request even with infinite wait.
@@ -49,6 +85,26 @@ func RateLimiter(cfg RateLimitConfig) func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+// clientIP extracts the client IP address from the request, stripping the port.
+func clientIP(r *http.Request) string {
+	// Prefer X-Forwarded-For if present (first entry is the original client).
+	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+		// Take the first IP in the chain.
+		for i := 0; i < len(xff); i++ {
+			if xff[i] == ',' {
+				return xff[:i]
+			}
+		}
+		return xff
+	}
+
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return host
 }
 
 func writeTooManyRequests(w http.ResponseWriter, retryAfterSecs int) {

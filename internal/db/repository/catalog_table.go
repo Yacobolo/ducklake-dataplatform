@@ -137,21 +137,23 @@ func (r *CatalogRepo) ListTables(ctx context.Context, schemaName string, page do
 		return nil, 0, err
 	}
 
-	var total int64
+	// Fetch ALL managed tables (no LIMIT/OFFSET) so we can merge with external
+	// tables before applying pagination, preventing duplicate/missing items.
+	var managedCount int64
 	if err := r.metaDB.QueryRowContext(ctx,
-		`SELECT COUNT(*) FROM ducklake_table WHERE schema_id = ? AND end_snapshot IS NULL`, schemaID).Scan(&total); err != nil {
+		`SELECT COUNT(*) FROM ducklake_table WHERE schema_id = ? AND end_snapshot IS NULL`, schemaID).Scan(&managedCount); err != nil {
 		return nil, 0, err
 	}
 
 	rows, err := r.metaDB.QueryContext(ctx,
-		`SELECT table_id, table_name FROM ducklake_table WHERE schema_id = ? AND end_snapshot IS NULL ORDER BY table_name LIMIT ? OFFSET ?`,
-		schemaID, page.Limit(), page.Offset())
+		`SELECT table_id, table_name FROM ducklake_table WHERE schema_id = ? AND end_snapshot IS NULL ORDER BY table_name`,
+		schemaID)
 	if err != nil {
 		return nil, 0, err
 	}
 	defer rows.Close() //nolint:errcheck
 
-	var tables []domain.TableDetail
+	var allTables []domain.TableDetail
 	for rows.Next() {
 		var t domain.TableDetail
 		var tblID int64
@@ -162,29 +164,42 @@ func (r *CatalogRepo) ListTables(ctx context.Context, schemaName string, page do
 		t.SchemaName = schemaName
 		t.CatalogName = r.catalogName
 		t.TableType = "MANAGED"
-		tables = append(tables, t)
+		allTables = append(allTables, t)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, 0, err
 	}
-	for i := range tables {
-		r.enrichTableMetadata(ctx, &tables[i])
-	}
 
-	// Append external tables (v1: simple append, not merged pagination)
+	// Append ALL external tables (no pagination) so we merge before slicing.
 	if r.extRepo != nil {
-		extTables, extTotal, extErr := r.extRepo.List(ctx, schemaName, page)
+		extTables, _, extErr := r.extRepo.List(ctx, schemaName, domain.PageRequest{MaxResults: domain.MaxMaxResults})
 		if extErr == nil {
 			for _, et := range extTables {
 				detail := r.externalTableToDetail(&et, schemaName)
-				r.enrichTableMetadata(ctx, detail)
-				tables = append(tables, *detail)
+				allTables = append(allTables, *detail)
 			}
-			total += extTotal
 		}
 	}
 
-	return tables, total, nil
+	total := int64(len(allTables))
+
+	// Enrich metadata for all tables before pagination.
+	for i := range allTables {
+		r.enrichTableMetadata(ctx, &allTables[i])
+	}
+
+	// Apply pagination to the merged list at the Go level.
+	offset := page.Offset()
+	limit := page.Limit()
+	if offset >= len(allTables) {
+		return []domain.TableDetail{}, total, nil
+	}
+	end := offset + limit
+	if end > len(allTables) {
+		end = len(allTables)
+	}
+
+	return allTables[offset:end], total, nil
 }
 
 // DeleteTable drops a table via DuckDB DDL and cascades governance cleanup.

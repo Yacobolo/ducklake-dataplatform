@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"duck-demo/internal/domain"
@@ -17,14 +18,15 @@ type ScheduleReloader interface {
 
 // Service provides business logic for pipeline management.
 type Service struct {
-	pipelines domain.PipelineRepository
-	runs      domain.PipelineRunRepository
-	audit     domain.AuditRepository
-	notebooks domain.NotebookProvider
-	engine    domain.SessionEngine
-	duckDB    *sql.DB
-	logger    *slog.Logger
-	reloader  ScheduleReloader
+	pipelines  domain.PipelineRepository
+	runs       domain.PipelineRunRepository
+	audit      domain.AuditRepository
+	notebooks  domain.NotebookProvider
+	engine     domain.SessionEngine
+	duckDB     *sql.DB
+	logger     *slog.Logger
+	reloader   ScheduleReloader
+	runCancels sync.Map // maps run ID (string) → context.CancelFunc
 }
 
 // NewService creates a new pipeline Service.
@@ -286,8 +288,11 @@ func (s *Service) TriggerRun(ctx context.Context, principal string, pipelineName
 		CreatedAt:     time.Now(),
 	})
 
-	// Launch background executor.
-	go s.executeRun(result.ID, jobs, levels, params, principal)
+	// Launch background executor with a cancellable context.
+	runCtx, cancel := context.WithCancel(context.Background())
+	s.runCancels.Store(result.ID, cancel)
+
+	go s.executeRun(runCtx, result.ID, jobs, levels, params, principal)
 
 	return result, nil
 }
@@ -326,6 +331,11 @@ func (s *Service) CancelRun(ctx context.Context, principal string, runID string)
 
 	if run.Status != domain.PipelineRunStatusPending && run.Status != domain.PipelineRunStatusRunning {
 		return domain.ErrValidation("cannot cancel run with status %s", run.Status)
+	}
+
+	// Signal the background goroutine to stop.
+	if cancel, ok := s.runCancels.LoadAndDelete(runID); ok {
+		cancel.(context.CancelFunc)()
 	}
 
 	errMsg := "cancelled by " + principal
