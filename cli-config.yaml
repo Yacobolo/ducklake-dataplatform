@@ -102,17 +102,8 @@ command_overrides:
   createPrincipal:
     positional_args: *name_positional
 
-  listPrincipals:
-    table_columns: [id, name, type, is_admin, created_at]
-
   createGroup:
     positional_args: *name_positional
-
-  listGroups:
-    table_columns: [id, name, description, created_at]
-
-  listGroupMembers:
-    table_columns: [group_id, member_type, member_id]
 
   createGroupMember:
     verb: add
@@ -128,15 +119,9 @@ command_overrides:
     verb: revoke
     confirm: false
 
-  listAPIKeys:
-    table_columns: [id, principal_id, name, key_prefix, expires_at, created_at]
-
   cleanupExpiredAPIKeys:
     verb: cleanup
     command_path: [api-keys]
-
-  listRowFilters:
-    table_columns: [id, table_id, filter_sql, description, created_at]
 
   bindRowFilter:
     verb: bind
@@ -146,9 +131,6 @@ command_overrides:
     verb: unbind
     command_path: [row-filters]
     confirm: false
-
-  listColumnMasks:
-    table_columns: [id, table_id, column_name, mask_expression, created_at]
 
   bindColumnMask:
     verb: bind
@@ -205,17 +187,11 @@ command_overrides:
     command_path: []
     table_columns: []
 
-  listTags:
-    table_columns: [id, key, value, created_by, created_at]
-
   createTagAssignment:
     command_path: [tag-assignments]
 
   deleteTagAssignment:
     command_path: [tag-assignments]
-
-  listClassifications:
-    table_columns: [id, key, value, created_by, created_at]
 
   # === Observability ===
   getMetastoreSummary:
@@ -287,9 +263,6 @@ command_overrides:
   createNotebook:
     positional_args: *name_positional
 
-  listNotebooks:
-    table_columns: [id, name, owner, created_at, updated_at]
-
   deleteCell:
     confirm: false
 
@@ -316,9 +289,6 @@ command_overrides:
 
   listNotebookJobs:
     table_columns: [id, notebook_id, state, created_at, updated_at]
-
-  listGitRepos:
-    table_columns: [id, url, branch, owner, last_sync_at, created_at]
 
   syncGitRepo:
     verb: sync
