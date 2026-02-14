@@ -31,11 +31,11 @@ func newIngestionCmd(client *Client) *cobra.Command {
 				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/commit"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				urlPath = strings.Replace(urlPath, "{tableName}", args[1], 1)
-				query := url.Values{}
 				if cmd.Flags().Changed("catalog-name") {
 					v, _ := cmd.Flags().GetString("catalog-name")
-					query.Set("catalogName", v)
+					urlPath = strings.Replace(urlPath, "{catalogName}", v, 1)
 				}
+				query := url.Values{}
 				// Build request body
 				var body interface{}
 				jsonInput, _ := cmd.Flags().GetString("json")
@@ -177,11 +177,11 @@ func newIngestionCmd(client *Client) *cobra.Command {
 				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/load"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				urlPath = strings.Replace(urlPath, "{tableName}", args[1], 1)
-				query := url.Values{}
 				if cmd.Flags().Changed("catalog-name") {
 					v, _ := cmd.Flags().GetString("catalog-name")
-					query.Set("catalogName", v)
+					urlPath = strings.Replace(urlPath, "{catalogName}", v, 1)
 				}
+				query := url.Values{}
 				// Build request body
 				var body interface{}
 				jsonInput, _ := cmd.Flags().GetString("json")
@@ -323,11 +323,11 @@ func newIngestionCmd(client *Client) *cobra.Command {
 				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				urlPath = strings.Replace(urlPath, "{tableName}", args[1], 1)
-				query := url.Values{}
 				if cmd.Flags().Changed("catalog-name") {
 					v, _ := cmd.Flags().GetString("catalog-name")
-					query.Set("catalogName", v)
+					urlPath = strings.Replace(urlPath, "{catalogName}", v, 1)
 				}
+				query := url.Values{}
 				// Build request body
 				var body interface{}
 				jsonInput, _ := cmd.Flags().GetString("json")

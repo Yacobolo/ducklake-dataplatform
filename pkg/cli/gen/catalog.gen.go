@@ -59,11 +59,11 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
 				urlPath := "/catalogs/{catalogName}/schemas"
-				query := url.Values{}
 				if cmd.Flags().Changed("catalog-name") {
 					v, _ := cmd.Flags().GetString("catalog-name")
-					query.Set("catalogName", v)
+					urlPath = strings.Replace(urlPath, "{catalogName}", v, 1)
 				}
+				query := url.Values{}
 				// Build request body
 				var body interface{}
 				jsonInput, _ := cmd.Flags().GetString("json")
@@ -196,11 +196,11 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				_ = outputFlag
 				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/tables"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
-				query := url.Values{}
 				if cmd.Flags().Changed("catalog-name") {
 					v, _ := cmd.Flags().GetString("catalog-name")
-					query.Set("catalogName", v)
+					urlPath = strings.Replace(urlPath, "{catalogName}", v, 1)
 				}
+				query := url.Values{}
 				// Build request body
 				var body interface{}
 				jsonInput, _ := cmd.Flags().GetString("json")
@@ -365,11 +365,11 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				_ = outputFlag
 				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/views"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
-				query := url.Values{}
 				if cmd.Flags().Changed("catalog-name") {
 					v, _ := cmd.Flags().GetString("catalog-name")
-					query.Set("catalogName", v)
+					urlPath = strings.Replace(urlPath, "{catalogName}", v, 1)
 				}
+				query := url.Values{}
 				// Build request body
 				var body interface{}
 				jsonInput, _ := cmd.Flags().GetString("json")
@@ -503,11 +503,11 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				_ = outputFlag
 				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/volumes"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
-				query := url.Values{}
 				if cmd.Flags().Changed("catalog-name") {
 					v, _ := cmd.Flags().GetString("catalog-name")
-					query.Set("catalogName", v)
+					urlPath = strings.Replace(urlPath, "{catalogName}", v, 1)
 				}
+				query := url.Values{}
 				// Build request body
 				var body interface{}
 				jsonInput, _ := cmd.Flags().GetString("json")
@@ -649,11 +649,11 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				}
 				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
-				query := url.Values{}
 				if cmd.Flags().Changed("catalog-name") {
 					v, _ := cmd.Flags().GetString("catalog-name")
-					query.Set("catalogName", v)
+					urlPath = strings.Replace(urlPath, "{catalogName}", v, 1)
 				}
+				query := url.Values{}
 				if cmd.Flags().Changed("force") {
 					v, _ := cmd.Flags().GetBool("force")
 					query.Set("force", fmt.Sprintf("%t", v))
@@ -703,11 +703,11 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				urlPath = strings.Replace(urlPath, "{tableName}", args[1], 1)
-				query := url.Values{}
 				if cmd.Flags().Changed("catalog-name") {
 					v, _ := cmd.Flags().GetString("catalog-name")
-					query.Set("catalogName", v)
+					urlPath = strings.Replace(urlPath, "{catalogName}", v, 1)
 				}
+				query := url.Values{}
 
 				// Execute request
 				resp, err := client.Do("DELETE", urlPath, query, nil)
@@ -752,11 +752,11 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/views/{viewName}"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				urlPath = strings.Replace(urlPath, "{viewName}", args[1], 1)
-				query := url.Values{}
 				if cmd.Flags().Changed("catalog-name") {
 					v, _ := cmd.Flags().GetString("catalog-name")
-					query.Set("catalogName", v)
+					urlPath = strings.Replace(urlPath, "{catalogName}", v, 1)
 				}
+				query := url.Values{}
 
 				// Execute request
 				resp, err := client.Do("DELETE", urlPath, query, nil)
@@ -801,11 +801,11 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				urlPath = strings.Replace(urlPath, "{volumeName}", args[1], 1)
-				query := url.Values{}
 				if cmd.Flags().Changed("catalog-name") {
 					v, _ := cmd.Flags().GetString("catalog-name")
-					query.Set("catalogName", v)
+					urlPath = strings.Replace(urlPath, "{catalogName}", v, 1)
 				}
+				query := url.Values{}
 
 				// Execute request
 				resp, err := client.Do("DELETE", urlPath, query, nil)
@@ -843,11 +843,11 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
 				urlPath := "/catalogs/{catalogName}/info"
-				query := url.Values{}
 				if cmd.Flags().Changed("catalog-name") {
 					v, _ := cmd.Flags().GetString("catalog-name")
-					query.Set("catalogName", v)
+					urlPath = strings.Replace(urlPath, "{catalogName}", v, 1)
 				}
+				query := url.Values{}
 
 				// Execute request
 				resp, err := client.Do("GET", urlPath, query, nil)
@@ -934,11 +934,11 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				_ = outputFlag
 				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
-				query := url.Values{}
 				if cmd.Flags().Changed("catalog-name") {
 					v, _ := cmd.Flags().GetString("catalog-name")
-					query.Set("catalogName", v)
+					urlPath = strings.Replace(urlPath, "{catalogName}", v, 1)
 				}
+				query := url.Values{}
 
 				// Execute request
 				resp, err := client.Do("GET", urlPath, query, nil)
@@ -1026,11 +1026,11 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				urlPath = strings.Replace(urlPath, "{tableName}", args[1], 1)
-				query := url.Values{}
 				if cmd.Flags().Changed("catalog-name") {
 					v, _ := cmd.Flags().GetString("catalog-name")
-					query.Set("catalogName", v)
+					urlPath = strings.Replace(urlPath, "{catalogName}", v, 1)
 				}
+				query := url.Values{}
 
 				// Execute request
 				resp, err := client.Do("GET", urlPath, query, nil)
@@ -1118,11 +1118,11 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/views/{viewName}"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				urlPath = strings.Replace(urlPath, "{viewName}", args[1], 1)
-				query := url.Values{}
 				if cmd.Flags().Changed("catalog-name") {
 					v, _ := cmd.Flags().GetString("catalog-name")
-					query.Set("catalogName", v)
+					urlPath = strings.Replace(urlPath, "{catalogName}", v, 1)
 				}
+				query := url.Values{}
 
 				// Execute request
 				resp, err := client.Do("GET", urlPath, query, nil)
@@ -1210,11 +1210,11 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				urlPath = strings.Replace(urlPath, "{volumeName}", args[1], 1)
-				query := url.Values{}
 				if cmd.Flags().Changed("catalog-name") {
 					v, _ := cmd.Flags().GetString("catalog-name")
-					query.Set("catalogName", v)
+					urlPath = strings.Replace(urlPath, "{catalogName}", v, 1)
 				}
+				query := url.Values{}
 
 				// Execute request
 				resp, err := client.Do("GET", urlPath, query, nil)
@@ -1298,11 +1298,11 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
 				urlPath := "/catalogs/{catalogName}/schemas"
-				query := url.Values{}
 				if cmd.Flags().Changed("catalog-name") {
 					v, _ := cmd.Flags().GetString("catalog-name")
-					query.Set("catalogName", v)
+					urlPath = strings.Replace(urlPath, "{catalogName}", v, 1)
 				}
+				query := url.Values{}
 				if cmd.Flags().Changed("max-results") {
 					v, _ := cmd.Flags().GetInt64("max-results")
 					query.Set("max_results", fmt.Sprintf("%d", v))
@@ -1402,11 +1402,11 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				urlPath = strings.Replace(urlPath, "{tableName}", args[1], 1)
-				query := url.Values{}
 				if cmd.Flags().Changed("catalog-name") {
 					v, _ := cmd.Flags().GetString("catalog-name")
-					query.Set("catalogName", v)
+					urlPath = strings.Replace(urlPath, "{catalogName}", v, 1)
 				}
+				query := url.Values{}
 				if cmd.Flags().Changed("max-results") {
 					v, _ := cmd.Flags().GetInt64("max-results")
 					query.Set("max_results", fmt.Sprintf("%d", v))
@@ -1505,11 +1505,11 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				_ = outputFlag
 				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/tables"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
-				query := url.Values{}
 				if cmd.Flags().Changed("catalog-name") {
 					v, _ := cmd.Flags().GetString("catalog-name")
-					query.Set("catalogName", v)
+					urlPath = strings.Replace(urlPath, "{catalogName}", v, 1)
 				}
+				query := url.Values{}
 				if cmd.Flags().Changed("max-results") {
 					v, _ := cmd.Flags().GetInt64("max-results")
 					query.Set("max_results", fmt.Sprintf("%d", v))
@@ -1608,11 +1608,11 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				_ = outputFlag
 				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/views"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
-				query := url.Values{}
 				if cmd.Flags().Changed("catalog-name") {
 					v, _ := cmd.Flags().GetString("catalog-name")
-					query.Set("catalogName", v)
+					urlPath = strings.Replace(urlPath, "{catalogName}", v, 1)
 				}
+				query := url.Values{}
 				if cmd.Flags().Changed("max-results") {
 					v, _ := cmd.Flags().GetInt64("max-results")
 					query.Set("max_results", fmt.Sprintf("%d", v))
@@ -1711,11 +1711,11 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				_ = outputFlag
 				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/volumes"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
-				query := url.Values{}
 				if cmd.Flags().Changed("catalog-name") {
 					v, _ := cmd.Flags().GetString("catalog-name")
-					query.Set("catalogName", v)
+					urlPath = strings.Replace(urlPath, "{catalogName}", v, 1)
 				}
+				query := url.Values{}
 				if cmd.Flags().Changed("max-results") {
 					v, _ := cmd.Flags().GetInt64("max-results")
 					query.Set("max_results", fmt.Sprintf("%d", v))
@@ -1815,11 +1815,11 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/profile"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				urlPath = strings.Replace(urlPath, "{tableName}", args[1], 1)
-				query := url.Values{}
 				if cmd.Flags().Changed("catalog-name") {
 					v, _ := cmd.Flags().GetString("catalog-name")
-					query.Set("catalogName", v)
+					urlPath = strings.Replace(urlPath, "{catalogName}", v, 1)
 				}
+				query := url.Values{}
 
 				// Execute request
 				resp, err := client.Do("POST", urlPath, query, nil)
@@ -1908,11 +1908,11 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				urlPath = strings.Replace(urlPath, "{tableName}", args[1], 1)
 				urlPath = strings.Replace(urlPath, "{columnName}", args[2], 1)
-				query := url.Values{}
 				if cmd.Flags().Changed("catalog-name") {
 					v, _ := cmd.Flags().GetString("catalog-name")
-					query.Set("catalogName", v)
+					urlPath = strings.Replace(urlPath, "{catalogName}", v, 1)
 				}
+				query := url.Values{}
 				// Build request body
 				var body interface{}
 				jsonInput, _ := cmd.Flags().GetString("json")
@@ -2039,11 +2039,11 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				_ = outputFlag
 				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
-				query := url.Values{}
 				if cmd.Flags().Changed("catalog-name") {
 					v, _ := cmd.Flags().GetString("catalog-name")
-					query.Set("catalogName", v)
+					urlPath = strings.Replace(urlPath, "{catalogName}", v, 1)
 				}
+				query := url.Values{}
 				// Build request body
 				var body interface{}
 				jsonInput, _ := cmd.Flags().GetString("json")
@@ -2171,11 +2171,11 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				urlPath = strings.Replace(urlPath, "{tableName}", args[1], 1)
-				query := url.Values{}
 				if cmd.Flags().Changed("catalog-name") {
 					v, _ := cmd.Flags().GetString("catalog-name")
-					query.Set("catalogName", v)
+					urlPath = strings.Replace(urlPath, "{catalogName}", v, 1)
 				}
+				query := url.Values{}
 				// Build request body
 				var body interface{}
 				jsonInput, _ := cmd.Flags().GetString("json")
@@ -2308,11 +2308,11 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/views/{viewName}"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				urlPath = strings.Replace(urlPath, "{viewName}", args[1], 1)
-				query := url.Values{}
 				if cmd.Flags().Changed("catalog-name") {
 					v, _ := cmd.Flags().GetString("catalog-name")
-					query.Set("catalogName", v)
+					urlPath = strings.Replace(urlPath, "{catalogName}", v, 1)
 				}
+				query := url.Values{}
 				// Build request body
 				var body interface{}
 				jsonInput, _ := cmd.Flags().GetString("json")
@@ -2445,11 +2445,11 @@ func newCatalogCmd(client *Client) *cobra.Command {
 				urlPath := "/catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}"
 				urlPath = strings.Replace(urlPath, "{schemaName}", args[0], 1)
 				urlPath = strings.Replace(urlPath, "{volumeName}", args[1], 1)
-				query := url.Values{}
 				if cmd.Flags().Changed("catalog-name") {
 					v, _ := cmd.Flags().GetString("catalog-name")
-					query.Set("catalogName", v)
+					urlPath = strings.Replace(urlPath, "{catalogName}", v, 1)
 				}
+				query := url.Values{}
 				// Build request body
 				var body interface{}
 				jsonInput, _ := cmd.Flags().GetString("json")

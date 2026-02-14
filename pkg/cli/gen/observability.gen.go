@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -267,11 +268,11 @@ func newObservabilityCmd(client *Client) *cobra.Command {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
 				urlPath := "/catalogs/{catalogName}/metastore/summary"
-				query := url.Values{}
 				if cmd.Flags().Changed("catalog-name") {
 					v, _ := cmd.Flags().GetString("catalog-name")
-					query.Set("catalogName", v)
+					urlPath = strings.Replace(urlPath, "{catalogName}", v, 1)
 				}
+				query := url.Values{}
 
 				// Execute request
 				resp, err := client.Do("GET", urlPath, query, nil)
