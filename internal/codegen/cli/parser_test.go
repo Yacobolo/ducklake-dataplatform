@@ -96,19 +96,19 @@ func TestParse_CoverageCheck(t *testing.T) {
 	// Build a minimal spec with one operation
 	spec := buildMinimalSpec("listSchemas", "GET", "/catalog/schemas")
 
-	t.Run("missing operation in config", func(t *testing.T) {
+	t.Run("missing operation covered by convention", func(t *testing.T) {
+		// Convention-based parser auto-discovers operations; just need skip_operations
 		cfg := &Config{
-			Groups: map[string]GroupConfig{},
+			CommandOverrides: map[string]CommandOverride{},
 		}
-		_, err := Parse(spec, cfg)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "SYNC ERROR")
-		assert.Contains(t, err.Error(), "listSchemas")
+		groups, err := Parse(spec, cfg)
+		require.NoError(t, err)
+		// The operation should be auto-discovered and placed in a group
+		assert.NotEmpty(t, groups)
 	})
 
 	t.Run("operation in skip_operations", func(t *testing.T) {
 		cfg := &Config{
-			Groups:         map[string]GroupConfig{},
 			SkipOperations: []string{"listSchemas"},
 		}
 		groups, err := Parse(spec, cfg)
@@ -116,28 +116,17 @@ func TestParse_CoverageCheck(t *testing.T) {
 		assert.Empty(t, groups)
 	})
 
-	t.Run("config references nonexistent operation", func(t *testing.T) {
+	t.Run("override references nonexistent operation", func(t *testing.T) {
 		cfg := &Config{
-			Groups: map[string]GroupConfig{
-				"catalog": {
-					Short: "Catalog",
-					Commands: map[string]CommandConfig{
-						"list-schemas": {
-							OperationID: "listSchemas",
-							CommandPath: []string{"schemas"},
-							Verb:        "list",
-						},
-						"nonexistent": {
-							OperationID: "doesNotExist",
-							CommandPath: []string{"test"},
-							Verb:        "get",
-						},
-					},
+			CommandOverrides: map[string]CommandOverride{
+				"doesNotExist": {
+					Group: "test",
 				},
 			},
 		}
 		_, err := Parse(spec, cfg)
 		require.Error(t, err)
+		assert.Contains(t, err.Error(), "DRIFT ERROR")
 		assert.Contains(t, err.Error(), "doesNotExist")
 	})
 }
@@ -177,7 +166,7 @@ func TestParse_FullSpec(t *testing.T) {
 	for _, g := range groups {
 		groupNames[g.Name] = true
 	}
-	for _, expected := range []string{"catalog", "security", "query", "ingestion", "lineage", "governance", "observability", "storage", "manifest", "compute"} {
+	for _, expected := range []string{"catalog", "security", "query", "ingestion", "lineage", "governance", "observability", "storage", "manifest", "compute", "notebooks", "pipelines"} {
 		assert.True(t, groupNames[expected], "missing group: %s", expected)
 	}
 
@@ -206,6 +195,12 @@ func TestParse_FullSpec(t *testing.T) {
 		case "query":
 			assert.Len(t, g.Commands, 1)
 			assert.Equal(t, "executeQuery", g.Commands[0].OperationID)
+
+		case "notebooks":
+			assert.Greater(t, len(g.Commands), 15, "notebooks should have many commands")
+
+		case "pipelines":
+			assert.Greater(t, len(g.Commands), 10, "pipelines should have many commands")
 		}
 	}
 }
@@ -245,6 +240,79 @@ func TestComputeUseString(t *testing.T) {
 	}
 }
 
+// === Drift Validation Tests ===
+
+func TestParse_DriftValidation_StaleOverrideKey(t *testing.T) {
+	spec := buildMinimalSpec("listItems", "GET", "/items")
+	cfg := &Config{
+		CommandOverrides: map[string]CommandOverride{
+			"listItems":    {},
+			"doesNotExist": {Group: "test"}, // stale override
+		},
+	}
+	_, err := Parse(spec, cfg)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "DRIFT ERROR")
+	assert.Contains(t, err.Error(), "doesNotExist")
+}
+
+func TestParse_DriftValidation_StaleTableColumn(t *testing.T) {
+	// Build a spec with a paginated response
+	op := makeOperationWithResponses("listItems", map[string]*openapi3.ResponseRef{
+		"200": makePaginatedResponseWithItemProps("PaginatedItems", "Item", map[string]string{
+			"id":   "string",
+			"name": "string",
+		}),
+	})
+	op.Tags = []string{"Test"}
+	spec := buildSpecFromOp("listItems", "GET", "/items", op)
+
+	staleColumns := []string{"id", "nonexistent_field"}
+	cfg := &Config{
+		CommandOverrides: map[string]CommandOverride{
+			"listItems": {
+				TableColumns: &staleColumns,
+			},
+		},
+	}
+	_, err := Parse(spec, cfg)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "table_columns")
+	assert.Contains(t, err.Error(), "nonexistent_field")
+}
+
+func TestParse_DriftValidation_StalePositionalArg(t *testing.T) {
+	// Build a spec with a path param
+	op := &openapi3.Operation{
+		OperationID: "getItem",
+		Summary:     "Get item",
+		Tags:        []string{"Test"},
+		Responses:   &openapi3.Responses{},
+	}
+	op.Responses.Set("200", makeResponse("OK"))
+
+	spec := buildSpecFromOp("getItem", "GET", "/items/{itemId}", op)
+	// Add path param to the path item
+	spec.Paths.Find("/items/{itemId}").Parameters = []*openapi3.ParameterRef{
+		makeParam("itemId", "path", "string", true),
+	}
+
+	staleArgs := []string{"nonexistentParam"}
+	cfg := &Config{
+		CommandOverrides: map[string]CommandOverride{
+			"getItem": {
+				PositionalArgs: &staleArgs,
+			},
+		},
+	}
+	_, err := Parse(spec, cfg)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "positional_arg")
+	assert.Contains(t, err.Error(), "nonexistentParam")
+}
+
+// === Test Helpers ===
+
 // buildMinimalSpec creates a minimal OpenAPI spec with one operation.
 func buildMinimalSpec(opID, method, path string) *openapi3.T {
 	op := &openapi3.Operation{
@@ -260,12 +328,19 @@ func buildMinimalSpec(opID, method, path string) *openapi3.T {
 	}
 	op.Responses.Set("200", &openapi3.ResponseRef{Value: resp})
 
+	return buildSpecFromOp(opID, method, path, op)
+}
+
+// buildSpecFromOp creates a spec with a single operation.
+func buildSpecFromOp(opID, method, path string, op *openapi3.Operation) *openapi3.T {
 	pathItem := &openapi3.PathItem{}
 	switch method {
 	case "GET":
 		pathItem.Get = op
 	case "POST":
 		pathItem.Post = op
+	case "PUT":
+		pathItem.Put = op
 	case "DELETE":
 		pathItem.Delete = op
 	}
@@ -281,6 +356,59 @@ func buildMinimalSpec(opID, method, path string) *openapi3.T {
 	spec.Paths.Set(path, pathItem)
 
 	return spec
+}
+
+// makePaginatedResponseWithItemProps builds a paginated response with known item properties.
+func makePaginatedResponseWithItemProps(refTypeName, itemRefName string, fields map[string]string) *openapi3.ResponseRef {
+	desc := "OK"
+	arrayTypes := openapi3.Types{"array"}
+	objectTypes := openapi3.Types{"object"}
+
+	// Build item schema with actual properties
+	itemProps := openapi3.Schemas{}
+	for name, typeName := range fields {
+		t := openapi3.Types{typeName}
+		itemProps[name] = &openapi3.SchemaRef{
+			Value: &openapi3.Schema{Type: &t},
+		}
+	}
+	itemSchema := &openapi3.Schema{
+		Type:       &objectTypes,
+		Properties: itemProps,
+	}
+
+	stringTypes := openapi3.Types{"string"}
+	props := openapi3.Schemas{
+		"data": &openapi3.SchemaRef{
+			Value: &openapi3.Schema{
+				Type: &arrayTypes,
+				Items: &openapi3.SchemaRef{
+					Ref:   "#/components/schemas/" + itemRefName,
+					Value: itemSchema,
+				},
+			},
+		},
+		"next_page_token": &openapi3.SchemaRef{
+			Value: &openapi3.Schema{Type: &stringTypes},
+		},
+	}
+
+	return &openapi3.ResponseRef{
+		Value: &openapi3.Response{
+			Description: &desc,
+			Content: openapi3.Content{
+				"application/json": &openapi3.MediaType{
+					Schema: &openapi3.SchemaRef{
+						Ref: "#/components/schemas/" + refTypeName,
+						Value: &openapi3.Schema{
+							Type:       &objectTypes,
+							Properties: props,
+						},
+					},
+				},
+			},
+		},
+	}
 }
 
 func stringPtr(s string) *string {

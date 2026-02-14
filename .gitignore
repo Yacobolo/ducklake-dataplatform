@@ -47,6 +47,7 @@ internal/api/server.gen.go
 internal/db/dbstore/*.sql.go
 internal/db/dbstore/db.go
 internal/db/dbstore/models.go
+pkg/cli/gen/*.gen.go
 
 # Binaries
 /server
