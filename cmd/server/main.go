@@ -333,7 +333,7 @@ func runAdmin(args []string) error {
 	var exists bool
 	err = db.QueryRowContext(context.Background(),
 		"SELECT 1 FROM principals WHERE name = ?", principalName).Scan(&exists)
-	if err != nil && err != sql.ErrNoRows {
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return fmt.Errorf("check principal: %w", err)
 	}
 
