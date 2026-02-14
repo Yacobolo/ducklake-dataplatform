@@ -1,0 +1,13 @@
+apiVersion: duck/v1
+kind: GrantList
+grants:
+  - principal: analysts
+    principal_type: group
+    securable_type: schema
+    securable: main.analytics
+    privilege: USAGE
+  - principal: analysts
+    principal_type: group
+    securable_type: table
+    securable: main.analytics.orders
+    privilege: SELECT

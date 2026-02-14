@@ -1,0 +1,10 @@
+apiVersion: duck/v1
+kind: Catalog
+metadata:
+  name: main
+  deletion_protection: true
+spec:
+  metastore_type: sqlite
+  dsn: /data/meta.sqlite
+  data_path: s3://test-bucket/main/
+  is_default: true

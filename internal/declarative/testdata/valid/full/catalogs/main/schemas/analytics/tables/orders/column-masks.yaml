@@ -1,0 +1,10 @@
+apiVersion: duck/v1
+kind: ColumnMaskList
+masks:
+  - name: mask-customer-id
+    column_name: customer_id
+    mask_expression: "-1"
+    bindings:
+      - principal: analyst1
+        principal_type: user
+        see_original: false

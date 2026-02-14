@@ -1,0 +1,7 @@
+apiVersion: duck/v1
+kind: View
+metadata:
+  name: monthly-revenue
+spec:
+  view_definition: "SELECT DATE_TRUNC('month', order_date) AS month, SUM(amount) AS total FROM analytics.orders GROUP BY 1"
+  comment: "Monthly revenue"

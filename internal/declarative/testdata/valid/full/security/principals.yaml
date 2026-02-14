@@ -1,0 +1,12 @@
+apiVersion: duck/v1
+kind: PrincipalList
+principals:
+  - name: admin-user
+    type: user
+    is_admin: true
+  - name: analyst1
+    type: user
+    is_admin: false
+  - name: data-bot
+    type: service_principal
+    is_admin: false

@@ -1,0 +1,6 @@
+apiVersion: duck/v1
+kind: ExternalLocationList
+locations:
+  - name: test-lake
+    url: s3://test-bucket/
+    credential_name: test-s3

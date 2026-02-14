@@ -1,0 +1,172 @@
+package declarative
+
+import (
+	"path/filepath"
+	"runtime"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// testdataDir returns the absolute path to testdata relative to this test file.
+func testdataDir(t *testing.T) string {
+	t.Helper()
+	_, filename, _, ok := runtime.Caller(0)
+	require.True(t, ok, "runtime.Caller failed")
+	return filepath.Join(filepath.Dir(filename), "testdata")
+}
+
+func TestLoader_FullConfig(t *testing.T) {
+	dir := filepath.Join(testdataDir(t), "valid", "full")
+	state, err := LoadDirectory(dir)
+	require.NoError(t, err)
+
+	t.Run("principals loaded", func(t *testing.T) {
+		assert.Len(t, state.Principals, 3)
+		assert.Equal(t, "admin-user", state.Principals[0].Name)
+		assert.True(t, state.Principals[0].IsAdmin)
+	})
+
+	t.Run("groups loaded", func(t *testing.T) {
+		assert.Len(t, state.Groups, 2)
+		assert.Equal(t, "analysts", state.Groups[0].Name)
+		assert.Len(t, state.Groups[0].Members, 1)
+	})
+
+	t.Run("grants loaded", func(t *testing.T) {
+		assert.Len(t, state.Grants, 2)
+	})
+
+	t.Run("catalogs loaded", func(t *testing.T) {
+		require.Len(t, state.Catalogs, 1)
+		assert.Equal(t, "main", state.Catalogs[0].CatalogName)
+		assert.True(t, state.Catalogs[0].DeletionProtection)
+		assert.Equal(t, "sqlite", state.Catalogs[0].Spec.MetastoreType)
+	})
+
+	t.Run("schemas loaded", func(t *testing.T) {
+		require.Len(t, state.Schemas, 1)
+		assert.Equal(t, "main", state.Schemas[0].CatalogName)
+		assert.Equal(t, "analytics", state.Schemas[0].SchemaName)
+	})
+
+	t.Run("tables loaded", func(t *testing.T) {
+		require.Len(t, state.Tables, 1)
+		assert.Equal(t, "orders", state.Tables[0].TableName)
+		assert.True(t, state.Tables[0].DeletionProtection)
+		assert.Len(t, state.Tables[0].Spec.Columns, 4)
+	})
+
+	t.Run("row filters loaded", func(t *testing.T) {
+		require.Len(t, state.RowFilters, 1)
+		assert.Len(t, state.RowFilters[0].Filters, 1)
+		assert.Equal(t, "region-us", state.RowFilters[0].Filters[0].Name)
+	})
+
+	t.Run("column masks loaded", func(t *testing.T) {
+		require.Len(t, state.ColumnMasks, 1)
+		assert.Len(t, state.ColumnMasks[0].Masks, 1)
+	})
+
+	t.Run("views loaded", func(t *testing.T) {
+		require.Len(t, state.Views, 1)
+		assert.Equal(t, "monthly-revenue", state.Views[0].ViewName)
+	})
+
+	t.Run("volumes loaded", func(t *testing.T) {
+		require.Len(t, state.Volumes, 1)
+		assert.Equal(t, "raw-data", state.Volumes[0].VolumeName)
+	})
+
+	t.Run("tags loaded", func(t *testing.T) {
+		assert.Len(t, state.Tags, 2)
+		assert.Len(t, state.TagAssignments, 1)
+	})
+
+	t.Run("storage credentials loaded", func(t *testing.T) {
+		require.Len(t, state.StorageCredentials, 1)
+		assert.Equal(t, "test-s3", state.StorageCredentials[0].Name)
+	})
+
+	t.Run("external locations loaded", func(t *testing.T) {
+		require.Len(t, state.ExternalLocations, 1)
+	})
+
+	t.Run("compute endpoints loaded", func(t *testing.T) {
+		require.Len(t, state.ComputeEndpoints, 1)
+		assert.Equal(t, "local-dev", state.ComputeEndpoints[0].Name)
+	})
+
+	t.Run("compute assignments loaded", func(t *testing.T) {
+		require.Len(t, state.ComputeAssignments, 1)
+	})
+}
+
+func TestLoader_MinimalConfig(t *testing.T) {
+	dir := filepath.Join(testdataDir(t), "valid", "minimal")
+	state, err := LoadDirectory(dir)
+	require.NoError(t, err)
+
+	assert.Len(t, state.Principals, 1)
+	assert.Empty(t, state.Groups)
+	assert.Empty(t, state.Grants)
+	assert.Empty(t, state.Catalogs)
+}
+
+func TestLoader_BadYAML(t *testing.T) {
+	dir := filepath.Join(testdataDir(t), "invalid", "bad-yaml")
+	_, err := LoadDirectory(dir)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "parse")
+}
+
+func TestLoader_NameMismatch(t *testing.T) {
+	dir := filepath.Join(testdataDir(t), "invalid", "name-mismatch")
+	_, err := LoadDirectory(dir)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "name")
+}
+
+func TestLoader_DanglingRef(t *testing.T) {
+	dir := filepath.Join(testdataDir(t), "invalid", "dangling-ref")
+	state, err := LoadDirectory(dir)
+	require.NoError(t, err, "LoadDirectory should succeed; validation is separate")
+
+	// The loader succeeds but Validate catches the dangling references.
+	errs := Validate(state)
+	require.NotEmpty(t, errs)
+
+	// Expect errors about both the unknown principal and the unknown catalog.
+	var messages []string
+	for _, e := range errs {
+		messages = append(messages, e.Error())
+	}
+
+	// The grant references "nonexistent-user" which is not a declared principal.
+	foundPrincipal := false
+	foundSecurable := false
+	for _, e := range errs {
+		if e.Message == "principal \"nonexistent-user\" references unknown user" {
+			foundPrincipal = true
+		}
+		if e.Message == "securable references unknown catalog \"main\"" {
+			foundSecurable = true
+		}
+	}
+	assert.True(t, foundPrincipal, "expected validation error about unknown principal; got: %v", messages)
+	assert.True(t, foundSecurable, "expected validation error about unknown catalog; got: %v", messages)
+}
+
+func TestLoader_NonexistentDir(t *testing.T) {
+	_, err := LoadDirectory("/nonexistent/path")
+	require.Error(t, err)
+}
+
+func TestLoader_EmptyDir(t *testing.T) {
+	dir := t.TempDir()
+	state, err := LoadDirectory(dir)
+	require.NoError(t, err)
+	assert.Empty(t, state.Principals)
+	assert.Empty(t, state.Catalogs)
+}

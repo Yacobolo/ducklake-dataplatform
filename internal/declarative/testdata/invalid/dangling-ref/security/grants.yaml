@@ -1,0 +1,8 @@
+apiVersion: duck/v1
+kind: GrantList
+grants:
+  - principal: nonexistent-user
+    principal_type: user
+    securable_type: catalog
+    securable: main
+    privilege: SELECT

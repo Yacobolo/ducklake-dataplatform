@@ -1,0 +1,17 @@
+apiVersion: duck/v1
+kind: Table
+metadata:
+  name: orders
+  deletion_protection: true
+spec:
+  table_type: MANAGED
+  comment: "Customer orders"
+  columns:
+    - name: order_id
+      type: BIGINT
+    - name: customer_id
+      type: BIGINT
+    - name: amount
+      type: DECIMAL(18,2)
+    - name: region
+      type: VARCHAR

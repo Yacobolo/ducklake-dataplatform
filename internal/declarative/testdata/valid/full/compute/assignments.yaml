@@ -1,0 +1,7 @@
+apiVersion: duck/v1
+kind: ComputeAssignmentList
+assignments:
+  - endpoint: local-dev
+    principal: analyst1
+    principal_type: user
+    is_default: true
