@@ -19,6 +19,7 @@ env:
   OAPI_CODEGEN_VERSION: "v2.5.1"
   SQLC_VERSION: "v1.30.0"
   GOVULNCHECK_VERSION: "v1.1.4"
+  GOLANGCI_LINT_VERSION: "v2.7"
 
 jobs:
   # ── Generate ────────────────────────────────────────────────
@@ -30,20 +31,13 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: ./.github/actions/setup
         with:
           go-version: ${{ env.GO_VERSION }}
+          download-generated: 'false'
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-      - name: Go module cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: go-mod-${{ runner.os }}-${{ hashFiles('go.sum') }}
-          restore-keys: go-mod-${{ runner.os }}-
       - name: Install tools
         run: |
           go install github.com/go-task/task/v3/cmd/task@${{ env.TASK_VERSION }}
@@ -77,85 +71,37 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: ./.github/actions/setup
         with:
           go-version: ${{ env.GO_VERSION }}
-      - name: Go module cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: go-mod-${{ runner.os }}-${{ hashFiles('go.sum') }}
-          restore-keys: go-mod-${{ runner.os }}-
-      - uses: actions/download-artifact@v4
-        with:
-          name: generated-code
       - uses: golangci/golangci-lint-action@v7
         with:
-          version: v2.7
+          version: ${{ env.GOLANGCI_LINT_VERSION }}
       - name: Install Task
         run: go install github.com/go-task/task/v3/cmd/task@${{ env.TASK_VERSION }}
       - name: Lint OpenAPI spec
         run: task lint:api
 
-  # ── Unit Tests ──────────────────────────────────────────────
-  test-unit:
-    name: Unit Tests
+  # ── Tests ───────────────────────────────────────────────────
+  test:
+    name: Tests (${{ matrix.suite }})
     needs: generate
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      matrix:
+        suite: [unit, integration]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: ./.github/actions/setup
         with:
           go-version: ${{ env.GO_VERSION }}
-      - name: Go module cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: go-mod-${{ runner.os }}-${{ hashFiles('go.sum') }}
-          restore-keys: go-mod-${{ runner.os }}-
-      - uses: actions/download-artifact@v4
-        with:
-          name: generated-code
       - name: Install tools
         run: |
           go install github.com/go-task/task/v3/cmd/task@${{ env.TASK_VERSION }}
           go install gotest.tools/gotestsum@${{ env.GOTESTSUM_VERSION }}
-      - name: Run unit tests
-        run: task test:unit
-
-  # ── Integration Tests ──────────────────────────────────────
-  test-integration:
-    name: Integration Tests
-    needs: generate
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-      - name: Go module cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: go-mod-${{ runner.os }}-${{ hashFiles('go.sum') }}
-          restore-keys: go-mod-${{ runner.os }}-
-      - uses: actions/download-artifact@v4
-        with:
-          name: generated-code
-      - name: Install tools
-        run: |
-          go install github.com/go-task/task/v3/cmd/task@${{ env.TASK_VERSION }}
-          go install gotest.tools/gotestsum@${{ env.GOTESTSUM_VERSION }}
-      - name: Run integration tests
-        run: task test:integration
+      - name: Run ${{ matrix.suite }} tests
+        run: task test:${{ matrix.suite }}
 
   # ── Build & Vet ─────────────────────────────────────────────
   build:
@@ -165,20 +111,9 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: ./.github/actions/setup
         with:
           go-version: ${{ env.GO_VERSION }}
-      - name: Go module cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: go-mod-${{ runner.os }}-${{ hashFiles('go.sum') }}
-          restore-keys: go-mod-${{ runner.os }}-
-      - uses: actions/download-artifact@v4
-        with:
-          name: generated-code
       - name: Install Task
         run: go install github.com/go-task/task/v3/cmd/task@${{ env.TASK_VERSION }}
       - name: Vet
@@ -194,20 +129,9 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: ./.github/actions/setup
         with:
           go-version: ${{ env.GO_VERSION }}
-      - name: Go module cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: go-mod-${{ runner.os }}-${{ hashFiles('go.sum') }}
-          restore-keys: go-mod-${{ runner.os }}-
-      - uses: actions/download-artifact@v4
-        with:
-          name: generated-code
       - name: Install govulncheck
         run: go install golang.org/x/vuln/cmd/govulncheck@${{ env.GOVULNCHECK_VERSION }}
       - name: Run govulncheck

@@ -1,0 +1,21 @@
+name: Setup Go with generated code
+description: Setup Go (with built-in module cache) and optionally download generated code artifact. Must be called after actions/checkout.
+
+inputs:
+  go-version:
+    description: Go version to install
+    required: true
+  download-generated:
+    description: Whether to download the generated-code artifact (set to 'false' in the generate job itself)
+    default: 'true'
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-go@v5
+      with:
+        go-version: ${{ inputs.go-version }}
+    - if: inputs.download-generated == 'true'
+      uses: actions/download-artifact@v4
+      with:
+        name: generated-code
