@@ -80,7 +80,7 @@ command_overrides:
 				t.Helper()
 				ov := cfg.CommandOverrides["executeQuery"]
 				require.NotNil(t, ov.Verb)
-				assert.Equal(t, "", *ov.Verb)
+				assert.Empty(t, *ov.Verb)
 				require.Contains(t, ov.FlagAliases, "sql")
 				assert.Equal(t, "s", ov.FlagAliases["sql"].Short)
 			},

@@ -89,7 +89,7 @@ var crudPrefixes = []string{"list", "create", "get", "update", "delete"}
 
 // inferVerb extracts the verb from an operationId by stripping the resource suffix.
 // Returns the inferred verb and whether it was successfully inferred.
-func inferVerb(operationID, httpMethod string) (string, bool) {
+func inferVerb(operationID, _ string) (string, bool) {
 	for _, prefix := range crudPrefixes {
 		if strings.HasPrefix(operationID, prefix) {
 			suffix := operationID[len(prefix):]
@@ -144,9 +144,6 @@ func inferPositionalArgs(params []*openapi3.ParameterRef, implicitParams map[str
 }
 
 // === Table Columns Inference ===
-
-// excludedColumnSuffixes are field name suffixes to exclude from auto-derived table columns.
-var excludedColumnSuffixes = []string{}
 
 // excludedColumnNames are specific field names to exclude from auto-derived table columns.
 var excludedColumnNames = map[string]bool{
@@ -238,7 +235,7 @@ func selectTableColumns(schema *openapi3.Schema) []string {
 }
 
 // isLongTextField returns true if the field is likely long text unsuitable for table columns.
-func isLongTextField(name string, schema *openapi3.Schema) bool {
+func isLongTextField(name string, _ *openapi3.Schema) bool {
 	longNames := map[string]bool{
 		"view_definition": true,
 		"storage_path":    true,
