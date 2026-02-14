@@ -168,7 +168,7 @@ func (h *APIHandler) DeleteSchema(ctx context.Context, request DeleteSchemaReque
 		case http.StatusConflict:
 			return DeleteSchema409JSONResponse{ConflictJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
-			return DeleteSchema403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return DeleteSchema500JSONResponse{InternalErrorJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: InternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 	}
 	return DeleteSchema204Response{}, nil

@@ -774,6 +774,61 @@ func TestApplyColumnMasks_CTE(t *testing.T) {
 	}
 }
 
+// --- Case-insensitive column mask lookup tests (Issue #48) ---
+
+func TestApplyColumnMasks_CaseInsensitive(t *testing.T) {
+	tests := []struct {
+		name     string
+		sql      string
+		masks    map[string]string
+		allCols  []string
+		wantMask bool
+	}{
+		{
+			name:     "mask on lowercase, query uses uppercase",
+			sql:      `SELECT "Email" FROM titanic`,
+			masks:    map[string]string{"email": "'***'"},
+			wantMask: true,
+		},
+		{
+			name:     "mask on lowercase, query uses mixed case",
+			sql:      `SELECT "eMaIl" FROM titanic`,
+			masks:    map[string]string{"email": "'***'"},
+			wantMask: true,
+		},
+		{
+			name:     "mask on lowercase, query uses lowercase",
+			sql:      `SELECT email FROM titanic`,
+			masks:    map[string]string{"email": "'***'"},
+			wantMask: true,
+		},
+		{
+			name:     "select star with case-insensitive mask",
+			sql:      `SELECT * FROM titanic`,
+			masks:    map[string]string{"name": "'***'"},
+			allCols:  []string{"id", "Name", "email"},
+			wantMask: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := ApplyColumnMasks(tc.sql, "titanic", tc.masks, tc.allCols)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			t.Logf("result: %s", result)
+			hasMask := strings.Contains(result, "'***'")
+			if tc.wantMask && !hasMask {
+				t.Error("expected mask expression in result, got none")
+			}
+			if !tc.wantMask && hasMask {
+				t.Error("did not expect mask expression in result")
+			}
+		})
+	}
+}
+
 // --- QuoteIdentifier tests ---
 
 func TestQuoteIdentifier(t *testing.T) {
@@ -781,11 +836,22 @@ func TestQuoteIdentifier(t *testing.T) {
 		input    string
 		expected string
 	}{
-		{"simple", "simple"},
-		{"with_underscore", "with_underscore"},
+		// All identifiers are now unconditionally quoted
+		{"simple", `"simple"`},
+		{"with_underscore", `"with_underscore"`},
 		{"MixedCase", `"MixedCase"`},
 		{"has space", `"has space"`},
 		{`has"quote`, `"has""quote"`},
+		// SQL reserved words are now properly quoted
+		{"select", `"select"`},
+		{"table", `"table"`},
+		{"order", `"order"`},
+		{"group", `"group"`},
+		{"user", `"user"`},
+		{"from", `"from"`},
+		{"where", `"where"`},
+		// Empty string
+		{"", `""`},
 	}
 
 	for _, tc := range tests {
@@ -845,6 +911,203 @@ func assertContains(t *testing.T, tables []string, want string) {
 		}
 	}
 	t.Errorf("expected tables to contain %q, got: %v", want, tables)
+}
+
+// --- InjectRowFilterSQL for UPDATE/DELETE (Issue #40) ---
+
+func TestInjectRowFilterSQL_Update(t *testing.T) {
+	tests := []struct {
+		name      string
+		sql       string
+		table     string
+		filter    string
+		wantWhere bool
+	}{
+		{
+			name:      "update_no_existing_where",
+			sql:       `UPDATE titanic SET "Name" = 'test'`,
+			table:     "titanic",
+			filter:    `"Pclass" = 1`,
+			wantWhere: true,
+		},
+		{
+			name:      "update_with_existing_where",
+			sql:       `UPDATE titanic SET "Name" = 'test' WHERE "PassengerId" = 1`,
+			table:     "titanic",
+			filter:    `"Pclass" = 1`,
+			wantWhere: true,
+		},
+		{
+			name:      "update_wrong_table",
+			sql:       `UPDATE other_table SET "Name" = 'test'`,
+			table:     "titanic",
+			filter:    `"Pclass" = 1`,
+			wantWhere: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := InjectRowFilterSQL(tc.sql, tc.table, tc.filter)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			t.Logf("result: %s", result)
+
+			lower := strings.ToLower(result)
+			hasPclass := strings.Contains(lower, "pclass")
+			if tc.wantWhere && !hasPclass {
+				t.Error("expected filter to be injected")
+			}
+			if !tc.wantWhere && hasPclass {
+				t.Error("expected filter NOT to be injected for wrong table")
+			}
+		})
+	}
+}
+
+func TestInjectRowFilterSQL_Delete(t *testing.T) {
+	tests := []struct {
+		name      string
+		sql       string
+		table     string
+		filter    string
+		wantWhere bool
+	}{
+		{
+			name:      "delete_no_existing_where",
+			sql:       `DELETE FROM titanic`,
+			table:     "titanic",
+			filter:    `"Pclass" = 1`,
+			wantWhere: true,
+		},
+		{
+			name:      "delete_with_existing_where",
+			sql:       `DELETE FROM titanic WHERE "PassengerId" = 1`,
+			table:     "titanic",
+			filter:    `"Pclass" = 1`,
+			wantWhere: true,
+		},
+		{
+			name:      "delete_wrong_table",
+			sql:       `DELETE FROM other_table WHERE id = 1`,
+			table:     "titanic",
+			filter:    `"Pclass" = 1`,
+			wantWhere: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := InjectRowFilterSQL(tc.sql, tc.table, tc.filter)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			t.Logf("result: %s", result)
+
+			lower := strings.ToLower(result)
+			hasPclass := strings.Contains(lower, "pclass")
+			if tc.wantWhere && !hasPclass {
+				t.Error("expected filter to be injected")
+			}
+			if !tc.wantWhere && hasPclass {
+				t.Error("expected filter NOT to be injected for wrong table")
+			}
+		})
+	}
+}
+
+func TestInjectRowFilterSQL_UpdatePreservesExistingWhere(t *testing.T) {
+	result, err := InjectRowFilterSQL(
+		`UPDATE titanic SET "Name" = 'test' WHERE "PassengerId" = 1`,
+		"titanic",
+		`"Pclass" = 1`,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("result: %s", result)
+
+	lower := strings.ToLower(result)
+	if !strings.Contains(lower, "pclass") {
+		t.Error("expected injected filter")
+	}
+	if !strings.Contains(lower, "passengerid") {
+		t.Error("expected original WHERE to be preserved")
+	}
+}
+
+func TestInjectMultipleRowFilters_Update(t *testing.T) {
+	result, err := InjectMultipleRowFilters(
+		`UPDATE titanic SET "Name" = 'test'`,
+		"titanic",
+		[]string{`"Pclass" = 1`, `"Survived" = 1`},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("result: %s", result)
+
+	lower := strings.ToLower(result)
+	if !strings.Contains(lower, "pclass") {
+		t.Error("expected Pclass in OR-composed filter")
+	}
+	if !strings.Contains(lower, "survived") {
+		t.Error("expected Survived in OR-composed filter")
+	}
+}
+
+// --- InjectRowFilterSQL for subqueries in FROM clause (Issue #47) ---
+
+func TestInjectRowFilterSQL_SubqueryInFrom(t *testing.T) {
+	result, err := InjectRowFilterSQL(
+		`SELECT * FROM (SELECT * FROM titanic) sub`,
+		"titanic",
+		`"Pclass" = 1`,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("result: %s", result)
+
+	lower := strings.ToLower(result)
+	if !strings.Contains(lower, "pclass") {
+		t.Error("expected filter to be injected into subquery in FROM clause")
+	}
+}
+
+func TestInjectRowFilterSQL_SubqueryInJoin(t *testing.T) {
+	result, err := InjectRowFilterSQL(
+		`SELECT * FROM orders o JOIN (SELECT * FROM titanic) sub ON o.id = sub."PassengerId"`,
+		"titanic",
+		`"Pclass" = 1`,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("result: %s", result)
+
+	lower := strings.ToLower(result)
+	if !strings.Contains(lower, "pclass") {
+		t.Error("expected filter to be injected into subquery inside JOIN")
+	}
+}
+
+func TestInjectRowFilterSQL_NestedSubqueryInFrom(t *testing.T) {
+	result, err := InjectRowFilterSQL(
+		`SELECT * FROM (SELECT * FROM (SELECT * FROM titanic) inner_sub) outer_sub`,
+		"titanic",
+		`"Pclass" = 1`,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("result: %s", result)
+
+	lower := strings.ToLower(result)
+	if !strings.Contains(lower, "pclass") {
+		t.Error("expected filter to be injected into deeply nested subquery")
+	}
 }
 
 // --- ExtractTargetTable tests ---

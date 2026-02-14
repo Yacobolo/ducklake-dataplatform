@@ -331,6 +331,32 @@ func TestAuth_JITBootstrapAdmin(t *testing.T) {
 	assert.True(t, cp.IsAdmin)
 }
 
+func TestAuth_JWTFallbackDeniesEmptyPrincipal(t *testing.T) {
+	// When no provisioner is configured and principal lookup fails,
+	// the middleware should return 401 instead of creating a principal with empty ID.
+	auth := NewAuthenticator(
+		&stubValidator{claims: &JWTClaims{
+			Subject: "unknown-user",
+			Raw:     map[string]interface{}{"sub": "unknown-user"},
+		}},
+		nil,
+		&stubPrincipalLookup{principals: map[string]*domain.Principal{}}, // empty — lookup will fail
+		nil, // no provisioner
+		config.AuthConfig{NameClaim: "sub"},
+		nil,
+	)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Authorization", "Bearer valid-but-unknown-user-token")
+	w := httptest.NewRecorder()
+
+	auth.Middleware()(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		t.Fatal("handler should not be called for unresolvable principal")
+	})).ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
 func TestAuth_SharedSecretHS256(t *testing.T) {
 	handler, getPrincipal := nextHandler()
 	secret := "test-secret-key-for-hs256"

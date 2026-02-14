@@ -437,8 +437,8 @@ func TestColumnMaskForPrincipal(t *testing.T) {
 	if masks == nil {
 		t.Fatal("expected column masks, got nil")
 	}
-	if masks["Name"] != "'***'" {
-		t.Errorf("expected Name mask = '***', got %q", masks["Name"])
+	if masks["name"] != "'***'" {
+		t.Errorf("expected name mask = '***', got %q", masks["name"])
 	}
 }
 
@@ -721,4 +721,174 @@ func TestCatalogScopedPrivilege_GroupInheritance(t *testing.T) {
 	if !ok {
 		t.Error("user in group with CREATE_EXTERNAL_LOCATION should have access")
 	}
+}
+
+// === Issue #43: SeeOriginal=true user exemption overridden by group mask ===
+
+func TestColumnMask_SeeOriginalNotOverriddenByGroup(t *testing.T) {
+	svc, q, ctx := setupTestService(t)
+
+	user, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+		ID: uuid.New().String(), Name: "analyst", Type: "user", IsAdmin: 0,
+	})
+	require.NoError(t, err)
+
+	group, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{
+		ID: uuid.New().String(), Name: "analysts",
+	})
+	require.NoError(t, err)
+	err = q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{
+		GroupID: group.ID, MemberType: "user", MemberID: user.ID,
+	})
+	require.NoError(t, err)
+
+	// Create mask on "Name" column
+	mask, err := q.CreateColumnMask(ctx, dbstore.CreateColumnMaskParams{
+		ID: uuid.New().String(), TableID: "1",
+		ColumnName:     "Name",
+		MaskExpression: "'***'",
+	})
+	require.NoError(t, err)
+
+	// User binding: see_original=1 (user is exempted)
+	err = q.BindColumnMask(ctx, dbstore.BindColumnMaskParams{
+		ID: uuid.New().String(), ColumnMaskID: mask.ID, PrincipalID: user.ID,
+		PrincipalType: "user", SeeOriginal: 1,
+	})
+	require.NoError(t, err)
+
+	// Group binding: see_original=0 (group sees masked)
+	err = q.BindColumnMask(ctx, dbstore.BindColumnMaskParams{
+		ID: uuid.New().String(), ColumnMaskID: mask.ID, PrincipalID: group.ID,
+		PrincipalType: "group", SeeOriginal: 0,
+	})
+	require.NoError(t, err)
+
+	masks, err := svc.GetEffectiveColumnMasks(ctx, "analyst", "1")
+	require.NoError(t, err)
+	if masks != nil {
+		t.Errorf("user with direct see_original=true should not be masked, got %v", masks)
+	}
+}
+
+// === Issue #48: Case-insensitive column mask matching ===
+
+func TestColumnMask_CaseInsensitiveLookup(t *testing.T) {
+	svc, q, ctx := setupTestService(t)
+
+	user, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+		ID: uuid.New().String(), Name: "analyst", Type: "user", IsAdmin: 0,
+	})
+	require.NoError(t, err)
+
+	// Mask on lowercase "email"
+	mask, err := q.CreateColumnMask(ctx, dbstore.CreateColumnMaskParams{
+		ID: uuid.New().String(), TableID: "1",
+		ColumnName:     "email",
+		MaskExpression: "'***'",
+	})
+	require.NoError(t, err)
+	err = q.BindColumnMask(ctx, dbstore.BindColumnMaskParams{
+		ID: uuid.New().String(), ColumnMaskID: mask.ID, PrincipalID: user.ID,
+		PrincipalType: "user", SeeOriginal: 0,
+	})
+	require.NoError(t, err)
+
+	masks, err := svc.GetEffectiveColumnMasks(ctx, "analyst", "1")
+	require.NoError(t, err)
+	require.NotNil(t, masks)
+
+	// The key should be normalized to lowercase
+	require.Equal(t, "'***'", masks["email"], "mask should be stored with lowercase key")
+	_, hasUpper := masks["Email"]
+	require.False(t, hasUpper, "mask should not have mixed-case key")
+}
+
+// === Issue #46: ALL_PRIVILEGES expansion in hasGrant ===
+
+func TestAllPrivileges_ExpandsToSelect(t *testing.T) {
+	svc, q, ctx := setupTestService(t)
+
+	user, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+		ID: uuid.New().String(), Name: "poweruser", Type: "user", IsAdmin: 0,
+	})
+	require.NoError(t, err)
+
+	// Grant USAGE on schema (required gate)
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		ID: uuid.New().String(), PrincipalID: user.ID, PrincipalType: "user",
+		SecurableType: SecurableSchema, SecurableID: "0",
+		Privilege: PrivUsage,
+	})
+	require.NoError(t, err)
+
+	// Grant ALL_PRIVILEGES on the table (not SELECT specifically)
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		ID: uuid.New().String(), PrincipalID: user.ID, PrincipalType: "user",
+		SecurableType: SecurableTable, SecurableID: "1",
+		Privilege: PrivAllPrivileges,
+	})
+	require.NoError(t, err)
+
+	// Check SELECT — should be allowed via ALL_PRIVILEGES expansion
+	ok, err := svc.CheckPrivilege(ctx, "poweruser", SecurableTable, "1", PrivSelect)
+	require.NoError(t, err)
+	require.True(t, ok, "ALL_PRIVILEGES on table should grant SELECT")
+
+	// Check INSERT — should also be allowed
+	ok, err = svc.CheckPrivilege(ctx, "poweruser", SecurableTable, "1", PrivInsert)
+	require.NoError(t, err)
+	require.True(t, ok, "ALL_PRIVILEGES on table should grant INSERT")
+}
+
+func TestAllPrivileges_OnSchema_ExpandsToUsageAndSelect(t *testing.T) {
+	svc, q, ctx := setupTestService(t)
+
+	user, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+		ID: uuid.New().String(), Name: "poweruser", Type: "user", IsAdmin: 0,
+	})
+	require.NoError(t, err)
+
+	// Grant ALL_PRIVILEGES on schema (should expand for USAGE gate and SELECT inheritance)
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		ID: uuid.New().String(), PrincipalID: user.ID, PrincipalType: "user",
+		SecurableType: SecurableSchema, SecurableID: "0",
+		Privilege: PrivAllPrivileges,
+	})
+	require.NoError(t, err)
+
+	// Check SELECT on a table — USAGE gate should pass via ALL_PRIVILEGES, SELECT should inherit
+	ok, err := svc.CheckPrivilege(ctx, "poweruser", SecurableTable, "1", PrivSelect)
+	require.NoError(t, err)
+	require.True(t, ok, "ALL_PRIVILEGES on schema should grant USAGE + SELECT on tables")
+}
+
+func TestAllPrivileges_GroupGrant_ExpandsToSelect(t *testing.T) {
+	svc, q, ctx := setupTestService(t)
+
+	user, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+		ID: uuid.New().String(), Name: "analyst", Type: "user", IsAdmin: 0,
+	})
+	require.NoError(t, err)
+
+	group, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{
+		ID: uuid.New().String(), Name: "team",
+	})
+	require.NoError(t, err)
+	err = q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{
+		GroupID: group.ID, MemberType: "user", MemberID: user.ID,
+	})
+	require.NoError(t, err)
+
+	// Group has ALL_PRIVILEGES on schema
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		ID: uuid.New().String(), PrincipalID: group.ID, PrincipalType: "group",
+		SecurableType: SecurableSchema, SecurableID: "0",
+		Privilege: PrivAllPrivileges,
+	})
+	require.NoError(t, err)
+
+	ok, err := svc.CheckPrivilege(ctx, "analyst", SecurableTable, "1", PrivSelect)
+	require.NoError(t, err)
+	require.True(t, ok, "group ALL_PRIVILEGES on schema should grant SELECT on table to group member")
 }

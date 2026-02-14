@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"duck-demo/internal/db/dbstore"
@@ -198,8 +199,14 @@ func (r *PipelineRepo) DeleteJobsByPipeline(ctx context.Context, pipelineID stri
 // === Private mappers ===
 
 func pipelineFromDB(row dbstore.Pipeline) *domain.Pipeline {
-	createdAt, _ := time.Parse("2006-01-02 15:04:05", row.CreatedAt)
-	updatedAt, _ := time.Parse("2006-01-02 15:04:05", row.UpdatedAt)
+	createdAt, err := time.Parse("2006-01-02 15:04:05", row.CreatedAt)
+	if err != nil {
+		slog.Default().Warn("failed to parse pipeline created_at", "value", row.CreatedAt, "error", err)
+	}
+	updatedAt, err := time.Parse("2006-01-02 15:04:05", row.UpdatedAt)
+	if err != nil {
+		slog.Default().Warn("failed to parse pipeline updated_at", "value", row.UpdatedAt, "error", err)
+	}
 
 	var sched *string
 	if row.ScheduleCron.Valid {
@@ -220,7 +227,10 @@ func pipelineFromDB(row dbstore.Pipeline) *domain.Pipeline {
 }
 
 func pipelineJobFromDB(row dbstore.PipelineJob) *domain.PipelineJob {
-	createdAt, _ := time.Parse("2006-01-02 15:04:05", row.CreatedAt)
+	createdAt, err := time.Parse("2006-01-02 15:04:05", row.CreatedAt)
+	if err != nil {
+		slog.Default().Warn("failed to parse pipeline_job created_at", "value", row.CreatedAt, "error", err)
+	}
 
 	var deps []string
 	_ = json.Unmarshal([]byte(row.DependsOn), &deps)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"duck-demo/internal/db/dbstore"
@@ -130,8 +131,14 @@ func (r *VolumeRepo) Delete(ctx context.Context, id string) error {
 
 // volumeFromDB converts a dbstore.Volume row to domain.Volume.
 func volumeFromDB(row dbstore.Volume) *domain.Volume {
-	createdAt, _ := time.Parse("2006-01-02 15:04:05", row.CreatedAt)
-	updatedAt, _ := time.Parse("2006-01-02 15:04:05", row.UpdatedAt)
+	createdAt, err := time.Parse("2006-01-02 15:04:05", row.CreatedAt)
+	if err != nil {
+		slog.Default().Warn("failed to parse volume created_at", "value", row.CreatedAt, "error", err)
+	}
+	updatedAt, err := time.Parse("2006-01-02 15:04:05", row.UpdatedAt)
+	if err != nil {
+		slog.Default().Warn("failed to parse volume updated_at", "value", row.UpdatedAt, "error", err)
+	}
 	return &domain.Volume{
 		ID:              row.ID,
 		Name:            row.Name,

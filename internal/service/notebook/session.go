@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"duck-demo/internal/domain"
@@ -19,7 +20,23 @@ type session struct {
 	conn       *sql.Conn
 	mu         sync.Mutex
 	createdAt  time.Time
-	lastUsed   time.Time
+	lastUsed   atomic.Value // stores time.Time
+	ctx        context.Context
+	cancel     context.CancelFunc
+	closing    atomic.Bool
+}
+
+// getLastUsed returns the session's last-used time safely via atomic.Value.
+func (s *session) getLastUsed() time.Time {
+	if v := s.lastUsed.Load(); v != nil {
+		return v.(time.Time)
+	}
+	return s.createdAt
+}
+
+// setLastUsed stores the session's last-used time safely via atomic.Value.
+func (s *session) setLastUsed(t time.Time) {
+	s.lastUsed.Store(t)
 }
 
 // SessionManager manages notebook sessions with pinned DuckDB connections.
@@ -66,14 +83,17 @@ func (m *SessionManager) CreateSession(ctx context.Context, notebookID, principa
 	}
 
 	now := time.Now()
+	sessCtx, sessCancel := context.WithCancel(context.Background())
 	s := &session{
 		id:         domain.NewID(),
 		notebookID: notebookID,
 		principal:  principal,
 		conn:       conn,
 		createdAt:  now,
-		lastUsed:   now,
+		ctx:        sessCtx,
+		cancel:     sessCancel,
 	}
+	s.setLastUsed(now)
 
 	m.mu.Lock()
 	m.sessions[s.id] = s
@@ -95,16 +115,41 @@ func (m *SessionManager) CreateSession(ctx context.Context, notebookID, principa
 	}, nil
 }
 
+// checkPrincipal verifies that the caller matches the session owner.
+// If principalName is empty, the check is skipped (backward compatible).
+func checkPrincipal(s *session, principalName string) error {
+	if principalName != "" && s.principal != principalName {
+		return domain.ErrAccessDenied("session belongs to a different principal")
+	}
+	return nil
+}
+
 // CloseSession closes a session and releases the DuckDB connection.
-func (m *SessionManager) CloseSession(_ context.Context, sessionID string) error {
+// If principalName is non-empty, the caller must match the session owner.
+func (m *SessionManager) CloseSession(_ context.Context, sessionID string, principalName ...string) error {
+	caller := ""
+	if len(principalName) > 0 {
+		caller = principalName[0]
+	}
+
 	m.mu.Lock()
 	s, ok := m.sessions[sessionID]
 	if !ok {
 		m.mu.Unlock()
 		return domain.ErrNotFound("session %s not found", sessionID)
 	}
+
+	if err := checkPrincipal(s, caller); err != nil {
+		m.mu.Unlock()
+		return err
+	}
+
 	delete(m.sessions, sessionID)
 	m.mu.Unlock()
+
+	// Cancel the session context to stop any in-flight async work.
+	s.cancel()
+	s.closing.Store(true)
 
 	return s.conn.Close()
 }
@@ -154,9 +199,19 @@ func scanRows(rows *sql.Rows) ([]string, [][]interface{}, error) {
 }
 
 // ExecuteCell executes a single cell's SQL on the pinned connection.
-func (m *SessionManager) ExecuteCell(ctx context.Context, sessionID, cellID string) (*domain.CellExecutionResult, error) {
+// If principalName is non-empty, the caller must match the session owner.
+func (m *SessionManager) ExecuteCell(ctx context.Context, sessionID, cellID string, principalName ...string) (*domain.CellExecutionResult, error) {
+	caller := ""
+	if len(principalName) > 0 {
+		caller = principalName[0]
+	}
+
 	s, err := m.getSession(sessionID)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := checkPrincipal(s, caller); err != nil {
 		return nil, err
 	}
 
@@ -172,7 +227,13 @@ func (m *SessionManager) ExecuteCell(ctx context.Context, sessionID, cellID stri
 	// Serialize execution per session
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.lastUsed = time.Now()
+
+	// Check if the session is being closed/reaped (Issue #54).
+	if s.closing.Load() {
+		return nil, domain.ErrNotFound("session %s is closing", sessionID)
+	}
+
+	s.setLastUsed(time.Now())
 
 	start := time.Now()
 	rows, err := m.engine.QueryOnConn(ctx, s.conn, s.principal, cell.Content)
@@ -214,9 +275,19 @@ func (m *SessionManager) ExecuteCell(ctx context.Context, sessionID, cellID stri
 }
 
 // RunAll executes all SQL cells in a notebook sequentially.
-func (m *SessionManager) RunAll(ctx context.Context, sessionID string) (*domain.RunAllResult, error) {
+// If principalName is non-empty, the caller must match the session owner.
+func (m *SessionManager) RunAll(ctx context.Context, sessionID string, principalName ...string) (*domain.RunAllResult, error) {
+	caller := ""
+	if len(principalName) > 0 {
+		caller = principalName[0]
+	}
+
 	s, err := m.getSession(sessionID)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := checkPrincipal(s, caller); err != nil {
 		return nil, err
 	}
 
@@ -232,13 +303,26 @@ func (m *SessionManager) RunAll(ctx context.Context, sessionID string) (*domain.
 		if cell.CellType != domain.CellTypeSQL {
 			continue
 		}
+
+		// Check for context cancellation between cells.
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+		}
+
 		cellResult, err := m.ExecuteCell(ctx, sessionID, cell.ID)
 		if err != nil {
 			return nil, fmt.Errorf("execute cell %s: %w", cell.ID, err)
 		}
 		results = append(results, *cellResult)
 		if cellResult.Error != nil {
-			break // Stop on first error
+			// If the context was cancelled, propagate it as a real error
+			// so that callers (e.g. RunAllAsync) know execution was interrupted.
+			if ctx.Err() != nil {
+				return nil, ctx.Err()
+			}
+			break // Stop on first SQL error
 		}
 	}
 
@@ -250,9 +334,19 @@ func (m *SessionManager) RunAll(ctx context.Context, sessionID string) (*domain.
 }
 
 // RunAllAsync starts an async execution of all cells and returns a job.
-func (m *SessionManager) RunAllAsync(ctx context.Context, sessionID string) (*domain.NotebookJob, error) {
+// If principalName is non-empty, the caller must match the session owner.
+func (m *SessionManager) RunAllAsync(ctx context.Context, sessionID string, principalName ...string) (*domain.NotebookJob, error) {
+	caller := ""
+	if len(principalName) > 0 {
+		caller = principalName[0]
+	}
+
 	s, err := m.getSession(sessionID)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := checkPrincipal(s, caller); err != nil {
 		return nil, err
 	}
 
@@ -268,22 +362,26 @@ func (m *SessionManager) RunAllAsync(ctx context.Context, sessionID string) (*do
 		return nil, fmt.Errorf("create job: %w", err)
 	}
 
-	// Launch async execution
+	// Launch async execution using the session's cancellable context
+	// instead of context.Background() so that CloseSession/CloseAll
+	// can stop the goroutine.
 	go func() {
-		bgCtx := context.Background()
-		_ = m.jobRepo.UpdateJobState(bgCtx, job.ID, domain.JobStateRunning, nil, nil)
+		sessCtx := s.ctx
+		_ = m.jobRepo.UpdateJobState(sessCtx, job.ID, domain.JobStateRunning, nil, nil)
 
-		result, execErr := m.RunAll(bgCtx, sessionID)
+		result, execErr := m.RunAll(sessCtx, sessionID)
 
 		if execErr != nil {
 			errStr := execErr.Error()
-			_ = m.jobRepo.UpdateJobState(bgCtx, job.ID, domain.JobStateFailed, nil, &errStr)
+			// Use a fresh background context for the final status update
+			// in case the session context was cancelled.
+			_ = m.jobRepo.UpdateJobState(context.Background(), job.ID, domain.JobStateFailed, nil, &errStr)
 			return
 		}
 
 		resultJSON, _ := json.Marshal(result)
 		resultStr := string(resultJSON)
-		_ = m.jobRepo.UpdateJobState(bgCtx, job.ID, domain.JobStateComplete, &resultStr, nil)
+		_ = m.jobRepo.UpdateJobState(context.Background(), job.ID, domain.JobStateComplete, &resultStr, nil)
 	}()
 
 	return job, nil
@@ -316,29 +414,40 @@ func (m *SessionManager) ReapIdle(ctx context.Context) {
 }
 
 func (m *SessionManager) reapOnce() {
+	// Collect stale sessions under the lock, but close connections after
+	// releasing the lock to avoid holding m.mu while doing I/O (Issue #54).
 	m.mu.Lock()
-	var stale []string
+	var stale []*session
 	cutoff := time.Now().Add(-m.ttl)
 	for id, s := range m.sessions {
-		if s.lastUsed.Before(cutoff) {
-			stale = append(stale, id)
-		}
-	}
-	for _, id := range stale {
-		if s, ok := m.sessions[id]; ok {
-			_ = s.conn.Close()
+		if s.getLastUsed().Before(cutoff) {
+			s.closing.Store(true)
+			stale = append(stale, s)
 			delete(m.sessions, id)
 		}
 	}
 	m.mu.Unlock()
+
+	// Close connections outside the lock.
+	for _, s := range stale {
+		s.cancel()
+		_ = s.conn.Close()
+	}
 }
 
 // CloseAll closes all active sessions. Called on server shutdown.
 func (m *SessionManager) CloseAll() {
 	m.mu.Lock()
-	defer m.mu.Unlock()
+	all := make([]*session, 0, len(m.sessions))
 	for id, s := range m.sessions {
-		_ = s.conn.Close()
+		s.closing.Store(true)
+		all = append(all, s)
 		delete(m.sessions, id)
+	}
+	m.mu.Unlock()
+
+	for _, s := range all {
+		s.cancel()
+		_ = s.conn.Close()
 	}
 }

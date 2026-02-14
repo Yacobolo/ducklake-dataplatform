@@ -2,6 +2,8 @@
 #include "duck_access_http.hpp"
 #include "include/json.hpp"
 
+#include <ctime>
+#include <iomanip>
 #include <sstream>
 
 using json = nlohmann::json;
@@ -119,11 +121,25 @@ std::shared_ptr<TableManifest> ManifestCache::ParseManifest(
 		manifest->schema = j.value("schema", "main");
 		manifest->fetched_at = std::chrono::system_clock::now();
 
-		// Parse expires_at (ISO 8601 format)
+		// Parse expires_at (ISO 8601 format like "2024-01-15T10:30:00Z")
 		if (j.contains("expires_at") && j["expires_at"].is_string()) {
-			// Use a simple approach: default to 1 hour from now
-			// Full ISO 8601 parsing would require a date library
-			manifest->expires_at = std::chrono::system_clock::now() + std::chrono::hours(1);
+			auto expires_str = j["expires_at"].get<std::string>();
+			std::tm tm = {};
+			std::istringstream ss(expires_str);
+			ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
+			if (!ss.fail()) {
+				// std::get_time does not handle timezone; assume UTC.
+				// timegm (POSIX) interprets tm as UTC; mktime uses local time.
+				#if defined(_WIN32)
+				time_t epoch = _mkgmtime(&tm);
+				#else
+				time_t epoch = timegm(&tm);
+				#endif
+				manifest->expires_at = std::chrono::system_clock::from_time_t(epoch);
+			} else {
+				// Fallback: if parsing fails, default to 1 hour from now.
+				manifest->expires_at = std::chrono::system_clock::now() + std::chrono::hours(1);
+			}
 		} else {
 			manifest->expires_at = std::chrono::system_clock::now() + std::chrono::hours(1);
 		}

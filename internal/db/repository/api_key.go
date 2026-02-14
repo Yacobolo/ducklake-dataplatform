@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"log/slog"
 	"time"
 
 	dbstore "duck-demo/internal/db/dbstore"
@@ -89,6 +90,16 @@ func (r *APIKeyRepo) ListByPrincipal(ctx context.Context, principalID string, pa
 	return keys, total, nil
 }
 
+// GetByID returns an API key by its ID.
+func (r *APIKeyRepo) GetByID(ctx context.Context, id string) (*domain.APIKey, error) {
+	row, err := r.q.GetAPIKeyByID(ctx, id)
+	if err != nil {
+		return nil, mapDBError(err)
+	}
+	key := apiKeyFromDB(row)
+	return &key, nil
+}
+
 // Delete removes an API key by ID.
 func (r *APIKeyRepo) Delete(ctx context.Context, id string) error {
 	return r.q.DeleteAPIKey(ctx, id)
@@ -110,7 +121,14 @@ func (r *APIKeyRepo) DeleteExpired(ctx context.Context) (int64, error) {
 // --- helpers ---
 
 func parseTimeStr(s string) time.Time {
-	t, _ := time.Parse(time.DateTime, s)
+	if s == "" {
+		return time.Time{}
+	}
+	t, err := time.Parse(time.DateTime, s)
+	if err != nil {
+		slog.Default().Warn("failed to parse time", "value", s, "error", err)
+		return time.Time{}
+	}
 	return t
 }
 

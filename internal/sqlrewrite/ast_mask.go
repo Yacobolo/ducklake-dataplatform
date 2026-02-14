@@ -2,6 +2,7 @@ package sqlrewrite
 
 import (
 	"fmt"
+	"strings"
 
 	pg_query "github.com/pganalyze/pg_query_go/v6"
 )
@@ -16,6 +17,13 @@ func ApplyColumnMasks(sqlStr string, tableName string, masks map[string]string, 
 	if len(masks) == 0 {
 		return sqlStr, nil
 	}
+
+	// Normalize mask keys to lowercase for case-insensitive matching.
+	normalized := make(map[string]string, len(masks))
+	for k, v := range masks {
+		normalized[strings.ToLower(k)] = v
+	}
+	masks = normalized
 
 	result, err := pg_query.Parse(sqlStr)
 	if err != nil {
@@ -97,7 +105,7 @@ func applyMasksToSelectStmt(sel *pg_query.SelectStmt, tableName string, masks ma
 			continue
 		}
 
-		maskExpr, shouldMask := masks[colName]
+		maskExpr, shouldMask := masks[strings.ToLower(colName)]
 		if !shouldMask {
 			continue
 		}

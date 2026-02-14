@@ -64,6 +64,7 @@ type ColumnMaskRepository interface {
 // APIKeyRepository provides CRUD operations for API keys.
 type APIKeyRepository interface {
 	Create(ctx context.Context, key *APIKey) error
+	GetByID(ctx context.Context, id string) (*APIKey, error)
 	GetByHash(ctx context.Context, hash string) (*APIKey, *Principal, error)
 	ListByPrincipal(ctx context.Context, principalID string, page PageRequest) ([]APIKey, int64, error)
 	Delete(ctx context.Context, id string) error

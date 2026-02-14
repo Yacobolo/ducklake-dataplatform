@@ -91,7 +91,8 @@ func (e *RemoteExecutor) QueryContext(ctx context.Context, query string) (*sql.R
 }
 
 // materialize creates a DuckDB temp table from the remote response and returns
-// *sql.Rows over it. Uses a pinned connection so the temp table is visible.
+// *sql.Rows over it. Uses a pinned connection for DDL and inserts, then closes
+// it and queries the temp table from the pool, preventing connection leaks.
 func (e *RemoteExecutor) materialize(ctx context.Context, result ExecuteResponse) (*sql.Rows, error) {
 	if len(result.Columns) == 0 {
 		// Return empty result set
@@ -101,11 +102,30 @@ func (e *RemoteExecutor) materialize(ctx context.Context, result ExecuteResponse
 	suffix := randomSuffix()
 	tableName := "_remote_result_" + suffix
 
-	// Use a pinned connection for temp table visibility
+	// Use a pinned connection for temp table creation + inserts.
+	if err := e.populateTempTable(ctx, tableName, result); err != nil {
+		return nil, err
+	}
+
+	// Query the temp table from the pool. The pinned connection was closed
+	// inside populateTempTable, preventing a connection leak.
+	selectSQL := fmt.Sprintf("SELECT * FROM %q", tableName) //nolint:gosec // tableName is generated internally, not user input
+	rows, err := e.localDB.QueryContext(ctx, selectSQL)
+	if err != nil {
+		return nil, fmt.Errorf("select from temp: %w", err)
+	}
+
+	return rows, nil
+}
+
+// populateTempTable creates and populates a temp table on a pinned connection,
+// then closes the connection before returning.
+func (e *RemoteExecutor) populateTempTable(ctx context.Context, tableName string, result ExecuteResponse) error {
 	conn, err := e.localDB.Conn(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("pin connection: %w", err)
+		return fmt.Errorf("pin connection: %w", err)
 	}
+	defer conn.Close() //nolint:errcheck
 
 	// Build CREATE TEMP TABLE with VARCHAR columns (type info not available from JSON)
 	var colDefs []string
@@ -114,8 +134,7 @@ func (e *RemoteExecutor) materialize(ctx context.Context, result ExecuteResponse
 	}
 	createSQL := fmt.Sprintf("CREATE TEMP TABLE %q (%s)", tableName, strings.Join(colDefs, ", "))
 	if _, err := conn.ExecContext(ctx, createSQL); err != nil {
-		_ = conn.Close()
-		return nil, fmt.Errorf("create temp table: %w", err)
+		return fmt.Errorf("create temp table: %w", err)
 	}
 
 	// Insert rows using parameterized queries
@@ -135,21 +154,12 @@ func (e *RemoteExecutor) materialize(ctx context.Context, result ExecuteResponse
 				}
 			}
 			if _, err := conn.ExecContext(ctx, insertSQL, args...); err != nil {
-				_ = conn.Close()
-				return nil, fmt.Errorf("insert row: %w", err)
+				return fmt.Errorf("insert row: %w", err)
 			}
 		}
 	}
 
-	// Query the temp table — rows.Close() will handle the connection lifecycle
-	selectSQL := fmt.Sprintf("SELECT * FROM %q", tableName) //nolint:gosec // tableName is generated internally, not user input
-	rows, err := conn.QueryContext(ctx, selectSQL)
-	if err != nil {
-		_ = conn.Close()
-		return nil, fmt.Errorf("select from temp: %w", err)
-	}
-
-	return rows, nil
+	return nil
 }
 
 // Ping performs a health check against the remote agent.

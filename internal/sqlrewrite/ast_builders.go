@@ -199,14 +199,10 @@ func makeAndExpr(left, right *pg_query.Node) *pg_query.Node {
 	}
 }
 
-// QuoteIdentifier quotes a SQL identifier if it contains special characters
-// or is a reserved word. Uses double quotes.
+// QuoteIdentifier unconditionally quotes a SQL identifier using double quotes.
+// This is always safe in SQL and eliminates ambiguity from reserved words,
+// mixed case, spaces, or other special characters. Internal double quotes are
+// escaped by doubling them ("" → ").
 func QuoteIdentifier(s string) string {
-	// Simple check: if it's all lowercase alphanumeric + underscore, no quoting needed
-	for _, c := range s {
-		if (c < 'a' || c > 'z') && (c < '0' || c > '9') && c != '_' {
-			return `"` + strings.ReplaceAll(s, `"`, `""`) + `"`
-		}
-	}
-	return s
+	return `"` + strings.ReplaceAll(s, `"`, `""`) + `"`
 }

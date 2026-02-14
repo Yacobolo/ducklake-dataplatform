@@ -70,6 +70,9 @@ func (r *CreateGrantRequest) Validate() error {
 	if r.SecurableType == "" {
 		return ErrValidation("securable_type is required")
 	}
+	if r.SecurableID == "" {
+		return ErrValidation("securable_id is required")
+	}
 	if r.Privilege == "" {
 		return ErrValidation("privilege is required")
 	}

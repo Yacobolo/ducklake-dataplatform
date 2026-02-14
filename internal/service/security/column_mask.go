@@ -43,8 +43,11 @@ func (s *ColumnMaskService) Create(ctx context.Context, req domain.CreateColumnM
 	return result, nil
 }
 
-// GetForTable returns a paginated list of column masks for a table.
+// GetForTable returns a paginated list of column masks for a table. Requires admin privileges.
 func (s *ColumnMaskService) GetForTable(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.ColumnMask, int64, error) {
+	if err := requireAdmin(ctx); err != nil {
+		return nil, 0, err
+	}
 	return s.repo.GetForTable(ctx, tableID, page)
 }
 

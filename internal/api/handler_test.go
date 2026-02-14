@@ -1547,7 +1547,7 @@ func TestAPI_RowFilter_NonAdminDenied(t *testing.T) {
 	t.Run("list denied", func(t *testing.T) {
 		resp := doRequest(t, http.MethodGet, srv.URL+"/tables/t1/row-filters", "")
 		defer resp.Body.Close() //nolint:errcheck
-		require.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+		require.Equal(t, http.StatusForbidden, resp.StatusCode)
 	})
 
 	t.Run("delete denied", func(t *testing.T) {

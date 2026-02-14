@@ -98,9 +98,11 @@ func (r *NotebookRepo) DeleteNotebook(ctx context.Context, id string) error {
 }
 
 // CreateCell inserts a new cell into a notebook.
+// A position of -1 means "auto-assign to end". Any other value (including 0)
+// is treated as an explicit position.
 func (r *NotebookRepo) CreateCell(ctx context.Context, cell *domain.Cell) (*domain.Cell, error) {
 	position := int64(cell.Position)
-	if cell.Position == 0 {
+	if cell.Position < 0 {
 		maxPos, err := r.GetMaxPosition(ctx, cell.NotebookID)
 		if err != nil {
 			return nil, fmt.Errorf("get max position: %w", err)

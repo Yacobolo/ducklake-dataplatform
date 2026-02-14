@@ -105,25 +105,25 @@ func (m *mockSessionService) CreateSession(ctx context.Context, notebookID, prin
 	}
 	panic("CreateSession not implemented")
 }
-func (m *mockSessionService) CloseSession(ctx context.Context, sessionID string) error {
+func (m *mockSessionService) CloseSession(ctx context.Context, sessionID string, principalName ...string) error {
 	if m.closeSessionFn != nil {
 		return m.closeSessionFn(ctx, sessionID)
 	}
 	panic("CloseSession not implemented")
 }
-func (m *mockSessionService) ExecuteCell(ctx context.Context, sessionID, cellID string) (*domain.CellExecutionResult, error) {
+func (m *mockSessionService) ExecuteCell(ctx context.Context, sessionID, cellID string, principalName ...string) (*domain.CellExecutionResult, error) {
 	if m.executeCellFn != nil {
 		return m.executeCellFn(ctx, sessionID, cellID)
 	}
 	panic("ExecuteCell not implemented")
 }
-func (m *mockSessionService) RunAll(ctx context.Context, sessionID string) (*domain.RunAllResult, error) {
+func (m *mockSessionService) RunAll(ctx context.Context, sessionID string, principalName ...string) (*domain.RunAllResult, error) {
 	if m.runAllFn != nil {
 		return m.runAllFn(ctx, sessionID)
 	}
 	panic("RunAll not implemented")
 }
-func (m *mockSessionService) RunAllAsync(ctx context.Context, sessionID string) (*domain.NotebookJob, error) {
+func (m *mockSessionService) RunAllAsync(ctx context.Context, sessionID string, principalName ...string) (*domain.NotebookJob, error) {
 	if m.runAllAsyncFn != nil {
 		return m.runAllAsyncFn(ctx, sessionID)
 	}

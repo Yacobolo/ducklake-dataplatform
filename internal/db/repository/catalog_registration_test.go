@@ -275,3 +275,82 @@ func TestCatalogRegistrationRepo_SetDefault(t *testing.T) {
 		assert.False(t, first.IsDefault)
 	})
 }
+
+func TestCatalogRegistrationRepo_SetDefault_Atomic(t *testing.T) {
+	repo := setupCatalogRegistrationRepo(t)
+	ctx := context.Background()
+
+	cat1, err := repo.Create(ctx, &domain.CatalogRegistration{
+		Name:          "atomic-default-1",
+		MetastoreType: domain.MetastoreTypeSQLite,
+		DSN:           "/tmp/atomic1.db",
+		DataPath:      "/tmp/atomic1-data",
+		Status:        domain.CatalogStatusActive,
+		IsDefault:     false,
+	})
+	require.NoError(t, err)
+
+	cat2, err := repo.Create(ctx, &domain.CatalogRegistration{
+		Name:          "atomic-default-2",
+		MetastoreType: domain.MetastoreTypeSQLite,
+		DSN:           "/tmp/atomic2.db",
+		DataPath:      "/tmp/atomic2-data",
+		Status:        domain.CatalogStatusActive,
+		IsDefault:     false,
+	})
+	require.NoError(t, err)
+
+	cat3, err := repo.Create(ctx, &domain.CatalogRegistration{
+		Name:          "atomic-default-3",
+		MetastoreType: domain.MetastoreTypeSQLite,
+		DSN:           "/tmp/atomic3.db",
+		DataPath:      "/tmp/atomic3-data",
+		Status:        domain.CatalogStatusActive,
+		IsDefault:     false,
+	})
+	require.NoError(t, err)
+
+	t.Run("exactly one default after rapid succession", func(t *testing.T) {
+		// Rapidly set different catalogs as default — the transaction
+		// ensures clear + set happen atomically, so we always end up
+		// with exactly one default.
+		require.NoError(t, repo.SetDefault(ctx, cat1.ID))
+		require.NoError(t, repo.SetDefault(ctx, cat2.ID))
+		require.NoError(t, repo.SetDefault(ctx, cat3.ID))
+
+		all, _, err := repo.List(ctx, domain.PageRequest{})
+		require.NoError(t, err)
+
+		defaultCount := 0
+		var defaultID string
+		for _, c := range all {
+			if c.IsDefault {
+				defaultCount++
+				defaultID = c.ID
+			}
+		}
+		assert.Equal(t, 1, defaultCount, "exactly one catalog should be default")
+		assert.Equal(t, cat3.ID, defaultID, "last SetDefault call should win")
+	})
+
+	t.Run("SetDefault is idempotent", func(t *testing.T) {
+		// Setting the same catalog twice should still leave exactly one default
+		require.NoError(t, repo.SetDefault(ctx, cat1.ID))
+		require.NoError(t, repo.SetDefault(ctx, cat1.ID))
+
+		all, _, err := repo.List(ctx, domain.PageRequest{})
+		require.NoError(t, err)
+
+		defaultCount := 0
+		for _, c := range all {
+			if c.IsDefault {
+				defaultCount++
+			}
+		}
+		assert.Equal(t, 1, defaultCount, "exactly one catalog should be default")
+
+		def, err := repo.GetDefault(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, cat1.ID, def.ID)
+	})
+}

@@ -180,3 +180,93 @@ func TestAPIKeyRepo_LookupNotFound(t *testing.T) {
 	_, err := apiKeyRepo.LookupPrincipalByAPIKeyHash(ctx, hashTestKey("nonexistent"))
 	require.Error(t, err)
 }
+
+func TestAPIKeyRepo_ExpiredKeyNotReturned(t *testing.T) {
+	apiKeyRepo, principalRepo := setupAPIKeyTest(t)
+	ctx := context.Background()
+
+	p, err := principalRepo.Create(ctx, &domain.Principal{Name: "expiry-user", Type: "user"})
+	require.NoError(t, err)
+
+	tests := []struct {
+		name        string
+		expiresAt   *time.Time
+		wantLookup  bool
+		description string
+	}{
+		{
+			name:        "expired key is rejected",
+			expiresAt:   timePtr(time.Now().Add(-time.Hour)),
+			wantLookup:  false,
+			description: "an expired key should not be returned by hash lookup",
+		},
+		{
+			name:        "future key is accepted",
+			expiresAt:   timePtr(time.Now().Add(24 * time.Hour)),
+			wantLookup:  true,
+			description: "a key with future expiry should be returned",
+		},
+		{
+			name:        "no-expiry key is accepted",
+			expiresAt:   nil,
+			wantLookup:  true,
+			description: "a key with no expiry should be returned",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rawKey := "expiry-test-key-" + tt.name
+			keyHash := hashTestKey(rawKey)
+
+			key := &domain.APIKey{
+				PrincipalID: p.ID,
+				Name:        tt.name,
+				KeyHash:     keyHash,
+				ExpiresAt:   tt.expiresAt,
+			}
+			err := apiKeyRepo.Create(ctx, key)
+			require.NoError(t, err)
+
+			_, lookupErr := apiKeyRepo.LookupPrincipalByAPIKeyHash(ctx, keyHash)
+			if tt.wantLookup {
+				require.NoError(t, lookupErr, tt.description)
+			} else {
+				require.Error(t, lookupErr, tt.description)
+			}
+
+			_, _, getErr := apiKeyRepo.GetByHash(ctx, keyHash)
+			if tt.wantLookup {
+				require.NoError(t, getErr, tt.description)
+			} else {
+				require.Error(t, getErr, tt.description)
+			}
+		})
+	}
+}
+
+func TestAPIKeyRepo_GetByID(t *testing.T) {
+	apiKeyRepo, principalRepo := setupAPIKeyTest(t)
+	ctx := context.Background()
+
+	p, err := principalRepo.Create(ctx, &domain.Principal{Name: "getbyid-user", Type: "user"})
+	require.NoError(t, err)
+
+	key := &domain.APIKey{
+		PrincipalID: p.ID,
+		Name:        "getbyid-key",
+		KeyHash:     hashTestKey("getbyid-raw"),
+	}
+	err = apiKeyRepo.Create(ctx, key)
+	require.NoError(t, err)
+
+	found, err := apiKeyRepo.GetByID(ctx, key.ID)
+	require.NoError(t, err)
+	assert.Equal(t, key.ID, found.ID)
+	assert.Equal(t, "getbyid-key", found.Name)
+	assert.Equal(t, p.ID, found.PrincipalID)
+}
+
+func timePtr(t time.Time) *time.Time {
+	return &t
+}

@@ -2,10 +2,8 @@ package engine
 
 import (
 	"context"
-	"crypto/rand"
 	"database/sql"
 	"fmt"
-	"regexp"
 	"strings"
 
 	"duck-demo/internal/domain"
@@ -23,16 +21,25 @@ type CatalogRepoFactory interface {
 type InformationSchemaProvider struct {
 	factory       CatalogRepoFactory
 	catalogLister domain.CatalogRegistrationRepository
+	catalog       domain.AuthorizationService
 }
 
 // NewInformationSchemaProvider creates a new provider.
 // factory provides per-catalog CatalogRepository instances.
 // catalogLister provides the list of all registered catalogs.
+// Use SetAuthorizationService to enable RBAC filtering on information_schema results.
 func NewInformationSchemaProvider(factory CatalogRepoFactory, catalogLister domain.CatalogRegistrationRepository) *InformationSchemaProvider {
 	return &InformationSchemaProvider{
 		factory:       factory,
 		catalogLister: catalogLister,
 	}
+}
+
+// SetAuthorizationService configures the authorization service used to filter
+// information_schema results based on the caller's RBAC grants. When nil,
+// all rows are visible (no filtering).
+func (p *InformationSchemaProvider) SetAuthorizationService(catalog domain.AuthorizationService) {
+	p.catalog = catalog
 }
 
 // IsInformationSchemaQuery checks if the SQL references information_schema tables.
@@ -139,26 +146,26 @@ func (p *InformationSchemaProvider) BuildColumnsRows(ctx context.Context) ([][]i
 }
 
 // HandleQuery intercepts information_schema queries and returns virtual results.
-// It creates a temporary DuckDB table with the metadata and then runs the original
-// query against it.
-func (p *InformationSchemaProvider) HandleQuery(ctx context.Context, db *sql.DB, sqlQuery string) (*sql.Rows, error) {
+// principalName is used to filter results based on RBAC grants so that users
+// only see metadata for objects they have access to.
+func (p *InformationSchemaProvider) HandleQuery(ctx context.Context, db *sql.DB, principalName, sqlQuery string) (*sql.Rows, error) {
 	lower := strings.ToLower(sqlQuery)
 
 	// Create the appropriate virtual table
 	if strings.Contains(lower, "information_schema.schemata") {
-		return p.queryVirtualTable(ctx, db, sqlQuery, "schemata")
+		return p.queryVirtualTable(ctx, db, principalName, "schemata")
 	}
 	if strings.Contains(lower, "information_schema.tables") {
-		return p.queryVirtualTable(ctx, db, sqlQuery, "tables")
+		return p.queryVirtualTable(ctx, db, principalName, "tables")
 	}
 	if strings.Contains(lower, "information_schema.columns") {
-		return p.queryVirtualTable(ctx, db, sqlQuery, "columns")
+		return p.queryVirtualTable(ctx, db, principalName, "columns")
 	}
 
 	return nil, fmt.Errorf("unsupported information_schema table")
 }
 
-func (p *InformationSchemaProvider) queryVirtualTable(ctx context.Context, db *sql.DB, sqlQuery, table string) (*sql.Rows, error) {
+func (p *InformationSchemaProvider) queryVirtualTable(ctx context.Context, db *sql.DB, principalName, table string) (*sql.Rows, error) {
 	var dataRows [][]interface{}
 	var columns []string
 	var err error
@@ -177,69 +184,133 @@ func (p *InformationSchemaProvider) queryVirtualTable(ctx context.Context, db *s
 		return nil, err
 	}
 
-	// Pin a single connection for the entire temp table lifecycle (CREATE, INSERT,
-	// SELECT) to avoid DuckDB connection pool issues — temp tables are per-connection.
-	conn, err := db.Conn(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("acquire connection: %w", err)
+	// Filter rows based on the caller's RBAC grants so that users only see
+	// metadata for objects they have access to (Issue #38).
+	if p.catalog != nil {
+		dataRows = p.filterRowsByPrivilege(ctx, principalName, table, dataRows)
 	}
 
-	// Build CREATE TEMP TABLE + INSERT statements with unique name to avoid
-	// race conditions between concurrent information_schema queries.
-	tempName := fmt.Sprintf("__info_schema_%s_%s", table, randomSuffix())
-
-	// Build column defs
-	colDefs := make([]string, len(columns))
-	for i, c := range columns {
-		colDefs[i] = fmt.Sprintf("%s VARCHAR", c)
-	}
-	createSQL := fmt.Sprintf("CREATE TEMPORARY TABLE %s (%s)", tempName, strings.Join(colDefs, ", "))
-	if _, err := conn.ExecContext(ctx, createSQL); err != nil {
-		_ = conn.Close()
-		return nil, fmt.Errorf("create temp table: %w", err)
-	}
-
-	// Insert rows
-	if len(dataRows) > 0 {
-		placeholders := make([]string, len(columns))
-		for i := range placeholders {
-			placeholders[i] = "?"
-		}
-		insertSQL := fmt.Sprintf("INSERT INTO %s VALUES (%s)", tempName, strings.Join(placeholders, ", ")) //nolint:gosec // tempName and placeholders are internally generated
-		for _, row := range dataRows {
-			if _, err := conn.ExecContext(ctx, insertSQL, row...); err != nil {
-				_ = conn.Close()
-				return nil, fmt.Errorf("insert row: %w", err)
-			}
-		}
-	}
-
-	// Rewrite the query to use the temp table (case-insensitive).
-	rewritten := replaceAllCaseInsensitive(sqlQuery, "information_schema."+table, tempName)
-
-	rows, err := conn.QueryContext(ctx, rewritten)
-	if err != nil {
-		_ = conn.Close()
-		return nil, fmt.Errorf("execute information_schema query: %w", err)
-	}
-
-	// The *sql.Rows keeps the connection pinned until rows.Close().
-	// The temp table lives on this connection and will be cleaned up when
-	// the connection is eventually closed or reused.
-	return rows, nil
+	// Materialize metadata rows as *sql.Rows using a pool-level VALUES query.
+	// This avoids both the SQL injection risk (user SQL is never executed) and
+	// the connection leak from pinned *sql.Conn (no pinned connection needed).
+	return materializeAsRows(ctx, db, columns, dataRows)
 }
 
-// replaceAllCaseInsensitive replaces all occurrences of old (case-insensitive)
-// with the replacement string. This ensures mixed-case references like
-// "Information_Schema.Tables" are handled correctly.
-func replaceAllCaseInsensitive(s, old, replacement string) string {
-	re := regexp.MustCompile("(?i)" + regexp.QuoteMeta(old))
-	return re.ReplaceAllLiteralString(s, replacement)
+// filterRowsByPrivilege filters information_schema rows based on the caller's grants.
+// For schemata: filter by USAGE on schema.
+// For tables: filter by SELECT on table (or any privilege).
+// For columns: filter by SELECT on parent table.
+// Admin users see everything (CheckPrivilege handles admin bypass).
+func (p *InformationSchemaProvider) filterRowsByPrivilege(ctx context.Context, principalName, table string, rows [][]interface{}) [][]interface{} {
+	var filtered [][]interface{}
+	for _, row := range rows {
+		if p.isRowVisible(ctx, principalName, table, row) {
+			filtered = append(filtered, row)
+		}
+	}
+	return filtered
 }
 
-// randomSuffix generates a short random hex string for unique temp table names.
-func randomSuffix() string {
-	b := make([]byte, 4)
-	_, _ = rand.Read(b)
-	return fmt.Sprintf("%x", b)
+// isRowVisible checks whether a single information_schema row is visible to the principal.
+func (p *InformationSchemaProvider) isRowVisible(ctx context.Context, principalName, table string, row []interface{}) bool {
+	switch table {
+	case "schemata":
+		// row: [catalog_name, schema_name, schema_owner, default_character_set_catalog]
+		if len(row) < 2 {
+			return false
+		}
+		schemaName, _ := row[1].(string)
+		// Look up the schema ID via the catalog repo and check USAGE privilege.
+		catalogName, _ := row[0].(string)
+		repo := p.factory.ForCatalog(catalogName)
+		schema, err := repo.GetSchema(ctx, schemaName)
+		if err != nil {
+			return false
+		}
+		allowed, err := p.catalog.CheckPrivilege(ctx, principalName, domain.SecurableSchema, schema.SchemaID, domain.PrivUsage)
+		if err != nil {
+			return false
+		}
+		return allowed
+
+	case "tables":
+		// row: [table_catalog, table_schema, table_name, table_type]
+		if len(row) < 3 {
+			return false
+		}
+		catalogName, _ := row[0].(string)
+		schemaName, _ := row[1].(string)
+		tableName, _ := row[2].(string)
+		repo := p.factory.ForCatalog(catalogName)
+		tbl, err := repo.GetTable(ctx, schemaName, tableName)
+		if err != nil {
+			return false
+		}
+		allowed, err := p.catalog.CheckPrivilege(ctx, principalName, domain.SecurableTable, tbl.TableID, domain.PrivSelect)
+		if err != nil {
+			return false
+		}
+		return allowed
+
+	case "columns":
+		// row: [table_catalog, table_schema, table_name, column_name, ordinal_position, data_type]
+		if len(row) < 3 {
+			return false
+		}
+		catalogName, _ := row[0].(string)
+		schemaName, _ := row[1].(string)
+		tableName, _ := row[2].(string)
+		repo := p.factory.ForCatalog(catalogName)
+		tbl, err := repo.GetTable(ctx, schemaName, tableName)
+		if err != nil {
+			return false
+		}
+		allowed, err := p.catalog.CheckPrivilege(ctx, principalName, domain.SecurableTable, tbl.TableID, domain.PrivSelect)
+		if err != nil {
+			return false
+		}
+		return allowed
+	}
+	return false
+}
+
+// materializeAsRows converts in-memory data rows into a *sql.Rows by running
+// a parameterized VALUES query against the connection pool. No temp tables or
+// pinned connections are needed, so there is no connection leak risk.
+func materializeAsRows(ctx context.Context, db *sql.DB, columns []string, dataRows [][]interface{}) (*sql.Rows, error) {
+	if len(dataRows) == 0 {
+		// Return an empty result set with the correct columns.
+		colDefs := make([]string, len(columns))
+		for i, c := range columns {
+			colDefs[i] = fmt.Sprintf("NULL::%s AS %s", "VARCHAR", c)
+		}
+		return db.QueryContext(ctx, fmt.Sprintf("SELECT %s WHERE false", strings.Join(colDefs, ", ")))
+	}
+
+	// Build a VALUES clause with parameter placeholders.
+	numCols := len(columns)
+	placeholders := make([]string, numCols)
+	for i := range placeholders {
+		placeholders[i] = "?"
+	}
+	rowPlaceholder := "(" + strings.Join(placeholders, ", ") + ")"
+
+	rowPlaceholders := make([]string, len(dataRows))
+	var args []interface{}
+	for i, row := range dataRows {
+		rowPlaceholders[i] = rowPlaceholder
+		args = append(args, row...)
+	}
+
+	// Build column aliases for the VALUES clause.
+	colAliases := make([]string, numCols)
+	copy(colAliases, columns)
+
+	query := fmt.Sprintf(
+		"SELECT * FROM (VALUES %s) AS __t(%s)",
+		strings.Join(rowPlaceholders, ", "),
+		strings.Join(colAliases, ", "),
+	)
+
+	return db.QueryContext(ctx, query, args...)
 }

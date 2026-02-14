@@ -3,6 +3,7 @@ package security
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"duck-demo/internal/domain"
 )
@@ -158,6 +159,12 @@ func (s *AuthorizationService) hasGrant(ctx context.Context, principalID string,
 			return true, nil
 		}
 	}
+
+	// If we didn't find the specific privilege, also check for ALL_PRIVILEGES
+	if privilege != domain.PrivAllPrivileges {
+		return s.hasGrant(ctx, principalID, groupIDs, securableType, securableID, domain.PrivAllPrivileges)
+	}
+
 	return false, nil
 }
 
@@ -336,6 +343,7 @@ func (s *AuthorizationService) GetEffectiveColumnMasks(ctx context.Context, prin
 	}
 
 	masks := map[string]string{}
+	exempted := map[string]bool{}
 
 	// Check direct user bindings
 	userMasks, err := s.columnMasks.GetForTableAndPrincipal(ctx, tableID, principal.ID, "user")
@@ -343,8 +351,11 @@ func (s *AuthorizationService) GetEffectiveColumnMasks(ctx context.Context, prin
 		return nil, err
 	}
 	for _, m := range userMasks {
-		if !m.SeeOriginal {
-			masks[m.ColumnName] = m.MaskExpression
+		key := strings.ToLower(m.ColumnName)
+		if m.SeeOriginal {
+			exempted[key] = true
+		} else {
+			masks[key] = m.MaskExpression
 		}
 	}
 
@@ -359,11 +370,15 @@ func (s *AuthorizationService) GetEffectiveColumnMasks(ctx context.Context, prin
 			return nil, err
 		}
 		for _, m := range groupMasks {
-			if _, alreadyUnmasked := masks[m.ColumnName]; alreadyUnmasked {
+			key := strings.ToLower(m.ColumnName)
+			if exempted[key] {
+				continue
+			}
+			if _, alreadyUnmasked := masks[key]; alreadyUnmasked {
 				continue
 			}
 			if !m.SeeOriginal {
-				masks[m.ColumnName] = m.MaskExpression
+				masks[key] = m.MaskExpression
 			}
 		}
 	}

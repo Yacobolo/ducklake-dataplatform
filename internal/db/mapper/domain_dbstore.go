@@ -4,6 +4,8 @@ package mapper
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
+	"log/slog"
 	"time"
 
 	dbstore "duck-demo/internal/db/dbstore"
@@ -14,8 +16,25 @@ import (
 
 const timeLayout = "2006-01-02 15:04:05"
 
+// ParseTime parses a time string and returns an error if the format is invalid.
+func ParseTime(s string) (time.Time, error) {
+	if s == "" {
+		return time.Time{}, fmt.Errorf("empty time string")
+	}
+	t, err := time.Parse(timeLayout, s)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("parse time %q: %w", s, err)
+	}
+	return t, nil
+}
+
+// parseTime parses a time string, logging a warning on failure.
+// Used for non-critical display fields where a zero time is acceptable.
 func parseTime(s string) time.Time {
-	t, _ := time.Parse(timeLayout, s)
+	t, err := ParseTime(s)
+	if err != nil {
+		slog.Default().Warn("failed to parse time", "value", s, "error", err)
+	}
 	return t
 }
 

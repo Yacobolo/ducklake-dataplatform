@@ -462,7 +462,7 @@ func TestSessionManager_ReapIdle(t *testing.T) {
 		// Manually set the session's lastUsed to be well past the TTL
 		sm.mu.Lock()
 		s := sm.sessions[sess.ID]
-		s.lastUsed = time.Now().Add(-2 * sm.ttl)
+		s.setLastUsed(time.Now().Add(-2 * sm.ttl))
 		sm.mu.Unlock()
 
 		// Run one reap cycle
@@ -598,5 +598,421 @@ func TestSessionManager_ConcurrentExecute(t *testing.T) {
 			require.NoError(t, err, "goroutine %d failed", i)
 			assert.Nil(t, results[i].Error, "goroutine %d had SQL error", i)
 		}
+	})
+}
+
+// === Issue #53 — Principal scoping (session hijacking prevention) ===
+
+func TestSessionManager_PrincipalScoping(t *testing.T) {
+	t.Run("ExecuteCell rejects different principal", func(t *testing.T) {
+		sm, repo, _, engine, _ := setupSessionManager(t)
+		ctx := context.Background()
+
+		repo.GetNotebookFn = func(_ context.Context, id string) (*domain.Notebook, error) {
+			return &domain.Notebook{ID: id, Name: "NB", Owner: "alice"}, nil
+		}
+		repo.GetCellFn = func(_ context.Context, id string) (*domain.Cell, error) {
+			return &domain.Cell{ID: id, NotebookID: "nb-1", CellType: domain.CellTypeSQL, Content: "SELECT 1"}, nil
+		}
+		engine.queryOnConnFn = func(ctx context.Context, conn *sql.Conn, _ string, sqlQuery string) (*sql.Rows, error) {
+			return conn.QueryContext(ctx, sqlQuery)
+		}
+
+		sess, err := sm.CreateSession(ctx, "nb-1", "alice")
+		require.NoError(t, err)
+
+		// Same principal should succeed
+		result, err := sm.ExecuteCell(ctx, sess.ID, "cell-1", "alice")
+		require.NoError(t, err)
+		assert.Nil(t, result.Error)
+
+		// Different principal should be denied
+		_, err = sm.ExecuteCell(ctx, sess.ID, "cell-1", "bob")
+		require.Error(t, err)
+		var accessDenied *domain.AccessDeniedError
+		require.ErrorAs(t, err, &accessDenied)
+		assert.Contains(t, err.Error(), "session belongs to a different principal")
+	})
+
+	t.Run("ExecuteCell allows empty principal (backward compatible)", func(t *testing.T) {
+		sm, repo, _, engine, _ := setupSessionManager(t)
+		ctx := context.Background()
+
+		repo.GetNotebookFn = func(_ context.Context, id string) (*domain.Notebook, error) {
+			return &domain.Notebook{ID: id, Name: "NB", Owner: "alice"}, nil
+		}
+		repo.GetCellFn = func(_ context.Context, id string) (*domain.Cell, error) {
+			return &domain.Cell{ID: id, NotebookID: "nb-1", CellType: domain.CellTypeSQL, Content: "SELECT 1"}, nil
+		}
+		engine.queryOnConnFn = func(ctx context.Context, conn *sql.Conn, _ string, sqlQuery string) (*sql.Rows, error) {
+			return conn.QueryContext(ctx, sqlQuery)
+		}
+
+		sess, err := sm.CreateSession(ctx, "nb-1", "alice")
+		require.NoError(t, err)
+
+		// No principal arg — should succeed (backward compatible)
+		result, err := sm.ExecuteCell(ctx, sess.ID, "cell-1")
+		require.NoError(t, err)
+		assert.Nil(t, result.Error)
+	})
+
+	t.Run("CloseSession rejects different principal", func(t *testing.T) {
+		sm, repo, _, _, _ := setupSessionManager(t)
+		ctx := context.Background()
+
+		repo.GetNotebookFn = func(_ context.Context, id string) (*domain.Notebook, error) {
+			return &domain.Notebook{ID: id, Name: "NB", Owner: "alice"}, nil
+		}
+
+		sess, err := sm.CreateSession(ctx, "nb-1", "alice")
+		require.NoError(t, err)
+
+		// Different principal should be denied
+		err = sm.CloseSession(ctx, sess.ID, "bob")
+		require.Error(t, err)
+		var accessDenied *domain.AccessDeniedError
+		require.ErrorAs(t, err, &accessDenied)
+
+		// Same principal should succeed
+		err = sm.CloseSession(ctx, sess.ID, "alice")
+		require.NoError(t, err)
+	})
+
+	t.Run("RunAll rejects different principal", func(t *testing.T) {
+		sm, repo, _, engine, _ := setupSessionManager(t)
+		ctx := context.Background()
+
+		repo.GetNotebookFn = func(_ context.Context, id string) (*domain.Notebook, error) {
+			return &domain.Notebook{ID: id, Name: "NB", Owner: "alice"}, nil
+		}
+		repo.ListCellsFn = func(_ context.Context, _ string) ([]domain.Cell, error) {
+			return []domain.Cell{
+				{ID: "cell-1", NotebookID: "nb-1", CellType: domain.CellTypeSQL, Content: "SELECT 1"},
+			}, nil
+		}
+		repo.GetCellFn = func(_ context.Context, id string) (*domain.Cell, error) {
+			return &domain.Cell{ID: id, NotebookID: "nb-1", CellType: domain.CellTypeSQL, Content: "SELECT 1"}, nil
+		}
+		engine.queryOnConnFn = func(ctx context.Context, conn *sql.Conn, _ string, sqlQuery string) (*sql.Rows, error) {
+			return conn.QueryContext(ctx, sqlQuery)
+		}
+
+		sess, err := sm.CreateSession(ctx, "nb-1", "alice")
+		require.NoError(t, err)
+
+		// Different principal should be denied
+		_, err = sm.RunAll(ctx, sess.ID, "bob")
+		require.Error(t, err)
+		var accessDenied *domain.AccessDeniedError
+		require.ErrorAs(t, err, &accessDenied)
+
+		// Same principal should succeed
+		result, err := sm.RunAll(ctx, sess.ID, "alice")
+		require.NoError(t, err)
+		assert.Len(t, result.Results, 1)
+	})
+
+	t.Run("RunAllAsync rejects different principal", func(t *testing.T) {
+		sm, repo, jobRepo, engine, _ := setupSessionManager(t)
+		ctx := context.Background()
+
+		repo.GetNotebookFn = func(_ context.Context, id string) (*domain.Notebook, error) {
+			return &domain.Notebook{ID: id, Name: "NB", Owner: "alice"}, nil
+		}
+		repo.ListCellsFn = func(_ context.Context, _ string) ([]domain.Cell, error) {
+			return []domain.Cell{
+				{ID: "cell-1", NotebookID: "nb-1", CellType: domain.CellTypeSQL, Content: "SELECT 1"},
+			}, nil
+		}
+		repo.GetCellFn = func(_ context.Context, id string) (*domain.Cell, error) {
+			return &domain.Cell{ID: id, NotebookID: "nb-1", CellType: domain.CellTypeSQL, Content: "SELECT 1"}, nil
+		}
+		engine.queryOnConnFn = func(ctx context.Context, conn *sql.Conn, _ string, sqlQuery string) (*sql.Rows, error) {
+			return conn.QueryContext(ctx, sqlQuery)
+		}
+		jobRepo.CreateJobFn = func(_ context.Context, job *domain.NotebookJob) (*domain.NotebookJob, error) {
+			job.CreatedAt = time.Now()
+			return job, nil
+		}
+		jobRepo.UpdateJobStateFn = func(_ context.Context, _ string, _ domain.JobState, _ *string, _ *string) error {
+			return nil
+		}
+
+		sess, err := sm.CreateSession(ctx, "nb-1", "alice")
+		require.NoError(t, err)
+
+		// Different principal should be denied
+		_, err = sm.RunAllAsync(ctx, sess.ID, "bob")
+		require.Error(t, err)
+		var accessDenied *domain.AccessDeniedError
+		assert.ErrorAs(t, err, &accessDenied)
+	})
+}
+
+// === Issue #50 — Goroutine leak / context cancellation ===
+
+func TestSessionManager_AsyncCancellation(t *testing.T) {
+	t.Run("CloseSession cancels running RunAllAsync goroutine", func(t *testing.T) {
+		sm, repo, jobRepo, engine, _ := setupSessionManager(t)
+		ctx := context.Background()
+
+		repo.GetNotebookFn = func(_ context.Context, id string) (*domain.Notebook, error) {
+			return &domain.Notebook{ID: id, Name: "NB", Owner: "alice"}, nil
+		}
+
+		// Create cells that will block until context is cancelled
+		repo.ListCellsFn = func(_ context.Context, _ string) ([]domain.Cell, error) {
+			return []domain.Cell{
+				{ID: "cell-1", NotebookID: "nb-1", CellType: domain.CellTypeSQL, Content: "SELECT 1"},
+			}, nil
+		}
+		repo.GetCellFn = func(_ context.Context, id string) (*domain.Cell, error) {
+			return &domain.Cell{ID: id, NotebookID: "nb-1", CellType: domain.CellTypeSQL, Content: "SELECT 1"}, nil
+		}
+
+		// Engine blocks until context is cancelled
+		engineCalled := make(chan struct{}, 1)
+		engine.queryOnConnFn = func(ctx context.Context, _ *sql.Conn, _ string, _ string) (*sql.Rows, error) {
+			engineCalled <- struct{}{}
+			<-ctx.Done()
+			return nil, ctx.Err()
+		}
+
+		jobRepo.CreateJobFn = func(_ context.Context, job *domain.NotebookJob) (*domain.NotebookJob, error) {
+			job.CreatedAt = time.Now()
+			return job, nil
+		}
+
+		var wg sync.WaitGroup
+		wg.Add(1)
+		var finalState domain.JobState
+		jobRepo.UpdateJobStateFn = func(_ context.Context, _ string, state domain.JobState, _ *string, _ *string) error {
+			finalState = state
+			if state == domain.JobStateFailed || state == domain.JobStateComplete {
+				wg.Done()
+			}
+			return nil
+		}
+
+		sess, err := sm.CreateSession(ctx, "nb-1", "alice")
+		require.NoError(t, err)
+
+		_, err = sm.RunAllAsync(ctx, sess.ID)
+		require.NoError(t, err)
+
+		// Wait for the goroutine to actually start executing
+		select {
+		case <-engineCalled:
+		case <-time.After(5 * time.Second):
+			t.Fatal("timed out waiting for engine to be called")
+		}
+
+		// Closing the session cancels the session context
+		err = sm.CloseSession(ctx, sess.ID)
+		require.NoError(t, err)
+
+		// The goroutine should finish with a failed state
+		wg.Wait()
+		assert.Equal(t, domain.JobStateFailed, finalState)
+	})
+
+	t.Run("CloseAll cancels async goroutines", func(t *testing.T) {
+		sm, repo, jobRepo, engine, _ := setupSessionManager(t)
+		ctx := context.Background()
+
+		repo.GetNotebookFn = func(_ context.Context, id string) (*domain.Notebook, error) {
+			return &domain.Notebook{ID: id, Name: "NB", Owner: "alice"}, nil
+		}
+		repo.ListCellsFn = func(_ context.Context, _ string) ([]domain.Cell, error) {
+			return []domain.Cell{
+				{ID: "cell-1", NotebookID: "nb-1", CellType: domain.CellTypeSQL, Content: "SELECT 1"},
+			}, nil
+		}
+		repo.GetCellFn = func(_ context.Context, id string) (*domain.Cell, error) {
+			return &domain.Cell{ID: id, NotebookID: "nb-1", CellType: domain.CellTypeSQL, Content: "SELECT 1"}, nil
+		}
+
+		engineCalled := make(chan struct{}, 1)
+		engine.queryOnConnFn = func(ctx context.Context, _ *sql.Conn, _ string, _ string) (*sql.Rows, error) {
+			engineCalled <- struct{}{}
+			<-ctx.Done()
+			return nil, ctx.Err()
+		}
+
+		jobRepo.CreateJobFn = func(_ context.Context, job *domain.NotebookJob) (*domain.NotebookJob, error) {
+			job.CreatedAt = time.Now()
+			return job, nil
+		}
+
+		var wg sync.WaitGroup
+		wg.Add(1)
+		var finalState domain.JobState
+		jobRepo.UpdateJobStateFn = func(_ context.Context, _ string, state domain.JobState, _ *string, _ *string) error {
+			finalState = state
+			if state == domain.JobStateFailed || state == domain.JobStateComplete {
+				wg.Done()
+			}
+			return nil
+		}
+
+		sess, err := sm.CreateSession(ctx, "nb-1", "alice")
+		require.NoError(t, err)
+
+		_, err = sm.RunAllAsync(ctx, sess.ID)
+		require.NoError(t, err)
+
+		select {
+		case <-engineCalled:
+		case <-time.After(5 * time.Second):
+			t.Fatal("timed out waiting for engine to be called")
+		}
+
+		// CloseAll should cancel all session contexts
+		sm.CloseAll()
+
+		wg.Wait()
+		assert.Equal(t, domain.JobStateFailed, finalState)
+	})
+}
+
+// === Issue #54 — Race condition in reaping ===
+
+func TestSessionManager_ReapClosingFlag(t *testing.T) {
+	t.Run("ExecuteCell returns error on closing session", func(t *testing.T) {
+		sm, repo, _, engine, _ := setupSessionManager(t)
+		ctx := context.Background()
+
+		repo.GetNotebookFn = func(_ context.Context, id string) (*domain.Notebook, error) {
+			return &domain.Notebook{ID: id, Name: "NB", Owner: "alice"}, nil
+		}
+		repo.GetCellFn = func(_ context.Context, id string) (*domain.Cell, error) {
+			return &domain.Cell{ID: id, NotebookID: "nb-1", CellType: domain.CellTypeSQL, Content: "SELECT 1"}, nil
+		}
+		engine.queryOnConnFn = func(ctx context.Context, conn *sql.Conn, _ string, sqlQuery string) (*sql.Rows, error) {
+			return conn.QueryContext(ctx, sqlQuery)
+		}
+
+		sess, err := sm.CreateSession(ctx, "nb-1", "alice")
+		require.NoError(t, err)
+
+		// Manually set closing flag (simulates what reapOnce does)
+		sm.mu.RLock()
+		s := sm.sessions[sess.ID]
+		sm.mu.RUnlock()
+		s.closing.Store(true)
+
+		_, err = sm.ExecuteCell(ctx, sess.ID, "cell-1")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "closing")
+	})
+
+	t.Run("reapOnce closes connections outside the lock", func(t *testing.T) {
+		sm, repo, _, _, _ := setupSessionManager(t)
+		ctx := context.Background()
+
+		repo.GetNotebookFn = func(_ context.Context, id string) (*domain.Notebook, error) {
+			return &domain.Notebook{ID: id, Name: "NB", Owner: "alice"}, nil
+		}
+
+		sess, err := sm.CreateSession(ctx, "nb-1", "alice")
+		require.NoError(t, err)
+
+		// Set lastUsed to be past the TTL
+		sm.mu.Lock()
+		s := sm.sessions[sess.ID]
+		s.setLastUsed(time.Now().Add(-2 * sm.ttl))
+		sm.mu.Unlock()
+
+		sm.reapOnce()
+
+		// Session should be removed from the map
+		_, err = sm.getSession(sess.ID)
+		require.Error(t, err)
+		var notFound *domain.NotFoundError
+		require.ErrorAs(t, err, &notFound)
+
+		// The closing flag should have been set
+		assert.True(t, s.closing.Load())
+	})
+
+	t.Run("reapOnce cancels session context", func(t *testing.T) {
+		sm, repo, _, _, _ := setupSessionManager(t)
+		ctx := context.Background()
+
+		repo.GetNotebookFn = func(_ context.Context, id string) (*domain.Notebook, error) {
+			return &domain.Notebook{ID: id, Name: "NB", Owner: "alice"}, nil
+		}
+
+		sess, err := sm.CreateSession(ctx, "nb-1", "alice")
+		require.NoError(t, err)
+
+		// Grab reference to the session's context before reaping
+		sm.mu.RLock()
+		s := sm.sessions[sess.ID]
+		sm.mu.RUnlock()
+		sessCtx := s.ctx
+
+		// Expire the session
+		s.setLastUsed(time.Now().Add(-2 * sm.ttl))
+
+		sm.reapOnce()
+
+		// Session context should be cancelled
+		select {
+		case <-sessCtx.Done():
+			// expected
+		default:
+			t.Fatal("session context should be cancelled after reaping")
+		}
+	})
+
+	t.Run("concurrent reap and execute does not panic", func(t *testing.T) {
+		sm, repo, _, engine, _ := setupSessionManager(t)
+		ctx := context.Background()
+
+		repo.GetNotebookFn = func(_ context.Context, id string) (*domain.Notebook, error) {
+			return &domain.Notebook{ID: id, Name: "NB", Owner: "alice"}, nil
+		}
+		repo.GetCellFn = func(_ context.Context, id string) (*domain.Cell, error) {
+			return &domain.Cell{ID: id, NotebookID: "nb-1", CellType: domain.CellTypeSQL, Content: "SELECT 1"}, nil
+		}
+		engine.queryOnConnFn = func(ctx context.Context, conn *sql.Conn, _ string, sqlQuery string) (*sql.Rows, error) {
+			return conn.QueryContext(ctx, sqlQuery)
+		}
+
+		// Create multiple sessions
+		var sessionIDs []string
+		for i := 0; i < 5; i++ {
+			sess, err := sm.CreateSession(ctx, "nb-1", "alice")
+			require.NoError(t, err)
+			sessionIDs = append(sessionIDs, sess.ID)
+		}
+
+		// Mark some as stale
+		sm.mu.Lock()
+		for i := 0; i < 3; i++ {
+			sm.sessions[sessionIDs[i]].setLastUsed(time.Now().Add(-2 * sm.ttl))
+		}
+		sm.mu.Unlock()
+
+		// Run reap and execute concurrently — should not panic
+		var wg sync.WaitGroup
+		wg.Add(2)
+
+		go func() {
+			defer wg.Done()
+			sm.reapOnce()
+		}()
+
+		go func() {
+			defer wg.Done()
+			for _, id := range sessionIDs {
+				// Some will fail (reaped or closing), that's expected
+				_, _ = sm.ExecuteCell(ctx, id, "cell-1")
+			}
+		}()
+
+		wg.Wait()
 	})
 }

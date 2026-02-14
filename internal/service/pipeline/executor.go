@@ -5,18 +5,31 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"regexp"
+	"strings"
 	"time"
 
 	"duck-demo/internal/domain"
 )
 
+// validVariableName matches valid SQL variable names: starts with letter or underscore,
+// followed by letters, digits, or underscores.
+var validVariableName = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
+
+// isValidVariableName checks whether name is a safe SQL variable identifier.
+func isValidVariableName(name string) bool {
+	return validVariableName.MatchString(name)
+}
+
 // executeRun processes a pipeline run in a background goroutine.
 // It resolves the DAG, executes jobs level-by-level, and updates status.
-func (s *Service) executeRun(runID string, jobs []domain.PipelineJob,
+func (s *Service) executeRun(ctx context.Context, runID string, jobs []domain.PipelineJob,
 	levels [][]string, params map[string]string, principal string) {
 
-	ctx := context.Background()
 	logger := s.logger.With("run_id", runID)
+
+	// Clean up the cancel func when done.
+	defer s.runCancels.Delete(runID)
 
 	// Recover from panics.
 	defer func() {
@@ -52,36 +65,59 @@ func (s *Service) executeRun(runID string, jobs []domain.PipelineJob,
 	}
 
 	runFailed := false
+	cancelled := false
 
 	// Execute level by level.
 	for _, level := range levels {
-		if runFailed {
-			// Skip remaining levels — mark jobs as skipped.
+		if runFailed || cancelled {
+			// Skip remaining levels — mark jobs as skipped/cancelled.
+			status := domain.PipelineJobRunStatusSkipped
+			if cancelled {
+				status = domain.PipelineJobRunStatusCancelled
+			}
 			for _, jobID := range level {
 				jrID := jobRunByJobID[jobID]
-				_ = s.runs.UpdateJobRunFinished(ctx, jrID, domain.PipelineJobRunStatusSkipped, nil)
+				_ = s.runs.UpdateJobRunFinished(ctx, jrID, status, nil)
 			}
 			continue
 		}
 
 		// Execute jobs in this level sequentially (parallel execution is a future enhancement).
 		for _, jobID := range level {
+			// Check for cancellation before each job.
+			if ctx.Err() != nil {
+				cancelled = true
+				jrID := jobRunByJobID[jobID]
+				_ = s.runs.UpdateJobRunFinished(ctx, jrID, domain.PipelineJobRunStatusCancelled, nil)
+				continue
+			}
+
+			// Skip remaining jobs in this level if a prior job failed.
+			if runFailed {
+				jrID := jobRunByJobID[jobID]
+				_ = s.runs.UpdateJobRunFinished(ctx, jrID, domain.PipelineJobRunStatusSkipped, nil)
+				continue
+			}
+
 			job := jobByID[jobID]
 			jrID := jobRunByJobID[jobID]
 
 			if err := s.executeJob(ctx, job, jrID, params, principal, logger); err != nil {
 				runFailed = true
-				// Continue marking remaining jobs in this level as skipped.
 				continue
 			}
 		}
 	}
 
 	// Finalize run status.
-	if runFailed {
+	switch {
+	case cancelled:
+		errMsg := "run was cancelled"
+		_ = s.runs.UpdateRunFinished(ctx, runID, domain.PipelineRunStatusCancelled, &errMsg)
+	case runFailed:
 		errMsg := "one or more jobs failed"
 		_ = s.runs.UpdateRunFinished(ctx, runID, domain.PipelineRunStatusFailed, &errMsg)
-	} else {
+	default:
 		_ = s.runs.UpdateRunFinished(ctx, runID, domain.PipelineRunStatusSuccess, nil)
 	}
 }
@@ -97,9 +133,13 @@ func (s *Service) executeJob(ctx context.Context, job domain.PipelineJob,
 
 	for attempt := 0; attempt < maxAttempts; attempt++ {
 		if attempt > 0 {
-			// Exponential backoff: 1s, 2s, 4s...
+			// Exponential backoff: 1s, 2s, 4s... — interruptible by cancellation.
 			backoff := time.Duration(1<<uint(attempt-1)) * time.Second //nolint:gosec // attempt is always >= 1 here
-			time.Sleep(backoff)
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(backoff):
+			}
 			logger.Info("retrying job", "attempt", attempt+1)
 		}
 
@@ -133,7 +173,12 @@ func (s *Service) executeJobAttempt(ctx context.Context, job domain.PipelineJob,
 
 	// Inject parameters via SET VARIABLE.
 	for k, v := range params {
-		setSQL := fmt.Sprintf("SET VARIABLE %s = '%s'", k, v)
+		if !isValidVariableName(k) {
+			return fmt.Errorf("set variable: %w",
+				domain.ErrValidation("invalid variable name: %s", k))
+		}
+		escaped := strings.ReplaceAll(v, "'", "''")
+		setSQL := fmt.Sprintf("SET VARIABLE %s = '%s'", k, escaped)
 		if err := s.execOnConn(ctx, conn, principal, setSQL); err != nil {
 			return fmt.Errorf("set variable %s: %w", k, err)
 		}

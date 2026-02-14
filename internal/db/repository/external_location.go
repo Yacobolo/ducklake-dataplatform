@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"log/slog"
 	"time"
 
 	"duck-demo/internal/db/dbstore"
@@ -130,8 +131,14 @@ func (r *ExternalLocationRepo) Delete(ctx context.Context, id string) error {
 }
 
 func fromDBLocation(row dbstore.ExternalLocation) *domain.ExternalLocation {
-	createdAt, _ := time.Parse("2006-01-02 15:04:05", row.CreatedAt)
-	updatedAt, _ := time.Parse("2006-01-02 15:04:05", row.UpdatedAt)
+	createdAt, err := time.Parse("2006-01-02 15:04:05", row.CreatedAt)
+	if err != nil {
+		slog.Default().Warn("failed to parse external_location created_at", "value", row.CreatedAt, "error", err)
+	}
+	updatedAt, err := time.Parse("2006-01-02 15:04:05", row.UpdatedAt)
+	if err != nil {
+		slog.Default().Warn("failed to parse external_location updated_at", "value", row.UpdatedAt, "error", err)
+	}
 	return &domain.ExternalLocation{
 		ID:             row.ID,
 		Name:           row.Name,

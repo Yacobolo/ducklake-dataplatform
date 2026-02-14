@@ -434,7 +434,7 @@ func TestInformationSchema_ConcurrentQueries(t *testing.T) {
 
 	for i := 0; i < goroutines; i++ {
 		go func() {
-			rows, err := provider.HandleQuery(context.Background(), db, "SELECT * FROM information_schema.tables")
+			rows, err := provider.HandleQuery(context.Background(), db, "admin", "SELECT * FROM information_schema.tables")
 			if err != nil {
 				errs <- err
 				return
@@ -462,6 +462,329 @@ func TestInformationSchema_ConcurrentQueries(t *testing.T) {
 			t.Errorf("goroutine error: %v", err)
 		}
 	}
+}
+
+// === Mock AuthorizationService for RBAC filtering ===
+
+type mockAuthzService struct {
+	checkPrivilegeFn func(ctx context.Context, principalName, securableType, securableID, privilege string) (bool, error)
+}
+
+func (m *mockAuthzService) LookupTableID(_ context.Context, _ string) (string, string, bool, error) {
+	return "", "", false, nil
+}
+func (m *mockAuthzService) CheckPrivilege(ctx context.Context, principalName, securableType, securableID, privilege string) (bool, error) {
+	if m.checkPrivilegeFn != nil {
+		return m.checkPrivilegeFn(ctx, principalName, securableType, securableID, privilege)
+	}
+	return false, nil
+}
+func (m *mockAuthzService) GetEffectiveRowFilters(_ context.Context, _ string, _ string) ([]string, error) {
+	return nil, nil
+}
+func (m *mockAuthzService) GetEffectiveColumnMasks(_ context.Context, _ string, _ string) (map[string]string, error) {
+	return nil, nil
+}
+func (m *mockAuthzService) GetTableColumnNames(_ context.Context, _ string) ([]string, error) {
+	return nil, nil
+}
+
+var _ domain.AuthorizationService = (*mockAuthzService)(nil)
+
+// === Issue #38: RBAC filtering on information_schema ===
+
+func TestHandleQuery_RBACFiltersSchemata(t *testing.T) {
+	catalog := &mockEngineCatalog{
+		listSchemasFn: func(_ context.Context, _ domain.PageRequest) ([]domain.SchemaDetail, int64, error) {
+			return []domain.SchemaDetail{
+				{SchemaID: "s1", Name: "public", CatalogName: "lake", Owner: "admin"},
+				{SchemaID: "s2", Name: "secret", CatalogName: "lake", Owner: "admin"},
+			}, 2, nil
+		},
+	}
+
+	// Add GetSchema to the mock
+	catalogWithGetSchema := &mockEngineCatalogWithGetSchema{
+		mockEngineCatalog: catalog,
+		getSchemaFn: func(_ context.Context, name string) (*domain.SchemaDetail, error) {
+			switch name {
+			case "public":
+				return &domain.SchemaDetail{SchemaID: "s1", Name: "public", CatalogName: "lake"}, nil
+			case "secret":
+				return &domain.SchemaDetail{SchemaID: "s2", Name: "secret", CatalogName: "lake"}, nil
+			}
+			return nil, fmt.Errorf("not found")
+		},
+	}
+
+	factory := &mockCatalogRepoFactory{
+		catalogs: map[string]domain.CatalogRepository{"lake": catalogWithGetSchema},
+	}
+	lister := &mockCatalogLister{
+		registrations: []domain.CatalogRegistration{
+			{Name: "lake", Status: domain.CatalogStatusActive},
+		},
+	}
+	authz := &mockAuthzService{
+		checkPrivilegeFn: func(_ context.Context, principalName, securableType, securableID, privilege string) (bool, error) {
+			// admin sees everything
+			if principalName == "admin" {
+				return true, nil
+			}
+			// analyst only has USAGE on schema s1 (public)
+			if principalName == "analyst" && securableType == "schema" && securableID == "s1" {
+				return true, nil
+			}
+			return false, nil
+		},
+	}
+
+	provider := NewInformationSchemaProvider(factory, lister)
+	provider.SetAuthorizationService(authz)
+
+	db, err := sql.Open("duckdb", "")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	t.Run("admin_sees_all_schemas", func(t *testing.T) {
+		rows, err := provider.HandleQuery(context.Background(), db, "admin", "SELECT * FROM information_schema.schemata")
+		require.NoError(t, err)
+		defer rows.Close() //nolint:errcheck
+
+		count := 0
+		for rows.Next() {
+			count++
+		}
+		require.NoError(t, rows.Err())
+		assert.Equal(t, 2, count, "admin should see all schemas")
+	})
+
+	t.Run("analyst_sees_only_public", func(t *testing.T) {
+		rows, err := provider.HandleQuery(context.Background(), db, "analyst", "SELECT * FROM information_schema.schemata")
+		require.NoError(t, err)
+		defer rows.Close() //nolint:errcheck
+
+		count := 0
+		for rows.Next() {
+			count++
+		}
+		require.NoError(t, rows.Err())
+		assert.Equal(t, 1, count, "analyst should see only public schema")
+	})
+
+	t.Run("no_access_sees_nothing", func(t *testing.T) {
+		rows, err := provider.HandleQuery(context.Background(), db, "nobody", "SELECT * FROM information_schema.schemata")
+		require.NoError(t, err)
+		defer rows.Close() //nolint:errcheck
+
+		count := 0
+		for rows.Next() {
+			count++
+		}
+		require.NoError(t, rows.Err())
+		assert.Equal(t, 0, count, "no_access user should see no schemas")
+	})
+}
+
+func TestHandleQuery_RBACFiltersTables(t *testing.T) {
+	catalog := &mockEngineCatalogWithGetTable{
+		mockEngineCatalog: &mockEngineCatalog{
+			listSchemasFn: func(_ context.Context, _ domain.PageRequest) ([]domain.SchemaDetail, int64, error) {
+				return []domain.SchemaDetail{
+					{SchemaID: "s1", Name: "main", CatalogName: "lake"},
+				}, 1, nil
+			},
+			listTablesFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.TableDetail, int64, error) {
+				return []domain.TableDetail{
+					{TableID: "t1", Name: "public_table", TableType: "MANAGED"},
+					{TableID: "t2", Name: "secret_table", TableType: "MANAGED"},
+				}, 2, nil
+			},
+		},
+		getTableFn: func(_ context.Context, _, tableName string) (*domain.TableDetail, error) {
+			switch tableName {
+			case "public_table":
+				return &domain.TableDetail{TableID: "t1", Name: "public_table"}, nil
+			case "secret_table":
+				return &domain.TableDetail{TableID: "t2", Name: "secret_table"}, nil
+			}
+			return nil, fmt.Errorf("not found")
+		},
+	}
+
+	factory := &mockCatalogRepoFactory{
+		catalogs: map[string]domain.CatalogRepository{"lake": catalog},
+	}
+	lister := &mockCatalogLister{
+		registrations: []domain.CatalogRegistration{
+			{Name: "lake", Status: domain.CatalogStatusActive},
+		},
+	}
+	authz := &mockAuthzService{
+		checkPrivilegeFn: func(_ context.Context, principalName, securableType, securableID, _ string) (bool, error) {
+			if principalName == "admin" {
+				return true, nil
+			}
+			// analyst has SELECT on t1 only
+			if principalName == "analyst" && securableType == "table" && securableID == "t1" {
+				return true, nil
+			}
+			return false, nil
+		},
+	}
+
+	provider := NewInformationSchemaProvider(factory, lister)
+	provider.SetAuthorizationService(authz)
+
+	db, err := sql.Open("duckdb", "")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	t.Run("admin_sees_all_tables", func(t *testing.T) {
+		rows, err := provider.HandleQuery(context.Background(), db, "admin", "SELECT * FROM information_schema.tables")
+		require.NoError(t, err)
+		defer rows.Close() //nolint:errcheck
+
+		count := 0
+		for rows.Next() {
+			count++
+		}
+		require.NoError(t, rows.Err())
+		assert.Equal(t, 2, count)
+	})
+
+	t.Run("analyst_sees_only_public_table", func(t *testing.T) {
+		rows, err := provider.HandleQuery(context.Background(), db, "analyst", "SELECT * FROM information_schema.tables")
+		require.NoError(t, err)
+		defer rows.Close() //nolint:errcheck
+
+		count := 0
+		for rows.Next() {
+			count++
+		}
+		require.NoError(t, rows.Err())
+		assert.Equal(t, 1, count)
+	})
+}
+
+// === Issue #39: SQL injection prevention ===
+
+func TestHandleQuery_NoSQLInjection(t *testing.T) {
+	// The fix for Issue #39 ensures user SQL is never executed against the temp table.
+	// This test verifies that even if the user provides SQL that would be dangerous
+	// if executed, only the materialized rows are returned.
+	catalog := &mockEngineCatalog{
+		listSchemasFn: func(_ context.Context, _ domain.PageRequest) ([]domain.SchemaDetail, int64, error) {
+			return []domain.SchemaDetail{
+				{SchemaID: "1", Name: "main", CatalogName: "lake", Owner: "admin"},
+			}, 1, nil
+		},
+	}
+	provider := newTestProvider("lake", catalog)
+
+	db, err := sql.Open("duckdb", "")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	// Previously this would have executed the user's SQL with string replacement.
+	// Now it should just return the materialized rows regardless of the SQL content.
+	rows, err := provider.HandleQuery(context.Background(), db, "admin", "SELECT read_parquet('evil.parquet') FROM information_schema.schemata")
+	require.NoError(t, err)
+	defer rows.Close() //nolint:errcheck
+
+	count := 0
+	for rows.Next() {
+		count++
+	}
+	require.NoError(t, rows.Err())
+	// Should return the 1 schema row, not execute read_parquet
+	assert.Equal(t, 1, count, "should return materialized rows, not execute user SQL")
+}
+
+// === Issue #41: Connection leak prevention ===
+
+func TestHandleQuery_NoConnectionLeak(t *testing.T) {
+	// This test verifies that calling HandleQuery and closing rows doesn't
+	// accumulate pinned connections. We run many queries in sequence.
+	catalog := &mockEngineCatalog{
+		listSchemasFn: func(_ context.Context, _ domain.PageRequest) ([]domain.SchemaDetail, int64, error) {
+			return []domain.SchemaDetail{
+				{SchemaID: "1", Name: "main", CatalogName: "lake", Owner: "admin"},
+			}, 1, nil
+		},
+	}
+	provider := newTestProvider("lake", catalog)
+
+	db, err := sql.Open("duckdb", "")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	// Run many queries and close them. If there's a conn leak, we'll eventually
+	// run out of connections or see errors.
+	for i := 0; i < 100; i++ {
+		rows, err := provider.HandleQuery(context.Background(), db, "admin", "SELECT * FROM information_schema.schemata")
+		require.NoError(t, err, "query %d should not fail", i)
+
+		count := 0
+		for rows.Next() {
+			count++
+		}
+		require.NoError(t, rows.Err())
+		defer rows.Close() //nolint:errcheck
+		assert.Equal(t, 1, count, "query %d should return 1 row", i)
+	}
+}
+
+func TestHandleQuery_EmptyResult(t *testing.T) {
+	catalog := &mockEngineCatalog{
+		listSchemasFn: func(_ context.Context, _ domain.PageRequest) ([]domain.SchemaDetail, int64, error) {
+			return []domain.SchemaDetail{}, 0, nil
+		},
+	}
+	provider := newTestProvider("lake", catalog)
+
+	db, err := sql.Open("duckdb", "")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	rows, err := provider.HandleQuery(context.Background(), db, "admin", "SELECT * FROM information_schema.schemata")
+	require.NoError(t, err)
+	defer rows.Close() //nolint:errcheck
+
+	count := 0
+	for rows.Next() {
+		count++
+	}
+	require.NoError(t, rows.Err())
+	assert.Equal(t, 0, count)
+}
+
+// === Extended mock types for RBAC tests ===
+
+// mockEngineCatalogWithGetSchema extends mockEngineCatalog with GetSchema support.
+type mockEngineCatalogWithGetSchema struct {
+	*mockEngineCatalog
+	getSchemaFn func(ctx context.Context, name string) (*domain.SchemaDetail, error)
+}
+
+func (m *mockEngineCatalogWithGetSchema) GetSchema(ctx context.Context, name string) (*domain.SchemaDetail, error) {
+	if m.getSchemaFn != nil {
+		return m.getSchemaFn(ctx, name)
+	}
+	panic("unexpected call to GetSchema")
+}
+
+// mockEngineCatalogWithGetTable extends mockEngineCatalog with GetTable support.
+type mockEngineCatalogWithGetTable struct {
+	*mockEngineCatalog
+	getTableFn func(ctx context.Context, schemaName, tableName string) (*domain.TableDetail, error)
+}
+
+func (m *mockEngineCatalogWithGetTable) GetTable(ctx context.Context, schemaName, tableName string) (*domain.TableDetail, error) {
+	if m.getTableFn != nil {
+		return m.getTableFn(ctx, schemaName, tableName)
+	}
+	panic("unexpected call to GetTable")
 }
 
 // errInfoTest is a sentinel error for information_schema tests.

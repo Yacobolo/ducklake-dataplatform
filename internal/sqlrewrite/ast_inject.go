@@ -48,13 +48,51 @@ func collectTableRefsFromNode(node *pg_query.Node, refs *[]tableRef) {
 	}
 }
 
-// injectRawFilterIntoNode recurses into statement nodes to find SELECTs.
+// injectRawFilterIntoNode recurses into statement nodes to find SELECTs,
+// UPDATEs, and DELETEs, injecting WHERE clause filters for RLS.
 func injectRawFilterIntoNode(node *pg_query.Node, tableName string, filterNode *pg_query.Node) {
 	if node == nil {
 		return
 	}
-	if n, ok := node.Node.(*pg_query.Node_SelectStmt); ok {
+	switch n := node.Node.(type) {
+	case *pg_query.Node_SelectStmt:
 		injectRawFilterIntoSelectStmt(n.SelectStmt, tableName, filterNode)
+	case *pg_query.Node_UpdateStmt:
+		injectRawFilterIntoUpdateStmt(n.UpdateStmt, tableName, filterNode)
+	case *pg_query.Node_DeleteStmt:
+		injectRawFilterIntoDeleteStmt(n.DeleteStmt, tableName, filterNode)
+	}
+}
+
+// injectRawFilterIntoUpdateStmt injects a WHERE filter into an UPDATE statement
+// when it targets the specified table.
+func injectRawFilterIntoUpdateStmt(upd *pg_query.UpdateStmt, tableName string, filterNode *pg_query.Node) {
+	if upd == nil || upd.Relation == nil {
+		return
+	}
+	if upd.Relation.Relname != tableName {
+		return
+	}
+	if upd.WhereClause == nil {
+		upd.WhereClause = filterNode
+	} else {
+		upd.WhereClause = makeAndExpr(upd.WhereClause, filterNode)
+	}
+}
+
+// injectRawFilterIntoDeleteStmt injects a WHERE filter into a DELETE statement
+// when it targets the specified table.
+func injectRawFilterIntoDeleteStmt(del *pg_query.DeleteStmt, tableName string, filterNode *pg_query.Node) {
+	if del == nil || del.Relation == nil {
+		return
+	}
+	if del.Relation.Relname != tableName {
+		return
+	}
+	if del.WhereClause == nil {
+		del.WhereClause = filterNode
+	} else {
+		del.WhereClause = makeAndExpr(del.WhereClause, filterNode)
 	}
 }
 
@@ -70,6 +108,11 @@ func injectRawFilterIntoSelectStmt(sel *pg_query.SelectStmt, tableName string, f
 		injectRawFilterIntoSelectStmt(sel.Rarg, tableName, filterNode)
 	}
 
+	// Recurse into subqueries in FROM clause (RangeSubselect and JoinExpr nodes)
+	for _, from := range sel.FromClause {
+		injectRawFilterIntoFromNode(from, tableName, filterNode)
+	}
+
 	// Check if this SELECT references the target table
 	if !selectReferencesTable(sel, tableName) {
 		return
@@ -80,6 +123,23 @@ func injectRawFilterIntoSelectStmt(sel *pg_query.SelectStmt, tableName string, f
 		sel.WhereClause = filterNode
 	} else {
 		sel.WhereClause = makeAndExpr(sel.WhereClause, filterNode)
+	}
+}
+
+// injectRawFilterIntoFromNode recurses into subqueries within FROM clause nodes
+// to apply raw RLS filters to nested SELECTs (e.g. SELECT * FROM (SELECT * FROM secret_table) sub).
+func injectRawFilterIntoFromNode(node *pg_query.Node, tableName string, filterNode *pg_query.Node) {
+	if node == nil {
+		return
+	}
+	switch n := node.Node.(type) {
+	case *pg_query.Node_RangeSubselect:
+		if n.RangeSubselect.Subquery != nil {
+			injectRawFilterIntoNode(n.RangeSubselect.Subquery, tableName, filterNode)
+		}
+	case *pg_query.Node_JoinExpr:
+		injectRawFilterIntoFromNode(n.JoinExpr.Larg, tableName, filterNode)
+		injectRawFilterIntoFromNode(n.JoinExpr.Rarg, tableName, filterNode)
 	}
 }
 
