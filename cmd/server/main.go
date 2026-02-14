@@ -24,6 +24,7 @@ import (
 	"duck-demo/internal/app"
 	"duck-demo/internal/config"
 	internaldb "duck-demo/internal/db"
+	"duck-demo/internal/domain"
 	"duck-demo/internal/engine"
 	"duck-demo/internal/middleware"
 )
@@ -276,11 +277,11 @@ func run() error {
 //
 // Usage:
 //
-//	go run ./cmd/server admin promote --principal=<name>
+//	go run ./cmd/server admin promote --principal=<name> [--create]
 //	go run ./cmd/server admin demote  --principal=<name>
 func runAdmin(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("usage: server admin <promote|demote> --principal=<name>")
+		return fmt.Errorf("usage: server admin <promote|demote> --principal=<name> [--create]")
 	}
 	action := args[0]
 	if action != "promote" && action != "demote" {
@@ -288,9 +289,13 @@ func runAdmin(args []string) error {
 	}
 
 	var principalName string
+	var createIfMissing bool
 	for _, arg := range args[1:] {
 		if len(arg) > len("--principal=") && arg[:len("--principal=")] == "--principal=" {
 			principalName = arg[len("--principal="):]
+		}
+		if arg == "--create" {
+			createIfMissing = true
 		}
 	}
 	if principalName == "" {
@@ -314,23 +319,46 @@ func runAdmin(args []string) error {
 	}
 	defer db.Close() //nolint:errcheck
 
+	// Run migrations to ensure schema is up to date.
+	if err := internaldb.RunMigrations(db); err != nil {
+		return fmt.Errorf("migration: %w", err)
+	}
+
 	isAdmin := int64(1)
 	if action == "demote" {
 		isAdmin = 0
 	}
 
-	result, err := db.ExecContext(context.Background(),
+	// Check if principal exists.
+	var exists bool
+	err = db.QueryRowContext(context.Background(),
+		"SELECT 1 FROM principals WHERE name = ?", principalName).Scan(&exists)
+	if err != nil && err != sql.ErrNoRows {
+		return fmt.Errorf("check principal: %w", err)
+	}
+
+	if !exists {
+		if !createIfMissing {
+			return fmt.Errorf("principal %q not found (use --create to create it)", principalName)
+		}
+		// Create the principal with the desired admin status.
+		id := domain.NewID()
+		_, err = db.ExecContext(context.Background(),
+			"INSERT INTO principals (id, name, type, is_admin) VALUES (?, ?, 'user', ?)",
+			id, principalName, isAdmin)
+		if err != nil {
+			return fmt.Errorf("create principal: %w", err)
+		}
+		fmt.Printf("principal %q created and %sd successfully\n", principalName, action)
+		return nil
+	}
+
+	// Principal exists — update admin status.
+	_, err = db.ExecContext(context.Background(),
 		"UPDATE principals SET is_admin = ? WHERE name = ?",
 		isAdmin, principalName)
 	if err != nil {
 		return fmt.Errorf("update principal: %w", err)
-	}
-	rows, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("check result: %w", err)
-	}
-	if rows == 0 {
-		return fmt.Errorf("principal %q not found", principalName)
 	}
 
 	fmt.Printf("principal %q %sd successfully\n", principalName, action)
