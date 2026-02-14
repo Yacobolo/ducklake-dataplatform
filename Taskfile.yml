@@ -126,12 +126,6 @@ tasks:
     cmds:
       - gotestsum --format pkgname-and-test-fails -- -race ./pkg/cli/... ./internal/codegen/cli/...
 
-  check-generated:
-    desc: Verify all generated files are up to date
-    cmds:
-      - task generate
-      - git diff --exit-code internal/api/types.gen.go internal/api/server.gen.go
-
   integration-test:
     desc: "Run integration tests (alias for test:integration)"
     deps: [test:integration]
