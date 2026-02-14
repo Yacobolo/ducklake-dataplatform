@@ -32,14 +32,14 @@ func (q *Queries) CountActivePipelineRuns(ctx context.Context, pipelineID string
 
 const countPipelineRuns = `-- name: CountPipelineRuns :one
 SELECT COUNT(*) FROM pipeline_runs
-WHERE (CAST(? AS TEXT) IS NULL OR pipeline_id = ?)
-  AND (CAST(? AS TEXT) IS NULL OR status = ?)
+WHERE (? = '' OR pipeline_id = ?)
+  AND (? = '' OR status = ?)
 `
 
 type CountPipelineRunsParams struct {
-	Column1    string
+	Column1    interface{}
 	PipelineID string
-	Column3    string
+	Column3    interface{}
 	Status     string
 }
 
@@ -450,16 +450,16 @@ func (q *Queries) ListPipelineJobsByPipeline(ctx context.Context, pipelineID str
 
 const listPipelineRuns = `-- name: ListPipelineRuns :many
 SELECT id, pipeline_id, status, trigger_type, triggered_by, parameters, git_commit_hash, started_at, finished_at, error_message, created_at FROM pipeline_runs
-WHERE (CAST(? AS TEXT) IS NULL OR pipeline_id = ?)
-  AND (CAST(? AS TEXT) IS NULL OR status = ?)
+WHERE (? = '' OR pipeline_id = ?)
+  AND (? = '' OR status = ?)
 ORDER BY created_at DESC
 LIMIT ? OFFSET ?
 `
 
 type ListPipelineRunsParams struct {
-	Column1    string
+	Column1    interface{}
 	PipelineID string
-	Column3    string
+	Column3    interface{}
 	Status     string
 	Limit      int64
 	Offset     int64

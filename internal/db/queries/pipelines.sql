@@ -57,15 +57,15 @@ SELECT * FROM pipeline_runs WHERE id = ?;
 
 -- name: ListPipelineRuns :many
 SELECT * FROM pipeline_runs
-WHERE (CAST(? AS TEXT) IS NULL OR pipeline_id = ?)
-  AND (CAST(? AS TEXT) IS NULL OR status = ?)
+WHERE (? = '' OR pipeline_id = ?)
+  AND (? = '' OR status = ?)
 ORDER BY created_at DESC
 LIMIT ? OFFSET ?;
 
 -- name: CountPipelineRuns :one
 SELECT COUNT(*) FROM pipeline_runs
-WHERE (CAST(? AS TEXT) IS NULL OR pipeline_id = ?)
-  AND (CAST(? AS TEXT) IS NULL OR status = ?);
+WHERE (? = '' OR pipeline_id = ?)
+  AND (? = '' OR status = ?);
 
 -- name: UpdatePipelineRunStatus :exec
 UPDATE pipeline_runs SET status = ?, error_message = ? WHERE id = ?;
