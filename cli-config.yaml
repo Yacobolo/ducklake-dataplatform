@@ -559,3 +559,17 @@ skip_operations:
   - getGitRepo
   - deleteGitRepo
   - syncGitRepo
+  # Pipeline operations (CLI commands TBD)
+  - listPipelines
+  - createPipeline
+  - getPipeline
+  - updatePipeline
+  - deletePipeline
+  - listPipelineJobs
+  - createPipelineJob
+  - deletePipelineJob
+  - triggerPipelineRun
+  - listPipelineRuns
+  - getPipelineRun
+  - cancelPipelineRun
+  - listPipelineJobRuns

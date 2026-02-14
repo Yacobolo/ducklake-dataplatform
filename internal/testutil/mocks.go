@@ -1091,3 +1091,270 @@ func (m *MockGitRepoRepo) UpdateSyncStatus(ctx context.Context, id string, commi
 }
 
 var _ domain.GitRepoRepository = (*MockGitRepoRepo)(nil)
+
+// === Pipeline Repository Mock ===
+
+// MockPipelineRepo implements domain.PipelineRepository for testing.
+type MockPipelineRepo struct {
+	CreatePipelineFn         func(ctx context.Context, p *domain.Pipeline) (*domain.Pipeline, error)
+	GetPipelineByIDFn        func(ctx context.Context, id string) (*domain.Pipeline, error)
+	GetPipelineByNameFn      func(ctx context.Context, name string) (*domain.Pipeline, error)
+	ListPipelinesFn          func(ctx context.Context, page domain.PageRequest) ([]domain.Pipeline, int64, error)
+	UpdatePipelineFn         func(ctx context.Context, id string, req domain.UpdatePipelineRequest) (*domain.Pipeline, error)
+	DeletePipelineFn         func(ctx context.Context, id string) error
+	ListScheduledPipelinesFn func(ctx context.Context) ([]domain.Pipeline, error)
+	CreateJobFn              func(ctx context.Context, job *domain.PipelineJob) (*domain.PipelineJob, error)
+	GetJobByIDFn             func(ctx context.Context, id string) (*domain.PipelineJob, error)
+	ListJobsByPipelineFn     func(ctx context.Context, pipelineID string) ([]domain.PipelineJob, error)
+	DeleteJobFn              func(ctx context.Context, id string) error
+	DeleteJobsByPipelineFn   func(ctx context.Context, pipelineID string) error
+}
+
+// CreatePipeline implements the interface method for testing.
+func (m *MockPipelineRepo) CreatePipeline(ctx context.Context, p *domain.Pipeline) (*domain.Pipeline, error) {
+	if m.CreatePipelineFn != nil {
+		return m.CreatePipelineFn(ctx, p)
+	}
+	panic("unexpected call to MockPipelineRepo.CreatePipeline")
+}
+
+// GetPipelineByID implements the interface method for testing.
+func (m *MockPipelineRepo) GetPipelineByID(ctx context.Context, id string) (*domain.Pipeline, error) {
+	if m.GetPipelineByIDFn != nil {
+		return m.GetPipelineByIDFn(ctx, id)
+	}
+	panic("unexpected call to MockPipelineRepo.GetPipelineByID")
+}
+
+// GetPipelineByName implements the interface method for testing.
+func (m *MockPipelineRepo) GetPipelineByName(ctx context.Context, name string) (*domain.Pipeline, error) {
+	if m.GetPipelineByNameFn != nil {
+		return m.GetPipelineByNameFn(ctx, name)
+	}
+	panic("unexpected call to MockPipelineRepo.GetPipelineByName")
+}
+
+// ListPipelines implements the interface method for testing.
+func (m *MockPipelineRepo) ListPipelines(ctx context.Context, page domain.PageRequest) ([]domain.Pipeline, int64, error) {
+	if m.ListPipelinesFn != nil {
+		return m.ListPipelinesFn(ctx, page)
+	}
+	panic("unexpected call to MockPipelineRepo.ListPipelines")
+}
+
+// UpdatePipeline implements the interface method for testing.
+func (m *MockPipelineRepo) UpdatePipeline(ctx context.Context, id string, req domain.UpdatePipelineRequest) (*domain.Pipeline, error) {
+	if m.UpdatePipelineFn != nil {
+		return m.UpdatePipelineFn(ctx, id, req)
+	}
+	panic("unexpected call to MockPipelineRepo.UpdatePipeline")
+}
+
+// DeletePipeline implements the interface method for testing.
+func (m *MockPipelineRepo) DeletePipeline(ctx context.Context, id string) error {
+	if m.DeletePipelineFn != nil {
+		return m.DeletePipelineFn(ctx, id)
+	}
+	panic("unexpected call to MockPipelineRepo.DeletePipeline")
+}
+
+// ListScheduledPipelines implements the interface method for testing.
+func (m *MockPipelineRepo) ListScheduledPipelines(ctx context.Context) ([]domain.Pipeline, error) {
+	if m.ListScheduledPipelinesFn != nil {
+		return m.ListScheduledPipelinesFn(ctx)
+	}
+	panic("unexpected call to MockPipelineRepo.ListScheduledPipelines")
+}
+
+// CreateJob implements the interface method for testing.
+func (m *MockPipelineRepo) CreateJob(ctx context.Context, job *domain.PipelineJob) (*domain.PipelineJob, error) {
+	if m.CreateJobFn != nil {
+		return m.CreateJobFn(ctx, job)
+	}
+	panic("unexpected call to MockPipelineRepo.CreateJob")
+}
+
+// GetJobByID implements the interface method for testing.
+func (m *MockPipelineRepo) GetJobByID(ctx context.Context, id string) (*domain.PipelineJob, error) {
+	if m.GetJobByIDFn != nil {
+		return m.GetJobByIDFn(ctx, id)
+	}
+	panic("unexpected call to MockPipelineRepo.GetJobByID")
+}
+
+// ListJobsByPipeline implements the interface method for testing.
+func (m *MockPipelineRepo) ListJobsByPipeline(ctx context.Context, pipelineID string) ([]domain.PipelineJob, error) {
+	if m.ListJobsByPipelineFn != nil {
+		return m.ListJobsByPipelineFn(ctx, pipelineID)
+	}
+	panic("unexpected call to MockPipelineRepo.ListJobsByPipeline")
+}
+
+// DeleteJob implements the interface method for testing.
+func (m *MockPipelineRepo) DeleteJob(ctx context.Context, id string) error {
+	if m.DeleteJobFn != nil {
+		return m.DeleteJobFn(ctx, id)
+	}
+	panic("unexpected call to MockPipelineRepo.DeleteJob")
+}
+
+// DeleteJobsByPipeline implements the interface method for testing.
+func (m *MockPipelineRepo) DeleteJobsByPipeline(ctx context.Context, pipelineID string) error {
+	if m.DeleteJobsByPipelineFn != nil {
+		return m.DeleteJobsByPipelineFn(ctx, pipelineID)
+	}
+	panic("unexpected call to MockPipelineRepo.DeleteJobsByPipeline")
+}
+
+var _ domain.PipelineRepository = (*MockPipelineRepo)(nil)
+
+// === Pipeline Run Repository Mock ===
+
+// MockPipelineRunRepo implements domain.PipelineRunRepository for testing.
+type MockPipelineRunRepo struct {
+	CreateRunFn            func(ctx context.Context, run *domain.PipelineRun) (*domain.PipelineRun, error)
+	GetRunByIDFn           func(ctx context.Context, id string) (*domain.PipelineRun, error)
+	ListRunsFn             func(ctx context.Context, filter domain.PipelineRunFilter) ([]domain.PipelineRun, int64, error)
+	UpdateRunStatusFn      func(ctx context.Context, id string, status string, errorMsg *string) error
+	UpdateRunStartedFn     func(ctx context.Context, id string) error
+	UpdateRunFinishedFn    func(ctx context.Context, id string, status string, errorMsg *string) error
+	CountActiveRunsFn      func(ctx context.Context, pipelineID string) (int64, error)
+	CancelPendingRunsFn    func(ctx context.Context, pipelineID string) (int64, error)
+	CreateJobRunFn         func(ctx context.Context, jr *domain.PipelineJobRun) (*domain.PipelineJobRun, error)
+	GetJobRunByIDFn        func(ctx context.Context, id string) (*domain.PipelineJobRun, error)
+	ListJobRunsByRunFn     func(ctx context.Context, runID string) ([]domain.PipelineJobRun, error)
+	UpdateJobRunStatusFn   func(ctx context.Context, id string, status string, errorMsg *string) error
+	UpdateJobRunStartedFn  func(ctx context.Context, id string) error
+	UpdateJobRunFinishedFn func(ctx context.Context, id string, status string, errorMsg *string) error
+}
+
+// CreateRun implements the interface method for testing.
+func (m *MockPipelineRunRepo) CreateRun(ctx context.Context, run *domain.PipelineRun) (*domain.PipelineRun, error) {
+	if m.CreateRunFn != nil {
+		return m.CreateRunFn(ctx, run)
+	}
+	panic("unexpected call to MockPipelineRunRepo.CreateRun")
+}
+
+// GetRunByID implements the interface method for testing.
+func (m *MockPipelineRunRepo) GetRunByID(ctx context.Context, id string) (*domain.PipelineRun, error) {
+	if m.GetRunByIDFn != nil {
+		return m.GetRunByIDFn(ctx, id)
+	}
+	panic("unexpected call to MockPipelineRunRepo.GetRunByID")
+}
+
+// ListRuns implements the interface method for testing.
+func (m *MockPipelineRunRepo) ListRuns(ctx context.Context, filter domain.PipelineRunFilter) ([]domain.PipelineRun, int64, error) {
+	if m.ListRunsFn != nil {
+		return m.ListRunsFn(ctx, filter)
+	}
+	panic("unexpected call to MockPipelineRunRepo.ListRuns")
+}
+
+// UpdateRunStatus implements the interface method for testing.
+func (m *MockPipelineRunRepo) UpdateRunStatus(ctx context.Context, id string, status string, errorMsg *string) error {
+	if m.UpdateRunStatusFn != nil {
+		return m.UpdateRunStatusFn(ctx, id, status, errorMsg)
+	}
+	panic("unexpected call to MockPipelineRunRepo.UpdateRunStatus")
+}
+
+// UpdateRunStarted implements the interface method for testing.
+func (m *MockPipelineRunRepo) UpdateRunStarted(ctx context.Context, id string) error {
+	if m.UpdateRunStartedFn != nil {
+		return m.UpdateRunStartedFn(ctx, id)
+	}
+	panic("unexpected call to MockPipelineRunRepo.UpdateRunStarted")
+}
+
+// UpdateRunFinished implements the interface method for testing.
+func (m *MockPipelineRunRepo) UpdateRunFinished(ctx context.Context, id string, status string, errorMsg *string) error {
+	if m.UpdateRunFinishedFn != nil {
+		return m.UpdateRunFinishedFn(ctx, id, status, errorMsg)
+	}
+	panic("unexpected call to MockPipelineRunRepo.UpdateRunFinished")
+}
+
+// CountActiveRuns implements the interface method for testing.
+func (m *MockPipelineRunRepo) CountActiveRuns(ctx context.Context, pipelineID string) (int64, error) {
+	if m.CountActiveRunsFn != nil {
+		return m.CountActiveRunsFn(ctx, pipelineID)
+	}
+	panic("unexpected call to MockPipelineRunRepo.CountActiveRuns")
+}
+
+// CancelPendingRuns implements the interface method for testing.
+func (m *MockPipelineRunRepo) CancelPendingRuns(ctx context.Context, pipelineID string) (int64, error) {
+	if m.CancelPendingRunsFn != nil {
+		return m.CancelPendingRunsFn(ctx, pipelineID)
+	}
+	panic("unexpected call to MockPipelineRunRepo.CancelPendingRuns")
+}
+
+// CreateJobRun implements the interface method for testing.
+func (m *MockPipelineRunRepo) CreateJobRun(ctx context.Context, jr *domain.PipelineJobRun) (*domain.PipelineJobRun, error) {
+	if m.CreateJobRunFn != nil {
+		return m.CreateJobRunFn(ctx, jr)
+	}
+	panic("unexpected call to MockPipelineRunRepo.CreateJobRun")
+}
+
+// GetJobRunByID implements the interface method for testing.
+func (m *MockPipelineRunRepo) GetJobRunByID(ctx context.Context, id string) (*domain.PipelineJobRun, error) {
+	if m.GetJobRunByIDFn != nil {
+		return m.GetJobRunByIDFn(ctx, id)
+	}
+	panic("unexpected call to MockPipelineRunRepo.GetJobRunByID")
+}
+
+// ListJobRunsByRun implements the interface method for testing.
+func (m *MockPipelineRunRepo) ListJobRunsByRun(ctx context.Context, runID string) ([]domain.PipelineJobRun, error) {
+	if m.ListJobRunsByRunFn != nil {
+		return m.ListJobRunsByRunFn(ctx, runID)
+	}
+	panic("unexpected call to MockPipelineRunRepo.ListJobRunsByRun")
+}
+
+// UpdateJobRunStatus implements the interface method for testing.
+func (m *MockPipelineRunRepo) UpdateJobRunStatus(ctx context.Context, id string, status string, errorMsg *string) error {
+	if m.UpdateJobRunStatusFn != nil {
+		return m.UpdateJobRunStatusFn(ctx, id, status, errorMsg)
+	}
+	panic("unexpected call to MockPipelineRunRepo.UpdateJobRunStatus")
+}
+
+// UpdateJobRunStarted implements the interface method for testing.
+func (m *MockPipelineRunRepo) UpdateJobRunStarted(ctx context.Context, id string) error {
+	if m.UpdateJobRunStartedFn != nil {
+		return m.UpdateJobRunStartedFn(ctx, id)
+	}
+	panic("unexpected call to MockPipelineRunRepo.UpdateJobRunStarted")
+}
+
+// UpdateJobRunFinished implements the interface method for testing.
+func (m *MockPipelineRunRepo) UpdateJobRunFinished(ctx context.Context, id string, status string, errorMsg *string) error {
+	if m.UpdateJobRunFinishedFn != nil {
+		return m.UpdateJobRunFinishedFn(ctx, id, status, errorMsg)
+	}
+	panic("unexpected call to MockPipelineRunRepo.UpdateJobRunFinished")
+}
+
+var _ domain.PipelineRunRepository = (*MockPipelineRunRepo)(nil)
+
+// === Notebook Provider Mock ===
+
+// MockNotebookProvider implements domain.NotebookProvider for testing.
+type MockNotebookProvider struct {
+	GetSQLBlocksFn func(ctx context.Context, notebookID string) ([]string, error)
+}
+
+// GetSQLBlocks implements the interface method for testing.
+func (m *MockNotebookProvider) GetSQLBlocks(ctx context.Context, notebookID string) ([]string, error) {
+	if m.GetSQLBlocksFn != nil {
+		return m.GetSQLBlocksFn(ctx, notebookID)
+	}
+	panic("unexpected call to MockNotebookProvider.GetSQLBlocks")
+}
+
+var _ domain.NotebookProvider = (*MockNotebookProvider)(nil)
