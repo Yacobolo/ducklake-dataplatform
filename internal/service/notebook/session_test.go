@@ -518,11 +518,11 @@ func TestSessionManager_CloseAll(t *testing.T) {
 		err = sm.CloseSession(ctx, s1.ID)
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
-		assert.ErrorAs(t, err, &notFound)
+		require.ErrorAs(t, err, &notFound)
 
 		err = sm.CloseSession(ctx, s2.ID)
 		require.Error(t, err)
-		assert.ErrorAs(t, err, &notFound)
+		require.ErrorAs(t, err, &notFound)
 	})
 }
 

@@ -28,5 +28,8 @@ func (r *CreateAPIKeyRequest) Validate() error {
 	if r.Name == "" {
 		return ErrValidation("api key name is required")
 	}
+	if r.ExpiresAt != nil && r.ExpiresAt.Before(time.Now()) {
+		return ErrValidation("expires_at must be in the future")
+	}
 	return nil
 }

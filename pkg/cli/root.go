@@ -18,6 +18,7 @@ var (
 func Execute() int {
 	rootCmd := newRootCmd()
 	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		return 1
 	}
 	return 0
@@ -103,6 +104,10 @@ func newRootCmd() *cobra.Command {
 			if err := originalPreRun(cmd, args); err != nil {
 				return err
 			}
+		}
+		// Validate output format
+		if output != "" && output != "table" && output != "json" {
+			return fmt.Errorf("unsupported output format %q: use 'table' or 'json'", output)
 		}
 		// Update client with resolved values
 		client.BaseURL = host

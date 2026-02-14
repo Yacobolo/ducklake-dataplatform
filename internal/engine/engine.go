@@ -66,14 +66,18 @@ func (e *SecureEngine) rewriteQuery(ctx context.Context, principalName, sqlQuery
 	}
 
 	if len(tables) == 0 {
-		// No tables referenced — require catalog-level privilege to prevent
-		// unguarded execution of functions like read_parquet(), read_csv_auto(), etc.
-		allowed, authErr := e.catalog.CheckPrivilege(ctx, principalName, domain.SecurableCatalog, domain.CatalogID, requiredPriv)
-		if authErr != nil {
-			return "", fmt.Errorf("privilege check: %w", authErr)
-		}
-		if !allowed {
-			return "", fmt.Errorf("access denied: %q lacks %s privilege for table-less queries", principalName, requiredPriv)
+		// Table-less SELECT (SELECT 1, SELECT version()) is harmless — allow for
+		// all authenticated users. Non-SELECT table-less statements still require
+		// catalog-level privilege to prevent unguarded execution of functions like
+		// read_parquet(), read_csv_auto(), etc.
+		if stmtType != sqlrewrite.StmtSelect {
+			allowed, authErr := e.catalog.CheckPrivilege(ctx, principalName, domain.SecurableCatalog, domain.CatalogID, requiredPriv)
+			if authErr != nil {
+				return "", fmt.Errorf("privilege check: %w", authErr)
+			}
+			if !allowed {
+				return "", domain.ErrAccessDenied("%q lacks %s privilege for table-less queries", principalName, requiredPriv)
+			}
 		}
 		return sqlQuery, nil
 	}

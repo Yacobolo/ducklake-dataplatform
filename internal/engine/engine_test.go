@@ -5,13 +5,11 @@ import (
 	"database/sql"
 	"log/slog"
 	"os"
-	"strings"
 	"testing"
 
 	_ "github.com/duckdb/duckdb-go/v2"
 	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	internaldb "duck-demo/internal/db"
@@ -434,16 +432,16 @@ func TestTablelessStatementRequiresAuth(t *testing.T) {
 		require.NoError(t, rows.Err())
 	})
 
-	t.Run("non_privileged_denied", func(t *testing.T) {
+	t.Run("non_privileged_allowed", func(t *testing.T) {
+		// B9: table-less SELECT is allowed for all authenticated users
 		err := queryAndClose(t, eng, "first_class_analyst", "SELECT 1 + 1")
-		require.Error(t, err)
-		assert.True(t, strings.Contains(err.Error(), "access denied") || strings.Contains(err.Error(), "privilege"),
-			"expected access denied error, got: %v", err)
+		require.NoError(t, err)
 	})
 
-	t.Run("no_access_denied", func(t *testing.T) {
+	t.Run("no_access_allowed", func(t *testing.T) {
+		// B9: table-less SELECT is allowed for all authenticated users
 		err := queryAndClose(t, eng, "no_access", "SELECT 1 + 1")
-		require.Error(t, err)
+		require.NoError(t, err)
 	})
 }
 

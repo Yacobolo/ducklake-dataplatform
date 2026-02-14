@@ -65,9 +65,10 @@ type Services struct {
 // App holds the fully-wired application: engine, services, and the
 // repositories needed for router setup (APIKeyRepo for auth middleware).
 type App struct {
-	Services   Services
-	Engine     *engine.SecureEngine
-	APIKeyRepo *repository.APIKeyRepo
+	Services      Services
+	Engine        *engine.SecureEngine
+	APIKeyRepo    *repository.APIKeyRepo
+	PrincipalRepo *repository.PrincipalRepo
 }
 
 // New wires all repositories, services, and engine from the provided deps.
@@ -133,7 +134,8 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	// === Seed demo data ===
 	q := dbstore.New(deps.WriteDB)
 	if err := seedCatalog(ctx, authSvc, q); err != nil {
-		deps.Logger.Warn("seed catalog failed", "error", err)
+		deps.Logger.Warn("seed skipped: grants/filters/masks require a DuckLake catalog (principals and groups seeded OK)",
+			"error", err)
 	}
 
 	// === 7. Engine (needs auth + resolver + infoSchema provider) ===
@@ -252,7 +254,8 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 			Notebook:            notebookSvc,
 			SessionManager:      sessionMgr,
 		},
-		Engine:     eng,
-		APIKeyRepo: apiKeyRepo,
+		Engine:        eng,
+		APIKeyRepo:    apiKeyRepo,
+		PrincipalRepo: principalRepo,
 	}, nil
 }

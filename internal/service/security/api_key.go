@@ -35,6 +35,11 @@ func (s *APIKeyService) Create(ctx context.Context, req domain.CreateAPIKeyReque
 		return "", nil, err
 	}
 
+	// Non-admin users can only create keys for themselves.
+	if !caller.IsAdmin && caller.ID != req.PrincipalID {
+		return "", nil, domain.ErrAccessDenied("non-admin users can only create API keys for themselves")
+	}
+
 	// Generate a cryptographically secure random key.
 	rawBytes := make([]byte, 32)
 	if _, err := rand.Read(rawBytes); err != nil {

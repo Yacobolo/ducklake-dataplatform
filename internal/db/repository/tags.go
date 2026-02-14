@@ -63,9 +63,17 @@ func (r *TagRepo) ListTags(ctx context.Context, page domain.PageRequest) ([]doma
 	return tags, total, nil
 }
 
-// DeleteTag removes a tag by ID.
+// DeleteTag removes a tag by ID. Returns NotFoundError if the tag does not exist.
 func (r *TagRepo) DeleteTag(ctx context.Context, id string) error {
-	return r.q.DeleteTag(ctx, id)
+	result, err := r.db.ExecContext(ctx, "DELETE FROM tags WHERE id = ?", id)
+	if err != nil {
+		return mapDBError(err)
+	}
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return domain.ErrNotFound("tag %q not found", id)
+	}
+	return nil
 }
 
 // AssignTag assigns a tag to a securable object.

@@ -104,7 +104,21 @@ func newIngestionCmd(client *Client) *cobra.Command {
 				if quiet {
 					var data map[string]interface{}
 					if err := json.Unmarshal(respBody, &data); err == nil {
-						// Try common ID fields
+						// Handle paginated list responses ({"data": [...]})
+						if items, ok := data["data"].([]interface{}); ok {
+							for _, item := range items {
+								if m, ok := item.(map[string]interface{}); ok {
+									for _, key := range []string{"id", "name", "key"} {
+										if v, ok := m[key]; ok {
+											fmt.Fprintln(os.Stdout, v)
+											break
+										}
+									}
+								}
+							}
+							return nil
+						}
+						// Handle single resource responses
 						for _, key := range []string{"id", "name", "key"} {
 							if v, ok := data[key]; ok {
 								fmt.Fprintln(os.Stdout, v)
@@ -236,7 +250,21 @@ func newIngestionCmd(client *Client) *cobra.Command {
 				if quiet {
 					var data map[string]interface{}
 					if err := json.Unmarshal(respBody, &data); err == nil {
-						// Try common ID fields
+						// Handle paginated list responses ({"data": [...]})
+						if items, ok := data["data"].([]interface{}); ok {
+							for _, item := range items {
+								if m, ok := item.(map[string]interface{}); ok {
+									for _, key := range []string{"id", "name", "key"} {
+										if v, ok := m[key]; ok {
+											fmt.Fprintln(os.Stdout, v)
+											break
+										}
+									}
+								}
+							}
+							return nil
+						}
+						// Handle single resource responses
 						for _, key := range []string{"id", "name", "key"} {
 							if v, ok := data[key]; ok {
 								fmt.Fprintln(os.Stdout, v)
@@ -352,7 +380,21 @@ func newIngestionCmd(client *Client) *cobra.Command {
 				if quiet {
 					var data map[string]interface{}
 					if err := json.Unmarshal(respBody, &data); err == nil {
-						// Try common ID fields
+						// Handle paginated list responses ({"data": [...]})
+						if items, ok := data["data"].([]interface{}); ok {
+							for _, item := range items {
+								if m, ok := item.(map[string]interface{}); ok {
+									for _, key := range []string{"id", "name", "key"} {
+										if v, ok := m[key]; ok {
+											fmt.Fprintln(os.Stdout, v)
+											break
+										}
+									}
+								}
+							}
+							return nil
+						}
+						// Handle single resource responses
 						for _, key := range []string{"id", "name", "key"} {
 							if v, ok := data[key]; ok {
 								fmt.Fprintln(os.Stdout, v)

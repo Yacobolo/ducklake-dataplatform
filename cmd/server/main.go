@@ -153,6 +153,18 @@ func run() error {
 		Burst:             cfg.RateLimitBurst,
 	}))
 
+	// Consistent JSON error responses for unknown routes and wrong methods
+	r.NotFound(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 404, "message": "not found"})
+	})
+	r.MethodNotAllowed(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 405, "message": "method not allowed"})
+	})
+
 	// Health check endpoint — no auth required, used by load balancers / K8s probes
 	r.Get("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -190,7 +202,7 @@ func run() error {
 
 	// Authenticated API routes under /v1 prefix
 	r.Route("/v1", func(r chi.Router) {
-		r.Use(middleware.AuthMiddleware([]byte(cfg.JWTSecret), application.APIKeyRepo))
+		r.Use(middleware.AuthMiddleware([]byte(cfg.JWTSecret), application.APIKeyRepo, application.PrincipalRepo))
 		api.HandlerFromMux(strictHandler, r)
 	})
 
