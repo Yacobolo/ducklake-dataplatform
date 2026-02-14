@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"duck-demo/internal/domain"
-	"duck-demo/internal/middleware"
 	"duck-demo/internal/testutil"
 )
 
@@ -13,7 +12,7 @@ import (
 var errTest = fmt.Errorf("test error")
 
 func ctxWithPrincipal(name string) context.Context {
-	return middleware.WithPrincipal(context.Background(), name)
+	return domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: name, Type: "user"})
 }
 
 // Type aliases for convenience — keeps test code short.

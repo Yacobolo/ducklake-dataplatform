@@ -628,9 +628,15 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 	)
 	strictHandler := api.NewStrictHandler(handler, nil)
 
-	// Router with REAL auth middleware (API key via SHA-256 hash lookup)
+	// Router with auth middleware (API key via SHA-256 hash lookup)
 	r := chi.NewRouter()
-	r.Use(middleware.AuthMiddleware([]byte("test-jwt-secret"), apiKeyRepo, principalRepo))
+	validator := middleware.NewSharedSecretValidator("test-jwt-secret")
+	authenticator := middleware.NewAuthenticator(validator, apiKeyRepo, principalRepo, nil, config.AuthConfig{
+		APIKeyEnabled: true,
+		APIKeyHeader:  "X-API-Key",
+		NameClaim:     "sub",
+	}, nil)
+	r.Use(authenticator.Middleware())
 	r.Route("/v1", func(r chi.Router) {
 		api.HandlerFromMux(strictHandler, r)
 	})
@@ -754,9 +760,15 @@ func setupLocalExtensionServer(t *testing.T) *testEnv {
 	)
 	strictHandler := api.NewStrictHandler(handler, nil)
 
-	// Router with REAL auth middleware (API key via SHA-256 hash lookup)
+	// Router with auth middleware (API key via SHA-256 hash lookup)
 	r := chi.NewRouter()
-	r.Use(middleware.AuthMiddleware([]byte("test-jwt-secret"), apiKeyRepo, principalRepo))
+	validator := middleware.NewSharedSecretValidator("test-jwt-secret")
+	authenticator := middleware.NewAuthenticator(validator, apiKeyRepo, principalRepo, nil, config.AuthConfig{
+		APIKeyEnabled: true,
+		APIKeyHeader:  "X-API-Key",
+		NameClaim:     "sub",
+	}, nil)
+	r.Use(authenticator.Middleware())
 	r.Route("/v1", func(r chi.Router) {
 		api.HandlerFromMux(strictHandler, r)
 	})
@@ -1940,7 +1952,13 @@ func setupMultiTableLocalServer(t *testing.T) *multiTableTestEnv {
 	strictHandler := api.NewStrictHandler(handler, nil)
 
 	r := chi.NewRouter()
-	r.Use(middleware.AuthMiddleware([]byte("test-jwt-secret"), apiKeyRepo, principalRepo))
+	validator := middleware.NewSharedSecretValidator("test-jwt-secret")
+	authenticator := middleware.NewAuthenticator(validator, apiKeyRepo, principalRepo, nil, config.AuthConfig{
+		APIKeyEnabled: true,
+		APIKeyHeader:  "X-API-Key",
+		NameClaim:     "sub",
+	}, nil)
+	r.Use(authenticator.Middleware())
 	r.Route("/v1", func(r chi.Router) {
 		api.HandlerFromMux(strictHandler, r)
 	})

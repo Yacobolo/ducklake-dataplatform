@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"duck-demo/internal/domain"
-	"duck-demo/internal/middleware"
 )
 
 // computeEndpointService defines the compute endpoint operations used by the API handler.
@@ -59,7 +58,8 @@ func (h *APIHandler) CreateComputeEndpoint(ctx context.Context, req CreateComput
 		domReq.AuthToken = *req.Body.AuthToken
 	}
 
-	principal, _ := middleware.PrincipalFromContext(ctx)
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	result, err := h.computeEndpoints.Create(ctx, principal, domReq)
 	if err != nil {
 		switch {
@@ -112,7 +112,8 @@ func (h *APIHandler) UpdateComputeEndpoint(ctx context.Context, req UpdateComput
 		domReq.Status = &s
 	}
 
-	principal, _ := middleware.PrincipalFromContext(ctx)
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	result, err := h.computeEndpoints.Update(ctx, principal, req.EndpointName, domReq)
 	if err != nil {
 		switch {
@@ -132,7 +133,8 @@ func (h *APIHandler) UpdateComputeEndpoint(ctx context.Context, req UpdateComput
 
 // DeleteComputeEndpoint implements the endpoint for deleting a compute endpoint.
 func (h *APIHandler) DeleteComputeEndpoint(ctx context.Context, req DeleteComputeEndpointRequestObject) (DeleteComputeEndpointResponseObject, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	if err := h.computeEndpoints.Delete(ctx, principal, req.EndpointName); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
@@ -185,7 +187,8 @@ func (h *APIHandler) CreateComputeAssignment(ctx context.Context, req CreateComp
 		domReq.FallbackLocal = *req.Body.FallbackLocal
 	}
 
-	principal, _ := middleware.PrincipalFromContext(ctx)
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	result, err := h.computeEndpoints.Assign(ctx, principal, req.EndpointName, domReq)
 	if err != nil {
 		switch {
@@ -207,7 +210,8 @@ func (h *APIHandler) CreateComputeAssignment(ctx context.Context, req CreateComp
 
 // GetComputeEndpointHealth implements the endpoint for checking compute endpoint health.
 func (h *APIHandler) GetComputeEndpointHealth(ctx context.Context, req GetComputeEndpointHealthRequestObject) (GetComputeEndpointHealthResponseObject, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 
 	result, err := h.computeEndpoints.HealthCheck(ctx, principal, req.EndpointName)
 	if err != nil {
@@ -251,7 +255,8 @@ func (h *APIHandler) GetComputeEndpointHealth(ctx context.Context, req GetComput
 
 // DeleteComputeAssignment implements the endpoint for removing a compute assignment.
 func (h *APIHandler) DeleteComputeAssignment(ctx context.Context, req DeleteComputeAssignmentRequestObject) (DeleteComputeAssignmentResponseObject, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	if err := h.computeEndpoints.Unassign(ctx, principal, req.AssignmentId); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):

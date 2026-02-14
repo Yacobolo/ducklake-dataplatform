@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"duck-demo/internal/domain"
-	"duck-demo/internal/middleware"
 	"duck-demo/internal/service/query"
 )
 
@@ -27,7 +26,8 @@ type manifestService interface {
 
 // ExecuteQuery implements the endpoint for executing a SQL query.
 func (h *APIHandler) ExecuteQuery(ctx context.Context, req ExecuteQueryRequestObject) (ExecuteQueryResponseObject, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	result, err := h.query.Execute(ctx, principal, req.Body.Sql)
 	if err != nil {
 		code := errorCodeFromError(err)
@@ -62,7 +62,8 @@ func (h *APIHandler) ExecuteQuery(ctx context.Context, req ExecuteQueryRequestOb
 
 // CreateManifest implements the endpoint for generating a table read manifest.
 func (h *APIHandler) CreateManifest(ctx context.Context, req CreateManifestRequestObject) (CreateManifestResponseObject, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 
 	schemaName := "main"
 	if req.Body.Schema != nil {

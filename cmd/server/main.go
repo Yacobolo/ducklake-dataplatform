@@ -207,9 +207,37 @@ func run() error {
 </html>`)
 	})
 
+	// Construct JWT validator based on auth config.
+	var jwtValidator middleware.JWTValidator
+	if cfg.Auth.OIDCEnabled() {
+		if cfg.Auth.JWKSURL != "" {
+			jwtValidator, err = middleware.NewOIDCValidatorFromJWKS(ctx,
+				cfg.Auth.JWKSURL, cfg.Auth.IssuerURL, cfg.Auth.Audience,
+				cfg.Auth.AllowedIssuers)
+		} else {
+			jwtValidator, err = middleware.NewOIDCValidator(ctx,
+				cfg.Auth.IssuerURL, cfg.Auth.Audience, cfg.Auth.AllowedIssuers)
+		}
+		if err != nil {
+			return fmt.Errorf("oidc validator: %w", err)
+		}
+		logger.Info("OIDC JWT validation enabled", "issuer", cfg.Auth.IssuerURL)
+	} else if cfg.Auth.SharedSecret != "" {
+		jwtValidator = middleware.NewSharedSecretValidator(cfg.Auth.SharedSecret)
+		logger.Info("HS256 JWT validation enabled")
+	}
+
 	// Authenticated API routes under /v1 prefix
+	authenticator := middleware.NewAuthenticator(
+		jwtValidator,
+		application.APIKeyRepo,
+		application.PrincipalRepo,
+		application.Services.Principal, // PrincipalProvisioner for JIT
+		cfg.Auth,
+		logger,
+	)
 	r.Route("/v1", func(r chi.Router) {
-		r.Use(middleware.AuthMiddleware([]byte(cfg.JWTSecret), application.APIKeyRepo, application.PrincipalRepo))
+		r.Use(authenticator.Middleware())
 		api.HandlerFromMux(strictHandler, r)
 	})
 

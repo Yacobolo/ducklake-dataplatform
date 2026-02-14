@@ -366,13 +366,18 @@ func TestAuth_SharedSecretHS256(t *testing.T) {
 		"exp": time.Now().Add(time.Hour).Unix(),
 	})
 
-	mw := AuthMiddleware([]byte(secret), nil, nil)
+	auth := NewAuthenticator(
+		NewSharedSecretValidator(secret),
+		nil, nil, nil,
+		config.AuthConfig{NameClaim: "sub"},
+		nil,
+	)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 	w := httptest.NewRecorder()
 
-	mw(handler).ServeHTTP(w, req)
+	auth.Middleware()(handler).ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	cp, found := getPrincipal()
@@ -387,13 +392,18 @@ func TestAuth_SharedSecretHS256_InvalidToken(t *testing.T) {
 		"exp": time.Now().Add(time.Hour).Unix(),
 	})
 
-	mw := AuthMiddleware([]byte(secret), nil, nil)
+	auth := NewAuthenticator(
+		NewSharedSecretValidator(secret),
+		nil, nil, nil,
+		config.AuthConfig{NameClaim: "sub"},
+		nil,
+	)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 	w := httptest.NewRecorder()
 
-	mw(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+	auth.Middleware()(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
 		t.Fatal("handler should not be called")
 	})).ServeHTTP(w, req)
 
@@ -495,20 +505,6 @@ func TestAuth_ResolveDisplayName(t *testing.T) {
 			assert.Equal(t, tt.wantName, got)
 		})
 	}
-}
-
-func TestAuth_BackwardCompatHelpers(t *testing.T) {
-	t.Run("WithPrincipal and PrincipalFromContext", func(t *testing.T) {
-		ctx := WithPrincipal(context.Background(), "test-user")
-		name, ok := PrincipalFromContext(ctx)
-		require.True(t, ok)
-		assert.Equal(t, "test-user", name)
-	})
-
-	t.Run("empty context returns false", func(t *testing.T) {
-		_, ok := PrincipalFromContext(context.Background())
-		assert.False(t, ok)
-	})
 }
 
 func strPtr(s string) *string {

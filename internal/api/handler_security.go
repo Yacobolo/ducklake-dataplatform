@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"duck-demo/internal/domain"
-	"duck-demo/internal/middleware"
 )
 
 // principalService defines the principal operations used by the API handler.
@@ -332,7 +331,8 @@ func (h *APIHandler) CreateGrant(ctx context.Context, req CreateGrantRequestObje
 
 // DeleteGrant implements the endpoint for revoking a privilege from a principal.
 func (h *APIHandler) DeleteGrant(ctx context.Context, req DeleteGrantRequestObject) (DeleteGrantResponseObject, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	if err := h.grants.Revoke(ctx, principal, req.GrantId); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):

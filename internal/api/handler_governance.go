@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"duck-demo/internal/domain"
-	"duck-demo/internal/middleware"
 )
 
 // auditService defines the audit operations used by the API handler.
@@ -266,7 +265,7 @@ func (h *APIHandler) CreateTag(ctx context.Context, req CreateTagRequestObject) 
 		Key:   req.Body.Key,
 		Value: req.Body.Value,
 	}
-	principal, _ := middleware.PrincipalFromContext(ctx)
+	principal := caller.Name
 	result, err := h.tags.CreateTag(ctx, principal, domReq)
 	if err != nil {
 		switch {
@@ -291,7 +290,7 @@ func (h *APIHandler) DeleteTag(ctx context.Context, req DeleteTagRequestObject) 
 		return DeleteTag403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: "admin privileges required"}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
 
-	principal, _ := middleware.PrincipalFromContext(ctx)
+	principal := caller.Name
 	if err := h.tags.DeleteTag(ctx, principal, req.TagId); err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
@@ -311,7 +310,8 @@ func (h *APIHandler) CreateTagAssignment(ctx context.Context, req CreateTagAssig
 		SecurableID:   req.Body.SecurableId,
 		ColumnName:    req.Body.ColumnName,
 	}
-	principal, _ := middleware.PrincipalFromContext(ctx)
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	result, err := h.tags.AssignTag(ctx, principal, domReq)
 	if err != nil {
 		switch {
@@ -329,7 +329,8 @@ func (h *APIHandler) CreateTagAssignment(ctx context.Context, req CreateTagAssig
 
 // DeleteTagAssignment implements the endpoint for removing a tag assignment.
 func (h *APIHandler) DeleteTagAssignment(ctx context.Context, req DeleteTagAssignmentRequestObject) (DeleteTagAssignmentResponseObject, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	if err := h.tags.UnassignTag(ctx, principal, req.AssignmentId); err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
