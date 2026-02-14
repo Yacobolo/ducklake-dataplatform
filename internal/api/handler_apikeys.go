@@ -10,7 +10,7 @@ import (
 // apiKeyService defines the API key management operations used by the API handler.
 type apiKeyService interface {
 	Create(ctx context.Context, req domain.CreateAPIKeyRequest) (string, *domain.APIKey, error)
-	List(ctx context.Context, principalID string, page domain.PageRequest) ([]domain.APIKey, int64, error)
+	List(ctx context.Context, principalID *string, page domain.PageRequest) ([]domain.APIKey, int64, error)
 	Delete(ctx context.Context, id string) error
 	CleanupExpired(ctx context.Context) (int64, error)
 }
@@ -56,7 +56,12 @@ func (h *APIHandler) ListAPIKeys(ctx context.Context, req ListAPIKeysRequestObje
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	keys, total, err := h.apiKeys.List(ctx, req.Params.PrincipalId, page)
 	if err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return ListAPIKeys403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		default:
+			return nil, err
+		}
 	}
 	data := make([]APIKeyInfo, len(keys))
 	for i, k := range keys {

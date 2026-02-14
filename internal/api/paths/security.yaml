@@ -862,7 +862,7 @@ paths:
       parameters:
         - name: principal_id
           in: query
-          required: true
+          required: false
           description: Filter by principal identifier.
           schema:
             type: string
@@ -910,6 +910,8 @@ paths:
                 next_page_token: eyJpZCI6MTB9
         '400':
           $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
         '429':
           $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
         '500':

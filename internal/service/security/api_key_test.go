@@ -79,10 +79,36 @@ func TestAPIKeyService_List(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	keys, total, err := svc.List(ctx, p.ID, domain.PageRequest{})
-	require.NoError(t, err)
-	assert.Equal(t, int64(2), total)
-	assert.Len(t, keys, 2)
+	t.Run("explicit_principal_id", func(t *testing.T) {
+		ownerCtx := principalCtx(p.ID, "listowner", false)
+		keys, total, err := svc.List(ownerCtx, &p.ID, domain.PageRequest{})
+		require.NoError(t, err)
+		assert.Equal(t, int64(2), total)
+		assert.Len(t, keys, 2)
+	})
+
+	t.Run("default_to_caller_keys", func(t *testing.T) {
+		ownerCtx := principalCtx(p.ID, "listowner", false)
+		keys, total, err := svc.List(ownerCtx, nil, domain.PageRequest{})
+		require.NoError(t, err)
+		assert.Equal(t, int64(2), total)
+		assert.Len(t, keys, 2)
+	})
+
+	t.Run("non_admin_cannot_list_others", func(t *testing.T) {
+		otherCtx := principalCtx("other-id", "other-user", false)
+		_, _, err := svc.List(otherCtx, &p.ID, domain.PageRequest{})
+		require.Error(t, err)
+		var accessDenied *domain.AccessDeniedError
+		assert.ErrorAs(t, err, &accessDenied)
+	})
+
+	t.Run("admin_can_list_others", func(t *testing.T) {
+		keys, total, err := svc.List(adminCtx(), &p.ID, domain.PageRequest{})
+		require.NoError(t, err)
+		assert.Equal(t, int64(2), total)
+		assert.Len(t, keys, 2)
+	})
 }
 
 func TestAPIKeyService_Delete(t *testing.T) {
@@ -97,7 +123,7 @@ func TestAPIKeyService_Delete(t *testing.T) {
 	err = svc.Delete(adminCtx(), key.ID)
 	require.NoError(t, err)
 
-	keys, total, err := svc.List(ctx, p.ID, domain.PageRequest{})
+	keys, total, err := svc.List(adminCtx(), &p.ID, domain.PageRequest{})
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), total)
 	assert.Empty(t, keys)
@@ -119,7 +145,7 @@ func TestAPIKeyService_Delete_OwnerCanDelete(t *testing.T) {
 	err = svc.Delete(ownerCtx, key.ID)
 	require.NoError(t, err)
 
-	keys, total, err := svc.List(ctx, p.ID, domain.PageRequest{})
+	keys, total, err := svc.List(ownerCtx, &p.ID, domain.PageRequest{})
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), total)
 	assert.Empty(t, keys)
