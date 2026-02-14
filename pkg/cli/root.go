@@ -124,6 +124,12 @@ func newRootCmd() *cobra.Command {
 	rootCmd.AddCommand(newConfigCmd())
 	rootCmd.AddCommand(newAuthCmd())
 
+	// Declarative configuration commands
+	rootCmd.AddCommand(newPlanCmd(client))
+	rootCmd.AddCommand(newApplyCmd(client))
+	rootCmd.AddCommand(newExportCmd(client))
+	rootCmd.AddCommand(newValidateCmd(client))
+
 	// Shell completions
 	rootCmd.AddCommand(newCompletionCmd())
 
