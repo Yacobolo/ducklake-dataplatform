@@ -71,7 +71,9 @@ tasks:
 
   build:
     desc: Build all packages
-    deps: [generate]
+    preconditions:
+      - sh: test -f internal/api/types.gen.go
+        msg: "Generated files missing. Run 'task generate' first."
     cmds:
       - go build ./...
 
