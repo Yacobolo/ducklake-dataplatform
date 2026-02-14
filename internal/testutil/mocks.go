@@ -5,6 +5,7 @@ package testutil
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"duck-demo/internal/domain"
@@ -1358,3 +1359,29 @@ func (m *MockNotebookProvider) GetSQLBlocks(ctx context.Context, notebookID stri
 }
 
 var _ domain.NotebookProvider = (*MockNotebookProvider)(nil)
+
+// === Session Engine Mock ===
+
+// MockSessionEngine implements domain.SessionEngine for testing.
+type MockSessionEngine struct {
+	QueryFn       func(ctx context.Context, principalName, sqlQuery string) (*sql.Rows, error)
+	QueryOnConnFn func(ctx context.Context, conn *sql.Conn, principalName, sqlQuery string) (*sql.Rows, error)
+}
+
+// Query implements the QueryEngine interface method for testing.
+func (m *MockSessionEngine) Query(ctx context.Context, principalName, sqlQuery string) (*sql.Rows, error) {
+	if m.QueryFn != nil {
+		return m.QueryFn(ctx, principalName, sqlQuery)
+	}
+	panic("unexpected call to MockSessionEngine.Query")
+}
+
+// QueryOnConn implements the SessionEngine interface method for testing.
+func (m *MockSessionEngine) QueryOnConn(ctx context.Context, conn *sql.Conn, principalName, sqlQuery string) (*sql.Rows, error) {
+	if m.QueryOnConnFn != nil {
+		return m.QueryOnConnFn(ctx, conn, principalName, sqlQuery)
+	}
+	panic("unexpected call to MockSessionEngine.QueryOnConn")
+}
+
+var _ domain.SessionEngine = (*MockSessionEngine)(nil)

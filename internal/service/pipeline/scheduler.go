@@ -13,7 +13,7 @@ import (
 // Scheduler manages cron-based pipeline execution.
 type Scheduler struct {
 	cron      *cron.Cron
-	svc       *PipelineService
+	svc       *Service
 	pipelines domain.PipelineRepository
 	logger    *slog.Logger
 	mu        sync.Mutex
@@ -21,7 +21,7 @@ type Scheduler struct {
 }
 
 // NewScheduler creates a new pipeline scheduler.
-func NewScheduler(svc *PipelineService, pipelines domain.PipelineRepository, logger *slog.Logger) *Scheduler {
+func NewScheduler(svc *Service, pipelines domain.PipelineRepository, logger *slog.Logger) *Scheduler {
 	return &Scheduler{
 		cron:      cron.New(),
 		svc:       svc,

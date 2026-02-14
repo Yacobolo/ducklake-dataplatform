@@ -374,7 +374,7 @@ func pipelineToAPI(p domain.Pipeline) Pipeline {
 	ct := p.CreatedAt
 	ut := p.UpdatedAt
 	isPaused := p.IsPaused
-	concLimit := int32(p.ConcurrencyLimit)
+	concLimit := int32(p.ConcurrencyLimit) //nolint:gosec // ConcurrencyLimit is validated to be non-negative and small
 	return Pipeline{
 		Id:               &p.ID,
 		Name:             &p.Name,
@@ -390,8 +390,8 @@ func pipelineToAPI(p domain.Pipeline) Pipeline {
 
 func pipelineJobToAPI(j domain.PipelineJob) PipelineJob {
 	ct := j.CreatedAt
-	order := int32(j.JobOrder)
-	retryCount := int32(j.RetryCount)
+	order := int32(j.JobOrder)        //nolint:gosec // JobOrder is a small non-negative index
+	retryCount := int32(j.RetryCount) //nolint:gosec // RetryCount is a small non-negative integer
 	resp := PipelineJob{
 		Id:         &j.ID,
 		PipelineId: &j.PipelineID,
@@ -446,7 +446,7 @@ func pipelineRunToAPI(r domain.PipelineRun) PipelineRun {
 func pipelineJobRunToAPI(jr domain.PipelineJobRun) PipelineJobRun {
 	ct := jr.CreatedAt
 	status := PipelineJobRunStatus(jr.Status)
-	retryAttempt := int32(jr.RetryAttempt)
+	retryAttempt := int32(jr.RetryAttempt) //nolint:gosec // RetryAttempt is a small non-negative integer
 	resp := PipelineJobRun{
 		Id:           &jr.ID,
 		RunId:        &jr.RunID,

@@ -62,7 +62,7 @@ type Services struct {
 	Notebook            *notebook.Service
 	SessionManager      *notebook.SessionManager
 	GitService          *notebook.GitService
-	Pipeline            *pipeline.PipelineService
+	Pipeline            *pipeline.Service
 }
 
 // App holds the fully-wired application: engine, services, and the
@@ -234,7 +234,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	pipelineRepo := repository.NewPipelineRepo(deps.WriteDB)
 	pipelineRunRepo := repository.NewPipelineRunRepo(deps.WriteDB)
 	notebookProvider := pipeline.NewDBNotebookProvider(notebookRepo)
-	pipelineSvc := pipeline.NewPipelineService(
+	pipelineSvc := pipeline.NewService(
 		pipelineRepo, pipelineRunRepo, auditRepo,
 		notebookProvider, eng, deps.DuckDB,
 		deps.Logger.With("component", "pipeline"),

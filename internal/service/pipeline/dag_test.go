@@ -26,7 +26,7 @@ func TestResolveExecutionOrder(t *testing.T) {
 		wantLevels int
 		wantIDs    []map[string]struct{} // expected IDs per level (nil if expecting error)
 		wantErr    bool
-		errType    interface{} // expected error type for errors.As
+		errType    any // expected error type target for assert.ErrorAs
 	}{
 		{
 			name: "single_job_no_deps",
@@ -86,7 +86,7 @@ func TestResolveExecutionOrder(t *testing.T) {
 				{ID: "j2", Name: "B", DependsOn: []string{"A"}},
 			},
 			wantErr: true,
-			errType: &domain.ValidationError{},
+			errType: new(*domain.ValidationError),
 		},
 		{
 			name: "unknown_dependency",
@@ -94,7 +94,7 @@ func TestResolveExecutionOrder(t *testing.T) {
 				{ID: "j1", Name: "A", DependsOn: []string{"nonexistent"}},
 			},
 			wantErr: true,
-			errType: &domain.ValidationError{},
+			errType: new(*domain.ValidationError),
 		},
 		{
 			name:    "empty_jobs",
@@ -107,7 +107,7 @@ func TestResolveExecutionOrder(t *testing.T) {
 				{ID: "j1", Name: "A", DependsOn: []string{"A"}},
 			},
 			wantErr: true,
-			errType: &domain.ValidationError{},
+			errType: new(*domain.ValidationError),
 		},
 	}
 
@@ -117,7 +117,7 @@ func TestResolveExecutionOrder(t *testing.T) {
 
 			if tt.wantErr {
 				require.Error(t, err)
-				assert.IsType(t, tt.errType, err)
+				assert.ErrorAs(t, err, tt.errType)
 				return
 			}
 

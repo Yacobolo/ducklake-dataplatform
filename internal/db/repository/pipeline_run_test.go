@@ -317,3 +317,149 @@ func TestPipelineJobRun_CRUD(t *testing.T) {
 		require.NotNil(t, finished.FinishedAt)
 	})
 }
+
+func TestPipelineRunRepo_UpdateRunStatus(t *testing.T) {
+	_, runRepo, pipeline, _ := setupPipelineRunRepos(t)
+	ctx := context.Background()
+
+	run, err := runRepo.CreateRun(ctx, &domain.PipelineRun{
+		PipelineID:  pipeline.ID,
+		Status:      domain.PipelineRunStatusPending,
+		TriggerType: domain.TriggerTypeManual,
+		TriggeredBy: "admin",
+		Parameters:  map[string]string{},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, domain.PipelineRunStatusPending, run.Status)
+
+	errMsg := "something went wrong"
+	err = runRepo.UpdateRunStatus(ctx, run.ID, domain.PipelineRunStatusFailed, &errMsg)
+	require.NoError(t, err)
+
+	got, err := runRepo.GetRunByID(ctx, run.ID)
+	require.NoError(t, err)
+	assert.Equal(t, domain.PipelineRunStatusFailed, got.Status)
+	require.NotNil(t, got.ErrorMessage)
+	assert.Equal(t, "something went wrong", *got.ErrorMessage)
+}
+
+func TestPipelineRunRepo_CancelPendingRuns(t *testing.T) {
+	_, runRepo, pipeline, _ := setupPipelineRunRepos(t)
+	ctx := context.Background()
+
+	// Create a PENDING run
+	pendingRun, err := runRepo.CreateRun(ctx, &domain.PipelineRun{
+		PipelineID:  pipeline.ID,
+		Status:      domain.PipelineRunStatusPending,
+		TriggerType: domain.TriggerTypeManual,
+		TriggeredBy: "admin",
+		Parameters:  map[string]string{},
+	})
+	require.NoError(t, err)
+
+	// Create a RUNNING run (start as PENDING then update status)
+	runningRun, err := runRepo.CreateRun(ctx, &domain.PipelineRun{
+		PipelineID:  pipeline.ID,
+		Status:      domain.PipelineRunStatusPending,
+		TriggerType: domain.TriggerTypeManual,
+		TriggeredBy: "admin",
+		Parameters:  map[string]string{},
+	})
+	require.NoError(t, err)
+	err = runRepo.UpdateRunStatus(ctx, runningRun.ID, domain.PipelineRunStatusRunning, nil)
+	require.NoError(t, err)
+
+	// Create a SUCCESS run
+	successRun, err := runRepo.CreateRun(ctx, &domain.PipelineRun{
+		PipelineID:  pipeline.ID,
+		Status:      domain.PipelineRunStatusPending,
+		TriggerType: domain.TriggerTypeManual,
+		TriggeredBy: "admin",
+		Parameters:  map[string]string{},
+	})
+	require.NoError(t, err)
+	err = runRepo.UpdateRunFinished(ctx, successRun.ID, domain.PipelineRunStatusSuccess, nil)
+	require.NoError(t, err)
+
+	// Cancel all pending runs
+	_, err = runRepo.CancelPendingRuns(ctx, pipeline.ID)
+	require.NoError(t, err)
+
+	// Verify PENDING run is now cancelled
+	gotPending, err := runRepo.GetRunByID(ctx, pendingRun.ID)
+	require.NoError(t, err)
+	assert.Equal(t, domain.PipelineRunStatusCancelled, gotPending.Status)
+
+	// Verify RUNNING run is unchanged
+	gotRunning, err := runRepo.GetRunByID(ctx, runningRun.ID)
+	require.NoError(t, err)
+	assert.Equal(t, domain.PipelineRunStatusRunning, gotRunning.Status)
+
+	// Verify SUCCESS run is unchanged
+	gotSuccess, err := runRepo.GetRunByID(ctx, successRun.ID)
+	require.NoError(t, err)
+	assert.Equal(t, domain.PipelineRunStatusSuccess, gotSuccess.Status)
+}
+
+func TestPipelineRunRepo_UpdateJobRunStatus(t *testing.T) {
+	_, runRepo, pipeline, jobs := setupPipelineRunRepos(t)
+	ctx := context.Background()
+
+	run, err := runRepo.CreateRun(ctx, &domain.PipelineRun{
+		PipelineID:  pipeline.ID,
+		Status:      domain.PipelineRunStatusPending,
+		TriggerType: domain.TriggerTypeManual,
+		TriggeredBy: "admin",
+		Parameters:  map[string]string{},
+	})
+	require.NoError(t, err)
+
+	jr, err := runRepo.CreateJobRun(ctx, &domain.PipelineJobRun{
+		RunID:        run.ID,
+		JobID:        jobs[0].ID,
+		JobName:      "step-1",
+		Status:       domain.PipelineJobRunStatusPending,
+		RetryAttempt: 0,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, domain.PipelineJobRunStatusPending, jr.Status)
+
+	err = runRepo.UpdateJobRunStatus(ctx, jr.ID, domain.PipelineJobRunStatusRunning, nil)
+	require.NoError(t, err)
+
+	got, err := runRepo.GetJobRunByID(ctx, jr.ID)
+	require.NoError(t, err)
+	assert.Equal(t, domain.PipelineJobRunStatusRunning, got.Status)
+	assert.Nil(t, got.ErrorMessage)
+}
+
+func TestPipelineRunRepo_UpdateRunFinished_withError(t *testing.T) {
+	_, runRepo, pipeline, _ := setupPipelineRunRepos(t)
+	ctx := context.Background()
+
+	run, err := runRepo.CreateRun(ctx, &domain.PipelineRun{
+		PipelineID:  pipeline.ID,
+		Status:      domain.PipelineRunStatusPending,
+		TriggerType: domain.TriggerTypeManual,
+		TriggeredBy: "admin",
+		Parameters:  map[string]string{},
+	})
+	require.NoError(t, err)
+
+	// Start the run first
+	err = runRepo.UpdateRunStarted(ctx, run.ID)
+	require.NoError(t, err)
+
+	// Finish with FAILED status and an error message
+	errMsg := "job step-1 timed out after 300s"
+	err = runRepo.UpdateRunFinished(ctx, run.ID, domain.PipelineRunStatusFailed, &errMsg)
+	require.NoError(t, err)
+
+	got, err := runRepo.GetRunByID(ctx, run.ID)
+	require.NoError(t, err)
+	assert.Equal(t, domain.PipelineRunStatusFailed, got.Status)
+	require.NotNil(t, got.FinishedAt)
+	assert.False(t, got.FinishedAt.IsZero())
+	require.NotNil(t, got.ErrorMessage)
+	assert.Equal(t, "job step-1 timed out after 300s", *got.ErrorMessage)
+}

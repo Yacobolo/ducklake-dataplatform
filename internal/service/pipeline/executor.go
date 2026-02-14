@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log/slog"
 	"time"
@@ -11,7 +12,7 @@ import (
 
 // executeRun processes a pipeline run in a background goroutine.
 // It resolves the DAG, executes jobs level-by-level, and updates status.
-func (s *PipelineService) executeRun(runID string, jobs []domain.PipelineJob,
+func (s *Service) executeRun(runID string, jobs []domain.PipelineJob,
 	levels [][]string, params map[string]string, principal string) {
 
 	ctx := context.Background()
@@ -86,7 +87,7 @@ func (s *PipelineService) executeRun(runID string, jobs []domain.PipelineJob,
 }
 
 // executeJob executes a single pipeline job on a pinned DuckDB connection.
-func (s *PipelineService) executeJob(ctx context.Context, job domain.PipelineJob,
+func (s *Service) executeJob(ctx context.Context, job domain.PipelineJob,
 	jobRunID string, params map[string]string, principal string, logger *slog.Logger) error {
 
 	logger = logger.With("job_id", job.ID, "job_name", job.Name)
@@ -97,7 +98,7 @@ func (s *PipelineService) executeJob(ctx context.Context, job domain.PipelineJob
 	for attempt := 0; attempt < maxAttempts; attempt++ {
 		if attempt > 0 {
 			// Exponential backoff: 1s, 2s, 4s...
-			backoff := time.Duration(1<<uint(attempt-1)) * time.Second
+			backoff := time.Duration(1<<uint(attempt-1)) * time.Second //nolint:gosec // attempt is always >= 1 here
 			time.Sleep(backoff)
 			logger.Info("retrying job", "attempt", attempt+1)
 		}
@@ -120,7 +121,7 @@ func (s *PipelineService) executeJob(ctx context.Context, job domain.PipelineJob
 }
 
 // executeJobAttempt runs one attempt of a job on a fresh pinned connection.
-func (s *PipelineService) executeJobAttempt(ctx context.Context, job domain.PipelineJob,
+func (s *Service) executeJobAttempt(ctx context.Context, job domain.PipelineJob,
 	params map[string]string, principal string, logger *slog.Logger) error {
 
 	// Acquire a pinned connection for job isolation.
@@ -128,16 +129,14 @@ func (s *PipelineService) executeJobAttempt(ctx context.Context, job domain.Pipe
 	if err != nil {
 		return fmt.Errorf("acquire connection: %w", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	// Inject parameters via SET VARIABLE.
 	for k, v := range params {
 		setSQL := fmt.Sprintf("SET VARIABLE %s = '%s'", k, v)
-		rows, err := s.engine.QueryOnConn(ctx, conn, principal, setSQL)
-		if err != nil {
+		if err := s.execOnConn(ctx, conn, principal, setSQL); err != nil {
 			return fmt.Errorf("set variable %s: %w", k, err)
 		}
-		rows.Close()
 	}
 
 	// Get SQL blocks from the notebook.
@@ -148,13 +147,21 @@ func (s *PipelineService) executeJobAttempt(ctx context.Context, job domain.Pipe
 
 	// Execute each SQL block.
 	for i, block := range blocks {
-		rows, err := s.engine.QueryOnConn(ctx, conn, principal, block)
-		if err != nil {
+		if err := s.execOnConn(ctx, conn, principal, block); err != nil {
 			return fmt.Errorf("execute block %d: %w", i+1, err)
 		}
-		rows.Close()
 	}
 
 	logger.Info("job completed successfully")
 	return nil
+}
+
+// execOnConn executes a SQL statement on a pinned connection and drains the result.
+func (s *Service) execOnConn(ctx context.Context, conn *sql.Conn, principal, query string) error {
+	rows, err := s.engine.QueryOnConn(ctx, conn, principal, query)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = rows.Close() }()
+	return rows.Err()
 }

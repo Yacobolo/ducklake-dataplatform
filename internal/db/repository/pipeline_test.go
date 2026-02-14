@@ -291,3 +291,95 @@ func TestPipelineJob_UniqueNamePerPipeline(t *testing.T) {
 	var conflict *domain.ConflictError
 	assert.ErrorAs(t, err, &conflict)
 }
+
+func TestPipelineRepo_ListScheduledPipelines(t *testing.T) {
+	repo := setupPipelineRepo(t)
+	ctx := context.Background()
+
+	cron := "*/5 * * * *"
+
+	// Pipeline with cron + active (not paused)
+	_, err := repo.CreatePipeline(ctx, &domain.Pipeline{
+		Name:         "scheduled-active",
+		ScheduleCron: &cron,
+		IsPaused:     false,
+		CreatedBy:    "admin",
+	})
+	require.NoError(t, err)
+
+	// Pipeline with cron + paused
+	pausedPipeline, err := repo.CreatePipeline(ctx, &domain.Pipeline{
+		Name:         "scheduled-paused",
+		ScheduleCron: &cron,
+		IsPaused:     false,
+		CreatedBy:    "admin",
+	})
+	require.NoError(t, err)
+	// Pause it via update
+	paused := true
+	_, err = repo.UpdatePipeline(ctx, pausedPipeline.ID, domain.UpdatePipelineRequest{
+		IsPaused: &paused,
+	})
+	require.NoError(t, err)
+
+	// Pipeline without cron (nil schedule → stored as NULL)
+	_, err = repo.CreatePipeline(ctx, &domain.Pipeline{
+		Name:      "no-schedule",
+		IsPaused:  false,
+		CreatedBy: "admin",
+	})
+	require.NoError(t, err)
+
+	scheduled, err := repo.ListScheduledPipelines(ctx)
+	require.NoError(t, err)
+	require.Len(t, scheduled, 1)
+	assert.Equal(t, "scheduled-active", scheduled[0].Name)
+	require.NotNil(t, scheduled[0].ScheduleCron)
+	assert.Equal(t, "*/5 * * * *", *scheduled[0].ScheduleCron)
+	assert.False(t, scheduled[0].IsPaused)
+}
+
+func TestPipelineRepo_UpdatePipeline_schedule(t *testing.T) {
+	repo := setupPipelineRepo(t)
+	ctx := context.Background()
+
+	p, err := repo.CreatePipeline(ctx, &domain.Pipeline{
+		Name:      "schedule-update-test",
+		CreatedBy: "admin",
+	})
+	require.NoError(t, err)
+	assert.Nil(t, p.ScheduleCron)
+
+	t.Run("set_cron_schedule", func(t *testing.T) {
+		cron := "0 3 * * *"
+		updated, err := repo.UpdatePipeline(ctx, p.ID, domain.UpdatePipelineRequest{
+			ScheduleCron: &cron,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, updated.ScheduleCron)
+		assert.Equal(t, "0 3 * * *", *updated.ScheduleCron)
+	})
+
+	t.Run("change_cron_schedule", func(t *testing.T) {
+		newCron := "0 6 * * MON"
+		updated, err := repo.UpdatePipeline(ctx, p.ID, domain.UpdatePipelineRequest{
+			ScheduleCron: &newCron,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, updated.ScheduleCron)
+		assert.Equal(t, "0 6 * * MON", *updated.ScheduleCron)
+	})
+
+	t.Run("verify_scheduled_pipeline_listed", func(t *testing.T) {
+		scheduled, err := repo.ListScheduledPipelines(ctx)
+		require.NoError(t, err)
+		var found bool
+		for _, s := range scheduled {
+			if s.ID == p.ID {
+				found = true
+				assert.Equal(t, "0 6 * * MON", *s.ScheduleCron)
+			}
+		}
+		assert.True(t, found, "pipeline with schedule should appear in scheduled list")
+	})
+}

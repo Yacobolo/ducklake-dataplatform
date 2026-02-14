@@ -15,8 +15,8 @@ type ScheduleReloader interface {
 	Reload(ctx context.Context) error
 }
 
-// PipelineService provides business logic for pipeline management.
-type PipelineService struct {
+// Service provides business logic for pipeline management.
+type Service struct {
 	pipelines domain.PipelineRepository
 	runs      domain.PipelineRunRepository
 	audit     domain.AuditRepository
@@ -27,8 +27,8 @@ type PipelineService struct {
 	reloader  ScheduleReloader
 }
 
-// NewPipelineService creates a new PipelineService.
-func NewPipelineService(
+// NewService creates a new pipeline Service.
+func NewService(
 	pipelines domain.PipelineRepository,
 	runs domain.PipelineRunRepository,
 	audit domain.AuditRepository,
@@ -36,8 +36,8 @@ func NewPipelineService(
 	engine domain.SessionEngine,
 	duckDB *sql.DB,
 	logger *slog.Logger,
-) *PipelineService {
-	return &PipelineService{
+) *Service {
+	return &Service{
 		pipelines: pipelines,
 		runs:      runs,
 		audit:     audit,
@@ -49,13 +49,14 @@ func NewPipelineService(
 }
 
 // SetScheduleReloader sets the schedule reloader (breaks circular dep).
-func (s *PipelineService) SetScheduleReloader(r ScheduleReloader) {
+func (s *Service) SetScheduleReloader(r ScheduleReloader) {
 	s.reloader = r
 }
 
 // === Pipeline CRUD ===
 
-func (s *PipelineService) CreatePipeline(ctx context.Context, principal string, req domain.CreatePipelineRequest) (*domain.Pipeline, error) {
+// CreatePipeline validates and persists a new pipeline, then reloads schedules.
+func (s *Service) CreatePipeline(ctx context.Context, principal string, req domain.CreatePipelineRequest) (*domain.Pipeline, error) {
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
@@ -94,15 +95,18 @@ func (s *PipelineService) CreatePipeline(ctx context.Context, principal string, 
 	return result, nil
 }
 
-func (s *PipelineService) GetPipeline(ctx context.Context, name string) (*domain.Pipeline, error) {
+// GetPipeline returns a pipeline by name.
+func (s *Service) GetPipeline(ctx context.Context, name string) (*domain.Pipeline, error) {
 	return s.pipelines.GetPipelineByName(ctx, name)
 }
 
-func (s *PipelineService) ListPipelines(ctx context.Context, page domain.PageRequest) ([]domain.Pipeline, int64, error) {
+// ListPipelines returns a paginated list of pipelines.
+func (s *Service) ListPipelines(ctx context.Context, page domain.PageRequest) ([]domain.Pipeline, int64, error) {
 	return s.pipelines.ListPipelines(ctx, page)
 }
 
-func (s *PipelineService) UpdatePipeline(ctx context.Context, principal string, name string, req domain.UpdatePipelineRequest) (*domain.Pipeline, error) {
+// UpdatePipeline applies changes to an existing pipeline and reloads schedules.
+func (s *Service) UpdatePipeline(ctx context.Context, principal string, name string, req domain.UpdatePipelineRequest) (*domain.Pipeline, error) {
 	p, err := s.pipelines.GetPipelineByName(ctx, name)
 	if err != nil {
 		return nil, err
@@ -128,7 +132,8 @@ func (s *PipelineService) UpdatePipeline(ctx context.Context, principal string, 
 	return result, nil
 }
 
-func (s *PipelineService) DeletePipeline(ctx context.Context, principal string, name string) error {
+// DeletePipeline removes a pipeline by name and reloads schedules.
+func (s *Service) DeletePipeline(ctx context.Context, principal string, name string) error {
 	p, err := s.pipelines.GetPipelineByName(ctx, name)
 	if err != nil {
 		return err
@@ -155,7 +160,8 @@ func (s *PipelineService) DeletePipeline(ctx context.Context, principal string, 
 
 // === Job CRUD ===
 
-func (s *PipelineService) CreateJob(ctx context.Context, principal string, pipelineName string, req domain.CreatePipelineJobRequest) (*domain.PipelineJob, error) {
+// CreateJob adds a new job to the specified pipeline after validating the notebook.
+func (s *Service) CreateJob(ctx context.Context, _ string, pipelineName string, req domain.CreatePipelineJobRequest) (*domain.PipelineJob, error) {
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
@@ -186,7 +192,8 @@ func (s *PipelineService) CreateJob(ctx context.Context, principal string, pipel
 	return s.pipelines.CreateJob(ctx, job)
 }
 
-func (s *PipelineService) ListJobs(ctx context.Context, pipelineName string) ([]domain.PipelineJob, error) {
+// ListJobs returns all jobs belonging to the named pipeline.
+func (s *Service) ListJobs(ctx context.Context, pipelineName string) ([]domain.PipelineJob, error) {
 	p, err := s.pipelines.GetPipelineByName(ctx, pipelineName)
 	if err != nil {
 		return nil, err
@@ -194,7 +201,8 @@ func (s *PipelineService) ListJobs(ctx context.Context, pipelineName string) ([]
 	return s.pipelines.ListJobsByPipeline(ctx, p.ID)
 }
 
-func (s *PipelineService) DeleteJob(ctx context.Context, principal string, pipelineName string, jobID string) error {
+// DeleteJob removes a job from a pipeline by ID.
+func (s *Service) DeleteJob(ctx context.Context, _ string, _ string, jobID string) error {
 	// Verify the job exists (also validates jobID).
 	_, err := s.pipelines.GetJobByID(ctx, jobID)
 	if err != nil {
@@ -205,7 +213,8 @@ func (s *PipelineService) DeleteJob(ctx context.Context, principal string, pipel
 
 // === Run Operations ===
 
-func (s *PipelineService) TriggerRun(ctx context.Context, principal string, pipelineName string,
+// TriggerRun starts a new pipeline run after validating concurrency limits and the job DAG.
+func (s *Service) TriggerRun(ctx context.Context, principal string, pipelineName string,
 	params map[string]string, triggerType string) (*domain.PipelineRun, error) {
 
 	p, err := s.pipelines.GetPipelineByName(ctx, pipelineName)
@@ -283,11 +292,13 @@ func (s *PipelineService) TriggerRun(ctx context.Context, principal string, pipe
 	return result, nil
 }
 
-func (s *PipelineService) GetRun(ctx context.Context, runID string) (*domain.PipelineRun, error) {
+// GetRun returns a pipeline run by ID.
+func (s *Service) GetRun(ctx context.Context, runID string) (*domain.PipelineRun, error) {
 	return s.runs.GetRunByID(ctx, runID)
 }
 
-func (s *PipelineService) ListRuns(ctx context.Context, pipelineName string, filter domain.PipelineRunFilter) ([]domain.PipelineRun, int64, error) {
+// ListRuns returns a filtered, paginated list of runs for the named pipeline.
+func (s *Service) ListRuns(ctx context.Context, pipelineName string, filter domain.PipelineRunFilter) ([]domain.PipelineRun, int64, error) {
 	p, err := s.pipelines.GetPipelineByName(ctx, pipelineName)
 	if err != nil {
 		return nil, 0, err
@@ -296,7 +307,8 @@ func (s *PipelineService) ListRuns(ctx context.Context, pipelineName string, fil
 	return s.runs.ListRuns(ctx, filter)
 }
 
-func (s *PipelineService) ListJobRuns(ctx context.Context, runID string) ([]domain.PipelineJobRun, error) {
+// ListJobRuns returns all job runs for the given pipeline run.
+func (s *Service) ListJobRuns(ctx context.Context, runID string) ([]domain.PipelineJobRun, error) {
 	// Verify run exists.
 	_, err := s.runs.GetRunByID(ctx, runID)
 	if err != nil {
@@ -305,7 +317,8 @@ func (s *PipelineService) ListJobRuns(ctx context.Context, runID string) ([]doma
 	return s.runs.ListJobRunsByRun(ctx, runID)
 }
 
-func (s *PipelineService) CancelRun(ctx context.Context, principal string, runID string) error {
+// CancelRun cancels a pending or running pipeline run and its pending job runs.
+func (s *Service) CancelRun(ctx context.Context, principal string, runID string) error {
 	run, err := s.runs.GetRunByID(ctx, runID)
 	if err != nil {
 		return err
@@ -321,10 +334,7 @@ func (s *PipelineService) CancelRun(ctx context.Context, principal string, runID
 	}
 
 	// Cancel pending job runs.
-	jobRuns, err := s.runs.ListJobRunsByRun(ctx, runID)
-	if err != nil {
-		return nil // best effort
-	}
+	jobRuns, _ := s.runs.ListJobRunsByRun(ctx, runID) // best effort: run already cancelled
 	for _, jr := range jobRuns {
 		if jr.Status == domain.PipelineJobRunStatusPending {
 			_ = s.runs.UpdateJobRunFinished(ctx, jr.ID, domain.PipelineJobRunStatusCancelled, nil)

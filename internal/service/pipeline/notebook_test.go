@@ -20,7 +20,7 @@ func TestDBNotebookProvider_GetSQLBlocks(t *testing.T) {
 		setupRepo    func() *testutil.MockNotebookRepo
 		wantBlocks   []string
 		wantErr      bool
-		wantErrType  interface{}
+		wantErrType  any
 		wantContains string // substring in error message
 	}{
 		{
@@ -54,7 +54,7 @@ func TestDBNotebookProvider_GetSQLBlocks(t *testing.T) {
 				}
 			},
 			wantErr:     true,
-			wantErrType: &domain.NotFoundError{},
+			wantErrType: new(*domain.NotFoundError),
 		},
 		{
 			name:       "no_sql_cells",
@@ -73,7 +73,7 @@ func TestDBNotebookProvider_GetSQLBlocks(t *testing.T) {
 				}
 			},
 			wantErr:      true,
-			wantErrType:  &domain.ValidationError{},
+			wantErrType:  new(*domain.ValidationError),
 			wantContains: "has no SQL cells",
 		},
 		{
@@ -113,7 +113,7 @@ func TestDBNotebookProvider_GetSQLBlocks(t *testing.T) {
 
 			if tt.wantErr {
 				require.Error(t, err)
-				assert.IsType(t, tt.wantErrType, err)
+				assert.ErrorAs(t, err, tt.wantErrType)
 				if tt.wantContains != "" {
 					assert.Contains(t, err.Error(), tt.wantContains)
 				}
