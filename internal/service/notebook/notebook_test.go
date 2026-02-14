@@ -15,11 +15,11 @@ func ptrStr(s string) *string { return &s }
 
 func ptrInt(i int) *int { return &i }
 
-func setupNotebookService(t *testing.T) (*NotebookService, *testutil.MockNotebookRepo, *testutil.MockAuditRepo) {
+func setupNotebookService(t *testing.T) (*Service, *testutil.MockNotebookRepo, *testutil.MockAuditRepo) {
 	t.Helper()
 	repo := &testutil.MockNotebookRepo{}
 	audit := &testutil.MockAuditRepo{}
-	svc := NewNotebookService(repo, audit)
+	svc := New(repo, audit)
 	return svc, repo, audit
 }
 

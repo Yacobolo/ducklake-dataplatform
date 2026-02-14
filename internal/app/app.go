@@ -58,7 +58,7 @@ type Services struct {
 	Volume              *storage.VolumeService
 	ComputeEndpoint     *svccompute.ComputeEndpointService
 	APIKey              *security.APIKeyService
-	Notebook            *notebook.NotebookService
+	Notebook            *notebook.Service
 	SessionManager      *notebook.SessionManager
 }
 
@@ -219,7 +219,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	// === Notebook services ===
 	notebookRepo := repository.NewNotebookRepo(deps.WriteDB)
 	notebookJobRepo := repository.NewNotebookJobRepo(deps.WriteDB)
-	notebookSvc := notebook.NewNotebookService(notebookRepo, auditRepo)
+	notebookSvc := notebook.New(notebookRepo, auditRepo)
 	sessionMgr := notebook.NewSessionManager(deps.DuckDB, eng, notebookRepo, notebookJobRepo, auditRepo)
 
 	// === API Key ===

@@ -511,9 +511,9 @@ func (h *APIHandler) SyncGitRepo(ctx context.Context, req SyncGitRepoRequestObje
 		}
 	}
 
-	created := int32(result.NotebooksCreated)
-	updated := int32(result.NotebooksUpdated)
-	deleted := int32(result.NotebooksDeleted)
+	created := int32(min(result.NotebooksCreated, int(^uint32(0)>>1))) //nolint:gosec // bounded by min
+	updated := int32(min(result.NotebooksUpdated, int(^uint32(0)>>1))) //nolint:gosec // bounded by min
+	deleted := int32(min(result.NotebooksDeleted, int(^uint32(0)>>1))) //nolint:gosec // bounded by min
 	return SyncGitRepo200JSONResponse{
 		Body: GitSyncResult{
 			CommitSha:        &result.CommitSHA,

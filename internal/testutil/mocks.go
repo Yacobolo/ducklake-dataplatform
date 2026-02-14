@@ -889,6 +889,7 @@ type MockNotebookRepo struct {
 	GetMaxPositionFn   func(ctx context.Context, notebookID string) (int, error)
 }
 
+// CreateNotebook implements the interface method for testing.
 func (m *MockNotebookRepo) CreateNotebook(ctx context.Context, nb *domain.Notebook) (*domain.Notebook, error) {
 	if m.CreateNotebookFn != nil {
 		return m.CreateNotebookFn(ctx, nb)
@@ -896,6 +897,7 @@ func (m *MockNotebookRepo) CreateNotebook(ctx context.Context, nb *domain.Notebo
 	panic("unexpected call to MockNotebookRepo.CreateNotebook")
 }
 
+// GetNotebook implements the interface method for testing.
 func (m *MockNotebookRepo) GetNotebook(ctx context.Context, id string) (*domain.Notebook, error) {
 	if m.GetNotebookFn != nil {
 		return m.GetNotebookFn(ctx, id)
@@ -903,6 +905,7 @@ func (m *MockNotebookRepo) GetNotebook(ctx context.Context, id string) (*domain.
 	panic("unexpected call to MockNotebookRepo.GetNotebook")
 }
 
+// ListNotebooks implements the interface method for testing.
 func (m *MockNotebookRepo) ListNotebooks(ctx context.Context, owner *string, page domain.PageRequest) ([]domain.Notebook, int64, error) {
 	if m.ListNotebooksFn != nil {
 		return m.ListNotebooksFn(ctx, owner, page)
@@ -910,6 +913,7 @@ func (m *MockNotebookRepo) ListNotebooks(ctx context.Context, owner *string, pag
 	panic("unexpected call to MockNotebookRepo.ListNotebooks")
 }
 
+// UpdateNotebook implements the interface method for testing.
 func (m *MockNotebookRepo) UpdateNotebook(ctx context.Context, id string, req domain.UpdateNotebookRequest) (*domain.Notebook, error) {
 	if m.UpdateNotebookFn != nil {
 		return m.UpdateNotebookFn(ctx, id, req)
@@ -917,6 +921,7 @@ func (m *MockNotebookRepo) UpdateNotebook(ctx context.Context, id string, req do
 	panic("unexpected call to MockNotebookRepo.UpdateNotebook")
 }
 
+// DeleteNotebook implements the interface method for testing.
 func (m *MockNotebookRepo) DeleteNotebook(ctx context.Context, id string) error {
 	if m.DeleteNotebookFn != nil {
 		return m.DeleteNotebookFn(ctx, id)
@@ -924,6 +929,7 @@ func (m *MockNotebookRepo) DeleteNotebook(ctx context.Context, id string) error 
 	panic("unexpected call to MockNotebookRepo.DeleteNotebook")
 }
 
+// CreateCell implements the interface method for testing.
 func (m *MockNotebookRepo) CreateCell(ctx context.Context, cell *domain.Cell) (*domain.Cell, error) {
 	if m.CreateCellFn != nil {
 		return m.CreateCellFn(ctx, cell)
@@ -931,6 +937,7 @@ func (m *MockNotebookRepo) CreateCell(ctx context.Context, cell *domain.Cell) (*
 	panic("unexpected call to MockNotebookRepo.CreateCell")
 }
 
+// GetCell implements the interface method for testing.
 func (m *MockNotebookRepo) GetCell(ctx context.Context, id string) (*domain.Cell, error) {
 	if m.GetCellFn != nil {
 		return m.GetCellFn(ctx, id)
@@ -938,6 +945,7 @@ func (m *MockNotebookRepo) GetCell(ctx context.Context, id string) (*domain.Cell
 	panic("unexpected call to MockNotebookRepo.GetCell")
 }
 
+// ListCells implements the interface method for testing.
 func (m *MockNotebookRepo) ListCells(ctx context.Context, notebookID string) ([]domain.Cell, error) {
 	if m.ListCellsFn != nil {
 		return m.ListCellsFn(ctx, notebookID)
@@ -945,6 +953,7 @@ func (m *MockNotebookRepo) ListCells(ctx context.Context, notebookID string) ([]
 	panic("unexpected call to MockNotebookRepo.ListCells")
 }
 
+// UpdateCell implements the interface method for testing.
 func (m *MockNotebookRepo) UpdateCell(ctx context.Context, id string, req domain.UpdateCellRequest) (*domain.Cell, error) {
 	if m.UpdateCellFn != nil {
 		return m.UpdateCellFn(ctx, id, req)
@@ -952,6 +961,7 @@ func (m *MockNotebookRepo) UpdateCell(ctx context.Context, id string, req domain
 	panic("unexpected call to MockNotebookRepo.UpdateCell")
 }
 
+// DeleteCell implements the interface method for testing.
 func (m *MockNotebookRepo) DeleteCell(ctx context.Context, id string) error {
 	if m.DeleteCellFn != nil {
 		return m.DeleteCellFn(ctx, id)
@@ -959,6 +969,7 @@ func (m *MockNotebookRepo) DeleteCell(ctx context.Context, id string) error {
 	panic("unexpected call to MockNotebookRepo.DeleteCell")
 }
 
+// UpdateCellResult implements the interface method for testing.
 func (m *MockNotebookRepo) UpdateCellResult(ctx context.Context, cellID string, result *string) error {
 	if m.UpdateCellResultFn != nil {
 		return m.UpdateCellResultFn(ctx, cellID, result)
@@ -966,6 +977,7 @@ func (m *MockNotebookRepo) UpdateCellResult(ctx context.Context, cellID string, 
 	return nil // default no-op like audit
 }
 
+// ReorderCells implements the interface method for testing.
 func (m *MockNotebookRepo) ReorderCells(ctx context.Context, notebookID string, cellIDs []string) error {
 	if m.ReorderCellsFn != nil {
 		return m.ReorderCellsFn(ctx, notebookID, cellIDs)
@@ -973,6 +985,7 @@ func (m *MockNotebookRepo) ReorderCells(ctx context.Context, notebookID string, 
 	panic("unexpected call to MockNotebookRepo.ReorderCells")
 }
 
+// GetMaxPosition implements the interface method for testing.
 func (m *MockNotebookRepo) GetMaxPosition(ctx context.Context, notebookID string) (int, error) {
 	if m.GetMaxPositionFn != nil {
 		return m.GetMaxPositionFn(ctx, notebookID)
@@ -992,6 +1005,7 @@ type MockNotebookJobRepo struct {
 	UpdateJobStateFn func(ctx context.Context, id string, state domain.JobState, result *string, errMsg *string) error
 }
 
+// CreateJob implements the interface method for testing.
 func (m *MockNotebookJobRepo) CreateJob(ctx context.Context, job *domain.NotebookJob) (*domain.NotebookJob, error) {
 	if m.CreateJobFn != nil {
 		return m.CreateJobFn(ctx, job)
@@ -999,6 +1013,7 @@ func (m *MockNotebookJobRepo) CreateJob(ctx context.Context, job *domain.Noteboo
 	panic("unexpected call to MockNotebookJobRepo.CreateJob")
 }
 
+// GetJob implements the interface method for testing.
 func (m *MockNotebookJobRepo) GetJob(ctx context.Context, id string) (*domain.NotebookJob, error) {
 	if m.GetJobFn != nil {
 		return m.GetJobFn(ctx, id)
@@ -1006,6 +1021,7 @@ func (m *MockNotebookJobRepo) GetJob(ctx context.Context, id string) (*domain.No
 	panic("unexpected call to MockNotebookJobRepo.GetJob")
 }
 
+// ListJobs implements the interface method for testing.
 func (m *MockNotebookJobRepo) ListJobs(ctx context.Context, notebookID string, page domain.PageRequest) ([]domain.NotebookJob, int64, error) {
 	if m.ListJobsFn != nil {
 		return m.ListJobsFn(ctx, notebookID, page)
@@ -1013,6 +1029,7 @@ func (m *MockNotebookJobRepo) ListJobs(ctx context.Context, notebookID string, p
 	panic("unexpected call to MockNotebookJobRepo.ListJobs")
 }
 
+// UpdateJobState implements the interface method for testing.
 func (m *MockNotebookJobRepo) UpdateJobState(ctx context.Context, id string, state domain.JobState, result *string, errMsg *string) error {
 	if m.UpdateJobStateFn != nil {
 		return m.UpdateJobStateFn(ctx, id, state, result, errMsg)
@@ -1033,6 +1050,7 @@ type MockGitRepoRepo struct {
 	UpdateSyncStatusFn func(ctx context.Context, id string, commitSHA string, syncedAt time.Time) error
 }
 
+// Create implements the interface method for testing.
 func (m *MockGitRepoRepo) Create(ctx context.Context, repo *domain.GitRepo) (*domain.GitRepo, error) {
 	if m.CreateFn != nil {
 		return m.CreateFn(ctx, repo)
@@ -1040,6 +1058,7 @@ func (m *MockGitRepoRepo) Create(ctx context.Context, repo *domain.GitRepo) (*do
 	panic("unexpected call to MockGitRepoRepo.Create")
 }
 
+// GetByID implements the interface method for testing.
 func (m *MockGitRepoRepo) GetByID(ctx context.Context, id string) (*domain.GitRepo, error) {
 	if m.GetByIDFn != nil {
 		return m.GetByIDFn(ctx, id)
@@ -1047,6 +1066,7 @@ func (m *MockGitRepoRepo) GetByID(ctx context.Context, id string) (*domain.GitRe
 	panic("unexpected call to MockGitRepoRepo.GetByID")
 }
 
+// List implements the interface method for testing.
 func (m *MockGitRepoRepo) List(ctx context.Context, page domain.PageRequest) ([]domain.GitRepo, int64, error) {
 	if m.ListFn != nil {
 		return m.ListFn(ctx, page)
@@ -1054,6 +1074,7 @@ func (m *MockGitRepoRepo) List(ctx context.Context, page domain.PageRequest) ([]
 	panic("unexpected call to MockGitRepoRepo.List")
 }
 
+// Delete implements the interface method for testing.
 func (m *MockGitRepoRepo) Delete(ctx context.Context, id string) error {
 	if m.DeleteFn != nil {
 		return m.DeleteFn(ctx, id)
@@ -1061,6 +1082,7 @@ func (m *MockGitRepoRepo) Delete(ctx context.Context, id string) error {
 	panic("unexpected call to MockGitRepoRepo.Delete")
 }
 
+// UpdateSyncStatus implements the interface method for testing.
 func (m *MockGitRepoRepo) UpdateSyncStatus(ctx context.Context, id string, commitSHA string, syncedAt time.Time) error {
 	if m.UpdateSyncStatusFn != nil {
 		return m.UpdateSyncStatusFn(ctx, id, commitSHA, syncedAt)

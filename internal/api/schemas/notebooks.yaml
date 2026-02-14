@@ -13,6 +13,7 @@ Notebook:
     description:
       type: string
       maxLength: 4096
+      pattern: '^[\s\S]*$'
     owner:
       type: string
       maxLength: 255
@@ -44,6 +45,7 @@ Cell:
     content:
       type: string
       maxLength: 65536
+      pattern: '^[\s\S]*$'
     position:
       type: integer
       format: int32
@@ -53,6 +55,7 @@ Cell:
       type: string
       description: JSON-encoded cached result from last execution
       maxLength: 10485760
+      pattern: '^[\s\S]*$'
     created_at:
       type: string
       format: date-time
@@ -101,6 +104,7 @@ CreateNotebookRequest:
     description:
       type: string
       maxLength: 4096
+      pattern: '^[\s\S]*$'
 
 UpdateNotebookRequest:
   description: Request payload for updating a notebook.
@@ -114,6 +118,7 @@ UpdateNotebookRequest:
     description:
       type: string
       maxLength: 4096
+      pattern: '^[\s\S]*$'
 
 CreateCellRequest:
   description: Request payload for creating a new cell.
@@ -128,6 +133,7 @@ CreateCellRequest:
       type: string
       maxLength: 65536
       default: ''
+      pattern: '^[\s\S]*$'
     position:
       type: integer
       format: int32
@@ -143,6 +149,7 @@ UpdateCellRequest:
     content:
       type: string
       maxLength: 65536
+      pattern: '^[\s\S]*$'
     position:
       type: integer
       format: int32
@@ -179,6 +186,7 @@ NotebookSession:
     principal:
       type: string
       maxLength: 255
+      pattern: '^\S.*$'
     state:
       type: string
       enum: [active, closed]
@@ -205,6 +213,7 @@ CellExecutionResult:
       items:
         type: string
         maxLength: 255
+        pattern: '^[\s\S]*$'
     rows:
       type: array
       maxItems: 1000000
@@ -220,6 +229,7 @@ CellExecutionResult:
     error:
       type: string
       maxLength: 65536
+      pattern: '^[\s\S]*$'
     duration_ms:
       type: integer
       format: int64
@@ -268,9 +278,11 @@ NotebookJob:
       type: string
       description: JSON-encoded RunAllResult when complete
       maxLength: 10485760
+      pattern: '^[\s\S]*$'
     error:
       type: string
       maxLength: 65536
+      pattern: '^[\s\S]*$'
     created_at:
       type: string
       format: date-time
@@ -305,15 +317,19 @@ GitRepo:
     url:
       type: string
       maxLength: 2048
+      format: uri
     branch:
       type: string
       maxLength: 255
+      pattern: '^[\w./-]+$'
     path:
       type: string
       maxLength: 1024
+      pattern: '^[\w./-]*$'
     owner:
       type: string
       maxLength: 255
+      pattern: '^\S.*$'
     last_sync_at:
       type: string
       format: date-time
@@ -321,6 +337,7 @@ GitRepo:
     last_commit:
       type: string
       maxLength: 64
+      pattern: '^[0-9a-f]+$'
     created_at:
       type: string
       format: date-time
@@ -339,18 +356,22 @@ CreateGitRepoRequest:
     url:
       type: string
       maxLength: 2048
+      format: uri
     branch:
       type: string
       maxLength: 255
       default: main
+      pattern: '^[\w./-]+$'
     path:
       type: string
       maxLength: 1024
       default: ''
+      pattern: '^[\w./-]*$'
     auth_token:
       type: string
       maxLength: 512
       description: Personal access token or deploy key for Git authentication.
+      pattern: '^\S+$'
 
 PaginatedGitRepos:
   description: A paginated list of Git repositories.
@@ -388,3 +409,4 @@ GitSyncResult:
     commit_sha:
       type: string
       maxLength: 64
+      pattern: '^[0-9a-f]+$'

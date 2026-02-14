@@ -89,7 +89,7 @@ func TestParseMarkdown_EmptySQLBlock(t *testing.T) {
 	// Empty SQL blocks are still created (Content is "")
 	require.Len(t, cells, 1)
 	assert.Equal(t, domain.CellTypeSQL, cells[0].CellType)
-	assert.Equal(t, "", cells[0].Content)
+	assert.Empty(t, cells[0].Content)
 }
 
 func TestParseMarkdown_DescriptionBeforeCode(t *testing.T) {

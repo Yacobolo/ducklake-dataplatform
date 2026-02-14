@@ -96,7 +96,7 @@ func (m *SessionManager) CreateSession(ctx context.Context, notebookID, principa
 }
 
 // CloseSession closes a session and releases the DuckDB connection.
-func (m *SessionManager) CloseSession(ctx context.Context, sessionID string) error {
+func (m *SessionManager) CloseSession(_ context.Context, sessionID string) error {
 	m.mu.Lock()
 	s, ok := m.sessions[sessionID]
 	if !ok {
@@ -192,7 +192,7 @@ func (m *SessionManager) ExecuteCell(ctx context.Context, sessionID, cellID stri
 		_ = m.repo.UpdateCellResult(ctx, cellID, &resultStr)
 		return result, nil
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	cols, data, scanErr := scanRows(rows)
 	if scanErr != nil {

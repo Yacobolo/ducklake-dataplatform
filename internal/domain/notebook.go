@@ -5,6 +5,7 @@ import "time"
 // CellType represents the type of a notebook cell.
 type CellType string
 
+// CellType constants define the supported notebook cell types.
 const (
 	CellTypeSQL      CellType = "sql"
 	CellTypeMarkdown CellType = "markdown"
@@ -114,6 +115,7 @@ type RunAllResult struct {
 // JobState represents the lifecycle of an async job.
 type JobState string
 
+// JobState constants define the lifecycle of an async job.
 const (
 	JobStatePending  JobState = "pending"
 	JobStateRunning  JobState = "running"

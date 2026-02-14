@@ -1,3 +1,5 @@
+// Package notebook provides business logic for SQL notebooks including
+// CRUD operations, session management, and markdown parsing.
 package notebook
 
 import (

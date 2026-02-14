@@ -7,19 +7,19 @@ import (
 	"duck-demo/internal/domain"
 )
 
-// NotebookService provides business logic for notebook and cell operations.
-type NotebookService struct {
+// Service provides business logic for notebook and cell operations.
+type Service struct {
 	repo  domain.NotebookRepository
 	audit domain.AuditRepository
 }
 
-// NewNotebookService creates a new NotebookService.
-func NewNotebookService(repo domain.NotebookRepository, audit domain.AuditRepository) *NotebookService {
-	return &NotebookService{repo: repo, audit: audit}
+// New creates a new Service.
+func New(repo domain.NotebookRepository, audit domain.AuditRepository) *Service {
+	return &Service{repo: repo, audit: audit}
 }
 
 // CreateNotebook creates a new notebook owned by the given principal.
-func (s *NotebookService) CreateNotebook(ctx context.Context, principal string, req domain.CreateNotebookRequest) (*domain.Notebook, error) {
+func (s *Service) CreateNotebook(ctx context.Context, principal string, req domain.CreateNotebookRequest) (*domain.Notebook, error) {
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func (s *NotebookService) CreateNotebook(ctx context.Context, principal string, 
 }
 
 // GetNotebook retrieves a notebook and its cells.
-func (s *NotebookService) GetNotebook(ctx context.Context, id string) (*domain.Notebook, []domain.Cell, error) {
+func (s *Service) GetNotebook(ctx context.Context, id string) (*domain.Notebook, []domain.Cell, error) {
 	nb, err := s.repo.GetNotebook(ctx, id)
 	if err != nil {
 		return nil, nil, err
@@ -55,12 +55,12 @@ func (s *NotebookService) GetNotebook(ctx context.Context, id string) (*domain.N
 }
 
 // ListNotebooks lists notebooks, optionally filtered by owner.
-func (s *NotebookService) ListNotebooks(ctx context.Context, owner *string, page domain.PageRequest) ([]domain.Notebook, int64, error) {
+func (s *Service) ListNotebooks(ctx context.Context, owner *string, page domain.PageRequest) ([]domain.Notebook, int64, error) {
 	return s.repo.ListNotebooks(ctx, owner, page)
 }
 
 // UpdateNotebook updates notebook metadata. Only the owner or admin can update.
-func (s *NotebookService) UpdateNotebook(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateNotebookRequest) (*domain.Notebook, error) {
+func (s *Service) UpdateNotebook(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateNotebookRequest) (*domain.Notebook, error) {
 	nb, err := s.repo.GetNotebook(ctx, id)
 	if err != nil {
 		return nil, err
@@ -81,7 +81,7 @@ func (s *NotebookService) UpdateNotebook(ctx context.Context, principal string, 
 }
 
 // DeleteNotebook deletes a notebook. Only the owner or admin can delete.
-func (s *NotebookService) DeleteNotebook(ctx context.Context, principal string, isAdmin bool, id string) error {
+func (s *Service) DeleteNotebook(ctx context.Context, principal string, isAdmin bool, id string) error {
 	nb, err := s.repo.GetNotebook(ctx, id)
 	if err != nil {
 		return err
@@ -101,7 +101,7 @@ func (s *NotebookService) DeleteNotebook(ctx context.Context, principal string, 
 }
 
 // CreateCell adds a new cell to a notebook. Owner or admin required.
-func (s *NotebookService) CreateCell(ctx context.Context, principal string, isAdmin bool, notebookID string, req domain.CreateCellRequest) (*domain.Cell, error) {
+func (s *Service) CreateCell(ctx context.Context, principal string, isAdmin bool, notebookID string, req domain.CreateCellRequest) (*domain.Cell, error) {
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
@@ -135,7 +135,7 @@ func (s *NotebookService) CreateCell(ctx context.Context, principal string, isAd
 }
 
 // UpdateCell updates a cell's content or position. Owner or admin required.
-func (s *NotebookService) UpdateCell(ctx context.Context, principal string, isAdmin bool, cellID string, req domain.UpdateCellRequest) (*domain.Cell, error) {
+func (s *Service) UpdateCell(ctx context.Context, principal string, isAdmin bool, cellID string, req domain.UpdateCellRequest) (*domain.Cell, error) {
 	cell, err := s.repo.GetCell(ctx, cellID)
 	if err != nil {
 		return nil, err
@@ -151,7 +151,7 @@ func (s *NotebookService) UpdateCell(ctx context.Context, principal string, isAd
 }
 
 // DeleteCell removes a cell. Owner or admin required.
-func (s *NotebookService) DeleteCell(ctx context.Context, principal string, isAdmin bool, cellID string) error {
+func (s *Service) DeleteCell(ctx context.Context, principal string, isAdmin bool, cellID string) error {
 	cell, err := s.repo.GetCell(ctx, cellID)
 	if err != nil {
 		return err
@@ -167,7 +167,7 @@ func (s *NotebookService) DeleteCell(ctx context.Context, principal string, isAd
 }
 
 // ReorderCells reorders cells in a notebook. Owner or admin required.
-func (s *NotebookService) ReorderCells(ctx context.Context, principal string, isAdmin bool, notebookID string, req domain.ReorderCellsRequest) ([]domain.Cell, error) {
+func (s *Service) ReorderCells(ctx context.Context, principal string, isAdmin bool, notebookID string, req domain.ReorderCellsRequest) ([]domain.Cell, error) {
 	nb, err := s.repo.GetNotebook(ctx, notebookID)
 	if err != nil {
 		return nil, err
