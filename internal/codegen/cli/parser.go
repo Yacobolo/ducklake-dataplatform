@@ -9,7 +9,8 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 )
 
-// Parse reads the OpenAPI spec and CLI config, validates coverage, and builds the model.
+// Parse reads the OpenAPI spec and CLI config, infers conventions, applies overrides,
+// validates coverage and drift, and builds the command model.
 func Parse(spec *openapi3.T, cfg *Config) ([]GroupModel, error) {
 	// Build a map of operationId -> operation info from spec
 	specOps := map[string]*opInfo{}
@@ -31,42 +32,57 @@ func Parse(spec *openapi3.T, cfg *Config) ([]GroupModel, error) {
 		}
 	}
 
-	// Coverage check: every spec operationId must be in config or skip_operations
 	skipSet := toSet(cfg.SkipOperations)
-	configOps := map[string]bool{}
-	for _, group := range cfg.Groups {
-		for _, cmd := range group.Commands {
-			configOps[cmd.OperationID] = true
+	implicitParams := toSet(cfg.Global.ImplicitParams)
+
+	// Validate override keys reference real operations
+	for opID := range cfg.CommandOverrides {
+		if _, ok := specOps[opID]; !ok && !skipSet[opID] {
+			return nil, fmt.Errorf("DRIFT ERROR: command_overrides references operationId %q which does not exist in spec (and is not in skip_operations)", opID)
 		}
 	}
-	for opID := range specOps {
-		if !configOps[opID] && !skipSet[opID] {
-			return nil, fmt.Errorf("SYNC ERROR: operationId %q exists in spec but not in cli-config.yaml (and not in skip_operations)", opID)
+
+	// Build resolved command configs from spec + conventions + overrides
+	// Group operations by their inferred/overridden group name
+	groupCommands := map[string]map[string]CommandConfig{} // group -> cmdName -> config
+	groupShorts := map[string]string{}
+
+	for opID, info := range specOps {
+		if skipSet[opID] {
+			continue
 		}
-	}
-	// Reverse check: every config operationId must exist in spec
-	for _, group := range cfg.Groups {
-		for cmdName, cmd := range group.Commands {
-			if _, ok := specOps[cmd.OperationID]; !ok {
-				return nil, fmt.Errorf("ERROR: operationId %q (command %q) in config not found in spec", cmd.OperationID, cmdName)
-			}
+
+		override := cfg.CommandOverrides[opID]
+
+		// Resolve group
+		group := resolveGroup(info, override, cfg.GroupOverrides)
+		if _, ok := groupCommands[group]; !ok {
+			groupCommands[group] = map[string]CommandConfig{}
+			groupShorts[group] = groupDescription(group, cfg.GroupOverrides)
 		}
+
+		// Resolve command config
+		cmdCfg := resolveCommandConfig(opID, info, override, implicitParams)
+
+		// Generate command name from verb + command_path
+		cmdName := generateCommandName(cmdCfg)
+
+		groupCommands[group][cmdName] = cmdCfg
 	}
 
 	// Build group models
-	groups := make([]GroupModel, 0, len(cfg.Groups))
-	// Sort group names for deterministic output
-	groupNames := sortedKeys(cfg.Groups)
+	groups := make([]GroupModel, 0, len(groupCommands))
+	groupNames := sortedKeys(groupCommands)
 	for _, groupName := range groupNames {
-		groupCfg := cfg.Groups[groupName]
+		commands := groupCommands[groupName]
 		gm := GroupModel{
 			Name:  groupName,
-			Short: groupCfg.Short,
+			Short: groupShorts[groupName],
 		}
 
-		cmdNames := sortedKeys(groupCfg.Commands)
+		cmdNames := sortedKeys(commands)
 		for _, cmdName := range cmdNames {
-			cmdCfg := groupCfg.Commands[cmdName]
+			cmdCfg := commands[cmdName]
 			info := specOps[cmdCfg.OperationID]
 
 			cm, err := buildCommandModel(groupName, cmdName, cmdCfg, info, cfg)
@@ -79,6 +95,101 @@ func Parse(spec *openapi3.T, cfg *Config) ([]GroupModel, error) {
 	}
 
 	return groups, nil
+}
+
+// resolveGroup determines the CLI group for an operation.
+func resolveGroup(info *opInfo, override CommandOverride, tagOverrides map[string]GroupOverride) string {
+	if override.Group != "" {
+		return override.Group
+	}
+	return inferGroup(info.op.Tags, tagOverrides)
+}
+
+// resolveCommandConfig builds a fully-resolved CommandConfig by merging
+// convention-inferred defaults with explicit overrides.
+func resolveCommandConfig(opID string, info *opInfo, override CommandOverride, implicitParams map[string]bool) CommandConfig {
+	cfg := CommandConfig{
+		OperationID: opID,
+	}
+
+	// Verb: override > convention
+	if override.Verb != nil {
+		cfg.Verb = *override.Verb
+	} else {
+		verb, ok := inferVerb(opID, info.method)
+		if ok {
+			cfg.Verb = verb
+		} else {
+			cfg.Verb = toKebabCase(opID)
+		}
+	}
+
+	// Command path: override > convention
+	if override.CommandPath != nil {
+		cfg.CommandPath = *override.CommandPath
+	} else {
+		cfg.CommandPath = inferCommandPath(info.urlPath)
+	}
+
+	// Positional args: override > convention (path params only)
+	if override.PositionalArgs != nil {
+		cfg.PositionalArgs = *override.PositionalArgs
+	} else {
+		cfg.PositionalArgs = inferPositionalArgs(info.params, implicitParams)
+	}
+
+	// Table columns: override > convention (auto-derived)
+	if override.TableColumns != nil {
+		cfg.TableColumns = *override.TableColumns
+	} else {
+		cfg.TableColumns = inferTableColumns(info.op)
+	}
+
+	// Confirm: override > convention (DELETE = confirm)
+	if override.Confirm != nil {
+		cfg.Confirm = *override.Confirm
+	} else {
+		cfg.Confirm = inferConfirm(info.method)
+	}
+
+	// Pass-through fields (no convention, only overrides)
+	cfg.Examples = override.Examples
+	cfg.FlagAliases = override.FlagAliases
+	cfg.FlattenFields = override.FlattenFields
+	cfg.CompoundFlags = override.CompoundFlags
+	cfg.ConditionalRequires = override.ConditionalRequires
+
+	return cfg
+}
+
+// generateCommandName creates a kebab-case command name from verb and command path.
+// The name is used as the key in the group's command map and must be unique within a group.
+func generateCommandName(cfg CommandConfig) string {
+	parts := []string{}
+	if cfg.Verb != "" {
+		parts = append(parts, cfg.Verb)
+	}
+
+	// For resource-specific operations, include the resource type in the name
+	// to avoid collisions (e.g., "list" in schemas vs "list" in tables)
+	if len(cfg.CommandPath) > 0 {
+		// Singularize the command path for the name
+		resource := cfg.CommandPath[len(cfg.CommandPath)-1]
+		resource = strings.TrimSuffix(resource, "s") // naive singularize
+
+		if cfg.Verb != "" {
+			parts = append(parts, resource)
+		} else {
+			parts = []string{resource}
+		}
+	}
+
+	if len(parts) == 0 {
+		// Empty verb + empty command path: use the Use string from computeUseString
+		use := computeUseString(cfg)
+		return strings.Fields(use)[0] // take first word
+	}
+	return strings.Join(parts, "-")
 }
 
 type opInfo struct {
@@ -240,6 +351,11 @@ func buildCommandModel(groupName, _ string, cmdCfg CommandConfig, info *opInfo, 
 		}
 	}
 
+	// Validate positional args reference real path params or body fields
+	if err := validatePositionalArgs(cmdCfg, cm); err != nil {
+		return nil, err
+	}
+
 	// Sort flags for deterministic output
 	sort.Slice(cm.Flags, func(i, j int) bool {
 		return cm.Flags[i].Name < cm.Flags[j].Name
@@ -248,7 +364,62 @@ func buildCommandModel(groupName, _ string, cmdCfg CommandConfig, info *opInfo, 
 	// Classify response
 	cm.Response = classifyResponse(info.op, cmdCfg.TableColumns)
 
+	// Validate table columns against response schema
+	if err := validateTableColumns(cmdCfg, info.op); err != nil {
+		return nil, err
+	}
+
 	return cm, nil
+}
+
+// validatePositionalArgs checks that every positional arg exists as a path param or body field.
+func validatePositionalArgs(cmdCfg CommandConfig, cm *CommandModel) error {
+	for _, pa := range cmdCfg.PositionalArgs {
+		foundInPath := false
+		for _, pp := range cm.PathParams {
+			if pp.Name == pa {
+				foundInPath = true
+				break
+			}
+		}
+		foundInBody := false
+		for _, bf := range cm.BodyFields {
+			if bf.Name == pa {
+				foundInBody = true
+				break
+			}
+		}
+		// Also check if it's a body property that was skipped via positionalSet
+		if !foundInPath && !foundInBody {
+			// Check request body properties directly
+			if cm.HasBody {
+				foundInBody = true // if it's marked positional and body exists, it was skipped intentionally
+			}
+		}
+		if !foundInPath && !foundInBody {
+			return fmt.Errorf("positional_arg %q for %q not found as path param or body field", pa, cmdCfg.OperationID)
+		}
+	}
+	return nil
+}
+
+// validateTableColumns checks that table columns reference fields that exist in the response schema.
+func validateTableColumns(cmdCfg CommandConfig, op *openapi3.Operation) error {
+	if len(cmdCfg.TableColumns) == 0 {
+		return nil
+	}
+
+	itemSchema := getItemSchema(op)
+	if itemSchema == nil || itemSchema.Properties == nil {
+		return nil // no schema to validate against
+	}
+
+	for _, col := range cmdCfg.TableColumns {
+		if _, ok := itemSchema.Properties[col]; !ok {
+			return fmt.Errorf("table_columns: field %q not found in response schema for %s", col, cmdCfg.OperationID)
+		}
+	}
+	return nil
 }
 
 func classifyResponse(op *openapi3.Operation, tableColumns []string) ResponseModel {

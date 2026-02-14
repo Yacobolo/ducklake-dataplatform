@@ -1,563 +1,252 @@
 global:
   default_output: table
   confirm_destructive: true
+  implicit_params: [catalogName]
 
-groups:
-  catalog:
+# Override tag-to-group mapping where convention doesn't match
+group_overrides:
+  Catalogs:
+    name: catalog
     short: "Manage the data catalog"
-    commands:
-      get-catalog:
-        operation_id: getCatalog
-        command_path: []
-        verb: get
-        table_columns: []
 
-      list-schemas:
-        operation_id: listSchemas
-        command_path: [schemas]
-        verb: list
-        table_columns: [schema_id, name, catalog_name, owner, created_at]
-      create-schema:
-        operation_id: createSchema
-        command_path: [schemas]
-        verb: create
-        positional_args: [name]
-      get-schema:
-        operation_id: getSchema
-        command_path: [schemas]
-        verb: get
-        positional_args: [schemaName]
-      update-schema:
-        operation_id: updateSchema
-        command_path: [schemas]
-        verb: update
-        positional_args: [schemaName]
-      delete-schema:
-        operation_id: deleteSchema
-        command_path: [schemas]
-        verb: delete
-        positional_args: [schemaName]
-        confirm: true
-      list-tables:
-        operation_id: listTables
-        command_path: [tables]
-        verb: list
-        positional_args: [schemaName]
-        table_columns: [table_id, name, schema_name, table_type, owner, created_at]
-      create-table:
-        operation_id: createTable
-        command_path: [tables]
-        verb: create
-        positional_args: [schemaName]
-        compound_flags:
-          columns:
-            fields: [name, type]
-            separator: ":"
-      get-table:
-        operation_id: getTable
-        command_path: [tables]
-        verb: get
-        positional_args: [schemaName, tableName]
-      update-table:
-        operation_id: updateTable
-        command_path: [tables]
-        verb: update
-        positional_args: [schemaName, tableName]
-      delete-table:
-        operation_id: deleteTable
-        command_path: [tables]
-        verb: delete
-        positional_args: [schemaName, tableName]
-        confirm: true
-      list-table-columns:
-        operation_id: listTableColumns
-        command_path: [columns]
-        verb: list
-        positional_args: [schemaName, tableName]
-        table_columns: [name, type, position, nullable, comment]
-      update-column:
-        operation_id: updateColumn
-        command_path: [columns]
-        verb: update
-        positional_args: [schemaName, tableName, columnName]
-      profile-table:
-        operation_id: profileTable
-        command_path: [tables]
-        verb: profile
-        positional_args: [schemaName, tableName]
-      list-views:
-        operation_id: listViews
-        command_path: [views]
-        verb: list
-        positional_args: [schemaName]
-        table_columns: [id, name, schema_name, owner, created_at]
-      create-view:
-        operation_id: createView
-        command_path: [views]
-        verb: create
-        positional_args: [schemaName]
-      get-view:
-        operation_id: getView
-        command_path: [views]
-        verb: get
-        positional_args: [schemaName, viewName]
-      update-view:
-        operation_id: updateView
-        command_path: [views]
-        verb: update
-        positional_args: [schemaName, viewName]
-      delete-view:
-        operation_id: deleteView
-        command_path: [views]
-        verb: delete
-        positional_args: [schemaName, viewName]
-        confirm: true
-      list-volumes:
-        operation_id: listVolumes
-        command_path: [volumes]
-        verb: list
-        positional_args: [schemaName]
-        table_columns: [id, name, volume_type, storage_location, owner, created_at]
-      create-volume:
-        operation_id: createVolume
-        command_path: [volumes]
-        verb: create
-        positional_args: [schemaName]
-      get-volume:
-        operation_id: getVolume
-        command_path: [volumes]
-        verb: get
-        positional_args: [schemaName, volumeName]
-      update-volume:
-        operation_id: updateVolume
-        command_path: [volumes]
-        verb: update
-        positional_args: [schemaName, volumeName]
-      delete-volume:
-        operation_id: deleteVolume
-        command_path: [volumes]
-        verb: delete
-        positional_args: [schemaName, volumeName]
-        confirm: true
-      register-catalog:
-        operation_id: registerCatalog
-        command_path: [catalogs]
-        verb: register
-      list-catalogs:
-        operation_id: listCatalogs
-        command_path: [catalogs]
-        verb: list
-        table_columns: [id, name, metastore_type, status, is_default, created_at]
-      get-catalog-registration:
-        operation_id: getCatalogRegistration
-        command_path: [catalogs]
-        verb: get
-        positional_args: [catalogName]
-      update-catalog-registration:
-        operation_id: updateCatalogRegistration
-        command_path: [catalogs]
-        verb: update
-        positional_args: [catalogName]
-      delete-catalog-registration:
-        operation_id: deleteCatalogRegistration
-        command_path: [catalogs]
-        verb: delete
-        positional_args: [catalogName]
-        confirm: true
-      set-default-catalog:
-        operation_id: setDefaultCatalog
-        command_path: [catalogs]
-        verb: set-default
-        positional_args: [catalogName]
+# Only commands that deviate from conventions need entries.
+# Convention defaults:
+#   verb:            inferred from operationId prefix (list/create/get/update/delete)
+#   command_path:    inferred from last non-parameter URL segment
+#   positional_args: all path params except implicit_params
+#   table_columns:   auto-derived from response schema scalar fields
+#   confirm:         true for DELETE operations
+#   group:           inferred from OpenAPI tag
+command_overrides:
+  # === Query (empty verb = special "execute" command) ===
+  executeQuery:
+    verb: ""
+    command_path: []
+    flag_aliases:
+      sql:
+        short: s
 
-  security:
-    short: "Manage principals, groups, grants, and access controls"
-    commands:
-      list-principals:
-        operation_id: listPrincipals
-        command_path: [principals]
-        verb: list
-        table_columns: [id, name, type, is_admin, created_at]
-      create-principal:
-        operation_id: createPrincipal
-        command_path: [principals]
-        verb: create
-        positional_args: [name]
-      get-principal:
-        operation_id: getPrincipal
-        command_path: [principals]
-        verb: get
-        positional_args: [principalId]
-      delete-principal:
-        operation_id: deletePrincipal
-        command_path: [principals]
-        verb: delete
-        positional_args: [principalId]
-        confirm: true
-      set-admin:
-        operation_id: updatePrincipalAdmin
-        command_path: [principals]
-        verb: set-admin
-        positional_args: [principalId]
-      list-groups:
-        operation_id: listGroups
-        command_path: [groups]
-        verb: list
-        table_columns: [id, name, description, created_at]
-      create-group:
-        operation_id: createGroup
-        command_path: [groups]
-        verb: create
-        positional_args: [name]
-      get-group:
-        operation_id: getGroup
-        command_path: [groups]
-        verb: get
-        positional_args: [groupId]
-      delete-group:
-        operation_id: deleteGroup
-        command_path: [groups]
-        verb: delete
-        positional_args: [groupId]
-        confirm: true
-      list-group-members:
-        operation_id: listGroupMembers
-        command_path: [members]
-        verb: list
-        positional_args: [groupId]
-        table_columns: [group_id, member_type, member_id]
-      add-group-member:
-        operation_id: createGroupMember
-        command_path: [members]
-        verb: add
-        positional_args: [groupId]
-      remove-group-member:
-        operation_id: deleteGroupMember
-        command_path: [members]
-        verb: remove
-        positional_args: [groupId]
-      list-grants:
-        operation_id: listGrants
-        command_path: [grants]
-        verb: list
-        table_columns: [id, principal_id, principal_type, securable_type, privilege, granted_at]
-      create-grant:
-        operation_id: createGrant
-        command_path: [grants]
-        verb: create
-      revoke-grant:
-        operation_id: deleteGrant
-        command_path: [grants]
-        verb: revoke
-        positional_args: [grantId]
-      list-api-keys:
-        operation_id: listAPIKeys
-        command_path: [api-keys]
-        verb: list
-        table_columns: [id, principal_id, name, key_prefix, expires_at, created_at]
-      create-api-key:
-        operation_id: createAPIKey
-        command_path: [api-keys]
-        verb: create
-      delete-api-key:
-        operation_id: deleteAPIKey
-        command_path: [api-keys]
-        verb: delete
-        positional_args: [apiKeyId]
-        confirm: true
-      cleanup-api-keys:
-        operation_id: cleanupExpiredAPIKeys
-        command_path: [api-keys]
-        verb: cleanup
-      list-row-filters:
-        operation_id: listRowFilters
-        command_path: [row-filters]
-        verb: list
-        positional_args: [tableId]
-        table_columns: [id, table_id, filter_sql, description, created_at]
-      create-row-filter:
-        operation_id: createRowFilter
-        command_path: [row-filters]
-        verb: create
-        positional_args: [tableId]
-      delete-row-filter:
-        operation_id: deleteRowFilter
-        command_path: [row-filters]
-        verb: delete
-        positional_args: [rowFilterId]
-        confirm: true
-      bind-row-filter:
-        operation_id: bindRowFilter
-        command_path: [row-filters]
-        verb: bind
-        positional_args: [rowFilterId]
-      unbind-row-filter:
-        operation_id: unbindRowFilter
-        command_path: [row-filters]
-        verb: unbind
-        positional_args: [rowFilterId]
-      list-column-masks:
-        operation_id: listColumnMasks
-        command_path: [column-masks]
-        verb: list
-        positional_args: [tableId]
-        table_columns: [id, table_id, column_name, mask_expression, created_at]
-      create-column-mask:
-        operation_id: createColumnMask
-        command_path: [column-masks]
-        verb: create
-        positional_args: [tableId]
-      delete-column-mask:
-        operation_id: deleteColumnMask
-        command_path: [column-masks]
-        verb: delete
-        positional_args: [columnMaskId]
-        confirm: true
-      bind-column-mask:
-        operation_id: bindColumnMask
-        command_path: [column-masks]
-        verb: bind
-        positional_args: [columnMaskId]
-      unbind-column-mask:
-        operation_id: unbindColumnMask
-        command_path: [column-masks]
-        verb: unbind
-        positional_args: [columnMaskId]
+  # === Catalog ===
+  getCatalog:
+    command_path: []
+    table_columns: []
 
-  query:
-    short: "Execute SQL queries"
-    commands:
-      execute-query:
-        operation_id: executeQuery
-        command_path: []
-        verb: ""
-        flag_aliases:
-          sql:
-            short: s
+  createSchema:
+    positional_args: &name_positional [name]
 
-  ingestion:
-    short: "Data ingestion operations"
-    commands:
-      upload-url:
-        operation_id: createUploadUrl
-        command_path: []
-        verb: upload-url
-        positional_args: [schemaName, tableName]
-      commit:
-        operation_id: commitTableIngestion
-        command_path: []
-        verb: commit
-        positional_args: [schemaName, tableName]
-        flatten_fields: [options]
-      load:
-        operation_id: loadTableExternalFiles
-        command_path: []
-        verb: load
-        positional_args: [schemaName, tableName]
-        flatten_fields: [options]
+  listSchemas:
+    table_columns: [schema_id, name, catalog_name, owner, created_at]
 
-  lineage:
-    short: "Table lineage tracking"
-    commands:
-      get-table-lineage:
-        operation_id: getTableLineage
-        command_path: [tables]
-        verb: get
-        positional_args: [schemaName, tableName]
-      upstream-lineage:
-        operation_id: getUpstreamLineage
-        command_path: [tables]
-        verb: upstream
-        positional_args: [schemaName, tableName]
-      downstream-lineage:
-        operation_id: getDownstreamLineage
-        command_path: [tables]
-        verb: downstream
-        positional_args: [schemaName, tableName]
-      delete-edge:
-        operation_id: deleteLineageEdge
-        command_path: [edges]
-        verb: delete
-        positional_args: [edgeId]
-        confirm: true
-      purge:
-        operation_id: purgeLineage
-        command_path: []
-        verb: purge
-        confirm: true
+  listTables:
+    table_columns: [table_id, name, schema_name, table_type, owner, created_at]
 
-  governance:
-    short: "Tags, classifications, and search"
-    commands:
-      search:
-        operation_id: searchCatalog
-        command_path: []
-        verb: search
-      list-tags:
-        operation_id: listTags
-        command_path: [tags]
-        verb: list
-        table_columns: [id, key, value, created_by, created_at]
-      create-tag:
-        operation_id: createTag
-        command_path: [tags]
-        verb: create
-      delete-tag:
-        operation_id: deleteTag
-        command_path: [tags]
-        verb: delete
-        positional_args: [tagId]
-        confirm: true
-      create-tag-assignment:
-        operation_id: createTagAssignment
-        command_path: [tag-assignments]
-        verb: create
-        positional_args: [tagId]
-      delete-tag-assignment:
-        operation_id: deleteTagAssignment
-        command_path: [tag-assignments]
-        verb: delete
-        positional_args: [assignmentId]
-        confirm: true
-      list-classifications:
-        operation_id: listClassifications
-        command_path: [classifications]
-        verb: list
-        table_columns: [id, key, value, created_by, created_at]
+  createTable:
+    compound_flags:
+      columns:
+        fields: [name, type]
+        separator: ":"
 
-  observability:
-    short: "Audit logs, query history, and metastore info"
-    commands:
-      list-audit-logs:
-        operation_id: listAuditLogs
-        command_path: [audit-logs]
-        verb: list
-        table_columns: [id, principal_name, action, status, created_at]
-      metastore-summary:
-        operation_id: getMetastoreSummary
-        command_path: [metastore]
-        verb: summary
-      list-query-history:
-        operation_id: listQueryHistory
-        command_path: [query-history]
-        verb: list
-        table_columns: [id, principal_name, status, duration_ms, created_at]
+  listTableColumns:
+    table_columns: [name, type, position, nullable, comment]
 
-  storage:
-    short: "Storage credentials and external locations"
-    commands:
-      list-credentials:
-        operation_id: listStorageCredentials
-        command_path: [credentials]
-        verb: list
-        table_columns: [id, name, credential_type, owner, created_at]
-      create-credential:
-        operation_id: createStorageCredential
-        command_path: [credentials]
-        verb: create
-        positional_args: [name]
-      get-credential:
-        operation_id: getStorageCredential
-        command_path: [credentials]
-        verb: get
-        positional_args: [credentialName]
-      update-credential:
-        operation_id: updateStorageCredential
-        command_path: [credentials]
-        verb: update
-        positional_args: [credentialName]
-      delete-credential:
-        operation_id: deleteStorageCredential
-        command_path: [credentials]
-        verb: delete
-        positional_args: [credentialName]
-        confirm: true
-      list-locations:
-        operation_id: listExternalLocations
-        command_path: [locations]
-        verb: list
-        table_columns: [id, name, url, credential_name, owner, created_at]
-      create-location:
-        operation_id: createExternalLocation
-        command_path: [locations]
-        verb: create
-        positional_args: [name]
-      get-location:
-        operation_id: getExternalLocation
-        command_path: [locations]
-        verb: get
-        positional_args: [locationName]
-      update-location:
-        operation_id: updateExternalLocation
-        command_path: [locations]
-        verb: update
-        positional_args: [locationName]
-      delete-location:
-        operation_id: deleteExternalLocation
-        command_path: [locations]
-        verb: delete
-        positional_args: [locationName]
-        confirm: true
+  profileTable:
+    verb: profile
+    command_path: [tables]
 
-  manifest:
-    short: "Client-side query manifest"
-    commands:
-      create-manifest:
-        operation_id: createManifest
-        command_path: []
-        verb: create
+  listViews:
+    table_columns: [id, name, schema_name, owner, created_at]
 
-  compute:
-    short: "Compute endpoint management"
-    commands:
-      list-endpoints:
-        operation_id: listComputeEndpoints
-        command_path: [endpoints]
-        verb: list
-        table_columns: [id, name, url, type, status, size, owner]
-      create-endpoint:
-        operation_id: createComputeEndpoint
-        command_path: [endpoints]
-        verb: create
-        positional_args: [name]
-      get-endpoint:
-        operation_id: getComputeEndpoint
-        command_path: [endpoints]
-        verb: get
-        positional_args: [endpointName]
-      update-endpoint:
-        operation_id: updateComputeEndpoint
-        command_path: [endpoints]
-        verb: update
-        positional_args: [endpointName]
-      delete-endpoint:
-        operation_id: deleteComputeEndpoint
-        command_path: [endpoints]
-        verb: delete
-        positional_args: [endpointName]
-        confirm: true
-      list-assignments:
-        operation_id: listComputeAssignments
-        command_path: [assignments]
-        verb: list
-        positional_args: [endpointName]
-        table_columns: [id, principal_id, principal_type, endpoint_name, is_default, created_at]
-      create-assignment:
-        operation_id: createComputeAssignment
-        command_path: [assignments]
-        verb: create
-        positional_args: [endpointName]
-      delete-assignment:
-        operation_id: deleteComputeAssignment
-        command_path: [assignments]
-        verb: delete
-        positional_args: [endpointName, assignmentId]
-        confirm: true
-      endpoint-health:
-        operation_id: getComputeEndpointHealth
-        command_path: [endpoints]
-        verb: health
-        positional_args: [endpointName]
+  listVolumes:
+    table_columns: [id, name, volume_type, storage_location, owner, created_at]
+
+  # === Security: non-CRUD verbs ===
+  updatePrincipalAdmin:
+    verb: set-admin
+    command_path: [principals]
+
+  createPrincipal:
+    positional_args: *name_positional
+
+  listPrincipals:
+    table_columns: [id, name, type, is_admin, created_at]
+
+  createGroup:
+    positional_args: *name_positional
+
+  listGroups:
+    table_columns: [id, name, description, created_at]
+
+  listGroupMembers:
+    table_columns: [group_id, member_type, member_id]
+
+  createGroupMember:
+    verb: add
+
+  deleteGroupMember:
+    verb: remove
+    confirm: false
+
+  listGrants:
+    table_columns: [id, principal_id, principal_type, securable_type, privilege, granted_at]
+
+  deleteGrant:
+    verb: revoke
+    confirm: false
+
+  listAPIKeys:
+    table_columns: [id, principal_id, name, key_prefix, expires_at, created_at]
+
+  cleanupExpiredAPIKeys:
+    verb: cleanup
+    command_path: [api-keys]
+
+  listRowFilters:
+    table_columns: [id, table_id, filter_sql, description, created_at]
+
+  bindRowFilter:
+    verb: bind
+    command_path: [row-filters]
+
+  unbindRowFilter:
+    verb: unbind
+    command_path: [row-filters]
+    confirm: false
+
+  listColumnMasks:
+    table_columns: [id, table_id, column_name, mask_expression, created_at]
+
+  bindColumnMask:
+    verb: bind
+    command_path: [column-masks]
+
+  unbindColumnMask:
+    verb: unbind
+    command_path: [column-masks]
+    confirm: false
+
+  # === Ingestion: group override + custom verbs ===
+  createUploadUrl:
+    group: ingestion
+    verb: upload-url
+    command_path: []
+
+  commitTableIngestion:
+    group: ingestion
+    verb: commit
+    command_path: []
+    flatten_fields: [options]
+
+  loadTableExternalFiles:
+    group: ingestion
+    verb: load
+    command_path: []
+    flatten_fields: [options]
+
+  # === Lineage: non-CRUD verbs + command_path override ===
+  getTableLineage:
+    command_path: [tables]
+
+  getUpstreamLineage:
+    verb: upstream
+    command_path: [tables]
+    table_columns: []
+
+  getDownstreamLineage:
+    verb: downstream
+    command_path: [tables]
+    table_columns: []
+
+  purgeLineage:
+    verb: purge
+    command_path: []
+    confirm: true
+
+  deleteLineageEdge:
+    command_path: [edges]
+
+  # === Governance ===
+  searchCatalog:
+    verb: search
+    command_path: []
+    table_columns: []
+
+  listTags:
+    table_columns: [id, key, value, created_by, created_at]
+
+  createTagAssignment:
+    command_path: [tag-assignments]
+
+  deleteTagAssignment:
+    command_path: [tag-assignments]
+
+  listClassifications:
+    table_columns: [id, key, value, created_by, created_at]
+
+  # === Observability ===
+  getMetastoreSummary:
+    verb: summary
+    command_path: [metastore]
+
+  listAuditLogs:
+    table_columns: [id, principal_name, action, status, created_at]
+
+  listQueryHistory:
+    table_columns: [id, principal_name, status, duration_ms, created_at]
+
+  # === Storage: command_path override (URL uses storage-credentials/external-locations) ===
+  listStorageCredentials:
+    command_path: [credentials]
+    table_columns: [id, name, credential_type, owner, created_at]
+  createStorageCredential:
+    command_path: [credentials]
+    positional_args: *name_positional
+  getStorageCredential:
+    command_path: [credentials]
+  updateStorageCredential:
+    command_path: [credentials]
+  deleteStorageCredential:
+    command_path: [credentials]
+
+  listExternalLocations:
+    command_path: [locations]
+    table_columns: [id, name, url, credential_name, owner, created_at]
+  createExternalLocation:
+    command_path: [locations]
+    positional_args: *name_positional
+  getExternalLocation:
+    command_path: [locations]
+  updateExternalLocation:
+    command_path: [locations]
+  deleteExternalLocation:
+    command_path: [locations]
+
+  # === Manifest ===
+  createManifest:
+    command_path: []
+
+  # === Compute: command_path override (URL uses compute-endpoints) ===
+  listComputeEndpoints:
+    command_path: [endpoints]
+    table_columns: [id, name, url, type, status, size, owner]
+  createComputeEndpoint:
+    command_path: [endpoints]
+    positional_args: *name_positional
+  getComputeEndpoint:
+    command_path: [endpoints]
+  updateComputeEndpoint:
+    command_path: [endpoints]
+  deleteComputeEndpoint:
+    command_path: [endpoints]
+  getComputeEndpointHealth:
+    verb: health
+    command_path: [endpoints]
+  listComputeAssignments:
+    command_path: [assignments]
+    table_columns: [id, principal_id, principal_type, endpoint_name, is_default, created_at]
+  createComputeAssignment:
+    command_path: [assignments]
+  deleteComputeAssignment:
+    command_path: [assignments]
 
   notebooks:
     short: "Manage notebooks, cells, sessions, and git repos"

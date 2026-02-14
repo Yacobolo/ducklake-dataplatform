@@ -40,6 +40,7 @@ func buildGoldenSpec() *openapi3.T {
 		OperationID: "listItems",
 		Summary:     "List all items",
 		Description: "Returns a paginated list of items.",
+		Tags:        []string{"Items"},
 		Parameters: openapi3.Parameters{
 			{Value: &openapi3.Parameter{
 				Name: "max_results", In: "query", Required: false,
@@ -101,6 +102,7 @@ func buildGoldenSpec() *openapi3.T {
 		OperationID: "getItem",
 		Summary:     "Get an item",
 		Description: "Returns a single item by ID.",
+		Tags:        []string{"Items"},
 		Responses:   &openapi3.Responses{},
 	}
 	getItemOp.Responses.Set("200", &openapi3.ResponseRef{
@@ -121,6 +123,7 @@ func buildGoldenSpec() *openapi3.T {
 		OperationID: "deleteItem",
 		Summary:     "Delete an item",
 		Description: "Deletes an item by ID.",
+		Tags:        []string{"Items"},
 		Responses:   &openapi3.Responses{},
 	}
 	deleteItemOp.Responses.Set("204", &openapi3.ResponseRef{
@@ -138,6 +141,7 @@ func buildGoldenSpec() *openapi3.T {
 		OperationID: "createTask",
 		Summary:     "Create a task",
 		Description: "Creates a new task.",
+		Tags:        []string{"Tasks"},
 		Responses:   &openapi3.Responses{},
 		RequestBody: &openapi3.RequestBodyRef{
 			Value: &openapi3.RequestBody{
@@ -202,6 +206,7 @@ func buildGoldenSpec() *openapi3.T {
 		OperationID: "runTask",
 		Summary:     "Run a task",
 		Description: "Triggers execution of a task.",
+		Tags:        []string{"Tasks"},
 		Responses:   &openapi3.Responses{},
 		RequestBody: &openapi3.RequestBodyRef{
 			Value: &openapi3.RequestBody{
@@ -271,56 +276,39 @@ func strPtr(s string) *string {
 	return &s
 }
 
-// buildGoldenConfig builds a Config matching the golden spec.
+// buildGoldenConfig builds a Config matching the golden spec using the
+// convention-over-configuration format. Only deviations from convention are specified.
 func buildGoldenConfig() *Config {
+	emptyPath := []string{}
+	tableColumns := []string{"id", "name", "status"}
 	return &Config{
 		Global: GlobalConfig{
 			DefaultOutput:      "table",
 			ConfirmDestructive: true,
 		},
-		Groups: map[string]GroupConfig{
-			"items": {
-				Short: "Item management commands",
-				Commands: map[string]CommandConfig{
-					"list-items": {
-						OperationID:  "listItems",
-						CommandPath:  []string{"items"},
-						Verb:         "list",
-						TableColumns: []string{"id", "name", "status"},
-					},
-					"get-item": {
-						OperationID:    "getItem",
-						CommandPath:    []string{"items"},
-						Verb:           "get",
-						PositionalArgs: []string{"itemId"},
-					},
-					"delete-item": {
-						OperationID:    "deleteItem",
-						CommandPath:    []string{"items"},
-						Verb:           "delete",
-						PositionalArgs: []string{"itemId"},
-						Confirm:        true,
-					},
+		GroupOverrides: map[string]GroupOverride{
+			"Items": {Short: "Item management commands"},
+			"Tasks": {Short: "Task management commands"},
+		},
+		CommandOverrides: map[string]CommandOverride{
+			// listItems: verb=list, path=["items"], positionalArgs=[] all match convention.
+			// Only table_columns needs override (item schema has no properties to infer from).
+			"listItems": {
+				TableColumns: &tableColumns,
+			},
+			// getItem: all convention-inferred, no overrides needed.
+			// deleteItem: all convention-inferred (DELETE → confirm=true), no overrides needed.
+			// createTask: convention gives command_path=["tasks"], but golden spec expects [].
+			"createTask": {
+				CommandPath: &emptyPath,
+				FlagAliases: map[string]FlagAliasConfig{
+					"name": {Short: "n"},
 				},
 			},
-			"tasks": {
-				Short: "Task management commands",
-				Commands: map[string]CommandConfig{
-					"create-task": {
-						OperationID: "createTask",
-						CommandPath: []string{},
-						Verb:        "create",
-						FlagAliases: map[string]FlagAliasConfig{
-							"name": {Short: "n"},
-						},
-					},
-					"run-task": {
-						OperationID:    "runTask",
-						CommandPath:    []string{},
-						Verb:           "run",
-						PositionalArgs: []string{"taskId"},
-					},
-				},
+			// runTask: "run" is non-CRUD verb (not auto-inferred), convention gives command_path=["run"].
+			"runTask": {
+				Verb:        strPtr("run"),
+				CommandPath: &emptyPath,
 			},
 		},
 	}
