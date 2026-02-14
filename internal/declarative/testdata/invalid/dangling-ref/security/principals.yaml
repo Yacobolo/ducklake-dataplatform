@@ -1,0 +1,6 @@
+apiVersion: duck/v1
+kind: PrincipalList
+principals:
+  - name: analyst1
+    type: user
+    is_admin: false

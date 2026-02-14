@@ -1,0 +1,7 @@
+apiVersion: duck/v1
+kind: Volume
+metadata:
+  name: raw-data
+spec:
+  volume_type: EXTERNAL
+  storage_location: s3://test-bucket/raw/

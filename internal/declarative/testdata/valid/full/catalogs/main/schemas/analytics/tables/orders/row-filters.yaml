@@ -1,0 +1,8 @@
+apiVersion: duck/v1
+kind: RowFilterList
+filters:
+  - name: region-us
+    filter_sql: "region = 'US'"
+    bindings:
+      - principal: analysts
+        principal_type: group

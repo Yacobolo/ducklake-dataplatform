@@ -1,0 +1,5 @@
+apiVersion: duck/v1
+kind: ComputeEndpointList
+endpoints:
+  - name: local-dev
+    type: LOCAL

@@ -1,0 +1,5 @@
+apiVersion: duck/v1
+kind: PrincipalList
+principals:
+  - name: broken
+    type: [invalid yaml

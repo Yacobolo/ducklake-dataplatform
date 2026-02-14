@@ -1,0 +1,9 @@
+apiVersion: duck/v1
+kind: Schema
+metadata:
+  name: analytics
+spec:
+  comment: "Analytics schema"
+  owner: data-team
+  properties:
+    team: analytics

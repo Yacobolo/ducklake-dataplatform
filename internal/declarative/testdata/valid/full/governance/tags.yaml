@@ -1,0 +1,11 @@
+apiVersion: duck/v1
+kind: TagConfig
+tags:
+  - key: classification
+    value: pii
+  - key: classification
+    value: public
+assignments:
+  - tag: "classification:pii"
+    securable_type: table
+    securable: main.analytics.orders
