@@ -1,0 +1,148 @@
+name: Feature Request
+description: Propose a new feature or enhancement to the data platform.
+title: "[feature] "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the problem this feature solves, the proposed solution, and which architecture layers it affects. Include API surface changes where applicable.
+
+  # ── Classification ──────────────────────────────────────────
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected Component(s)
+      description: Select all architecture layers this feature would touch.
+      multiple: true
+      options:
+        - "api (internal/api — HTTP handlers, OpenAPI)"
+        - "service (internal/service — business logic)"
+        - "domain (internal/domain — types, interfaces, errors)"
+        - "repository (internal/db/repository — SQLite persistence)"
+        - "dbstore (internal/db/dbstore — sqlc generated code)"
+        - "migrations (internal/db/migrations — schema migrations)"
+        - "engine (internal/engine — SecureEngine, DuckDB query execution)"
+        - "sqlrewrite (internal/sqlrewrite — SQL parsing/rewriting)"
+        - "middleware (internal/middleware — JWT, API key auth)"
+        - "extension (extension/duck_access — C++ DuckDB extension)"
+        - "cmd (cmd/server — composition root, startup)"
+        - "new component"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Feature Category
+      options:
+        - "Query execution / SQL support"
+        - "RBAC / access control"
+        - "Row-level security (RLS)"
+        - "Column masking"
+        - "Catalog management"
+        - "Ingestion / data loading"
+        - "Storage / external locations"
+        - "Compute / endpoints"
+        - "Notebooks / sessions"
+        - "Pipelines / scheduling"
+        - "Observability / audit / lineage"
+        - "Governance / tags / search"
+        - "Authentication (JWT / API keys)"
+        - "API design / ergonomics"
+        - "Performance / scalability"
+        - "Developer experience / tooling"
+        - "Other"
+    validations:
+      required: true
+
+  # ── Problem & Solution ─────────────────────────────────────
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case / Problem Statement
+      description: |
+        Describe the concrete problem or workflow gap. Who encounters this
+        and how frequently? Reference specific API operations if relevant.
+      placeholder: |
+        When a data analyst needs to query across multiple catalogs in a
+        single SQL statement, they currently must issue separate requests
+        per catalog and join client-side. This is common for cross-catalog
+        lineage analysis.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed Solution
+      description: |
+        Describe the desired behavior. Be specific about interfaces, data
+        flow, and where in the architecture this belongs.
+      placeholder: |
+        Add cross-catalog query support to SecureEngine:
+        1. Extend SQL rewriting to resolve multi-catalog references
+        2. Attach multiple DuckDB catalogs in a single engine session
+        3. Apply RLS/masking per-catalog based on the principal's grants
+    validations:
+      required: true
+
+  - type: textarea
+    id: api-changes
+    attributes:
+      label: API Changes (if applicable)
+      description: |
+        Describe new or modified endpoints, request/response schemas, or
+        OpenAPI spec changes. Use code blocks for examples.
+      render: yaml
+      placeholder: |
+        # New endpoint
+        POST /query/cross-catalog
+        Request: { "sql": "...", "catalogs": ["cat_a", "cat_b"] }
+        Response: same as /query
+
+        # Or modification to existing
+        POST /query
+        Request: { "sql": "...", "catalogs": ["cat_a", "cat_b"] }  # new optional field
+
+  - type: textarea
+    id: domain-changes
+    attributes:
+      label: Domain / Interface Changes (if applicable)
+      description: |
+        New or modified types in `internal/domain/`, repository interfaces,
+        error types, or service interfaces.
+      render: go
+      placeholder: |
+        // New method on QueryService interface
+        ExecuteCrossCatalog(ctx context.Context, req CrossCatalogRequest) (*QueryResult, error)
+
+  # ── Alternatives & Impact ──────────────────────────────────
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: What other approaches did you evaluate and why were they rejected?
+
+  - type: dropdown
+    id: breaking
+    attributes:
+      label: Breaking Change?
+      description: Would this require changes to existing API clients or migrations?
+      options:
+        - "No — purely additive"
+        - "Yes — requires API client changes"
+        - "Yes — requires data migration"
+        - "Yes — both API and data migration"
+        - "Unknown"
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Related issues, external references, mockups, or prior art.

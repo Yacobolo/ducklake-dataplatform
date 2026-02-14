@@ -1,0 +1,182 @@
+name: Bug Report
+description: Report incorrect behavior in the data platform.
+title: "[bug] "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Provide precise, reproducible details. Include SQL, HTTP requests, and error output verbatim where applicable.
+
+  # ── Classification ──────────────────────────────────────────
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected Component
+      description: Primary architecture layer where the bug manifests.
+      options:
+        - "api (internal/api — HTTP handlers, OpenAPI)"
+        - "service (internal/service — business logic)"
+        - "domain (internal/domain — types, interfaces, errors)"
+        - "repository (internal/db/repository — SQLite persistence)"
+        - "dbstore (internal/db/dbstore — sqlc generated code)"
+        - "migrations (internal/db/migrations — schema migrations)"
+        - "engine (internal/engine — SecureEngine, DuckDB query execution)"
+        - "sqlrewrite (internal/sqlrewrite — SQL parsing/rewriting)"
+        - "middleware (internal/middleware — JWT, API key auth)"
+        - "extension (extension/duck_access — C++ DuckDB extension)"
+        - "cmd (cmd/server — composition root, startup)"
+        - "other / unknown"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - "critical — data corruption, security bypass, or crash"
+        - "high — feature broken, no workaround"
+        - "medium — feature broken, workaround exists"
+        - "low — cosmetic, minor inconvenience"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: domain-error
+    attributes:
+      label: Domain Error Type
+      description: If the bug produces a domain error, select its type.
+      options:
+        - "NotFoundError (404)"
+        - "AccessDeniedError (403)"
+        - "ValidationError (400)"
+        - "ConflictError (409)"
+        - "Unexpected / no domain error (5xx or panic)"
+        - "Not applicable"
+    validations:
+      required: true
+
+  # ── Reproduction ────────────────────────────────────────────
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: |
+        Numbered steps. Include curl/HTTP requests, SQL queries, and setup
+        commands exactly as executed. Use code blocks.
+      placeholder: |
+        1. Create principal via `POST /principals` with body: ...
+        2. Create row filter via `POST /tables/{id}/row-filters` with body: ...
+        3. Execute query via `POST /query` with body: `{"sql": "SELECT * FROM ..."}`
+        4. Observe error response
+    validations:
+      required: true
+
+  - type: textarea
+    id: sql-query
+    attributes:
+      label: SQL Query (if applicable)
+      description: The exact SQL sent to the `/query` endpoint or used internally.
+      render: sql
+      placeholder: |
+        SELECT col_a, col_b
+        FROM catalog.schema.table
+        WHERE region = 'us-east-1'
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What should happen according to the spec or documentation.
+      placeholder: |
+        The query should return rows filtered by the active RLS policy for the
+        authenticated principal, with `col_b` masked per the column mask definition.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happens. Include full error messages, HTTP status codes, and response bodies.
+      placeholder: |
+        HTTP 500 with body:
+        ```json
+        {"error": "internal error", "message": "..."}
+        ```
+        Server log shows: `AccessDeniedError: principal X lacks SELECT on catalog.schema.table`
+    validations:
+      required: true
+
+  # ── Auth & Security Context ─────────────────────────────────
+
+  - type: dropdown
+    id: auth-method
+    attributes:
+      label: Authentication Method
+      options:
+        - "JWT Bearer token"
+        - "API key (X-API-Key header)"
+        - "Unauthenticated"
+        - "Not relevant"
+    validations:
+      required: true
+
+  - type: textarea
+    id: auth-context
+    attributes:
+      label: Auth / RBAC Context
+      description: |
+        Describe the principal, their groups, relevant grants, active RLS
+        policies, and column masks. Omit secrets. Use structured format.
+      placeholder: |
+        - Principal: `user-123` (is_admin: false)
+        - Groups: [`analysts`]
+        - Grants: `SELECT` on `catalog.schema.table` via group `analysts`
+        - Row filters: `region = current_user_attr('region')` bound to group `analysts`
+        - Column masks: `col_b` masked with `'***'` for group `analysts`
+
+  # ── Environment ─────────────────────────────────────────────
+
+  - type: textarea
+    id: error-output
+    attributes:
+      label: Error Output / Logs
+      description: Full error output, stack traces, or relevant server log lines. Redact secrets.
+      render: text
+
+  - type: input
+    id: go-version
+    attributes:
+      label: Go Version
+      placeholder: "1.25.7"
+
+  - type: input
+    id: duckdb-version
+    attributes:
+      label: DuckDB Version
+      placeholder: "1.2.1"
+
+  - type: input
+    id: os
+    attributes:
+      label: OS / Architecture
+      placeholder: "linux/amd64, darwin/arm64"
+
+  - type: input
+    id: commit-sha
+    attributes:
+      label: Commit SHA or Version
+      description: Output of `git rev-parse --short HEAD` or release tag.
+      placeholder: "abc1234"
+
+  # ── Additional ──────────────────────────────────────────────
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Anything else — screenshots, related issues, hypotheses about root cause.

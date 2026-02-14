@@ -1,0 +1,194 @@
+name: Performance Issue
+description: Report slow queries, high resource usage, or scalability problems.
+title: "[perf] "
+labels: ["performance", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Provide concrete measurements. Include query text, timing data, dataset
+        characteristics, and profiling output where available.
+
+  # ── Classification ──────────────────────────────────────────
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected Component
+      description: Where is the bottleneck?
+      options:
+        - "engine (internal/engine — DuckDB query execution)"
+        - "sqlrewrite (internal/sqlrewrite — SQL parsing/rewriting overhead)"
+        - "repository (internal/db/repository — SQLite metadata queries)"
+        - "api (internal/api — HTTP handler latency)"
+        - "middleware (internal/middleware — auth overhead)"
+        - "extension (extension/duck_access — C++ extension)"
+        - "ingestion (data loading pipeline)"
+        - "other / unknown"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: perf-category
+    attributes:
+      label: Performance Category
+      options:
+        - "Query latency (slow individual queries)"
+        - "Throughput (low queries/second under load)"
+        - "Memory usage (excessive or leaking)"
+        - "CPU usage (high utilization)"
+        - "Disk I/O (slow reads/writes)"
+        - "Startup time"
+        - "Connection/session overhead"
+        - "SQL rewriting overhead"
+        - "Auth/RBAC resolution overhead"
+        - "Other"
+    validations:
+      required: true
+
+  # ── Query Details ──────────────────────────────────────────
+
+  - type: textarea
+    id: sql-query
+    attributes:
+      label: SQL Query
+      description: The exact SQL that exhibits the performance issue.
+      render: sql
+      placeholder: |
+        SELECT t1.id, t2.value
+        FROM catalog.schema.large_table t1
+        JOIN catalog.schema.dim_table t2 ON t1.dim_id = t2.id
+        WHERE t1.created_at > '2025-01-01'
+    validations:
+      required: true
+
+  - type: textarea
+    id: query-plan
+    attributes:
+      label: Query Plan / EXPLAIN Output
+      description: Output of `EXPLAIN` or `EXPLAIN ANALYZE` for the query, if available.
+      render: text
+
+  # ── Dataset Characteristics ────────────────────────────────
+
+  - type: input
+    id: row-count
+    attributes:
+      label: Row Count
+      description: Approximate number of rows in the primary table(s) involved.
+      placeholder: "10M rows"
+    validations:
+      required: true
+
+  - type: input
+    id: data-size
+    attributes:
+      label: Dataset Size on Disk
+      description: Approximate size of the Parquet/DuckDB files involved.
+      placeholder: "2.4 GB"
+
+  - type: input
+    id: column-count
+    attributes:
+      label: Column Count
+      description: Number of columns in the primary table(s).
+      placeholder: "85 columns"
+
+  - type: textarea
+    id: rls-masking
+    attributes:
+      label: Active RLS / Column Masking
+      description: |
+        Describe any row filters or column masks active during the query.
+        These can significantly affect performance.
+      placeholder: |
+        - Row filter: `region = current_user_attr('region')` (filters ~90% of rows)
+        - Column masks: 3 columns masked with `CASE WHEN ... END` expressions
+
+  # ── Timing & Measurements ──────────────────────────────────
+
+  - type: input
+    id: observed-latency
+    attributes:
+      label: Observed Latency
+      description: End-to-end time for the operation.
+      placeholder: "12.4s"
+    validations:
+      required: true
+
+  - type: input
+    id: expected-latency
+    attributes:
+      label: Expected / Acceptable Latency
+      description: What you consider a reasonable target.
+      placeholder: "<500ms"
+    validations:
+      required: true
+
+  - type: textarea
+    id: timing-breakdown
+    attributes:
+      label: Timing Breakdown (if available)
+      description: |
+        Break down where time is spent. Use server logs, tracing, or
+        profiling to identify phases. Include percentages or absolute times.
+      placeholder: |
+        - SQL rewrite: 45ms
+        - RBAC resolution (SQLite): 320ms
+        - DuckDB execution: 11.8s
+        - Response serialization: 230ms
+        Total: 12.4s
+
+  - type: textarea
+    id: profiling
+    attributes:
+      label: Profiling Data
+      description: |
+        Attach pprof output, flame graphs, or DuckDB profiling output.
+        For Go profiles: `go tool pprof -http=:6060 cpu.prof`
+        For DuckDB: `PRAGMA enable_profiling; PRAGMA profiling_output='...'`
+      render: text
+
+  # ── Concurrency & Environment ──────────────────────────────
+
+  - type: input
+    id: concurrency
+    attributes:
+      label: Concurrent Users / Queries
+      description: Number of concurrent connections or queries during the issue.
+      placeholder: "50 concurrent queries"
+
+  - type: input
+    id: hardware
+    attributes:
+      label: Hardware / Resources
+      description: CPU cores, RAM, disk type (SSD/HDD/NVMe), cloud instance type.
+      placeholder: "8 vCPU, 32 GB RAM, NVMe SSD (c5.2xlarge)"
+
+  - type: input
+    id: go-version
+    attributes:
+      label: Go Version
+      placeholder: "1.25.7"
+
+  - type: input
+    id: duckdb-version
+    attributes:
+      label: DuckDB Version
+      placeholder: "1.2.1"
+
+  - type: input
+    id: commit-sha
+    attributes:
+      label: Commit SHA or Version
+      placeholder: "abc1234"
+
+  # ── Additional ──────────────────────────────────────────────
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: |
+        Regression info (was it faster before?), workarounds attempted,
+        related issues, or hypotheses about the bottleneck.
