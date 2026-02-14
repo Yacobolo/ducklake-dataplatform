@@ -13,9 +13,11 @@ Pipeline:
     description:
       type: string
       maxLength: 4096
+      pattern: '^[\s\S]*$'
     schedule_cron:
       type: string
       maxLength: 255
+      pattern: '^[\S].*$'
     is_paused:
       type: boolean
     concurrency_limit:
@@ -26,6 +28,7 @@ Pipeline:
     created_by:
       type: string
       maxLength: 255
+      pattern: '^\S+$'
     created_at:
       type: string
       format: date-time
@@ -61,6 +64,7 @@ PipelineJob:
       items:
         type: string
         maxLength: 255
+        pattern: '^\S.*$'
     notebook_id:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
@@ -106,14 +110,17 @@ PipelineRun:
     triggered_by:
       type: string
       maxLength: 255
+      pattern: '^\S+$'
     parameters:
       type: object
       additionalProperties:
         type: string
         maxLength: 4096
+        pattern: '^[\s\S]*$'
     git_commit_hash:
       type: string
       maxLength: 64
+      pattern: '^[0-9a-f]+$'
     started_at:
       type: string
       format: date-time
@@ -125,6 +132,7 @@ PipelineRun:
     error_message:
       type: string
       maxLength: 4096
+      pattern: '^[\s\S]*$'
     created_at:
       type: string
       format: date-time
@@ -149,6 +157,7 @@ PipelineJobRun:
     job_name:
       type: string
       maxLength: 255
+      pattern: '^\S.*$'
     status:
       type: string
       enum: [PENDING, RUNNING, SUCCESS, FAILED, SKIPPED, CANCELLED]
@@ -163,6 +172,7 @@ PipelineJobRun:
     error_message:
       type: string
       maxLength: 4096
+      pattern: '^[\s\S]*$'
     retry_attempt:
       type: integer
       format: int32
@@ -186,9 +196,11 @@ CreatePipelineRequest:
     description:
       type: string
       maxLength: 4096
+      pattern: '^[\s\S]*$'
     schedule_cron:
       type: string
       maxLength: 255
+      pattern: '^[\S].*$'
     is_paused:
       type: boolean
       default: false
@@ -207,9 +219,11 @@ UpdatePipelineRequest:
     description:
       type: string
       maxLength: 4096
+      pattern: '^[\s\S]*$'
     schedule_cron:
       type: string
       maxLength: 255
+      pattern: '^[\S].*$'
     is_paused:
       type: boolean
     concurrency_limit:
@@ -238,6 +252,7 @@ CreatePipelineJobRequest:
       items:
         type: string
         maxLength: 255
+        pattern: '^\S.*$'
     notebook_id:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
@@ -270,6 +285,7 @@ TriggerPipelineRunRequest:
       additionalProperties:
         type: string
         maxLength: 4096
+        pattern: '^[\s\S]*$'
 
 PaginatedPipelines:
   description: A paginated list of pipelines.

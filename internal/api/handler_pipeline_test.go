@@ -130,7 +130,7 @@ func pipelineTestCtx() context.Context {
 	})
 }
 
-var fixedTime = time.Date(2025, 1, 15, 10, 30, 0, 0, time.UTC)
+var pipelineFixedTime = time.Date(2025, 1, 15, 10, 30, 0, 0, time.UTC)
 
 func samplePipeline() domain.Pipeline {
 	cron := "0 * * * *"
@@ -142,8 +142,8 @@ func samplePipeline() domain.Pipeline {
 		IsPaused:         false,
 		ConcurrencyLimit: 2,
 		CreatedBy:        "test-user",
-		CreatedAt:        fixedTime,
-		UpdatedAt:        fixedTime,
+		CreatedAt:        pipelineFixedTime,
+		UpdatedAt:        pipelineFixedTime,
 	}
 }
 
@@ -153,18 +153,18 @@ func sampleJob() domain.PipelineJob {
 		ID:                "job-1",
 		PipelineID:        "pipe-1",
 		Name:              "extract",
-		ComputeEndpointID: strPtr("ep-1"),
+		ComputeEndpointID: pipelineStrPtr("ep-1"),
 		DependsOn:         []string{},
 		NotebookID:        "nb-1",
 		TimeoutSeconds:    &timeout,
 		RetryCount:        1,
 		JobOrder:          0,
-		CreatedAt:         fixedTime,
+		CreatedAt:         pipelineFixedTime,
 	}
 }
 
 func sampleRun() domain.PipelineRun {
-	started := fixedTime.Add(time.Second)
+	started := pipelineFixedTime.Add(time.Second)
 	return domain.PipelineRun{
 		ID:          "run-1",
 		PipelineID:  "pipe-1",
@@ -173,12 +173,12 @@ func sampleRun() domain.PipelineRun {
 		TriggeredBy: "test-user",
 		Parameters:  map[string]string{"env": "prod"},
 		StartedAt:   &started,
-		CreatedAt:   fixedTime,
+		CreatedAt:   pipelineFixedTime,
 	}
 }
 
 func sampleJobRun() domain.PipelineJobRun {
-	started := fixedTime.Add(2 * time.Second)
+	started := pipelineFixedTime.Add(2 * time.Second)
 	return domain.PipelineJobRun{
 		ID:           "jr-1",
 		RunID:        "run-1",
@@ -187,11 +187,11 @@ func sampleJobRun() domain.PipelineJobRun {
 		Status:       domain.PipelineJobRunStatusRunning,
 		StartedAt:    &started,
 		RetryAttempt: 0,
-		CreatedAt:    fixedTime,
+		CreatedAt:    pipelineFixedTime,
 	}
 }
 
-func strPtr(s string) *string { return &s }
+func pipelineStrPtr(s string) *string { return &s }
 
 // === Tests ===
 
@@ -206,7 +206,7 @@ func TestHandler_CreatePipeline(t *testing.T) {
 	}{
 		{
 			name: "happy path returns 201",
-			body: CreatePipelineJSONRequestBody{Name: "etl-daily", Description: strPtr("Daily ETL pipeline")},
+			body: CreatePipelineJSONRequestBody{Name: "etl-daily", Description: pipelineStrPtr("Daily ETL pipeline")},
 			svcFn: func(_ context.Context, _ string, _ domain.CreatePipelineRequest) (*domain.Pipeline, error) {
 				p := samplePipeline()
 				return &p, nil
@@ -344,7 +344,7 @@ func TestHandler_UpdatePipeline(t *testing.T) {
 		{
 			name:     "happy path returns 200",
 			pipeName: "etl-daily",
-			body:     UpdatePipelineJSONRequestBody{Description: strPtr("updated desc")},
+			body:     UpdatePipelineJSONRequestBody{Description: pipelineStrPtr("updated desc")},
 			svcFn: func(_ context.Context, _ string, _ string, _ domain.UpdatePipelineRequest) (*domain.Pipeline, error) {
 				p := samplePipeline()
 				p.Description = "updated desc"
@@ -361,7 +361,7 @@ func TestHandler_UpdatePipeline(t *testing.T) {
 		{
 			name:     "not found returns 404",
 			pipeName: "nonexistent",
-			body:     UpdatePipelineJSONRequestBody{Description: strPtr("x")},
+			body:     UpdatePipelineJSONRequestBody{Description: pipelineStrPtr("x")},
 			svcFn: func(_ context.Context, _ string, name string, _ domain.UpdatePipelineRequest) (*domain.Pipeline, error) {
 				return nil, domain.ErrNotFound("pipeline %s not found", name)
 			},
