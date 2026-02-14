@@ -122,6 +122,7 @@ func newRootCmd() *cobra.Command {
 	// Add hand-written commands
 	rootCmd.AddCommand(newVersionCmd())
 	rootCmd.AddCommand(newConfigCmd())
+	rootCmd.AddCommand(newAuthCmd())
 
 	// Shell completions
 	rootCmd.AddCommand(newCompletionCmd())

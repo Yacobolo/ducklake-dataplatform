@@ -73,8 +73,25 @@ func (s *APIKeyService) Create(ctx context.Context, req domain.CreateAPIKeyReque
 }
 
 // List returns API keys for a principal (without raw key values).
-func (s *APIKeyService) List(ctx context.Context, principalID string, page domain.PageRequest) ([]domain.APIKey, int64, error) {
-	return s.repo.ListByPrincipal(ctx, principalID, page)
+// If principalID is nil or empty, defaults to the caller's own keys.
+// Non-admin users can only list their own keys.
+func (s *APIKeyService) List(ctx context.Context, principalID *string, page domain.PageRequest) ([]domain.APIKey, int64, error) {
+	caller, ok := domain.PrincipalFromContext(ctx)
+	if !ok {
+		return nil, 0, domain.ErrAccessDenied("authentication required")
+	}
+
+	// Default to caller's own keys
+	if principalID == nil || *principalID == "" {
+		return s.repo.ListByPrincipal(ctx, caller.ID, page)
+	}
+
+	// Non-admin can only list own keys
+	if !caller.IsAdmin && caller.ID != *principalID {
+		return nil, 0, domain.ErrAccessDenied("can only list your own API keys")
+	}
+
+	return s.repo.ListByPrincipal(ctx, *principalID, page)
 }
 
 // Delete removes an API key by ID.

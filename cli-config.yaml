@@ -139,6 +139,36 @@ groups:
         verb: delete
         positional_args: [schemaName, volumeName]
         confirm: true
+      register-catalog:
+        operation_id: registerCatalog
+        command_path: [catalogs]
+        verb: register
+      list-catalogs:
+        operation_id: listCatalogs
+        command_path: [catalogs]
+        verb: list
+        table_columns: [id, name, metastore_type, status, is_default, created_at]
+      get-catalog-registration:
+        operation_id: getCatalogRegistration
+        command_path: [catalogs]
+        verb: get
+        positional_args: [catalogName]
+      update-catalog-registration:
+        operation_id: updateCatalogRegistration
+        command_path: [catalogs]
+        verb: update
+        positional_args: [catalogName]
+      delete-catalog-registration:
+        operation_id: deleteCatalogRegistration
+        command_path: [catalogs]
+        verb: delete
+        positional_args: [catalogName]
+        confirm: true
+      set-default-catalog:
+        operation_id: setDefaultCatalog
+        command_path: [catalogs]
+        verb: set-default
+        positional_args: [catalogName]
 
   security:
     short: "Manage principals, groups, grants, and access controls"
@@ -529,47 +559,189 @@ groups:
         verb: health
         positional_args: [endpointName]
 
+  notebooks:
+    short: "Manage notebooks, cells, sessions, and git repos"
+    commands:
+      list-notebooks:
+        operation_id: listNotebooks
+        command_path: []
+        verb: list
+        table_columns: [id, name, owner, created_at, updated_at]
+      create-notebook:
+        operation_id: createNotebook
+        command_path: []
+        verb: create
+      get-notebook:
+        operation_id: getNotebook
+        command_path: []
+        verb: get
+        positional_args: [notebookId]
+      update-notebook:
+        operation_id: updateNotebook
+        command_path: []
+        verb: update
+        positional_args: [notebookId]
+      delete-notebook:
+        operation_id: deleteNotebook
+        command_path: []
+        verb: delete
+        positional_args: [notebookId]
+        confirm: true
+      create-cell:
+        operation_id: createCell
+        command_path: [cells]
+        verb: create
+        positional_args: [notebookId]
+      update-cell:
+        operation_id: updateCell
+        command_path: [cells]
+        verb: update
+        positional_args: [notebookId, cellId]
+      delete-cell:
+        operation_id: deleteCell
+        command_path: [cells]
+        verb: delete
+        positional_args: [notebookId, cellId]
+        confirm: true
+      reorder-cells:
+        operation_id: reorderCells
+        command_path: [cells]
+        verb: reorder
+        positional_args: [notebookId]
+      create-session:
+        operation_id: createNotebookSession
+        command_path: [sessions]
+        verb: create
+        positional_args: [notebookId]
+      close-session:
+        operation_id: closeNotebookSession
+        command_path: [sessions]
+        verb: close
+        positional_args: [notebookId, sessionId]
+      execute-cell:
+        operation_id: executeCell
+        command_path: [sessions]
+        verb: execute
+        positional_args: [notebookId, sessionId, cellId]
+      run-all:
+        operation_id: runAllCells
+        command_path: [sessions]
+        verb: run-all
+        positional_args: [notebookId, sessionId]
+      run-all-async:
+        operation_id: runAllCellsAsync
+        command_path: [sessions]
+        verb: run-all-async
+        positional_args: [notebookId, sessionId]
+      list-jobs:
+        operation_id: listNotebookJobs
+        command_path: [jobs]
+        verb: list
+        positional_args: [notebookId]
+        table_columns: [id, notebook_id, session_id, state, created_at, updated_at]
+      get-job:
+        operation_id: getNotebookJob
+        command_path: [jobs]
+        verb: get
+        positional_args: [notebookId, jobId]
+      list-git-repos:
+        operation_id: listGitRepos
+        command_path: [git-repos]
+        verb: list
+        table_columns: [id, url, branch, path, owner, last_sync_at, created_at]
+      create-git-repo:
+        operation_id: createGitRepo
+        command_path: [git-repos]
+        verb: create
+      get-git-repo:
+        operation_id: getGitRepo
+        command_path: [git-repos]
+        verb: get
+        positional_args: [gitRepoId]
+      delete-git-repo:
+        operation_id: deleteGitRepo
+        command_path: [git-repos]
+        verb: delete
+        positional_args: [gitRepoId]
+        confirm: true
+      sync-git-repo:
+        operation_id: syncGitRepo
+        command_path: [git-repos]
+        verb: sync
+        positional_args: [gitRepoId]
+
+  pipelines:
+    short: "Manage pipelines, jobs, and runs"
+    commands:
+      list-pipelines:
+        operation_id: listPipelines
+        command_path: []
+        verb: list
+        table_columns: [id, name, schedule_cron, is_paused, created_by, created_at]
+      create-pipeline:
+        operation_id: createPipeline
+        command_path: []
+        verb: create
+      get-pipeline:
+        operation_id: getPipeline
+        command_path: []
+        verb: get
+        positional_args: [pipelineName]
+      update-pipeline:
+        operation_id: updatePipeline
+        command_path: []
+        verb: update
+        positional_args: [pipelineName]
+      delete-pipeline:
+        operation_id: deletePipeline
+        command_path: []
+        verb: delete
+        positional_args: [pipelineName]
+        confirm: true
+      list-jobs:
+        operation_id: listPipelineJobs
+        command_path: [jobs]
+        verb: list
+        positional_args: [pipelineName]
+        table_columns: [id, name, notebook_id, depends_on, timeout_seconds, retry_count, job_order, created_at]
+      create-job:
+        operation_id: createPipelineJob
+        command_path: [jobs]
+        verb: create
+        positional_args: [pipelineName]
+      delete-job:
+        operation_id: deletePipelineJob
+        command_path: [jobs]
+        verb: delete
+        positional_args: [pipelineName, jobId]
+        confirm: true
+      trigger-run:
+        operation_id: triggerPipelineRun
+        command_path: [runs]
+        verb: trigger
+        positional_args: [pipelineName]
+      list-runs:
+        operation_id: listPipelineRuns
+        command_path: [runs]
+        verb: list
+        positional_args: [pipelineName]
+        table_columns: [id, status, trigger_type, triggered_by, started_at, finished_at, created_at]
+      get-run:
+        operation_id: getPipelineRun
+        command_path: [runs]
+        verb: get
+        positional_args: [runId]
+      cancel-run:
+        operation_id: cancelPipelineRun
+        command_path: [runs]
+        verb: cancel
+        positional_args: [runId]
+      list-job-runs:
+        operation_id: listPipelineJobRuns
+        command_path: [job-runs]
+        verb: list
+        positional_args: [runId]
+        table_columns: [id, job_id, job_name, status, started_at, finished_at, retry_attempt, created_at]
+
 skip_operations:
   - createRowFilterTopLevel
-  - registerCatalog
-  - listCatalogs
-  - getCatalogRegistration
-  - updateCatalogRegistration
-  - deleteCatalogRegistration
-  - setDefaultCatalog
-  # Notebook operations (CLI commands TBD)
-  - listNotebooks
-  - createNotebook
-  - getNotebook
-  - updateNotebook
-  - deleteNotebook
-  - createCell
-  - updateCell
-  - deleteCell
-  - reorderCells
-  - createNotebookSession
-  - closeNotebookSession
-  - executeCell
-  - runAllCells
-  - runAllCellsAsync
-  - listNotebookJobs
-  - getNotebookJob
-  - listGitRepos
-  - createGitRepo
-  - getGitRepo
-  - deleteGitRepo
-  - syncGitRepo
-  # Pipeline operations (CLI commands TBD)
-  - listPipelines
-  - createPipeline
-  - getPipeline
-  - updatePipeline
-  - deletePipeline
-  - listPipelineJobs
-  - createPipelineJob
-  - deletePipelineJob
-  - triggerPipelineRun
-  - listPipelineRuns
-  - getPipelineRun
-  - cancelPipelineRun
-  - listPipelineJobRuns

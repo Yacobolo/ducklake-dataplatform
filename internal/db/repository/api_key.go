@@ -90,6 +90,26 @@ func (r *APIKeyRepo) ListByPrincipal(ctx context.Context, principalID string, pa
 	return keys, total, nil
 }
 
+// ListAll returns a paginated list of all API keys.
+func (r *APIKeyRepo) ListAll(ctx context.Context, page domain.PageRequest) ([]domain.APIKey, int64, error) {
+	total, err := r.q.CountAllAPIKeys(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	rows, err := r.q.ListAllAPIKeysPaginated(ctx, dbstore.ListAllAPIKeysPaginatedParams{
+		Limit:  int64(page.Limit()),
+		Offset: int64(page.Offset()),
+	})
+	if err != nil {
+		return nil, 0, err
+	}
+	keys := make([]domain.APIKey, len(rows))
+	for i, row := range rows {
+		keys[i] = apiKeyFromDB(row)
+	}
+	return keys, total, nil
+}
+
 // GetByID returns an API key by its ID.
 func (r *APIKeyRepo) GetByID(ctx context.Context, id string) (*domain.APIKey, error) {
 	row, err := r.q.GetAPIKeyByID(ctx, id)

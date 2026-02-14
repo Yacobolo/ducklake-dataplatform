@@ -141,7 +141,8 @@ func setupTestServer(t *testing.T, principalName string) *httptest.Server {
 	columnMaskSvc := security.NewColumnMaskService(columnMaskRepo, auditRepo)
 	auditSvc := governance.NewAuditService(auditRepo)
 
-	catalogRepoFactory := repository.NewCatalogRepoFactory(metaDB, duckDB, nil, slog.New(slog.DiscardHandler))
+	catalogRegRepo := repository.NewCatalogRegistrationRepo(metaDB)
+	catalogRepoFactory := repository.NewCatalogRepoFactory(catalogRegRepo, metaDB, duckDB, nil, slog.New(slog.DiscardHandler))
 	tagRepo := repository.NewTagRepo(metaDB)
 	catalogSvc := catalog.NewCatalogService(catalogRepoFactory, cat, auditRepo, tagRepo, nil, nil)
 
@@ -1422,15 +1423,15 @@ func TestAPI_APIKey_CRUD(t *testing.T) {
 	}
 }
 
-func TestAPI_ReadEndpoints_NoAdminRequired(t *testing.T) {
+func TestAPI_ReadEndpoints_NonAdminAccess(t *testing.T) {
 	srv := setupSecurityTestServer(t, "non-admin-user", false)
 	defer srv.Close()
 
-	// Non-admin can list principals.
+	// Non-admin cannot list principals (requires admin).
 	resp := doRequest(t, http.MethodGet, srv.URL+"/principals", "")
 	defer resp.Body.Close() //nolint:errcheck
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("list principals: got status %d, want 200", resp.StatusCode)
+	if resp.StatusCode != http.StatusForbidden {
+		t.Errorf("list principals: got status %d, want 403", resp.StatusCode)
 	}
 
 	// Non-admin can list groups.

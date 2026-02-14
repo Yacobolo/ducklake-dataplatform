@@ -55,12 +55,17 @@ type columnMaskService interface {
 
 // === Principals ===
 
-// ListPrincipals implements the endpoint for listing all principals.
+// ListPrincipals implements the endpoint for listing all principals. Requires admin privileges.
 func (h *APIHandler) ListPrincipals(ctx context.Context, req ListPrincipalsRequestObject) (ListPrincipalsResponseObject, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	ps, total, err := h.principals.List(ctx, page)
 	if err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return ListPrincipals403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		default:
+			return nil, err
+		}
 	}
 	out := make([]Principal, len(ps))
 	for i, p := range ps {

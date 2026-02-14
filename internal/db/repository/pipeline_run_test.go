@@ -174,6 +174,53 @@ func TestPipelineRun_ListWithFilter(t *testing.T) {
 	})
 }
 
+func TestPipelineRun_ListWithoutFilters(t *testing.T) {
+	_, runRepo, pipeline, _ := setupPipelineRunRepos(t)
+	ctx := context.Background()
+
+	// Create runs with different statuses for the same pipeline.
+	statuses := []string{
+		domain.PipelineRunStatusPending,
+		domain.PipelineRunStatusPending,
+		domain.PipelineRunStatusPending, // will be marked SUCCESS below
+	}
+	var runIDs []string
+	for _, s := range statuses {
+		r, err := runRepo.CreateRun(ctx, &domain.PipelineRun{
+			PipelineID:  pipeline.ID,
+			Status:      s,
+			TriggerType: domain.TriggerTypeManual,
+			TriggeredBy: "admin",
+			Parameters:  map[string]string{},
+		})
+		require.NoError(t, err)
+		runIDs = append(runIDs, r.ID)
+	}
+	// Mark last run as SUCCESS so we have mixed statuses.
+	err := runRepo.UpdateRunFinished(ctx, runIDs[2], domain.PipelineRunStatusSuccess, nil)
+	require.NoError(t, err)
+
+	t.Run("pipeline_id_only_no_status_filter", func(t *testing.T) {
+		runs, total, err := runRepo.ListRuns(ctx, domain.PipelineRunFilter{
+			PipelineID: &pipeline.ID,
+			Status:     nil,
+		})
+		require.NoError(t, err)
+		assert.Equal(t, int64(3), total)
+		assert.Len(t, runs, 3)
+	})
+
+	t.Run("no_filters_at_all", func(t *testing.T) {
+		runs, total, err := runRepo.ListRuns(ctx, domain.PipelineRunFilter{
+			PipelineID: nil,
+			Status:     nil,
+		})
+		require.NoError(t, err)
+		assert.Equal(t, int64(3), total)
+		assert.Len(t, runs, 3)
+	})
+}
+
 func TestPipelineRun_Lifecycle(t *testing.T) {
 	_, runRepo, pipeline, _ := setupPipelineRunRepos(t)
 	ctx := context.Background()

@@ -23,5 +23,11 @@ DELETE FROM api_keys WHERE id = ?;
 -- name: GetAPIKeyByID :one
 SELECT * FROM api_keys WHERE id = ?;
 
+-- name: ListAllAPIKeysPaginated :many
+SELECT * FROM api_keys ORDER BY created_at DESC LIMIT ? OFFSET ?;
+
+-- name: CountAllAPIKeys :one
+SELECT COUNT(*) as cnt FROM api_keys;
+
 -- name: DeleteExpiredKeys :execresult
 DELETE FROM api_keys WHERE expires_at IS NOT NULL AND expires_at <= datetime('now');

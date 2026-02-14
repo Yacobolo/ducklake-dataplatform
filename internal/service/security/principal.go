@@ -51,8 +51,11 @@ func (s *PrincipalService) GetByName(ctx context.Context, name string) (*domain.
 	return s.repo.GetByName(ctx, name)
 }
 
-// List returns a paginated list of principals.
+// List returns a paginated list of principals. Requires admin privileges.
 func (s *PrincipalService) List(ctx context.Context, page domain.PageRequest) ([]domain.Principal, int64, error) {
+	if err := requireAdmin(ctx); err != nil {
+		return nil, 0, err
+	}
 	return s.repo.List(ctx, page)
 }
 

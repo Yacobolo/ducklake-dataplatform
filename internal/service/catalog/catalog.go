@@ -13,7 +13,7 @@ import (
 //
 //nolint:revive // Name chosen for clarity across package boundaries
 type CatalogRepoFactory interface {
-	ForCatalog(catalogName string) domain.CatalogRepository
+	ForCatalog(ctx context.Context, catalogName string) (domain.CatalogRepository, error)
 }
 
 // CatalogService provides catalog management operations with authorization.
@@ -50,17 +50,29 @@ func NewCatalogService(
 
 // GetCatalogInfo returns information about a catalog.
 func (s *CatalogService) GetCatalogInfo(ctx context.Context, catalogName string) (*domain.CatalogInfo, error) {
-	return s.repoFactory.ForCatalog(catalogName).GetCatalogInfo(ctx)
+	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
+	if err != nil {
+		return nil, err
+	}
+	return repo.GetCatalogInfo(ctx)
 }
 
 // GetMetastoreSummary returns high-level metastore information.
 func (s *CatalogService) GetMetastoreSummary(ctx context.Context, catalogName string) (*domain.MetastoreSummary, error) {
-	return s.repoFactory.ForCatalog(catalogName).GetMetastoreSummary(ctx)
+	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
+	if err != nil {
+		return nil, err
+	}
+	return repo.GetMetastoreSummary(ctx)
 }
 
 // ListSchemas returns a paginated list of schemas.
 func (s *CatalogService) ListSchemas(ctx context.Context, catalogName string, page domain.PageRequest) ([]domain.SchemaDetail, int64, error) {
-	schemas, total, err := s.repoFactory.ForCatalog(catalogName).ListSchemas(ctx, page)
+	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
+	if err != nil {
+		return nil, 0, err
+	}
+	schemas, total, err := repo.ListSchemas(ctx, page)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -74,7 +86,10 @@ func (s *CatalogService) ListSchemas(ctx context.Context, catalogName string, pa
 // If LocationName is specified, the schema's storage path is set to the
 // external location's URL, enabling per-schema data paths in DuckLake.
 func (s *CatalogService) CreateSchema(ctx context.Context, catalogName string, principal string, req domain.CreateSchemaRequest) (*domain.SchemaDetail, error) {
-	repo := s.repoFactory.ForCatalog(catalogName)
+	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
+	if err != nil {
+		return nil, err
+	}
 
 	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateSchema)
 	if err != nil {
@@ -115,7 +130,11 @@ func (s *CatalogService) CreateSchema(ctx context.Context, catalogName string, p
 
 // GetSchema returns a schema by name.
 func (s *CatalogService) GetSchema(ctx context.Context, catalogName string, name string) (*domain.SchemaDetail, error) {
-	result, err := s.repoFactory.ForCatalog(catalogName).GetSchema(ctx, name)
+	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
+	if err != nil {
+		return nil, err
+	}
+	result, err := repo.GetSchema(ctx, name)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +154,11 @@ func (s *CatalogService) UpdateSchema(ctx context.Context, catalogName string, p
 		return nil, domain.ErrAccessDenied("%q lacks permission to update schema %q", principal, name)
 	}
 
-	result, err := s.repoFactory.ForCatalog(catalogName).UpdateSchema(ctx, name, req.Comment, req.Properties)
+	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
+	if err != nil {
+		return nil, err
+	}
+	result, err := repo.UpdateSchema(ctx, name, req.Comment, req.Properties)
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +178,11 @@ func (s *CatalogService) DeleteSchema(ctx context.Context, catalogName string, p
 		return domain.ErrAccessDenied("%q lacks permission to delete schema %q", principal, name)
 	}
 
-	if err := s.repoFactory.ForCatalog(catalogName).DeleteSchema(ctx, name, force); err != nil {
+	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
+	if err != nil {
+		return err
+	}
+	if err := repo.DeleteSchema(ctx, name, force); err != nil {
 		return err
 	}
 
@@ -165,7 +192,11 @@ func (s *CatalogService) DeleteSchema(ctx context.Context, catalogName string, p
 
 // ListTables returns a paginated list of tables in a schema.
 func (s *CatalogService) ListTables(ctx context.Context, catalogName string, schemaName string, page domain.PageRequest) ([]domain.TableDetail, int64, error) {
-	tables, total, err := s.repoFactory.ForCatalog(catalogName).ListTables(ctx, schemaName, page)
+	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
+	if err != nil {
+		return nil, 0, err
+	}
+	tables, total, err := repo.ListTables(ctx, schemaName, page)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -179,7 +210,10 @@ func (s *CatalogService) ListTables(ctx context.Context, catalogName string, sch
 // CreateTable creates a new table, checking CREATE_TABLE privilege on the schema.
 // If req.TableType is "EXTERNAL", delegates to createExternalTable.
 func (s *CatalogService) CreateTable(ctx context.Context, catalogName string, principal string, schemaName string, req domain.CreateTableRequest) (*domain.TableDetail, error) {
-	repo := s.repoFactory.ForCatalog(catalogName)
+	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
+	if err != nil {
+		return nil, err
+	}
 
 	// Check CREATE_TABLE at catalog level
 	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateTable)
@@ -228,7 +262,11 @@ func (s *CatalogService) createExternalTable(ctx context.Context, catalogName st
 		return nil, domain.ErrValidation("source_path %q is not under location %q (URL: %s)", req.SourcePath, req.LocationName, loc.URL)
 	}
 
-	result, err := s.repoFactory.ForCatalog(catalogName).CreateExternalTable(ctx, schemaName, req, principal)
+	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
+	if err != nil {
+		return nil, err
+	}
+	result, err := repo.CreateExternalTable(ctx, schemaName, req, principal)
 	if err != nil {
 		return nil, err
 	}
@@ -239,7 +277,11 @@ func (s *CatalogService) createExternalTable(ctx context.Context, catalogName st
 
 // GetTable returns a table by schema and table name.
 func (s *CatalogService) GetTable(ctx context.Context, catalogName string, schemaName, tableName string) (*domain.TableDetail, error) {
-	result, err := s.repoFactory.ForCatalog(catalogName).GetTable(ctx, schemaName, tableName)
+	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
+	if err != nil {
+		return nil, err
+	}
+	result, err := repo.GetTable(ctx, schemaName, tableName)
 	if err != nil {
 		return nil, err
 	}
@@ -260,7 +302,11 @@ func (s *CatalogService) DeleteTable(ctx context.Context, catalogName string, pr
 		return domain.ErrAccessDenied("%q lacks permission to delete table %q.%q", principal, schemaName, tableName)
 	}
 
-	if err := s.repoFactory.ForCatalog(catalogName).DeleteTable(ctx, schemaName, tableName); err != nil {
+	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
+	if err != nil {
+		return err
+	}
+	if err := repo.DeleteTable(ctx, schemaName, tableName); err != nil {
 		return err
 	}
 
@@ -270,7 +316,11 @@ func (s *CatalogService) DeleteTable(ctx context.Context, catalogName string, pr
 
 // ListColumns returns a paginated list of columns for a table.
 func (s *CatalogService) ListColumns(ctx context.Context, catalogName string, schemaName, tableName string, page domain.PageRequest) ([]domain.ColumnDetail, int64, error) {
-	return s.repoFactory.ForCatalog(catalogName).ListColumns(ctx, schemaName, tableName, page)
+	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
+	if err != nil {
+		return nil, 0, err
+	}
+	return repo.ListColumns(ctx, schemaName, tableName, page)
 }
 
 // UpdateTable updates table metadata, checking CREATE_TABLE privilege.
@@ -284,7 +334,11 @@ func (s *CatalogService) UpdateTable(ctx context.Context, catalogName string, pr
 		return nil, domain.ErrAccessDenied("%q lacks permission to update table %q.%q", principal, schemaName, tableName)
 	}
 
-	result, err := s.repoFactory.ForCatalog(catalogName).UpdateTable(ctx, schemaName, tableName, req.Comment, req.Properties, req.Owner)
+	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
+	if err != nil {
+		return nil, err
+	}
+	result, err := repo.UpdateTable(ctx, schemaName, tableName, req.Comment, req.Properties, req.Owner)
 	if err != nil {
 		return nil, err
 	}
@@ -306,7 +360,11 @@ func (s *CatalogService) UpdateCatalog(ctx context.Context, catalogName string, 
 		return nil, domain.ErrAccessDenied("%q lacks permission to update catalog metadata", principal)
 	}
 
-	result, err := s.repoFactory.ForCatalog(catalogName).UpdateCatalog(ctx, req.Comment)
+	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
+	if err != nil {
+		return nil, err
+	}
+	result, err := repo.UpdateCatalog(ctx, req.Comment)
 	if err != nil {
 		return nil, err
 	}
@@ -326,7 +384,11 @@ func (s *CatalogService) UpdateColumn(ctx context.Context, catalogName string, p
 		return nil, domain.ErrAccessDenied("%q lacks permission to update column metadata", principal)
 	}
 
-	result, err := s.repoFactory.ForCatalog(catalogName).UpdateColumn(ctx, schemaName, tableName, columnName, req.Comment, req.Properties)
+	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
+	if err != nil {
+		return nil, err
+	}
+	result, err := repo.UpdateColumn(ctx, schemaName, tableName, columnName, req.Comment, req.Properties)
 	if err != nil {
 		return nil, err
 	}
@@ -339,7 +401,11 @@ func (s *CatalogService) UpdateColumn(ctx context.Context, catalogName string, p
 func (s *CatalogService) ProfileTable(ctx context.Context, catalogName string, principal string, schemaName, tableName string) (*domain.TableStatistics, error) {
 
 	// Verify table exists
-	tbl, err := s.repoFactory.ForCatalog(catalogName).GetTable(ctx, schemaName, tableName)
+	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
+	if err != nil {
+		return nil, err
+	}
+	tbl, err := repo.GetTable(ctx, schemaName, tableName)
 	if err != nil {
 		return nil, err
 	}

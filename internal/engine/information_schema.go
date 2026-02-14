@@ -12,7 +12,7 @@ import (
 // CatalogRepoFactory creates per-catalog CatalogRepository instances.
 // Matches the interface from repository.CatalogRepoFactory.
 type CatalogRepoFactory interface {
-	ForCatalog(catalogName string) domain.CatalogRepository
+	ForCatalog(ctx context.Context, catalogName string) (domain.CatalogRepository, error)
 }
 
 // InformationSchemaProvider builds virtual information_schema views from the
@@ -76,7 +76,10 @@ func (p *InformationSchemaProvider) BuildSchemataRows(ctx context.Context) ([][]
 	var rows [][]interface{}
 
 	for _, catalogName := range p.activeCatalogs(ctx) {
-		repo := p.factory.ForCatalog(catalogName)
+		repo, err := p.factory.ForCatalog(ctx, catalogName)
+		if err != nil {
+			continue // skip catalogs that fail
+		}
 		page := domain.PageRequest{MaxResults: 1000}
 		schemas, _, err := repo.ListSchemas(ctx, page)
 		if err != nil {
@@ -95,7 +98,10 @@ func (p *InformationSchemaProvider) BuildTablesRows(ctx context.Context) ([][]in
 	var rows [][]interface{}
 
 	for _, catalogName := range p.activeCatalogs(ctx) {
-		repo := p.factory.ForCatalog(catalogName)
+		repo, err := p.factory.ForCatalog(ctx, catalogName)
+		if err != nil {
+			continue
+		}
 		page := domain.PageRequest{MaxResults: 1000}
 		schemas, _, err := repo.ListSchemas(ctx, page)
 		if err != nil {
@@ -120,7 +126,10 @@ func (p *InformationSchemaProvider) BuildColumnsRows(ctx context.Context) ([][]i
 	var rows [][]interface{}
 
 	for _, catalogName := range p.activeCatalogs(ctx) {
-		repo := p.factory.ForCatalog(catalogName)
+		repo, err := p.factory.ForCatalog(ctx, catalogName)
+		if err != nil {
+			continue
+		}
 		page := domain.PageRequest{MaxResults: 1000}
 		schemas, _, err := repo.ListSchemas(ctx, page)
 		if err != nil {
@@ -222,7 +231,10 @@ func (p *InformationSchemaProvider) isRowVisible(ctx context.Context, principalN
 		schemaName, _ := row[1].(string)
 		// Look up the schema ID via the catalog repo and check USAGE privilege.
 		catalogName, _ := row[0].(string)
-		repo := p.factory.ForCatalog(catalogName)
+		repo, err := p.factory.ForCatalog(ctx, catalogName)
+		if err != nil {
+			return false
+		}
 		schema, err := repo.GetSchema(ctx, schemaName)
 		if err != nil {
 			return false
@@ -241,7 +253,10 @@ func (p *InformationSchemaProvider) isRowVisible(ctx context.Context, principalN
 		catalogName, _ := row[0].(string)
 		schemaName, _ := row[1].(string)
 		tableName, _ := row[2].(string)
-		repo := p.factory.ForCatalog(catalogName)
+		repo, err := p.factory.ForCatalog(ctx, catalogName)
+		if err != nil {
+			return false
+		}
 		tbl, err := repo.GetTable(ctx, schemaName, tableName)
 		if err != nil {
 			return false
@@ -260,7 +275,10 @@ func (p *InformationSchemaProvider) isRowVisible(ctx context.Context, principalN
 		catalogName, _ := row[0].(string)
 		schemaName, _ := row[1].(string)
 		tableName, _ := row[2].(string)
-		repo := p.factory.ForCatalog(catalogName)
+		repo, err := p.factory.ForCatalog(ctx, catalogName)
+		if err != nil {
+			return false
+		}
 		tbl, err := repo.GetTable(ctx, schemaName, tableName)
 		if err != nil {
 			return false

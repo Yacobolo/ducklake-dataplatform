@@ -109,7 +109,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 
 	// === 3. Factories (multi-catalog) ===
 	catalogRepoFactory := repository.NewCatalogRepoFactory(
-		deps.WriteDB, deps.DuckDB, extTableRepo,
+		catalogRegRepo, deps.WriteDB, deps.DuckDB, extTableRepo,
 		deps.Logger.With("component", "catalog-repo"),
 	)
 	introspectionFactory := repository.NewIntrospectionRepoFactory(catalogRegRepo)

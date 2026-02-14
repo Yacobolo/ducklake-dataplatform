@@ -145,7 +145,7 @@ func setupSharedDuckLake() (*catalogTestEnv, func(), error) {
 		_ = os.RemoveAll(tmpDir)
 	}
 
-	return &catalogTestEnv{DuckDB: duckDB, MetaDB: metaDB}, cleanup, nil
+	return &catalogTestEnv{DuckDB: duckDB, MetaDB: metaDB, MetaPath: metaPath}, cleanup, nil
 }
 
 // requireCatalogEnv returns the shared DuckLake environment or fails the test.
@@ -540,6 +540,25 @@ func seedRBAC(t *testing.T, db *sql.DB) apiKeys {
 	return keys
 }
 
+// registerTestCatalog inserts a catalog registration for "lake" into the
+// control-plane DB so that CatalogRepoFactory.ForCatalog("lake") succeeds.
+func registerTestCatalog(t *testing.T, db *sql.DB, metaPath string) {
+	t.Helper()
+	q := dbstore.New(db)
+	_, err := q.CreateCatalog(ctx, dbstore.CreateCatalogParams{
+		ID:            uuid.New().String(),
+		Name:          "lake",
+		MetastoreType: "sqlite",
+		Dsn:           metaPath,
+		DataPath:      "s3://yacobolo/lake_data/",
+		Status:        "ACTIVE",
+		IsDefault:     1,
+	})
+	if err != nil {
+		t.Fatalf("register test catalog: %v", err)
+	}
+}
+
 // ---------------------------------------------------------------------------
 // Server setup
 // ---------------------------------------------------------------------------
@@ -613,7 +632,8 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 	lineageSvc := governance.NewLineageService(lineageRepo)
 	searchSvc := catalog.NewSearchService(searchRepo, nil)
 	queryHistorySvc := governance.NewQueryHistoryService(queryHistoryRepo)
-	catalogRepoFactory := repository.NewCatalogRepoFactory(metaDB, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	catalogRegRepo := repository.NewCatalogRegistrationRepo(metaDB)
+	catalogRepoFactory := repository.NewCatalogRepoFactory(catalogRegRepo, metaDB, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	viewSvc := catalog.NewViewService(viewRepo, catalogRepoFactory, authSvc, auditRepo)
 
 	handler := api.NewHandler(
@@ -745,7 +765,8 @@ func setupLocalExtensionServer(t *testing.T) *testEnv {
 	lineageSvc := governance.NewLineageService(lineageRepo)
 	searchSvc := catalog.NewSearchService(searchRepo, nil)
 	queryHistorySvc := governance.NewQueryHistoryService(queryHistoryRepo)
-	catalogRepoFactory := repository.NewCatalogRepoFactory(metaDB, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	catalogRegRepo := repository.NewCatalogRegistrationRepo(metaDB)
+	catalogRepoFactory := repository.NewCatalogRepoFactory(catalogRegRepo, metaDB, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	viewSvc := catalog.NewViewService(viewRepo, catalogRepoFactory, authSvc, auditRepo)
 
 	handler := api.NewHandler(
@@ -895,8 +916,9 @@ func extractLastJSONArray(s string) string {
 
 // catalogTestEnv bundles the DuckDB + SQLite connections for catalog repo tests.
 type catalogTestEnv struct {
-	DuckDB *sql.DB
-	MetaDB *sql.DB
+	DuckDB   *sql.DB
+	MetaDB   *sql.DB
+	MetaPath string // filesystem path to the metastore SQLite file
 }
 
 // setupLocalDuckLake creates a local DuckLake instance using filesystem storage.
@@ -954,7 +976,7 @@ func setupLocalDuckLake(t *testing.T) *catalogTestEnv {
 		t.Fatalf("migrations: %v", err)
 	}
 
-	return &catalogTestEnv{DuckDB: duckDB, MetaDB: metaDB}
+	return &catalogTestEnv{DuckDB: duckDB, MetaDB: metaDB, MetaPath: metaPath}
 }
 
 // ---------------------------------------------------------------------------
@@ -1058,11 +1080,22 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	}
 
 	// Temp SQLite with hardened connection (WAL, busy_timeout, etc.)
-	metaDB, _ := internaldb.OpenTestSQLite(t)
+	// We create the DB at a known path so we can register the catalog later.
+	metaPath := filepath.Join(t.TempDir(), "test.sqlite")
+	metaDB, err := internaldb.OpenSQLite(metaPath, "write", 0)
+	if err != nil {
+		t.Fatalf("open test sqlite: %v", err)
+	}
+	t.Cleanup(func() { _ = metaDB.Close() })
+	if err := internaldb.RunMigrations(metaDB); err != nil {
+		t.Fatalf("run migrations: %v", err)
+	}
 
 	// Optionally seed DuckLake metadata (without DuckLake extensions)
 	if opts.SeedDuckLakeMetadata {
 		seedDuckLakeMetadata(t, metaDB, "s3://yacobolo/lake_data/")
+		// Register the "lake" catalog so ForCatalog("lake") can find it.
+		registerTestCatalog(t, metaDB, metaPath)
 	}
 
 	// Seed RBAC data (principals, groups, grants, row filters, column masks, API keys)
@@ -1106,7 +1139,8 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	querySvc := query.NewQueryService(nil, auditRepo, nil)
 
 	// catalogRepoFactory with duckDB=nil is safe — GetSchema only reads ducklake_schema from metaDB
-	catalogRepoFactory := repository.NewCatalogRepoFactory(metaDB, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	catalogRegRepo := repository.NewCatalogRegistrationRepo(metaDB)
+	catalogRepoFactory := repository.NewCatalogRepoFactory(catalogRegRepo, metaDB, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	viewSvc := catalog.NewViewService(viewRepo, catalogRepoFactory, authSvc, auditRepo)
 
 	var duckDB *sql.DB
@@ -1126,6 +1160,9 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 
 		// Re-seed RBAC data into the DuckLake metaDB (migrations already ran in setupLocalDuckLake)
 		keys = seedRBAC(t, metaDB)
+
+		// Register the "lake" catalog so ForCatalog("lake") can find it.
+		registerTestCatalog(t, metaDB, env.MetaPath)
 
 		// Rebuild repos on the new metaDB
 		principalRepo = repository.NewPrincipalRepo(metaDB)
@@ -1160,7 +1197,8 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		searchSvc = catalog.NewSearchService(searchRepo, nil)
 		queryHistorySvc = governance.NewQueryHistoryService(queryHistoryRepo)
 
-		catalogRepoFactory = repository.NewCatalogRepoFactory(metaDB, duckDB, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+		catalogRegRepo = repository.NewCatalogRegistrationRepo(metaDB)
+		catalogRepoFactory = repository.NewCatalogRepoFactory(catalogRegRepo, metaDB, duckDB, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 		viewSvc = catalog.NewViewService(viewRepo, catalogRepoFactory, authSvc, auditRepo)
 		tableStatsRepo = repository.NewTableStatisticsRepo(metaDB)
 		catalogSvc = catalog.NewCatalogService(catalogRepoFactory, authSvc, auditRepo, tagRepo, tableStatsRepo, nil)
@@ -1936,7 +1974,8 @@ func setupMultiTableLocalServer(t *testing.T) *multiTableTestEnv {
 	lineageSvc := governance.NewLineageService(lineageRepo)
 	searchSvc := catalog.NewSearchService(searchRepo, nil)
 	queryHistorySvc := governance.NewQueryHistoryService(queryHistoryRepo)
-	catalogRepoFactory := repository.NewCatalogRepoFactory(metaDB, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	catalogRegRepo := repository.NewCatalogRegistrationRepo(metaDB)
+	catalogRepoFactory := repository.NewCatalogRepoFactory(catalogRegRepo, metaDB, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	viewSvc := catalog.NewViewService(viewRepo, catalogRepoFactory, authSvc, auditRepo)
 
 	handler := api.NewHandler(

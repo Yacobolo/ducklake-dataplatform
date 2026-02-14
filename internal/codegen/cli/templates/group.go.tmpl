@@ -73,15 +73,24 @@ func new{{toPascal .Name}}Cmd(client *Client) *cobra.Command {
 				{{- end}}
 				{{- end}}
 				{{- /* Non-positional path params from flags */}}
-				{{- range $cmd.PathParams}}
+				{{- range $pp := $cmd.PathParams}}
 				{{- $isPositional := false}}
-				{{- range $cmd.PositionalArgs}}{{- if eq . $cmd.OperationID}}{{$isPositional = true}}{{end}}{{end}}
+				{{- range $cmd.PositionalArgs}}{{- if eq . $pp.Name}}{{$isPositional = true}}{{end}}{{end}}
+				{{- if not $isPositional}}
+				if cmd.Flags().Changed("{{toKebab $pp.Name}}") {
+					v, _ := cmd.Flags().GetString("{{toKebab $pp.Name}}")
+					urlPath = strings.Replace(urlPath, "{{"{"}}{{$pp.Name}}{{"}"}}", v, 1)
+				}
+				{{- end}}
 				{{- end}}
 
 				{{- /* Build query params */}}
 				query := url.Values{}
 				{{- range $cmd.Flags}}
-				{{- if not .IsBody}}
+				{{- $flagField := .FieldName}}
+				{{- $isPathParam := false}}
+				{{- range $cmd.PathParams}}{{- if eq .Name $flagField}}{{$isPathParam = true}}{{end}}{{end}}
+				{{- if and (not .IsBody) (not $isPathParam)}}
 				{{- if eq .CobraType "String"}}
 				if cmd.Flags().Changed("{{.Name}}") {
 					v, _ := cmd.Flags().GetString("{{.Name}}")
@@ -282,14 +291,16 @@ func new{{toPascal .Name}}Cmd(client *Client) *cobra.Command {
 						return fmt.Errorf("parse response: %w", err)
 					}
 					PrintDetail(os.Stdout, data)
-					{{- else}}
-					// Custom result: default to JSON
-					var pretty interface{}
-					json.Unmarshal(respBody, &pretty)
-					return PrintJSON(os.Stdout, pretty)
-					{{- end}}
+				{{- else}}
+				// Custom result: default to JSON
+				var pretty interface{}
+				json.Unmarshal(respBody, &pretty)
+				return PrintJSON(os.Stdout, pretty)
+				{{- end}}
 				}
+				{{- if or (isPaginatedList $cmd.Response.Pattern) (isSingleResource $cmd.Response.Pattern)}}
 				return nil
+				{{- end}}
 				{{- end}}
 			},
 		}

@@ -14,6 +14,7 @@ import (
 // metastore (metaDB) for reads and the DuckDB connection (duckDB) for DDL.
 type CatalogRepo struct {
 	metaDB      *sql.DB
+	controlDB   *sql.DB // control-plane DB (for transactions on catalog_metadata, tags, etc.)
 	duckDB      *sql.DB
 	q           *dbstore.Queries // sqlc queries for application-owned tables
 	extRepo     *ExternalTableRepo
@@ -22,8 +23,11 @@ type CatalogRepo struct {
 }
 
 // NewCatalogRepo creates a new CatalogRepo.
-func NewCatalogRepo(metaDB, duckDB *sql.DB, catalogName string, extRepo *ExternalTableRepo, logger *slog.Logger) *CatalogRepo {
-	return &CatalogRepo{metaDB: metaDB, duckDB: duckDB, catalogName: catalogName, q: dbstore.New(metaDB), extRepo: extRepo, logger: logger}
+// metaDB is the per-catalog DuckLake metastore (for ducklake_* table queries).
+// controlDB is the control-plane database (for transactions).
+// controlQ is dbstore.Queries backed by controlDB (for catalog_metadata, tag_assignments, etc.).
+func NewCatalogRepo(metaDB *sql.DB, controlDB *sql.DB, controlQ *dbstore.Queries, duckDB *sql.DB, catalogName string, extRepo *ExternalTableRepo, logger *slog.Logger) *CatalogRepo {
+	return &CatalogRepo{metaDB: metaDB, controlDB: controlDB, duckDB: duckDB, catalogName: catalogName, q: controlQ, extRepo: extRepo, logger: logger}
 }
 
 // refreshMetaDB forces metaDB to see the latest WAL changes written by

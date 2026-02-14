@@ -90,11 +90,11 @@ type mockCatalogRepoFactory struct {
 	catalogs map[string]domain.CatalogRepository
 }
 
-func (f *mockCatalogRepoFactory) ForCatalog(name string) domain.CatalogRepository {
+func (f *mockCatalogRepoFactory) ForCatalog(_ context.Context, name string) (domain.CatalogRepository, error) {
 	if repo, ok := f.catalogs[name]; ok {
-		return repo
+		return repo, nil
 	}
-	panic(fmt.Sprintf("unexpected catalog: %s", name))
+	return nil, fmt.Errorf("unexpected catalog: %s", name)
 }
 
 // === Mock CatalogRegistrationRepository (lister) ===

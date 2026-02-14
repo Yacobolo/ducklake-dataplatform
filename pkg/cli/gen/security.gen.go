@@ -1629,7 +1629,6 @@ func newSecurityCmd(client *Client) *cobra.Command {
 		c.Flags().Int64("max-results", 100, "Maximum number of results to return per page.")
 		c.Flags().String("page-token", "", "Opaque pagination token from a previous response.")
 		c.Flags().String("principal-id", "", "Filter by principal identifier.")
-		_ = c.MarkFlagRequired("principal-id")
 
 		// Apply overrides
 		if fn, ok := runOverrides["listAPIKeys"]; ok {

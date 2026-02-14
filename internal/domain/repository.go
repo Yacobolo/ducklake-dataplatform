@@ -67,6 +67,7 @@ type APIKeyRepository interface {
 	GetByID(ctx context.Context, id string) (*APIKey, error)
 	GetByHash(ctx context.Context, hash string) (*APIKey, *Principal, error)
 	ListByPrincipal(ctx context.Context, principalID string, page PageRequest) ([]APIKey, int64, error)
+	ListAll(ctx context.Context, page PageRequest) ([]APIKey, int64, error)
 	Delete(ctx context.Context, id string) error
 	DeleteExpired(ctx context.Context) (int64, error)
 }

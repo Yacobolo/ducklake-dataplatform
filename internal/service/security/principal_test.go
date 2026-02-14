@@ -130,16 +130,25 @@ func TestPrincipalService_GetByID_NoAdminRequired(t *testing.T) {
 	assert.Equal(t, "readable", found.Name)
 }
 
-func TestPrincipalService_List_NoAdminRequired(t *testing.T) {
+func TestPrincipalService_List_RequiresAdmin(t *testing.T) {
 	svc, _ := setupPrincipalService(t)
 
 	_, err := svc.Create(adminCtx(), domain.CreatePrincipalRequest{Name: "listed", Type: "user"})
 	require.NoError(t, err)
 
-	ps, total, err := svc.List(nonAdminCtx(), domain.PageRequest{})
-	require.NoError(t, err)
-	assert.GreaterOrEqual(t, total, int64(1))
-	assert.NotEmpty(t, ps)
+	t.Run("admin_can_list", func(t *testing.T) {
+		ps, total, err := svc.List(adminCtx(), domain.PageRequest{})
+		require.NoError(t, err)
+		assert.GreaterOrEqual(t, total, int64(1))
+		assert.NotEmpty(t, ps)
+	})
+
+	t.Run("non_admin_denied", func(t *testing.T) {
+		_, _, err := svc.List(nonAdminCtx(), domain.PageRequest{})
+		require.Error(t, err)
+		var accessDenied *domain.AccessDeniedError
+		assert.ErrorAs(t, err, &accessDenied)
+	})
 }
 
 func TestPrincipalService_ResolveOrProvision_Existing(t *testing.T) {
