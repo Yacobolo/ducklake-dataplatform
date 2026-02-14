@@ -8,6 +8,10 @@ group_overrides:
   Catalogs:
     name: catalog
     short: "Manage the data catalog"
+  Notebooks:
+    short: "Notebooks, cells, sessions, and Git repositories"
+  Pipelines:
+    short: "Data pipelines, jobs, and runs"
 
 # Only commands that deviate from conventions need entries.
 # Convention defaults:
@@ -278,6 +282,73 @@ command_overrides:
     command_path: [assignments]
   deleteComputeAssignment:
     command_path: [assignments]
+
+  # === Notebooks ===
+  createNotebook:
+    positional_args: *name_positional
+
+  listNotebooks:
+    table_columns: [id, name, owner, created_at, updated_at]
+
+  deleteCell:
+    confirm: false
+
+  reorderCells:
+    verb: reorder
+    command_path: [cells]
+
+  closeNotebookSession:
+    verb: close
+    command_path: [sessions]
+    confirm: false
+
+  executeCell:
+    verb: execute
+    command_path: [cells]
+
+  runAllCells:
+    verb: run-all
+    command_path: [sessions]
+
+  runAllCellsAsync:
+    verb: run-all-async
+    command_path: [sessions]
+
+  listNotebookJobs:
+    table_columns: [id, notebook_id, state, created_at, updated_at]
+
+  listGitRepos:
+    table_columns: [id, url, branch, owner, last_sync_at, created_at]
+
+  syncGitRepo:
+    verb: sync
+    command_path: [git-repos]
+
+  # === Pipelines ===
+  createPipeline:
+    positional_args: *name_positional
+
+  listPipelines:
+    table_columns: [id, name, schedule_cron, is_paused, created_by, created_at]
+
+  listPipelineJobs:
+    table_columns: []  # bare array response, not standard pagination
+
+  triggerPipelineRun:
+    verb: trigger
+    command_path: [runs]
+
+  listPipelineRuns:
+    table_columns: [id, status, trigger_type, triggered_by, started_at, finished_at]
+
+  cancelPipelineRun:
+    verb: cancel
+    command_path: [runs]
+
+  listPipelineJobRuns:
+    verb: list-job-runs
+    command_path: [runs]
+    table_columns: []  # bare array response, not standard pagination
 
 skip_operations:
   - createRowFilterTopLevel
