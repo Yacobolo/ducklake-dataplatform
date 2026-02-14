@@ -17,6 +17,12 @@ func newCatalogCmd(client *Client) *cobra.Command {
 		Short: "Manage the data catalog",
 	}
 
+	catalogsCmd := &cobra.Command{
+		Use:   "catalogs",
+		Short: "Manage catalogs",
+	}
+	cmd.AddCommand(catalogsCmd)
+
 	columnsCmd := &cobra.Command{
 		Use:   "columns",
 		Short: "Manage columns",
@@ -633,6 +639,48 @@ func newCatalogCmd(client *Client) *cobra.Command {
 		volumesCmd.AddCommand(c)
 	}
 
+	// deleteCatalogRegistration
+	{
+		c := &cobra.Command{
+			Use:     "delete <catalog-name>",
+			Short:   "Delete a catalog registration",
+			Long:    "Removes a catalog registration. Does not delete the underlying data.",
+			Example: "duck catalog catalogs delete <catalog-name>",
+			Args:    cobra.ExactArgs(1),
+			RunE: func(cmd *cobra.Command, args []string) error {
+				if !cmd.Flags().Changed("yes") {
+					if !ConfirmPrompt("Are you sure?") {
+						return nil
+					}
+				}
+				urlPath := "/catalogs/{catalogName}"
+				urlPath = strings.Replace(urlPath, "{catalogName}", args[0], 1)
+				query := url.Values{}
+
+				// Execute request
+				resp, err := client.Do("DELETE", urlPath, query, nil)
+				if err != nil {
+					return err
+				}
+				if err := CheckError(resp); err != nil {
+					return err
+				}
+				fmt.Fprintln(os.Stdout, "Done.")
+				return nil
+			},
+		}
+		c.Flags().Bool("yes", false, "Skip confirmation prompt")
+
+		// Apply overrides
+		if fn, ok := runOverrides["deleteCatalogRegistration"]; ok {
+			c.RunE = fn(client)
+		}
+		if fn, ok := commandOverrides["deleteCatalogRegistration"]; ok {
+			fn(c)
+		}
+		catalogsCmd.AddCommand(c)
+	}
+
 	// deleteSchema
 	{
 		c := &cobra.Command{
@@ -919,6 +967,91 @@ func newCatalogCmd(client *Client) *cobra.Command {
 			fn(c)
 		}
 		cmd.AddCommand(c)
+	}
+
+	// getCatalogRegistration
+	{
+		c := &cobra.Command{
+			Use:     "get <catalog-name>",
+			Short:   "Get a catalog registration by name",
+			Long:    "Returns the registration details for a specific catalog.",
+			Example: "duck catalog catalogs get <catalog-name>",
+			Args:    cobra.ExactArgs(1),
+			RunE: func(cmd *cobra.Command, args []string) error {
+				outputFlag, _ := cmd.Flags().GetString("output")
+				_ = outputFlag
+				urlPath := "/catalogs/{catalogName}"
+				urlPath = strings.Replace(urlPath, "{catalogName}", args[0], 1)
+				query := url.Values{}
+
+				// Execute request
+				resp, err := client.Do("GET", urlPath, query, nil)
+				if err != nil {
+					return err
+				}
+				if err := CheckError(resp); err != nil {
+					return err
+				}
+				respBody, err := ReadBody(resp)
+				if err != nil {
+					return fmt.Errorf("read response: %w", err)
+				}
+
+				// Handle --quiet
+				quiet, _ := cmd.Root().PersistentFlags().GetBool("quiet")
+				if quiet {
+					var data map[string]interface{}
+					if err := json.Unmarshal(respBody, &data); err == nil {
+						// Handle paginated list responses ({"data": [...]})
+						if items, ok := data["data"].([]interface{}); ok {
+							for _, item := range items {
+								if m, ok := item.(map[string]interface{}); ok {
+									for _, key := range []string{"id", "name", "key"} {
+										if v, ok := m[key]; ok {
+											fmt.Fprintln(os.Stdout, v)
+											break
+										}
+									}
+								}
+							}
+							return nil
+						}
+						// Handle single resource responses
+						for _, key := range []string{"id", "name", "key"} {
+							if v, ok := data[key]; ok {
+								fmt.Fprintln(os.Stdout, v)
+								return nil
+							}
+						}
+					}
+					fmt.Fprintln(os.Stdout, string(respBody))
+					return nil
+				}
+
+				switch OutputFormat(outputFlag) {
+				case OutputJSON:
+					var pretty interface{}
+					json.Unmarshal(respBody, &pretty)
+					return PrintJSON(os.Stdout, pretty)
+				default:
+					var data map[string]interface{}
+					if err := json.Unmarshal(respBody, &data); err != nil {
+						return fmt.Errorf("parse response: %w", err)
+					}
+					PrintDetail(os.Stdout, data)
+				}
+				return nil
+			},
+		}
+
+		// Apply overrides
+		if fn, ok := runOverrides["getCatalogRegistration"]; ok {
+			c.RunE = fn(client)
+		}
+		if fn, ok := commandOverrides["getCatalogRegistration"]; ok {
+			fn(c)
+		}
+		catalogsCmd.AddCommand(c)
 	}
 
 	// getSchema
@@ -1286,6 +1419,98 @@ func newCatalogCmd(client *Client) *cobra.Command {
 			fn(c)
 		}
 		volumesCmd.AddCommand(c)
+	}
+
+	// listCatalogs
+	{
+		c := &cobra.Command{
+			Use:   "list",
+			Short: "List all registered catalogs",
+			Long:  "Returns a list of all registered catalogs.",
+			RunE: func(cmd *cobra.Command, args []string) error {
+				outputFlag, _ := cmd.Flags().GetString("output")
+				_ = outputFlag
+				urlPath := "/catalogs"
+				query := url.Values{}
+				if cmd.Flags().Changed("max-results") {
+					v, _ := cmd.Flags().GetInt64("max-results")
+					query.Set("max_results", fmt.Sprintf("%d", v))
+				}
+				if cmd.Flags().Changed("page-token") {
+					v, _ := cmd.Flags().GetString("page-token")
+					query.Set("page_token", v)
+				}
+
+				// Execute request
+				resp, err := client.Do("GET", urlPath, query, nil)
+				if err != nil {
+					return err
+				}
+				if err := CheckError(resp); err != nil {
+					return err
+				}
+				respBody, err := ReadBody(resp)
+				if err != nil {
+					return fmt.Errorf("read response: %w", err)
+				}
+
+				// Handle --quiet
+				quiet, _ := cmd.Root().PersistentFlags().GetBool("quiet")
+				if quiet {
+					var data map[string]interface{}
+					if err := json.Unmarshal(respBody, &data); err == nil {
+						// Handle paginated list responses ({"data": [...]})
+						if items, ok := data["data"].([]interface{}); ok {
+							for _, item := range items {
+								if m, ok := item.(map[string]interface{}); ok {
+									for _, key := range []string{"id", "name", "key"} {
+										if v, ok := m[key]; ok {
+											fmt.Fprintln(os.Stdout, v)
+											break
+										}
+									}
+								}
+							}
+							return nil
+						}
+						// Handle single resource responses
+						for _, key := range []string{"id", "name", "key"} {
+							if v, ok := data[key]; ok {
+								fmt.Fprintln(os.Stdout, v)
+								return nil
+							}
+						}
+					}
+					fmt.Fprintln(os.Stdout, string(respBody))
+					return nil
+				}
+
+				switch OutputFormat(outputFlag) {
+				case OutputJSON:
+					var pretty interface{}
+					json.Unmarshal(respBody, &pretty)
+					return PrintJSON(os.Stdout, pretty)
+				default:
+					var data map[string]interface{}
+					if err := json.Unmarshal(respBody, &data); err != nil {
+						return fmt.Errorf("parse response: %w", err)
+					}
+					PrintDetail(os.Stdout, data)
+				}
+				return nil
+			},
+		}
+		c.Flags().Int64("max-results", 100, "Maximum number of results to return per page.")
+		c.Flags().String("page-token", "", "Opaque pagination token from a previous response.")
+
+		// Apply overrides
+		if fn, ok := runOverrides["listCatalogs"]; ok {
+			c.RunE = fn(client)
+		}
+		if fn, ok := commandOverrides["listCatalogs"]; ok {
+			fn(c)
+		}
+		catalogsCmd.AddCommand(c)
 	}
 
 	// listSchemas
@@ -1891,6 +2116,393 @@ func newCatalogCmd(client *Client) *cobra.Command {
 			fn(c)
 		}
 		tablesCmd.AddCommand(c)
+	}
+
+	// registerCatalog
+	{
+		c := &cobra.Command{
+			Use:     "register",
+			Short:   "Register a new catalog",
+			Long:    "Registers a new DuckLake catalog with the platform.",
+			Example: "duck catalog catalogs register --comment \"Analytics data catalog\" --data-path s3://my-bucket/analytics/ --dsn /data/analytics.db --metastore-type sqlite --name analytics",
+			RunE: func(cmd *cobra.Command, args []string) error {
+				outputFlag, _ := cmd.Flags().GetString("output")
+				_ = outputFlag
+				urlPath := "/catalogs"
+				query := url.Values{}
+				// Build request body
+				var body interface{}
+				jsonInput, _ := cmd.Flags().GetString("json")
+				if jsonInput != "" {
+					var raw interface{}
+					jsonData := jsonInput
+					if jsonInput == "-" {
+						data, err := os.ReadFile("/dev/stdin")
+						if err != nil {
+							return fmt.Errorf("read stdin: %w", err)
+						}
+						jsonData = string(data)
+					} else if strings.HasPrefix(jsonInput, "@") {
+						data, err := os.ReadFile(jsonInput[1:])
+						if err != nil {
+							return fmt.Errorf("read file: %w", err)
+						}
+						jsonData = string(data)
+					}
+					if err := json.Unmarshal([]byte(jsonData), &raw); err != nil {
+						return fmt.Errorf("parse JSON input: %w", err)
+					}
+					body = raw
+				} else {
+					m := map[string]interface{}{}
+					if cmd.Flags().Changed("comment") {
+						v, _ := cmd.Flags().GetString("comment")
+						m["comment"] = v
+					}
+					if cmd.Flags().Changed("data-path") {
+						v, _ := cmd.Flags().GetString("data-path")
+						m["data_path"] = v
+					}
+					if cmd.Flags().Changed("dsn") {
+						v, _ := cmd.Flags().GetString("dsn")
+						m["dsn"] = v
+					}
+					if cmd.Flags().Changed("metastore-type") {
+						v, _ := cmd.Flags().GetString("metastore-type")
+						m["metastore_type"] = v
+					}
+					if cmd.Flags().Changed("name") {
+						v, _ := cmd.Flags().GetString("name")
+						m["name"] = v
+					}
+					if len(m) > 0 {
+						body = m
+					}
+				}
+
+				// Execute request
+				resp, err := client.Do("POST", urlPath, query, body)
+				if err != nil {
+					return err
+				}
+				if err := CheckError(resp); err != nil {
+					return err
+				}
+				respBody, err := ReadBody(resp)
+				if err != nil {
+					return fmt.Errorf("read response: %w", err)
+				}
+
+				// Handle --quiet
+				quiet, _ := cmd.Root().PersistentFlags().GetBool("quiet")
+				if quiet {
+					var data map[string]interface{}
+					if err := json.Unmarshal(respBody, &data); err == nil {
+						// Handle paginated list responses ({"data": [...]})
+						if items, ok := data["data"].([]interface{}); ok {
+							for _, item := range items {
+								if m, ok := item.(map[string]interface{}); ok {
+									for _, key := range []string{"id", "name", "key"} {
+										if v, ok := m[key]; ok {
+											fmt.Fprintln(os.Stdout, v)
+											break
+										}
+									}
+								}
+							}
+							return nil
+						}
+						// Handle single resource responses
+						for _, key := range []string{"id", "name", "key"} {
+							if v, ok := data[key]; ok {
+								fmt.Fprintln(os.Stdout, v)
+								return nil
+							}
+						}
+					}
+					fmt.Fprintln(os.Stdout, string(respBody))
+					return nil
+				}
+
+				switch OutputFormat(outputFlag) {
+				case OutputJSON:
+					var pretty interface{}
+					json.Unmarshal(respBody, &pretty)
+					return PrintJSON(os.Stdout, pretty)
+				default:
+					var data map[string]interface{}
+					if err := json.Unmarshal(respBody, &data); err != nil {
+						return fmt.Errorf("parse response: %w", err)
+					}
+					PrintDetail(os.Stdout, data)
+				}
+				return nil
+			},
+		}
+		c.Flags().String("comment", "", "")
+		c.Flags().String("data-path", "", "")
+		_ = c.MarkFlagRequired("data-path")
+		c.Flags().String("dsn", "", "")
+		_ = c.MarkFlagRequired("dsn")
+		c.Flags().String("json", "", "JSON input (raw string or @filename or - for stdin)")
+		c.Flags().String("metastore-type", "", "")
+		_ = c.MarkFlagRequired("metastore-type")
+		c.Flags().String("name", "", "")
+		_ = c.MarkFlagRequired("name")
+
+		// Apply overrides
+		if fn, ok := runOverrides["registerCatalog"]; ok {
+			c.RunE = fn(client)
+		}
+		if fn, ok := commandOverrides["registerCatalog"]; ok {
+			fn(c)
+		}
+		catalogsCmd.AddCommand(c)
+	}
+
+	// setDefaultCatalog
+	{
+		c := &cobra.Command{
+			Use:     "set-default <catalog-name>",
+			Short:   "Set a catalog as the default",
+			Long:    "Sets the specified catalog as the default catalog for the platform.",
+			Example: "duck catalog catalogs set-default <catalog-name>",
+			Args:    cobra.ExactArgs(1),
+			RunE: func(cmd *cobra.Command, args []string) error {
+				outputFlag, _ := cmd.Flags().GetString("output")
+				_ = outputFlag
+				urlPath := "/catalogs/{catalogName}/set-default"
+				urlPath = strings.Replace(urlPath, "{catalogName}", args[0], 1)
+				query := url.Values{}
+				// Build request body
+				var body interface{}
+				jsonInput, _ := cmd.Flags().GetString("json")
+				if jsonInput != "" {
+					var raw interface{}
+					jsonData := jsonInput
+					if jsonInput == "-" {
+						data, err := os.ReadFile("/dev/stdin")
+						if err != nil {
+							return fmt.Errorf("read stdin: %w", err)
+						}
+						jsonData = string(data)
+					} else if strings.HasPrefix(jsonInput, "@") {
+						data, err := os.ReadFile(jsonInput[1:])
+						if err != nil {
+							return fmt.Errorf("read file: %w", err)
+						}
+						jsonData = string(data)
+					}
+					if err := json.Unmarshal([]byte(jsonData), &raw); err != nil {
+						return fmt.Errorf("parse JSON input: %w", err)
+					}
+					body = raw
+				} else {
+					m := map[string]interface{}{}
+					if len(m) > 0 {
+						body = m
+					}
+				}
+
+				// Execute request
+				resp, err := client.Do("POST", urlPath, query, body)
+				if err != nil {
+					return err
+				}
+				if err := CheckError(resp); err != nil {
+					return err
+				}
+				respBody, err := ReadBody(resp)
+				if err != nil {
+					return fmt.Errorf("read response: %w", err)
+				}
+
+				// Handle --quiet
+				quiet, _ := cmd.Root().PersistentFlags().GetBool("quiet")
+				if quiet {
+					var data map[string]interface{}
+					if err := json.Unmarshal(respBody, &data); err == nil {
+						// Handle paginated list responses ({"data": [...]})
+						if items, ok := data["data"].([]interface{}); ok {
+							for _, item := range items {
+								if m, ok := item.(map[string]interface{}); ok {
+									for _, key := range []string{"id", "name", "key"} {
+										if v, ok := m[key]; ok {
+											fmt.Fprintln(os.Stdout, v)
+											break
+										}
+									}
+								}
+							}
+							return nil
+						}
+						// Handle single resource responses
+						for _, key := range []string{"id", "name", "key"} {
+							if v, ok := data[key]; ok {
+								fmt.Fprintln(os.Stdout, v)
+								return nil
+							}
+						}
+					}
+					fmt.Fprintln(os.Stdout, string(respBody))
+					return nil
+				}
+
+				switch OutputFormat(outputFlag) {
+				case OutputJSON:
+					var pretty interface{}
+					json.Unmarshal(respBody, &pretty)
+					return PrintJSON(os.Stdout, pretty)
+				default:
+					var data map[string]interface{}
+					if err := json.Unmarshal(respBody, &data); err != nil {
+						return fmt.Errorf("parse response: %w", err)
+					}
+					PrintDetail(os.Stdout, data)
+				}
+				return nil
+			},
+		}
+		c.Flags().String("json", "", "JSON input (raw string or @filename or - for stdin)")
+
+		// Apply overrides
+		if fn, ok := runOverrides["setDefaultCatalog"]; ok {
+			c.RunE = fn(client)
+		}
+		if fn, ok := commandOverrides["setDefaultCatalog"]; ok {
+			fn(c)
+		}
+		catalogsCmd.AddCommand(c)
+	}
+
+	// updateCatalogRegistration
+	{
+		c := &cobra.Command{
+			Use:     "update <catalog-name>",
+			Short:   "Update a catalog registration",
+			Long:    "Updates the registration details for a catalog.",
+			Example: "duck catalog catalogs update <catalog-name> --comment \"Updated analytics catalog\" --data-path s3://new-bucket/analytics/",
+			Args:    cobra.ExactArgs(1),
+			RunE: func(cmd *cobra.Command, args []string) error {
+				outputFlag, _ := cmd.Flags().GetString("output")
+				_ = outputFlag
+				urlPath := "/catalogs/{catalogName}"
+				urlPath = strings.Replace(urlPath, "{catalogName}", args[0], 1)
+				query := url.Values{}
+				// Build request body
+				var body interface{}
+				jsonInput, _ := cmd.Flags().GetString("json")
+				if jsonInput != "" {
+					var raw interface{}
+					jsonData := jsonInput
+					if jsonInput == "-" {
+						data, err := os.ReadFile("/dev/stdin")
+						if err != nil {
+							return fmt.Errorf("read stdin: %w", err)
+						}
+						jsonData = string(data)
+					} else if strings.HasPrefix(jsonInput, "@") {
+						data, err := os.ReadFile(jsonInput[1:])
+						if err != nil {
+							return fmt.Errorf("read file: %w", err)
+						}
+						jsonData = string(data)
+					}
+					if err := json.Unmarshal([]byte(jsonData), &raw); err != nil {
+						return fmt.Errorf("parse JSON input: %w", err)
+					}
+					body = raw
+				} else {
+					m := map[string]interface{}{}
+					if cmd.Flags().Changed("comment") {
+						v, _ := cmd.Flags().GetString("comment")
+						m["comment"] = v
+					}
+					if cmd.Flags().Changed("data-path") {
+						v, _ := cmd.Flags().GetString("data-path")
+						m["data_path"] = v
+					}
+					if cmd.Flags().Changed("dsn") {
+						v, _ := cmd.Flags().GetString("dsn")
+						m["dsn"] = v
+					}
+					if len(m) > 0 {
+						body = m
+					}
+				}
+
+				// Execute request
+				resp, err := client.Do("PATCH", urlPath, query, body)
+				if err != nil {
+					return err
+				}
+				if err := CheckError(resp); err != nil {
+					return err
+				}
+				respBody, err := ReadBody(resp)
+				if err != nil {
+					return fmt.Errorf("read response: %w", err)
+				}
+
+				// Handle --quiet
+				quiet, _ := cmd.Root().PersistentFlags().GetBool("quiet")
+				if quiet {
+					var data map[string]interface{}
+					if err := json.Unmarshal(respBody, &data); err == nil {
+						// Handle paginated list responses ({"data": [...]})
+						if items, ok := data["data"].([]interface{}); ok {
+							for _, item := range items {
+								if m, ok := item.(map[string]interface{}); ok {
+									for _, key := range []string{"id", "name", "key"} {
+										if v, ok := m[key]; ok {
+											fmt.Fprintln(os.Stdout, v)
+											break
+										}
+									}
+								}
+							}
+							return nil
+						}
+						// Handle single resource responses
+						for _, key := range []string{"id", "name", "key"} {
+							if v, ok := data[key]; ok {
+								fmt.Fprintln(os.Stdout, v)
+								return nil
+							}
+						}
+					}
+					fmt.Fprintln(os.Stdout, string(respBody))
+					return nil
+				}
+
+				switch OutputFormat(outputFlag) {
+				case OutputJSON:
+					var pretty interface{}
+					json.Unmarshal(respBody, &pretty)
+					return PrintJSON(os.Stdout, pretty)
+				default:
+					var data map[string]interface{}
+					if err := json.Unmarshal(respBody, &data); err != nil {
+						return fmt.Errorf("parse response: %w", err)
+					}
+					PrintDetail(os.Stdout, data)
+				}
+				return nil
+			},
+		}
+		c.Flags().String("comment", "", "")
+		c.Flags().String("data-path", "", "")
+		c.Flags().String("dsn", "", "")
+		c.Flags().String("json", "", "JSON input (raw string or @filename or - for stdin)")
+
+		// Apply overrides
+		if fn, ok := runOverrides["updateCatalogRegistration"]; ok {
+			c.RunE = fn(client)
+		}
+		if fn, ok := commandOverrides["updateCatalogRegistration"]; ok {
+			fn(c)
+		}
+		catalogsCmd.AddCommand(c)
 	}
 
 	// updateColumn

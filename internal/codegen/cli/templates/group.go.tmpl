@@ -291,14 +291,16 @@ func new{{toPascal .Name}}Cmd(client *Client) *cobra.Command {
 						return fmt.Errorf("parse response: %w", err)
 					}
 					PrintDetail(os.Stdout, data)
-					{{- else}}
-					// Custom result: default to JSON
-					var pretty interface{}
-					json.Unmarshal(respBody, &pretty)
-					return PrintJSON(os.Stdout, pretty)
-					{{- end}}
+				{{- else}}
+				// Custom result: default to JSON
+				var pretty interface{}
+				json.Unmarshal(respBody, &pretty)
+				return PrintJSON(os.Stdout, pretty)
+				{{- end}}
 				}
+				{{- if or (isPaginatedList $cmd.Response.Pattern) (isSingleResource $cmd.Response.Pattern)}}
 				return nil
+				{{- end}}
 				{{- end}}
 			},
 		}
