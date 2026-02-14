@@ -27,6 +27,6 @@ type mockCatalogRepoFactory struct {
 	repo *mockCatalogRepo
 }
 
-func (f *mockCatalogRepoFactory) ForCatalog(_ string) domain.CatalogRepository {
-	return f.repo
+func (f *mockCatalogRepoFactory) ForCatalog(_ context.Context, _ string) (domain.CatalogRepository, error) {
+	return f.repo, nil
 }

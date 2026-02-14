@@ -33,7 +33,10 @@ func NewViewService(
 
 // CreateView creates a new view in the given schema.
 func (s *ViewService) CreateView(ctx context.Context, catalogName string, principal string, schemaName string, req domain.CreateViewRequest) (*domain.ViewDetail, error) {
-	catalogRepo := s.catalogFactory.ForCatalog(catalogName)
+	catalogRepo, err := s.catalogFactory.ForCatalog(ctx, catalogName)
+	if err != nil {
+		return nil, err
+	}
 
 	// Check CREATE_TABLE privilege (views require same privilege)
 	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateTable)
@@ -75,7 +78,11 @@ func (s *ViewService) CreateView(ctx context.Context, catalogName string, princi
 
 // GetView returns a view by schema and name.
 func (s *ViewService) GetView(ctx context.Context, catalogName string, schemaName, viewName string) (*domain.ViewDetail, error) {
-	schema, err := s.catalogFactory.ForCatalog(catalogName).GetSchema(ctx, schemaName)
+	repo, err := s.catalogFactory.ForCatalog(ctx, catalogName)
+	if err != nil {
+		return nil, err
+	}
+	schema, err := repo.GetSchema(ctx, schemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +97,11 @@ func (s *ViewService) GetView(ctx context.Context, catalogName string, schemaNam
 
 // ListViews returns a paginated list of views in a schema.
 func (s *ViewService) ListViews(ctx context.Context, catalogName string, schemaName string, page domain.PageRequest) ([]domain.ViewDetail, int64, error) {
-	schema, err := s.catalogFactory.ForCatalog(catalogName).GetSchema(ctx, schemaName)
+	repo, err := s.catalogFactory.ForCatalog(ctx, catalogName)
+	if err != nil {
+		return nil, 0, err
+	}
+	schema, err := repo.GetSchema(ctx, schemaName)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -116,7 +127,11 @@ func (s *ViewService) DeleteView(ctx context.Context, catalogName string, princi
 		return domain.ErrAccessDenied("%q lacks permission to delete view %q.%q", principal, schemaName, viewName)
 	}
 
-	schema, err := s.catalogFactory.ForCatalog(catalogName).GetSchema(ctx, schemaName)
+	repo, err := s.catalogFactory.ForCatalog(ctx, catalogName)
+	if err != nil {
+		return err
+	}
+	schema, err := repo.GetSchema(ctx, schemaName)
 	if err != nil {
 		return err
 	}
@@ -140,7 +155,11 @@ func (s *ViewService) UpdateView(ctx context.Context, catalogName string, princi
 		return nil, domain.ErrAccessDenied("%q lacks permission to update view %q.%q", principal, schemaName, viewName)
 	}
 
-	schema, err := s.catalogFactory.ForCatalog(catalogName).GetSchema(ctx, schemaName)
+	repo, err := s.catalogFactory.ForCatalog(ctx, catalogName)
+	if err != nil {
+		return nil, err
+	}
+	schema, err := repo.GetSchema(ctx, schemaName)
 	if err != nil {
 		return nil, err
 	}

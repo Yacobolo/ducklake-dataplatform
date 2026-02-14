@@ -22,8 +22,10 @@ type CatalogRepo struct {
 }
 
 // NewCatalogRepo creates a new CatalogRepo.
-func NewCatalogRepo(metaDB, duckDB *sql.DB, catalogName string, extRepo *ExternalTableRepo, logger *slog.Logger) *CatalogRepo {
-	return &CatalogRepo{metaDB: metaDB, duckDB: duckDB, catalogName: catalogName, q: dbstore.New(metaDB), extRepo: extRepo, logger: logger}
+// metaDB is the per-catalog DuckLake metastore (for ducklake_* table queries).
+// controlQ is dbstore.Queries backed by the control-plane DB (for catalog_metadata, tag_assignments, etc.).
+func NewCatalogRepo(metaDB *sql.DB, controlQ *dbstore.Queries, duckDB *sql.DB, catalogName string, extRepo *ExternalTableRepo, logger *slog.Logger) *CatalogRepo {
+	return &CatalogRepo{metaDB: metaDB, duckDB: duckDB, catalogName: catalogName, q: controlQ, extRepo: extRepo, logger: logger}
 }
 
 // refreshMetaDB forces metaDB to see the latest WAL changes written by

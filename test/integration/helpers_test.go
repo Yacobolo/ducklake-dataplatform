@@ -613,7 +613,8 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 	lineageSvc := governance.NewLineageService(lineageRepo)
 	searchSvc := catalog.NewSearchService(searchRepo, nil)
 	queryHistorySvc := governance.NewQueryHistoryService(queryHistoryRepo)
-	catalogRepoFactory := repository.NewCatalogRepoFactory(metaDB, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	catalogRegRepo := repository.NewCatalogRegistrationRepo(metaDB)
+	catalogRepoFactory := repository.NewCatalogRepoFactory(catalogRegRepo, metaDB, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	viewSvc := catalog.NewViewService(viewRepo, catalogRepoFactory, authSvc, auditRepo)
 
 	handler := api.NewHandler(
@@ -745,7 +746,8 @@ func setupLocalExtensionServer(t *testing.T) *testEnv {
 	lineageSvc := governance.NewLineageService(lineageRepo)
 	searchSvc := catalog.NewSearchService(searchRepo, nil)
 	queryHistorySvc := governance.NewQueryHistoryService(queryHistoryRepo)
-	catalogRepoFactory := repository.NewCatalogRepoFactory(metaDB, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	catalogRegRepo := repository.NewCatalogRegistrationRepo(metaDB)
+	catalogRepoFactory := repository.NewCatalogRepoFactory(catalogRegRepo, metaDB, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	viewSvc := catalog.NewViewService(viewRepo, catalogRepoFactory, authSvc, auditRepo)
 
 	handler := api.NewHandler(
@@ -1106,7 +1108,8 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	querySvc := query.NewQueryService(nil, auditRepo, nil)
 
 	// catalogRepoFactory with duckDB=nil is safe — GetSchema only reads ducklake_schema from metaDB
-	catalogRepoFactory := repository.NewCatalogRepoFactory(metaDB, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	catalogRegRepo := repository.NewCatalogRegistrationRepo(metaDB)
+	catalogRepoFactory := repository.NewCatalogRepoFactory(catalogRegRepo, metaDB, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	viewSvc := catalog.NewViewService(viewRepo, catalogRepoFactory, authSvc, auditRepo)
 
 	var duckDB *sql.DB
@@ -1160,7 +1163,8 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		searchSvc = catalog.NewSearchService(searchRepo, nil)
 		queryHistorySvc = governance.NewQueryHistoryService(queryHistoryRepo)
 
-		catalogRepoFactory = repository.NewCatalogRepoFactory(metaDB, duckDB, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+		catalogRegRepo = repository.NewCatalogRegistrationRepo(metaDB)
+		catalogRepoFactory = repository.NewCatalogRepoFactory(catalogRegRepo, metaDB, duckDB, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 		viewSvc = catalog.NewViewService(viewRepo, catalogRepoFactory, authSvc, auditRepo)
 		tableStatsRepo = repository.NewTableStatisticsRepo(metaDB)
 		catalogSvc = catalog.NewCatalogService(catalogRepoFactory, authSvc, auditRepo, tagRepo, tableStatsRepo, nil)
@@ -1936,7 +1940,8 @@ func setupMultiTableLocalServer(t *testing.T) *multiTableTestEnv {
 	lineageSvc := governance.NewLineageService(lineageRepo)
 	searchSvc := catalog.NewSearchService(searchRepo, nil)
 	queryHistorySvc := governance.NewQueryHistoryService(queryHistoryRepo)
-	catalogRepoFactory := repository.NewCatalogRepoFactory(metaDB, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	catalogRegRepo := repository.NewCatalogRegistrationRepo(metaDB)
+	catalogRepoFactory := repository.NewCatalogRepoFactory(catalogRegRepo, metaDB, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	viewSvc := catalog.NewViewService(viewRepo, catalogRepoFactory, authSvc, auditRepo)
 
 	handler := api.NewHandler(
