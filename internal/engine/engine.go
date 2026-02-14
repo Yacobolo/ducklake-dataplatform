@@ -44,6 +44,103 @@ func (e *SecureEngine) execQuery(ctx context.Context, principalName, query strin
 	return e.db.QueryContext(ctx, query)
 }
 
+// rewriteQuery runs the full security pipeline (classify → RBAC → RLS → column masking)
+// and returns the rewritten SQL string. Used by both Query() and QueryOnConn().
+func (e *SecureEngine) rewriteQuery(ctx context.Context, principalName, sqlQuery string) (string, error) {
+	// 1. Classify statement type
+	stmtType, err := sqlrewrite.ClassifyStatement(sqlQuery)
+	if err != nil {
+		return "", fmt.Errorf("classify statement: %w", err)
+	}
+
+	// Map statement type to required privilege
+	requiredPriv, err := privilegeForStatement(stmtType)
+	if err != nil {
+		return "", err
+	}
+
+	// 2. Extract table names
+	tables, err := sqlrewrite.ExtractTableNames(sqlQuery)
+	if err != nil {
+		return "", fmt.Errorf("parse SQL: %w", err)
+	}
+
+	if len(tables) == 0 {
+		// Table-less SELECT (SELECT 1, SELECT version()) is harmless — allow for
+		// all authenticated users. Non-SELECT table-less statements still require
+		// catalog-level privilege to prevent unguarded execution of functions like
+		// read_parquet(), read_csv_auto(), etc.
+		if stmtType != sqlrewrite.StmtSelect {
+			allowed, authErr := e.catalog.CheckPrivilege(ctx, principalName, domain.SecurableCatalog, domain.CatalogID, requiredPriv)
+			if authErr != nil {
+				return "", fmt.Errorf("privilege check: %w", authErr)
+			}
+			if !allowed {
+				return "", domain.ErrAccessDenied("%q lacks %s privilege for table-less queries", principalName, requiredPriv)
+			}
+		}
+		return sqlQuery, nil
+	}
+
+	// 3. Check privileges + collect filters/masks for each table
+	rewritten := sqlQuery
+	for _, tableName := range tables {
+		tableID, _, isExternal, err := e.catalog.LookupTableID(ctx, tableName)
+		if err != nil {
+			return "", fmt.Errorf("catalog lookup: %w", err)
+		}
+
+		// Block DML on external (read-only) tables
+		if isExternal && stmtType != sqlrewrite.StmtSelect {
+			return "", fmt.Errorf("access denied: table %q is read-only (EXTERNAL)", tableName)
+		}
+
+		// Check privilege
+		allowed, err := e.catalog.CheckPrivilege(ctx, principalName, domain.SecurableTable, tableID, requiredPriv)
+		if err != nil {
+			return "", fmt.Errorf("privilege check: %w", err)
+		}
+		if !allowed {
+			return "", domain.ErrAccessDenied("principal %q lacks %s on table %q", principalName, requiredPriv, tableName)
+		}
+
+		// Get row filters (only for SELECT)
+		if stmtType == sqlrewrite.StmtSelect {
+			filters, err := e.catalog.GetEffectiveRowFilters(ctx, principalName, tableID)
+			if err != nil {
+				return "", fmt.Errorf("row filter: %w", err)
+			}
+			if len(filters) > 0 {
+				rewritten, err = sqlrewrite.InjectMultipleRowFilters(rewritten, tableName, filters)
+				if err != nil {
+					return "", fmt.Errorf("inject row filter: %w", err)
+				}
+			}
+
+			// Get column masks
+			masks, err := e.catalog.GetEffectiveColumnMasks(ctx, principalName, tableID)
+			if err != nil {
+				return "", fmt.Errorf("column masks: %w", err)
+			}
+			if masks != nil {
+				// Fetch column names so SELECT * can be expanded before masking.
+				colNames, err := e.catalog.GetTableColumnNames(ctx, tableID)
+				if err != nil {
+					return "", fmt.Errorf("get column names for masking: %w", err)
+				}
+				rewritten, err = sqlrewrite.ApplyColumnMasks(rewritten, tableName, masks, colNames)
+				if err != nil {
+					return "", fmt.Errorf("apply column masks: %w", err)
+				}
+			}
+		}
+	}
+
+	e.logger.Info("query rewritten", "principal", principalName, "statement", stmtType, "tables", tables, "sql", rewritten)
+
+	return rewritten, nil
+}
+
 // Query executes a SQL query as the given principal, enforcing:
 //   - Statement type classification (DDL/DML protection)
 //   - RBAC privilege checks via the catalog
@@ -62,107 +159,32 @@ func (e *SecureEngine) Query(ctx context.Context, principalName, sqlQuery string
 		return e.infoSchema.HandleQuery(ctx, e.db, sqlQuery)
 	}
 
-	// 1. Classify statement type
-	stmtType, err := sqlrewrite.ClassifyStatement(sqlQuery)
-	if err != nil {
-		return nil, fmt.Errorf("classify statement: %w", err)
-	}
-
-	// Map statement type to required privilege
-	requiredPriv, err := privilegeForStatement(stmtType)
+	rewritten, err := e.rewriteQuery(ctx, principalName, sqlQuery)
 	if err != nil {
 		return nil, err
 	}
 
-	// 2. Extract table names
-	tables, err := sqlrewrite.ExtractTableNames(sqlQuery)
-	if err != nil {
-		return nil, fmt.Errorf("parse SQL: %w", err)
-	}
-
-	if len(tables) == 0 {
-		// Table-less SELECT (SELECT 1, SELECT version()) is harmless — allow for
-		// all authenticated users. Non-SELECT table-less statements still require
-		// catalog-level privilege to prevent unguarded execution of functions like
-		// read_parquet(), read_csv_auto(), etc.
-		if stmtType != sqlrewrite.StmtSelect {
-			allowed, authErr := e.catalog.CheckPrivilege(ctx, principalName, domain.SecurableCatalog, domain.CatalogID, requiredPriv)
-			if authErr != nil {
-				return nil, fmt.Errorf("privilege check: %w", authErr)
-			}
-			if !allowed {
-				return nil, domain.ErrAccessDenied("%q lacks %s privilege for table-less queries", principalName, requiredPriv)
-			}
-		}
-		rows, err := e.execQuery(ctx, principalName, sqlQuery)
-		if err != nil {
-			return nil, fmt.Errorf("execute query: %w", err)
-		}
-		return rows, nil
-	}
-
-	// 3. Check privileges + collect filters/masks for each table
-	rewritten := sqlQuery
-	for _, tableName := range tables {
-		tableID, _, isExternal, err := e.catalog.LookupTableID(ctx, tableName)
-		if err != nil {
-			return nil, fmt.Errorf("catalog lookup: %w", err)
-		}
-
-		// Block DML on external (read-only) tables
-		if isExternal && stmtType != sqlrewrite.StmtSelect {
-			return nil, fmt.Errorf("access denied: table %q is read-only (EXTERNAL)", tableName)
-		}
-
-		// Check privilege
-		allowed, err := e.catalog.CheckPrivilege(ctx, principalName, domain.SecurableTable, tableID, requiredPriv)
-		if err != nil {
-			return nil, fmt.Errorf("privilege check: %w", err)
-		}
-		if !allowed {
-			return nil, domain.ErrAccessDenied("principal %q lacks %s on table %q", principalName, requiredPriv, tableName)
-		}
-
-		// Get row filters (only for SELECT)
-		if stmtType == sqlrewrite.StmtSelect {
-			filters, err := e.catalog.GetEffectiveRowFilters(ctx, principalName, tableID)
-			if err != nil {
-				return nil, fmt.Errorf("row filter: %w", err)
-			}
-			if len(filters) > 0 {
-				rewritten, err = sqlrewrite.InjectMultipleRowFilters(rewritten, tableName, filters)
-				if err != nil {
-					return nil, fmt.Errorf("inject row filter: %w", err)
-				}
-			}
-
-			// Get column masks
-			masks, err := e.catalog.GetEffectiveColumnMasks(ctx, principalName, tableID)
-			if err != nil {
-				return nil, fmt.Errorf("column masks: %w", err)
-			}
-			if masks != nil {
-				// Fetch column names so SELECT * can be expanded before masking.
-				colNames, err := e.catalog.GetTableColumnNames(ctx, tableID)
-				if err != nil {
-					return nil, fmt.Errorf("get column names for masking: %w", err)
-				}
-				rewritten, err = sqlrewrite.ApplyColumnMasks(rewritten, tableName, masks, colNames)
-				if err != nil {
-					return nil, fmt.Errorf("apply column masks: %w", err)
-				}
-			}
-		}
-	}
-
-	e.logger.Info("query executed", "principal", principalName, "statement", stmtType, "tables", tables, "sql", rewritten)
-
-	// 5. Execute
 	rows, err := e.execQuery(ctx, principalName, rewritten)
 	if err != nil {
 		return nil, fmt.Errorf("execute query: %w", err)
 	}
 	return rows, nil
+}
+
+// QueryOnConn executes a SQL query through the full security pipeline
+// on a pinned database connection. Used by notebook sessions to maintain
+// temp table state across cell executions.
+func (e *SecureEngine) QueryOnConn(ctx context.Context, conn *sql.Conn, principalName, sqlQuery string) (*sql.Rows, error) {
+	if e.infoSchema != nil && IsInformationSchemaQuery(sqlQuery) {
+		return e.infoSchema.HandleQuery(ctx, e.db, sqlQuery)
+	}
+
+	rewritten, err := e.rewriteQuery(ctx, principalName, sqlQuery)
+	if err != nil {
+		return nil, err
+	}
+
+	return conn.QueryContext(ctx, rewritten)
 }
 
 // privilegeForStatement maps a statement type to the required privilege.

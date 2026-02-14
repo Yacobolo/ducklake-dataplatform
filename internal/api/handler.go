@@ -24,6 +24,9 @@ type APIHandler struct {
 	volumes             volumeService
 	computeEndpoints    computeEndpointService
 	apiKeys             apiKeyService
+	notebooks           notebookService
+	sessions            sessionService
+	gitRepos            gitRepoService
 }
 
 // NewHandler creates a new APIHandler with all required service dependencies.
@@ -49,6 +52,9 @@ func NewHandler(
 	volumes volumeService,
 	computeEndpoints computeEndpointService,
 	apiKeys apiKeyService,
+	notebooks notebookService,
+	sessions sessionService,
+	gitRepos gitRepoService,
 ) *APIHandler {
 	return &APIHandler{
 		query:               query,
@@ -72,6 +78,9 @@ func NewHandler(
 		volumes:             volumes,
 		computeEndpoints:    computeEndpoints,
 		apiKeys:             apiKeys,
+		notebooks:           notebooks,
+		sessions:            sessions,
+		gitRepos:            gitRepos,
 	}
 }
 

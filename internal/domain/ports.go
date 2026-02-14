@@ -11,6 +11,15 @@ type QueryEngine interface {
 	Query(ctx context.Context, principalName, sqlQuery string) (*sql.Rows, error)
 }
 
+// SessionEngine extends QueryEngine to support pinned-connection execution.
+// Implemented by engine.SecureEngine.
+type SessionEngine interface {
+	QueryEngine
+	// QueryOnConn executes SQL through the full RBAC/RLS/masking pipeline
+	// but on a specific *sql.Conn instead of the connection pool.
+	QueryOnConn(ctx context.Context, conn *sql.Conn, principalName, sqlQuery string) (*sql.Rows, error)
+}
+
 // SecretManager handles DuckDB secret lifecycle.
 // Implemented by engine.DuckDBSecretManager.
 type SecretManager interface {

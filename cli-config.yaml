@@ -537,3 +537,25 @@ skip_operations:
   - updateCatalogRegistration
   - deleteCatalogRegistration
   - setDefaultCatalog
+  # Notebook operations (CLI commands TBD)
+  - listNotebooks
+  - createNotebook
+  - getNotebook
+  - updateNotebook
+  - deleteNotebook
+  - createCell
+  - updateCell
+  - deleteCell
+  - reorderCells
+  - createNotebookSession
+  - closeNotebookSession
+  - executeCell
+  - runAllCells
+  - runAllCellsAsync
+  - listNotebookJobs
+  - getNotebookJob
+  - listGitRepos
+  - createGitRepo
+  - getGitRepo
+  - deleteGitRepo
+  - syncGitRepo

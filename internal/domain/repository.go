@@ -234,3 +234,38 @@ type ComputeEndpointRepository interface {
 	GetDefaultForPrincipal(ctx context.Context, principalID string, principalType string) (*ComputeEndpoint, error)
 	GetAssignmentsForPrincipal(ctx context.Context, principalID string, principalType string) ([]ComputeEndpoint, error)
 }
+
+// NotebookRepository provides CRUD operations for notebooks and cells.
+type NotebookRepository interface {
+	CreateNotebook(ctx context.Context, nb *Notebook) (*Notebook, error)
+	GetNotebook(ctx context.Context, id string) (*Notebook, error)
+	ListNotebooks(ctx context.Context, owner *string, page PageRequest) ([]Notebook, int64, error)
+	UpdateNotebook(ctx context.Context, id string, req UpdateNotebookRequest) (*Notebook, error)
+	DeleteNotebook(ctx context.Context, id string) error
+
+	CreateCell(ctx context.Context, cell *Cell) (*Cell, error)
+	GetCell(ctx context.Context, id string) (*Cell, error)
+	ListCells(ctx context.Context, notebookID string) ([]Cell, error)
+	UpdateCell(ctx context.Context, id string, req UpdateCellRequest) (*Cell, error)
+	DeleteCell(ctx context.Context, id string) error
+	UpdateCellResult(ctx context.Context, cellID string, result *string) error
+	ReorderCells(ctx context.Context, notebookID string, cellIDs []string) error
+	GetMaxPosition(ctx context.Context, notebookID string) (int, error)
+}
+
+// NotebookJobRepository provides CRUD operations for async notebook jobs.
+type NotebookJobRepository interface {
+	CreateJob(ctx context.Context, job *NotebookJob) (*NotebookJob, error)
+	GetJob(ctx context.Context, id string) (*NotebookJob, error)
+	ListJobs(ctx context.Context, notebookID string, page PageRequest) ([]NotebookJob, int64, error)
+	UpdateJobState(ctx context.Context, id string, state JobState, result *string, errMsg *string) error
+}
+
+// GitRepoRepository provides CRUD operations for registered Git repositories.
+type GitRepoRepository interface {
+	Create(ctx context.Context, repo *GitRepo) (*GitRepo, error)
+	GetByID(ctx context.Context, id string) (*GitRepo, error)
+	List(ctx context.Context, page PageRequest) ([]GitRepo, int64, error)
+	Delete(ctx context.Context, id string) error
+	UpdateSyncStatus(ctx context.Context, id string, commitSHA string, syncedAt time.Time) error
+}

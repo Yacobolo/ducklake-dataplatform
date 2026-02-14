@@ -194,6 +194,21 @@ type ServerInterface interface {
 	// Update an external location
 	// (PATCH /external-locations/{locationName})
 	UpdateExternalLocation(w http.ResponseWriter, r *http.Request, locationName LocationName)
+	// List registered Git repositories
+	// (GET /git-repos)
+	ListGitRepos(w http.ResponseWriter, r *http.Request, params ListGitReposParams)
+	// Register a Git repository
+	// (POST /git-repos)
+	CreateGitRepo(w http.ResponseWriter, r *http.Request)
+	// Delete a Git repository
+	// (DELETE /git-repos/{gitRepoId})
+	DeleteGitRepo(w http.ResponseWriter, r *http.Request, gitRepoId string)
+	// Get a Git repository
+	// (GET /git-repos/{gitRepoId})
+	GetGitRepo(w http.ResponseWriter, r *http.Request, gitRepoId string)
+	// Trigger Git sync
+	// (POST /git-repos/{gitRepoId}/sync)
+	SyncGitRepo(w http.ResponseWriter, r *http.Request, gitRepoId string)
 	// List grants
 	// (GET /grants)
 	ListGrants(w http.ResponseWriter, r *http.Request, params ListGrantsParams)
@@ -242,6 +257,54 @@ type ServerInterface interface {
 	// Create table manifest with presigned URLs and security policies
 	// (POST /manifest)
 	CreateManifest(w http.ResponseWriter, r *http.Request)
+	// List notebooks
+	// (GET /notebooks)
+	ListNotebooks(w http.ResponseWriter, r *http.Request, params ListNotebooksParams)
+	// Create a notebook
+	// (POST /notebooks)
+	CreateNotebook(w http.ResponseWriter, r *http.Request)
+	// Delete a notebook
+	// (DELETE /notebooks/{notebookId})
+	DeleteNotebook(w http.ResponseWriter, r *http.Request, notebookId string)
+	// Get a notebook with cells
+	// (GET /notebooks/{notebookId})
+	GetNotebook(w http.ResponseWriter, r *http.Request, notebookId string)
+	// Update notebook metadata
+	// (PATCH /notebooks/{notebookId})
+	UpdateNotebook(w http.ResponseWriter, r *http.Request, notebookId string)
+	// Add a cell to a notebook
+	// (POST /notebooks/{notebookId}/cells)
+	CreateCell(w http.ResponseWriter, r *http.Request, notebookId string)
+	// Reorder cells in a notebook
+	// (POST /notebooks/{notebookId}/cells/reorder)
+	ReorderCells(w http.ResponseWriter, r *http.Request, notebookId string)
+	// Delete a cell
+	// (DELETE /notebooks/{notebookId}/cells/{cellId})
+	DeleteCell(w http.ResponseWriter, r *http.Request, notebookId string, cellId string)
+	// Update a cell
+	// (PATCH /notebooks/{notebookId}/cells/{cellId})
+	UpdateCell(w http.ResponseWriter, r *http.Request, notebookId string, cellId string)
+	// List jobs for a notebook
+	// (GET /notebooks/{notebookId}/jobs)
+	ListNotebookJobs(w http.ResponseWriter, r *http.Request, notebookId string, params ListNotebookJobsParams)
+	// Get job status
+	// (GET /notebooks/{notebookId}/jobs/{jobId})
+	GetNotebookJob(w http.ResponseWriter, r *http.Request, notebookId string, jobId string)
+	// Start a notebook session
+	// (POST /notebooks/{notebookId}/sessions)
+	CreateNotebookSession(w http.ResponseWriter, r *http.Request, notebookId string)
+	// Close a notebook session
+	// (DELETE /notebooks/{notebookId}/sessions/{sessionId})
+	CloseNotebookSession(w http.ResponseWriter, r *http.Request, notebookId string, sessionId string)
+	// Execute a single cell in a session
+	// (POST /notebooks/{notebookId}/sessions/{sessionId}/execute/{cellId})
+	ExecuteCell(w http.ResponseWriter, r *http.Request, notebookId string, sessionId string, cellId string)
+	// Execute all SQL cells in order (synchronous)
+	// (POST /notebooks/{notebookId}/sessions/{sessionId}/run-all)
+	RunAllCells(w http.ResponseWriter, r *http.Request, notebookId string, sessionId string)
+	// Start async execution of all cells
+	// (POST /notebooks/{notebookId}/sessions/{sessionId}/run-all-async)
+	RunAllCellsAsync(w http.ResponseWriter, r *http.Request, notebookId string, sessionId string)
 	// List all principals
 	// (GET /principals)
 	ListPrincipals(w http.ResponseWriter, r *http.Request, params ListPrincipalsParams)
@@ -668,6 +731,36 @@ func (_ Unimplemented) UpdateExternalLocation(w http.ResponseWriter, r *http.Req
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// List registered Git repositories
+// (GET /git-repos)
+func (_ Unimplemented) ListGitRepos(w http.ResponseWriter, r *http.Request, params ListGitReposParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Register a Git repository
+// (POST /git-repos)
+func (_ Unimplemented) CreateGitRepo(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Delete a Git repository
+// (DELETE /git-repos/{gitRepoId})
+func (_ Unimplemented) DeleteGitRepo(w http.ResponseWriter, r *http.Request, gitRepoId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get a Git repository
+// (GET /git-repos/{gitRepoId})
+func (_ Unimplemented) GetGitRepo(w http.ResponseWriter, r *http.Request, gitRepoId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Trigger Git sync
+// (POST /git-repos/{gitRepoId}/sync)
+func (_ Unimplemented) SyncGitRepo(w http.ResponseWriter, r *http.Request, gitRepoId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // List grants
 // (GET /grants)
 func (_ Unimplemented) ListGrants(w http.ResponseWriter, r *http.Request, params ListGrantsParams) {
@@ -761,6 +854,102 @@ func (_ Unimplemented) GetUpstreamLineage(w http.ResponseWriter, r *http.Request
 // Create table manifest with presigned URLs and security policies
 // (POST /manifest)
 func (_ Unimplemented) CreateManifest(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List notebooks
+// (GET /notebooks)
+func (_ Unimplemented) ListNotebooks(w http.ResponseWriter, r *http.Request, params ListNotebooksParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create a notebook
+// (POST /notebooks)
+func (_ Unimplemented) CreateNotebook(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Delete a notebook
+// (DELETE /notebooks/{notebookId})
+func (_ Unimplemented) DeleteNotebook(w http.ResponseWriter, r *http.Request, notebookId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get a notebook with cells
+// (GET /notebooks/{notebookId})
+func (_ Unimplemented) GetNotebook(w http.ResponseWriter, r *http.Request, notebookId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update notebook metadata
+// (PATCH /notebooks/{notebookId})
+func (_ Unimplemented) UpdateNotebook(w http.ResponseWriter, r *http.Request, notebookId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Add a cell to a notebook
+// (POST /notebooks/{notebookId}/cells)
+func (_ Unimplemented) CreateCell(w http.ResponseWriter, r *http.Request, notebookId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Reorder cells in a notebook
+// (POST /notebooks/{notebookId}/cells/reorder)
+func (_ Unimplemented) ReorderCells(w http.ResponseWriter, r *http.Request, notebookId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Delete a cell
+// (DELETE /notebooks/{notebookId}/cells/{cellId})
+func (_ Unimplemented) DeleteCell(w http.ResponseWriter, r *http.Request, notebookId string, cellId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update a cell
+// (PATCH /notebooks/{notebookId}/cells/{cellId})
+func (_ Unimplemented) UpdateCell(w http.ResponseWriter, r *http.Request, notebookId string, cellId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List jobs for a notebook
+// (GET /notebooks/{notebookId}/jobs)
+func (_ Unimplemented) ListNotebookJobs(w http.ResponseWriter, r *http.Request, notebookId string, params ListNotebookJobsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get job status
+// (GET /notebooks/{notebookId}/jobs/{jobId})
+func (_ Unimplemented) GetNotebookJob(w http.ResponseWriter, r *http.Request, notebookId string, jobId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Start a notebook session
+// (POST /notebooks/{notebookId}/sessions)
+func (_ Unimplemented) CreateNotebookSession(w http.ResponseWriter, r *http.Request, notebookId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Close a notebook session
+// (DELETE /notebooks/{notebookId}/sessions/{sessionId})
+func (_ Unimplemented) CloseNotebookSession(w http.ResponseWriter, r *http.Request, notebookId string, sessionId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Execute a single cell in a session
+// (POST /notebooks/{notebookId}/sessions/{sessionId}/execute/{cellId})
+func (_ Unimplemented) ExecuteCell(w http.ResponseWriter, r *http.Request, notebookId string, sessionId string, cellId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Execute all SQL cells in order (synchronous)
+// (POST /notebooks/{notebookId}/sessions/{sessionId}/run-all)
+func (_ Unimplemented) RunAllCells(w http.ResponseWriter, r *http.Request, notebookId string, sessionId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Start async execution of all cells
+// (POST /notebooks/{notebookId}/sessions/{sessionId}/run-all-async)
+func (_ Unimplemented) RunAllCellsAsync(w http.ResponseWriter, r *http.Request, notebookId string, sessionId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -3381,6 +3570,170 @@ func (siw *ServerInterfaceWrapper) UpdateExternalLocation(w http.ResponseWriter,
 	handler.ServeHTTP(w, r)
 }
 
+// ListGitRepos operation middleware
+func (siw *ServerInterfaceWrapper) ListGitRepos(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListGitReposParams
+
+	// ------------- Optional query parameter "max_results" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListGitRepos(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateGitRepo operation middleware
+func (siw *ServerInterfaceWrapper) CreateGitRepo(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateGitRepo(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteGitRepo operation middleware
+func (siw *ServerInterfaceWrapper) DeleteGitRepo(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "gitRepoId" -------------
+	var gitRepoId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "gitRepoId", chi.URLParam(r, "gitRepoId"), &gitRepoId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "gitRepoId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteGitRepo(w, r, gitRepoId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetGitRepo operation middleware
+func (siw *ServerInterfaceWrapper) GetGitRepo(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "gitRepoId" -------------
+	var gitRepoId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "gitRepoId", chi.URLParam(r, "gitRepoId"), &gitRepoId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "gitRepoId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetGitRepo(w, r, gitRepoId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SyncGitRepo operation middleware
+func (siw *ServerInterfaceWrapper) SyncGitRepo(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "gitRepoId" -------------
+	var gitRepoId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "gitRepoId", chi.URLParam(r, "gitRepoId"), &gitRepoId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "gitRepoId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SyncGitRepo(w, r, gitRepoId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListGrants operation middleware
 func (siw *ServerInterfaceWrapper) ListGrants(w http.ResponseWriter, r *http.Request) {
 
@@ -4044,6 +4397,632 @@ func (siw *ServerInterfaceWrapper) CreateManifest(w http.ResponseWriter, r *http
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateManifest(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListNotebooks operation middleware
+func (siw *ServerInterfaceWrapper) ListNotebooks(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListNotebooksParams
+
+	// ------------- Optional query parameter "owner" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "owner", r.URL.Query(), &params.Owner)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "owner", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "max_results" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListNotebooks(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateNotebook operation middleware
+func (siw *ServerInterfaceWrapper) CreateNotebook(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateNotebook(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteNotebook operation middleware
+func (siw *ServerInterfaceWrapper) DeleteNotebook(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "notebookId" -------------
+	var notebookId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "notebookId", chi.URLParam(r, "notebookId"), &notebookId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "notebookId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteNotebook(w, r, notebookId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetNotebook operation middleware
+func (siw *ServerInterfaceWrapper) GetNotebook(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "notebookId" -------------
+	var notebookId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "notebookId", chi.URLParam(r, "notebookId"), &notebookId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "notebookId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetNotebook(w, r, notebookId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateNotebook operation middleware
+func (siw *ServerInterfaceWrapper) UpdateNotebook(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "notebookId" -------------
+	var notebookId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "notebookId", chi.URLParam(r, "notebookId"), &notebookId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "notebookId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateNotebook(w, r, notebookId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateCell operation middleware
+func (siw *ServerInterfaceWrapper) CreateCell(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "notebookId" -------------
+	var notebookId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "notebookId", chi.URLParam(r, "notebookId"), &notebookId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "notebookId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateCell(w, r, notebookId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReorderCells operation middleware
+func (siw *ServerInterfaceWrapper) ReorderCells(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "notebookId" -------------
+	var notebookId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "notebookId", chi.URLParam(r, "notebookId"), &notebookId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "notebookId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReorderCells(w, r, notebookId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteCell operation middleware
+func (siw *ServerInterfaceWrapper) DeleteCell(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "notebookId" -------------
+	var notebookId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "notebookId", chi.URLParam(r, "notebookId"), &notebookId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "notebookId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "cellId" -------------
+	var cellId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "cellId", chi.URLParam(r, "cellId"), &cellId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cellId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteCell(w, r, notebookId, cellId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateCell operation middleware
+func (siw *ServerInterfaceWrapper) UpdateCell(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "notebookId" -------------
+	var notebookId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "notebookId", chi.URLParam(r, "notebookId"), &notebookId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "notebookId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "cellId" -------------
+	var cellId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "cellId", chi.URLParam(r, "cellId"), &cellId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cellId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateCell(w, r, notebookId, cellId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListNotebookJobs operation middleware
+func (siw *ServerInterfaceWrapper) ListNotebookJobs(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "notebookId" -------------
+	var notebookId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "notebookId", chi.URLParam(r, "notebookId"), &notebookId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "notebookId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListNotebookJobsParams
+
+	// ------------- Optional query parameter "max_results" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "max_results", r.URL.Query(), &params.MaxResults)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "max_results", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListNotebookJobs(w, r, notebookId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetNotebookJob operation middleware
+func (siw *ServerInterfaceWrapper) GetNotebookJob(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "notebookId" -------------
+	var notebookId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "notebookId", chi.URLParam(r, "notebookId"), &notebookId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "notebookId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "jobId" -------------
+	var jobId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "jobId", chi.URLParam(r, "jobId"), &jobId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "jobId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetNotebookJob(w, r, notebookId, jobId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateNotebookSession operation middleware
+func (siw *ServerInterfaceWrapper) CreateNotebookSession(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "notebookId" -------------
+	var notebookId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "notebookId", chi.URLParam(r, "notebookId"), &notebookId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "notebookId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateNotebookSession(w, r, notebookId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CloseNotebookSession operation middleware
+func (siw *ServerInterfaceWrapper) CloseNotebookSession(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "notebookId" -------------
+	var notebookId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "notebookId", chi.URLParam(r, "notebookId"), &notebookId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "notebookId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "sessionId" -------------
+	var sessionId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "sessionId", chi.URLParam(r, "sessionId"), &sessionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sessionId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CloseNotebookSession(w, r, notebookId, sessionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ExecuteCell operation middleware
+func (siw *ServerInterfaceWrapper) ExecuteCell(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "notebookId" -------------
+	var notebookId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "notebookId", chi.URLParam(r, "notebookId"), &notebookId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "notebookId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "sessionId" -------------
+	var sessionId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "sessionId", chi.URLParam(r, "sessionId"), &sessionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sessionId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "cellId" -------------
+	var cellId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "cellId", chi.URLParam(r, "cellId"), &cellId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cellId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ExecuteCell(w, r, notebookId, sessionId, cellId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RunAllCells operation middleware
+func (siw *ServerInterfaceWrapper) RunAllCells(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "notebookId" -------------
+	var notebookId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "notebookId", chi.URLParam(r, "notebookId"), &notebookId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "notebookId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "sessionId" -------------
+	var sessionId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "sessionId", chi.URLParam(r, "sessionId"), &sessionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sessionId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RunAllCells(w, r, notebookId, sessionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RunAllCellsAsync operation middleware
+func (siw *ServerInterfaceWrapper) RunAllCellsAsync(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "notebookId" -------------
+	var notebookId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "notebookId", chi.URLParam(r, "notebookId"), &notebookId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "notebookId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "sessionId" -------------
+	var sessionId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "sessionId", chi.URLParam(r, "sessionId"), &sessionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sessionId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, ApiKeyAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RunAllCellsAsync(w, r, notebookId, sessionId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -5325,6 +6304,21 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Patch(options.BaseURL+"/external-locations/{locationName}", wrapper.UpdateExternalLocation)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/git-repos", wrapper.ListGitRepos)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/git-repos", wrapper.CreateGitRepo)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/git-repos/{gitRepoId}", wrapper.DeleteGitRepo)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/git-repos/{gitRepoId}", wrapper.GetGitRepo)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/git-repos/{gitRepoId}/sync", wrapper.SyncGitRepo)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/grants", wrapper.ListGrants)
 	})
 	r.Group(func(r chi.Router) {
@@ -5371,6 +6365,54 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/manifest", wrapper.CreateManifest)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/notebooks", wrapper.ListNotebooks)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/notebooks", wrapper.CreateNotebook)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/notebooks/{notebookId}", wrapper.DeleteNotebook)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/notebooks/{notebookId}", wrapper.GetNotebook)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/notebooks/{notebookId}", wrapper.UpdateNotebook)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/notebooks/{notebookId}/cells", wrapper.CreateCell)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/notebooks/{notebookId}/cells/reorder", wrapper.ReorderCells)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/notebooks/{notebookId}/cells/{cellId}", wrapper.DeleteCell)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/notebooks/{notebookId}/cells/{cellId}", wrapper.UpdateCell)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/notebooks/{notebookId}/jobs", wrapper.ListNotebookJobs)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/notebooks/{notebookId}/jobs/{jobId}", wrapper.GetNotebookJob)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/notebooks/{notebookId}/sessions", wrapper.CreateNotebookSession)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/notebooks/{notebookId}/sessions/{sessionId}", wrapper.CloseNotebookSession)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/notebooks/{notebookId}/sessions/{sessionId}/execute/{cellId}", wrapper.ExecuteCell)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/notebooks/{notebookId}/sessions/{sessionId}/run-all", wrapper.RunAllCells)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/notebooks/{notebookId}/sessions/{sessionId}/run-all-async", wrapper.RunAllCellsAsync)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/principals", wrapper.ListPrincipals)
@@ -11061,6 +12103,393 @@ func (response UpdateExternalLocation500JSONResponse) VisitUpdateExternalLocatio
 	return json.NewEncoder(w).Encode(response.Body)
 }
 
+type ListGitReposRequestObject struct {
+	Params ListGitReposParams
+}
+
+type ListGitReposResponseObject interface {
+	VisitListGitReposResponse(w http.ResponseWriter) error
+}
+
+type ListGitRepos200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListGitRepos200JSONResponse struct {
+	Body    PaginatedGitRepos
+	Headers ListGitRepos200ResponseHeaders
+}
+
+func (response ListGitRepos200JSONResponse) VisitListGitReposResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListGitRepos401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListGitRepos401JSONResponse) VisitListGitReposResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListGitRepos429JSONResponse struct{ RateLimitExceededJSONResponse }
+
+func (response ListGitRepos429JSONResponse) VisitListGitReposResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListGitRepos500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response ListGitRepos500JSONResponse) VisitListGitReposResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateGitRepoRequestObject struct {
+	Body *CreateGitRepoJSONRequestBody
+}
+
+type CreateGitRepoResponseObject interface {
+	VisitCreateGitRepoResponse(w http.ResponseWriter) error
+}
+
+type CreateGitRepo201ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateGitRepo201JSONResponse struct {
+	Body    GitRepo
+	Headers CreateGitRepo201ResponseHeaders
+}
+
+func (response CreateGitRepo201JSONResponse) VisitCreateGitRepoResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateGitRepo400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateGitRepo400JSONResponse) VisitCreateGitRepoResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateGitRepo401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateGitRepo401JSONResponse) VisitCreateGitRepoResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateGitRepo409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateGitRepo409JSONResponse) VisitCreateGitRepoResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateGitRepo429JSONResponse struct{ RateLimitExceededJSONResponse }
+
+func (response CreateGitRepo429JSONResponse) VisitCreateGitRepoResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateGitRepo500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response CreateGitRepo500JSONResponse) VisitCreateGitRepoResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteGitRepoRequestObject struct {
+	GitRepoId string `json:"gitRepoId"`
+}
+
+type DeleteGitRepoResponseObject interface {
+	VisitDeleteGitRepoResponse(w http.ResponseWriter) error
+}
+
+type DeleteGitRepo204ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteGitRepo204Response struct {
+	Headers DeleteGitRepo204ResponseHeaders
+}
+
+func (response DeleteGitRepo204Response) VisitDeleteGitRepoResponse(w http.ResponseWriter) error {
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteGitRepo401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DeleteGitRepo401JSONResponse) VisitDeleteGitRepoResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteGitRepo404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DeleteGitRepo404JSONResponse) VisitDeleteGitRepoResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteGitRepo429JSONResponse struct{ RateLimitExceededJSONResponse }
+
+func (response DeleteGitRepo429JSONResponse) VisitDeleteGitRepoResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteGitRepo500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response DeleteGitRepo500JSONResponse) VisitDeleteGitRepoResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetGitRepoRequestObject struct {
+	GitRepoId string `json:"gitRepoId"`
+}
+
+type GetGitRepoResponseObject interface {
+	VisitGetGitRepoResponse(w http.ResponseWriter) error
+}
+
+type GetGitRepo200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetGitRepo200JSONResponse struct {
+	Body    GitRepo
+	Headers GetGitRepo200ResponseHeaders
+}
+
+func (response GetGitRepo200JSONResponse) VisitGetGitRepoResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetGitRepo401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetGitRepo401JSONResponse) VisitGetGitRepoResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetGitRepo404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetGitRepo404JSONResponse) VisitGetGitRepoResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetGitRepo429JSONResponse struct{ RateLimitExceededJSONResponse }
+
+func (response GetGitRepo429JSONResponse) VisitGetGitRepoResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetGitRepo500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response GetGitRepo500JSONResponse) VisitGetGitRepoResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type SyncGitRepoRequestObject struct {
+	GitRepoId string `json:"gitRepoId"`
+}
+
+type SyncGitRepoResponseObject interface {
+	VisitSyncGitRepoResponse(w http.ResponseWriter) error
+}
+
+type SyncGitRepo200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type SyncGitRepo200JSONResponse struct {
+	Body    GitSyncResult
+	Headers SyncGitRepo200ResponseHeaders
+}
+
+func (response SyncGitRepo200JSONResponse) VisitSyncGitRepoResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type SyncGitRepo401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response SyncGitRepo401JSONResponse) VisitSyncGitRepoResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type SyncGitRepo404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response SyncGitRepo404JSONResponse) VisitSyncGitRepoResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type SyncGitRepo429JSONResponse struct{ RateLimitExceededJSONResponse }
+
+func (response SyncGitRepo429JSONResponse) VisitSyncGitRepoResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type SyncGitRepo500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response SyncGitRepo500JSONResponse) VisitSyncGitRepoResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
 type ListGrantsRequestObject struct {
 	Params ListGrantsParams
 }
@@ -12558,6 +13987,1438 @@ func (response CreateManifest429JSONResponse) VisitCreateManifestResponse(w http
 type CreateManifest500JSONResponse struct{ InternalErrorJSONResponse }
 
 func (response CreateManifest500JSONResponse) VisitCreateManifestResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListNotebooksRequestObject struct {
+	Params ListNotebooksParams
+}
+
+type ListNotebooksResponseObject interface {
+	VisitListNotebooksResponse(w http.ResponseWriter) error
+}
+
+type ListNotebooks200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListNotebooks200JSONResponse struct {
+	Body    PaginatedNotebooks
+	Headers ListNotebooks200ResponseHeaders
+}
+
+func (response ListNotebooks200JSONResponse) VisitListNotebooksResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListNotebooks400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListNotebooks400JSONResponse) VisitListNotebooksResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListNotebooks401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListNotebooks401JSONResponse) VisitListNotebooksResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListNotebooks429JSONResponse struct{ RateLimitExceededJSONResponse }
+
+func (response ListNotebooks429JSONResponse) VisitListNotebooksResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListNotebooks500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response ListNotebooks500JSONResponse) VisitListNotebooksResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateNotebookRequestObject struct {
+	Body *CreateNotebookJSONRequestBody
+}
+
+type CreateNotebookResponseObject interface {
+	VisitCreateNotebookResponse(w http.ResponseWriter) error
+}
+
+type CreateNotebook201ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateNotebook201JSONResponse struct {
+	Body    Notebook
+	Headers CreateNotebook201ResponseHeaders
+}
+
+func (response CreateNotebook201JSONResponse) VisitCreateNotebookResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateNotebook400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateNotebook400JSONResponse) VisitCreateNotebookResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateNotebook401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateNotebook401JSONResponse) VisitCreateNotebookResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateNotebook409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateNotebook409JSONResponse) VisitCreateNotebookResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateNotebook429JSONResponse struct{ RateLimitExceededJSONResponse }
+
+func (response CreateNotebook429JSONResponse) VisitCreateNotebookResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateNotebook500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response CreateNotebook500JSONResponse) VisitCreateNotebookResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteNotebookRequestObject struct {
+	NotebookId string `json:"notebookId"`
+}
+
+type DeleteNotebookResponseObject interface {
+	VisitDeleteNotebookResponse(w http.ResponseWriter) error
+}
+
+type DeleteNotebook204ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteNotebook204Response struct {
+	Headers DeleteNotebook204ResponseHeaders
+}
+
+func (response DeleteNotebook204Response) VisitDeleteNotebookResponse(w http.ResponseWriter) error {
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteNotebook401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DeleteNotebook401JSONResponse) VisitDeleteNotebookResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteNotebook403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DeleteNotebook403JSONResponse) VisitDeleteNotebookResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteNotebook404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DeleteNotebook404JSONResponse) VisitDeleteNotebookResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteNotebook429JSONResponse struct{ RateLimitExceededJSONResponse }
+
+func (response DeleteNotebook429JSONResponse) VisitDeleteNotebookResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteNotebook500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response DeleteNotebook500JSONResponse) VisitDeleteNotebookResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetNotebookRequestObject struct {
+	NotebookId string `json:"notebookId"`
+}
+
+type GetNotebookResponseObject interface {
+	VisitGetNotebookResponse(w http.ResponseWriter) error
+}
+
+type GetNotebook200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetNotebook200JSONResponse struct {
+	Body    NotebookDetail
+	Headers GetNotebook200ResponseHeaders
+}
+
+func (response GetNotebook200JSONResponse) VisitGetNotebookResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetNotebook401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetNotebook401JSONResponse) VisitGetNotebookResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetNotebook404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetNotebook404JSONResponse) VisitGetNotebookResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetNotebook429JSONResponse struct{ RateLimitExceededJSONResponse }
+
+func (response GetNotebook429JSONResponse) VisitGetNotebookResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetNotebook500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response GetNotebook500JSONResponse) VisitGetNotebookResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateNotebookRequestObject struct {
+	NotebookId string `json:"notebookId"`
+	Body       *UpdateNotebookJSONRequestBody
+}
+
+type UpdateNotebookResponseObject interface {
+	VisitUpdateNotebookResponse(w http.ResponseWriter) error
+}
+
+type UpdateNotebook200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateNotebook200JSONResponse struct {
+	Body    Notebook
+	Headers UpdateNotebook200ResponseHeaders
+}
+
+func (response UpdateNotebook200JSONResponse) VisitUpdateNotebookResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateNotebook400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateNotebook400JSONResponse) VisitUpdateNotebookResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateNotebook401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateNotebook401JSONResponse) VisitUpdateNotebookResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateNotebook403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateNotebook403JSONResponse) VisitUpdateNotebookResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateNotebook404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateNotebook404JSONResponse) VisitUpdateNotebookResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateNotebook429JSONResponse struct{ RateLimitExceededJSONResponse }
+
+func (response UpdateNotebook429JSONResponse) VisitUpdateNotebookResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateNotebook500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response UpdateNotebook500JSONResponse) VisitUpdateNotebookResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateCellRequestObject struct {
+	NotebookId string `json:"notebookId"`
+	Body       *CreateCellJSONRequestBody
+}
+
+type CreateCellResponseObject interface {
+	VisitCreateCellResponse(w http.ResponseWriter) error
+}
+
+type CreateCell201ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateCell201JSONResponse struct {
+	Body    Cell
+	Headers CreateCell201ResponseHeaders
+}
+
+func (response CreateCell201JSONResponse) VisitCreateCellResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateCell400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateCell400JSONResponse) VisitCreateCellResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateCell401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateCell401JSONResponse) VisitCreateCellResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateCell403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateCell403JSONResponse) VisitCreateCellResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateCell404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CreateCell404JSONResponse) VisitCreateCellResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateCell429JSONResponse struct{ RateLimitExceededJSONResponse }
+
+func (response CreateCell429JSONResponse) VisitCreateCellResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateCell500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response CreateCell500JSONResponse) VisitCreateCellResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ReorderCellsRequestObject struct {
+	NotebookId string `json:"notebookId"`
+	Body       *ReorderCellsJSONRequestBody
+}
+
+type ReorderCellsResponseObject interface {
+	VisitReorderCellsResponse(w http.ResponseWriter) error
+}
+
+type ReorderCells200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ReorderCells200JSONResponse struct {
+	Body    []Cell
+	Headers ReorderCells200ResponseHeaders
+}
+
+func (response ReorderCells200JSONResponse) VisitReorderCellsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ReorderCells400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ReorderCells400JSONResponse) VisitReorderCellsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ReorderCells401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ReorderCells401JSONResponse) VisitReorderCellsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ReorderCells403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ReorderCells403JSONResponse) VisitReorderCellsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ReorderCells404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ReorderCells404JSONResponse) VisitReorderCellsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ReorderCells429JSONResponse struct{ RateLimitExceededJSONResponse }
+
+func (response ReorderCells429JSONResponse) VisitReorderCellsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ReorderCells500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response ReorderCells500JSONResponse) VisitReorderCellsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteCellRequestObject struct {
+	NotebookId string `json:"notebookId"`
+	CellId     string `json:"cellId"`
+}
+
+type DeleteCellResponseObject interface {
+	VisitDeleteCellResponse(w http.ResponseWriter) error
+}
+
+type DeleteCell204ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type DeleteCell204Response struct {
+	Headers DeleteCell204ResponseHeaders
+}
+
+func (response DeleteCell204Response) VisitDeleteCellResponse(w http.ResponseWriter) error {
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteCell401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DeleteCell401JSONResponse) VisitDeleteCellResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteCell403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DeleteCell403JSONResponse) VisitDeleteCellResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteCell404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DeleteCell404JSONResponse) VisitDeleteCellResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteCell429JSONResponse struct{ RateLimitExceededJSONResponse }
+
+func (response DeleteCell429JSONResponse) VisitDeleteCellResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteCell500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response DeleteCell500JSONResponse) VisitDeleteCellResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateCellRequestObject struct {
+	NotebookId string `json:"notebookId"`
+	CellId     string `json:"cellId"`
+	Body       *UpdateCellJSONRequestBody
+}
+
+type UpdateCellResponseObject interface {
+	VisitUpdateCellResponse(w http.ResponseWriter) error
+}
+
+type UpdateCell200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type UpdateCell200JSONResponse struct {
+	Body    Cell
+	Headers UpdateCell200ResponseHeaders
+}
+
+func (response UpdateCell200JSONResponse) VisitUpdateCellResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateCell400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateCell400JSONResponse) VisitUpdateCellResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateCell401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateCell401JSONResponse) VisitUpdateCellResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateCell403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateCell403JSONResponse) VisitUpdateCellResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateCell404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateCell404JSONResponse) VisitUpdateCellResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateCell429JSONResponse struct{ RateLimitExceededJSONResponse }
+
+func (response UpdateCell429JSONResponse) VisitUpdateCellResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateCell500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response UpdateCell500JSONResponse) VisitUpdateCellResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListNotebookJobsRequestObject struct {
+	NotebookId string `json:"notebookId"`
+	Params     ListNotebookJobsParams
+}
+
+type ListNotebookJobsResponseObject interface {
+	VisitListNotebookJobsResponse(w http.ResponseWriter) error
+}
+
+type ListNotebookJobs200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ListNotebookJobs200JSONResponse struct {
+	Body    PaginatedNotebookJobs
+	Headers ListNotebookJobs200ResponseHeaders
+}
+
+func (response ListNotebookJobs200JSONResponse) VisitListNotebookJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListNotebookJobs401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListNotebookJobs401JSONResponse) VisitListNotebookJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListNotebookJobs404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ListNotebookJobs404JSONResponse) VisitListNotebookJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListNotebookJobs429JSONResponse struct{ RateLimitExceededJSONResponse }
+
+func (response ListNotebookJobs429JSONResponse) VisitListNotebookJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ListNotebookJobs500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response ListNotebookJobs500JSONResponse) VisitListNotebookJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetNotebookJobRequestObject struct {
+	NotebookId string `json:"notebookId"`
+	JobId      string `json:"jobId"`
+}
+
+type GetNotebookJobResponseObject interface {
+	VisitGetNotebookJobResponse(w http.ResponseWriter) error
+}
+
+type GetNotebookJob200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type GetNotebookJob200JSONResponse struct {
+	Body    NotebookJob
+	Headers GetNotebookJob200ResponseHeaders
+}
+
+func (response GetNotebookJob200JSONResponse) VisitGetNotebookJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetNotebookJob401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetNotebookJob401JSONResponse) VisitGetNotebookJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetNotebookJob404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetNotebookJob404JSONResponse) VisitGetNotebookJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetNotebookJob429JSONResponse struct{ RateLimitExceededJSONResponse }
+
+func (response GetNotebookJob429JSONResponse) VisitGetNotebookJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetNotebookJob500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response GetNotebookJob500JSONResponse) VisitGetNotebookJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateNotebookSessionRequestObject struct {
+	NotebookId string `json:"notebookId"`
+}
+
+type CreateNotebookSessionResponseObject interface {
+	VisitCreateNotebookSessionResponse(w http.ResponseWriter) error
+}
+
+type CreateNotebookSession201ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CreateNotebookSession201JSONResponse struct {
+	Body    NotebookSession
+	Headers CreateNotebookSession201ResponseHeaders
+}
+
+func (response CreateNotebookSession201JSONResponse) VisitCreateNotebookSessionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateNotebookSession401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateNotebookSession401JSONResponse) VisitCreateNotebookSessionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateNotebookSession404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CreateNotebookSession404JSONResponse) VisitCreateNotebookSessionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateNotebookSession429JSONResponse struct{ RateLimitExceededJSONResponse }
+
+func (response CreateNotebookSession429JSONResponse) VisitCreateNotebookSessionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateNotebookSession500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response CreateNotebookSession500JSONResponse) VisitCreateNotebookSessionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CloseNotebookSessionRequestObject struct {
+	NotebookId string `json:"notebookId"`
+	SessionId  string `json:"sessionId"`
+}
+
+type CloseNotebookSessionResponseObject interface {
+	VisitCloseNotebookSessionResponse(w http.ResponseWriter) error
+}
+
+type CloseNotebookSession204ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type CloseNotebookSession204Response struct {
+	Headers CloseNotebookSession204ResponseHeaders
+}
+
+func (response CloseNotebookSession204Response) VisitCloseNotebookSessionResponse(w http.ResponseWriter) error {
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(204)
+	return nil
+}
+
+type CloseNotebookSession401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CloseNotebookSession401JSONResponse) VisitCloseNotebookSessionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CloseNotebookSession404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CloseNotebookSession404JSONResponse) VisitCloseNotebookSessionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CloseNotebookSession429JSONResponse struct{ RateLimitExceededJSONResponse }
+
+func (response CloseNotebookSession429JSONResponse) VisitCloseNotebookSessionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CloseNotebookSession500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response CloseNotebookSession500JSONResponse) VisitCloseNotebookSessionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ExecuteCellRequestObject struct {
+	NotebookId string `json:"notebookId"`
+	SessionId  string `json:"sessionId"`
+	CellId     string `json:"cellId"`
+}
+
+type ExecuteCellResponseObject interface {
+	VisitExecuteCellResponse(w http.ResponseWriter) error
+}
+
+type ExecuteCell200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type ExecuteCell200JSONResponse struct {
+	Body    CellExecutionResult
+	Headers ExecuteCell200ResponseHeaders
+}
+
+func (response ExecuteCell200JSONResponse) VisitExecuteCellResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ExecuteCell400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ExecuteCell400JSONResponse) VisitExecuteCellResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ExecuteCell401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ExecuteCell401JSONResponse) VisitExecuteCellResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ExecuteCell403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ExecuteCell403JSONResponse) VisitExecuteCellResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ExecuteCell404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ExecuteCell404JSONResponse) VisitExecuteCellResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ExecuteCell429JSONResponse struct{ RateLimitExceededJSONResponse }
+
+func (response ExecuteCell429JSONResponse) VisitExecuteCellResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type ExecuteCell500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response ExecuteCell500JSONResponse) VisitExecuteCellResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type RunAllCellsRequestObject struct {
+	NotebookId string `json:"notebookId"`
+	SessionId  string `json:"sessionId"`
+}
+
+type RunAllCellsResponseObject interface {
+	VisitRunAllCellsResponse(w http.ResponseWriter) error
+}
+
+type RunAllCells200ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type RunAllCells200JSONResponse struct {
+	Body    RunAllResult
+	Headers RunAllCells200ResponseHeaders
+}
+
+func (response RunAllCells200JSONResponse) VisitRunAllCellsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type RunAllCells400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response RunAllCells400JSONResponse) VisitRunAllCellsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type RunAllCells401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RunAllCells401JSONResponse) VisitRunAllCellsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type RunAllCells403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response RunAllCells403JSONResponse) VisitRunAllCellsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type RunAllCells404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response RunAllCells404JSONResponse) VisitRunAllCellsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type RunAllCells429JSONResponse struct{ RateLimitExceededJSONResponse }
+
+func (response RunAllCells429JSONResponse) VisitRunAllCellsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type RunAllCells500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response RunAllCells500JSONResponse) VisitRunAllCellsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type RunAllCellsAsyncRequestObject struct {
+	NotebookId string `json:"notebookId"`
+	SessionId  string `json:"sessionId"`
+}
+
+type RunAllCellsAsyncResponseObject interface {
+	VisitRunAllCellsAsyncResponse(w http.ResponseWriter) error
+}
+
+type RunAllCellsAsync202ResponseHeaders struct {
+	XRateLimitLimit     int32
+	XRateLimitRemaining int32
+	XRateLimitReset     int64
+}
+
+type RunAllCellsAsync202JSONResponse struct {
+	Body    NotebookJob
+	Headers RunAllCellsAsync202ResponseHeaders
+}
+
+func (response RunAllCellsAsync202JSONResponse) VisitRunAllCellsAsyncResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(202)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type RunAllCellsAsync401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RunAllCellsAsync401JSONResponse) VisitRunAllCellsAsyncResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type RunAllCellsAsync404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response RunAllCellsAsync404JSONResponse) VisitRunAllCellsAsyncResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type RunAllCellsAsync429JSONResponse struct{ RateLimitExceededJSONResponse }
+
+func (response RunAllCellsAsync429JSONResponse) VisitRunAllCellsAsyncResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", fmt.Sprint(response.Headers.RetryAfter))
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprint(response.Headers.XRateLimitReset))
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type RunAllCellsAsync500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response RunAllCellsAsync500JSONResponse) VisitRunAllCellsAsyncResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-RateLimit-Limit", fmt.Sprint(response.Headers.XRateLimitLimit))
 	w.Header().Set("X-RateLimit-Remaining", fmt.Sprint(response.Headers.XRateLimitRemaining))
@@ -15197,6 +18058,21 @@ type StrictServerInterface interface {
 	// Update an external location
 	// (PATCH /external-locations/{locationName})
 	UpdateExternalLocation(ctx context.Context, request UpdateExternalLocationRequestObject) (UpdateExternalLocationResponseObject, error)
+	// List registered Git repositories
+	// (GET /git-repos)
+	ListGitRepos(ctx context.Context, request ListGitReposRequestObject) (ListGitReposResponseObject, error)
+	// Register a Git repository
+	// (POST /git-repos)
+	CreateGitRepo(ctx context.Context, request CreateGitRepoRequestObject) (CreateGitRepoResponseObject, error)
+	// Delete a Git repository
+	// (DELETE /git-repos/{gitRepoId})
+	DeleteGitRepo(ctx context.Context, request DeleteGitRepoRequestObject) (DeleteGitRepoResponseObject, error)
+	// Get a Git repository
+	// (GET /git-repos/{gitRepoId})
+	GetGitRepo(ctx context.Context, request GetGitRepoRequestObject) (GetGitRepoResponseObject, error)
+	// Trigger Git sync
+	// (POST /git-repos/{gitRepoId}/sync)
+	SyncGitRepo(ctx context.Context, request SyncGitRepoRequestObject) (SyncGitRepoResponseObject, error)
 	// List grants
 	// (GET /grants)
 	ListGrants(ctx context.Context, request ListGrantsRequestObject) (ListGrantsResponseObject, error)
@@ -15245,6 +18121,54 @@ type StrictServerInterface interface {
 	// Create table manifest with presigned URLs and security policies
 	// (POST /manifest)
 	CreateManifest(ctx context.Context, request CreateManifestRequestObject) (CreateManifestResponseObject, error)
+	// List notebooks
+	// (GET /notebooks)
+	ListNotebooks(ctx context.Context, request ListNotebooksRequestObject) (ListNotebooksResponseObject, error)
+	// Create a notebook
+	// (POST /notebooks)
+	CreateNotebook(ctx context.Context, request CreateNotebookRequestObject) (CreateNotebookResponseObject, error)
+	// Delete a notebook
+	// (DELETE /notebooks/{notebookId})
+	DeleteNotebook(ctx context.Context, request DeleteNotebookRequestObject) (DeleteNotebookResponseObject, error)
+	// Get a notebook with cells
+	// (GET /notebooks/{notebookId})
+	GetNotebook(ctx context.Context, request GetNotebookRequestObject) (GetNotebookResponseObject, error)
+	// Update notebook metadata
+	// (PATCH /notebooks/{notebookId})
+	UpdateNotebook(ctx context.Context, request UpdateNotebookRequestObject) (UpdateNotebookResponseObject, error)
+	// Add a cell to a notebook
+	// (POST /notebooks/{notebookId}/cells)
+	CreateCell(ctx context.Context, request CreateCellRequestObject) (CreateCellResponseObject, error)
+	// Reorder cells in a notebook
+	// (POST /notebooks/{notebookId}/cells/reorder)
+	ReorderCells(ctx context.Context, request ReorderCellsRequestObject) (ReorderCellsResponseObject, error)
+	// Delete a cell
+	// (DELETE /notebooks/{notebookId}/cells/{cellId})
+	DeleteCell(ctx context.Context, request DeleteCellRequestObject) (DeleteCellResponseObject, error)
+	// Update a cell
+	// (PATCH /notebooks/{notebookId}/cells/{cellId})
+	UpdateCell(ctx context.Context, request UpdateCellRequestObject) (UpdateCellResponseObject, error)
+	// List jobs for a notebook
+	// (GET /notebooks/{notebookId}/jobs)
+	ListNotebookJobs(ctx context.Context, request ListNotebookJobsRequestObject) (ListNotebookJobsResponseObject, error)
+	// Get job status
+	// (GET /notebooks/{notebookId}/jobs/{jobId})
+	GetNotebookJob(ctx context.Context, request GetNotebookJobRequestObject) (GetNotebookJobResponseObject, error)
+	// Start a notebook session
+	// (POST /notebooks/{notebookId}/sessions)
+	CreateNotebookSession(ctx context.Context, request CreateNotebookSessionRequestObject) (CreateNotebookSessionResponseObject, error)
+	// Close a notebook session
+	// (DELETE /notebooks/{notebookId}/sessions/{sessionId})
+	CloseNotebookSession(ctx context.Context, request CloseNotebookSessionRequestObject) (CloseNotebookSessionResponseObject, error)
+	// Execute a single cell in a session
+	// (POST /notebooks/{notebookId}/sessions/{sessionId}/execute/{cellId})
+	ExecuteCell(ctx context.Context, request ExecuteCellRequestObject) (ExecuteCellResponseObject, error)
+	// Execute all SQL cells in order (synchronous)
+	// (POST /notebooks/{notebookId}/sessions/{sessionId}/run-all)
+	RunAllCells(ctx context.Context, request RunAllCellsRequestObject) (RunAllCellsResponseObject, error)
+	// Start async execution of all cells
+	// (POST /notebooks/{notebookId}/sessions/{sessionId}/run-all-async)
+	RunAllCellsAsync(ctx context.Context, request RunAllCellsAsyncRequestObject) (RunAllCellsAsyncResponseObject, error)
 	// List all principals
 	// (GET /principals)
 	ListPrincipals(ctx context.Context, request ListPrincipalsRequestObject) (ListPrincipalsResponseObject, error)
@@ -17029,6 +19953,141 @@ func (sh *strictHandler) UpdateExternalLocation(w http.ResponseWriter, r *http.R
 	}
 }
 
+// ListGitRepos operation middleware
+func (sh *strictHandler) ListGitRepos(w http.ResponseWriter, r *http.Request, params ListGitReposParams) {
+	var request ListGitReposRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListGitRepos(ctx, request.(ListGitReposRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListGitRepos")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListGitReposResponseObject); ok {
+		if err := validResponse.VisitListGitReposResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateGitRepo operation middleware
+func (sh *strictHandler) CreateGitRepo(w http.ResponseWriter, r *http.Request) {
+	var request CreateGitRepoRequestObject
+
+	var body CreateGitRepoJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateGitRepo(ctx, request.(CreateGitRepoRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateGitRepo")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateGitRepoResponseObject); ok {
+		if err := validResponse.VisitCreateGitRepoResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteGitRepo operation middleware
+func (sh *strictHandler) DeleteGitRepo(w http.ResponseWriter, r *http.Request, gitRepoId string) {
+	var request DeleteGitRepoRequestObject
+
+	request.GitRepoId = gitRepoId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteGitRepo(ctx, request.(DeleteGitRepoRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteGitRepo")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteGitRepoResponseObject); ok {
+		if err := validResponse.VisitDeleteGitRepoResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetGitRepo operation middleware
+func (sh *strictHandler) GetGitRepo(w http.ResponseWriter, r *http.Request, gitRepoId string) {
+	var request GetGitRepoRequestObject
+
+	request.GitRepoId = gitRepoId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetGitRepo(ctx, request.(GetGitRepoRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetGitRepo")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetGitRepoResponseObject); ok {
+		if err := validResponse.VisitGetGitRepoResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SyncGitRepo operation middleware
+func (sh *strictHandler) SyncGitRepo(w http.ResponseWriter, r *http.Request, gitRepoId string) {
+	var request SyncGitRepoRequestObject
+
+	request.GitRepoId = gitRepoId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SyncGitRepo(ctx, request.(SyncGitRepoRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SyncGitRepo")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SyncGitRepoResponseObject); ok {
+		if err := validResponse.VisitSyncGitRepoResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListGrants operation middleware
 func (sh *strictHandler) ListGrants(w http.ResponseWriter, r *http.Request, params ListGrantsParams) {
 	var request ListGrantsRequestObject
@@ -17473,6 +20532,464 @@ func (sh *strictHandler) CreateManifest(w http.ResponseWriter, r *http.Request) 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(CreateManifestResponseObject); ok {
 		if err := validResponse.VisitCreateManifestResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListNotebooks operation middleware
+func (sh *strictHandler) ListNotebooks(w http.ResponseWriter, r *http.Request, params ListNotebooksParams) {
+	var request ListNotebooksRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListNotebooks(ctx, request.(ListNotebooksRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListNotebooks")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListNotebooksResponseObject); ok {
+		if err := validResponse.VisitListNotebooksResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateNotebook operation middleware
+func (sh *strictHandler) CreateNotebook(w http.ResponseWriter, r *http.Request) {
+	var request CreateNotebookRequestObject
+
+	var body CreateNotebookJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateNotebook(ctx, request.(CreateNotebookRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateNotebook")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateNotebookResponseObject); ok {
+		if err := validResponse.VisitCreateNotebookResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteNotebook operation middleware
+func (sh *strictHandler) DeleteNotebook(w http.ResponseWriter, r *http.Request, notebookId string) {
+	var request DeleteNotebookRequestObject
+
+	request.NotebookId = notebookId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteNotebook(ctx, request.(DeleteNotebookRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteNotebook")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteNotebookResponseObject); ok {
+		if err := validResponse.VisitDeleteNotebookResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetNotebook operation middleware
+func (sh *strictHandler) GetNotebook(w http.ResponseWriter, r *http.Request, notebookId string) {
+	var request GetNotebookRequestObject
+
+	request.NotebookId = notebookId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetNotebook(ctx, request.(GetNotebookRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetNotebook")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetNotebookResponseObject); ok {
+		if err := validResponse.VisitGetNotebookResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateNotebook operation middleware
+func (sh *strictHandler) UpdateNotebook(w http.ResponseWriter, r *http.Request, notebookId string) {
+	var request UpdateNotebookRequestObject
+
+	request.NotebookId = notebookId
+
+	var body UpdateNotebookJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateNotebook(ctx, request.(UpdateNotebookRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateNotebook")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateNotebookResponseObject); ok {
+		if err := validResponse.VisitUpdateNotebookResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateCell operation middleware
+func (sh *strictHandler) CreateCell(w http.ResponseWriter, r *http.Request, notebookId string) {
+	var request CreateCellRequestObject
+
+	request.NotebookId = notebookId
+
+	var body CreateCellJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateCell(ctx, request.(CreateCellRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateCell")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateCellResponseObject); ok {
+		if err := validResponse.VisitCreateCellResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReorderCells operation middleware
+func (sh *strictHandler) ReorderCells(w http.ResponseWriter, r *http.Request, notebookId string) {
+	var request ReorderCellsRequestObject
+
+	request.NotebookId = notebookId
+
+	var body ReorderCellsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReorderCells(ctx, request.(ReorderCellsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReorderCells")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReorderCellsResponseObject); ok {
+		if err := validResponse.VisitReorderCellsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteCell operation middleware
+func (sh *strictHandler) DeleteCell(w http.ResponseWriter, r *http.Request, notebookId string, cellId string) {
+	var request DeleteCellRequestObject
+
+	request.NotebookId = notebookId
+	request.CellId = cellId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteCell(ctx, request.(DeleteCellRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteCell")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteCellResponseObject); ok {
+		if err := validResponse.VisitDeleteCellResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateCell operation middleware
+func (sh *strictHandler) UpdateCell(w http.ResponseWriter, r *http.Request, notebookId string, cellId string) {
+	var request UpdateCellRequestObject
+
+	request.NotebookId = notebookId
+	request.CellId = cellId
+
+	var body UpdateCellJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateCell(ctx, request.(UpdateCellRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateCell")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateCellResponseObject); ok {
+		if err := validResponse.VisitUpdateCellResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListNotebookJobs operation middleware
+func (sh *strictHandler) ListNotebookJobs(w http.ResponseWriter, r *http.Request, notebookId string, params ListNotebookJobsParams) {
+	var request ListNotebookJobsRequestObject
+
+	request.NotebookId = notebookId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListNotebookJobs(ctx, request.(ListNotebookJobsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListNotebookJobs")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListNotebookJobsResponseObject); ok {
+		if err := validResponse.VisitListNotebookJobsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetNotebookJob operation middleware
+func (sh *strictHandler) GetNotebookJob(w http.ResponseWriter, r *http.Request, notebookId string, jobId string) {
+	var request GetNotebookJobRequestObject
+
+	request.NotebookId = notebookId
+	request.JobId = jobId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetNotebookJob(ctx, request.(GetNotebookJobRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetNotebookJob")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetNotebookJobResponseObject); ok {
+		if err := validResponse.VisitGetNotebookJobResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateNotebookSession operation middleware
+func (sh *strictHandler) CreateNotebookSession(w http.ResponseWriter, r *http.Request, notebookId string) {
+	var request CreateNotebookSessionRequestObject
+
+	request.NotebookId = notebookId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateNotebookSession(ctx, request.(CreateNotebookSessionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateNotebookSession")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateNotebookSessionResponseObject); ok {
+		if err := validResponse.VisitCreateNotebookSessionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CloseNotebookSession operation middleware
+func (sh *strictHandler) CloseNotebookSession(w http.ResponseWriter, r *http.Request, notebookId string, sessionId string) {
+	var request CloseNotebookSessionRequestObject
+
+	request.NotebookId = notebookId
+	request.SessionId = sessionId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CloseNotebookSession(ctx, request.(CloseNotebookSessionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CloseNotebookSession")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CloseNotebookSessionResponseObject); ok {
+		if err := validResponse.VisitCloseNotebookSessionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ExecuteCell operation middleware
+func (sh *strictHandler) ExecuteCell(w http.ResponseWriter, r *http.Request, notebookId string, sessionId string, cellId string) {
+	var request ExecuteCellRequestObject
+
+	request.NotebookId = notebookId
+	request.SessionId = sessionId
+	request.CellId = cellId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ExecuteCell(ctx, request.(ExecuteCellRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ExecuteCell")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ExecuteCellResponseObject); ok {
+		if err := validResponse.VisitExecuteCellResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RunAllCells operation middleware
+func (sh *strictHandler) RunAllCells(w http.ResponseWriter, r *http.Request, notebookId string, sessionId string) {
+	var request RunAllCellsRequestObject
+
+	request.NotebookId = notebookId
+	request.SessionId = sessionId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RunAllCells(ctx, request.(RunAllCellsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RunAllCells")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RunAllCellsResponseObject); ok {
+		if err := validResponse.VisitRunAllCellsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RunAllCellsAsync operation middleware
+func (sh *strictHandler) RunAllCellsAsync(w http.ResponseWriter, r *http.Request, notebookId string, sessionId string) {
+	var request RunAllCellsAsyncRequestObject
+
+	request.NotebookId = notebookId
+	request.SessionId = sessionId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RunAllCellsAsync(ctx, request.(RunAllCellsAsyncRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RunAllCellsAsync")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RunAllCellsAsyncResponseObject); ok {
+		if err := validResponse.VisitRunAllCellsAsyncResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -18229,311 +21746,354 @@ func (sh *strictHandler) CreateTagAssignment(w http.ResponseWriter, r *http.Requ
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
-	"LsP+vwAAAP//eyyOCVM/AwA=",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

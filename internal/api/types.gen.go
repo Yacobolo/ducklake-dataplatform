@@ -25,6 +25,12 @@ const (
 	CatalogRegistrationStatusERROR    CatalogRegistrationStatus = "ERROR"
 )
 
+// Defines values for CellCellType.
+const (
+	CellCellTypeMarkdown CellCellType = "markdown"
+	CellCellTypeSql      CellCellType = "sql"
+)
+
 // Defines values for ColumnMaskBindingRequestPrincipalType.
 const (
 	ColumnMaskBindingRequestPrincipalTypeGroup ColumnMaskBindingRequestPrincipalType = "group"
@@ -63,6 +69,12 @@ const (
 const (
 	CreateCatalogRequestMetastoreTypePostgres CreateCatalogRequestMetastoreType = "postgres"
 	CreateCatalogRequestMetastoreTypeSqlite   CreateCatalogRequestMetastoreType = "sqlite"
+)
+
+// Defines values for CreateCellRequestCellType.
+const (
+	CreateCellRequestCellTypeMarkdown CreateCellRequestCellType = "markdown"
+	CreateCellRequestCellTypeSql      CreateCellRequestCellType = "sql"
 )
 
 // Defines values for CreateComputeAssignmentRequestPrincipalType.
@@ -143,6 +155,20 @@ const (
 	READ      LineageEdgeEdgeType = "READ"
 	READWRITE LineageEdgeEdgeType = "READ_WRITE"
 	WRITE     LineageEdgeEdgeType = "WRITE"
+)
+
+// Defines values for NotebookJobState.
+const (
+	Complete NotebookJobState = "complete"
+	Failed   NotebookJobState = "failed"
+	Pending  NotebookJobState = "pending"
+	Running  NotebookJobState = "running"
+)
+
+// Defines values for NotebookSessionState.
+const (
+	Active NotebookSessionState = "active"
+	Closed NotebookSessionState = "closed"
 )
 
 // Defines values for PrincipalType.
@@ -285,6 +311,33 @@ type CatalogRegistrationList struct {
 	TotalCount    *int64                 `json:"total_count,omitempty"`
 }
 
+// Cell A single cell within a notebook.
+type Cell struct {
+	CellType  *CellCellType `json:"cell_type,omitempty"`
+	Content   *string       `json:"content,omitempty"`
+	CreatedAt *time.Time    `json:"created_at,omitempty"`
+	Id        *string       `json:"id,omitempty"`
+
+	// LastResult JSON-encoded cached result from last execution
+	LastResult *string    `json:"last_result,omitempty"`
+	NotebookId *string    `json:"notebook_id,omitempty"`
+	Position   *int32     `json:"position,omitempty"`
+	UpdatedAt  *time.Time `json:"updated_at,omitempty"`
+}
+
+// CellCellType defines model for Cell.CellType.
+type CellCellType string
+
+// CellExecutionResult Result of executing a single cell.
+type CellExecutionResult struct {
+	CellId     *string          `json:"cell_id,omitempty"`
+	Columns    *[]string        `json:"columns,omitempty"`
+	DurationMs *int64           `json:"duration_ms,omitempty"`
+	Error      *string          `json:"error,omitempty"`
+	RowCount   *int32           `json:"row_count,omitempty"`
+	Rows       *[][]interface{} `json:"rows,omitempty"`
+}
+
 // CleanupAPIKeysResponse Response returned after cleaning up expired API keys.
 type CleanupAPIKeysResponse struct {
 	DeletedCount *int64 `json:"deleted_count,omitempty"`
@@ -422,6 +475,18 @@ type CreateCatalogRequest struct {
 // CreateCatalogRequestMetastoreType defines model for CreateCatalogRequest.MetastoreType.
 type CreateCatalogRequestMetastoreType string
 
+// CreateCellRequest Request payload for creating a new cell.
+type CreateCellRequest struct {
+	CellType CreateCellRequestCellType `json:"cell_type"`
+	Content  *string                   `json:"content,omitempty"`
+
+	// Position Position in the notebook. If omitted, appends to end.
+	Position *int32 `json:"position,omitempty"`
+}
+
+// CreateCellRequestCellType defines model for CreateCellRequest.CellType.
+type CreateCellRequestCellType string
+
 // CreateColumnMaskRequest Request body for creating a new column mask.
 type CreateColumnMaskRequest struct {
 	ColumnName     string  `json:"column_name"`
@@ -476,6 +541,15 @@ type CreateExternalLocationRequest struct {
 // CreateExternalLocationRequestStorageType defines model for CreateExternalLocationRequest.StorageType.
 type CreateExternalLocationRequestStorageType string
 
+// CreateGitRepoRequest Request payload for registering a Git repository.
+type CreateGitRepoRequest struct {
+	// AuthToken Personal access token or deploy key for Git authentication.
+	AuthToken string  `json:"auth_token"`
+	Branch    string  `json:"branch"`
+	Path      *string `json:"path,omitempty"`
+	Url       string  `json:"url"`
+}
+
 // CreateGrantRequest Request body for creating a new privilege grant.
 type CreateGrantRequest struct {
 	PrincipalId   string                          `json:"principal_id"`
@@ -499,6 +573,12 @@ type CreateGroupMemberRequestMemberType string
 
 // CreateGroupRequest Request body for creating a new group.
 type CreateGroupRequest struct {
+	Description *string `json:"description,omitempty"`
+	Name        string  `json:"name"`
+}
+
+// CreateNotebookRequest Request payload for creating a new notebook.
+type CreateNotebookRequest struct {
 	Description *string `json:"description,omitempty"`
 	Name        string  `json:"name"`
 }
@@ -632,6 +712,27 @@ type ExternalLocation struct {
 	Url            *string    `json:"url,omitempty"`
 }
 
+// GitRepo A registered Git repository for notebook sync.
+type GitRepo struct {
+	Branch     *string    `json:"branch,omitempty"`
+	CreatedAt  *time.Time `json:"created_at,omitempty"`
+	Id         *string    `json:"id,omitempty"`
+	LastCommit *string    `json:"last_commit,omitempty"`
+	LastSyncAt *time.Time `json:"last_sync_at,omitempty"`
+	Owner      *string    `json:"owner,omitempty"`
+	Path       *string    `json:"path,omitempty"`
+	UpdatedAt  *time.Time `json:"updated_at,omitempty"`
+	Url        *string    `json:"url,omitempty"`
+}
+
+// GitSyncResult Result of a Git sync operation.
+type GitSyncResult struct {
+	CommitSha        *string `json:"commit_sha,omitempty"`
+	NotebooksCreated *int32  `json:"notebooks_created,omitempty"`
+	NotebooksDeleted *int32  `json:"notebooks_deleted,omitempty"`
+	NotebooksUpdated *int32  `json:"notebooks_updated,omitempty"`
+}
+
 // Group A group that can contain multiple principals for collective access control.
 type Group struct {
 	CreatedAt   *time.Time `json:"created_at,omitempty"`
@@ -740,6 +841,54 @@ type MetastoreSummary struct {
 	TableCount     *int64  `json:"table_count,omitempty"`
 }
 
+// Notebook A SQL notebook document.
+type Notebook struct {
+	CreatedAt   *time.Time `json:"created_at,omitempty"`
+	Description *string    `json:"description,omitempty"`
+	Id          *string    `json:"id,omitempty"`
+	Name        *string    `json:"name,omitempty"`
+	Owner       *string    `json:"owner,omitempty"`
+	UpdatedAt   *time.Time `json:"updated_at,omitempty"`
+}
+
+// NotebookDetail A notebook with its cells.
+type NotebookDetail struct {
+	Cells *[]Cell `json:"cells,omitempty"`
+
+	// Notebook A SQL notebook document.
+	Notebook *Notebook `json:"notebook,omitempty"`
+}
+
+// NotebookJob An async notebook execution job.
+type NotebookJob struct {
+	CreatedAt  *time.Time `json:"created_at,omitempty"`
+	Error      *string    `json:"error,omitempty"`
+	Id         *string    `json:"id,omitempty"`
+	NotebookId *string    `json:"notebook_id,omitempty"`
+
+	// Result JSON-encoded RunAllResult when complete
+	Result    *string           `json:"result,omitempty"`
+	SessionId *string           `json:"session_id,omitempty"`
+	State     *NotebookJobState `json:"state,omitempty"`
+	UpdatedAt *time.Time        `json:"updated_at,omitempty"`
+}
+
+// NotebookJobState defines model for NotebookJob.State.
+type NotebookJobState string
+
+// NotebookSession An active notebook execution session.
+type NotebookSession struct {
+	CreatedAt  *time.Time            `json:"created_at,omitempty"`
+	Id         *string               `json:"id,omitempty"`
+	LastUsedAt *time.Time            `json:"last_used_at,omitempty"`
+	NotebookId *string               `json:"notebook_id,omitempty"`
+	Principal  *string               `json:"principal,omitempty"`
+	State      *NotebookSessionState `json:"state,omitempty"`
+}
+
+// NotebookSessionState defines model for NotebookSession.State.
+type NotebookSessionState string
+
 // PaginatedAPIKeys Paginated list of API key metadata.
 type PaginatedAPIKeys struct {
 	Data          *[]APIKeyInfo `json:"data,omitempty"`
@@ -782,6 +931,12 @@ type PaginatedExternalLocations struct {
 	NextPageToken *string             `json:"next_page_token,omitempty"`
 }
 
+// PaginatedGitRepos A paginated list of Git repositories.
+type PaginatedGitRepos struct {
+	Data          *[]GitRepo `json:"data,omitempty"`
+	NextPageToken *string    `json:"next_page_token,omitempty"`
+}
+
 // PaginatedGrants Paginated list of privilege grants.
 type PaginatedGrants struct {
 	Data          *[]PrivilegeGrant `json:"data,omitempty"`
@@ -804,6 +959,18 @@ type PaginatedGroups struct {
 type PaginatedLineageEdges struct {
 	Data          *[]LineageEdge `json:"data,omitempty"`
 	NextPageToken *string        `json:"next_page_token,omitempty"`
+}
+
+// PaginatedNotebookJobs A paginated list of notebook jobs.
+type PaginatedNotebookJobs struct {
+	Data          *[]NotebookJob `json:"data,omitempty"`
+	NextPageToken *string        `json:"next_page_token,omitempty"`
+}
+
+// PaginatedNotebooks A paginated list of notebooks.
+type PaginatedNotebooks struct {
+	Data          *[]Notebook `json:"data,omitempty"`
+	NextPageToken *string     `json:"next_page_token,omitempty"`
 }
 
 // PaginatedPrincipals Paginated list of principals.
@@ -931,6 +1098,11 @@ type QueryResult struct {
 	Rows     *[][]interface{} `json:"rows,omitempty"`
 }
 
+// ReorderCellsRequest Request payload for reordering cells in a notebook.
+type ReorderCellsRequest struct {
+	CellIds []string `json:"cell_ids"`
+}
+
 // RowFilter A row-level security filter applied to a table.
 type RowFilter struct {
 	CreatedAt   *time.Time `json:"created_at,omitempty"`
@@ -948,6 +1120,13 @@ type RowFilterBindingRequest struct {
 
 // RowFilterBindingRequestPrincipalType defines model for RowFilterBindingRequest.PrincipalType.
 type RowFilterBindingRequestPrincipalType string
+
+// RunAllResult Aggregated result from executing all cells in a notebook.
+type RunAllResult struct {
+	NotebookId      *string                `json:"notebook_id,omitempty"`
+	Results         *[]CellExecutionResult `json:"results,omitempty"`
+	TotalDurationMs *int64                 `json:"total_duration_ms,omitempty"`
+}
 
 // SchemaDetail Detailed information about a schema within a catalog.
 type SchemaDetail struct {
@@ -1069,6 +1248,12 @@ type UpdateCatalogRegistrationRequest struct {
 	Dsn      *string `json:"dsn,omitempty"`
 }
 
+// UpdateCellRequest Request payload for updating a cell.
+type UpdateCellRequest struct {
+	Content  *string `json:"content,omitempty"`
+	Position *int32  `json:"position,omitempty"`
+}
+
 // UpdateColumnRequest Request body for updating column metadata.
 type UpdateColumnRequest struct {
 	Comment    *string            `json:"comment,omitempty"`
@@ -1097,6 +1282,12 @@ type UpdateExternalLocationRequest struct {
 	Owner          *string `json:"owner,omitempty"`
 	ReadOnly       *bool   `json:"read_only,omitempty"`
 	Url            *string `json:"url,omitempty"`
+}
+
+// UpdateNotebookRequest Request payload for updating a notebook.
+type UpdateNotebookRequest struct {
+	Description *string `json:"description,omitempty"`
+	Name        *string `json:"name,omitempty"`
 }
 
 // UpdatePrincipalAdminRequest Request body for updating a principal's admin status.
@@ -1420,6 +1611,15 @@ type ListExternalLocationsParams struct {
 	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
 }
 
+// ListGitReposParams defines parameters for ListGitRepos.
+type ListGitReposParams struct {
+	// MaxResults Maximum number of results to return per page.
+	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
+
+	// PageToken Opaque pagination token from a previous response.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
 // ListGrantsParams defines parameters for ListGrants.
 type ListGrantsParams struct {
 	// PrincipalId Filter by principal identifier.
@@ -1494,6 +1694,27 @@ type GetDownstreamLineageParams struct {
 
 // GetUpstreamLineageParams defines parameters for GetUpstreamLineage.
 type GetUpstreamLineageParams struct {
+	// MaxResults Maximum number of results to return per page.
+	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
+
+	// PageToken Opaque pagination token from a previous response.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// ListNotebooksParams defines parameters for ListNotebooks.
+type ListNotebooksParams struct {
+	// Owner Filter by owner principal name.
+	Owner *string `form:"owner,omitempty" json:"owner,omitempty"`
+
+	// MaxResults Maximum number of results to return per page.
+	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
+
+	// PageToken Opaque pagination token from a previous response.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// ListNotebookJobsParams defines parameters for ListNotebookJobs.
+type ListNotebookJobsParams struct {
 	// MaxResults Maximum number of results to return per page.
 	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
 
@@ -1663,6 +1884,9 @@ type CreateExternalLocationJSONRequestBody = CreateExternalLocationRequest
 // UpdateExternalLocationJSONRequestBody defines body for UpdateExternalLocation for application/json ContentType.
 type UpdateExternalLocationJSONRequestBody = UpdateExternalLocationRequest
 
+// CreateGitRepoJSONRequestBody defines body for CreateGitRepo for application/json ContentType.
+type CreateGitRepoJSONRequestBody = CreateGitRepoRequest
+
 // CreateGrantJSONRequestBody defines body for CreateGrant for application/json ContentType.
 type CreateGrantJSONRequestBody = CreateGrantRequest
 
@@ -1677,6 +1901,21 @@ type PurgeLineageJSONRequestBody = PurgeLineageRequest
 
 // CreateManifestJSONRequestBody defines body for CreateManifest for application/json ContentType.
 type CreateManifestJSONRequestBody = ManifestRequest
+
+// CreateNotebookJSONRequestBody defines body for CreateNotebook for application/json ContentType.
+type CreateNotebookJSONRequestBody = CreateNotebookRequest
+
+// UpdateNotebookJSONRequestBody defines body for UpdateNotebook for application/json ContentType.
+type UpdateNotebookJSONRequestBody = UpdateNotebookRequest
+
+// CreateCellJSONRequestBody defines body for CreateCell for application/json ContentType.
+type CreateCellJSONRequestBody = CreateCellRequest
+
+// ReorderCellsJSONRequestBody defines body for ReorderCells for application/json ContentType.
+type ReorderCellsJSONRequestBody = ReorderCellsRequest
+
+// UpdateCellJSONRequestBody defines body for UpdateCell for application/json ContentType.
+type UpdateCellJSONRequestBody = UpdateCellRequest
 
 // CreatePrincipalJSONRequestBody defines body for CreatePrincipal for application/json ContentType.
 type CreatePrincipalJSONRequestBody = CreatePrincipalRequest

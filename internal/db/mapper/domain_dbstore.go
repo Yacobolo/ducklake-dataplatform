@@ -375,6 +375,109 @@ func TagAssignmentFromDB(a dbstore.TagAssignment) *domain.TagAssignment {
 	}
 }
 
+// --- Notebook ---
+
+// NotebookFromDB converts a dbstore.Notebook to a domain.Notebook.
+func NotebookFromDB(n dbstore.Notebook) *domain.Notebook {
+	return &domain.Notebook{
+		ID:          n.ID,
+		Name:        n.Name,
+		Description: ptrStr(n.Description),
+		Owner:       n.Owner,
+		CreatedAt:   parseTime(n.CreatedAt),
+		UpdatedAt:   parseTime(n.UpdatedAt),
+	}
+}
+
+// NotebooksFromDB converts a slice of dbstore.Notebook to a slice of domain.Notebook.
+func NotebooksFromDB(ns []dbstore.Notebook) []domain.Notebook {
+	out := make([]domain.Notebook, len(ns))
+	for i, n := range ns {
+		out[i] = *NotebookFromDB(n)
+	}
+	return out
+}
+
+// CellFromDB converts a dbstore.Cell to a domain.Cell.
+func CellFromDB(c dbstore.Cell) *domain.Cell {
+	return &domain.Cell{
+		ID:         c.ID,
+		NotebookID: c.NotebookID,
+		CellType:   domain.CellType(c.CellType),
+		Content:    c.Content,
+		Position:   int(c.Position),
+		LastResult: ptrStr(c.LastResult),
+		CreatedAt:  parseTime(c.CreatedAt),
+		UpdatedAt:  parseTime(c.UpdatedAt),
+	}
+}
+
+// CellsFromDB converts a slice of dbstore.Cell to a slice of domain.Cell.
+func CellsFromDB(cs []dbstore.Cell) []domain.Cell {
+	out := make([]domain.Cell, len(cs))
+	for i, c := range cs {
+		out[i] = *CellFromDB(c)
+	}
+	return out
+}
+
+// --- NotebookJob ---
+
+// NotebookJobFromDB converts a dbstore.NotebookJob to a domain.NotebookJob.
+func NotebookJobFromDB(j dbstore.NotebookJob) *domain.NotebookJob {
+	return &domain.NotebookJob{
+		ID:         j.ID,
+		NotebookID: j.NotebookID,
+		SessionID:  j.SessionID,
+		State:      domain.JobState(j.State),
+		Result:     ptrStr(j.Result),
+		Error:      ptrStr(j.Error),
+		CreatedAt:  parseTime(j.CreatedAt),
+		UpdatedAt:  parseTime(j.UpdatedAt),
+	}
+}
+
+// NotebookJobsFromDB converts a slice of dbstore.NotebookJob to a slice of domain.NotebookJob.
+func NotebookJobsFromDB(js []dbstore.NotebookJob) []domain.NotebookJob {
+	out := make([]domain.NotebookJob, len(js))
+	for i, j := range js {
+		out[i] = *NotebookJobFromDB(j)
+	}
+	return out
+}
+
+// --- GitRepo ---
+
+// GitRepoFromDB converts a dbstore.GitRepo to a domain.GitRepo.
+func GitRepoFromDB(r dbstore.GitRepo) *domain.GitRepo {
+	repo := &domain.GitRepo{
+		ID:            r.ID,
+		URL:           r.Url,
+		Branch:        r.Branch,
+		Path:          r.Path,
+		AuthToken:     r.AuthToken,
+		WebhookSecret: ptrStr(r.WebhookSecret),
+		Owner:         r.Owner,
+		LastCommit:    ptrStr(r.LastCommit),
+		CreatedAt:     parseTime(r.CreatedAt),
+		UpdatedAt:     parseTime(r.UpdatedAt),
+	}
+	if r.LastSyncAt.Valid {
+		t := parseTime(r.LastSyncAt.String)
+		repo.LastSyncAt = &t
+	}
+	return repo
+}
+
+// GitReposFromDB converts a slice of dbstore.GitRepo to a slice of domain.GitRepo.
+func GitReposFromDB(rs []dbstore.GitRepo) []domain.GitRepo {
+	out := make([]domain.GitRepo, len(rs))
+	for i, r := range rs {
+		out[i] = *GitRepoFromDB(r)
+	}
+	return out
+}
+
 // --- CatalogRegistration ---
 
 // CatalogRegistrationFromDB converts a dbstore.Catalog to a domain.CatalogRegistration.

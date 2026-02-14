@@ -623,6 +623,7 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
 		nil,                     // ingestionSvc
 		nil, nil, nil, nil, nil, // storageCredSvc, extLocationSvc, volumeSvc, computeEndpointSvc, apiKeySvc
+		nil, nil, nil, // notebookSvc, sessionSvc, gitRepoSvc
 	)
 	strictHandler := api.NewStrictHandler(handler, nil)
 
@@ -747,6 +748,7 @@ func setupLocalExtensionServer(t *testing.T) *testEnv {
 		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
 		nil,                     // ingestionSvc
 		nil, nil, nil, nil, nil, // storageCredSvc, extLocationSvc, volumeSvc, computeEndpointSvc, apiKeySvc
+		nil, nil, nil, // notebookSvc, sessionSvc, gitRepoSvc
 	)
 	strictHandler := api.NewStrictHandler(handler, nil)
 
@@ -1239,6 +1241,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		storageCredSvc, extLocationSvc, nil, // volumeSvc
 		computeEndpointSvc,
 		apiKeySvc,
+		nil, nil, nil, // notebookSvc, sessionSvc, gitRepoSvc
 	)
 	strictHandler := api.NewStrictHandler(handler, nil)
 
@@ -1928,6 +1931,7 @@ func setupMultiTableLocalServer(t *testing.T) *multiTableTestEnv {
 		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
 		nil,
 		nil, nil, nil, nil, nil,
+		nil, nil, nil, // notebookSvc, sessionSvc, gitRepoSvc
 	)
 	strictHandler := api.NewStrictHandler(handler, nil)
 

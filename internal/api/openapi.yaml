@@ -35,6 +35,8 @@ tags:
     description: Client-side query manifest with presigned URLs.
   - name: Compute
     description: Compute endpoint and assignment management.
+  - name: Notebooks
+    description: SQL notebooks, sessions, jobs, and Git integration.
 
 components:
   securitySchemes:
@@ -307,6 +309,42 @@ components:
       $ref: 'schemas/compute.yaml#/PaginatedComputeAssignments'
     ComputeEndpointHealth:
       $ref: 'schemas/compute.yaml#/ComputeEndpointHealth'
+    Notebook:
+      $ref: 'schemas/notebooks.yaml#/Notebook'
+    Cell:
+      $ref: 'schemas/notebooks.yaml#/Cell'
+    NotebookDetail:
+      $ref: 'schemas/notebooks.yaml#/NotebookDetail'
+    PaginatedNotebooks:
+      $ref: 'schemas/notebooks.yaml#/PaginatedNotebooks'
+    CreateNotebookRequest:
+      $ref: 'schemas/notebooks.yaml#/CreateNotebookRequest'
+    UpdateNotebookRequest:
+      $ref: 'schemas/notebooks.yaml#/UpdateNotebookRequest'
+    CreateCellRequest:
+      $ref: 'schemas/notebooks.yaml#/CreateCellRequest'
+    UpdateCellRequest:
+      $ref: 'schemas/notebooks.yaml#/UpdateCellRequest'
+    ReorderCellsRequest:
+      $ref: 'schemas/notebooks.yaml#/ReorderCellsRequest'
+    NotebookSession:
+      $ref: 'schemas/notebooks.yaml#/NotebookSession'
+    CellExecutionResult:
+      $ref: 'schemas/notebooks.yaml#/CellExecutionResult'
+    RunAllResult:
+      $ref: 'schemas/notebooks.yaml#/RunAllResult'
+    NotebookJob:
+      $ref: 'schemas/notebooks.yaml#/NotebookJob'
+    PaginatedNotebookJobs:
+      $ref: 'schemas/notebooks.yaml#/PaginatedNotebookJobs'
+    GitRepo:
+      $ref: 'schemas/notebooks.yaml#/GitRepo'
+    CreateGitRepoRequest:
+      $ref: 'schemas/notebooks.yaml#/CreateGitRepoRequest'
+    PaginatedGitRepos:
+      $ref: 'schemas/notebooks.yaml#/PaginatedGitRepos'
+    GitSyncResult:
+      $ref: 'schemas/notebooks.yaml#/GitSyncResult'
 
 paths:
   /query:
@@ -441,3 +479,34 @@ paths:
     $ref: 'paths/compute.yaml#/paths/~1compute-endpoints~1{endpointName}~1health'
   /compute-endpoints/{endpointName}/assignments/{assignmentId}:
     $ref: 'paths/compute.yaml#/paths/~1compute-endpoints~1{endpointName}~1assignments~1{assignmentId}'
+  # === Notebooks ===
+  /notebooks:
+    $ref: 'paths/notebooks.yaml#/paths/~1notebooks'
+  /notebooks/{notebookId}:
+    $ref: 'paths/notebooks.yaml#/paths/~1notebooks~1{notebookId}'
+  /notebooks/{notebookId}/cells:
+    $ref: 'paths/notebooks.yaml#/paths/~1notebooks~1{notebookId}~1cells'
+  /notebooks/{notebookId}/cells/reorder:
+    $ref: 'paths/notebooks.yaml#/paths/~1notebooks~1{notebookId}~1cells~1reorder'
+  /notebooks/{notebookId}/cells/{cellId}:
+    $ref: 'paths/notebooks.yaml#/paths/~1notebooks~1{notebookId}~1cells~1{cellId}'
+  /notebooks/{notebookId}/sessions:
+    $ref: 'paths/notebooks.yaml#/paths/~1notebooks~1{notebookId}~1sessions'
+  /notebooks/{notebookId}/sessions/{sessionId}:
+    $ref: 'paths/notebooks.yaml#/paths/~1notebooks~1{notebookId}~1sessions~1{sessionId}'
+  /notebooks/{notebookId}/sessions/{sessionId}/execute/{cellId}:
+    $ref: 'paths/notebooks.yaml#/paths/~1notebooks~1{notebookId}~1sessions~1{sessionId}~1execute~1{cellId}'
+  /notebooks/{notebookId}/sessions/{sessionId}/run-all:
+    $ref: 'paths/notebooks.yaml#/paths/~1notebooks~1{notebookId}~1sessions~1{sessionId}~1run-all'
+  /notebooks/{notebookId}/sessions/{sessionId}/run-all-async:
+    $ref: 'paths/notebooks.yaml#/paths/~1notebooks~1{notebookId}~1sessions~1{sessionId}~1run-all-async'
+  /notebooks/{notebookId}/jobs:
+    $ref: 'paths/notebooks.yaml#/paths/~1notebooks~1{notebookId}~1jobs'
+  /notebooks/{notebookId}/jobs/{jobId}:
+    $ref: 'paths/notebooks.yaml#/paths/~1notebooks~1{notebookId}~1jobs~1{jobId}'
+  /git-repos:
+    $ref: 'paths/notebooks.yaml#/paths/~1git-repos'
+  /git-repos/{gitRepoId}:
+    $ref: 'paths/notebooks.yaml#/paths/~1git-repos~1{gitRepoId}'
+  /git-repos/{gitRepoId}/sync:
+    $ref: 'paths/notebooks.yaml#/paths/~1git-repos~1{gitRepoId}~1sync'

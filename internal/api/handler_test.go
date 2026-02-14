@@ -151,7 +151,7 @@ func setupTestServer(t *testing.T, principalName string) *httptest.Server {
 	tagSvc := governance.NewTagService(repository.NewTagRepo(metaDB), auditRepo)
 	viewSvc := catalog.NewViewService(repository.NewViewRepo(metaDB), catalogRepoFactory, cat, auditRepo)
 
-	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, auditSvc, nil, catalogSvc, nil, queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc, nil, nil, nil, nil, nil, nil)
+	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, auditSvc, nil, catalogSvc, nil, queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	strictHandler := NewStrictHandler(handler, nil)
 
 	// Lookup principal to get admin status for context injection
@@ -433,7 +433,7 @@ func setupCatalogTestServer(t *testing.T, principalName string, mockRepo *mockCa
 	tagSvc := governance.NewTagService(repository.NewTagRepo(metaDB), auditRepo)
 	viewSvc := catalog.NewViewService(repository.NewViewRepo(metaDB), mockFactory, cat, auditRepo)
 
-	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, auditSvc, nil, catalogSvc, nil, queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc, nil, nil, nil, nil, nil, nil)
+	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, auditSvc, nil, catalogSvc, nil, queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	strictHandler := NewStrictHandler(handler, nil)
 
 	// Lookup principal to get admin status for context injection
@@ -1261,6 +1261,7 @@ func setupSecurityTestServer(t *testing.T, principalName string, isAdmin bool) *
 		nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
 		nil, // computeEndpointSvc
 		apiKeySvc,
+		nil, nil, nil, // notebook, session, gitRepo services
 	)
 	strictHandler := NewStrictHandler(handler, nil)
 
