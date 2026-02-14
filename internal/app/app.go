@@ -60,6 +60,7 @@ type Services struct {
 	APIKey              *security.APIKeyService
 	Notebook            *notebook.Service
 	SessionManager      *notebook.SessionManager
+	GitService          *notebook.GitService
 }
 
 // App holds the fully-wired application: engine, services, and the
@@ -223,6 +224,8 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	notebookJobRepo := repository.NewNotebookJobRepo(deps.WriteDB)
 	notebookSvc := notebook.New(notebookRepo, auditRepo)
 	sessionMgr := notebook.NewSessionManager(deps.DuckDB, eng, notebookRepo, notebookJobRepo, auditRepo)
+	gitRepoRepo := repository.NewGitRepoRepo(deps.WriteDB)
+	gitSvc := notebook.NewGitService(gitRepoRepo, auditRepo)
 
 	// === API Key ===
 	apiKeyRepo := repository.NewAPIKeyRepo(deps.ReadDB)
@@ -253,6 +256,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 			APIKey:              apiKeySvc,
 			Notebook:            notebookSvc,
 			SessionManager:      sessionMgr,
+			GitService:          gitSvc,
 		},
 		Engine:        eng,
 		APIKeyRepo:    apiKeyRepo,

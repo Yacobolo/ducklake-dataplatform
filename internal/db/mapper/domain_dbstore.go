@@ -384,6 +384,8 @@ func NotebookFromDB(n dbstore.Notebook) *domain.Notebook {
 		Name:        n.Name,
 		Description: ptrStr(n.Description),
 		Owner:       n.Owner,
+		GitRepoID:   ptrStr(n.GitRepoID),
+		GitPath:     ptrStr(n.GitPath),
 		CreatedAt:   parseTime(n.CreatedAt),
 		UpdatedAt:   parseTime(n.UpdatedAt),
 	}

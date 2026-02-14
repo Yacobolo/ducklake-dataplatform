@@ -466,6 +466,119 @@ func TestDDLVariantsBlocked(t *testing.T) {
 	}
 }
 
+// setupEngineWithDB is like setupEngine but also returns the underlying *sql.DB
+// so callers can obtain a pinned *sql.Conn for QueryOnConn tests.
+func setupEngineWithDB(t *testing.T) (*engine.SecureEngine, *sql.DB) {
+	t.Helper()
+
+	if _, err := os.Stat("../../titanic.parquet"); os.IsNotExist(err) {
+		t.Skip("titanic.parquet not found, skipping integration test")
+	}
+
+	db, err := sql.Open("duckdb", "")
+	if err != nil {
+		t.Fatalf("open duckdb: %v", err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+
+	if _, err := db.ExecContext(ctx, "CREATE TABLE titanic AS SELECT * FROM '../../titanic.parquet'"); err != nil {
+		t.Fatalf("create table: %v", err)
+	}
+
+	cat := setupTestCatalog(t)
+	eng := engine.NewSecureEngine(db, cat, nil, nil, slog.New(slog.DiscardHandler))
+	return eng, db
+}
+
+func TestQueryOnConn(t *testing.T) {
+	t.Run("applies_security_rewriting", func(t *testing.T) {
+		eng, db := setupEngineWithDB(t)
+
+		conn, err := db.Conn(ctx)
+		require.NoError(t, err)
+		t.Cleanup(func() { _ = conn.Close() })
+
+		rows, err := eng.QueryOnConn(ctx, conn, "first_class_analyst", "SELECT COUNT(*) FROM titanic")
+		require.NoError(t, err)
+		defer rows.Close() //nolint:errcheck
+
+		require.True(t, rows.Next(), "expected a row from COUNT query")
+		var count int64
+		require.NoError(t, rows.Scan(&count))
+		require.NoError(t, rows.Err())
+
+		require.Positive(t, count, "first_class_analyst should see at least some rows")
+		require.Less(t, count, int64(891), "first_class_analyst should see fewer than 891 rows due to RLS")
+		t.Logf("first_class_analyst saw %d rows on pinned conn", count)
+	})
+
+	t.Run("admin_sees_all_rows", func(t *testing.T) {
+		eng, db := setupEngineWithDB(t)
+
+		conn, err := db.Conn(ctx)
+		require.NoError(t, err)
+		t.Cleanup(func() { _ = conn.Close() })
+
+		rows, err := eng.QueryOnConn(ctx, conn, "admin", "SELECT COUNT(*) FROM titanic")
+		require.NoError(t, err)
+		defer rows.Close() //nolint:errcheck
+
+		require.True(t, rows.Next(), "expected a row from COUNT query")
+		var count int64
+		require.NoError(t, rows.Scan(&count))
+		require.NoError(t, rows.Err())
+
+		require.Equal(t, int64(891), count, "admin should see all 891 rows")
+	})
+
+	t.Run("no_access_denied", func(t *testing.T) {
+		eng, db := setupEngineWithDB(t)
+
+		conn, err := db.Conn(ctx)
+		require.NoError(t, err)
+		t.Cleanup(func() { _ = conn.Close() })
+
+		rows, err := eng.QueryOnConn(ctx, conn, "no_access", "SELECT * FROM titanic") //nolint:rowserrcheck // we expect an error
+		if rows != nil {
+			defer rows.Close() //nolint:errcheck
+		}
+		require.Error(t, err, "expected access denied for no_access user")
+		t.Logf("no_access error on pinned conn: %v", err)
+	})
+
+	t.Run("pinned_conn_independent_from_pool", func(t *testing.T) {
+		// Verify that a pinned connection maintains its own state separate from
+		// the connection pool. We test this by executing multiple queries on the
+		// same pinned connection and verifying consistent results.
+		eng, db := setupEngineWithDB(t)
+
+		conn, err := db.Conn(ctx)
+		require.NoError(t, err)
+		t.Cleanup(func() { _ = conn.Close() })
+
+		// First query: count rows as admin on pinned conn
+		rows1, err := eng.QueryOnConn(ctx, conn, "admin", "SELECT COUNT(*) FROM titanic")
+		require.NoError(t, err)
+		require.True(t, rows1.Next())
+		var count1 int64
+		require.NoError(t, rows1.Scan(&count1))
+		require.NoError(t, rows1.Err())
+		rows1.Close() //nolint:errcheck,sqlclosecheck
+
+		// Second query on same pinned conn: should give same result
+		rows2, err := eng.QueryOnConn(ctx, conn, "admin", "SELECT COUNT(*) FROM titanic")
+		require.NoError(t, err)
+		require.True(t, rows2.Next())
+		var count2 int64
+		require.NoError(t, rows2.Scan(&count2))
+		require.NoError(t, rows2.Err())
+		rows2.Close() //nolint:errcheck,sqlclosecheck
+
+		require.Equal(t, count1, count2, "same pinned conn should give consistent results")
+		require.Equal(t, int64(891), count1)
+	})
+}
+
 func TestMalformedSQLReturnsError(t *testing.T) {
 	eng := setupEngine(t)
 

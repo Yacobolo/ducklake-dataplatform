@@ -129,7 +129,7 @@ func run() error {
 		svc.APIKey,
 		svc.Notebook,
 		svc.SessionManager,
-		nil, // gitRepos - Phase 4, not yet implemented
+		svc.GitService,
 	)
 
 	// Create strict handler wrapper
