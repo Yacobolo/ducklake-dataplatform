@@ -1,0 +1,300 @@
+Pipeline:
+  description: A pipeline workflow definition for scheduling SQL notebook execution.
+  type: object
+  properties:
+    id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+    name:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+    description:
+      type: string
+      maxLength: 4096
+    schedule_cron:
+      type: string
+      maxLength: 255
+    is_paused:
+      type: boolean
+    concurrency_limit:
+      type: integer
+      format: int32
+      minimum: 0
+      maximum: 100
+    created_by:
+      type: string
+      maxLength: 255
+    created_at:
+      type: string
+      format: date-time
+      maxLength: 64
+    updated_at:
+      type: string
+      format: date-time
+      maxLength: 64
+
+PipelineJob:
+  description: A job within a pipeline, referencing a notebook for execution.
+  type: object
+  properties:
+    id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+    pipeline_id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+    name:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+    compute_endpoint_id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+    depends_on:
+      type: array
+      maxItems: 100
+      items:
+        type: string
+        maxLength: 255
+    notebook_id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+    timeout_seconds:
+      type: integer
+      format: int64
+      minimum: 0
+      maximum: 86400
+    retry_count:
+      type: integer
+      format: int32
+      minimum: 0
+      maximum: 10
+    job_order:
+      type: integer
+      format: int32
+      minimum: 0
+      maximum: 1000
+    created_at:
+      type: string
+      format: date-time
+      maxLength: 64
+
+PipelineRun:
+  description: An execution instance of a pipeline.
+  type: object
+  properties:
+    id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+    pipeline_id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+    status:
+      type: string
+      enum: [PENDING, RUNNING, SUCCESS, FAILED, CANCELLED]
+    trigger_type:
+      type: string
+      enum: [MANUAL, SCHEDULED]
+    triggered_by:
+      type: string
+      maxLength: 255
+    parameters:
+      type: object
+      additionalProperties:
+        type: string
+        maxLength: 4096
+    git_commit_hash:
+      type: string
+      maxLength: 64
+    started_at:
+      type: string
+      format: date-time
+      maxLength: 64
+    finished_at:
+      type: string
+      format: date-time
+      maxLength: 64
+    error_message:
+      type: string
+      maxLength: 4096
+    created_at:
+      type: string
+      format: date-time
+      maxLength: 64
+
+PipelineJobRun:
+  description: Execution status of a single job within a pipeline run.
+  type: object
+  properties:
+    id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+    run_id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+    job_id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+    job_name:
+      type: string
+      maxLength: 255
+    status:
+      type: string
+      enum: [PENDING, RUNNING, SUCCESS, FAILED, SKIPPED, CANCELLED]
+    started_at:
+      type: string
+      format: date-time
+      maxLength: 64
+    finished_at:
+      type: string
+      format: date-time
+      maxLength: 64
+    error_message:
+      type: string
+      maxLength: 4096
+    retry_attempt:
+      type: integer
+      format: int32
+      minimum: 0
+      maximum: 10
+    created_at:
+      type: string
+      format: date-time
+      maxLength: 64
+
+CreatePipelineRequest:
+  description: Request payload for creating a new pipeline.
+  type: object
+  additionalProperties: false
+  required: [name]
+  properties:
+    name:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+    description:
+      type: string
+      maxLength: 4096
+    schedule_cron:
+      type: string
+      maxLength: 255
+    is_paused:
+      type: boolean
+      default: false
+    concurrency_limit:
+      type: integer
+      format: int32
+      minimum: 0
+      maximum: 100
+      default: 1
+
+UpdatePipelineRequest:
+  description: Request payload for updating an existing pipeline.
+  type: object
+  additionalProperties: false
+  properties:
+    description:
+      type: string
+      maxLength: 4096
+    schedule_cron:
+      type: string
+      maxLength: 255
+    is_paused:
+      type: boolean
+    concurrency_limit:
+      type: integer
+      format: int32
+      minimum: 0
+      maximum: 100
+
+CreatePipelineJobRequest:
+  description: Request payload for creating a new pipeline job.
+  type: object
+  additionalProperties: false
+  required: [name, notebook_id]
+  properties:
+    name:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+    compute_endpoint_id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+    depends_on:
+      type: array
+      maxItems: 100
+      items:
+        type: string
+        maxLength: 255
+    notebook_id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+    timeout_seconds:
+      type: integer
+      format: int64
+      minimum: 0
+      maximum: 86400
+    retry_count:
+      type: integer
+      format: int32
+      minimum: 0
+      maximum: 10
+      default: 0
+    job_order:
+      type: integer
+      format: int32
+      minimum: 0
+      maximum: 1000
+      default: 0
+
+TriggerPipelineRunRequest:
+  description: Request payload for manually triggering a pipeline run.
+  type: object
+  additionalProperties: false
+  properties:
+    parameters:
+      type: object
+      additionalProperties:
+        type: string
+        maxLength: 4096
+
+PaginatedPipelines:
+  description: A paginated list of pipelines.
+  type: object
+  properties:
+    data:
+      type: array
+      maxItems: 1000
+      items:
+        $ref: '#/Pipeline'
+    next_page_token:
+      type: string
+      maxLength: 4096
+      pattern: '^\S+$'
+
+PaginatedPipelineRuns:
+  description: A paginated list of pipeline runs.
+  type: object
+  properties:
+    data:
+      type: array
+      maxItems: 1000
+      items:
+        $ref: '#/PipelineRun'
+    next_page_token:
+      type: string
+      maxLength: 4096
+      pattern: '^\S+$'
