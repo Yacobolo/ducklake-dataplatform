@@ -115,6 +115,12 @@ func run() error {
 		logger.Warn("catalog AttachAll failed", "error", err)
 	}
 
+	// Start pipeline scheduler
+	if err := application.Scheduler.Start(ctx); err != nil {
+		logger.Warn("pipeline scheduler failed to start", "error", err)
+	}
+	defer application.Scheduler.Stop()
+
 	// Create API handler.
 	svc := application.Services
 	handler := api.NewHandler(
@@ -130,6 +136,7 @@ func run() error {
 		svc.Notebook,
 		svc.SessionManager,
 		svc.GitService,
+		svc.Pipeline,
 	)
 
 	// Create strict handler wrapper

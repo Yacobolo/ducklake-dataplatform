@@ -19,6 +19,7 @@ import (
 	"duck-demo/internal/service/governance"
 	"duck-demo/internal/service/ingestion"
 	"duck-demo/internal/service/notebook"
+	"duck-demo/internal/service/pipeline"
 	"duck-demo/internal/service/query"
 	"duck-demo/internal/service/security"
 	"duck-demo/internal/service/storage"
@@ -61,6 +62,7 @@ type Services struct {
 	Notebook            *notebook.Service
 	SessionManager      *notebook.SessionManager
 	GitService          *notebook.GitService
+	Pipeline            *pipeline.PipelineService
 }
 
 // App holds the fully-wired application: engine, services, and the
@@ -70,6 +72,7 @@ type App struct {
 	Engine        *engine.SecureEngine
 	APIKeyRepo    *repository.APIKeyRepo
 	PrincipalRepo *repository.PrincipalRepo
+	Scheduler     *pipeline.Scheduler
 }
 
 // New wires all repositories, services, and engine from the provided deps.
@@ -227,6 +230,19 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	gitRepoRepo := repository.NewGitRepoRepo(deps.WriteDB)
 	gitSvc := notebook.NewGitService(gitRepoRepo, auditRepo)
 
+	// === Pipeline ===
+	pipelineRepo := repository.NewPipelineRepo(deps.WriteDB)
+	pipelineRunRepo := repository.NewPipelineRunRepo(deps.WriteDB)
+	notebookProvider := pipeline.NewDBNotebookProvider(notebookRepo)
+	pipelineSvc := pipeline.NewPipelineService(
+		pipelineRepo, pipelineRunRepo, auditRepo,
+		notebookProvider, eng, deps.DuckDB,
+		deps.Logger.With("component", "pipeline"),
+	)
+	pipelineScheduler := pipeline.NewScheduler(pipelineSvc, pipelineRepo,
+		deps.Logger.With("component", "pipeline-scheduler"))
+	pipelineSvc.SetScheduleReloader(pipelineScheduler)
+
 	// === API Key ===
 	apiKeyRepo := repository.NewAPIKeyRepo(deps.ReadDB)
 	apiKeySvc := security.NewAPIKeyService(apiKeyRepo, auditRepo)
@@ -257,9 +273,11 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 			Notebook:            notebookSvc,
 			SessionManager:      sessionMgr,
 			GitService:          gitSvc,
+			Pipeline:            pipelineSvc,
 		},
 		Engine:        eng,
 		APIKeyRepo:    apiKeyRepo,
 		PrincipalRepo: principalRepo,
+		Scheduler:     pipelineScheduler,
 	}, nil
 }
