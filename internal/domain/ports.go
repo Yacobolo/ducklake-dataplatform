@@ -69,3 +69,9 @@ type MetastoreQuerier interface {
 	// Returns paths and whether each path is relative to the data_path.
 	ListDataFiles(ctx context.Context, tableID string) (paths []string, pathIsRelative []bool, err error)
 }
+
+// NotebookProvider resolves a notebook ID to executable SQL blocks.
+// Used by the pipeline executor to extract SQL cells from notebooks.
+type NotebookProvider interface {
+	GetSQLBlocks(ctx context.Context, notebookID string) ([]string, error)
+}

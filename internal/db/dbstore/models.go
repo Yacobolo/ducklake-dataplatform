@@ -216,6 +216,58 @@ type NotebookJob struct {
 	UpdatedAt  string
 }
 
+type Pipeline struct {
+	ID               string
+	Name             string
+	Description      string
+	ScheduleCron     sql.NullString
+	IsPaused         int64
+	ConcurrencyLimit int64
+	CreatedBy        string
+	CreatedAt        string
+	UpdatedAt        string
+}
+
+type PipelineJob struct {
+	ID                string
+	PipelineID        string
+	Name              string
+	ComputeEndpointID sql.NullString
+	DependsOn         string
+	NotebookID        string
+	TimeoutSeconds    sql.NullInt64
+	RetryCount        int64
+	JobOrder          int64
+	CreatedAt         string
+}
+
+type PipelineJobRun struct {
+	ID           string
+	RunID        string
+	JobID        string
+	JobName      string
+	Status       string
+	StartedAt    sql.NullString
+	FinishedAt   sql.NullString
+	ErrorMessage sql.NullString
+	RetryAttempt int64
+	CreatedAt    string
+}
+
+type PipelineRun struct {
+	ID            string
+	PipelineID    string
+	Status        string
+	TriggerType   string
+	TriggeredBy   string
+	Parameters    string
+	GitCommitHash sql.NullString
+	StartedAt     sql.NullString
+	FinishedAt    sql.NullString
+	ErrorMessage  sql.NullString
+	CreatedAt     string
+}
+
 type Principal struct {
 	ID             string
 	Name           string
