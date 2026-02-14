@@ -8,6 +8,7 @@ UploadUrlRequest:
       maxLength: 255
       pattern: '^\S.*$'
       description: Optional filename hint for the uploaded file.
+      example: data.parquet
 
 UploadUrlResponse:
   description: Response containing the presigned upload URL and associated S3 key.
@@ -18,16 +19,19 @@ UploadUrlResponse:
       maxLength: 2048
       format: uri
       description: Presigned PUT URL for uploading the Parquet file.
+      example: https://example.com/resource
     s3_key:
       type: string
       maxLength: 1024
       pattern: '^\S+$'
       description: The S3 key where the file will be stored.
+      example: example-value
     expires_at:
       type: string
       format: date-time
       maxLength: 64
       description: When the presigned URL expires.
+      example: '2025-01-15T10:30:00Z'
 
 IngestionOptions:
   description: Options controlling how ingested files are mapped to the target table schema.
@@ -37,10 +41,12 @@ IngestionOptions:
       type: boolean
       default: false
       description: Allow columns in the table that are missing from the Parquet file.
+      example: true
     ignore_extra_columns:
       type: boolean
       default: false
       description: Ignore columns in the Parquet file not present in the table.
+      example: true
 
 CommitIngestionRequest:
   description: Request to commit previously uploaded files into a target table.
@@ -56,6 +62,7 @@ CommitIngestionRequest:
         maxLength: 1024
         pattern: '^\S+$'
       description: S3 keys returned from upload-url to register.
+      example: ["data/file1.parquet"]
     options:
       $ref: '#/IngestionOptions'
 
@@ -73,6 +80,7 @@ LoadExternalRequest:
         maxLength: 2048
         pattern: '^\S+$'
       description: S3 paths or globs to register.
+      example: ["notebooks/analysis.sql"]
     options:
       $ref: '#/IngestionOptions'
 
@@ -86,17 +94,21 @@ IngestionResult:
       maximum: 9223372036854775807
       format: int64
       description: Number of files successfully registered.
+      example: 5
     files_skipped:
       type: integer
       minimum: 0
       maximum: 9223372036854775807
       format: int64
       description: Number of files skipped (e.g., empty files).
+      example: 100
     schema:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: example-value
     table:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: example-value

@@ -6,20 +6,25 @@ Principal:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     name:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: my-resource
     type:
       type: string
       maxLength: 64
       enum: [user, group]
+      example: user
     is_admin:
       type: boolean
+      example: false
     created_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
 
 CreatePrincipalRequest:
   description: Request body for creating a new principal.
@@ -31,14 +36,17 @@ CreatePrincipalRequest:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: my-resource
     type:
       type: string
       default: user
       maxLength: 64
       enum: [user, group]
+      example: user
     is_admin:
       type: boolean
       default: false
+      example: false
 
 UpdatePrincipalAdminRequest:
   description: Request body for updating a principal's admin status.
@@ -48,6 +56,7 @@ UpdatePrincipalAdminRequest:
   properties:
     is_admin:
       type: boolean
+      example: false
 
 PaginatedPrincipals:
   description: Paginated list of principals.
@@ -58,10 +67,12 @@ PaginatedPrincipals:
       items:
         $ref: '#/Principal'
       maxItems: 1000
+      example: []
     next_page_token:
       type: string
       maxLength: 4096
       pattern: '^\S+$'
+      example: eyJpZCI6MTB9
 
 Group:
   description: A group that can contain multiple principals for collective access control.
@@ -71,18 +82,22 @@ Group:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     name:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: my-resource
     description:
       type: string
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: A detailed description
     created_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
 
 CreateGroupRequest:
   description: Request body for creating a new group.
@@ -94,10 +109,12 @@ CreateGroupRequest:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: my-resource
     description:
       type: string
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: A detailed description
 
 GroupMember:
   description: Represents a principal's membership in a group.
@@ -107,14 +124,17 @@ GroupMember:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     member_type:
       type: string
       maxLength: 64
       enum: [user, group]
+      example: user
     member_id:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
 
 CreateGroupMemberRequest:
   description: Request body for adding a member to a group.
@@ -126,10 +146,12 @@ CreateGroupMemberRequest:
       type: string
       maxLength: 64
       enum: [user, group]
+      example: user
     member_id:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
 
 PaginatedGroups:
   description: Paginated list of groups.
@@ -140,10 +162,12 @@ PaginatedGroups:
       items:
         $ref: '#/Group'
       maxItems: 1000
+      example: []
     next_page_token:
       type: string
       maxLength: 4096
       pattern: '^\S+$'
+      example: eyJpZCI6MTB9
 
 PaginatedGroupMembers:
   description: Paginated list of group members.
@@ -154,10 +178,12 @@ PaginatedGroupMembers:
       items:
         $ref: '#/GroupMember'
       maxItems: 1000
+      example: []
     next_page_token:
       type: string
       maxLength: 4096
       pattern: '^\S+$'
+      example: eyJpZCI6MTB9
 
 PrivilegeGrant:
   description: A privilege grant linking a principal to a securable resource with a specific permission.
@@ -167,35 +193,43 @@ PrivilegeGrant:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     principal_id:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     principal_type:
       type: string
       maxLength: 64
       enum: [user, group]
+      example: user
     securable_type:
       type: string
       maxLength: 64
       pattern: '^\S+$'
+      example: table
     securable_id:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     privilege:
       type: string
       maxLength: 64
       pattern: '^\S+$'
+      example: SELECT
     granted_by:
       type: string
       nullable: true
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     granted_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
 
 CreateGrantRequest:
   description: Request body for creating a new privilege grant.
@@ -207,22 +241,27 @@ CreateGrantRequest:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     principal_type:
       type: string
       maxLength: 64
       enum: [user, group]
+      example: user
     securable_type:
       type: string
       maxLength: 64
       pattern: '^\S+$'
+      example: table
     securable_id:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     privilege:
       type: string
       maxLength: 64
       pattern: '^\S+$'
+      example: SELECT
 
 PaginatedGrants:
   description: Paginated list of privilege grants.
@@ -233,10 +272,12 @@ PaginatedGrants:
       items:
         $ref: '#/PrivilegeGrant'
       maxItems: 1000
+      example: []
     next_page_token:
       type: string
       maxLength: 4096
       pattern: '^\S+$'
+      example: eyJpZCI6MTB9
 
 APIKeyInfo:
   description: Metadata about an API key, excluding the secret key value.
@@ -246,27 +287,33 @@ APIKeyInfo:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     principal_id:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     name:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: my-resource
     key_prefix:
       type: string
       maxLength: 255
       pattern: '^\S+$'
+      example: example-value
     expires_at:
       type: string
       format: date-time
       maxLength: 64
       nullable: true
+      example: '2025-01-15T10:30:00Z'
     created_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
 
 CreateAPIKeyRequest:
   description: Request body for creating a new API key.
@@ -278,14 +325,17 @@ CreateAPIKeyRequest:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     name:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: my-resource
     expires_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
 
 CreateAPIKeyResponse:
   description: Response returned after creating an API key, including the raw secret shown only once.
@@ -295,28 +345,34 @@ CreateAPIKeyResponse:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     key:
       type: string
       description: Raw API key (shown only once)
       maxLength: 512
       pattern: '^\S+$'
+      example: dkl_key_example0000000000000000
     name:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: my-resource
     key_prefix:
       type: string
       maxLength: 255
       pattern: '^\S+$'
+      example: example-value
     expires_at:
       type: string
       format: date-time
       maxLength: 64
       nullable: true
+      example: '2025-01-15T10:30:00Z'
     created_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
 
 PaginatedAPIKeys:
   description: Paginated list of API key metadata.
@@ -327,10 +383,12 @@ PaginatedAPIKeys:
       items:
         $ref: '#/APIKeyInfo'
       maxItems: 1000
+      example: []
     next_page_token:
       type: string
       maxLength: 4096
       pattern: '^\S+$'
+      example: eyJpZCI6MTB9
 
 CleanupAPIKeysResponse:
   description: Response returned after cleaning up expired API keys.
@@ -341,6 +399,7 @@ CleanupAPIKeysResponse:
       format: int64
       minimum: 0
       maximum: 9223372036854775807
+      example: 3
 
 RowFilter:
   description: A row-level security filter applied to a table.
@@ -350,22 +409,27 @@ RowFilter:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     table_id:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     filter_sql:
       type: string
       maxLength: 65536
       pattern: '[\s\S]+'
+      example: example-value
     description:
       type: string
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: A detailed description
     created_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
 
 CreateRowFilterRequest:
   description: Request body for creating a new row-level security filter.
@@ -378,14 +442,17 @@ CreateRowFilterRequest:
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
       description: Table ID (required when creating via top-level POST /row-filters)
+      example: "550e8400-e29b-41d4-a716-446655440000"
     filter_sql:
       type: string
       maxLength: 65536
       pattern: '[\s\S]+'
+      example: example-value
     description:
       type: string
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: A detailed description
 
 RowFilterBindingRequest:
   description: Request body for binding a row filter to a principal.
@@ -397,10 +464,12 @@ RowFilterBindingRequest:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     principal_type:
       type: string
       maxLength: 64
       enum: [user, group]
+      example: user
 
 PaginatedRowFilters:
   description: Paginated list of row-level security filters.
@@ -411,10 +480,12 @@ PaginatedRowFilters:
       items:
         $ref: '#/RowFilter'
       maxItems: 1000
+      example: []
     next_page_token:
       type: string
       maxLength: 4096
       pattern: '^\S+$'
+      example: eyJpZCI6MTB9
 
 ColumnMask:
   description: A column masking rule that transforms column values for specific principals.
@@ -424,26 +495,32 @@ ColumnMask:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     table_id:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     column_name:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: email
     mask_expression:
       type: string
       maxLength: 65536
       pattern: '[\s\S]+'
+      example: '***'
     description:
       type: string
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: A detailed description
     created_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
 
 CreateColumnMaskRequest:
   description: Request body for creating a new column mask.
@@ -455,14 +532,17 @@ CreateColumnMaskRequest:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: email
     mask_expression:
       type: string
       maxLength: 65536
       pattern: '[\s\S]+'
+      example: '***'
     description:
       type: string
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: A detailed description
 
 ColumnMaskBindingRequest:
   description: Request body for binding a column mask to a principal.
@@ -474,13 +554,16 @@ ColumnMaskBindingRequest:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     principal_type:
       type: string
       maxLength: 64
       enum: [user, group]
+      example: user
     see_original:
       type: boolean
       default: false
+      example: true
 
 PaginatedColumnMasks:
   description: Paginated list of column masks.
@@ -491,7 +574,9 @@ PaginatedColumnMasks:
       items:
         $ref: '#/ColumnMask'
       maxItems: 1000
+      example: []
     next_page_token:
       type: string
       maxLength: 4096
       pattern: '^\S+$'
+      example: eyJpZCI6MTB9

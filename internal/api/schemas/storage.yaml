@@ -6,60 +6,74 @@ StorageCredential:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     name:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: my-resource
     credential_type:
       type: string
       enum: [S3, AZURE, GCS]
+      example: S3
     # S3 fields (write-only: key_id and secret are never returned)
     endpoint:
       type: string
       maxLength: 255
       pattern: '^\S+$'
+      example: example-value
     region:
       type: string
       maxLength: 255
       pattern: '^\S+$'
+      example: example-value
     url_style:
       type: string
       maxLength: 255
       pattern: '^\S+$'
+      example: example-value
     # Azure fields (write-only: account_key and client_secret are never returned)
     azure_account_name:
       type: string
       maxLength: 512
       pattern: '^\S+$'
+      example: example-value
     azure_client_id:
       type: string
       maxLength: 512
       pattern: '^\S+$'
+      example: example-value
     azure_tenant_id:
       type: string
       maxLength: 512
       pattern: '^\S+$'
+      example: example-value
     # GCS fields
     gcs_key_file_path:
       type: string
       maxLength: 512
       pattern: '^\S+$'
+      example: example-value
     comment:
       type: string
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: A descriptive comment
     owner:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: alice
     created_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
     updated_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
 
 CreateStorageCredentialRequest:
   description: Request payload for creating a new storage credential.
@@ -71,61 +85,75 @@ CreateStorageCredentialRequest:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: my-resource
     credential_type:
       type: string
       enum: [S3, AZURE, GCS]
+      example: S3
     # S3 fields (required when credential_type = S3)
     key_id:
       type: string
       maxLength: 512
       pattern: '^\S+$'
+      example: example-value
     secret:
       type: string
       maxLength: 512
       pattern: '^\S+$'
+      example: example-value
     endpoint:
       type: string
       maxLength: 255
       pattern: '^\S+$'
+      example: example-value
     region:
       type: string
       maxLength: 255
       pattern: '^\S+$'
+      example: example-value
     url_style:
       type: string
       maxLength: 255
       pattern: '^\S+$'
       default: path
+      example: example-value
     # Azure fields (required when credential_type = AZURE)
     azure_account_name:
       type: string
       maxLength: 512
       pattern: '^\S+$'
+      example: example-value
     azure_account_key:
       type: string
       maxLength: 512
       pattern: '^\S+$'
+      example: example-value
     azure_client_id:
       type: string
       maxLength: 512
       pattern: '^\S+$'
+      example: example-value
     azure_tenant_id:
       type: string
       maxLength: 512
       pattern: '^\S+$'
+      example: example-value
     azure_client_secret:
       type: string
       maxLength: 512
       pattern: '^\S+$'
+      example: example-value
     # GCS fields (required when credential_type = GCS)
     gcs_key_file_path:
       type: string
       maxLength: 512
       pattern: '^\S+$'
+      example: example-value
     comment:
       type: string
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: A descriptive comment
 
 UpdateStorageCredentialRequest:
   description: Request payload for updating an existing storage credential.
@@ -137,52 +165,64 @@ UpdateStorageCredentialRequest:
       type: string
       maxLength: 512
       pattern: '^\S+$'
+      example: example-value
     secret:
       type: string
       maxLength: 512
       pattern: '^\S+$'
+      example: example-value
     endpoint:
       type: string
       maxLength: 255
       pattern: '^\S+$'
+      example: example-value
     region:
       type: string
       maxLength: 255
       pattern: '^\S+$'
+      example: example-value
     url_style:
       type: string
       maxLength: 255
       pattern: '^\S+$'
+      example: example-value
     # Azure fields
     azure_account_name:
       type: string
       maxLength: 512
       pattern: '^\S+$'
+      example: example-value
     azure_account_key:
       type: string
       maxLength: 512
       pattern: '^\S+$'
+      example: example-value
     azure_client_id:
       type: string
       maxLength: 512
       pattern: '^\S+$'
+      example: example-value
     azure_tenant_id:
       type: string
       maxLength: 512
       pattern: '^\S+$'
+      example: example-value
     azure_client_secret:
       type: string
       maxLength: 512
       pattern: '^\S+$'
+      example: example-value
     # GCS fields
     gcs_key_file_path:
       type: string
       maxLength: 512
       pattern: '^\S+$'
+      example: example-value
     comment:
       type: string
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: A descriptive comment
 
 PaginatedStorageCredentials:
   description: A paginated list of storage credentials.
@@ -193,10 +233,12 @@ PaginatedStorageCredentials:
       maxItems: 1000
       items:
         $ref: '#/StorageCredential'
+      example: []
     next_page_token:
       type: string
       maxLength: 4096
       pattern: '^\S+$'
+      example: eyJpZCI6MTB9
 
 ExternalLocation:
   description: An external storage location backed by a storage credential, used for accessing remote data.
@@ -206,40 +248,50 @@ ExternalLocation:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     name:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: my-resource
     url:
       type: string
       maxLength: 2048
       format: uri
+      example: https://example.com/resource
     credential_name:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: example-value
     storage_type:
       type: string
       maxLength: 64
       pattern: '^\S+$'
+      example: example-value
     comment:
       type: string
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: A descriptive comment
     owner:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: alice
     read_only:
       type: boolean
+      example: true
     created_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
     updated_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
 
 CreateExternalLocationRequest:
   description: Request payload for creating a new external location.
@@ -251,25 +303,31 @@ CreateExternalLocationRequest:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: my-resource
     url:
       type: string
       maxLength: 2048
       format: uri
+      example: https://example.com/resource
     credential_name:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: example-value
     storage_type:
       type: string
       enum: [S3]
       default: S3
+      example: S3
     comment:
       type: string
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: A descriptive comment
     read_only:
       type: boolean
       default: false
+      example: true
 
 UpdateExternalLocationRequest:
   description: Request payload for updating an existing external location.
@@ -280,20 +338,25 @@ UpdateExternalLocationRequest:
       type: string
       maxLength: 2048
       format: uri
+      example: https://example.com/resource
     credential_name:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: example-value
     comment:
       type: string
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: A descriptive comment
     read_only:
       type: boolean
+      example: true
     owner:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: alice
 
 PaginatedExternalLocations:
   description: A paginated list of external locations.
@@ -304,7 +367,9 @@ PaginatedExternalLocations:
       maxItems: 1000
       items:
         $ref: '#/ExternalLocation'
+      example: []
     next_page_token:
       type: string
       maxLength: 4096
       pattern: '^\S+$'
+      example: eyJpZCI6MTB9

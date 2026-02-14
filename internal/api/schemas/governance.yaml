@@ -7,30 +7,36 @@ SearchResult:
       description: "Object type: schema, table, or column"
       maxLength: 64
       pattern: '^\S+$'
+      example: example-value
     name:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: my-resource
     schema_name:
       type: string
       nullable: true
       maxLength: 255
       pattern: '^\S.*$'
+      example: example-value
     table_name:
       type: string
       nullable: true
       maxLength: 255
       pattern: '^\S.*$'
+      example: my_table
     comment:
       type: string
       nullable: true
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: A descriptive comment
     match_field:
       type: string
       description: "Field that matched: name, comment, property, or tag"
       maxLength: 64
       pattern: '^\S+$'
+      example: example-value
 
 PaginatedSearchResults:
   description: A paginated list of search results.
@@ -41,10 +47,12 @@ PaginatedSearchResults:
       maxItems: 1000
       items:
         $ref: '#/SearchResult'
+      example: []
     next_page_token:
       type: string
       maxLength: 4096
       pattern: '^\S+$'
+      example: eyJpZCI6MTB9
 
 Tag:
   description: A key-value tag that can be assigned to securable objects for classification and discovery.
@@ -54,23 +62,28 @@ Tag:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     key:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: my-property-key
     value:
       type: string
       nullable: true
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: example-value
     created_by:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: example-value
     created_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
 
 CreateTagRequest:
   description: Request payload for creating a new tag.
@@ -82,10 +95,12 @@ CreateTagRequest:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: my-property-key
     value:
       type: string
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: example-value
 
 TagAssignment:
   description: An assignment linking a tag to a securable object, optionally scoped to a specific column.
@@ -95,31 +110,38 @@ TagAssignment:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     tag_id:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     securable_type:
       type: string
       maxLength: 64
       pattern: '^\S+$'
+      example: table
     securable_id:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     column_name:
       type: string
       nullable: true
       maxLength: 255
       pattern: '^\S.*$'
+      example: email
     assigned_by:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: example-value
     assigned_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
 
 CreateTagAssignmentRequest:
   description: Request payload for creating a new tag assignment on a securable object.
@@ -131,14 +153,17 @@ CreateTagAssignmentRequest:
       type: string
       maxLength: 64
       pattern: '^\S+$'
+      example: table
     securable_id:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     column_name:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: email
 
 PaginatedTags:
   description: A paginated list of tags.
@@ -149,7 +174,9 @@ PaginatedTags:
       maxItems: 1000
       items:
         $ref: '#/Tag'
+      example: []
     next_page_token:
       type: string
       maxLength: 4096
       pattern: '^\S+$'
+      example: eyJpZCI6MTB9

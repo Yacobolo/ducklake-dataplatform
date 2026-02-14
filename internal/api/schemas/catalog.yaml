@@ -6,18 +6,22 @@ CatalogInfo:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: my-resource
     comment:
       type: string
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: A descriptive comment
     created_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
     updated_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
 
 SchemaDetail:
   description: Detailed information about a schema within a catalog.
@@ -27,46 +31,57 @@ SchemaDetail:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     name:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: my-resource
     catalog_name:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: analytics
     comment:
       type: string
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: A descriptive comment
     properties:
       type: object
       additionalProperties:
         type: string
         maxLength: 255
         pattern: '[\s\S]+'
+      example:
+        env: production
     owner:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: alice
     created_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
     updated_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
     tags:
       type: array
       items:
         $ref: 'governance.yaml#/Tag'
       maxItems: 100
+      example: []
     deleted_at:
       type: string
       format: date-time
       maxLength: 64
       nullable: true
+      example: '2025-01-15T10:30:00Z'
 
 CreateSchemaRequest:
   description: Request body for creating a new schema.
@@ -78,21 +93,26 @@ CreateSchemaRequest:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: my-resource
     comment:
       type: string
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: A descriptive comment
     properties:
       type: object
       additionalProperties:
         type: string
         maxLength: 255
         pattern: '[\s\S]+'
+      example:
+        env: production
     location_name:
       type: string
       description: Optional external location name to use for schema storage path.
       maxLength: 2048
       pattern: '^\S.*$'
+      example: example-value
 
 UpdateSchemaRequest:
   description: Request body for updating an existing schema.
@@ -103,12 +123,15 @@ UpdateSchemaRequest:
       type: string
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: A descriptive comment
     properties:
       type: object
       additionalProperties:
         type: string
         maxLength: 255
         pattern: '[\s\S]+'
+      example:
+        env: production
 
 UpdateTableRequest:
   description: Request body for updating an existing table.
@@ -119,16 +142,20 @@ UpdateTableRequest:
       type: string
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: A descriptive comment
     properties:
       type: object
       additionalProperties:
         type: string
         maxLength: 255
         pattern: '[\s\S]+'
+      example:
+        env: production
     owner:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: alice
 
 PaginatedSchemaDetails:
   description: Paginated list of schema details.
@@ -139,10 +166,12 @@ PaginatedSchemaDetails:
       items:
         $ref: '#/SchemaDetail'
       maxItems: 1000
+      example: []
     next_page_token:
       type: string
       maxLength: 4096
       pattern: '^\S+$'
+      example: eyJpZCI6MTB9
 
 TableDetail:
   description: Detailed information about a table including its columns and metadata.
@@ -152,54 +181,71 @@ TableDetail:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     name:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: my-resource
     schema_name:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: example-value
     catalog_name:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: analytics
     table_type:
       type: string
       maxLength: 64
       pattern: '^\S+$'
+      example: example-value
     columns:
       type: array
       items:
         $ref: '#/ColumnDetail'
       maxItems: 10000
+      example:
+      - name: id
+        type: INTEGER
+        position: 0
+        nullable: false
     comment:
       type: string
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: A descriptive comment
     properties:
       type: object
       additionalProperties:
         type: string
         maxLength: 255
         pattern: '[\s\S]+'
+      example:
+        env: production
     owner:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: alice
     created_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
     updated_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
     tags:
       type: array
       items:
         $ref: 'governance.yaml#/Tag'
       maxItems: 100
+      example: []
     statistics:
       $ref: '#/TableStatistics'
     deleted_at:
@@ -207,26 +253,31 @@ TableDetail:
       format: date-time
       maxLength: 64
       nullable: true
+      example: '2025-01-15T10:30:00Z'
     storage_path:
       type: string
       description: Resolved DuckLake data path for MANAGED tables.
       maxLength: 2048
       pattern: '^\S.*$'
+      example: example-value
     source_path:
       type: string
       description: S3/storage path for EXTERNAL tables.
       maxLength: 2048
       pattern: '^\S.*$'
+      example: example-value
     file_format:
       type: string
       description: File format for EXTERNAL tables (parquet or csv).
       maxLength: 64
       pattern: '^\S+$'
+      example: example-value
     location_name:
       type: string
       description: External location name for EXTERNAL tables.
       maxLength: 2048
       pattern: '^\S.*$'
+      example: example-value
 
 ColumnDetail:
   description: Detailed information about a single column in a table.
@@ -236,28 +287,35 @@ ColumnDetail:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: my-resource
     type:
       type: string
       maxLength: 64
       pattern: '^\S+$'
+      example: example-value
     position:
       type: integer
       format: int32
       minimum: 0
       maximum: 10000
+      example: 0
     nullable:
       type: boolean
       description: Whether the column allows NULL values.
+      example: true
     comment:
       type: string
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: A descriptive comment
     properties:
       type: object
       additionalProperties:
         type: string
         maxLength: 255
         pattern: '[\s\S]+'
+      example:
+        env: production
 
 CreateTableRequest:
   description: Request body for creating a new table (managed or external).
@@ -269,36 +327,45 @@ CreateTableRequest:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: my-resource
     columns:
       type: array
       items:
         $ref: '#/CreateColumnRequest'
       description: Required for MANAGED tables; auto-discovered for EXTERNAL if omitted.
       maxItems: 10000
+      example:
+      - name: id
+        type: INTEGER
     comment:
       type: string
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: A descriptive comment
     table_type:
       type: string
       enum: [MANAGED, EXTERNAL]
       default: MANAGED
       description: Type of table. MANAGED (default) or EXTERNAL.
+      example: MANAGED
     source_path:
       type: string
       description: S3/storage path to the data file(s). Required for EXTERNAL tables.
       maxLength: 2048
       pattern: '^\S.*$'
+      example: example-value
     file_format:
       type: string
       enum: [parquet, csv]
       default: parquet
       description: File format of the external data. Required for EXTERNAL tables.
+      example: parquet
     location_name:
       type: string
       description: Name of the external location that owns the source path. Required for EXTERNAL tables.
       maxLength: 2048
       pattern: '^\S.*$'
+      example: example-value
 
 CreateColumnRequest:
   description: Request body for defining a column when creating a table.
@@ -310,10 +377,12 @@ CreateColumnRequest:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: my-resource
     type:
       type: string
       maxLength: 64
       pattern: '^\S+$'
+      example: example-value
 
 UpdateColumnRequest:
   description: Request body for updating column metadata.
@@ -324,12 +393,15 @@ UpdateColumnRequest:
       type: string
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: A descriptive comment
     properties:
       type: object
       additionalProperties:
         type: string
         maxLength: 255
         pattern: '[\s\S]+'
+      example:
+        env: production
 
 PaginatedTableDetails:
   description: Paginated list of table details.
@@ -340,10 +412,12 @@ PaginatedTableDetails:
       items:
         $ref: '#/TableDetail'
       maxItems: 1000
+      example: []
     next_page_token:
       type: string
       maxLength: 4096
       pattern: '^\S+$'
+      example: eyJpZCI6MTB9
 
 PaginatedColumnDetails:
   description: Paginated list of column details.
@@ -354,10 +428,12 @@ PaginatedColumnDetails:
       items:
         $ref: '#/ColumnDetail'
       maxItems: 1000
+      example: []
     next_page_token:
       type: string
       maxLength: 4096
       pattern: '^\S+$'
+      example: eyJpZCI6MTB9
 
 TableStatistics:
   description: Statistical metadata about a table's size and profiling status.
@@ -369,27 +445,32 @@ TableStatistics:
       nullable: true
       minimum: 0
       maximum: 9223372036854775807
+      example: 42
     size_bytes:
       type: integer
       format: int64
       nullable: true
       minimum: 0
       maximum: 9223372036854775807
+      example: 100
     column_count:
       type: integer
       format: int64
       nullable: true
       minimum: 0
       maximum: 9223372036854775807
+      example: 100
     last_profiled_at:
       type: string
       format: date-time
       maxLength: 64
       nullable: true
+      example: '2025-01-15T10:30:00Z'
     profiled_by:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: example-value
 
 MetastoreSummary:
   description: Summary information about the metastore including catalog and storage details.
@@ -399,28 +480,34 @@ MetastoreSummary:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: analytics
     metastore_type:
       type: string
       maxLength: 64
       pattern: '^\S+$'
+      example: example-value
     storage_backend:
       type: string
       maxLength: 64
       pattern: '^\S+$'
+      example: example-value
     data_path:
       type: string
       maxLength: 2048
       pattern: '^\S.*$'
+      example: s3://my-bucket/data/
     schema_count:
       type: integer
       format: int64
       minimum: 0
       maximum: 9223372036854775807
+      example: 100
     table_count:
       type: integer
       format: int64
       minimum: 0
       maximum: 9223372036854775807
+      example: 100
 
 ViewDetail:
   description: Detailed information about a view including its definition and source tables.
@@ -430,41 +517,51 @@ ViewDetail:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     schema_id:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     schema_name:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: example-value
     catalog_name:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: analytics
     name:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: my-resource
     view_definition:
       type: string
       maxLength: 65536
       pattern: '[\s\S]+'
+      example: example-value
     comment:
       type: string
       nullable: true
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: A descriptive comment
     properties:
       type: object
       additionalProperties:
         type: string
         maxLength: 255
         pattern: '[\s\S]+'
+      example:
+        env: production
     owner:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: alice
     source_tables:
       type: array
       items:
@@ -472,14 +569,17 @@ ViewDetail:
         maxLength: 255
         pattern: '^\S.*$'
       maxItems: 1000
+      example: ["analytics.sales.orders"]
     created_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
     updated_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
 
 CreateViewRequest:
   description: Request body for creating a new view.
@@ -491,14 +591,17 @@ CreateViewRequest:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: my-resource
     view_definition:
       type: string
       maxLength: 65536
       pattern: '[\s\S]+'
+      example: example-value
     comment:
       type: string
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: A descriptive comment
 
 UpdateViewRequest:
   description: Request body for updating an existing view.
@@ -509,16 +612,20 @@ UpdateViewRequest:
       type: string
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: A descriptive comment
     properties:
       type: object
       additionalProperties:
         type: string
         maxLength: 255
         pattern: '[\s\S]+'
+      example:
+        env: production
     view_definition:
       type: string
       maxLength: 65536
       pattern: '[\s\S]+'
+      example: example-value
 
 PaginatedViewDetails:
   description: Paginated list of view details.
@@ -529,10 +636,12 @@ PaginatedViewDetails:
       items:
         $ref: '#/ViewDetail'
       maxItems: 1000
+      example: []
     next_page_token:
       type: string
       maxLength: 4096
       pattern: '^\S+$'
+      example: eyJpZCI6MTB9
 
 VolumeDetail:
   description: Detailed information about a storage volume.
@@ -542,41 +651,51 @@ VolumeDetail:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     name:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: my-resource
     schema_name:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: example-value
     catalog_name:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: analytics
     volume_type:
       type: string
       enum: [MANAGED, EXTERNAL]
+      example: MANAGED
     storage_location:
       type: string
       maxLength: 2048
       pattern: '^\S.*$'
+      example: example-value
     comment:
       type: string
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: A descriptive comment
     owner:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: alice
     created_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
     updated_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
 
 CreateVolumeRequest:
   description: Request body for creating a new volume.
@@ -588,18 +707,22 @@ CreateVolumeRequest:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: my-resource
     volume_type:
       type: string
       enum: [MANAGED, EXTERNAL]
+      example: MANAGED
     storage_location:
       type: string
       description: Required for EXTERNAL volumes. Ignored for MANAGED.
       maxLength: 2048
       pattern: '^\S.*$'
+      example: example-value
     comment:
       type: string
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: A descriptive comment
 
 UpdateVolumeRequest:
   description: Request body for updating an existing volume.
@@ -610,14 +733,17 @@ UpdateVolumeRequest:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: renamed-resource
     comment:
       type: string
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: A descriptive comment
     owner:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: alice
 
 PaginatedVolumes:
   description: Paginated list of volumes.
@@ -628,10 +754,12 @@ PaginatedVolumes:
       items:
         $ref: '#/VolumeDetail'
       maxItems: 1000
+      example: []
     next_page_token:
       type: string
       maxLength: 4096
       pattern: '^\S+$'
+      example: eyJpZCI6MTB9
 
 CatalogRegistration:
   description: Registration details for a DuckLake catalog.
@@ -642,48 +770,59 @@ CatalogRegistration:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     name:
       type: string
       description: DuckDB catalog alias, used in SQL as catalog.schema.table
       maxLength: 255
       pattern: '^\S+$'
+      example: my-resource
     metastore_type:
       type: string
       enum: [sqlite, postgres]
       description: Type of metastore backend
       maxLength: 64
+      example: sqlite
     dsn:
       type: string
       description: File path (sqlite) or connection string (postgres)
       maxLength: 2048
       pattern: '^\S.*$'
+      example: /data/meta.sqlite
     data_path:
       type: string
       description: Data path (s3://bucket/path/ or local path)
       maxLength: 2048
       pattern: '^\S.*$'
+      example: s3://my-bucket/data/
     status:
       type: string
       enum: [ACTIVE, ERROR, DETACHED]
       maxLength: 64
+      example: ACTIVE
     status_message:
       type: string
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: Catalog is healthy
     is_default:
       type: boolean
+      example: false
     comment:
       type: string
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: A descriptive comment
     created_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
     updated_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
 
 CreateCatalogRequest:
   description: Request body for registering a new catalog.
@@ -695,22 +834,27 @@ CreateCatalogRequest:
       type: string
       maxLength: 255
       pattern: '^\S+$'
+      example: my-resource
     metastore_type:
       type: string
       enum: [sqlite, postgres]
       maxLength: 64
+      example: sqlite
     dsn:
       type: string
       maxLength: 2048
       pattern: '^\S.*$'
+      example: /data/meta.sqlite
     data_path:
       type: string
       maxLength: 2048
       pattern: '^\S.*$'
+      example: s3://my-bucket/data/
     comment:
       type: string
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: A descriptive comment
 
 UpdateCatalogRegistrationRequest:
   description: Request body for updating a catalog registration.
@@ -721,14 +865,17 @@ UpdateCatalogRegistrationRequest:
       type: string
       maxLength: 1024
       pattern: '[\s\S]+'
+      example: A descriptive comment
     data_path:
       type: string
       maxLength: 2048
       pattern: '^\S.*$'
+      example: s3://my-bucket/data/
     dsn:
       type: string
       maxLength: 2048
       pattern: '^\S.*$'
+      example: /data/meta.sqlite
 
 CatalogRegistrationList:
   description: Paginated list of catalog registrations.
@@ -739,15 +886,18 @@ CatalogRegistrationList:
       items:
         $ref: '#/CatalogRegistration'
       maxItems: 1000
+      example: []
     next_page_token:
       type: string
       maxLength: 4096
       pattern: '^\S+$'
+      example: eyJpZCI6MTB9
     total_count:
       type: integer
       format: int64
       minimum: 0
       maximum: 9223372036854775807
+      example: 100
 
 SetDefaultCatalogRequest:
   description: Empty object, the catalog name is in the URL path.

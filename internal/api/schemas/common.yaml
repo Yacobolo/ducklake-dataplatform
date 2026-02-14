@@ -30,10 +30,12 @@ Error:
       minimum: 100
       maximum: 599
       format: int32
+      example: 400
     message:
       type: string
       maxLength: 4096
       pattern: '[\s\S]+'
+      example: "Invalid request: check the request body and parameters"
 
 QueryRequest:
   description: A SQL query to execute against the analytics engine.
@@ -44,6 +46,7 @@ QueryRequest:
       type: string
       maxLength: 65536
       pattern: '[\s\S]+'
+      example: SELECT * FROM my_table LIMIT 10
 
 QueryResult:
   description: The result set returned after executing a SQL query.
@@ -56,6 +59,7 @@ QueryResult:
         type: string
         maxLength: 255
         pattern: '^\S.*$'
+      example: ["id", "name", "value"]
     rows:
       type: array
       maxItems: 1000000
@@ -63,8 +67,10 @@ QueryResult:
         type: array
         maxItems: 10000
         items: {}
+      example: []
     row_count:
       type: integer
       minimum: 0
       maximum: 9223372036854775807
       format: int64
+      example: 42
