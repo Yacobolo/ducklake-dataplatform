@@ -17,6 +17,8 @@ type Notebook struct {
 	Name        string
 	Description *string
 	Owner       string
+	GitRepoID   *string
+	GitPath     *string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
