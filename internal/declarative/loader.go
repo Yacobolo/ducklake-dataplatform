@@ -69,7 +69,7 @@ func LoadDirectory(dir string) (*DesiredState, error) {
 // Returns (false, err) on read/parse errors.
 // Returns (true, nil) on success.
 func loadYAMLFile(path string, target interface{}) (bool, error) {
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) //nolint:gosec // intentional: reading user-specified config files
 	if err != nil {
 		if os.IsNotExist(err) {
 			return false, nil

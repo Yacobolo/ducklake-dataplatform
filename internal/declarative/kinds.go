@@ -3,6 +3,8 @@ package declarative
 // ResourceKind identifies a type of managed resource.
 type ResourceKind int
 
+// Resource kind constants identify each type of managed resource.
+// They are ordered by dependency layer (0-7) for correct apply/delete sequencing.
 const (
 	KindStorageCredential   ResourceKind = iota // layer 0
 	KindPrincipal                               // layer 0

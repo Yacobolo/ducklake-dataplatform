@@ -1,3 +1,5 @@
+// Package declarative implements a Terraform-style declarative configuration
+// system for managing platform resources via version-controlled YAML files.
 package declarative
 
 import (
@@ -217,12 +219,12 @@ func diffGroupMembers(plan *Plan, groupName string, desired, actual []MemberRef)
 	}
 	actualMap := make(map[memberKey]MemberRef, len(actual))
 	for _, a := range actual {
-		actualMap[memberKey{a.Name, a.Type}] = a
+		actualMap[memberKey(a)] = a
 	}
 
 	seen := make(map[memberKey]bool, len(desired))
 	for _, d := range desired {
-		k := memberKey{d.Name, d.Type}
+		k := memberKey(d)
 		seen[k] = true
 		if _, exists := actualMap[k]; !exists {
 			memberName := fmt.Sprintf("%s/%s(%s)", groupName, d.Name, d.Type)
@@ -231,7 +233,7 @@ func diffGroupMembers(plan *Plan, groupName string, desired, actual []MemberRef)
 	}
 
 	for _, a := range actual {
-		k := memberKey{a.Name, a.Type}
+		k := memberKey(a)
 		if !seen[k] {
 			memberName := fmt.Sprintf("%s/%s(%s)", groupName, a.Name, a.Type)
 			addDelete(plan, KindGroupMembership, memberName, a)

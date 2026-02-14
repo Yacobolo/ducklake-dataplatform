@@ -58,7 +58,7 @@ func newApplyCmd(client *gen.Client) *cobra.Command {
 
 			// 6. Confirm unless auto-approved.
 			if !autoApprove {
-				fmt.Fprint(os.Stdout, "\nApply these changes? [y/N] ")
+				_, _ = fmt.Fprint(os.Stdout, "\nApply these changes? [y/N] ")
 				reader := bufio.NewReader(os.Stdin)
 				answer, err := reader.ReadString('\n')
 				if err != nil {
@@ -66,7 +66,7 @@ func newApplyCmd(client *gen.Client) *cobra.Command {
 				}
 				answer = strings.TrimSpace(strings.ToLower(answer))
 				if answer != "y" && answer != "yes" {
-					fmt.Fprintln(os.Stdout, "Apply cancelled.")
+					_, _ = fmt.Fprintln(os.Stdout, "Apply cancelled.")
 					return nil
 				}
 			}
@@ -74,20 +74,20 @@ func newApplyCmd(client *gen.Client) *cobra.Command {
 			// 7. Execute each action.
 			var succeeded, failed int
 			for _, action := range plan.Actions {
-				fmt.Fprintf(os.Stdout, "  %s %s %q ... ",
+				_, _ = fmt.Fprintf(os.Stdout, "  %s %s %q ... ",
 					action.Operation, action.ResourceKind, action.ResourceName)
 
 				if err := stateClient.Execute(cmd.Context(), action); err != nil {
-					fmt.Fprintf(os.Stdout, "failed: %v\n", err)
+					_, _ = fmt.Fprintf(os.Stdout, "failed: %v\n", err)
 					failed++
 				} else {
-					fmt.Fprintln(os.Stdout, "succeeded")
+					_, _ = fmt.Fprintln(os.Stdout, "succeeded")
 					succeeded++
 				}
 			}
 
 			// 8. Print summary.
-			fmt.Fprintf(os.Stdout, "\nApply complete: %d succeeded, %d failed.\n", succeeded, failed)
+			_, _ = fmt.Fprintf(os.Stdout, "\nApply complete: %d succeeded, %d failed.\n", succeeded, failed)
 			if failed > 0 {
 				os.Exit(1)
 			}

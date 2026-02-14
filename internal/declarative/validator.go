@@ -909,10 +909,8 @@ func validateStorageCredentials(creds []StorageCredentialSpec, errs *[]Validatio
 		case "AZURE":
 			if c.Azure == nil {
 				addErr(errs, path, "azure spec is required when credential_type is \"AZURE\"")
-			} else {
-				if c.Azure.AccountNameFromEnv == "" {
-					addErr(errs, path, "azure.account_name_from_env is required")
-				}
+			} else if c.Azure.AccountNameFromEnv == "" {
+				addErr(errs, path, "azure.account_name_from_env is required")
 			}
 		case "GCS":
 			if c.GCS == nil {
@@ -1153,9 +1151,7 @@ func validatePipelines(pipelines []PipelineResource, notebookNames, endpointName
 func detectJobCycles(jobs []PipelineJobSpec) [][]string {
 	adj := make(map[string][]string, len(jobs))
 	for _, j := range jobs {
-		for _, dep := range j.DependsOn {
-			adj[j.Name] = append(adj[j.Name], dep)
-		}
+		adj[j.Name] = append(adj[j.Name], j.DependsOn...)
 	}
 
 	var cycles [][]string

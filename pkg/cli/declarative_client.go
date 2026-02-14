@@ -51,7 +51,7 @@ type catalogListResponse struct {
 
 // fetchAllPages fetches all pages from a paginated list endpoint.
 // The dataKey param selects between the standard "data" key and alternate keys.
-func (c *APIStateClient) fetchAllPages(ctx context.Context, path string) ([]json.RawMessage, error) {
+func (c *APIStateClient) fetchAllPages(_ context.Context, path string) ([]json.RawMessage, error) {
 	var all []json.RawMessage
 	pageToken := ""
 
@@ -99,7 +99,7 @@ func (c *APIStateClient) fetchAllPages(ctx context.Context, path string) ([]json
 }
 
 // fetchAllCatalogs fetches all catalogs using the catalogs-specific response shape.
-func (c *APIStateClient) fetchAllCatalogs(ctx context.Context) (json.RawMessage, error) {
+func (c *APIStateClient) fetchAllCatalogs(_ context.Context) (json.RawMessage, error) {
 	resp, err := c.client.Do(http.MethodGet, "/catalogs", nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("GET /catalogs: %w", err)
@@ -828,7 +828,7 @@ func (c *APIStateClient) Execute(ctx context.Context, action declarative.Action)
 
 // --- Security resource execution ---
 
-func (c *APIStateClient) executePrincipal(ctx context.Context, action declarative.Action) error {
+func (c *APIStateClient) executePrincipal(_ context.Context, action declarative.Action) error {
 	switch action.Operation {
 	case declarative.OpCreate:
 		resp, err := c.client.Do(http.MethodPost, "/principals", nil, action.Desired)
@@ -856,7 +856,7 @@ func (c *APIStateClient) executePrincipal(ctx context.Context, action declarativ
 	}
 }
 
-func (c *APIStateClient) executeGroup(ctx context.Context, action declarative.Action) error {
+func (c *APIStateClient) executeGroup(_ context.Context, action declarative.Action) error {
 	switch action.Operation {
 	case declarative.OpCreate:
 		resp, err := c.client.Do(http.MethodPost, "/groups", nil, action.Desired)
@@ -884,7 +884,7 @@ func (c *APIStateClient) executeGroup(ctx context.Context, action declarative.Ac
 	}
 }
 
-func (c *APIStateClient) executeGrant(ctx context.Context, action declarative.Action) error {
+func (c *APIStateClient) executeGrant(_ context.Context, action declarative.Action) error {
 	switch action.Operation {
 	case declarative.OpCreate:
 		resp, err := c.client.Do(http.MethodPost, "/grants", nil, action.Desired)
@@ -908,7 +908,7 @@ func (c *APIStateClient) executeGrant(ctx context.Context, action declarative.Ac
 
 // --- Catalog resource execution ---
 
-func (c *APIStateClient) executeCatalog(ctx context.Context, action declarative.Action) error {
+func (c *APIStateClient) executeCatalog(_ context.Context, action declarative.Action) error {
 	switch action.Operation {
 	case declarative.OpCreate:
 		resp, err := c.client.Do(http.MethodPost, "/catalogs", nil, action.Desired)
@@ -936,7 +936,7 @@ func (c *APIStateClient) executeCatalog(ctx context.Context, action declarative.
 	}
 }
 
-func (c *APIStateClient) executeSchema(ctx context.Context, action declarative.Action) error {
+func (c *APIStateClient) executeSchema(_ context.Context, action declarative.Action) error {
 	// ResourceName is "catalog.schema" format.
 	switch action.Operation {
 	case declarative.OpCreate:
@@ -965,7 +965,7 @@ func (c *APIStateClient) executeSchema(ctx context.Context, action declarative.A
 	}
 }
 
-func (c *APIStateClient) executeTable(ctx context.Context, action declarative.Action) error {
+func (c *APIStateClient) executeTable(_ context.Context, action declarative.Action) error {
 	// ResourceName is "catalog.schema.table" format.
 	switch action.Operation {
 	case declarative.OpCreate:
@@ -994,7 +994,7 @@ func (c *APIStateClient) executeTable(ctx context.Context, action declarative.Ac
 	}
 }
 
-func (c *APIStateClient) executeView(ctx context.Context, action declarative.Action) error {
+func (c *APIStateClient) executeView(_ context.Context, action declarative.Action) error {
 	// ResourceName is "catalog.schema.view" format.
 	switch action.Operation {
 	case declarative.OpCreate:

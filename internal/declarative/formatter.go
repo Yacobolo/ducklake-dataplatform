@@ -25,9 +25,15 @@ func FormatText(w io.Writer, plan *Plan, noColor bool) {
 		}
 		return code
 	}
+	write := func(format string, args ...any) {
+		_, _ = fmt.Fprintf(w, format, args...)
+	}
+	writeln := func(args ...any) {
+		_, _ = fmt.Fprintln(w, args...)
+	}
 
 	if !plan.HasChanges() {
-		fmt.Fprintln(w, "No changes. Infrastructure is up-to-date.")
+		writeln("No changes. Infrastructure is up-to-date.")
 		return
 	}
 
@@ -50,27 +56,27 @@ func FormatText(w io.Writer, plan *Plan, noColor bool) {
 
 	for _, g := range groups {
 		if g.path != "" {
-			fmt.Fprintf(w, "\n%s# %s%s\n", c(colorCyan), g.path, c(colorReset))
+			write("\n%s# %s%s\n", c(colorCyan), g.path, c(colorReset))
 		} else {
-			fmt.Fprintf(w, "\n%s# (server-only)%s\n", c(colorCyan), c(colorReset))
+			write("\n%s# (server-only)%s\n", c(colorCyan), c(colorReset))
 		}
 
 		for _, a := range g.actions {
 			switch a.Operation {
 			case OpCreate:
-				fmt.Fprintf(w, "  %s+%s %s %q will be created\n",
+				write("  %s+%s %s %q will be created\n",
 					c(colorGreen), c(colorReset), a.ResourceKind, a.ResourceName)
 				formatDesired(w, a.Desired, c)
 
 			case OpUpdate:
-				fmt.Fprintf(w, "  %s~%s %s %q will be updated\n",
+				write("  %s~%s %s %q will be updated\n",
 					c(colorYellow), c(colorReset), a.ResourceKind, a.ResourceName)
 				for _, d := range a.Changes {
-					fmt.Fprintf(w, "      %s: %q → %q\n", d.Field, d.OldValue, d.NewValue)
+					write("      %s: %q → %q\n", d.Field, d.OldValue, d.NewValue)
 				}
 
 			case OpDelete:
-				fmt.Fprintf(w, "  %s-%s %s %q will be deleted\n",
+				write("  %s-%s %s %q will be deleted\n",
 					c(colorRed), c(colorReset), a.ResourceKind, a.ResourceName)
 			}
 		}
@@ -78,18 +84,18 @@ func FormatText(w io.Writer, plan *Plan, noColor bool) {
 
 	// Errors section.
 	for _, e := range plan.Errors {
-		fmt.Fprintf(w, "  %s✗%s %s %q: %s\n",
+		write("  %s✗%s %s %q: %s\n",
 			c(colorRed), c(colorReset), e.ResourceKind, e.ResourceName, e.Message)
 	}
 
 	// Summary.
 	s := plan.Summary()
-	fmt.Fprintf(w, "\n%sPlan:%s %d to create, %d to update, %d to delete.",
+	write("\n%sPlan:%s %d to create, %d to update, %d to delete.",
 		c(colorDim), c(colorReset), s.Creates, s.Updates, s.Deletes)
 	if s.Errors > 0 {
-		fmt.Fprintf(w, " %s%d error(s).%s", c(colorRed), s.Errors, c(colorReset))
+		write(" %s%d error(s).%s", c(colorRed), s.Errors, c(colorReset))
 	}
-	fmt.Fprintln(w)
+	writeln()
 }
 
 // formatDesired writes indented key-value pairs for a created resource's desired state.
@@ -101,8 +107,11 @@ func formatDesired(w io.Writer, desired any, c func(string) string) {
 	if !ok {
 		return
 	}
+	write := func(format string, args ...any) {
+		_, _ = fmt.Fprintf(w, format, args...)
+	}
 	for k, v := range m {
-		fmt.Fprintf(w, "      %s%s%s: %v\n", c(colorDim), k, c(colorReset), v)
+		write("      %s%s%s: %v\n", c(colorDim), k, c(colorReset), v)
 	}
 }
 

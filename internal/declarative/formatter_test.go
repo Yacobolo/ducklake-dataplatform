@@ -102,8 +102,8 @@ func TestFormatJSON_EmptyPlan(t *testing.T) {
 
 	summary, ok := result["summary"].(map[string]any)
 	require.True(t, ok)
-	assert.Equal(t, float64(0), summary["creates"])
-	assert.Equal(t, float64(0), summary["deletes"])
+	assert.Equal(t, 0, int(summary["creates"].(float64)))
+	assert.Equal(t, 0, int(summary["deletes"].(float64)))
 }
 
 func TestFormatJSON_IncludesChanges(t *testing.T) {

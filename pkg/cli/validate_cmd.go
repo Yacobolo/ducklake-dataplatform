@@ -34,7 +34,7 @@ func newValidateCmd(_ *gen.Client) *cobra.Command {
 				os.Exit(1)
 			}
 
-			fmt.Fprintln(os.Stdout, "Configuration is valid.")
+			_, _ = fmt.Fprintln(os.Stdout, "Configuration is valid.")
 			return nil
 		},
 	}
