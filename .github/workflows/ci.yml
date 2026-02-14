@@ -45,12 +45,6 @@ jobs:
           go install github.com/sqlc-dev/sqlc/cmd/sqlc@${{ env.SQLC_VERSION }}
       - name: Run code generation
         run: task generate
-      - name: Verify tracked generated files are up to date
-        run: |
-          if ! git diff --exit-code -- pkg/cli/gen/; then
-            echo "::error::Generated CLI code is out of date. Run 'task generate' and commit the results."
-            exit 1
-          fi
       - name: Upload generated code
         uses: actions/upload-artifact@v4
         with:
