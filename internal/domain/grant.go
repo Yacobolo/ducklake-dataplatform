@@ -22,6 +22,7 @@ const (
 	PrivReadFiles               = "READ_FILES"
 	PrivWriteFiles              = "WRITE_FILES"
 	PrivManageCompute           = "MANAGE_COMPUTE"
+	PrivManagePipelines         = "MANAGE_PIPELINES"
 )
 
 // Securable type constants.

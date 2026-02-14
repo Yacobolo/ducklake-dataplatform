@@ -171,6 +171,31 @@ const (
 	Closed NotebookSessionState = "closed"
 )
 
+// Defines values for PipelineJobRunStatus.
+const (
+	PipelineJobRunStatusCANCELLED PipelineJobRunStatus = "CANCELLED"
+	PipelineJobRunStatusFAILED    PipelineJobRunStatus = "FAILED"
+	PipelineJobRunStatusPENDING   PipelineJobRunStatus = "PENDING"
+	PipelineJobRunStatusRUNNING   PipelineJobRunStatus = "RUNNING"
+	PipelineJobRunStatusSKIPPED   PipelineJobRunStatus = "SKIPPED"
+	PipelineJobRunStatusSUCCESS   PipelineJobRunStatus = "SUCCESS"
+)
+
+// Defines values for PipelineRunStatus.
+const (
+	PipelineRunStatusCANCELLED PipelineRunStatus = "CANCELLED"
+	PipelineRunStatusFAILED    PipelineRunStatus = "FAILED"
+	PipelineRunStatusPENDING   PipelineRunStatus = "PENDING"
+	PipelineRunStatusRUNNING   PipelineRunStatus = "RUNNING"
+	PipelineRunStatusSUCCESS   PipelineRunStatus = "SUCCESS"
+)
+
+// Defines values for PipelineRunTriggerType.
+const (
+	MANUAL    PipelineRunTriggerType = "MANUAL"
+	SCHEDULED PipelineRunTriggerType = "SCHEDULED"
+)
+
 // Defines values for PrincipalType.
 const (
 	PrincipalTypeGroup PrincipalType = "group"
@@ -234,6 +259,15 @@ const (
 const (
 	DeleteGroupMemberParamsMemberTypeGroup DeleteGroupMemberParamsMemberType = "group"
 	DeleteGroupMemberParamsMemberTypeUser  DeleteGroupMemberParamsMemberType = "user"
+)
+
+// Defines values for ListPipelineRunsParamsStatus.
+const (
+	CANCELLED ListPipelineRunsParamsStatus = "CANCELLED"
+	FAILED    ListPipelineRunsParamsStatus = "FAILED"
+	PENDING   ListPipelineRunsParamsStatus = "PENDING"
+	RUNNING   ListPipelineRunsParamsStatus = "RUNNING"
+	SUCCESS   ListPipelineRunsParamsStatus = "SUCCESS"
 )
 
 // Defines values for UnbindRowFilterParamsPrincipalType.
@@ -581,6 +615,26 @@ type CreateGroupRequest struct {
 type CreateNotebookRequest struct {
 	Description *string `json:"description,omitempty"`
 	Name        string  `json:"name"`
+}
+
+// CreatePipelineJobRequest Request payload for creating a new pipeline job.
+type CreatePipelineJobRequest struct {
+	ComputeEndpointId *string   `json:"compute_endpoint_id,omitempty"`
+	DependsOn         *[]string `json:"depends_on,omitempty"`
+	JobOrder          *int32    `json:"job_order,omitempty"`
+	Name              string    `json:"name"`
+	NotebookId        string    `json:"notebook_id"`
+	RetryCount        *int32    `json:"retry_count,omitempty"`
+	TimeoutSeconds    *int64    `json:"timeout_seconds,omitempty"`
+}
+
+// CreatePipelineRequest Request payload for creating a new pipeline.
+type CreatePipelineRequest struct {
+	ConcurrencyLimit *int32  `json:"concurrency_limit,omitempty"`
+	Description      *string `json:"description,omitempty"`
+	IsPaused         *bool   `json:"is_paused,omitempty"`
+	Name             string  `json:"name"`
+	ScheduleCron     *string `json:"schedule_cron,omitempty"`
 }
 
 // CreatePrincipalRequest Request body for creating a new principal.
@@ -973,6 +1027,18 @@ type PaginatedNotebooks struct {
 	NextPageToken *string     `json:"next_page_token,omitempty"`
 }
 
+// PaginatedPipelineRuns A paginated list of pipeline runs.
+type PaginatedPipelineRuns struct {
+	Data          *[]PipelineRun `json:"data,omitempty"`
+	NextPageToken *string        `json:"next_page_token,omitempty"`
+}
+
+// PaginatedPipelines A paginated list of pipelines.
+type PaginatedPipelines struct {
+	Data          *[]Pipeline `json:"data,omitempty"`
+	NextPageToken *string     `json:"next_page_token,omitempty"`
+}
+
 // PaginatedPrincipals Paginated list of principals.
 type PaginatedPrincipals struct {
 	Data          *[]Principal `json:"data,omitempty"`
@@ -1032,6 +1098,71 @@ type PaginatedVolumes struct {
 	Data          *[]VolumeDetail `json:"data,omitempty"`
 	NextPageToken *string         `json:"next_page_token,omitempty"`
 }
+
+// Pipeline A pipeline workflow definition for scheduling SQL notebook execution.
+type Pipeline struct {
+	ConcurrencyLimit *int32     `json:"concurrency_limit,omitempty"`
+	CreatedAt        *time.Time `json:"created_at,omitempty"`
+	CreatedBy        *string    `json:"created_by,omitempty"`
+	Description      *string    `json:"description,omitempty"`
+	Id               *string    `json:"id,omitempty"`
+	IsPaused         *bool      `json:"is_paused,omitempty"`
+	Name             *string    `json:"name,omitempty"`
+	ScheduleCron     *string    `json:"schedule_cron,omitempty"`
+	UpdatedAt        *time.Time `json:"updated_at,omitempty"`
+}
+
+// PipelineJob A job within a pipeline, referencing a notebook for execution.
+type PipelineJob struct {
+	ComputeEndpointId *string    `json:"compute_endpoint_id,omitempty"`
+	CreatedAt         *time.Time `json:"created_at,omitempty"`
+	DependsOn         *[]string  `json:"depends_on,omitempty"`
+	Id                *string    `json:"id,omitempty"`
+	JobOrder          *int32     `json:"job_order,omitempty"`
+	Name              *string    `json:"name,omitempty"`
+	NotebookId        *string    `json:"notebook_id,omitempty"`
+	PipelineId        *string    `json:"pipeline_id,omitempty"`
+	RetryCount        *int32     `json:"retry_count,omitempty"`
+	TimeoutSeconds    *int64     `json:"timeout_seconds,omitempty"`
+}
+
+// PipelineJobRun Execution status of a single job within a pipeline run.
+type PipelineJobRun struct {
+	CreatedAt    *time.Time            `json:"created_at,omitempty"`
+	ErrorMessage *string               `json:"error_message,omitempty"`
+	FinishedAt   *time.Time            `json:"finished_at,omitempty"`
+	Id           *string               `json:"id,omitempty"`
+	JobId        *string               `json:"job_id,omitempty"`
+	JobName      *string               `json:"job_name,omitempty"`
+	RetryAttempt *int32                `json:"retry_attempt,omitempty"`
+	RunId        *string               `json:"run_id,omitempty"`
+	StartedAt    *time.Time            `json:"started_at,omitempty"`
+	Status       *PipelineJobRunStatus `json:"status,omitempty"`
+}
+
+// PipelineJobRunStatus defines model for PipelineJobRun.Status.
+type PipelineJobRunStatus string
+
+// PipelineRun An execution instance of a pipeline.
+type PipelineRun struct {
+	CreatedAt     *time.Time              `json:"created_at,omitempty"`
+	ErrorMessage  *string                 `json:"error_message,omitempty"`
+	FinishedAt    *time.Time              `json:"finished_at,omitempty"`
+	GitCommitHash *string                 `json:"git_commit_hash,omitempty"`
+	Id            *string                 `json:"id,omitempty"`
+	Parameters    *map[string]string      `json:"parameters,omitempty"`
+	PipelineId    *string                 `json:"pipeline_id,omitempty"`
+	StartedAt     *time.Time              `json:"started_at,omitempty"`
+	Status        *PipelineRunStatus      `json:"status,omitempty"`
+	TriggerType   *PipelineRunTriggerType `json:"trigger_type,omitempty"`
+	TriggeredBy   *string                 `json:"triggered_by,omitempty"`
+}
+
+// PipelineRunStatus defines model for PipelineRun.Status.
+type PipelineRunStatus string
+
+// PipelineRunTriggerType defines model for PipelineRun.TriggerType.
+type PipelineRunTriggerType string
 
 // Principal A security principal representing a user or service account.
 type Principal struct {
@@ -1241,6 +1372,11 @@ type TagAssignment struct {
 	TagId         *string    `json:"tag_id,omitempty"`
 }
 
+// TriggerPipelineRunRequest Request payload for manually triggering a pipeline run.
+type TriggerPipelineRunRequest struct {
+	Parameters *map[string]string `json:"parameters,omitempty"`
+}
+
 // UpdateCatalogRegistrationRequest Request body for updating a catalog registration.
 type UpdateCatalogRegistrationRequest struct {
 	Comment  *string `json:"comment,omitempty"`
@@ -1288,6 +1424,14 @@ type UpdateExternalLocationRequest struct {
 type UpdateNotebookRequest struct {
 	Description *string `json:"description,omitempty"`
 	Name        *string `json:"name,omitempty"`
+}
+
+// UpdatePipelineRequest Request payload for updating an existing pipeline.
+type UpdatePipelineRequest struct {
+	ConcurrencyLimit *int32  `json:"concurrency_limit,omitempty"`
+	Description      *string `json:"description,omitempty"`
+	IsPaused         *bool   `json:"is_paused,omitempty"`
+	ScheduleCron     *string `json:"schedule_cron,omitempty"`
 }
 
 // UpdatePrincipalAdminRequest Request body for updating a principal's admin status.
@@ -1722,6 +1866,30 @@ type ListNotebookJobsParams struct {
 	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
 }
 
+// ListPipelinesParams defines parameters for ListPipelines.
+type ListPipelinesParams struct {
+	// MaxResults Maximum number of results to return per page.
+	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
+
+	// PageToken Opaque pagination token from a previous response.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// ListPipelineRunsParams defines parameters for ListPipelineRuns.
+type ListPipelineRunsParams struct {
+	// MaxResults Maximum number of results to return per page.
+	MaxResults *MaxResults `form:"max_results,omitempty" json:"max_results,omitempty"`
+
+	// PageToken Opaque pagination token from a previous response.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+
+	// Status Filter runs by status.
+	Status *ListPipelineRunsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+}
+
+// ListPipelineRunsParamsStatus defines parameters for ListPipelineRuns.
+type ListPipelineRunsParamsStatus string
+
 // ListPrincipalsParams defines parameters for ListPrincipals.
 type ListPrincipalsParams struct {
 	// MaxResults Maximum number of results to return per page.
@@ -1916,6 +2084,18 @@ type ReorderCellsJSONRequestBody = ReorderCellsRequest
 
 // UpdateCellJSONRequestBody defines body for UpdateCell for application/json ContentType.
 type UpdateCellJSONRequestBody = UpdateCellRequest
+
+// CreatePipelineJSONRequestBody defines body for CreatePipeline for application/json ContentType.
+type CreatePipelineJSONRequestBody = CreatePipelineRequest
+
+// UpdatePipelineJSONRequestBody defines body for UpdatePipeline for application/json ContentType.
+type UpdatePipelineJSONRequestBody = UpdatePipelineRequest
+
+// CreatePipelineJobJSONRequestBody defines body for CreatePipelineJob for application/json ContentType.
+type CreatePipelineJobJSONRequestBody = CreatePipelineJobRequest
+
+// TriggerPipelineRunJSONRequestBody defines body for TriggerPipelineRun for application/json ContentType.
+type TriggerPipelineRunJSONRequestBody = TriggerPipelineRunRequest
 
 // CreatePrincipalJSONRequestBody defines body for CreatePrincipal for application/json ContentType.
 type CreatePrincipalJSONRequestBody = CreatePrincipalRequest

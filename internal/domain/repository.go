@@ -269,3 +269,37 @@ type GitRepoRepository interface {
 	Delete(ctx context.Context, id string) error
 	UpdateSyncStatus(ctx context.Context, id string, commitSHA string, syncedAt time.Time) error
 }
+
+// PipelineRepository provides CRUD operations for pipelines and jobs.
+type PipelineRepository interface {
+	CreatePipeline(ctx context.Context, p *Pipeline) (*Pipeline, error)
+	GetPipelineByID(ctx context.Context, id string) (*Pipeline, error)
+	GetPipelineByName(ctx context.Context, name string) (*Pipeline, error)
+	ListPipelines(ctx context.Context, page PageRequest) ([]Pipeline, int64, error)
+	UpdatePipeline(ctx context.Context, id string, req UpdatePipelineRequest) (*Pipeline, error)
+	DeletePipeline(ctx context.Context, id string) error
+	ListScheduledPipelines(ctx context.Context) ([]Pipeline, error)
+	CreateJob(ctx context.Context, job *PipelineJob) (*PipelineJob, error)
+	GetJobByID(ctx context.Context, id string) (*PipelineJob, error)
+	ListJobsByPipeline(ctx context.Context, pipelineID string) ([]PipelineJob, error)
+	DeleteJob(ctx context.Context, id string) error
+	DeleteJobsByPipeline(ctx context.Context, pipelineID string) error
+}
+
+// PipelineRunRepository provides CRUD operations for pipeline runs and job runs.
+type PipelineRunRepository interface {
+	CreateRun(ctx context.Context, run *PipelineRun) (*PipelineRun, error)
+	GetRunByID(ctx context.Context, id string) (*PipelineRun, error)
+	ListRuns(ctx context.Context, filter PipelineRunFilter) ([]PipelineRun, int64, error)
+	UpdateRunStatus(ctx context.Context, id string, status string, errorMsg *string) error
+	UpdateRunStarted(ctx context.Context, id string) error
+	UpdateRunFinished(ctx context.Context, id string, status string, errorMsg *string) error
+	CountActiveRuns(ctx context.Context, pipelineID string) (int64, error)
+	CancelPendingRuns(ctx context.Context, pipelineID string) (int64, error)
+	CreateJobRun(ctx context.Context, jr *PipelineJobRun) (*PipelineJobRun, error)
+	GetJobRunByID(ctx context.Context, id string) (*PipelineJobRun, error)
+	ListJobRunsByRun(ctx context.Context, runID string) ([]PipelineJobRun, error)
+	UpdateJobRunStatus(ctx context.Context, id string, status string, errorMsg *string) error
+	UpdateJobRunStarted(ctx context.Context, id string) error
+	UpdateJobRunFinished(ctx context.Context, id string, status string, errorMsg *string) error
+}

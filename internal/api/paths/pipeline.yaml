@@ -1,0 +1,844 @@
+paths:
+  /pipelines:
+    get:
+      operationId: listPipelines
+      summary: List pipelines
+      tags: [Pipelines]
+      description: Returns a paginated list of pipelines.
+      parameters:
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of pipelines
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/pipeline.yaml#/PaginatedPipelines'
+              example:
+                data:
+                  - id: "550e8400-e29b-41d4-a716-446655440001"
+                    name: "daily-etl"
+                    description: "Daily ETL pipeline"
+                    schedule_cron: "0 2 * * *"
+                    is_paused: false
+                    concurrency_limit: 1
+                    created_by: "admin"
+                    created_at: "2025-01-15T09:30:00Z"
+                    updated_at: "2025-01-15T09:30:00Z"
+                next_page_token: "eyJpZCI6MTB9"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+    post:
+      operationId: createPipeline
+      summary: Create a pipeline
+      tags: [Pipelines]
+      description: Creates a new pipeline workflow definition.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/pipeline.yaml#/CreatePipelineRequest'
+            example:
+              name: "daily-etl"
+              description: "Daily ETL pipeline"
+              schedule_cron: "0 2 * * *"
+              is_paused: false
+              concurrency_limit: 1
+      responses:
+        '201':
+          description: Created pipeline
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/pipeline.yaml#/Pipeline'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440001"
+                name: "daily-etl"
+                description: "Daily ETL pipeline"
+                schedule_cron: "0 2 * * *"
+                is_paused: false
+                concurrency_limit: 1
+                created_by: "admin"
+                created_at: "2025-01-15T09:30:00Z"
+                updated_at: "2025-01-15T09:30:00Z"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '409':
+          $ref: '../schemas/responses.yaml#/responses/Conflict'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /pipelines/{pipelineName}:
+    parameters:
+      - name: pipelineName
+        in: path
+        required: true
+        description: Name of the pipeline.
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
+    get:
+      operationId: getPipeline
+      summary: Get a pipeline by name
+      tags: [Pipelines]
+      description: Retrieves the details of a specific pipeline identified by its name.
+      responses:
+        '200':
+          description: Pipeline details
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/pipeline.yaml#/Pipeline'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440001"
+                name: "daily-etl"
+                description: "Daily ETL pipeline"
+                schedule_cron: "0 2 * * *"
+                is_paused: false
+                concurrency_limit: 1
+                created_by: "admin"
+                created_at: "2025-01-15T09:30:00Z"
+                updated_at: "2025-01-15T09:30:00Z"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+    patch:
+      operationId: updatePipeline
+      summary: Update a pipeline
+      tags: [Pipelines]
+      description: Updates pipeline fields.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/pipeline.yaml#/UpdatePipelineRequest'
+            example:
+              description: "Updated daily ETL pipeline"
+              schedule_cron: "0 3 * * *"
+              is_paused: true
+      responses:
+        '200':
+          description: Updated pipeline
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/pipeline.yaml#/Pipeline'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440001"
+                name: "daily-etl"
+                description: "Updated daily ETL pipeline"
+                schedule_cron: "0 3 * * *"
+                is_paused: true
+                concurrency_limit: 1
+                created_by: "admin"
+                created_at: "2025-01-15T09:30:00Z"
+                updated_at: "2025-01-16T10:00:00Z"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+    delete:
+      operationId: deletePipeline
+      summary: Delete a pipeline
+      tags: [Pipelines]
+      description: Deletes a pipeline and all its associated jobs.
+      responses:
+        '204':
+          description: Pipeline deleted
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /pipelines/{pipelineName}/jobs:
+    parameters:
+      - name: pipelineName
+        in: path
+        required: true
+        description: Name of the pipeline.
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
+    get:
+      operationId: listPipelineJobs
+      summary: List jobs for a pipeline
+      tags: [Pipelines]
+      description: Returns the list of jobs defined in a pipeline.
+      responses:
+        '200':
+          description: List of pipeline jobs
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 1000
+                items:
+                  $ref: '../schemas/pipeline.yaml#/PipelineJob'
+              example:
+                - id: "550e8400-e29b-41d4-a716-446655440010"
+                  pipeline_id: "550e8400-e29b-41d4-a716-446655440001"
+                  name: "extract-data"
+                  compute_endpoint_id: "550e8400-e29b-41d4-a716-446655440020"
+                  depends_on: []
+                  notebook_id: "550e8400-e29b-41d4-a716-446655440030"
+                  timeout_seconds: 3600
+                  retry_count: 2
+                  job_order: 0
+                  created_at: "2025-01-15T09:30:00Z"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+    post:
+      operationId: createPipelineJob
+      summary: Create a job in a pipeline
+      tags: [Pipelines]
+      description: Creates a new job within a pipeline.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/pipeline.yaml#/CreatePipelineJobRequest'
+            example:
+              name: "extract-data"
+              compute_endpoint_id: "550e8400-e29b-41d4-a716-446655440020"
+              depends_on: []
+              notebook_id: "550e8400-e29b-41d4-a716-446655440030"
+              timeout_seconds: 3600
+              retry_count: 2
+              job_order: 0
+      responses:
+        '201':
+          description: Created pipeline job
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/pipeline.yaml#/PipelineJob'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440010"
+                pipeline_id: "550e8400-e29b-41d4-a716-446655440001"
+                name: "extract-data"
+                compute_endpoint_id: "550e8400-e29b-41d4-a716-446655440020"
+                depends_on: []
+                notebook_id: "550e8400-e29b-41d4-a716-446655440030"
+                timeout_seconds: 3600
+                retry_count: 2
+                job_order: 0
+                created_at: "2025-01-15T09:30:00Z"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '409':
+          $ref: '../schemas/responses.yaml#/responses/Conflict'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /pipelines/{pipelineName}/jobs/{jobId}:
+    parameters:
+      - name: pipelineName
+        in: path
+        required: true
+        description: Name of the pipeline.
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
+      - name: jobId
+        in: path
+        required: true
+        description: Unique identifier of the pipeline job.
+        schema:
+          type: string
+          pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+          maxLength: 36
+    delete:
+      operationId: deletePipelineJob
+      summary: Delete a pipeline job
+      tags: [Pipelines]
+      description: Removes a job from a pipeline.
+      responses:
+        '204':
+          description: Pipeline job deleted
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /pipelines/{pipelineName}/runs:
+    parameters:
+      - name: pipelineName
+        in: path
+        required: true
+        description: Name of the pipeline.
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
+    post:
+      operationId: triggerPipelineRun
+      summary: Trigger a pipeline run
+      tags: [Pipelines]
+      description: Manually triggers a new run of the specified pipeline.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/pipeline.yaml#/TriggerPipelineRunRequest'
+            example:
+              parameters:
+                env: "production"
+      responses:
+        '201':
+          description: Triggered pipeline run
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/pipeline.yaml#/PipelineRun'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440050"
+                pipeline_id: "550e8400-e29b-41d4-a716-446655440001"
+                status: PENDING
+                trigger_type: MANUAL
+                triggered_by: "admin"
+                parameters:
+                  env: "production"
+                created_at: "2025-01-15T10:00:00Z"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '409':
+          $ref: '../schemas/responses.yaml#/responses/Conflict'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+    get:
+      operationId: listPipelineRuns
+      summary: List runs for a pipeline
+      tags: [Pipelines]
+      description: Returns a paginated list of runs for the specified pipeline.
+      parameters:
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
+        - name: status
+          in: query
+          required: false
+          description: Filter runs by status.
+          schema:
+            type: string
+            enum: [PENDING, RUNNING, SUCCESS, FAILED, CANCELLED]
+      responses:
+        '200':
+          description: Paginated list of pipeline runs
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/pipeline.yaml#/PaginatedPipelineRuns'
+              example:
+                data:
+                  - id: "550e8400-e29b-41d4-a716-446655440050"
+                    pipeline_id: "550e8400-e29b-41d4-a716-446655440001"
+                    status: SUCCESS
+                    trigger_type: SCHEDULED
+                    triggered_by: "scheduler"
+                    started_at: "2025-01-15T02:00:00Z"
+                    finished_at: "2025-01-15T02:15:00Z"
+                    created_at: "2025-01-15T02:00:00Z"
+                next_page_token: "eyJpZCI6MTB9"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /pipelines/runs/{runId}:
+    parameters:
+      - name: runId
+        in: path
+        required: true
+        description: Unique identifier of the pipeline run.
+        schema:
+          type: string
+          pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+          maxLength: 36
+    get:
+      operationId: getPipelineRun
+      summary: Get a pipeline run
+      tags: [Pipelines]
+      description: Retrieves the details of a specific pipeline run.
+      responses:
+        '200':
+          description: Pipeline run details
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/pipeline.yaml#/PipelineRun'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440050"
+                pipeline_id: "550e8400-e29b-41d4-a716-446655440001"
+                status: RUNNING
+                trigger_type: MANUAL
+                triggered_by: "admin"
+                parameters:
+                  env: "production"
+                started_at: "2025-01-15T10:00:00Z"
+                created_at: "2025-01-15T10:00:00Z"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /pipelines/runs/{runId}/cancel:
+    parameters:
+      - name: runId
+        in: path
+        required: true
+        description: Unique identifier of the pipeline run.
+        schema:
+          type: string
+          pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+          maxLength: 36
+    post:
+      operationId: cancelPipelineRun
+      summary: Cancel a pipeline run
+      tags: [Pipelines]
+      description: Cancels a running or pending pipeline run.
+      responses:
+        '200':
+          description: Cancelled pipeline run
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/pipeline.yaml#/PipelineRun'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440050"
+                pipeline_id: "550e8400-e29b-41d4-a716-446655440001"
+                status: CANCELLED
+                trigger_type: MANUAL
+                triggered_by: "admin"
+                started_at: "2025-01-15T10:00:00Z"
+                finished_at: "2025-01-15T10:05:00Z"
+                created_at: "2025-01-15T10:00:00Z"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '409':
+          $ref: '../schemas/responses.yaml#/responses/Conflict'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /pipelines/runs/{runId}/jobs:
+    parameters:
+      - name: runId
+        in: path
+        required: true
+        description: Unique identifier of the pipeline run.
+        schema:
+          type: string
+          pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+          maxLength: 36
+    get:
+      operationId: listPipelineJobRuns
+      summary: List job runs for a pipeline run
+      tags: [Pipelines]
+      description: Returns the list of individual job executions within a pipeline run.
+      responses:
+        '200':
+          description: List of pipeline job runs
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 1000
+                items:
+                  $ref: '../schemas/pipeline.yaml#/PipelineJobRun'
+              example:
+                - id: "550e8400-e29b-41d4-a716-446655440060"
+                  run_id: "550e8400-e29b-41d4-a716-446655440050"
+                  job_id: "550e8400-e29b-41d4-a716-446655440010"
+                  job_name: "extract-data"
+                  status: SUCCESS
+                  started_at: "2025-01-15T10:00:00Z"
+                  finished_at: "2025-01-15T10:05:00Z"
+                  retry_attempt: 0
+                  created_at: "2025-01-15T10:00:00Z"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
