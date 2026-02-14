@@ -6,13 +6,12 @@ import (
 	"net/http"
 
 	"duck-demo/internal/domain"
-	"duck-demo/internal/middleware"
 )
 
 // principalFromCtx extracts the principal name from the context.
 func principalFromCtx(ctx context.Context) string {
-	p, _ := middleware.PrincipalFromContext(ctx)
-	return p
+	p, _ := domain.PrincipalFromContext(ctx)
+	return p.Name
 }
 
 // catalogService defines the catalog operations used by the API handler.

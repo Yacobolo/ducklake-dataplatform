@@ -10,8 +10,8 @@ import (
 	_ "github.com/duckdb/duckdb-go/v2"
 	"github.com/stretchr/testify/require"
 
+	"duck-demo/internal/domain"
 	"duck-demo/internal/engine"
-	"duck-demo/internal/middleware"
 	"duck-demo/internal/testutil"
 )
 
@@ -19,7 +19,7 @@ import (
 var errTest = fmt.Errorf("test error")
 
 func ctxWithPrincipal(name string) context.Context {
-	return middleware.WithPrincipal(context.Background(), name)
+	return domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: name, Type: "user"})
 }
 
 // testSecretManager returns a DuckDBSecretManager wrapping the given DuckDB connection.

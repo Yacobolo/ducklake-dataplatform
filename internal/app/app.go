@@ -11,8 +11,8 @@ import (
 	"duck-demo/internal/compute"
 	"duck-demo/internal/config"
 	"duck-demo/internal/db/crypto"
-	dbstore "duck-demo/internal/db/dbstore"
 	"duck-demo/internal/db/repository"
+	"duck-demo/internal/domain"
 	"duck-demo/internal/engine"
 	"duck-demo/internal/service/catalog"
 	svccompute "duck-demo/internal/service/compute"
@@ -76,7 +76,7 @@ type App struct {
 }
 
 // New wires all repositories, services, and engine from the provided deps.
-// It also runs conditional seeding and external-table view restoration.
+// It also performs external-table view restoration.
 //
 // Construction order is designed so every dependency is available at the
 // time each constructor is called — no post-construction Set*() calls.
@@ -135,11 +135,16 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 		extTableRepo,
 	)
 
-	// === Seed demo data ===
-	q := dbstore.New(deps.WriteDB)
-	if err := seedCatalog(ctx, authSvc, q); err != nil {
-		deps.Logger.Warn("seed skipped: grants/filters/masks require a DuckLake catalog (principals and groups seeded OK)",
-			"error", err)
+	// === Check for empty database and log bootstrap instructions ===
+	_, total, _ := principalRepo.List(ctx, domain.PageRequest{MaxResults: 1})
+	if total == 0 {
+		if cfg.Auth.BootstrapAdmin != "" {
+			deps.Logger.Info("no principals found — first JWT login matching AUTH_BOOTSTRAP_ADMIN will be provisioned as admin",
+				"bootstrap_admin", cfg.Auth.BootstrapAdmin)
+		} else {
+			deps.Logger.Warn("no principals found and AUTH_BOOTSTRAP_ADMIN is not set",
+				"hint", "set AUTH_BOOTSTRAP_ADMIN=<jwt-sub> or run: go run ./cmd/server admin promote --principal=<name> --create")
+		}
 	}
 
 	// === 7. Engine (needs auth + resolver + infoSchema provider) ===

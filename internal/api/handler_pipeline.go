@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"duck-demo/internal/domain"
-	"duck-demo/internal/middleware"
 )
 
 // pipelineService defines the pipeline operations used by the API handler.
@@ -64,7 +63,8 @@ func (h *APIHandler) CreatePipeline(ctx context.Context, req CreatePipelineReque
 		domReq.ConcurrencyLimit = int(*req.Body.ConcurrencyLimit)
 	}
 
-	principal, _ := middleware.PrincipalFromContext(ctx)
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	result, err := h.pipelines.CreatePipeline(ctx, principal, domReq)
 	if err != nil {
 		switch {
@@ -113,7 +113,8 @@ func (h *APIHandler) UpdatePipeline(ctx context.Context, req UpdatePipelineReque
 		domReq.ConcurrencyLimit = &v
 	}
 
-	principal, _ := middleware.PrincipalFromContext(ctx)
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	result, err := h.pipelines.UpdatePipeline(ctx, principal, req.PipelineName, domReq)
 	if err != nil {
 		switch {
@@ -133,7 +134,8 @@ func (h *APIHandler) UpdatePipeline(ctx context.Context, req UpdatePipelineReque
 
 // DeletePipeline implements the endpoint for deleting a pipeline.
 func (h *APIHandler) DeletePipeline(ctx context.Context, req DeletePipelineRequestObject) (DeletePipelineResponseObject, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	if err := h.pipelines.DeletePipeline(ctx, principal, req.PipelineName); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
@@ -195,7 +197,8 @@ func (h *APIHandler) CreatePipelineJob(ctx context.Context, req CreatePipelineJo
 		domReq.JobOrder = int(*req.Body.JobOrder)
 	}
 
-	principal, _ := middleware.PrincipalFromContext(ctx)
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	result, err := h.pipelines.CreateJob(ctx, principal, req.PipelineName, domReq)
 	if err != nil {
 		switch {
@@ -219,7 +222,8 @@ func (h *APIHandler) CreatePipelineJob(ctx context.Context, req CreatePipelineJo
 
 // DeletePipelineJob implements the endpoint for deleting a pipeline job.
 func (h *APIHandler) DeletePipelineJob(ctx context.Context, req DeletePipelineJobRequestObject) (DeletePipelineJobResponseObject, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	if err := h.pipelines.DeleteJob(ctx, principal, req.PipelineName, req.JobId); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
@@ -244,7 +248,8 @@ func (h *APIHandler) TriggerPipelineRun(ctx context.Context, req TriggerPipeline
 		params = *req.Body.Parameters
 	}
 
-	principal, _ := middleware.PrincipalFromContext(ctx)
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	result, err := h.pipelines.TriggerRun(ctx, principal, req.PipelineName, params, domain.TriggerTypeManual)
 	if err != nil {
 		switch {
@@ -317,7 +322,8 @@ func (h *APIHandler) GetPipelineRun(ctx context.Context, req GetPipelineRunReque
 
 // CancelPipelineRun implements the endpoint for cancelling a pipeline run.
 func (h *APIHandler) CancelPipelineRun(ctx context.Context, req CancelPipelineRunRequestObject) (CancelPipelineRunResponseObject, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	if err := h.pipelines.CancelRun(ctx, principal, req.RunId); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):

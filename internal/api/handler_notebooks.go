@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"duck-demo/internal/domain"
-	"duck-demo/internal/middleware"
 )
 
 // notebookService defines the notebook operations used by the API handler.
@@ -69,7 +68,8 @@ func (h *APIHandler) CreateNotebook(ctx context.Context, req CreateNotebookReque
 		Description: req.Body.Description,
 	}
 
-	principal, _ := middleware.PrincipalFromContext(ctx)
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	result, err := h.notebooks.CreateNotebook(ctx, principal, domReq)
 	if err != nil {
 		switch {
@@ -117,8 +117,8 @@ func (h *APIHandler) UpdateNotebook(ctx context.Context, req UpdateNotebookReque
 		Description: req.Body.Description,
 	}
 
-	principal, _ := middleware.PrincipalFromContext(ctx)
 	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	isAdmin := cp.IsAdmin
 
 	result, err := h.notebooks.UpdateNotebook(ctx, principal, isAdmin, req.NotebookId, domReq)
@@ -142,8 +142,8 @@ func (h *APIHandler) UpdateNotebook(ctx context.Context, req UpdateNotebookReque
 
 // DeleteNotebook implements the endpoint for deleting a notebook.
 func (h *APIHandler) DeleteNotebook(ctx context.Context, req DeleteNotebookRequestObject) (DeleteNotebookResponseObject, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
 	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	isAdmin := cp.IsAdmin
 
 	if err := h.notebooks.DeleteNotebook(ctx, principal, isAdmin, req.NotebookId); err != nil {
@@ -174,8 +174,8 @@ func (h *APIHandler) CreateCell(ctx context.Context, req CreateCellRequestObject
 		domReq.Position = &pos
 	}
 
-	principal, _ := middleware.PrincipalFromContext(ctx)
 	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	isAdmin := cp.IsAdmin
 
 	result, err := h.notebooks.CreateCell(ctx, principal, isAdmin, req.NotebookId, domReq)
@@ -207,8 +207,8 @@ func (h *APIHandler) UpdateCell(ctx context.Context, req UpdateCellRequestObject
 		domReq.Position = &pos
 	}
 
-	principal, _ := middleware.PrincipalFromContext(ctx)
 	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	isAdmin := cp.IsAdmin
 
 	result, err := h.notebooks.UpdateCell(ctx, principal, isAdmin, req.CellId, domReq)
@@ -232,8 +232,8 @@ func (h *APIHandler) UpdateCell(ctx context.Context, req UpdateCellRequestObject
 
 // DeleteCell implements the endpoint for deleting a cell.
 func (h *APIHandler) DeleteCell(ctx context.Context, req DeleteCellRequestObject) (DeleteCellResponseObject, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
 	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	isAdmin := cp.IsAdmin
 
 	if err := h.notebooks.DeleteCell(ctx, principal, isAdmin, req.CellId); err != nil {
@@ -255,8 +255,8 @@ func (h *APIHandler) ReorderCells(ctx context.Context, req ReorderCellsRequestOb
 		CellIDs: req.Body.CellIds,
 	}
 
-	principal, _ := middleware.PrincipalFromContext(ctx)
 	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	isAdmin := cp.IsAdmin
 
 	cells, err := h.notebooks.ReorderCells(ctx, principal, isAdmin, req.NotebookId, domReq)
@@ -287,7 +287,8 @@ func (h *APIHandler) ReorderCells(ctx context.Context, req ReorderCellsRequestOb
 
 // CreateNotebookSession implements the endpoint for starting a notebook session.
 func (h *APIHandler) CreateNotebookSession(ctx context.Context, req CreateNotebookSessionRequestObject) (CreateNotebookSessionResponseObject, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 
 	result, err := h.sessions.CreateSession(ctx, req.NotebookId, principal)
 	if err != nil {
@@ -306,7 +307,8 @@ func (h *APIHandler) CreateNotebookSession(ctx context.Context, req CreateNotebo
 
 // CloseNotebookSession implements the endpoint for closing a notebook session.
 func (h *APIHandler) CloseNotebookSession(ctx context.Context, req CloseNotebookSessionRequestObject) (CloseNotebookSessionResponseObject, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	if err := h.sessions.CloseSession(ctx, req.SessionId, principal); err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
@@ -320,7 +322,8 @@ func (h *APIHandler) CloseNotebookSession(ctx context.Context, req CloseNotebook
 
 // ExecuteCell implements the endpoint for executing a single cell in a session.
 func (h *APIHandler) ExecuteCell(ctx context.Context, req ExecuteCellRequestObject) (ExecuteCellResponseObject, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	result, err := h.sessions.ExecuteCell(ctx, req.SessionId, req.CellId, principal)
 	if err != nil {
 		switch {
@@ -342,7 +345,8 @@ func (h *APIHandler) ExecuteCell(ctx context.Context, req ExecuteCellRequestObje
 
 // RunAllCells implements the endpoint for executing all SQL cells synchronously.
 func (h *APIHandler) RunAllCells(ctx context.Context, req RunAllCellsRequestObject) (RunAllCellsResponseObject, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	result, err := h.sessions.RunAll(ctx, req.SessionId, principal)
 	if err != nil {
 		switch {
@@ -360,7 +364,8 @@ func (h *APIHandler) RunAllCells(ctx context.Context, req RunAllCellsRequestObje
 
 // RunAllCellsAsync implements the endpoint for starting async execution of all cells.
 func (h *APIHandler) RunAllCellsAsync(ctx context.Context, req RunAllCellsAsyncRequestObject) (RunAllCellsAsyncResponseObject, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	result, err := h.sessions.RunAllAsync(ctx, req.SessionId, principal)
 	if err != nil {
 		switch {
@@ -451,7 +456,8 @@ func (h *APIHandler) CreateGitRepo(ctx context.Context, req CreateGitRepoRequest
 		domReq.Path = *req.Body.Path
 	}
 
-	principal, _ := middleware.PrincipalFromContext(ctx)
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	result, err := h.gitRepos.CreateGitRepo(ctx, principal, domReq)
 	if err != nil {
 		switch {
@@ -488,8 +494,8 @@ func (h *APIHandler) GetGitRepo(ctx context.Context, req GetGitRepoRequestObject
 
 // DeleteGitRepo implements the endpoint for deleting a Git repository.
 func (h *APIHandler) DeleteGitRepo(ctx context.Context, req DeleteGitRepoRequestObject) (DeleteGitRepoResponseObject, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
 	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	isAdmin := cp.IsAdmin
 
 	if err := h.gitRepos.DeleteGitRepo(ctx, principal, isAdmin, req.GitRepoId); err != nil {

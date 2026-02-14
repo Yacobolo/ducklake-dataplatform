@@ -13,7 +13,6 @@ import (
 	dbstore "duck-demo/internal/db/dbstore"
 	"duck-demo/internal/db/repository"
 	"duck-demo/internal/domain"
-	"duck-demo/internal/middleware"
 	"duck-demo/internal/service/security"
 )
 
@@ -210,7 +209,7 @@ func TestIngestion_CommitEmptyKeys(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	ctx = middleware.WithPrincipal(ctx, "writer")
+	ctx = domain.WithPrincipal(ctx, domain.ContextPrincipal{Name: "writer", Type: "user"})
 	_, err = svc.CommitIngestion(ctx, "writer", "lake", "main", "titanic", []string{}, domain.IngestionOptions{})
 	require.Error(t, err)
 
@@ -227,7 +226,7 @@ func TestIngestion_LoadEmptyPaths(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	ctx = middleware.WithPrincipal(ctx, "writer")
+	ctx = domain.WithPrincipal(ctx, domain.ContextPrincipal{Name: "writer", Type: "user"})
 	_, err = svc.LoadExternalFiles(ctx, "writer", "lake", "main", "titanic", []string{}, domain.IngestionOptions{})
 	require.Error(t, err)
 
@@ -245,7 +244,7 @@ func TestIngestion_AccessDenied(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	ctx = middleware.WithPrincipal(ctx, "no_access")
+	ctx = domain.WithPrincipal(ctx, domain.ContextPrincipal{Name: "no_access", Type: "user"})
 
 	t.Run("upload-url denied", func(t *testing.T) {
 		_, err := svc.RequestUploadURL(ctx, "no_access", "lake", "main", "titanic", nil)
@@ -284,7 +283,7 @@ func TestIngestion_TableNotFound(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	ctx = middleware.WithPrincipal(ctx, "writer")
+	ctx = domain.WithPrincipal(ctx, domain.ContextPrincipal{Name: "writer", Type: "user"})
 
 	_, err = svc.RequestUploadURL(ctx, "writer", "lake", "main", "nonexistent_table", nil)
 	require.Error(t, err)
@@ -301,7 +300,7 @@ func TestIngestion_AdminPassesAuthCheck(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	ctx = middleware.WithPrincipal(ctx, "admin")
+	ctx = domain.WithPrincipal(ctx, domain.ContextPrincipal{Name: "admin", Type: "user"})
 
 	// Admin should pass the auth check for commit, but fail on validation (empty keys).
 	// This verifies auth is not the blocker.
@@ -334,7 +333,7 @@ func TestIngestion_UserWithInsertGrant(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	ctx = middleware.WithPrincipal(ctx, "inserter")
+	ctx = domain.WithPrincipal(ctx, domain.ContextPrincipal{Name: "inserter", Type: "user"})
 
 	// Should pass auth, but fail on validation (empty keys) — NOT AccessDenied.
 	_, err = svc.CommitIngestion(ctx, "inserter", "lake", "main", "titanic", []string{}, domain.IngestionOptions{})

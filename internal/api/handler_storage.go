@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"duck-demo/internal/domain"
-	"duck-demo/internal/middleware"
 )
 
 // storageCredentialService defines the storage credential operations used by the API handler.
@@ -104,7 +103,8 @@ func (h *APIHandler) CreateStorageCredential(ctx context.Context, req CreateStor
 		domReq.Comment = *req.Body.Comment
 	}
 
-	principal, _ := middleware.PrincipalFromContext(ctx)
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	result, err := h.storageCreds.Create(ctx, principal, domReq)
 	if err != nil {
 		var accessErr *domain.AccessDeniedError
@@ -164,7 +164,8 @@ func (h *APIHandler) UpdateStorageCredential(ctx context.Context, req UpdateStor
 		Comment:        req.Body.Comment,
 	}
 
-	principal, _ := middleware.PrincipalFromContext(ctx)
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	result, err := h.storageCreds.Update(ctx, principal, req.CredentialName, domReq)
 	if err != nil {
 		switch {
@@ -184,7 +185,8 @@ func (h *APIHandler) UpdateStorageCredential(ctx context.Context, req UpdateStor
 
 // DeleteStorageCredential implements the endpoint for deleting a storage credential by name.
 func (h *APIHandler) DeleteStorageCredential(ctx context.Context, req DeleteStorageCredentialRequestObject) (DeleteStorageCredentialResponseObject, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	if err := h.storageCreds.Delete(ctx, principal, req.CredentialName); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
@@ -236,7 +238,8 @@ func (h *APIHandler) CreateExternalLocation(ctx context.Context, req CreateExter
 		domReq.ReadOnly = *req.Body.ReadOnly
 	}
 
-	principal, _ := middleware.PrincipalFromContext(ctx)
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	result, err := h.externalLocations.Create(ctx, principal, domReq)
 	if err != nil {
 		var accessErr *domain.AccessDeniedError
@@ -294,7 +297,8 @@ func (h *APIHandler) UpdateExternalLocation(ctx context.Context, req UpdateExter
 		domReq.ReadOnly = req.Body.ReadOnly
 	}
 
-	principal, _ := middleware.PrincipalFromContext(ctx)
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	result, err := h.externalLocations.Update(ctx, principal, req.LocationName, domReq)
 	if err != nil {
 		switch {
@@ -314,7 +318,8 @@ func (h *APIHandler) UpdateExternalLocation(ctx context.Context, req UpdateExter
 
 // DeleteExternalLocation implements the endpoint for deleting an external location by name.
 func (h *APIHandler) DeleteExternalLocation(ctx context.Context, req DeleteExternalLocationRequestObject) (DeleteExternalLocationResponseObject, error) {
-	principal, _ := middleware.PrincipalFromContext(ctx)
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
 	if err := h.externalLocations.Delete(ctx, principal, req.LocationName); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
