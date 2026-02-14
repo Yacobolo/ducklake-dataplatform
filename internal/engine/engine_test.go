@@ -507,7 +507,7 @@ func TestQueryOnConn(t *testing.T) {
 		require.NoError(t, rows.Scan(&count))
 		require.NoError(t, rows.Err())
 
-		require.Greater(t, count, int64(0), "first_class_analyst should see at least some rows")
+		require.Positive(t, count, "first_class_analyst should see at least some rows")
 		require.Less(t, count, int64(891), "first_class_analyst should see fewer than 891 rows due to RLS")
 		t.Logf("first_class_analyst saw %d rows on pinned conn", count)
 	})
@@ -538,9 +538,9 @@ func TestQueryOnConn(t *testing.T) {
 		require.NoError(t, err)
 		t.Cleanup(func() { _ = conn.Close() })
 
-		rows, err := eng.QueryOnConn(ctx, conn, "no_access", "SELECT * FROM titanic")
+		rows, err := eng.QueryOnConn(ctx, conn, "no_access", "SELECT * FROM titanic") //nolint:rowserrcheck // we expect an error
 		if rows != nil {
-			rows.Close() //nolint:errcheck
+			defer rows.Close() //nolint:errcheck
 		}
 		require.Error(t, err, "expected access denied for no_access user")
 		t.Logf("no_access error on pinned conn: %v", err)
@@ -562,7 +562,8 @@ func TestQueryOnConn(t *testing.T) {
 		require.True(t, rows1.Next())
 		var count1 int64
 		require.NoError(t, rows1.Scan(&count1))
-		rows1.Close() //nolint:errcheck
+		require.NoError(t, rows1.Err())
+		rows1.Close() //nolint:errcheck,sqlclosecheck
 
 		// Second query on same pinned conn: should give same result
 		rows2, err := eng.QueryOnConn(ctx, conn, "admin", "SELECT COUNT(*) FROM titanic")
@@ -570,7 +571,8 @@ func TestQueryOnConn(t *testing.T) {
 		require.True(t, rows2.Next())
 		var count2 int64
 		require.NoError(t, rows2.Scan(&count2))
-		rows2.Close() //nolint:errcheck
+		require.NoError(t, rows2.Err())
+		rows2.Close() //nolint:errcheck,sqlclosecheck
 
 		require.Equal(t, count1, count2, "same pinned conn should give consistent results")
 		require.Equal(t, int64(891), count1)

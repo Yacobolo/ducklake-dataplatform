@@ -2,7 +2,6 @@ package notebook
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"duck-demo/internal/domain"
@@ -60,7 +59,7 @@ func TestGitService_CreateGitRepo(t *testing.T) {
 		})
 		require.Error(t, err)
 		var validationErr *domain.ValidationError
-		assert.True(t, errors.As(err, &validationErr))
+		require.ErrorAs(t, err, &validationErr)
 		assert.Contains(t, validationErr.Message, "url is required")
 	})
 
@@ -74,7 +73,7 @@ func TestGitService_CreateGitRepo(t *testing.T) {
 		})
 		require.Error(t, err)
 		var validationErr *domain.ValidationError
-		assert.True(t, errors.As(err, &validationErr))
+		require.ErrorAs(t, err, &validationErr)
 		assert.Contains(t, validationErr.Message, "branch is required")
 	})
 }
@@ -112,7 +111,7 @@ func TestGitService_GetGitRepo(t *testing.T) {
 		_, err := svc.GetGitRepo(ctx, "nonexistent")
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
-		assert.True(t, errors.As(err, &notFound))
+		require.ErrorAs(t, err, &notFound)
 	})
 }
 
@@ -189,7 +188,7 @@ func TestGitService_DeleteGitRepo(t *testing.T) {
 		err := svc.DeleteGitRepo(ctx, "bob", false, "repo-1")
 		require.Error(t, err)
 		var accessDenied *domain.AccessDeniedError
-		assert.True(t, errors.As(err, &accessDenied))
+		require.ErrorAs(t, err, &accessDenied)
 	})
 
 	t.Run("not_found", func(t *testing.T) {
@@ -203,7 +202,7 @@ func TestGitService_DeleteGitRepo(t *testing.T) {
 		err := svc.DeleteGitRepo(ctx, "alice", false, "nonexistent")
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
-		assert.True(t, errors.As(err, &notFound))
+		require.ErrorAs(t, err, &notFound)
 	})
 }
 
@@ -222,7 +221,7 @@ func TestGitService_SyncGitRepo(t *testing.T) {
 		assert.Nil(t, result)
 		require.Error(t, err)
 		var validationErr *domain.ValidationError
-		assert.True(t, errors.As(err, &validationErr))
+		require.ErrorAs(t, err, &validationErr)
 		assert.Contains(t, validationErr.Message, "not yet implemented")
 	})
 
@@ -238,6 +237,6 @@ func TestGitService_SyncGitRepo(t *testing.T) {
 		assert.Nil(t, result)
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
-		assert.True(t, errors.As(err, &notFound))
+		require.ErrorAs(t, err, &notFound)
 	})
 }
