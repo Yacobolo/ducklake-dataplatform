@@ -234,8 +234,8 @@ func (r *CatalogRepo) DeleteTable(ctx context.Context, schemaName, tableName str
 	}
 	r.refreshMetaDB(ctx)
 
-	// Run all cascade cleanup in a transaction to maintain consistency.
-	tx, err := r.metaDB.BeginTx(ctx, nil)
+	// Run all cascade cleanup in a transaction on the control-plane DB.
+	tx, err := r.controlDB.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("begin cascade cleanup tx: %w", err)
 	}

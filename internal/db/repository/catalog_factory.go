@@ -75,7 +75,7 @@ func (f *CatalogRepoFactory) ForCatalog(ctx context.Context, catalogName string)
 	}
 
 	controlQ := dbstore.New(f.controlDB)
-	repo := NewCatalogRepo(metaDB, controlQ, f.duckDB, catalogName, f.extRepo, f.logger.With("catalog", catalogName))
+	repo := NewCatalogRepo(metaDB, f.controlDB, controlQ, f.duckDB, catalogName, f.extRepo, f.logger.With("catalog", catalogName))
 	f.cache[catalogName] = &catalogEntry{metaDB: metaDB, repo: repo}
 	return repo, nil
 }
@@ -116,7 +116,7 @@ func (f *CatalogRepoFactory) CloseAll() {
 func (f *CatalogRepoFactory) openMetastore(reg *domain.CatalogRegistration) (*sql.DB, error) {
 	switch reg.MetastoreType {
 	case domain.MetastoreTypeSQLite:
-		return internaldb.OpenSQLite(reg.DSN, "read", 4)
+		return internaldb.OpenSQLite(reg.DSN, "write", 1)
 	case domain.MetastoreTypePostgres:
 		db, err := sql.Open("postgres", reg.DSN)
 		if err != nil {

@@ -20,7 +20,7 @@ import (
 
 func TestCatalog_SchemaCRUD(t *testing.T) {
 	env := requireCatalogEnv(t)
-	repo := repository.NewCatalogRepo(env.MetaDB, dbstore.New(env.MetaDB), env.DuckDB, "lake", nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	repo := repository.NewCatalogRepo(env.MetaDB, env.MetaDB, dbstore.New(env.MetaDB), env.DuckDB, "lake", nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	ctx := context.Background()
 
 	type step struct {
@@ -143,7 +143,7 @@ func TestCatalog_SchemaCRUD(t *testing.T) {
 
 func TestCatalog_TableCRUD(t *testing.T) {
 	env := requireCatalogEnv(t)
-	repo := repository.NewCatalogRepo(env.MetaDB, dbstore.New(env.MetaDB), env.DuckDB, "lake", nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	repo := repository.NewCatalogRepo(env.MetaDB, env.MetaDB, dbstore.New(env.MetaDB), env.DuckDB, "lake", nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	ctx := context.Background()
 
 	type step struct {
@@ -305,7 +305,7 @@ func TestCatalog_TableCRUD(t *testing.T) {
 
 func TestCatalog_SchemaConflict(t *testing.T) {
 	env := requireCatalogEnv(t)
-	repo := repository.NewCatalogRepo(env.MetaDB, dbstore.New(env.MetaDB), env.DuckDB, "lake", nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	repo := repository.NewCatalogRepo(env.MetaDB, env.MetaDB, dbstore.New(env.MetaDB), env.DuckDB, "lake", nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	ctx := context.Background()
 
 	// Pre-create a schema for duplicate tests (unique prefix to avoid collisions)
@@ -410,7 +410,7 @@ func TestCatalog_SchemaConflict(t *testing.T) {
 
 func TestCatalog_CascadeDelete(t *testing.T) {
 	env := requireCatalogEnv(t)
-	repo := repository.NewCatalogRepo(env.MetaDB, dbstore.New(env.MetaDB), env.DuckDB, "lake", nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	repo := repository.NewCatalogRepo(env.MetaDB, env.MetaDB, dbstore.New(env.MetaDB), env.DuckDB, "lake", nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	ctx := context.Background()
 
 	type step struct {
@@ -481,7 +481,7 @@ func TestCatalog_CascadeDelete(t *testing.T) {
 
 func TestCatalog_MetastoreSummary(t *testing.T) {
 	env := requireCatalogEnv(t)
-	repo := repository.NewCatalogRepo(env.MetaDB, dbstore.New(env.MetaDB), env.DuckDB, "lake", nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	repo := repository.NewCatalogRepo(env.MetaDB, env.MetaDB, dbstore.New(env.MetaDB), env.DuckDB, "lake", nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	ctx := context.Background()
 
 	type step struct {
@@ -554,7 +554,7 @@ func TestCatalog_MetastoreSummary(t *testing.T) {
 
 func TestCatalog_Pagination(t *testing.T) {
 	env := requireCatalogEnv(t)
-	repo := repository.NewCatalogRepo(env.MetaDB, dbstore.New(env.MetaDB), env.DuckDB, "lake", nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	repo := repository.NewCatalogRepo(env.MetaDB, env.MetaDB, dbstore.New(env.MetaDB), env.DuckDB, "lake", nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	ctx := context.Background()
 
 	// Create 5 schemas with unique prefix (DuckLake auto-creates "main")
