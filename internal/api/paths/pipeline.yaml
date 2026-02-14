@@ -342,10 +342,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                maxItems: 1000
-                items:
-                  $ref: '../schemas/pipeline.yaml#/PipelineJob'
+                $ref: '../schemas/pipeline.yaml#/PipelineJobList'
               example:
                 - id: "550e8400-e29b-41d4-a716-446655440010"
                   pipeline_id: "550e8400-e29b-41d4-a716-446655440001"
@@ -818,10 +815,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                maxItems: 1000
-                items:
-                  $ref: '../schemas/pipeline.yaml#/PipelineJobRun'
+                $ref: '../schemas/pipeline.yaml#/PipelineJobRunList'
               example:
                 - id: "550e8400-e29b-41d4-a716-446655440060"
                   run_id: "550e8400-e29b-41d4-a716-446655440050"

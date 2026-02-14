@@ -106,6 +106,20 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/catalog.yaml#/CatalogRegistrationList'
+              example:
+                catalogs:
+                - id: "550e8400-e29b-41d4-a716-446655440001"
+                  name: analytics
+                  metastore_type: sqlite
+                  dsn: /data/analytics_meta.sqlite
+                  data_path: s3://my-bucket/analytics/
+                  status: ACTIVE
+                  is_default: true
+                  comment: Primary analytics catalog
+                  created_at: '2025-01-15T09:30:00Z'
+                  updated_at: '2025-01-20T14:00:00Z'
+                next_page_token: eyJpZCI6MTB9
+                total_count: 1
         '400':
           $ref: '../schemas/responses.yaml#/responses/BadRequest'
         '401':
@@ -215,6 +229,17 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/catalog.yaml#/CatalogRegistration'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440001"
+                name: analytics
+                metastore_type: sqlite
+                dsn: /data/analytics_meta.sqlite
+                data_path: s3://new-bucket/analytics/
+                status: ACTIVE
+                is_default: true
+                comment: Updated analytics catalog
+                created_at: '2025-01-15T09:30:00Z'
+                updated_at: '2025-01-21T10:00:00Z'
         '400':
           $ref: '../schemas/responses.yaml#/responses/BadRequest'
         '401':

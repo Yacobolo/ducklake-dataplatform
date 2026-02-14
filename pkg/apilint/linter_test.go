@@ -747,8 +747,8 @@ func TestLintActualSpec(t *testing.T) {
 	require.NoError(t, err)
 
 	vs := l.Run()
-	// Verify the linter found violations (built-in + OWASP + custom should all fire).
-	assert.NotEmpty(t, vs, "expected violations from the actual spec")
+	// Verify the spec is lint-clean after all violations were fixed.
+	assert.Empty(t, vs, "expected zero violations from the actual spec")
 
 	errors := Filter(vs, SeverityError)
 	warnings := Filter(vs, SeverityWarning)

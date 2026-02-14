@@ -373,7 +373,9 @@ var actionVerbSet = map[string]bool{
 	"executeQuery": true, "profileTable": true, "commitTableIngestion": true,
 	"loadTableExternalFiles": true, "purgeLineage": true, "cleanupExpiredAPIKeys": true,
 	"createManifest": true, "createUploadUrl": true, "searchCatalog": true,
-	"setDefaultCatalog": true,
+	"setDefaultCatalog": true, "reorderCells": true, "executeCell": true,
+	"runAllCells": true, "syncGitRepo": true, "cancelPipelineRun": true,
+	"triggerPipelineRun": true,
 }
 
 func (f *fnCheckPostCreateStatus) RunRule(nodes []*yaml.Node, ctx model.RuleFunctionContext) []model.RuleFunctionResult {

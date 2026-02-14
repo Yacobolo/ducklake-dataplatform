@@ -6,38 +6,46 @@ LineageEdge:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     source_table:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: example-value
     target_table:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
       nullable: true
+      example: example-value
     source_schema:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
       description: Schema of the source table
+      example: example-value
     target_schema:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
       description: Schema of the target table
+      example: example-value
     edge_type:
       type: string
       maxLength: 64
       enum: [READ, WRITE, READ_WRITE]
       description: "Edge type: READ, WRITE, READ_WRITE"
+      example: READ
     principal_name:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: example-value
     created_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
 
 LineageNode:
   description: A table node in the lineage graph with its upstream and downstream edges.
@@ -47,16 +55,19 @@ LineageNode:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: my_table
     upstream:
       type: array
       maxItems: 10000
       items:
         $ref: '#/LineageEdge'
+      example: []
     downstream:
       type: array
       maxItems: 10000
       items:
         $ref: '#/LineageEdge'
+      example: []
 
 PaginatedLineageEdges:
   description: A paginated list of lineage edges.
@@ -67,10 +78,12 @@ PaginatedLineageEdges:
       maxItems: 1000
       items:
         $ref: '#/LineageEdge'
+      example: []
     next_page_token:
       type: string
       maxLength: 4096
       pattern: '^\S+$'
+      example: eyJpZCI6MTB9
 
 PurgeLineageRequest:
   description: Request to delete lineage edges older than a specified number of days.
@@ -83,6 +96,7 @@ PurgeLineageRequest:
       maximum: 3650
       format: int32
       description: Delete lineage edges older than this many days.
+      example: 30
 
 PurgeLineageResponse:
   description: Result of a lineage purge operation indicating how many edges were deleted.
@@ -93,3 +107,4 @@ PurgeLineageResponse:
       format: int64
       minimum: 0
       maximum: 9223372036854775807
+      example: 3

@@ -6,26 +6,32 @@ Notebook:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     name:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: my-resource
     description:
       type: string
       maxLength: 4096
       pattern: '^[\s\S]*$'
+      example: A detailed description
     owner:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: alice
     created_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
     updated_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
 
 Cell:
   description: A single cell within a notebook.
@@ -35,35 +41,43 @@ Cell:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     notebook_id:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     cell_type:
       type: string
       enum: [sql, markdown]
+      example: sql
     content:
       type: string
       maxLength: 65536
       pattern: '^[\s\S]*$'
+      example: SELECT 1
     position:
       type: integer
       format: int32
       minimum: 0
       maximum: 2147483647
+      example: 0
     last_result:
       type: string
       description: JSON-encoded cached result from last execution
       maxLength: 10485760
       pattern: '^[\s\S]*$'
+      example: '{"columns":["id"],"rows":[[1]]}'
     created_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
     updated_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
 
 NotebookDetail:
   description: A notebook with its cells.
@@ -76,6 +90,7 @@ NotebookDetail:
       maxItems: 10000
       items:
         $ref: '#/Cell'
+      example: []
 
 PaginatedNotebooks:
   description: A paginated list of notebooks.
@@ -86,10 +101,12 @@ PaginatedNotebooks:
       maxItems: 1000
       items:
         $ref: '#/Notebook'
+      example: []
     next_page_token:
       type: string
       maxLength: 4096
       pattern: '^\S+$'
+      example: eyJpZCI6MTB9
 
 CreateNotebookRequest:
   description: Request payload for creating a new notebook.
@@ -101,10 +118,12 @@ CreateNotebookRequest:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: my-resource
     description:
       type: string
       maxLength: 4096
       pattern: '^[\s\S]*$'
+      example: A detailed description
 
 UpdateNotebookRequest:
   description: Request payload for updating a notebook.
@@ -115,10 +134,12 @@ UpdateNotebookRequest:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: my-resource
     description:
       type: string
       maxLength: 4096
       pattern: '^[\s\S]*$'
+      example: A detailed description
 
 CreateCellRequest:
   description: Request payload for creating a new cell.
@@ -129,17 +150,20 @@ CreateCellRequest:
     cell_type:
       type: string
       enum: [sql, markdown]
+      example: sql
     content:
       type: string
       maxLength: 65536
       default: ''
       pattern: '^[\s\S]*$'
+      example: SELECT 1
     position:
       type: integer
       format: int32
       minimum: 0
       maximum: 2147483647
       description: Position in the notebook. If omitted, appends to end.
+      example: 0
 
 UpdateCellRequest:
   description: Request payload for updating a cell.
@@ -150,11 +174,13 @@ UpdateCellRequest:
       type: string
       maxLength: 65536
       pattern: '^[\s\S]*$'
+      example: SELECT 1
     position:
       type: integer
       format: int32
       minimum: 0
       maximum: 2147483647
+      example: 0
 
 ReorderCellsRequest:
   description: Request payload for reordering cells in a notebook.
@@ -170,6 +196,14 @@ ReorderCellsRequest:
         type: string
         pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
         maxLength: 36
+      example: ["550e8400-e29b-41d4-a716-446655440000"]
+
+CellList:
+  description: Ordered list of cells.
+  type: array
+  maxItems: 10000
+  items:
+    $ref: '#/Cell'
 
 NotebookSession:
   description: An active notebook execution session.
@@ -179,25 +213,31 @@ NotebookSession:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     notebook_id:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     principal:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: alice
     state:
       type: string
       enum: [active, closed]
+      example: active
     created_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
     last_used_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
 
 CellExecutionResult:
   description: Result of executing a single cell.
@@ -207,6 +247,7 @@ CellExecutionResult:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     columns:
       type: array
       maxItems: 10000
@@ -214,6 +255,7 @@ CellExecutionResult:
         type: string
         maxLength: 255
         pattern: '^[\s\S]*$'
+      example: ["id", "name", "value"]
     rows:
       type: array
       maxItems: 1000000
@@ -221,20 +263,24 @@ CellExecutionResult:
         type: array
         maxItems: 10000
         items: {}
+      example: []
     row_count:
       type: integer
       format: int32
       minimum: 0
       maximum: 2147483647
+      example: 42
     error:
       type: string
       maxLength: 65536
       pattern: '^[\s\S]*$'
+      example: syntax error at position 42
     duration_ms:
       type: integer
       format: int64
       minimum: 0
       maximum: 9223372036854775807
+      example: 45
 
 RunAllResult:
   description: Aggregated result from executing all cells in a notebook.
@@ -244,16 +290,19 @@ RunAllResult:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     results:
       type: array
       maxItems: 10000
       items:
         $ref: '#/CellExecutionResult'
+      example: []
     total_duration_ms:
       type: integer
       format: int64
       minimum: 0
       maximum: 9223372036854775807
+      example: 120
 
 NotebookJob:
   description: An async notebook execution job.
@@ -263,34 +312,42 @@ NotebookJob:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     notebook_id:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     session_id:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     state:
       type: string
       enum: [pending, running, complete, failed]
+      example: pending
     result:
       type: string
       description: JSON-encoded RunAllResult when complete
       maxLength: 10485760
       pattern: '^[\s\S]*$'
+      example: '{"notebook_id":"abc","results":[]}'
     error:
       type: string
       maxLength: 65536
       pattern: '^[\s\S]*$'
+      example: syntax error at position 42
     created_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
     updated_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
 
 PaginatedNotebookJobs:
   description: A paginated list of notebook jobs.
@@ -301,10 +358,12 @@ PaginatedNotebookJobs:
       maxItems: 1000
       items:
         $ref: '#/NotebookJob'
+      example: []
     next_page_token:
       type: string
       maxLength: 4096
       pattern: '^\S+$'
+      example: eyJpZCI6MTB9
 
 GitRepo:
   description: A registered Git repository for notebook sync.
@@ -314,38 +373,47 @@ GitRepo:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
     url:
       type: string
       maxLength: 2048
       format: uri
+      example: https://example.com/resource
     branch:
       type: string
       maxLength: 255
       pattern: '^[\w./-]+$'
+      example: main
     path:
       type: string
       maxLength: 1024
       pattern: '^[\w./-]*$'
+      example: notebooks/
     owner:
       type: string
       maxLength: 255
       pattern: '^\S.*$'
+      example: alice
     last_sync_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
     last_commit:
       type: string
       maxLength: 64
       pattern: '^[0-9a-f]+$'
+      example: a1b2c3d4e5f6
     created_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
     updated_at:
       type: string
       format: date-time
       maxLength: 64
+      example: '2025-01-15T10:30:00Z'
 
 CreateGitRepoRequest:
   description: Request payload for registering a Git repository.
@@ -357,21 +425,25 @@ CreateGitRepoRequest:
       type: string
       maxLength: 2048
       format: uri
+      example: https://example.com/resource
     branch:
       type: string
       maxLength: 255
       default: main
       pattern: '^[\w./-]+$'
+      example: main
     path:
       type: string
       maxLength: 1024
       default: ''
       pattern: '^[\w./-]*$'
+      example: notebooks/
     auth_token:
       type: string
       maxLength: 512
       description: Personal access token or deploy key for Git authentication.
       pattern: '^\S+$'
+      example: ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 PaginatedGitRepos:
   description: A paginated list of Git repositories.
@@ -382,10 +454,12 @@ PaginatedGitRepos:
       maxItems: 1000
       items:
         $ref: '#/GitRepo'
+      example: []
     next_page_token:
       type: string
       maxLength: 4096
       pattern: '^\S+$'
+      example: eyJpZCI6MTB9
 
 GitSyncResult:
   description: Result of a Git sync operation.
@@ -396,17 +470,21 @@ GitSyncResult:
       format: int32
       minimum: 0
       maximum: 2147483647
+      example: 3
     notebooks_updated:
       type: integer
       format: int32
       minimum: 0
       maximum: 2147483647
+      example: 1
     notebooks_deleted:
       type: integer
       format: int32
       minimum: 0
       maximum: 2147483647
+      example: 0
     commit_sha:
       type: string
       maxLength: 64
       pattern: '^[0-9a-f]+$'
+      example: a1b2c3d4e5f6
