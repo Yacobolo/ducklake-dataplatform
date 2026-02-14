@@ -71,6 +71,7 @@ tasks:
 
   build:
     desc: Build all packages
+    deps: [generate]
     cmds:
       - go build ./...
 
