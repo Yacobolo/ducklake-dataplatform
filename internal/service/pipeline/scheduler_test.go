@@ -3,7 +3,6 @@ package pipeline
 import (
 	"context"
 	"fmt"
-	"io"
 	"log/slog"
 	"testing"
 
@@ -16,7 +15,7 @@ import (
 
 // discardLogger returns a logger that discards all output.
 func discardLogger() *slog.Logger {
-	return slog.New(slog.NewTextHandler(io.Discard, nil))
+	return slog.New(slog.DiscardHandler)
 }
 
 func TestScheduler_Start(t *testing.T) {
@@ -74,7 +73,7 @@ func TestScheduler_Start(t *testing.T) {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, tt.wantCount, len(scheduler.entries))
+				assert.Len(t, scheduler.entries, tt.wantCount)
 			}
 		})
 	}
@@ -108,12 +107,12 @@ func TestScheduler_Reload(t *testing.T) {
 
 	err := scheduler.Start(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, 1, len(scheduler.entries))
+	assert.Len(t, scheduler.entries, 1)
 
 	// Reload should clear old entries and load new ones
 	err = scheduler.Reload(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, 2, len(scheduler.entries))
+	assert.Len(t, scheduler.entries, 2)
 
 	// Verify old entry is gone
 	_, hasP1 := scheduler.entries["p1"]
@@ -167,7 +166,7 @@ func TestScheduler_InvalidCronExpression(t *testing.T) {
 	require.NoError(t, err)
 
 	// Only the valid cron should be registered
-	assert.Equal(t, 1, len(scheduler.entries))
+	assert.Len(t, scheduler.entries, 1)
 	_, hasGood := scheduler.entries["good"]
 	assert.True(t, hasGood, "valid cron pipeline should be registered")
 	_, hasBad := scheduler.entries["bad"]
@@ -195,7 +194,7 @@ func TestScheduler_PipelineWithoutScheduleCron(t *testing.T) {
 	require.NoError(t, err)
 
 	// Only the pipeline with a cron schedule should be registered
-	assert.Equal(t, 1, len(scheduler.entries))
+	assert.Len(t, scheduler.entries, 1)
 	_, hasCron := scheduler.entries["with-cron"]
 	assert.True(t, hasCron, "pipeline with cron should be registered")
 	_, hasNoCron := scheduler.entries["no-cron"]

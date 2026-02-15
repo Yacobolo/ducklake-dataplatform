@@ -20,16 +20,8 @@ func openDuckDB(t *testing.T) *sql.DB {
 	t.Helper()
 	db, err := sql.Open("duckdb", "")
 	require.NoError(t, err)
-	t.Cleanup(func() { db.Close() })
+	t.Cleanup(func() { _ = db.Close() })
 	return db
-}
-
-// queryDuckDB executes a SQL statement against an in-memory DuckDB and returns *sql.Rows.
-func queryDuckDB(t *testing.T, db *sql.DB, query string) *sql.Rows {
-	t.Helper()
-	rows, err := db.Query(query)
-	require.NoError(t, err)
-	return rows
 }
 
 // === Execute ===
@@ -96,8 +88,8 @@ func TestQueryService_Execute(t *testing.T) {
 			principal: "alice",
 			sqlQuery:  "SELECT 1 AS id, 'hello' AS name",
 			setupEng: func(eng *testutil.MockSessionEngine, ddb *sql.DB) {
-				eng.QueryFn = func(_ context.Context, _, q string) (*sql.Rows, error) {
-					return ddb.Query(q)
+				eng.QueryFn = func(ctx context.Context, _, q string) (*sql.Rows, error) {
+					return ddb.QueryContext(ctx, q)
 				}
 			},
 			wantErr: false,
@@ -122,8 +114,8 @@ func TestQueryService_Execute(t *testing.T) {
 			principal: "alice",
 			sqlQuery:  "SELECT 42 AS val",
 			setupEng: func(eng *testutil.MockSessionEngine, ddb *sql.DB) {
-				eng.QueryFn = func(_ context.Context, _, q string) (*sql.Rows, error) {
-					return ddb.Query(q)
+				eng.QueryFn = func(ctx context.Context, _, q string) (*sql.Rows, error) {
+					return ddb.QueryContext(ctx, q)
 				}
 			},
 			lineage: nil, // explicitly nil
@@ -144,8 +136,8 @@ func TestQueryService_Execute(t *testing.T) {
 			principal: "alice",
 			sqlQuery:  "SELECT 1 AS x",
 			setupEng: func(eng *testutil.MockSessionEngine, ddb *sql.DB) {
-				eng.QueryFn = func(_ context.Context, _, q string) (*sql.Rows, error) {
-					return ddb.Query(q)
+				eng.QueryFn = func(ctx context.Context, _, q string) (*sql.Rows, error) {
+					return ddb.QueryContext(ctx, q)
 				}
 			},
 			lineage: &testutil.MockLineageRepo{
