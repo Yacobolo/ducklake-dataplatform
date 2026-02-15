@@ -100,6 +100,7 @@ const (
 	TOKEN_INNER
 	TOKEN_INSERT
 	TOKEN_INSTALL
+	TOKEN_INTERVAL
 	TOKEN_INTERSECT
 	TOKEN_INTO
 	TOKEN_IS
@@ -264,6 +265,7 @@ var tokenNames = map[TokenType]string{
 	TOKEN_INNER:     "INNER",
 	TOKEN_INSERT:    "INSERT",
 	TOKEN_INSTALL:   "INSTALL",
+	TOKEN_INTERVAL:  "INTERVAL",
 	TOKEN_INTERSECT: "INTERSECT",
 	TOKEN_INTO:      "INTO",
 	TOKEN_IS:        "IS",
@@ -388,6 +390,7 @@ var keywords = map[string]TokenType{
 	"inner":     TOKEN_INNER,
 	"insert":    TOKEN_INSERT,
 	"install":   TOKEN_INSTALL,
+	"interval":  TOKEN_INTERVAL,
 	"intersect": TOKEN_INTERSECT,
 	"into":      TOKEN_INTO,
 	"is":        TOKEN_IS,

@@ -69,6 +69,9 @@ func (p *Parser) parsePrimary() Expr {
 	case TOKEN_LBRACE:
 		return p.parseStructLiteral()
 
+	case TOKEN_INTERVAL:
+		return p.parseIntervalExpr()
+
 	case TOKEN_COLUMNS:
 		return p.parseColumnsExpr()
 
@@ -521,6 +524,30 @@ func (p *Parser) parseStructLiteral() Expr {
 
 	p.expect(TOKEN_RBRACE)
 	return s
+}
+
+// parseIntervalExpr parses INTERVAL 'value' [unit].
+// DuckDB supports: INTERVAL 'value' unit, INTERVAL 'value', INTERVAL expr.
+func (p *Parser) parseIntervalExpr() Expr {
+	p.nextToken() // consume INTERVAL
+
+	iv := &IntervalExpr{}
+	iv.Value = p.parsePrimary()
+
+	// Optional unit: DAY, HOUR, MINUTE, SECOND, MONTH, YEAR, WEEK, MILLISECOND, MICROSECOND
+	if p.check(TOKEN_IDENT) {
+		upper := strings.ToUpper(p.token.Literal)
+		switch upper {
+		case "YEAR", "YEARS", "MONTH", "MONTHS", "DAY", "DAYS",
+			"HOUR", "HOURS", "MINUTE", "MINUTES", "SECOND", "SECONDS",
+			"WEEK", "WEEKS", "MILLISECOND", "MILLISECONDS",
+			"MICROSECOND", "MICROSECONDS":
+			iv.Unit = upper
+			p.nextToken()
+		}
+	}
+
+	return iv
 }
 
 // parseColumnsExpr parses DuckDB COLUMNS(pattern).
