@@ -119,6 +119,10 @@ func newRootCmd() *cobra.Command {
 				return err
 			}
 		}
+		// Propagate resolved output to pflag so getOutputFormat() sees config values.
+		if output != "" {
+			_ = cmd.Root().PersistentFlags().Set("output", output)
+		}
 		// Validate output format
 		if output != "" && output != "table" && output != "json" {
 			return fmt.Errorf("unsupported output format %q: use 'table' or 'json'", output)
