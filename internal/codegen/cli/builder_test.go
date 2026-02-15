@@ -293,6 +293,7 @@ func TestParamToFlag(t *testing.T) {
 				Name: "max-results", GoName: "MaxResults",
 				GoType: "int64", CobraType: "Int64",
 				FieldName: "max_results", Default: "100",
+				Usage: "Max results",
 			},
 		},
 		{
@@ -304,7 +305,7 @@ func TestParamToFlag(t *testing.T) {
 			expected: FlagModel{
 				Name: "force", GoName: "Force",
 				GoType: "bool", CobraType: "Bool",
-				FieldName: "force",
+				FieldName: "force", Usage: "Force",
 			},
 		},
 		{
@@ -317,7 +318,7 @@ func TestParamToFlag(t *testing.T) {
 			expected: FlagModel{
 				Name: "sql", GoName: "SQL",
 				GoType: "string", CobraType: "String",
-				FieldName: "sql", Short: "s",
+				FieldName: "sql", Short: "s", Usage: "Sql",
 			},
 		},
 		{
@@ -328,7 +329,7 @@ func TestParamToFlag(t *testing.T) {
 			expected: FlagModel{
 				Name: "x", GoName: "X",
 				GoType: "string", CobraType: "String",
-				FieldName: "x",
+				FieldName: "x", Usage: "X",
 			},
 		},
 	}
@@ -359,6 +360,7 @@ func TestFieldToFlag(t *testing.T) {
 				Name: "description", GoName: "Description",
 				GoType: "string", CobraType: "String",
 				FieldName: "description", IsBody: true,
+				Usage: "Description",
 			},
 		},
 		{
@@ -370,6 +372,7 @@ func TestFieldToFlag(t *testing.T) {
 				Name: "tags", GoName: "Tags",
 				GoType: "[]string", CobraType: "StringSlice",
 				FieldName: "tags", IsBody: true,
+				Usage: "Tags",
 			},
 		},
 		{
@@ -397,7 +400,7 @@ func TestFieldToFlag(t *testing.T) {
 				Name: "compact", GoName: "Compact",
 				GoType: "bool", CobraType: "Bool",
 				FieldName: "compact", IsBody: true,
-				Default: "true",
+				Default: "true", Usage: "Compact",
 			},
 		},
 		{
@@ -410,7 +413,7 @@ func TestFieldToFlag(t *testing.T) {
 				Name: "name", GoName: "Name",
 				GoType: "string", CobraType: "String",
 				FieldName: "name", IsBody: true, Required: true,
-				Short: "n",
+				Short: "n", Usage: "Name",
 			},
 		},
 	}

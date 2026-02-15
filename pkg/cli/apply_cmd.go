@@ -119,8 +119,8 @@ func newApplyCmd(client *gen.Client) *cobra.Command {
 						_, _ = fmt.Fprintf(os.Stdout, "failed: %v\n", err)
 					}
 					results = append(results, actionResult{
-						Operation:    string(action.Operation),
-						ResourceKind: string(action.ResourceKind),
+						Operation:    action.Operation.String(),
+						ResourceKind: action.ResourceKind.String(),
 						ResourceName: action.ResourceName,
 						Status:       "failed",
 						Error:        err.Error(),
@@ -131,8 +131,8 @@ func newApplyCmd(client *gen.Client) *cobra.Command {
 						_, _ = fmt.Fprintln(os.Stdout, "succeeded")
 					}
 					results = append(results, actionResult{
-						Operation:    string(action.Operation),
-						ResourceKind: string(action.ResourceKind),
+						Operation:    action.Operation.String(),
+						ResourceKind: action.ResourceKind.String(),
 						ResourceName: action.ResourceName,
 						Status:       "succeeded",
 					})

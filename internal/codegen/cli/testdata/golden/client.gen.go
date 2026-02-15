@@ -79,6 +79,17 @@ func ReadBody(resp *http.Response) ([]byte, error) {
 	return io.ReadAll(resp.Body)
 }
 
+// APIError is a structured error from the API that preserves the HTTP status code.
+type APIError struct {
+	HTTPStatus int
+	Code       string
+	Message    string
+}
+
+func (e *APIError) Error() string {
+	return fmt.Sprintf("API error (HTTP %d): %s", e.HTTPStatus, e.Message)
+}
+
 // CheckError returns an error if the response status is not a success code.
 func CheckError(resp *http.Response) error {
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
@@ -86,11 +97,19 @@ func CheckError(resp *http.Response) error {
 	}
 	body, _ := ReadBody(resp)
 	var apiErr struct {
-		Code    int    `json:"code"`
-		Message string `json:"message"`
+		Code    interface{} `json:"code"`
+		Message string      `json:"message"`
 	}
 	if err := json.Unmarshal(body, &apiErr); err == nil && apiErr.Message != "" {
-		return fmt.Errorf("API error (HTTP %d): %s", resp.StatusCode, apiErr.Message)
+		return &APIError{
+			HTTPStatus: resp.StatusCode,
+			Code:       fmt.Sprintf("%v", apiErr.Code),
+			Message:    apiErr.Message,
+		}
 	}
-	return fmt.Errorf("API error (HTTP %d): %s", resp.StatusCode, string(body))
+	return &APIError{
+		HTTPStatus: resp.StatusCode,
+		Code:       fmt.Sprintf("%d", resp.StatusCode),
+		Message:    string(body),
+	}
 }
