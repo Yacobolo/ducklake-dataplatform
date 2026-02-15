@@ -112,7 +112,7 @@ func TestSearchService_Search_NoCatalogAttached(t *testing.T) {
 
 	require.Error(t, err)
 	var validationErr *domain.ValidationError
-	assert.ErrorAs(t, err, &validationErr, "should be a ValidationError when no catalog is attached")
+	require.ErrorAs(t, err, &validationErr, "should be a ValidationError when no catalog is attached")
 	assert.Contains(t, err.Error(), "no catalog")
 }
 
