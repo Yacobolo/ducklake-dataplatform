@@ -24,7 +24,9 @@ func newConfigCmd() *cobra.Command {
 }
 
 func newConfigShowCmd() *cobra.Command {
-	return &cobra.Command{
+	var reveal bool
+
+	cmd := &cobra.Command{
 		Use:   "show",
 		Short: "Display current configuration",
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -32,6 +34,9 @@ func newConfigShowCmd() *cobra.Command {
 			if err != nil {
 				_, _ = fmt.Fprintf(os.Stderr, "No configuration found at %s\n", ConfigPath())
 				return err
+			}
+			if !reveal {
+				cfg = maskConfig(cfg)
 			}
 			if getOutputFormat(cmd) == "json" {
 				return gen.PrintJSON(os.Stdout, cfg)
@@ -44,6 +49,38 @@ func newConfigShowCmd() *cobra.Command {
 			return nil
 		},
 	}
+
+	cmd.Flags().BoolVar(&reveal, "reveal", false, "Show sensitive values unmasked")
+
+	return cmd
+}
+
+// maskConfig returns a copy of the config with sensitive fields masked.
+func maskConfig(cfg *UserConfig) *UserConfig {
+	masked := &UserConfig{
+		CurrentProfile: cfg.CurrentProfile,
+		Profiles:       make(map[string]Profile, len(cfg.Profiles)),
+	}
+	for name, p := range cfg.Profiles {
+		masked.Profiles[name] = Profile{
+			Host:   p.Host,
+			APIKey: maskSecret(p.APIKey),
+			Token:  maskSecret(p.Token),
+			Output: p.Output,
+		}
+	}
+	return masked
+}
+
+// maskSecret masks a sensitive string, showing first 4 and last 4 chars.
+func maskSecret(s string) string {
+	if s == "" {
+		return ""
+	}
+	if len(s) <= 10 {
+		return "****"
+	}
+	return s[:4] + "****" + s[len(s)-4:]
 }
 
 func newConfigSetProfileCmd() *cobra.Command {
