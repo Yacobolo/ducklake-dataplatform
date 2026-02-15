@@ -12,7 +12,11 @@ func (p *Parser) parseSelectStatement() *SelectStmt {
 		stmt.With = p.parseWithClause()
 	}
 
-	stmt.Body = p.parseSelectBody()
+	if p.check(TOKEN_VALUES) {
+		stmt.Body = p.parseValuesBody()
+	} else {
+		stmt.Body = p.parseSelectBody()
+	}
 	return stmt
 }
 
@@ -47,7 +51,25 @@ func (p *Parser) parseCTE() *CTE {
 	cte.Name = p.token.Literal
 	p.nextToken()
 
+	// Optional column list: cte(col1, col2, ...)
+	if p.match(TOKEN_LPAREN) {
+		cte.Columns = p.parseColumnAliasList()
+		p.expect(TOKEN_RPAREN)
+	}
+
 	p.expect(TOKEN_AS)
+
+	// Optional MATERIALIZED / NOT MATERIALIZED hint
+	if p.matchSoftKeyword("MATERIALIZED") {
+		mat := true
+		cte.Materialized = &mat
+	} else if p.check(TOKEN_NOT) && p.peek.Type == TOKEN_IDENT && strings.EqualFold(p.peek.Literal, "MATERIALIZED") {
+		p.nextToken() // consume NOT
+		p.nextToken() // consume MATERIALIZED
+		mat := false
+		cte.Materialized = &mat
+	}
+
 	p.expect(TOKEN_LPAREN)
 	cte.Select = p.parseSelectStatement()
 	p.expect(TOKEN_RPAREN)
@@ -74,11 +96,15 @@ func (p *Parser) parseSelectBody() *SelectBody {
 		case TOKEN_INTERSECT:
 			p.nextToken()
 			body.Op = SetOpIntersect
-			p.match(TOKEN_ALL)
+			if p.match(TOKEN_ALL) {
+				body.All = true
+			}
 		case TOKEN_EXCEPT:
 			p.nextToken()
 			body.Op = SetOpExcept
-			p.match(TOKEN_ALL)
+			if p.match(TOKEN_ALL) {
+				body.All = true
+			}
 		}
 
 		// DuckDB: BY NAME
@@ -134,7 +160,7 @@ func (p *Parser) parseDuckDBClauses(sc *SelectCore) {
 		if p.match(TOKEN_ALL) {
 			sc.GroupByAll = true
 		} else {
-			sc.GroupBy = p.parseExpressionList()
+			sc.GroupBy = p.parseGroupByList()
 		}
 	}
 
@@ -172,7 +198,10 @@ func (p *Parser) parseDuckDBClauses(sc *SelectCore) {
 
 	// LIMIT
 	if p.match(TOKEN_LIMIT) {
-		sc.Limit = p.parseExpression()
+		sc.Limit = p.parseExpressionWithPrecedence(PrecedenceMultiply + 1)
+		if p.match(TOKEN_PERCENT) || p.match(TOKEN_MOD) {
+			sc.LimitPercent = true
+		}
 	}
 
 	// OFFSET
@@ -183,6 +212,13 @@ func (p *Parser) parseDuckDBClauses(sc *SelectCore) {
 	// FETCH FIRST/NEXT
 	if p.check(TOKEN_FETCH) {
 		sc.Fetch = p.parseFetchClause()
+	}
+
+	// USING SAMPLE (DuckDB)
+	if p.match(TOKEN_USING) {
+		if p.matchSoftKeyword("SAMPLE") {
+			sc.Sample = p.parseSampleClause()
+		}
 	}
 }
 
@@ -289,6 +325,16 @@ func (p *Parser) parseSelectItem() SelectItem {
 		return item
 	}
 
+	// Prefix alias: name: expr (DuckDB friendly SQL)
+	if p.check(TOKEN_IDENT) && p.checkPeek(TOKEN_COLON) && !p.checkPeek2(TOKEN_COLON) {
+		alias := p.token.Literal
+		p.nextToken() // consume ident
+		p.nextToken() // consume colon
+		item.Alias = alias
+		item.Expr = p.parseExpression()
+		return item
+	}
+
 	// Regular expression
 	item.Expr = p.parseExpression()
 
@@ -312,9 +358,19 @@ func (p *Parser) parseSelectItem() SelectItem {
 
 func (p *Parser) parseInsertStatement() *InsertStmt {
 	p.expect(TOKEN_INSERT)
-	p.expect(TOKEN_INTO)
 
 	stmt := &InsertStmt{}
+
+	// INSERT OR REPLACE / INSERT OR IGNORE
+	if p.match(TOKEN_OR) {
+		if p.match(TOKEN_REPLACE) {
+			stmt.ConflictAction = "REPLACE"
+		} else if p.matchSoftKeyword("IGNORE") {
+			stmt.ConflictAction = "IGNORE"
+		}
+	}
+
+	p.expect(TOKEN_INTO)
 	stmt.Table = p.parseTableNameRef()
 
 	// Optional column list
@@ -329,6 +385,15 @@ func (p *Parser) parseInsertStatement() *InsertStmt {
 			}
 		}
 		p.expect(TOKEN_RPAREN)
+	}
+
+	// BY NAME / BY POSITION
+	if p.match(TOKEN_BY) {
+		if p.matchSoftKeyword("NAME") {
+			stmt.ByName = true
+		} else if p.match(TOKEN_POSITIONAL) || p.matchSoftKeyword("POSITION") {
+			stmt.ByPosition = true
+		}
 	}
 
 	// VALUES or SELECT
@@ -346,6 +411,10 @@ func (p *Parser) parseInsertStatement() *InsertStmt {
 		}
 	case p.check(TOKEN_SELECT) || p.check(TOKEN_WITH):
 		stmt.Query = p.parseSelectStatement()
+	case p.check(TOKEN_LPAREN) && (p.checkPeek(TOKEN_SELECT) || p.checkPeek(TOKEN_WITH)):
+		p.nextToken() // consume (
+		stmt.Query = p.parseSelectStatement()
+		p.expect(TOKEN_RPAREN)
 	case p.match(TOKEN_DEFAULT):
 		p.expect(TOKEN_VALUES)
 		// INSERT INTO t DEFAULT VALUES - no explicit values
@@ -405,6 +474,10 @@ func (p *Parser) parseOnConflict() *OnConflictClause {
 			if !p.match(TOKEN_COMMA) {
 				break
 			}
+		}
+		// WHERE clause for DO UPDATE
+		if p.match(TOKEN_WHERE) {
+			oc.Where = p.parseExpression()
 		}
 	}
 
@@ -615,4 +688,111 @@ func (p *Parser) parseUtility(utilType UtilityType) Stmt {
 func init() {
 	// Ensure "or" is also matched as soft keyword in DDL context
 	_ = strings.EqualFold("or", "OR")
+}
+
+func (p *Parser) parseValuesBody() *SelectBody {
+	body := &SelectBody{}
+	sc := &SelectCore{}
+	p.expect(TOKEN_VALUES)
+	for {
+		p.expect(TOKEN_LPAREN)
+		row := p.parseExpressionList()
+		sc.ValuesRows = append(sc.ValuesRows, row)
+		p.expect(TOKEN_RPAREN)
+		if !p.match(TOKEN_COMMA) {
+			break
+		}
+	}
+	body.Left = sc
+	return body
+}
+
+func (p *Parser) parseSampleClause() *SampleClause {
+	s := &SampleClause{}
+	s.Size = p.parseExpressionWithPrecedence(PrecedenceMultiply + 1)
+	if p.match(TOKEN_PERCENT) || p.match(TOKEN_MOD) {
+		s.IsPercent = true
+	} else if p.match(TOKEN_ROWS) {
+		s.IsRows = true
+	}
+	if p.match(TOKEN_LPAREN) {
+		s.Method = p.token.Literal
+		p.nextToken()
+		p.expect(TOKEN_RPAREN)
+	}
+	return s
+}
+
+func (p *Parser) parseGroupByList() []Expr {
+	var exprs []Expr
+	for {
+		if p.matchSoftKeyword("GROUPING") {
+			if p.matchSoftKeyword("SETS") {
+				exprs = append(exprs, p.parseGroupingSets("GROUPING SETS"))
+			}
+		} else if p.matchSoftKeyword("CUBE") {
+			exprs = append(exprs, p.parseGroupingSets("CUBE"))
+		} else if p.matchSoftKeyword("ROLLUP") {
+			exprs = append(exprs, p.parseGroupingSets("ROLLUP"))
+		} else {
+			exprs = append(exprs, p.parseExpression())
+		}
+		if !p.match(TOKEN_COMMA) {
+			break
+		}
+	}
+	return exprs
+}
+
+func (p *Parser) parseGroupingSets(gsType string) Expr {
+	ge := &GroupingExpr{Type: gsType}
+	p.expect(TOKEN_LPAREN)
+	for {
+		if p.check(TOKEN_LPAREN) {
+			p.nextToken() // consume (
+			var group []Expr
+			if !p.check(TOKEN_RPAREN) {
+				group = p.parseExpressionList()
+			}
+			p.expect(TOKEN_RPAREN)
+			ge.Groups = append(ge.Groups, group)
+		} else if !p.check(TOKEN_RPAREN) {
+			ge.Groups = append(ge.Groups, []Expr{p.parseExpression()})
+		}
+		if !p.match(TOKEN_COMMA) {
+			break
+		}
+	}
+	p.expect(TOKEN_RPAREN)
+	return ge
+}
+
+func (p *Parser) parseFromFirstStatement() *SelectStmt {
+	stmt := &SelectStmt{}
+	body := &SelectBody{}
+	sc := &SelectCore{}
+
+	// FROM clause (current token is FROM)
+	p.nextToken() // consume FROM
+	sc.From = p.parseFromClause()
+
+	// Optional SELECT
+	if p.match(TOKEN_SELECT) {
+		if p.match(TOKEN_DISTINCT) {
+			sc.Distinct = true
+		} else {
+			p.match(TOKEN_ALL)
+		}
+		sc.Columns = p.parseSelectList()
+	} else {
+		// Implicit SELECT * (FROM tbl)
+		sc.Columns = []SelectItem{{Star: true}}
+	}
+
+	// Parse remaining clauses
+	p.parseDuckDBClauses(sc)
+
+	body.Left = sc
+	stmt.Body = body
+	return stmt
 }

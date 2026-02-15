@@ -63,6 +63,22 @@ func (f *formatter) formatExpr(e Expr) {
 		f.formatListLiteral(expr)
 	case *IndexExpr:
 		f.formatIndexExpr(expr)
+	case *ParamExpr:
+		f.formatParamExpr(expr)
+	case *DefaultExpr:
+		f.write("DEFAULT")
+	case *IsDistinctExpr:
+		f.formatIsDistinctExpr(expr)
+	case *CollateExpr:
+		f.formatCollateExpr(expr)
+	case *MapLiteral:
+		f.formatMapLiteral(expr)
+	case *ListComprehension:
+		f.formatListComprehension(expr)
+	case *NamedArgExpr:
+		f.formatNamedArgExpr(expr)
+	case *GroupingExpr:
+		f.formatGroupingExpr(expr)
 	}
 }
 
@@ -105,6 +121,9 @@ func operatorString(op TokenType) string {
 	if op == TOKEN_NE {
 		return "<>"
 	}
+	if op == TOKEN_DBLEQ {
+		return "="
+	}
 	if name, ok := tokenNames[op]; ok {
 		return name
 	}
@@ -121,6 +140,9 @@ func (f *formatter) formatUnaryExpr(expr *UnaryExpr) {
 		f.formatExpr(expr.Expr)
 	case TOKEN_PLUS:
 		f.write("+")
+		f.formatExpr(expr.Expr)
+	case TOKEN_TILDE:
+		f.write("~")
 		f.formatExpr(expr.Expr)
 	default:
 		f.write(operatorString(expr.Op))
@@ -180,6 +202,12 @@ func (f *formatter) formatFuncCall(fn *FuncCall) {
 }
 
 func (f *formatter) formatWindowSpec(w *WindowSpec) {
+	// Named window reference without details: emit without parens
+	if w.Name != "" && len(w.PartitionBy) == 0 && len(w.OrderBy) == 0 && w.Frame == nil {
+		f.writeIdent(w.Name)
+		return
+	}
+
 	f.write("(")
 
 	needSpace := false
@@ -350,6 +378,10 @@ func (f *formatter) formatLikeExpr(like *LikeExpr) {
 		f.write(" LIKE ")
 	}
 	f.formatExpr(like.Pattern)
+	if like.Escape != nil {
+		f.write(" ESCAPE ")
+		f.formatExpr(like.Escape)
+	}
 }
 
 func (f *formatter) formatGlobExpr(g *GlobExpr) {
@@ -508,4 +540,81 @@ func (f *formatter) formatOrderByItem(item OrderByItem) {
 			f.write(" NULLS LAST")
 		}
 	}
+}
+
+func (f *formatter) formatParamExpr(expr *ParamExpr) {
+	if expr.Style == ParamQuestion {
+		f.write("?")
+	} else {
+		f.write(expr.Name)
+	}
+}
+
+func (f *formatter) formatIsDistinctExpr(expr *IsDistinctExpr) {
+	f.formatExpr(expr.Left)
+	if expr.Not {
+		f.write(" IS NOT DISTINCT FROM ")
+	} else {
+		f.write(" IS DISTINCT FROM ")
+	}
+	f.formatExpr(expr.Right)
+}
+
+func (f *formatter) formatCollateExpr(expr *CollateExpr) {
+	f.formatExpr(expr.Expr)
+	f.write(" COLLATE ")
+	f.write(expr.Collation)
+}
+
+func (f *formatter) formatMapLiteral(expr *MapLiteral) {
+	f.write("MAP {")
+	f.commaSep(len(expr.Entries), func(i int) {
+		f.write("'")
+		f.write(strings.ReplaceAll(expr.Entries[i].Key, "'", "''"))
+		f.write("': ")
+		f.formatExpr(expr.Entries[i].Value)
+	})
+	f.write("}")
+}
+
+func (f *formatter) formatListComprehension(expr *ListComprehension) {
+	f.write("[")
+	f.formatExpr(expr.Expr)
+	f.write(" FOR ")
+	f.writeIdent(expr.Var)
+	f.write(" IN ")
+	f.formatExpr(expr.List)
+	if expr.Cond != nil {
+		f.write(" IF ")
+		f.formatExpr(expr.Cond)
+	}
+	f.write("]")
+}
+
+func (f *formatter) formatNamedArgExpr(expr *NamedArgExpr) {
+	f.writeIdent(expr.Name)
+	f.write(" := ")
+	f.formatExpr(expr.Value)
+}
+
+func (f *formatter) formatGroupingExpr(expr *GroupingExpr) {
+	f.write(expr.Type)
+	f.write(" (")
+	f.commaSep(len(expr.Groups), func(i int) {
+		group := expr.Groups[i]
+		if len(group) == 0 {
+			f.write("()")
+		} else if expr.Type == "GROUPING SETS" {
+			f.write("(")
+			f.commaSep(len(group), func(j int) {
+				f.formatExpr(group[j])
+			})
+			f.write(")")
+		} else {
+			f.commaSep(len(group), func(j int) {
+				f.formatExpr(group[j])
+			})
+		}
+	})
+	f.write(")")
 }

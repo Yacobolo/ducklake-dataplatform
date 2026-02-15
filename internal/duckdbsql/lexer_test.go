@@ -255,7 +255,7 @@ func TestLexer_Whitespace(t *testing.T) {
 }
 
 func TestLexer_IllegalChar(t *testing.T) {
-	l := NewLexer("$")
+	l := NewLexer("@")
 	tok := l.NextToken()
 	assert.Equal(t, TOKEN_ILLEGAL, tok.Type)
 }

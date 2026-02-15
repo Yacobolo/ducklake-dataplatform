@@ -71,7 +71,12 @@ func (l *Lexer) NextToken() Token {
 	case '%':
 		tok = Token{Type: TOKEN_MOD, Literal: "%"}
 	case '=':
-		tok = Token{Type: TOKEN_EQ, Literal: "="}
+		if l.peekChar() == '=' {
+			l.readChar()
+			tok = Token{Type: TOKEN_DBLEQ, Literal: "=="}
+		} else {
+			tok = Token{Type: TOKEN_EQ, Literal: "="}
+		}
 	case '<':
 		switch l.peekChar() {
 		case '=':
@@ -80,14 +85,21 @@ func (l *Lexer) NextToken() Token {
 		case '>':
 			l.readChar()
 			tok = Token{Type: TOKEN_NE, Literal: "<>"}
+		case '<':
+			l.readChar()
+			tok = Token{Type: TOKEN_LSHIFT, Literal: "<<"}
 		default:
 			tok = Token{Type: TOKEN_LT, Literal: "<"}
 		}
 	case '>':
-		if l.peekChar() == '=' {
+		switch l.peekChar() {
+		case '=':
 			l.readChar()
 			tok = Token{Type: TOKEN_GE, Literal: ">="}
-		} else {
+		case '>':
+			l.readChar()
+			tok = Token{Type: TOKEN_RSHIFT, Literal: ">>"}
+		default:
 			tok = Token{Type: TOKEN_GT, Literal: ">"}
 		}
 	case '!':
@@ -102,7 +114,7 @@ func (l *Lexer) NextToken() Token {
 			l.readChar()
 			tok = Token{Type: TOKEN_DPIPE, Literal: "||"}
 		} else {
-			tok = Token{Type: TOKEN_ILLEGAL, Literal: string(l.ch)}
+			tok = Token{Type: TOKEN_PIPE, Literal: "|"}
 		}
 	case '.':
 		tok = Token{Type: TOKEN_DOT, Literal: "."}
@@ -123,12 +135,32 @@ func (l *Lexer) NextToken() Token {
 	case '}':
 		tok = Token{Type: TOKEN_RBRACE, Literal: "}"}
 	case ':':
-		if l.peekChar() == ':' {
+		switch l.peekChar() {
+		case ':':
 			l.readChar()
 			tok = Token{Type: TOKEN_DCOLON, Literal: "::"}
-		} else {
+		case '=':
+			l.readChar()
+			tok = Token{Type: TOKEN_COLONEQ, Literal: ":="}
+		default:
 			tok = Token{Type: TOKEN_COLON, Literal: ":"}
 		}
+	case '&':
+		tok = Token{Type: TOKEN_AMP, Literal: "&"}
+	case '^':
+		tok = Token{Type: TOKEN_CARET, Literal: "^"}
+	case '~':
+		tok = Token{Type: TOKEN_TILDE, Literal: "~"}
+	case '?':
+		tok = Token{Type: TOKEN_QMARK, Literal: "?"}
+	case '$':
+		l.readChar() // advance past $
+		start := l.pos
+		for isLetter(l.ch) || isDigit(l.ch) || l.ch == '_' {
+			l.readChar()
+		}
+		tok = Token{Type: TOKEN_DOLLAR, Literal: "$" + l.input[start:l.pos]}
+		return tok
 	case '\'':
 		tok.Type = TOKEN_STRING
 		tok.Literal = l.readString()

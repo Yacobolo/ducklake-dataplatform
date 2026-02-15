@@ -1,5 +1,7 @@
 package duckdbsql
 
+import "strings"
+
 // formatStmt dispatches statement formatting by type.
 func (f *formatter) formatStmt(stmt Stmt) {
 	if stmt == nil {
@@ -44,7 +46,22 @@ func (f *formatter) formatWithClause(with *WithClause) {
 	f.commaSep(len(with.CTEs), func(i int) {
 		cte := with.CTEs[i]
 		f.writeIdent(cte.Name)
-		f.write(" AS (")
+		if len(cte.Columns) > 0 {
+			f.write("(")
+			f.commaSep(len(cte.Columns), func(j int) {
+				f.writeIdent(cte.Columns[j])
+			})
+			f.write(")")
+		}
+		f.write(" AS ")
+		if cte.Materialized != nil {
+			if *cte.Materialized {
+				f.write("MATERIALIZED ")
+			} else {
+				f.write("NOT MATERIALIZED ")
+			}
+		}
+		f.write("(")
 		f.formatSelectStmt(cte.Select)
 		f.write(")")
 	})
@@ -82,6 +99,20 @@ func (f *formatter) formatSelectBody(body *SelectBody) {
 
 func (f *formatter) formatSelectCore(sc *SelectCore) {
 	if sc == nil {
+		return
+	}
+
+	// VALUES body
+	if len(sc.ValuesRows) > 0 {
+		f.write("VALUES ")
+		f.commaSep(len(sc.ValuesRows), func(i int) {
+			row := sc.ValuesRows[i]
+			f.write("(")
+			f.commaSep(len(row), func(j int) {
+				f.formatExpr(row[j])
+			})
+			f.write(")")
+		})
 		return
 	}
 
@@ -157,6 +188,9 @@ func (f *formatter) formatSelectCore(sc *SelectCore) {
 	if sc.Limit != nil {
 		f.write(" LIMIT ")
 		f.formatExpr(sc.Limit)
+		if sc.LimitPercent {
+			f.write("%")
+		}
 	}
 
 	// OFFSET
@@ -168,6 +202,22 @@ func (f *formatter) formatSelectCore(sc *SelectCore) {
 	// FETCH
 	if sc.Fetch != nil {
 		f.formatFetchClause(sc.Fetch)
+	}
+
+	// USING SAMPLE
+	if sc.Sample != nil {
+		f.write(" USING SAMPLE ")
+		f.formatExpr(sc.Sample.Size)
+		if sc.Sample.IsPercent {
+			f.write("%")
+		} else if sc.Sample.IsRows {
+			f.write(" ROWS")
+		}
+		if sc.Sample.Method != "" {
+			f.write(" (")
+			f.write(sc.Sample.Method)
+			f.write(")")
+		}
 	}
 }
 
@@ -218,6 +268,8 @@ func (f *formatter) formatTableRef(ref TableRef) {
 		f.formatPivotTable(t)
 	case *UnpivotTable:
 		f.formatUnpivotTable(t)
+	case *StringTable:
+		f.formatStringTable(t)
 	}
 }
 
@@ -245,6 +297,7 @@ func (f *formatter) formatDerivedTable(t *DerivedTable) {
 	if t.Alias != "" {
 		f.write(" ")
 		f.writeIdent(t.Alias)
+		f.formatColumnAliases(t.ColumnAliases)
 	}
 }
 
@@ -255,6 +308,7 @@ func (f *formatter) formatLateralTable(t *LateralTable) {
 	if t.Alias != "" {
 		f.write(" ")
 		f.writeIdent(t.Alias)
+		f.formatColumnAliases(t.ColumnAliases)
 	}
 }
 
@@ -264,6 +318,9 @@ func (f *formatter) formatFuncTable(t *FuncTable) {
 		f.write(" ")
 		f.writeIdent(t.Alias)
 		f.formatColumnAliases(t.ColumnAliases)
+	}
+	if t.WithOrdinality {
+		f.write(" WITH ORDINALITY")
 	}
 }
 
@@ -309,6 +366,13 @@ func (f *formatter) formatPivotTable(t *PivotTable) {
 			}
 		})
 		f.write(")")
+	}
+
+	if len(t.GroupBy) > 0 {
+		f.write(" GROUP BY ")
+		f.commaSep(len(t.GroupBy), func(i int) {
+			f.formatExpr(t.GroupBy[i])
+		})
 	}
 
 	f.write(")")
@@ -384,6 +448,10 @@ func (f *formatter) formatJoin(join *Join) {
 		f.write("JOIN ")
 	case JoinCross:
 		f.write("CROSS JOIN ")
+	case JoinAsOfLeft:
+		f.write("ASOF LEFT JOIN ")
+	case JoinAsOfRight:
+		f.write("ASOF RIGHT JOIN ")
 	default:
 		f.write(string(join.Type))
 		f.write(" JOIN ")
@@ -432,7 +500,13 @@ func (f *formatter) formatFetchClause(fetch *FetchClause) {
 // === INSERT ===
 
 func (f *formatter) formatInsertStmt(stmt *InsertStmt) {
-	f.write("INSERT INTO ")
+	f.write("INSERT ")
+	if stmt.ConflictAction != "" {
+		f.write("OR ")
+		f.write(stmt.ConflictAction)
+		f.write(" ")
+	}
+	f.write("INTO ")
 	f.formatTableName(stmt.Table)
 
 	// Column list
@@ -442,6 +516,13 @@ func (f *formatter) formatInsertStmt(stmt *InsertStmt) {
 			f.writeIdent(stmt.Columns[i])
 		})
 		f.write(")")
+	}
+
+	if stmt.ByName {
+		f.write(" BY NAME")
+	}
+	if stmt.ByPosition {
+		f.write(" BY POSITION")
 	}
 
 	// VALUES or SELECT
@@ -488,6 +569,10 @@ func (f *formatter) formatOnConflictClause(oc *OnConflictClause) {
 	} else if len(oc.DoUpdate) > 0 {
 		f.write(" DO UPDATE SET ")
 		f.formatSetClauses(oc.DoUpdate)
+		if oc.Where != nil {
+			f.write(" WHERE ")
+			f.formatExpr(oc.Where)
+		}
 	}
 }
 
@@ -555,4 +640,14 @@ func (f *formatter) formatSetClauses(sets []SetClause) {
 		f.write(" = ")
 		f.formatExpr(sets[i].Value)
 	})
+}
+
+func (f *formatter) formatStringTable(t *StringTable) {
+	f.write("'")
+	f.write(strings.ReplaceAll(t.Path, "'", "''"))
+	f.write("'")
+	if t.Alias != "" {
+		f.write(" ")
+		f.writeIdent(t.Alias)
+	}
 }

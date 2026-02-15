@@ -123,6 +123,13 @@ func collectTablesFromCore(sc *SelectCore, seen map[string]bool, tables *[]strin
 	for _, col := range sc.Columns {
 		collectTablesFromExpr(col.Expr, seen, tables)
 	}
+
+	// VALUES rows
+	for _, row := range sc.ValuesRows {
+		for _, expr := range row {
+			collectTablesFromExpr(expr, seen, tables)
+		}
+	}
 }
 
 func collectTablesFromFrom(from *FromClause, seen map[string]bool, tables *[]string) {
@@ -159,6 +166,8 @@ func collectTablesFromTableRef(ref TableRef, seen map[string]bool, tables *[]str
 		collectTablesFromTableRef(t.Source, seen, tables)
 	case *UnpivotTable:
 		collectTablesFromTableRef(t.Source, seen, tables)
+	case *StringTable:
+		addTable(t.Path, seen, tables)
 	}
 }
 
@@ -213,6 +222,29 @@ func collectTablesFromExpr(e Expr, seen map[string]bool, tables *[]string) {
 	case *LikeExpr:
 		collectTablesFromExpr(expr.Expr, seen, tables)
 		collectTablesFromExpr(expr.Pattern, seen, tables)
+	case *IsDistinctExpr:
+		collectTablesFromExpr(expr.Left, seen, tables)
+		collectTablesFromExpr(expr.Right, seen, tables)
+	case *CollateExpr:
+		collectTablesFromExpr(expr.Expr, seen, tables)
+	case *MapLiteral:
+		for _, e := range expr.Entries {
+			collectTablesFromExpr(e.Value, seen, tables)
+		}
+	case *ListComprehension:
+		collectTablesFromExpr(expr.Expr, seen, tables)
+		collectTablesFromExpr(expr.List, seen, tables)
+		collectTablesFromExpr(expr.Cond, seen, tables)
+	case *NamedArgExpr:
+		collectTablesFromExpr(expr.Value, seen, tables)
+	case *GroupingExpr:
+		for _, group := range expr.Groups {
+			for _, e := range group {
+				collectTablesFromExpr(e, seen, tables)
+			}
+		}
+	case *ParamExpr, *DefaultExpr:
+		// Leaf nodes, no sub-expressions
 	}
 }
 
@@ -332,6 +364,8 @@ func injectFilterIntoTableRef(ref TableRef, tableName string, filter Expr) {
 		injectFilterIntoTableRef(t.Source, tableName, filter)
 	case *UnpivotTable:
 		injectFilterIntoTableRef(t.Source, tableName, filter)
+	case *StringTable:
+		// No subqueries to recurse into
 	}
 }
 
@@ -382,6 +416,8 @@ func tableRefReferencesTable(ref TableRef, tableName string) bool {
 		return tableRefReferencesTable(t.Source, tableName)
 	case *UnpivotTable:
 		return tableRefReferencesTable(t.Source, tableName)
+	case *StringTable:
+		return t.Path == tableName
 	}
 	return false
 }
@@ -533,6 +569,8 @@ func applyMasksToTableRef(ref TableRef, tableName string, masks map[string]strin
 		return applyMasksToSelect(t.Select, tableName, masks, nil)
 	case *LateralTable:
 		return applyMasksToSelect(t.Select, tableName, masks, nil)
+	case *StringTable:
+		// No subqueries
 	}
 	return nil
 }
@@ -698,6 +736,8 @@ func dangerousFuncInTableRef(ref TableRef, blocklist map[string]bool) (string, b
 		return dangerousFuncInTableRef(t.Source, blocklist)
 	case *UnpivotTable:
 		return dangerousFuncInTableRef(t.Source, blocklist)
+	case *StringTable:
+		// No functions to check
 	}
 	return "", false
 }
@@ -775,6 +815,39 @@ func dangerousFuncInExpr(e Expr, blocklist map[string]bool) (string, bool) {
 			return name, true
 		}
 		return dangerousFuncInExpr(expr.Pattern, blocklist)
+	case *IsDistinctExpr:
+		if name, found := dangerousFuncInExpr(expr.Left, blocklist); found {
+			return name, true
+		}
+		return dangerousFuncInExpr(expr.Right, blocklist)
+	case *CollateExpr:
+		return dangerousFuncInExpr(expr.Expr, blocklist)
+	case *MapLiteral:
+		for _, e := range expr.Entries {
+			if name, found := dangerousFuncInExpr(e.Value, blocklist); found {
+				return name, true
+			}
+		}
+	case *ListComprehension:
+		if name, found := dangerousFuncInExpr(expr.Expr, blocklist); found {
+			return name, true
+		}
+		if name, found := dangerousFuncInExpr(expr.List, blocklist); found {
+			return name, true
+		}
+		return dangerousFuncInExpr(expr.Cond, blocklist)
+	case *NamedArgExpr:
+		return dangerousFuncInExpr(expr.Value, blocklist)
+	case *GroupingExpr:
+		for _, group := range expr.Groups {
+			for _, e := range group {
+				if name, found := dangerousFuncInExpr(e, blocklist); found {
+					return name, true
+				}
+			}
+		}
+	case *ParamExpr, *DefaultExpr:
+		// Leaf nodes
 	}
 	return "", false
 }

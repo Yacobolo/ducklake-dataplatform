@@ -199,6 +199,7 @@ type LikeExpr struct {
 	Not     bool
 	Pattern Expr
 	ILike   bool // true for ILIKE, false for LIKE
+	Escape  Expr // optional ESCAPE clause
 }
 
 func (*LikeExpr) node()     {}
@@ -368,3 +369,83 @@ type RenameModifier struct {
 }
 
 func (*RenameModifier) starModifier() {}
+
+// ParamStyle represents the style of a parameter placeholder.
+type ParamStyle int
+
+// ParamQuestion and ParamDollar classify parameter placeholder styles.
+const (
+	ParamQuestion ParamStyle = iota // ?
+	ParamDollar                     // $1, $name
+)
+
+// ParamExpr represents a parameter placeholder (?, $1, $name).
+type ParamExpr struct {
+	Style ParamStyle
+	Name  string // "$1", "$name", or "" for ?
+}
+
+func (*ParamExpr) node()     {}
+func (*ParamExpr) exprNode() {}
+
+// DefaultExpr represents the DEFAULT keyword used as a value expression.
+type DefaultExpr struct{}
+
+func (*DefaultExpr) node()     {}
+func (*DefaultExpr) exprNode() {}
+
+// IsDistinctExpr represents IS [NOT] DISTINCT FROM.
+type IsDistinctExpr struct {
+	Left  Expr
+	Not   bool
+	Right Expr
+}
+
+func (*IsDistinctExpr) node()     {}
+func (*IsDistinctExpr) exprNode() {}
+
+// CollateExpr represents expr COLLATE collation_name.
+type CollateExpr struct {
+	Expr      Expr
+	Collation string
+}
+
+func (*CollateExpr) node()     {}
+func (*CollateExpr) exprNode() {}
+
+// MapLiteral represents MAP {'key': value, ...}.
+type MapLiteral struct {
+	Entries []StructField
+}
+
+func (*MapLiteral) node()     {}
+func (*MapLiteral) exprNode() {}
+
+// ListComprehension represents [expr FOR var IN list [IF cond]].
+type ListComprehension struct {
+	Expr Expr
+	Var  string
+	List Expr
+	Cond Expr
+}
+
+func (*ListComprehension) node()     {}
+func (*ListComprehension) exprNode() {}
+
+// NamedArgExpr represents name := value in function calls.
+type NamedArgExpr struct {
+	Name  string
+	Value Expr
+}
+
+func (*NamedArgExpr) node()     {}
+func (*NamedArgExpr) exprNode() {}
+
+// GroupingExpr represents GROUPING SETS/CUBE/ROLLUP in GROUP BY.
+type GroupingExpr struct {
+	Type   string   // "GROUPING SETS", "CUBE", "ROLLUP"
+	Groups [][]Expr // list of expression groups
+}
+
+func (*GroupingExpr) node()     {}
+func (*GroupingExpr) exprNode() {}

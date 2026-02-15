@@ -1,6 +1,9 @@
 package duckdbsql
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // FROM clause parsing: table references, derived tables, function tables,
 // JOINs (all types including DuckDB-specific), PIVOT/UNPIVOT.
@@ -35,6 +38,11 @@ func (p *Parser) parseTableRef() TableRef {
 	// Derived table (subquery)
 	if p.check(TOKEN_LPAREN) {
 		return p.parseDerivedTable()
+	}
+
+	// String literal as table source (e.g., 'file.csv')
+	if p.check(TOKEN_STRING) {
+		return p.parseStringTable()
 	}
 
 	// Table name or function call
@@ -92,6 +100,15 @@ func (p *Parser) parseTableNameOrFunc() TableRef {
 			p.expect(TOKEN_RPAREN)
 		}
 
+		// WITH ORDINALITY
+		if p.check(TOKEN_WITH) && !p.isClauseKeyword(p.peek) {
+			if p.peek.Type == TOKEN_IDENT && strings.EqualFold(p.peek.Literal, "ORDINALITY") {
+				p.nextToken() // consume WITH
+				p.nextToken() // consume ORDINALITY
+				ft.WithOrdinality = true
+			}
+		}
+
 		return ft
 	}
 
@@ -115,7 +132,7 @@ func (p *Parser) parseTableNameOrFunc() TableRef {
 			table.Alias = p.token.Literal
 			p.nextToken()
 		}
-	} else if p.check(TOKEN_IDENT) && !p.isJoinKeyword(p.token) && !p.isClauseKeyword(p.token) {
+	} else if p.check(TOKEN_IDENT) && !p.isJoinKeyword(p.token) && !p.isClauseKeyword(p.token) && !strings.EqualFold(p.token.Literal, "TABLESAMPLE") {
 		table.Alias = p.token.Literal
 		p.nextToken()
 	}
@@ -141,9 +158,15 @@ func (p *Parser) parseDerivedTable() *DerivedTable {
 			derived.Alias = p.token.Literal
 			p.nextToken()
 		}
-	} else if p.check(TOKEN_IDENT) {
+	} else if p.check(TOKEN_IDENT) && !p.isJoinKeyword(p.token) && !p.isClauseKeyword(p.token) {
 		derived.Alias = p.token.Literal
 		p.nextToken()
+	}
+
+	// Column alias list
+	if derived.Alias != "" && p.match(TOKEN_LPAREN) {
+		derived.ColumnAliases = p.parseColumnAliasList()
+		p.expect(TOKEN_RPAREN)
 	}
 
 	return derived
@@ -166,6 +189,12 @@ func (p *Parser) parseLateralTable() *LateralTable {
 		p.nextToken()
 	}
 
+	// Column alias list
+	if lateral.Alias != "" && p.match(TOKEN_LPAREN) {
+		lateral.ColumnAliases = p.parseColumnAliasList()
+		p.expect(TOKEN_RPAREN)
+	}
+
 	return lateral
 }
 
@@ -180,6 +209,16 @@ func (p *Parser) parseFromItemExtensions(source TableRef) TableRef {
 			p.nextToken()
 			source = p.parseUnpivot(source)
 		default:
+			// TABLESAMPLE soft keyword
+			if p.check(TOKEN_IDENT) && strings.EqualFold(p.token.Literal, "TABLESAMPLE") {
+				p.nextToken()                                           // consume TABLESAMPLE
+				p.parseExpressionWithPrecedence(PrecedenceMultiply + 1) // consume size expr, stop before %
+				if !p.match(TOKEN_MOD) {                                // % sign
+					p.match(TOKEN_PERCENT)
+				}
+				p.match(TOKEN_ROWS)
+				continue
+			}
 			return source
 		}
 	}
@@ -247,6 +286,13 @@ func (p *Parser) parsePivot(source TableRef) TableRef {
 			}
 		}
 		p.expect(TOKEN_RPAREN)
+	}
+
+	// GROUP BY inside PIVOT (SQL standard syntax)
+	if p.check(TOKEN_GROUP) {
+		p.nextToken()
+		p.expect(TOKEN_BY)
+		pivot.GroupBy = p.parseExpressionList()
 	}
 
 	p.expect(TOKEN_RPAREN)
@@ -417,8 +463,19 @@ func (p *Parser) parseJoin() *Join {
 		p.nextToken()
 		gotJoinType = true
 	case TOKEN_ASOF:
-		join.Type = JoinAsOf
-		p.nextToken()
+		p.nextToken() // consume ASOF
+		switch p.token.Type {
+		case TOKEN_LEFT:
+			join.Type = JoinAsOfLeft
+			p.nextToken()
+			p.match(TOKEN_OUTER)
+		case TOKEN_RIGHT:
+			join.Type = JoinAsOfRight
+			p.nextToken()
+			p.match(TOKEN_OUTER)
+		default:
+			join.Type = JoinAsOf
+		}
 		gotJoinType = true
 	case TOKEN_POSITIONAL:
 		join.Type = JoinPositional
@@ -462,12 +519,13 @@ func (p *Parser) parseUsingColumns() []string {
 	p.expect(TOKEN_LPAREN)
 	var cols []string
 	for {
-		if !p.check(TOKEN_IDENT) {
+		if p.check(TOKEN_IDENT) || p.check(TOKEN_STRING) {
+			cols = append(cols, p.token.Literal)
+			p.nextToken()
+		} else {
 			p.addError("expected column name in USING clause")
 			break
 		}
-		cols = append(cols, p.token.Literal)
-		p.nextToken()
 		if !p.match(TOKEN_COMMA) {
 			break
 		}
@@ -488,4 +546,19 @@ func (p *Parser) parseColumnAliasList() []string {
 		}
 	}
 	return aliases
+}
+
+func (p *Parser) parseStringTable() *StringTable {
+	st := &StringTable{Path: p.token.Literal}
+	p.nextToken()
+	if p.match(TOKEN_AS) {
+		if p.check(TOKEN_IDENT) {
+			st.Alias = p.token.Literal
+			p.nextToken()
+		}
+	} else if p.check(TOKEN_IDENT) && !p.isJoinKeyword(p.token) && !p.isClauseKeyword(p.token) {
+		st.Alias = p.token.Literal
+		p.nextToken()
+	}
+	return st
 }

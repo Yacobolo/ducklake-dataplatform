@@ -48,6 +48,16 @@ const (
 	TOKEN_COLON     // :
 	TOKEN_DCOLON    // :: (DuckDB cast)
 	TOKEN_ARROW     // -> (lambda)
+	TOKEN_AMP       // &  (bitwise AND)
+	TOKEN_PIPE      // |  (bitwise OR, single)
+	TOKEN_CARET     // ^  (bitwise XOR)
+	TOKEN_TILDE     // ~  (bitwise NOT)
+	TOKEN_LSHIFT    // <<
+	TOKEN_RSHIFT    // >>
+	TOKEN_DBLEQ     // == (alias for =)
+	TOKEN_COLONEQ   // := (named parameter)
+	TOKEN_QMARK     // ?  (positional parameter)
+	TOKEN_DOLLAR    // $  (dollar parameter)
 
 	// TOKEN_ALL and below are SQL keywords (alphabetical).
 	TOKEN_ALL
@@ -191,6 +201,8 @@ const (
 	TOKEN_QUALIFY
 	TOKEN_SEMI
 	TOKEN_UNPIVOT
+	TOKEN_COMMENT
+	TOKEN_MERGE
 )
 
 // String returns a human-readable representation of the token type.
@@ -234,6 +246,16 @@ var tokenNames = map[TokenType]string{
 	TOKEN_COLON:     ":",
 	TOKEN_DCOLON:    "::",
 	TOKEN_ARROW:     "->",
+	TOKEN_AMP:       "&",
+	TOKEN_PIPE:      "|",
+	TOKEN_CARET:     "^",
+	TOKEN_TILDE:     "~",
+	TOKEN_LSHIFT:    "<<",
+	TOKEN_RSHIFT:    ">>",
+	TOKEN_DBLEQ:     "==",
+	TOKEN_COLONEQ:   ":=",
+	TOKEN_QMARK:     "?",
+	TOKEN_DOLLAR:    "$",
 
 	TOKEN_ALL:        "ALL",
 	TOKEN_ALTER:      "ALTER",
@@ -376,6 +398,8 @@ var tokenNames = map[TokenType]string{
 	TOKEN_QUALIFY:    "QUALIFY",
 	TOKEN_SEMI:       "SEMI",
 	TOKEN_UNPIVOT:    "UNPIVOT",
+	TOKEN_COMMENT:    "COMMENT",
+	TOKEN_MERGE:      "MERGE",
 }
 
 // keywords maps lowercase keyword strings to their token types.
@@ -522,6 +546,8 @@ var keywords = map[string]TokenType{
 	"qualify":    TOKEN_QUALIFY,
 	"semi":       TOKEN_SEMI,
 	"unpivot":    TOKEN_UNPIVOT,
+	"comment":    TOKEN_COMMENT,
+	"merge":      TOKEN_MERGE,
 }
 
 // lookupKeyword returns the token type for the given lowercase identifier.

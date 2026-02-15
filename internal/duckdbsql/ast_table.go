@@ -16,8 +16,9 @@ func (*TableName) tableRefNode() {}
 
 // DerivedTable represents a subquery in FROM clause.
 type DerivedTable struct {
-	Select *SelectStmt
-	Alias  string
+	Select        *SelectStmt
+	Alias         string
+	ColumnAliases []string
 }
 
 func (*DerivedTable) node()         {}
@@ -25,8 +26,9 @@ func (*DerivedTable) tableRefNode() {}
 
 // LateralTable represents a LATERAL subquery.
 type LateralTable struct {
-	Select *SelectStmt
-	Alias  string
+	Select        *SelectStmt
+	Alias         string
+	ColumnAliases []string
 }
 
 func (*LateralTable) node()         {}
@@ -34,9 +36,10 @@ func (*LateralTable) tableRefNode() {}
 
 // FuncTable represents a table-valued function in FROM (e.g., read_parquet()).
 type FuncTable struct {
-	Func          *FuncCall
-	Alias         string
-	ColumnAliases []string // e.g., range(5) t(i) → ColumnAliases: ["i"]
+	Func           *FuncCall
+	Alias          string
+	ColumnAliases  []string // e.g., range(5) t(i) → ColumnAliases: ["i"]
+	WithOrdinality bool
 }
 
 func (*FuncTable) node()         {}
@@ -52,6 +55,7 @@ type PivotTable struct {
 	InValues   []PivotInValue
 	InStar     bool
 	Alias      string
+	GroupBy    []Expr
 }
 
 func (*PivotTable) node()         {}
@@ -86,3 +90,12 @@ type UnpivotInGroup struct {
 	Columns []string
 	Alias   string
 }
+
+// StringTable represents a string literal used as a table source (e.g., 'file.csv').
+type StringTable struct {
+	Path  string
+	Alias string
+}
+
+func (*StringTable) node()         {}
+func (*StringTable) tableRefNode() {}
