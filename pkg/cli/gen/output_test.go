@@ -231,12 +231,12 @@ func TestExtractField_StringValue(t *testing.T) {
 
 func TestExtractField_MissingKey(t *testing.T) {
 	data := map[string]interface{}{"name": "alice"}
-	assert.Equal(t, "", ExtractField(data, "missing"))
+	assert.Empty(t, ExtractField(data, "missing"))
 }
 
 func TestExtractField_NilValue(t *testing.T) {
 	data := map[string]interface{}{"name": nil}
-	assert.Equal(t, "", ExtractField(data, "name"))
+	assert.Empty(t, ExtractField(data, "name"))
 }
 
 func TestExtractField_FloatValue(t *testing.T) {

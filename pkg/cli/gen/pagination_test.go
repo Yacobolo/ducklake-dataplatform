@@ -21,7 +21,7 @@ func TestFetchAllPages_SinglePage(t *testing.T) {
 			NextPageToken: "",
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer srv.Close()
 
@@ -65,7 +65,7 @@ func TestFetchAllPages_MultiPage(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer srv.Close()
 
@@ -79,7 +79,7 @@ func TestFetchAllPages_MultiPage(t *testing.T) {
 
 	// First request should have no page_token, 2nd should have "p2", 3rd "p3".
 	require.Len(t, receivedTokens, 3)
-	assert.Equal(t, "", receivedTokens[0])
+	assert.Empty(t, receivedTokens[0])
 	assert.Equal(t, "p2", receivedTokens[1])
 	assert.Equal(t, "p3", receivedTokens[2])
 }
@@ -91,7 +91,7 @@ func TestFetchAllPages_EmptyFirstPage(t *testing.T) {
 			NextPageToken: "",
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer srv.Close()
 
@@ -106,7 +106,7 @@ func TestFetchAllPages_HTTPError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"code":    500,
 			"message": "something broke",
 		})
@@ -139,7 +139,7 @@ func TestFetchAllPages_InvalidJSON(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{not valid json`))
+		_, _ = w.Write([]byte(`{not valid json`))
 	}))
 	defer srv.Close()
 
@@ -171,7 +171,7 @@ func TestFetchAllPages_PreservesBaseQuery(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer srv.Close()
 

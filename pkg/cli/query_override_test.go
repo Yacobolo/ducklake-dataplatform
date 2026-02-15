@@ -87,18 +87,18 @@ func TestQueryOverride(t *testing.T) {
 			t.Setenv("HOME", dir)
 
 			var (
-				mu  sync.Mutex
-				cap captured
+				mu          sync.Mutex
+				capturedReq captured
 			)
 
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				mu.Lock()
 				defer mu.Unlock()
-				cap.method = r.Method
-				cap.path = r.URL.Path
+				capturedReq.method = r.Method
+				capturedReq.path = r.URL.Path
 				if r.Body != nil {
-					cap.body, _ = io.ReadAll(r.Body)
-					r.Body.Close()
+					capturedReq.body, _ = io.ReadAll(r.Body)
+					_ = r.Body.Close()
 				}
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
@@ -123,7 +123,7 @@ func TestQueryOverride(t *testing.T) {
 
 			if tt.checkReq != nil {
 				mu.Lock()
-				c := cap
+				c := capturedReq
 				mu.Unlock()
 				tt.checkReq(t, c)
 			}

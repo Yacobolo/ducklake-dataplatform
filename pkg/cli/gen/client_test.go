@@ -52,7 +52,7 @@ func TestDo_URLConstruction(t *testing.T) {
 	c := NewClient(srv.URL, "", "")
 	resp, err := c.Do(http.MethodGet, "/schemas", nil, nil)
 	require.NoError(t, err)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	assert.Equal(t, "/v1/schemas", gotPath)
 }
@@ -72,7 +72,7 @@ func TestDo_QueryParams(t *testing.T) {
 
 	resp, err := c.Do(http.MethodGet, "/items", q, nil)
 	require.NoError(t, err)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	parsed, err := url.ParseQuery(gotRawQuery)
 	require.NoError(t, err)
@@ -91,7 +91,7 @@ func TestDo_EmptyQueryParams(t *testing.T) {
 	c := NewClient(srv.URL, "", "")
 	resp, err := c.Do(http.MethodGet, "/items", url.Values{}, nil)
 	require.NoError(t, err)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	assert.Empty(t, gotRawQuery)
 }
@@ -112,7 +112,7 @@ func TestDo_WithBody(t *testing.T) {
 	body := map[string]string{"name": "test-schema"}
 	resp, err := c.Do(http.MethodPost, "/schemas", nil, body)
 	require.NoError(t, err)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	assert.Equal(t, "application/json", gotContentType)
 
@@ -136,7 +136,7 @@ func TestDo_NilBody(t *testing.T) {
 	c := NewClient(srv.URL, "", "")
 	resp, err := c.Do(http.MethodGet, "/schemas", nil, nil)
 	require.NoError(t, err)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	assert.Empty(t, gotContentType)
 	assert.LessOrEqual(t, gotBodyLen, int64(0))
@@ -153,7 +153,7 @@ func TestDo_AcceptHeader(t *testing.T) {
 	c := NewClient(srv.URL, "", "")
 	resp, err := c.Do(http.MethodGet, "/schemas", nil, nil)
 	require.NoError(t, err)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	assert.Equal(t, "application/json", gotAccept)
 }
@@ -169,7 +169,7 @@ func TestDo_BearerToken(t *testing.T) {
 	c := NewClient(srv.URL, "", "my-jwt-token")
 	resp, err := c.Do(http.MethodGet, "/schemas", nil, nil)
 	require.NoError(t, err)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	assert.Equal(t, "Bearer my-jwt-token", gotAuth)
 }
@@ -189,7 +189,7 @@ func TestDo_APIKey(t *testing.T) {
 	c := NewClient(srv.URL, "secret-key", "")
 	resp, err := c.Do(http.MethodGet, "/schemas", nil, nil)
 	require.NoError(t, err)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	assert.Equal(t, "secret-key", gotAPIKey)
 	assert.Empty(t, gotAuth)
@@ -210,7 +210,7 @@ func TestDo_TokenPrecedence(t *testing.T) {
 	c := NewClient(srv.URL, "secret-key", "my-jwt-token")
 	resp, err := c.Do(http.MethodGet, "/schemas", nil, nil)
 	require.NoError(t, err)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	assert.Equal(t, "Bearer my-jwt-token", gotAuth)
 	assert.Empty(t, gotAPIKey)
@@ -231,7 +231,7 @@ func TestDo_NoAuth(t *testing.T) {
 	c := NewClient(srv.URL, "", "")
 	resp, err := c.Do(http.MethodGet, "/schemas", nil, nil)
 	require.NoError(t, err)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	assert.Empty(t, gotAuth)
 	assert.Empty(t, gotAPIKey)
@@ -259,7 +259,7 @@ func TestDo_HTTPMethod(t *testing.T) {
 			c := NewClient(srv.URL, "", "")
 			resp, err := c.Do(tt.method, "/resource", nil, nil)
 			require.NoError(t, err)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 
 			assert.Equal(t, tt.method, gotMethod)
 		})

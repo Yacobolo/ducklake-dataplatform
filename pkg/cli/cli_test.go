@@ -36,7 +36,7 @@ func (r *requestRecorder) record(req *http.Request) {
 	defer r.mu.Unlock()
 
 	body, _ := io.ReadAll(req.Body)
-	defer req.Body.Close()
+	defer func() { _ = req.Body.Close() }()
 
 	r.requests = append(r.requests, capturedRequest{
 		Method:  req.Method,
@@ -695,7 +695,7 @@ func TestCLI_DeleteCommand_RequiresYesFlag(t *testing.T) {
 	oldStdin := os.Stdin
 	r, w, _ := os.Pipe()
 	_, _ = w.WriteString("n\n")
-	w.Close()
+	_ = w.Close()
 	os.Stdin = r
 	defer func() { os.Stdin = oldStdin }()
 
