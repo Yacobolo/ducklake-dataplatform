@@ -1,0 +1,49 @@
+name: Notify Rune
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  issues:
+    types: [opened]
+  issue_comment:
+    types: [created]
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Rune
+        run: |
+          EVENT='${{ github.event_name }}'
+          ACTION='${{ github.event.action }}'
+          
+          if [ "$EVENT" = "pull_request" ]; then
+            TITLE='${{ github.event.pull_request.title }}'
+            URL='${{ github.event.pull_request.html_url }}'
+            AUTHOR='${{ github.event.pull_request.user.login }}'
+            NUM='${{ github.event.pull_request.number }}'
+            MSG="GitHub PR #${NUM} ${ACTION} by ${AUTHOR}: \"${TITLE}\" — ${URL}. Review the changes, run tests if needed, and comment on the PR."
+          elif [ "$EVENT" = "issues" ]; then
+            TITLE='${{ github.event.issue.title }}'
+            URL='${{ github.event.issue.html_url }}'
+            AUTHOR='${{ github.event.issue.user.login }}'
+            NUM='${{ github.event.issue.number }}'
+            MSG="GitHub Issue #${NUM} opened by ${AUTHOR}: \"${TITLE}\" — ${URL}. Review and comment if you can help."
+          elif [ "$EVENT" = "issue_comment" ]; then
+            URL='${{ github.event.comment.html_url }}'
+            AUTHOR='${{ github.event.comment.user.login }}'
+            BODY='${{ github.event.comment.body }}'
+            MSG="New comment by ${AUTHOR} on ${URL}: ${BODY}"
+          elif [ "$EVENT" = "pull_request_review" ]; then
+            URL='${{ github.event.review.html_url }}'
+            AUTHOR='${{ github.event.review.user.login }}'
+            STATE='${{ github.event.review.state }}'
+            MSG="PR review (${STATE}) by ${AUTHOR}: ${URL}"
+          fi
+          
+          curl -s -X POST "${{ secrets.RUNE_WEBHOOK_URL }}/hooks/agent" \
+            -H "Authorization: Bearer ${{ secrets.RUNE_WEBHOOK_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"message\": \"${MSG}\", \"name\": \"GitHub\", \"deliver\": true, \"channel\": \"telegram\", \"to\": \"8599265092\"}"
