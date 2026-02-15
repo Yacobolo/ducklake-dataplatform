@@ -16,7 +16,7 @@ SELECT * FROM principals WHERE name = ?;
 
 -- name: GetPrincipalByExternalID :one
 SELECT * FROM principals
-WHERE external_issuer = ? AND external_id = ?
+WHERE external_issuer IS ? AND external_id = ?
 LIMIT 1;
 
 -- name: ListPrincipals :many
