@@ -107,3 +107,33 @@ type ResponseModel struct {
 	TableColumns []string // from config
 	SuccessCode  int
 }
+
+// APIEndpointModel represents a single API endpoint for the api registry.
+type APIEndpointModel struct {
+	OperationID string
+	Method      string
+	Path        string
+	Summary     string
+	Description string
+	Tags        []string
+	Parameters  []APIParamModel
+	BodyFields  []APIFieldModel
+	CLICommand  string // corresponding CLI command path, e.g. "catalog schemas create"
+}
+
+// APIParamModel represents a parameter in the API registry.
+type APIParamModel struct {
+	Name     string
+	In       string // "path", "query"
+	Type     string
+	Required bool
+	Enum     []string
+}
+
+// APIFieldModel represents a request body field in the API registry.
+type APIFieldModel struct {
+	Name     string
+	Type     string
+	Required bool
+	Enum     []string
+}

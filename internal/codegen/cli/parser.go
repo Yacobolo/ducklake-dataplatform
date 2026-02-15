@@ -766,6 +766,98 @@ func toSet(ss []string) map[string]bool {
 	return m
 }
 
+// ExtractAPIEndpoints extracts all API endpoints from the OpenAPI spec for the api registry.
+func ExtractAPIEndpoints(spec *openapi3.T, groups []GroupModel) []APIEndpointModel {
+	// Build a map of operationID -> CLI command path from the group models
+	cliCmdMap := map[string]string{}
+	for _, g := range groups {
+		for _, cmd := range g.Commands {
+			path := g.Name
+			if len(cmd.CommandPath) > 0 {
+				path += " " + strings.Join(cmd.CommandPath, " ")
+			}
+			path += " " + cmd.Verb
+			cliCmdMap[cmd.OperationID] = strings.TrimSpace(path)
+		}
+	}
+
+	var endpoints []APIEndpointModel
+	for urlPath, pathItem := range spec.Paths.Map() {
+		for method, op := range pathItem.Operations() {
+			if op.OperationID == "" {
+				continue
+			}
+			ep := APIEndpointModel{
+				OperationID: op.OperationID,
+				Method:      method,
+				Path:        urlPath,
+				Summary:     op.Summary,
+				Description: op.Description,
+				Tags:        op.Tags,
+				CLICommand:  cliCmdMap[op.OperationID],
+			}
+
+			// Collect path-level + operation-level parameters
+			var allParams []*openapi3.ParameterRef
+			allParams = append(allParams, pathItem.Parameters...)
+			allParams = append(allParams, op.Parameters...)
+			for _, pRef := range allParams {
+				p := pRef.Value
+				if p == nil {
+					continue
+				}
+				param := APIParamModel{
+					Name:     p.Name,
+					In:       p.In,
+					Required: p.Required,
+				}
+				if p.Schema != nil && p.Schema.Value != nil {
+					param.Type = schemaType(p.Schema.Value)
+					for _, e := range p.Schema.Value.Enum {
+						param.Enum = append(param.Enum, fmt.Sprintf("%v", e))
+					}
+				}
+				ep.Parameters = append(ep.Parameters, param)
+			}
+
+			// Collect body fields
+			if op.RequestBody != nil && op.RequestBody.Value != nil {
+				if ct, ok := op.RequestBody.Value.Content["application/json"]; ok && ct.Schema != nil && ct.Schema.Value != nil {
+					schema := ct.Schema.Value
+					requiredSet := toSet(schema.Required)
+					for propName, propRef := range schema.Properties {
+						prop := propRef.Value
+						if prop == nil {
+							continue
+						}
+						field := APIFieldModel{
+							Name:     propName,
+							Type:     schemaType(prop),
+							Required: requiredSet[propName],
+						}
+						for _, e := range prop.Enum {
+							field.Enum = append(field.Enum, fmt.Sprintf("%v", e))
+						}
+						ep.BodyFields = append(ep.BodyFields, field)
+					}
+				}
+			}
+
+			endpoints = append(endpoints, ep)
+		}
+	}
+
+	// Sort by path then method for deterministic output
+	sort.Slice(endpoints, func(i, j int) bool {
+		if endpoints[i].Path == endpoints[j].Path {
+			return endpoints[i].Method < endpoints[j].Method
+		}
+		return endpoints[i].Path < endpoints[j].Path
+	})
+
+	return endpoints
+}
+
 func sortedKeys[V any](m map[string]V) []string {
 	keys := make([]string, 0, len(m))
 	for k := range m {

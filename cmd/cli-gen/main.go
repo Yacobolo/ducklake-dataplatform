@@ -42,10 +42,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Render to Go source
-	if err := cligen.Render(groups, cfg, *outDir); err != nil {
+	// Extract API endpoints for the registry
+	endpoints := cligen.ExtractAPIEndpoints(spec, groups)
+
+	// Render to Go source (including API registry)
+	if err := cligen.RenderWithEndpoints(groups, cfg, endpoints, *outDir); err != nil {
 		log.Fatalf("render: %v", err)
 	}
 
-	fmt.Printf("Generated %d groups in %s\n", len(groups), *outDir)
+	fmt.Printf("Generated %d groups + %d API endpoints in %s\n", len(groups), len(endpoints), *outDir)
 }
