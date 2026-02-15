@@ -726,15 +726,16 @@ func (p *Parser) parseSampleClause() *SampleClause {
 func (p *Parser) parseGroupByList() []Expr {
 	var exprs []Expr
 	for {
-		if p.matchSoftKeyword("GROUPING") {
+		switch {
+		case p.matchSoftKeyword("GROUPING"):
 			if p.matchSoftKeyword("SETS") {
 				exprs = append(exprs, p.parseGroupingSets("GROUPING SETS"))
 			}
-		} else if p.matchSoftKeyword("CUBE") {
+		case p.matchSoftKeyword("CUBE"):
 			exprs = append(exprs, p.parseGroupingSets("CUBE"))
-		} else if p.matchSoftKeyword("ROLLUP") {
+		case p.matchSoftKeyword("ROLLUP"):
 			exprs = append(exprs, p.parseGroupingSets("ROLLUP"))
-		} else {
+		default:
 			exprs = append(exprs, p.parseExpression())
 		}
 		if !p.match(TOKEN_COMMA) {

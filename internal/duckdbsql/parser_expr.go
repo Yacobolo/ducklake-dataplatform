@@ -204,7 +204,8 @@ func (p *Parser) parseIsExpr(left Expr) Expr {
 func (p *Parser) parseInExpr(left Expr, not bool) Expr {
 	in := &InExpr{Expr: left, Not: not}
 
-	if p.check(TOKEN_LPAREN) {
+	switch {
+	case p.check(TOKEN_LPAREN):
 		p.nextToken() // consume (
 		if p.check(TOKEN_SELECT) || p.check(TOKEN_WITH) {
 			in.Query = p.parseSelectStatement()
@@ -212,10 +213,10 @@ func (p *Parser) parseInExpr(left Expr, not bool) Expr {
 			in.Values = p.parseExpressionList()
 		}
 		p.expect(TOKEN_RPAREN)
-	} else if p.check(TOKEN_LBRACKET) {
+	case p.check(TOKEN_LBRACKET):
 		listExpr := p.parseListLiteral()
 		in.Values = []Expr{listExpr}
-	} else {
+	default:
 		// IN 'string' or IN expr
 		in.Values = []Expr{p.parsePrimary()}
 	}

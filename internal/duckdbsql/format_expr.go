@@ -602,15 +602,16 @@ func (f *formatter) formatGroupingExpr(expr *GroupingExpr) {
 	f.write(" (")
 	f.commaSep(len(expr.Groups), func(i int) {
 		group := expr.Groups[i]
-		if len(group) == 0 {
+		switch {
+		case len(group) == 0:
 			f.write("()")
-		} else if expr.Type == "GROUPING SETS" {
+		case expr.Type == "GROUPING SETS":
 			f.write("(")
 			f.commaSep(len(group), func(j int) {
 				f.formatExpr(group[j])
 			})
 			f.write(")")
-		} else {
+		default:
 			f.commaSep(len(group), func(j int) {
 				f.formatExpr(group[j])
 			})
