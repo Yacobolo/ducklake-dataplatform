@@ -141,11 +141,8 @@ func runFind(cmd *cobra.Command, client *gen.Client, query, objectType, catalog 
 
 	// Output
 	if getOutputFormat(cmd) == "json" {
-		var pretty interface{}
-		if err := json.Unmarshal(respBody, &pretty); err != nil {
-			return gen.PrintJSON(os.Stdout, data)
-		}
-		return gen.PrintJSON(os.Stdout, pretty)
+		// Use filtered data.Data so glob filtering is reflected in JSON output
+		return gen.PrintJSON(os.Stdout, data)
 	}
 
 	// Table output

@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 
@@ -223,7 +224,7 @@ func newAPICurlCmd() *cobra.Command {
 			for _, p := range found.Parameters {
 				if p.In == "path" {
 					if v, ok := paramMap[p.Name]; ok {
-						path = strings.ReplaceAll(path, "{"+p.Name+"}", v)
+						path = strings.ReplaceAll(path, "{"+p.Name+"}", url.PathEscape(v))
 						delete(paramMap, p.Name)
 					}
 				}
@@ -234,7 +235,7 @@ func newAPICurlCmd() *cobra.Command {
 			for _, p := range found.Parameters {
 				if p.In == "query" {
 					if v, ok := paramMap[p.Name]; ok {
-						queryParts = append(queryParts, p.Name+"="+v)
+						queryParts = append(queryParts, url.QueryEscape(p.Name)+"="+url.QueryEscape(v))
 						delete(paramMap, p.Name)
 					}
 				}

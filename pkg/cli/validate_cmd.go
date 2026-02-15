@@ -32,10 +32,13 @@ func newValidateCmd(_ *gen.Client) *cobra.Command {
 					for i, ve := range validationErrs {
 						errMsgs[i] = ve.Error()
 					}
-					return gen.PrintJSON(os.Stdout, map[string]interface{}{
+					if err := gen.PrintJSON(os.Stdout, map[string]interface{}{
 						"valid":  false,
 						"errors": errMsgs,
-					})
+					}); err != nil {
+						return err
+					}
+					os.Exit(1)
 				}
 				fmt.Fprintf(os.Stderr, "Configuration has %d validation error(s):\n", len(validationErrs))
 				for _, ve := range validationErrs {
