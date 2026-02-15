@@ -222,10 +222,9 @@ func TestCLI_PathParamSubstitution_NoUnresolvedPlaceholders(t *testing.T) {
 // === JSON Input Tests (issue #101) ===
 
 func TestCLI_JSONInputWithRequiredBodyFlag(t *testing.T) {
-	// BUG (issue #101): MarkFlagRequired("name") on the table create command
-	// rejects the command before RunE when --name is not passed as a flag,
-	// even though --json provides the name in the body. This test documents
-	// the known failure.
+	// Fixed (issue #101): --json input now bypasses MarkFlagRequired for body
+	// flags. Required body fields are validated inside RunE only when --json
+	// is not provided.
 	rec := &requestRecorder{}
 	srv := httptest.NewServer(jsonHandler(rec, 201, `{"name":"users"}`))
 	defer srv.Close()
@@ -236,13 +235,15 @@ func TestCLI_JSONInputWithRequiredBodyFlag(t *testing.T) {
 		"catalog", "tables", "create", "myschema",
 		"--catalog-name", "test",
 		"--json", `{"name":"users","columns":[{"name":"id","type":"BIGINT"}]}`,
-		// NOTE: --name flag intentionally omitted; --json provides it.
+		// --name flag intentionally omitted; --json provides it.
 	})
 
 	err := rootCmd.Execute()
-	// Known bug: MarkFlagRequired("name") blocks before RunE can process --json.
-	require.Error(t, err, "expected error due to issue #101: MarkFlagRequired blocks --json input")
-	assert.Contains(t, err.Error(), "required")
+	require.NoError(t, err, "--json should bypass required body flag validation")
+
+	captured := rec.last()
+	require.NotNil(t, captured, "server should have received a request")
+	assert.Equal(t, "POST", captured.Method)
 }
 
 func TestCLI_JSONInputRawString(t *testing.T) {

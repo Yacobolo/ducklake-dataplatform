@@ -27,6 +27,10 @@ func newTasksCmd(client *Client) *cobra.Command {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
 				urlPath := "/tasks"
+
+				if strings.Contains(urlPath, "{") {
+					return fmt.Errorf("unresolved path parameter in URL: %s", urlPath)
+				}
 				query := url.Values{}
 				// Build request body
 				var body interface{}
@@ -67,6 +71,12 @@ func newTasksCmd(client *Client) *cobra.Command {
 					}
 					if len(m) > 0 {
 						body = m
+					}
+				}
+				// Validate required body fields when --json is not provided
+				if jsonInput == "" {
+					if !cmd.Flags().Changed("name") {
+						return fmt.Errorf("required flag %q not set (or use --json)", "name")
 					}
 				}
 
@@ -132,7 +142,6 @@ func newTasksCmd(client *Client) *cobra.Command {
 		c.Flags().String("description", "", "Task description")
 		c.Flags().String("json", "", "JSON input (raw string or @filename or - for stdin)")
 		c.Flags().StringP("name", "n", "", "Task name")
-		_ = c.MarkFlagRequired("name")
 		c.Flags().Int64("priority", 0, "Task priority")
 
 		// Apply overrides
@@ -157,6 +166,10 @@ func newTasksCmd(client *Client) *cobra.Command {
 				_ = outputFlag
 				urlPath := "/tasks/{taskId}/run"
 				urlPath = strings.Replace(urlPath, "{taskId}", args[0], 1)
+
+				if strings.Contains(urlPath, "{") {
+					return fmt.Errorf("unresolved path parameter in URL: %s", urlPath)
+				}
 				query := url.Values{}
 				// Build request body
 				var body interface{}
@@ -190,6 +203,9 @@ func newTasksCmd(client *Client) *cobra.Command {
 					if len(m) > 0 {
 						body = m
 					}
+				}
+				// Validate required body fields when --json is not provided
+				if jsonInput == "" {
 				}
 
 				// Execute request

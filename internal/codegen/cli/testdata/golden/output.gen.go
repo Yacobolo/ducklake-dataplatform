@@ -120,7 +120,7 @@ func PrintDetail(w io.Writer, fields map[string]interface{}) {
 	for _, k := range keys {
 		v := fields[k]
 		padding := strings.Repeat(" ", maxKeyLen-len(k))
-		fmt.Fprintf(w, "%s:%s  %v\n", k, padding, v)
+		fmt.Fprintf(w, "%s:%s  %s\n", k, padding, FormatValue(v))
 	}
 }
 
@@ -139,7 +139,34 @@ func ExtractField(data map[string]interface{}, field string) string {
 	if !ok || v == nil {
 		return ""
 	}
-	return fmt.Sprintf("%v", v)
+	return FormatValue(v)
+}
+
+// FormatValue formats a value for human-readable CLI display.
+// It avoids Go-internal representations like <nil>, map[...], and [a b].
+func FormatValue(v interface{}) string {
+	if v == nil {
+		return ""
+	}
+	switch val := v.(type) {
+	case string:
+		return val
+	case float64:
+		if val == float64(int64(val)) {
+			return fmt.Sprintf("%d", int64(val))
+		}
+		return fmt.Sprintf("%g", val)
+	case bool:
+		return fmt.Sprintf("%t", val)
+	case map[string]interface{}:
+		b, _ := json.Marshal(val)
+		return string(b)
+	case []interface{}:
+		b, _ := json.Marshal(val)
+		return string(b)
+	default:
+		return fmt.Sprintf("%v", v)
+	}
 }
 
 // ExtractRows extracts table rows from a paginated response.

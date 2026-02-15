@@ -49,7 +49,7 @@ func TestQueryOverride(t *testing.T) {
 			statusCode: http.StatusOK,
 			response:   `{}`,
 			wantErr:    true,
-			errContain: "required flag",
+			errContain: "provide SQL via --sql flag or stdin pipe",
 		},
 		{
 			name:       "HTTP error",
