@@ -35,6 +35,7 @@ type SelectBody struct {
 // SetOpType represents the type of set operation.
 type SetOpType string
 
+// SetOpNone and friends classify set operations (UNION, INTERSECT, EXCEPT).
 const (
 	SetOpNone      SetOpType = ""
 	SetOpUnion     SetOpType = "UNION"
@@ -103,6 +104,7 @@ type Join struct {
 // JoinType represents the type of join.
 type JoinType string
 
+// JoinInner and friends classify SQL JOIN types including DuckDB extensions.
 const (
 	JoinInner JoinType = "INNER"
 	JoinLeft  JoinType = "LEFT"
@@ -110,7 +112,7 @@ const (
 	JoinFull  JoinType = "FULL"
 	JoinCross JoinType = "CROSS"
 	JoinComma JoinType = ","
-	// DuckDB extensions
+	// JoinLeftSemi and below are DuckDB extensions.
 	JoinLeftSemi   JoinType = "LEFT SEMI"
 	JoinRightSemi  JoinType = "RIGHT SEMI"
 	JoinSemi       JoinType = "SEMI"
@@ -184,6 +186,7 @@ func (*DeleteStmt) stmtNode() {}
 // DDLType classifies the type of DDL statement.
 type DDLType int
 
+// DDLCreateTable and friends classify the type of DDL statement.
 const (
 	DDLCreateTable DDLType = iota
 	DDLCreateView
@@ -212,6 +215,7 @@ func (*DDLStmt) stmtNode() {}
 // UtilityType classifies the type of utility statement.
 type UtilityType int
 
+// UtilityCall and friends classify the type of utility statement.
 const (
 	UtilityCall UtilityType = iota
 	UtilityCopy

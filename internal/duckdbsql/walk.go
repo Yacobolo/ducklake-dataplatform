@@ -10,6 +10,7 @@ import (
 // StmtType represents the kind of SQL statement.
 type StmtType int
 
+// StmtTypeSelect and friends classify statement types.
 const (
 	StmtTypeSelect StmtType = iota
 	StmtTypeInsert
@@ -415,8 +416,7 @@ func ApplyColumnMasks(stmt Stmt, tableName string, masks map[string]string, allC
 		normalized[strings.ToLower(k)] = v
 	}
 
-	switch s := stmt.(type) {
-	case *SelectStmt:
+	if s, ok := stmt.(*SelectStmt); ok {
 		return applyMasksToSelect(s, tableName, normalized, allColumns)
 	}
 	return nil
@@ -576,8 +576,7 @@ func extractColumnNameFromExpr(e Expr) string {
 	if e == nil {
 		return ""
 	}
-	switch expr := e.(type) {
-	case *ColumnRef:
+	if expr, ok := e.(*ColumnRef); ok {
 		return expr.Column
 	}
 	return ""

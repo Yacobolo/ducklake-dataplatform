@@ -14,17 +14,15 @@ import "fmt"
 // TokenType represents the type of a lexical token.
 type TokenType int
 
+// TOKEN_EOF and friends enumerate all token types produced by the lexer.
 const (
-	// Special tokens
-	TOKEN_EOF     TokenType = iota
-	TOKEN_ILLEGAL           // unexpected character
+	TOKEN_EOF     TokenType = iota // end of input
+	TOKEN_ILLEGAL                  // unexpected character
 
-	// Literals
 	TOKEN_IDENT  // identifier
 	TOKEN_NUMBER // 123, 45.67, 1e10
 	TOKEN_STRING // 'hello'
 
-	// Punctuation / Operators
 	TOKEN_PLUS      // +
 	TOKEN_MINUS     // -
 	TOKEN_STAR      // *
@@ -51,7 +49,7 @@ const (
 	TOKEN_DCOLON    // :: (DuckDB cast)
 	TOKEN_ARROW     // -> (lambda)
 
-	// === SQL Keywords (alphabetical) ===
+	// TOKEN_ALL and below are SQL keywords (alphabetical).
 	TOKEN_ALL
 	TOKEN_ALTER
 	TOKEN_AND
@@ -182,7 +180,7 @@ const (
 	TOKEN_WITH
 	TOKEN_WITHIN
 
-	// === DuckDB-specific keywords ===
+	// TOKEN_ANTI and below are DuckDB-specific keywords.
 	TOKEN_ANTI
 	TOKEN_ASOF
 	TOKEN_COLUMNS

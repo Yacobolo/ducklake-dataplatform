@@ -175,16 +175,10 @@ func (p *Parser) parseFromItemExtensions(source TableRef) TableRef {
 		switch p.token.Type {
 		case TOKEN_PIVOT:
 			p.nextToken()
-			result := p.parsePivot(source)
-			if result != nil {
-				source = result
-			}
+			source = p.parsePivot(source)
 		case TOKEN_UNPIVOT:
 			p.nextToken()
-			result := p.parseUnpivot(source)
-			if result != nil {
-				source = result
-			}
+			source = p.parseUnpivot(source)
 		default:
 			return source
 		}
@@ -289,11 +283,9 @@ func (p *Parser) parseUnpivot(source TableRef) TableRef {
 			}
 		}
 		p.expect(TOKEN_RPAREN)
-	} else {
-		if p.check(TOKEN_IDENT) {
-			unpivot.ValueColumns = []string{p.token.Literal}
-			p.nextToken()
-		}
+	} else if p.check(TOKEN_IDENT) {
+		unpivot.ValueColumns = []string{p.token.Literal}
+		p.nextToken()
 	}
 
 	// FOR name_column
@@ -322,11 +314,9 @@ func (p *Parser) parseUnpivot(source TableRef) TableRef {
 				}
 			}
 			p.expect(TOKEN_RPAREN)
-		} else {
-			if p.check(TOKEN_IDENT) {
-				group.Columns = []string{p.token.Literal}
-				p.nextToken()
-			}
+		} else if p.check(TOKEN_IDENT) {
+			group.Columns = []string{p.token.Literal}
+			p.nextToken()
 		}
 		if p.match(TOKEN_AS) {
 			if p.check(TOKEN_STRING) {
@@ -387,22 +377,24 @@ func (p *Parser) parseJoin() *Join {
 		gotJoinType = true
 	case TOKEN_LEFT:
 		p.nextToken()
-		if p.match(TOKEN_SEMI) {
+		switch {
+		case p.match(TOKEN_SEMI):
 			join.Type = JoinLeftSemi
-		} else if p.match(TOKEN_ANTI) {
+		case p.match(TOKEN_ANTI):
 			join.Type = JoinLeftAnti
-		} else {
+		default:
 			join.Type = JoinLeft
 			p.match(TOKEN_OUTER)
 		}
 		gotJoinType = true
 	case TOKEN_RIGHT:
 		p.nextToken()
-		if p.match(TOKEN_SEMI) {
+		switch {
+		case p.match(TOKEN_SEMI):
 			join.Type = JoinRightSemi
-		} else if p.match(TOKEN_ANTI) {
+		case p.match(TOKEN_ANTI):
 			join.Type = JoinRightAnti
-		} else {
+		default:
 			join.Type = JoinRight
 			p.match(TOKEN_OUTER)
 		}
@@ -488,10 +480,7 @@ func (p *Parser) parseUsingColumns() []string {
 // The opening paren has already been consumed.
 func (p *Parser) parseColumnAliasList() []string {
 	var aliases []string
-	for {
-		if !p.check(TOKEN_IDENT) {
-			break
-		}
+	for p.check(TOKEN_IDENT) {
 		aliases = append(aliases, p.token.Literal)
 		p.nextToken()
 		if !p.match(TOKEN_COMMA) {

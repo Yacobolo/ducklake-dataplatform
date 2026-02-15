@@ -391,7 +391,6 @@ func (p *Parser) parseTypeName() string {
 	if p.match(TOKEN_LPAREN) {
 		typeName += "("
 		depth := 1
-		first := true
 		for depth > 0 && p.token.Type != TOKEN_EOF {
 			if p.token.Type == TOKEN_LPAREN {
 				depth++
@@ -402,10 +401,6 @@ func (p *Parser) parseTypeName() string {
 					break
 				}
 			}
-			if !first {
-				// Preserve spacing
-			}
-			first = false
 			typeName += p.token.Literal
 			p.nextToken()
 		}

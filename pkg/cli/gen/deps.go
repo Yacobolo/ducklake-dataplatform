@@ -5,4 +5,4 @@
 // remain in go.mod/go.sum so downstream CI jobs can build after code generation.
 package gen
 
-import _ "golang.org/x/term"
+import _ "golang.org/x/term" // required by generated *.gen.go files

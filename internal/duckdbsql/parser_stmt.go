@@ -332,7 +332,8 @@ func (p *Parser) parseInsertStatement() *InsertStmt {
 	}
 
 	// VALUES or SELECT
-	if p.check(TOKEN_VALUES) {
+	switch {
+	case p.check(TOKEN_VALUES):
 		p.nextToken()
 		for {
 			p.expect(TOKEN_LPAREN)
@@ -343,9 +344,9 @@ func (p *Parser) parseInsertStatement() *InsertStmt {
 				break
 			}
 		}
-	} else if p.check(TOKEN_SELECT) || p.check(TOKEN_WITH) {
+	case p.check(TOKEN_SELECT) || p.check(TOKEN_WITH):
 		stmt.Query = p.parseSelectStatement()
-	} else if p.match(TOKEN_DEFAULT) {
+	case p.match(TOKEN_DEFAULT):
 		p.expect(TOKEN_VALUES)
 		// INSERT INTO t DEFAULT VALUES - no explicit values
 	}

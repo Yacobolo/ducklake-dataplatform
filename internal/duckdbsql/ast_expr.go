@@ -24,6 +24,7 @@ func (*Literal) exprNode() {}
 // LiteralType represents the type of a literal.
 type LiteralType int
 
+// LiteralNumber and friends classify the type of a literal value.
 const (
 	LiteralNumber LiteralType = iota
 	LiteralString
@@ -91,6 +92,7 @@ type FrameSpec struct {
 // FrameType represents the type of window frame.
 type FrameType string
 
+// FrameRows and friends specify the window frame unit.
 const (
 	FrameRows   FrameType = "ROWS"
 	FrameRange  FrameType = "RANGE"
@@ -106,6 +108,7 @@ type FrameBound struct {
 // FrameBoundType represents the type of frame bound.
 type FrameBoundType string
 
+// FrameUnboundedPreceding and friends specify window frame bound positions.
 const (
 	FrameUnboundedPreceding FrameBoundType = "UNBOUNDED PRECEDING"
 	FrameUnboundedFollowing FrameBoundType = "UNBOUNDED FOLLOWING"
