@@ -55,6 +55,8 @@ func TestGrantService_Grant_AdminAllowed(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "SELECT", grant.Privilege)
 	assert.NotEmpty(t, grant.ID)
+	require.NotNil(t, grant.GrantedBy, "granted_by should be set")
+	assert.Equal(t, "admin-user", *grant.GrantedBy, "granted_by should be the caller's name")
 }
 
 func TestGrantService_Revoke_AdminRequired(t *testing.T) {
