@@ -288,6 +288,40 @@ func TestExtractRows_NonMapItems(t *testing.T) {
 	assert.Equal(t, []string{"3"}, rows[1])
 }
 
+func TestPrintTable_LongValues_Truncated(t *testing.T) {
+	var buf bytes.Buffer
+	columns := []string{"id", "description"}
+	longVal := strings.Repeat("x", 100)
+	rows := [][]string{
+		{"1", longVal},
+	}
+
+	PrintTable(&buf, columns, rows)
+	output := buf.String()
+
+	// The long value should be truncated (max 50 chars).
+	assert.NotContains(t, output, longVal, "long values should be truncated")
+	assert.Contains(t, output, "...", "truncated values should end with ...")
+}
+
+func TestPrintTable_NarrowColumns_NoPanic(t *testing.T) {
+	var buf bytes.Buffer
+	// Create many columns to force very narrow widths.
+	columns := make([]string, 20)
+	for i := range columns {
+		columns[i] = "c"
+	}
+	rows := [][]string{make([]string, 20)}
+	for i := range rows[0] {
+		rows[0][i] = "abcdef"
+	}
+
+	// Should not panic even with many columns and narrow widths.
+	assert.NotPanics(t, func() {
+		PrintTable(&buf, columns, rows)
+	})
+}
+
 func TestExtractRows_MissingColumns(t *testing.T) {
 	data := map[string]interface{}{
 		"data": []interface{}{
