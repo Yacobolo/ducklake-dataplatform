@@ -39,7 +39,6 @@ command_overrides:
   listCatalogs:
     verb: list-registrations
     command_path: []
-    table_columns: []   # non-standard pagination (uses "catalogs" not "data")
 
   getCatalogRegistration:
     verb: get-registration
@@ -141,20 +140,17 @@ command_overrides:
     command_path: [column-masks]
     confirm: false
 
-  # === Ingestion: group override + custom verbs ===
+  # === Ingestion: custom verbs ===
   createUploadUrl:
-    group: ingestion
     verb: upload-url
     command_path: []
 
   commitTableIngestion:
-    group: ingestion
     verb: commit
     command_path: []
     flatten_fields: [options]
 
   loadTableExternalFiles:
-    group: ingestion
     verb: load
     command_path: []
     flatten_fields: [options]
@@ -301,9 +297,6 @@ command_overrides:
   listPipelines:
     table_columns: [id, name, schedule_cron, is_paused, created_by, created_at]
 
-  listPipelineJobs:
-    table_columns: []  # bare array response, not standard pagination
-
   triggerPipelineRun:
     verb: trigger
     command_path: [runs]
@@ -318,7 +311,3 @@ command_overrides:
   listPipelineJobRuns:
     verb: list-job-runs
     command_path: [runs]
-    table_columns: []  # bare array response, not standard pagination
-
-skip_operations:
-  - createRowFilterTopLevel

@@ -1465,21 +1465,6 @@ func TestAPI_RowFilterCRUD(t *testing.T) {
 		assert.Equal(t, `"Pclass" = 1`, *rf.FilterSql)
 	})
 
-	t.Run("create row filter top level", func(t *testing.T) {
-		body := fmt.Sprintf(`{"table_id":"%s","filter_sql":"\"Survived\" = 1"}`, tableID)
-		resp := doRequest(t, http.MethodPost, srv.URL+"/row-filters", body)
-		require.Equal(t, http.StatusCreated, resp.StatusCode)
-		rf := decodeJSON[RowFilter](t, resp)
-		require.NotNil(t, rf.Id)
-	})
-
-	t.Run("create row filter top level missing table_id", func(t *testing.T) {
-		body := `{"filter_sql":"\"Survived\" = 1"}`
-		resp := doRequest(t, http.MethodPost, srv.URL+"/row-filters", body)
-		defer resp.Body.Close() //nolint:errcheck
-		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
-	})
-
 	t.Run("create row filter invalid SQL", func(t *testing.T) {
 		body := `{"filter_sql":"NOT VALID ((("}`
 		resp := doRequest(t, http.MethodPost, srv.URL+"/tables/"+tableID+"/row-filters", body)
@@ -1492,7 +1477,7 @@ func TestAPI_RowFilterCRUD(t *testing.T) {
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 		list := decodeJSON[PaginatedRowFilters](t, resp)
 		require.NotNil(t, list.Data)
-		assert.GreaterOrEqual(t, len(*list.Data), 2)
+		assert.GreaterOrEqual(t, len(*list.Data), 1)
 	})
 
 	t.Run("bind and unbind row filter", func(t *testing.T) {

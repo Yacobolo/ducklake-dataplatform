@@ -455,35 +455,6 @@ func (h *APIHandler) UnbindRowFilter(ctx context.Context, req UnbindRowFilterReq
 	return UnbindRowFilter204Response{}, nil
 }
 
-// CreateRowFilterTopLevel implements the endpoint for creating a row filter without a table path parameter.
-func (h *APIHandler) CreateRowFilterTopLevel(ctx context.Context, req CreateRowFilterTopLevelRequestObject) (CreateRowFilterTopLevelResponseObject, error) {
-	if req.Body.TableId == nil {
-		return CreateRowFilterTopLevel400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: "table_id is required"}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-	}
-	domReq := domain.CreateRowFilterRequest{
-		TableID:   *req.Body.TableId,
-		FilterSQL: req.Body.FilterSql,
-	}
-	if req.Body.Description != nil {
-		domReq.Description = *req.Body.Description
-	}
-	result, err := h.rowFilters.Create(ctx, domReq)
-	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CreateRowFilterTopLevel403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ValidationError)):
-			return CreateRowFilterTopLevel400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
-		}
-	}
-	return CreateRowFilterTopLevel201JSONResponse{
-		Body:    rowFilterToAPI(*result),
-		Headers: CreateRowFilterTopLevel201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
-	}, nil
-}
-
 // === Column Masks ===
 
 // ListColumnMasks implements the endpoint for listing column masks for a table.

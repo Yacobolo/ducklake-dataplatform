@@ -881,7 +881,7 @@ CatalogRegistrationList:
   description: Paginated list of catalog registrations.
   type: object
   properties:
-    catalogs:
+    data:
       type: array
       items:
         $ref: '#/CatalogRegistration'

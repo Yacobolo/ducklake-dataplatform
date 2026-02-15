@@ -347,18 +347,36 @@ TriggerPipelineRunRequest:
         env: production
 
 PipelineJobList:
-  description: A list of pipeline jobs.
-  type: array
-  maxItems: 1000
-  items:
-    $ref: '#/PipelineJob'
+  description: A paginated list of pipeline jobs.
+  type: object
+  properties:
+    data:
+      type: array
+      maxItems: 1000
+      items:
+        $ref: '#/PipelineJob'
+      example: []
+    next_page_token:
+      type: string
+      maxLength: 4096
+      pattern: '^\S+$'
+      example: eyJpZCI6MTB9
 
 PipelineJobRunList:
-  description: A list of pipeline job runs.
-  type: array
-  maxItems: 1000
-  items:
-    $ref: '#/PipelineJobRun'
+  description: A paginated list of pipeline job runs.
+  type: object
+  properties:
+    data:
+      type: array
+      maxItems: 1000
+      items:
+        $ref: '#/PipelineJobRun'
+      example: []
+    next_page_token:
+      type: string
+      maxLength: 4096
+      pattern: '^\S+$'
+      example: eyJpZCI6MTB9
 
 PaginatedPipelines:
   description: A paginated list of pipelines.

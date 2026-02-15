@@ -43,12 +43,6 @@ type listResponse struct {
 	NextPageToken string          `json:"next_page_token"`
 }
 
-// catalogListResponse is the JSON envelope for the catalogs endpoint.
-type catalogListResponse struct {
-	Catalogs   json.RawMessage `json:"catalogs"`
-	TotalCount int             `json:"total_count"`
-}
-
 // fetchAllPages fetches all pages from a paginated list endpoint.
 // The dataKey param selects between the standard "data" key and alternate keys.
 func (c *APIStateClient) fetchAllPages(_ context.Context, path string) ([]json.RawMessage, error) {
@@ -101,34 +95,6 @@ func (c *APIStateClient) fetchAllPages(_ context.Context, path string) ([]json.R
 	}
 
 	return all, nil
-}
-
-// fetchAllCatalogs fetches all catalogs using the catalogs-specific response shape.
-func (c *APIStateClient) fetchAllCatalogs(_ context.Context) (json.RawMessage, error) {
-	resp, err := c.client.Do(http.MethodGet, "/catalogs", nil, nil)
-	if err != nil {
-		// Connection error (e.g., server panic) — treat as unavailable.
-		return nil, nil //nolint:nilerr // intentional: unavailable endpoint returns empty
-	}
-
-	body, err := gen.ReadBody(resp)
-	if err != nil {
-		return nil, fmt.Errorf("read GET /catalogs: %w", err)
-	}
-
-	if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusBadRequest || resp.StatusCode >= 500 {
-		return nil, nil
-	}
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("GET /catalogs: HTTP %d: %s", resp.StatusCode, string(body))
-	}
-
-	var cr catalogListResponse
-	if err := json.Unmarshal(body, &cr); err != nil {
-		return nil, fmt.Errorf("parse GET /catalogs: %w", err)
-	}
-
-	return cr.Catalogs, nil
 }
 
 // mergePages concatenates multiple JSON arrays into a single slice.
@@ -332,16 +298,13 @@ type apiCatalog struct {
 }
 
 func (c *APIStateClient) readCatalogs(ctx context.Context, state *declarative.DesiredState) error {
-	raw, err := c.fetchAllCatalogs(ctx)
+	pages, err := c.fetchAllPages(ctx, "/catalogs")
 	if err != nil {
 		return err
 	}
-	if raw == nil || string(raw) == "null" {
-		return nil
-	}
 
 	var items []apiCatalog
-	if err := json.Unmarshal(raw, &items); err != nil {
+	if err := mergePages(pages, &items); err != nil {
 		return fmt.Errorf("parse catalogs: %w", err)
 	}
 
