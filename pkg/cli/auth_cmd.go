@@ -7,6 +7,8 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/spf13/cobra"
+
+	"duck-demo/pkg/cli/gen"
 )
 
 func newAuthCmd() *cobra.Command {
@@ -36,7 +38,7 @@ func newAuthTokenCmd() *cobra.Command {
 
   # Generate an admin token with custom expiry
   duck auth token --principal admin_user --admin --secret mysecret --expires 48h`,
-		RunE: func(_ *cobra.Command, _ []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			now := time.Now()
 			claims := jwt.MapClaims{
 				"sub": principal,
@@ -73,6 +75,13 @@ func newAuthTokenCmd() *cobra.Command {
 				return fmt.Errorf("save config: %w", err)
 			}
 
+			if getOutputFormat(cmd) == "json" {
+				return gen.PrintJSON(os.Stdout, map[string]string{
+					"token":     signed,
+					"principal": principal,
+					"profile":   profileName,
+				})
+			}
 			_, _ = fmt.Fprintln(os.Stdout, signed)
 			return nil
 		},

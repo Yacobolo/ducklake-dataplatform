@@ -18,7 +18,19 @@ var (
 func Execute() int {
 	rootCmd := newRootCmd()
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		output, _ := rootCmd.PersistentFlags().GetString("output")
+		if output == "json" {
+			errObj := map[string]interface{}{
+				"error": err.Error(),
+			}
+			if apiErr, ok := err.(*gen.APIError); ok {
+				errObj["http_status"] = apiErr.HTTPStatus
+				errObj["code"] = apiErr.Code
+			}
+			_ = gen.PrintJSON(os.Stdout, errObj)
+		} else {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		}
 		return 1
 	}
 	return 0
