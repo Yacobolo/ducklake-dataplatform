@@ -32,6 +32,12 @@ tasks:
     cmds:
       - sqlc generate
 
+  genduckdb:
+    desc: Regenerate DuckDB catalog metadata (keywords, types, functions)
+    dir: scripts/genduckdb
+    cmds:
+      - go run . -gen=all -outdir=../../internal/duckdbsql/catalog/
+
   bundle-api:
     desc: Bundle split OpenAPI files into single resolved spec
     cmds:
@@ -67,7 +73,7 @@ tasks:
 
   generate:
     desc: Run all code generation
-    deps: [generate-api, sqlc, generate-cli]
+    deps: [generate-api, sqlc, generate-cli, genduckdb]
 
   build:
     desc: Build all packages
