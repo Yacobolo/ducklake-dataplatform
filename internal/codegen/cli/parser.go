@@ -554,6 +554,12 @@ func paramToFlag(p *openapi3.Parameter, aliases map[string]FlagAliasConfig) Flag
 		fm.CobraType = "String"
 	}
 	fm.Usage = p.Description
+	if fm.Usage == "" {
+		fm.Usage = inferUsageFromName(p.Name)
+	}
+	if p.Schema != nil && p.Schema.Value != nil {
+		fm.Usage = appendEnumHint(fm.Usage, p.Schema.Value.Enum)
+	}
 	if alias, ok := aliases[p.Name]; ok {
 		fm.Short = alias.Short
 	}
@@ -584,6 +590,11 @@ func fieldToFlag(name string, schema *openapi3.Schema, required bool, aliases ma
 		fm.Usage = schema.Description
 	}
 
+	if fm.Usage == "" {
+		fm.Usage = inferUsageFromName(name)
+	}
+	fm.Usage = appendEnumHint(fm.Usage, schema.Enum)
+
 	if schema.Default != nil {
 		fm.Default = fmt.Sprintf("%v", schema.Default)
 	}
@@ -593,6 +604,30 @@ func fieldToFlag(name string, schema *openapi3.Schema, required bool, aliases ma
 	}
 
 	return fm
+}
+
+// inferUsageFromName creates a human-readable usage string from a field name.
+// For example, "member_type" becomes "Member type".
+func inferUsageFromName(name string) string {
+	words := strings.ReplaceAll(name, "_", " ")
+	words = strings.ReplaceAll(words, "-", " ")
+	if len(words) > 0 {
+		return strings.ToUpper(words[:1]) + words[1:]
+	}
+	return name
+}
+
+// appendEnumHint appends a list of valid values to the usage string if enums are defined.
+func appendEnumHint(usage string, enums []interface{}) string {
+	if len(enums) == 0 {
+		return usage
+	}
+	vals := make([]string, len(enums))
+	for i, e := range enums {
+		vals[i] = fmt.Sprintf("%v", e)
+	}
+	hint := fmt.Sprintf(" (one of: %s)", strings.Join(vals, ", "))
+	return usage + hint
 }
 
 func schemaType(s *openapi3.Schema) string {

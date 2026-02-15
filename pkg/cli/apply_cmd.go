@@ -58,6 +58,9 @@ func newApplyCmd(client *gen.Client) *cobra.Command {
 
 			// 6. Confirm unless auto-approved.
 			if !autoApprove {
+				if !gen.IsStdinTTY() {
+					return fmt.Errorf("confirmation required but stdin is not a terminal; use --auto-approve")
+				}
 				_, _ = fmt.Fprint(os.Stdout, "\nApply these changes? [y/N] ")
 				reader := bufio.NewReader(os.Stdin)
 				answer, err := reader.ReadString('\n')

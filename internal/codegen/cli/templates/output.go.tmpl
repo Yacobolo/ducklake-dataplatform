@@ -124,8 +124,18 @@ func PrintDetail(w io.Writer, fields map[string]interface{}) {
 	}
 }
 
+// IsStdinTTY returns true if stdin is a terminal.
+func IsStdinTTY() bool {
+	return term.IsTerminal(int(os.Stdin.Fd()))
+}
+
 // ConfirmPrompt asks the user for confirmation.
+// In non-interactive mode (stdin is not a terminal), it prints an error and returns false.
 func ConfirmPrompt(message string) bool {
+	if !IsStdinTTY() {
+		fmt.Fprintf(os.Stderr, "Error: confirmation required but stdin is not a terminal. Use --yes to skip.\n")
+		return false
+	}
 	fmt.Fprintf(os.Stderr, "%s [y/N]: ", message)
 	var response string
 	fmt.Scanln(&response)
