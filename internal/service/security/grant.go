@@ -25,12 +25,14 @@ func (s *GrantService) Grant(ctx context.Context, req domain.CreateGrantRequest)
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
+	caller := callerName(ctx)
 	g := &domain.PrivilegeGrant{
 		PrincipalID:   req.PrincipalID,
 		PrincipalType: req.PrincipalType,
 		SecurableType: req.SecurableType,
 		SecurableID:   req.SecurableID,
 		Privilege:     req.Privilege,
+		GrantedBy:     &caller,
 	}
 	result, err := s.repo.Grant(ctx, g)
 	if err != nil {

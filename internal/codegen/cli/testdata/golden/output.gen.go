@@ -33,13 +33,17 @@ func IsTTY() bool {
 	return term.IsTerminal(int(os.Stdout.Fd()))
 }
 
+// maxColWidth is the maximum column width for table output.
+// Values exceeding this width are truncated with "..." suffix.
+const maxColWidth = 50
+
 // PrintTable renders tabular data to stdout using a simple columnar layout.
 func PrintTable(w io.Writer, columns []string, rows [][]string) {
 	if len(columns) == 0 {
 		return
 	}
 
-	// Compute column widths
+	// Compute column widths from content
 	widths := make([]int, len(columns))
 	for i, col := range columns {
 		widths[i] = len(col)
@@ -52,7 +56,14 @@ func PrintTable(w io.Writer, columns []string, rows [][]string) {
 		}
 	}
 
-	// Truncate if TTY
+	// Apply absolute max column width regardless of TTY
+	for i := range widths {
+		if widths[i] > maxColWidth {
+			widths[i] = maxColWidth
+		}
+	}
+
+	// Further constrain widths to fit terminal when running interactively
 	if IsTTY() {
 		maxWidth := GetTerminalWidth()
 		colWidth := maxWidth / maxInt(len(columns), 1)
@@ -64,10 +75,16 @@ func PrintTable(w io.Writer, columns []string, rows [][]string) {
 				widths[i] = colWidth
 			}
 		}
-		for i := range rows {
-			for j := range rows[i] {
-				if j < len(widths) && len(rows[i][j]) > widths[j] {
+	}
+
+	// Truncate cell values that exceed their column width
+	for i := range rows {
+		for j := range rows[i] {
+			if j < len(widths) && len(rows[i][j]) > widths[j] {
+				if widths[j] > 3 {
 					rows[i][j] = rows[i][j][:widths[j]-3] + "..."
+				} else {
+					rows[i][j] = rows[i][j][:widths[j]]
 				}
 			}
 		}

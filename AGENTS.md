@@ -18,6 +18,7 @@ task sqlc                 # regenerate DB query code from SQL
 task migrate-up           # run all pending migrations
 task new-migration -- X   # create a new migration named X
 task integration-test     # integration tests (require S3 creds + built extension)
+task check                # run lint + test, print CI-style pass/fail summary — run before creating PRs
 ```
 
 Run server: `go run ./cmd/server`

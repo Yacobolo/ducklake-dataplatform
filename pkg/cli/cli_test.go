@@ -114,7 +114,7 @@ func TestCLI_ErrorPropagation(t *testing.T) {
 			defer srv.Close()
 
 			rootCmd := newTestRootCmd(t, srv)
-			rootCmd.SetArgs([]string{"--host", srv.URL, "catalog", "schemas", "list", "--catalog-name", "test"})
+			rootCmd.SetArgs([]string{"--host", srv.URL, "catalog", "schemas", "list", "test"})
 
 			err := rootCmd.Execute()
 			require.Error(t, err)
@@ -129,14 +129,14 @@ func TestCLI_ConnectionRefused(t *testing.T) {
 	t.Setenv("HOME", dir)
 
 	rootCmd := newRootCmd()
-	rootCmd.SetArgs([]string{"--host", "http://127.0.0.1:1", "catalog", "schemas", "list", "--catalog-name", "test"})
+	rootCmd.SetArgs([]string{"--host", "http://127.0.0.1:1", "catalog", "schemas", "list", "test"})
 
 	err := rootCmd.Execute()
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "execute request")
 }
 
-func TestCLI_MissingRequiredFlag(t *testing.T) {
+func TestCLI_MissingRequiredArg(t *testing.T) {
 	rec := &requestRecorder{}
 	srv := httptest.NewServer(jsonHandler(rec, 200, `{}`))
 	defer srv.Close()
@@ -146,7 +146,7 @@ func TestCLI_MissingRequiredFlag(t *testing.T) {
 
 	err := rootCmd.Execute()
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "required")
+	assert.Contains(t, err.Error(), "accepts 1 arg(s)")
 }
 
 func TestCLI_MissingArgs(t *testing.T) {
@@ -170,7 +170,7 @@ func TestCLI_PathParamSubstitution(t *testing.T) {
 	defer srv.Close()
 
 	rootCmd := newTestRootCmd(t, srv)
-	rootCmd.SetArgs([]string{"--host", srv.URL, "catalog", "schemas", "list", "--catalog-name", "production"})
+	rootCmd.SetArgs([]string{"--host", srv.URL, "catalog", "schemas", "list", "production"})
 
 	err := rootCmd.Execute()
 	require.NoError(t, err)
@@ -198,18 +198,15 @@ func TestCLI_PathParamSubstitution_MultiLevel(t *testing.T) {
 }
 
 func TestCLI_PathParamSubstitution_NoUnresolvedPlaceholders(t *testing.T) {
-	// When --catalog-name IS provided, verify no unresolved placeholders remain.
-	// NOTE: The underlying bug (issue #100) is that when --catalog-name is NOT
-	// provided but somehow bypasses MarkFlagRequired, the literal {catalogName}
-	// ends up in the URL. We can't directly test that path because
-	// MarkFlagRequired blocks execution first. This test documents that
-	// substitution works correctly when the flag IS provided.
+	// When catalogName IS provided as a positional arg, verify no unresolved
+	// placeholders remain. This test documents that substitution works
+	// correctly when the argument is provided.
 	rec := &requestRecorder{}
 	srv := httptest.NewServer(jsonHandler(rec, 200, `{"data":[]}`))
 	defer srv.Close()
 
 	rootCmd := newTestRootCmd(t, srv)
-	rootCmd.SetArgs([]string{"--host", srv.URL, "catalog", "schemas", "list", "--catalog-name", "mycat"})
+	rootCmd.SetArgs([]string{"--host", srv.URL, "catalog", "schemas", "list", "mycat"})
 
 	err := rootCmd.Execute()
 	require.NoError(t, err)
@@ -351,8 +348,7 @@ func TestCLI_ListCommand(t *testing.T) {
 	rootCmd := newTestRootCmd(t, srv)
 	rootCmd.SetArgs([]string{
 		"--host", srv.URL,
-		"catalog", "schemas", "list",
-		"--catalog-name", "test",
+		"catalog", "schemas", "list", "test",
 	})
 
 	err := rootCmd.Execute()
@@ -488,8 +484,7 @@ func TestCLI_MaxResults(t *testing.T) {
 	rootCmd := newTestRootCmd(t, srv)
 	rootCmd.SetArgs([]string{
 		"--host", srv.URL,
-		"catalog", "schemas", "list",
-		"--catalog-name", "test",
+		"catalog", "schemas", "list", "test",
 		"--max-results", "50",
 	})
 
@@ -508,8 +503,7 @@ func TestCLI_PageToken(t *testing.T) {
 	rootCmd := newTestRootCmd(t, srv)
 	rootCmd.SetArgs([]string{
 		"--host", srv.URL,
-		"catalog", "schemas", "list",
-		"--catalog-name", "test",
+		"catalog", "schemas", "list", "test",
 		"--page-token", "abc",
 	})
 
@@ -589,8 +583,7 @@ func TestCLI_BearerTokenAuth(t *testing.T) {
 	rootCmd.SetArgs([]string{
 		"--host", srv.URL,
 		"--token", "mytoken",
-		"catalog", "schemas", "list",
-		"--catalog-name", "test",
+		"catalog", "schemas", "list", "test",
 	})
 
 	err := rootCmd.Execute()
@@ -609,8 +602,7 @@ func TestCLI_APIKeyAuth(t *testing.T) {
 	rootCmd.SetArgs([]string{
 		"--host", srv.URL,
 		"--api-key", "mykey",
-		"catalog", "schemas", "list",
-		"--catalog-name", "test",
+		"catalog", "schemas", "list", "test",
 	})
 
 	err := rootCmd.Execute()
@@ -631,8 +623,7 @@ func TestCLI_InvalidOutputFormat(t *testing.T) {
 	rootCmd.SetArgs([]string{
 		"--host", srv.URL,
 		"-o", "xml",
-		"catalog", "schemas", "list",
-		"--catalog-name", "test",
+		"catalog", "schemas", "list", "test",
 	})
 
 	err := rootCmd.Execute()
@@ -664,8 +655,7 @@ func TestCLI_ErrorPropagation_ContainsStatusCode(t *testing.T) {
 			rootCmd := newTestRootCmd(t, srv)
 			rootCmd.SetArgs([]string{
 				"--host", srv.URL,
-				"catalog", "schemas", "list",
-				"--catalog-name", "test",
+				"catalog", "schemas", "list", "test",
 			})
 
 			err := rootCmd.Execute()
@@ -718,8 +708,7 @@ func TestCLI_TokenPrecedenceOverAPIKey(t *testing.T) {
 		"--host", srv.URL,
 		"--token", "mytoken",
 		"--api-key", "mykey",
-		"catalog", "schemas", "list",
-		"--catalog-name", "test",
+		"catalog", "schemas", "list", "test",
 	})
 
 	err := rootCmd.Execute()
@@ -808,8 +797,7 @@ func TestCLI_ListWithMultipleQueryParams(t *testing.T) {
 	rootCmd := newTestRootCmd(t, srv)
 	rootCmd.SetArgs([]string{
 		"--host", srv.URL,
-		"catalog", "schemas", "list",
-		"--catalog-name", "test",
+		"catalog", "schemas", "list", "test",
 		"--max-results", "25",
 		"--page-token", "nextpage",
 	})
@@ -884,8 +872,7 @@ func TestCLI_HostTrailingSlash(t *testing.T) {
 	rootCmd := newTestRootCmd(t, srv)
 	rootCmd.SetArgs([]string{
 		"--host", srv.URL + "/",
-		"catalog", "schemas", "list",
-		"--catalog-name", "test",
+		"catalog", "schemas", "list", "test",
 	})
 
 	err := rootCmd.Execute()

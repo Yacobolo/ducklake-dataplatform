@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -96,6 +97,23 @@ func TestSearchService_Search(t *testing.T) {
 		assert.Len(t, results, 1)
 		assert.Equal(t, "raw", results[0].Name)
 	})
+}
+
+func TestSearchService_Search_NoCatalogAttached(t *testing.T) {
+	// Simulate the "no such table" error that occurs when no DuckLake catalog is attached.
+	repo := &mockSearchRepo{
+		SearchFn: func(_ context.Context, _ string, _ *string, _ int, _ int) ([]domain.SearchResult, int64, error) {
+			return nil, 0, fmt.Errorf("no such table: ducklake_column")
+		},
+	}
+	svc := NewSearchService(repo, nil)
+
+	_, _, err := svc.Search(context.Background(), "test", nil, nil, domain.PageRequest{})
+
+	require.Error(t, err)
+	var validationErr *domain.ValidationError
+	require.ErrorAs(t, err, &validationErr, "should be a ValidationError when no catalog is attached")
+	assert.Contains(t, err.Error(), "no catalog")
 }
 
 // mockSearchRepoFactory implements SearchRepoFactory for testing.

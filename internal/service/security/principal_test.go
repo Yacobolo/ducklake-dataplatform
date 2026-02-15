@@ -196,6 +196,29 @@ func TestPrincipalService_ResolveOrProvision_Bootstrap(t *testing.T) {
 	assert.True(t, p.IsAdmin)
 }
 
+func TestPrincipalService_ResolveOrProvision_EmptyIssuer(t *testing.T) {
+	svc, repo := setupPrincipalService(t)
+
+	// Pre-seed a principal and bind with empty issuer (HS256 dev mode).
+	preSeeded, err := repo.Create(ctx, &domain.Principal{
+		Name: "dev-user",
+		Type: "user",
+	})
+	require.NoError(t, err)
+
+	err = repo.BindExternalID(ctx, preSeeded.ID, "hs256-sub", "")
+	require.NoError(t, err)
+
+	// ResolveOrProvision with empty issuer should find existing principal,
+	// not create a new one (this is the HS256 dev mode bug fix for #113).
+	p, err := svc.ResolveOrProvision(ctx, domain.ResolveOrProvisionRequest{
+		Issuer: "", ExternalID: "hs256-sub", DisplayName: "dev-user",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, preSeeded.ID, p.ID, "should match pre-seeded principal, not create a new one")
+	assert.Equal(t, "dev-user", p.Name)
+}
+
 func TestPrincipalService_GetByName(t *testing.T) {
 	svc, _ := setupPrincipalService(t)
 

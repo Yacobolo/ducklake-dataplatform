@@ -3,6 +3,7 @@ package catalog
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"duck-demo/internal/domain"
 )
@@ -36,7 +37,14 @@ func (s *SearchService) Search(ctx context.Context, query string, objectType *st
 	if err != nil {
 		return nil, 0, err
 	}
-	return repo.Search(ctx, query, objectType, page.Limit(), page.Offset())
+	results, total, err := repo.Search(ctx, query, objectType, page.Limit(), page.Offset())
+	if err != nil {
+		if strings.Contains(err.Error(), "no such table") {
+			return nil, 0, domain.ErrValidation("search unavailable: no catalog is currently attached")
+		}
+		return nil, 0, fmt.Errorf("search query: %w", err)
+	}
+	return results, total, nil
 }
 
 // resolveRepo returns the appropriate SearchRepository for the given catalog name.

@@ -69,6 +69,7 @@ command_overrides:
     positional_args: &name_positional [name]
 
   listSchemas:
+    positional_args: [catalogName]
     table_columns: [schema_id, name, catalog_name, owner, created_at]
 
   listTables:

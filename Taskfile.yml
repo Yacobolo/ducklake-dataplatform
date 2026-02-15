@@ -135,3 +135,26 @@ tasks:
   integration-test:
     desc: "Run integration tests (alias for test:integration)"
     deps: [test:integration]
+
+  check:
+    desc: Run all checks (lint + test) and print a CI-style summary
+    silent: true
+    cmds:
+      - |
+        failed=0
+        results=""
+        for step in lint:go lint:api test:unit test:integration; do
+          if task "$step" > /dev/null 2>&1; then
+            results="${results}  ${step} ... ok\n"
+          else
+            results="${results}  ${step} ... FAIL\n"
+            failed=1
+          fi
+        done
+        printf "\n=== Check Summary ===\n${results}\n"
+        if [ "$failed" -eq 1 ]; then
+          echo "Some checks failed. Run the individual task for details."
+          exit 1
+        else
+          echo "All checks passed."
+        fi

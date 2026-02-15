@@ -154,6 +154,28 @@ func TestPrincipalRepo_GetByName_NotFound(t *testing.T) {
 	assert.ErrorAs(t, err, &notFound)
 }
 
+func TestPrincipalRepo_GetByExternalID_EmptyIssuer(t *testing.T) {
+	repo := setupPrincipalRepo(t)
+	ctx := context.Background()
+
+	// Create a principal without external ID, then bind with empty issuer (HS256 dev mode).
+	p, err := repo.Create(ctx, &domain.Principal{
+		Name: "dev-user",
+		Type: "user",
+	})
+	require.NoError(t, err)
+
+	// Bind with empty issuer (simulates HS256 dev mode where JWT has no iss claim).
+	err = repo.BindExternalID(ctx, p.ID, "dev-sub", "")
+	require.NoError(t, err)
+
+	// Lookup with empty issuer should find the row.
+	found, err := repo.GetByExternalID(ctx, "", "dev-sub")
+	require.NoError(t, err)
+	assert.Equal(t, p.ID, found.ID)
+	assert.Equal(t, "dev-user", found.Name)
+}
+
 func TestPrincipalRepo_GetByExternalID_NotFound(t *testing.T) {
 	repo := setupPrincipalRepo(t)
 	ctx := context.Background()
