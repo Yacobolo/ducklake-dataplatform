@@ -313,3 +313,19 @@ func TestLoadDotEnv_EnvVarPrecedence(t *testing.T) {
 		t.Errorf("TEST_PRECEDENCE_KEY = %q, want %q (env precedence)", val, "from_env")
 	}
 }
+
+func TestLoadFromEnv_CORSWildcardRejectedInProduction(t *testing.T) {
+	t.Setenv("ENV", "production")
+	t.Setenv("JWT_SECRET", "a-real-secret-that-is-not-the-default")
+	t.Setenv("ENCRYPTION_KEY", "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789")
+	t.Setenv("CORS_ALLOWED_ORIGINS", "")
+
+	// In production, wildcard CORS should be rejected as a security risk.
+	// Wildcard CORS allows any website to make authenticated API requests.
+	cfg, err := LoadFromEnv()
+	if err != nil {
+		return // LoadFromEnv rejecting wildcard CORS in production is acceptable
+	}
+	assert.NotEqual(t, []string{"*"}, cfg.CORSAllowedOrigins,
+		"production should not default to wildcard CORS — this allows any website to make authenticated API requests")
+}

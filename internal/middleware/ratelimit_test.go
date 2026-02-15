@@ -128,3 +128,32 @@ func TestClientIP_ExtractsHost(t *testing.T) {
 		})
 	}
 }
+
+func TestRateLimiter_NotBypassableViaXFF(t *testing.T) {
+	handler := RateLimiter(RateLimitConfig{
+		RequestsPerSecond: 1,
+		Burst:             2,
+	})(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	// Exhaust burst from real IP 10.0.0.1.
+	for range 2 {
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req.RemoteAddr = "10.0.0.1:1234"
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		require.Equal(t, http.StatusOK, rec.Code)
+	}
+
+	// Attacker spoofs X-Forwarded-For to bypass rate limit.
+	// The rate limiter should still identify the client by RemoteAddr,
+	// not the spoofable X-Forwarded-For header.
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.RemoteAddr = "10.0.0.1:5678"
+	req.Header.Set("X-Forwarded-For", "fake-ip-to-bypass-ratelimit")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	assert.Equal(t, http.StatusTooManyRequests, rec.Code,
+		"attacker should NOT bypass rate limit by spoofing X-Forwarded-For")
+}

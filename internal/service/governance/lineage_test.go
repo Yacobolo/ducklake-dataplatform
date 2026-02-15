@@ -294,3 +294,33 @@ func TestLineageService_PurgeOlderThan(t *testing.T) {
 		assert.Equal(t, int64(0), deleted)
 	})
 }
+
+func TestLineageService_DeleteEdge_RequiresAdmin(t *testing.T) {
+	repo := &mockLineageRepo{
+		DeleteEdgeFn: func(_ context.Context, _ string) error {
+			return nil
+		},
+	}
+	svc := NewLineageService(repo)
+
+	// Non-admin should NOT be able to delete lineage edges.
+	err := svc.DeleteEdge(nonAdminCtx(), "42")
+	require.Error(t, err, "non-admin should not be able to delete lineage edges")
+	var accessDenied *domain.AccessDeniedError
+	assert.ErrorAs(t, err, &accessDenied)
+}
+
+func TestLineageService_PurgeOlderThan_RequiresAdmin(t *testing.T) {
+	repo := &mockLineageRepo{
+		PurgeOlderThanFn: func(_ context.Context, _ time.Time) (int64, error) {
+			return 0, nil
+		},
+	}
+	svc := NewLineageService(repo)
+
+	// Non-admin should NOT be able to purge lineage data.
+	_, err := svc.PurgeOlderThan(nonAdminCtx(), 90)
+	require.Error(t, err, "non-admin should not be able to purge lineage data")
+	var accessDenied *domain.AccessDeniedError
+	assert.ErrorAs(t, err, &accessDenied)
+}

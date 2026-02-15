@@ -158,3 +158,29 @@ func TestGroupService_ListMembers_NoAdminRequired(t *testing.T) {
 	assert.Equal(t, int64(0), total)
 	assert.Empty(t, members)
 }
+
+func TestGroupService_List_RequiresAdmin(t *testing.T) {
+	svc, _ := setupGroupService(t)
+
+	_, err := svc.Create(adminCtx(), domain.CreateGroupRequest{Name: "secret-group"})
+	require.NoError(t, err)
+
+	// Non-admin should NOT be able to list all groups.
+	_, _, err = svc.List(nonAdminCtx(), domain.PageRequest{})
+	require.Error(t, err, "non-admin should not be able to list groups")
+	var accessDenied *domain.AccessDeniedError
+	assert.ErrorAs(t, err, &accessDenied)
+}
+
+func TestGroupService_ListMembers_RequiresAdmin(t *testing.T) {
+	svc, _ := setupGroupService(t)
+
+	g, err := svc.Create(adminCtx(), domain.CreateGroupRequest{Name: "sensitive-team"})
+	require.NoError(t, err)
+
+	// Non-admin should NOT be able to list group members.
+	_, _, err = svc.ListMembers(nonAdminCtx(), g.ID, domain.PageRequest{})
+	require.Error(t, err, "non-admin should not be able to list group members")
+	var accessDenied *domain.AccessDeniedError
+	assert.ErrorAs(t, err, &accessDenied)
+}

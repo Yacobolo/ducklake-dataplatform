@@ -1557,3 +1557,107 @@ func TestAPI_RowFilter_NonAdminDenied(t *testing.T) {
 		require.Equal(t, http.StatusForbidden, resp.StatusCode)
 	})
 }
+
+// === Failing TDD tests for unimplemented behavior ===
+
+func TestAPI_DeleteNonExistentReturns404(t *testing.T) {
+	srv := setupSecurityTestServer(t, "admin-user", true)
+	defer srv.Close()
+
+	tests := []struct {
+		name string
+		path string
+	}{
+		{"delete nonexistent principal", "/principals/00000000-0000-0000-0000-000000000099"},
+		{"delete nonexistent group", "/groups/00000000-0000-0000-0000-000000000099"},
+		{"delete nonexistent grant", "/grants/00000000-0000-0000-0000-000000000099"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			resp := doRequest(t, http.MethodDelete, srv.URL+tc.path, "")
+			defer resp.Body.Close()
+			assert.Equal(t, http.StatusNotFound, resp.StatusCode,
+				"DELETE on non-existent resource should return 404, not 204")
+		})
+	}
+}
+
+func TestAPI_ErrorResponsesAreJSON(t *testing.T) {
+	// Use a non-admin server to trigger 403 errors
+	srv := setupSecurityTestServer(t, "non-admin-user", false)
+	defer srv.Close()
+
+	tests := []struct {
+		name   string
+		method string
+		path   string
+		body   string
+	}{
+		{"forbidden create principal", http.MethodPost, "/principals", `{"name":"test","type":"user"}`},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			resp := doRequest(t, tc.method, srv.URL+tc.path, tc.body)
+			defer resp.Body.Close()
+
+			contentType := resp.Header.Get("Content-Type")
+			assert.Contains(t, contentType, "application/json",
+				"error responses should be JSON, got Content-Type: %s", contentType)
+
+			var errBody map[string]interface{}
+			err := json.NewDecoder(resp.Body).Decode(&errBody)
+			assert.NoError(t, err, "error response body should be valid JSON")
+			if err == nil {
+				assert.NotEmpty(t, errBody["message"], "error response should have a message field")
+			}
+		})
+	}
+}
+
+func TestAPI_PaginationValidation(t *testing.T) {
+	srv := setupSecurityTestServer(t, "admin-user", true)
+	defer srv.Close()
+
+	tests := []struct {
+		name       string
+		path       string
+		wantStatus int
+	}{
+		{"max_results=0 should fail", "/principals?max_results=0", http.StatusBadRequest},
+		{"max_results=-1 should fail", "/principals?max_results=-1", http.StatusBadRequest},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			resp := doRequest(t, http.MethodGet, srv.URL+tc.path, "")
+			defer resp.Body.Close()
+			assert.Equal(t, tc.wantStatus, resp.StatusCode,
+				"invalid max_results should return 400, got %d", resp.StatusCode)
+		})
+	}
+}
+
+func TestAPI_EndpointsThatShouldExist(t *testing.T) {
+	srv := setupSecurityTestServer(t, "admin-user", true)
+	defer srv.Close()
+
+	// These endpoints are defined in the OpenAPI spec but return 405
+	// because they are not implemented.
+	tests := []struct {
+		name   string
+		method string
+		path   string
+	}{
+		{"get individual tag", http.MethodGet, "/tags/00000000-0000-0000-0000-000000000001"},
+		{"get individual row filter", http.MethodGet, "/row-filters/00000000-0000-0000-0000-000000000001"},
+		{"get individual column mask", http.MethodGet, "/column-masks/00000000-0000-0000-0000-000000000001"},
+		{"list all row filters", http.MethodGet, "/row-filters"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			resp := doRequest(t, tc.method, srv.URL+tc.path, "")
+			defer resp.Body.Close()
+			assert.NotEqual(t, http.StatusMethodNotAllowed, resp.StatusCode,
+				"endpoint %s %s should exist (not return 405)", tc.method, tc.path)
+		})
+	}
+}

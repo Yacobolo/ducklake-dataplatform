@@ -112,3 +112,36 @@ func TestGrantService_Grant_EmptyPrivilege(t *testing.T) {
 	var validationErr *domain.ValidationError
 	assert.ErrorAs(t, err, &validationErr)
 }
+
+func TestGrantService_ListForPrincipal_RequiresAdmin(t *testing.T) {
+	svc, principalSvc := setupGrantService(t)
+
+	p, err := principalSvc.Create(adminCtx(), domain.CreatePrincipalRequest{Name: "target", Type: "user"})
+	require.NoError(t, err)
+
+	// Create a grant for the target.
+	_, err = svc.Grant(adminCtx(), domain.CreateGrantRequest{
+		PrincipalID:   p.ID,
+		PrincipalType: "user",
+		Privilege:     "SELECT",
+		SecurableType: "table",
+		SecurableID:   "1",
+	})
+	require.NoError(t, err)
+
+	// Non-admin should NOT be able to list another user's grants.
+	_, _, err = svc.ListForPrincipal(nonAdminCtx(), p.ID, "user", domain.PageRequest{})
+	require.Error(t, err, "non-admin should not list other users' grants")
+	var accessDenied *domain.AccessDeniedError
+	assert.ErrorAs(t, err, &accessDenied)
+}
+
+func TestGrantService_ListForSecurable_RequiresAdmin(t *testing.T) {
+	svc, _ := setupGrantService(t)
+
+	// Non-admin should NOT be able to list all grants on a securable.
+	_, _, err := svc.ListForSecurable(nonAdminCtx(), "table", "1", domain.PageRequest{})
+	require.Error(t, err, "non-admin should not list grants for a securable")
+	var accessDenied *domain.AccessDeniedError
+	assert.ErrorAs(t, err, &accessDenied)
+}
