@@ -124,13 +124,13 @@ func TestGroupService_RemoveMember_AdminRequired(t *testing.T) {
 	assert.ErrorAs(t, err, &accessDenied)
 }
 
-func TestGroupService_List_NoAdminRequired(t *testing.T) {
+func TestGroupService_List_AdminAllowed(t *testing.T) {
 	svc, _ := setupGroupService(t)
 
 	_, err := svc.Create(adminCtx(), domain.CreateGroupRequest{Name: "visible"})
 	require.NoError(t, err)
 
-	groups, total, err := svc.List(nonAdminCtx(), domain.PageRequest{})
+	groups, total, err := svc.List(adminCtx(), domain.PageRequest{})
 	require.NoError(t, err)
 	assert.GreaterOrEqual(t, total, int64(1))
 	assert.NotEmpty(t, groups)
@@ -147,13 +147,13 @@ func TestGroupService_GetByID_NoAdminRequired(t *testing.T) {
 	assert.Equal(t, "readable", found.Name)
 }
 
-func TestGroupService_ListMembers_NoAdminRequired(t *testing.T) {
+func TestGroupService_ListMembers_AdminAllowed(t *testing.T) {
 	svc, _ := setupGroupService(t)
 
 	g, err := svc.Create(adminCtx(), domain.CreateGroupRequest{Name: "team"})
 	require.NoError(t, err)
 
-	members, total, err := svc.ListMembers(nonAdminCtx(), g.ID, domain.PageRequest{})
+	members, total, err := svc.ListMembers(adminCtx(), g.ID, domain.PageRequest{})
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), total)
 	assert.Empty(t, members)

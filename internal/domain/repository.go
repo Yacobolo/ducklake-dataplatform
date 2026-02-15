@@ -14,6 +14,7 @@ type PrincipalRepository interface {
 	List(ctx context.Context, page PageRequest) ([]Principal, int64, error)
 	Delete(ctx context.Context, id string) error
 	SetAdmin(ctx context.Context, id string, isAdmin bool) error
+	BindExternalID(ctx context.Context, id string, externalID string, externalIssuer string) error
 }
 
 // GroupRepository provides CRUD operations for groups and membership.

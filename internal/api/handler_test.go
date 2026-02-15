@@ -1434,11 +1434,11 @@ func TestAPI_ReadEndpoints_NonAdminAccess(t *testing.T) {
 		t.Errorf("list principals: got status %d, want 403", resp.StatusCode)
 	}
 
-	// Non-admin can list groups.
+	// Non-admin cannot list groups (requires admin).
 	resp2 := doRequest(t, http.MethodGet, srv.URL+"/groups", "")
 	defer resp2.Body.Close() //nolint:errcheck
-	if resp2.StatusCode != http.StatusOK {
-		t.Errorf("list groups: got status %d, want 200", resp2.StatusCode)
+	if resp2.StatusCode != http.StatusForbidden {
+		t.Errorf("list groups: got status %d, want 403", resp2.StatusCode)
 	}
 }
 
@@ -1575,7 +1575,7 @@ func TestAPI_DeleteNonExistentReturns404(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			resp := doRequest(t, http.MethodDelete, srv.URL+tc.path, "")
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			assert.Equal(t, http.StatusNotFound, resp.StatusCode,
 				"DELETE on non-existent resource should return 404, not 204")
 		})
@@ -1598,7 +1598,7 @@ func TestAPI_ErrorResponsesAreJSON(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			resp := doRequest(t, tc.method, srv.URL+tc.path, tc.body)
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 
 			contentType := resp.Header.Get("Content-Type")
 			assert.Contains(t, contentType, "application/json",
@@ -1606,10 +1606,8 @@ func TestAPI_ErrorResponsesAreJSON(t *testing.T) {
 
 			var errBody map[string]interface{}
 			err := json.NewDecoder(resp.Body).Decode(&errBody)
-			assert.NoError(t, err, "error response body should be valid JSON")
-			if err == nil {
-				assert.NotEmpty(t, errBody["message"], "error response should have a message field")
-			}
+			require.NoError(t, err, "error response body should be valid JSON")
+			assert.NotEmpty(t, errBody["message"], "error response should have a message field")
 		})
 	}
 }
@@ -1629,7 +1627,7 @@ func TestAPI_PaginationValidation(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			resp := doRequest(t, http.MethodGet, srv.URL+tc.path, "")
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			assert.Equal(t, tc.wantStatus, resp.StatusCode,
 				"invalid max_results should return 400, got %d", resp.StatusCode)
 		})
@@ -1655,7 +1653,7 @@ func TestAPI_EndpointsThatShouldExist(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			resp := doRequest(t, tc.method, srv.URL+tc.path, "")
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			assert.NotEqual(t, http.StatusMethodNotAllowed, resp.StatusCode,
 				"endpoint %s %s should exist (not return 405)", tc.method, tc.path)
 		})

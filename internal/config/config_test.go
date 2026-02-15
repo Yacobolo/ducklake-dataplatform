@@ -155,6 +155,7 @@ func TestLoadFromEnv_ProductionModeAcceptsProperConfig(t *testing.T) {
 	t.Setenv("ENV", "production")
 	t.Setenv("JWT_SECRET", "a-real-secret")
 	t.Setenv("ENCRYPTION_KEY", "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789")
+	t.Setenv("CORS_ALLOWED_ORIGINS", "https://app.example.com")
 
 	cfg, err := LoadFromEnv()
 	require.NoError(t, err)

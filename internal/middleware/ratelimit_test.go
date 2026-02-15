@@ -103,16 +103,16 @@ func TestClientIP_ExtractsHost(t *testing.T) {
 			want:       "::1",
 		},
 		{
-			name:       "X-Forwarded-For single",
+			name:       "X-Forwarded-For ignored",
 			remoteAddr: "10.0.0.1:1234",
 			xff:        "203.0.113.50",
-			want:       "203.0.113.50",
+			want:       "10.0.0.1",
 		},
 		{
-			name:       "X-Forwarded-For chain",
+			name:       "X-Forwarded-For chain ignored",
 			remoteAddr: "10.0.0.1:1234",
 			xff:        "203.0.113.50, 70.41.3.18, 150.172.238.178",
-			want:       "203.0.113.50",
+			want:       "10.0.0.1",
 		},
 	}
 

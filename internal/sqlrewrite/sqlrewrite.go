@@ -126,6 +126,9 @@ func ClassifyStatement(sql string) (StatementType, error) {
 
 	switch result.Stmts[0].Stmt.Node.(type) {
 	case *pg_query.Node_SelectStmt:
+		if name, found := containsDangerousFunction(result.Stmts[0].Stmt); found {
+			return StmtOther, fmt.Errorf("prohibited function: %s", name)
+		}
 		return StmtSelect, nil
 	case *pg_query.Node_InsertStmt:
 		return StmtInsert, nil
@@ -226,4 +229,157 @@ func InjectMultipleRowFilters(sqlStr string, tableName string, filters []string)
 	}
 	combined := strings.Join(parts, " OR ")
 	return InjectRowFilterSQL(sqlStr, tableName, combined)
+}
+
+// dangerousFunctions is the blocklist of DuckDB functions that can read the
+// filesystem, leak internal metadata, or escape the query sandbox.
+var dangerousFunctions = map[string]bool{
+	"read_csv":             true,
+	"read_csv_auto":        true,
+	"read_parquet":         true,
+	"read_json":            true,
+	"read_json_auto":       true,
+	"read_text":            true,
+	"read_blob":            true,
+	"glob":                 true,
+	"sqlite_scan":          true,
+	"query_table":          true,
+	"duckdb_extensions":    true,
+	"duckdb_settings":      true,
+	"duckdb_databases":     true,
+	"duckdb_secrets":       true,
+	"pragma_database_list": true,
+}
+
+// containsDangerousFunction walks the AST looking for function calls whose
+// names appear in the blocklist.
+func containsDangerousFunction(node *pg_query.Node) (string, bool) {
+	if node == nil {
+		return "", false
+	}
+	return walkNodeForDangerousFunc(node)
+}
+
+// walkNodeForDangerousFunc recursively walks a parse tree node looking for
+// dangerous function calls in any position (FROM clause, SELECT list, WHERE, etc.).
+func walkNodeForDangerousFunc(node *pg_query.Node) (string, bool) {
+	if node == nil {
+		return "", false
+	}
+
+	switch n := node.Node.(type) {
+	case *pg_query.Node_SelectStmt:
+		return walkSelectForDangerousFunc(n.SelectStmt)
+	case *pg_query.Node_FuncCall:
+		if name := extractFuncName(n.FuncCall); dangerousFunctions[strings.ToLower(name)] {
+			return name, true
+		}
+		// Check function arguments for nested dangerous calls.
+		for _, arg := range n.FuncCall.Args {
+			if name, found := walkNodeForDangerousFunc(arg); found {
+				return name, true
+			}
+		}
+	case *pg_query.Node_RangeFunction:
+		for _, fn := range n.RangeFunction.Functions {
+			if name, found := walkNodeForDangerousFunc(fn); found {
+				return name, true
+			}
+		}
+	case *pg_query.Node_RangeSubselect:
+		return walkNodeForDangerousFunc(n.RangeSubselect.Subquery)
+	case *pg_query.Node_SubLink:
+		return walkNodeForDangerousFunc(n.SubLink.Subselect)
+	case *pg_query.Node_BoolExpr:
+		for _, arg := range n.BoolExpr.Args {
+			if name, found := walkNodeForDangerousFunc(arg); found {
+				return name, true
+			}
+		}
+	case *pg_query.Node_AExpr:
+		if name, found := walkNodeForDangerousFunc(n.AExpr.Lexpr); found {
+			return name, true
+		}
+		return walkNodeForDangerousFunc(n.AExpr.Rexpr)
+	case *pg_query.Node_JoinExpr:
+		if name, found := walkNodeForDangerousFunc(n.JoinExpr.Larg); found {
+			return name, true
+		}
+		return walkNodeForDangerousFunc(n.JoinExpr.Rarg)
+	case *pg_query.Node_ResTarget:
+		return walkNodeForDangerousFunc(n.ResTarget.Val)
+	case *pg_query.Node_List:
+		for _, item := range n.List.Items {
+			if name, found := walkNodeForDangerousFunc(item); found {
+				return name, true
+			}
+		}
+	case *pg_query.Node_CommonTableExpr:
+		return walkNodeForDangerousFunc(n.CommonTableExpr.Ctequery)
+	}
+
+	return "", false
+}
+
+// walkSelectForDangerousFunc checks all parts of a SELECT statement for dangerous functions.
+func walkSelectForDangerousFunc(sel *pg_query.SelectStmt) (string, bool) {
+	if sel == nil {
+		return "", false
+	}
+
+	// UNION/INTERSECT/EXCEPT
+	if name, found := walkSelectForDangerousFunc(sel.Larg); found {
+		return name, true
+	}
+	if name, found := walkSelectForDangerousFunc(sel.Rarg); found {
+		return name, true
+	}
+
+	// FROM clause
+	for _, from := range sel.FromClause {
+		if name, found := walkNodeForDangerousFunc(from); found {
+			return name, true
+		}
+	}
+
+	// Target list (SELECT expressions)
+	for _, target := range sel.TargetList {
+		if name, found := walkNodeForDangerousFunc(target); found {
+			return name, true
+		}
+	}
+
+	// WHERE clause
+	if name, found := walkNodeForDangerousFunc(sel.WhereClause); found {
+		return name, true
+	}
+
+	// HAVING clause
+	if name, found := walkNodeForDangerousFunc(sel.HavingClause); found {
+		return name, true
+	}
+
+	// WITH (CTEs)
+	if sel.WithClause != nil {
+		for _, cte := range sel.WithClause.Ctes {
+			if name, found := walkNodeForDangerousFunc(cte); found {
+				return name, true
+			}
+		}
+	}
+
+	return "", false
+}
+
+// extractFuncName returns the function name from a FuncCall node.
+func extractFuncName(fc *pg_query.FuncCall) string {
+	if fc == nil {
+		return ""
+	}
+	for _, nameNode := range fc.Funcname {
+		if s, ok := nameNode.Node.(*pg_query.Node_String_); ok {
+			return s.String_.Sval
+		}
+	}
+	return ""
 }

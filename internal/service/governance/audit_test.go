@@ -24,7 +24,7 @@ func TestAuditService_List(t *testing.T) {
 		}
 		svc := NewAuditService(repo)
 
-		entries, total, err := svc.List(context.Background(), domain.AuditFilter{})
+		entries, total, err := svc.List(adminCtx(), domain.AuditFilter{})
 		require.NoError(t, err)
 		assert.Len(t, entries, 2)
 		assert.Equal(t, int64(2), total)
@@ -46,7 +46,7 @@ func TestAuditService_List(t *testing.T) {
 		}
 		svc := NewAuditService(repo)
 
-		entries, total, err := svc.List(context.Background(), domain.AuditFilter{
+		entries, total, err := svc.List(adminCtx(), domain.AuditFilter{
 			PrincipalName: &principalName,
 			Action:        &action,
 		})
@@ -63,7 +63,7 @@ func TestAuditService_List(t *testing.T) {
 		}
 		svc := NewAuditService(repo)
 
-		entries, total, err := svc.List(context.Background(), domain.AuditFilter{})
+		entries, total, err := svc.List(adminCtx(), domain.AuditFilter{})
 		require.NoError(t, err)
 		assert.Empty(t, entries)
 		assert.Equal(t, int64(0), total)
@@ -77,7 +77,7 @@ func TestAuditService_List(t *testing.T) {
 		}
 		svc := NewAuditService(repo)
 
-		_, _, err := svc.List(context.Background(), domain.AuditFilter{})
+		_, _, err := svc.List(adminCtx(), domain.AuditFilter{})
 		require.Error(t, err)
 		assert.ErrorIs(t, err, errTest)
 	})

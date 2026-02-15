@@ -31,7 +31,7 @@ func TestQueryHistoryService_List(t *testing.T) {
 		}
 		svc := NewQueryHistoryService(repo)
 
-		entries, total, err := svc.List(context.Background(), filter)
+		entries, total, err := svc.List(adminCtx(), filter)
 
 		require.NoError(t, err)
 		assert.Equal(t, int64(1), total)
@@ -47,7 +47,7 @@ func TestQueryHistoryService_List(t *testing.T) {
 		}
 		svc := NewQueryHistoryService(repo)
 
-		_, _, err := svc.List(context.Background(), domain.QueryHistoryFilter{})
+		_, _, err := svc.List(adminCtx(), domain.QueryHistoryFilter{})
 
 		require.Error(t, err)
 		assert.ErrorIs(t, err, errTest)

@@ -49,13 +49,19 @@ func (s *LineageService) GetFullLineage(ctx context.Context, tableName string, p
 	}, nil
 }
 
-// DeleteEdge removes a lineage edge by ID.
+// DeleteEdge removes a lineage edge by ID. Requires admin privileges.
 func (s *LineageService) DeleteEdge(ctx context.Context, id string) error {
+	if err := requireAdmin(ctx); err != nil {
+		return err
+	}
 	return s.repo.DeleteEdge(ctx, id)
 }
 
-// PurgeOlderThan removes lineage edges older than the given duration.
+// PurgeOlderThan removes lineage edges older than the given duration. Requires admin privileges.
 func (s *LineageService) PurgeOlderThan(ctx context.Context, olderThanDays int) (int64, error) {
+	if err := requireAdmin(ctx); err != nil {
+		return 0, err
+	}
 	before := time.Now().AddDate(0, 0, -olderThanDays)
 	return s.repo.PurgeOlderThan(ctx, before)
 }

@@ -85,14 +85,14 @@ func TestGrantService_Revoke_AdminAllowed(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestGrantService_List_NoAdminRequired(t *testing.T) {
+func TestGrantService_List_AdminAllowed(t *testing.T) {
 	svc, principalSvc := setupGrantService(t)
 
 	p, err := principalSvc.Create(adminCtx(), domain.CreatePrincipalRequest{Name: "lister", Type: "user"})
 	require.NoError(t, err)
 
-	// Non-admin can list grants (even if none exist).
-	grants, total, err := svc.ListForPrincipal(nonAdminCtx(), p.ID, "user", domain.PageRequest{})
+	// Admin can list grants.
+	grants, total, err := svc.ListForPrincipal(adminCtx(), p.ID, "user", domain.PageRequest{})
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), total)
 	assert.Empty(t, grants)

@@ -111,8 +111,23 @@ func (s *PrincipalService) ResolveOrProvision(ctx context.Context, req domain.Re
 		return nil, fmt.Errorf("resolve external identity: %w", err)
 	}
 
-	// JIT provisioning: create a new principal.
+	// Try to find a pre-seeded principal by name (e.g., bootstrapped admin
+	// with NULL external_id). If found, bind the external identity and return,
+	// preserving the existing principal's admin status.
 	name := sanitizeName(req.DisplayName)
+	if name != "" {
+		existing, nameErr := s.repo.GetByName(ctx, name)
+		if nameErr == nil && existing.ExternalID == nil {
+			if bindErr := s.repo.BindExternalID(ctx, existing.ID, req.ExternalID, req.Issuer); bindErr != nil {
+				return nil, fmt.Errorf("bind external identity: %w", bindErr)
+			}
+			existing.ExternalID = &req.ExternalID
+			existing.ExternalIssuer = &req.Issuer
+			return existing, nil
+		}
+	}
+
+	// JIT provisioning: create a new principal.
 	if name == "" {
 		name = sanitizeName(req.ExternalID)
 	}

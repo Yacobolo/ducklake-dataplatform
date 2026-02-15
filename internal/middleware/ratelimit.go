@@ -88,18 +88,9 @@ func RateLimiter(cfg RateLimitConfig) func(http.Handler) http.Handler {
 }
 
 // clientIP extracts the client IP address from the request, stripping the port.
+// Only uses RemoteAddr — X-Forwarded-For is untrusted and ignored to prevent
+// rate-limit bypass via header spoofing.
 func clientIP(r *http.Request) string {
-	// Prefer X-Forwarded-For if present (first entry is the original client).
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		// Take the first IP in the chain.
-		for i := 0; i < len(xff); i++ {
-			if xff[i] == ',' {
-				return xff[:i]
-			}
-		}
-		return xff
-	}
-
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		return r.RemoteAddr
