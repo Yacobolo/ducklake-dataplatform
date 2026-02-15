@@ -60,12 +60,18 @@ func (s *GrantService) Revoke(ctx context.Context, _ string, grantID string) err
 	return nil
 }
 
-// ListForPrincipal returns grants assigned to a specific principal.
+// ListForPrincipal returns grants assigned to a specific principal. Requires admin privileges.
 func (s *GrantService) ListForPrincipal(ctx context.Context, principalID string, principalType string, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error) {
+	if err := requireAdmin(ctx); err != nil {
+		return nil, 0, err
+	}
 	return s.repo.ListForPrincipal(ctx, principalID, principalType, page)
 }
 
-// ListForSecurable returns grants on a specific securable object.
+// ListForSecurable returns grants on a specific securable object. Requires admin privileges.
 func (s *GrantService) ListForSecurable(ctx context.Context, securableType string, securableID string, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error) {
+	if err := requireAdmin(ctx); err != nil {
+		return nil, 0, err
+	}
 	return s.repo.ListForSecurable(ctx, securableType, securableID, page)
 }

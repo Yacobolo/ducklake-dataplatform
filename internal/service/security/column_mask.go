@@ -92,7 +92,10 @@ func (s *ColumnMaskService) Unbind(ctx context.Context, req domain.BindColumnMas
 	return s.repo.Unbind(ctx, b)
 }
 
-// ListBindings returns all bindings for a column mask.
+// ListBindings returns all bindings for a column mask. Requires admin privileges.
 func (s *ColumnMaskService) ListBindings(ctx context.Context, maskID string) ([]domain.ColumnMaskBinding, error) {
+	if err := requireAdmin(ctx); err != nil {
+		return nil, err
+	}
 	return s.repo.ListBindings(ctx, maskID)
 }

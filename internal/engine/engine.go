@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"duck-demo/internal/ddl"
 	"duck-demo/internal/domain"
@@ -90,6 +91,14 @@ func (e *SecureEngine) rewriteQuery(ctx context.Context, principalName, sqlQuery
 	// 3. Check privileges + collect filters/masks for each table
 	rewritten := sqlQuery
 	for _, tableName := range tables {
+		// Skip sentinel entries added by ExtractTableNames for table-valued
+		// functions (e.g., range(), generate_series()). These sentinels exist
+		// only to prevent the query from being classified as "table-less".
+		// Dangerous functions (read_csv, etc.) are already blocked by
+		// ClassifyStatement's blocklist above.
+		if strings.HasPrefix(tableName, "__func__") {
+			continue
+		}
 		tableID, _, isExternal, err := e.catalog.LookupTableID(ctx, tableName)
 		if err != nil {
 			return "", fmt.Errorf("catalog lookup: %w", err)

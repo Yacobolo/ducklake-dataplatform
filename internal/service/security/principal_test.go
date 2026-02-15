@@ -206,3 +206,30 @@ func TestPrincipalService_GetByName(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "findme", found.Name)
 }
+
+func TestPrincipalService_ResolveOrProvision_PreSeededAdminWithNullExtID(t *testing.T) {
+	svc, repo := setupPrincipalService(t)
+
+	// Pre-seed an admin principal WITHOUT external ID (as bootstrap flow does).
+	// This simulates a pre-seeded admin in the DB with NULL external_id/external_issuer.
+	preSeeded, err := repo.Create(ctx, &domain.Principal{
+		Name:    "admin-user",
+		Type:    "user",
+		IsAdmin: true,
+		// ExternalID and ExternalIssuer are nil (NULL in DB)
+	})
+	require.NoError(t, err)
+	require.True(t, preSeeded.IsAdmin)
+
+	// Simulate OIDC login for this admin. ResolveOrProvision should
+	// find the existing principal by name and bind the external_id,
+	// preserving admin status. It should NOT create a new non-admin user.
+	p, err := svc.ResolveOrProvision(ctx, domain.ResolveOrProvisionRequest{
+		Issuer:      "https://login.example.com",
+		ExternalID:  "oidc-sub-admin",
+		DisplayName: "admin-user",
+	})
+	require.NoError(t, err)
+	assert.True(t, p.IsAdmin, "pre-seeded admin should retain admin status after OIDC login")
+	assert.Equal(t, preSeeded.ID, p.ID, "should match pre-seeded principal, not create a new one")
+}

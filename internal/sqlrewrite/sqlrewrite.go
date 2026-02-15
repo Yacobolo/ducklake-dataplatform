@@ -193,6 +193,9 @@ func ClassifyStatement(sql string) (StatementType, error) {
 	st := duckdbsql.Classify(stmt)
 	switch st {
 	case duckdbsql.StmtTypeSelect:
+		if name, found := duckdbsql.ContainsDangerousFunction(stmt, dangerousFunctions); found {
+			return StmtOther, fmt.Errorf("prohibited function: %s", name)
+		}
 		return StmtSelect, nil
 	case duckdbsql.StmtTypeInsert:
 		return StmtInsert, nil
@@ -291,4 +294,24 @@ func ApplyColumnMasks(sqlStr string, tableName string, masks map[string]string, 
 // Internal double quotes are escaped by doubling them ("" → ").
 func QuoteIdentifier(s string) string {
 	return `"` + strings.ReplaceAll(s, `"`, `""`) + `"`
+}
+
+// dangerousFunctions is the blocklist of DuckDB functions that can read the
+// filesystem, leak internal metadata, or escape the query sandbox.
+var dangerousFunctions = map[string]bool{
+	"read_csv":             true,
+	"read_csv_auto":        true,
+	"read_parquet":         true,
+	"read_json":            true,
+	"read_json_auto":       true,
+	"read_text":            true,
+	"read_blob":            true,
+	"glob":                 true,
+	"sqlite_scan":          true,
+	"query_table":          true,
+	"duckdb_extensions":    true,
+	"duckdb_settings":      true,
+	"duckdb_databases":     true,
+	"duckdb_secrets":       true,
+	"pragma_database_list": true,
 }

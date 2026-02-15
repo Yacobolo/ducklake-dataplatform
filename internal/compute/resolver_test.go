@@ -43,6 +43,9 @@ func (m *mockPrincipalRepo) SetAdmin(_ context.Context, _ string, _ bool) error 
 func (m *mockPrincipalRepo) GetByExternalID(_ context.Context, _, _ string) (*domain.Principal, error) {
 	panic("unexpected")
 }
+func (m *mockPrincipalRepo) BindExternalID(_ context.Context, _ string, _ string, _ string) error {
+	panic("unexpected")
+}
 
 type mockGroupRepo struct {
 	getGroupsForMemberFn func(ctx context.Context, memberType string, memberID string) ([]domain.Group, error)

@@ -147,7 +147,13 @@ func collectTablesFromTableRef(ref TableRef, seen map[string]bool, tables *[]str
 	case *LateralTable:
 		collectTablesFromSelect(t.Select, seen, tables)
 	case *FuncTable:
-		// Function tables (e.g. read_parquet) — skip, not a real table
+		// Table-valued functions in FROM clauses (e.g., read_csv_auto(), range()).
+		// Add a "__func__<name>" sentinel entry so the engine does not treat
+		// the query as a "table-less SELECT" and bypass RBAC. The engine skips
+		// these sentinel entries during table-level privilege checks.
+		if t.Func != nil && t.Func.Name != "" {
+			addTable("__func__"+strings.ToLower(t.Func.Name), seen, tables)
+		}
 	case *PivotTable:
 		collectTablesFromTableRef(t.Source, seen, tables)
 	case *UnpivotTable:
@@ -575,4 +581,201 @@ func extractColumnNameFromExpr(e Expr) string {
 		return expr.Column
 	}
 	return ""
+}
+
+// === Dangerous Function Detection ===
+
+// ContainsDangerousFunction walks the AST looking for function calls whose
+// names appear in the blocklist. Returns the function name and true if found.
+func ContainsDangerousFunction(stmt Stmt, blocklist map[string]bool) (string, bool) {
+	switch s := stmt.(type) {
+	case *SelectStmt:
+		return dangerousFuncInSelect(s, blocklist)
+	case *InsertStmt:
+		if s.Query != nil {
+			return dangerousFuncInSelect(s.Query, blocklist)
+		}
+	}
+	return "", false
+}
+
+func dangerousFuncInSelect(sel *SelectStmt, blocklist map[string]bool) (string, bool) {
+	if sel == nil {
+		return "", false
+	}
+	// CTEs
+	if sel.With != nil {
+		for _, cte := range sel.With.CTEs {
+			if name, found := dangerousFuncInSelect(cte.Select, blocklist); found {
+				return name, true
+			}
+		}
+	}
+	if sel.Body != nil {
+		return dangerousFuncInBody(sel.Body, blocklist)
+	}
+	return "", false
+}
+
+func dangerousFuncInBody(body *SelectBody, blocklist map[string]bool) (string, bool) {
+	if body == nil {
+		return "", false
+	}
+	if body.Left != nil {
+		if name, found := dangerousFuncInCore(body.Left, blocklist); found {
+			return name, true
+		}
+	}
+	if body.Right != nil {
+		return dangerousFuncInBody(body.Right, blocklist)
+	}
+	return "", false
+}
+
+func dangerousFuncInCore(sc *SelectCore, blocklist map[string]bool) (string, bool) {
+	if sc == nil {
+		return "", false
+	}
+	// SELECT list
+	for _, col := range sc.Columns {
+		if name, found := dangerousFuncInExpr(col.Expr, blocklist); found {
+			return name, true
+		}
+	}
+	// FROM clause (table-valued functions)
+	if sc.From != nil {
+		if name, found := dangerousFuncInFrom(sc.From, blocklist); found {
+			return name, true
+		}
+	}
+	// WHERE
+	if name, found := dangerousFuncInExpr(sc.Where, blocklist); found {
+		return name, true
+	}
+	// HAVING
+	if name, found := dangerousFuncInExpr(sc.Having, blocklist); found {
+		return name, true
+	}
+	return "", false
+}
+
+func dangerousFuncInFrom(from *FromClause, blocklist map[string]bool) (string, bool) {
+	if from == nil {
+		return "", false
+	}
+	if name, found := dangerousFuncInTableRef(from.Source, blocklist); found {
+		return name, true
+	}
+	for _, join := range from.Joins {
+		if name, found := dangerousFuncInTableRef(join.Right, blocklist); found {
+			return name, true
+		}
+	}
+	return "", false
+}
+
+func dangerousFuncInTableRef(ref TableRef, blocklist map[string]bool) (string, bool) {
+	if ref == nil {
+		return "", false
+	}
+	switch t := ref.(type) {
+	case *FuncTable:
+		if t.Func != nil && blocklist[strings.ToLower(t.Func.Name)] {
+			return t.Func.Name, true
+		}
+		// Check function arguments
+		if t.Func != nil {
+			for _, arg := range t.Func.Args {
+				if name, found := dangerousFuncInExpr(arg, blocklist); found {
+					return name, true
+				}
+			}
+		}
+	case *DerivedTable:
+		return dangerousFuncInSelect(t.Select, blocklist)
+	case *LateralTable:
+		return dangerousFuncInSelect(t.Select, blocklist)
+	case *PivotTable:
+		return dangerousFuncInTableRef(t.Source, blocklist)
+	case *UnpivotTable:
+		return dangerousFuncInTableRef(t.Source, blocklist)
+	}
+	return "", false
+}
+
+func dangerousFuncInExpr(e Expr, blocklist map[string]bool) (string, bool) {
+	if e == nil {
+		return "", false
+	}
+	switch expr := e.(type) {
+	case *FuncCall:
+		if blocklist[strings.ToLower(expr.Name)] {
+			return expr.Name, true
+		}
+		for _, arg := range expr.Args {
+			if name, found := dangerousFuncInExpr(arg, blocklist); found {
+				return name, true
+			}
+		}
+	case *SubqueryExpr:
+		return dangerousFuncInSelect(expr.Select, blocklist)
+	case *ExistsExpr:
+		return dangerousFuncInSelect(expr.Select, blocklist)
+	case *InExpr:
+		if name, found := dangerousFuncInExpr(expr.Expr, blocklist); found {
+			return name, true
+		}
+		if expr.Query != nil {
+			return dangerousFuncInSelect(expr.Query, blocklist)
+		}
+		for _, v := range expr.Values {
+			if name, found := dangerousFuncInExpr(v, blocklist); found {
+				return name, true
+			}
+		}
+	case *BinaryExpr:
+		if name, found := dangerousFuncInExpr(expr.Left, blocklist); found {
+			return name, true
+		}
+		return dangerousFuncInExpr(expr.Right, blocklist)
+	case *UnaryExpr:
+		return dangerousFuncInExpr(expr.Expr, blocklist)
+	case *ParenExpr:
+		return dangerousFuncInExpr(expr.Expr, blocklist)
+	case *CaseExpr:
+		if name, found := dangerousFuncInExpr(expr.Operand, blocklist); found {
+			return name, true
+		}
+		for _, w := range expr.Whens {
+			if name, found := dangerousFuncInExpr(w.Condition, blocklist); found {
+				return name, true
+			}
+			if name, found := dangerousFuncInExpr(w.Result, blocklist); found {
+				return name, true
+			}
+		}
+		return dangerousFuncInExpr(expr.Else, blocklist)
+	case *CastExpr:
+		return dangerousFuncInExpr(expr.Expr, blocklist)
+	case *TypeCastExpr:
+		return dangerousFuncInExpr(expr.Expr, blocklist)
+	case *BetweenExpr:
+		if name, found := dangerousFuncInExpr(expr.Expr, blocklist); found {
+			return name, true
+		}
+		if name, found := dangerousFuncInExpr(expr.Low, blocklist); found {
+			return name, true
+		}
+		return dangerousFuncInExpr(expr.High, blocklist)
+	case *IsNullExpr:
+		return dangerousFuncInExpr(expr.Expr, blocklist)
+	case *IsBoolExpr:
+		return dangerousFuncInExpr(expr.Expr, blocklist)
+	case *LikeExpr:
+		if name, found := dangerousFuncInExpr(expr.Expr, blocklist); found {
+			return name, true
+		}
+		return dangerousFuncInExpr(expr.Pattern, blocklist)
+	}
+	return "", false
 }

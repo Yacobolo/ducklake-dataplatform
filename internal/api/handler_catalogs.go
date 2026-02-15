@@ -66,7 +66,7 @@ func (h *APIHandler) ListCatalogs(ctx context.Context, request ListCatalogsReque
 	tc := total
 	return ListCatalogs200JSONResponse{
 		Body: CatalogRegistrationList{
-			Catalogs:      &data,
+			Data:          &data,
 			NextPageToken: optStr(npt),
 			TotalCount:    &tc,
 		},

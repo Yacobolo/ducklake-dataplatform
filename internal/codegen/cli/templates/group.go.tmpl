@@ -76,15 +76,21 @@ func new{{toPascal .Name}}Cmd(client *Client) *cobra.Command {
 				{{- range $pp := $cmd.PathParams}}
 				{{- $isPositional := false}}
 				{{- range $cmd.PositionalArgs}}{{- if eq . $pp.Name}}{{$isPositional = true}}{{end}}{{end}}
-				{{- if not $isPositional}}
-				if cmd.Flags().Changed("{{toKebab $pp.Name}}") {
-					v, _ := cmd.Flags().GetString("{{toKebab $pp.Name}}")
+			{{- if not $isPositional}}
+			{
+				v, _ := cmd.Flags().GetString("{{toKebab $pp.Name}}")
+				if v != "" {
 					urlPath = strings.Replace(urlPath, "{{"{"}}{{$pp.Name}}{{"}"}}", v, 1)
 				}
-				{{- end}}
-				{{- end}}
+			}
+			{{- end}}
+			{{- end}}
 
-				{{- /* Build query params */}}
+			if strings.Contains(urlPath, "{") {
+				return fmt.Errorf("unresolved path parameter in URL: %s", urlPath)
+			}
+
+			{{- /* Build query params */}}
 				query := url.Values{}
 				{{- range $cmd.Flags}}
 				{{- $flagField := .FieldName}}
@@ -222,6 +228,19 @@ func new{{toPascal .Name}}Cmd(client *Client) *cobra.Command {
 				}
 				{{- end}}
 
+				{{- if $cmd.HasBody}}
+				// Validate required body fields when --json is not provided
+				if jsonInput == "" {
+					{{- range $cmd.Flags}}
+					{{- if and .Required .IsBody (ne .FieldName "__json__")}}
+					if !cmd.Flags().Changed("{{.Name}}") {
+						return fmt.Errorf("required flag %q not set (or use --json)", "{{.Name}}")
+					}
+					{{- end}}
+					{{- end}}
+				}
+				{{- end}}
+
 				// Execute request
 				resp, err := client.Do("{{$cmd.Method}}", urlPath, query, {{if $cmd.HasBody}}body{{else}}nil{{end}})
 				if err != nil {
@@ -320,7 +339,7 @@ func new{{toPascal .Name}}Cmd(client *Client) *cobra.Command {
 		{{- else if eq .CobraType "Float64"}}
 		c.Flags().Float64("{{.Name}}", {{defaultValue .}}, {{quote .Usage}})
 		{{- end}}
-		{{- if .Required}}
+		{{- if and .Required (not .IsBody)}}
 		_ = c.MarkFlagRequired("{{.Name}}")
 		{{- end}}
 		{{- end}}

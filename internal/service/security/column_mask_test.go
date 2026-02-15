@@ -204,3 +204,18 @@ func TestColumnMaskService_GetForTable_NonAdminDenied(t *testing.T) {
 	var denied *domain.AccessDeniedError
 	assert.ErrorAs(t, err, &denied)
 }
+
+func TestColumnMaskService_ListBindings_RequiresAdmin(t *testing.T) {
+	repo := &mockColumnMaskRepo{
+		ListBindingsFn: func(_ context.Context, _ string) ([]domain.ColumnMaskBinding, error) {
+			return []domain.ColumnMaskBinding{}, nil
+		},
+	}
+	svc := NewColumnMaskService(repo, &testutil.MockAuditRepo{})
+
+	// Non-admin should NOT be able to list column mask bindings.
+	_, err := svc.ListBindings(nonAdminCtx(), "cm-1")
+	require.Error(t, err, "non-admin should not be able to list column mask bindings")
+	var accessDenied *domain.AccessDeniedError
+	assert.ErrorAs(t, err, &accessDenied)
+}
