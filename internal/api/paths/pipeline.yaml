@@ -344,16 +344,17 @@ paths:
               schema:
                 $ref: '../schemas/pipeline.yaml#/PipelineJobList'
               example:
-                - id: "550e8400-e29b-41d4-a716-446655440010"
-                  pipeline_id: "550e8400-e29b-41d4-a716-446655440001"
-                  name: "extract-data"
-                  compute_endpoint_id: "550e8400-e29b-41d4-a716-446655440020"
-                  depends_on: []
-                  notebook_id: "550e8400-e29b-41d4-a716-446655440030"
-                  timeout_seconds: 3600
-                  retry_count: 2
-                  job_order: 0
-                  created_at: "2025-01-15T09:30:00Z"
+                data:
+                  - id: "550e8400-e29b-41d4-a716-446655440010"
+                    pipeline_id: "550e8400-e29b-41d4-a716-446655440001"
+                    name: "extract-data"
+                    compute_endpoint_id: "550e8400-e29b-41d4-a716-446655440020"
+                    depends_on: []
+                    notebook_id: "550e8400-e29b-41d4-a716-446655440030"
+                    timeout_seconds: 3600
+                    retry_count: 2
+                    job_order: 0
+                    created_at: "2025-01-15T09:30:00Z"
         '400':
           $ref: '../schemas/responses.yaml#/responses/BadRequest'
         '401':
@@ -817,15 +818,16 @@ paths:
               schema:
                 $ref: '../schemas/pipeline.yaml#/PipelineJobRunList'
               example:
-                - id: "550e8400-e29b-41d4-a716-446655440060"
-                  run_id: "550e8400-e29b-41d4-a716-446655440050"
-                  job_id: "550e8400-e29b-41d4-a716-446655440010"
-                  job_name: "extract-data"
-                  status: SUCCESS
-                  started_at: "2025-01-15T10:00:00Z"
-                  finished_at: "2025-01-15T10:05:00Z"
-                  retry_attempt: 0
-                  created_at: "2025-01-15T10:00:00Z"
+                data:
+                  - id: "550e8400-e29b-41d4-a716-446655440060"
+                    run_id: "550e8400-e29b-41d4-a716-446655440050"
+                    job_id: "550e8400-e29b-41d4-a716-446655440010"
+                    job_name: "extract-data"
+                    status: SUCCESS
+                    started_at: "2025-01-15T10:00:00Z"
+                    finished_at: "2025-01-15T10:05:00Z"
+                    retry_attempt: 0
+                    created_at: "2025-01-15T10:00:00Z"
         '400':
           $ref: '../schemas/responses.yaml#/responses/BadRequest'
         '401':

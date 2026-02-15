@@ -7,7 +7,7 @@ paths:
     post:
       operationId: createUploadUrl
       summary: Get a presigned URL for uploading a Parquet file
-      tags: [Catalogs]
+      tags: [Ingestion]
       description: >
         Returns a presigned PUT URL that the client can use to upload a Parquet file
         directly to S3. The file can then be registered via the commit endpoint.
@@ -74,7 +74,7 @@ paths:
     post:
       operationId: commitTableIngestion
       summary: Register uploaded Parquet files in DuckLake
-      tags: [Catalogs]
+      tags: [Ingestion]
       description: >
         Registers previously uploaded files (from upload-url) in the DuckLake catalog.
         DuckLake validates schema compatibility, extracts column statistics, and
@@ -147,7 +147,7 @@ paths:
     post:
       operationId: loadTableExternalFiles
       summary: Register existing S3 files in DuckLake
-      tags: [Catalogs]
+      tags: [Ingestion]
       description: >
         Registers existing S3 files or globs in the DuckLake catalog. Paths without
         an s3:// prefix are treated as relative to the lake data path. DuckLake validates

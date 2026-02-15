@@ -604,8 +604,9 @@ func TestHandler_ListPipelineJobs(t *testing.T) {
 				require.NoError(t, err)
 				ok200, ok := resp.(ListPipelineJobs200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
-				require.Len(t, ok200.Body, 1)
-				assert.Equal(t, "extract", *ok200.Body[0].Name)
+				require.NotNil(t, ok200.Body.Data)
+				require.Len(t, *ok200.Body.Data, 1)
+				assert.Equal(t, "extract", *(*ok200.Body.Data)[0].Name)
 			},
 		},
 		{
@@ -1007,10 +1008,11 @@ func TestHandler_ListPipelineJobRuns(t *testing.T) {
 				require.NoError(t, err)
 				ok200, ok := resp.(ListPipelineJobRuns200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
-				require.Len(t, ok200.Body, 1)
-				assert.Equal(t, "jr-1", *ok200.Body[0].Id)
-				assert.Equal(t, "extract", *ok200.Body[0].JobName)
-				assert.Equal(t, PipelineJobRunStatus(domain.PipelineJobRunStatusRunning), *ok200.Body[0].Status)
+				require.NotNil(t, ok200.Body.Data)
+				require.Len(t, *ok200.Body.Data, 1)
+				assert.Equal(t, "jr-1", *(*ok200.Body.Data)[0].Id)
+				assert.Equal(t, "extract", *(*ok200.Body.Data)[0].JobName)
+				assert.Equal(t, PipelineJobRunStatus(domain.PipelineJobRunStatusRunning), *(*ok200.Body.Data)[0].Status)
 			},
 		},
 		{

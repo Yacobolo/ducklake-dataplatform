@@ -170,7 +170,7 @@ func (h *APIHandler) ListPipelineJobs(ctx context.Context, req ListPipelineJobsR
 		data[i] = pipelineJobToAPI(j)
 	}
 	return ListPipelineJobs200JSONResponse{
-		Body:    data,
+		Body:    PipelineJobList{Data: &data},
 		Headers: ListPipelineJobs200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -369,7 +369,7 @@ func (h *APIHandler) ListPipelineJobRuns(ctx context.Context, req ListPipelineJo
 		data[i] = pipelineJobRunToAPI(jr)
 	}
 	return ListPipelineJobRuns200JSONResponse{
-		Body:    data,
+		Body:    PipelineJobRunList{Data: &data},
 		Headers: ListPipelineJobRuns200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
