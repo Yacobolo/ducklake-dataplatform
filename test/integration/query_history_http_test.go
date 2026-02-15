@@ -163,19 +163,27 @@ func TestHTTP_QueryHistoryList(t *testing.T) {
 	}
 }
 
-// TestHTTP_QueryHistoryAnyUserCanList verifies that non-admin users can list
-// query history (no privilege checks enforced).
-func TestHTTP_QueryHistoryAnyUserCanList(t *testing.T) {
+// TestHTTP_QueryHistoryRequiresAdmin verifies that non-admin users get 403
+// when listing query history (admin privilege required).
+func TestHTTP_QueryHistoryRequiresAdmin(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{})
 	seedQueryHistoryEntries(t, env)
 
+	// Non-admin should get 403.
 	resp := doRequest(t, "GET",
 		env.Server.URL+"/v1/query-history",
 		env.Keys.Analyst, nil)
-	require.Equal(t, 200, resp.StatusCode)
+	require.Equal(t, 403, resp.StatusCode)
+	_ = resp.Body.Close()
+
+	// Admin should get 200.
+	resp2 := doRequest(t, "GET",
+		env.Server.URL+"/v1/query-history",
+		env.Keys.Admin, nil)
+	require.Equal(t, 200, resp2.StatusCode)
 
 	var result map[string]interface{}
-	decodeJSON(t, resp, &result)
+	decodeJSON(t, resp2, &result)
 	data := result["data"].([]interface{})
 	assert.GreaterOrEqual(t, len(data), 3)
 }

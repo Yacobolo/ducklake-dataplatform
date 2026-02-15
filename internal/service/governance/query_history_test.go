@@ -31,7 +31,7 @@ func TestQueryHistoryService_List(t *testing.T) {
 		}
 		svc := NewQueryHistoryService(repo)
 
-		entries, total, err := svc.List(context.Background(), filter)
+		entries, total, err := svc.List(adminCtx(), filter)
 
 		require.NoError(t, err)
 		assert.Equal(t, int64(1), total)
@@ -47,9 +47,24 @@ func TestQueryHistoryService_List(t *testing.T) {
 		}
 		svc := NewQueryHistoryService(repo)
 
-		_, _, err := svc.List(context.Background(), domain.QueryHistoryFilter{})
+		_, _, err := svc.List(adminCtx(), domain.QueryHistoryFilter{})
 
 		require.Error(t, err)
 		assert.ErrorIs(t, err, errTest)
 	})
+}
+
+func TestQueryHistoryService_List_RequiresAdmin(t *testing.T) {
+	repo := &mockQueryHistoryRepo{
+		ListFn: func(_ context.Context, _ domain.QueryHistoryFilter) ([]domain.QueryHistoryEntry, int64, error) {
+			return []domain.QueryHistoryEntry{{ID: "1", PrincipalName: "alice"}}, 1, nil
+		},
+	}
+	svc := NewQueryHistoryService(repo)
+
+	// Non-admin should NOT be able to view all query history.
+	_, _, err := svc.List(nonAdminCtx(), domain.QueryHistoryFilter{})
+	require.Error(t, err, "non-admin should not be able to list all query history")
+	var accessDenied *domain.AccessDeniedError
+	assert.ErrorAs(t, err, &accessDenied)
 }

@@ -28,6 +28,9 @@ DELETE FROM principals WHERE id = ?;
 -- name: SetAdmin :exec
 UPDATE principals SET is_admin = ? WHERE id = ?;
 
+-- name: BindExternalID :exec
+UPDATE principals SET external_id = ?, external_issuer = ? WHERE id = ?;
+
 -- name: CountPrincipals :one
 SELECT COUNT(*) as cnt FROM principals;
 

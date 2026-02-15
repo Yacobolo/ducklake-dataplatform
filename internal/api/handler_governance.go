@@ -54,7 +54,12 @@ func (h *APIHandler) ListAuditLogs(ctx context.Context, req ListAuditLogsRequest
 
 	entries, total, err := h.audit.List(ctx, filter)
 	if err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return ListAuditLogs403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		default:
+			return nil, err
+		}
 	}
 
 	data := make([]AuditEntry, len(entries))
@@ -84,7 +89,12 @@ func (h *APIHandler) ListQueryHistory(ctx context.Context, req ListQueryHistoryR
 
 	entries, total, err := h.queryHistory.List(ctx, filter)
 	if err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return ListQueryHistory403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		default:
+			return nil, err
+		}
 	}
 
 	data := make([]QueryHistoryEntry, len(entries))

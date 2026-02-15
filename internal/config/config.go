@@ -229,6 +229,9 @@ func LoadFromEnv() (*Config, error) {
 		if cfg.EncryptionKey == "0000000000000000000000000000000000000000000000000000000000000000" {
 			return nil, fmt.Errorf("ENCRYPTION_KEY must be set in production (ENV=production)")
 		}
+		if len(cfg.CORSAllowedOrigins) == 1 && cfg.CORSAllowedOrigins[0] == "*" {
+			return nil, fmt.Errorf("CORS wildcard (*) is not allowed in production (ENV=production)")
+		}
 	}
 
 	return cfg, nil

@@ -24,7 +24,7 @@ func TestAuditService_List(t *testing.T) {
 		}
 		svc := NewAuditService(repo)
 
-		entries, total, err := svc.List(context.Background(), domain.AuditFilter{})
+		entries, total, err := svc.List(adminCtx(), domain.AuditFilter{})
 		require.NoError(t, err)
 		assert.Len(t, entries, 2)
 		assert.Equal(t, int64(2), total)
@@ -46,7 +46,7 @@ func TestAuditService_List(t *testing.T) {
 		}
 		svc := NewAuditService(repo)
 
-		entries, total, err := svc.List(context.Background(), domain.AuditFilter{
+		entries, total, err := svc.List(adminCtx(), domain.AuditFilter{
 			PrincipalName: &principalName,
 			Action:        &action,
 		})
@@ -63,7 +63,7 @@ func TestAuditService_List(t *testing.T) {
 		}
 		svc := NewAuditService(repo)
 
-		entries, total, err := svc.List(context.Background(), domain.AuditFilter{})
+		entries, total, err := svc.List(adminCtx(), domain.AuditFilter{})
 		require.NoError(t, err)
 		assert.Empty(t, entries)
 		assert.Equal(t, int64(0), total)
@@ -77,8 +77,24 @@ func TestAuditService_List(t *testing.T) {
 		}
 		svc := NewAuditService(repo)
 
-		_, _, err := svc.List(context.Background(), domain.AuditFilter{})
+		_, _, err := svc.List(adminCtx(), domain.AuditFilter{})
 		require.Error(t, err)
 		assert.ErrorIs(t, err, errTest)
 	})
+}
+
+func TestAuditService_List_RequiresAdmin(t *testing.T) {
+	repo := &mockAuditRepo{
+		ListFn: func(_ context.Context, _ domain.AuditFilter) ([]domain.AuditEntry, int64, error) {
+			return []domain.AuditEntry{{ID: "ae-1", PrincipalName: "alice"}}, 1, nil
+		},
+	}
+	svc := NewAuditService(repo)
+
+	// Non-admin should NOT be able to view audit logs — they contain
+	// sensitive information about all users' actions and SQL queries.
+	_, _, err := svc.List(nonAdminCtx(), domain.AuditFilter{})
+	require.Error(t, err, "non-admin should not be able to list audit logs")
+	var accessDenied *domain.AccessDeniedError
+	assert.ErrorAs(t, err, &accessDenied)
 }

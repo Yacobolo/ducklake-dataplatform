@@ -43,8 +43,11 @@ func (s *GroupService) GetByID(ctx context.Context, id string) (*domain.Group, e
 	return s.repo.GetByID(ctx, id)
 }
 
-// List returns a paginated list of groups.
+// List returns a paginated list of groups. Requires admin privileges.
 func (s *GroupService) List(ctx context.Context, page domain.PageRequest) ([]domain.Group, int64, error) {
+	if err := requireAdmin(ctx); err != nil {
+		return nil, 0, err
+	}
 	return s.repo.List(ctx, page)
 }
 
@@ -100,8 +103,11 @@ func (s *GroupService) RemoveMember(ctx context.Context, req domain.RemoveGroupM
 	return nil
 }
 
-// ListMembers returns a paginated list of members in a group.
+// ListMembers returns a paginated list of members in a group. Requires admin privileges.
 func (s *GroupService) ListMembers(ctx context.Context, groupID string, page domain.PageRequest) ([]domain.GroupMember, int64, error) {
+	if err := requireAdmin(ctx); err != nil {
+		return nil, 0, err
+	}
 	return s.repo.ListMembers(ctx, groupID, page)
 }
 

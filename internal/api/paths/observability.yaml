@@ -153,6 +153,8 @@ paths:
           $ref: '../schemas/responses.yaml#/responses/BadRequest'
         '401':
           $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
         '429':
           $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
         '500':
@@ -298,6 +300,8 @@ paths:
           $ref: '../schemas/responses.yaml#/responses/BadRequest'
         '401':
           $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
         '429':
           $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
         '500':

@@ -107,3 +107,12 @@ func (r *PrincipalRepo) SetAdmin(ctx context.Context, id string, isAdmin bool) e
 		ID:      id,
 	})
 }
+
+// BindExternalID sets the external identity on an existing principal.
+func (r *PrincipalRepo) BindExternalID(ctx context.Context, id string, externalID string, externalIssuer string) error {
+	return r.q.BindExternalID(ctx, dbstore.BindExternalIDParams{
+		ExternalID:     mapper.NullStrFromStr(externalID),
+		ExternalIssuer: mapper.NullStrFromStr(externalIssuer),
+		ID:             id,
+	})
+}

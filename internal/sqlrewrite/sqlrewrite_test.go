@@ -1179,3 +1179,71 @@ func TestExtractTargetTable(t *testing.T) {
 		})
 	}
 }
+
+// --- Security: block dangerous DuckDB functions ---
+
+func TestClassifyStatement_BlocksDangerousFunctions(t *testing.T) {
+	tests := []struct {
+		name string
+		sql  string
+	}{
+		{"read_csv_auto", "SELECT * FROM read_csv_auto('/etc/passwd')"},
+		{"read_parquet", "SELECT * FROM read_parquet('/etc/shadow')"},
+		{"read_json", "SELECT * FROM read_json('/etc/hosts')"},
+		{"read_text", "SELECT read_text('/etc/passwd')"},
+		{"glob", "SELECT * FROM glob('/tmp/*')"},
+		{"sqlite_scan", "SELECT * FROM sqlite_scan('/etc/passwd', 'sqlite_master')"},
+		{"read_blob", "SELECT * FROM read_blob('/etc/passwd')"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := ClassifyStatement(tc.sql)
+			if err == nil {
+				t.Errorf("ClassifyStatement(%q): expected error for dangerous function, got nil", tc.sql)
+			}
+		})
+	}
+}
+
+func TestClassifyStatement_BlocksMetadataLeaks(t *testing.T) {
+	tests := []struct {
+		name string
+		sql  string
+	}{
+		{"duckdb_extensions", "SELECT * FROM duckdb_extensions()"},
+		{"duckdb_settings", "SELECT * FROM duckdb_settings()"},
+		{"duckdb_databases", "SELECT * FROM duckdb_databases()"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := ClassifyStatement(tc.sql)
+			if err == nil {
+				t.Errorf("ClassifyStatement(%q): expected error for metadata leak function, got nil", tc.sql)
+			}
+		})
+	}
+}
+
+func TestExtractTableNames_DetectsFunctionCalls(t *testing.T) {
+	tests := []struct {
+		name string
+		sql  string
+	}{
+		{"read_csv_auto", "SELECT * FROM read_csv_auto('/etc/passwd')"},
+		{"glob", "SELECT * FROM glob('/tmp/*')"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tables, err := ExtractTableNames(tc.sql)
+			if err != nil {
+				return // error is acceptable — means the function was detected
+			}
+			// If no error, the table list must NOT be empty, otherwise the
+			// engine will treat this as a "table-less SELECT" and allow it
+			// for all authenticated users, bypassing RBAC entirely.
+			if len(tables) == 0 {
+				t.Errorf("ExtractTableNames(%q): got empty table list — function-based FROM clause will bypass RBAC as table-less SELECT", tc.sql)
+			}
+		})
+	}
+}

@@ -35,8 +35,8 @@ func TestJIT_ProvisionNewUser(t *testing.T) {
 	token := generateJWT(t, secret, newSub, time.Now().Add(time.Hour))
 
 	// First request: the user doesn't exist yet, JIT should create it.
-	// Use /v1/groups (open to non-admins) to trigger JIT provisioning.
-	resp := doRequestWithBearer(t, "GET", env.Server.URL+"/v1/groups", token, nil)
+	// Use /v1/tags (open to non-admins) to trigger JIT provisioning.
+	resp := doRequestWithBearer(t, "GET", env.Server.URL+"/v1/tags", token, nil)
 	body := readBody(t, resp)
 	require.Equal(t, 200, resp.StatusCode, "JIT user should be able to access read endpoints, got body: %s", string(body))
 
@@ -74,12 +74,12 @@ func TestJIT_ProvisionIdempotent(t *testing.T) {
 	token := generateJWT(t, secret, newSub, time.Now().Add(time.Hour))
 
 	// Make two requests — both should succeed.
-	// Use /v1/groups (open to non-admins) to trigger JIT provisioning.
-	resp1 := doRequestWithBearer(t, "GET", env.Server.URL+"/v1/groups", token, nil)
+	// Use /v1/tags (open to non-admins) to trigger JIT provisioning.
+	resp1 := doRequestWithBearer(t, "GET", env.Server.URL+"/v1/tags", token, nil)
 	require.Equal(t, 200, resp1.StatusCode)
 	_ = resp1.Body.Close()
 
-	resp2 := doRequestWithBearer(t, "GET", env.Server.URL+"/v1/groups", token, nil)
+	resp2 := doRequestWithBearer(t, "GET", env.Server.URL+"/v1/tags", token, nil)
 	require.Equal(t, 200, resp2.StatusCode)
 	_ = resp2.Body.Close()
 
@@ -115,13 +115,13 @@ func TestJIT_ExistingExternalID(t *testing.T) {
 	extSub := "jit-existing-ext-" + fmt.Sprintf("%d", time.Now().UnixNano())
 	token := generateJWT(t, secret, extSub, time.Now().Add(time.Hour))
 
-	// Use /v1/groups (open to non-admins) to trigger JIT provisioning.
-	resp := doRequestWithBearer(t, "GET", env.Server.URL+"/v1/groups", token, nil)
+	// Use /v1/tags (open to non-admins) to trigger JIT provisioning.
+	resp := doRequestWithBearer(t, "GET", env.Server.URL+"/v1/tags", token, nil)
 	require.Equal(t, 200, resp.StatusCode, "first JIT login should succeed")
 	_ = resp.Body.Close()
 
 	// Second login — should resolve to same principal.
-	resp2 := doRequestWithBearer(t, "GET", env.Server.URL+"/v1/groups", token, nil)
+	resp2 := doRequestWithBearer(t, "GET", env.Server.URL+"/v1/tags", token, nil)
 	require.Equal(t, 200, resp2.StatusCode, "second JIT login should resolve existing")
 	_ = resp2.Body.Close()
 
@@ -184,8 +184,8 @@ func TestJIT_DisplayNameFromEmailClaim(t *testing.T) {
 	signed, err := token.SignedString(secret)
 	require.NoError(t, err)
 
-	// Use /v1/groups (open to non-admins) to trigger JIT provisioning.
-	resp := doRequestWithBearer(t, "GET", env.Server.URL+"/v1/groups", signed, nil)
+	// Use /v1/tags (open to non-admins) to trigger JIT provisioning.
+	resp := doRequestWithBearer(t, "GET", env.Server.URL+"/v1/tags", signed, nil)
 	require.Equal(t, 200, resp.StatusCode)
 	_ = resp.Body.Close()
 
@@ -350,7 +350,7 @@ func TestAdminGuard_AdminAllowed(t *testing.T) {
 }
 
 // TestAdminGuard_ReadEndpointsOpen verifies that non-admin users can still
-// access read endpoints (except admin-only ones like ListPrincipals).
+// access read endpoints that don't require admin, and get 403 on admin-only ones.
 func TestAdminGuard_ReadEndpointsOpen(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{})
 
@@ -360,8 +360,9 @@ func TestAdminGuard_ReadEndpointsOpen(t *testing.T) {
 		wantStatus int
 	}{
 		{"list_principals_admin_only", "/v1/principals", 403},
-		{"list_groups", "/v1/groups", 200},
-		{"list_audit_logs", "/v1/audit-logs", 200},
+		{"list_groups_admin_only", "/v1/groups", 403},
+		{"list_audit_logs_admin_only", "/v1/audit-logs", 403},
+		{"list_tags", "/v1/tags", 200},
 	}
 
 	for _, tc := range tests {
@@ -630,8 +631,8 @@ func TestMixedAuth_JWTUserCreatesAPIKey(t *testing.T) {
 	mixedSub := "mixed-auth-user-" + fmt.Sprintf("%d", time.Now().UnixNano())
 	jwtToken := generateJWT(t, secret, mixedSub, time.Now().Add(time.Hour))
 
-	// Use /v1/groups (open to non-admins) to trigger JIT provisioning.
-	resp := doRequestWithBearer(t, "GET", env.Server.URL+"/v1/groups", jwtToken, nil)
+	// Use /v1/tags (open to non-admins) to trigger JIT provisioning.
+	resp := doRequestWithBearer(t, "GET", env.Server.URL+"/v1/tags", jwtToken, nil)
 	require.Equal(t, 200, resp.StatusCode, "JWT auth should JIT-provision the user")
 	_ = resp.Body.Close()
 
@@ -664,8 +665,8 @@ func TestMixedAuth_JWTUserCreatesAPIKey(t *testing.T) {
 	apiKey := keyResult["key"].(string)
 
 	// Step 4: Use the API key to authenticate as the same user.
-	// Use /v1/groups (open to non-admins) since ListPrincipals requires admin.
-	resp4 := doRequest(t, "GET", env.Server.URL+"/v1/groups", apiKey, nil)
+	// Use /v1/tags (open to non-admins) since ListPrincipals and ListGroups require admin.
+	resp4 := doRequest(t, "GET", env.Server.URL+"/v1/tags", apiKey, nil)
 	require.Equal(t, 200, resp4.StatusCode, "API key should authenticate as the same principal")
 	_ = resp4.Body.Close()
 }
@@ -720,8 +721,8 @@ func TestJIT_NonAdminCannotMutate(t *testing.T) {
 	token := generateJWT(t, secret, newSub, time.Now().Add(time.Hour))
 
 	// Read should work (JIT provisions the user).
-	// Use /v1/groups (open to non-admins) to trigger JIT provisioning.
-	resp := doRequestWithBearer(t, "GET", env.Server.URL+"/v1/groups", token, nil)
+	// Use /v1/tags (open to non-admins) to trigger JIT provisioning.
+	resp := doRequestWithBearer(t, "GET", env.Server.URL+"/v1/tags", token, nil)
 	require.Equal(t, 200, resp.StatusCode, "JIT user should be able to read")
 	_ = resp.Body.Close()
 
@@ -747,8 +748,8 @@ func TestJIT_AuditTrail(t *testing.T) {
 	newSub := "jit-audit-" + fmt.Sprintf("%d", time.Now().UnixNano())
 	token := generateJWT(t, secret, newSub, time.Now().Add(time.Hour))
 
-	// Trigger JIT provisioning via /v1/groups (open to non-admins).
-	resp := doRequestWithBearer(t, "GET", env.Server.URL+"/v1/groups", token, nil)
+	// Trigger JIT provisioning via /v1/tags (open to non-admins).
+	resp := doRequestWithBearer(t, "GET", env.Server.URL+"/v1/tags", token, nil)
 	require.Equal(t, 200, resp.StatusCode)
 	_ = resp.Body.Close()
 

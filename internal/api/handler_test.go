@@ -1434,11 +1434,11 @@ func TestAPI_ReadEndpoints_NonAdminAccess(t *testing.T) {
 		t.Errorf("list principals: got status %d, want 403", resp.StatusCode)
 	}
 
-	// Non-admin can list groups.
+	// Non-admin cannot list groups (requires admin).
 	resp2 := doRequest(t, http.MethodGet, srv.URL+"/groups", "")
 	defer resp2.Body.Close() //nolint:errcheck
-	if resp2.StatusCode != http.StatusOK {
-		t.Errorf("list groups: got status %d, want 200", resp2.StatusCode)
+	if resp2.StatusCode != http.StatusForbidden {
+		t.Errorf("list groups: got status %d, want 403", resp2.StatusCode)
 	}
 }
 

@@ -60,6 +60,12 @@ func NewCatalogRegistrationService(deps RegistrationServiceDeps) *CatalogRegistr
 
 // Register validates and persists a new catalog, then attempts to ATTACH it.
 func (s *CatalogRegistrationService) Register(ctx context.Context, req domain.CreateCatalogRequest) (*domain.CatalogRegistration, error) {
+	// Block reserved DuckDB catalog names that would conflict with internal catalogs.
+	reserved := map[string]bool{"main": true, "memory": true, "system": true, "temp": true}
+	if reserved[strings.ToLower(req.Name)] {
+		return nil, domain.ErrValidation("catalog name %q is reserved by DuckDB", req.Name)
+	}
+
 	// Validate catalog name as a safe SQL identifier
 	if err := ddl.ValidateIdentifier(req.Name); err != nil {
 		return nil, domain.ErrValidation("invalid catalog name: %s", err.Error())
