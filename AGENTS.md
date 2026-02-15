@@ -12,30 +12,77 @@ Uses [Task](https://taskfile.dev/) (`Taskfile.yml`):
 task build                # go build ./...
 task test                 # go test -race ./...
 task vet                  # go vet ./...
+task lint                 # run all linters (Go + OpenAPI)
+task check                # run lint + test, print CI-style pass/fail summary — run before creating PRs
 task generate             # regenerate all code (API types + server + sqlc)
 task generate-api         # regenerate API types/server from openapi.yaml
 task sqlc                 # regenerate DB query code from SQL
 task migrate-up           # run all pending migrations
 task new-migration -- X   # create a new migration named X
 task integration-test     # integration tests (require S3 creds + built extension)
-task check                # run lint + test, print CI-style pass/fail summary — run before creating PRs
 ```
 
 Run server: `go run ./cmd/server`
 
+## Branch & PR Conventions
+
+### Branch naming
+
+```
+ai/<type>/<name>       # AI-authored changes
+feat/<name>            # Human-authored features
+fix/<name>             # Human-authored bug fixes
+```
+
+Types: `feat`, `fix`, `refactor`, `chore`, `test`, `docs`
+
+### Commit messages
+
+Use [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+feat: add row-level security for external tables
+fix: resolve panic in SQL rewriter for nested CTEs
+refactor: extract engine helpers into separate file
+test: add coverage for column masking edge cases
+chore: update CI workflow
+docs: improve API documentation for grants endpoint
+```
+
+### PR workflow
+
+1. Create branch from `origin/main`
+2. Implement changes with incremental commits
+3. Run `task check` — all checks must pass
+4. Rebase onto latest `origin/main` before pushing
+5. Open PR (draft if WIP)
+6. Require 1 approval before merge to `main`
+
+### AI PR workflow
+
+When working from a plan (`.opencode/plans/`):
+
+1. Read the plan fully before starting
+2. Branch as `ai/<type>/<name>` from `origin/main`
+3. Implement step by step, commit incrementally
+4. Run `task check` — fix failures before pushing
+5. Rebase onto `origin/main` (other agents may have merged)
+6. Open draft PR referencing the plan
+7. Report PR URL for human review
+
 ## Testing
 
 ```bash
-task test                                                              # all unit tests
+task test:unit                                                         # all unit tests
+task test:integration                                                  # integration tests
 go test -race ./internal/sqlrewrite/...                                # single package
 go test -race -run TestAdminSeesAllRows ./internal/engine/...          # single test
 go test -race -run TestAPI_SchemaCRUD/create_schema ./internal/api/... # single subtest
-task integration-test                                                  # integration (build-tagged)
 ```
 
 ### Conventions
 
-- **Table-driven tests** with `t.Run()` subtests — this is the default pattern for all new tests.
+- **Table-driven tests** with `t.Run()` subtests — default pattern for all new tests.
 - **Use testify** (`require` for fatal, `assert` for non-fatal) for assertions.
 - **Hand-written mocks** preferred (see `internal/api/mock_catalog_test.go`). Most tests use real SQLite via `t.TempDir()` instead of mocks.
 - **Helpers** must call `t.Helper()`. Use `t.Cleanup()` for teardown, `t.TempDir()` for temp dirs, `t.Skip()` when prerequisites are missing.
