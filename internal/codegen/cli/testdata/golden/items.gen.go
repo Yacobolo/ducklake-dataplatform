@@ -53,6 +53,10 @@ func newItemsCmd(client *Client) *cobra.Command {
 				if err := CheckError(resp); err != nil {
 					return err
 				}
+				outputFlag, _ := cmd.Root().PersistentFlags().GetString("output")
+				if OutputFormat(outputFlag) == OutputJSON {
+					return PrintJSON(os.Stdout, map[string]string{"status": "ok"})
+				}
 				fmt.Fprintln(os.Stdout, "Done.")
 				return nil
 			},

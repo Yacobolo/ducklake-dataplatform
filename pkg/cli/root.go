@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -18,7 +19,20 @@ var (
 func Execute() int {
 	rootCmd := newRootCmd()
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		output, _ := rootCmd.PersistentFlags().GetString("output")
+		if output == "json" {
+			errObj := map[string]interface{}{
+				"error": err.Error(),
+			}
+			var apiErr *gen.APIError
+			if errors.As(err, &apiErr) {
+				errObj["http_status"] = apiErr.HTTPStatus
+				errObj["code"] = apiErr.Code
+			}
+			_ = gen.PrintJSON(os.Stdout, errObj)
+		} else {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		}
 		return 1
 	}
 	return 0
@@ -129,6 +143,12 @@ func newRootCmd() *cobra.Command {
 	rootCmd.AddCommand(newApplyCmd(client))
 	rootCmd.AddCommand(newExportCmd(client))
 	rootCmd.AddCommand(newValidateCmd(client))
+
+	// Agent discovery commands
+	rootCmd.AddCommand(newCommandsCmd())
+	rootCmd.AddCommand(newAPICmd())
+	rootCmd.AddCommand(newFindCmd(client))
+	rootCmd.AddCommand(newDescribeCmd(client))
 
 	// Shell completions
 	rootCmd.AddCommand(newCompletionCmd())

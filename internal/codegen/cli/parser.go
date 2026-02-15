@@ -554,6 +554,12 @@ func paramToFlag(p *openapi3.Parameter, aliases map[string]FlagAliasConfig) Flag
 		fm.CobraType = "String"
 	}
 	fm.Usage = p.Description
+	if fm.Usage == "" {
+		fm.Usage = inferUsageFromName(p.Name)
+	}
+	if p.Schema != nil && p.Schema.Value != nil {
+		fm.Usage = appendEnumHint(fm.Usage, p.Schema.Value.Enum)
+	}
 	if alias, ok := aliases[p.Name]; ok {
 		fm.Short = alias.Short
 	}
@@ -584,6 +590,11 @@ func fieldToFlag(name string, schema *openapi3.Schema, required bool, aliases ma
 		fm.Usage = schema.Description
 	}
 
+	if fm.Usage == "" {
+		fm.Usage = inferUsageFromName(name)
+	}
+	fm.Usage = appendEnumHint(fm.Usage, schema.Enum)
+
 	if schema.Default != nil {
 		fm.Default = fmt.Sprintf("%v", schema.Default)
 	}
@@ -593,6 +604,30 @@ func fieldToFlag(name string, schema *openapi3.Schema, required bool, aliases ma
 	}
 
 	return fm
+}
+
+// inferUsageFromName creates a human-readable usage string from a field name.
+// For example, "member_type" becomes "Member type".
+func inferUsageFromName(name string) string {
+	words := strings.ReplaceAll(name, "_", " ")
+	words = strings.ReplaceAll(words, "-", " ")
+	if len(words) > 0 {
+		return strings.ToUpper(words[:1]) + words[1:]
+	}
+	return name
+}
+
+// appendEnumHint appends a list of valid values to the usage string if enums are defined.
+func appendEnumHint(usage string, enums []interface{}) string {
+	if len(enums) == 0 {
+		return usage
+	}
+	vals := make([]string, len(enums))
+	for i, e := range enums {
+		vals[i] = fmt.Sprintf("%v", e)
+	}
+	hint := fmt.Sprintf(" (one of: %s)", strings.Join(vals, ", "))
+	return usage + hint
 }
 
 func schemaType(s *openapi3.Schema) string {
@@ -729,6 +764,98 @@ func toSet(ss []string) map[string]bool {
 		m[s] = true
 	}
 	return m
+}
+
+// ExtractAPIEndpoints extracts all API endpoints from the OpenAPI spec for the api registry.
+func ExtractAPIEndpoints(spec *openapi3.T, groups []GroupModel) []APIEndpointModel {
+	// Build a map of operationID -> CLI command path from the group models
+	cliCmdMap := map[string]string{}
+	for _, g := range groups {
+		for _, cmd := range g.Commands {
+			path := g.Name
+			if len(cmd.CommandPath) > 0 {
+				path += " " + strings.Join(cmd.CommandPath, " ")
+			}
+			path += " " + cmd.Verb
+			cliCmdMap[cmd.OperationID] = strings.TrimSpace(path)
+		}
+	}
+
+	var endpoints []APIEndpointModel
+	for urlPath, pathItem := range spec.Paths.Map() {
+		for method, op := range pathItem.Operations() {
+			if op.OperationID == "" {
+				continue
+			}
+			ep := APIEndpointModel{
+				OperationID: op.OperationID,
+				Method:      method,
+				Path:        urlPath,
+				Summary:     op.Summary,
+				Description: op.Description,
+				Tags:        op.Tags,
+				CLICommand:  cliCmdMap[op.OperationID],
+			}
+
+			// Collect path-level + operation-level parameters
+			var allParams []*openapi3.ParameterRef
+			allParams = append(allParams, pathItem.Parameters...)
+			allParams = append(allParams, op.Parameters...)
+			for _, pRef := range allParams {
+				p := pRef.Value
+				if p == nil {
+					continue
+				}
+				param := APIParamModel{
+					Name:     p.Name,
+					In:       p.In,
+					Required: p.Required,
+				}
+				if p.Schema != nil && p.Schema.Value != nil {
+					param.Type = schemaType(p.Schema.Value)
+					for _, e := range p.Schema.Value.Enum {
+						param.Enum = append(param.Enum, fmt.Sprintf("%v", e))
+					}
+				}
+				ep.Parameters = append(ep.Parameters, param)
+			}
+
+			// Collect body fields
+			if op.RequestBody != nil && op.RequestBody.Value != nil {
+				if ct, ok := op.RequestBody.Value.Content["application/json"]; ok && ct.Schema != nil && ct.Schema.Value != nil {
+					schema := ct.Schema.Value
+					requiredSet := toSet(schema.Required)
+					for propName, propRef := range schema.Properties {
+						prop := propRef.Value
+						if prop == nil {
+							continue
+						}
+						field := APIFieldModel{
+							Name:     propName,
+							Type:     schemaType(prop),
+							Required: requiredSet[propName],
+						}
+						for _, e := range prop.Enum {
+							field.Enum = append(field.Enum, fmt.Sprintf("%v", e))
+						}
+						ep.BodyFields = append(ep.BodyFields, field)
+					}
+				}
+			}
+
+			endpoints = append(endpoints, ep)
+		}
+	}
+
+	// Sort by path then method for deterministic output
+	sort.Slice(endpoints, func(i, j int) bool {
+		if endpoints[i].Path == endpoints[j].Path {
+			return endpoints[i].Method < endpoints[j].Method
+		}
+		return endpoints[i].Path < endpoints[j].Path
+	})
+
+	return endpoints
 }
 
 func sortedKeys[V any](m map[string]V) []string {

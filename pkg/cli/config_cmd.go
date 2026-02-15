@@ -5,8 +5,9 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-
 	"gopkg.in/yaml.v3"
+
+	"duck-demo/pkg/cli/gen"
 )
 
 func newConfigCmd() *cobra.Command {
@@ -26,11 +27,14 @@ func newConfigShowCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "show",
 		Short: "Display current configuration",
-		RunE: func(_ *cobra.Command, _ []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			cfg, err := LoadUserConfig()
 			if err != nil {
 				_, _ = fmt.Fprintf(os.Stderr, "No configuration found at %s\n", ConfigPath())
 				return err
+			}
+			if getOutputFormat(cmd) == "json" {
+				return gen.PrintJSON(os.Stdout, cfg)
 			}
 			data, err := yaml.Marshal(cfg)
 			if err != nil {
@@ -85,6 +89,13 @@ func newConfigSetProfileCmd() *cobra.Command {
 			if err := SaveUserConfig(cfg); err != nil {
 				return err
 			}
+			if getOutputFormat(cmd) == "json" {
+				return gen.PrintJSON(os.Stdout, map[string]string{
+					"status":  "ok",
+					"profile": name,
+					"path":    ConfigPath(),
+				})
+			}
 			_, _ = fmt.Fprintf(os.Stdout, "Profile %q saved to %s\n", name, ConfigPath())
 			return nil
 		},
@@ -105,7 +116,7 @@ func newConfigUseProfileCmd() *cobra.Command {
 		Use:   "use-profile <name>",
 		Short: "Set the active configuration profile",
 		Args:  cobra.ExactArgs(1),
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := LoadUserConfig()
 			if err != nil {
 				return fmt.Errorf("no config found: %w", err)
@@ -117,6 +128,12 @@ func newConfigUseProfileCmd() *cobra.Command {
 			cfg.CurrentProfile = name
 			if err := SaveUserConfig(cfg); err != nil {
 				return err
+			}
+			if getOutputFormat(cmd) == "json" {
+				return gen.PrintJSON(os.Stdout, map[string]string{
+					"status":         "ok",
+					"active_profile": name,
+				})
 			}
 			_, _ = fmt.Fprintf(os.Stdout, "Active profile set to %q\n", name)
 			return nil

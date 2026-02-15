@@ -251,6 +251,10 @@ func new{{toPascal .Name}}Cmd(client *Client) *cobra.Command {
 				}
 
 				{{- if isNoContent $cmd.Response.Pattern}}
+				outputFlag, _ := cmd.Root().PersistentFlags().GetString("output")
+				if OutputFormat(outputFlag) == OutputJSON {
+					return PrintJSON(os.Stdout, map[string]string{"status": "ok"})
+				}
 				fmt.Fprintln(os.Stdout, "Done.")
 				return nil
 				{{- else}}

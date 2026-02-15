@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -20,7 +21,10 @@ func newExportCmd(client *gen.Client) *cobra.Command {
 		Short: "Export current server state as declarative YAML configuration",
 		Long:  "Reads the current state from the server and writes it as YAML configuration files.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Fetching state from server...")
+			isJSON := getOutputFormat(cmd) == "json"
+			if !isJSON {
+				_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Fetching state from server...")
+			}
 
 			reader := NewAPIStateClient(client)
 			state, err := reader.ReadState(cmd.Context())
@@ -32,6 +36,12 @@ func newExportCmd(client *gen.Client) *cobra.Command {
 				return fmt.Errorf("export: %w", err)
 			}
 
+			if isJSON {
+				return gen.PrintJSON(os.Stdout, map[string]string{
+					"status": "ok",
+					"path":   configDir,
+				})
+			}
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Exported configuration to %s\n", configDir)
 			return nil
 		},

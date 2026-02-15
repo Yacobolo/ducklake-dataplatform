@@ -538,6 +538,7 @@ func TestCLI_CommandTree(t *testing.T) {
 		"lineage", "manifest", "ingestion",
 		"version", "config", "auth",
 		"plan", "apply", "export", "validate",
+		"commands", "api", "find", "describe",
 		"completion",
 	}
 
@@ -906,4 +907,62 @@ func TestCLI_UnknownCommand(t *testing.T) {
 	err := rootCmd.Execute()
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unknown command")
+}
+
+// === Agent-Friendly Output Tests ===
+
+func TestCLI_DeleteCommand_JSONOutput(t *testing.T) {
+	// DELETE commands should output {"status":"ok"} when --output json is set.
+	rec := &requestRecorder{}
+	srv := httptest.NewServer(jsonHandler(rec, 204, ``))
+	defer srv.Close()
+
+	rootCmd := newTestRootCmd(t, srv)
+	rootCmd.SetArgs([]string{
+		"--host", srv.URL,
+		"--output", "json",
+		"catalog", "schemas", "delete", "myschema",
+		"--catalog-name", "test",
+		"--yes",
+	})
+
+	// Capture stdout
+	old := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	err := rootCmd.Execute()
+	_ = w.Close()
+	out, _ := io.ReadAll(r)
+	os.Stdout = old
+
+	require.NoError(t, err)
+
+	var result map[string]string
+	require.NoError(t, json.Unmarshal(out, &result), "DELETE with --output json should produce valid JSON: %s", string(out))
+	assert.Equal(t, "ok", result["status"])
+}
+
+func TestCLI_VersionCommand_JSONOutput(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{"--output", "json", "version"})
+
+	old := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	err := rootCmd.Execute()
+	_ = w.Close()
+	out, _ := io.ReadAll(r)
+	os.Stdout = old
+
+	require.NoError(t, err)
+
+	var result map[string]string
+	require.NoError(t, json.Unmarshal(out, &result), "version --output json should produce valid JSON: %s", string(out))
+	assert.Contains(t, result, "version")
+	assert.Contains(t, result, "commit")
 }

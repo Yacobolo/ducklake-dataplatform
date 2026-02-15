@@ -70,6 +70,14 @@ func uniqueSubcommandNames(commands []CommandModel) []string {
 //go:embed templates/*.tmpl
 var templateFS embed.FS
 
+// RenderWithEndpoints generates all Go source files including the API registry.
+func RenderWithEndpoints(groups []GroupModel, cfg *Config, endpoints []APIEndpointModel, outDir string) error {
+	if err := Render(groups, cfg, outDir); err != nil {
+		return err
+	}
+	return renderAPIRegistry(endpoints, outDir)
+}
+
 // Render generates all Go source files from the model into outDir.
 func Render(groups []GroupModel, cfg *Config, outDir string) error {
 	if err := os.MkdirAll(outDir, 0o750); err != nil {
@@ -175,6 +183,37 @@ func Render(groups []GroupModel, cfg *Config, outDir string) error {
 		if err := os.WriteFile(outPath, formatted, 0o600); err != nil {
 			return fmt.Errorf("write %s: %w", outPath, err)
 		}
+	}
+
+	return nil
+}
+
+// renderAPIRegistry generates the api_registry.gen.go file from endpoint models.
+func renderAPIRegistry(endpoints []APIEndpointModel, outDir string) error {
+	funcMap := template.FuncMap{
+		"quote": func(s string) string { return fmt.Sprintf("%q", s) },
+	}
+
+	tmpl, err := template.New("").Funcs(funcMap).ParseFS(templateFS, "templates/api_registry.go.tmpl")
+	if err != nil {
+		return fmt.Errorf("parse api_registry template: %w", err)
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.ExecuteTemplate(&buf, "api_registry.go.tmpl", endpoints); err != nil {
+		return fmt.Errorf("execute api_registry template: %w", err)
+	}
+
+	formatted, err := imports.Process("api_registry.gen.go", buf.Bytes(), nil)
+	if err != nil {
+		outPath := filepath.Join(outDir, "api_registry.gen.go")
+		_ = os.WriteFile(outPath, buf.Bytes(), 0o600)
+		return fmt.Errorf("goimports api_registry.gen.go: %w", err)
+	}
+
+	outPath := filepath.Join(outDir, "api_registry.gen.go")
+	if err := os.WriteFile(outPath, formatted, 0o600); err != nil {
+		return fmt.Errorf("write %s: %w", outPath, err)
 	}
 
 	return nil

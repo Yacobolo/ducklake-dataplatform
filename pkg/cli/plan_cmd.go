@@ -48,7 +48,12 @@ func newPlanCmd(client *gen.Client) *cobra.Command {
 			plan := declarative.Diff(desired, actual)
 
 			// 5. Format output.
-			switch output {
+			// Check local -o flag first, then fall back to global --output
+			effectiveOutput := output
+			if effectiveOutput == "text" && getOutputFormat(cmd) == "json" {
+				effectiveOutput = "json"
+			}
+			switch effectiveOutput {
 			case "json":
 				if err := declarative.FormatJSON(os.Stdout, plan); err != nil {
 					return fmt.Errorf("format plan: %w", err)
