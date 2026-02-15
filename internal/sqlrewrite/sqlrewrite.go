@@ -1,16 +1,15 @@
 // Package sqlrewrite provides SQL-level RBAC and RLS enforcement.
 //
-// It parses SQL queries using the PostgreSQL parser (pg_query_go), extracts
-// table names, checks access control, and injects WHERE clause filters for
-// row-level security. This replaces the previous Substrait-based approach,
-// removing the dependency on the DuckDB substrait extension.
+// It parses SQL queries using a DuckDB-native parser, extracts table names,
+// checks access control, and injects WHERE clause filters for row-level
+// security.
 package sqlrewrite
 
 import (
 	"fmt"
 	"strings"
 
-	pg_query "github.com/pganalyze/pg_query_go/v6"
+	"duck-demo/internal/duckdbsql"
 )
 
 // Operator constants for RLS rule conditions (migrated from policy package).
@@ -33,21 +32,12 @@ type RLSRule struct {
 
 // ExtractTableNames parses a SQL query and returns the deduplicated list
 // of table names referenced in FROM clauses and JOINs.
-// Handles compound names (e.g., "lake.main.titanic") by using the last element.
 func ExtractTableNames(sql string) ([]string, error) {
-	result, err := pg_query.Parse(sql)
+	stmt, err := duckdbsql.Parse(sql)
 	if err != nil {
 		return nil, fmt.Errorf("parse SQL: %w", err)
 	}
-
-	seen := make(map[string]bool)
-	var tables []string
-
-	for _, stmt := range result.Stmts {
-		collectTablesFromNode(stmt.Stmt, seen, &tables)
-	}
-
-	return tables, nil
+	return duckdbsql.CollectTableNames(stmt), nil
 }
 
 // RewriteQuery parses the SQL query, injects WHERE clause conditions based on
@@ -58,23 +48,107 @@ func RewriteQuery(sql string, rulesByTable map[string][]RLSRule) (string, error)
 		return sql, nil
 	}
 
-	result, err := pg_query.Parse(sql)
+	stmt, err := duckdbsql.Parse(sql)
 	if err != nil {
 		return "", fmt.Errorf("parse SQL: %w", err)
 	}
 
-	for _, stmt := range result.Stmts {
-		if err := injectFiltersIntoNode(stmt.Stmt, rulesByTable); err != nil {
-			return "", err
+	// Build and inject filter expressions for each table
+	if err := injectRLSRules(stmt, rulesByTable); err != nil {
+		return "", err
+	}
+
+	return duckdbsql.Format(stmt), nil
+}
+
+// injectRLSRules injects RLS rule-based WHERE clauses into a statement.
+func injectRLSRules(stmt duckdbsql.Stmt, rulesByTable map[string][]RLSRule) error {
+	// For SELECT statements, we need to match table names in FROM clauses
+	// and inject filters. Build filter expressions and inject.
+	tables := duckdbsql.CollectTableNames(stmt)
+	for _, tableName := range tables {
+		rules, ok := rulesByTable[tableName]
+		if !ok || len(rules) == 0 {
+			continue
+		}
+
+		for _, rule := range rules {
+			filter, err := buildRuleFilter(rule)
+			if err != nil {
+				return err
+			}
+			duckdbsql.InjectFilter(stmt, tableName, filter)
 		}
 	}
+	return nil
+}
 
-	output, err := pg_query.Deparse(result)
+// buildRuleFilter creates an expression node from an RLS rule.
+func buildRuleFilter(rule RLSRule) (duckdbsql.Expr, error) {
+	opToken, err := operatorToToken(rule.Operator)
 	if err != nil {
-		return "", fmt.Errorf("deparse SQL: %w", err)
+		return nil, err
 	}
 
-	return output, nil
+	literal, err := makeLiteralExpr(rule.Value)
+	if err != nil {
+		return nil, fmt.Errorf("RLS rule for %s.%s: %w", rule.Table, rule.Column, err)
+	}
+
+	return &duckdbsql.BinaryExpr{
+		Left:  &duckdbsql.ColumnRef{Column: rule.Column},
+		Op:    opToken,
+		Right: literal,
+	}, nil
+}
+
+// operatorToToken converts a policy operator constant to a duckdbsql token type.
+func operatorToToken(op string) (duckdbsql.TokenType, error) {
+	switch op {
+	case OpEqual:
+		return duckdbsql.TOKEN_EQ, nil
+	case OpNotEqual:
+		return duckdbsql.TOKEN_NE, nil
+	case OpLessThan:
+		return duckdbsql.TOKEN_LT, nil
+	case OpLessEqual:
+		return duckdbsql.TOKEN_LE, nil
+	case OpGreaterThan:
+		return duckdbsql.TOKEN_GT, nil
+	case OpGreaterEqual:
+		return duckdbsql.TOKEN_GE, nil
+	default:
+		return 0, fmt.Errorf("unsupported operator: %q", op)
+	}
+}
+
+// makeLiteralExpr creates a Literal expression from a Go value.
+func makeLiteralExpr(v interface{}) (duckdbsql.Expr, error) {
+	switch val := v.(type) {
+	case int:
+		return &duckdbsql.Literal{Type: duckdbsql.LiteralNumber, Value: fmt.Sprintf("%d", val)}, nil
+	case int8:
+		return &duckdbsql.Literal{Type: duckdbsql.LiteralNumber, Value: fmt.Sprintf("%d", val)}, nil
+	case int16:
+		return &duckdbsql.Literal{Type: duckdbsql.LiteralNumber, Value: fmt.Sprintf("%d", val)}, nil
+	case int32:
+		return &duckdbsql.Literal{Type: duckdbsql.LiteralNumber, Value: fmt.Sprintf("%d", val)}, nil
+	case int64:
+		return &duckdbsql.Literal{Type: duckdbsql.LiteralNumber, Value: fmt.Sprintf("%d", val)}, nil
+	case float32:
+		return &duckdbsql.Literal{Type: duckdbsql.LiteralNumber, Value: fmt.Sprintf("%g", val)}, nil
+	case float64:
+		return &duckdbsql.Literal{Type: duckdbsql.LiteralNumber, Value: fmt.Sprintf("%g", val)}, nil
+	case string:
+		return &duckdbsql.Literal{Type: duckdbsql.LiteralString, Value: val}, nil
+	case bool:
+		if val {
+			return &duckdbsql.Literal{Type: duckdbsql.LiteralString, Value: "true"}, nil
+		}
+		return &duckdbsql.Literal{Type: duckdbsql.LiteralString, Value: "false"}, nil
+	default:
+		return nil, fmt.Errorf("unsupported literal type: %T", v)
+	}
 }
 
 // StatementType represents the kind of SQL statement.
@@ -111,31 +185,22 @@ func (t StatementType) String() string {
 // It rejects multi-statement input to prevent piggy-backed SQL injection
 // (e.g., "SELECT 1; DROP TABLE foo").
 func ClassifyStatement(sql string) (StatementType, error) {
-	result, err := pg_query.Parse(sql)
+	stmt, err := duckdbsql.Parse(sql)
 	if err != nil {
 		return StmtOther, fmt.Errorf("parse SQL: %w", err)
 	}
 
-	if len(result.Stmts) == 0 {
-		return StmtOther, nil
-	}
-
-	if len(result.Stmts) > 1 {
-		return StmtOther, fmt.Errorf("multi-statement queries are not allowed")
-	}
-
-	switch result.Stmts[0].Stmt.Node.(type) {
-	case *pg_query.Node_SelectStmt:
+	st := duckdbsql.Classify(stmt)
+	switch st {
+	case duckdbsql.StmtTypeSelect:
 		return StmtSelect, nil
-	case *pg_query.Node_InsertStmt:
+	case duckdbsql.StmtTypeInsert:
 		return StmtInsert, nil
-	case *pg_query.Node_UpdateStmt:
+	case duckdbsql.StmtTypeUpdate:
 		return StmtUpdate, nil
-	case *pg_query.Node_DeleteStmt:
+	case duckdbsql.StmtTypeDelete:
 		return StmtDelete, nil
-	case *pg_query.Node_CreateStmt, *pg_query.Node_AlterTableStmt, *pg_query.Node_DropStmt,
-		*pg_query.Node_IndexStmt, *pg_query.Node_ViewStmt, *pg_query.Node_CreateSchemaStmt,
-		*pg_query.Node_TruncateStmt, *pg_query.Node_RenameStmt:
+	case duckdbsql.StmtTypeDDL:
 		return StmtDDL, nil
 	default:
 		return StmtOther, nil
@@ -145,31 +210,14 @@ func ClassifyStatement(sql string) (StatementType, error) {
 // ExtractTargetTable parses a SQL DML statement and returns the target table name
 // for INSERT, UPDATE, and DELETE statements. Returns empty string for SELECT/DDL/other.
 func ExtractTargetTable(sqlStr string) (string, error) {
-	result, err := pg_query.Parse(sqlStr)
+	if sqlStr == "" {
+		return "", nil
+	}
+	stmt, err := duckdbsql.Parse(sqlStr)
 	if err != nil {
 		return "", fmt.Errorf("parse SQL: %w", err)
 	}
-
-	if len(result.Stmts) == 0 {
-		return "", nil
-	}
-
-	switch n := result.Stmts[0].Stmt.Node.(type) {
-	case *pg_query.Node_InsertStmt:
-		if n.InsertStmt.Relation != nil {
-			return n.InsertStmt.Relation.Relname, nil
-		}
-	case *pg_query.Node_UpdateStmt:
-		if n.UpdateStmt.Relation != nil {
-			return n.UpdateStmt.Relation.Relname, nil
-		}
-	case *pg_query.Node_DeleteStmt:
-		if n.DeleteStmt.Relation != nil {
-			return n.DeleteStmt.Relation.Relname, nil
-		}
-	}
-
-	return "", nil
+	return duckdbsql.TargetTable(stmt), nil
 }
 
 // InjectRowFilterSQL injects a raw SQL WHERE clause expression into all SELECT
@@ -180,32 +228,21 @@ func InjectRowFilterSQL(sqlStr string, tableName string, filterSQL string) (stri
 		return sqlStr, nil
 	}
 
-	// Parse the filter expression into an AST node
-	filterResult, err := pg_query.Parse("SELECT 1 WHERE " + filterSQL)
+	// Parse the filter expression
+	filterExpr, err := duckdbsql.ParseExpr(filterSQL)
 	if err != nil {
 		return "", fmt.Errorf("parse row filter %q: %w", filterSQL, err)
 	}
-	sel := filterResult.Stmts[0].Stmt.GetSelectStmt()
-	if sel == nil || sel.WhereClause == nil {
-		return "", fmt.Errorf("row filter %q did not produce a WHERE clause", filterSQL)
-	}
-	filterNode := sel.WhereClause
 
 	// Parse the original query
-	result, err := pg_query.Parse(sqlStr)
+	stmt, err := duckdbsql.Parse(sqlStr)
 	if err != nil {
 		return "", fmt.Errorf("parse SQL: %w", err)
 	}
 
-	for _, stmt := range result.Stmts {
-		injectRawFilterIntoNode(stmt.Stmt, tableName, filterNode)
-	}
+	duckdbsql.InjectFilter(stmt, tableName, filterExpr)
 
-	output, err := pg_query.Deparse(result)
-	if err != nil {
-		return "", fmt.Errorf("deparse SQL: %w", err)
-	}
-	return output, nil
+	return duckdbsql.Format(stmt), nil
 }
 
 // InjectMultipleRowFilters injects multiple row filter expressions into a SQL
@@ -226,4 +263,32 @@ func InjectMultipleRowFilters(sqlStr string, tableName string, filters []string)
 	}
 	combined := strings.Join(parts, " OR ")
 	return InjectRowFilterSQL(sqlStr, tableName, combined)
+}
+
+// ApplyColumnMasks rewrites SELECT target columns to apply mask expressions.
+// masks is a map of column_name -> mask_expression (e.g., {"Name": "'***'"}).
+// allColumns is the full list of column names for the table, used to expand
+// SELECT * into explicit column references so masks can be applied.
+// Returns an error if any mask expression cannot be parsed.
+func ApplyColumnMasks(sqlStr string, tableName string, masks map[string]string, allColumns []string) (string, error) {
+	if len(masks) == 0 {
+		return sqlStr, nil
+	}
+
+	stmt, err := duckdbsql.Parse(sqlStr)
+	if err != nil {
+		return "", fmt.Errorf("parse SQL: %w", err)
+	}
+
+	if err := duckdbsql.ApplyColumnMasks(stmt, tableName, masks, allColumns); err != nil {
+		return "", err
+	}
+
+	return duckdbsql.Format(stmt), nil
+}
+
+// QuoteIdentifier unconditionally quotes a SQL identifier using double quotes.
+// Internal double quotes are escaped by doubling them ("" → ").
+func QuoteIdentifier(s string) string {
+	return `"` + strings.ReplaceAll(s, `"`, `""`) + `"`
 }

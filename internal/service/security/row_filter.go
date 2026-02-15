@@ -2,11 +2,9 @@ package security
 
 import (
 	"context"
-	"fmt"
-
-	pg_query "github.com/pganalyze/pg_query_go/v6"
 
 	"duck-demo/internal/domain"
+	"duck-demo/internal/duckdbsql"
 )
 
 // RowFilterService provides row-level security filter operations.
@@ -29,9 +27,9 @@ func (s *RowFilterService) Create(ctx context.Context, req domain.CreateRowFilte
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
-	// Validate filter_sql is syntactically valid SQL by parsing it through the PostgreSQL parser.
+	// Validate filter_sql is syntactically valid SQL by parsing it through the DuckDB parser.
 	// This catches malformed expressions early rather than failing at query time.
-	if _, err := pg_query.Parse(fmt.Sprintf("SELECT 1 WHERE %s", req.FilterSQL)); err != nil {
+	if _, err := duckdbsql.ParseExpr(req.FilterSQL); err != nil {
 		return nil, domain.ErrValidation("filter_sql is not valid SQL: %v", err)
 	}
 	f := &domain.RowFilter{
