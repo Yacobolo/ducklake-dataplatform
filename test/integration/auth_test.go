@@ -133,9 +133,9 @@ func TestAuth_PrincipalIdentity(t *testing.T) {
 		assert.GreaterOrEqual(t, len(data), 1, "admin should see principals")
 
 		// Also verify a different key maps to a different principal by
-		// checking that the analyst key works too (use /v1/groups since
-		// ListPrincipals is now admin-only).
-		resp2 := doRequest(t, "GET", env.Server.URL+"/v1/groups", env.Keys.Analyst, nil)
+		// checking that the analyst key works too (use /v1/tags since
+		// ListPrincipals and ListGroups are admin-only).
+		resp2 := doRequest(t, "GET", env.Server.URL+"/v1/tags", env.Keys.Analyst, nil)
 		require.Equal(t, 200, resp2.StatusCode)
 		_ = resp2.Body.Close()
 	})

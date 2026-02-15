@@ -162,7 +162,12 @@ func (h *APIHandler) ListGroups(ctx context.Context, req ListGroupsRequestObject
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	gs, total, err := h.groups.List(ctx, page)
 	if err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return ListGroups403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		default:
+			return nil, err
+		}
 	}
 	out := make([]Group, len(gs))
 	for i, g := range gs {
@@ -231,7 +236,12 @@ func (h *APIHandler) ListGroupMembers(ctx context.Context, req ListGroupMembersR
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	ms, total, err := h.groups.ListMembers(ctx, req.GroupId, page)
 	if err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return ListGroupMembers403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		default:
+			return nil, err
+		}
 	}
 	out := make([]GroupMember, len(ms))
 	for i, m := range ms {
@@ -296,7 +306,12 @@ func (h *APIHandler) ListGrants(ctx context.Context, req ListGrantsRequestObject
 		return ListGrants400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: "either principal_id+principal_type or securable_type+securable_id query parameters are required"}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
 	if err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return ListGrants403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		default:
+			return nil, err
+		}
 	}
 
 	out := make([]PrivilegeGrant, len(grants))

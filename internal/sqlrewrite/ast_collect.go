@@ -90,8 +90,10 @@ func collectTablesFromFromNode(node *pg_query.Node, seen map[string]bool, tables
 	case *pg_query.Node_RangeSubselect:
 		collectTablesFromNode(n.RangeSubselect.Subquery, seen, tables)
 	case *pg_query.Node_RangeFunction:
-		// Table-valued functions — add a sentinel entry so the engine doesn't
-		// treat this as a "table-less SELECT" and bypass RBAC.
+		// Table-valued functions in FROM clauses (e.g., read_csv_auto(), range()).
+		// We add a "__func__<name>" sentinel entry so the engine does not treat
+		// the query as a "table-less SELECT" and bypass RBAC. The engine skips
+		// these sentinel entries during table-level privilege checks.
 		for _, fn := range n.RangeFunction.Functions {
 			if list, ok := fn.Node.(*pg_query.Node_List); ok {
 				for _, item := range list.List.Items {
