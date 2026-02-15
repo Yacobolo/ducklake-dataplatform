@@ -62,7 +62,7 @@ func (p *Parser) getInfixPrecedence() int {
 		return PrecedenceAnd
 	case TOKEN_EQ, TOKEN_NE, TOKEN_LT, TOKEN_GT, TOKEN_LE, TOKEN_GE:
 		return PrecedenceComparison
-	case TOKEN_IS, TOKEN_IN, TOKEN_BETWEEN, TOKEN_LIKE, TOKEN_ILIKE:
+	case TOKEN_IS, TOKEN_IN, TOKEN_BETWEEN, TOKEN_LIKE, TOKEN_ILIKE, TOKEN_GLOB, TOKEN_SIMILAR:
 		return PrecedenceComparison
 	case TOKEN_NOT:
 		// NOT as infix (for NOT IN, NOT LIKE, etc.)
@@ -107,6 +107,14 @@ func (p *Parser) parseInfixExpr(left Expr, prec int) Expr {
 		p.nextToken()
 		return p.parseLikeExpr(left, false, true)
 
+	case TOKEN_GLOB:
+		p.nextToken()
+		return p.parseGlobExpr(left, false)
+
+	case TOKEN_SIMILAR:
+		p.nextToken()
+		return p.parseSimilarToExpr(left, false)
+
 	case TOKEN_DCOLON:
 		return p.parseTypeCastExpr(left)
 
@@ -142,8 +150,14 @@ func (p *Parser) parseNotInfixExpr(left Expr) Expr {
 	case TOKEN_ILIKE:
 		p.nextToken()
 		return p.parseLikeExpr(left, true, true)
+	case TOKEN_GLOB:
+		p.nextToken()
+		return p.parseGlobExpr(left, true)
+	case TOKEN_SIMILAR:
+		p.nextToken()
+		return p.parseSimilarToExpr(left, true)
 	default:
-		p.addError("expected IN, BETWEEN, LIKE, or ILIKE after NOT")
+		p.addError("expected IN, BETWEEN, LIKE, ILIKE, GLOB, or SIMILAR after NOT")
 		return left
 	}
 }
@@ -279,6 +293,28 @@ func extractLambdaParams(expr Expr) ([]string, error) {
 		return nil, fmt.Errorf("invalid lambda parameter: unexpected binary expression")
 	default:
 		return nil, fmt.Errorf("invalid lambda parameter: expected identifier, got %T", expr)
+	}
+}
+
+// parseGlobExpr parses [NOT] GLOB pattern.
+func (p *Parser) parseGlobExpr(left Expr, not bool) Expr {
+	return &GlobExpr{
+		Expr:    left,
+		Not:     not,
+		Pattern: p.parseExpressionWithPrecedence(PrecedenceAddition),
+	}
+}
+
+// parseSimilarToExpr parses [NOT] SIMILAR TO pattern.
+func (p *Parser) parseSimilarToExpr(left Expr, not bool) Expr {
+	// Expect TO after SIMILAR
+	if !p.matchSoftKeyword("TO") {
+		p.expect(TOKEN_IDENT) // will produce an error message
+	}
+	return &SimilarToExpr{
+		Expr:    left,
+		Not:     not,
+		Pattern: p.parseExpressionWithPrecedence(PrecedenceAddition),
 	}
 }
 

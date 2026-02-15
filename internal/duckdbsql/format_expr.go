@@ -37,6 +37,12 @@ func (f *formatter) formatExpr(e Expr) {
 		f.formatIsBoolExpr(expr)
 	case *LikeExpr:
 		f.formatLikeExpr(expr)
+	case *GlobExpr:
+		f.formatGlobExpr(expr)
+	case *SimilarToExpr:
+		f.formatSimilarToExpr(expr)
+	case *ExtractExpr:
+		f.formatExtractExpr(expr)
 	case *ExistsExpr:
 		f.formatExistsExpr(expr)
 	case *SubqueryExpr:
@@ -267,7 +273,11 @@ func (f *formatter) formatCaseExpr(c *CaseExpr) {
 }
 
 func (f *formatter) formatCastExpr(c *CastExpr) {
-	f.write("CAST(")
+	if c.TryCast {
+		f.write("TRY_CAST(")
+	} else {
+		f.write("CAST(")
+	}
 	f.formatExpr(c.Expr)
 	f.write(" AS ")
 	f.write(c.TypeName)
@@ -340,6 +350,32 @@ func (f *formatter) formatLikeExpr(like *LikeExpr) {
 		f.write(" LIKE ")
 	}
 	f.formatExpr(like.Pattern)
+}
+
+func (f *formatter) formatGlobExpr(g *GlobExpr) {
+	f.formatExpr(g.Expr)
+	if g.Not {
+		f.write(" NOT")
+	}
+	f.write(" GLOB ")
+	f.formatExpr(g.Pattern)
+}
+
+func (f *formatter) formatSimilarToExpr(s *SimilarToExpr) {
+	f.formatExpr(s.Expr)
+	if s.Not {
+		f.write(" NOT")
+	}
+	f.write(" SIMILAR TO ")
+	f.formatExpr(s.Pattern)
+}
+
+func (f *formatter) formatExtractExpr(ext *ExtractExpr) {
+	f.write("EXTRACT(")
+	f.write(ext.Field)
+	f.write(" FROM ")
+	f.formatExpr(ext.Expr)
+	f.write(")")
 }
 
 func (f *formatter) formatExistsExpr(ex *ExistsExpr) {

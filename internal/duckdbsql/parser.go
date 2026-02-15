@@ -3,6 +3,8 @@ package duckdbsql
 import (
 	"fmt"
 	"strings"
+
+	"duck-demo/internal/duckdbsql/catalog"
 )
 
 // Parser parses DuckDB SQL into an AST.
@@ -124,6 +126,50 @@ func (p *Parser) parseTopLevel() Stmt {
 	case TOKEN_DESCRIBE:
 		return p.parseUtility(UtilityDescribe)
 
+	// Transaction control
+	case TOKEN_BEGIN:
+		return p.parseUtility(UtilityBegin)
+	case TOKEN_COMMIT:
+		return p.parseUtility(UtilityCommit)
+	case TOKEN_ROLLBACK:
+		return p.parseUtility(UtilityRollback)
+
+	// Informational
+	case TOKEN_SHOW:
+		return p.parseUtility(UtilityShow)
+	case TOKEN_EXPLAIN:
+		return p.parseUtility(UtilityExplain)
+	case TOKEN_SUMMARIZE:
+		return p.parseUtility(UtilitySummarize)
+
+	// Prepared statements
+	case TOKEN_PREPARE:
+		return p.parseUtility(UtilityPrepare)
+	case TOKEN_EXECUTE:
+		return p.parseUtility(UtilityExecute)
+	case TOKEN_DEALLOCATE:
+		return p.parseUtility(UtilityDeallocate)
+
+	// Maintenance
+	case TOKEN_VACUUM:
+		return p.parseUtility(UtilityVacuum)
+	case TOKEN_CHECKPOINT:
+		return p.parseUtility(UtilityCheckpoint)
+	case TOKEN_REINDEX:
+		return p.parseUtility(UtilityReindex)
+
+	// Permissions
+	case TOKEN_GRANT:
+		return p.parseUtility(UtilityGrant)
+	case TOKEN_REVOKE:
+		return p.parseUtility(UtilityRevoke)
+
+	// Settings / Data
+	case TOKEN_RESET:
+		return p.parseUtility(UtilityReset)
+	case TOKEN_IMPORT:
+		return p.parseUtility(UtilityImport)
+
 	default:
 		p.addError(fmt.Sprintf("unexpected token at start of statement: %s", p.token.Type))
 		return nil
@@ -200,8 +246,22 @@ func (p *Parser) isKeyword(tok Token) bool {
 		TOKEN_OFFSET, TOKEN_QUALIFY, TOKEN_WINDOW, TOKEN_FETCH,
 		TOKEN_SELECT, TOKEN_INSERT, TOKEN_UPDATE, TOKEN_DELETE,
 		TOKEN_CREATE, TOKEN_DROP, TOKEN_ALTER, TOKEN_SET,
-		TOKEN_INTO, TOKEN_VALUES, TOKEN_RETURNING, TOKEN_USING:
+		TOKEN_INTO, TOKEN_VALUES, TOKEN_RETURNING, TOKEN_USING,
+		// Statement-starters that should not be treated as aliases
+		TOKEN_BEGIN, TOKEN_COMMIT, TOKEN_ROLLBACK,
+		TOKEN_SHOW, TOKEN_EXPLAIN, TOKEN_SUMMARIZE,
+		TOKEN_GRANT, TOKEN_REVOKE,
+		TOKEN_PREPARE, TOKEN_EXECUTE, TOKEN_DEALLOCATE,
+		TOKEN_VACUUM, TOKEN_CHECKPOINT, TOKEN_REINDEX,
+		TOKEN_RESET, TOKEN_IMPORT,
+		// Expression keywords
+		TOKEN_EXTRACT, TOKEN_GLOB, TOKEN_SIMILAR:
 		return true
+	}
+	// Fall back to the generated catalog for identifiers that are DuckDB reserved keywords
+	// but not in our hand-maintained token table.
+	if tok.Type == TOKEN_IDENT {
+		return catalog.ReservedKeywords[strings.ToLower(tok.Literal)]
 	}
 	return false
 }

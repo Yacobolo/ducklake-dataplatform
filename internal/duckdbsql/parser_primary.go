@@ -3,6 +3,8 @@ package duckdbsql
 import (
 	"fmt"
 	"strings"
+
+	"duck-demo/internal/duckdbsql/catalog"
 )
 
 // Primary expression parsing: literals, column refs, function calls, CASE, CAST,
@@ -38,6 +40,12 @@ func (p *Parser) parsePrimary() Expr {
 
 	case TOKEN_CAST:
 		return p.parseCastExpr()
+
+	case TOKEN_TRY_CAST:
+		return p.parseTryCastExpr()
+
+	case TOKEN_EXTRACT:
+		return p.parseExtractExpr()
 
 	case TOKEN_NOT:
 		if p.checkPeek(TOKEN_EXISTS) {
@@ -323,6 +331,36 @@ func (p *Parser) parseCastExpr() Expr {
 	return cast
 }
 
+// parseTryCastExpr parses TRY_CAST(expr AS type).
+func (p *Parser) parseTryCastExpr() Expr {
+	p.expect(TOKEN_TRY_CAST)
+	p.expect(TOKEN_LPAREN)
+
+	cast := &CastExpr{TryCast: true}
+	cast.Expr = p.parseExpression()
+	p.expect(TOKEN_AS)
+	cast.TypeName = p.parseTypeName()
+
+	p.expect(TOKEN_RPAREN)
+	return cast
+}
+
+// parseExtractExpr parses EXTRACT(field FROM expr).
+func (p *Parser) parseExtractExpr() Expr {
+	p.nextToken() // consume EXTRACT
+	p.expect(TOKEN_LPAREN)
+
+	// The field name (YEAR, MONTH, DAY, HOUR, MINUTE, SECOND, EPOCH, etc.)
+	field := strings.ToUpper(p.token.Literal)
+	p.nextToken() // consume field name
+
+	p.expect(TOKEN_FROM)
+	expr := p.parseExpression()
+	p.expect(TOKEN_RPAREN)
+
+	return &ExtractExpr{Field: field, Expr: expr}
+}
+
 // parseTypeName parses a type name with optional parameters.
 func (p *Parser) parseTypeName() string {
 	// Accept both identifiers and some keywords as type names
@@ -393,7 +431,14 @@ func (p *Parser) isTypeLikeKeyword() bool {
 		return false // These are not type names
 	}
 	// Accept most other keywords as potential type names if followed by type-like context
-	return p.token.Type > TOKEN_STRING && p.token.Type < TOKEN_ANTI
+	if p.token.Type > TOKEN_STRING && p.token.Type < TOKEN_ANTI {
+		return true
+	}
+	// Also accept identifiers that are recognized DuckDB type names (e.g., HUGEINT, UINTEGER)
+	if p.token.Type == TOKEN_IDENT {
+		return catalog.TypeNames[strings.ToUpper(p.token.Literal)]
+	}
+	return false
 }
 
 // parseExistsExpr parses [NOT] EXISTS (subquery).

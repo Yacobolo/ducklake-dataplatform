@@ -224,6 +224,22 @@ const (
 	UtilityDetach
 	UtilityUse
 	UtilityDescribe
+	UtilityBegin
+	UtilityCheckpoint
+	UtilityCommit
+	UtilityDeallocate
+	UtilityExecute
+	UtilityExplain
+	UtilityGrant
+	UtilityImport
+	UtilityPrepare
+	UtilityReindex
+	UtilityReset
+	UtilityRevoke
+	UtilityRollback
+	UtilityShow
+	UtilitySummarize
+	UtilityVacuum
 	UtilityOther
 )
 

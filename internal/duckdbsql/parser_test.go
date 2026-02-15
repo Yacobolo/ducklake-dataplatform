@@ -674,6 +674,143 @@ func TestParse_UtilityAttach(t *testing.T) {
 	assert.Equal(t, UtilityAttach, util.Type)
 }
 
+// === Missing statement starters ===
+
+func TestParse_UtilityStatementStarters(t *testing.T) {
+	tests := []struct {
+		name     string
+		sql      string
+		utilType UtilityType
+	}{
+		{"show_tables", "SHOW TABLES", UtilityShow},
+		{"show_databases", "SHOW databases", UtilityShow},
+		{"explain", "EXPLAIN SELECT 1", UtilityExplain},
+		{"explain_analyze", "EXPLAIN ANALYZE SELECT * FROM t", UtilityExplain},
+		{"summarize", "SUMMARIZE titanic", UtilitySummarize},
+		{"begin", "BEGIN TRANSACTION", UtilityBegin},
+		{"begin_simple", "BEGIN", UtilityBegin},
+		{"commit", "COMMIT", UtilityCommit},
+		{"rollback", "ROLLBACK", UtilityRollback},
+		{"prepare", "PREPARE q AS SELECT 1", UtilityPrepare},
+		{"execute", "EXECUTE q", UtilityExecute},
+		{"deallocate", "DEALLOCATE q", UtilityDeallocate},
+		{"vacuum", "VACUUM", UtilityVacuum},
+		{"vacuum_analyze", "VACUUM ANALYZE", UtilityVacuum},
+		{"checkpoint", "CHECKPOINT", UtilityCheckpoint},
+		{"reindex", "REINDEX", UtilityReindex},
+		{"grant", "GRANT SELECT ON t TO user1", UtilityGrant},
+		{"revoke", "REVOKE SELECT ON t FROM user1", UtilityRevoke},
+		{"reset", "RESET ALL", UtilityReset},
+		{"reset_setting", "RESET threads", UtilityReset},
+		{"import", "IMPORT DATABASE 'path'", UtilityImport},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			stmt, err := Parse(tc.sql)
+			require.NoError(t, err)
+			util, ok := stmt.(*UtilityStmt)
+			require.True(t, ok, "expected UtilityStmt, got %T", stmt)
+			assert.Equal(t, tc.utilType, util.Type)
+		})
+	}
+}
+
+// === TRY_CAST ===
+
+func TestParse_TryCast(t *testing.T) {
+	stmt, err := Parse("SELECT TRY_CAST(x AS INTEGER) FROM t")
+	require.NoError(t, err)
+	sel := stmt.(*SelectStmt)
+	cast, ok := sel.Body.Left.Columns[0].Expr.(*CastExpr)
+	require.True(t, ok)
+	assert.True(t, cast.TryCast)
+	assert.Equal(t, "INTEGER", cast.TypeName)
+}
+
+func TestParse_TryCast_Nested(t *testing.T) {
+	stmt, err := Parse("SELECT TRY_CAST(TRY_CAST(x AS VARCHAR) AS INTEGER) FROM t")
+	require.NoError(t, err)
+	sel := stmt.(*SelectStmt)
+	cast, ok := sel.Body.Left.Columns[0].Expr.(*CastExpr)
+	require.True(t, ok)
+	assert.True(t, cast.TryCast)
+	assert.Equal(t, "INTEGER", cast.TypeName)
+	inner, ok := cast.Expr.(*CastExpr)
+	require.True(t, ok)
+	assert.True(t, inner.TryCast)
+	assert.Equal(t, "VARCHAR", inner.TypeName)
+}
+
+// === EXTRACT ===
+
+func TestParse_Extract(t *testing.T) {
+	tests := []struct {
+		name  string
+		sql   string
+		field string
+	}{
+		{"year", "SELECT EXTRACT(YEAR FROM created_at) FROM t", "YEAR"},
+		{"month", "SELECT EXTRACT(MONTH FROM d) FROM t", "MONTH"},
+		{"day", "SELECT EXTRACT(DAY FROM d) FROM t", "DAY"},
+		{"hour", "SELECT EXTRACT(HOUR FROM ts) FROM t", "HOUR"},
+		{"epoch", "SELECT EXTRACT(EPOCH FROM ts) FROM t", "EPOCH"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			stmt, err := Parse(tc.sql)
+			require.NoError(t, err)
+			sel := stmt.(*SelectStmt)
+			ext, ok := sel.Body.Left.Columns[0].Expr.(*ExtractExpr)
+			require.True(t, ok)
+			assert.Equal(t, tc.field, ext.Field)
+		})
+	}
+}
+
+// === GLOB ===
+
+func TestParse_GlobExpr(t *testing.T) {
+	t.Run("glob", func(t *testing.T) {
+		stmt, err := Parse("SELECT * FROM t WHERE name GLOB '*test*'")
+		require.NoError(t, err)
+		sel := stmt.(*SelectStmt)
+		g, ok := sel.Body.Left.Where.(*GlobExpr)
+		require.True(t, ok)
+		assert.False(t, g.Not)
+	})
+
+	t.Run("not_glob", func(t *testing.T) {
+		stmt, err := Parse("SELECT * FROM t WHERE name NOT GLOB '*test*'")
+		require.NoError(t, err)
+		sel := stmt.(*SelectStmt)
+		g, ok := sel.Body.Left.Where.(*GlobExpr)
+		require.True(t, ok)
+		assert.True(t, g.Not)
+	})
+}
+
+// === SIMILAR TO ===
+
+func TestParse_SimilarToExpr(t *testing.T) {
+	t.Run("similar_to", func(t *testing.T) {
+		stmt, err := Parse("SELECT * FROM t WHERE name SIMILAR TO '%test%'")
+		require.NoError(t, err)
+		sel := stmt.(*SelectStmt)
+		s, ok := sel.Body.Left.Where.(*SimilarToExpr)
+		require.True(t, ok)
+		assert.False(t, s.Not)
+	})
+
+	t.Run("not_similar_to", func(t *testing.T) {
+		stmt, err := Parse("SELECT * FROM t WHERE name NOT SIMILAR TO '%test%'")
+		require.NoError(t, err)
+		sel := stmt.(*SelectStmt)
+		s, ok := sel.Body.Left.Where.(*SimilarToExpr)
+		require.True(t, ok)
+		assert.True(t, s.Not)
+	})
+}
+
 // === Window functions ===
 
 func TestParse_WindowFunction(t *testing.T) {

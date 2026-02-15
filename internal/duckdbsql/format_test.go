@@ -347,6 +347,17 @@ func TestFormat_UtilityPassthrough(t *testing.T) {
 	}{
 		{"set", "SET threads = 4"},
 		{"describe", "DESCRIBE titanic"},
+		{"show", "SHOW TABLES"},
+		{"explain", "EXPLAIN SELECT 1"},
+		{"begin", "BEGIN TRANSACTION"},
+		{"commit", "COMMIT"},
+		{"rollback", "ROLLBACK"},
+		{"vacuum", "VACUUM"},
+		{"checkpoint", "CHECKPOINT"},
+		{"grant", "GRANT SELECT ON t TO user1"},
+		{"revoke", "REVOKE SELECT ON t FROM user1"},
+		{"reset", "RESET ALL"},
+		{"import", "IMPORT DATABASE 'path'"},
 	}
 
 	for _, tc := range tests {
@@ -357,6 +368,54 @@ func TestFormat_UtilityPassthrough(t *testing.T) {
 			assert.Equal(t, tc.sql, got)
 		})
 	}
+}
+
+// TestFormat_TryCast verifies TRY_CAST round-trip.
+func TestFormat_TryCast(t *testing.T) {
+	sql := "SELECT TRY_CAST(x AS VARCHAR) FROM t"
+	stmt, err := Parse(sql)
+	require.NoError(t, err)
+	got := Format(stmt)
+	assert.Contains(t, got, "TRY_CAST")
+	// Verify re-parseable
+	_, err = Parse(got)
+	assert.NoError(t, err)
+}
+
+// TestFormat_Extract verifies EXTRACT round-trip.
+func TestFormat_Extract(t *testing.T) {
+	sql := "SELECT EXTRACT(MONTH FROM d) FROM t"
+	stmt, err := Parse(sql)
+	require.NoError(t, err)
+	got := Format(stmt)
+	assert.Contains(t, got, "EXTRACT(MONTH FROM")
+	// Verify re-parseable
+	_, err = Parse(got)
+	assert.NoError(t, err)
+}
+
+// TestFormat_Glob verifies GLOB round-trip.
+func TestFormat_Glob(t *testing.T) {
+	sql := "SELECT * FROM t WHERE x GLOB '*.txt'"
+	stmt, err := Parse(sql)
+	require.NoError(t, err)
+	got := Format(stmt)
+	assert.Contains(t, got, "GLOB")
+	// Verify re-parseable
+	_, err = Parse(got)
+	assert.NoError(t, err)
+}
+
+// TestFormat_SimilarTo verifies SIMILAR TO round-trip.
+func TestFormat_SimilarTo(t *testing.T) {
+	sql := "SELECT * FROM t WHERE x SIMILAR TO '%test%'"
+	stmt, err := Parse(sql)
+	require.NoError(t, err)
+	got := Format(stmt)
+	assert.Contains(t, got, "SIMILAR TO")
+	// Verify re-parseable
+	_, err = Parse(got)
+	assert.NoError(t, err)
 }
 
 // TestFormat_NullLiteral verifies NULL is formatted correctly.

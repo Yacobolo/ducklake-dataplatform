@@ -130,10 +130,11 @@ type WhenClause struct {
 	Result    Expr
 }
 
-// CastExpr represents a CAST(expr AS type) expression.
+// CastExpr represents a CAST(expr AS type) or TRY_CAST(expr AS type) expression.
 type CastExpr struct {
 	Expr     Expr
 	TypeName string
+	TryCast  bool // true for TRY_CAST
 }
 
 func (*CastExpr) node()     {}
@@ -234,6 +235,35 @@ type IntervalExpr struct {
 
 func (*IntervalExpr) node()     {}
 func (*IntervalExpr) exprNode() {}
+
+// ExtractExpr represents EXTRACT(field FROM expr).
+type ExtractExpr struct {
+	Field string // YEAR, MONTH, DAY, HOUR, MINUTE, SECOND, EPOCH, etc.
+	Expr  Expr
+}
+
+func (*ExtractExpr) node()     {}
+func (*ExtractExpr) exprNode() {}
+
+// GlobExpr represents expr [NOT] GLOB pattern.
+type GlobExpr struct {
+	Expr    Expr
+	Not     bool
+	Pattern Expr
+}
+
+func (*GlobExpr) node()     {}
+func (*GlobExpr) exprNode() {}
+
+// SimilarToExpr represents expr [NOT] SIMILAR TO pattern.
+type SimilarToExpr struct {
+	Expr    Expr
+	Not     bool
+	Pattern Expr
+}
+
+func (*SimilarToExpr) node()     {}
+func (*SimilarToExpr) exprNode() {}
 
 // ColumnsExpr represents DuckDB COLUMNS(regex_or_lambda) expression.
 type ColumnsExpr struct {
