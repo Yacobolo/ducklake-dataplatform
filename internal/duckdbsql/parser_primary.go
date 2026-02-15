@@ -83,7 +83,33 @@ func (p *Parser) parsePrimary() Expr {
 	case TOKEN_COLUMNS:
 		return p.parseColumnsExpr()
 
+	case TOKEN_QMARK:
+		p.nextToken()
+		return &ParamExpr{Style: ParamQuestion}
+
+	case TOKEN_DOLLAR:
+		lit := p.token.Literal
+		p.nextToken()
+		return &ParamExpr{Style: ParamDollar, Name: lit}
+
+	case TOKEN_DEFAULT:
+		if !p.checkPeek(TOKEN_VALUES) {
+			p.nextToken()
+			return &DefaultExpr{}
+		}
+		p.addError(fmt.Sprintf("unexpected token in expression: %s (%q)", p.token.Type, p.token.Literal))
+		p.nextToken()
+		return nil
+
 	default:
+		// ALL(subquery) quantifier
+		if p.token.Type == TOKEN_ALL && p.checkPeek(TOKEN_LPAREN) && (p.checkPeek2(TOKEN_SELECT) || p.checkPeek2(TOKEN_WITH)) {
+			p.nextToken() // consume ALL
+			p.nextToken() // consume (
+			subquery := &SubqueryExpr{Select: p.parseSelectStatement()}
+			p.expect(TOKEN_RPAREN)
+			return &FuncCall{Name: "ALL", Args: []Expr{subquery}}
+		}
 		// Try to handle keywords that can be used as identifiers in some contexts
 		// (e.g., function names like REPLACE, RENAME)
 		if p.token.Type > TOKEN_STRING && p.token.Type < TOKEN_ANTI {
@@ -103,8 +129,32 @@ func (p *Parser) parseIdentifierExpr() Expr {
 	name := p.token.Literal
 	p.nextToken()
 
+	// MAP {'key': value} literal
+	if strings.EqualFold(name, "MAP") && p.check(TOKEN_LBRACE) {
+		structLit := p.parseStructLiteral()
+		if sl, ok := structLit.(*StructLiteral); ok {
+			return &MapLiteral{Entries: sl.Fields}
+		}
+		return structLit
+	}
+
+	// ANY(subquery) quantifier
+	if strings.EqualFold(name, "ANY") && p.check(TOKEN_LPAREN) && (p.checkPeek(TOKEN_SELECT) || p.checkPeek(TOKEN_WITH)) {
+		p.nextToken() // consume (
+		subquery := &SubqueryExpr{Select: p.parseSelectStatement()}
+		p.expect(TOKEN_RPAREN)
+		return &FuncCall{Name: "ANY", Args: []Expr{subquery}}
+	}
+
 	// Function call: name(...)
 	if p.check(TOKEN_LPAREN) {
+		// ARRAY(SELECT ...) special case
+		if strings.EqualFold(name, "ARRAY") && (p.checkPeek(TOKEN_SELECT) || p.checkPeek(TOKEN_WITH)) {
+			p.nextToken() // consume (
+			subquery := &SubqueryExpr{Select: p.parseSelectStatement()}
+			p.expect(TOKEN_RPAREN)
+			return &FuncCall{Name: name, Args: []Expr{subquery}}
+		}
 		return p.parseFuncCall(name, "")
 	}
 
@@ -130,7 +180,7 @@ func (p *Parser) parseQualifiedRef(firstPart string) Expr {
 			return star
 		}
 
-		if p.check(TOKEN_IDENT) {
+		if p.check(TOKEN_IDENT) || (p.token.Type > TOKEN_STRING && p.token.Type <= TOKEN_UNPIVOT) {
 			parts = append(parts, p.token.Literal)
 			p.nextToken()
 		} else {
@@ -194,10 +244,22 @@ func (p *Parser) parseFuncCall(name string, schema string) Expr {
 
 	p.expect(TOKEN_RPAREN)
 
+	// WITHIN GROUP clause
+	if p.match(TOKEN_WITHIN) {
+		p.expect(TOKEN_GROUP)
+		p.expect(TOKEN_LPAREN)
+		if p.check(TOKEN_ORDER) {
+			p.nextToken()
+			p.expect(TOKEN_BY)
+			fn.OrderBy = p.parseOrderByList()
+		}
+		p.expect(TOKEN_RPAREN)
+	}
+
 	// FILTER clause
 	if p.match(TOKEN_FILTER) {
 		p.expect(TOKEN_LPAREN)
-		p.expect(TOKEN_WHERE)
+		p.match(TOKEN_WHERE) // WHERE is optional in DuckDB
 		fn.Filter = p.parseExpression()
 		p.expect(TOKEN_RPAREN)
 	}
@@ -407,11 +469,16 @@ func (p *Parser) parseTypeName() string {
 		typeName += ")"
 	}
 
-	// Handle array type: INTEGER[]
-	if p.check(TOKEN_LBRACKET) && p.checkPeek(TOKEN_RBRACKET) {
-		typeName += "[]"
-		p.nextToken() // [
-		p.nextToken() // ]
+	// Handle array type: INTEGER[] or INTEGER[3]
+	if p.check(TOKEN_LBRACKET) {
+		p.nextToken() // consume [
+		if p.check(TOKEN_NUMBER) {
+			typeName += "[" + p.token.Literal + "]"
+			p.nextToken()
+		} else {
+			typeName += "[]"
+		}
+		p.expect(TOKEN_RBRACKET)
 	}
 
 	return typeName
@@ -514,18 +581,39 @@ func (p *Parser) parseListLiteral() Expr {
 	p.nextToken() // consume [
 	list := &ListLiteral{}
 
-	if !p.check(TOKEN_RBRACKET) {
-		for {
-			elem := p.parseExpression()
-			if elem != nil {
-				list.Elements = append(list.Elements, elem)
-			}
-			if !p.match(TOKEN_COMMA) {
-				break
-			}
-		}
+	if p.check(TOKEN_RBRACKET) {
+		p.nextToken()
+		return list
 	}
 
+	first := p.parseExpression()
+
+	// Check for list comprehension: [expr FOR var IN list [IF cond]]
+	if p.check(TOKEN_FOR) {
+		p.nextToken() // consume FOR
+		varName := p.token.Literal
+		p.nextToken()
+		p.expect(TOKEN_IN)
+		listExpr := p.parseExpression()
+		var cond Expr
+		if p.check(TOKEN_IF) {
+			p.nextToken()
+			cond = p.parseExpression()
+		}
+		p.expect(TOKEN_RBRACKET)
+		return &ListComprehension{Expr: first, Var: varName, List: listExpr, Cond: cond}
+	}
+
+	// Regular list literal
+	if first != nil {
+		list.Elements = append(list.Elements, first)
+	}
+	for p.match(TOKEN_COMMA) {
+		elem := p.parseExpression()
+		if elem != nil {
+			list.Elements = append(list.Elements, elem)
+		}
+	}
 	p.expect(TOKEN_RBRACKET)
 	return list
 }

@@ -170,6 +170,20 @@ func (p *Parser) parseTopLevel() Stmt {
 	case TOKEN_IMPORT:
 		return p.parseUtility(UtilityImport)
 
+	// DuckDB extended statements
+	case TOKEN_FROM:
+		return p.parseFromFirstStatement()
+	case TOKEN_VALUES:
+		return p.parseSelectStatement()
+	case TOKEN_PIVOT:
+		return p.parseUtility(UtilityPivot)
+	case TOKEN_UNPIVOT:
+		return p.parseUtility(UtilityUnpivot)
+	case TOKEN_MERGE:
+		return p.parseUtility(UtilityMerge)
+	case TOKEN_COMMENT:
+		return p.parseUtility(UtilityCommentOn)
+
 	default:
 		p.addError(fmt.Sprintf("unexpected token at start of statement: %s", p.token.Type))
 		return nil

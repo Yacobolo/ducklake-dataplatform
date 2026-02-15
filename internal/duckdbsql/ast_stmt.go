@@ -19,8 +19,10 @@ type WithClause struct {
 
 // CTE represents a Common Table Expression.
 type CTE struct {
-	Name   string
-	Select *SelectStmt
+	Name         string
+	Columns      []string // optional column list: WITH cte(col1, col2)
+	Materialized *bool    // nil=default, true=MATERIALIZED, false=NOT MATERIALIZED
+	Select       *SelectStmt
 }
 
 // SelectBody represents the body of a SELECT with possible set operations.
@@ -61,6 +63,17 @@ type SelectCore struct {
 	Limit          Expr
 	Offset         Expr
 	Fetch          *FetchClause
+	ValuesRows     [][]Expr      // VALUES (...), (...) body
+	LimitPercent   bool          // LIMIT 10%
+	Sample         *SampleClause // USING SAMPLE clause
+}
+
+// SampleClause represents USING SAMPLE or TABLESAMPLE.
+type SampleClause struct {
+	Size      Expr
+	IsPercent bool
+	IsRows    bool
+	Method    string // bernoulli, reservoir, system
 }
 
 // FetchClause represents FETCH FIRST/NEXT n ROWS ONLY/WITH TIES.
@@ -121,6 +134,8 @@ const (
 	JoinAnti       JoinType = "ANTI"
 	JoinAsOf       JoinType = "ASOF"
 	JoinPositional JoinType = "POSITIONAL"
+	JoinAsOfLeft   JoinType = "ASOF LEFT"
+	JoinAsOfRight  JoinType = "ASOF RIGHT"
 )
 
 // OrderByItem represents an item in ORDER BY clause.
@@ -134,12 +149,15 @@ type OrderByItem struct {
 
 // InsertStmt represents an INSERT statement.
 type InsertStmt struct {
-	Table      *TableName
-	Columns    []string
-	Values     [][]Expr    // VALUES rows
-	Query      *SelectStmt // INSERT ... SELECT
-	OnConflict *OnConflictClause
-	Returning  []SelectItem
+	Table          *TableName
+	Columns        []string
+	Values         [][]Expr    // VALUES rows
+	Query          *SelectStmt // INSERT ... SELECT
+	OnConflict     *OnConflictClause
+	Returning      []SelectItem
+	ConflictAction string // "REPLACE" or "IGNORE" for INSERT OR REPLACE/IGNORE
+	ByName         bool   // INSERT ... BY NAME
+	ByPosition     bool   // INSERT ... BY POSITION
 }
 
 func (*InsertStmt) node()     {}
@@ -150,6 +168,7 @@ type OnConflictClause struct {
 	Columns   []string    // ON CONFLICT (col1, col2)
 	DoUpdate  []SetClause // DO UPDATE SET ...
 	DoNothing bool        // DO NOTHING
+	Where     Expr        // ON CONFLICT ... DO UPDATE SET ... WHERE ...
 }
 
 // SetClause represents column = value in UPDATE or ON CONFLICT DO UPDATE.
@@ -245,6 +264,11 @@ const (
 	UtilitySummarize
 	UtilityVacuum
 	UtilityOther
+	UtilityMerge
+	UtilityCommentOn
+	UtilityPivot
+	UtilityUnpivot
+	UtilityValues
 )
 
 // UtilityStmt represents a utility statement (classification only).
