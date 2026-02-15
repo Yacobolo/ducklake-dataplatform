@@ -84,8 +84,8 @@ func describePlatform(client *gen.Client, isJSON bool) error {
 		return fmt.Errorf("parse response: %w", err)
 	}
 
-	fmt.Fprintln(os.Stdout, "PLATFORM OVERVIEW")
-	fmt.Fprintf(os.Stdout, "catalogs: %d\n\n", len(data.Data))
+	_, _ = fmt.Fprintln(os.Stdout, "PLATFORM OVERVIEW")
+	_, _ = fmt.Fprintf(os.Stdout, "catalogs: %d\n\n", len(data.Data))
 	columns := []string{"name", "status", "is_default", "metastore_type"}
 	rows := gen.ExtractRows(map[string]interface{}{"data": toInterfaceSlice(data.Data)}, columns)
 	gen.PrintTable(os.Stdout, columns, rows)
@@ -132,14 +132,14 @@ func describeCatalog(client *gen.Client, catalog string, isJSON bool) error {
 
 	var regData map[string]interface{}
 	_ = json.Unmarshal(regBody, &regData)
-	fmt.Fprintf(os.Stdout, "CATALOG: %s\n", catalog)
+	_, _ = fmt.Fprintf(os.Stdout, "CATALOG: %s\n", catalog)
 	gen.PrintDetail(os.Stdout, regData)
 
 	var schemasData struct {
 		Data []map[string]interface{} `json:"data"`
 	}
 	_ = json.Unmarshal(schemasBody, &schemasData)
-	fmt.Fprintf(os.Stdout, "\nSCHEMAS (%d):\n", len(schemasData.Data))
+	_, _ = fmt.Fprintf(os.Stdout, "\nSCHEMAS (%d):\n", len(schemasData.Data))
 	columns := []string{"name", "comment"}
 	rows := gen.ExtractRows(map[string]interface{}{"data": toInterfaceSlice(schemasData.Data)}, columns)
 	gen.PrintTable(os.Stdout, columns, rows)
@@ -220,14 +220,14 @@ func describeSchema(client *gen.Client, catalog, schema string, isJSON bool) err
 
 	var schemaDetail map[string]interface{}
 	_ = json.Unmarshal(schemaBody, &schemaDetail)
-	fmt.Fprintf(os.Stdout, "SCHEMA: %s.%s\n", catalog, schema)
+	_, _ = fmt.Fprintf(os.Stdout, "SCHEMA: %s.%s\n", catalog, schema)
 	gen.PrintDetail(os.Stdout, schemaDetail)
 
 	var tablesData struct {
 		Data []map[string]interface{} `json:"data"`
 	}
 	_ = json.Unmarshal(tablesBody, &tablesData)
-	fmt.Fprintf(os.Stdout, "\nTABLES (%d):\n", len(tablesData.Data))
+	_, _ = fmt.Fprintf(os.Stdout, "\nTABLES (%d):\n", len(tablesData.Data))
 	columns := []string{"name", "table_type", "comment"}
 	rows := gen.ExtractRows(map[string]interface{}{"data": toInterfaceSlice(tablesData.Data)}, columns)
 	gen.PrintTable(os.Stdout, columns, rows)
@@ -238,7 +238,7 @@ func describeSchema(client *gen.Client, catalog, schema string, isJSON bool) err
 		}
 		_ = json.Unmarshal(viewsBody, &viewsData)
 		if len(viewsData.Data) > 0 {
-			fmt.Fprintf(os.Stdout, "\nVIEWS (%d):\n", len(viewsData.Data))
+			_, _ = fmt.Fprintf(os.Stdout, "\nVIEWS (%d):\n", len(viewsData.Data))
 			vColumns := []string{"name", "comment"}
 			vRows := gen.ExtractRows(map[string]interface{}{"data": toInterfaceSlice(viewsData.Data)}, vColumns)
 			gen.PrintTable(os.Stdout, vColumns, vRows)
@@ -251,7 +251,7 @@ func describeSchema(client *gen.Client, catalog, schema string, isJSON bool) err
 		}
 		_ = json.Unmarshal(volumesBody, &volumesData)
 		if len(volumesData.Data) > 0 {
-			fmt.Fprintf(os.Stdout, "\nVOLUMES (%d):\n", len(volumesData.Data))
+			_, _ = fmt.Fprintf(os.Stdout, "\nVOLUMES (%d):\n", len(volumesData.Data))
 			volColumns := []string{"name", "volume_type"}
 			volRows := gen.ExtractRows(map[string]interface{}{"data": toInterfaceSlice(volumesData.Data)}, volColumns)
 			gen.PrintTable(os.Stdout, volColumns, volRows)
@@ -323,28 +323,28 @@ func describeTable(client *gen.Client, catalog, schema, table string, isJSON boo
 	}
 
 	// Human-friendly output
-	fmt.Fprintf(os.Stdout, "TABLE: %s.%s.%s\n", catalog, schema, table)
+	_, _ = fmt.Fprintf(os.Stdout, "TABLE: %s.%s.%s\n", catalog, schema, table)
 
 	// Print key fields
 	for _, key := range []string{"table_type", "owner", "comment", "storage_path", "created_at", "updated_at"} {
 		if v := gen.ExtractField(tableDetail, key); v != "" {
-			fmt.Fprintf(os.Stdout, "%-14s %s\n", key+":", v)
+			_, _ = fmt.Fprintf(os.Stdout, "%-14s %s\n", key+":", v)
 		}
 	}
 
 	// Statistics
 	if stats, ok := tableDetail["statistics"].(map[string]interface{}); ok {
-		fmt.Fprintln(os.Stdout, "\nSTATISTICS:")
+		_, _ = fmt.Fprintln(os.Stdout, "\nSTATISTICS:")
 		for _, key := range []string{"row_count", "size_bytes", "column_count", "last_profiled_at"} {
 			if v := gen.ExtractField(stats, key); v != "" {
-				fmt.Fprintf(os.Stdout, "%-18s %s\n", key+":", v)
+				_, _ = fmt.Fprintf(os.Stdout, "%-18s %s\n", key+":", v)
 			}
 		}
 	}
 
 	// Columns
 	if cols, ok := tableDetail["columns"].([]interface{}); ok && len(cols) > 0 {
-		fmt.Fprintf(os.Stdout, "\nCOLUMNS (%d):\n", len(cols))
+		_, _ = fmt.Fprintf(os.Stdout, "\nCOLUMNS (%d):\n", len(cols))
 		colColumns := []string{"name", "type", "nullable", "comment"}
 		var colRows [][]string
 		for _, col := range cols {
@@ -361,7 +361,7 @@ func describeTable(client *gen.Client, catalog, schema, table string, isJSON boo
 
 	// Tags
 	if tags, ok := tableDetail["tags"].([]interface{}); ok && len(tags) > 0 {
-		fmt.Fprintf(os.Stdout, "\nTAGS (%d):\n", len(tags))
+		_, _ = fmt.Fprintf(os.Stdout, "\nTAGS (%d):\n", len(tags))
 		tagColumns := []string{"key", "value"}
 		var tagRows [][]string
 		for _, tag := range tags {
@@ -379,7 +379,7 @@ func describeTable(client *gen.Client, catalog, schema, table string, isJSON boo
 		}
 		_ = json.Unmarshal(rowFiltersBody, &rf)
 		if len(rf.Data) > 0 {
-			fmt.Fprintf(os.Stdout, "\nROW FILTERS (%d):\n", len(rf.Data))
+			_, _ = fmt.Fprintf(os.Stdout, "\nROW FILTERS (%d):\n", len(rf.Data))
 			rfColumns := []string{"id", "filter_sql", "description"}
 			rfRows := gen.ExtractRows(map[string]interface{}{"data": toInterfaceSlice(rf.Data)}, rfColumns)
 			gen.PrintTable(os.Stdout, rfColumns, rfRows)
@@ -393,7 +393,7 @@ func describeTable(client *gen.Client, catalog, schema, table string, isJSON boo
 		}
 		_ = json.Unmarshal(columnMasksBody, &cm)
 		if len(cm.Data) > 0 {
-			fmt.Fprintf(os.Stdout, "\nCOLUMN MASKS (%d):\n", len(cm.Data))
+			_, _ = fmt.Fprintf(os.Stdout, "\nCOLUMN MASKS (%d):\n", len(cm.Data))
 			cmColumns := []string{"column_name", "mask_expression", "description"}
 			cmRows := gen.ExtractRows(map[string]interface{}{"data": toInterfaceSlice(cm.Data)}, cmColumns)
 			gen.PrintTable(os.Stdout, cmColumns, cmRows)

@@ -41,7 +41,7 @@ func TestAPI_Search(t *testing.T) {
 
 	var endpoints []gen.APIEndpoint
 	require.NoError(t, json.Unmarshal([]byte(output), &endpoints))
-	assert.Greater(t, len(endpoints), 0, "should find schema-related endpoints")
+	assert.NotEmpty(t, endpoints, "should find schema-related endpoints")
 }
 
 func TestAPI_Describe(t *testing.T) {

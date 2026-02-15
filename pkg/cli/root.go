@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -23,7 +24,8 @@ func Execute() int {
 			errObj := map[string]interface{}{
 				"error": err.Error(),
 			}
-			if apiErr, ok := err.(*gen.APIError); ok {
+			var apiErr *gen.APIError
+			if errors.As(err, &apiErr) {
 				errObj["http_status"] = apiErr.HTTPStatus
 				errObj["code"] = apiErr.Code
 			}

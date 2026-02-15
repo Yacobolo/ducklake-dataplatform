@@ -66,7 +66,7 @@ func TestCommands_Filter(t *testing.T) {
 
 	var entries []CommandEntry
 	require.NoError(t, json.Unmarshal([]byte(output), &entries))
-	assert.Greater(t, len(entries), 0, "filter should match at least one command")
+	assert.NotEmpty(t, entries, "filter should match at least one command")
 	for _, e := range entries {
 		assert.True(t,
 			containsIgnoreCase(e.Path, "row-filter") || containsIgnoreCase(e.Short, "row-filter") || containsIgnoreCase(e.Long, "row-filter"),
@@ -88,7 +88,7 @@ func TestCommands_FilterGroup(t *testing.T) {
 
 	var entries []CommandEntry
 	require.NoError(t, json.Unmarshal([]byte(output), &entries))
-	assert.Greater(t, len(entries), 0, "security group should have commands")
+	assert.NotEmpty(t, entries, "security group should have commands")
 	for _, e := range entries {
 		assert.Equal(t, "security", e.Group, "all entries should be in security group")
 	}
@@ -108,12 +108,12 @@ func TestCommands_HasFlags(t *testing.T) {
 
 	var entries []CommandEntry
 	require.NoError(t, json.Unmarshal([]byte(output), &entries))
-	require.Greater(t, len(entries), 0, "should find schemas create command")
+	require.NotEmpty(t, entries, "should find schemas create command")
 
 	// The create schema command should have flags
 	for _, e := range entries {
 		if e.Path == "catalog schemas create" {
-			assert.Greater(t, len(e.Flags), 0, "create command should have flags")
+			assert.NotEmpty(t, e.Flags, "create command should have flags")
 			return
 		}
 	}

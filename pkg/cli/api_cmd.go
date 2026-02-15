@@ -140,21 +140,21 @@ func newAPIDescribeCmd() *cobra.Command {
 			}
 
 			// Human-friendly detail
-			fmt.Fprintf(os.Stdout, "ENDPOINT: %s %s\n", found.Method, found.Path)
-			fmt.Fprintf(os.Stdout, "operation_id:  %s\n", found.OperationID)
-			fmt.Fprintf(os.Stdout, "summary:       %s\n", found.Summary)
+			_, _ = fmt.Fprintf(os.Stdout, "ENDPOINT: %s %s\n", found.Method, found.Path)
+			_, _ = fmt.Fprintf(os.Stdout, "operation_id:  %s\n", found.OperationID)
+			_, _ = fmt.Fprintf(os.Stdout, "summary:       %s\n", found.Summary)
 			if found.Description != "" {
-				fmt.Fprintf(os.Stdout, "description:   %s\n", found.Description)
+				_, _ = fmt.Fprintf(os.Stdout, "description:   %s\n", found.Description)
 			}
 			if len(found.Tags) > 0 {
-				fmt.Fprintf(os.Stdout, "tags:          %s\n", strings.Join(found.Tags, ", "))
+				_, _ = fmt.Fprintf(os.Stdout, "tags:          %s\n", strings.Join(found.Tags, ", "))
 			}
 			if found.CLICommand != "" {
-				fmt.Fprintf(os.Stdout, "cli_command:   duck %s\n", found.CLICommand)
+				_, _ = fmt.Fprintf(os.Stdout, "cli_command:   duck %s\n", found.CLICommand)
 			}
 
 			if len(found.Parameters) > 0 {
-				fmt.Fprintln(os.Stdout, "\nPARAMETERS:")
+				_, _ = fmt.Fprintln(os.Stdout, "\nPARAMETERS:")
 				columns := []string{"name", "in", "type", "required", "enum"}
 				var rows [][]string
 				for _, p := range found.Parameters {
@@ -168,7 +168,7 @@ func newAPIDescribeCmd() *cobra.Command {
 			}
 
 			if len(found.BodyFields) > 0 {
-				fmt.Fprintln(os.Stdout, "\nBODY FIELDS:")
+				_, _ = fmt.Fprintln(os.Stdout, "\nBODY FIELDS:")
 				columns := []string{"name", "type", "required", "enum"}
 				var rows [][]string
 				for _, f := range found.BodyFields {
@@ -279,7 +279,7 @@ func newAPICurlCmd() *cobra.Command {
 				})
 			}
 
-			fmt.Fprintln(os.Stdout, result)
+			_, _ = fmt.Fprintln(os.Stdout, result)
 			return nil
 		},
 	}
