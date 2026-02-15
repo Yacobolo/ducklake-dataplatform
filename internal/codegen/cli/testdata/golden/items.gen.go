@@ -39,6 +39,10 @@ func newItemsCmd(client *Client) *cobra.Command {
 				}
 				urlPath := "/items/{itemId}"
 				urlPath = strings.Replace(urlPath, "{itemId}", args[0], 1)
+
+				if strings.Contains(urlPath, "{") {
+					return fmt.Errorf("unresolved path parameter in URL: %s", urlPath)
+				}
 				query := url.Values{}
 
 				// Execute request
@@ -78,6 +82,10 @@ func newItemsCmd(client *Client) *cobra.Command {
 				_ = outputFlag
 				urlPath := "/items/{itemId}"
 				urlPath = strings.Replace(urlPath, "{itemId}", args[0], 1)
+
+				if strings.Contains(urlPath, "{") {
+					return fmt.Errorf("unresolved path parameter in URL: %s", urlPath)
+				}
 				query := url.Values{}
 
 				// Execute request
@@ -160,6 +168,10 @@ func newItemsCmd(client *Client) *cobra.Command {
 				outputFlag, _ := cmd.Flags().GetString("output")
 				_ = outputFlag
 				urlPath := "/items"
+
+				if strings.Contains(urlPath, "{") {
+					return fmt.Errorf("unresolved path parameter in URL: %s", urlPath)
+				}
 				query := url.Values{}
 				if cmd.Flags().Changed("max-results") {
 					v, _ := cmd.Flags().GetInt64("max-results")

@@ -77,7 +77,7 @@ func init() {
 				for _, row := range result.Rows {
 					record := make([]string, len(row))
 					for i, v := range row {
-						record[i] = fmt.Sprintf("%v", v)
+						record[i] = gen.FormatValue(v)
 					}
 					_ = w.Write(record)
 				}
@@ -89,7 +89,7 @@ func init() {
 				for i, row := range result.Rows {
 					rows[i] = make([]string, len(row))
 					for j, v := range row {
-						rows[i][j] = fmt.Sprintf("%v", v)
+						rows[i][j] = gen.FormatValue(v)
 					}
 				}
 				gen.PrintTable(os.Stdout, result.Columns, rows)
