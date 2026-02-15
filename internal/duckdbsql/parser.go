@@ -288,6 +288,35 @@ func (p *Parser) isClauseKeyword(tok Token) bool {
 	return false
 }
 
+// isTableNameKeyword returns true if the current token is a keyword that can
+// appear as a table name or table-valued function name in a FROM clause.
+// Many DuckDB built-in functions (range, generate_series, unnest, etc.) are
+// lexed as keyword tokens. We accept any keyword except structural SQL tokens
+// that would be ambiguous in FROM position.
+func (p *Parser) isTableNameKeyword() bool {
+	tok := p.token.Type
+	// Must be in the keyword token range
+	if tok <= TOKEN_STRING || tok >= TOKEN_ANTI {
+		return false
+	}
+	// Reject tokens that start clauses or are structural
+	switch tok {
+	case TOKEN_SELECT, TOKEN_FROM, TOKEN_WHERE, TOKEN_GROUP, TOKEN_HAVING,
+		TOKEN_ORDER, TOKEN_LIMIT, TOKEN_OFFSET, TOKEN_QUALIFY, TOKEN_WINDOW, TOKEN_FETCH,
+		TOKEN_UNION, TOKEN_INTERSECT, TOKEN_EXCEPT,
+		TOKEN_JOIN, TOKEN_ON, TOKEN_USING, TOKEN_LATERAL, TOKEN_NATURAL,
+		TOKEN_INNER, TOKEN_LEFT, TOKEN_RIGHT, TOKEN_FULL, TOKEN_CROSS, TOKEN_OUTER,
+		TOKEN_INSERT, TOKEN_UPDATE, TOKEN_DELETE, TOKEN_CREATE, TOKEN_DROP, TOKEN_ALTER,
+		TOKEN_INTO, TOKEN_VALUES, TOKEN_RETURNING,
+		TOKEN_AND, TOKEN_OR, TOKEN_NOT, TOKEN_IS, TOKEN_AS,
+		TOKEN_CASE, TOKEN_WHEN, TOKEN_THEN, TOKEN_ELSE, TOKEN_END,
+		TOKEN_TRUE, TOKEN_FALSE, TOKEN_NULL,
+		TOKEN_LPAREN, TOKEN_RPAREN:
+		return false
+	}
+	return true
+}
+
 // consumeUntilEOF consumes all remaining tokens.
 // Used for DDL/utility statements that don't need deep parsing.
 func (p *Parser) consumeUntilEOF() {

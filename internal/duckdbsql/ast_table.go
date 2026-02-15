@@ -4,10 +4,11 @@ package duckdbsql
 
 // TableName represents a table name reference (up to 3-part: catalog.schema.name).
 type TableName struct {
-	Catalog string
-	Schema  string
-	Name    string
-	Alias   string
+	Catalog       string
+	Schema        string
+	Name          string
+	Alias         string
+	ColumnAliases []string // e.g., t(a, b) → ColumnAliases: ["a", "b"]
 }
 
 func (*TableName) node()         {}
@@ -33,8 +34,9 @@ func (*LateralTable) tableRefNode() {}
 
 // FuncTable represents a table-valued function in FROM (e.g., read_parquet()).
 type FuncTable struct {
-	Func  *FuncCall
-	Alias string
+	Func          *FuncCall
+	Alias         string
+	ColumnAliases []string // e.g., range(5) t(i) → ColumnAliases: ["i"]
 }
 
 func (*FuncTable) node()         {}

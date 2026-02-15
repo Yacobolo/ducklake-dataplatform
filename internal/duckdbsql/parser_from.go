@@ -43,7 +43,10 @@ func (p *Parser) parseTableRef() TableRef {
 
 // parseTableNameOrFunc parses a table name or table-valued function.
 func (p *Parser) parseTableNameOrFunc() TableRef {
-	if !p.check(TOKEN_IDENT) {
+	// Accept identifiers and keywords that could be function/table names.
+	// Many DuckDB built-in functions (range, generate_series, unnest, etc.)
+	// are also keywords, so we accept any keyword token here too.
+	if !p.check(TOKEN_IDENT) && !p.isTableNameKeyword() {
 		p.addError(fmt.Sprintf("expected table name, got %s", p.token.Type))
 		return &TableName{}
 	}
@@ -73,7 +76,7 @@ func (p *Parser) parseTableNameOrFunc() TableRef {
 
 		ft := &FuncTable{Func: funcCall}
 
-		// Optional alias
+		// Optional alias with optional column alias list: AS t(i, j) or t(i, j)
 		if p.match(TOKEN_AS) {
 			if p.check(TOKEN_IDENT) {
 				ft.Alias = p.token.Literal
@@ -82,6 +85,11 @@ func (p *Parser) parseTableNameOrFunc() TableRef {
 		} else if p.check(TOKEN_IDENT) && !p.isJoinKeyword(p.token) && !p.isClauseKeyword(p.token) {
 			ft.Alias = p.token.Literal
 			p.nextToken()
+		}
+		// Column alias list: t(col1, col2, ...)
+		if ft.Alias != "" && p.match(TOKEN_LPAREN) {
+			ft.ColumnAliases = p.parseColumnAliasList()
+			p.expect(TOKEN_RPAREN)
 		}
 
 		return ft
@@ -101,7 +109,7 @@ func (p *Parser) parseTableNameOrFunc() TableRef {
 		table.Name = parts[2]
 	}
 
-	// Optional alias
+	// Optional alias with optional column alias list
 	if p.match(TOKEN_AS) {
 		if p.check(TOKEN_IDENT) {
 			table.Alias = p.token.Literal
@@ -110,6 +118,11 @@ func (p *Parser) parseTableNameOrFunc() TableRef {
 	} else if p.check(TOKEN_IDENT) && !p.isJoinKeyword(p.token) && !p.isClauseKeyword(p.token) {
 		table.Alias = p.token.Literal
 		p.nextToken()
+	}
+	// Column alias list: t(col1, col2, ...)
+	if table.Alias != "" && p.match(TOKEN_LPAREN) {
+		table.ColumnAliases = p.parseColumnAliasList()
+		p.expect(TOKEN_RPAREN)
 	}
 
 	return table
@@ -469,4 +482,21 @@ func (p *Parser) parseUsingColumns() []string {
 	}
 	p.expect(TOKEN_RPAREN)
 	return cols
+}
+
+// parseColumnAliasList parses a parenthesized list of column aliases: (col1, col2, ...).
+// The opening paren has already been consumed.
+func (p *Parser) parseColumnAliasList() []string {
+	var aliases []string
+	for {
+		if !p.check(TOKEN_IDENT) {
+			break
+		}
+		aliases = append(aliases, p.token.Literal)
+		p.nextToken()
+		if !p.match(TOKEN_COMMA) {
+			break
+		}
+	}
+	return aliases
 }

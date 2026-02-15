@@ -234,6 +234,7 @@ func (f *formatter) formatTableName(t *TableName) {
 	if t.Alias != "" {
 		f.write(" ")
 		f.writeIdent(t.Alias)
+		f.formatColumnAliases(t.ColumnAliases)
 	}
 }
 
@@ -262,7 +263,19 @@ func (f *formatter) formatFuncTable(t *FuncTable) {
 	if t.Alias != "" {
 		f.write(" ")
 		f.writeIdent(t.Alias)
+		f.formatColumnAliases(t.ColumnAliases)
 	}
+}
+
+func (f *formatter) formatColumnAliases(aliases []string) {
+	if len(aliases) == 0 {
+		return
+	}
+	f.write("(")
+	f.commaSep(len(aliases), func(i int) {
+		f.writeIdent(aliases[i])
+	})
+	f.write(")")
 }
 
 func (f *formatter) formatPivotTable(t *PivotTable) {
