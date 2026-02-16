@@ -9,6 +9,7 @@ const (
 	KindStorageCredential   ResourceKind = iota // layer 0
 	KindPrincipal                               // layer 0
 	KindTag                                     // layer 0
+	KindMacro                                   // layer 0
 	KindGroup                                   // layer 1
 	KindExternalLocation                        // layer 1
 	KindComputeEndpoint                         // layer 1
@@ -29,6 +30,7 @@ const (
 	KindNotebook                                // layer 6
 	KindPipeline                                // layer 7
 	KindPipelineJob                             // layer 7
+	KindModel                                   // layer 8
 )
 
 // String returns a human-readable kebab-case name for the resource kind.
@@ -40,6 +42,8 @@ func (k ResourceKind) String() string {
 		return "principal"
 	case KindTag:
 		return "tag"
+	case KindMacro:
+		return "macro"
 	case KindGroup:
 		return "group"
 	case KindExternalLocation:
@@ -80,6 +84,8 @@ func (k ResourceKind) String() string {
 		return "pipeline"
 	case KindPipelineJob:
 		return "pipeline-job"
+	case KindModel:
+		return "model"
 	default:
 		return "unknown"
 	}
@@ -89,7 +95,7 @@ func (k ResourceKind) String() string {
 // Layer 0 has no dependencies; higher layers depend on lower ones.
 func (k ResourceKind) Layer() int {
 	switch k {
-	case KindStorageCredential, KindPrincipal, KindTag:
+	case KindStorageCredential, KindPrincipal, KindTag, KindMacro:
 		return 0
 	case KindGroup, KindExternalLocation, KindComputeEndpoint:
 		return 1
@@ -105,13 +111,15 @@ func (k ResourceKind) Layer() int {
 		return 6
 	case KindPipeline, KindPipelineJob:
 		return 7
+	case KindModel:
+		return 8
 	default:
 		return 99
 	}
 }
 
 // MaxLayer is the highest dependency layer.
-const MaxLayer = 7
+const MaxLayer = 8
 
 // Operation represents a planned change type.
 type Operation int
@@ -159,6 +167,8 @@ const (
 	KindNameComputeAssignmentList = "ComputeAssignmentList"
 	KindNameNotebook              = "Notebook"
 	KindNamePipeline              = "Pipeline"
+	KindNameModel                 = "Model"
+	KindNameMacro                 = "Macro"
 )
 
 // SupportedAPIVersion is the current API version for YAML documents.

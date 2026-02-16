@@ -31,8 +31,8 @@ DELETE FROM pipelines WHERE id = ?;
 SELECT * FROM pipelines WHERE schedule_cron IS NOT NULL AND is_paused = 0;
 
 -- name: CreatePipelineJob :one
-INSERT INTO pipeline_jobs (id, pipeline_id, name, compute_endpoint_id, depends_on, notebook_id, timeout_seconds, retry_count, job_order)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO pipeline_jobs (id, pipeline_id, name, compute_endpoint_id, depends_on, notebook_id, timeout_seconds, retry_count, job_order, job_type, model_selector)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetPipelineJobByID :one

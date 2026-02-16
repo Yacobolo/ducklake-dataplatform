@@ -18,15 +18,16 @@ type ScheduleReloader interface {
 
 // Service provides business logic for pipeline management.
 type Service struct {
-	pipelines  domain.PipelineRepository
-	runs       domain.PipelineRunRepository
-	audit      domain.AuditRepository
-	notebooks  domain.NotebookProvider
-	engine     domain.SessionEngine
-	duckDB     *sql.DB
-	logger     *slog.Logger
-	reloader   ScheduleReloader
-	runCancels sync.Map // maps run ID (string) → context.CancelFunc
+	pipelines   domain.PipelineRepository
+	runs        domain.PipelineRunRepository
+	audit       domain.AuditRepository
+	notebooks   domain.NotebookProvider
+	modelRunner domain.ModelRunner
+	engine      domain.SessionEngine
+	duckDB      *sql.DB
+	logger      *slog.Logger
+	reloader    ScheduleReloader
+	runCancels  sync.Map // maps run ID (string) → context.CancelFunc
 }
 
 // NewService creates a new pipeline Service.
@@ -53,6 +54,11 @@ func NewService(
 // SetScheduleReloader sets the schedule reloader (breaks circular dep).
 func (s *Service) SetScheduleReloader(r ScheduleReloader) {
 	s.reloader = r
+}
+
+// SetModelRunner sets the model runner for MODEL_RUN pipeline jobs.
+func (s *Service) SetModelRunner(runner domain.ModelRunner) {
+	s.modelRunner = runner
 }
 
 // === Pipeline CRUD ===
@@ -173,10 +179,12 @@ func (s *Service) CreateJob(ctx context.Context, _ string, pipelineName string, 
 		return nil, err
 	}
 
-	// Validate notebook exists and has SQL.
-	_, err = s.notebooks.GetSQLBlocks(ctx, req.NotebookID)
-	if err != nil {
-		return nil, fmt.Errorf("validate notebook: %w", err)
+	// Validate notebook exists and has SQL (only for NOTEBOOK jobs).
+	if req.JobType == "" || req.JobType == domain.PipelineJobTypeNotebook {
+		_, err = s.notebooks.GetSQLBlocks(ctx, req.NotebookID)
+		if err != nil {
+			return nil, fmt.Errorf("validate notebook: %w", err)
+		}
 	}
 
 	job := &domain.PipelineJob{
@@ -189,6 +197,8 @@ func (s *Service) CreateJob(ctx context.Context, _ string, pipelineName string, 
 		TimeoutSeconds:    req.TimeoutSeconds,
 		RetryCount:        req.RetryCount,
 		JobOrder:          req.JobOrder,
+		JobType:           req.JobType,
+		ModelSelector:     req.ModelSelector,
 	}
 
 	return s.pipelines.CreateJob(ctx, job)

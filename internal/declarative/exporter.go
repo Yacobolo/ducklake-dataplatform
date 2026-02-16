@@ -53,6 +53,16 @@ func ExportDirectory(dir string, state *DesiredState, overwrite bool) error {
 		return err
 	}
 
+	// Models.
+	if err := exportModels(dir, state); err != nil {
+		return err
+	}
+
+	// Macros.
+	if err := exportMacros(dir, state); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -390,6 +400,42 @@ func exportPipelines(dir string, state *DesiredState) error {
 			Spec:       pl.Spec,
 		}
 		path := filepath.Join(dir, "pipelines", pl.Name+".yaml")
+		if err := writeYAMLFile(path, doc); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// === Models ===
+
+func exportModels(dir string, state *DesiredState) error {
+	for _, m := range state.Models {
+		doc := ModelDoc{
+			APIVersion: SupportedAPIVersion,
+			Kind:       KindNameModel,
+			Metadata:   ObjectMeta{Name: m.ModelName},
+			Spec:       m.Spec,
+		}
+		path := filepath.Join(dir, "models", m.ProjectName, m.ModelName+".yaml")
+		if err := writeYAMLFile(path, doc); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// === Macros ===
+
+func exportMacros(dir string, state *DesiredState) error {
+	for _, m := range state.Macros {
+		doc := MacroDoc{
+			APIVersion: SupportedAPIVersion,
+			Kind:       KindNameMacro,
+			Metadata:   ObjectMeta{Name: m.Name},
+			Spec:       m.Spec,
+		}
+		path := filepath.Join(dir, "macros", m.Name+".yaml")
 		if err := writeYAMLFile(path, doc); err != nil {
 			return err
 		}

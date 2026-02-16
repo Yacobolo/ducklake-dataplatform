@@ -315,3 +315,52 @@ type PipelineRunRepository interface {
 	UpdateJobRunStarted(ctx context.Context, id string) error
 	UpdateJobRunFinished(ctx context.Context, id string, status string, errorMsg *string) error
 }
+
+// ModelRepository provides CRUD operations for transformation models.
+type ModelRepository interface {
+	Create(ctx context.Context, m *Model) (*Model, error)
+	GetByID(ctx context.Context, id string) (*Model, error)
+	GetByName(ctx context.Context, projectName, name string) (*Model, error)
+	List(ctx context.Context, projectName *string, page PageRequest) ([]Model, int64, error)
+	Update(ctx context.Context, id string, req UpdateModelRequest) (*Model, error)
+	Delete(ctx context.Context, id string) error
+	ListAll(ctx context.Context) ([]Model, error)
+	UpdateDependencies(ctx context.Context, id string, deps []string) error
+}
+
+// ModelRunRepository provides CRUD operations for model runs and steps.
+type ModelRunRepository interface {
+	CreateRun(ctx context.Context, run *ModelRun) (*ModelRun, error)
+	GetRunByID(ctx context.Context, id string) (*ModelRun, error)
+	ListRuns(ctx context.Context, filter ModelRunFilter) ([]ModelRun, int64, error)
+	UpdateRunStarted(ctx context.Context, id string) error
+	UpdateRunFinished(ctx context.Context, id string, status string, errMsg *string) error
+	CreateStep(ctx context.Context, step *ModelRunStep) (*ModelRunStep, error)
+	ListStepsByRun(ctx context.Context, runID string) ([]ModelRunStep, error)
+	UpdateStepStarted(ctx context.Context, id string) error
+	UpdateStepFinished(ctx context.Context, id string, status string, rowsAffected *int64, errMsg *string) error
+}
+
+// ModelTestRepository provides CRUD operations for model tests.
+type ModelTestRepository interface {
+	Create(ctx context.Context, test *ModelTest) (*ModelTest, error)
+	GetByID(ctx context.Context, id string) (*ModelTest, error)
+	ListByModel(ctx context.Context, modelID string) ([]ModelTest, error)
+	Delete(ctx context.Context, id string) error
+}
+
+// ModelTestResultRepository provides operations for model test results.
+type ModelTestResultRepository interface {
+	Create(ctx context.Context, result *ModelTestResult) (*ModelTestResult, error)
+	ListByStep(ctx context.Context, runStepID string) ([]ModelTestResult, error)
+}
+
+// MacroRepository provides CRUD operations for SQL macros.
+type MacroRepository interface {
+	Create(ctx context.Context, m *Macro) (*Macro, error)
+	GetByName(ctx context.Context, name string) (*Macro, error)
+	List(ctx context.Context, page PageRequest) ([]Macro, int64, error)
+	Update(ctx context.Context, name string, req UpdateMacroRequest) (*Macro, error)
+	Delete(ctx context.Context, name string) error
+	ListAll(ctx context.Context) ([]Macro, error)
+}

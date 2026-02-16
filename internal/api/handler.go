@@ -28,6 +28,8 @@ type APIHandler struct {
 	sessions            sessionService
 	gitRepos            gitRepoService
 	pipelines           pipelineService
+	models              modelService
+	macros              macroService
 }
 
 // NewHandler creates a new APIHandler with all required service dependencies.
@@ -57,6 +59,8 @@ func NewHandler(
 	sessions sessionService,
 	gitRepos gitRepoService,
 	pipelines pipelineService,
+	models modelService,
+	macros macroService,
 ) *APIHandler {
 	return &APIHandler{
 		query:               query,
@@ -84,6 +88,8 @@ func NewHandler(
 		sessions:            sessions,
 		gitRepos:            gitRepos,
 		pipelines:           pipelines,
+		models:              models,
+		macros:              macros,
 	}
 }
 

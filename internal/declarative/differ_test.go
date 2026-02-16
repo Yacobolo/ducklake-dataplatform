@@ -1164,3 +1164,94 @@ func TestDiff_StorageCredentialUpdate(t *testing.T) {
 	assert.True(t, fields["comment"], "expected comment field diff")
 	assert.True(t, fields["s3.region"], "expected s3.region field diff")
 }
+
+func TestDiff_CreateModels(t *testing.T) {
+	desired := &DesiredState{
+		Models: []ModelResource{
+			{ProjectName: "sales", ModelName: "stg_orders", Spec: ModelSpec{
+				Materialization: "TABLE",
+				SQL:             "SELECT 1",
+			}},
+		},
+	}
+	actual := &DesiredState{}
+
+	plan := Diff(desired, actual)
+	require.Len(t, plan.Actions, 1)
+	assert.Equal(t, OpCreate, plan.Actions[0].Operation)
+	assert.Equal(t, KindModel, plan.Actions[0].ResourceKind)
+	assert.Equal(t, "sales.stg_orders", plan.Actions[0].ResourceName)
+}
+
+func TestDiff_DeleteModels(t *testing.T) {
+	desired := &DesiredState{}
+	actual := &DesiredState{
+		Models: []ModelResource{
+			{ProjectName: "sales", ModelName: "old_model", Spec: ModelSpec{
+				Materialization: "VIEW",
+				SQL:             "SELECT 1",
+			}},
+		},
+	}
+
+	plan := Diff(desired, actual)
+	require.Len(t, plan.Actions, 1)
+	assert.Equal(t, OpDelete, plan.Actions[0].Operation)
+	assert.Equal(t, KindModel, plan.Actions[0].ResourceKind)
+	assert.Equal(t, "sales.old_model", plan.Actions[0].ResourceName)
+}
+
+func TestDiff_UpdateModel(t *testing.T) {
+	desired := &DesiredState{
+		Models: []ModelResource{
+			{ProjectName: "sales", ModelName: "stg_orders", Spec: ModelSpec{
+				Materialization: "TABLE",
+				Description:     "updated description",
+				SQL:             "SELECT 2",
+				Tags:            []string{"v2"},
+			}},
+		},
+	}
+	actual := &DesiredState{
+		Models: []ModelResource{
+			{ProjectName: "sales", ModelName: "stg_orders", Spec: ModelSpec{
+				Materialization: "VIEW",
+				Description:     "original",
+				SQL:             "SELECT 1",
+				Tags:            []string{"v1"},
+			}},
+		},
+	}
+
+	plan := Diff(desired, actual)
+	require.NotEmpty(t, plan.Actions)
+	action := plan.Actions[0]
+	assert.Equal(t, OpUpdate, action.Operation)
+	assert.Equal(t, KindModel, action.ResourceKind)
+
+	fields := map[string]bool{}
+	for _, c := range action.Changes {
+		fields[c.Field] = true
+	}
+	assert.True(t, fields["materialization"], "expected materialization diff")
+	assert.True(t, fields["description"], "expected description diff")
+	assert.True(t, fields["sql"], "expected sql diff")
+	assert.True(t, fields["tags"], "expected tags diff")
+}
+
+func TestDiff_NoModelChanges(t *testing.T) {
+	state := &DesiredState{
+		Models: []ModelResource{
+			{ProjectName: "sales", ModelName: "stg_orders", Spec: ModelSpec{
+				Materialization: "VIEW",
+				SQL:             "SELECT 1",
+			}},
+		},
+	}
+
+	plan := Diff(state, state)
+	// No model actions expected.
+	for _, a := range plan.Actions {
+		assert.NotEqual(t, KindModel, a.ResourceKind, "expected no model actions")
+	}
+}

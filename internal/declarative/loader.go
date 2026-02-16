@@ -61,6 +61,16 @@ func LoadDirectory(dir string) (*DesiredState, error) {
 		return nil, err
 	}
 
+	// 8. models/
+	if err := loadModels(dir, state); err != nil {
+		return nil, err
+	}
+
+	// 9. macros/
+	if err := loadMacros(dir, state); err != nil {
+		return nil, err
+	}
+
 	return state, nil
 }
 
@@ -630,6 +640,128 @@ func loadPipelines(root string, state *DesiredState) error {
 		state.Pipelines = append(state.Pipelines, PipelineResource{
 			Name: plName,
 			Spec: plDoc.Spec,
+		})
+	}
+
+	return nil
+}
+
+// loadModels walks the models/<project>/**/*.yaml directory tree recursively.
+// The first-level directory is the project name; model name is from the filename.
+// Subdirectories within a project are organizational only.
+func loadModels(root string, state *DesiredState) error {
+	modelsDir := filepath.Join(root, "models")
+	if !dirExists(modelsDir) {
+		return nil
+	}
+
+	// Each top-level entry under models/ is a project directory.
+	projectEntries, err := os.ReadDir(modelsDir)
+	if err != nil {
+		return fmt.Errorf("read models directory: %w", err)
+	}
+
+	for _, projEntry := range projectEntries {
+		if !projEntry.IsDir() {
+			continue
+		}
+		projectName := projEntry.Name()
+		projectPath := filepath.Join(modelsDir, projectName)
+
+		if err := loadModelsRecursive(projectPath, projectName, state); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// loadMacros walks the macros/ directory. Each .yaml file is a macro.
+func loadMacros(root string, state *DesiredState) error {
+	macroDir := filepath.Join(root, "macros")
+	if !dirExists(macroDir) {
+		return nil
+	}
+
+	entries, err := os.ReadDir(macroDir)
+	if err != nil {
+		return fmt.Errorf("read macros directory: %w", err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
+			continue
+		}
+
+		macroName := strings.TrimSuffix(entry.Name(), ".yaml")
+		macroFile := filepath.Join(macroDir, entry.Name())
+
+		var macroDoc MacroDoc
+		found, err := loadYAMLFile(macroFile, &macroDoc)
+		if err != nil {
+			return err
+		}
+		if !found {
+			continue
+		}
+
+		if err := validateDocument(macroFile, macroDoc.APIVersion, macroDoc.Kind, KindNameMacro); err != nil {
+			return err
+		}
+		if macroDoc.Metadata.Name != macroName {
+			return fmt.Errorf("%s: metadata.name %q does not match file name %q", macroFile, macroDoc.Metadata.Name, macroName)
+		}
+		state.Macros = append(state.Macros, MacroResource{
+			Name: macroName,
+			Spec: macroDoc.Spec,
+		})
+	}
+
+	return nil
+}
+
+// loadModelsRecursive walks a directory tree under a project, loading all .yaml files as models.
+func loadModelsRecursive(dir, projectName string, state *DesiredState) error {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return fmt.Errorf("read models directory %s: %w", dir, err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			// Recurse into subdirectories (organizational only).
+			if err := loadModelsRecursive(filepath.Join(dir, entry.Name()), projectName, state); err != nil {
+				return err
+			}
+			continue
+		}
+
+		if !strings.HasSuffix(entry.Name(), ".yaml") {
+			continue
+		}
+
+		modelName := strings.TrimSuffix(entry.Name(), ".yaml")
+		modelFile := filepath.Join(dir, entry.Name())
+
+		var modelDoc ModelDoc
+		found, err := loadYAMLFile(modelFile, &modelDoc)
+		if err != nil {
+			return err
+		}
+		if !found {
+			continue
+		}
+
+		if err := validateDocument(modelFile, modelDoc.APIVersion, modelDoc.Kind, KindNameModel); err != nil {
+			return err
+		}
+		if modelDoc.Metadata.Name != modelName {
+			return fmt.Errorf("%s: metadata.name %q does not match file name %q", modelFile, modelDoc.Metadata.Name, modelName)
+		}
+		state.Models = append(state.Models, ModelResource{
+			ProjectName: projectName,
+			ModelName:   modelName,
+			Spec:        modelDoc.Spec,
 		})
 	}
 

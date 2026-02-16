@@ -194,6 +194,8 @@ func setupNotebookTestServer(t *testing.T, nb notebookService, sess sessionServi
 		nil, // apiKeys
 		nb, sess, git,
 		nil, // pipelineSvc
+		nil, // modelSvc
+		nil, // macroSvc
 	)
 	strictHandler := NewStrictHandler(handler, nil)
 

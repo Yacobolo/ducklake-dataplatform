@@ -34,6 +34,12 @@ type Pipeline struct {
 	UpdatedAt        time.Time
 }
 
+// Pipeline job type constants.
+const (
+	PipelineJobTypeNotebook = "NOTEBOOK"
+	PipelineJobTypeModelRun = "MODEL_RUN"
+)
+
 // PipelineJob represents a single job within a pipeline (DAG node).
 type PipelineJob struct {
 	ID                string
@@ -45,6 +51,8 @@ type PipelineJob struct {
 	TimeoutSeconds    *int64
 	RetryCount        int
 	JobOrder          int
+	JobType           string // NOTEBOOK or MODEL_RUN
+	ModelSelector     string // for MODEL_RUN jobs
 	CreatedAt         time.Time
 }
 
@@ -114,6 +122,8 @@ type CreatePipelineJobRequest struct {
 	TimeoutSeconds    *int64
 	RetryCount        int
 	JobOrder          int
+	JobType           string
+	ModelSelector     string
 }
 
 // Validate checks that the request is well-formed.
@@ -121,8 +131,14 @@ func (r *CreatePipelineJobRequest) Validate() error {
 	if r.Name == "" {
 		return ErrValidation("name is required")
 	}
-	if r.NotebookID == "" {
-		return ErrValidation("notebook_id is required")
+	if r.JobType == "" {
+		r.JobType = PipelineJobTypeNotebook
+	}
+	if r.JobType == PipelineJobTypeNotebook && r.NotebookID == "" {
+		return ErrValidation("notebook_id is required for NOTEBOOK jobs")
+	}
+	if r.JobType == PipelineJobTypeModelRun && r.ModelSelector == "" {
+		return ErrValidation("model_selector is required for MODEL_RUN jobs")
 	}
 	if r.RetryCount < 0 {
 		return ErrValidation("retry_count must be non-negative")

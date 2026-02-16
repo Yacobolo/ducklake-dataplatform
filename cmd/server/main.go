@@ -138,6 +138,8 @@ func run() error {
 		svc.SessionManager,
 		svc.GitService,
 		svc.Pipeline,
+		svc.Model,
+		svc.Macro,
 	)
 
 	// Create strict handler wrapper

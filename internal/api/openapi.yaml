@@ -39,6 +39,8 @@ tags:
     description: SQL notebooks, sessions, jobs, and Git integration.
   - name: Pipelines
     description: Pipeline workflow scheduling and orchestration.
+  - name: Models
+    description: Transformation model definitions, runs, DAG management, macros, and freshness.
 
 components:
   securitySchemes:
@@ -371,6 +373,56 @@ components:
       $ref: 'schemas/pipeline.yaml#/PaginatedPipelines'
     PaginatedPipelineRuns:
       $ref: 'schemas/pipeline.yaml#/PaginatedPipelineRuns'
+    Model:
+      $ref: 'schemas/models.yaml#/Model'
+    ModelConfig:
+      $ref: 'schemas/models.yaml#/ModelConfig'
+    CreateModelRequest:
+      $ref: 'schemas/models.yaml#/CreateModelRequest'
+    UpdateModelRequest:
+      $ref: 'schemas/models.yaml#/UpdateModelRequest'
+    PaginatedModels:
+      $ref: 'schemas/models.yaml#/PaginatedModels'
+    ModelRun:
+      $ref: 'schemas/models.yaml#/ModelRun'
+    ModelRunStep:
+      $ref: 'schemas/models.yaml#/ModelRunStep'
+    TriggerModelRunRequest:
+      $ref: 'schemas/models.yaml#/TriggerModelRunRequest'
+    PaginatedModelRuns:
+      $ref: 'schemas/models.yaml#/PaginatedModelRuns'
+    ModelRunStepList:
+      $ref: 'schemas/models.yaml#/ModelRunStepList'
+    ModelDAG:
+      $ref: 'schemas/models.yaml#/ModelDAG'
+    ModelDAGTier:
+      $ref: 'schemas/models.yaml#/ModelDAGTier'
+    ModelDAGNode:
+      $ref: 'schemas/models.yaml#/ModelDAGNode'
+    ModelTest:
+      $ref: 'schemas/models.yaml#/ModelTest'
+    ModelTestConfig:
+      $ref: 'schemas/models.yaml#/ModelTestConfig'
+    CreateModelTestRequest:
+      $ref: 'schemas/models.yaml#/CreateModelTestRequest'
+    ModelTestList:
+      $ref: 'schemas/models.yaml#/ModelTestList'
+    ModelTestResult:
+      $ref: 'schemas/models.yaml#/ModelTestResult'
+    ModelTestResultList:
+      $ref: 'schemas/models.yaml#/ModelTestResultList'
+    FreshnessStatus:
+      $ref: 'schemas/models.yaml#/FreshnessStatus'
+    PromoteNotebookRequest:
+      $ref: 'schemas/models.yaml#/PromoteNotebookRequest'
+    Macro:
+      $ref: 'schemas/macros.yaml#/Macro'
+    CreateMacroRequest:
+      $ref: 'schemas/macros.yaml#/CreateMacroRequest'
+    UpdateMacroRequest:
+      $ref: 'schemas/macros.yaml#/UpdateMacroRequest'
+    PaginatedMacros:
+      $ref: 'schemas/macros.yaml#/PaginatedMacros'
 
 paths:
   /query:
@@ -555,3 +607,33 @@ paths:
     $ref: 'paths/pipeline.yaml#/paths/~1pipelines~1runs~1{runId}~1cancel'
   /pipelines/runs/{runId}/jobs:
     $ref: 'paths/pipeline.yaml#/paths/~1pipelines~1runs~1{runId}~1jobs'
+  # === Models ===
+  /models:
+    $ref: 'paths/models.yaml#/paths/~1models'
+  /models/{projectName}/{modelName}:
+    $ref: 'paths/models.yaml#/paths/~1models~1{projectName}~1{modelName}'
+  /models/dag:
+    $ref: 'paths/models.yaml#/paths/~1models~1dag'
+  /model-runs:
+    $ref: 'paths/models.yaml#/paths/~1model-runs'
+  /model-runs/{runId}:
+    $ref: 'paths/models.yaml#/paths/~1model-runs~1{runId}'
+  /model-runs/{runId}/steps:
+    $ref: 'paths/models.yaml#/paths/~1model-runs~1{runId}~1steps'
+  /models/{projectName}/{modelName}/tests:
+    $ref: 'paths/models.yaml#/paths/~1models~1{projectName}~1{modelName}~1tests'
+  /models/{projectName}/{modelName}/tests/{testId}:
+    $ref: 'paths/models.yaml#/paths/~1models~1{projectName}~1{modelName}~1tests~1{testId}'
+  /model-runs/{runId}/steps/{stepId}/test-results:
+    $ref: 'paths/models.yaml#/paths/~1model-runs~1{runId}~1steps~1{stepId}~1test-results'
+  /models/{projectName}/{modelName}/freshness:
+    $ref: 'paths/models.yaml#/paths/~1models~1{projectName}~1{modelName}~1freshness'
+  /models/from-notebook:
+    $ref: 'paths/models.yaml#/paths/~1models~1from-notebook'
+  /model-runs/{runId}/cancel:
+    $ref: 'paths/models.yaml#/paths/~1model-runs~1{runId}~1cancel'
+  # === Macros ===
+  /macros:
+    $ref: 'paths/macros.yaml#/paths/~1macros'
+  /macros/{macroName}:
+    $ref: 'paths/macros.yaml#/paths/~1macros~1{macroName}'

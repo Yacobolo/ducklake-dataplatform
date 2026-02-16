@@ -1,0 +1,637 @@
+Model:
+  description: A transformation model definition.
+  type: object
+  properties:
+    id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+      example: 550e8400-e29b-41d4-a716-446655440100
+    project_name:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+      example: analytics
+    name:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+      example: stg_orders
+    sql:
+      type: string
+      maxLength: 65536
+      pattern: '^[\s\S]*$'
+      example: "SELECT * FROM raw.orders WHERE status = 'active'"
+    materialization:
+      type: string
+      enum: [VIEW, TABLE, INCREMENTAL, EPHEMERAL]
+      example: VIEW
+    description:
+      type: string
+      maxLength: 4096
+      pattern: '^[\s\S]*$'
+      example: Staging model for orders
+    owner:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+      example: admin
+    tags:
+      type: array
+      maxItems: 100
+      items:
+        type: string
+        maxLength: 255
+        pattern: '^\S.*$'
+      example: ["staging", "orders"]
+    depends_on:
+      type: array
+      maxItems: 100
+      items:
+        type: string
+        maxLength: 255
+        pattern: '^\S.*$'
+      example: ["raw_orders"]
+    config:
+      $ref: '#/ModelConfig'
+    created_by:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+      example: admin
+    created_at:
+      type: string
+      format: date-time
+      maxLength: 64
+      example: "2025-01-15T09:30:00Z"
+    updated_at:
+      type: string
+      format: date-time
+      maxLength: 64
+      example: "2025-01-15T09:30:00Z"
+
+ModelConfig:
+  description: Configuration options for a transformation model.
+  type: object
+  properties:
+    unique_key:
+      type: array
+      maxItems: 50
+      items:
+        type: string
+        maxLength: 255
+        pattern: '^\S+$'
+      example: ["order_id"]
+    incremental_strategy:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+      example: merge
+
+CreateModelRequest:
+  description: Request payload for creating a new transformation model.
+  type: object
+  additionalProperties: false
+  required: [project_name, name, sql]
+  properties:
+    project_name:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+      example: analytics
+    name:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+      example: stg_orders
+    sql:
+      type: string
+      maxLength: 65536
+      pattern: '^[\s\S]*$'
+      example: "SELECT * FROM raw.orders WHERE status = 'active'"
+    materialization:
+      type: string
+      enum: [VIEW, TABLE, INCREMENTAL, EPHEMERAL]
+      default: VIEW
+      example: VIEW
+    description:
+      type: string
+      maxLength: 4096
+      pattern: '^[\s\S]*$'
+      example: Staging model for orders
+    tags:
+      type: array
+      maxItems: 100
+      items:
+        type: string
+        maxLength: 255
+        pattern: '^\S.*$'
+      example: ["staging", "orders"]
+    config:
+      $ref: '#/ModelConfig'
+
+UpdateModelRequest:
+  description: Request payload for updating an existing transformation model.
+  type: object
+  additionalProperties: false
+  properties:
+    sql:
+      type: string
+      maxLength: 65536
+      pattern: '^[\s\S]*$'
+      example: "SELECT * FROM raw.orders WHERE status = 'completed'"
+    materialization:
+      type: string
+      enum: [VIEW, TABLE, INCREMENTAL, EPHEMERAL]
+      example: TABLE
+    description:
+      type: string
+      maxLength: 4096
+      pattern: '^[\s\S]*$'
+      example: Updated staging model for orders
+    tags:
+      type: array
+      maxItems: 100
+      items:
+        type: string
+        maxLength: 255
+        pattern: '^\S.*$'
+      example: ["staging", "orders"]
+    config:
+      $ref: '#/ModelConfig'
+
+PaginatedModels:
+  description: A paginated list of transformation models.
+  type: object
+  properties:
+    data:
+      type: array
+      maxItems: 1000
+      items:
+        $ref: '#/Model'
+      example:
+        - id: "550e8400-e29b-41d4-a716-446655440100"
+          project_name: analytics
+          name: stg_orders
+          sql: "SELECT * FROM raw.orders WHERE status = 'active'"
+          materialization: VIEW
+          description: Staging model for orders
+          owner: admin
+          tags: ["staging", "orders"]
+          depends_on: ["raw_orders"]
+          created_by: admin
+          created_at: "2025-01-15T09:30:00Z"
+          updated_at: "2025-01-15T09:30:00Z"
+    next_page_token:
+      type: string
+      maxLength: 4096
+      pattern: '^\S+$'
+      example: eyJpZCI6MTB9
+
+ModelRun:
+  description: An execution instance of a model run.
+  type: object
+  properties:
+    id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+      example: 550e8400-e29b-41d4-a716-446655440200
+    status:
+      type: string
+      enum: [PENDING, RUNNING, SUCCESS, FAILED, CANCELLED]
+      example: RUNNING
+    trigger_type:
+      type: string
+      enum: [MANUAL, SCHEDULED]
+      example: MANUAL
+    triggered_by:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+      example: admin
+    model_names:
+      type: array
+      maxItems: 1000
+      items:
+        type: string
+        maxLength: 255
+        pattern: '^\S.*$'
+      example: ["stg_orders", "fct_orders"]
+    project_name:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+      example: analytics
+    started_at:
+      type: string
+      format: date-time
+      maxLength: 64
+      example: "2025-01-15T10:00:00Z"
+    finished_at:
+      type: string
+      format: date-time
+      maxLength: 64
+      example: "2025-01-15T10:15:00Z"
+    error_message:
+      type: string
+      maxLength: 4096
+      pattern: '^[\s\S]*$'
+      example: model stg_orders failed
+    created_at:
+      type: string
+      format: date-time
+      maxLength: 64
+      example: "2025-01-15T10:00:00Z"
+
+ModelRunStep:
+  description: Execution status of a single model within a model run.
+  type: object
+  properties:
+    id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+      example: 550e8400-e29b-41d4-a716-446655440300
+    run_id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+      example: 550e8400-e29b-41d4-a716-446655440200
+    model_name:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+      example: stg_orders
+    status:
+      type: string
+      enum: [PENDING, RUNNING, SUCCESS, FAILED, SKIPPED, CANCELLED]
+      example: SUCCESS
+    started_at:
+      type: string
+      format: date-time
+      maxLength: 64
+      example: "2025-01-15T10:00:00Z"
+    finished_at:
+      type: string
+      format: date-time
+      maxLength: 64
+      example: "2025-01-15T10:05:00Z"
+    error_message:
+      type: string
+      maxLength: 4096
+      pattern: '^[\s\S]*$'
+      example: query execution timed out
+    rows_affected:
+      type: integer
+      format: int64
+      minimum: 0
+      maximum: 9999999999
+      example: 1500
+    created_at:
+      type: string
+      format: date-time
+      maxLength: 64
+      example: "2025-01-15T10:00:00Z"
+
+TriggerModelRunRequest:
+  description: Request payload for triggering a model run.
+  type: object
+  additionalProperties: false
+  required: [project_name]
+  properties:
+    project_name:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+      example: analytics
+    model_names:
+      type: array
+      maxItems: 1000
+      items:
+        type: string
+        maxLength: 255
+        pattern: '^\S.*$'
+      example: ["stg_orders", "fct_orders"]
+    full_refresh:
+      type: boolean
+      default: false
+      example: false
+
+PaginatedModelRuns:
+  description: A paginated list of model runs.
+  type: object
+  properties:
+    data:
+      type: array
+      maxItems: 1000
+      items:
+        $ref: '#/ModelRun'
+      example:
+        - id: "550e8400-e29b-41d4-a716-446655440200"
+          status: SUCCESS
+          trigger_type: MANUAL
+          triggered_by: admin
+          model_names: ["stg_orders", "fct_orders"]
+          project_name: analytics
+          started_at: "2025-01-15T10:00:00Z"
+          finished_at: "2025-01-15T10:15:00Z"
+          created_at: "2025-01-15T10:00:00Z"
+    next_page_token:
+      type: string
+      maxLength: 4096
+      pattern: '^\S+$'
+      example: eyJpZCI6MTB9
+
+ModelRunStepList:
+  description: A list of model run steps.
+  type: object
+  properties:
+    data:
+      type: array
+      maxItems: 1000
+      items:
+        $ref: '#/ModelRunStep'
+      example: []
+    next_page_token:
+      type: string
+      maxLength: 4096
+      pattern: '^\S+$'
+      example: eyJpZCI6MTB9
+
+ModelDAG:
+  description: The directed acyclic graph of model dependencies.
+  type: object
+  properties:
+    tiers:
+      type: array
+      maxItems: 100
+      items:
+        $ref: '#/ModelDAGTier'
+      example:
+        - tier: 0
+          nodes:
+            - project_name: "analytics"
+              model_name: "stg_orders"
+              materialization: "VIEW"
+              depends_on: []
+        - tier: 1
+          nodes:
+            - project_name: "analytics"
+              model_name: "fct_orders"
+              materialization: "TABLE"
+              depends_on: ["stg_orders"]
+
+ModelDAGTier:
+  description: A tier of models in the DAG that can be executed in parallel.
+  type: object
+  properties:
+    tier:
+      type: integer
+      format: int32
+      minimum: 0
+      maximum: 1000
+      example: 0
+    nodes:
+      type: array
+      maxItems: 1000
+      items:
+        $ref: '#/ModelDAGNode'
+
+ModelDAGNode:
+  description: A single model node in the DAG.
+  type: object
+  properties:
+    project_name:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+      example: analytics
+    model_name:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+      example: stg_orders
+    materialization:
+      type: string
+      enum: [VIEW, TABLE, INCREMENTAL, EPHEMERAL]
+      example: VIEW
+    depends_on:
+      type: array
+      maxItems: 100
+      items:
+        type: string
+        maxLength: 255
+        pattern: '^\S.*$'
+      example: ["raw_orders"]
+
+ModelTest:
+  description: A test assertion for a model's output.
+  type: object
+  properties:
+    id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+      example: 550e8400-e29b-41d4-a716-446655440400
+    model_id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+      example: 550e8400-e29b-41d4-a716-446655440100
+    name:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+      example: not_null_order_id
+    test_type:
+      type: string
+      enum: [not_null, unique, accepted_values, relationships, custom_sql]
+      example: not_null
+    column:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+      example: order_id
+    config:
+      $ref: '#/ModelTestConfig'
+    created_at:
+      type: string
+      format: date-time
+      maxLength: 64
+      example: "2025-01-15T09:30:00Z"
+
+ModelTestConfig:
+  description: Test-type-specific configuration for a model test.
+  type: object
+  properties:
+    values:
+      type: array
+      maxItems: 1000
+      items:
+        type: string
+        maxLength: 255
+        pattern: '^[\s\S]*$'
+      example: ["active", "pending", "completed"]
+    to_model:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+      example: stg_customers
+    to_column:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+      example: customer_id
+    sql:
+      type: string
+      maxLength: 65536
+      pattern: '^[\s\S]*$'
+      example: "SELECT * FROM {{ model }} WHERE amount < 0"
+
+CreateModelTestRequest:
+  description: Request payload for creating a new model test.
+  type: object
+  additionalProperties: false
+  required: [name, test_type]
+  properties:
+    name:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+      example: not_null_order_id
+    test_type:
+      type: string
+      enum: [not_null, unique, accepted_values, relationships, custom_sql]
+      example: not_null
+    column:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+      example: order_id
+    config:
+      $ref: '#/ModelTestConfig'
+
+ModelTestList:
+  description: A list of model tests.
+  type: object
+  properties:
+    data:
+      type: array
+      maxItems: 1000
+      items:
+        $ref: '#/ModelTest'
+      example: []
+
+ModelTestResult:
+  description: The result of a model test execution.
+  type: object
+  properties:
+    id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+      example: 550e8400-e29b-41d4-a716-446655440500
+    run_step_id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+      example: 550e8400-e29b-41d4-a716-446655440300
+    test_id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+      example: 550e8400-e29b-41d4-a716-446655440400
+    test_name:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+      example: not_null_order_id
+    status:
+      type: string
+      enum: [PASS, FAIL, ERROR]
+      example: PASS
+    rows_returned:
+      type: integer
+      format: int64
+      minimum: 0
+      maximum: 9999999999
+      example: 0
+    error_message:
+      type: string
+      maxLength: 4096
+      pattern: '^[\s\S]*$'
+      example: query execution timed out
+    created_at:
+      type: string
+      format: date-time
+      maxLength: 64
+      example: "2025-01-15T10:00:00Z"
+
+ModelTestResultList:
+  description: A list of model test results.
+  type: object
+  properties:
+    data:
+      type: array
+      maxItems: 1000
+      items:
+        $ref: '#/ModelTestResult'
+      example: []
+
+FreshnessStatus:
+  description: The freshness status of a model based on its freshness policy.
+  type: object
+  properties:
+    is_fresh:
+      type: boolean
+      example: true
+    last_run_at:
+      type: string
+      format: date-time
+      maxLength: 64
+      example: "2025-01-15T10:00:00Z"
+    max_lag_seconds:
+      type: integer
+      format: int64
+      minimum: 0
+      maximum: 999999999
+      example: 3600
+    stale_since:
+      type: string
+      format: date-time
+      maxLength: 64
+      example: "2025-01-15T11:00:00Z"
+
+PromoteNotebookRequest:
+  description: Request payload for promoting a notebook cell to a transformation model.
+  type: object
+  additionalProperties: false
+  required: [notebook_id, cell_index, project_name, name]
+  properties:
+    notebook_id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+      example: 550e8400-e29b-41d4-a716-446655440050
+    cell_index:
+      type: integer
+      format: int32
+      minimum: 0
+      maximum: 10000
+      example: 0
+    project_name:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+      example: analytics
+    name:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+      example: stg_orders
+    materialization:
+      type: string
+      enum: [VIEW, TABLE, INCREMENTAL, EPHEMERAL]
+      default: TABLE
+      example: TABLE

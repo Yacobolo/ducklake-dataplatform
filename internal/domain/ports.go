@@ -75,3 +75,8 @@ type MetastoreQuerier interface {
 type NotebookProvider interface {
 	GetSQLBlocks(ctx context.Context, notebookID string) ([]string, error)
 }
+
+// ModelRunner executes a model run synchronously. Used by the pipeline executor.
+type ModelRunner interface {
+	TriggerRunSync(ctx context.Context, principal string, req TriggerModelRunRequest) error
+}

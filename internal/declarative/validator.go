@@ -244,6 +244,12 @@ func Validate(state *DesiredState) []ValidationError {
 	// 19. Validate pipelines.
 	validatePipelines(state.Pipelines, notebookNames, endpointNames, &errs)
 
+	// 20. Validate models.
+	validateModels(state.Models, &errs)
+
+	// 21. Validate macros.
+	validateMacros(state.Macros, &errs)
+
 	return errs
 }
 
@@ -1143,6 +1149,164 @@ func validatePipelines(pipelines []PipelineResource, notebookNames, endpointName
 				addErr(errs, path, "duplicate pipeline name %q", p.Name)
 			}
 			seen[p.Name] = true
+		}
+	}
+}
+
+// === Models ===
+
+// Valid materialization types for models.
+var validMaterializationTypes = map[string]bool{
+	"VIEW":        true,
+	"TABLE":       true,
+	"INCREMENTAL": true,
+	"EPHEMERAL":   true,
+}
+
+// Valid test types for model tests.
+var validTestTypes = map[string]bool{
+	"not_null":        true,
+	"unique":          true,
+	"accepted_values": true,
+	"relationships":   true,
+	"custom_sql":      true,
+}
+
+func validateModels(models []ModelResource, errs *[]ValidationError) {
+	seen := make(map[string]bool, len(models))
+	for i, m := range models {
+		path := fmt.Sprintf("model[%d]", i)
+		if m.ProjectName != "" && m.ModelName != "" {
+			path = fmt.Sprintf("model[%s.%s]", m.ProjectName, m.ModelName)
+		}
+		if m.ProjectName == "" {
+			addErr(errs, path, "project_name is required")
+		}
+		if m.ModelName == "" {
+			addErr(errs, path, "model_name is required")
+		}
+		if m.Spec.SQL == "" {
+			addErr(errs, path, "sql is required")
+		}
+		if m.Spec.Materialization != "" && !validMaterializationTypes[m.Spec.Materialization] {
+			addErr(errs, path, "materialization must be one of [VIEW, TABLE, INCREMENTAL, EPHEMERAL], got %q", m.Spec.Materialization)
+		}
+
+		// Validate contract.
+		if m.Spec.Contract != nil {
+			validateModelContract(m.Spec.Contract, path, errs)
+		}
+
+		// Validate tests.
+		validateModelTests(m.Spec.Tests, path, errs)
+
+		key := m.ProjectName + "." + m.ModelName
+		if m.ProjectName != "" && m.ModelName != "" {
+			if seen[key] {
+				addErr(errs, path, "duplicate model %q", key)
+			}
+			seen[key] = true
+		}
+	}
+}
+
+func validateModelContract(contract *ContractSpec, parentPath string, errs *[]ValidationError) {
+	colSeen := make(map[string]bool, len(contract.Columns))
+	for i, col := range contract.Columns {
+		cpath := fmt.Sprintf("%s.contract.columns[%d]", parentPath, i)
+		if col.Name == "" {
+			addErr(errs, cpath, "column name is required")
+		}
+		if col.Type == "" {
+			addErr(errs, cpath, "column type is required")
+		}
+		if col.Name != "" {
+			if colSeen[col.Name] {
+				addErr(errs, cpath, "duplicate contract column name %q", col.Name)
+			}
+			colSeen[col.Name] = true
+		}
+	}
+}
+
+func validateModelTests(tests []TestSpec, parentPath string, errs *[]ValidationError) {
+	testSeen := make(map[string]bool, len(tests))
+	for i, t := range tests {
+		tpath := fmt.Sprintf("%s.tests[%d]", parentPath, i)
+		if t.Name != "" {
+			tpath = fmt.Sprintf("%s.tests[%s]", parentPath, t.Name)
+		}
+		if t.Name == "" {
+			addErr(errs, tpath, "test name is required")
+		}
+		if !validTestTypes[t.Type] {
+			addErr(errs, tpath, "test type must be one of [not_null, unique, accepted_values, relationships, custom_sql], got %q", t.Type)
+		}
+
+		switch t.Type {
+		case "not_null", "unique":
+			if t.Column == "" {
+				addErr(errs, tpath, "column is required for %s tests", t.Type)
+			}
+		case "accepted_values":
+			if t.Column == "" {
+				addErr(errs, tpath, "column is required for accepted_values tests")
+			}
+			if len(t.Values) == 0 {
+				addErr(errs, tpath, "values are required for accepted_values tests")
+			}
+		case "relationships":
+			if t.Column == "" {
+				addErr(errs, tpath, "column is required for relationships tests")
+			}
+			if t.ToModel == "" || t.ToColumn == "" {
+				addErr(errs, tpath, "to_model and to_column are required for relationships tests")
+			}
+		case "custom_sql":
+			if t.SQL == "" {
+				addErr(errs, tpath, "sql is required for custom_sql tests")
+			}
+		}
+
+		if t.Name != "" {
+			if testSeen[t.Name] {
+				addErr(errs, tpath, "duplicate test name %q", t.Name)
+			}
+			testSeen[t.Name] = true
+		}
+	}
+}
+
+// === Macros ===
+
+// Valid macro types.
+var validMacroTypes = map[string]bool{
+	"SCALAR": true,
+	"TABLE":  true,
+	"":       true, // default to SCALAR
+}
+
+func validateMacros(macros []MacroResource, errs *[]ValidationError) {
+	seen := make(map[string]bool, len(macros))
+	for i, m := range macros {
+		path := fmt.Sprintf("macro[%d]", i)
+		if m.Name != "" {
+			path = fmt.Sprintf("macro[%s]", m.Name)
+		}
+		if m.Name == "" {
+			addErr(errs, path, "name is required")
+		}
+		if m.Spec.Body == "" {
+			addErr(errs, path, "body is required")
+		}
+		if !validMacroTypes[m.Spec.MacroType] {
+			addErr(errs, path, "macro_type must be \"SCALAR\" or \"TABLE\", got %q", m.Spec.MacroType)
+		}
+		if m.Name != "" {
+			if seen[m.Name] {
+				addErr(errs, path, "duplicate macro name %q", m.Name)
+			}
+			seen[m.Name] = true
 		}
 	}
 }

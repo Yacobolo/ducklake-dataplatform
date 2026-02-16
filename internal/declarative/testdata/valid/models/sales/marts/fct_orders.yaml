@@ -1,0 +1,9 @@
+apiVersion: duck/v1
+kind: Model
+metadata:
+  name: fct_orders
+spec:
+  materialization: VIEW
+  description: "Orders fact table"
+  sql: |
+    SELECT * FROM stg_orders
