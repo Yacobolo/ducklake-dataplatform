@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"duck-demo/internal/declarative"
 	"duck-demo/pkg/cli/gen"
@@ -21,9 +22,36 @@ type StateWriter interface {
 	Execute(ctx context.Context, action declarative.Action) error
 }
 
+// resourceIndex maps human-readable names to API UUIDs. It is populated during
+// ReadState and consumed by Execute methods that must resolve names to IDs.
+type resourceIndex struct {
+	principalIDByName  map[string]string // "alice" → UUID
+	groupIDByName      map[string]string // "admins" → UUID
+	catalogIDByName    map[string]string // "demo" → UUID
+	schemaIDByPath     map[string]string // "catalog.schema" → UUID
+	tableIDByPath      map[string]string // "catalog.schema.table" → UUID
+	tagIDByKey         map[string]string // "pii" or "pii:value" → UUID
+	rowFilterIDByPath  map[string]string // "cat.sch.tbl/filterName" → UUID
+	columnMaskIDByPath map[string]string // "cat.sch.tbl/maskName" → UUID
+}
+
+func newResourceIndex() *resourceIndex {
+	return &resourceIndex{
+		principalIDByName:  make(map[string]string),
+		groupIDByName:      make(map[string]string),
+		catalogIDByName:    make(map[string]string),
+		schemaIDByPath:     make(map[string]string),
+		tableIDByPath:      make(map[string]string),
+		tagIDByKey:         make(map[string]string),
+		rowFilterIDByPath:  make(map[string]string),
+		columnMaskIDByPath: make(map[string]string),
+	}
+}
+
 // APIStateClient implements both StateReader and StateWriter using the gen.Client.
 type APIStateClient struct {
 	client *gen.Client
+	index  *resourceIndex
 }
 
 // Compile-time interface checks.
@@ -119,7 +147,9 @@ func mergePages(pages []json.RawMessage, target interface{}) error {
 // === ReadState ===
 
 // ReadState fetches the current server state and returns it as a DesiredState.
+// It also populates the internal resource index for name→ID resolution during Execute.
 func (c *APIStateClient) ReadState(ctx context.Context) (*declarative.DesiredState, error) {
+	c.index = newResourceIndex()
 	state := &declarative.DesiredState{}
 
 	if err := c.readPrincipals(ctx, state); err != nil {
@@ -162,6 +192,7 @@ func (c *APIStateClient) ReadState(ctx context.Context) (*declarative.DesiredSta
 // --- Security resources ---
 
 type apiPrincipal struct {
+	ID      string `json:"id"`
 	Name    string `json:"name"`
 	Type    string `json:"type"`
 	IsAdmin bool   `json:"is_admin"`
@@ -187,6 +218,9 @@ func (c *APIStateClient) readPrincipals(ctx context.Context, state *declarative.
 			Type:    p.Type,
 			IsAdmin: p.IsAdmin,
 		})
+		if p.ID != "" && c.index != nil {
+			c.index.principalIDByName[p.Name] = p.ID
+		}
 	}
 	return nil
 }
@@ -241,6 +275,9 @@ func (c *APIStateClient) readGroups(ctx context.Context, state *declarative.Desi
 		}
 
 		state.Groups = append(state.Groups, spec)
+		if g.ID != "" && c.index != nil {
+			c.index.groupIDByName[g.Name] = g.ID
+		}
 	}
 	return nil
 }
@@ -289,6 +326,7 @@ func (c *APIStateClient) readAPIKeys(ctx context.Context, state *declarative.Des
 // --- Catalog resources ---
 
 type apiCatalog struct {
+	ID            string `json:"id"`
 	Name          string `json:"name"`
 	MetastoreType string `json:"metastore_type"`
 	DSN           string `json:"dsn"`
@@ -320,6 +358,10 @@ func (c *APIStateClient) readCatalogs(ctx context.Context, state *declarative.De
 			},
 		})
 
+		if cat.ID != "" && c.index != nil {
+			c.index.catalogIDByName[cat.Name] = cat.ID
+		}
+
 		// Fetch schemas for this catalog.
 		if err := c.readSchemas(ctx, cat.Name, state); err != nil {
 			return fmt.Errorf("catalog %q schemas: %w", cat.Name, err)
@@ -329,6 +371,7 @@ func (c *APIStateClient) readCatalogs(ctx context.Context, state *declarative.De
 }
 
 type apiSchema struct {
+	ID           string            `json:"id"`
 	Name         string            `json:"name"`
 	Comment      string            `json:"comment"`
 	Owner        string            `json:"owner"`
@@ -361,6 +404,9 @@ func (c *APIStateClient) readSchemas(ctx context.Context, catalogName string, st
 				Properties:   s.Properties,
 			},
 		})
+		if s.ID != "" && c.index != nil {
+			c.index.schemaIDByPath[catalogName+"."+s.Name] = s.ID
+		}
 
 		// Fetch tables, views, volumes for this schema.
 		if err := c.readTables(ctx, catalogName, s.Name, state); err != nil {
@@ -435,6 +481,9 @@ func (c *APIStateClient) readTables(ctx context.Context, catalogName, schemaName
 				LocationName: t.LocationName,
 			},
 		})
+		if t.ID != "" && c.index != nil {
+			c.index.tableIDByPath[catalogName+"."+schemaName+"."+t.Name] = t.ID
+		}
 	}
 	return nil
 }
@@ -651,6 +700,7 @@ func (c *APIStateClient) readComputeEndpoints(ctx context.Context, state *declar
 // --- Governance resources ---
 
 type apiTag struct {
+	ID    string  `json:"id"`
 	Key   string  `json:"key"`
 	Value *string `json:"value"`
 }
@@ -674,8 +724,19 @@ func (c *APIStateClient) readTags(ctx context.Context, state *declarative.Desire
 			Key:   t.Key,
 			Value: t.Value,
 		})
+		if t.ID != "" && c.index != nil {
+			c.index.tagIDByKey[tagKey(t.Key, t.Value)] = t.ID
+		}
 	}
 	return nil
+}
+
+// tagKey returns the canonical key for a tag: "key" or "key:value".
+func tagKey(key string, value *string) string {
+	if value != nil {
+		return key + ":" + *value
+	}
+	return key
 }
 
 // --- Workflow resources (simplified) ---
@@ -748,6 +809,119 @@ func (c *APIStateClient) readPipelines(ctx context.Context, state *declarative.D
 	return nil
 }
 
+// === Name-to-ID Resolution ===
+
+// resolvePrincipalID looks up a principal or group UUID by name.
+func (c *APIStateClient) resolvePrincipalID(name, principalType string) (string, error) {
+	if c.index == nil {
+		return "", fmt.Errorf("resource index not populated; call ReadState first")
+	}
+	if principalType == "group" {
+		id, ok := c.index.groupIDByName[name]
+		if !ok {
+			return "", fmt.Errorf("group %q not found in index", name)
+		}
+		return id, nil
+	}
+	id, ok := c.index.principalIDByName[name]
+	if !ok {
+		return "", fmt.Errorf("principal %q not found in index", name)
+	}
+	return id, nil
+}
+
+// resolveSecurableID looks up a securable UUID by type and dot-path.
+func (c *APIStateClient) resolveSecurableID(securableType, path string) (string, error) {
+	if c.index == nil {
+		return "", fmt.Errorf("resource index not populated; call ReadState first")
+	}
+	switch securableType {
+	case "catalog":
+		if id, ok := c.index.catalogIDByName[path]; ok {
+			return id, nil
+		}
+	case "schema":
+		if id, ok := c.index.schemaIDByPath[path]; ok {
+			return id, nil
+		}
+	case "table":
+		if id, ok := c.index.tableIDByPath[path]; ok {
+			return id, nil
+		}
+	default:
+		// For other types (volume, external_location, etc.) try all maps.
+		if id, ok := c.index.tableIDByPath[path]; ok {
+			return id, nil
+		}
+		if id, ok := c.index.schemaIDByPath[path]; ok {
+			return id, nil
+		}
+		if id, ok := c.index.catalogIDByName[path]; ok {
+			return id, nil
+		}
+	}
+	return "", fmt.Errorf("%s %q not found in index", securableType, path)
+}
+
+// resolveTagID looks up a tag UUID by key or "key:value" string.
+func (c *APIStateClient) resolveTagID(keyOrKeyValue string) (string, error) {
+	if c.index == nil {
+		return "", fmt.Errorf("resource index not populated; call ReadState first")
+	}
+	id, ok := c.index.tagIDByKey[keyOrKeyValue]
+	if !ok {
+		return "", fmt.Errorf("tag %q not found in index", keyOrKeyValue)
+	}
+	return id, nil
+}
+
+// resolveRowFilterID looks up a row filter UUID by "catalog.schema.table/filterName" path.
+func (c *APIStateClient) resolveRowFilterID(resourceName string) (string, error) {
+	if c.index == nil {
+		return "", fmt.Errorf("resource index not populated; call ReadState first")
+	}
+	id, ok := c.index.rowFilterIDByPath[resourceName]
+	if !ok {
+		return "", fmt.Errorf("row filter %q not found in index", resourceName)
+	}
+	return id, nil
+}
+
+// resolveColumnMaskID looks up a column mask UUID by "catalog.schema.table/maskName" path.
+func (c *APIStateClient) resolveColumnMaskID(resourceName string) (string, error) {
+	if c.index == nil {
+		return "", fmt.Errorf("resource index not populated; call ReadState first")
+	}
+	id, ok := c.index.columnMaskIDByPath[resourceName]
+	if !ok {
+		return "", fmt.Errorf("column mask %q not found in index", resourceName)
+	}
+	return id, nil
+}
+
+// checkCreateResponse reads the response body, checks for errors, and extracts the created resource ID.
+func (c *APIStateClient) checkCreateResponse(resp *http.Response) (string, error) {
+	body, err := gen.ReadBody(resp)
+	if err != nil {
+		return "", err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		var apiErr struct {
+			Code    interface{} `json:"code"`
+			Message string      `json:"message"`
+		}
+		if json.Unmarshal(body, &apiErr) == nil && apiErr.Message != "" {
+			return "", fmt.Errorf("API error (HTTP %d): %s", resp.StatusCode, apiErr.Message)
+		}
+		return "", fmt.Errorf("API error (HTTP %d): %s", resp.StatusCode, string(body))
+	}
+	var created struct {
+		ID string `json:"id"`
+	}
+	_ = json.Unmarshal(body, &created)
+	return created.ID, nil
+}
+
 // === Execute ===
 
 // Execute applies a single planned action to the server via the API.
@@ -757,6 +931,8 @@ func (c *APIStateClient) Execute(ctx context.Context, action declarative.Action)
 		return c.executePrincipal(ctx, action)
 	case declarative.KindGroup:
 		return c.executeGroup(ctx, action)
+	case declarative.KindGroupMembership:
+		return c.executeGroupMembership(ctx, action)
 	case declarative.KindPrivilegeGrant:
 		return c.executeGrant(ctx, action)
 	case declarative.KindCatalogRegistration:
@@ -767,6 +943,18 @@ func (c *APIStateClient) Execute(ctx context.Context, action declarative.Action)
 		return c.executeTable(ctx, action)
 	case declarative.KindView:
 		return c.executeView(ctx, action)
+	case declarative.KindTag:
+		return c.executeTag(ctx, action)
+	case declarative.KindTagAssignment:
+		return c.executeTagAssignment(ctx, action)
+	case declarative.KindRowFilter:
+		return c.executeRowFilter(ctx, action)
+	case declarative.KindRowFilterBinding:
+		return c.executeRowFilterBinding(ctx, action)
+	case declarative.KindColumnMask:
+		return c.executeColumnMask(ctx, action)
+	case declarative.KindColumnMaskBinding:
+		return c.executeColumnMaskBinding(ctx, action)
 	default:
 		return fmt.Errorf("execute %s %s: resource kind not yet implemented", action.Operation, action.ResourceKind)
 	}
@@ -777,11 +965,24 @@ func (c *APIStateClient) Execute(ctx context.Context, action declarative.Action)
 func (c *APIStateClient) executePrincipal(_ context.Context, action declarative.Action) error {
 	switch action.Operation {
 	case declarative.OpCreate:
-		resp, err := c.client.Do(http.MethodPost, "/principals", nil, action.Desired)
+		spec := action.Desired.(declarative.PrincipalSpec)
+		body := map[string]interface{}{
+			"name":     spec.Name,
+			"type":     spec.Type,
+			"is_admin": spec.IsAdmin,
+		}
+		resp, err := c.client.Do(http.MethodPost, "/principals", nil, body)
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		id, err := c.checkCreateResponse(resp)
+		if err != nil {
+			return err
+		}
+		if id != "" && c.index != nil {
+			c.index.principalIDByName[spec.Name] = id
+		}
+		return nil
 
 	case declarative.OpUpdate:
 		resp, err := c.client.Do(http.MethodPatch, "/principals/"+action.ResourceName, nil, action.Desired)
@@ -805,11 +1006,25 @@ func (c *APIStateClient) executePrincipal(_ context.Context, action declarative.
 func (c *APIStateClient) executeGroup(_ context.Context, action declarative.Action) error {
 	switch action.Operation {
 	case declarative.OpCreate:
-		resp, err := c.client.Do(http.MethodPost, "/groups", nil, action.Desired)
+		spec := action.Desired.(declarative.GroupSpec)
+		body := map[string]interface{}{
+			"name": spec.Name,
+		}
+		if spec.Description != "" {
+			body["description"] = spec.Description
+		}
+		resp, err := c.client.Do(http.MethodPost, "/groups", nil, body)
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		id, err := c.checkCreateResponse(resp)
+		if err != nil {
+			return err
+		}
+		if id != "" && c.index != nil {
+			c.index.groupIDByName[spec.Name] = id
+		}
+		return nil
 
 	case declarative.OpUpdate:
 		resp, err := c.client.Do(http.MethodPatch, "/groups/"+action.ResourceName, nil, action.Desired)
@@ -833,14 +1048,46 @@ func (c *APIStateClient) executeGroup(_ context.Context, action declarative.Acti
 func (c *APIStateClient) executeGrant(_ context.Context, action declarative.Action) error {
 	switch action.Operation {
 	case declarative.OpCreate:
-		resp, err := c.client.Do(http.MethodPost, "/grants", nil, action.Desired)
+		grant := action.Desired.(declarative.GrantSpec)
+		principalID, err := c.resolvePrincipalID(grant.Principal, grant.PrincipalType)
+		if err != nil {
+			return fmt.Errorf("resolve principal for grant: %w", err)
+		}
+		securableID, err := c.resolveSecurableID(grant.SecurableType, grant.Securable)
+		if err != nil {
+			return fmt.Errorf("resolve securable for grant: %w", err)
+		}
+		body := map[string]interface{}{
+			"principal_id":   principalID,
+			"principal_type": grant.PrincipalType,
+			"securable_id":   securableID,
+			"securable_type": grant.SecurableType,
+			"privilege":      grant.Privilege,
+		}
+		resp, err := c.client.Do(http.MethodPost, "/grants", nil, body)
 		if err != nil {
 			return err
 		}
 		return gen.CheckError(resp)
 
 	case declarative.OpDelete:
-		resp, err := c.client.Do(http.MethodDelete, "/grants", nil, action.Actual)
+		grant := action.Actual.(declarative.GrantSpec)
+		principalID, err := c.resolvePrincipalID(grant.Principal, grant.PrincipalType)
+		if err != nil {
+			return fmt.Errorf("resolve principal for grant delete: %w", err)
+		}
+		securableID, err := c.resolveSecurableID(grant.SecurableType, grant.Securable)
+		if err != nil {
+			return fmt.Errorf("resolve securable for grant delete: %w", err)
+		}
+		body := map[string]interface{}{
+			"principal_id":   principalID,
+			"principal_type": grant.PrincipalType,
+			"securable_id":   securableID,
+			"securable_type": grant.SecurableType,
+			"privilege":      grant.Privilege,
+		}
+		resp, err := c.client.Do(http.MethodDelete, "/grants", nil, body)
 		if err != nil {
 			return err
 		}
@@ -857,14 +1104,44 @@ func (c *APIStateClient) executeGrant(_ context.Context, action declarative.Acti
 func (c *APIStateClient) executeCatalog(_ context.Context, action declarative.Action) error {
 	switch action.Operation {
 	case declarative.OpCreate:
-		resp, err := c.client.Do(http.MethodPost, "/catalogs", nil, action.Desired)
+		cat := action.Desired.(declarative.CatalogResource)
+		body := map[string]interface{}{
+			"name":           cat.CatalogName,
+			"metastore_type": cat.Spec.MetastoreType,
+			"dsn":            cat.Spec.DSN,
+			"data_path":      cat.Spec.DataPath,
+		}
+		if cat.Spec.IsDefault {
+			body["is_default"] = true
+		}
+		if cat.Spec.Comment != "" {
+			body["comment"] = cat.Spec.Comment
+		}
+		resp, err := c.client.Do(http.MethodPost, "/catalogs", nil, body)
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		id, err := c.checkCreateResponse(resp)
+		if err != nil {
+			return err
+		}
+		if id != "" && c.index != nil {
+			c.index.catalogIDByName[cat.CatalogName] = id
+		}
+		return nil
 
 	case declarative.OpUpdate:
-		resp, err := c.client.Do(http.MethodPatch, "/catalogs/"+action.ResourceName, nil, action.Desired)
+		cat := action.Desired.(declarative.CatalogResource)
+		body := map[string]interface{}{
+			"metastore_type": cat.Spec.MetastoreType,
+			"dsn":            cat.Spec.DSN,
+			"data_path":      cat.Spec.DataPath,
+			"is_default":     cat.Spec.IsDefault,
+		}
+		if cat.Spec.Comment != "" {
+			body["comment"] = cat.Spec.Comment
+		}
+		resp, err := c.client.Do(http.MethodPatch, "/catalogs/"+action.ResourceName, nil, body)
 		if err != nil {
 			return err
 		}
@@ -966,5 +1243,349 @@ func (c *APIStateClient) executeView(_ context.Context, action declarative.Actio
 
 	default:
 		return fmt.Errorf("unsupported operation %s for view", action.Operation)
+	}
+}
+
+// --- Group membership execution ---
+
+func (c *APIStateClient) executeGroupMembership(_ context.Context, action declarative.Action) error {
+	// ResourceName format: "groupName/memberName(memberType)"
+	slashIdx := strings.Index(action.ResourceName, "/")
+	if slashIdx < 0 {
+		return fmt.Errorf("invalid group membership resource name: %s", action.ResourceName)
+	}
+	groupName := action.ResourceName[:slashIdx]
+	groupID, err := c.resolvePrincipalID(groupName, "group")
+	if err != nil {
+		return fmt.Errorf("resolve group for membership: %w", err)
+	}
+
+	switch action.Operation {
+	case declarative.OpCreate:
+		member := action.Desired.(declarative.MemberRef)
+		memberID, err := c.resolvePrincipalID(member.Name, member.Type)
+		if err != nil {
+			return fmt.Errorf("resolve member for group membership: %w", err)
+		}
+		body := map[string]interface{}{
+			"member_id":   memberID,
+			"member_type": member.Type,
+		}
+		resp, err := c.client.Do(http.MethodPost, "/groups/"+groupID+"/members", nil, body)
+		if err != nil {
+			return err
+		}
+		return gen.CheckError(resp)
+
+	case declarative.OpDelete:
+		member := action.Actual.(declarative.MemberRef)
+		memberID, err := c.resolvePrincipalID(member.Name, member.Type)
+		if err != nil {
+			return fmt.Errorf("resolve member for group membership delete: %w", err)
+		}
+		q := url.Values{}
+		q.Set("member_id", memberID)
+		q.Set("member_type", member.Type)
+		resp, err := c.client.Do(http.MethodDelete, "/groups/"+groupID+"/members", q, nil)
+		if err != nil {
+			return err
+		}
+		return gen.CheckError(resp)
+
+	default:
+		return fmt.Errorf("unsupported operation %s for group-membership", action.Operation)
+	}
+}
+
+// --- Tag execution ---
+
+func (c *APIStateClient) executeTag(_ context.Context, action declarative.Action) error {
+	switch action.Operation {
+	case declarative.OpCreate:
+		tag := action.Desired.(declarative.TagSpec)
+		body := map[string]interface{}{
+			"key": tag.Key,
+		}
+		if tag.Value != nil {
+			body["value"] = *tag.Value
+		}
+		resp, err := c.client.Do(http.MethodPost, "/tags", nil, body)
+		if err != nil {
+			return err
+		}
+		id, err := c.checkCreateResponse(resp)
+		if err != nil {
+			return err
+		}
+		if id != "" && c.index != nil {
+			c.index.tagIDByKey[tagKey(tag.Key, tag.Value)] = id
+		}
+		return nil
+
+	case declarative.OpDelete:
+		tagID, err := c.resolveTagID(action.ResourceName)
+		if err != nil {
+			return fmt.Errorf("resolve tag for delete: %w", err)
+		}
+		resp, err := c.client.Do(http.MethodDelete, "/tags/"+tagID, nil, nil)
+		if err != nil {
+			return err
+		}
+		return gen.CheckError(resp)
+
+	default:
+		return fmt.Errorf("unsupported operation %s for tag", action.Operation)
+	}
+}
+
+// --- Tag assignment execution ---
+
+func (c *APIStateClient) executeTagAssignment(_ context.Context, action declarative.Action) error {
+	switch action.Operation {
+	case declarative.OpCreate:
+		assignment := action.Desired.(declarative.TagAssignmentSpec)
+		tagID, err := c.resolveTagID(assignment.Tag)
+		if err != nil {
+			return fmt.Errorf("resolve tag for assignment: %w", err)
+		}
+		securableID, err := c.resolveSecurableID(assignment.SecurableType, assignment.Securable)
+		if err != nil {
+			return fmt.Errorf("resolve securable for tag assignment: %w", err)
+		}
+		body := map[string]interface{}{
+			"securable_id":   securableID,
+			"securable_type": assignment.SecurableType,
+		}
+		if assignment.ColumnName != "" {
+			body["column_name"] = assignment.ColumnName
+		}
+		resp, err := c.client.Do(http.MethodPost, "/tags/"+tagID+"/assignments", nil, body)
+		if err != nil {
+			return err
+		}
+		return gen.CheckError(resp)
+
+	case declarative.OpDelete:
+		// Tag assignment deletes require the assignment ID. Since we don't
+		// track assignment IDs during ReadState, we use the tag ID and
+		// attempt deletion via the composite endpoint.
+		assignment := action.Actual.(declarative.TagAssignmentSpec)
+		tagID, err := c.resolveTagID(assignment.Tag)
+		if err != nil {
+			return fmt.Errorf("resolve tag for assignment delete: %w", err)
+		}
+		securableID, err := c.resolveSecurableID(assignment.SecurableType, assignment.Securable)
+		if err != nil {
+			return fmt.Errorf("resolve securable for tag assignment delete: %w", err)
+		}
+		q := url.Values{}
+		q.Set("tag_id", tagID)
+		q.Set("securable_id", securableID)
+		q.Set("securable_type", assignment.SecurableType)
+		if assignment.ColumnName != "" {
+			q.Set("column_name", assignment.ColumnName)
+		}
+		resp, err := c.client.Do(http.MethodDelete, "/tag-assignments", q, nil)
+		if err != nil {
+			return err
+		}
+		return gen.CheckError(resp)
+
+	default:
+		return fmt.Errorf("unsupported operation %s for tag-assignment", action.Operation)
+	}
+}
+
+// --- Row filter execution ---
+
+func (c *APIStateClient) executeRowFilter(_ context.Context, action declarative.Action) error {
+	switch action.Operation {
+	case declarative.OpCreate:
+		filter := action.Desired.(declarative.RowFilterSpec)
+		// ResourceName is "catalog.schema.table/filterName" — extract table path.
+		parts := strings.SplitN(action.ResourceName, "/", 2)
+		tablePath := parts[0]
+		tableID, err := c.resolveSecurableID("table", tablePath)
+		if err != nil {
+			return fmt.Errorf("resolve table for row filter: %w", err)
+		}
+		body := map[string]interface{}{
+			"filter_sql": filter.FilterSQL,
+		}
+		if filter.Description != "" {
+			body["description"] = filter.Description
+		}
+		resp, err := c.client.Do(http.MethodPost, "/tables/"+tableID+"/row-filters", nil, body)
+		if err != nil {
+			return err
+		}
+		id, err := c.checkCreateResponse(resp)
+		if err != nil {
+			return err
+		}
+		if id != "" && c.index != nil {
+			c.index.rowFilterIDByPath[action.ResourceName] = id
+		}
+		return nil
+
+	case declarative.OpDelete:
+		filterID, err := c.resolveRowFilterID(action.ResourceName)
+		if err != nil {
+			return fmt.Errorf("resolve row filter for delete: %w", err)
+		}
+		resp, err := c.client.Do(http.MethodDelete, "/row-filters/"+filterID, nil, nil)
+		if err != nil {
+			return err
+		}
+		return gen.CheckError(resp)
+
+	default:
+		return fmt.Errorf("unsupported operation %s for row-filter", action.Operation)
+	}
+}
+
+// --- Row filter binding execution ---
+
+func (c *APIStateClient) executeRowFilterBinding(_ context.Context, action declarative.Action) error {
+	// ResourceName format: "catalog.schema.table/filterName->principalType:principalName"
+	parts := strings.SplitN(action.ResourceName, "->", 2)
+	filterPath := parts[0]
+	filterID, err := c.resolveRowFilterID(filterPath)
+	if err != nil {
+		return fmt.Errorf("resolve row filter for binding: %w", err)
+	}
+
+	switch action.Operation {
+	case declarative.OpCreate:
+		binding := action.Desired.(declarative.FilterBindingRef)
+		principalID, err := c.resolvePrincipalID(binding.Principal, binding.PrincipalType)
+		if err != nil {
+			return fmt.Errorf("resolve principal for row filter binding: %w", err)
+		}
+		body := map[string]interface{}{
+			"principal_id":   principalID,
+			"principal_type": binding.PrincipalType,
+		}
+		resp, err := c.client.Do(http.MethodPost, "/row-filters/"+filterID+"/bindings", nil, body)
+		if err != nil {
+			return err
+		}
+		return gen.CheckError(resp)
+
+	case declarative.OpDelete:
+		binding := action.Actual.(declarative.FilterBindingRef)
+		principalID, err := c.resolvePrincipalID(binding.Principal, binding.PrincipalType)
+		if err != nil {
+			return fmt.Errorf("resolve principal for row filter binding delete: %w", err)
+		}
+		q := url.Values{}
+		q.Set("principal_id", principalID)
+		q.Set("principal_type", binding.PrincipalType)
+		resp, err := c.client.Do(http.MethodDelete, "/row-filters/"+filterID+"/bindings", q, nil)
+		if err != nil {
+			return err
+		}
+		return gen.CheckError(resp)
+
+	default:
+		return fmt.Errorf("unsupported operation %s for row-filter-binding", action.Operation)
+	}
+}
+
+// --- Column mask execution ---
+
+func (c *APIStateClient) executeColumnMask(_ context.Context, action declarative.Action) error {
+	switch action.Operation {
+	case declarative.OpCreate:
+		mask := action.Desired.(declarative.ColumnMaskSpec)
+		// ResourceName is "catalog.schema.table/maskName" — extract table path.
+		parts := strings.SplitN(action.ResourceName, "/", 2)
+		tablePath := parts[0]
+		tableID, err := c.resolveSecurableID("table", tablePath)
+		if err != nil {
+			return fmt.Errorf("resolve table for column mask: %w", err)
+		}
+		body := map[string]interface{}{
+			"column_name":     mask.ColumnName,
+			"mask_expression": mask.MaskExpression,
+		}
+		if mask.Description != "" {
+			body["description"] = mask.Description
+		}
+		resp, err := c.client.Do(http.MethodPost, "/tables/"+tableID+"/column-masks", nil, body)
+		if err != nil {
+			return err
+		}
+		id, err := c.checkCreateResponse(resp)
+		if err != nil {
+			return err
+		}
+		if id != "" && c.index != nil {
+			c.index.columnMaskIDByPath[action.ResourceName] = id
+		}
+		return nil
+
+	case declarative.OpDelete:
+		maskID, err := c.resolveColumnMaskID(action.ResourceName)
+		if err != nil {
+			return fmt.Errorf("resolve column mask for delete: %w", err)
+		}
+		resp, err := c.client.Do(http.MethodDelete, "/column-masks/"+maskID, nil, nil)
+		if err != nil {
+			return err
+		}
+		return gen.CheckError(resp)
+
+	default:
+		return fmt.Errorf("unsupported operation %s for column-mask", action.Operation)
+	}
+}
+
+// --- Column mask binding execution ---
+
+func (c *APIStateClient) executeColumnMaskBinding(_ context.Context, action declarative.Action) error {
+	// ResourceName format: "catalog.schema.table/maskName->principalType:principalName"
+	parts := strings.SplitN(action.ResourceName, "->", 2)
+	maskPath := parts[0]
+	maskID, err := c.resolveColumnMaskID(maskPath)
+	if err != nil {
+		return fmt.Errorf("resolve column mask for binding: %w", err)
+	}
+
+	switch action.Operation {
+	case declarative.OpCreate:
+		binding := action.Desired.(declarative.MaskBindingRef)
+		principalID, err := c.resolvePrincipalID(binding.Principal, binding.PrincipalType)
+		if err != nil {
+			return fmt.Errorf("resolve principal for column mask binding: %w", err)
+		}
+		body := map[string]interface{}{
+			"principal_id":   principalID,
+			"principal_type": binding.PrincipalType,
+			"see_original":   binding.SeeOriginal,
+		}
+		resp, err := c.client.Do(http.MethodPost, "/column-masks/"+maskID+"/bindings", nil, body)
+		if err != nil {
+			return err
+		}
+		return gen.CheckError(resp)
+
+	case declarative.OpDelete:
+		binding := action.Actual.(declarative.MaskBindingRef)
+		principalID, err := c.resolvePrincipalID(binding.Principal, binding.PrincipalType)
+		if err != nil {
+			return fmt.Errorf("resolve principal for column mask binding delete: %w", err)
+		}
+		q := url.Values{}
+		q.Set("principal_id", principalID)
+		q.Set("principal_type", binding.PrincipalType)
+		resp, err := c.client.Do(http.MethodDelete, "/column-masks/"+maskID+"/bindings", q, nil)
+		if err != nil {
+			return err
+		}
+		return gen.CheckError(resp)
+
+	default:
+		return fmt.Errorf("unsupported operation %s for column-mask-binding", action.Operation)
 	}
 }
