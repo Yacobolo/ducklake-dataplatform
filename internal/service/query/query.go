@@ -24,14 +24,24 @@ type QueryResult struct {
 //
 //nolint:revive // Name chosen for clarity across package boundaries
 type QueryService struct {
-	engine  domain.QueryEngine
-	audit   domain.AuditRepository
-	lineage domain.LineageRepository
+	engine        domain.QueryEngine
+	audit         domain.AuditRepository
+	lineage       domain.LineageRepository
+	colLineage    domain.ColumnLineageRepository
+	catalog       sqlrewrite.CatalogResolver
+	defaultSchema string
 }
 
 // NewQueryService creates a new QueryService.
 func NewQueryService(eng domain.QueryEngine, audit domain.AuditRepository, lineage domain.LineageRepository) *QueryService {
-	return &QueryService{engine: eng, audit: audit, lineage: lineage}
+	return &QueryService{engine: eng, audit: audit, lineage: lineage, defaultSchema: "main"}
+}
+
+// SetColumnLineage configures column-level lineage capture.
+// This is optional — if not called, column lineage is silently skipped.
+func (s *QueryService) SetColumnLineage(colRepo domain.ColumnLineageRepository, catalog sqlrewrite.CatalogResolver) {
+	s.colLineage = colRepo
+	s.catalog = catalog
 }
 
 // Execute runs a SQL query as the given principal and returns structured results.
@@ -101,13 +111,53 @@ func (s *QueryService) emitLineage(ctx context.Context, principalName, sqlQuery 
 		// SELECT — all tables are read sources
 		for _, src := range tables {
 			srcSchema, srcName := splitQualifiedName(src)
-			_ = s.lineage.InsertEdge(ctx, &domain.LineageEdge{
+			edge := &domain.LineageEdge{
 				SourceTable:   srcName,
 				SourceSchema:  srcSchema,
 				EdgeType:      "READ",
 				PrincipalName: principalName,
+			}
+			_ = s.lineage.InsertEdge(ctx, edge)
+
+			// Best-effort column lineage for SELECT statements
+			if edge.ID != "" {
+				s.emitColumnLineage(ctx, edge.ID, sqlQuery)
+			}
+		}
+	}
+}
+
+// emitColumnLineage extracts column-level lineage from a SELECT query and
+// stores it alongside the table-level lineage edge. Best-effort: failures
+// are silently discarded.
+func (s *QueryService) emitColumnLineage(ctx context.Context, edgeID, sqlQuery string) {
+	if s.colLineage == nil || s.catalog == nil {
+		return
+	}
+
+	entries, err := sqlrewrite.ExtractColumnLineage(ctx, sqlQuery, s.defaultSchema, s.catalog)
+	if err != nil || len(entries) == 0 {
+		return
+	}
+
+	// Convert ColumnLineageEntry to ColumnLineageEdge for storage
+	var edges []domain.ColumnLineageEdge
+	for _, entry := range entries {
+		for _, src := range entry.Sources {
+			edges = append(edges, domain.ColumnLineageEdge{
+				LineageEdgeID: edgeID,
+				TargetColumn:  entry.TargetColumn,
+				SourceSchema:  src.Schema,
+				SourceTable:   src.Table,
+				SourceColumn:  src.Column,
+				TransformType: entry.TransformType,
+				Function:      entry.Function,
 			})
 		}
+	}
+
+	if len(edges) > 0 {
+		_ = s.colLineage.InsertBatch(ctx, edgeID, edges)
 	}
 }
 

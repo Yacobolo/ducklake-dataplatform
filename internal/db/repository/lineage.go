@@ -21,9 +21,11 @@ func NewLineageRepo(db *sql.DB) *LineageRepo {
 }
 
 // InsertEdge records a new lineage edge between tables.
+// On success, edge.ID is populated with the generated ID.
 func (r *LineageRepo) InsertEdge(ctx context.Context, edge *domain.LineageEdge) error {
-	return r.q.InsertLineageEdge(ctx, dbstore.InsertLineageEdgeParams{
-		ID:            newID(),
+	id := newID()
+	err := r.q.InsertLineageEdge(ctx, dbstore.InsertLineageEdgeParams{
+		ID:            id,
 		SourceTable:   edge.SourceTable,
 		TargetTable:   mapper.NullStrFromPtr(edge.TargetTable),
 		EdgeType:      edge.EdgeType,
@@ -32,6 +34,10 @@ func (r *LineageRepo) InsertEdge(ctx context.Context, edge *domain.LineageEdge) 
 		SourceSchema:  mapper.NullStrFromStr(edge.SourceSchema),
 		TargetSchema:  mapper.NullStrFromStr(edge.TargetSchema),
 	})
+	if err == nil {
+		edge.ID = id
+	}
+	return err
 }
 
 // GetUpstream returns a paginated list of upstream lineage edges for a table.

@@ -47,11 +47,13 @@ func (m *mockSearchService) Search(ctx context.Context, query string, objectType
 }
 
 type mockLineageService struct {
-	getFullLineageFn func(ctx context.Context, tableName string, page domain.PageRequest) (*domain.LineageNode, error)
-	getUpstreamFn    func(ctx context.Context, tableName string, page domain.PageRequest) ([]domain.LineageEdge, int64, error)
-	getDownstreamFn  func(ctx context.Context, tableName string, page domain.PageRequest) ([]domain.LineageEdge, int64, error)
-	deleteEdgeFn     func(ctx context.Context, id string) error
-	purgeOlderThanFn func(ctx context.Context, olderThanDays int) (int64, error)
+	getFullLineageFn            func(ctx context.Context, tableName string, page domain.PageRequest) (*domain.LineageNode, error)
+	getUpstreamFn               func(ctx context.Context, tableName string, page domain.PageRequest) ([]domain.LineageEdge, int64, error)
+	getDownstreamFn             func(ctx context.Context, tableName string, page domain.PageRequest) ([]domain.LineageEdge, int64, error)
+	deleteEdgeFn                func(ctx context.Context, id string) error
+	purgeOlderThanFn            func(ctx context.Context, olderThanDays int) (int64, error)
+	getColumnLineageForTableFn  func(ctx context.Context, schema, table string) ([]domain.ColumnLineageEdge, error)
+	getColumnLineageForSourceFn func(ctx context.Context, schema, table, column string) ([]domain.ColumnLineageEdge, error)
 }
 
 func (m *mockLineageService) GetFullLineage(ctx context.Context, tableName string, page domain.PageRequest) (*domain.LineageNode, error) {
@@ -87,6 +89,20 @@ func (m *mockLineageService) PurgeOlderThan(ctx context.Context, olderThanDays i
 		panic("mockLineageService.PurgeOlderThan called but not configured")
 	}
 	return m.purgeOlderThanFn(ctx, olderThanDays)
+}
+
+func (m *mockLineageService) GetColumnLineageForTable(ctx context.Context, schema, table string) ([]domain.ColumnLineageEdge, error) {
+	if m.getColumnLineageForTableFn == nil {
+		return nil, nil
+	}
+	return m.getColumnLineageForTableFn(ctx, schema, table)
+}
+
+func (m *mockLineageService) GetColumnLineageForSourceColumn(ctx context.Context, schema, table, column string) ([]domain.ColumnLineageEdge, error) {
+	if m.getColumnLineageForSourceFn == nil {
+		return nil, nil
+	}
+	return m.getColumnLineageForSourceFn(ctx, schema, table, column)
 }
 
 type mockTagService struct {
