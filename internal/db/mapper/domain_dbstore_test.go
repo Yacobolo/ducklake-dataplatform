@@ -51,6 +51,11 @@ func TestNullStr(t *testing.T) {
 		got := nullStr(nil)
 		assert.False(t, got.Valid)
 	})
+	t.Run("empty string pointer", func(t *testing.T) {
+		s := ""
+		got := nullStr(&s)
+		assert.False(t, got.Valid, "pointer to empty string should map to NULL")
+	})
 }
 
 func TestNullStrVal(t *testing.T) {
@@ -110,6 +115,14 @@ func TestNullStrFromPtr(t *testing.T) {
 
 	got = NullStrFromPtr(nil)
 	assert.False(t, got.Valid)
+}
+
+func TestNullStrFromPtr_EmptyString(t *testing.T) {
+	// Regression test for issue #127: NullStrFromPtr(&"") must return NULL,
+	// matching NullStrFromStr("") behavior for consistent storage/lookup.
+	empty := ""
+	got := NullStrFromPtr(&empty)
+	assert.False(t, got.Valid, "empty string pointer should map to NULL")
 }
 
 func TestNullStrFromStr(t *testing.T) {

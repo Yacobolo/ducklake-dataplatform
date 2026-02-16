@@ -219,6 +219,32 @@ func TestPrincipalService_ResolveOrProvision_EmptyIssuer(t *testing.T) {
 	assert.Equal(t, "dev-user", p.Name)
 }
 
+func TestPrincipalService_ResolveOrProvision_EmptyIssuerJITRoundTrip(t *testing.T) {
+	// Regression test for issue #127: JIT provisioning with empty issuer (HS256
+	// dev mode without "iss" claim). The first call creates the principal; the
+	// second call must find it—not fail with "resource not found".
+	svc, _ := setupPrincipalService(t)
+
+	req := domain.ResolveOrProvisionRequest{
+		Issuer:      "",
+		ExternalID:  "bootstrap-sub",
+		DisplayName: "Bootstrap Admin",
+		IsBootstrap: true,
+	}
+
+	// First call: JIT creates the admin principal.
+	p1, err := svc.ResolveOrProvision(ctx, req)
+	require.NoError(t, err)
+	assert.True(t, p1.IsAdmin)
+	assert.Equal(t, "bootstrap admin", p1.Name)
+
+	// Second call: must find the existing principal, not fail.
+	p2, err := svc.ResolveOrProvision(ctx, req)
+	require.NoError(t, err, "second ResolveOrProvision with empty issuer should succeed")
+	assert.Equal(t, p1.ID, p2.ID, "should return the same principal")
+	assert.True(t, p2.IsAdmin)
+}
+
 func TestPrincipalService_GetByName(t *testing.T) {
 	svc, _ := setupPrincipalService(t)
 
