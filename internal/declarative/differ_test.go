@@ -1255,3 +1255,38 @@ func TestDiff_NoModelChanges(t *testing.T) {
 		assert.NotEqual(t, KindModel, a.ResourceKind, "expected no model actions")
 	}
 }
+
+func TestDiff_GroupMembershipDeleteEmptyName(t *testing.T) {
+	t.Parallel()
+
+	desired := &DesiredState{
+		Groups: []GroupSpec{
+			{Name: "admins"}, // no members desired
+		},
+	}
+	actual := &DesiredState{
+		Groups: []GroupSpec{
+			{
+				Name: "admins",
+				Members: []MemberRef{
+					{Name: "", Type: "user", MemberID: "orphan-uuid"},
+				},
+			},
+		},
+	}
+
+	plan := Diff(desired, actual)
+
+	var found bool
+	for _, a := range plan.Actions {
+		if a.ResourceKind == KindGroupMembership && a.Operation == OpDelete {
+			found = true
+			member, ok := a.Actual.(MemberRef)
+			require.True(t, ok)
+			assert.Empty(t, member.Name)
+			assert.Equal(t, "orphan-uuid", member.MemberID)
+			assert.Equal(t, "user", member.Type)
+		}
+	}
+	assert.True(t, found, "expected a delete action for the empty-name membership")
+}

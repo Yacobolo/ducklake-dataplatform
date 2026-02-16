@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 
@@ -1053,7 +1054,18 @@ func TestReadState_GroupsWithMembers(t *testing.T) {
 	t.Parallel()
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/v1/principals", emptyListHandler())
+	// Principals endpoint provides names for reverse-lookup of group members.
+	mux.HandleFunc("/v1/principals", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{"id": "p-alice", "name": "alice", "type": "user", "is_admin": false},
+				{"id": "p-bob", "name": "bob", "type": "user", "is_admin": false},
+				{"id": "p-charlie", "name": "charlie", "type": "user", "is_admin": false},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
 	mux.HandleFunc("/v1/groups", func(w http.ResponseWriter, r *http.Request) {
 		// Only respond to the top-level groups list, not /groups/{id}/members.
 		if r.URL.Path != "/v1/groups" {
@@ -1073,8 +1085,8 @@ func TestReadState_GroupsWithMembers(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		resp := map[string]interface{}{
 			"data": []map[string]interface{}{
-				{"name": "alice", "type": "user"},
-				{"name": "bob", "type": "user"},
+				{"member_id": "p-alice", "member_type": "user"},
+				{"member_id": "p-bob", "member_type": "user"},
 			},
 		}
 		_ = json.NewEncoder(w).Encode(resp)
@@ -1083,7 +1095,7 @@ func TestReadState_GroupsWithMembers(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		resp := map[string]interface{}{
 			"data": []map[string]interface{}{
-				{"name": "charlie", "type": "user"},
+				{"member_id": "p-charlie", "member_type": "user"},
 			},
 		}
 		_ = json.NewEncoder(w).Encode(resp)
@@ -1103,12 +1115,14 @@ func TestReadState_GroupsWithMembers(t *testing.T) {
 	require.Len(t, state.Groups[0].Members, 2)
 	assert.Equal(t, "alice", state.Groups[0].Members[0].Name)
 	assert.Equal(t, "user", state.Groups[0].Members[0].Type)
+	assert.Equal(t, "p-alice", state.Groups[0].Members[0].MemberID)
 	assert.Equal(t, "bob", state.Groups[0].Members[1].Name)
 
 	// Second group: analysts with 1 member.
 	assert.Equal(t, "analysts", state.Groups[1].Name)
 	require.Len(t, state.Groups[1].Members, 1)
 	assert.Equal(t, "charlie", state.Groups[1].Members[0].Name)
+	assert.Equal(t, "p-charlie", state.Groups[1].Members[0].MemberID)
 
 	// Verify resource index.
 	assert.Equal(t, "g-1", sc.index.groupIDByName["admins"])
@@ -1847,4 +1861,260 @@ func TestReadState_ViewsAndVolumes(t *testing.T) {
 	assert.Equal(t, "data_vol", state.Volumes[0].VolumeName)
 	assert.Equal(t, "EXTERNAL", state.Volumes[0].Spec.VolumeType)
 	assert.Equal(t, "s3://bucket/data", state.Volumes[0].Spec.StorageLocation)
+}
+
+// === Issue #141: schema_id / table_id extraction tests ===
+
+func TestExecuteSchema_CreatePopulatesIndexFromSchemaID(t *testing.T) {
+	t.Parallel()
+
+	// Server returns schema_id (not id) — the real API behavior.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`{"schema_id":"schema-uuid-456","name":"analytics"}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	client := gen.NewClient(srv.URL, "", "test-token")
+	sc := NewAPIStateClient(client)
+	sc.index = newResourceIndex()
+
+	action := declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindSchema,
+		ResourceName: "demo.analytics",
+		Desired: declarative.SchemaResource{
+			CatalogName: "demo",
+			SchemaName:  "analytics",
+		},
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.NoError(t, err)
+	assert.Equal(t, "schema-uuid-456", sc.index.schemaIDByPath["demo.analytics"])
+}
+
+func TestExecuteTable_CreatePopulatesIndexFromTableID(t *testing.T) {
+	t.Parallel()
+
+	// Server returns table_id (not id) — the real API behavior.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`{"table_id":"table-uuid-789","name":"orders"}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	client := gen.NewClient(srv.URL, "", "test-token")
+	sc := NewAPIStateClient(client)
+	sc.index = newResourceIndex()
+
+	action := declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindTable,
+		ResourceName: "demo.analytics.orders",
+		Desired: declarative.TableResource{
+			CatalogName: "demo",
+			SchemaName:  "analytics",
+			TableName:   "orders",
+			Spec:        declarative.TableSpec{TableType: "MANAGED"},
+		},
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.NoError(t, err)
+	assert.Equal(t, "table-uuid-789", sc.index.tableIDByPath["demo.analytics.orders"])
+}
+
+func TestExecute_CrossLayerResolution(t *testing.T) {
+	t.Parallel()
+
+	// Server returns type-specific IDs for creates, 200 for grants.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if strings.Contains(r.URL.Path, "/schemas") && r.Method == http.MethodPost {
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"schema_id":"schema-new-id","name":"analytics"}`))
+			return
+		}
+		if strings.Contains(r.URL.Path, "/grants") {
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"id":"grant-new-id"}`))
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	client := gen.NewClient(srv.URL, "", "test-token")
+	sc := NewAPIStateClient(client)
+	sc.index = newResourceIndex()
+	// Pre-populate what ReadState would provide for existing resources.
+	sc.index.principalIDByName["alice"] = "principal-alice"
+	sc.index.catalogIDByName["demo"] = "catalog-id"
+
+	// Step 1: Create schema (layer 3).
+	schemaAction := declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindSchema,
+		ResourceName: "demo.analytics",
+		Desired: declarative.SchemaResource{
+			CatalogName: "demo",
+			SchemaName:  "analytics",
+		},
+	}
+	err := sc.Execute(context.Background(), schemaAction)
+	require.NoError(t, err)
+
+	// Step 2: Create grant referencing the just-created schema (layer 5).
+	// This would fail with "schema not found in index" before the fix.
+	grantAction := declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindPrivilegeGrant,
+		ResourceName: "alice/schema.demo.analytics/USE_SCHEMA",
+		Desired: declarative.GrantSpec{
+			Principal:     "alice",
+			PrincipalType: "user",
+			SecurableType: "schema",
+			Securable:     "demo.analytics",
+			Privilege:     "USE_SCHEMA",
+		},
+	}
+	err = sc.Execute(context.Background(), grantAction)
+	require.NoError(t, err, "grant on just-created schema should resolve via index")
+}
+
+func TestExecute_CreateWithNoIDInResponse(t *testing.T) {
+	t.Parallel()
+
+	// Server returns no ID at all.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`{"name":"analytics"}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	client := gen.NewClient(srv.URL, "", "test-token")
+	sc := NewAPIStateClient(client)
+	sc.index = newResourceIndex()
+
+	action := declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindSchema,
+		ResourceName: "demo.analytics",
+		Desired: declarative.SchemaResource{
+			CatalogName: "demo",
+			SchemaName:  "analytics",
+		},
+	}
+
+	// Should not error, but index won't be populated.
+	err := sc.Execute(context.Background(), action)
+	require.NoError(t, err)
+	assert.Empty(t, sc.index.schemaIDByPath["demo.analytics"])
+}
+
+// === Issue #142: group membership delete tests ===
+
+func TestExecuteGroupMembership_DeleteWithMemberID(t *testing.T) {
+	t.Parallel()
+
+	var captured []execCapture
+	sc := withTestIndex(newTestExecuteClient(t, &captured))
+
+	// Delete a membership where Name is empty but MemberID is set.
+	action := declarative.Action{
+		Operation:    declarative.OpDelete,
+		ResourceKind: declarative.KindGroupMembership,
+		ResourceName: "analysts/(user)",
+		Actual: declarative.MemberRef{
+			Name:     "",
+			Type:     "user",
+			MemberID: "principal-id-alice",
+		},
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.NoError(t, err)
+	require.Len(t, captured, 1)
+
+	req := captured[0]
+	assert.Equal(t, http.MethodDelete, req.Method)
+	assert.Equal(t, "principal-id-alice", queryStr(req, "member_id"))
+	assert.Equal(t, "user", queryStr(req, "member_type"))
+}
+
+func TestExecuteGroupMembership_DeleteNoNameNoID(t *testing.T) {
+	t.Parallel()
+
+	var captured []execCapture
+	sc := withTestIndex(newTestExecuteClient(t, &captured))
+
+	action := declarative.Action{
+		Operation:    declarative.OpDelete,
+		ResourceKind: declarative.KindGroupMembership,
+		ResourceName: "analysts/(user)",
+		Actual: declarative.MemberRef{
+			Name:     "",
+			Type:     "user",
+			MemberID: "",
+		},
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "member has neither ID nor name")
+}
+
+func TestReadState_GroupMembersReverseLookup(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/principals", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{"id": "p-abc", "name": "alice", "type": "user", "is_admin": false},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/v1/groups", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v1/groups" {
+			emptyListHandler()(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{"id": "g-1", "name": "admins", "description": ""},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/v1/groups/g-1/members", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{"member_id": "p-abc", "member_type": "user"},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/", emptyListHandler())
+
+	sc := setupReadStateClient(t, mux)
+	state, err := sc.ReadState(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, state.Groups, 1)
+	require.Len(t, state.Groups[0].Members, 1)
+
+	member := state.Groups[0].Members[0]
+	assert.Equal(t, "alice", member.Name, "name should be reverse-looked-up from principal index")
+	assert.Equal(t, "user", member.Type)
+	assert.Equal(t, "p-abc", member.MemberID, "MemberID should be preserved from API response")
 }

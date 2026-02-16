@@ -232,8 +232,8 @@ type apiGroup struct {
 }
 
 type apiGroupMember struct {
-	Name string `json:"name"`
-	Type string `json:"type"`
+	MemberID   string `json:"member_id"`
+	MemberType string `json:"member_type"`
 }
 
 func (c *APIStateClient) readGroups(ctx context.Context, state *declarative.DesiredState) error {
@@ -267,9 +267,11 @@ func (c *APIStateClient) readGroups(ctx context.Context, state *declarative.Desi
 				return fmt.Errorf("group %q members parse: %w", g.Name, err)
 			}
 			for _, m := range members {
+				name := c.reverseLookupPrincipalName(m.MemberID, m.MemberType)
 				spec.Members = append(spec.Members, declarative.MemberRef{
-					Name: m.Name,
-					Type: m.Type,
+					Name:     name,
+					Type:     m.MemberType,
+					MemberID: m.MemberID,
 				})
 			}
 		}
@@ -811,6 +813,24 @@ func (c *APIStateClient) readPipelines(ctx context.Context, state *declarative.D
 
 // === Name-to-ID Resolution ===
 
+// reverseLookupPrincipalName finds the principal name for a given ID by
+// iterating the index maps. Returns "" if the ID is not found.
+func (c *APIStateClient) reverseLookupPrincipalName(id, memberType string) string {
+	if c.index == nil {
+		return ""
+	}
+	source := c.index.principalIDByName
+	if memberType == "group" {
+		source = c.index.groupIDByName
+	}
+	for name, storedID := range source {
+		if storedID == id {
+			return name
+		}
+	}
+	return ""
+}
+
 // resolvePrincipalID looks up a principal or group UUID by name.
 func (c *APIStateClient) resolvePrincipalID(name, principalType string) (string, error) {
 	if c.index == nil {
@@ -916,10 +936,19 @@ func (c *APIStateClient) checkCreateResponse(resp *http.Response) (string, error
 		return "", fmt.Errorf("API error (HTTP %d): %s", resp.StatusCode, string(body))
 	}
 	var created struct {
-		ID string `json:"id"`
+		ID       string `json:"id"`
+		SchemaID string `json:"schema_id"`
+		TableID  string `json:"table_id"`
 	}
 	_ = json.Unmarshal(body, &created)
-	return created.ID, nil
+	id := created.ID
+	if id == "" {
+		id = created.SchemaID
+	}
+	if id == "" {
+		id = created.TableID
+	}
+	return id, nil
 }
 
 // === Execute ===
@@ -1405,9 +1434,18 @@ func (c *APIStateClient) executeGroupMembership(_ context.Context, action declar
 
 	case declarative.OpDelete:
 		member := action.Actual.(declarative.MemberRef)
-		memberID, err := c.resolvePrincipalID(member.Name, member.Type)
-		if err != nil {
-			return fmt.Errorf("resolve member for group membership delete: %w", err)
+		var memberID string
+		switch {
+		case member.MemberID != "":
+			memberID = member.MemberID
+		case member.Name != "":
+			resolved, err := c.resolvePrincipalID(member.Name, member.Type)
+			if err != nil {
+				return fmt.Errorf("resolve member for group membership delete: %w", err)
+			}
+			memberID = resolved
+		default:
+			return fmt.Errorf("cannot delete group membership: member has neither ID nor name")
 		}
 		q := url.Values{}
 		q.Set("member_id", memberID)
