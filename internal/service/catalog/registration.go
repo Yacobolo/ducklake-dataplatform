@@ -2,7 +2,6 @@ package catalog
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log/slog"
 	"path/filepath"
@@ -12,7 +11,6 @@ import (
 
 	"duck-demo/internal/ddl"
 	"duck-demo/internal/domain"
-	"duck-demo/internal/engine"
 )
 
 // CatalogRegistrationService manages the lifecycle of DuckLake catalog registrations:
@@ -23,7 +21,6 @@ type CatalogRegistrationService struct {
 	repo               domain.CatalogRegistrationRepository
 	attacher           domain.CatalogAttacher
 	controlPlaneDBPath string // to enforce SQLite separation
-	duckDB             *sql.DB
 	logger             *slog.Logger
 
 	// Factories to notify on catalog deletion (pool cleanup).
@@ -37,7 +34,6 @@ type RegistrationServiceDeps struct {
 	Repo               domain.CatalogRegistrationRepository
 	Attacher           domain.CatalogAttacher
 	ControlPlaneDBPath string
-	DuckDB             *sql.DB
 	Logger             *slog.Logger
 	MetastoreFactory   domain.MetastoreQuerierFactory
 	IntrospectionClose func(catalogName string) error
@@ -50,7 +46,6 @@ func NewCatalogRegistrationService(deps RegistrationServiceDeps) *CatalogRegistr
 		repo:                deps.Repo,
 		attacher:            deps.Attacher,
 		controlPlaneDBPath:  deps.ControlPlaneDBPath,
-		duckDB:              deps.DuckDB,
 		logger:              deps.Logger,
 		metastoreFactory:    deps.MetastoreFactory,
 		introspectionCloser: deps.IntrospectionClose,
@@ -203,7 +198,7 @@ func (s *CatalogRegistrationService) SetDefault(ctx context.Context, name string
 	}
 
 	// Execute USE <catalog> on DuckDB
-	if err := engine.SetDefaultCatalog(ctx, s.duckDB, name); err != nil {
+	if err := s.attacher.SetDefaultCatalog(ctx, name); err != nil {
 		s.logger.Warn("USE catalog failed", "catalog", name, "error", err)
 	}
 
@@ -246,7 +241,7 @@ func (s *CatalogRegistrationService) AttachAll(ctx context.Context) error {
 	// USE the default catalog
 	defCat, err := s.repo.GetDefault(ctx)
 	if err == nil && defCat.Status == domain.CatalogStatusActive {
-		if err := engine.SetDefaultCatalog(ctx, s.duckDB, defCat.Name); err != nil {
+		if err := s.attacher.SetDefaultCatalog(ctx, defCat.Name); err != nil {
 			s.logger.Warn("USE default catalog failed", "catalog", defCat.Name, "error", err)
 		} else {
 			s.logger.Info("default catalog set", "catalog", defCat.Name)

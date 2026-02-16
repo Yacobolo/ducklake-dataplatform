@@ -69,7 +69,6 @@ func setupCatalogRegistrationEnv(t *testing.T) *catalogRegTestEnv {
 		Repo:               catalogRegRepo,
 		Attacher:           secretMgr,
 		ControlPlaneDBPath: controlPlaneDBPath,
-		DuckDB:             duckDB,
 		Logger:             logger,
 	})
 
@@ -300,7 +299,6 @@ func TestCatalogRegistration_AttachAllOnStartup(t *testing.T) {
 	newSvc := catalog.NewCatalogRegistrationService(catalog.RegistrationServiceDeps{
 		Repo:     catalogRegRepo,
 		Attacher: newSecretMgr,
-		DuckDB:   newDuckDB,
 		Logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
 	})
 

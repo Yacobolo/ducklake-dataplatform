@@ -83,3 +83,8 @@ func (m *DuckDBSecretManager) ensurePostgresExtension(ctx context.Context) error
 func (m *DuckDBSecretManager) Detach(ctx context.Context, catalogName string) error {
 	return DetachCatalog(ctx, m.db, catalogName)
 }
+
+// SetDefaultCatalog runs USE <catalog> on DuckDB.
+func (m *DuckDBSecretManager) SetDefaultCatalog(ctx context.Context, catalogName string) error {
+	return SetDefaultCatalog(ctx, m.db, catalogName)
+}
