@@ -67,7 +67,7 @@ func TestCatalogRepo_GetTable(t *testing.T) {
 		ctx := context.Background()
 
 		schemaID := seedSchema(t, repo.metaDB, "public")
-		_, err := repo.metaDB.Exec(
+		_, err := repo.metaDB.ExecContext(ctx,
 			`INSERT INTO ducklake_table (schema_id, table_name, end_snapshot) VALUES (?, ?, ?)`,
 			schemaID, "old_table", 50)
 		require.NoError(t, err)
@@ -85,7 +85,7 @@ func TestCatalogRepo_GetTable(t *testing.T) {
 		schemaID := seedSchema(t, repo.metaDB, "public")
 		seedTable(t, repo.metaDB, schemaID, "enriched_tbl")
 
-		_, err := repo.controlDB.Exec(
+		_, err := repo.controlDB.ExecContext(ctx,
 			`INSERT INTO catalog_metadata (securable_type, securable_name, comment, owner)
 			 VALUES ('table', 'public.enriched_tbl', 'table comment', 'bob')`)
 		require.NoError(t, err)
@@ -111,7 +111,7 @@ func TestCatalogRepo_ListTables(t *testing.T) {
 		seedTable(t, repo.metaDB, schemaID, "products")
 		seedTable(t, repo.metaDB, schemaID, "users")
 		// Soft-deleted table — should not appear.
-		_, err := repo.metaDB.Exec(
+		_, err := repo.metaDB.ExecContext(ctx,
 			`INSERT INTO ducklake_table (schema_id, table_name, end_snapshot) VALUES (?, ?, ?)`,
 			schemaID, "deleted_tbl", 99)
 		require.NoError(t, err)
@@ -413,7 +413,7 @@ func TestCatalogRepo_UpdateCatalog(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "lake", info.Name)
 		// COALESCE in upsert: empty string is still a valid (non-NULL) value.
-		assert.Equal(t, "", info.Comment)
+		assert.Empty(t, info.Comment)
 	})
 
 	t.Run("nil comment preserves existing", func(t *testing.T) {

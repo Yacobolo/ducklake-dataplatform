@@ -38,7 +38,7 @@ func TestCatalogRepo_GetSchema(t *testing.T) {
 	})
 
 	t.Run("soft-deleted schema not found", func(t *testing.T) {
-		_, err := repo.metaDB.Exec(
+		_, err := repo.metaDB.ExecContext(ctx,
 			`INSERT INTO ducklake_schema (schema_name, end_snapshot) VALUES (?, ?)`,
 			"old_schema", 10)
 		require.NoError(t, err)
@@ -53,7 +53,7 @@ func TestCatalogRepo_GetSchema(t *testing.T) {
 		seedSchema(t, repo.metaDB, "enriched")
 
 		// Insert catalog_metadata for the schema.
-		_, err := repo.controlDB.Exec(
+		_, err := repo.controlDB.ExecContext(ctx,
 			`INSERT INTO catalog_metadata (securable_type, securable_name, comment, owner)
 			 VALUES ('schema', 'enriched', 'my comment', 'alice')`)
 		require.NoError(t, err)
@@ -78,7 +78,7 @@ func TestCatalogRepo_ListSchemas(t *testing.T) {
 		seedSchema(t, repo.metaDB, "beta")
 		seedSchema(t, repo.metaDB, "gamma")
 		// Soft-deleted — should not appear.
-		_, err := repo.metaDB.Exec(
+		_, err := repo.metaDB.ExecContext(ctx,
 			`INSERT INTO ducklake_schema (schema_name, end_snapshot) VALUES ('deleted', 5)`)
 		require.NoError(t, err)
 

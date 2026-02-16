@@ -31,66 +31,66 @@ func seedSearchData(t *testing.T, db *sql.DB) {
 
 	// --- ducklake objects ---------------------------------------------------
 	// Schema: analytics (active)
-	_, err := db.Exec(`INSERT INTO ducklake_schema (schema_id, schema_name, end_snapshot) VALUES (1, 'analytics', NULL)`)
+	_, err := db.ExecContext(context.Background(), `INSERT INTO ducklake_schema (schema_id, schema_name, end_snapshot) VALUES (1, 'analytics', NULL)`)
 	require.NoError(t, err)
 	// Schema: staging (active)
-	_, err = db.Exec(`INSERT INTO ducklake_schema (schema_id, schema_name, end_snapshot) VALUES (2, 'staging', NULL)`)
+	_, err = db.ExecContext(context.Background(), `INSERT INTO ducklake_schema (schema_id, schema_name, end_snapshot) VALUES (2, 'staging', NULL)`)
 	require.NoError(t, err)
 	// Schema: old_schema (soft-deleted)
-	_, err = db.Exec(`INSERT INTO ducklake_schema (schema_id, schema_name, end_snapshot) VALUES (3, 'old_schema', 50)`)
+	_, err = db.ExecContext(context.Background(), `INSERT INTO ducklake_schema (schema_id, schema_name, end_snapshot) VALUES (3, 'old_schema', 50)`)
 	require.NoError(t, err)
 
 	// Tables in analytics
-	_, err = db.Exec(`INSERT INTO ducklake_table (table_id, schema_id, table_name, end_snapshot) VALUES (10, 1, 'events', NULL)`)
+	_, err = db.ExecContext(context.Background(), `INSERT INTO ducklake_table (table_id, schema_id, table_name, end_snapshot) VALUES (10, 1, 'events', NULL)`)
 	require.NoError(t, err)
-	_, err = db.Exec(`INSERT INTO ducklake_table (table_id, schema_id, table_name, end_snapshot) VALUES (11, 1, 'sessions', NULL)`)
+	_, err = db.ExecContext(context.Background(), `INSERT INTO ducklake_table (table_id, schema_id, table_name, end_snapshot) VALUES (11, 1, 'sessions', NULL)`)
 	require.NoError(t, err)
 	// Soft-deleted table
-	_, err = db.Exec(`INSERT INTO ducklake_table (table_id, schema_id, table_name, end_snapshot) VALUES (12, 1, 'deleted_tbl', 99)`)
+	_, err = db.ExecContext(context.Background(), `INSERT INTO ducklake_table (table_id, schema_id, table_name, end_snapshot) VALUES (12, 1, 'deleted_tbl', 99)`)
 	require.NoError(t, err)
 
 	// Table in staging
-	_, err = db.Exec(`INSERT INTO ducklake_table (table_id, schema_id, table_name, end_snapshot) VALUES (20, 2, 'raw_events', NULL)`)
+	_, err = db.ExecContext(context.Background(), `INSERT INTO ducklake_table (table_id, schema_id, table_name, end_snapshot) VALUES (20, 2, 'raw_events', NULL)`)
 	require.NoError(t, err)
 
 	// Columns on analytics.events
-	_, err = db.Exec(`INSERT INTO ducklake_column (column_id, table_id, column_name, column_type, end_snapshot) VALUES (100, 10, 'event_id', 'INTEGER', NULL)`)
+	_, err = db.ExecContext(context.Background(), `INSERT INTO ducklake_column (column_id, table_id, column_name, column_type, end_snapshot) VALUES (100, 10, 'event_id', 'INTEGER', NULL)`)
 	require.NoError(t, err)
-	_, err = db.Exec(`INSERT INTO ducklake_column (column_id, table_id, column_name, column_type, end_snapshot) VALUES (101, 10, 'user_email', 'VARCHAR', NULL)`)
+	_, err = db.ExecContext(context.Background(), `INSERT INTO ducklake_column (column_id, table_id, column_name, column_type, end_snapshot) VALUES (101, 10, 'user_email', 'VARCHAR', NULL)`)
 	require.NoError(t, err)
 	// Soft-deleted column
-	_, err = db.Exec(`INSERT INTO ducklake_column (column_id, table_id, column_name, column_type, end_snapshot) VALUES (102, 10, 'old_col', 'TEXT', 30)`)
+	_, err = db.ExecContext(context.Background(), `INSERT INTO ducklake_column (column_id, table_id, column_name, column_type, end_snapshot) VALUES (102, 10, 'old_col', 'TEXT', 30)`)
 	require.NoError(t, err)
 
 	// --- governance metadata ------------------------------------------------
 	// Comment on analytics schema
-	_, err = db.Exec(`INSERT INTO catalog_metadata (securable_type, securable_name, comment, properties, deleted_at) VALUES ('schema', 'analytics', 'Core analytics schema', '{"team":"data"}', NULL)`)
+	_, err = db.ExecContext(context.Background(), `INSERT INTO catalog_metadata (securable_type, securable_name, comment, properties, deleted_at) VALUES ('schema', 'analytics', 'Core analytics schema', '{"team":"data"}', NULL)`)
 	require.NoError(t, err)
 
 	// Comment on analytics.events table
-	_, err = db.Exec(`INSERT INTO catalog_metadata (securable_type, securable_name, comment, properties, deleted_at) VALUES ('table', 'analytics.events', 'Event tracking table', '{"pii":"false"}', NULL)`)
+	_, err = db.ExecContext(context.Background(), `INSERT INTO catalog_metadata (securable_type, securable_name, comment, properties, deleted_at) VALUES ('table', 'analytics.events', 'Event tracking table', '{"pii":"false"}', NULL)`)
 	require.NoError(t, err)
 
 	// Column comment
-	_, err = db.Exec(`INSERT INTO column_metadata (table_securable_name, column_name, comment) VALUES ('analytics.events', 'user_email', 'The user email address')`)
+	_, err = db.ExecContext(context.Background(), `INSERT INTO column_metadata (table_securable_name, column_name, comment) VALUES ('analytics.events', 'user_email', 'The user email address')`)
 	require.NoError(t, err)
 
 	// Tag on schema "analytics" (securable_id = schema_id as TEXT)
-	_, err = db.Exec(`INSERT INTO tags (id, key, value, created_by) VALUES ('tag-1', 'env', 'production', 'admin')`)
+	_, err = db.ExecContext(context.Background(), `INSERT INTO tags (id, key, value, created_by) VALUES ('tag-1', 'env', 'production', 'admin')`)
 	require.NoError(t, err)
-	_, err = db.Exec(`INSERT INTO tag_assignments (id, tag_id, securable_type, securable_id, assigned_by) VALUES ('ta-1', 'tag-1', 'schema', '1', 'admin')`)
+	_, err = db.ExecContext(context.Background(), `INSERT INTO tag_assignments (id, tag_id, securable_type, securable_id, assigned_by) VALUES ('ta-1', 'tag-1', 'schema', '1', 'admin')`)
 	require.NoError(t, err)
 
 	// Tag on table "events" (securable_id = table_id as TEXT)
-	_, err = db.Exec(`INSERT INTO tags (id, key, value, created_by) VALUES ('tag-2', 'classification', 'internal', 'admin')`)
+	_, err = db.ExecContext(context.Background(), `INSERT INTO tags (id, key, value, created_by) VALUES ('tag-2', 'classification', 'internal', 'admin')`)
 	require.NoError(t, err)
-	_, err = db.Exec(`INSERT INTO tag_assignments (id, tag_id, securable_type, securable_id, assigned_by) VALUES ('ta-2', 'tag-2', 'table', '10', 'admin')`)
+	_, err = db.ExecContext(context.Background(), `INSERT INTO tag_assignments (id, tag_id, securable_type, securable_id, assigned_by) VALUES ('ta-2', 'tag-2', 'table', '10', 'admin')`)
 	require.NoError(t, err)
 
 	// Tag on column (securable_type='column', securable_id=table_id, column_name set)
-	_, err = db.Exec(`INSERT INTO tags (id, key, value, created_by) VALUES ('tag-3', 'pii', 'email', 'admin')`)
+	_, err = db.ExecContext(context.Background(), `INSERT INTO tags (id, key, value, created_by) VALUES ('tag-3', 'pii', 'email', 'admin')`)
 	require.NoError(t, err)
-	_, err = db.Exec(`INSERT INTO tag_assignments (id, tag_id, securable_type, securable_id, column_name, assigned_by) VALUES ('ta-3', 'tag-3', 'column', '10', 'user_email', 'admin')`)
+	_, err = db.ExecContext(context.Background(), `INSERT INTO tag_assignments (id, tag_id, securable_type, securable_id, column_name, assigned_by) VALUES ('ta-3', 'tag-3', 'column', '10', 'user_email', 'admin')`)
 	require.NoError(t, err)
 }
 
@@ -105,7 +105,7 @@ func TestSearchRepo_SearchBySchemaName(t *testing.T) {
 
 	results, total, err := repo.Search(ctx, "analytics", nil, 100, 0)
 	require.NoError(t, err)
-	assert.Greater(t, total, int64(0))
+	assert.Positive(t, total)
 
 	// Should find the schema "analytics" by name
 	found := false
@@ -125,7 +125,7 @@ func TestSearchRepo_SearchByTableName(t *testing.T) {
 
 	results, total, err := repo.Search(ctx, "events", nil, 100, 0)
 	require.NoError(t, err)
-	assert.Greater(t, total, int64(0))
+	assert.Positive(t, total)
 
 	found := false
 	for _, r := range results {
@@ -146,7 +146,7 @@ func TestSearchRepo_SearchByColumnName(t *testing.T) {
 
 	results, total, err := repo.Search(ctx, "user_email", nil, 100, 0)
 	require.NoError(t, err)
-	assert.Greater(t, total, int64(0))
+	assert.Positive(t, total)
 
 	found := false
 	for _, r := range results {
@@ -278,7 +278,7 @@ func TestSearchRepo_SearchByComment(t *testing.T) {
 	// "Core analytics" appears in the schema comment
 	results, total, err := repo.Search(ctx, "Core analytics", nil, 100, 0)
 	require.NoError(t, err)
-	assert.Greater(t, total, int64(0))
+	assert.Positive(t, total)
 
 	found := false
 	for _, r := range results {
@@ -299,7 +299,7 @@ func TestSearchRepo_SearchByTag(t *testing.T) {
 	// "production" is a tag value on the analytics schema
 	results, total, err := repo.Search(ctx, "production", nil, 100, 0)
 	require.NoError(t, err)
-	assert.Greater(t, total, int64(0))
+	assert.Positive(t, total)
 
 	found := false
 	for _, r := range results {
@@ -320,7 +320,7 @@ func TestSearchRepo_SearchByProperty(t *testing.T) {
 	// Search for "pii" — shouldn't match name or comment for the table, should match property
 	results, total, err := repo.Search(ctx, "pii", nil, 100, 0)
 	require.NoError(t, err)
-	assert.Greater(t, total, int64(0))
+	assert.Positive(t, total)
 
 	foundProp := false
 	for _, r := range results {
@@ -330,7 +330,7 @@ func TestSearchRepo_SearchByProperty(t *testing.T) {
 		}
 	}
 	// "pii" also appears as tag key — so we just verify we got results
-	assert.True(t, len(results) > 0, "expected results for property/tag search")
+	assert.NotEmpty(t, results, "expected results for property/tag search")
 	// If property match is present, verify it
 	if foundProp {
 		assert.True(t, foundProp, "expected at least one property match")
@@ -345,7 +345,7 @@ func TestSearchRepo_SearchByColumnComment(t *testing.T) {
 	// "email address" appears in the column_metadata comment for user_email
 	results, total, err := repo.Search(ctx, "email address", nil, 100, 0)
 	require.NoError(t, err)
-	assert.Greater(t, total, int64(0))
+	assert.Positive(t, total)
 
 	found := false
 	for _, r := range results {
@@ -366,7 +366,7 @@ func TestSearchRepo_SearchByTableTag(t *testing.T) {
 	// "classification" is a tag key on the events table
 	results, total, err := repo.Search(ctx, "classification", nil, 100, 0)
 	require.NoError(t, err)
-	assert.Greater(t, total, int64(0))
+	assert.Positive(t, total)
 
 	found := false
 	for _, r := range results {
@@ -387,7 +387,7 @@ func TestSearchRepo_SearchByColumnTag(t *testing.T) {
 	colType := "column"
 	results, total, err := repo.Search(ctx, "pii", &colType, 100, 0)
 	require.NoError(t, err)
-	assert.Greater(t, total, int64(0))
+	assert.Positive(t, total)
 
 	found := false
 	for _, r := range results {

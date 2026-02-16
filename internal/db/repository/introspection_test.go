@@ -32,7 +32,7 @@ func seedIntrospectionData(t *testing.T, db *sql.DB) introspectionIDs {
 	ids.schemaPrivate = seedSchema(t, db, "private")
 
 	// Soft-deleted schema (should be excluded from results)
-	_, err := db.Exec(`INSERT INTO ducklake_schema (schema_name, end_snapshot) VALUES ('archived', 100)`)
+	_, err := db.ExecContext(context.Background(), `INSERT INTO ducklake_schema (schema_name, end_snapshot) VALUES ('archived', 100)`)
 	require.NoError(t, err)
 
 	// Active tables in "public"
@@ -40,7 +40,7 @@ func seedIntrospectionData(t *testing.T, db *sql.DB) introspectionIDs {
 	ids.tableOrders = seedTable(t, db, ids.schemaPublic, "orders")
 
 	// Soft-deleted table
-	_, err = db.Exec(`INSERT INTO ducklake_table (schema_id, table_name, end_snapshot) VALUES (?, 'deleted_table', 50)`, ids.schemaPublic)
+	_, err = db.ExecContext(context.Background(), `INSERT INTO ducklake_table (schema_id, table_name, end_snapshot) VALUES (?, 'deleted_table', 50)`, ids.schemaPublic)
 	require.NoError(t, err)
 
 	// Columns on "users"
@@ -49,7 +49,7 @@ func seedIntrospectionData(t *testing.T, db *sql.DB) introspectionIDs {
 	seedColumn(t, db, ids.tableUsers, "name", "VARCHAR", true)
 
 	// Soft-deleted column
-	_, err = db.Exec(
+	_, err = db.ExecContext(context.Background(),
 		`INSERT INTO ducklake_column (table_id, column_name, column_type, end_snapshot) VALUES (?, 'old_col', 'TEXT', 99)`,
 		ids.tableUsers)
 	require.NoError(t, err)

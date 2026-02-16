@@ -2,6 +2,7 @@ package agent
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"net/http"
@@ -50,7 +51,7 @@ func postExecute(t *testing.T, srv *httptest.Server, token string, body interfac
 	payload, err := json.Marshal(body)
 	require.NoError(t, err)
 
-	req, err := http.NewRequest(http.MethodPost, srv.URL+"/execute", bytes.NewReader(payload))
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, srv.URL+"/execute", bytes.NewReader(payload))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 	if token != "" {
@@ -71,7 +72,7 @@ func TestAgentHandler_Auth(t *testing.T) {
 	t.Run("missing token returns 401", func(t *testing.T) {
 		t.Parallel()
 		resp := postExecute(t, srv, "", compute.ExecuteRequest{SQL: "SELECT 1"})
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 
@@ -83,7 +84,7 @@ func TestAgentHandler_Auth(t *testing.T) {
 	t.Run("wrong token returns 401", func(t *testing.T) {
 		t.Parallel()
 		resp := postExecute(t, srv, "wrong-token", compute.ExecuteRequest{SQL: "SELECT 1"})
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 
@@ -99,14 +100,14 @@ func TestAgentHandler_BadRequest(t *testing.T) {
 	t.Parallel()
 	srv := setupAgentTest(t)
 
-	req, err := http.NewRequest(http.MethodPost, srv.URL+"/execute", bytes.NewReader([]byte("{invalid json")))
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, srv.URL+"/execute", bytes.NewReader([]byte("{invalid json")))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Agent-Token", testToken)
 
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 
@@ -125,7 +126,7 @@ func TestAgentHandler_SuccessfulQuery(t *testing.T) {
 		SQL:       "SELECT 1 AS id",
 		RequestID: "req-123",
 	})
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -140,7 +141,7 @@ func TestAgentHandler_SuccessfulQuery(t *testing.T) {
 	// DuckDB returns int32 for integer literals; JSON decodes as float64.
 	val, ok := result.Rows[0][0].(float64)
 	require.True(t, ok, "expected float64 from JSON decode, got %T", result.Rows[0][0])
-	assert.Equal(t, float64(1), val)
+	assert.InDelta(t, float64(1), val, 0.0001)
 }
 
 // === SQL error ===
@@ -153,7 +154,7 @@ func TestAgentHandler_SQLError(t *testing.T) {
 		SQL:       "SELECT * FROM nonexistent_table_xyz",
 		RequestID: "req-err",
 	})
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 
@@ -170,9 +171,11 @@ func TestAgentHandler_Health(t *testing.T) {
 	t.Parallel()
 	srv := setupAgentTest(t)
 
-	resp, err := http.Get(srv.URL + "/health")
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, srv.URL+"/health", nil)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -194,7 +197,7 @@ func TestAgentHandler_EmptyResult(t *testing.T) {
 	resp := postExecute(t, srv, testToken, compute.ExecuteRequest{
 		SQL: "SELECT 1 WHERE false",
 	})
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 

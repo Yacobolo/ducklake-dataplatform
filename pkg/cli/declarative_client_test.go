@@ -1130,7 +1130,8 @@ func TestReadState_Pagination(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		pageToken := r.URL.Query().Get("page_token")
 
-		if pageToken == "" {
+		switch pageToken {
+		case "":
 			// First page.
 			resp := map[string]interface{}{
 				"data": []map[string]interface{}{
@@ -1140,7 +1141,7 @@ func TestReadState_Pagination(t *testing.T) {
 				"next_page_token": "page2",
 			}
 			_ = json.NewEncoder(w).Encode(resp)
-		} else if pageToken == "page2" {
+		case "page2":
 			// Second page.
 			resp := map[string]interface{}{
 				"data": []map[string]interface{}{

@@ -261,11 +261,11 @@ func TestQueryService_Execute_DMLLineage(t *testing.T) {
 
 	// Create the source and target tables in the in-memory DuckDB so the
 	// INSERT statement actually succeeds and returns *sql.Rows.
-	_, err := db.Exec("CREATE TABLE src(id INTEGER, val TEXT)")
+	_, err := db.ExecContext(context.Background(), "CREATE TABLE src(id INTEGER, val TEXT)")
 	require.NoError(t, err)
-	_, err = db.Exec("INSERT INTO src VALUES (1, 'a'), (2, 'b')")
+	_, err = db.ExecContext(context.Background(), "INSERT INTO src VALUES (1, 'a'), (2, 'b')")
 	require.NoError(t, err)
-	_, err = db.Exec("CREATE TABLE dst(id INTEGER, val TEXT)")
+	_, err = db.ExecContext(context.Background(), "CREATE TABLE dst(id INTEGER, val TEXT)")
 	require.NoError(t, err)
 
 	eng := &testutil.MockSessionEngine{
@@ -324,9 +324,9 @@ func TestQueryService_Execute_LineageErrorSuppressed(t *testing.T) {
 	db := openDuckDB(t)
 
 	// Create a table so ExtractTableNames finds something.
-	_, err := db.Exec("CREATE TABLE orders(id INTEGER)")
+	_, err := db.ExecContext(context.Background(), "CREATE TABLE orders(id INTEGER)")
 	require.NoError(t, err)
-	_, err = db.Exec("INSERT INTO orders VALUES (1)")
+	_, err = db.ExecContext(context.Background(), "INSERT INTO orders VALUES (1)")
 	require.NoError(t, err)
 
 	eng := &testutil.MockSessionEngine{

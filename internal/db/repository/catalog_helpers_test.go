@@ -72,7 +72,7 @@ func createCatalogDuckLakeTables(t *testing.T, db *sql.DB) {
 		)`,
 	}
 	for _, stmt := range stmts {
-		_, err := db.Exec(stmt)
+		_, err := db.ExecContext(context.Background(), stmt)
 		require.NoError(t, err, "create ducklake table: %s", stmt)
 	}
 }
@@ -80,7 +80,7 @@ func createCatalogDuckLakeTables(t *testing.T, db *sql.DB) {
 // seedSchema inserts a row into ducklake_schema and returns its ID.
 func seedSchema(t *testing.T, db *sql.DB, name string) int64 {
 	t.Helper()
-	res, err := db.Exec(
+	res, err := db.ExecContext(context.Background(),
 		`INSERT INTO ducklake_schema (schema_name) VALUES (?)`, name)
 	require.NoError(t, err)
 	id, err := res.LastInsertId()
@@ -91,7 +91,7 @@ func seedSchema(t *testing.T, db *sql.DB, name string) int64 {
 // seedTable inserts a row into ducklake_table and returns its ID.
 func seedTable(t *testing.T, db *sql.DB, schemaID int64, name string) int64 {
 	t.Helper()
-	res, err := db.Exec(
+	res, err := db.ExecContext(context.Background(),
 		`INSERT INTO ducklake_table (schema_id, table_name) VALUES (?, ?)`, schemaID, name)
 	require.NoError(t, err)
 	id, err := res.LastInsertId()
@@ -106,7 +106,7 @@ func seedColumn(t *testing.T, db *sql.DB, tableID int64, name, colType string, n
 	if !nullable {
 		n = 0
 	}
-	_, err := db.Exec(
+	_, err := db.ExecContext(context.Background(),
 		`INSERT INTO ducklake_column (table_id, column_name, column_type, nulls_allowed) VALUES (?, ?, ?, ?)`,
 		tableID, name, colType, n)
 	require.NoError(t, err)
@@ -168,7 +168,7 @@ func TestCatalogHelpers_ResolveSchemaID(t *testing.T) {
 	})
 
 	t.Run("deleted schema (end_snapshot set) returns NotFoundError", func(t *testing.T) {
-		_, err := repo.metaDB.Exec(
+		_, err := repo.metaDB.ExecContext(context.Background(),
 			`INSERT INTO ducklake_schema (schema_name, end_snapshot) VALUES (?, ?)`,
 			"deleted_schema", 42)
 		require.NoError(t, err)
@@ -225,7 +225,7 @@ func TestCatalogHelpers_LoadColumns(t *testing.T) {
 	t.Run("excludes soft-deleted columns", func(t *testing.T) {
 		tableID := seedTable(t, repo.metaDB, schemaID, "with_deleted_col")
 		seedColumn(t, repo.metaDB, tableID, "active_col", "TEXT", true)
-		_, err := repo.metaDB.Exec(
+		_, err := repo.metaDB.ExecContext(context.Background(),
 			`INSERT INTO ducklake_column (table_id, column_name, column_type, end_snapshot) VALUES (?, ?, ?, ?)`,
 			tableID, "old_col", "TEXT", 99)
 		require.NoError(t, err)
@@ -291,7 +291,7 @@ func TestCatalogHelpers_ResolveStoragePath(t *testing.T) {
 			repo := NewCatalogRepo(writeDB, writeDB, q, nil, "lake", nil, slog.Default())
 
 			if tc.dataPath != "" {
-				_, err := writeDB.Exec(
+				_, err := writeDB.ExecContext(context.Background(),
 					`INSERT INTO ducklake_metadata (key, value) VALUES ('data_path', ?)`, tc.dataPath)
 				require.NoError(t, err)
 			}
