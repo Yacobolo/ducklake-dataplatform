@@ -201,6 +201,9 @@ func (s *Service) TriggerRun(ctx context.Context, principal string, req domain.T
 	if err != nil {
 		return nil, err
 	}
+	if err := s.persistCompileDependencyLineage(ctx, selected, compiledArtifacts, req, principal); err != nil {
+		return nil, fmt.Errorf("persist compile dependency lineage: %w", err)
+	}
 
 	// Resolve ephemeral models: inject CTEs and remove from execution set.
 	// This can alter SQL for downstream models, so keep artifacts in sync.
@@ -298,6 +301,9 @@ func (s *Service) TriggerRunSync(ctx context.Context, principal string, req doma
 	compiledArtifacts, err := s.compileSelectedModels(selected, allModels, req)
 	if err != nil {
 		return err
+	}
+	if err := s.persistCompileDependencyLineage(ctx, selected, compiledArtifacts, req, principal); err != nil {
+		return fmt.Errorf("persist compile dependency lineage: %w", err)
 	}
 
 	selected = resolveEphemeralModels(selected)
@@ -587,4 +593,74 @@ func strPtrOrNil(v string) *string {
 		return nil
 	}
 	return &v
+}
+
+func (s *Service) persistCompileDependencyLineage(
+	ctx context.Context,
+	selected []domain.Model,
+	artifacts map[string]compileResult,
+	req domain.TriggerModelRunRequest,
+	principal string,
+) error {
+	if s.lineage == nil {
+		return nil
+	}
+
+	for _, m := range selected {
+		artifact, ok := artifacts[m.ID]
+		if !ok {
+			continue
+		}
+		targetSchema := req.TargetSchema
+		targetTable := m.Name
+		targetName := makeLineageTableName(req.TargetCatalog, targetSchema, targetTable)
+
+		for _, dep := range artifact.dependsOn {
+			sourceSchema, sourceTable := depToLineageSource(dep, req.TargetSchema)
+			if sourceTable == "" {
+				continue
+			}
+			sourceName := makeLineageTableName(req.TargetCatalog, sourceSchema, sourceTable)
+			edge := &domain.LineageEdge{
+				SourceTable:   sourceName,
+				TargetTable:   strPtr(targetName),
+				SourceSchema:  sourceSchema,
+				TargetSchema:  targetSchema,
+				EdgeType:      "READ",
+				PrincipalName: principal,
+				QueryHash:     strPtrOrNil(artifact.compiledHash),
+			}
+			if err := s.lineage.InsertEdge(ctx, edge); err != nil {
+				return fmt.Errorf("insert lineage edge %s -> %s: %w", sourceName, targetName, err)
+			}
+		}
+	}
+
+	return nil
+}
+
+func depToLineageSource(dep, defaultSchema string) (schema, table string) {
+	if strings.HasPrefix(dep, "source:") {
+		dep = strings.TrimPrefix(dep, "source:")
+		parts := strings.Split(dep, ".")
+		switch len(parts) {
+		case 1:
+			return defaultSchema, parts[0]
+		default:
+			return parts[len(parts)-2], parts[len(parts)-1]
+		}
+	}
+
+	parts := strings.Split(dep, ".")
+	if len(parts) == 1 {
+		return defaultSchema, parts[0]
+	}
+	return defaultSchema, parts[len(parts)-1]
+}
+
+func makeLineageTableName(catalog, schema, table string) string {
+	if strings.TrimSpace(catalog) == "" {
+		return schema + "." + table
+	}
+	return catalog + "." + schema + "." + table
 }
