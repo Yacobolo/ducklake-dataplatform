@@ -33,6 +33,11 @@ func SelectModels(selector string, allModels []domain.Model) ([]domain.Model, er
 		return filterByProject(allModels, project), nil
 	}
 
+	// Explicit multi-model selector: "model_a,model_b"
+	if strings.Contains(selector, ",") {
+		return selectMultipleModels(selector, allModels)
+	}
+
 	// Graph selectors: +model+, +model, model+, model
 	upstream := strings.HasPrefix(selector, "+")
 	downstream := strings.HasSuffix(selector, "+")
@@ -66,6 +71,35 @@ func SelectModels(selector string, allModels []domain.Model) ([]domain.Model, er
 			result = append(result, m)
 		}
 	}
+	return result, nil
+}
+
+func selectMultipleModels(selector string, allModels []domain.Model) ([]domain.Model, error) {
+	parts := strings.Split(selector, ",")
+	result := make([]domain.Model, 0, len(parts))
+	seen := make(map[string]bool, len(parts))
+
+	for _, raw := range parts {
+		name := strings.TrimSpace(raw)
+		if name == "" {
+			continue
+		}
+		m := findModel(allModels, name)
+		if m == nil {
+			return nil, domain.ErrNotFound("model %q not found", name)
+		}
+		qualified := m.QualifiedName()
+		if seen[qualified] {
+			continue
+		}
+		seen[qualified] = true
+		result = append(result, *m)
+	}
+
+	if len(result) == 0 {
+		return nil, domain.ErrValidation("selector must include at least one model name")
+	}
+
 	return result, nil
 }
 

@@ -76,7 +76,7 @@ func TestBuildCommandPrefix(t *testing.T) {
 			name:     "group with empty verb",
 			group:    "query",
 			cmdCfg:   CommandConfig{},
-			expected: "duck query",
+			expected: "duck query execute",
 		},
 		{
 			name:     "group with empty command path and verb",
@@ -469,7 +469,7 @@ func TestGenerateExamples(t *testing.T) {
 				"sql": "SELECT id, name FROM main.users LIMIT 10",
 			}, nil),
 			expected: []string{
-				`duck query --sql "SELECT id, name FROM main.users LIMIT 10"`,
+				`duck query execute --sql "SELECT id, name FROM main.users LIMIT 10"`,
 			},
 		},
 		{

@@ -507,6 +507,64 @@ func TestAuth_ResolveDisplayName(t *testing.T) {
 	}
 }
 
+func TestAuth_JWTAdminClaim_OverridesPrincipalRole(t *testing.T) {
+	handler, getPrincipal := nextHandler()
+
+	auth := NewAuthenticator(
+		&stubValidator{claims: &JWTClaims{
+			Subject: "dev-admin",
+			Raw:     map[string]interface{}{"sub": "dev-admin", "admin": true},
+		}},
+		nil,
+		&stubPrincipalLookup{principals: map[string]*domain.Principal{
+			"dev-admin": {Name: "dev-admin", IsAdmin: false, Type: "user"},
+		}},
+		nil,
+		config.AuthConfig{NameClaim: "sub"},
+		nil,
+	)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Authorization", "Bearer test-token")
+	w := httptest.NewRecorder()
+
+	auth.Middleware()(handler).ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	cp, found := getPrincipal()
+	require.True(t, found)
+	assert.Equal(t, "dev-admin", cp.Name)
+	assert.True(t, cp.IsAdmin)
+}
+
+func TestAuth_JWTAdminClaim_WorksWithoutPrincipalRepo(t *testing.T) {
+	handler, getPrincipal := nextHandler()
+
+	auth := NewAuthenticator(
+		&stubValidator{claims: &JWTClaims{
+			Subject: "ephemeral-admin",
+			Raw:     map[string]interface{}{"sub": "ephemeral-admin", "admin": true},
+		}},
+		nil,
+		nil,
+		nil,
+		config.AuthConfig{NameClaim: "sub"},
+		nil,
+	)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Authorization", "Bearer test-token")
+	w := httptest.NewRecorder()
+
+	auth.Middleware()(handler).ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	cp, found := getPrincipal()
+	require.True(t, found)
+	assert.Equal(t, "ephemeral-admin", cp.Name)
+	assert.True(t, cp.IsAdmin)
+}
+
 func strPtr(s string) *string {
 	return &s
 }

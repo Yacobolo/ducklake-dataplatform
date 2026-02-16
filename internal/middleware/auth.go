@@ -104,6 +104,7 @@ func (a *Authenticator) authenticateJWT(ctx context.Context, tokenStr string) (*
 	if err != nil {
 		return nil, err
 	}
+	adminClaim := jwtAdminClaim(claims)
 
 	if claims.Subject == "" {
 		return nil, fmt.Errorf("JWT missing sub claim")
@@ -130,7 +131,7 @@ func (a *Authenticator) authenticateJWT(ctx context.Context, tokenStr string) (*
 		return &domain.ContextPrincipal{
 			ID:      p.ID,
 			Name:    p.Name,
-			IsAdmin: p.IsAdmin,
+			IsAdmin: p.IsAdmin || adminClaim,
 			Type:    p.Type,
 		}, nil
 	}
@@ -142,7 +143,7 @@ func (a *Authenticator) authenticateJWT(ctx context.Context, tokenStr string) (*
 			return &domain.ContextPrincipal{
 				ID:      p.ID,
 				Name:    p.Name,
-				IsAdmin: p.IsAdmin,
+				IsAdmin: p.IsAdmin || adminClaim,
 				Type:    p.Type,
 			}, nil
 		}
@@ -155,8 +156,9 @@ func (a *Authenticator) authenticateJWT(ctx context.Context, tokenStr string) (*
 	// No provisioner and no principal repo (legacy shared-secret dev mode):
 	// allow with display name only. This is the backward-compatible path.
 	return &domain.ContextPrincipal{
-		Name: displayName,
-		Type: "user",
+		Name:    displayName,
+		IsAdmin: adminClaim,
+		Type:    "user",
 	}, nil
 }
 
@@ -225,4 +227,15 @@ func writeUnauthorized(w http.ResponseWriter) {
 		"code":    401,
 		"message": "unauthorized: provide a valid JWT Bearer token or API key",
 	})
+}
+
+func jwtAdminClaim(claims *JWTClaims) bool {
+	if claims == nil || claims.Raw == nil {
+		return false
+	}
+	admin, ok := claims.Raw["admin"].(bool)
+	if !ok {
+		return false
+	}
+	return admin
 }

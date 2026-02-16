@@ -590,6 +590,11 @@ func fieldToFlag(name string, schema *openapi3.Schema, required bool, aliases ma
 		fm.GoType = "[]string"
 		fm.CobraType = "StringSlice"
 		fm.Usage = fmt.Sprintf("%s (key=value pairs)", name)
+	case isJSONObjectType(schema):
+		fm.GoType = "string"
+		fm.CobraType = "String"
+		fm.ParseJSON = true
+		fm.Usage = fmt.Sprintf("%s (JSON object)", name)
 	case isArrayType(schema):
 		fm.GoType = "[]string"
 		fm.CobraType = "StringSlice"
@@ -683,6 +688,19 @@ func isMapType(s *openapi3.Schema) bool {
 		return false
 	}
 	return (*s.Type)[0] == "object" && s.AdditionalProperties.Schema != nil
+}
+
+func isJSONObjectType(s *openapi3.Schema) bool {
+	if s.Type == nil || len(*s.Type) == 0 {
+		return false
+	}
+	if (*s.Type)[0] != "object" {
+		return false
+	}
+	if s.AdditionalProperties.Schema != nil {
+		return false
+	}
+	return len(s.Properties) > 0
 }
 
 func goTypeToCobraType(goType string) string {

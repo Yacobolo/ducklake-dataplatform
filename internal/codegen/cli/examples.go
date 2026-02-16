@@ -45,6 +45,12 @@ func buildCommandPrefix(groupName string, cmdCfg CommandConfig) string {
 	parts = append(parts, cmdCfg.CommandPath...)
 	if cmdCfg.Verb != "" {
 		parts = append(parts, cmdCfg.Verb)
+	} else {
+		use := computeUseString(cmdCfg)
+		useParts := strings.Fields(use)
+		if len(useParts) > 0 {
+			parts = append(parts, useParts[0])
+		}
 	}
 	return strings.Join(parts, " ")
 }

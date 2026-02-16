@@ -240,6 +240,37 @@ func TestComputeUseString(t *testing.T) {
 	}
 }
 
+func TestFieldToFlag_ObjectSchemaParsesJSON(t *testing.T) {
+	objType := openapi3.Types{"object"}
+	strType := openapi3.Types{"string"}
+	schema := &openapi3.Schema{
+		Type: &objType,
+		Properties: openapi3.Schemas{
+			"unique_key": {Value: &openapi3.Schema{Type: &strType}},
+		},
+	}
+
+	fm := fieldToFlag("config", schema, false, nil)
+	assert.Equal(t, "String", fm.CobraType)
+	assert.True(t, fm.ParseJSON)
+	assert.Contains(t, fm.Usage, "JSON object")
+}
+
+func TestFieldToFlag_MapSchemaDoesNotParseJSON(t *testing.T) {
+	objType := openapi3.Types{"object"}
+	strType := openapi3.Types{"string"}
+	schema := &openapi3.Schema{
+		Type: &objType,
+		AdditionalProperties: openapi3.AdditionalProperties{
+			Schema: &openapi3.SchemaRef{Value: &openapi3.Schema{Type: &strType}},
+		},
+	}
+
+	fm := fieldToFlag("properties", schema, false, nil)
+	assert.Equal(t, "StringSlice", fm.CobraType)
+	assert.False(t, fm.ParseJSON)
+}
+
 // === Drift Validation Tests ===
 
 func TestParse_DriftValidation_StaleOverrideKey(t *testing.T) {

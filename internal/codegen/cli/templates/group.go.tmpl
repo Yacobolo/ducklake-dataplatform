@@ -15,6 +15,13 @@ func new{{toPascal .Name}}Cmd(client *Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "{{.Name}}",
 		Short: {{quote .Short}},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				return cmd.Help()
+			}
+			_ = cmd.Help()
+			return fmt.Errorf("unknown subcommand %q", args[0])
+		},
 	}
 
 {{- $groupName := .Name}}
@@ -147,6 +154,25 @@ func new{{toPascal .Name}}Cmd(client *Client) *cobra.Command {
 					{{- if eq .CobraType "String"}}
 					if cmd.Flags().Changed("{{.Name}}") {
 						v, _ := cmd.Flags().GetString("{{.Name}}")
+						{{- if .ParseJSON}}
+						var parsed interface{}
+						if err := json.Unmarshal([]byte(v), &parsed); err != nil {
+							return fmt.Errorf("parse --{{.Name}} as JSON object: %w", err)
+						}
+						if _, ok := parsed.(map[string]interface{}); !ok {
+							return fmt.Errorf("--{{.Name}} must be a JSON object")
+						}
+						{{- if contains .FieldName "."}}
+						// Nested field: {{.FieldName}}
+						parts := strings.SplitN("{{.FieldName}}", ".", 2)
+						if m[parts[0]] == nil {
+							m[parts[0]] = map[string]interface{}{}
+						}
+						m[parts[0]].(map[string]interface{})[parts[1]] = parsed
+						{{- else}}
+						m["{{.FieldName}}"] = parsed
+						{{- end}}
+						{{- else}}
 						{{- if contains .FieldName "."}}
 						// Nested field: {{.FieldName}}
 						parts := strings.SplitN("{{.FieldName}}", ".", 2)
@@ -156,6 +182,7 @@ func new{{toPascal .Name}}Cmd(client *Client) *cobra.Command {
 						m[parts[0]].(map[string]interface{})[parts[1]] = v
 						{{- else}}
 						m["{{.FieldName}}"] = v
+						{{- end}}
 						{{- end}}
 					}
 					{{- else if eq .CobraType "Int64"}}

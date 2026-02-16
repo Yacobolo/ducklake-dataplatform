@@ -92,6 +92,7 @@ type FlagModel struct {
 	GoName         string // PascalCase
 	GoType         string // "string", "int64", "bool", "[]string"
 	CobraType      string // "String", "Int64", "Bool", "StringSlice", "StringToString"
+	ParseJSON      bool   // true when the string flag value should be parsed as JSON object
 	Required       bool
 	Default        string
 	Usage          string
