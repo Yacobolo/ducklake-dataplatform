@@ -146,6 +146,11 @@ func (r *PipelineRepo) CreateJob(ctx context.Context, job *domain.PipelineJob) (
 		return nil, fmt.Errorf("marshal depends_on: %w", err)
 	}
 
+	jobType := job.JobType
+	if jobType == "" {
+		jobType = domain.PipelineJobTypeNotebook
+	}
+
 	row, err := r.q.CreatePipelineJob(ctx, dbstore.CreatePipelineJobParams{
 		ID:                newID(),
 		PipelineID:        job.PipelineID,
@@ -156,6 +161,8 @@ func (r *PipelineRepo) CreateJob(ctx context.Context, job *domain.PipelineJob) (
 		TimeoutSeconds:    nullInt64Ptr(job.TimeoutSeconds),
 		RetryCount:        int64(job.RetryCount),
 		JobOrder:          int64(job.JobOrder),
+		JobType:           jobType,
+		ModelSelector:     job.ModelSelector,
 	})
 	if err != nil {
 		return nil, mapDBError(err)
@@ -258,6 +265,8 @@ func pipelineJobFromDB(row dbstore.PipelineJob) *domain.PipelineJob {
 		TimeoutSeconds:    ts,
 		RetryCount:        int(row.RetryCount),
 		JobOrder:          int(row.JobOrder),
+		JobType:           row.JobType,
+		ModelSelector:     row.ModelSelector,
 		CreatedAt:         createdAt,
 	}
 }

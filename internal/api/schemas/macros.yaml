@@ -1,0 +1,134 @@
+Macro:
+  description: A DuckDB SQL macro definition.
+  type: object
+  properties:
+    id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+      example: 550e8400-e29b-41d4-a716-446655440200
+    name:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+      example: cents_to_dollars
+    macro_type:
+      type: string
+      enum: [SCALAR, TABLE]
+      example: SCALAR
+    parameters:
+      type: array
+      maxItems: 50
+      items:
+        type: string
+        maxLength: 255
+        pattern: '^\S+$'
+      example: ["amount"]
+    body:
+      type: string
+      maxLength: 65536
+      pattern: '^[\s\S]*$'
+      example: "amount / 100.0"
+    description:
+      type: string
+      maxLength: 4096
+      pattern: '^[\s\S]*$'
+      example: Converts cents to dollars
+    created_by:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+      example: admin
+    created_at:
+      type: string
+      format: date-time
+      maxLength: 64
+      example: "2025-01-15T09:30:00Z"
+    updated_at:
+      type: string
+      format: date-time
+      maxLength: 64
+      example: "2025-01-15T09:30:00Z"
+
+CreateMacroRequest:
+  description: Request payload for creating a new SQL macro.
+  type: object
+  additionalProperties: false
+  required: [name, body]
+  properties:
+    name:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+      example: cents_to_dollars
+    macro_type:
+      type: string
+      enum: [SCALAR, TABLE]
+      example: SCALAR
+    parameters:
+      type: array
+      maxItems: 50
+      items:
+        type: string
+        maxLength: 255
+        pattern: '^\S+$'
+      example: ["amount"]
+    body:
+      type: string
+      maxLength: 65536
+      pattern: '^[\s\S]*$'
+      example: "amount / 100.0"
+    description:
+      type: string
+      maxLength: 4096
+      pattern: '^[\s\S]*$'
+      example: Converts cents to dollars
+
+UpdateMacroRequest:
+  description: Request payload for updating an existing SQL macro.
+  type: object
+  additionalProperties: false
+  properties:
+    body:
+      type: string
+      maxLength: 65536
+      pattern: '^[\s\S]*$'
+      example: "amount / 100.0"
+    description:
+      type: string
+      maxLength: 4096
+      pattern: '^[\s\S]*$'
+      example: Updated description
+    parameters:
+      type: array
+      maxItems: 50
+      items:
+        type: string
+        maxLength: 255
+        pattern: '^\S+$'
+      example: ["amount"]
+
+PaginatedMacros:
+  description: Paginated list of macros.
+  type: object
+  properties:
+    data:
+      type: array
+      maxItems: 10000
+      items:
+        $ref: '#/Macro'
+      example:
+        - id: "550e8400-e29b-41d4-a716-446655440200"
+          name: "cents_to_dollars"
+          macro_type: "SCALAR"
+          parameters: ["amount"]
+          body: "amount / 100.0"
+          description: "Converts cents to dollars"
+          created_by: "admin"
+          created_at: "2025-01-15T09:30:00Z"
+          updated_at: "2025-01-15T09:30:00Z"
+    next_page_token:
+      type: string
+      maxLength: 1024
+      pattern: '^[\S]*$'
+      example: "eyJpZCI6MTB9"

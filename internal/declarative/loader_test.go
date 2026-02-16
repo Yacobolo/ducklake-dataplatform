@@ -159,6 +159,38 @@ func TestLoader_DanglingRef(t *testing.T) {
 	assert.True(t, foundSecurable, "expected validation error about unknown catalog; got: %v", messages)
 }
 
+func TestLoader_ModelsDirectory(t *testing.T) {
+	// LoadDirectory expects <root>/models/<project>/... so we use a dedicated
+	// fixture directory that contains only a models/ subtree.
+	dir := filepath.Join(testdataDir(t), "valid", "models-only")
+	state, err := LoadDirectory(dir)
+	require.NoError(t, err)
+
+	t.Run("models loaded from nested directories", func(t *testing.T) {
+		require.Len(t, state.Models, 2)
+
+		// Build a lookup by model name for order-independent assertions.
+		byName := make(map[string]ModelResource, len(state.Models))
+		for _, m := range state.Models {
+			byName[m.ModelName] = m
+		}
+
+		stg, ok := byName["stg_orders"]
+		require.True(t, ok, "expected stg_orders model")
+		assert.Equal(t, "sales", stg.ProjectName)
+		assert.Equal(t, "TABLE", stg.Spec.Materialization)
+		assert.Equal(t, "Staged orders", stg.Spec.Description)
+		assert.Equal(t, []string{"finance", "staging"}, stg.Spec.Tags)
+		assert.Contains(t, stg.Spec.SQL, "SELECT order_id")
+
+		fct, ok := byName["fct_orders"]
+		require.True(t, ok, "expected fct_orders model")
+		assert.Equal(t, "sales", fct.ProjectName)
+		assert.Equal(t, "VIEW", fct.Spec.Materialization)
+		assert.Equal(t, "Orders fact table", fct.Spec.Description)
+	})
+}
+
 func TestLoader_NonexistentDir(t *testing.T) {
 	_, err := LoadDirectory("/nonexistent/path")
 	require.Error(t, err)

@@ -374,7 +374,7 @@ var actionVerbSet = map[string]bool{
 	"loadTableExternalFiles": true, "purgeLineage": true, "cleanupExpiredAPIKeys": true,
 	"createManifest": true, "createUploadUrl": true, "searchCatalog": true,
 	"setDefaultCatalog": true, "reorderCells": true, "executeCell": true,
-	"runAllCells": true, "syncGitRepo": true, "cancelPipelineRun": true,
+	"runAllCells": true, "syncGitRepo": true, "cancelPipelineRun": true, "cancelModelRun": true,
 	"triggerPipelineRun": true,
 }
 

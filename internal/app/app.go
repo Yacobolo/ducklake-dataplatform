@@ -18,6 +18,8 @@ import (
 	svccompute "duck-demo/internal/service/compute"
 	"duck-demo/internal/service/governance"
 	"duck-demo/internal/service/ingestion"
+	"duck-demo/internal/service/macro"
+	svcmodel "duck-demo/internal/service/model"
 	"duck-demo/internal/service/notebook"
 	"duck-demo/internal/service/pipeline"
 	"duck-demo/internal/service/query"
@@ -63,6 +65,8 @@ type Services struct {
 	SessionManager      *notebook.SessionManager
 	GitService          *notebook.GitService
 	Pipeline            *pipeline.Service
+	Model               *svcmodel.Service
+	Macro               *macro.Service
 }
 
 // App holds the fully-wired application: engine, services, and the
@@ -251,6 +255,26 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 		deps.Logger.With("component", "pipeline-scheduler"))
 	pipelineSvc.SetScheduleReloader(pipelineScheduler)
 
+	// === Model ===
+	modelRepo := repository.NewModelRepo(deps.WriteDB)
+	modelRunRepo := repository.NewModelRunRepo(deps.WriteDB)
+	modelTestRepo := repository.NewModelTestRepo(deps.WriteDB)
+	modelTestResultRepo := repository.NewModelTestResultRepo(deps.WriteDB)
+	modelSvc := svcmodel.NewService(
+		modelRepo, modelRunRepo, modelTestRepo, modelTestResultRepo, auditRepo,
+		lineageRepo, colLineageRepo,
+		eng, deps.DuckDB,
+		deps.Logger.With("component", "model"),
+	)
+
+	// === Macro ===
+	macroRepo := repository.NewMacroRepo(deps.WriteDB)
+	macroSvc := macro.NewService(macroRepo, auditRepo)
+
+	// Wire optional dependencies into model service.
+	modelSvc.SetMacroRepo(macroRepo)
+	modelSvc.SetNotebookProvider(notebookProvider)
+
 	// === API Key ===
 	apiKeyRepo := repository.NewAPIKeyRepo(deps.ReadDB)
 	apiKeySvc := security.NewAPIKeyService(apiKeyRepo, auditRepo)
@@ -282,6 +306,8 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 			SessionManager:      sessionMgr,
 			GitService:          gitSvc,
 			Pipeline:            pipelineSvc,
+			Model:               modelSvc,
+			Macro:               macroSvc,
 		},
 		Engine:        eng,
 		APIKeyRepo:    apiKeyRepo,

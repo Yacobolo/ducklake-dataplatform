@@ -1,0 +1,11 @@
+apiVersion: duck/v1
+kind: Model
+metadata:
+  name: stg_orders
+spec:
+  materialization: TABLE
+  description: "Staged orders"
+  tags: [finance, staging]
+  sql: |
+    SELECT order_id, customer_id
+    FROM raw_data.orders

@@ -164,6 +164,11 @@ func (s *Service) executeJob(ctx context.Context, job domain.PipelineJob,
 func (s *Service) executeJobAttempt(ctx context.Context, job domain.PipelineJob,
 	params map[string]string, principal string, logger *slog.Logger) error {
 
+	// Handle MODEL_RUN jobs via the model runner.
+	if job.JobType == domain.PipelineJobTypeModelRun {
+		return s.executeModelRunJob(ctx, job, params, principal, logger)
+	}
+
 	// Acquire a pinned connection for job isolation.
 	conn, err := s.duckDB.Conn(ctx)
 	if err != nil {
@@ -198,6 +203,40 @@ func (s *Service) executeJobAttempt(ctx context.Context, job domain.PipelineJob,
 	}
 
 	logger.Info("job completed successfully")
+	return nil
+}
+
+// executeModelRunJob triggers a synchronous model run via the ModelRunner interface.
+func (s *Service) executeModelRunJob(ctx context.Context, job domain.PipelineJob,
+	params map[string]string, principal string, logger *slog.Logger) error {
+
+	if s.modelRunner == nil {
+		return fmt.Errorf("model runner not configured")
+	}
+
+	targetCatalog := params["target_catalog"]
+	targetSchema := params["target_schema"]
+	if targetCatalog == "" {
+		targetCatalog = "main"
+	}
+	if targetSchema == "" {
+		targetSchema = "main"
+	}
+
+	req := domain.TriggerModelRunRequest{
+		TargetCatalog: targetCatalog,
+		TargetSchema:  targetSchema,
+		Selector:      job.ModelSelector,
+		TriggerType:   domain.ModelTriggerTypePipeline,
+		Variables:     params,
+	}
+
+	logger.Info("triggering model run", "selector", job.ModelSelector)
+	if err := s.modelRunner.TriggerRunSync(ctx, principal, req); err != nil {
+		return fmt.Errorf("model run: %w", err)
+	}
+
+	logger.Info("model run job completed successfully")
 	return nil
 }
 

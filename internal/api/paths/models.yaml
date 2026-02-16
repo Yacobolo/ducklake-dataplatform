@@ -1,0 +1,1125 @@
+paths:
+  /models:
+    get:
+      operationId: listModels
+      summary: List transformation models
+      tags: [Models]
+      description: Returns a paginated list of transformation models.
+      parameters:
+        - name: project_name
+          in: query
+          required: false
+          description: Filter models by project name.
+          schema:
+            type: string
+            maxLength: 255
+            pattern: '^\S+$'
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of models
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/models.yaml#/PaginatedModels'
+              example:
+                data:
+                  - id: "550e8400-e29b-41d4-a716-446655440100"
+                    project_name: "analytics"
+                    name: "stg_orders"
+                    sql: "SELECT * FROM raw.orders WHERE status = 'active'"
+                    materialization: "VIEW"
+                    description: "Staging model for orders"
+                    owner: "admin"
+                    tags: ["staging", "orders"]
+                    depends_on: ["raw_orders"]
+                    created_by: "admin"
+                    created_at: "2025-01-15T09:30:00Z"
+                    updated_at: "2025-01-15T09:30:00Z"
+                next_page_token: "eyJpZCI6MTB9"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+    post:
+      operationId: createModel
+      summary: Create a transformation model
+      tags: [Models]
+      description: Creates a new transformation model.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/models.yaml#/CreateModelRequest'
+            example:
+              project_name: "analytics"
+              name: "stg_orders"
+              sql: "SELECT * FROM raw.orders WHERE status = 'active'"
+              materialization: "VIEW"
+              description: "Staging model for orders"
+              tags: ["staging", "orders"]
+      responses:
+        '201':
+          description: Created model
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/models.yaml#/Model'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440100"
+                project_name: "analytics"
+                name: "stg_orders"
+                sql: "SELECT * FROM raw.orders WHERE status = 'active'"
+                materialization: "VIEW"
+                description: "Staging model for orders"
+                owner: "admin"
+                tags: ["staging", "orders"]
+                depends_on: ["raw_orders"]
+                created_by: "admin"
+                created_at: "2025-01-15T09:30:00Z"
+                updated_at: "2025-01-15T09:30:00Z"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '409':
+          $ref: '../schemas/responses.yaml#/responses/Conflict'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /models/{projectName}/{modelName}:
+    parameters:
+      - name: projectName
+        in: path
+        required: true
+        description: Name of the project.
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
+      - name: modelName
+        in: path
+        required: true
+        description: Name of the model.
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
+    get:
+      operationId: getModel
+      summary: Get a model by project and name
+      tags: [Models]
+      description: Retrieves the details of a specific transformation model.
+      responses:
+        '200':
+          description: Model details
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/models.yaml#/Model'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440100"
+                project_name: "analytics"
+                name: "stg_orders"
+                sql: "SELECT * FROM raw.orders WHERE status = 'active'"
+                materialization: "VIEW"
+                description: "Staging model for orders"
+                owner: "admin"
+                tags: ["staging", "orders"]
+                depends_on: ["raw_orders"]
+                created_by: "admin"
+                created_at: "2025-01-15T09:30:00Z"
+                updated_at: "2025-01-15T09:30:00Z"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+    patch:
+      operationId: updateModel
+      summary: Update a transformation model
+      tags: [Models]
+      description: Updates transformation model fields.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/models.yaml#/UpdateModelRequest'
+            example:
+              sql: "SELECT * FROM raw.orders WHERE status = 'completed'"
+              materialization: "TABLE"
+      responses:
+        '200':
+          description: Updated model
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/models.yaml#/Model'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440100"
+                project_name: "analytics"
+                name: "stg_orders"
+                sql: "SELECT * FROM raw.orders WHERE status = 'completed'"
+                materialization: "TABLE"
+                description: "Staging model for orders"
+                owner: "admin"
+                tags: ["staging", "orders"]
+                depends_on: ["raw_orders"]
+                created_by: "admin"
+                created_at: "2025-01-15T09:30:00Z"
+                updated_at: "2025-01-16T10:00:00Z"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+    delete:
+      operationId: deleteModel
+      summary: Delete a transformation model
+      tags: [Models]
+      description: Deletes a transformation model.
+      responses:
+        '204':
+          description: Model deleted
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /models/dag:
+    get:
+      operationId: getModelDAG
+      summary: Get the model dependency DAG
+      tags: [Models]
+      description: Returns the directed acyclic graph of model dependencies.
+      parameters:
+        - name: project_name
+          in: query
+          required: false
+          description: Filter DAG by project name.
+          schema:
+            type: string
+            maxLength: 255
+            pattern: '^\S+$'
+      responses:
+        '200':
+          description: Model DAG
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/models.yaml#/ModelDAG'
+              example:
+                tiers:
+                  - tier: 0
+                    nodes:
+                      - project_name: "analytics"
+                        model_name: "stg_orders"
+                        materialization: "VIEW"
+                        depends_on: []
+                  - tier: 1
+                    nodes:
+                      - project_name: "analytics"
+                        model_name: "fct_orders"
+                        materialization: "TABLE"
+                        depends_on: ["stg_orders"]
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /model-runs:
+    post:
+      operationId: triggerModelRun
+      summary: Trigger a model run
+      tags: [Models]
+      description: Manually triggers a new model run.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/models.yaml#/TriggerModelRunRequest'
+            example:
+              project_name: "analytics"
+              model_names: ["stg_orders", "fct_orders"]
+              full_refresh: false
+      responses:
+        '201':
+          description: Triggered model run
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/models.yaml#/ModelRun'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440200"
+                status: PENDING
+                trigger_type: MANUAL
+                triggered_by: "admin"
+                model_names: ["stg_orders", "fct_orders"]
+                project_name: "analytics"
+                created_at: "2025-01-15T10:00:00Z"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '409':
+          $ref: '../schemas/responses.yaml#/responses/Conflict'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+    get:
+      operationId: listModelRuns
+      summary: List model runs
+      tags: [Models]
+      description: Returns a paginated list of model runs.
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Filter runs by status.
+          schema:
+            type: string
+            enum: [PENDING, RUNNING, SUCCESS, FAILED, CANCELLED]
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of model runs
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/models.yaml#/PaginatedModelRuns'
+              example:
+                data:
+                  - id: "550e8400-e29b-41d4-a716-446655440200"
+                    status: SUCCESS
+                    trigger_type: MANUAL
+                    triggered_by: "admin"
+                    model_names: ["stg_orders", "fct_orders"]
+                    project_name: "analytics"
+                    started_at: "2025-01-15T10:00:00Z"
+                    finished_at: "2025-01-15T10:15:00Z"
+                    created_at: "2025-01-15T10:00:00Z"
+                next_page_token: "eyJpZCI6MTB9"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /model-runs/{runId}:
+    parameters:
+      - name: runId
+        in: path
+        required: true
+        description: Unique identifier of the model run.
+        schema:
+          type: string
+          pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+          maxLength: 36
+    get:
+      operationId: getModelRun
+      summary: Get a model run
+      tags: [Models]
+      description: Retrieves the details of a specific model run.
+      responses:
+        '200':
+          description: Model run details
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/models.yaml#/ModelRun'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440200"
+                status: RUNNING
+                trigger_type: MANUAL
+                triggered_by: "admin"
+                model_names: ["stg_orders", "fct_orders"]
+                project_name: "analytics"
+                started_at: "2025-01-15T10:00:00Z"
+                created_at: "2025-01-15T10:00:00Z"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /model-runs/{runId}/steps:
+    parameters:
+      - name: runId
+        in: path
+        required: true
+        description: Unique identifier of the model run.
+        schema:
+          type: string
+          pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+          maxLength: 36
+    get:
+      operationId: listModelRunSteps
+      summary: List steps for a model run
+      tags: [Models]
+      description: Returns the list of individual model execution steps within a model run.
+      responses:
+        '200':
+          description: List of model run steps
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/models.yaml#/ModelRunStepList'
+              example:
+                data:
+                  - id: "550e8400-e29b-41d4-a716-446655440300"
+                    run_id: "550e8400-e29b-41d4-a716-446655440200"
+                    model_name: "stg_orders"
+                    status: SUCCESS
+                    started_at: "2025-01-15T10:00:00Z"
+                    finished_at: "2025-01-15T10:05:00Z"
+                    rows_affected: 1500
+                    created_at: "2025-01-15T10:00:00Z"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /models/{projectName}/{modelName}/tests:
+    parameters:
+      - name: projectName
+        in: path
+        required: true
+        description: Name of the project.
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
+      - name: modelName
+        in: path
+        required: true
+        description: Name of the model.
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
+    post:
+      operationId: createModelTest
+      summary: Create a model test
+      tags: [Models]
+      description: Creates a new test assertion for a model.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/models.yaml#/CreateModelTestRequest'
+            example:
+              name: "not_null_order_id"
+              test_type: "not_null"
+              column: "order_id"
+      responses:
+        '201':
+          description: Created model test
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/models.yaml#/ModelTest'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440400"
+                model_id: "550e8400-e29b-41d4-a716-446655440100"
+                name: "not_null_order_id"
+                test_type: "not_null"
+                column: "order_id"
+                created_at: "2025-01-15T09:30:00Z"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '409':
+          $ref: '../schemas/responses.yaml#/responses/Conflict'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+    get:
+      operationId: listModelTests
+      summary: List tests for a model
+      tags: [Models]
+      description: Returns all test assertions defined for a model.
+      responses:
+        '200':
+          description: List of model tests
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/models.yaml#/ModelTestList'
+              example:
+                data: []
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /models/{projectName}/{modelName}/tests/{testId}:
+    parameters:
+      - name: projectName
+        in: path
+        required: true
+        description: Name of the project.
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
+      - name: modelName
+        in: path
+        required: true
+        description: Name of the model.
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
+      - name: testId
+        in: path
+        required: true
+        description: Unique identifier of the model test.
+        schema:
+          type: string
+          pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+          maxLength: 36
+    delete:
+      operationId: deleteModelTest
+      summary: Delete a model test
+      tags: [Models]
+      description: Deletes a test assertion from a model.
+      responses:
+        '204':
+          description: Model test deleted
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /model-runs/{runId}/steps/{stepId}/test-results:
+    parameters:
+      - name: runId
+        in: path
+        required: true
+        description: Unique identifier of the model run.
+        schema:
+          type: string
+          pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+          maxLength: 36
+      - name: stepId
+        in: path
+        required: true
+        description: Unique identifier of the model run step.
+        schema:
+          type: string
+          pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+          maxLength: 36
+    get:
+      operationId: listModelTestResults
+      summary: List test results for a run step
+      tags: [Models]
+      description: Returns all test results for a specific model run step.
+      responses:
+        '200':
+          description: List of model test results
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/models.yaml#/ModelTestResultList'
+              example:
+                data: []
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /models/{projectName}/{modelName}/freshness:
+    parameters:
+      - name: projectName
+        in: path
+        required: true
+        description: Name of the project.
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
+      - name: modelName
+        in: path
+        required: true
+        description: Name of the model.
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
+    get:
+      operationId: checkModelFreshness
+      summary: Check model freshness
+      tags: [Models]
+      description: Evaluates whether a model is fresh based on its freshness policy.
+      responses:
+        '200':
+          description: Freshness status
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/models.yaml#/FreshnessStatus'
+              example:
+                is_fresh: true
+                last_run_at: "2025-01-15T10:00:00Z"
+                max_lag_seconds: 3600
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /models/from-notebook:
+    post:
+      operationId: promoteNotebookToModel
+      summary: Promote a notebook cell to a model
+      tags: [Models]
+      description: Creates a new transformation model from a notebook cell's SQL.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/models.yaml#/PromoteNotebookRequest'
+            example:
+              notebook_id: "550e8400-e29b-41d4-a716-446655440050"
+              cell_index: 0
+              project_name: "analytics"
+              name: "stg_orders"
+              materialization: "TABLE"
+      responses:
+        '201':
+          description: Created model from notebook
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/models.yaml#/Model'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440100"
+                project_name: "analytics"
+                name: "stg_orders"
+                sql: "SELECT * FROM raw.orders"
+                materialization: "TABLE"
+                created_by: "admin"
+                created_at: "2025-01-15T09:30:00Z"
+                updated_at: "2025-01-15T09:30:00Z"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '409':
+          $ref: '../schemas/responses.yaml#/responses/Conflict'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /model-runs/{runId}/cancel:
+    parameters:
+      - name: runId
+        in: path
+        required: true
+        description: Unique identifier of the model run.
+        schema:
+          type: string
+          pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+          maxLength: 36
+    post:
+      operationId: cancelModelRun
+      summary: Cancel a model run
+      tags: [Models]
+      description: Cancels a running or pending model run.
+      responses:
+        '200':
+          description: Cancelled model run
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/models.yaml#/ModelRun'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440200"
+                status: CANCELLED
+                trigger_type: MANUAL
+                triggered_by: "admin"
+                model_names: ["stg_orders", "fct_orders"]
+                project_name: "analytics"
+                started_at: "2025-01-15T10:00:00Z"
+                finished_at: "2025-01-15T10:05:00Z"
+                created_at: "2025-01-15T10:00:00Z"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '409':
+          $ref: '../schemas/responses.yaml#/responses/Conflict'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'

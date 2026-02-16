@@ -33,6 +33,8 @@ func Diff(desired, actual *DesiredState) *Plan {
 	diffAPIKeys(plan, desired.APIKeys, actual.APIKeys)
 	diffNotebooks(plan, desired.Notebooks, actual.Notebooks)
 	diffPipelines(plan, desired.Pipelines, actual.Pipelines)
+	diffModels(plan, desired.Models, actual.Models)
+	diffMacros(plan, desired.Macros, actual.Macros)
 
 	plan.SortActions()
 	return plan
@@ -1172,4 +1174,76 @@ func formatStringSlice(s []string) string {
 	copy(sorted, s)
 	sort.Strings(sorted)
 	return strings.Join(sorted, ",")
+}
+
+// === Models ===
+
+func modelKey(projectName, modelName string) string {
+	return projectName + "." + modelName
+}
+
+func diffModels(plan *Plan, desired, actual []ModelResource) {
+	actualMap := make(map[string]ModelResource, len(actual))
+	for _, a := range actual {
+		actualMap[modelKey(a.ProjectName, a.ModelName)] = a
+	}
+
+	seen := make(map[string]bool, len(desired))
+	for _, d := range desired {
+		k := modelKey(d.ProjectName, d.ModelName)
+		seen[k] = true
+		a, exists := actualMap[k]
+		if !exists {
+			addCreate(plan, KindModel, k, "", d)
+			continue
+		}
+		var changes []FieldDiff
+		diffField(&changes, "materialization", a.Spec.Materialization, d.Spec.Materialization)
+		diffField(&changes, "description", a.Spec.Description, d.Spec.Description)
+		diffField(&changes, "sql", a.Spec.SQL, d.Spec.SQL)
+		diffField(&changes, "tags", formatStringSlice(a.Spec.Tags), formatStringSlice(d.Spec.Tags))
+		if len(changes) > 0 {
+			addUpdate(plan, KindModel, k, "", d, a, changes)
+		}
+	}
+
+	for _, a := range actual {
+		k := modelKey(a.ProjectName, a.ModelName)
+		if !seen[k] {
+			addDelete(plan, KindModel, k, a)
+		}
+	}
+}
+
+// === Macros ===
+
+func diffMacros(plan *Plan, desired, actual []MacroResource) {
+	actualMap := make(map[string]MacroResource, len(actual))
+	for _, a := range actual {
+		actualMap[a.Name] = a
+	}
+
+	seen := make(map[string]bool, len(desired))
+	for _, d := range desired {
+		seen[d.Name] = true
+		a, exists := actualMap[d.Name]
+		if !exists {
+			addCreate(plan, KindMacro, d.Name, "", d)
+			continue
+		}
+		var changes []FieldDiff
+		diffField(&changes, "macro_type", a.Spec.MacroType, d.Spec.MacroType)
+		diffField(&changes, "body", a.Spec.Body, d.Spec.Body)
+		diffField(&changes, "description", a.Spec.Description, d.Spec.Description)
+		diffField(&changes, "parameters", formatStringSlice(a.Spec.Parameters), formatStringSlice(d.Spec.Parameters))
+		if len(changes) > 0 {
+			addUpdate(plan, KindMacro, d.Name, "", d, a, changes)
+		}
+	}
+
+	for _, a := range actual {
+		if !seen[a.Name] {
+			addDelete(plan, KindMacro, a.Name, a)
+		}
+	}
 }

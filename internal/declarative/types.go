@@ -410,6 +410,8 @@ type DesiredState struct {
 	APIKeys            []APIKeySpec
 	Notebooks          []NotebookResource
 	Pipelines          []PipelineResource
+	Models             []ModelResource
+	Macros             []MacroResource
 }
 
 // CatalogResource is a catalog with positional context from the directory tree.
@@ -478,6 +480,95 @@ type NotebookResource struct {
 type PipelineResource struct {
 	Name string
 	Spec PipelineSpec
+}
+
+// === SQL Macros ===
+
+// MacroDoc declares a SQL macro.
+type MacroDoc struct {
+	APIVersion string     `yaml:"apiVersion"`
+	Kind       string     `yaml:"kind"`
+	Metadata   ObjectMeta `yaml:"metadata"`
+	Spec       MacroSpec  `yaml:"spec"`
+}
+
+// MacroSpec holds the configuration for a SQL macro.
+type MacroSpec struct {
+	MacroType   string   `yaml:"macro_type,omitempty"` // SCALAR or TABLE
+	Parameters  []string `yaml:"parameters,omitempty"`
+	Body        string   `yaml:"body"`
+	Description string   `yaml:"description,omitempty"`
+}
+
+// MacroResource is a macro with its resolved name.
+type MacroResource struct {
+	Name string
+	Spec MacroSpec
+}
+
+// === Transformation Models ===
+
+// ModelDoc declares a transformation model.
+type ModelDoc struct {
+	APIVersion string     `yaml:"apiVersion"`
+	Kind       string     `yaml:"kind"`
+	Metadata   ObjectMeta `yaml:"metadata"`
+	Spec       ModelSpec  `yaml:"spec"`
+}
+
+// ModelSpec holds the configuration for a transformation model.
+type ModelSpec struct {
+	Materialization string             `yaml:"materialization"`
+	Description     string             `yaml:"description,omitempty"`
+	Tags            []string           `yaml:"tags,omitempty"`
+	SQL             string             `yaml:"sql"`
+	Config          *ModelConfigSpec   `yaml:"config,omitempty"`
+	Contract        *ContractSpec      `yaml:"contract,omitempty"`
+	Tests           []TestSpec         `yaml:"tests,omitempty"`
+	Freshness       *FreshnessSpecYAML `yaml:"freshness,omitempty"`
+}
+
+// FreshnessSpecYAML defines freshness policy in YAML.
+type FreshnessSpecYAML struct {
+	MaxLagSeconds int64  `yaml:"max_lag_seconds,omitempty"`
+	CronSchedule  string `yaml:"cron_schedule,omitempty"`
+}
+
+// ContractSpec defines enforced output column types for a model.
+type ContractSpec struct {
+	Enforce bool                 `yaml:"enforce"`
+	Columns []ContractColumnSpec `yaml:"columns,omitempty"`
+}
+
+// ContractColumnSpec defines an expected column in a model contract.
+type ContractColumnSpec struct {
+	Name     string `yaml:"name"`
+	Type     string `yaml:"type"`
+	Nullable bool   `yaml:"nullable"`
+}
+
+// TestSpec describes a test assertion for a model.
+type TestSpec struct {
+	Name     string   `yaml:"name"`
+	Type     string   `yaml:"type"`
+	Column   string   `yaml:"column,omitempty"`
+	Values   []string `yaml:"values,omitempty"`
+	ToModel  string   `yaml:"to_model,omitempty"`
+	ToColumn string   `yaml:"to_column,omitempty"`
+	SQL      string   `yaml:"sql,omitempty"`
+}
+
+// ModelConfigSpec holds optional model configuration options.
+type ModelConfigSpec struct {
+	UniqueKey           []string `yaml:"unique_key,omitempty"`
+	IncrementalStrategy string   `yaml:"incremental_strategy,omitempty"`
+}
+
+// ModelResource is a model with project context from the directory tree.
+type ModelResource struct {
+	ProjectName string
+	ModelName   string
+	Spec        ModelSpec
 }
 
 // ActualState mirrors DesiredState but populated from the server.

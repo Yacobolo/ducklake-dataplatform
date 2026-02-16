@@ -421,3 +421,99 @@ func TestValidate_PipelineJobCycleError(t *testing.T) {
 	}
 	assert.True(t, found, "expected error containing 'circular' or 'cycle', got %v", errs)
 }
+
+func TestValidate_ModelErrors(t *testing.T) {
+	tests := []struct {
+		name    string
+		state   *DesiredState
+		wantErr string
+	}{
+		{
+			"missing project_name",
+			&DesiredState{
+				Models: []ModelResource{
+					{ProjectName: "", ModelName: "stg_orders", Spec: ModelSpec{SQL: "SELECT 1", Materialization: "VIEW"}},
+				},
+			},
+			"project_name is required",
+		},
+		{
+			"missing model_name",
+			&DesiredState{
+				Models: []ModelResource{
+					{ProjectName: "sales", ModelName: "", Spec: ModelSpec{SQL: "SELECT 1", Materialization: "VIEW"}},
+				},
+			},
+			"model_name is required",
+		},
+		{
+			"missing sql",
+			&DesiredState{
+				Models: []ModelResource{
+					{ProjectName: "sales", ModelName: "stg_orders", Spec: ModelSpec{SQL: "", Materialization: "VIEW"}},
+				},
+			},
+			"sql is required",
+		},
+		{
+			"invalid materialization",
+			&DesiredState{
+				Models: []ModelResource{
+					{ProjectName: "sales", ModelName: "stg_orders", Spec: ModelSpec{SQL: "SELECT 1", Materialization: "BANANA"}},
+				},
+			},
+			"materialization must be one of",
+		},
+		{
+			"duplicate model",
+			&DesiredState{
+				Models: []ModelResource{
+					{ProjectName: "sales", ModelName: "stg_orders", Spec: ModelSpec{SQL: "SELECT 1", Materialization: "VIEW"}},
+					{ProjectName: "sales", ModelName: "stg_orders", Spec: ModelSpec{SQL: "SELECT 2", Materialization: "TABLE"}},
+				},
+			},
+			"duplicate model",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			errs := Validate(tt.state)
+			require.NotEmpty(t, errs)
+			found := false
+			for _, e := range errs {
+				if containsStr(e.Error(), tt.wantErr) {
+					found = true
+					break
+				}
+			}
+			assert.True(t, found, "expected error containing %q, got %v", tt.wantErr, errs)
+		})
+	}
+}
+
+func TestValidate_ModelValid(t *testing.T) {
+	state := &DesiredState{
+		Models: []ModelResource{
+			{ProjectName: "sales", ModelName: "stg_orders", Spec: ModelSpec{
+				SQL:             "SELECT order_id FROM raw_data.orders",
+				Materialization: "TABLE",
+				Description:     "Staged orders",
+				Tags:            []string{"finance"},
+			}},
+			{ProjectName: "sales", ModelName: "fct_orders", Spec: ModelSpec{
+				SQL:             "SELECT * FROM stg_orders",
+				Materialization: "VIEW",
+			}},
+		},
+	}
+
+	errs := Validate(state)
+	// Filter to only model-related errors.
+	var modelErrs []ValidationError
+	for _, e := range errs {
+		if containsStr(e.Path, "model") {
+			modelErrs = append(modelErrs, e)
+		}
+	}
+	assert.Empty(t, modelErrs, "valid models should have no model errors: %v", modelErrs)
+}

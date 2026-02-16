@@ -42,6 +42,8 @@ import (
 	"duck-demo/internal/service/catalog"
 	svccompute "duck-demo/internal/service/compute"
 	"duck-demo/internal/service/governance"
+	"duck-demo/internal/service/macro"
+	svcmodel "duck-demo/internal/service/model"
 	"duck-demo/internal/service/query"
 	"duck-demo/internal/service/security"
 	"duck-demo/internal/service/storage"
@@ -645,6 +647,8 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 		nil, nil, nil, nil, nil, // storageCredSvc, extLocationSvc, volumeSvc, computeEndpointSvc, apiKeySvc
 		nil, nil, nil, // notebookSvc, sessionSvc, gitRepoSvc
 		nil, // pipelineSvc
+		nil, // modelSvc
+		nil, // macroSvc
 	)
 	strictHandler := api.NewStrictHandler(handler, nil)
 
@@ -778,6 +782,8 @@ func setupLocalExtensionServer(t *testing.T) *testEnv {
 		nil, nil, nil, nil, nil, // storageCredSvc, extLocationSvc, volumeSvc, computeEndpointSvc, apiKeySvc
 		nil, nil, nil, // notebookSvc, sessionSvc, gitRepoSvc
 		nil, // pipelineSvc
+		nil, // modelSvc
+		nil, // macroSvc
 	)
 	strictHandler := api.NewStrictHandler(handler, nil)
 
@@ -1058,6 +1064,9 @@ type httpTestOpts struct {
 	// WithAPIKeyService wires the APIKeyService into the handler (enables API key
 	// management endpoints). When false, the handler gets nil for apiKeySvc.
 	WithAPIKeyService bool
+	// WithModels wires ModelService and MacroService into the handler (enables
+	// model CRUD, DAG, run, test, freshness, and macro endpoints).
+	WithModels bool
 }
 
 // httpTestEnv bundles the test server, API keys, and direct DB access.
@@ -1284,6 +1293,26 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		apiKeySvc = security.NewAPIKeyService(apiKeyRepo, auditRepo)
 	}
 
+	// Optionally wire Model + Macro services
+	var modelSvc *svcmodel.Service
+	var macroSvc *macro.Service
+	if opts.WithModels {
+		modelRepo := repository.NewModelRepo(metaDB)
+		modelRunRepo := repository.NewModelRunRepo(metaDB)
+		modelTestRepo := repository.NewModelTestRepo(metaDB)
+		modelTestResultRepo := repository.NewModelTestResultRepo(metaDB)
+		colLineageRepo := repository.NewColumnLineageRepo(metaDB)
+		modelSvc = svcmodel.NewService(
+			modelRepo, modelRunRepo, modelTestRepo, modelTestResultRepo, auditRepo,
+			lineageRepo, colLineageRepo,
+			nil, nil, // engine + duckDB — nil for CRUD-only tests
+			slog.New(slog.NewTextHandler(io.Discard, nil)),
+		)
+		macroRepo := repository.NewMacroRepo(metaDB)
+		macroSvc = macro.NewService(macroRepo, auditRepo)
+		modelSvc.SetMacroRepo(macroRepo)
+	}
+
 	handler := api.NewHandler(
 		querySvc, principalSvc, groupSvc, grantSvc,
 		rowFilterSvc, columnMaskSvc, auditSvc,
@@ -1294,7 +1323,9 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		computeEndpointSvc,
 		apiKeySvc,
 		nil, nil, nil, // notebookSvc, sessionSvc, gitRepoSvc
-		nil, // pipelineSvc
+		nil,      // pipelineSvc
+		modelSvc, // modelSvc
+		macroSvc, // macroSvc
 	)
 	strictHandler := api.NewStrictHandler(handler, nil)
 
@@ -1987,6 +2018,8 @@ func setupMultiTableLocalServer(t *testing.T) *multiTableTestEnv {
 		nil, nil, nil, nil, nil,
 		nil, nil, nil, // notebookSvc, sessionSvc, gitRepoSvc
 		nil, // pipelineSvc
+		nil, // modelSvc
+		nil, // macroSvc
 	)
 	strictHandler := api.NewStrictHandler(handler, nil)
 
