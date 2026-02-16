@@ -153,6 +153,7 @@ ColumnLineageEdge:
     function:
       type: string
       maxLength: 255
+      pattern: '^\S.*$'
       description: "Function name if transform_type is EXPRESSION (e.g., SUM, CASE)."
       example: SUM
 

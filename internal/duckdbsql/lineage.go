@@ -254,10 +254,7 @@ func mergeSetOp(left, right []ColumnLineage, op SetOpType) []ColumnLineage {
 		return right
 	}
 
-	opName := string(op)
-	if strings.HasSuffix(opName, " ALL") {
-		opName = strings.TrimSuffix(opName, " ALL")
-	}
+	opName := strings.TrimSuffix(string(op), " ALL")
 
 	merged := make([]ColumnLineage, n)
 	for i := 0; i < n; i++ {
@@ -356,19 +353,16 @@ func resolveTableRef(ref TableRef, schema SchemaInfo, ctes map[string]*cteDef, p
 			kind:   sourceBaseTable,
 		}
 
-		cols := lookupSchemaColumns(schema, t.Schema, t.Name)
-		if cols != nil {
-			for _, colName := range cols {
-				origin := ColumnOrigin{
-					Schema: t.Schema,
-					Table:  t.Name,
-					Column: colName,
-				}
-				src.columns = append(src.columns, scopeCol{
-					name:    colName,
-					origins: []ColumnOrigin{origin},
-				})
+		for _, colName := range lookupSchemaColumns(schema, t.Schema, t.Name) {
+			origin := ColumnOrigin{
+				Schema: t.Schema,
+				Table:  t.Name,
+				Column: colName,
 			}
+			src.columns = append(src.columns, scopeCol{
+				name:    colName,
+				origins: []ColumnOrigin{origin},
+			})
 		}
 		if len(t.ColumnAliases) > 0 {
 			src.columns = applyColumnAliases(src.columns, t.ColumnAliases)
@@ -636,8 +630,8 @@ func traceExpr(expr Expr, s *scope, schema SchemaInfo, ctes map[string]*cteDef) 
 	case *BinaryExpr:
 		leftSrc, _, _ := traceExpr(e.Left, s, schema, ctes)
 		rightSrc, _, _ := traceExpr(e.Right, s, schema, ctes)
-		all := append(leftSrc, rightSrc...)
-		return dedupOrigins(all), "EXPRESSION", ""
+		leftSrc = append(leftSrc, rightSrc...)
+		return dedupOrigins(leftSrc), "EXPRESSION", ""
 
 	case *UnaryExpr:
 		src, _, _ := traceExpr(e.Expr, s, schema, ctes)
@@ -661,9 +655,9 @@ func traceExpr(expr Expr, s *scope, schema SchemaInfo, ctes map[string]*cteDef) 
 		src1, _, _ := traceExpr(e.Expr, s, schema, ctes)
 		src2, _, _ := traceExpr(e.Low, s, schema, ctes)
 		src3, _, _ := traceExpr(e.High, s, schema, ctes)
-		all := append(src1, src2...)
-		all = append(all, src3...)
-		return dedupOrigins(all), "EXPRESSION", ""
+		src1 = append(src1, src2...)
+		src1 = append(src1, src3...)
+		return dedupOrigins(src1), "EXPRESSION", ""
 
 	case *IsNullExpr:
 		src, _, _ := traceExpr(e.Expr, s, schema, ctes)
@@ -798,11 +792,8 @@ func traceFuncCall(fc *FuncCall, s *scope, schema SchemaInfo, ctes map[string]*c
 		}
 	}
 
-	// Resolve named window references
-	if fc.Window != nil && fc.Window.Name != "" && s != nil {
-		// Named window — need to find it from the current scope's window defs
-		// This is a simplification; full resolution would need the SelectCore's Windows
-	}
+	// Named window references: full resolution would need the SelectCore's
+	// Windows list. Currently a no-op simplification.
 
 	return dedupOrigins(all), "EXPRESSION", strings.ToUpper(fc.Name)
 }
@@ -867,7 +858,7 @@ func traceExistsExpr(ee *ExistsExpr, s *scope, schema SchemaInfo, ctes map[strin
 	return nil, "EXPRESSION", ""
 }
 
-func traceSubqueryExpr(se *SubqueryExpr, s *scope, schema SchemaInfo, ctes map[string]*cteDef) ([]ColumnOrigin, string, string) {
+func traceSubqueryExpr(se *SubqueryExpr, s *scope, schema SchemaInfo, _ map[string]*cteDef) ([]ColumnOrigin, string, string) {
 	cols, _ := analyzeSelectStmt(se.Select, schema, s)
 	if len(cols) > 0 {
 		return cols[0].Sources, "EXPRESSION", "SUBQUERY"
