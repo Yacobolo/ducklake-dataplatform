@@ -99,6 +99,58 @@ func TestSearchService_Search(t *testing.T) {
 	})
 }
 
+func TestSearchService_Search_DefaultCatalogResolution(t *testing.T) {
+	t.Run("uses_default_catalog_when_no_name_provided", func(t *testing.T) {
+		var defaultCalled bool
+		catalogRepo := &mockSearchRepo{
+			SearchFn: func(_ context.Context, _ string, _ *string, _ int, _ int) ([]domain.SearchResult, int64, error) {
+				return []domain.SearchResult{
+					{Type: "table", Name: "orders", MatchField: "name"},
+				}, 1, nil
+			},
+		}
+		factory := &mockSearchRepoFactory{
+			ForDefaultFn: func(_ context.Context) (domain.SearchRepository, error) {
+				defaultCalled = true
+				return catalogRepo, nil
+			},
+		}
+		defaultRepo := &mockSearchRepo{
+			SearchFn: func(_ context.Context, _ string, _ *string, _ int, _ int) ([]domain.SearchResult, int64, error) {
+				t.Fatal("static default repo should not be called when factory resolves a default catalog")
+				return nil, 0, nil
+			},
+		}
+		svc := NewSearchService(defaultRepo, factory)
+
+		results, total, err := svc.Search(context.Background(), "orders", nil, nil, domain.PageRequest{MaxResults: 50})
+
+		require.NoError(t, err)
+		assert.True(t, defaultCalled, "factory.ForDefault should have been called")
+		assert.Equal(t, int64(1), total)
+		assert.Len(t, results, 1)
+		assert.Equal(t, "orders", results[0].Name)
+	})
+
+	t.Run("falls_back_to_static_default_when_no_default_catalog", func(t *testing.T) {
+		staticRepo := &mockSearchRepo{
+			SearchFn: func(_ context.Context, _ string, _ *string, _ int, _ int) ([]domain.SearchResult, int64, error) {
+				return []domain.SearchResult{}, 0, nil
+			},
+		}
+		factory := &mockSearchRepoFactory{
+			ForDefaultFn: func(_ context.Context) (domain.SearchRepository, error) {
+				return nil, fmt.Errorf("no default catalog configured")
+			},
+		}
+		svc := NewSearchService(staticRepo, factory)
+
+		_, _, err := svc.Search(context.Background(), "test", nil, nil, domain.PageRequest{})
+
+		require.NoError(t, err, "should fall back to static default repo without error")
+	})
+}
+
 func TestSearchService_Search_NoCatalogAttached(t *testing.T) {
 	// Simulate the "no such table" error that occurs when no DuckLake catalog is attached.
 	repo := &mockSearchRepo{
@@ -119,6 +171,7 @@ func TestSearchService_Search_NoCatalogAttached(t *testing.T) {
 // mockSearchRepoFactory implements SearchRepoFactory for testing.
 type mockSearchRepoFactory struct {
 	ForCatalogFn func(ctx context.Context, catalogName string) (domain.SearchRepository, error)
+	ForDefaultFn func(ctx context.Context) (domain.SearchRepository, error)
 }
 
 func (f *mockSearchRepoFactory) ForCatalog(ctx context.Context, catalogName string) (domain.SearchRepository, error) {
@@ -126,4 +179,11 @@ func (f *mockSearchRepoFactory) ForCatalog(ctx context.Context, catalogName stri
 		return f.ForCatalogFn(ctx, catalogName)
 	}
 	panic("unexpected call to mockSearchRepoFactory.ForCatalog")
+}
+
+func (f *mockSearchRepoFactory) ForDefault(ctx context.Context) (domain.SearchRepository, error) {
+	if f.ForDefaultFn != nil {
+		return f.ForDefaultFn(ctx)
+	}
+	return nil, fmt.Errorf("no default catalog configured")
 }

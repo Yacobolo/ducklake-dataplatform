@@ -35,6 +35,16 @@ func NewSearchRepoFactory(controlDB *sql.DB, catalogRegRepo domain.CatalogRegist
 	}
 }
 
+// ForDefault returns a SearchRepo for the current default catalog.
+// Returns an error if no default catalog is configured.
+func (f *SearchRepoFactory) ForDefault(ctx context.Context) (domain.SearchRepository, error) {
+	reg, err := f.catalogRegRepo.GetDefault(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("no default catalog configured: %w", err)
+	}
+	return f.ForCatalog(ctx, reg.Name)
+}
+
 // ForCatalog returns a SearchRepo for the given catalog name.
 // The returned repo queries that catalog's metastore for ducklake_* tables
 // and the shared control plane DB for governance metadata.

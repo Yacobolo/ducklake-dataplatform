@@ -55,3 +55,10 @@ WHERE securable_type = ? AND securable_id = ?;
 SELECT * FROM privilege_grants
 WHERE securable_type = ? AND securable_id = ?
 ORDER BY id LIMIT ? OFFSET ?;
+
+-- name: CountAllGrants :one
+SELECT COUNT(*) as cnt FROM privilege_grants;
+
+-- name: ListAllGrantsPaginated :many
+SELECT * FROM privilege_grants
+ORDER BY id LIMIT ? OFFSET ?;

@@ -285,9 +285,9 @@ func (c *APIStateClient) readGroups(ctx context.Context, state *declarative.Desi
 }
 
 func (c *APIStateClient) readGrants(_ context.Context, _ *declarative.DesiredState) error {
-	// The grants API requires principal_id+principal_type or securable_type+securable_id
-	// filter parameters and returns ID-based references (not name-based). Full grant
-	// reconciliation requires a name→ID resolver which is not yet implemented.
+	// The grants API returns ID-based references (principal_id, securable_id) but
+	// the declarative config uses names (principal, securable dot-path). Full grant
+	// reconciliation requires an ID→name resolver which is not yet implemented.
 	// Grants are skipped during ReadState — they are handled separately by the
 	// declarative differ when both desired and actual states include grants.
 	return nil

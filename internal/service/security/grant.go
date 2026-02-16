@@ -62,6 +62,14 @@ func (s *GrantService) Revoke(ctx context.Context, _ string, grantID string) err
 	return nil
 }
 
+// ListAll returns all grants with pagination. Requires admin privileges.
+func (s *GrantService) ListAll(ctx context.Context, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error) {
+	if err := requireAdmin(ctx); err != nil {
+		return nil, 0, err
+	}
+	return s.repo.ListAll(ctx, page)
+}
+
 // ListForPrincipal returns grants assigned to a specific principal. Requires admin privileges.
 func (s *GrantService) ListForPrincipal(ctx context.Context, principalID string, principalType string, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error) {
 	if err := requireAdmin(ctx); err != nil {

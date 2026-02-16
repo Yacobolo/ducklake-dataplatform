@@ -118,6 +118,7 @@ func (m *mockGroupService) RemoveMember(ctx context.Context, req domain.RemoveGr
 type mockGrantService struct {
 	listForPrincipalFn func(ctx context.Context, principalID string, principalType string, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error)
 	listForSecurableFn func(ctx context.Context, securableType string, securableID string, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error)
+	listAllFn          func(ctx context.Context, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error)
 	grantFn            func(ctx context.Context, req domain.CreateGrantRequest) (*domain.PrivilegeGrant, error)
 	revokeFn           func(ctx context.Context, principal string, grantID string) error
 }
@@ -134,6 +135,13 @@ func (m *mockGrantService) ListForSecurable(ctx context.Context, securableType s
 		panic("mockGrantService.ListForSecurable called but not configured")
 	}
 	return m.listForSecurableFn(ctx, securableType, securableID, page)
+}
+
+func (m *mockGrantService) ListAll(ctx context.Context, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error) {
+	if m.listAllFn == nil {
+		panic("mockGrantService.ListAll called but not configured")
+	}
+	return m.listAllFn(ctx, page)
 }
 
 func (m *mockGrantService) Grant(ctx context.Context, req domain.CreateGrantRequest) (*domain.PrivilegeGrant, error) {
@@ -527,6 +535,7 @@ func TestHandler_ListGrants(t *testing.T) {
 		params             ListGrantsParams
 		listForPrincipalFn func(ctx context.Context, principalID string, principalType string, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error)
 		listForSecurableFn func(ctx context.Context, securableType string, securableID string, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error)
+		listAllFn          func(ctx context.Context, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error)
 		assertFn           func(t *testing.T, resp ListGrantsResponseObject, err error)
 	}{
 		{
@@ -561,14 +570,18 @@ func TestHandler_ListGrants(t *testing.T) {
 			},
 		},
 		{
-			name:   "missing params returns 400",
+			name:   "missing params returns 200",
 			params: ListGrantsParams{},
+			listAllFn: func(_ context.Context, _ domain.PageRequest) ([]domain.PrivilegeGrant, int64, error) {
+				return []domain.PrivilegeGrant{secSampleGrant()}, 1, nil
+			},
 			assertFn: func(t *testing.T, resp ListGrantsResponseObject, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(ListGrants400JSONResponse)
-				require.True(t, ok, "expected 400 response, got %T", resp)
-				assert.Equal(t, int32(400), badReq.Body.Code)
+				ok200, ok := resp.(ListGrants200JSONResponse)
+				require.True(t, ok, "expected 200 response, got %T", resp)
+				require.NotNil(t, ok200.Body.Data)
+				require.Len(t, *ok200.Body.Data, 1)
 			},
 		},
 		{
@@ -593,6 +606,7 @@ func TestHandler_ListGrants(t *testing.T) {
 			svc := &mockGrantService{
 				listForPrincipalFn: tt.listForPrincipalFn,
 				listForSecurableFn: tt.listForSecurableFn,
+				listAllFn:          tt.listAllFn,
 			}
 			handler := &APIHandler{grants: svc}
 			resp, err := handler.ListGrants(secTestCtx(), ListGrantsRequestObject{Params: tt.params})

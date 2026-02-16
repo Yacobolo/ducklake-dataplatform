@@ -43,8 +43,8 @@ This is designed as the agent's "grep" for the data catalog.`,
 	}
 
 	cmd.Flags().StringVarP(&objectType, "type", "t", "", "Filter by object type: schema, table, column")
-	cmd.Flags().StringVar(&catalog, "catalog", "", "Scope search to a specific catalog")
-	cmd.Flags().Int64Var(&maxResults, "max-results", 100, "Maximum number of results")
+	cmd.PersistentFlags().StringVar(&catalog, "catalog", "", "Scope search to a specific catalog")
+	cmd.PersistentFlags().Int64Var(&maxResults, "max-results", 100, "Maximum number of results")
 
 	// Add convenience subcommands
 	cmd.AddCommand(newFindTablesCmd(client, &catalog, &maxResults))

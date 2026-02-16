@@ -9,6 +9,8 @@ import (
 	"duck-demo/internal/domain"
 )
 
+var _ domain.GrantRepository = (*GrantRepo)(nil)
+
 // GrantRepo implements domain.GrantRepository using SQLite.
 type GrantRepo struct {
 	q *dbstore.Queries
@@ -54,6 +56,24 @@ func (r *GrantRepo) Revoke(ctx context.Context, g *domain.PrivilegeGrant) error 
 // RevokeByID removes a privilege grant by its ID.
 func (r *GrantRepo) RevokeByID(ctx context.Context, id string) error {
 	return r.q.RevokePrivilegeByID(ctx, id)
+}
+
+// ListAll returns a paginated list of all grants.
+func (r *GrantRepo) ListAll(ctx context.Context, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error) {
+	total, err := r.q.CountAllGrants(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	rows, err := r.q.ListAllGrantsPaginated(ctx, dbstore.ListAllGrantsPaginatedParams{
+		Limit:  int64(page.Limit()),
+		Offset: int64(page.Offset()),
+	})
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return mapper.GrantsFromDB(rows), total, nil
 }
 
 // ListForPrincipal returns a paginated list of grants for a specific principal.
