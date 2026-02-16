@@ -37,7 +37,9 @@ func init() {
 			switch gen.OutputFormat(outputFlag) {
 			case gen.OutputJSON:
 				var pretty interface{}
-				json.Unmarshal(respBody, &pretty)
+				if err := json.Unmarshal(respBody, &pretty); err != nil {
+					return fmt.Errorf("parse response: %w", err)
+				}
 				return gen.PrintJSON(os.Stdout, pretty)
 			default:
 				var data map[string]interface{}
@@ -76,7 +78,9 @@ func init() {
 			if gen.OutputFormat(outputFlag) == gen.OutputJSON {
 				return gen.PrintJSON(os.Stdout, map[string]string{"status": "ok"})
 			}
-			fmt.Fprintln(os.Stdout, "Done.")
+			if _, err := fmt.Fprintln(os.Stdout, "Done."); err != nil {
+				return fmt.Errorf("write output: %w", err)
+			}
 			return nil
 		}
 	})
