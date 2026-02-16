@@ -896,6 +896,65 @@ func TestCLI_UnknownCommand(t *testing.T) {
 	assert.Contains(t, err.Error(), "unknown command")
 }
 
+func TestCLI_UnknownSecuritySubcommand(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{"security", "nope"})
+
+	err := rootCmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown subcommand")
+}
+
+func TestCLI_CatalogSetDefault_SendsEmptyJSONObject(t *testing.T) {
+	rec := &requestRecorder{}
+	srv := httptest.NewServer(jsonHandler(rec, 200, `{"status":"ok"}`))
+	defer srv.Close()
+
+	rootCmd := newTestRootCmd(t, srv)
+	rootCmd.SetArgs([]string{"--host", srv.URL, "catalog", "set-default", "lake"})
+
+	err := rootCmd.Execute()
+	require.NoError(t, err)
+
+	captured := rec.last()
+	assert.Equal(t, "POST", captured.Method)
+	assert.Equal(t, "/v1/catalogs/lake/set-default", captured.Path)
+	assert.JSONEq(t, `{}`, captured.Body)
+}
+
+func TestCLI_CreateModel_ConfigFlagParsesJSONObject(t *testing.T) {
+	rec := &requestRecorder{}
+	srv := httptest.NewServer(jsonHandler(rec, 201, `{"id":"m1"}`))
+	defer srv.Close()
+
+	rootCmd := newTestRootCmd(t, srv)
+	rootCmd.SetArgs([]string{
+		"--host", srv.URL,
+		"models", "models", "create",
+		"--project-name", "analytics",
+		"--name", "stg_orders",
+		"--sql", "select 1",
+		"--config", `{"unique_key":["id"],"incremental_strategy":"merge"}`,
+	})
+
+	err := rootCmd.Execute()
+	require.NoError(t, err)
+
+	captured := rec.last()
+	var body map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(captured.Body), &body))
+	cfg, ok := body["config"].(map[string]interface{})
+	require.True(t, ok, "config should be a JSON object")
+	assert.Equal(t, "merge", cfg["incremental_strategy"])
+	vals, ok := cfg["unique_key"].([]interface{})
+	require.True(t, ok)
+	require.Len(t, vals, 1)
+	assert.Equal(t, "id", vals[0])
+}
+
 // === Agent-Friendly Output Tests ===
 
 func TestCLI_DeleteCommand_JSONOutput(t *testing.T) {

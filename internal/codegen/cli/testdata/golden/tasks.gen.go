@@ -15,6 +15,13 @@ func newTasksCmd(client *Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "tasks",
 		Short: "Task management commands",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				return cmd.Help()
+			}
+			_ = cmd.Help()
+			return fmt.Errorf("unknown subcommand %q", args[0])
+		},
 	}
 
 	// createTask
