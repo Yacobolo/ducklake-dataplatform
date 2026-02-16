@@ -256,6 +256,20 @@ func lineageEdgeToAPI(e domain.LineageEdge) LineageEdge {
 	}
 }
 
+func columnLineageEdgeToAPI(e domain.ColumnLineageEdge) ColumnLineageEdge {
+	tt := ColumnLineageEdgeTransformType(e.TransformType)
+	return ColumnLineageEdge{
+		Id:            &e.ID,
+		LineageEdgeId: &e.LineageEdgeID,
+		TargetColumn:  &e.TargetColumn,
+		SourceSchema:  strPtrIfNonEmpty(e.SourceSchema),
+		SourceTable:   &e.SourceTable,
+		SourceColumn:  &e.SourceColumn,
+		TransformType: &tt,
+		Function:      strPtrIfNonEmpty(e.Function),
+	}
+}
+
 func strPtrIfNonEmpty(s string) *string {
 	if s == "" {
 		return nil

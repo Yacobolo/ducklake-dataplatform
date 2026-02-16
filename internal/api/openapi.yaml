@@ -241,6 +241,10 @@ components:
       $ref: 'schemas/lineage.yaml#/PurgeLineageRequest'
     PurgeLineageResponse:
       $ref: 'schemas/lineage.yaml#/PurgeLineageResponse'
+    ColumnLineageEdge:
+      $ref: 'schemas/lineage.yaml#/ColumnLineageEdge'
+    PaginatedColumnLineageEdges:
+      $ref: 'schemas/lineage.yaml#/PaginatedColumnLineageEdges'
     Tag:
       $ref: 'schemas/governance.yaml#/Tag'
     CreateTagRequest:
@@ -462,6 +466,10 @@ paths:
     $ref: 'paths/lineage.yaml#/paths/~1lineage~1tables~1{schemaName}~1{tableName}~1downstream'
   /lineage/edges/{edgeId}:
     $ref: 'paths/lineage.yaml#/paths/~1lineage~1edges~1{edgeId}'
+  /lineage/columns/{schemaName}/{tableName}:
+    $ref: 'paths/lineage.yaml#/paths/~1lineage~1columns~1{schemaName}~1{tableName}'
+  /lineage/columns/{schemaName}/{tableName}/{columnName}/impact:
+    $ref: 'paths/lineage.yaml#/paths/~1lineage~1columns~1{schemaName}~1{tableName}~1{columnName}~1impact'
   /lineage/purge:
     $ref: 'paths/lineage.yaml#/paths/~1lineage~1purge'
   /tags:

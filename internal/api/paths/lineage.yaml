@@ -243,6 +243,133 @@ paths:
         '500':
           $ref: '../schemas/responses.yaml#/responses/InternalError'
 
+  /lineage/columns/{schemaName}/{tableName}:
+    parameters:
+      - $ref: '../schemas/responses.yaml#/parameters/schemaName'
+      - $ref: '../schemas/responses.yaml#/parameters/tableName'
+    get:
+      operationId: getColumnLineage
+      summary: Get column-level lineage for a table
+      tags: [Lineage]
+      description: Returns column-level lineage edges showing how each output column traces back to source columns.
+      parameters:
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
+      responses:
+        '200':
+          description: Column lineage edges
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/lineage.yaml#/PaginatedColumnLineageEdges'
+              example:
+                data:
+                  - id: 1
+                    lineage_edge_id: "550e8400-e29b-41d4-a716-446655440001"
+                    target_column: "total_amount"
+                    source_schema: "main"
+                    source_table: "orders"
+                    source_column: "amount"
+                    transform_type: EXPRESSION
+                    function: SUM
+                next_page_token: "eyJpZCI6MTB9"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /lineage/columns/{schemaName}/{tableName}/{columnName}/impact:
+    parameters:
+      - $ref: '../schemas/responses.yaml#/parameters/schemaName'
+      - $ref: '../schemas/responses.yaml#/parameters/tableName'
+      - $ref: '../schemas/responses.yaml#/parameters/columnName'
+    get:
+      operationId: getColumnImpact
+      summary: Get impact analysis for a source column
+      tags: [Lineage]
+      description: Returns all column-level lineage edges that originate from the specified source column, showing which downstream columns are affected.
+      parameters:
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
+      responses:
+        '200':
+          description: Column impact edges
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/lineage.yaml#/PaginatedColumnLineageEdges'
+              example:
+                data:
+                  - id: 1
+                    lineage_edge_id: "550e8400-e29b-41d4-a716-446655440001"
+                    target_column: "total_amount"
+                    source_schema: "main"
+                    source_table: "orders"
+                    source_column: "amount"
+                    transform_type: EXPRESSION
+                    function: SUM
+                next_page_token: "eyJpZCI6MTB9"
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
   /lineage/purge:
     post:
       operationId: purgeLineage

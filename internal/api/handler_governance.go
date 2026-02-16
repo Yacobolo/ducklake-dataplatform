@@ -29,6 +29,8 @@ type lineageService interface {
 	GetDownstream(ctx context.Context, tableName string, page domain.PageRequest) ([]domain.LineageEdge, int64, error)
 	DeleteEdge(ctx context.Context, id string) error
 	PurgeOlderThan(ctx context.Context, olderThanDays int) (int64, error)
+	GetColumnLineageForTable(ctx context.Context, schema, table string) ([]domain.ColumnLineageEdge, error)
+	GetColumnLineageForSourceColumn(ctx context.Context, schema, table, column string) ([]domain.ColumnLineageEdge, error)
 }
 
 // tagService defines the tag operations used by the API handler.
@@ -244,6 +246,44 @@ func (h *APIHandler) PurgeLineage(ctx context.Context, req PurgeLineageRequestOb
 	return PurgeLineage200JSONResponse{
 		Body:    PurgeLineageResponse{DeletedCount: &deleted},
 		Headers: PurgeLineage200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// === Column Lineage ===
+
+// GetColumnLineage implements the endpoint for retrieving column-level lineage for a table.
+func (h *APIHandler) GetColumnLineage(ctx context.Context, req GetColumnLineageRequestObject) (GetColumnLineageResponseObject, error) {
+	edges, err := h.lineage.GetColumnLineageForTable(ctx, req.SchemaName, req.TableName)
+	if err != nil {
+		return nil, err
+	}
+
+	data := make([]ColumnLineageEdge, len(edges))
+	for i, e := range edges {
+		data[i] = columnLineageEdgeToAPI(e)
+	}
+
+	return GetColumnLineage200JSONResponse{
+		Body:    PaginatedColumnLineageEdges{Data: &data},
+		Headers: GetColumnLineage200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// GetColumnImpact implements the endpoint for impact analysis on a source column.
+func (h *APIHandler) GetColumnImpact(ctx context.Context, req GetColumnImpactRequestObject) (GetColumnImpactResponseObject, error) {
+	edges, err := h.lineage.GetColumnLineageForSourceColumn(ctx, req.SchemaName, req.TableName, req.ColumnName)
+	if err != nil {
+		return nil, err
+	}
+
+	data := make([]ColumnLineageEdge, len(edges))
+	for i, e := range edges {
+		data[i] = columnLineageEdgeToAPI(e)
+	}
+
+	return GetColumnImpact200JSONResponse{
+		Body:    PaginatedColumnLineageEdges{Data: &data},
+		Headers: GetColumnImpact200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 

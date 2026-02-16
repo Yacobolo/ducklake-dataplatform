@@ -20,7 +20,7 @@ func TestLineageService_InsertEdge(t *testing.T) {
 				return nil
 			},
 		}
-		svc := NewLineageService(repo)
+		svc := NewLineageService(repo, nil)
 
 		err := svc.InsertEdge(context.Background(), &domain.LineageEdge{
 			SourceTable: "orders",
@@ -36,7 +36,7 @@ func TestLineageService_InsertEdge(t *testing.T) {
 				return errTest
 			},
 		}
-		svc := NewLineageService(repo)
+		svc := NewLineageService(repo, nil)
 
 		err := svc.InsertEdge(context.Background(), &domain.LineageEdge{})
 
@@ -56,7 +56,7 @@ func TestLineageService_GetUpstream(t *testing.T) {
 				}, 1, nil
 			},
 		}
-		svc := NewLineageService(repo)
+		svc := NewLineageService(repo, nil)
 
 		edges, total, err := svc.GetUpstream(context.Background(), "revenue_summary", domain.PageRequest{})
 
@@ -71,7 +71,7 @@ func TestLineageService_GetUpstream(t *testing.T) {
 				return nil, 0, errTest
 			},
 		}
-		svc := NewLineageService(repo)
+		svc := NewLineageService(repo, nil)
 
 		_, _, err := svc.GetUpstream(context.Background(), "t", domain.PageRequest{})
 
@@ -91,7 +91,7 @@ func TestLineageService_GetDownstream(t *testing.T) {
 				}, 1, nil
 			},
 		}
-		svc := NewLineageService(repo)
+		svc := NewLineageService(repo, nil)
 
 		edges, total, err := svc.GetDownstream(context.Background(), "revenue_summary", domain.PageRequest{})
 
@@ -106,7 +106,7 @@ func TestLineageService_GetDownstream(t *testing.T) {
 				return nil, 0, errTest
 			},
 		}
-		svc := NewLineageService(repo)
+		svc := NewLineageService(repo, nil)
 
 		_, _, err := svc.GetDownstream(context.Background(), "t", domain.PageRequest{})
 
@@ -133,7 +133,7 @@ func TestLineageService_GetFullLineage(t *testing.T) {
 				}, 1, nil
 			},
 		}
-		svc := NewLineageService(repo)
+		svc := NewLineageService(repo, nil)
 
 		node, err := svc.GetFullLineage(context.Background(), target, domain.PageRequest{})
 
@@ -154,7 +154,7 @@ func TestLineageService_GetFullLineage(t *testing.T) {
 				return nil, 0, nil
 			},
 		}
-		svc := NewLineageService(repo)
+		svc := NewLineageService(repo, nil)
 
 		_, err := svc.GetFullLineage(context.Background(), "t", domain.PageRequest{})
 
@@ -172,7 +172,7 @@ func TestLineageService_GetFullLineage(t *testing.T) {
 				return nil, 0, errTest
 			},
 		}
-		svc := NewLineageService(repo)
+		svc := NewLineageService(repo, nil)
 
 		_, err := svc.GetFullLineage(context.Background(), "t", domain.PageRequest{})
 
@@ -189,7 +189,7 @@ func TestLineageService_GetFullLineage(t *testing.T) {
 				return []domain.LineageEdge{}, 0, nil
 			},
 		}
-		svc := NewLineageService(repo)
+		svc := NewLineageService(repo, nil)
 
 		node, err := svc.GetFullLineage(context.Background(), "unknown_table", domain.PageRequest{})
 
@@ -210,7 +210,7 @@ func TestLineageService_DeleteEdge(t *testing.T) {
 				return nil
 			},
 		}
-		svc := NewLineageService(repo)
+		svc := NewLineageService(repo, nil)
 
 		err := svc.DeleteEdge(adminCtx(), "42")
 
@@ -223,7 +223,7 @@ func TestLineageService_DeleteEdge(t *testing.T) {
 				return domain.ErrNotFound("edge not found")
 			},
 		}
-		svc := NewLineageService(repo)
+		svc := NewLineageService(repo, nil)
 
 		err := svc.DeleteEdge(adminCtx(), "999")
 
@@ -238,7 +238,7 @@ func TestLineageService_DeleteEdge(t *testing.T) {
 				return errTest
 			},
 		}
-		svc := NewLineageService(repo)
+		svc := NewLineageService(repo, nil)
 
 		err := svc.DeleteEdge(adminCtx(), "1")
 
@@ -258,7 +258,7 @@ func TestLineageService_PurgeOlderThan(t *testing.T) {
 				return 5, nil
 			},
 		}
-		svc := NewLineageService(repo)
+		svc := NewLineageService(repo, nil)
 
 		deleted, err := svc.PurgeOlderThan(adminCtx(), 90)
 
@@ -272,7 +272,7 @@ func TestLineageService_PurgeOlderThan(t *testing.T) {
 				return 0, errTest
 			},
 		}
-		svc := NewLineageService(repo)
+		svc := NewLineageService(repo, nil)
 
 		_, err := svc.PurgeOlderThan(adminCtx(), 30)
 
@@ -286,7 +286,7 @@ func TestLineageService_PurgeOlderThan(t *testing.T) {
 				return 0, nil
 			},
 		}
-		svc := NewLineageService(repo)
+		svc := NewLineageService(repo, nil)
 
 		deleted, err := svc.PurgeOlderThan(adminCtx(), 7)
 
@@ -301,7 +301,7 @@ func TestLineageService_DeleteEdge_RequiresAdmin(t *testing.T) {
 			return nil
 		},
 	}
-	svc := NewLineageService(repo)
+	svc := NewLineageService(repo, nil)
 
 	// Non-admin should NOT be able to delete lineage edges.
 	err := svc.DeleteEdge(nonAdminCtx(), "42")
@@ -316,7 +316,7 @@ func TestLineageService_PurgeOlderThan_RequiresAdmin(t *testing.T) {
 			return 0, nil
 		},
 	}
-	svc := NewLineageService(repo)
+	svc := NewLineageService(repo, nil)
 
 	// Non-admin should NOT be able to purge lineage data.
 	_, err := svc.PurgeOlderThan(nonAdminCtx(), 90)

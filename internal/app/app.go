@@ -97,6 +97,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	columnMaskRepo := repository.NewColumnMaskRepo(deps.WriteDB)
 	auditRepo := repository.NewAuditRepo(deps.WriteDB)
 	lineageRepo := repository.NewLineageRepo(deps.WriteDB)
+	colLineageRepo := repository.NewColumnLineageRepo(deps.WriteDB)
 	tagRepo := repository.NewTagRepo(deps.WriteDB)
 	viewRepo := repository.NewViewRepo(deps.WriteDB)
 	tableStatsRepo := repository.NewTableStatisticsRepo(deps.WriteDB)
@@ -159,6 +160,8 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 
 	// === 8. All services (all deps available at construction) ===
 	querySvc := query.NewQueryService(eng, auditRepo, lineageRepo)
+	catalogAdapter := query.NewCatalogAdapter(introspectionRepo)
+	querySvc.SetColumnLineage(colLineageRepo, catalogAdapter)
 	principalSvc := security.NewPrincipalService(principalRepo, auditRepo)
 	groupSvc := security.NewGroupService(groupRepo, auditRepo)
 	grantSvc := security.NewGrantService(grantRepo, auditRepo)
@@ -166,7 +169,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	columnMaskSvc := security.NewColumnMaskService(columnMaskRepo, auditRepo)
 	auditSvc := governance.NewAuditService(auditRepo)
 	queryHistorySvc := governance.NewQueryHistoryService(queryHistoryRepo)
-	lineageSvc := governance.NewLineageService(lineageRepo)
+	lineageSvc := governance.NewLineageService(lineageRepo, colLineageRepo)
 	searchRepoFactory := repository.NewSearchRepoFactory(deps.ReadDB, catalogRegRepo)
 	searchSvc := catalog.NewSearchService(searchRepo, searchRepoFactory)
 	tagSvc := governance.NewTagService(tagRepo, auditRepo)
