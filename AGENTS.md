@@ -31,45 +31,23 @@ Run server: `go run ./cmd/server`
 ### Branch naming
 
 ```
-ai/<type>/<name>       # AI-authored changes
-feat/<name>            # Human-authored features
-fix/<name>             # Human-authored bug fixes
+ai/<type>/<name>
 ```
 
 Types: `feat`, `fix`, `refactor`, `chore`, `test`, `docs`
 
 ### Commit messages
 
-Use [Conventional Commits](https://www.conventionalcommits.org/):
+[Conventional Commits](https://www.conventionalcommits.org/): `feat:`, `fix:`, `refactor:`, `chore:`, `test:`, `docs:`
 
-```
-feat: add row-level security for external tables
-fix: resolve panic in SQL rewriter for nested CTEs
-refactor: extract engine helpers into separate file
-test: add coverage for column masking edge cases
-chore: update CI workflow
-docs: improve API documentation for grants endpoint
-```
+### Workflow
 
-### PR workflow
-
-1. Create branch from `origin/main`
-2. Implement changes with incremental commits
-3. Run `task check` — all checks must pass
-4. Rebase onto latest `origin/main` before pushing
-5. Open PR (draft if WIP)
-6. Require 1 approval before merge to `main`
-
-### AI PR workflow
-
-When working from a plan (`.opencode/plans/`):
-
-1. Read the plan fully before starting
+1. If a plan exists in `.opencode/plans/`, read it fully before starting
 2. Branch as `ai/<type>/<name>` from `origin/main`
 3. Implement step by step, commit incrementally
 4. Run `task check` — fix failures before pushing
 5. Rebase onto `origin/main` (other agents may have merged)
-6. Open draft PR referencing the plan
+6. Open draft PR referencing the plan if applicable
 7. Report PR URL for human review
 
 ## Testing
