@@ -5,6 +5,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"duck-demo/internal/domain"
 )
 
 func TestParseS3Path(t *testing.T) {
@@ -151,6 +153,153 @@ func TestParseGCSPath(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantBucket, bucket)
 			assert.Equal(t, tt.wantKey, key)
+		})
+	}
+}
+
+// === Factory dispatch: NewPresignerFromCredential ===
+
+func TestNewPresignerFromCredential(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		cred        *domain.StorageCredential
+		storagePath string
+		wantType    string // "S3", "Azure", "GCS", or "" for error
+		wantErr     bool
+	}{
+		{
+			name: "S3 credential returns S3Presigner",
+			cred: &domain.StorageCredential{
+				CredentialType: domain.CredentialTypeS3,
+				KeyID:          "AKID",
+				Secret:         "secret",
+				Endpoint:       "s3.example.com",
+				Region:         "us-east-1",
+			},
+			storagePath: "s3://my-bucket/prefix/file.parquet",
+			wantType:    "S3",
+		},
+		{
+			name: "Azure credential returns AzurePresigner",
+			cred: &domain.StorageCredential{
+				CredentialType:   domain.CredentialTypeAzure,
+				AzureAccountName: "myaccount",
+				AzureAccountKey:  "bXlrZXk=", // base64 "mykey"
+			},
+			storagePath: "az://mycontainer/path/to/file.parquet",
+			wantType:    "Azure",
+		},
+		{
+			name: "unknown credential type returns error",
+			cred: &domain.StorageCredential{
+				CredentialType: "UNKNOWN",
+			},
+			storagePath: "s3://bucket/key.parquet",
+			wantErr:     true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			presigner, err := NewPresignerFromCredential(tt.cred, tt.storagePath)
+			if tt.wantErr {
+				require.Error(t, err)
+				assert.Nil(t, presigner)
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, presigner)
+
+			switch tt.wantType {
+			case "S3":
+				_, ok := presigner.(*S3Presigner)
+				assert.True(t, ok, "expected *S3Presigner, got %T", presigner)
+			case "Azure":
+				_, ok := presigner.(*AzurePresigner)
+				assert.True(t, ok, "expected *AzurePresigner, got %T", presigner)
+			case "GCS":
+				_, ok := presigner.(*GCSPresigner)
+				assert.True(t, ok, "expected *GCSPresigner, got %T", presigner)
+			}
+		})
+	}
+}
+
+// === Factory dispatch: NewUploadPresignerFromCredential ===
+
+func TestNewUploadPresignerFromCredential(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		cred        *domain.StorageCredential
+		storagePath string
+		wantType    string
+		wantErr     bool
+	}{
+		{
+			name: "S3 credential returns S3 upload presigner",
+			cred: &domain.StorageCredential{
+				CredentialType: domain.CredentialTypeS3,
+				KeyID:          "AKID",
+				Secret:         "secret",
+				Endpoint:       "s3.example.com",
+				Region:         "us-east-1",
+			},
+			storagePath: "s3://my-bucket/prefix/file.parquet",
+			wantType:    "S3",
+		},
+		{
+			name: "Azure credential returns Azure upload presigner",
+			cred: &domain.StorageCredential{
+				CredentialType:   domain.CredentialTypeAzure,
+				AzureAccountName: "myaccount",
+				AzureAccountKey:  "bXlrZXk=",
+			},
+			storagePath: "az://mycontainer/path/to/file.parquet",
+			wantType:    "Azure",
+		},
+		{
+			name: "unknown credential type returns error",
+			cred: &domain.StorageCredential{
+				CredentialType: "INVALID",
+			},
+			storagePath: "s3://bucket/key.parquet",
+			wantErr:     true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			presigner, err := NewUploadPresignerFromCredential(tt.cred, tt.storagePath)
+			if tt.wantErr {
+				require.Error(t, err)
+				assert.Nil(t, presigner)
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, presigner)
+
+			// All returned types should implement FileUploadPresigner.
+			assert.NotEmpty(t, presigner.Bucket(), "Bucket() should return a non-empty string")
+
+			switch tt.wantType {
+			case "S3":
+				_, ok := presigner.(*S3Presigner)
+				assert.True(t, ok, "expected *S3Presigner, got %T", presigner)
+			case "Azure":
+				_, ok := presigner.(*AzurePresigner)
+				assert.True(t, ok, "expected *AzurePresigner, got %T", presigner)
+			case "GCS":
+				_, ok := presigner.(*GCSPresigner)
+				assert.True(t, ok, "expected *GCSPresigner, got %T", presigner)
+			}
 		})
 	}
 }

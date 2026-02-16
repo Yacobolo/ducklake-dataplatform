@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -960,4 +961,890 @@ func TestExecute_UnimplementedKindReturnsError(t *testing.T) {
 	err := sc.Execute(context.Background(), action)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "not yet implemented")
+}
+
+// === ReadState helper ===
+
+// setupReadStateClient creates an APIStateClient backed by a test server with the given mux.
+func setupReadStateClient(t *testing.T, handler http.Handler) *APIStateClient {
+	t.Helper()
+	srv := httptest.NewServer(handler)
+	t.Cleanup(srv.Close)
+	client := gen.NewClient(srv.URL, "", "test-token")
+	return NewAPIStateClient(client)
+}
+
+// emptyListHandler returns an HTTP handler that always responds with an empty paginated list.
+func emptyListHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":[]}`))
+	}
+}
+
+// === ReadState tests ===
+
+func TestReadState_EmptyState(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	// All endpoints return empty arrays.
+	mux.HandleFunc("/", emptyListHandler())
+
+	sc := setupReadStateClient(t, mux)
+	state, err := sc.ReadState(context.Background())
+
+	require.NoError(t, err)
+	require.NotNil(t, state)
+	assert.Empty(t, state.Principals)
+	assert.Empty(t, state.Groups)
+	assert.Empty(t, state.Catalogs)
+	assert.Empty(t, state.Schemas)
+	assert.Empty(t, state.Tags)
+	assert.Empty(t, state.StorageCredentials)
+	assert.Empty(t, state.ExternalLocations)
+	assert.Empty(t, state.ComputeEndpoints)
+	assert.Empty(t, state.Notebooks)
+	assert.Empty(t, state.Pipelines)
+	assert.Empty(t, state.APIKeys)
+}
+
+func TestReadState_Principals(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/principals", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{"id": "p-1", "name": "alice", "type": "user", "is_admin": false},
+				{"id": "p-2", "name": "bob", "type": "user", "is_admin": true},
+				{"id": "p-3", "name": "svc1", "type": "service_principal", "is_admin": false},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	// Other endpoints return empty.
+	mux.HandleFunc("/", emptyListHandler())
+
+	sc := setupReadStateClient(t, mux)
+	state, err := sc.ReadState(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, state.Principals, 3)
+
+	assert.Equal(t, "alice", state.Principals[0].Name)
+	assert.Equal(t, "user", state.Principals[0].Type)
+	assert.False(t, state.Principals[0].IsAdmin)
+
+	assert.Equal(t, "bob", state.Principals[1].Name)
+	assert.True(t, state.Principals[1].IsAdmin)
+
+	assert.Equal(t, "svc1", state.Principals[2].Name)
+	assert.Equal(t, "service_principal", state.Principals[2].Type)
+
+	// Verify resource index was populated.
+	assert.Equal(t, "p-1", sc.index.principalIDByName["alice"])
+	assert.Equal(t, "p-2", sc.index.principalIDByName["bob"])
+	assert.Equal(t, "p-3", sc.index.principalIDByName["svc1"])
+}
+
+func TestReadState_GroupsWithMembers(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/principals", emptyListHandler())
+	mux.HandleFunc("/v1/groups", func(w http.ResponseWriter, r *http.Request) {
+		// Only respond to the top-level groups list, not /groups/{id}/members.
+		if r.URL.Path != "/v1/groups" {
+			emptyListHandler()(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{"id": "g-1", "name": "admins", "description": "Administrators"},
+				{"id": "g-2", "name": "analysts", "description": "Data analysts"},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/v1/groups/g-1/members", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{"name": "alice", "type": "user"},
+				{"name": "bob", "type": "user"},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/v1/groups/g-2/members", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{"name": "charlie", "type": "user"},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	// Other endpoints return empty.
+	mux.HandleFunc("/", emptyListHandler())
+
+	sc := setupReadStateClient(t, mux)
+	state, err := sc.ReadState(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, state.Groups, 2)
+
+	// First group: admins with 2 members.
+	assert.Equal(t, "admins", state.Groups[0].Name)
+	assert.Equal(t, "Administrators", state.Groups[0].Description)
+	require.Len(t, state.Groups[0].Members, 2)
+	assert.Equal(t, "alice", state.Groups[0].Members[0].Name)
+	assert.Equal(t, "user", state.Groups[0].Members[0].Type)
+	assert.Equal(t, "bob", state.Groups[0].Members[1].Name)
+
+	// Second group: analysts with 1 member.
+	assert.Equal(t, "analysts", state.Groups[1].Name)
+	require.Len(t, state.Groups[1].Members, 1)
+	assert.Equal(t, "charlie", state.Groups[1].Members[0].Name)
+
+	// Verify resource index.
+	assert.Equal(t, "g-1", sc.index.groupIDByName["admins"])
+	assert.Equal(t, "g-2", sc.index.groupIDByName["analysts"])
+}
+
+func TestReadState_Pagination(t *testing.T) {
+	t.Parallel()
+
+	var mu sync.Mutex
+	requestCount := 0
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/principals", func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		requestCount++
+		mu.Unlock()
+
+		w.Header().Set("Content-Type", "application/json")
+		pageToken := r.URL.Query().Get("page_token")
+
+		switch pageToken {
+		case "":
+			// First page.
+			resp := map[string]interface{}{
+				"data": []map[string]interface{}{
+					{"id": "p-1", "name": "alice", "type": "user", "is_admin": false},
+					{"id": "p-2", "name": "bob", "type": "user", "is_admin": false},
+				},
+				"next_page_token": "page2",
+			}
+			_ = json.NewEncoder(w).Encode(resp)
+		case "page2":
+			// Second page.
+			resp := map[string]interface{}{
+				"data": []map[string]interface{}{
+					{"id": "p-3", "name": "charlie", "type": "user", "is_admin": true},
+				},
+			}
+			_ = json.NewEncoder(w).Encode(resp)
+		}
+	})
+	mux.HandleFunc("/", emptyListHandler())
+
+	sc := setupReadStateClient(t, mux)
+	state, err := sc.ReadState(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, state.Principals, 3)
+	assert.Equal(t, "alice", state.Principals[0].Name)
+	assert.Equal(t, "bob", state.Principals[1].Name)
+	assert.Equal(t, "charlie", state.Principals[2].Name)
+	assert.True(t, state.Principals[2].IsAdmin)
+
+	// Verify two pages were fetched.
+	mu.Lock()
+	assert.Equal(t, 2, requestCount)
+	mu.Unlock()
+}
+
+func TestReadState_APIError4xx(t *testing.T) {
+	t.Parallel()
+
+	// fetchAllPages treats 404, 400, and 500+ as empty (not errors).
+	// Only HTTP 4xx other than 400/404 propagate as errors.
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/principals", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden) // 403 — treated as error
+		_, _ = w.Write([]byte(`{"code":"FORBIDDEN","message":"access denied"}`))
+	})
+	mux.HandleFunc("/", emptyListHandler())
+
+	sc := setupReadStateClient(t, mux)
+	_, err := sc.ReadState(context.Background())
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "HTTP 403")
+}
+
+func TestReadState_ServerErrorReturnsEmpty(t *testing.T) {
+	t.Parallel()
+
+	// 500 errors are silently treated as empty (see fetchAllPages line ~102).
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/principals", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`{"message":"internal error"}`))
+	})
+	mux.HandleFunc("/", emptyListHandler())
+
+	sc := setupReadStateClient(t, mux)
+	state, err := sc.ReadState(context.Background())
+
+	require.NoError(t, err)
+	assert.Empty(t, state.Principals)
+}
+
+func TestReadState_CatalogsWithSchemasAndTables(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/catalogs", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{
+					"id":             "cat-1",
+					"name":           "demo",
+					"metastore_type": "sqlite",
+					"dsn":            "/tmp/meta.sqlite",
+					"data_path":      "/tmp/data",
+					"is_default":     true,
+					"comment":        "Demo catalog",
+				},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/v1/catalogs/demo/schemas", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{
+					"id":      "sch-1",
+					"name":    "analytics",
+					"comment": "Analytics schema",
+					"owner":   "alice",
+				},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/v1/catalogs/demo/schemas/analytics/tables", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{
+					"id":         "tbl-1",
+					"name":       "orders",
+					"table_type": "MANAGED",
+					"comment":    "Order data",
+					"owner":      "alice",
+					"columns": []map[string]interface{}{
+						{"name": "id", "type": "INTEGER", "comment": "PK"},
+						{"name": "amount", "type": "DOUBLE", "comment": ""},
+					},
+				},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/", emptyListHandler())
+
+	sc := setupReadStateClient(t, mux)
+	state, err := sc.ReadState(context.Background())
+
+	require.NoError(t, err)
+
+	// Catalogs
+	require.Len(t, state.Catalogs, 1)
+	assert.Equal(t, "demo", state.Catalogs[0].CatalogName)
+	assert.Equal(t, "sqlite", state.Catalogs[0].Spec.MetastoreType)
+	assert.Equal(t, "/tmp/meta.sqlite", state.Catalogs[0].Spec.DSN)
+	assert.True(t, state.Catalogs[0].Spec.IsDefault)
+	assert.Equal(t, "Demo catalog", state.Catalogs[0].Spec.Comment)
+	assert.Equal(t, "cat-1", sc.index.catalogIDByName["demo"])
+
+	// Schemas
+	require.Len(t, state.Schemas, 1)
+	assert.Equal(t, "demo", state.Schemas[0].CatalogName)
+	assert.Equal(t, "analytics", state.Schemas[0].SchemaName)
+	assert.Equal(t, "Analytics schema", state.Schemas[0].Spec.Comment)
+	assert.Equal(t, "alice", state.Schemas[0].Spec.Owner)
+	assert.Equal(t, "sch-1", sc.index.schemaIDByPath["demo.analytics"])
+
+	// Tables
+	require.Len(t, state.Tables, 1)
+	assert.Equal(t, "demo", state.Tables[0].CatalogName)
+	assert.Equal(t, "analytics", state.Tables[0].SchemaName)
+	assert.Equal(t, "orders", state.Tables[0].TableName)
+	assert.Equal(t, "MANAGED", state.Tables[0].Spec.TableType)
+	require.Len(t, state.Tables[0].Spec.Columns, 2)
+	assert.Equal(t, "id", state.Tables[0].Spec.Columns[0].Name)
+	assert.Equal(t, "INTEGER", state.Tables[0].Spec.Columns[0].Type)
+	assert.Equal(t, "PK", state.Tables[0].Spec.Columns[0].Comment)
+	assert.Equal(t, "tbl-1", sc.index.tableIDByPath["demo.analytics.orders"])
+}
+
+func TestReadState_Tags(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	piiValue := "email"
+	mux.HandleFunc("/v1/tags", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{"id": "tag-1", "key": "pii", "value": nil},
+				{"id": "tag-2", "key": "pii", "value": piiValue},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/", emptyListHandler())
+
+	sc := setupReadStateClient(t, mux)
+	state, err := sc.ReadState(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, state.Tags, 2)
+	assert.Equal(t, "pii", state.Tags[0].Key)
+	assert.Nil(t, state.Tags[0].Value)
+	assert.Equal(t, "pii", state.Tags[1].Key)
+	require.NotNil(t, state.Tags[1].Value)
+	assert.Equal(t, "email", *state.Tags[1].Value)
+
+	assert.Equal(t, "tag-1", sc.index.tagIDByKey["pii"])
+	assert.Equal(t, "tag-2", sc.index.tagIDByKey["pii:email"])
+}
+
+func TestReadState_StorageCredentials(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/storage-credentials", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{"name": "aws-creds", "credential_type": "S3", "comment": "AWS access"},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/", emptyListHandler())
+
+	sc := setupReadStateClient(t, mux)
+	state, err := sc.ReadState(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, state.StorageCredentials, 1)
+	assert.Equal(t, "aws-creds", state.StorageCredentials[0].Name)
+	assert.Equal(t, "S3", state.StorageCredentials[0].CredentialType)
+	assert.Equal(t, "AWS access", state.StorageCredentials[0].Comment)
+}
+
+func TestReadState_ExternalLocations(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/external-locations", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{
+					"name":            "s3-data",
+					"url":             "s3://my-bucket/data",
+					"credential_name": "aws-creds",
+					"storage_type":    "S3",
+					"comment":         "External S3",
+					"read_only":       true,
+				},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/", emptyListHandler())
+
+	sc := setupReadStateClient(t, mux)
+	state, err := sc.ReadState(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, state.ExternalLocations, 1)
+	assert.Equal(t, "s3-data", state.ExternalLocations[0].Name)
+	assert.Equal(t, "s3://my-bucket/data", state.ExternalLocations[0].URL)
+	assert.Equal(t, "aws-creds", state.ExternalLocations[0].CredentialName)
+	assert.True(t, state.ExternalLocations[0].ReadOnly)
+}
+
+func TestReadState_ComputeEndpointsWithAssignments(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/compute-endpoints", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v1/compute-endpoints" {
+			emptyListHandler()(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{"name": "local", "url": "", "type": "LOCAL", "size": "small"},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/v1/compute-endpoints/local/assignments", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{
+					"endpoint":       "local",
+					"principal":      "alice",
+					"principal_type": "user",
+					"is_default":     true,
+					"fallback_local": false,
+				},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/", emptyListHandler())
+
+	sc := setupReadStateClient(t, mux)
+	state, err := sc.ReadState(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, state.ComputeEndpoints, 1)
+	assert.Equal(t, "local", state.ComputeEndpoints[0].Name)
+	assert.Equal(t, "LOCAL", state.ComputeEndpoints[0].Type)
+
+	require.Len(t, state.ComputeAssignments, 1)
+	assert.Equal(t, "local", state.ComputeAssignments[0].Endpoint)
+	assert.Equal(t, "alice", state.ComputeAssignments[0].Principal)
+	assert.True(t, state.ComputeAssignments[0].IsDefault)
+}
+
+func TestReadState_NotebooksAndPipelines(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/notebooks", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{"name": "nb1", "description": "My notebook", "owner": "alice"},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/v1/pipelines", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{
+					"name":          "pipe1",
+					"description":   "ETL pipeline",
+					"schedule_cron": "0 0 * * *",
+					"is_paused":     true,
+				},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/", emptyListHandler())
+
+	sc := setupReadStateClient(t, mux)
+	state, err := sc.ReadState(context.Background())
+
+	require.NoError(t, err)
+
+	require.Len(t, state.Notebooks, 1)
+	assert.Equal(t, "nb1", state.Notebooks[0].Name)
+	assert.Equal(t, "My notebook", state.Notebooks[0].Spec.Description)
+	assert.Equal(t, "alice", state.Notebooks[0].Spec.Owner)
+
+	require.Len(t, state.Pipelines, 1)
+	assert.Equal(t, "pipe1", state.Pipelines[0].Name)
+	assert.Equal(t, "ETL pipeline", state.Pipelines[0].Spec.Description)
+	assert.Equal(t, "0 0 * * *", state.Pipelines[0].Spec.ScheduleCron)
+	assert.True(t, state.Pipelines[0].Spec.IsPaused)
+}
+
+func TestReadState_APIKeys(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/api-keys", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{"name": "key1", "principal": "alice", "expires_at": "2026-12-31T00:00:00Z"},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/", emptyListHandler())
+
+	sc := setupReadStateClient(t, mux)
+	state, err := sc.ReadState(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, state.APIKeys, 1)
+	assert.Equal(t, "key1", state.APIKeys[0].Name)
+	assert.Equal(t, "alice", state.APIKeys[0].Principal)
+	require.NotNil(t, state.APIKeys[0].ExpiresAt)
+	assert.Equal(t, "2026-12-31T00:00:00Z", *state.APIKeys[0].ExpiresAt)
+}
+
+// === Additional Execute tests ===
+
+func TestExecutePrincipal_Create(t *testing.T) {
+	t.Parallel()
+
+	var captured []execCapture
+	sc := newTestExecuteClient(t, &captured)
+
+	action := declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindPrincipal,
+		ResourceName: "alice",
+		Desired: declarative.PrincipalSpec{
+			Name:    "alice",
+			Type:    "user",
+			IsAdmin: true,
+		},
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.NoError(t, err)
+	require.Len(t, captured, 1)
+
+	req := captured[0]
+	assert.Equal(t, http.MethodPost, req.Method)
+	assert.Contains(t, req.Path, "/principals")
+	assert.Equal(t, "alice", bodyStr(req, "name"))
+	assert.Equal(t, "user", bodyStr(req, "type"))
+	assert.True(t, bodyBool(req, "is_admin"))
+
+	// ID should be stored in index.
+	assert.Equal(t, "generated-uuid-123", sc.index.principalIDByName["alice"])
+}
+
+func TestExecutePrincipal_Delete(t *testing.T) {
+	t.Parallel()
+
+	var captured []execCapture
+	sc := withTestIndex(newTestExecuteClient(t, &captured))
+
+	action := declarative.Action{
+		Operation:    declarative.OpDelete,
+		ResourceKind: declarative.KindPrincipal,
+		ResourceName: "alice",
+		Actual: declarative.PrincipalSpec{
+			Name: "alice",
+			Type: "user",
+		},
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.NoError(t, err)
+	require.Len(t, captured, 1)
+
+	req := captured[0]
+	assert.Equal(t, http.MethodDelete, req.Method)
+	assert.Contains(t, req.Path, "/principals/principal-id-alice")
+}
+
+func TestExecutePrincipal_Update(t *testing.T) {
+	t.Parallel()
+
+	var captured []execCapture
+	sc := withTestIndex(newTestExecuteClient(t, &captured))
+
+	action := declarative.Action{
+		Operation:    declarative.OpUpdate,
+		ResourceKind: declarative.KindPrincipal,
+		ResourceName: "alice",
+		Desired: declarative.PrincipalSpec{
+			Name:    "alice",
+			Type:    "user",
+			IsAdmin: true,
+		},
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.NoError(t, err)
+	require.Len(t, captured, 1)
+
+	req := captured[0]
+	assert.Equal(t, http.MethodPut, req.Method)
+	assert.Contains(t, req.Path, "/principals/principal-id-alice/admin")
+	assert.True(t, bodyBool(req, "is_admin"))
+}
+
+func TestExecuteSchema_Create(t *testing.T) {
+	t.Parallel()
+
+	var captured []execCapture
+	sc := newTestExecuteClient(t, &captured)
+
+	action := declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindSchema,
+		ResourceName: "demo.analytics",
+		Desired: declarative.SchemaResource{
+			CatalogName: "demo",
+			SchemaName:  "analytics",
+			Spec: declarative.SchemaSpec{
+				Comment: "Analytics schema",
+				Owner:   "alice",
+			},
+		},
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.NoError(t, err)
+	require.Len(t, captured, 1)
+
+	req := captured[0]
+	assert.Equal(t, http.MethodPost, req.Method)
+	assert.Contains(t, req.Path, "/schemas")
+}
+
+func TestExecuteSchema_Delete(t *testing.T) {
+	t.Parallel()
+
+	var captured []execCapture
+	sc := newTestExecuteClient(t, &captured)
+
+	action := declarative.Action{
+		Operation:    declarative.OpDelete,
+		ResourceKind: declarative.KindSchema,
+		ResourceName: "demo.analytics",
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.NoError(t, err)
+	require.Len(t, captured, 1)
+
+	req := captured[0]
+	assert.Equal(t, http.MethodDelete, req.Method)
+	assert.Contains(t, req.Path, "/catalogs/demo/schemas/analytics")
+}
+
+func TestExecuteCatalog_Delete(t *testing.T) {
+	t.Parallel()
+
+	var captured []execCapture
+	sc := newTestExecuteClient(t, &captured)
+
+	action := declarative.Action{
+		Operation:    declarative.OpDelete,
+		ResourceKind: declarative.KindCatalogRegistration,
+		ResourceName: "demo",
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.NoError(t, err)
+	require.Len(t, captured, 1)
+
+	req := captured[0]
+	assert.Equal(t, http.MethodDelete, req.Method)
+	assert.Contains(t, req.Path, "/catalogs/demo")
+}
+
+func TestExecuteGroup_Delete(t *testing.T) {
+	t.Parallel()
+
+	var captured []execCapture
+	sc := newTestExecuteClient(t, &captured)
+
+	action := declarative.Action{
+		Operation:    declarative.OpDelete,
+		ResourceKind: declarative.KindGroup,
+		ResourceName: "analysts",
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.NoError(t, err)
+	require.Len(t, captured, 1)
+
+	req := captured[0]
+	assert.Equal(t, http.MethodDelete, req.Method)
+	assert.Contains(t, req.Path, "/groups/analysts")
+}
+
+func TestExecuteTable_Create(t *testing.T) {
+	t.Parallel()
+
+	var captured []execCapture
+	sc := newTestExecuteClient(t, &captured)
+
+	action := declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindTable,
+		ResourceName: "demo.analytics.orders",
+		Desired: declarative.TableResource{
+			CatalogName: "demo",
+			SchemaName:  "analytics",
+			TableName:   "orders",
+			Spec: declarative.TableSpec{
+				TableType: "MANAGED",
+				Comment:   "Order data",
+			},
+		},
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.NoError(t, err)
+	require.Len(t, captured, 1)
+
+	req := captured[0]
+	assert.Equal(t, http.MethodPost, req.Method)
+	assert.Contains(t, req.Path, "/tables")
+}
+
+func TestExecuteView_Create(t *testing.T) {
+	t.Parallel()
+
+	var captured []execCapture
+	sc := newTestExecuteClient(t, &captured)
+
+	action := declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindView,
+		ResourceName: "demo.analytics.my_view",
+		Desired: declarative.ViewResource{
+			CatalogName: "demo",
+			SchemaName:  "analytics",
+			ViewName:    "my_view",
+			Spec: declarative.ViewSpec{
+				ViewDefinition: "SELECT 1",
+				Comment:        "Test view",
+			},
+		},
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.NoError(t, err)
+	require.Len(t, captured, 1)
+
+	req := captured[0]
+	assert.Equal(t, http.MethodPost, req.Method)
+	assert.Contains(t, req.Path, "/views")
+}
+
+func TestExecute_APIErrorResponse(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		_, _ = w.Write([]byte(`{"code":"CONFLICT","message":"already exists"}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	client := gen.NewClient(srv.URL, "", "test-token")
+	sc := NewAPIStateClient(client)
+	sc.index = newResourceIndex()
+
+	action := declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindPrincipal,
+		ResourceName: "alice",
+		Desired: declarative.PrincipalSpec{
+			Name: "alice",
+			Type: "user",
+		},
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "already exists")
+}
+
+func TestReadState_ViewsAndVolumes(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/catalogs", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{"id": "cat-1", "name": "demo", "metastore_type": "sqlite", "dsn": ":memory:"},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/v1/catalogs/demo/schemas", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{"id": "sch-1", "name": "public"},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/v1/catalogs/demo/schemas/public/tables", emptyListHandler())
+	mux.HandleFunc("/v1/catalogs/demo/schemas/public/views", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{
+					"name":            "my_view",
+					"view_definition": "SELECT 1 AS x",
+					"comment":         "Simple view",
+					"owner":           "bob",
+				},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/v1/catalogs/demo/schemas/public/volumes", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{
+					"name":             "data_vol",
+					"volume_type":      "EXTERNAL",
+					"storage_location": "s3://bucket/data",
+					"comment":          "Data volume",
+					"owner":            "alice",
+				},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/", emptyListHandler())
+
+	sc := setupReadStateClient(t, mux)
+	state, err := sc.ReadState(context.Background())
+
+	require.NoError(t, err)
+
+	// Views
+	require.Len(t, state.Views, 1)
+	assert.Equal(t, "demo", state.Views[0].CatalogName)
+	assert.Equal(t, "public", state.Views[0].SchemaName)
+	assert.Equal(t, "my_view", state.Views[0].ViewName)
+	assert.Equal(t, "SELECT 1 AS x", state.Views[0].Spec.ViewDefinition)
+	assert.Equal(t, "Simple view", state.Views[0].Spec.Comment)
+
+	// Volumes
+	require.Len(t, state.Volumes, 1)
+	assert.Equal(t, "data_vol", state.Volumes[0].VolumeName)
+	assert.Equal(t, "EXTERNAL", state.Volumes[0].Spec.VolumeType)
+	assert.Equal(t, "s3://bucket/data", state.Volumes[0].Spec.StorageLocation)
 }
