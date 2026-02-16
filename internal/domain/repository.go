@@ -35,6 +35,7 @@ type GrantRepository interface {
 	Grant(ctx context.Context, g *PrivilegeGrant) (*PrivilegeGrant, error)
 	Revoke(ctx context.Context, g *PrivilegeGrant) error
 	RevokeByID(ctx context.Context, id string) error
+	ListAll(ctx context.Context, page PageRequest) ([]PrivilegeGrant, int64, error)
 	ListForPrincipal(ctx context.Context, principalID string, principalType string, page PageRequest) ([]PrivilegeGrant, int64, error)
 	ListForSecurable(ctx context.Context, securableType string, securableID string, page PageRequest) ([]PrivilegeGrant, int64, error)
 	HasPrivilege(ctx context.Context, principalID string, principalType, securableType string, securableID string, privilege string) (bool, error)

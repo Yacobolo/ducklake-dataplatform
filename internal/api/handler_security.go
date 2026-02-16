@@ -29,6 +29,7 @@ type groupService interface {
 
 // grantService defines the grant operations used by the API handler.
 type grantService interface {
+	ListAll(ctx context.Context, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error)
 	ListForPrincipal(ctx context.Context, principalID string, principalType string, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error)
 	ListForSecurable(ctx context.Context, securableType string, securableID string, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error)
 	Grant(ctx context.Context, req domain.CreateGrantRequest) (*domain.PrivilegeGrant, error)
@@ -303,7 +304,7 @@ func (h *APIHandler) ListGrants(ctx context.Context, req ListGrantsRequestObject
 	case req.Params.SecurableType != nil && req.Params.SecurableId != nil:
 		grants, total, err = h.grants.ListForSecurable(ctx, *req.Params.SecurableType, *req.Params.SecurableId, page)
 	default:
-		return ListGrants400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: "either principal_id+principal_type or securable_type+securable_id query parameters are required"}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		grants, total, err = h.grants.ListAll(ctx, page)
 	}
 	if err != nil {
 		switch {
