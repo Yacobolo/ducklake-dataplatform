@@ -65,6 +65,19 @@ func TestDiff_NoPrincipalChanges(t *testing.T) {
 	assert.False(t, plan.HasChanges())
 }
 
+func TestDiff_PrincipalTypeChangeIgnored(t *testing.T) {
+	// Principal type is immutable; changing it should NOT produce an update.
+	desired := &DesiredState{
+		Principals: []PrincipalSpec{{Name: "svc1", Type: "service_principal", IsAdmin: false}},
+	}
+	actual := &DesiredState{
+		Principals: []PrincipalSpec{{Name: "svc1", Type: "user", IsAdmin: false}},
+	}
+
+	plan := Diff(desired, actual)
+	assert.False(t, plan.HasChanges(), "type-only change should not produce an update")
+}
+
 func TestDiff_CreateAndDeleteGrants(t *testing.T) {
 	desired := &DesiredState{
 		Grants: []GrantSpec{

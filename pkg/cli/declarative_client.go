@@ -985,14 +985,27 @@ func (c *APIStateClient) executePrincipal(_ context.Context, action declarative.
 		return nil
 
 	case declarative.OpUpdate:
-		resp, err := c.client.Do(http.MethodPatch, "/principals/"+action.ResourceName, nil, action.Desired)
+		spec := action.Desired.(declarative.PrincipalSpec)
+		id, err := c.resolvePrincipalID(spec.Name, spec.Type)
+		if err != nil {
+			return fmt.Errorf("resolve principal for update: %w", err)
+		}
+		body := map[string]interface{}{
+			"is_admin": spec.IsAdmin,
+		}
+		resp, err := c.client.Do(http.MethodPut, "/principals/"+id+"/admin", nil, body)
 		if err != nil {
 			return err
 		}
 		return gen.CheckError(resp)
 
 	case declarative.OpDelete:
-		resp, err := c.client.Do(http.MethodDelete, "/principals/"+action.ResourceName, nil, nil)
+		spec := action.Actual.(declarative.PrincipalSpec)
+		id, err := c.resolvePrincipalID(spec.Name, spec.Type)
+		if err != nil {
+			return fmt.Errorf("resolve principal for delete: %w", err)
+		}
+		resp, err := c.client.Do(http.MethodDelete, "/principals/"+id, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -1163,21 +1176,53 @@ func (c *APIStateClient) executeSchema(_ context.Context, action declarative.Act
 	// ResourceName is "catalog.schema" format.
 	switch action.Operation {
 	case declarative.OpCreate:
-		resp, err := c.client.Do(http.MethodPost, "/schemas", nil, action.Desired)
+		schema := action.Desired.(declarative.SchemaResource)
+		body := map[string]interface{}{
+			"name": schema.SchemaName,
+		}
+		if schema.Spec.Comment != "" {
+			body["comment"] = schema.Spec.Comment
+		}
+		if schema.Spec.LocationName != "" {
+			body["location_name"] = schema.Spec.LocationName
+		}
+		if len(schema.Spec.Properties) > 0 {
+			body["properties"] = schema.Spec.Properties
+		}
+		resp, err := c.client.Do(http.MethodPost, "/catalogs/"+schema.CatalogName+"/schemas", nil, body)
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		id, err := c.checkCreateResponse(resp)
+		if err != nil {
+			return err
+		}
+		if id != "" && c.index != nil {
+			c.index.schemaIDByPath[schema.CatalogName+"."+schema.SchemaName] = id
+		}
+		return nil
 
 	case declarative.OpUpdate:
-		resp, err := c.client.Do(http.MethodPatch, "/schemas/"+action.ResourceName, nil, action.Desired)
+		schema := action.Desired.(declarative.SchemaResource)
+		body := map[string]interface{}{}
+		if schema.Spec.Comment != "" {
+			body["comment"] = schema.Spec.Comment
+		}
+		if len(schema.Spec.Properties) > 0 {
+			body["properties"] = schema.Spec.Properties
+		}
+		resp, err := c.client.Do(http.MethodPatch, "/catalogs/"+schema.CatalogName+"/schemas/"+schema.SchemaName, nil, body)
 		if err != nil {
 			return err
 		}
 		return gen.CheckError(resp)
 
 	case declarative.OpDelete:
-		resp, err := c.client.Do(http.MethodDelete, "/schemas/"+action.ResourceName, nil, nil)
+		parts := strings.SplitN(action.ResourceName, ".", 2)
+		if len(parts) != 2 {
+			return fmt.Errorf("invalid schema resource name: %s", action.ResourceName)
+		}
+		resp, err := c.client.Do(http.MethodDelete, "/catalogs/"+parts[0]+"/schemas/"+parts[1], nil, nil)
 		if err != nil {
 			return err
 		}
@@ -1192,21 +1237,73 @@ func (c *APIStateClient) executeTable(_ context.Context, action declarative.Acti
 	// ResourceName is "catalog.schema.table" format.
 	switch action.Operation {
 	case declarative.OpCreate:
-		resp, err := c.client.Do(http.MethodPost, "/tables", nil, action.Desired)
+		tbl := action.Desired.(declarative.TableResource)
+		body := map[string]interface{}{
+			"name": tbl.TableName,
+		}
+		if tbl.Spec.TableType != "" {
+			body["table_type"] = tbl.Spec.TableType
+		}
+		if tbl.Spec.Comment != "" {
+			body["comment"] = tbl.Spec.Comment
+		}
+		if len(tbl.Spec.Columns) > 0 {
+			cols := make([]map[string]interface{}, len(tbl.Spec.Columns))
+			for i, col := range tbl.Spec.Columns {
+				c := map[string]interface{}{
+					"name": col.Name,
+					"type": col.Type,
+				}
+				if col.Comment != "" {
+					c["comment"] = col.Comment
+				}
+				cols[i] = c
+			}
+			body["columns"] = cols
+		}
+		if tbl.Spec.SourcePath != "" {
+			body["source_path"] = tbl.Spec.SourcePath
+		}
+		if tbl.Spec.FileFormat != "" {
+			body["file_format"] = tbl.Spec.FileFormat
+		}
+		if tbl.Spec.LocationName != "" {
+			body["location_name"] = tbl.Spec.LocationName
+		}
+		basePath := "/catalogs/" + tbl.CatalogName + "/schemas/" + tbl.SchemaName + "/tables"
+		resp, err := c.client.Do(http.MethodPost, basePath, nil, body)
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		id, err := c.checkCreateResponse(resp)
+		if err != nil {
+			return err
+		}
+		if id != "" && c.index != nil {
+			c.index.tableIDByPath[tbl.CatalogName+"."+tbl.SchemaName+"."+tbl.TableName] = id
+		}
+		return nil
 
 	case declarative.OpUpdate:
-		resp, err := c.client.Do(http.MethodPatch, "/tables/"+action.ResourceName, nil, action.Desired)
+		tbl := action.Desired.(declarative.TableResource)
+		body := map[string]interface{}{}
+		if tbl.Spec.Comment != "" {
+			body["comment"] = tbl.Spec.Comment
+		}
+		basePath := "/catalogs/" + tbl.CatalogName + "/schemas/" + tbl.SchemaName + "/tables/" + tbl.TableName
+		resp, err := c.client.Do(http.MethodPatch, basePath, nil, body)
 		if err != nil {
 			return err
 		}
 		return gen.CheckError(resp)
 
 	case declarative.OpDelete:
-		resp, err := c.client.Do(http.MethodDelete, "/tables/"+action.ResourceName, nil, nil)
+		parts := strings.SplitN(action.ResourceName, ".", 3)
+		if len(parts) != 3 {
+			return fmt.Errorf("invalid table resource name: %s", action.ResourceName)
+		}
+		basePath := "/catalogs/" + parts[0] + "/schemas/" + parts[1] + "/tables/" + parts[2]
+		resp, err := c.client.Do(http.MethodDelete, basePath, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -1221,21 +1318,50 @@ func (c *APIStateClient) executeView(_ context.Context, action declarative.Actio
 	// ResourceName is "catalog.schema.view" format.
 	switch action.Operation {
 	case declarative.OpCreate:
-		resp, err := c.client.Do(http.MethodPost, "/views", nil, action.Desired)
+		vw := action.Desired.(declarative.ViewResource)
+		body := map[string]interface{}{
+			"name":            vw.ViewName,
+			"view_definition": vw.Spec.ViewDefinition,
+		}
+		if vw.Spec.Comment != "" {
+			body["comment"] = vw.Spec.Comment
+		}
+		if len(vw.Spec.Properties) > 0 {
+			body["properties"] = vw.Spec.Properties
+		}
+		basePath := "/catalogs/" + vw.CatalogName + "/schemas/" + vw.SchemaName + "/views"
+		resp, err := c.client.Do(http.MethodPost, basePath, nil, body)
 		if err != nil {
 			return err
 		}
 		return gen.CheckError(resp)
 
 	case declarative.OpUpdate:
-		resp, err := c.client.Do(http.MethodPatch, "/views/"+action.ResourceName, nil, action.Desired)
+		vw := action.Desired.(declarative.ViewResource)
+		body := map[string]interface{}{}
+		if vw.Spec.ViewDefinition != "" {
+			body["view_definition"] = vw.Spec.ViewDefinition
+		}
+		if vw.Spec.Comment != "" {
+			body["comment"] = vw.Spec.Comment
+		}
+		if len(vw.Spec.Properties) > 0 {
+			body["properties"] = vw.Spec.Properties
+		}
+		basePath := "/catalogs/" + vw.CatalogName + "/schemas/" + vw.SchemaName + "/views/" + vw.ViewName
+		resp, err := c.client.Do(http.MethodPatch, basePath, nil, body)
 		if err != nil {
 			return err
 		}
 		return gen.CheckError(resp)
 
 	case declarative.OpDelete:
-		resp, err := c.client.Do(http.MethodDelete, "/views/"+action.ResourceName, nil, nil)
+		parts := strings.SplitN(action.ResourceName, ".", 3)
+		if len(parts) != 3 {
+			return fmt.Errorf("invalid view resource name: %s", action.ResourceName)
+		}
+		basePath := "/catalogs/" + parts[0] + "/schemas/" + parts[1] + "/views/" + parts[2]
+		resp, err := c.client.Do(http.MethodDelete, basePath, nil, nil)
 		if err != nil {
 			return err
 		}

@@ -156,7 +156,8 @@ func diffPrincipals(plan *Plan, desired, actual []PrincipalSpec) {
 			continue
 		}
 		var changes []FieldDiff
-		diffField(&changes, "type", a.Type, d.Type)
+		// Note: principal type is immutable (no API endpoint supports changing it),
+		// so we only diff is_admin which can be toggled via PUT /principals/{id}/admin.
 		diffBoolField(&changes, "is_admin", a.IsAdmin, d.IsAdmin)
 		if len(changes) > 0 {
 			addUpdate(plan, KindPrincipal, d.Name, "", d, a, changes)

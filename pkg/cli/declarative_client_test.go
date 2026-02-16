@@ -644,6 +644,307 @@ func TestExecuteGrant_FailsUnknownPrincipal(t *testing.T) {
 	assert.Contains(t, err.Error(), "not found in index")
 }
 
+// === Principal update and delete execution tests (#138) ===
+
+func TestExecutePrincipal_UpdateSendsAdminEndpoint(t *testing.T) {
+	var captured []execCapture
+	sc := withTestIndex(newTestExecuteClient(t, &captured))
+
+	action := declarative.Action{
+		Operation:    declarative.OpUpdate,
+		ResourceKind: declarative.KindPrincipal,
+		ResourceName: "alice",
+		Desired: declarative.PrincipalSpec{
+			Name:    "alice",
+			Type:    "user",
+			IsAdmin: true,
+		},
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.NoError(t, err)
+	require.Len(t, captured, 1)
+
+	req := captured[0]
+	assert.Equal(t, http.MethodPut, req.Method)
+	assert.Contains(t, req.Path, "/principals/principal-id-alice/admin")
+	assert.True(t, bodyBool(req, "is_admin"))
+}
+
+func TestExecutePrincipal_DeleteResolvesID(t *testing.T) {
+	var captured []execCapture
+	sc := withTestIndex(newTestExecuteClient(t, &captured))
+
+	action := declarative.Action{
+		Operation:    declarative.OpDelete,
+		ResourceKind: declarative.KindPrincipal,
+		ResourceName: "bob",
+		Actual: declarative.PrincipalSpec{
+			Name: "bob",
+			Type: "user",
+		},
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.NoError(t, err)
+	require.Len(t, captured, 1)
+
+	req := captured[0]
+	assert.Equal(t, http.MethodDelete, req.Method)
+	assert.Contains(t, req.Path, "/principals/principal-id-bob")
+}
+
+// === Schema execution tests (#137) ===
+
+func TestExecuteSchema_CreateUsesNestedPath(t *testing.T) {
+	var captured []execCapture
+	sc := newTestExecuteClient(t, &captured)
+
+	action := declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindSchema,
+		ResourceName: "demo.analytics",
+		Desired: declarative.SchemaResource{
+			CatalogName: "demo",
+			SchemaName:  "analytics",
+			Spec: declarative.SchemaSpec{
+				Comment: "analytics schema",
+			},
+		},
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.NoError(t, err)
+	require.Len(t, captured, 1)
+
+	req := captured[0]
+	assert.Equal(t, http.MethodPost, req.Method)
+	assert.Contains(t, req.Path, "/catalogs/demo/schemas")
+	assert.Equal(t, "analytics", bodyStr(req, "name"))
+	assert.Equal(t, "analytics schema", bodyStr(req, "comment"))
+
+	// Schema ID should be captured in the index.
+	assert.Equal(t, "generated-uuid-123", sc.index.schemaIDByPath["demo.analytics"])
+}
+
+func TestExecuteSchema_UpdateUsesNestedPath(t *testing.T) {
+	var captured []execCapture
+	sc := newTestExecuteClient(t, &captured)
+
+	action := declarative.Action{
+		Operation:    declarative.OpUpdate,
+		ResourceKind: declarative.KindSchema,
+		ResourceName: "demo.analytics",
+		Desired: declarative.SchemaResource{
+			CatalogName: "demo",
+			SchemaName:  "analytics",
+			Spec: declarative.SchemaSpec{
+				Comment: "updated comment",
+			},
+		},
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.NoError(t, err)
+	require.Len(t, captured, 1)
+
+	req := captured[0]
+	assert.Equal(t, http.MethodPatch, req.Method)
+	assert.Contains(t, req.Path, "/catalogs/demo/schemas/analytics")
+	assert.Equal(t, "updated comment", bodyStr(req, "comment"))
+}
+
+func TestExecuteSchema_DeleteUsesNestedPath(t *testing.T) {
+	var captured []execCapture
+	sc := newTestExecuteClient(t, &captured)
+
+	action := declarative.Action{
+		Operation:    declarative.OpDelete,
+		ResourceKind: declarative.KindSchema,
+		ResourceName: "demo.analytics",
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.NoError(t, err)
+	require.Len(t, captured, 1)
+
+	req := captured[0]
+	assert.Equal(t, http.MethodDelete, req.Method)
+	assert.Contains(t, req.Path, "/catalogs/demo/schemas/analytics")
+}
+
+// === Table execution tests (#137) ===
+
+func TestExecuteTable_CreateUsesNestedPath(t *testing.T) {
+	var captured []execCapture
+	sc := newTestExecuteClient(t, &captured)
+
+	action := declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindTable,
+		ResourceName: "demo.analytics.orders",
+		Desired: declarative.TableResource{
+			CatalogName: "demo",
+			SchemaName:  "analytics",
+			TableName:   "orders",
+			Spec: declarative.TableSpec{
+				TableType: "MANAGED",
+				Comment:   "order table",
+				Columns: []declarative.ColumnDef{
+					{Name: "id", Type: "INTEGER"},
+					{Name: "amount", Type: "DOUBLE", Comment: "order amount"},
+				},
+			},
+		},
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.NoError(t, err)
+	require.Len(t, captured, 1)
+
+	req := captured[0]
+	assert.Equal(t, http.MethodPost, req.Method)
+	assert.Contains(t, req.Path, "/catalogs/demo/schemas/analytics/tables")
+	assert.Equal(t, "orders", bodyStr(req, "name"))
+	assert.Equal(t, "MANAGED", bodyStr(req, "table_type"))
+	assert.Equal(t, "order table", bodyStr(req, "comment"))
+
+	// Columns should be present.
+	cols, ok := req.Body["columns"].([]interface{})
+	require.True(t, ok, "columns should be an array")
+	assert.Len(t, cols, 2)
+
+	// Table ID should be captured in the index.
+	assert.Equal(t, "generated-uuid-123", sc.index.tableIDByPath["demo.analytics.orders"])
+}
+
+func TestExecuteTable_UpdateUsesNestedPath(t *testing.T) {
+	var captured []execCapture
+	sc := newTestExecuteClient(t, &captured)
+
+	action := declarative.Action{
+		Operation:    declarative.OpUpdate,
+		ResourceKind: declarative.KindTable,
+		ResourceName: "demo.analytics.orders",
+		Desired: declarative.TableResource{
+			CatalogName: "demo",
+			SchemaName:  "analytics",
+			TableName:   "orders",
+			Spec: declarative.TableSpec{
+				Comment: "updated comment",
+			},
+		},
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.NoError(t, err)
+	require.Len(t, captured, 1)
+
+	req := captured[0]
+	assert.Equal(t, http.MethodPatch, req.Method)
+	assert.Contains(t, req.Path, "/catalogs/demo/schemas/analytics/tables/orders")
+}
+
+func TestExecuteTable_DeleteUsesNestedPath(t *testing.T) {
+	var captured []execCapture
+	sc := newTestExecuteClient(t, &captured)
+
+	action := declarative.Action{
+		Operation:    declarative.OpDelete,
+		ResourceKind: declarative.KindTable,
+		ResourceName: "demo.analytics.orders",
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.NoError(t, err)
+	require.Len(t, captured, 1)
+
+	req := captured[0]
+	assert.Equal(t, http.MethodDelete, req.Method)
+	assert.Contains(t, req.Path, "/catalogs/demo/schemas/analytics/tables/orders")
+}
+
+// === View execution tests (#137) ===
+
+func TestExecuteView_CreateUsesNestedPath(t *testing.T) {
+	var captured []execCapture
+	sc := newTestExecuteClient(t, &captured)
+
+	action := declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindView,
+		ResourceName: "demo.analytics.order_summary",
+		Desired: declarative.ViewResource{
+			CatalogName: "demo",
+			SchemaName:  "analytics",
+			ViewName:    "order_summary",
+			Spec: declarative.ViewSpec{
+				ViewDefinition: "SELECT * FROM orders",
+				Comment:        "summary view",
+			},
+		},
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.NoError(t, err)
+	require.Len(t, captured, 1)
+
+	req := captured[0]
+	assert.Equal(t, http.MethodPost, req.Method)
+	assert.Contains(t, req.Path, "/catalogs/demo/schemas/analytics/views")
+	assert.Equal(t, "order_summary", bodyStr(req, "name"))
+	assert.Equal(t, "SELECT * FROM orders", bodyStr(req, "view_definition"))
+	assert.Equal(t, "summary view", bodyStr(req, "comment"))
+}
+
+func TestExecuteView_UpdateUsesNestedPath(t *testing.T) {
+	var captured []execCapture
+	sc := newTestExecuteClient(t, &captured)
+
+	action := declarative.Action{
+		Operation:    declarative.OpUpdate,
+		ResourceKind: declarative.KindView,
+		ResourceName: "demo.analytics.order_summary",
+		Desired: declarative.ViewResource{
+			CatalogName: "demo",
+			SchemaName:  "analytics",
+			ViewName:    "order_summary",
+			Spec: declarative.ViewSpec{
+				ViewDefinition: "SELECT id, amount FROM orders",
+				Comment:        "updated view",
+			},
+		},
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.NoError(t, err)
+	require.Len(t, captured, 1)
+
+	req := captured[0]
+	assert.Equal(t, http.MethodPatch, req.Method)
+	assert.Contains(t, req.Path, "/catalogs/demo/schemas/analytics/views/order_summary")
+	assert.Equal(t, "SELECT id, amount FROM orders", bodyStr(req, "view_definition"))
+}
+
+func TestExecuteView_DeleteUsesNestedPath(t *testing.T) {
+	var captured []execCapture
+	sc := newTestExecuteClient(t, &captured)
+
+	action := declarative.Action{
+		Operation:    declarative.OpDelete,
+		ResourceKind: declarative.KindView,
+		ResourceName: "demo.analytics.order_summary",
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.NoError(t, err)
+	require.Len(t, captured, 1)
+
+	req := captured[0]
+	assert.Equal(t, http.MethodDelete, req.Method)
+	assert.Contains(t, req.Path, "/catalogs/demo/schemas/analytics/views/order_summary")
+}
+
 // === Unimplemented resource kind test ===
 
 func TestExecute_UnimplementedKindReturnsError(t *testing.T) {
