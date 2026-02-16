@@ -21,6 +21,22 @@ type StateWriter interface {
 	Execute(ctx context.Context, action declarative.Action) error
 }
 
+// catalogCreateBody matches the POST /catalogs JSON schema.
+type catalogCreateBody struct {
+	Name          string  `json:"name"`
+	MetastoreType string  `json:"metastore_type"`
+	DSN           string  `json:"dsn"`
+	DataPath      string  `json:"data_path"`
+	Comment       *string `json:"comment,omitempty"`
+}
+
+// catalogUpdateBody matches the PATCH /catalogs/{name} JSON schema.
+type catalogUpdateBody struct {
+	DSN      *string `json:"dsn,omitempty"`
+	DataPath *string `json:"data_path,omitempty"`
+	Comment  *string `json:"comment,omitempty"`
+}
+
 // APIStateClient implements both StateReader and StateWriter using the gen.Client.
 type APIStateClient struct {
 	client *gen.Client
@@ -857,14 +873,35 @@ func (c *APIStateClient) executeGrant(_ context.Context, action declarative.Acti
 func (c *APIStateClient) executeCatalog(_ context.Context, action declarative.Action) error {
 	switch action.Operation {
 	case declarative.OpCreate:
-		resp, err := c.client.Do(http.MethodPost, "/catalogs", nil, action.Desired)
+		cat := action.Desired.(declarative.CatalogResource)
+		body := catalogCreateBody{
+			Name:          cat.CatalogName,
+			MetastoreType: cat.Spec.MetastoreType,
+			DSN:           cat.Spec.DSN,
+			DataPath:      cat.Spec.DataPath,
+		}
+		if cat.Spec.Comment != "" {
+			body.Comment = &cat.Spec.Comment
+		}
+		resp, err := c.client.Do(http.MethodPost, "/catalogs", nil, body)
 		if err != nil {
 			return err
 		}
 		return gen.CheckError(resp)
 
 	case declarative.OpUpdate:
-		resp, err := c.client.Do(http.MethodPatch, "/catalogs/"+action.ResourceName, nil, action.Desired)
+		cat := action.Desired.(declarative.CatalogResource)
+		body := catalogUpdateBody{}
+		if cat.Spec.DSN != "" {
+			body.DSN = &cat.Spec.DSN
+		}
+		if cat.Spec.DataPath != "" {
+			body.DataPath = &cat.Spec.DataPath
+		}
+		if cat.Spec.Comment != "" {
+			body.Comment = &cat.Spec.Comment
+		}
+		resp, err := c.client.Do(http.MethodPatch, "/catalogs/"+action.ResourceName, nil, body)
 		if err != nil {
 			return err
 		}
