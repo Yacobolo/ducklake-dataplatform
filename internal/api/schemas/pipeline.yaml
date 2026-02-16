@@ -84,6 +84,15 @@ PipelineJob:
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
       example: 550e8400-e29b-41d4-a716-446655440030
+    job_type:
+      type: string
+      enum: [NOTEBOOK, MODEL_RUN]
+      example: NOTEBOOK
+    model_selector:
+      type: string
+      maxLength: 1024
+      pattern: '^[\s\S]*$'
+      example: tag:daily
     timeout_seconds:
       type: integer
       format: int64
@@ -286,7 +295,7 @@ CreatePipelineJobRequest:
   description: Request payload for creating a new pipeline job.
   type: object
   additionalProperties: false
-  required: [name, notebook_id]
+  required: [name]
   properties:
     name:
       type: string
@@ -311,6 +320,16 @@ CreatePipelineJobRequest:
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
       example: 550e8400-e29b-41d4-a716-446655440030
+    job_type:
+      type: string
+      enum: [NOTEBOOK, MODEL_RUN]
+      default: NOTEBOOK
+      example: NOTEBOOK
+    model_selector:
+      type: string
+      maxLength: 1024
+      pattern: '^[\s\S]*$'
+      example: tag:daily
     timeout_seconds:
       type: integer
       format: int64

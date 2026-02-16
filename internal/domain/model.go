@@ -75,6 +75,7 @@ type CreateModelRequest struct {
 	Tags            []string
 	Config          ModelConfig
 	Contract        *ModelContract
+	Freshness       *FreshnessPolicy
 }
 
 // Validate checks that the request is well-formed.

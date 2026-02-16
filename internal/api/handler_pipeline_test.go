@@ -506,7 +506,7 @@ func TestHandler_CreatePipelineJob(t *testing.T) {
 		{
 			name:     "happy path returns 201",
 			pipeName: "etl-daily",
-			body:     CreatePipelineJobJSONRequestBody{Name: "extract", NotebookId: "nb-1"},
+			body:     CreatePipelineJobJSONRequestBody{Name: "extract", NotebookId: pipelineStrPtr("nb-1")},
 			svcFn: func(_ context.Context, _ string, _ string, _ domain.CreatePipelineJobRequest) (*domain.PipelineJob, error) {
 				j := sampleJob()
 				return &j, nil
@@ -523,7 +523,7 @@ func TestHandler_CreatePipelineJob(t *testing.T) {
 		{
 			name:     "validation error returns 400",
 			pipeName: "etl-daily",
-			body:     CreatePipelineJobJSONRequestBody{Name: "", NotebookId: "nb-1"},
+			body:     CreatePipelineJobJSONRequestBody{Name: "", NotebookId: pipelineStrPtr("nb-1")},
 			svcFn: func(_ context.Context, _ string, _ string, _ domain.CreatePipelineJobRequest) (*domain.PipelineJob, error) {
 				return nil, domain.ErrValidation("name is required")
 			},
@@ -539,7 +539,7 @@ func TestHandler_CreatePipelineJob(t *testing.T) {
 		{
 			name:     "pipeline not found maps to 400",
 			pipeName: "nonexistent",
-			body:     CreatePipelineJobJSONRequestBody{Name: "extract", NotebookId: "nb-1"},
+			body:     CreatePipelineJobJSONRequestBody{Name: "extract", NotebookId: pipelineStrPtr("nb-1")},
 			svcFn: func(_ context.Context, _ string, pipelineName string, _ domain.CreatePipelineJobRequest) (*domain.PipelineJob, error) {
 				return nil, domain.ErrNotFound("pipeline %s not found", pipelineName)
 			},
@@ -555,7 +555,7 @@ func TestHandler_CreatePipelineJob(t *testing.T) {
 		{
 			name:     "conflict error returns 409",
 			pipeName: "etl-daily",
-			body:     CreatePipelineJobJSONRequestBody{Name: "extract", NotebookId: "nb-1"},
+			body:     CreatePipelineJobJSONRequestBody{Name: "extract", NotebookId: pipelineStrPtr("nb-1")},
 			svcFn: func(_ context.Context, _ string, _ string, _ domain.CreatePipelineJobRequest) (*domain.PipelineJob, error) {
 				return nil, domain.ErrConflict("job extract already exists")
 			},

@@ -124,6 +124,11 @@ CreateNotebookRequest:
       maxLength: 4096
       pattern: '^[\s\S]*$'
       example: A detailed description
+    source:
+      type: string
+      maxLength: 65536
+      pattern: '^[\s\S]*$'
+      example: SELECT 1
 
 UpdateNotebookRequest:
   description: Request payload for updating a notebook.

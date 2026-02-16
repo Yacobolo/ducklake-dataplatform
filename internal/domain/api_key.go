@@ -1,6 +1,9 @@
 package domain
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 // APIKey represents an API key for programmatic access.
 type APIKey struct {
@@ -25,7 +28,7 @@ func (r *CreateAPIKeyRequest) Validate() error {
 	if r.PrincipalID == "" {
 		return ErrValidation("principal_id is required")
 	}
-	if r.Name == "" {
+	if strings.TrimSpace(r.Name) == "" {
 		return ErrValidation("api key name is required")
 	}
 	if r.ExpiresAt != nil && r.ExpiresAt.Before(time.Now()) {

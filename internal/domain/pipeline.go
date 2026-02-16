@@ -1,6 +1,11 @@
 package domain
 
-import "time"
+import (
+	"strings"
+	"time"
+
+	"github.com/robfig/cron/v3"
+)
 
 // Pipeline status constants.
 const (
@@ -96,8 +101,13 @@ type CreatePipelineRequest struct {
 
 // Validate checks that the request is well-formed.
 func (r *CreatePipelineRequest) Validate() error {
-	if r.Name == "" {
+	if strings.TrimSpace(r.Name) == "" {
 		return ErrValidation("name is required")
+	}
+	if r.ScheduleCron != nil && *r.ScheduleCron != "" {
+		if _, err := cron.ParseStandard(*r.ScheduleCron); err != nil {
+			return ErrValidation("schedule_cron is invalid: %v", err)
+		}
 	}
 	if r.ConcurrencyLimit < 0 {
 		return ErrValidation("concurrency_limit must be non-negative")
@@ -128,7 +138,7 @@ type CreatePipelineJobRequest struct {
 
 // Validate checks that the request is well-formed.
 func (r *CreatePipelineJobRequest) Validate() error {
-	if r.Name == "" {
+	if strings.TrimSpace(r.Name) == "" {
 		return ErrValidation("name is required")
 	}
 	if r.JobType == "" {

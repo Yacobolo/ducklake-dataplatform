@@ -178,8 +178,10 @@ func (h *APIHandler) ListPipelineJobs(ctx context.Context, req ListPipelineJobsR
 // CreatePipelineJob implements the endpoint for creating a job in a pipeline.
 func (h *APIHandler) CreatePipelineJob(ctx context.Context, req CreatePipelineJobRequestObject) (CreatePipelineJobResponseObject, error) {
 	domReq := domain.CreatePipelineJobRequest{
-		Name:       req.Body.Name,
-		NotebookID: req.Body.NotebookId,
+		Name: req.Body.Name,
+	}
+	if req.Body.NotebookId != nil {
+		domReq.NotebookID = *req.Body.NotebookId
 	}
 	if req.Body.ComputeEndpointId != nil {
 		domReq.ComputeEndpointID = req.Body.ComputeEndpointId
@@ -195,6 +197,12 @@ func (h *APIHandler) CreatePipelineJob(ctx context.Context, req CreatePipelineJo
 	}
 	if req.Body.JobOrder != nil {
 		domReq.JobOrder = int(*req.Body.JobOrder)
+	}
+	if req.Body.JobType != nil {
+		domReq.JobType = string(*req.Body.JobType)
+	}
+	if req.Body.ModelSelector != nil {
+		domReq.ModelSelector = *req.Body.ModelSelector
 	}
 
 	cp, _ := domain.PrincipalFromContext(ctx)
@@ -402,10 +410,19 @@ func pipelineJobToAPI(j domain.PipelineJob) PipelineJob {
 		Id:         &j.ID,
 		PipelineId: &j.PipelineID,
 		Name:       &j.Name,
-		NotebookId: &j.NotebookID,
 		JobOrder:   &order,
 		RetryCount: &retryCount,
 		CreatedAt:  &ct,
+	}
+	if j.NotebookID != "" {
+		resp.NotebookId = &j.NotebookID
+	}
+	if j.JobType != "" {
+		jt := PipelineJobJobType(j.JobType)
+		resp.JobType = &jt
+	}
+	if j.ModelSelector != "" {
+		resp.ModelSelector = &j.ModelSelector
 	}
 	if j.ComputeEndpointID != nil {
 		resp.ComputeEndpointId = j.ComputeEndpointID

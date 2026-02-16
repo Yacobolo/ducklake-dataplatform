@@ -66,6 +66,7 @@ func (h *APIHandler) CreateNotebook(ctx context.Context, req CreateNotebookReque
 	domReq := domain.CreateNotebookRequest{
 		Name:        req.Body.Name,
 		Description: req.Body.Description,
+		Source:      req.Body.Source,
 	}
 
 	cp, _ := domain.PrincipalFromContext(ctx)

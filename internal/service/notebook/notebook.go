@@ -33,6 +33,19 @@ func (s *Service) CreateNotebook(ctx context.Context, principal string, req doma
 	if err != nil {
 		return nil, fmt.Errorf("create notebook: %w", err)
 	}
+	if req.Source != nil && *req.Source != "" {
+		cell := &domain.Cell{
+			ID:         domain.NewID(),
+			NotebookID: result.ID,
+			CellType:   domain.CellTypeSQL,
+			Content:    *req.Source,
+			Position:   0,
+		}
+		if _, err := s.repo.CreateCell(ctx, cell); err != nil {
+			_ = s.repo.DeleteNotebook(ctx, result.ID)
+			return nil, fmt.Errorf("create initial notebook cell: %w", err)
+		}
+	}
 	_ = s.audit.Insert(ctx, &domain.AuditEntry{
 		PrincipalName: principal,
 		Action:        "CREATE_NOTEBOOK",

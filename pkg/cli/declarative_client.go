@@ -268,6 +268,13 @@ func (c *APIStateClient) readGroups(ctx context.Context, state *declarative.Desi
 			}
 			for _, m := range members {
 				name := c.reverseLookupPrincipalName(m.MemberID, m.MemberType)
+				if name == "" {
+					resolvedName, err := c.lookupMemberNameByID(ctx, m.MemberID, m.MemberType)
+					if err != nil {
+						return fmt.Errorf("group %q member %s (%s): %w", g.Name, m.MemberID, m.MemberType, err)
+					}
+					name = resolvedName
+				}
 				spec.Members = append(spec.Members, declarative.MemberRef{
 					Name:     name,
 					Type:     m.MemberType,
@@ -829,6 +836,34 @@ func (c *APIStateClient) reverseLookupPrincipalName(id, memberType string) strin
 		}
 	}
 	return ""
+}
+
+func (c *APIStateClient) lookupMemberNameByID(_ context.Context, id, memberType string) (string, error) {
+	path := "/principals/" + id
+	if memberType == "group" {
+		path = "/groups/" + id
+	}
+	resp, err := c.client.Do(http.MethodGet, path, nil, nil)
+	if err != nil {
+		return "", err
+	}
+	body, err := gen.ReadBody(resp)
+	if err != nil {
+		return "", err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return "", fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
+	}
+	var parsed struct {
+		Name string `json:"name"`
+	}
+	if err := json.Unmarshal(body, &parsed); err != nil {
+		return "", err
+	}
+	if parsed.Name == "" {
+		return "", fmt.Errorf("empty name in response")
+	}
+	return parsed.Name, nil
 }
 
 // resolvePrincipalID looks up a principal or group UUID by name.
