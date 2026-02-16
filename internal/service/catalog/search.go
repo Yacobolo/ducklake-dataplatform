@@ -11,6 +11,7 @@ import (
 // SearchRepoFactory creates per-catalog SearchRepository instances.
 type SearchRepoFactory interface {
 	ForCatalog(ctx context.Context, catalogName string) (domain.SearchRepository, error)
+	ForDefault(ctx context.Context) (domain.SearchRepository, error)
 }
 
 // SearchService provides catalog search operations.
@@ -48,9 +49,18 @@ func (s *SearchService) Search(ctx context.Context, query string, objectType *st
 }
 
 // resolveRepo returns the appropriate SearchRepository for the given catalog name.
+// When no catalog name is provided, it dynamically resolves the current default catalog.
 func (s *SearchService) resolveRepo(ctx context.Context, catalogName *string) (domain.SearchRepository, error) {
 	if catalogName == nil || *catalogName == "" {
-		return s.defaultRepo, nil
+		if s.factory == nil {
+			return s.defaultRepo, nil
+		}
+		repo, err := s.factory.ForDefault(ctx)
+		if err != nil {
+			// Fall back to static default if no default catalog is configured.
+			return s.defaultRepo, nil //nolint:nilerr // intentional fallback
+		}
+		return repo, nil
 	}
 	if s.factory == nil {
 		return s.defaultRepo, nil
