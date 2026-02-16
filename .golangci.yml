@@ -62,12 +62,92 @@ linters:
             - pkg: "^log$"
               desc: "Use log/slog. For fatal errors, return them or use os.Exit only in main."
 
+        GovernanceDomain:
+          files:
+            - "internal/domain/**/*.go"
+          deny:
+            - pkg: "^duck-demo/internal/(api|service|db|engine|middleware|declarative)(/|$)"
+              desc: "governance: domain imports must stay within domain"
+            - pkg: "^duck-demo/cmd(/|$)"
+              desc: "governance: domain must not import cmd packages"
+            - pkg: "^duck-demo/pkg/cli(/|$)"
+              desc: "governance: domain must not import cli delivery packages"
+
+        GovernanceService:
+          files:
+            - "internal/service/**/*.go"
+          deny:
+            - pkg: "^duck-demo/internal/(api|db|engine|middleware)(/|$)"
+              desc: "governance: service imports must flow toward domain"
+            - pkg: "^duck-demo/cmd(/|$)"
+              desc: "governance: service must not import cmd packages"
+            - pkg: "^duck-demo/pkg/cli(/|$)"
+              desc: "governance: service must not import cli delivery packages"
+
+        GovernanceAPI:
+          files:
+            - "internal/api/**/*.go"
+          deny:
+            - pkg: "^duck-demo/internal/(db|engine|declarative)(/|$)"
+              desc: "governance: api imports must not depend on infrastructure layers"
+            - pkg: "^duck-demo/cmd(/|$)"
+              desc: "governance: api must not import cmd packages"
+            - pkg: "^duck-demo/pkg/cli(/|$)"
+              desc: "governance: api must not import cli delivery packages"
+
+        GovernanceDB:
+          files:
+            - "internal/db/**/*.go"
+          deny:
+            - pkg: "^duck-demo/internal/(api|service|engine|middleware)(/|$)"
+              desc: "governance: db imports must stay inward toward domain"
+            - pkg: "^duck-demo/cmd(/|$)"
+              desc: "governance: db must not import cmd packages"
+            - pkg: "^duck-demo/pkg/cli(/|$)"
+              desc: "governance: db must not import cli delivery packages"
+
+        GovernanceEngine:
+          files:
+            - "internal/engine/**/*.go"
+          deny:
+            - pkg: "^duck-demo/internal/(api|service)(/|$)"
+              desc: "governance: engine must not import api/service"
+            - pkg: "^duck-demo/cmd(/|$)"
+              desc: "governance: engine must not import cmd packages"
+            - pkg: "^duck-demo/pkg/cli(/|$)"
+              desc: "governance: engine must not import cli delivery packages"
+
+        GovernanceMiddleware:
+          files:
+            - "internal/middleware/**/*.go"
+          deny:
+            - pkg: "^duck-demo/internal/(service|db|engine)(/|$)"
+              desc: "governance: middleware must not import service/db/engine"
+
   exclusions:
     paths:
       - vendor
       - context
 
     rules:
+      - path: _test\.go
+        linters:
+          - depguard
+      - path: \.gen\.go
+        linters:
+          - depguard
+      - path: internal/db/dbstore/.*\.sql\.go
+        linters:
+          - depguard
+      - path: internal/duckdbsql/catalog/.*_gen\.go
+        linters:
+          - depguard
+      - path: internal/service/catalog/registration\.go
+        linters:
+          - depguard
+      - path: internal/service/ingestion/ingestion\.go
+        linters:
+          - depguard
       - path: _test\.go
         linters:
           - gosec

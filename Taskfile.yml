@@ -102,6 +102,11 @@ tasks:
     cmds:
       - gotestsum --format pkgname-and-test-fails -- -race ./...
 
+  test:arch:
+    desc: Run architecture governance tests
+    cmds:
+      - gotestsum --format pkgname-and-test-fails -- ./internal/architecture/...
+
   test:integration:
     desc: Run integration tests (package summary, shows failures inline)
     cmds:
@@ -143,7 +148,7 @@ tasks:
       - |
         failed=0
         results=""
-        for step in lint:go lint:api test:unit test:integration; do
+        for step in lint:go lint:api test:arch test:unit test:integration; do
           if task "$step" > /dev/null 2>&1; then
             results="${results}  ${step} ... ok\n"
           else
