@@ -5,7 +5,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -23,16 +22,16 @@ func main() {
 	loader := openapi3.NewLoader()
 	spec, err := loader.LoadFromFile(*specPath)
 	if err != nil {
-		log.Fatalf("load spec: %v", err)
+		fatalf("load spec: %v", err)
 	}
 	if err := spec.Validate(context.Background()); err != nil {
-		log.Fatalf("validate spec: %v", err)
+		fatalf("validate spec: %v", err)
 	}
 
 	// Load CLI config
 	cfg, err := cligen.LoadConfig(*configPath)
 	if err != nil {
-		log.Fatalf("load config: %v", err)
+		fatalf("load config: %v", err)
 	}
 
 	// Parse spec + config into model
@@ -47,8 +46,13 @@ func main() {
 
 	// Render to Go source (including API registry)
 	if err := cligen.RenderWithEndpoints(groups, cfg, endpoints, *outDir); err != nil {
-		log.Fatalf("render: %v", err)
+		fatalf("render: %v", err)
 	}
 
 	fmt.Printf("Generated %d groups + %d API endpoints in %s\n", len(groups), len(endpoints), *outDir)
+}
+
+func fatalf(format string, args ...any) {
+	_, _ = fmt.Fprintf(os.Stderr, format+"\n", args...)
+	os.Exit(1)
 }
