@@ -117,6 +117,70 @@ func TestHandler_TriggerModelRun_UsesAllModelNames(t *testing.T) {
 	assert.Equal(t, []string{"stg_orders", "fct_orders"}, *created.Body.ModelNames)
 }
 
+func TestHandler_TriggerModelRun_MapsPayloadFields(t *testing.T) {
+	t.Parallel()
+
+	ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice", IsAdmin: true})
+
+	reqBody := TriggerModelRunJSONRequestBody{
+		ProjectName:   "proj_a",
+		ModelNames:    &[]string{"stg_orders", "+fct_orders"},
+		FullRefresh:   boolPtr(true),
+		TargetCatalog: strPtr("analytics"),
+		TargetSchema:  strPtr("mart"),
+	}
+
+	var gotPrincipal string
+	var gotReq domain.TriggerModelRunRequest
+	h := &APIHandler{
+		models: &mockModelService{triggerRunFn: func(_ context.Context, principal string, req domain.TriggerModelRunRequest) (*domain.ModelRun, error) {
+			gotPrincipal = principal
+			gotReq = req
+			now := time.Now().UTC()
+			return &domain.ModelRun{ID: "run-1", Status: domain.ModelRunStatusPending, TriggerType: domain.ModelTriggerTypeManual, TriggeredBy: principal, CreatedAt: now}, nil
+		}},
+	}
+
+	resp, err := h.TriggerModelRun(ctx, TriggerModelRunRequestObject{Body: &reqBody})
+	require.NoError(t, err)
+	_, ok := resp.(TriggerModelRun201JSONResponse)
+	require.True(t, ok, "expected 201 response, got %T", resp)
+
+	assert.Equal(t, "alice", gotPrincipal)
+	assert.Equal(t, "analytics", gotReq.TargetCatalog)
+	assert.Equal(t, "mart", gotReq.TargetSchema)
+	assert.Equal(t, "stg_orders,+fct_orders", gotReq.Selector)
+	assert.True(t, gotReq.FullRefresh)
+	assert.Equal(t, domain.ModelTriggerTypeManual, gotReq.TriggerType)
+}
+
+func TestHandler_TriggerModelRun_DefaultTargetValues(t *testing.T) {
+	t.Parallel()
+
+	ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice", IsAdmin: true})
+
+	reqBody := TriggerModelRunJSONRequestBody{ProjectName: "proj_a"}
+
+	var gotReq domain.TriggerModelRunRequest
+	h := &APIHandler{
+		models: &mockModelService{triggerRunFn: func(_ context.Context, _ string, req domain.TriggerModelRunRequest) (*domain.ModelRun, error) {
+			gotReq = req
+			now := time.Now().UTC()
+			return &domain.ModelRun{ID: "run-2", Status: domain.ModelRunStatusPending, TriggerType: domain.ModelTriggerTypeManual, TriggeredBy: "alice", CreatedAt: now}, nil
+		}},
+	}
+
+	resp, err := h.TriggerModelRun(ctx, TriggerModelRunRequestObject{Body: &reqBody})
+	require.NoError(t, err)
+	_, ok := resp.(TriggerModelRun201JSONResponse)
+	require.True(t, ok, "expected 201 response, got %T", resp)
+
+	assert.Equal(t, "memory", gotReq.TargetCatalog)
+	assert.Equal(t, "proj_a", gotReq.TargetSchema)
+	assert.Equal(t, "", gotReq.Selector)
+	assert.False(t, gotReq.FullRefresh)
+}
+
 func TestHandler_ListModelRuns_InvalidStatusReturns400(t *testing.T) {
 	t.Parallel()
 
@@ -173,3 +237,5 @@ func TestHandler_ListModelRuns_IncludesModelNamesAndProject(t *testing.T) {
 	require.NotNil(t, run.ModelNames)
 	assert.Equal(t, []string{"stg_orders", "fct_orders"}, *run.ModelNames)
 }
+
+func boolPtr(v bool) *bool { return &v }

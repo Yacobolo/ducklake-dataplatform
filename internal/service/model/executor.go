@@ -268,7 +268,7 @@ func (s *Service) execOnConn(ctx context.Context, conn *sql.Conn, principal, que
 		return fmt.Errorf("classify statement: %w", err)
 	}
 
-	if stmtType == sqlrewrite.StmtDDL || stmtType == sqlrewrite.StmtOther {
+	if canDirectExecOnConn(stmtType, query) {
 		if _, err := conn.ExecContext(ctx, query); err != nil {
 			return err
 		}
@@ -412,6 +412,34 @@ func relationFQN(catalog, schema, name string) string {
 		return quoteIdent(schema) + "." + quoteIdent(name)
 	}
 	return quoteIdent(catalog) + "." + quoteIdent(schema) + "." + quoteIdent(name)
+}
+
+func canDirectExecOnConn(stmtType sqlrewrite.StatementType, query string) bool {
+	norm := strings.ToUpper(strings.TrimSpace(query))
+
+	if strings.HasPrefix(norm, "SET VARIABLE ") {
+		return true
+	}
+
+	if stmtType != sqlrewrite.StmtDDL {
+		return false
+	}
+
+	allowedDDLPrefixes := []string{
+		"CREATE OR REPLACE VIEW ",
+		"CREATE OR REPLACE TABLE ",
+		"CREATE TEMP TABLE ",
+		"DROP TABLE ",
+		"CREATE OR REPLACE MACRO ",
+	}
+
+	for _, p := range allowedDDLPrefixes {
+		if strings.HasPrefix(norm, p) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // resolveEphemeralModels injects ephemeral model SQL as CTEs into downstream models.
