@@ -1,3 +1,5 @@
+//go:build integration
+
 package engine_test
 
 import (

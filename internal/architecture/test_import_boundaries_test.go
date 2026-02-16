@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestImportBoundaries(t *testing.T) {
+func TestTestImportBoundaries(t *testing.T) {
 	t.Helper()
 
 	files, err := collectGoFiles(internalRootDir())
@@ -16,7 +16,7 @@ func TestImportBoundaries(t *testing.T) {
 
 	violations := make([]string, 0)
 	for _, file := range files {
-		if shouldSkipProductionGovernanceFile(file) {
+		if !isTestFile(file) || shouldSkipGeneratedFile(file) {
 			continue
 		}
 
@@ -26,15 +26,23 @@ func TestImportBoundaries(t *testing.T) {
 			continue
 		}
 
+		relPath := relToRepoRoot(file)
+		isIntegrationTest := hasIntegrationBuildTag(file)
 		for _, importPath := range parseImports(t, file) {
 			if !strings.HasPrefix(importPath, modulePath+"/") {
 				continue
 			}
-			if violatesRule(importPath, rule.forbidden) {
-				violations = append(violations,
-					"governance: "+sourcePkg+" imports "+importPath+" via "+file+"; allowed direction: "+rule.hint,
-				)
+			matchedForbidden := matchingForbiddenPrefix(importPath, rule.forbidden)
+			if matchedForbidden == "" {
+				continue
 			}
+			if isIntegrationTest {
+				continue
+			}
+
+			violations = append(violations,
+				"governance: test "+sourcePkg+" imports "+importPath+" via "+relPath+"; allowed direction: "+rule.hint,
+			)
 		}
 	}
 

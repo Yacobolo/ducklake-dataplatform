@@ -19,10 +19,3 @@ func nonAdminCtx() context.Context {
 		ID: "non-admin-id", Name: "regular-user", IsAdmin: false, Type: "user",
 	})
 }
-
-// principalCtx returns a context with a specific principal ID.
-func principalCtx(id, name string, isAdmin bool) context.Context {
-	return domain.WithPrincipal(context.Background(), domain.ContextPrincipal{
-		ID: id, Name: name, IsAdmin: isAdmin, Type: "user",
-	})
-}
