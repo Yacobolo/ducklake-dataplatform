@@ -1,21 +1,24 @@
 name: Notify Rune
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
   pull_request_review:
     types: [submitted]
   issues:
     types: [opened]
   issue_comment:
     types: [created]
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
 
 jobs:
   notify:
     runs-on: ubuntu-latest
     # Only notify for repo owner's actions — public repo, don't let strangers trigger the bot
+    # For workflow_run events, we filter inside the script
     if: >-
-      github.actor == 'Yacobolo'
+      github.event_name == 'workflow_run'
+      || github.actor == 'Yacobolo'
       || (github.event_name == 'issue_comment' && github.event.comment.user.login == 'Yacobolo')
     steps:
       - name: Notify Rune
@@ -29,9 +32,31 @@ jobs:
             const action = context.payload.action;
             let msg = '';
 
-            if (event === 'pull_request') {
-              const pr = context.payload.pull_request;
-              msg = `GitHub PR #${pr.number} ${action} by ${pr.user.login}: "${pr.title}" — ${pr.html_url}. Review the changes, run tests if needed, and comment on the PR.`;
+            if (event === 'workflow_run') {
+              const run = context.payload.workflow_run;
+              // Only notify for PR-related runs
+              if (!run.pull_requests || run.pull_requests.length === 0) {
+                console.log('workflow_run not associated with a PR, skipping.');
+                return;
+              }
+              // Skip bot's own PRs
+              if (run.actor.login === 'runeaibot-bit') {
+                console.log('Skipping notification for bot own PR.');
+                return;
+              }
+              const pr = run.pull_requests[0];
+              // Fetch full PR to check draft status
+              const { data: fullPR } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number
+              });
+              if (fullPR.draft) {
+                console.log(`PR #${pr.number} is a draft, skipping.`);
+                return;
+              }
+              const conclusion = run.conclusion;
+              msg = `CI ${conclusion} on PR #${pr.number}: "${fullPR.title}" — ${fullPR.html_url}. Review the PR if CI passed.`;
             } else if (event === 'issues') {
               const issue = context.payload.issue;
               msg = `GitHub Issue #${issue.number} opened by ${issue.user.login}: "${issue.title}" — ${issue.html_url}. Review and comment if you can help.`;
