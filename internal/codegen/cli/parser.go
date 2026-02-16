@@ -492,6 +492,16 @@ func classifyResponse(op *openapi3.Operation, tableColumns []string) ResponseMod
 			return rm
 		}
 
+		// Check for bare array response (type: array at top level)
+		if schema.Type != nil && len(*schema.Type) > 0 && (*schema.Type)[0] == "array" {
+			rm.Pattern = ArrayResult
+			rm.GoTypeName = typeName
+			if schema.Items != nil && schema.Items.Ref != "" {
+				rm.ItemTypeName = refToTypeName(schema.Items.Ref)
+			}
+			return rm
+		}
+
 		rm.Pattern = SingleResource
 		rm.GoTypeName = typeName
 		return rm

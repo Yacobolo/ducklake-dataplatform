@@ -222,9 +222,7 @@ func new{{toPascal .Name}}Cmd(client *Client) *cobra.Command {
 					{{- end}}
 					{{- end}}
 					{{- end}}
-					if len(m) > 0 {
-						body = m
-					}
+					body = m
 				}
 				{{- end}}
 
@@ -308,7 +306,35 @@ func new{{toPascal .Name}}Cmd(client *Client) *cobra.Command {
 					columns := []string{ {{- range $i, $col := $cmd.Response.TableColumns}}{{if $i}}, {{end}}{{quote $col}}{{end}} }
 					rows := ExtractRows(data, columns)
 					PrintTable(os.Stdout, columns, rows)
-					{{- else if isSingleResource $cmd.Response.Pattern}}
+					{{- else if isArrayResult $cmd.Response.Pattern}}
+					var items []interface{}
+					if err := json.Unmarshal(respBody, &items); err != nil {
+						return fmt.Errorf("parse response: %w", err)
+					}
+					{{- if $cmd.Response.TableColumns}}
+					columns := []string{ {{- range $i, $col := $cmd.Response.TableColumns}}{{if $i}}, {{end}}{{quote $col}}{{end}} }
+					rows := make([][]string, 0, len(items))
+					for _, item := range items {
+						if m, ok := item.(map[string]interface{}); ok {
+							row := make([]string, len(columns))
+							for ci, col := range columns {
+								if v, ok := m[col]; ok {
+									row[ci] = FormatValue(v)
+								}
+							}
+							rows = append(rows, row)
+						}
+					}
+					PrintTable(os.Stdout, columns, rows)
+					{{- else}}
+					for _, item := range items {
+						if m, ok := item.(map[string]interface{}); ok {
+							PrintDetail(os.Stdout, m)
+							fmt.Fprintln(os.Stdout)
+						}
+					}
+					{{- end}}
+				{{- else if isSingleResource $cmd.Response.Pattern}}
 					var data map[string]interface{}
 					if err := json.Unmarshal(respBody, &data); err != nil {
 						return fmt.Errorf("parse response: %w", err)
@@ -321,7 +347,7 @@ func new{{toPascal .Name}}Cmd(client *Client) *cobra.Command {
 				return PrintJSON(os.Stdout, pretty)
 				{{- end}}
 				}
-				{{- if or (isPaginatedList $cmd.Response.Pattern) (isSingleResource $cmd.Response.Pattern)}}
+				{{- if or (isPaginatedList $cmd.Response.Pattern) (isSingleResource $cmd.Response.Pattern) (isArrayResult $cmd.Response.Pattern)}}
 				return nil
 				{{- end}}
 				{{- end}}

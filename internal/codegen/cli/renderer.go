@@ -126,6 +126,7 @@ func Render(groups []GroupModel, cfg *Config, outDir string) error {
 		"isSingleResource": func(p ResponsePattern) bool { return p == SingleResource },
 		"isNoContent":      func(p ResponsePattern) bool { return p == NoContent },
 		"isCustomResult":   func(p ResponsePattern) bool { return p == CustomResult },
+		"isArrayResult":    func(p ResponsePattern) bool { return p == ArrayResult },
 		"defaultValue":     defaultValueForFlag,
 		"pathTemplate": func(urlPath string) string {
 			// Convert /catalog/schemas/{schemaName} to fmt.Sprintf pattern
