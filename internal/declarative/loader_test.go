@@ -1,6 +1,7 @@
 package declarative
 
 import (
+	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -169,4 +170,108 @@ func TestLoader_EmptyDir(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, state.Principals)
 	assert.Empty(t, state.Catalogs)
+}
+
+func TestLoader_WrongAPIVersion(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+
+	secDir := filepath.Join(dir, "security")
+	require.NoError(t, os.MkdirAll(secDir, 0o755))
+
+	content := []byte(`apiVersion: v99
+kind: PrincipalList
+principals:
+  - name: user1
+    type: user
+`)
+	require.NoError(t, os.WriteFile(filepath.Join(secDir, "principals.yaml"), content, 0o644))
+
+	_, err := LoadDirectory(dir)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unsupported apiVersion")
+	assert.Contains(t, err.Error(), "v99")
+}
+
+func TestLoader_WrongKind(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+
+	secDir := filepath.Join(dir, "security")
+	require.NoError(t, os.MkdirAll(secDir, 0o755))
+
+	content := []byte(`apiVersion: duck/v1
+kind: WrongKind
+principals:
+  - name: user1
+    type: user
+`)
+	require.NoError(t, os.WriteFile(filepath.Join(secDir, "principals.yaml"), content, 0o644))
+
+	_, err := LoadDirectory(dir)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unexpected kind")
+	assert.Contains(t, err.Error(), "WrongKind")
+}
+
+func TestLoader_PartialCatalogDir(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+
+	// Create catalogs/mycat/ directory without a catalog.yaml file inside.
+	catDir := filepath.Join(dir, "catalogs", "mycat")
+	require.NoError(t, os.MkdirAll(catDir, 0o755))
+
+	state, err := LoadDirectory(dir)
+	require.NoError(t, err, "should succeed without catalog.yaml — file is optional")
+	assert.Empty(t, state.Catalogs, "no catalog should be loaded when catalog.yaml is missing")
+}
+
+func TestLoader_NonYAMLFilesSkipped(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+
+	// Create a proper catalog with a schema and views directory.
+	viewsDir := filepath.Join(dir, "catalogs", "main", "schemas", "public", "views")
+	require.NoError(t, os.MkdirAll(viewsDir, 0o755))
+
+	// Write a valid catalog.yaml.
+	catYAML := []byte(`apiVersion: duck/v1
+kind: Catalog
+metadata:
+  name: main
+spec:
+  metastore_type: sqlite
+  dsn: ":memory:"
+  data_path: /tmp/data
+`)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "catalogs", "main", "catalog.yaml"), catYAML, 0o644))
+
+	// Write a valid schema.yaml.
+	schemaYAML := []byte(`apiVersion: duck/v1
+kind: Schema
+metadata:
+  name: public
+spec:
+  comment: test schema
+`)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "catalogs", "main", "schemas", "public", "schema.yaml"), schemaYAML, 0o644))
+
+	// Write a valid view YAML.
+	viewYAML := []byte(`apiVersion: duck/v1
+kind: View
+metadata:
+  name: my-view
+spec:
+  view_definition: "SELECT 1"
+`)
+	require.NoError(t, os.WriteFile(filepath.Join(viewsDir, "my-view.yaml"), viewYAML, 0o644))
+
+	// Write a .txt file that should be skipped.
+	require.NoError(t, os.WriteFile(filepath.Join(viewsDir, "notes.txt"), []byte("this is not yaml"), 0o644))
+
+	state, err := LoadDirectory(dir)
+	require.NoError(t, err, "non-YAML files should be silently skipped")
+	require.Len(t, state.Views, 1, "should load only the .yaml view file")
+	assert.Equal(t, "my-view", state.Views[0].ViewName)
 }
