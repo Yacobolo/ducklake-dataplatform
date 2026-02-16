@@ -209,7 +209,7 @@ func TestGitService_DeleteGitRepo(t *testing.T) {
 // === SyncGitRepo ===
 
 func TestGitService_SyncGitRepo(t *testing.T) {
-	t.Run("returns_validation_error", func(t *testing.T) {
+	t.Run("returns_not_implemented_error", func(t *testing.T) {
 		svc, repo, _ := setupGitService(t)
 		ctx := context.Background()
 
@@ -220,9 +220,9 @@ func TestGitService_SyncGitRepo(t *testing.T) {
 		result, err := svc.SyncGitRepo(ctx, "repo-1")
 		assert.Nil(t, result)
 		require.Error(t, err)
-		var validationErr *domain.ValidationError
-		require.ErrorAs(t, err, &validationErr)
-		assert.Contains(t, validationErr.Message, "not yet implemented")
+		var notImplErr *domain.NotImplementedError
+		require.ErrorAs(t, err, &notImplErr)
+		assert.Contains(t, notImplErr.Message, "not yet implemented")
 	})
 
 	t.Run("not_found_repo", func(t *testing.T) {

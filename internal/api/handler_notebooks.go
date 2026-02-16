@@ -514,6 +514,8 @@ func (h *APIHandler) SyncGitRepo(ctx context.Context, req SyncGitRepoRequestObje
 	result, err := h.gitRepos.SyncGitRepo(ctx, req.GitRepoId)
 	if err != nil {
 		switch {
+		case errors.As(err, new(*domain.NotImplementedError)):
+			return SyncGitRepo500JSONResponse{InternalErrorJSONResponse{Body: Error{Code: 501, Message: err.Error()}, Headers: InternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
 			return SyncGitRepo404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:

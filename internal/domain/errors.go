@@ -50,3 +50,15 @@ func ErrValidation(format string, args ...interface{}) *ValidationError {
 func ErrConflict(format string, args ...interface{}) *ConflictError {
 	return &ConflictError{Message: fmt.Sprintf(format, args...)}
 }
+
+// NotImplementedError indicates a feature is not yet implemented.
+type NotImplementedError struct {
+	Message string
+}
+
+func (e *NotImplementedError) Error() string { return e.Message }
+
+// ErrNotImplemented creates a NotImplementedError with a formatted message.
+func ErrNotImplemented(format string, args ...interface{}) *NotImplementedError {
+	return &NotImplementedError{Message: fmt.Sprintf(format, args...)}
+}
