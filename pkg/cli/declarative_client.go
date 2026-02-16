@@ -1435,15 +1435,16 @@ func (c *APIStateClient) executeGroupMembership(_ context.Context, action declar
 	case declarative.OpDelete:
 		member := action.Actual.(declarative.MemberRef)
 		var memberID string
-		if member.MemberID != "" {
+		switch {
+		case member.MemberID != "":
 			memberID = member.MemberID
-		} else if member.Name != "" {
+		case member.Name != "":
 			resolved, err := c.resolvePrincipalID(member.Name, member.Type)
 			if err != nil {
 				return fmt.Errorf("resolve member for group membership delete: %w", err)
 			}
 			memberID = resolved
-		} else {
+		default:
 			return fmt.Errorf("cannot delete group membership: member has neither ID nor name")
 		}
 		q := url.Values{}
