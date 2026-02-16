@@ -39,7 +39,7 @@ func parseTime(s string) time.Time {
 }
 
 func nullStr(s *string) sql.NullString {
-	if s == nil {
+	if s == nil || *s == "" {
 		return sql.NullString{}
 	}
 	return sql.NullString{String: *s, Valid: true}
