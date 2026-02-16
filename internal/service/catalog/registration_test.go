@@ -100,6 +100,7 @@ type noopAttacher struct{}
 
 func (noopAttacher) Attach(_ context.Context, _ domain.CatalogRegistration) error { return nil }
 func (noopAttacher) Detach(_ context.Context, _ string) error                     { return nil }
+func (noopAttacher) SetDefaultCatalog(_ context.Context, _ string) error          { return nil }
 
 var _ domain.CatalogAttacher = noopAttacher{}
 
@@ -113,7 +114,6 @@ func TestCatalogRegistrationService_Register_RejectsReservedNames(t *testing.T) 
 		Repo:               repo,
 		Attacher:           attacher,
 		ControlPlaneDBPath: "/tmp/ctrl.db",
-		DuckDB:             nil,
 		Logger:             slog.Default(),
 		MetastoreFactory:   nil,
 		IntrospectionClose: nil,

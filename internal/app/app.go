@@ -194,7 +194,6 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 		Repo:               catalogRegRepo,
 		Attacher:           secretMgr,
 		ControlPlaneDBPath: cfg.MetaDBPath,
-		DuckDB:             deps.DuckDB,
 		Logger:             deps.Logger.With("component", "catalog-registration"),
 		MetastoreFactory:   metastoreFactory,
 		IntrospectionClose: introspectionFactory.Close,

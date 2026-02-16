@@ -34,6 +34,7 @@ type SecretManager interface {
 type CatalogAttacher interface {
 	Attach(ctx context.Context, reg CatalogRegistration) error
 	Detach(ctx context.Context, catalogName string) error
+	SetDefaultCatalog(ctx context.Context, catalogName string) error
 }
 
 // AuthorizationService defines the interface for permission checking.
