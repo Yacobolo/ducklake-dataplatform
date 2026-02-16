@@ -9,6 +9,7 @@ const (
 	SingleResource                        // 200/201 with named $ref
 	NoContent                             // 204 only
 	CustomResult                          // fallback
+	ArrayResult                           // bare JSON array response
 )
 
 func (p ResponsePattern) String() string {
@@ -21,6 +22,8 @@ func (p ResponsePattern) String() string {
 		return "NoContent"
 	case CustomResult:
 		return "CustomResult"
+	case ArrayResult:
+		return "ArrayResult"
 	default:
 		return "Unknown"
 	}

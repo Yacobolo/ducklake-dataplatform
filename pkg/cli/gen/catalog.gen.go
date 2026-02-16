@@ -108,9 +108,7 @@ func newCatalogCmd(client *Client) *cobra.Command {
 						m["properties"] = v
 					}
 					m["name"] = args[0]
-					if len(m) > 0 {
-						body = m
-					}
+					body = m
 				}
 				// Validate required body fields when --json is not provided
 				if jsonInput == "" {
@@ -281,9 +279,7 @@ func newCatalogCmd(client *Client) *cobra.Command {
 						v, _ := cmd.Flags().GetString("table-type")
 						m["table_type"] = v
 					}
-					if len(m) > 0 {
-						body = m
-					}
+					body = m
 				}
 				// Validate required body fields when --json is not provided
 				if jsonInput == "" {
@@ -433,9 +429,7 @@ func newCatalogCmd(client *Client) *cobra.Command {
 						v, _ := cmd.Flags().GetString("view-definition")
 						m["view_definition"] = v
 					}
-					if len(m) > 0 {
-						body = m
-					}
+					body = m
 				}
 				// Validate required body fields when --json is not provided
 				if jsonInput == "" {
@@ -588,9 +582,7 @@ func newCatalogCmd(client *Client) *cobra.Command {
 						v, _ := cmd.Flags().GetString("volume-type")
 						m["volume_type"] = v
 					}
-					if len(m) > 0 {
-						body = m
-					}
+					body = m
 				}
 				// Validate required body fields when --json is not provided
 				if jsonInput == "" {
@@ -2336,9 +2328,7 @@ func newCatalogCmd(client *Client) *cobra.Command {
 						m["metastore_type"] = v
 					}
 					m["name"] = args[0]
-					if len(m) > 0 {
-						body = m
-					}
+					body = m
 				}
 				// Validate required body fields when --json is not provided
 				if jsonInput == "" {
@@ -2471,9 +2461,7 @@ func newCatalogCmd(client *Client) *cobra.Command {
 					body = raw
 				} else {
 					m := map[string]interface{}{}
-					if len(m) > 0 {
-						body = m
-					}
+					body = m
 				}
 				// Validate required body fields when --json is not provided
 				if jsonInput == "" {
@@ -2609,9 +2597,7 @@ func newCatalogCmd(client *Client) *cobra.Command {
 						v, _ := cmd.Flags().GetStringSlice("properties")
 						m["properties"] = v
 					}
-					if len(m) > 0 {
-						body = m
-					}
+					body = m
 				}
 				// Validate required body fields when --json is not provided
 				if jsonInput == "" {
@@ -2747,9 +2733,7 @@ func newCatalogCmd(client *Client) *cobra.Command {
 						v, _ := cmd.Flags().GetString("dsn")
 						m["dsn"] = v
 					}
-					if len(m) > 0 {
-						body = m
-					}
+					body = m
 				}
 				// Validate required body fields when --json is not provided
 				if jsonInput == "" {
@@ -2886,9 +2870,7 @@ func newCatalogCmd(client *Client) *cobra.Command {
 						v, _ := cmd.Flags().GetStringSlice("properties")
 						m["properties"] = v
 					}
-					if len(m) > 0 {
-						body = m
-					}
+					body = m
 				}
 				// Validate required body fields when --json is not provided
 				if jsonInput == "" {
@@ -3031,9 +3013,7 @@ func newCatalogCmd(client *Client) *cobra.Command {
 						v, _ := cmd.Flags().GetStringSlice("properties")
 						m["properties"] = v
 					}
-					if len(m) > 0 {
-						body = m
-					}
+					body = m
 				}
 				// Validate required body fields when --json is not provided
 				if jsonInput == "" {
@@ -3177,9 +3157,7 @@ func newCatalogCmd(client *Client) *cobra.Command {
 						v, _ := cmd.Flags().GetString("view-definition")
 						m["view_definition"] = v
 					}
-					if len(m) > 0 {
-						body = m
-					}
+					body = m
 				}
 				// Validate required body fields when --json is not provided
 				if jsonInput == "" {
@@ -3323,9 +3301,7 @@ func newCatalogCmd(client *Client) *cobra.Command {
 						v, _ := cmd.Flags().GetString("owner")
 						m["owner"] = v
 					}
-					if len(m) > 0 {
-						body = m
-					}
+					body = m
 				}
 				// Validate required body fields when --json is not provided
 				if jsonInput == "" {

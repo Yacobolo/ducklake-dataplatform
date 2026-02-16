@@ -69,9 +69,7 @@ func newTasksCmd(client *Client) *cobra.Command {
 						v, _ := cmd.Flags().GetInt64("priority")
 						m["priority"] = v
 					}
-					if len(m) > 0 {
-						body = m
-					}
+					body = m
 				}
 				// Validate required body fields when --json is not provided
 				if jsonInput == "" {
@@ -200,9 +198,7 @@ func newTasksCmd(client *Client) *cobra.Command {
 						v, _ := cmd.Flags().GetStringSlice("parameters")
 						m["parameters"] = v
 					}
-					if len(m) > 0 {
-						body = m
-					}
+					body = m
 				}
 				// Validate required body fields when --json is not provided
 				if jsonInput == "" {
