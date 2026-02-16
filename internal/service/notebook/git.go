@@ -87,5 +87,5 @@ func (s *GitService) SyncGitRepo(ctx context.Context, id string) (*domain.GitSyn
 	if _, err := s.repo.GetByID(ctx, id); err != nil {
 		return nil, err
 	}
-	return nil, domain.ErrValidation("git sync is not yet implemented")
+	return nil, domain.ErrNotImplemented("git sync is not yet implemented")
 }
