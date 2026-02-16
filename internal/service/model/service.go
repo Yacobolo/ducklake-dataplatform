@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"strings"
 	"sync"
 
 	"duck-demo/internal/domain"
@@ -196,8 +197,17 @@ func (s *Service) TriggerRun(ctx context.Context, principal string, req domain.T
 		}
 	}
 
-	// Resolve ephemeral models: inject CTEs and remove from execution set
+	compiledArtifacts, err := s.compileSelectedModels(selected, allModels, req)
+	if err != nil {
+		return nil, err
+	}
+
+	// Resolve ephemeral models: inject CTEs and remove from execution set.
+	// This can alter SQL for downstream models, so keep artifacts in sync.
 	selected = resolveEphemeralModels(selected)
+	if err := s.syncCompiledArtifacts(selected, compiledArtifacts, req); err != nil {
+		return nil, err
+	}
 
 	// Resolve DAG
 	tiers, err := ResolveDAG(selected)
@@ -214,6 +224,7 @@ func (s *Service) TriggerRun(ctx context.Context, principal string, req domain.T
 		TargetSchema:  req.TargetSchema,
 		ModelSelector: req.Selector,
 		Variables:     req.Variables,
+		FullRefresh:   req.FullRefresh,
 	}
 	run, err = s.runs.CreateRun(ctx, run)
 	if err != nil {
@@ -223,12 +234,18 @@ func (s *Service) TriggerRun(ctx context.Context, principal string, req domain.T
 	// Create steps
 	for _, tier := range tiers {
 		for _, node := range tier {
+			artifact := compiledArtifacts[node.Model.ID]
 			step := &domain.ModelRunStep{
-				RunID:     run.ID,
-				ModelID:   node.Model.ID,
-				ModelName: node.Model.QualifiedName(),
-				Status:    domain.ModelRunStatusPending,
-				Tier:      node.Tier,
+				RunID:        run.ID,
+				ModelID:      node.Model.ID,
+				ModelName:    node.Model.QualifiedName(),
+				CompiledSQL:  strPtrOrNil(artifact.sql),
+				CompiledHash: strPtrOrNil(artifact.compiledHash),
+				DependsOn:    artifact.dependsOn,
+				VarsUsed:     artifact.varsUsed,
+				MacrosUsed:   artifact.macrosUsed,
+				Status:       domain.ModelRunStatusPending,
+				Tier:         node.Tier,
 			}
 			if _, err := s.runs.CreateStep(ctx, step); err != nil {
 				return nil, fmt.Errorf("create step for %s: %w", node.Model.QualifiedName(), err)
@@ -278,7 +295,15 @@ func (s *Service) TriggerRunSync(ctx context.Context, principal string, req doma
 		}
 	}
 
+	compiledArtifacts, err := s.compileSelectedModels(selected, allModels, req)
+	if err != nil {
+		return err
+	}
+
 	selected = resolveEphemeralModels(selected)
+	if err := s.syncCompiledArtifacts(selected, compiledArtifacts, req); err != nil {
+		return err
+	}
 
 	tiers, err := ResolveDAG(selected)
 	if err != nil {
@@ -294,6 +319,7 @@ func (s *Service) TriggerRunSync(ctx context.Context, principal string, req doma
 		TargetSchema:  req.TargetSchema,
 		ModelSelector: req.Selector,
 		Variables:     req.Variables,
+		FullRefresh:   req.FullRefresh,
 	}
 	run, err = s.runs.CreateRun(ctx, run)
 	if err != nil {
@@ -303,12 +329,18 @@ func (s *Service) TriggerRunSync(ctx context.Context, principal string, req doma
 	// Create steps
 	for _, tier := range tiers {
 		for _, node := range tier {
+			artifact := compiledArtifacts[node.Model.ID]
 			step := &domain.ModelRunStep{
-				RunID:     run.ID,
-				ModelID:   node.Model.ID,
-				ModelName: node.Model.QualifiedName(),
-				Status:    domain.ModelRunStatusPending,
-				Tier:      node.Tier,
+				RunID:        run.ID,
+				ModelID:      node.Model.ID,
+				ModelName:    node.Model.QualifiedName(),
+				CompiledSQL:  strPtrOrNil(artifact.sql),
+				CompiledHash: strPtrOrNil(artifact.compiledHash),
+				DependsOn:    artifact.dependsOn,
+				VarsUsed:     artifact.varsUsed,
+				MacrosUsed:   artifact.macrosUsed,
+				Status:       domain.ModelRunStatusPending,
+				Tier:         node.Tier,
 			}
 			if _, err := s.runs.CreateStep(ctx, step); err != nil {
 				return fmt.Errorf("create step for %s: %w", node.Model.QualifiedName(), err)
@@ -488,4 +520,71 @@ func (s *Service) logAudit(ctx context.Context, principal, action, _ string) {
 		Action:        action,
 		Status:        "ALLOWED",
 	})
+}
+
+func (s *Service) compileSelectedModels(selected []domain.Model, allModels []domain.Model, req domain.TriggerModelRunRequest) (map[string]compileResult, error) {
+	byQualified := make(map[string]domain.Model, len(allModels))
+	byName := make(map[string][]domain.Model)
+	for _, m := range allModels {
+		byQualified[m.QualifiedName()] = m
+		byName[m.Name] = append(byName[m.Name], m)
+	}
+
+	artifacts := make(map[string]compileResult, len(selected))
+	for i := range selected {
+		m := selected[i]
+		ctx := compileContext{
+			targetCatalog: req.TargetCatalog,
+			targetSchema:  req.TargetSchema,
+			vars:          req.Variables,
+			fullRefresh:   req.FullRefresh,
+			projectName:   m.ProjectName,
+			modelName:     m.Name,
+			materialize:   m.Materialization,
+			models:        byQualified,
+			byName:        byName,
+		}
+		compiled, err := compileModelSQL(m.SQL, ctx)
+		if err != nil {
+			return nil, fmt.Errorf("compile model %s: %w", m.QualifiedName(), err)
+		}
+
+		selected[i].SQL = compiled.sql
+		selected[i].DependsOn = compiled.dependsOn
+		artifacts[m.ID] = *compiled
+	}
+
+	return artifacts, nil
+}
+
+func (s *Service) syncCompiledArtifacts(selected []domain.Model, artifacts map[string]compileResult, req domain.TriggerModelRunRequest) error {
+	for _, m := range selected {
+		artifact := artifacts[m.ID]
+		if artifact.sql == m.SQL {
+			continue
+		}
+		hash, err := computeCompiledHash(m.SQL, compileContext{
+			targetCatalog: req.TargetCatalog,
+			targetSchema:  req.TargetSchema,
+			vars:          req.Variables,
+			fullRefresh:   req.FullRefresh,
+			projectName:   m.ProjectName,
+			modelName:     m.Name,
+			materialize:   m.Materialization,
+		})
+		if err != nil {
+			return fmt.Errorf("hash compiled SQL for %s: %w", m.QualifiedName(), err)
+		}
+		artifact.sql = m.SQL
+		artifact.compiledHash = hash
+		artifacts[m.ID] = artifact
+	}
+	return nil
+}
+
+func strPtrOrNil(v string) *string {
+	if strings.TrimSpace(v) == "" {
+		return nil
+	}
+	return &v
 }

@@ -43,6 +43,15 @@ func (s *Service) executeRun(ctx context.Context, runID string,
 		return
 	}
 
+	if err := s.verifyMacrosLoadable(ctx, principal); err != nil {
+		errMsg := fmt.Sprintf("macro validation failed: %v", err)
+		for _, st := range stepsOrEmpty(ctx, s, runID) {
+			_ = s.runs.UpdateStepFinished(ctx, st.ID, domain.ModelRunStatusFailed, nil, &errMsg)
+		}
+		_ = s.runs.UpdateRunFinished(ctx, runID, domain.ModelRunStatusFailed, &errMsg)
+		return
+	}
+
 	// Build step map
 	steps, err := s.runs.ListStepsByRun(ctx, runID)
 	if err != nil {
@@ -51,8 +60,10 @@ func (s *Service) executeRun(ctx context.Context, runID string,
 		return
 	}
 	stepByModelID := make(map[string]string, len(steps))
+	stepMetaByModelID := make(map[string]domain.ModelRunStep, len(steps))
 	for _, st := range steps {
 		stepByModelID[st.ModelID] = st.ID
+		stepMetaByModelID[st.ModelID] = st
 	}
 
 	runFailed := false
@@ -90,7 +101,17 @@ func (s *Service) executeRun(ctx context.Context, runID string,
 				logger.Error("failed to update step started", "model", node.Model.QualifiedName(), "error", err)
 			}
 
-			rowsAffected, err := s.executeSingleModel(ctx, node.Model, config, principal, logger)
+			execModel := *node.Model
+			stepMeta, ok := stepMetaByModelID[node.Model.ID]
+			if !ok || stepMeta.CompiledSQL == nil || strings.TrimSpace(*stepMeta.CompiledSQL) == "" {
+				runFailed = true
+				errMsg := fmt.Sprintf("missing compiled SQL artifact for %s", node.Model.QualifiedName())
+				_ = s.runs.UpdateStepFinished(ctx, stepID, domain.ModelRunStatusFailed, nil, &errMsg)
+				continue
+			}
+			execModel.SQL = *stepMeta.CompiledSQL
+
+			rowsAffected, err := s.executeSingleModel(ctx, &execModel, config, principal, logger)
 			if err != nil {
 				runFailed = true
 				errMsg := err.Error()
@@ -99,7 +120,7 @@ func (s *Service) executeRun(ctx context.Context, runID string,
 			}
 
 			// Post-materialization: contract validation and tests
-			if err := s.postMaterialize(ctx, node.Model, config, stepID, principal, logger); err != nil {
+			if err := s.postMaterialize(ctx, &execModel, config, stepID, principal, logger); err != nil {
 				runFailed = true
 				errMsg := err.Error()
 				_ = s.runs.UpdateStepFinished(ctx, stepID, domain.ModelRunStatusFailed, rowsAffected, &errMsg)
@@ -120,6 +141,29 @@ func (s *Service) executeRun(ctx context.Context, runID string,
 	default:
 		_ = s.runs.UpdateRunFinished(ctx, runID, domain.ModelRunStatusSuccess, nil)
 	}
+}
+
+func (s *Service) verifyMacrosLoadable(ctx context.Context, principal string) error {
+	if s.macros == nil {
+		return nil
+	}
+	conn, err := s.duckDB.Conn(ctx)
+	if err != nil {
+		return fmt.Errorf("acquire connection for macro validation: %w", err)
+	}
+	defer func() { _ = conn.Close() }()
+	if err := s.loadMacros(ctx, conn, principal); err != nil {
+		return err
+	}
+	return nil
+}
+
+func stepsOrEmpty(ctx context.Context, s *Service, runID string) []domain.ModelRunStep {
+	steps, err := s.runs.ListStepsByRun(ctx, runID)
+	if err != nil {
+		return nil
+	}
+	return steps
 }
 
 // loadMacros creates all macros on the connection before model execution.

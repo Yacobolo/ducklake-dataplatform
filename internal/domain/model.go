@@ -153,6 +153,7 @@ type ModelRun struct {
 	TargetSchema  string
 	ModelSelector string // which models: "" = all, "stg_orders+", "tag:finance"
 	Variables     map[string]string
+	FullRefresh   bool
 	StartedAt     *time.Time
 	FinishedAt    *time.Time
 	ErrorMessage  *string
@@ -165,6 +166,11 @@ type ModelRunStep struct {
 	RunID        string
 	ModelID      string
 	ModelName    string // "project.name" qualified
+	CompiledSQL  *string
+	CompiledHash *string
+	DependsOn    []string
+	VarsUsed     []string
+	MacrosUsed   []string
 	Status       string
 	Tier         int // DAG tier (0 = roots)
 	RowsAffected *int64

@@ -284,6 +284,10 @@ ModelRun:
       maxLength: 255
       pattern: '^\S+$'
       example: analytics
+    full_refresh:
+      type: boolean
+      default: false
+      example: false
     started_at:
       type: string
       format: date-time
@@ -324,6 +328,40 @@ ModelRunStep:
       maxLength: 255
       pattern: '^\S.*$'
       example: stg_orders
+    compiled_sql:
+      type: string
+      maxLength: 500000
+      pattern: '^[\s\S]*$'
+      example: SELECT * FROM "analytics"."stg_orders"
+    compiled_hash:
+      type: string
+      maxLength: 128
+      pattern: '^sha256:[0-9a-f]+$'
+      example: sha256:abcdef012345
+    depends_on:
+      type: array
+      maxItems: 1000
+      items:
+        type: string
+        maxLength: 255
+        pattern: '^\S.*$'
+      example: ["analytics.stg_orders", "source:raw.orders"]
+    vars_used:
+      type: array
+      maxItems: 1000
+      items:
+        type: string
+        maxLength: 255
+        pattern: '^\S.*$'
+      example: ["window_days"]
+    macros_used:
+      type: array
+      maxItems: 1000
+      items:
+        type: string
+        maxLength: 255
+        pattern: '^\S.*$'
+      example: ["utils.cents_to_dollars"]
     status:
       type: string
       enum: [PENDING, RUNNING, SUCCESS, FAILED, SKIPPED, CANCELLED]

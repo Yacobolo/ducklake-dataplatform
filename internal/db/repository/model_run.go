@@ -41,6 +41,7 @@ func (r *ModelRunRepo) CreateRun(ctx context.Context, run *domain.ModelRun) (*do
 		TargetSchema:  run.TargetSchema,
 		ModelSelector: run.ModelSelector,
 		Variables:     string(varsJSON),
+		FullRefresh:   boolToInt64(run.FullRefresh),
 	})
 	if err != nil {
 		return nil, mapDBError(err)
@@ -105,13 +106,31 @@ func (r *ModelRunRepo) UpdateRunFinished(ctx context.Context, id string, status 
 
 // CreateStep inserts a new model run step.
 func (r *ModelRunRepo) CreateStep(ctx context.Context, step *domain.ModelRunStep) (*domain.ModelRunStep, error) {
+	dependsOnJSON, err := json.Marshal(step.DependsOn)
+	if err != nil {
+		return nil, fmt.Errorf("marshal depends_on: %w", err)
+	}
+	varsUsedJSON, err := json.Marshal(step.VarsUsed)
+	if err != nil {
+		return nil, fmt.Errorf("marshal vars_used: %w", err)
+	}
+	macrosUsedJSON, err := json.Marshal(step.MacrosUsed)
+	if err != nil {
+		return nil, fmt.Errorf("marshal macros_used: %w", err)
+	}
+
 	row, err := r.q.CreateModelRunStep(ctx, dbstore.CreateModelRunStepParams{
-		ID:        newID(),
-		RunID:     step.RunID,
-		ModelID:   step.ModelID,
-		ModelName: step.ModelName,
-		Status:    step.Status,
-		Tier:      int64(step.Tier),
+		ID:           newID(),
+		RunID:        step.RunID,
+		ModelID:      step.ModelID,
+		ModelName:    step.ModelName,
+		CompiledSql:  nullStrFromPtr(step.CompiledSQL),
+		CompiledHash: nullStrFromPtr(step.CompiledHash),
+		DependsOn:    string(dependsOnJSON),
+		VarsUsed:     string(varsUsedJSON),
+		MacrosUsed:   string(macrosUsedJSON),
+		Status:       step.Status,
+		Tier:         int64(step.Tier),
 	})
 	if err != nil {
 		return nil, mapDBError(err)
@@ -190,11 +209,19 @@ func modelRunFromDB(row dbstore.ModelRun) *domain.ModelRun {
 		TargetSchema:  row.TargetSchema,
 		ModelSelector: row.ModelSelector,
 		Variables:     vars,
+		FullRefresh:   row.FullRefresh != 0,
 		StartedAt:     startedAt,
 		FinishedAt:    finishedAt,
 		ErrorMessage:  errMsg,
 		CreatedAt:     createdAt,
 	}
+}
+
+func boolToInt64(v bool) int64 {
+	if v {
+		return 1
+	}
+	return 0
 }
 
 func modelRunStepFromDB(row dbstore.ModelRunStep) *domain.ModelRunStep {
@@ -222,11 +249,38 @@ func modelRunStepFromDB(row dbstore.ModelRunStep) *domain.ModelRunStep {
 		rowsAffected = &row.RowsAffected.Int64
 	}
 
+	dependsOn := make([]string, 0)
+	if row.DependsOn != "" {
+		_ = json.Unmarshal([]byte(row.DependsOn), &dependsOn)
+	}
+	varsUsed := make([]string, 0)
+	if row.VarsUsed != "" {
+		_ = json.Unmarshal([]byte(row.VarsUsed), &varsUsed)
+	}
+	macrosUsed := make([]string, 0)
+	if row.MacrosUsed != "" {
+		_ = json.Unmarshal([]byte(row.MacrosUsed), &macrosUsed)
+	}
+
+	var compiledSQL *string
+	if row.CompiledSql.Valid {
+		compiledSQL = &row.CompiledSql.String
+	}
+	var compiledHash *string
+	if row.CompiledHash.Valid {
+		compiledHash = &row.CompiledHash.String
+	}
+
 	return &domain.ModelRunStep{
 		ID:           row.ID,
 		RunID:        row.RunID,
 		ModelID:      row.ModelID,
 		ModelName:    row.ModelName,
+		CompiledSQL:  compiledSQL,
+		CompiledHash: compiledHash,
+		DependsOn:    dependsOn,
+		VarsUsed:     varsUsed,
+		MacrosUsed:   macrosUsed,
 		Status:       row.Status,
 		Tier:         int(row.Tier),
 		RowsAffected: rowsAffected,

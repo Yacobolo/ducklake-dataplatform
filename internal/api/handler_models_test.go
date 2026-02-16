@@ -177,7 +177,7 @@ func TestHandler_TriggerModelRun_DefaultTargetValues(t *testing.T) {
 
 	assert.Equal(t, "memory", gotReq.TargetCatalog)
 	assert.Equal(t, "proj_a", gotReq.TargetSchema)
-	assert.Equal(t, "", gotReq.Selector)
+	assert.Empty(t, gotReq.Selector)
 	assert.False(t, gotReq.FullRefresh)
 }
 

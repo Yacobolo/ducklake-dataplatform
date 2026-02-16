@@ -395,6 +395,7 @@ func modelRunToAPI(r domain.ModelRun) ModelRun {
 	if r.TargetSchema != "" {
 		resp.ProjectName = &r.TargetSchema
 	}
+	resp.FullRefresh = &r.FullRefresh
 	if names := selectorToModelNames(r.ModelSelector); len(names) > 0 {
 		resp.ModelNames = &names
 	}
@@ -459,6 +460,21 @@ func modelRunStepToAPI(s domain.ModelRunStep) ModelRunStep {
 		ModelName: &s.ModelName,
 		Status:    &status,
 		CreatedAt: &ct,
+	}
+	if s.CompiledSQL != nil {
+		resp.CompiledSql = s.CompiledSQL
+	}
+	if s.CompiledHash != nil {
+		resp.CompiledHash = s.CompiledHash
+	}
+	if len(s.DependsOn) > 0 {
+		resp.DependsOn = &s.DependsOn
+	}
+	if len(s.VarsUsed) > 0 {
+		resp.VarsUsed = &s.VarsUsed
+	}
+	if len(s.MacrosUsed) > 0 {
+		resp.MacrosUsed = &s.MacrosUsed
 	}
 	if s.RowsAffected != nil {
 		resp.RowsAffected = s.RowsAffected
