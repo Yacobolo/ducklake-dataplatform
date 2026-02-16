@@ -44,8 +44,9 @@ type GroupSpec struct {
 
 // MemberRef is a reference to a user or nested group within a group.
 type MemberRef struct {
-	Name string `yaml:"name"`
-	Type string `yaml:"type"` // "user" or "group"
+	Name     string `yaml:"name"`
+	Type     string `yaml:"type"`       // "user" or "group"
+	MemberID string `yaml:"-" json:"-"` // populated from API during ReadState, not from YAML
 }
 
 // GrantListDoc declares a set of privilege grants.

@@ -222,12 +222,12 @@ func diffGroupMembers(plan *Plan, groupName string, desired, actual []MemberRef)
 	}
 	actualMap := make(map[memberKey]MemberRef, len(actual))
 	for _, a := range actual {
-		actualMap[memberKey(a)] = a
+		actualMap[memberKey{Name: a.Name, Type: a.Type}] = a
 	}
 
 	seen := make(map[memberKey]bool, len(desired))
 	for _, d := range desired {
-		k := memberKey(d)
+		k := memberKey{Name: d.Name, Type: d.Type}
 		seen[k] = true
 		if _, exists := actualMap[k]; !exists {
 			memberName := fmt.Sprintf("%s/%s(%s)", groupName, d.Name, d.Type)
@@ -236,7 +236,7 @@ func diffGroupMembers(plan *Plan, groupName string, desired, actual []MemberRef)
 	}
 
 	for _, a := range actual {
-		k := memberKey(a)
+		k := memberKey{Name: a.Name, Type: a.Type}
 		if !seen[k] {
 			memberName := fmt.Sprintf("%s/%s(%s)", groupName, a.Name, a.Type)
 			addDelete(plan, KindGroupMembership, memberName, a)
