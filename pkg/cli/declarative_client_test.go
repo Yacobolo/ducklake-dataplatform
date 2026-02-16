@@ -121,7 +121,7 @@ func TestExecuteCatalog_CreateSendsName(t *testing.T) {
 	assert.Equal(t, "sqlite", bodyStr(req, "metastore_type"))
 	assert.Equal(t, "/tmp/meta.sqlite", bodyStr(req, "dsn"))
 	assert.Equal(t, "/tmp/data/", bodyStr(req, "data_path"))
-	assert.Equal(t, true, bodyBool(req, "is_default"))
+	assert.True(t, bodyBool(req, "is_default"))
 	assert.Equal(t, "test catalog", bodyStr(req, "comment"))
 }
 
@@ -522,7 +522,7 @@ func TestExecuteColumnMaskBinding_Create(t *testing.T) {
 	assert.Contains(t, req.Path, "/column-masks/cm-id-name/bindings")
 	assert.Equal(t, "principal-id-alice", bodyStr(req, "principal_id"))
 	assert.Equal(t, "user", bodyStr(req, "principal_type"))
-	assert.Equal(t, true, bodyBool(req, "see_original"))
+	assert.True(t, bodyBool(req, "see_original"))
 }
 
 func TestExecuteColumnMaskBinding_Delete(t *testing.T) {
