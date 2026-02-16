@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"duck-demo/internal/domain"
 	"duck-demo/internal/service/model"
@@ -193,7 +194,7 @@ func (h *APIHandler) TriggerModelRun(ctx context.Context, req TriggerModelRunReq
 		TriggerType:   domain.ModelTriggerTypeManual,
 	}
 	if req.Body.ModelNames != nil && len(*req.Body.ModelNames) > 0 {
-		domReq.Selector = (*req.Body.ModelNames)[0]
+		domReq.Selector = strings.Join(*req.Body.ModelNames, ",")
 	}
 
 	cp, _ := domain.PrincipalFromContext(ctx)
@@ -225,6 +226,9 @@ func (h *APIHandler) ListModelRuns(ctx context.Context, req ListModelRunsRequest
 	}
 	if req.Params.Status != nil {
 		s := string(*req.Params.Status)
+		if !isValidListModelRunsStatus(s) {
+			return ListModelRuns400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: "status must be one of: PENDING, RUNNING, SUCCESS, FAILED, CANCELLED"}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		}
 		filter.Status = &s
 	}
 
@@ -355,6 +359,12 @@ func modelRunToAPI(r domain.ModelRun) ModelRun {
 		TriggeredBy: &r.TriggeredBy,
 		CreatedAt:   &ct,
 	}
+	if r.TargetSchema != "" {
+		resp.ProjectName = &r.TargetSchema
+	}
+	if names := selectorToModelNames(r.ModelSelector); len(names) > 0 {
+		resp.ModelNames = &names
+	}
 	if r.StartedAt != nil {
 		resp.StartedAt = r.StartedAt
 	}
@@ -365,6 +375,46 @@ func modelRunToAPI(r domain.ModelRun) ModelRun {
 		resp.ErrorMessage = r.ErrorMessage
 	}
 	return resp
+}
+
+func isValidListModelRunsStatus(status string) bool {
+	switch status {
+	case domain.ModelRunStatusPending,
+		domain.ModelRunStatusRunning,
+		domain.ModelRunStatusSuccess,
+		domain.ModelRunStatusFailed,
+		domain.ModelRunStatusCancelled:
+		return true
+	default:
+		return false
+	}
+}
+
+func selectorToModelNames(selector string) []string {
+	selector = strings.TrimSpace(selector)
+	if selector == "" {
+		return nil
+	}
+	if strings.HasPrefix(selector, "tag:") || strings.HasPrefix(selector, "project:") {
+		return nil
+	}
+	if strings.Contains(selector, "+") || selector == "*" {
+		return nil
+	}
+
+	rawParts := strings.Split(selector, ",")
+	names := make([]string, 0, len(rawParts))
+	for _, part := range rawParts {
+		name := strings.TrimSpace(part)
+		if name == "" {
+			continue
+		}
+		names = append(names, name)
+	}
+	if len(names) == 0 {
+		return nil
+	}
+	return names
 }
 
 func modelRunStepToAPI(s domain.ModelRunStep) ModelRunStep {
