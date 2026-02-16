@@ -118,3 +118,62 @@ func TestCommands_HasFlags(t *testing.T) {
 		}
 	}
 }
+
+func TestCommands_FilterAndGroup(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{"--output", "json", "commands", "--group", "security", "--filter", "api-key"})
+
+	old := captureStdout(t)
+	err := rootCmd.Execute()
+	output := old()
+	require.NoError(t, err)
+
+	var entries []CommandEntry
+	require.NoError(t, json.Unmarshal([]byte(output), &entries))
+	assert.NotEmpty(t, entries, "should find security api-key commands")
+	for _, e := range entries {
+		assert.Equal(t, "security", e.Group, "group should be security")
+		assert.True(t,
+			containsIgnoreCase(e.Path, "api-key") || containsIgnoreCase(e.Short, "api-key") || containsIgnoreCase(e.Long, "api-key"),
+			"entry %s should match api-key filter", e.Path)
+	}
+}
+
+func TestCommands_FilterNoMatches(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{"--output", "json", "commands", "--filter", "zzz_nonexistent_xyz_999"})
+
+	old := captureStdout(t)
+	err := rootCmd.Execute()
+	output := old()
+	require.NoError(t, err)
+
+	var entries []CommandEntry
+	err = json.Unmarshal([]byte(output), &entries)
+	require.NoError(t, err)
+	assert.Empty(t, entries, "nonsense filter should return no commands")
+}
+
+func TestCommands_TableOutput(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{"commands", "--group", "api"})
+
+	old := captureStdout(t)
+	err := rootCmd.Execute()
+	output := old()
+	require.NoError(t, err)
+
+	// Table output should contain column headers (uppercase) and at least one api subcommand
+	assert.Contains(t, output, "PATH", "table output should have PATH column header")
+	assert.Contains(t, output, "DESCRIPTION", "table output should have DESCRIPTION column header")
+	assert.Contains(t, output, "api ", "should show api commands in table output")
+}
