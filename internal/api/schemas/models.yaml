@@ -374,6 +374,17 @@ TriggerModelRunRequest:
         maxLength: 255
         pattern: '^\S.*$'
       example: ["stg_orders", "fct_orders"]
+    target_catalog:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+      default: memory
+      example: memory
+    target_schema:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+      example: analytics
     full_refresh:
       type: boolean
       default: false

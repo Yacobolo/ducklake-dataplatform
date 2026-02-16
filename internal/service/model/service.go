@@ -243,6 +243,7 @@ func (s *Service) TriggerRun(ctx context.Context, principal string, req domain.T
 		TargetCatalog: req.TargetCatalog,
 		TargetSchema:  req.TargetSchema,
 		Variables:     req.Variables,
+		FullRefresh:   req.FullRefresh,
 	}
 	go s.executeRun(runCtx, run.ID, selected, tiers, config, principal)
 
@@ -320,6 +321,7 @@ func (s *Service) TriggerRunSync(ctx context.Context, principal string, req doma
 		TargetCatalog: req.TargetCatalog,
 		TargetSchema:  req.TargetSchema,
 		Variables:     req.Variables,
+		FullRefresh:   req.FullRefresh,
 	}
 	s.executeRun(ctx, run.ID, selected, tiers, config, principal)
 

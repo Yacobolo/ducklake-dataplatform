@@ -32,6 +32,8 @@ func TestSelectModels(t *testing.T) {
 		{name: "both directions", selector: "+b+", want: []string{"p.a", "p.b", "p.c"}},
 		{name: "tag", selector: "tag:finance", want: []string{"p.a", "p.b"}},
 		{name: "project", selector: "project:q", want: []string{"q.d"}},
+		{name: "multi selector list", selector: "p.a, p.c", want: []string{"p.a", "p.c"}},
+		{name: "multi selector list with graph", selector: "+c, tag:marketing", want: []string{"p.a", "p.b", "p.c", "q.d"}},
 		{name: "multiple explicit models", selector: "a,c", want: []string{"p.a", "p.c"}},
 		{name: "multiple explicit models trims and dedupes", selector: " a , p.a , c ", want: []string{"p.a", "p.c"}},
 		{name: "not found", selector: "nonexistent", wantErr: true},

@@ -209,6 +209,15 @@ func (h *APIHandler) TriggerModelRun(ctx context.Context, req TriggerModelRunReq
 		TargetSchema:  req.Body.ProjectName,
 		TriggerType:   domain.ModelTriggerTypeManual,
 	}
+	if req.Body.TargetCatalog != nil {
+		domReq.TargetCatalog = *req.Body.TargetCatalog
+	}
+	if req.Body.TargetSchema != nil {
+		domReq.TargetSchema = *req.Body.TargetSchema
+	}
+	if req.Body.FullRefresh != nil {
+		domReq.FullRefresh = *req.Body.FullRefresh
+	}
 	if req.Body.ModelNames != nil && len(*req.Body.ModelNames) > 0 {
 		domReq.Selector = strings.Join(*req.Body.ModelNames, ",")
 	}

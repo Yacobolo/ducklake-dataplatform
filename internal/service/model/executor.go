@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"duck-demo/internal/domain"
+	"duck-demo/internal/sqlrewrite"
 )
 
 var validVariableName = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
@@ -18,6 +19,7 @@ type ExecutionConfig struct {
 	TargetCatalog string
 	TargetSchema  string
 	Variables     map[string]string
+	FullRefresh   bool
 }
 
 // executeRun processes a model run in a background goroutine.
@@ -128,8 +130,7 @@ func (s *Service) loadMacros(ctx context.Context, conn *sql.Conn, principal stri
 
 	macros, err := s.macros.ListAll(ctx)
 	if err != nil {
-		s.logger.Warn("failed to load macros", "error", err)
-		return nil // non-fatal: continue without macros
+		return fmt.Errorf("list macros: %w", err)
 	}
 
 	for _, m := range macros {
@@ -149,8 +150,7 @@ func (s *Service) loadMacros(ctx context.Context, conn *sql.Conn, principal stri
 		}
 
 		if err := s.execOnConn(ctx, conn, principal, ddl); err != nil {
-			s.logger.Warn("failed to create macro", "macro", m.Name, "error", err)
-			// Non-fatal: continue with other macros.
+			return fmt.Errorf("create macro %q: %w", m.Name, err)
 		}
 	}
 	return nil
@@ -230,22 +230,21 @@ func (s *Service) injectVariables(ctx context.Context, conn *sql.Conn,
 
 func (s *Service) materializeView(ctx context.Context, conn *sql.Conn,
 	model *domain.Model, config ExecutionConfig, principal string) error {
-	ddl := fmt.Sprintf("CREATE OR REPLACE VIEW %s.%s AS (%s)",
-		quoteIdent(config.TargetSchema), quoteIdent(model.Name), model.SQL)
+	relation := relationFQN(config.TargetCatalog, config.TargetSchema, model.Name)
+	ddl := fmt.Sprintf("CREATE OR REPLACE VIEW %s AS (%s)", relation, model.SQL)
 	return s.execOnConn(ctx, conn, principal, ddl)
 }
 
 func (s *Service) materializeTable(ctx context.Context, conn *sql.Conn,
 	model *domain.Model, config ExecutionConfig, principal string) (int64, error) {
-	ddl := fmt.Sprintf("CREATE OR REPLACE TABLE %s.%s AS (%s)",
-		quoteIdent(config.TargetSchema), quoteIdent(model.Name), model.SQL)
+	relation := relationFQN(config.TargetCatalog, config.TargetSchema, model.Name)
+	ddl := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s)", relation, model.SQL)
 	// Execute and count rows via a separate count query
 	if err := s.execOnConn(ctx, conn, principal, ddl); err != nil {
 		return 0, err
 	}
 	// Count rows in the materialized table
-	countSQL := fmt.Sprintf("SELECT COUNT(*) FROM %s.%s",
-		quoteIdent(config.TargetSchema), quoteIdent(model.Name))
+	countSQL := fmt.Sprintf("SELECT COUNT(*) FROM %s", relation)
 	rows, err := s.engine.QueryOnConn(ctx, conn, principal, countSQL)
 	if err != nil {
 		return 0, fmt.Errorf("count materialized rows: %w", err)
@@ -264,6 +263,18 @@ func (s *Service) materializeTable(ctx context.Context, conn *sql.Conn,
 }
 
 func (s *Service) execOnConn(ctx context.Context, conn *sql.Conn, principal, query string) error {
+	stmtType, err := sqlrewrite.ClassifyStatement(query)
+	if err != nil {
+		return fmt.Errorf("classify statement: %w", err)
+	}
+
+	if stmtType == sqlrewrite.StmtDDL || stmtType == sqlrewrite.StmtOther {
+		if _, err := conn.ExecContext(ctx, query); err != nil {
+			return err
+		}
+		return nil
+	}
+
 	rows, err := s.engine.QueryOnConn(ctx, conn, principal, query)
 	if err != nil {
 		return err
@@ -306,11 +317,14 @@ func (s *Service) postMaterialize(ctx context.Context, model *domain.Model,
 
 func (s *Service) materializeIncremental(ctx context.Context, conn *sql.Conn,
 	model *domain.Model, config ExecutionConfig, principal string) (int64, error) {
+	if config.FullRefresh {
+		return s.materializeTable(ctx, conn, model, config, principal)
+	}
 
-	targetFQN := quoteIdent(config.TargetSchema) + "." + quoteIdent(model.Name)
+	targetFQN := relationFQN(config.TargetCatalog, config.TargetSchema, model.Name)
 
 	// Check if target table exists
-	exists, err := s.tableExists(ctx, conn, config.TargetSchema, model.Name, principal)
+	exists, err := s.tableExists(ctx, conn, config.TargetCatalog, config.TargetSchema, model.Name, principal)
 	if err != nil {
 		return 0, fmt.Errorf("check table existence: %w", err)
 	}
@@ -361,12 +375,22 @@ func (s *Service) materializeIncremental(ctx context.Context, conn *sql.Conn,
 	return count, nil
 }
 
-func (s *Service) tableExists(ctx context.Context, conn *sql.Conn, schema, table, principal string) (bool, error) {
-	checkSQL := fmt.Sprintf(
-		"SELECT 1 FROM information_schema.tables WHERE table_schema = '%s' AND table_name = '%s'",
-		strings.ReplaceAll(schema, "'", "''"),
-		strings.ReplaceAll(table, "'", "''"),
-	)
+func (s *Service) tableExists(ctx context.Context, conn *sql.Conn, catalog, schema, table, principal string) (bool, error) {
+	var checkSQL string
+	if catalog != "" {
+		checkSQL = fmt.Sprintf(
+			"SELECT 1 FROM information_schema.tables WHERE table_catalog = '%s' AND table_schema = '%s' AND table_name = '%s'",
+			strings.ReplaceAll(catalog, "'", "''"),
+			strings.ReplaceAll(schema, "'", "''"),
+			strings.ReplaceAll(table, "'", "''"),
+		)
+	} else {
+		checkSQL = fmt.Sprintf(
+			"SELECT 1 FROM information_schema.tables WHERE table_schema = '%s' AND table_name = '%s'",
+			strings.ReplaceAll(schema, "'", "''"),
+			strings.ReplaceAll(table, "'", "''"),
+		)
+	}
 	rows, err := s.engine.QueryOnConn(ctx, conn, principal, checkSQL)
 	if err != nil {
 		return false, err
@@ -381,6 +405,13 @@ func (s *Service) tableExists(ctx context.Context, conn *sql.Conn, schema, table
 
 func quoteIdent(name string) string {
 	return `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
+}
+
+func relationFQN(catalog, schema, name string) string {
+	if catalog == "" {
+		return quoteIdent(schema) + "." + quoteIdent(name)
+	}
+	return quoteIdent(catalog) + "." + quoteIdent(schema) + "." + quoteIdent(name)
 }
 
 // resolveEphemeralModels injects ephemeral model SQL as CTEs into downstream models.

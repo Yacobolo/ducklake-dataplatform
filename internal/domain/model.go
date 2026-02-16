@@ -187,6 +187,7 @@ type TriggerModelRunRequest struct {
 	Selector      string
 	TriggerType   string
 	Variables     map[string]string
+	FullRefresh   bool
 }
 
 // Validate checks that the request is well-formed.
