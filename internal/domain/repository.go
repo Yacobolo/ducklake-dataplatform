@@ -135,6 +135,15 @@ type LineageRepository interface {
 	PurgeOlderThan(ctx context.Context, before time.Time) (int64, error)
 }
 
+// ColumnLineageRepository provides operations for column-level lineage edges.
+type ColumnLineageRepository interface {
+	InsertBatch(ctx context.Context, edgeID string, edges []ColumnLineageEdge) error
+	GetByEdgeID(ctx context.Context, edgeID string) ([]ColumnLineageEdge, error)
+	GetForTable(ctx context.Context, schema, table string) ([]ColumnLineageEdge, error)
+	GetForSourceColumn(ctx context.Context, schema, table, column string) ([]ColumnLineageEdge, error)
+	DeleteByEdgeID(ctx context.Context, edgeID string) error
+}
+
 // TableStatisticsRepository provides operations for table statistics.
 type TableStatisticsRepository interface {
 	Upsert(ctx context.Context, securableName string, stats *TableStatistics) error
