@@ -292,9 +292,11 @@ func (c *APIStateClient) readGrants(_ context.Context, _ *declarative.DesiredSta
 }
 
 type apiAPIKey struct {
-	Name      string  `json:"name"`
-	Principal string  `json:"principal"`
-	ExpiresAt *string `json:"expires_at"`
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Principal   string  `json:"principal"`
+	PrincipalID string  `json:"principal_id"`
+	ExpiresAt   *string `json:"expires_at"`
 }
 
 func (c *APIStateClient) readAPIKeys(ctx context.Context, state *declarative.DesiredState) error {
@@ -312,9 +314,17 @@ func (c *APIStateClient) readAPIKeys(ctx context.Context, state *declarative.Des
 	}
 
 	for _, k := range items {
+		principal := k.Principal
+		if principal == "" && k.PrincipalID != "" {
+			principal = c.reverseLookupPrincipalName(k.PrincipalID, "user")
+		}
+		if principal == "" {
+			principal = k.PrincipalID
+		}
+
 		state.APIKeys = append(state.APIKeys, declarative.APIKeySpec{
 			Name:      k.Name,
-			Principal: k.Principal,
+			Principal: principal,
 			ExpiresAt: k.ExpiresAt,
 		})
 	}
@@ -1038,9 +1048,98 @@ func (c *APIStateClient) Execute(ctx context.Context, action declarative.Action)
 		return c.executeColumnMask(ctx, action)
 	case declarative.KindColumnMaskBinding:
 		return c.executeColumnMaskBinding(ctx, action)
+	case declarative.KindAPIKey:
+		return c.executeAPIKey(ctx, action)
 	default:
 		return fmt.Errorf("execute %s %s: resource kind not yet implemented", action.Operation, action.ResourceKind)
 	}
+}
+
+func (c *APIStateClient) executeAPIKey(ctx context.Context, action declarative.Action) error {
+	switch action.Operation {
+	case declarative.OpCreate:
+		spec := action.Desired.(declarative.APIKeySpec)
+		principalID, err := c.resolvePrincipalID(spec.Principal, "user")
+		if err != nil {
+			return fmt.Errorf("resolve principal for api key create: %w", err)
+		}
+		body := map[string]interface{}{
+			"principal_id": principalID,
+			"name":         spec.Name,
+		}
+		if spec.ExpiresAt != nil {
+			body["expires_at"] = *spec.ExpiresAt
+		}
+		resp, err := c.client.Do(http.MethodPost, "/api-keys", nil, body)
+		if err != nil {
+			return err
+		}
+		return gen.CheckError(resp)
+
+	case declarative.OpUpdate:
+		actual := action.Actual.(declarative.APIKeySpec)
+		id, err := c.lookupAPIKeyID(ctx, actual)
+		if err != nil {
+			return fmt.Errorf("resolve api key for update: %w", err)
+		}
+		resp, err := c.client.Do(http.MethodDelete, "/api-keys/"+id, nil, nil)
+		if err != nil {
+			return err
+		}
+		if err := gen.CheckError(resp); err != nil {
+			return err
+		}
+		create := declarative.Action{Operation: declarative.OpCreate, Desired: action.Desired}
+		return c.executeAPIKey(ctx, create)
+
+	case declarative.OpDelete:
+		spec := action.Actual.(declarative.APIKeySpec)
+		id, err := c.lookupAPIKeyID(ctx, spec)
+		if err != nil {
+			return fmt.Errorf("resolve api key for delete: %w", err)
+		}
+		resp, err := c.client.Do(http.MethodDelete, "/api-keys/"+id, nil, nil)
+		if err != nil {
+			return err
+		}
+		return gen.CheckError(resp)
+
+	default:
+		return fmt.Errorf("unsupported operation %s for api-key", action.Operation)
+	}
+}
+
+func (c *APIStateClient) lookupAPIKeyID(ctx context.Context, spec declarative.APIKeySpec) (string, error) {
+	pages, err := c.fetchAllPages(ctx, "/api-keys")
+	if err != nil {
+		return "", err
+	}
+	var items []apiAPIKey
+	if err := mergePages(pages, &items); err != nil {
+		return "", err
+	}
+	for _, item := range items {
+		if item.Name != spec.Name {
+			continue
+		}
+		if spec.Principal != "" {
+			principal := item.Principal
+			if principal == "" && item.PrincipalID != "" {
+				principal = c.reverseLookupPrincipalName(item.PrincipalID, "user")
+			}
+			if principal != "" && principal != spec.Principal {
+				continue
+			}
+		}
+		if item.ID == "" {
+			return "", fmt.Errorf("api key %q has no id in API response", spec.Name)
+		}
+		return item.ID, nil
+	}
+	if spec.Principal != "" {
+		return "", fmt.Errorf("api key %q for principal %q not found", spec.Name, spec.Principal)
+	}
+	return "", fmt.Errorf("api key %q not found", spec.Name)
 }
 
 // --- Security resource execution ---
