@@ -1502,7 +1502,16 @@ func TestReadState_APIKeys(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		resp := map[string]interface{}{
 			"data": []map[string]interface{}{
-				{"name": "key1", "principal": "alice", "expires_at": "2026-12-31T00:00:00Z"},
+				{"id": "k-1", "name": "key1", "principal_id": "p-1", "expires_at": "2026-12-31T00:00:00Z"},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/v1/principals", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{"id": "p-1", "name": "alice", "type": "user", "is_admin": false},
 			},
 		}
 		_ = json.NewEncoder(w).Encode(resp)
@@ -1518,6 +1527,76 @@ func TestReadState_APIKeys(t *testing.T) {
 	assert.Equal(t, "alice", state.APIKeys[0].Principal)
 	require.NotNil(t, state.APIKeys[0].ExpiresAt)
 	assert.Equal(t, "2026-12-31T00:00:00Z", *state.APIKeys[0].ExpiresAt)
+}
+
+func TestExecuteAPIKey_Delete(t *testing.T) {
+	t.Parallel()
+
+	var captured []execCapture
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ec := execCapture{Method: r.Method, Path: r.URL.Path, Query: r.URL.Query()}
+		captured = append(captured, ec)
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/api-keys":
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"data":[{"id":"key-id-1","name":"local-dev","principal":"alice"}]}`))
+		default:
+			w.WriteHeader(http.StatusNoContent)
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	client := gen.NewClient(srv.URL, "", "test-token")
+	sc := NewAPIStateClient(client)
+	sc.index = newResourceIndex()
+	sc = withTestIndex(sc)
+
+	action := declarative.Action{
+		Operation:    declarative.OpDelete,
+		ResourceKind: declarative.KindAPIKey,
+		ResourceName: "local-dev",
+		Actual: declarative.APIKeySpec{
+			Name:      "local-dev",
+			Principal: "alice",
+		},
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.NoError(t, err)
+	require.Len(t, captured, 2)
+	assert.Equal(t, http.MethodGet, captured[0].Method)
+	assert.Equal(t, "/v1/api-keys", captured[0].Path)
+	assert.Equal(t, http.MethodDelete, captured[1].Method)
+	assert.Equal(t, "/v1/api-keys/key-id-1", captured[1].Path)
+}
+
+func TestExecuteAPIKey_Create(t *testing.T) {
+	t.Parallel()
+
+	var captured []execCapture
+	sc := withTestIndex(newTestExecuteClient(t, &captured))
+
+	expiry := "2027-01-01T00:00:00Z"
+	action := declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindAPIKey,
+		ResourceName: "local-dev",
+		Desired: declarative.APIKeySpec{
+			Name:      "local-dev",
+			Principal: "alice",
+			ExpiresAt: &expiry,
+		},
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.NoError(t, err)
+	require.Len(t, captured, 1)
+	assert.Equal(t, http.MethodPost, captured[0].Method)
+	assert.Equal(t, "/v1/api-keys", captured[0].Path)
+	assert.Equal(t, "principal-id-alice", bodyStr(captured[0], "principal_id"))
+	assert.Equal(t, "local-dev", bodyStr(captured[0], "name"))
+	assert.Equal(t, expiry, bodyStr(captured[0], "expires_at"))
 }
 
 // === Additional Execute tests ===
