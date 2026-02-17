@@ -58,6 +58,9 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("config: %w", err)
 	}
+	if err := cfg.Auth.Validate(); err != nil {
+		return fmt.Errorf("auth config: %w", err)
+	}
 
 	// Create structured logger
 	logger := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{
@@ -225,9 +228,6 @@ func run() error {
 			return fmt.Errorf("oidc validator: %w", err)
 		}
 		logger.Info("OIDC JWT validation enabled", "issuer", cfg.Auth.IssuerURL)
-	} else if cfg.Auth.SharedSecret != "" {
-		jwtValidator = middleware.NewSharedSecretValidator(cfg.Auth.SharedSecret)
-		logger.Info("HS256 JWT validation enabled")
 	}
 
 	// Authenticated API routes under /v1 prefix

@@ -20,9 +20,6 @@ type AuthConfig struct {
 	AllowedIssuers []string      // Accepted issuers (defaults to [IssuerURL])
 	JWKSCacheTTL   time.Duration // JWKS cache duration (default: 1h)
 
-	// Legacy shared-secret JWT (for backward compat / dev)
-	SharedSecret string // HS256 shared secret; disabled when OIDC is configured
-
 	// API key settings
 	APIKeyEnabled bool   // Enable API key auth (default: true)
 	APIKeyHeader  string // Header name for API keys (default: X-API-Key)
@@ -39,8 +36,8 @@ func (a *AuthConfig) OIDCEnabled() bool {
 
 // Validate checks that the auth configuration is internally consistent.
 func (a *AuthConfig) Validate() error {
-	if a.IssuerURL == "" && a.JWKSURL == "" && a.SharedSecret == "" {
-		return fmt.Errorf("at least one of AUTH_ISSUER_URL, AUTH_JWKS_URL, or JWT_SECRET must be set")
+	if a.IssuerURL == "" && a.JWKSURL == "" {
+		return fmt.Errorf("at least one of AUTH_ISSUER_URL or AUTH_JWKS_URL must be set")
 	}
 	if a.IssuerURL != "" && a.Audience == "" {
 		return fmt.Errorf("AUTH_AUDIENCE is required when AUTH_ISSUER_URL is set")
@@ -57,7 +54,6 @@ type Config struct {
 	S3Region      *string
 	S3Bucket      *string
 	MetaDBPath    string // path to SQLite metadata file (control plane)
-	JWTSecret     string // secret key for JWT token validation (legacy, prefer AuthConfig)
 	ListenAddr    string // HTTP listen address (default ":8080")
 	EncryptionKey string // 64-char hex string (32-byte AES key) for encrypting stored credentials
 	LogLevel      string // log level: debug, info, warn, error (default "info")
@@ -108,7 +104,6 @@ func (c *Config) HasS3Config() bool {
 func LoadFromEnv() (*Config, error) {
 	cfg := &Config{
 		MetaDBPath:    os.Getenv("META_DB_PATH"),
-		JWTSecret:     os.Getenv("JWT_SECRET"),
 		ListenAddr:    os.Getenv("LISTEN_ADDR"),
 		EncryptionKey: os.Getenv("ENCRYPTION_KEY"),
 		LogLevel:      os.Getenv("LOG_LEVEL"),
@@ -158,7 +153,6 @@ func LoadFromEnv() (*Config, error) {
 		IssuerURL:      os.Getenv("AUTH_ISSUER_URL"),
 		JWKSURL:        os.Getenv("AUTH_JWKS_URL"),
 		Audience:       os.Getenv("AUTH_AUDIENCE"),
-		SharedSecret:   cfg.JWTSecret,
 		APIKeyEnabled:  true,
 		APIKeyHeader:   os.Getenv("AUTH_API_KEY_HEADER"),
 		NameClaim:      os.Getenv("AUTH_NAME_CLAIM"),
@@ -195,14 +189,8 @@ func LoadFromEnv() (*Config, error) {
 	if cfg.ListenAddr == "" {
 		cfg.ListenAddr = ":8080"
 	}
-	if cfg.JWTSecret == "" {
-		cfg.JWTSecret = "dev-secret-change-in-production"
-		cfg.Auth.SharedSecret = cfg.JWTSecret
-		cfg.Warnings = append(cfg.Warnings, "JWT_SECRET not set — using insecure default. Set JWT_SECRET in production!")
-	}
-	if cfg.Auth.OIDCEnabled() {
-		cfg.Auth.SharedSecret = "" // disable HS256 when OIDC is configured
-		cfg.Warnings = append(cfg.Warnings, "OIDC configured — HS256 shared-secret authentication is disabled")
+	if !cfg.Auth.OIDCEnabled() {
+		cfg.Warnings = append(cfg.Warnings, "OIDC is not configured — set AUTH_ISSUER_URL or AUTH_JWKS_URL")
 	}
 	if cfg.EncryptionKey == "" {
 		cfg.EncryptionKey = "0000000000000000000000000000000000000000000000000000000000000000"
@@ -223,8 +211,8 @@ func LoadFromEnv() (*Config, error) {
 
 	// Production mode: insecure defaults are fatal errors.
 	if cfg.IsProduction() {
-		if cfg.JWTSecret == "dev-secret-change-in-production" {
-			return nil, fmt.Errorf("JWT_SECRET must be set in production (ENV=production)")
+		if !cfg.Auth.OIDCEnabled() {
+			return nil, fmt.Errorf("OIDC must be configured in production (set AUTH_ISSUER_URL or AUTH_JWKS_URL)")
 		}
 		if cfg.EncryptionKey == "0000000000000000000000000000000000000000000000000000000000000000" {
 			return nil, fmt.Errorf("ENCRYPTION_KEY must be set in production (ENV=production)")

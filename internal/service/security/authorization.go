@@ -9,35 +9,6 @@ import (
 	"duck-demo/internal/domain"
 )
 
-// Privilege constants re-exported from domain for backward compatibility.
-const (
-	PrivSelect        = domain.PrivSelect
-	PrivInsert        = domain.PrivInsert
-	PrivUpdate        = domain.PrivUpdate
-	PrivDelete        = domain.PrivDelete
-	PrivUsage         = domain.PrivUsage
-	PrivCreateTable   = domain.PrivCreateTable
-	PrivCreateSchema  = domain.PrivCreateSchema
-	PrivAllPrivileges = domain.PrivAllPrivileges
-
-	PrivCreateExternalLocation  = domain.PrivCreateExternalLocation
-	PrivCreateStorageCredential = domain.PrivCreateStorageCredential
-	PrivCreateVolume            = domain.PrivCreateVolume
-	PrivReadVolume              = domain.PrivReadVolume
-	PrivWriteVolume             = domain.PrivWriteVolume
-	PrivReadFiles               = domain.PrivReadFiles
-	PrivWriteFiles              = domain.PrivWriteFiles
-
-	SecurableCatalog           = domain.SecurableCatalog
-	SecurableSchema            = domain.SecurableSchema
-	SecurableTable             = domain.SecurableTable
-	SecurableExternalLocation  = domain.SecurableExternalLocation
-	SecurableStorageCredential = domain.SecurableStorageCredential
-	SecurableVolume            = domain.SecurableVolume
-
-	CatalogID = domain.CatalogID
-)
-
 // AuthorizationService provides permission checking using domain repository interfaces.
 // It implements the domain.AuthorizationService interface.
 type AuthorizationService struct {

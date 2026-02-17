@@ -43,7 +43,7 @@ type FilePresigner interface {
 type ManifestService struct {
 	metastoreFactory domain.MetastoreQuerierFactory // per-catalog metastore access
 	authSvc          domain.AuthorizationService
-	presigner        FilePresigner // legacy presigner (from env config), may be nil
+	presigner        FilePresigner
 	introRepo        domain.IntrospectionRepository
 	auditRepo        domain.AuditRepository
 	credRepo         domain.StorageCredentialRepository // for credential-aware presigning
@@ -142,7 +142,7 @@ func (s *ManifestService) GetManifest(
 		return nil, fmt.Errorf("resolve files: %w", err)
 	}
 
-	// 7. Resolve the presigner — prefer per-schema credential, fall back to legacy
+	// 7. Resolve the presigner from schema-bound credentials
 	presigner, err := s.resolvePresigner(ctx, schemaPath)
 	if err != nil {
 		return nil, fmt.Errorf("resolve presigner: %w", err)
@@ -227,9 +227,11 @@ func (s *ManifestService) resolveDataFiles(ctx context.Context, catalogName stri
 }
 
 // resolvePresigner returns the appropriate presigner for the given schema path.
-// If the schema has a per-schema external location with stored credentials,
-// a dynamic presigner is created. Otherwise, the legacy presigner is returned.
+// The schema path must resolve to an external location with stored credentials.
 func (s *ManifestService) resolvePresigner(ctx context.Context, schemaPath string) (FilePresigner, error) {
+	if schemaPath == "" {
+		return nil, fmt.Errorf("schema has no storage path")
+	}
 	if schemaPath != "" && s.credRepo != nil && s.locRepo != nil {
 		// Find the external location matching this schema path
 		locations, _, err := s.locRepo.List(ctx, domain.PageRequest{MaxResults: 1000})
@@ -248,8 +250,7 @@ func (s *ManifestService) resolvePresigner(ctx context.Context, schemaPath strin
 		}
 	}
 
-	// Fall back to legacy presigner
-	return s.presigner, nil
+	return nil, fmt.Errorf("no storage credential found for schema path %q", schemaPath)
 }
 
 // logManifestAudit records a manifest request in the audit log.

@@ -314,13 +314,6 @@ func DropSecret(ctx context.Context, db *sql.DB, name string) error {
 	return nil
 }
 
-// DropS3Secret removes a named DuckDB secret.
-//
-// Deprecated: Use DropSecret instead. Kept for backward compatibility.
-func DropS3Secret(ctx context.Context, db *sql.DB, name string) error {
-	return DropSecret(ctx, db, name)
-}
-
 // AttachDuckLake attaches the DuckLake catalog with the given metastore and data path.
 func AttachDuckLake(ctx context.Context, db *sql.DB, catalogName, metaDBPath, dataPath string) error {
 	attachSQL, err := ddl.AttachDuckLake(catalogName, metaDBPath, dataPath)

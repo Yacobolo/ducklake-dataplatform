@@ -52,6 +52,44 @@ import (
 // ctx is a package-level background context used by setup helpers.
 var ctx = context.Background()
 
+type testHS256Validator struct {
+	secret []byte
+}
+
+func (v *testHS256Validator) Validate(_ context.Context, tokenString string) (*middleware.JWTClaims, error) {
+	token, err := jwt.Parse(tokenString, func(_ *jwt.Token) (interface{}, error) {
+		return v.secret, nil
+	}, jwt.WithValidMethods([]string{"HS256"}))
+	if err != nil {
+		return nil, fmt.Errorf("jwt parse: %w", err)
+	}
+	if !token.Valid {
+		return nil, fmt.Errorf("invalid token")
+	}
+	mapClaims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, fmt.Errorf("unexpected claims type")
+	}
+
+	claims := &middleware.JWTClaims{Raw: map[string]interface{}(mapClaims)}
+	if sub, ok := mapClaims["sub"].(string); ok {
+		claims.Subject = sub
+	}
+	if iss, ok := mapClaims["iss"].(string); ok {
+		claims.Issuer = iss
+	}
+	if email, ok := mapClaims["email"].(string); ok {
+		claims.Email = &email
+	}
+	if name, ok := mapClaims["name"].(string); ok {
+		claims.Name = &name
+	}
+	if aud, ok := mapClaims["aud"].(string); ok {
+		claims.Audience = []string{aud}
+	}
+	return claims, nil
+}
+
 // ---------------------------------------------------------------------------
 // TestMain — shared setup for all integration tests
 // ---------------------------------------------------------------------------
@@ -654,7 +692,7 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 
 	// Router with auth middleware (API key via SHA-256 hash lookup)
 	r := chi.NewRouter()
-	validator := middleware.NewSharedSecretValidator("test-jwt-secret")
+	validator := &testHS256Validator{secret: []byte("test-jwt-secret")}
 	authenticator := middleware.NewAuthenticator(validator, apiKeyRepo, principalRepo, nil, config.AuthConfig{
 		APIKeyEnabled: true,
 		APIKeyHeader:  "X-API-Key",
@@ -789,7 +827,7 @@ func setupLocalExtensionServer(t *testing.T) *testEnv {
 
 	// Router with auth middleware (API key via SHA-256 hash lookup)
 	r := chi.NewRouter()
-	validator := middleware.NewSharedSecretValidator("test-jwt-secret")
+	validator := &testHS256Validator{secret: []byte("test-jwt-secret")}
 	authenticator := middleware.NewAuthenticator(validator, apiKeyRepo, principalRepo, nil, config.AuthConfig{
 		APIKeyEnabled: true,
 		APIKeyHeader:  "X-API-Key",
@@ -1338,13 +1376,12 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		nameClaim = "sub"
 	}
 	authCfg := config.AuthConfig{
-		SharedSecret:   string(jwtSecret),
 		APIKeyEnabled:  true,
 		APIKeyHeader:   "X-API-Key",
 		NameClaim:      nameClaim,
 		BootstrapAdmin: opts.BootstrapAdmin,
 	}
-	validator := middleware.NewSharedSecretValidator(string(jwtSecret))
+	validator := &testHS256Validator{secret: jwtSecret}
 	var provisioner middleware.PrincipalProvisioner
 	if opts.WithAuthenticator {
 		provisioner = principalSvc
@@ -2024,7 +2061,7 @@ func setupMultiTableLocalServer(t *testing.T) *multiTableTestEnv {
 	strictHandler := api.NewStrictHandler(handler, nil)
 
 	r := chi.NewRouter()
-	validator := middleware.NewSharedSecretValidator("test-jwt-secret")
+	validator := &testHS256Validator{secret: []byte("test-jwt-secret")}
 	authenticator := middleware.NewAuthenticator(validator, apiKeyRepo, principalRepo, nil, config.AuthConfig{
 		APIKeyEnabled: true,
 		APIKeyHeader:  "X-API-Key",

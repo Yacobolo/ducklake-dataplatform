@@ -153,13 +153,7 @@ func (a *Authenticator) authenticateJWT(ctx context.Context, tokenStr string) (*
 		return nil, fmt.Errorf("principal %q not found", displayName)
 	}
 
-	// No provisioner and no principal repo (legacy shared-secret dev mode):
-	// allow with display name only. This is the backward-compatible path.
-	return &domain.ContextPrincipal{
-		Name:    displayName,
-		IsAdmin: adminClaim,
-		Type:    "user",
-	}, nil
+	return nil, fmt.Errorf("principal resolution unavailable: provisioner or principal repository required")
 }
 
 // authenticateAPIKey validates an API key and resolves the principal.

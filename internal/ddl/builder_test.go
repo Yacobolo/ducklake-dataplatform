@@ -456,44 +456,6 @@ func TestDropSecret(t *testing.T) {
 	}
 }
 
-func TestDropS3Secret(t *testing.T) {
-	tests := []struct {
-		name    string
-		secName string
-		want    string
-		wantErr string
-	}{
-		{
-			name:    "valid",
-			secName: "my_secret",
-			want:    `DROP SECRET IF EXISTS "my_secret"`,
-		},
-		{
-			name:    "escapes_quotes",
-			secName: `sec"ret`,
-			want:    `DROP SECRET IF EXISTS "sec""ret"`,
-		},
-		{
-			name:    "empty_name",
-			secName: "",
-			wantErr: "secret name is required",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := DropS3Secret(tt.secName)
-			if tt.wantErr != "" {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), tt.wantErr)
-				return
-			}
-			require.NoError(t, err)
-			assert.Equal(t, tt.want, got)
-		})
-	}
-}
-
 func TestCreateExternalTableView(t *testing.T) {
 	tests := []struct {
 		name       string
