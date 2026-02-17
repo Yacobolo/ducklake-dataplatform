@@ -413,6 +413,8 @@ components:
       $ref: 'schemas/models.yaml#/ModelTestResultList'
     FreshnessStatus:
       $ref: 'schemas/models.yaml#/FreshnessStatus'
+    SourceFreshnessStatus:
+      $ref: 'schemas/models.yaml#/SourceFreshnessStatus'
     PromoteNotebookRequest:
       $ref: 'schemas/models.yaml#/PromoteNotebookRequest'
     Macro:
@@ -628,6 +630,8 @@ paths:
     $ref: 'paths/models.yaml#/paths/~1model-runs~1{runId}~1steps~1{stepId}~1test-results'
   /models/{projectName}/{modelName}/freshness:
     $ref: 'paths/models.yaml#/paths/~1models~1{projectName}~1{modelName}~1freshness'
+  /sources/{sourceSchema}/{sourceTable}/freshness:
+    $ref: 'paths/models.yaml#/paths/~1sources~1{sourceSchema}~1{sourceTable}~1freshness'
   /models/from-notebook:
     $ref: 'paths/models.yaml#/paths/~1models~1from-notebook'
   /model-runs/{runId}/cancel:

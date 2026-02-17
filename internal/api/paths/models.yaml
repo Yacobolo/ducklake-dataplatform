@@ -984,6 +984,97 @@ paths:
         '500':
           $ref: '../schemas/responses.yaml#/responses/InternalError'
 
+  /sources/{sourceSchema}/{sourceTable}/freshness:
+    parameters:
+      - name: sourceSchema
+        in: path
+        required: true
+        description: Schema name for the source relation.
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
+      - name: sourceTable
+        in: path
+        required: true
+        description: Table name for the source relation.
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
+    get:
+      operationId: checkSourceFreshness
+      summary: Check source freshness
+      tags: [Models]
+      description: Evaluates whether a source relation is fresh based on its max timestamp lag.
+      parameters:
+        - name: timestamp_column
+          in: query
+          required: false
+          description: Optional timestamp column to evaluate. If omitted, common timestamp columns are auto-detected.
+          schema:
+            type: string
+            maxLength: 255
+            pattern: '^\S+$'
+            example: updated_at
+        - name: max_lag_seconds
+          in: query
+          required: false
+          description: Maximum allowed lag in seconds before source is considered stale.
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+            maximum: 999999999
+            default: 3600
+            example: 3600
+      responses:
+        '200':
+          description: Source freshness status
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/models.yaml#/SourceFreshnessStatus'
+              example:
+                is_fresh: true
+                source_schema: raw
+                source_table: orders
+                timestamp_column: updated_at
+                last_loaded_at: "2025-01-15T10:00:00Z"
+                max_lag_seconds: 3600
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
   /models/from-notebook:
     post:
       operationId: promoteNotebookToModel

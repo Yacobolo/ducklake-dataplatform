@@ -745,6 +745,45 @@ FreshnessStatus:
       maxLength: 64
       example: "2025-01-15T11:00:00Z"
 
+SourceFreshnessStatus:
+  description: The freshness status of a source relation based on max timestamp lag.
+  type: object
+  properties:
+    is_fresh:
+      type: boolean
+      example: true
+    source_schema:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+      example: raw
+    source_table:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+      example: orders
+    timestamp_column:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+      example: updated_at
+    last_loaded_at:
+      type: string
+      format: date-time
+      maxLength: 64
+      example: "2025-01-15T10:00:00Z"
+    max_lag_seconds:
+      type: integer
+      format: int64
+      minimum: 0
+      maximum: 999999999
+      example: 3600
+    stale_since:
+      type: string
+      format: date-time
+      maxLength: 64
+      example: "2025-01-15T11:00:00Z"
+
 PromoteNotebookRequest:
   description: Request payload for promoting a notebook cell to a transformation model.
   type: object
