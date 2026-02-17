@@ -12,6 +12,8 @@ const (
 	MaterializationIncremental = "INCREMENTAL"
 	MaterializationEphemeral   = "EPHEMERAL"
 	MaxModelNameLength         = 255
+	MaterializationSeed        = "SEED"
+	MaterializationSnapshot    = "SNAPSHOT"
 )
 
 // Model run status constants.
@@ -101,12 +103,13 @@ func (r *CreateModelRequest) Validate() error {
 	validMat := map[string]bool{
 		MaterializationView: true, MaterializationTable: true,
 		MaterializationIncremental: true, MaterializationEphemeral: true,
+		MaterializationSeed: true, MaterializationSnapshot: true,
 	}
 	if r.Materialization == "" {
 		r.Materialization = MaterializationView
 	}
 	if !validMat[r.Materialization] {
-		return ErrValidation("materialization must be VIEW, TABLE, INCREMENTAL, or EPHEMERAL")
+		return ErrValidation("materialization must be VIEW, TABLE, INCREMENTAL, EPHEMERAL, SEED, or SNAPSHOT")
 	}
 	return nil
 }
@@ -141,6 +144,17 @@ func (r *UpdateModelRequest) Validate() error {
 type FreshnessStatus struct {
 	IsFresh       bool
 	LastRunAt     *time.Time
+	MaxLagSeconds int64
+	StaleSince    *time.Time
+}
+
+// SourceFreshnessStatus holds freshness status for a source relation.
+type SourceFreshnessStatus struct {
+	IsFresh       bool
+	SourceSchema  string
+	SourceTable   string
+	TimestampCol  string
+	LastLoadedAt  *time.Time
 	MaxLagSeconds int64
 	StaleSince    *time.Time
 }

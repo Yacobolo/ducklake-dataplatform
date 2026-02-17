@@ -2,6 +2,7 @@ package model
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -165,4 +166,44 @@ func TestCheckFreshness_StaleWhenPastLag(t *testing.T) {
 	require.NotNil(t, status.StaleSince)
 	require.NotNil(t, status.LastRunAt)
 	assert.True(t, status.StaleSince.After(*status.LastRunAt))
+}
+
+func TestCheckSourceFreshness(t *testing.T) {
+	t.Run("auto-detect timestamp column and mark fresh", func(t *testing.T) {
+		svc, db := newDuckDBServiceForTest(t)
+		_, err := db.Exec(`CREATE TABLE analytics.raw_orders (id INTEGER, updated_at TIMESTAMP)`)
+		require.NoError(t, err)
+		_, err = db.Exec(`INSERT INTO analytics.raw_orders VALUES (1, CURRENT_TIMESTAMP)`)
+		require.NoError(t, err)
+
+		status, err := svc.CheckSourceFreshness(context.Background(), "admin", "analytics", "raw_orders", "", 3600)
+		require.NoError(t, err)
+		assert.True(t, status.IsFresh)
+		assert.Equal(t, "updated_at", status.TimestampCol)
+		require.NotNil(t, status.LastLoadedAt)
+	})
+
+	t.Run("stale when max timestamp is old", func(t *testing.T) {
+		svc, db := newDuckDBServiceForTest(t)
+		_, err := db.Exec(`CREATE TABLE analytics.raw_orders (id INTEGER, updated_at TIMESTAMP)`)
+		require.NoError(t, err)
+		old := time.Now().UTC().Add(-2 * time.Hour).Format("2006-01-02 15:04:05")
+		_, err = db.Exec(fmt.Sprintf(`INSERT INTO analytics.raw_orders VALUES (1, TIMESTAMP '%s')`, old))
+		require.NoError(t, err)
+
+		status, err := svc.CheckSourceFreshness(context.Background(), "admin", "analytics", "raw_orders", "updated_at", 60)
+		require.NoError(t, err)
+		assert.False(t, status.IsFresh)
+		require.NotNil(t, status.StaleSince)
+	})
+
+	t.Run("fails without usable timestamp column", func(t *testing.T) {
+		svc, db := newDuckDBServiceForTest(t)
+		_, err := db.Exec(`CREATE TABLE analytics.raw_orders (id INTEGER, amount INTEGER)`)
+		require.NoError(t, err)
+
+		_, err = svc.CheckSourceFreshness(context.Background(), "admin", "analytics", "raw_orders", "", 60)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "source freshness requires timestamp column")
+	})
 }

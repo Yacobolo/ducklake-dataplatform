@@ -304,6 +304,112 @@ func TestMaterializeIncremental(t *testing.T) {
 	})
 }
 
+func TestMaterializeSeed_UsesTableSemantics(t *testing.T) {
+	svc, db := newDuckDBServiceForTest(t)
+	conn, err := db.Conn(context.Background())
+	require.NoError(t, err)
+	defer func() { _ = conn.Close() }()
+
+	rows, err := svc.materializeSeed(
+		context.Background(),
+		conn,
+		&domain.Model{
+			ProjectName:     "analytics",
+			Name:            "seed_orders",
+			SQL:             "SELECT * FROM (VALUES (1, 'new'), (2, 'paid')) AS src(id, status)",
+			Materialization: domain.MaterializationSeed,
+		},
+		ExecutionConfig{TargetSchema: "analytics"},
+		"admin",
+	)
+	require.NoError(t, err)
+	assert.EqualValues(t, 2, rows)
+
+	var cnt int
+	err = db.QueryRow(`SELECT COUNT(*) FROM analytics.seed_orders`).Scan(&cnt)
+	require.NoError(t, err)
+	assert.Equal(t, 2, cnt)
+}
+
+func TestMaterializeSnapshot_SCD2Baseline(t *testing.T) {
+	t.Run("first run creates current rows", func(t *testing.T) {
+		svc, db := newDuckDBServiceForTest(t)
+		conn, err := db.Conn(context.Background())
+		require.NoError(t, err)
+		defer func() { _ = conn.Close() }()
+
+		rows, err := svc.materializeSnapshot(
+			context.Background(),
+			conn,
+			&domain.Model{
+				ProjectName:     "analytics",
+				Name:            "snap_orders",
+				SQL:             "SELECT * FROM (VALUES (1, 'new'), (2, 'paid')) AS src(id, status)",
+				Materialization: domain.MaterializationSnapshot,
+				Config:          domain.ModelConfig{UniqueKey: []string{"id"}},
+			},
+			ExecutionConfig{TargetSchema: "analytics"},
+			"admin",
+		)
+		require.NoError(t, err)
+		assert.EqualValues(t, 2, rows)
+
+		var currentCount int
+		err = db.QueryRow(`SELECT COUNT(*) FROM analytics.snap_orders WHERE dbt_is_current = TRUE`).Scan(&currentCount)
+		require.NoError(t, err)
+		assert.Equal(t, 2, currentCount)
+	})
+
+	t.Run("second run expires changed rows and inserts new version", func(t *testing.T) {
+		svc, db := newDuckDBServiceForTest(t)
+		conn, err := db.Conn(context.Background())
+		require.NoError(t, err)
+		defer func() { _ = conn.Close() }()
+
+		_, err = svc.materializeSnapshot(
+			context.Background(),
+			conn,
+			&domain.Model{
+				ProjectName:     "analytics",
+				Name:            "snap_orders",
+				SQL:             "SELECT * FROM (VALUES (1, 'new'), (2, 'paid')) AS src(id, status)",
+				Materialization: domain.MaterializationSnapshot,
+				Config:          domain.ModelConfig{UniqueKey: []string{"id"}},
+			},
+			ExecutionConfig{TargetSchema: "analytics"},
+			"admin",
+		)
+		require.NoError(t, err)
+
+		rows, err := svc.materializeSnapshot(
+			context.Background(),
+			conn,
+			&domain.Model{
+				ProjectName:     "analytics",
+				Name:            "snap_orders",
+				SQL:             "SELECT * FROM (VALUES (1, 'new'), (2, 'refunded'), (3, 'paid')) AS src(id, status)",
+				Materialization: domain.MaterializationSnapshot,
+				Config:          domain.ModelConfig{UniqueKey: []string{"id"}},
+			},
+			ExecutionConfig{TargetSchema: "analytics"},
+			"admin",
+		)
+		require.NoError(t, err)
+		assert.EqualValues(t, 4, rows)
+
+		var total, current int
+		err = db.QueryRow(`SELECT COUNT(*), SUM(CASE WHEN dbt_is_current THEN 1 ELSE 0 END) FROM analytics.snap_orders`).Scan(&total, &current)
+		require.NoError(t, err)
+		assert.Equal(t, 4, total)
+		assert.Equal(t, 3, current)
+
+		var historical int
+		err = db.QueryRow(`SELECT COUNT(*) FROM analytics.snap_orders WHERE id = 2 AND dbt_is_current = FALSE AND dbt_valid_to IS NOT NULL`).Scan(&historical)
+		require.NoError(t, err)
+		assert.Equal(t, 1, historical)
+	})
+}
+
 func queryOrderRows(t *testing.T, db *sql.DB) [][2]int64 {
 	t.Helper()
 

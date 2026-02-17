@@ -242,9 +242,28 @@ func (s *Service) executeSingleModel(ctx context.Context, model *domain.Model,
 		}
 		logger.Info("incremental materialized", "rows", n)
 		return &n, nil
+	case domain.MaterializationSeed:
+		n, err := s.materializeSeed(ctx, conn, model, config, principal)
+		if err != nil {
+			return nil, err
+		}
+		logger.Info("seed materialized", "rows", n)
+		return &n, nil
+	case domain.MaterializationSnapshot:
+		n, err := s.materializeSnapshot(ctx, conn, model, config, principal)
+		if err != nil {
+			return nil, err
+		}
+		logger.Info("snapshot materialized", "rows", n)
+		return &n, nil
 	default:
 		return nil, fmt.Errorf("unsupported materialization: %s", model.Materialization)
 	}
+}
+
+func (s *Service) materializeSeed(ctx context.Context, conn *sql.Conn,
+	model *domain.Model, config ExecutionConfig, principal string) (int64, error) {
+	return s.materializeTable(ctx, conn, model, config, principal)
 }
 
 func (s *Service) injectVariables(ctx context.Context, conn *sql.Conn,
@@ -435,6 +454,112 @@ func (s *Service) materializeIncremental(ctx context.Context, conn *sql.Conn,
 		if err := rows.Scan(&count); err != nil {
 			return 0, fmt.Errorf("scan incremental row count: %w", err)
 		}
+	}
+	if err := rows.Err(); err != nil {
+		s.logger.Warn("row count error", "error", err)
+	}
+	return count, nil
+}
+
+func (s *Service) materializeSnapshot(ctx context.Context, conn *sql.Conn,
+	model *domain.Model, config ExecutionConfig, principal string) (int64, error) {
+	targetFQN := relationFQN(config.TargetCatalog, config.TargetSchema, model.Name)
+	exists, err := s.tableExists(ctx, conn, config.TargetCatalog, config.TargetSchema, model.Name, principal)
+	if err != nil {
+		return 0, fmt.Errorf("check snapshot table existence: %w", err)
+	}
+
+	if config.FullRefresh || !exists {
+		createSQL := fmt.Sprintf(
+			"CREATE OR REPLACE TABLE %s AS SELECT src.*, CURRENT_TIMESTAMP AS dbt_valid_from, CAST(NULL AS TIMESTAMP) AS dbt_valid_to, TRUE AS dbt_is_current FROM (%s) AS src",
+			targetFQN,
+			model.SQL,
+		)
+		if err := s.execOnConn(ctx, conn, principal, createSQL); err != nil {
+			return 0, err
+		}
+		return s.countRows(ctx, conn, principal, targetFQN)
+	}
+
+	uniqueKeys := model.Config.UniqueKey
+	if len(uniqueKeys) == 0 {
+		return 0, domain.ErrValidation("snapshot model %s requires unique_key in config", model.Name)
+	}
+
+	sourceCols, err := s.queryColumns(ctx, conn, principal, fmt.Sprintf("SELECT * FROM (%s) AS source WHERE 1=0", model.SQL))
+	if err != nil {
+		return 0, fmt.Errorf("load snapshot source columns for %s: %w", model.QualifiedName(), err)
+	}
+	if len(sourceCols) == 0 {
+		return 0, domain.ErrValidation("snapshot model %s compiled SQL returned no columns", model.Name)
+	}
+
+	keySet := make(map[string]struct{}, len(uniqueKeys))
+	for _, k := range uniqueKeys {
+		keySet[strings.ToLower(strings.TrimSpace(k))] = struct{}{}
+	}
+
+	nonKeyCols := make([]string, 0, len(sourceCols))
+	for _, col := range sourceCols {
+		if _, ok := keySet[col]; ok {
+			continue
+		}
+		nonKeyCols = append(nonKeyCols, col)
+	}
+	if len(nonKeyCols) == 0 {
+		return 0, domain.ErrValidation("snapshot model %s requires at least one non-unique_key column", model.Name)
+	}
+
+	onParts := make([]string, len(uniqueKeys))
+	for i, key := range uniqueKeys {
+		qk := quoteIdent(key)
+		onParts[i] = fmt.Sprintf("target.%s = source.%s", qk, qk)
+	}
+	onClause := strings.Join(onParts, " AND ")
+
+	changeParts := make([]string, len(nonKeyCols))
+	for i, col := range nonKeyCols {
+		qc := quoteIdent(col)
+		changeParts[i] = fmt.Sprintf("target.%s IS DISTINCT FROM source.%s", qc, qc)
+	}
+	changeClause := strings.Join(changeParts, " OR ")
+
+	updateSQL := fmt.Sprintf(
+		"UPDATE %s AS target SET dbt_valid_to = CURRENT_TIMESTAMP, dbt_is_current = FALSE FROM (%s) AS source WHERE target.dbt_is_current = TRUE AND %s AND (%s)",
+		targetFQN,
+		model.SQL,
+		onClause,
+		changeClause,
+	)
+	if err := s.execOnConn(ctx, conn, principal, updateSQL); err != nil {
+		return 0, err
+	}
+
+	insertSQL := fmt.Sprintf(
+		"INSERT INTO %s SELECT source.*, CURRENT_TIMESTAMP AS dbt_valid_from, CAST(NULL AS TIMESTAMP) AS dbt_valid_to, TRUE AS dbt_is_current FROM (%s) AS source LEFT JOIN %s AS target ON %s AND target.dbt_is_current = TRUE WHERE target.%s IS NULL OR (%s)",
+		targetFQN,
+		model.SQL,
+		targetFQN,
+		onClause,
+		quoteIdent(uniqueKeys[0]),
+		changeClause,
+	)
+	if err := s.execOnConn(ctx, conn, principal, insertSQL); err != nil {
+		return 0, err
+	}
+
+	return s.countRows(ctx, conn, principal, targetFQN)
+}
+
+func (s *Service) countRows(ctx context.Context, conn *sql.Conn, principal, relation string) (int64, error) {
+	rows, err := s.engine.QueryOnConn(ctx, conn, principal, fmt.Sprintf("SELECT COUNT(*) FROM %s", relation))
+	if err != nil {
+		return 0, nil
+	}
+	defer func() { _ = rows.Close() }()
+	var count int64
+	if rows.Next() {
+		_ = rows.Scan(&count)
 	}
 	if err := rows.Err(); err != nil {
 		s.logger.Warn("row count error", "error", err)
