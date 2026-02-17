@@ -712,6 +712,33 @@ func TestHTTP_ModelRunEndpoints(t *testing.T) {
 		assert.True(t, ok)
 	})
 
+	t.Run("seeded_run_empty_compile_diagnostics_keeps_stable_shape", func(t *testing.T) {
+		emptyDiagnosticsRunID := "22222222-2222-2222-2222-222222222222"
+		_, err := env.MetaDB.Exec(
+			`INSERT INTO model_runs (id, status, trigger_type, triggered_by, target_catalog, target_schema, model_selector, variables, full_refresh, compile_manifest, compile_diagnostics)
+			 VALUES (?, 'SUCCESS', 'MANUAL', 'admin', 'memory', 'analytics', '', '{}', 0, ?, ?)`,
+			emptyDiagnosticsRunID,
+			`{"version":1,"models":[]}`,
+			`{}`,
+		)
+		require.NoError(t, err)
+
+		resp := doRequest(t, "GET", env.Server.URL+"/v1/model-runs/"+emptyDiagnosticsRunID, env.Keys.Admin, nil)
+		require.Equal(t, 200, resp.StatusCode)
+
+		var result map[string]interface{}
+		decodeJSON(t, resp, &result)
+
+		diagnostics, ok := result["compile_diagnostics"].(map[string]interface{})
+		require.True(t, ok)
+		warnings, ok := diagnostics["warnings"].([]interface{})
+		require.True(t, ok)
+		assert.Len(t, warnings, 0)
+		errors, ok := diagnostics["errors"].([]interface{})
+		require.True(t, ok)
+		assert.Len(t, errors, 0)
+	})
+
 	t.Run("get_run_not_found_404", func(t *testing.T) {
 		resp := doRequest(t, "GET",
 			env.Server.URL+"/v1/model-runs/00000000-0000-0000-0000-000000000000",

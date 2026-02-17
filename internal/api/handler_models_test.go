@@ -239,3 +239,26 @@ func TestHandler_ListModelRuns_IncludesModelNamesAndProject(t *testing.T) {
 }
 
 func boolPtr(v bool) *bool { return &v }
+
+func TestModelRunToAPI_CompileDiagnosticsStableEmptyArrays(t *testing.T) {
+	t.Parallel()
+
+	run := domain.ModelRun{
+		ID:          "run-empty-diags",
+		Status:      domain.ModelRunStatusSuccess,
+		TriggerType: domain.ModelTriggerTypeManual,
+		TriggeredBy: "admin",
+		CreatedAt:   time.Date(2026, 2, 17, 12, 0, 0, 0, time.UTC),
+		CompileDiagnostics: &domain.ModelCompileDiagnostics{
+			Warnings: nil,
+			Errors:   nil,
+		},
+	}
+
+	got := modelRunToAPI(run)
+	require.NotNil(t, got.CompileDiagnostics)
+	require.NotNil(t, got.CompileDiagnostics.Warnings)
+	require.NotNil(t, got.CompileDiagnostics.Errors)
+	assert.Empty(t, *got.CompileDiagnostics.Warnings)
+	assert.Empty(t, *got.CompileDiagnostics.Errors)
+}

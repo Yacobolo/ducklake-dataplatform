@@ -242,9 +242,6 @@ func unmarshalCompileDiagnostics(raw string) *domain.ModelCompileDiagnostics {
 	if err := json.Unmarshal([]byte(raw), &out); err != nil {
 		return nil
 	}
-	if len(out.Warnings) == 0 && len(out.Errors) == 0 {
-		return nil
-	}
 	return &out
 }
 

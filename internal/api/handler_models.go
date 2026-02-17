@@ -400,12 +400,13 @@ func modelRunToAPI(r domain.ModelRun) ModelRun {
 		resp.CompileManifest = r.CompileManifest
 	}
 	if r.CompileDiagnostics != nil {
-		d := ModelRunCompileDiagnostics{}
-		if len(r.CompileDiagnostics.Warnings) > 0 {
-			d.Warnings = &r.CompileDiagnostics.Warnings
-		}
-		if len(r.CompileDiagnostics.Errors) > 0 {
-			d.Errors = &r.CompileDiagnostics.Errors
+		warnings := make([]string, len(r.CompileDiagnostics.Warnings))
+		copy(warnings, r.CompileDiagnostics.Warnings)
+		errors := make([]string, len(r.CompileDiagnostics.Errors))
+		copy(errors, r.CompileDiagnostics.Errors)
+		d := ModelRunCompileDiagnostics{
+			Warnings: &warnings,
+			Errors:   &errors,
 		}
 		resp.CompileDiagnostics = &d
 	}
