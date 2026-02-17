@@ -153,6 +153,30 @@ func loadSecurity(root string, state *DesiredState) error {
 		state.Grants = grantDoc.Grants
 	}
 
+	// privilege-presets.yaml
+	presetsPath := filepath.Join(secDir, "privilege-presets.yaml")
+	var presetDoc PrivilegePresetListDoc
+	if found, err := loadYAMLFile(presetsPath, &presetDoc); err != nil {
+		return err
+	} else if found {
+		if err := validateDocument(presetsPath, presetDoc.APIVersion, presetDoc.Kind, KindNamePrivilegePresetList); err != nil {
+			return err
+		}
+		state.PrivilegePresets = presetDoc.Presets
+	}
+
+	// bindings.yaml
+	bindingsPath := filepath.Join(secDir, "bindings.yaml")
+	var bindingDoc BindingListDoc
+	if found, err := loadYAMLFile(bindingsPath, &bindingDoc); err != nil {
+		return err
+	} else if found {
+		if err := validateDocument(bindingsPath, bindingDoc.APIVersion, bindingDoc.Kind, KindNameBindingList); err != nil {
+			return err
+		}
+		state.Bindings = bindingDoc.Bindings
+	}
+
 	// api-keys.yaml (optional)
 	apiKeysPath := filepath.Join(secDir, "api-keys.yaml")
 	var apiKeyDoc APIKeyListDoc

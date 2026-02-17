@@ -175,7 +175,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	querySvc.SetColumnLineage(colLineageRepo, catalogAdapter)
 	principalSvc := security.NewPrincipalService(principalRepo, auditRepo)
 	groupSvc := security.NewGroupService(groupRepo, auditRepo)
-	grantSvc := security.NewGrantService(grantRepo, auditRepo)
+	grantSvc := security.NewGrantService(grantRepo, auditRepo, authSvc)
 	rowFilterSvc := security.NewRowFilterService(rowFilterRepo, auditRepo)
 	columnMaskSvc := security.NewColumnMaskService(columnMaskRepo, auditRepo)
 	auditSvc := governance.NewAuditService(auditRepo)

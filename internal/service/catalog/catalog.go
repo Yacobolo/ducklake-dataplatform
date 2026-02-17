@@ -91,11 +91,12 @@ func (s *CatalogService) CreateSchema(ctx context.Context, catalogName string, p
 		return nil, err
 	}
 
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateSchema)
+	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, catalogName, domain.PrivCreateSchema)
 	if err != nil {
 		return nil, fmt.Errorf("check privilege: %w", err)
 	}
 	if !allowed {
+		s.logAuditDenied(ctx, principal, "CREATE_SCHEMA", fmt.Sprintf("Denied create schema %q in catalog %q", req.Name, catalogName))
 		return nil, domain.ErrAccessDenied("%q lacks CREATE_SCHEMA on catalog", principal)
 	}
 
@@ -144,20 +145,27 @@ func (s *CatalogService) GetSchema(ctx context.Context, catalogName string, name
 
 // UpdateSchema updates schema metadata.
 func (s *CatalogService) UpdateSchema(ctx context.Context, catalogName string, principal string, name string, req domain.UpdateSchemaRequest) (*domain.SchemaDetail, error) {
-
-	// Check privilege: need CREATE_SCHEMA on catalog or be admin
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateSchema)
-	if err != nil {
-		return nil, fmt.Errorf("check privilege: %w", err)
-	}
-	if !allowed {
-		return nil, domain.ErrAccessDenied("%q lacks permission to update schema %q", principal, name)
-	}
-
 	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
 	if err != nil {
 		return nil, err
 	}
+
+	schema, err := repo.GetSchema(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+
+	if schema.Owner != principal {
+		allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivModify)
+		if err != nil {
+			return nil, fmt.Errorf("check privilege: %w", err)
+		}
+		if !allowed {
+			s.logAuditDenied(ctx, principal, "UPDATE_SCHEMA", fmt.Sprintf("Denied update schema %q metadata", name))
+			return nil, domain.ErrAccessDenied("%q lacks permission to update schema %q", principal, name)
+		}
+	}
+
 	result, err := repo.UpdateSchema(ctx, name, req.Comment, req.Properties)
 	if err != nil {
 		return nil, err
@@ -169,19 +177,27 @@ func (s *CatalogService) UpdateSchema(ctx context.Context, catalogName string, p
 
 // DeleteSchema drops a schema, checking authorization.
 func (s *CatalogService) DeleteSchema(ctx context.Context, catalogName string, principal string, name string, force bool) error {
-
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateSchema)
-	if err != nil {
-		return fmt.Errorf("check privilege: %w", err)
-	}
-	if !allowed {
-		return domain.ErrAccessDenied("%q lacks permission to delete schema %q", principal, name)
-	}
-
 	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
 	if err != nil {
 		return err
 	}
+
+	schema, err := repo.GetSchema(ctx, name)
+	if err != nil {
+		return err
+	}
+
+	if schema.Owner != principal {
+		allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivManage)
+		if err != nil {
+			return fmt.Errorf("check privilege: %w", err)
+		}
+		if !allowed {
+			s.logAuditDenied(ctx, principal, "DELETE_SCHEMA", fmt.Sprintf("Denied delete schema %q", name))
+			return domain.ErrAccessDenied("%q lacks permission to delete schema %q", principal, name)
+		}
+	}
+
 	if err := repo.DeleteSchema(ctx, name, force); err != nil {
 		return err
 	}
@@ -215,12 +231,17 @@ func (s *CatalogService) CreateTable(ctx context.Context, catalogName string, pr
 		return nil, err
 	}
 
-	// Check CREATE_TABLE at catalog level
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateTable)
+	schema, err := repo.GetSchema(ctx, schemaName)
+	if err != nil {
+		return nil, err
+	}
+
+	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivCreateTable)
 	if err != nil {
 		return nil, fmt.Errorf("check privilege: %w", err)
 	}
 	if !allowed {
+		s.logAuditDenied(ctx, principal, "CREATE_TABLE", fmt.Sprintf("Denied create table %q in schema %q", req.Name, schemaName))
 		return nil, domain.ErrAccessDenied("%q lacks CREATE_TABLE privilege", principal)
 	}
 
@@ -292,20 +313,26 @@ func (s *CatalogService) GetTable(ctx context.Context, catalogName string, schem
 
 // DeleteTable drops a table, checking authorization.
 func (s *CatalogService) DeleteTable(ctx context.Context, catalogName string, principal string, schemaName, tableName string) error {
-
-	// Check CREATE_TABLE at catalog level (which implies table management)
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateTable)
-	if err != nil {
-		return fmt.Errorf("check privilege: %w", err)
-	}
-	if !allowed {
-		return domain.ErrAccessDenied("%q lacks permission to delete table %q.%q", principal, schemaName, tableName)
-	}
-
 	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
 	if err != nil {
 		return err
 	}
+	tbl, err := repo.GetTable(ctx, schemaName, tableName)
+	if err != nil {
+		return err
+	}
+
+	if tbl.Owner != principal {
+		allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableTable, tbl.TableID, domain.PrivManage)
+		if err != nil {
+			return fmt.Errorf("check privilege: %w", err)
+		}
+		if !allowed {
+			s.logAuditDenied(ctx, principal, "DROP_TABLE", fmt.Sprintf("Denied drop table %q.%q", schemaName, tableName))
+			return domain.ErrAccessDenied("%q lacks permission to delete table %q.%q", principal, schemaName, tableName)
+		}
+	}
+
 	if err := repo.DeleteTable(ctx, schemaName, tableName); err != nil {
 		return err
 	}
@@ -325,19 +352,26 @@ func (s *CatalogService) ListColumns(ctx context.Context, catalogName string, sc
 
 // UpdateTable updates table metadata, checking CREATE_TABLE privilege.
 func (s *CatalogService) UpdateTable(ctx context.Context, catalogName string, principal string, schemaName, tableName string, req domain.UpdateTableRequest) (*domain.TableDetail, error) {
-
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateTable)
-	if err != nil {
-		return nil, fmt.Errorf("check privilege: %w", err)
-	}
-	if !allowed {
-		return nil, domain.ErrAccessDenied("%q lacks permission to update table %q.%q", principal, schemaName, tableName)
-	}
-
 	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
 	if err != nil {
 		return nil, err
 	}
+	tbl, err := repo.GetTable(ctx, schemaName, tableName)
+	if err != nil {
+		return nil, err
+	}
+
+	if tbl.Owner != principal {
+		allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableTable, tbl.TableID, domain.PrivModify)
+		if err != nil {
+			return nil, fmt.Errorf("check privilege: %w", err)
+		}
+		if !allowed {
+			s.logAuditDenied(ctx, principal, "UPDATE_TABLE", fmt.Sprintf("Denied update table %q.%q metadata", schemaName, tableName))
+			return nil, domain.ErrAccessDenied("%q lacks permission to update table %q.%q", principal, schemaName, tableName)
+		}
+	}
+
 	result, err := repo.UpdateTable(ctx, schemaName, tableName, req.Comment, req.Properties, req.Owner)
 	if err != nil {
 		return nil, err
@@ -352,11 +386,12 @@ func (s *CatalogService) UpdateTable(ctx context.Context, catalogName string, pr
 // UpdateCatalog updates catalog-level metadata (admin only).
 func (s *CatalogService) UpdateCatalog(ctx context.Context, catalogName string, principal string, req domain.UpdateCatalogRequest) (*domain.CatalogInfo, error) {
 
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateSchema)
+	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, catalogName, domain.PrivManage)
 	if err != nil {
 		return nil, fmt.Errorf("check privilege: %w", err)
 	}
 	if !allowed {
+		s.logAuditDenied(ctx, principal, "UPDATE_CATALOG", "Denied update catalog metadata")
 		return nil, domain.ErrAccessDenied("%q lacks permission to update catalog metadata", principal)
 	}
 
@@ -375,19 +410,26 @@ func (s *CatalogService) UpdateCatalog(ctx context.Context, catalogName string, 
 
 // UpdateColumn updates column metadata, checking CREATE_TABLE privilege.
 func (s *CatalogService) UpdateColumn(ctx context.Context, catalogName string, principal string, schemaName, tableName, columnName string, req domain.UpdateColumnRequest) (*domain.ColumnDetail, error) {
-
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateTable)
-	if err != nil {
-		return nil, fmt.Errorf("check privilege: %w", err)
-	}
-	if !allowed {
-		return nil, domain.ErrAccessDenied("%q lacks permission to update column metadata", principal)
-	}
-
 	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
 	if err != nil {
 		return nil, err
 	}
+	tbl, err := repo.GetTable(ctx, schemaName, tableName)
+	if err != nil {
+		return nil, err
+	}
+
+	if tbl.Owner != principal {
+		allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableTable, tbl.TableID, domain.PrivModify)
+		if err != nil {
+			return nil, fmt.Errorf("check privilege: %w", err)
+		}
+		if !allowed {
+			s.logAuditDenied(ctx, principal, "UPDATE_COLUMN", fmt.Sprintf("Denied update column %q in %q.%q", columnName, schemaName, tableName))
+			return nil, domain.ErrAccessDenied("%q lacks permission to update column metadata", principal)
+		}
+	}
+
 	result, err := repo.UpdateColumn(ctx, schemaName, tableName, columnName, req.Comment, req.Properties)
 	if err != nil {
 		return nil, err
@@ -416,6 +458,7 @@ func (s *CatalogService) ProfileTable(ctx context.Context, catalogName string, p
 		return nil, fmt.Errorf("check profile privilege: %w", err)
 	}
 	if !allowed {
+		s.logAuditDenied(ctx, principal, "PROFILE_TABLE", fmt.Sprintf("Denied profile table %q.%q", schemaName, tableName))
 		return nil, domain.ErrAccessDenied("principal %q lacks SELECT on %s.%s", principal, schemaName, tableName)
 	}
 
@@ -479,6 +522,15 @@ func (s *CatalogService) logAudit(ctx context.Context, principal, action, detail
 		PrincipalName: principal,
 		Action:        action,
 		Status:        "ALLOWED",
+		OriginalSQL:   &detail,
+	})
+}
+
+func (s *CatalogService) logAuditDenied(ctx context.Context, principal, action, detail string) {
+	_ = s.audit.Insert(ctx, &domain.AuditEntry{
+		PrincipalName: principal,
+		Action:        action,
+		Status:        "DENIED",
 		OriginalSQL:   &detail,
 	})
 }

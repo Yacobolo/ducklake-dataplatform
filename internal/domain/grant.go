@@ -8,9 +8,15 @@ const (
 	PrivInsert        = "INSERT"
 	PrivUpdate        = "UPDATE"
 	PrivDelete        = "DELETE"
-	PrivUsage         = "USAGE"
+	PrivUseCatalog    = "USE_CATALOG"
+	PrivUseSchema     = "USE_SCHEMA"
+	PrivUsage         = PrivUseSchema
 	PrivCreateTable   = "CREATE_TABLE"
+	PrivCreateView    = "CREATE_VIEW"
 	PrivCreateSchema  = "CREATE_SCHEMA"
+	PrivModify        = "MODIFY"
+	PrivManage        = "MANAGE"
+	PrivApplyTag      = "APPLY_TAG"
 	PrivAllPrivileges = "ALL_PRIVILEGES"
 
 	// Storage & governance privileges.

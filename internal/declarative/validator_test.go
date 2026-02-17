@@ -33,6 +33,12 @@ func TestValidate_ValidFullState(t *testing.T) {
 			{Principal: "analysts", PrincipalType: "group", SecurableType: "schema", Securable: "main.analytics", Privilege: "USAGE"},
 			{Principal: "analyst1", PrincipalType: "user", SecurableType: "table", Securable: "main.analytics.orders", Privilege: "SELECT"},
 		},
+		PrivilegePresets: []PrivilegePresetSpec{
+			{Name: "reader", Privileges: []string{"USE_CATALOG", "USE_SCHEMA", "SELECT"}},
+		},
+		Bindings: []BindingSpec{
+			{Principal: "analysts", PrincipalType: "group", Preset: "reader", ScopeType: "schema", Scope: "main.analytics"},
+		},
 		Catalogs: []CatalogResource{
 			{CatalogName: "main", Spec: CatalogSpec{MetastoreType: "sqlite", DSN: "/data/meta.sqlite", DataPath: "s3://bucket/"}},
 		},
@@ -62,6 +68,123 @@ func TestValidate_ValidFullState(t *testing.T) {
 
 	errs := Validate(state)
 	assert.Empty(t, errs, "valid state should have no errors: %v", errs)
+}
+
+func TestValidate_PresetAndBindingErrors(t *testing.T) {
+	state := &DesiredState{
+		Principals: []PrincipalSpec{{Name: "user1", Type: "user"}},
+		Catalogs:   []CatalogResource{{CatalogName: "main", Spec: CatalogSpec{MetastoreType: "sqlite", DSN: "/db", DataPath: "/data"}}},
+		PrivilegePresets: []PrivilegePresetSpec{
+			{Name: "", Privileges: []string{"SELECT"}},
+			{Name: "bad-priv", Privileges: []string{"NOT_REAL"}},
+		},
+		Bindings: []BindingSpec{
+			{Principal: "user1", PrincipalType: "user", Preset: "missing", ScopeType: "catalog", Scope: "main"},
+			{Principal: "ghost", PrincipalType: "user", Preset: "bad-priv", ScopeType: "banana", Scope: "main"},
+		},
+	}
+
+	errs := Validate(state)
+	require.NotEmpty(t, errs)
+
+	messages := make([]string, 0, len(errs))
+	for _, e := range errs {
+		messages = append(messages, e.Error())
+	}
+
+	assert.Condition(t, func() bool {
+		for _, m := range messages {
+			if containsStr(m, "privilege_preset") && containsStr(m, "name is required") {
+				return true
+			}
+		}
+		return false
+	})
+
+	assert.Condition(t, func() bool {
+		for _, m := range messages {
+			if containsStr(m, "unknown privilege") && containsStr(m, "NOT_REAL") {
+				return true
+			}
+		}
+		return false
+	})
+
+	assert.Condition(t, func() bool {
+		for _, m := range messages {
+			if containsStr(m, "unknown preset") {
+				return true
+			}
+		}
+		return false
+	})
+}
+
+func TestValidate_BindingPrivilegeScopeRules(t *testing.T) {
+	state := &DesiredState{
+		Principals: []PrincipalSpec{{Name: "user1", Type: "user"}},
+		Catalogs:   []CatalogResource{{CatalogName: "main", Spec: CatalogSpec{MetastoreType: "sqlite", DSN: "/db", DataPath: "/data"}}},
+		PrivilegePresets: []PrivilegePresetSpec{{
+			Name:       "bad-catalog-reader",
+			Privileges: []string{"SELECT"},
+		}},
+		Bindings: []BindingSpec{{
+			Principal:     "user1",
+			PrincipalType: "user",
+			Preset:        "bad-catalog-reader",
+			ScopeType:     "catalog",
+			Scope:         "main",
+		}},
+	}
+
+	errs := Validate(state)
+	require.NotEmpty(t, errs)
+
+	found := false
+	for _, e := range errs {
+		if containsStr(e.Error(), "not allowed on scope_type") && containsStr(e.Error(), "SELECT") {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "expected binding scope privilege validation error, got %v", errs)
+}
+
+func TestValidate_DuplicateEffectiveGrantFromBinding(t *testing.T) {
+	state := &DesiredState{
+		Principals: []PrincipalSpec{{Name: "user1", Type: "user"}},
+		Catalogs:   []CatalogResource{{CatalogName: "main", Spec: CatalogSpec{MetastoreType: "sqlite", DSN: "/db", DataPath: "/data"}}},
+		Grants: []GrantSpec{{
+			Principal:     "user1",
+			PrincipalType: "user",
+			SecurableType: "catalog",
+			Securable:     "main",
+			Privilege:     "USE_CATALOG",
+		}},
+		PrivilegePresets: []PrivilegePresetSpec{{
+			Name:       "catalog-user",
+			Privileges: []string{"USE_CATALOG"},
+		}},
+		Bindings: []BindingSpec{{
+			Principal:     "user1",
+			PrincipalType: "user",
+			Preset:        "catalog-user",
+			ScopeType:     "catalog",
+			Scope:         "main",
+		}},
+	}
+
+	errs := Validate(state)
+	require.NotEmpty(t, errs)
+
+	found := false
+	for _, e := range errs {
+		if containsStr(e.Error(), "duplicate effective grant") {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "expected duplicate effective grant error, got %v", errs)
 }
 
 func TestValidate_PrincipalErrors(t *testing.T) {

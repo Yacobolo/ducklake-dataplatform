@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"duck-demo/internal/domain"
+	"duck-demo/internal/service/auditutil"
 )
 
 // StorageCredentialService provides CRUD operations for storage credentials
@@ -34,7 +35,7 @@ func NewStorageCredentialService(
 // Create validates and persists a new storage credential.
 // Requires CREATE_STORAGE_CREDENTIAL on catalog.
 func (s *StorageCredentialService) Create(ctx context.Context, principal string, req domain.CreateStorageCredentialRequest) (*domain.StorageCredential, error) {
-	if err := s.requirePrivilege(ctx, principal, domain.PrivCreateStorageCredential); err != nil {
+	if err := s.requirePrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateStorageCredential, "CREATE_STORAGE_CREDENTIAL", fmt.Sprintf("Denied create credential %q", req.Name)); err != nil {
 		return nil, err
 	}
 
@@ -83,15 +84,17 @@ func (s *StorageCredentialService) List(ctx context.Context, page domain.PageReq
 }
 
 // Update updates a storage credential by name.
-// Requires CREATE_STORAGE_CREDENTIAL on catalog.
+// Requires MANAGE on storage credential.
 func (s *StorageCredentialService) Update(ctx context.Context, principal string, name string, req domain.UpdateStorageCredentialRequest) (*domain.StorageCredential, error) {
-	if err := s.requirePrivilege(ctx, principal, domain.PrivCreateStorageCredential); err != nil {
-		return nil, err
-	}
-
 	existing, err := s.repo.GetByName(ctx, name)
 	if err != nil {
 		return nil, err
+	}
+
+	if existing.Owner != principal {
+		if err := s.requirePrivilege(ctx, principal, domain.SecurableStorageCredential, existing.ID, domain.PrivManage, "UPDATE_STORAGE_CREDENTIAL", fmt.Sprintf("Denied update credential %q", name)); err != nil {
+			return nil, err
+		}
 	}
 
 	result, err := s.repo.Update(ctx, existing.ID, req)
@@ -104,15 +107,17 @@ func (s *StorageCredentialService) Update(ctx context.Context, principal string,
 }
 
 // Delete removes a storage credential by name.
-// Requires CREATE_STORAGE_CREDENTIAL on catalog.
+// Requires MANAGE on storage credential.
 func (s *StorageCredentialService) Delete(ctx context.Context, principal string, name string) error {
-	if err := s.requirePrivilege(ctx, principal, domain.PrivCreateStorageCredential); err != nil {
-		return err
-	}
-
 	existing, err := s.repo.GetByName(ctx, name)
 	if err != nil {
 		return err
+	}
+
+	if existing.Owner != principal {
+		if err := s.requirePrivilege(ctx, principal, domain.SecurableStorageCredential, existing.ID, domain.PrivManage, "DELETE_STORAGE_CREDENTIAL", fmt.Sprintf("Denied delete credential %q", name)); err != nil {
+			return err
+		}
 	}
 
 	if err := s.repo.Delete(ctx, existing.ID); err != nil {
@@ -123,23 +128,23 @@ func (s *StorageCredentialService) Delete(ctx context.Context, principal string,
 	return nil
 }
 
-// requirePrivilege checks that the principal has the given privilege on the catalog.
-func (s *StorageCredentialService) requirePrivilege(ctx context.Context, principal string, privilege string) error {
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, privilege)
+// requirePrivilege checks that the principal has the given privilege on a securable.
+func (s *StorageCredentialService) requirePrivilege(ctx context.Context, principal, securableType, securableID, privilege, action, detail string) error {
+	allowed, err := s.auth.CheckPrivilege(ctx, principal, securableType, securableID, privilege)
 	if err != nil {
 		return fmt.Errorf("check privilege: %w", err)
 	}
 	if !allowed {
-		return domain.ErrAccessDenied("%q lacks %s on catalog", principal, privilege)
+		s.logAuditDenied(ctx, principal, action, detail)
+		return domain.ErrAccessDenied("%q lacks %s on %s %q", principal, privilege, securableType, securableID)
 	}
 	return nil
 }
 
 func (s *StorageCredentialService) logAudit(ctx context.Context, principal, action, detail string) {
-	_ = s.audit.Insert(ctx, &domain.AuditEntry{
-		PrincipalName: principal,
-		Action:        action,
-		Status:        "ALLOWED",
-		OriginalSQL:   &detail,
-	})
+	auditutil.LogAllowed(ctx, s.audit, principal, action, detail)
+}
+
+func (s *StorageCredentialService) logAuditDenied(ctx context.Context, principal, action, detail string) {
+	auditutil.LogDenied(ctx, s.audit, principal, action, detail)
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"duck-demo/internal/domain"
+	"duck-demo/internal/service/auditutil"
 )
 
 // VolumeService provides CRUD operations for volumes
@@ -31,7 +32,7 @@ func NewVolumeService(
 // Create validates and persists a new volume.
 // Requires CREATE_VOLUME on catalog.
 func (s *VolumeService) Create(ctx context.Context, principal, catalogName, schemaName string, req domain.CreateVolumeRequest) (*domain.Volume, error) {
-	if err := s.requirePrivilege(ctx, principal, domain.PrivCreateVolume); err != nil {
+	if err := s.requirePrivilege(ctx, principal, domain.SecurableCatalog, catalogName, domain.PrivCreateVolume, "CREATE_VOLUME", fmt.Sprintf("Denied create volume %q in schema %q", req.Name, schemaName)); err != nil {
 		return nil, err
 	}
 
@@ -71,16 +72,18 @@ func (s *VolumeService) List(ctx context.Context, catalogName, schemaName string
 }
 
 // Update updates a volume by schema and name.
-// Requires CREATE_VOLUME on catalog.
+// Requires MANAGE on volume.
 func (s *VolumeService) Update(ctx context.Context, principal, catalogName, schemaName, name string, req domain.UpdateVolumeRequest) (*domain.Volume, error) {
 	_ = catalogName // volumes are stored globally; catalogName reserved for future use
-	if err := s.requirePrivilege(ctx, principal, domain.PrivCreateVolume); err != nil {
-		return nil, err
-	}
-
 	existing, err := s.repo.GetByName(ctx, schemaName, name)
 	if err != nil {
 		return nil, err
+	}
+
+	if existing.Owner != principal {
+		if err := s.requirePrivilege(ctx, principal, domain.SecurableVolume, existing.ID, domain.PrivManage, "UPDATE_VOLUME", fmt.Sprintf("Denied update volume %q in schema %q", name, schemaName)); err != nil {
+			return nil, err
+		}
 	}
 
 	result, err := s.repo.Update(ctx, existing.ID, req)
@@ -93,16 +96,18 @@ func (s *VolumeService) Update(ctx context.Context, principal, catalogName, sche
 }
 
 // Delete removes a volume by schema and name.
-// Requires CREATE_VOLUME on catalog.
+// Requires MANAGE on volume.
 func (s *VolumeService) Delete(ctx context.Context, principal, catalogName, schemaName, name string) error {
 	_ = catalogName // volumes are stored globally; catalogName reserved for future use
-	if err := s.requirePrivilege(ctx, principal, domain.PrivCreateVolume); err != nil {
-		return err
-	}
-
 	existing, err := s.repo.GetByName(ctx, schemaName, name)
 	if err != nil {
 		return err
+	}
+
+	if existing.Owner != principal {
+		if err := s.requirePrivilege(ctx, principal, domain.SecurableVolume, existing.ID, domain.PrivManage, "DELETE_VOLUME", fmt.Sprintf("Denied delete volume %q from schema %q", name, schemaName)); err != nil {
+			return err
+		}
 	}
 
 	if err := s.repo.Delete(ctx, existing.ID); err != nil {
@@ -113,23 +118,23 @@ func (s *VolumeService) Delete(ctx context.Context, principal, catalogName, sche
 	return nil
 }
 
-// requirePrivilege checks that the principal has the given privilege on the catalog.
-func (s *VolumeService) requirePrivilege(ctx context.Context, principal string, privilege string) error {
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, privilege)
+// requirePrivilege checks that the principal has the given privilege on a securable.
+func (s *VolumeService) requirePrivilege(ctx context.Context, principal, securableType, securableID, privilege, action, detail string) error {
+	allowed, err := s.auth.CheckPrivilege(ctx, principal, securableType, securableID, privilege)
 	if err != nil {
 		return fmt.Errorf("check privilege: %w", err)
 	}
 	if !allowed {
-		return domain.ErrAccessDenied("%q lacks %s on catalog", principal, privilege)
+		s.logAuditDenied(ctx, principal, action, detail)
+		return domain.ErrAccessDenied("%q lacks %s on %s %q", principal, privilege, securableType, securableID)
 	}
 	return nil
 }
 
 func (s *VolumeService) logAudit(ctx context.Context, principal, action, detail string) {
-	_ = s.audit.Insert(ctx, &domain.AuditEntry{
-		PrincipalName: principal,
-		Action:        action,
-		Status:        "ALLOWED",
-		OriginalSQL:   &detail,
-	})
+	auditutil.LogAllowed(ctx, s.audit, principal, action, detail)
+}
+
+func (s *VolumeService) logAuditDenied(ctx context.Context, principal, action, detail string) {
+	auditutil.LogDenied(ctx, s.audit, principal, action, detail)
 }

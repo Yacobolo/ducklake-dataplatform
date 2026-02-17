@@ -5,8 +5,44 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 
 	"duck-demo/internal/domain"
+)
+
+// Privilege constants re-exported from domain for backward compatibility.
+const (
+	PrivSelect        = domain.PrivSelect
+	PrivInsert        = domain.PrivInsert
+	PrivUpdate        = domain.PrivUpdate
+	PrivDelete        = domain.PrivDelete
+	PrivUseCatalog    = domain.PrivUseCatalog
+	PrivUseSchema     = domain.PrivUseSchema
+	PrivUsage         = domain.PrivUsage
+	PrivCreateTable   = domain.PrivCreateTable
+	PrivCreateView    = domain.PrivCreateView
+	PrivCreateSchema  = domain.PrivCreateSchema
+	PrivModify        = domain.PrivModify
+	PrivManage        = domain.PrivManage
+	PrivApplyTag      = domain.PrivApplyTag
+	PrivAllPrivileges = domain.PrivAllPrivileges
+
+	PrivCreateExternalLocation  = domain.PrivCreateExternalLocation
+	PrivCreateStorageCredential = domain.PrivCreateStorageCredential
+	PrivCreateVolume            = domain.PrivCreateVolume
+	PrivReadVolume              = domain.PrivReadVolume
+	PrivWriteVolume             = domain.PrivWriteVolume
+	PrivReadFiles               = domain.PrivReadFiles
+	PrivWriteFiles              = domain.PrivWriteFiles
+
+	SecurableCatalog           = domain.SecurableCatalog
+	SecurableSchema            = domain.SecurableSchema
+	SecurableTable             = domain.SecurableTable
+	SecurableExternalLocation  = domain.SecurableExternalLocation
+	SecurableStorageCredential = domain.SecurableStorageCredential
+	SecurableVolume            = domain.SecurableVolume
+
+	CatalogID = domain.CatalogID
 )
 
 // AuthorizationService provides permission checking using domain repository interfaces.
@@ -20,6 +56,8 @@ type AuthorizationService struct {
 	introspection      domain.IntrospectionRepository
 	extTableRepo       domain.ExternalTableRepository
 	lookupCatalogTable func(ctx context.Context, catalogName, schemaName, tableName string) (*domain.TableDetail, error)
+	cacheMu            sync.RWMutex
+	privilegeCache     map[string]bool
 }
 
 // NewAuthorizationService creates a new AuthorizationService backed by domain repositories.
@@ -33,14 +71,22 @@ func NewAuthorizationService(
 	extTableRepo domain.ExternalTableRepository,
 ) *AuthorizationService {
 	return &AuthorizationService{
-		principals:    principals,
-		groups:        groups,
-		grants:        grants,
-		rowFilters:    rowFilters,
-		columnMasks:   columnMasks,
-		introspection: introspection,
-		extTableRepo:  extTableRepo,
+		principals:     principals,
+		groups:         groups,
+		grants:         grants,
+		rowFilters:     rowFilters,
+		columnMasks:    columnMasks,
+		introspection:  introspection,
+		extTableRepo:   extTableRepo,
+		privilegeCache: make(map[string]bool),
 	}
+}
+
+// InvalidatePrivilegeCache clears memoized privilege decisions.
+func (s *AuthorizationService) InvalidatePrivilegeCache() {
+	s.cacheMu.Lock()
+	defer s.cacheMu.Unlock()
+	s.privilegeCache = make(map[string]bool)
 }
 
 // SetCatalogTableLookup configures catalog-aware table lookup for three-part
@@ -226,6 +272,14 @@ func (s *AuthorizationService) hasGrant(ctx context.Context, principalID string,
 //  3. Walk up hierarchy: table -> schema -> catalog
 //  4. ALL_PRIVILEGES expansion
 func (s *AuthorizationService) CheckPrivilege(ctx context.Context, principalName string, securableType string, securableID string, privilege string) (bool, error) {
+	cacheKey := principalName + "|" + securableType + "|" + securableID + "|" + privilege
+	s.cacheMu.RLock()
+	if cached, ok := s.privilegeCache[cacheKey]; ok {
+		s.cacheMu.RUnlock()
+		return cached, nil
+	}
+	s.cacheMu.RUnlock()
+
 	principal, err := s.principals.GetByName(ctx, principalName)
 	if err != nil {
 		return false, fmt.Errorf("principal %q not found", principalName)
@@ -233,6 +287,9 @@ func (s *AuthorizationService) CheckPrivilege(ctx context.Context, principalName
 
 	// Admin bypass
 	if principal.IsAdmin {
+		s.cacheMu.Lock()
+		s.privilegeCache[cacheKey] = true
+		s.cacheMu.Unlock()
 		return true, nil
 	}
 
@@ -242,7 +299,14 @@ func (s *AuthorizationService) CheckPrivilege(ctx context.Context, principalName
 		return false, err
 	}
 
-	return s.checkPrivilegeForIdentities(ctx, principal.ID, groupIDs, securableType, securableID, privilege)
+	allowed, err := s.checkPrivilegeForIdentities(ctx, principal.ID, groupIDs, securableType, securableID, privilege)
+	if err != nil {
+		return false, err
+	}
+	s.cacheMu.Lock()
+	s.privilegeCache[cacheKey] = allowed
+	s.cacheMu.Unlock()
+	return allowed, nil
 }
 
 func (s *AuthorizationService) checkPrivilegeForIdentities(ctx context.Context, principalID string, groupIDs []string, securableType string, securableID string, privilege string) (bool, error) {
@@ -282,12 +346,12 @@ func (s *AuthorizationService) checkTablePrivilege(ctx context.Context, principa
 		return false, fmt.Errorf("lookup table %s: %w", tableID, err)
 	}
 
-	// USAGE gate: must have USAGE on the schema
-	hasUsage, err := s.checkSchemaPrivilege(ctx, principalID, groupIDs, schemaID, domain.PrivUsage)
+	// USE_SCHEMA gate: principal must be able to use the parent schema.
+	hasUseSchema, err := s.checkSchemaPrivilege(ctx, principalID, groupIDs, schemaID, domain.PrivUseSchema)
 	if err != nil {
 		return false, err
 	}
-	if !hasUsage {
+	if !hasUseSchema {
 		return false, nil
 	}
 

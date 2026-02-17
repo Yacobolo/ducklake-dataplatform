@@ -195,7 +195,12 @@ func TestVolumeService_Update(t *testing.T) {
 				return false, nil
 			},
 		}
-		svc := NewVolumeService(&mockVolumeRepo{}, auth, &mockAuditRepo{})
+		repo := &mockVolumeRepo{
+			GetByNameFn: func(_ context.Context, _, _ string) (*domain.Volume, error) {
+				return &domain.Volume{ID: "vol-1", Name: "my-vol", SchemaName: "schema1"}, nil
+			},
+		}
+		svc := NewVolumeService(repo, auth, &mockAuditRepo{})
 
 		_, err := svc.Update(context.Background(), "bob", "catalog1", "schema1", "my-vol", domain.UpdateVolumeRequest{})
 		require.Error(t, err)
@@ -254,7 +259,12 @@ func TestVolumeService_Delete(t *testing.T) {
 				return false, nil
 			},
 		}
-		svc := NewVolumeService(&mockVolumeRepo{}, auth, &mockAuditRepo{})
+		repo := &mockVolumeRepo{
+			GetByNameFn: func(_ context.Context, _, _ string) (*domain.Volume, error) {
+				return &domain.Volume{ID: "vol-1", Name: "my-vol", SchemaName: "schema1"}, nil
+			},
+		}
+		svc := NewVolumeService(repo, auth, &mockAuditRepo{})
 
 		err := svc.Delete(context.Background(), "bob", "catalog1", "schema1", "my-vol")
 		require.Error(t, err)

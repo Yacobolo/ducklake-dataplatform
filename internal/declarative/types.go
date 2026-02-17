@@ -56,6 +56,36 @@ type GrantListDoc struct {
 	Grants     []GrantSpec `yaml:"grants"`
 }
 
+// PrivilegePresetListDoc declares reusable privilege bundles.
+type PrivilegePresetListDoc struct {
+	APIVersion string                `yaml:"apiVersion"`
+	Kind       string                `yaml:"kind"`
+	Presets    []PrivilegePresetSpec `yaml:"presets"`
+}
+
+// PrivilegePresetSpec describes a named privilege bundle.
+type PrivilegePresetSpec struct {
+	Name        string   `yaml:"name"`
+	Description string   `yaml:"description,omitempty"`
+	Privileges  []string `yaml:"privileges"`
+}
+
+// BindingListDoc declares principal/group bindings to privilege presets.
+type BindingListDoc struct {
+	APIVersion string        `yaml:"apiVersion"`
+	Kind       string        `yaml:"kind"`
+	Bindings   []BindingSpec `yaml:"bindings"`
+}
+
+// BindingSpec binds a principal or group to a preset at a specific scope.
+type BindingSpec struct {
+	Principal     string `yaml:"principal"`
+	PrincipalType string `yaml:"principal_type"` // user or group
+	Preset        string `yaml:"preset"`
+	ScopeType     string `yaml:"scope_type"` // catalog, schema, table, external_location, storage_credential, volume
+	Scope         string `yaml:"scope"`      // dot-path for scoped objects
+}
+
 // GrantSpec describes a single privilege grant on a securable object.
 type GrantSpec struct {
 	Principal     string `yaml:"principal"`
@@ -400,6 +430,8 @@ type DesiredState struct {
 	Principals         []PrincipalSpec
 	Groups             []GroupSpec
 	Grants             []GrantSpec
+	PrivilegePresets   []PrivilegePresetSpec
+	Bindings           []BindingSpec
 	RowFilters         []RowFilterResource
 	ColumnMasks        []ColumnMaskResource
 	Tags               []TagSpec

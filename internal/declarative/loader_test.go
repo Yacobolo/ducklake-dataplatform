@@ -115,6 +115,40 @@ func TestLoader_MinimalConfig(t *testing.T) {
 	assert.Empty(t, state.Catalogs)
 }
 
+func TestLoader_SecurityPresetsAndBindings(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	secDir := filepath.Join(dir, "security")
+	require.NoError(t, os.MkdirAll(secDir, 0o755))
+
+	presetsYAML := []byte(`apiVersion: duck/v1
+kind: PrivilegePresetList
+presets:
+  - name: reader
+    privileges: [USE_CATALOG, USE_SCHEMA, SELECT]
+`)
+	require.NoError(t, os.WriteFile(filepath.Join(secDir, "privilege-presets.yaml"), presetsYAML, 0o644))
+
+	bindingsYAML := []byte(`apiVersion: duck/v1
+kind: BindingList
+bindings:
+  - principal: analysts
+    principal_type: group
+    preset: reader
+    scope_type: schema
+    scope: main.analytics
+`)
+	require.NoError(t, os.WriteFile(filepath.Join(secDir, "bindings.yaml"), bindingsYAML, 0o644))
+
+	state, err := LoadDirectory(dir)
+	require.NoError(t, err)
+	require.Len(t, state.PrivilegePresets, 1)
+	assert.Equal(t, "reader", state.PrivilegePresets[0].Name)
+	require.Len(t, state.Bindings, 1)
+	assert.Equal(t, "reader", state.Bindings[0].Preset)
+}
+
 func TestLoader_BadYAML(t *testing.T) {
 	dir := filepath.Join(testdataDir(t), "invalid", "bad-yaml")
 	_, err := LoadDirectory(dir)

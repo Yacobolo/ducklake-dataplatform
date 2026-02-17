@@ -152,6 +152,8 @@ const (
 	KindNamePrincipalList         = "PrincipalList"
 	KindNameGroupList             = "GroupList"
 	KindNameGrantList             = "GrantList"
+	KindNamePrivilegePresetList   = "PrivilegePresetList"
+	KindNameBindingList           = "BindingList"
 	KindNameAPIKeyList            = "APIKeyList"
 	KindNameCatalog               = "Catalog"
 	KindNameSchema                = "Schema"

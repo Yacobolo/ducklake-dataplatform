@@ -142,6 +142,28 @@ func exportSecurity(dir string, state *DesiredState) error {
 		}
 	}
 
+	if len(state.PrivilegePresets) > 0 {
+		doc := PrivilegePresetListDoc{
+			APIVersion: SupportedAPIVersion,
+			Kind:       KindNamePrivilegePresetList,
+			Presets:    state.PrivilegePresets,
+		}
+		if err := writeYAMLFile(filepath.Join(dir, "security", "privilege-presets.yaml"), doc); err != nil {
+			return err
+		}
+	}
+
+	if len(state.Bindings) > 0 {
+		doc := BindingListDoc{
+			APIVersion: SupportedAPIVersion,
+			Kind:       KindNameBindingList,
+			Bindings:   state.Bindings,
+		}
+		if err := writeYAMLFile(filepath.Join(dir, "security", "bindings.yaml"), doc); err != nil {
+			return err
+		}
+	}
+
 	if len(state.APIKeys) > 0 {
 		doc := APIKeyListDoc{
 			APIVersion: SupportedAPIVersion,
