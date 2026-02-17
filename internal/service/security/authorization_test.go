@@ -14,10 +14,33 @@ import (
 	internaldb "duck-demo/internal/db"
 	dbstore "duck-demo/internal/db/dbstore"
 	"duck-demo/internal/db/repository"
+	"duck-demo/internal/domain"
 )
 
 // ctx is a package-level background context used by setup helpers.
 var ctx = context.Background()
+
+const (
+	PrivSelect        = domain.PrivSelect
+	PrivInsert        = domain.PrivInsert
+	PrivUsage         = domain.PrivUsage
+	PrivAllPrivileges = domain.PrivAllPrivileges
+
+	PrivCreateExternalLocation  = domain.PrivCreateExternalLocation
+	PrivCreateStorageCredential = domain.PrivCreateStorageCredential
+	PrivCreateVolume            = domain.PrivCreateVolume
+	PrivReadVolume              = domain.PrivReadVolume
+	PrivWriteVolume             = domain.PrivWriteVolume
+
+	SecurableCatalog           = domain.SecurableCatalog
+	SecurableSchema            = domain.SecurableSchema
+	SecurableTable             = domain.SecurableTable
+	SecurableExternalLocation  = domain.SecurableExternalLocation
+	SecurableStorageCredential = domain.SecurableStorageCredential
+	SecurableVolume            = domain.SecurableVolume
+
+	CatalogID = domain.CatalogID
+)
 
 // setupTestService creates an AuthorizationService with a temporary SQLite DB,
 // runs migrations, and creates mock DuckLake metadata tables.

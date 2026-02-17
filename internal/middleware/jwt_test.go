@@ -79,8 +79,3 @@ func TestNewOIDCValidatorFromJWKS(t *testing.T) {
 		})
 	}
 }
-
-// ptrStr is a helper to create a *string from a literal.
-func ptrStr(s string) *string {
-	return &s
-}

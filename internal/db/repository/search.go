@@ -173,17 +173,48 @@ func (r *SearchRepo) searchGovernanceControl(ctx context.Context, likePattern st
 		args = append(args, likePattern)
 	}
 
-	// Tags (all types) — tags are in control plane
-	if objectType == nil || *objectType == "schema" {
-		unions = append(unions, `
-			SELECT 'schema' as type, cm.securable_name as name, NULL as schema_name, NULL as table_name,
-				cm.comment as comment, 'tag' as match_field
-			FROM tag_assignments ta
-			JOIN tags t ON t.id = ta.tag_id
-			LEFT JOIN catalog_metadata cm ON cm.securable_type = ta.securable_type AND cm.securable_name IS NOT NULL AND cm.deleted_at IS NULL
-			WHERE ta.securable_type = 'schema'
-			AND (LOWER(t.key) LIKE ? OR LOWER(COALESCE(t.value, '')) LIKE ?)`)
-		args = append(args, likePattern, likePattern)
+	// Tags (all types) — tags are in control plane.
+	// When both DB handles point to the same SQLite DB, enrich tag matches with
+	// object names via ducklake_* tables.
+	if r.metaDB == r.controlDB {
+		if objectType == nil || *objectType == "schema" {
+			unions = append(unions, `
+				SELECT 'schema' as type, ds.schema_name as name, NULL as schema_name, NULL as table_name,
+					cm.comment as comment, 'tag' as match_field
+				FROM tag_assignments ta
+				JOIN tags t ON t.id = ta.tag_id
+				JOIN ducklake_schema ds ON ta.securable_type = 'schema' AND ta.securable_id = CAST(ds.schema_id AS TEXT)
+				LEFT JOIN catalog_metadata cm ON cm.securable_type = 'schema' AND cm.securable_name = ds.schema_name AND cm.deleted_at IS NULL
+				WHERE ds.end_snapshot IS NULL AND (LOWER(t.key) LIKE ? OR LOWER(COALESCE(t.value, '')) LIKE ?)`)
+			args = append(args, likePattern, likePattern)
+		}
+
+		if objectType == nil || *objectType == "table" {
+			unions = append(unions, `
+				SELECT 'table' as type, dt.table_name as name, ds.schema_name as schema_name, NULL as table_name,
+					cm.comment as comment, 'tag' as match_field
+				FROM tag_assignments ta
+				JOIN tags t ON t.id = ta.tag_id
+				JOIN ducklake_table dt ON ta.securable_type = 'table' AND ta.securable_id = CAST(dt.table_id AS TEXT)
+				JOIN ducklake_schema ds ON dt.schema_id = ds.schema_id AND ds.end_snapshot IS NULL
+				LEFT JOIN catalog_metadata cm ON cm.securable_type = 'table' AND cm.securable_name = ds.schema_name || '.' || dt.table_name AND cm.deleted_at IS NULL
+				WHERE dt.end_snapshot IS NULL AND (LOWER(t.key) LIKE ? OR LOWER(COALESCE(t.value, '')) LIKE ?)`)
+			args = append(args, likePattern, likePattern)
+		}
+
+		if objectType == nil || *objectType == "column" {
+			unions = append(unions, `
+				SELECT 'column' as type, dc.column_name as name, ds.schema_name as schema_name, dt.table_name as table_name,
+					colm.comment as comment, 'tag' as match_field
+				FROM tag_assignments ta
+				JOIN tags t ON t.id = ta.tag_id
+				JOIN ducklake_table dt ON ta.securable_type = 'column' AND ta.securable_id = CAST(dt.table_id AS TEXT)
+				JOIN ducklake_schema ds ON dt.schema_id = ds.schema_id AND ds.end_snapshot IS NULL
+				JOIN ducklake_column dc ON dc.table_id = dt.table_id AND dc.column_name = ta.column_name AND dc.end_snapshot IS NULL
+				LEFT JOIN column_metadata colm ON colm.table_securable_name = ds.schema_name || '.' || dt.table_name AND colm.column_name = dc.column_name
+				WHERE dt.end_snapshot IS NULL AND (LOWER(t.key) LIKE ? OR LOWER(COALESCE(t.value, '')) LIKE ?)`)
+			args = append(args, likePattern, likePattern)
+		}
 	}
 
 	if len(unions) == 0 {
