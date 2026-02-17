@@ -661,6 +661,10 @@ func TestHTTP_ModelFreshness(t *testing.T) {
 func TestHTTP_ModelRunEndpoints(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{WithModels: true})
 
+	seedRunID := "11111111-1111-1111-1111-111111111111"
+	seedManifest := `{"version":1,"models":[{"model_name":"analytics.stg_orders","compiled_hash":"sha256:abc"}]}`
+	seedDiagnostics := `{"warnings":["source registry is empty; source() references are rendered without strict existence checks"],"errors":[]}`
+
 	t.Run("list_runs_empty", func(t *testing.T) {
 		resp := doRequest(t, "GET", env.Server.URL+"/v1/model-runs", env.Keys.Admin, nil)
 		require.Equal(t, 200, resp.StatusCode)
@@ -669,6 +673,43 @@ func TestHTTP_ModelRunEndpoints(t *testing.T) {
 		decodeJSON(t, resp, &result)
 		data := result["data"].([]interface{})
 		assert.Equal(t, 0, len(data), "no runs should exist initially")
+	})
+
+	t.Run("seeded_run_exposes_compile_artifacts", func(t *testing.T) {
+		_, err := env.MetaDB.Exec(
+			`INSERT INTO model_runs (id, status, trigger_type, triggered_by, target_catalog, target_schema, model_selector, variables, full_refresh, compile_manifest, compile_diagnostics)
+			 VALUES (?, 'SUCCESS', 'MANUAL', 'admin', 'memory', 'analytics', '', '{}', 0, ?, ?)`,
+			seedRunID,
+			seedManifest,
+			seedDiagnostics,
+		)
+		require.NoError(t, err)
+
+		listResp := doRequest(t, "GET", env.Server.URL+"/v1/model-runs", env.Keys.Admin, nil)
+		require.Equal(t, 200, listResp.StatusCode)
+
+		var listResult map[string]interface{}
+		decodeJSON(t, listResp, &listResult)
+		data := listResult["data"].([]interface{})
+		require.Len(t, data, 1)
+
+		run := data[0].(map[string]interface{})
+		assert.Equal(t, seedRunID, run["id"])
+		assert.Equal(t, seedManifest, run["compile_manifest"])
+		diagnostics, ok := run["compile_diagnostics"].(map[string]interface{})
+		require.True(t, ok)
+		warnings := diagnostics["warnings"].([]interface{})
+		require.Len(t, warnings, 1)
+		assert.Equal(t, "source registry is empty; source() references are rendered without strict existence checks", warnings[0])
+
+		getResp := doRequest(t, "GET", env.Server.URL+"/v1/model-runs/"+seedRunID, env.Keys.Admin, nil)
+		require.Equal(t, 200, getResp.StatusCode)
+
+		var getResult map[string]interface{}
+		decodeJSON(t, getResp, &getResult)
+		assert.Equal(t, seedManifest, getResult["compile_manifest"])
+		_, ok = getResult["compile_diagnostics"].(map[string]interface{})
+		assert.True(t, ok)
 	})
 
 	t.Run("get_run_not_found_404", func(t *testing.T) {
