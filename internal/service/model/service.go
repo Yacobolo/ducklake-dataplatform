@@ -106,6 +106,10 @@ func (s *Service) ListModels(ctx context.Context, projectName *string, page doma
 
 // UpdateModel updates a model and re-extracts dependencies if SQL changed.
 func (s *Service) UpdateModel(ctx context.Context, principal, projectName, name string, req domain.UpdateModelRequest) (*domain.Model, error) {
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+
 	existing, err := s.models.GetByName(ctx, projectName, name)
 	if err != nil {
 		return nil, err
