@@ -790,7 +790,7 @@ func TestHTTP_ModelCustomSQLTest(t *testing.T) {
 					"name":      "no_negative_amounts",
 					"test_type": "custom_sql",
 					"config": map[string]interface{}{
-						"sql": "SELECT * FROM {{ model }} WHERE amount < 0",
+						"custom_sql": "SELECT * FROM {{ model }} WHERE amount < 0",
 					},
 				})
 			require.Equal(t, 201, resp.StatusCode)
@@ -799,7 +799,7 @@ func TestHTTP_ModelCustomSQLTest(t *testing.T) {
 			decodeJSON(t, resp, &result)
 			assert.Equal(t, "custom_sql", result["test_type"])
 			cfg := result["config"].(map[string]interface{})
-			assert.Contains(t, cfg["sql"], "amount < 0")
+			assert.Contains(t, cfg["custom_sql"], "amount < 0")
 		}},
 
 		{"create_relationships_test", func(t *testing.T) {

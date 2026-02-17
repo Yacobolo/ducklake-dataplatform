@@ -70,6 +70,14 @@ func (h *APIHandler) CreateModel(ctx context.Context, req CreateModelRequestObje
 	if req.Body.Config != nil {
 		domReq.Config = domainModelConfig(*req.Body.Config)
 	}
+	if req.Body.Contract != nil {
+		contract := domainModelContract(*req.Body.Contract)
+		domReq.Contract = &contract
+	}
+	if req.Body.FreshnessPolicy != nil {
+		freshness := domainFreshnessPolicy(*req.Body.FreshnessPolicy)
+		domReq.Freshness = &freshness
+	}
 
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
@@ -125,6 +133,14 @@ func (h *APIHandler) UpdateModel(ctx context.Context, req UpdateModelRequestObje
 	if req.Body.Config != nil {
 		cfg := domainModelConfig(*req.Body.Config)
 		domReq.Config = &cfg
+	}
+	if req.Body.Contract != nil {
+		contract := domainModelContract(*req.Body.Contract)
+		domReq.Contract = &contract
+	}
+	if req.Body.FreshnessPolicy != nil {
+		freshness := domainFreshnessPolicy(*req.Body.FreshnessPolicy)
+		domReq.Freshness = &freshness
 	}
 
 	cp, _ := domain.PrincipalFromContext(ctx)
@@ -344,6 +360,14 @@ func modelToAPI(m domain.Model) Model {
 	if m.Config.UniqueKey != nil || m.Config.IncrementalStrategy != "" {
 		cfg := apiModelConfig(m.Config)
 		resp.Config = &cfg
+	}
+	if m.Contract != nil {
+		contract := apiModelContract(*m.Contract)
+		resp.Contract = &contract
+	}
+	if m.Freshness != nil {
+		freshness := apiFreshnessPolicy(*m.Freshness)
+		resp.FreshnessPolicy = &freshness
 	}
 	return resp
 }
@@ -644,7 +668,7 @@ func apiModelTestConfig(c domain.ModelTestConfig) ModelTestConfig {
 		cfg.ToColumn = &c.ToColumn
 	}
 	if c.SQL != "" {
-		cfg.Sql = &c.SQL
+		cfg.CustomSql = &c.SQL
 	}
 	return cfg
 }
@@ -660,10 +684,68 @@ func domainModelTestConfig(c ModelTestConfig) domain.ModelTestConfig {
 	if c.ToColumn != nil {
 		cfg.ToColumn = *c.ToColumn
 	}
-	if c.Sql != nil {
-		cfg.SQL = *c.Sql
+	if c.CustomSql != nil {
+		cfg.SQL = *c.CustomSql
 	}
 	return cfg
+}
+
+func apiModelContract(c domain.ModelContract) ModelContract {
+	resp := ModelContract{}
+	resp.Enforce = &c.Enforce
+	if len(c.Columns) > 0 {
+		cols := make([]ModelContractColumn, len(c.Columns))
+		for i, col := range c.Columns {
+			nullable := col.Nullable
+			cols[i] = ModelContractColumn{
+				Name:     col.Name,
+				Type:     col.Type,
+				Nullable: &nullable,
+			}
+		}
+		resp.Columns = &cols
+	}
+	return resp
+}
+
+func domainModelContract(c ModelContract) domain.ModelContract {
+	resp := domain.ModelContract{}
+	if c.Enforce != nil {
+		resp.Enforce = *c.Enforce
+	}
+	if c.Columns != nil {
+		resp.Columns = make([]domain.ModelContractColumn, len(*c.Columns))
+		for i, col := range *c.Columns {
+			resp.Columns[i].Name = col.Name
+			resp.Columns[i].Type = col.Type
+			if col.Nullable != nil {
+				resp.Columns[i].Nullable = *col.Nullable
+			}
+		}
+	}
+	return resp
+}
+
+func apiFreshnessPolicy(f domain.FreshnessPolicy) FreshnessPolicy {
+	resp := FreshnessPolicy{}
+	if f.MaxLagSeconds != 0 {
+		resp.MaxLagSeconds = &f.MaxLagSeconds
+	}
+	if f.CronSchedule != "" {
+		resp.CronSchedule = &f.CronSchedule
+	}
+	return resp
+}
+
+func domainFreshnessPolicy(f FreshnessPolicy) domain.FreshnessPolicy {
+	resp := domain.FreshnessPolicy{}
+	if f.MaxLagSeconds != nil {
+		resp.MaxLagSeconds = *f.MaxLagSeconds
+	}
+	if f.CronSchedule != nil {
+		resp.CronSchedule = *f.CronSchedule
+	}
+	return resp
 }
 
 // === Freshness ===

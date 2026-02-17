@@ -80,6 +80,8 @@ func (s *Service) CreateModel(ctx context.Context, principal string, req domain.
 		Tags:            req.Tags,
 		DependsOn:       deps,
 		Config:          req.Config,
+		Contract:        req.Contract,
+		Freshness:       req.Freshness,
 		CreatedBy:       principal,
 	}
 

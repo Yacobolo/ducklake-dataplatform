@@ -28,10 +28,10 @@ type externalLocationService interface {
 // volumeService defines the volume operations used by the API handler.
 type volumeService interface {
 	List(ctx context.Context, catalogName string, schemaName string, page domain.PageRequest) ([]domain.Volume, int64, error)
-	Create(ctx context.Context, catalogName string, principal, schemaName string, req domain.CreateVolumeRequest) (*domain.Volume, error)
+	Create(ctx context.Context, principal, catalogName, schemaName string, req domain.CreateVolumeRequest) (*domain.Volume, error)
 	GetByName(ctx context.Context, catalogName string, schemaName, name string) (*domain.Volume, error)
-	Update(ctx context.Context, catalogName string, principal, schemaName, name string, req domain.UpdateVolumeRequest) (*domain.Volume, error)
-	Delete(ctx context.Context, catalogName string, principal, schemaName, name string) error
+	Update(ctx context.Context, principal, catalogName, schemaName, name string, req domain.UpdateVolumeRequest) (*domain.Volume, error)
+	Delete(ctx context.Context, principal, catalogName, schemaName, name string) error
 }
 
 // === Storage Credentials ===
@@ -412,7 +412,7 @@ func (h *APIHandler) CreateVolume(ctx context.Context, request CreateVolumeReque
 	}
 
 	principal := principalFromCtx(ctx)
-	result, err := h.volumes.Create(ctx, string(request.CatalogName), principal, request.SchemaName, domReq)
+	result, err := h.volumes.Create(ctx, principal, string(request.CatalogName), request.SchemaName, domReq)
 	if err != nil {
 		var accessErr *domain.AccessDeniedError
 		var validErr *domain.ValidationError
@@ -460,7 +460,7 @@ func (h *APIHandler) UpdateVolume(ctx context.Context, request UpdateVolumeReque
 	}
 
 	principal := principalFromCtx(ctx)
-	result, err := h.volumes.Update(ctx, string(request.CatalogName), principal, request.SchemaName, request.VolumeName, domReq)
+	result, err := h.volumes.Update(ctx, principal, string(request.CatalogName), request.SchemaName, request.VolumeName, domReq)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
@@ -480,7 +480,7 @@ func (h *APIHandler) UpdateVolume(ctx context.Context, request UpdateVolumeReque
 // DeleteVolume implements the endpoint for deleting a volume by name.
 func (h *APIHandler) DeleteVolume(ctx context.Context, request DeleteVolumeRequestObject) (DeleteVolumeResponseObject, error) {
 	principal := principalFromCtx(ctx)
-	if err := h.volumes.Delete(ctx, string(request.CatalogName), principal, request.SchemaName, request.VolumeName); err != nil {
+	if err := h.volumes.Delete(ctx, principal, string(request.CatalogName), request.SchemaName, request.VolumeName); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
 			return DeleteVolume403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"duck-demo/internal/domain"
+	"duck-demo/internal/duckdbsql"
 )
 
 // ColumnMaskService provides column masking operations.
@@ -24,6 +25,9 @@ func (s *ColumnMaskService) Create(ctx context.Context, req domain.CreateColumnM
 	}
 	if err := req.Validate(); err != nil {
 		return nil, err
+	}
+	if _, err := duckdbsql.ParseExpr(req.MaskExpression); err != nil {
+		return nil, domain.ErrValidation("mask_expression must be a valid SQL expression: %v", err)
 	}
 	m := &domain.ColumnMask{
 		TableID:        req.TableID,

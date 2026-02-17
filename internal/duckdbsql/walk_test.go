@@ -24,7 +24,7 @@ func TestClassify(t *testing.T) {
 		{"create_table", "CREATE TABLE foo (id INT)", StmtTypeDDL},
 		{"drop_table", "DROP TABLE foo", StmtTypeDDL},
 		{"alter", "ALTER TABLE foo ADD COLUMN bar INT", StmtTypeDDL},
-		{"set", "SET threads = 4", StmtTypeOther},
+		{"set", "SET threads = 4", StmtTypeUtilitySet},
 		{"describe", "DESCRIBE t", StmtTypeOther},
 	}
 

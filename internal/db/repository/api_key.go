@@ -39,6 +39,7 @@ func (r *APIKeyRepo) Create(ctx context.Context, key *domain.APIKey) error {
 	params := dbstore.CreateAPIKeyParams{
 		ID:          newID(),
 		KeyHash:     key.KeyHash,
+		KeyPrefix:   sql.NullString{String: key.KeyPrefix, Valid: key.KeyPrefix != ""},
 		PrincipalID: key.PrincipalID,
 		Name:        key.Name,
 	}
@@ -160,7 +161,9 @@ func apiKeyFromDB(row dbstore.ApiKey) domain.APIKey {
 		KeyHash:     row.KeyHash,
 		CreatedAt:   parseTimeStr(row.CreatedAt),
 	}
-	if row.KeyHash != "" && len(row.KeyHash) >= 8 {
+	if row.KeyPrefix.Valid {
+		key.KeyPrefix = row.KeyPrefix.String
+	} else if row.KeyHash != "" && len(row.KeyHash) >= 8 {
 		key.KeyPrefix = row.KeyHash[:8]
 	}
 	if row.ExpiresAt.Valid {
@@ -178,7 +181,9 @@ func apiKeyFromHashRow(row dbstore.GetAPIKeyByHashRow) *domain.APIKey {
 		KeyHash:     row.KeyHash,
 		CreatedAt:   parseTimeStr(row.CreatedAt),
 	}
-	if row.KeyHash != "" && len(row.KeyHash) >= 8 {
+	if row.KeyPrefix.Valid {
+		key.KeyPrefix = row.KeyPrefix.String
+	} else if row.KeyHash != "" && len(row.KeyHash) >= 8 {
 		key.KeyPrefix = row.KeyHash[:8]
 	}
 	if row.ExpiresAt.Valid {
