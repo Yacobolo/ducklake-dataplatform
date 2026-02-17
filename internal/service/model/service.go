@@ -128,7 +128,9 @@ func (s *Service) UpdateModel(ctx context.Context, principal, projectName, name 
 			if depErr != nil {
 				s.logger.Warn("dependency re-extraction failed", "model", result.QualifiedName(), "error", depErr)
 			} else {
-				_ = s.models.UpdateDependencies(ctx, result.ID, deps)
+				if err := s.models.UpdateDependencies(ctx, result.ID, deps); err != nil {
+					return nil, fmt.Errorf("update dependencies for %s: %w", result.QualifiedName(), err)
+				}
 				result.DependsOn = deps
 			}
 		}
@@ -367,7 +369,12 @@ func (s *Service) CancelRun(ctx context.Context, principal, runID string) error 
 	}
 
 	errMsg := "cancelled by " + principal
-	return s.runs.UpdateRunFinished(ctx, runID, domain.ModelRunStatusCancelled, &errMsg)
+	if err := s.runs.UpdateRunFinished(ctx, runID, domain.ModelRunStatusCancelled, &errMsg); err != nil {
+		return err
+	}
+
+	s.logAudit(ctx, principal, "cancel_model_run", runID)
+	return nil
 }
 
 // SetTestRepos sets the test and test result repositories on the service.
@@ -477,6 +484,6 @@ func (s *Service) logAudit(ctx context.Context, principal, action, _ string) {
 	_ = s.audit.Insert(ctx, &domain.AuditEntry{
 		PrincipalName: principal,
 		Action:        action,
-		Status:        "SUCCESS",
+		Status:        "ALLOWED",
 	})
 }

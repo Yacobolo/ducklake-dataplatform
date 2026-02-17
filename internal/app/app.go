@@ -180,7 +180,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	columnMaskSvc := security.NewColumnMaskService(columnMaskRepo, auditRepo)
 	auditSvc := governance.NewAuditService(auditRepo)
 	queryHistorySvc := governance.NewQueryHistoryService(queryHistoryRepo)
-	lineageSvc := governance.NewLineageService(lineageRepo, colLineageRepo)
+	lineageSvc := governance.NewLineageService(lineageRepo, colLineageRepo, auditRepo)
 	searchRepoFactory := repository.NewSearchRepoFactory(deps.ReadDB, catalogRegRepo)
 	searchSvc := catalog.NewSearchService(searchRepo, searchRepoFactory)
 	tagSvc := governance.NewTagService(tagRepo, auditRepo)

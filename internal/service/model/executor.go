@@ -248,12 +248,14 @@ func (s *Service) materializeTable(ctx context.Context, conn *sql.Conn,
 		quoteIdent(config.TargetSchema), quoteIdent(model.Name))
 	rows, err := s.engine.QueryOnConn(ctx, conn, principal, countSQL)
 	if err != nil {
-		return 0, nil // non-fatal: count failure doesn't fail materialization
+		return 0, fmt.Errorf("count materialized rows: %w", err)
 	}
 	defer func() { _ = rows.Close() }()
 	var count int64
 	if rows.Next() {
-		_ = rows.Scan(&count)
+		if err := rows.Scan(&count); err != nil {
+			return 0, fmt.Errorf("scan materialized row count: %w", err)
+		}
 	}
 	if err := rows.Err(); err != nil {
 		s.logger.Warn("row count error", "error", err)
@@ -344,12 +346,14 @@ func (s *Service) materializeIncremental(ctx context.Context, conn *sql.Conn,
 	countSQL := fmt.Sprintf("SELECT COUNT(*) FROM %s", targetFQN)
 	rows, err := s.engine.QueryOnConn(ctx, conn, principal, countSQL)
 	if err != nil {
-		return 0, nil
+		return 0, fmt.Errorf("count incremental rows: %w", err)
 	}
 	defer func() { _ = rows.Close() }()
 	var count int64
 	if rows.Next() {
-		_ = rows.Scan(&count)
+		if err := rows.Scan(&count); err != nil {
+			return 0, fmt.Errorf("scan incremental row count: %w", err)
+		}
 	}
 	if err := rows.Err(); err != nil {
 		s.logger.Warn("row count error", "error", err)

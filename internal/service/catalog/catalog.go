@@ -434,7 +434,13 @@ func (s *CatalogService) ProfileTable(ctx context.Context, catalogName string, p
 	}
 
 	// Return stored stats (which now has LastProfiledAt set by the DB)
-	return s.stats.Get(ctx, securableName)
+	result, err := s.stats.Get(ctx, securableName)
+	if err != nil {
+		return nil, err
+	}
+
+	s.logAudit(ctx, principal, "PROFILE_TABLE", fmt.Sprintf("Profiled table %q.%q", schemaName, tableName))
+	return result, nil
 }
 
 func (s *CatalogService) enrichSchemaTags(ctx context.Context, schema *domain.SchemaDetail) {

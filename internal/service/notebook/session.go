@@ -151,7 +151,35 @@ func (m *SessionManager) CloseSession(_ context.Context, sessionID string, princ
 	s.cancel()
 	s.closing.Store(true)
 
-	return s.conn.Close()
+	if err := s.conn.Close(); err != nil {
+		return err
+	}
+
+	auditPrincipal := caller
+	if auditPrincipal == "" {
+		auditPrincipal = s.principal
+	}
+	_ = m.audit.Insert(context.Background(), &domain.AuditEntry{
+		PrincipalName: auditPrincipal,
+		Action:        "CLOSE_SESSION",
+		Status:        "ALLOWED",
+	})
+
+	return nil
+}
+
+func (m *SessionManager) persistCellResult(ctx context.Context, cellID string, result *domain.CellExecutionResult) error {
+	resultJSON, err := json.Marshal(result)
+	if err != nil {
+		return fmt.Errorf("marshal cell result: %w", err)
+	}
+
+	resultStr := string(resultJSON)
+	if err := m.repo.UpdateCellResult(ctx, cellID, &resultStr); err != nil {
+		return fmt.Errorf("update cached cell result: %w", err)
+	}
+
+	return nil
 }
 
 // getSession retrieves a session (caller must hold no locks).
@@ -247,10 +275,9 @@ func (m *SessionManager) ExecuteCell(ctx context.Context, sessionID, cellID stri
 	if err != nil {
 		errMsg := err.Error()
 		result.Error = &errMsg
-		// Cache the error result
-		resultJSON, _ := json.Marshal(result)
-		resultStr := string(resultJSON)
-		_ = m.repo.UpdateCellResult(ctx, cellID, &resultStr)
+		if cacheErr := m.persistCellResult(ctx, cellID, result); cacheErr != nil {
+			return nil, cacheErr
+		}
 		return result, nil
 	}
 	defer func() { _ = rows.Close() }()
@@ -266,10 +293,9 @@ func (m *SessionManager) ExecuteCell(ctx context.Context, sessionID, cellID stri
 	result.Rows = data
 	result.RowCount = len(data)
 
-	// Cache result
-	resultJSON, _ := json.Marshal(result)
-	resultStr := string(resultJSON)
-	_ = m.repo.UpdateCellResult(ctx, cellID, &resultStr)
+	if err := m.persistCellResult(ctx, cellID, result); err != nil {
+		return nil, err
+	}
 
 	return result, nil
 }
@@ -379,7 +405,12 @@ func (m *SessionManager) RunAllAsync(ctx context.Context, sessionID string, prin
 			return
 		}
 
-		resultJSON, _ := json.Marshal(result)
+		resultJSON, err := json.Marshal(result)
+		if err != nil {
+			errStr := fmt.Sprintf("marshal async run result: %v", err)
+			_ = m.jobRepo.UpdateJobState(context.Background(), job.ID, domain.JobStateFailed, nil, &errStr)
+			return
+		}
 		resultStr := string(resultJSON)
 		_ = m.jobRepo.UpdateJobState(context.Background(), job.ID, domain.JobStateComplete, &resultStr, nil)
 	}()

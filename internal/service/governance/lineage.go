@@ -11,11 +11,17 @@ import (
 type LineageService struct {
 	repo    domain.LineageRepository
 	colRepo domain.ColumnLineageRepository
+	audit   domain.AuditRepository
 }
 
 // NewLineageService creates a new LineageService.
-func NewLineageService(repo domain.LineageRepository, colRepo domain.ColumnLineageRepository) *LineageService {
-	return &LineageService{repo: repo, colRepo: colRepo}
+func NewLineageService(repo domain.LineageRepository, colRepo domain.ColumnLineageRepository, audit ...domain.AuditRepository) *LineageService {
+	var auditRepo domain.AuditRepository
+	if len(audit) > 0 {
+		auditRepo = audit[0]
+	}
+
+	return &LineageService{repo: repo, colRepo: colRepo, audit: auditRepo}
 }
 
 // InsertEdge records a new lineage edge.
@@ -55,7 +61,13 @@ func (s *LineageService) DeleteEdge(ctx context.Context, id string) error {
 	if err := requireAdmin(ctx); err != nil {
 		return err
 	}
-	return s.repo.DeleteEdge(ctx, id)
+
+	if err := s.repo.DeleteEdge(ctx, id); err != nil {
+		return err
+	}
+
+	s.logAudit(ctx, "LINEAGE_DELETE_EDGE")
+	return nil
 }
 
 // PurgeOlderThan removes lineage edges older than the given duration. Requires admin privileges.
@@ -64,7 +76,31 @@ func (s *LineageService) PurgeOlderThan(ctx context.Context, olderThanDays int) 
 		return 0, err
 	}
 	before := time.Now().AddDate(0, 0, -olderThanDays)
-	return s.repo.PurgeOlderThan(ctx, before)
+
+	deleted, err := s.repo.PurgeOlderThan(ctx, before)
+	if err != nil {
+		return 0, err
+	}
+
+	s.logAudit(ctx, "LINEAGE_PURGE")
+	return deleted, nil
+}
+
+func (s *LineageService) logAudit(ctx context.Context, action string) {
+	if s.audit == nil {
+		return
+	}
+
+	principal, ok := domain.PrincipalFromContext(ctx)
+	if !ok {
+		principal.Name = "system"
+	}
+
+	_ = s.audit.Insert(ctx, &domain.AuditEntry{
+		PrincipalName: principal.Name,
+		Action:        action,
+		Status:        "ALLOWED",
+	})
 }
 
 // === Column-Level Lineage ===

@@ -144,7 +144,19 @@ func (s *Service) CreateCell(ctx context.Context, principal string, isAdmin bool
 		Content:    req.Content,
 		Position:   pos,
 	}
-	return s.repo.CreateCell(ctx, cell)
+
+	result, err := s.repo.CreateCell(ctx, cell)
+	if err != nil {
+		return nil, err
+	}
+
+	_ = s.audit.Insert(ctx, &domain.AuditEntry{
+		PrincipalName: principal,
+		Action:        "CREATE_CELL",
+		Status:        "ALLOWED",
+	})
+
+	return result, nil
 }
 
 // UpdateCell updates a cell's content or position. Owner or admin required.
@@ -160,7 +172,18 @@ func (s *Service) UpdateCell(ctx context.Context, principal string, isAdmin bool
 	if nb.Owner != principal && !isAdmin {
 		return nil, domain.ErrAccessDenied("only the notebook owner or admin can update cells")
 	}
-	return s.repo.UpdateCell(ctx, cellID, req)
+	result, err := s.repo.UpdateCell(ctx, cellID, req)
+	if err != nil {
+		return nil, err
+	}
+
+	_ = s.audit.Insert(ctx, &domain.AuditEntry{
+		PrincipalName: principal,
+		Action:        "UPDATE_CELL",
+		Status:        "ALLOWED",
+	})
+
+	return result, nil
 }
 
 // DeleteCell removes a cell. Owner or admin required.
@@ -176,7 +199,17 @@ func (s *Service) DeleteCell(ctx context.Context, principal string, isAdmin bool
 	if nb.Owner != principal && !isAdmin {
 		return domain.ErrAccessDenied("only the notebook owner or admin can delete cells")
 	}
-	return s.repo.DeleteCell(ctx, cellID)
+	if err := s.repo.DeleteCell(ctx, cellID); err != nil {
+		return err
+	}
+
+	_ = s.audit.Insert(ctx, &domain.AuditEntry{
+		PrincipalName: principal,
+		Action:        "DELETE_CELL",
+		Status:        "ALLOWED",
+	})
+
+	return nil
 }
 
 // ReorderCells reorders cells in a notebook. Owner or admin required.

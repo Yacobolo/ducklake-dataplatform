@@ -93,7 +93,7 @@ func (s *Service) CreatePipeline(ctx context.Context, principal string, req doma
 		ID:            domain.NewID(),
 		PrincipalName: principal,
 		Action:        "pipeline.create",
-		Status:        "success",
+		Status:        "ALLOWED",
 		CreatedAt:     time.Now(),
 	})
 
@@ -136,7 +136,7 @@ func (s *Service) UpdatePipeline(ctx context.Context, principal string, name str
 		ID:            domain.NewID(),
 		PrincipalName: principal,
 		Action:        "pipeline.update",
-		Status:        "success",
+		Status:        "ALLOWED",
 		CreatedAt:     time.Now(),
 	})
 
@@ -162,7 +162,7 @@ func (s *Service) DeletePipeline(ctx context.Context, principal string, name str
 		ID:            domain.NewID(),
 		PrincipalName: principal,
 		Action:        "pipeline.delete",
-		Status:        "success",
+		Status:        "ALLOWED",
 		CreatedAt:     time.Now(),
 	})
 
@@ -176,7 +176,7 @@ func (s *Service) DeletePipeline(ctx context.Context, principal string, name str
 // === Job CRUD ===
 
 // CreateJob adds a new job to the specified pipeline after validating the notebook.
-func (s *Service) CreateJob(ctx context.Context, _ string, pipelineName string, req domain.CreatePipelineJobRequest) (*domain.PipelineJob, error) {
+func (s *Service) CreateJob(ctx context.Context, principal string, pipelineName string, req domain.CreatePipelineJobRequest) (*domain.PipelineJob, error) {
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
@@ -208,7 +208,20 @@ func (s *Service) CreateJob(ctx context.Context, _ string, pipelineName string, 
 		ModelSelector:     req.ModelSelector,
 	}
 
-	return s.pipelines.CreateJob(ctx, job)
+	created, err := s.pipelines.CreateJob(ctx, job)
+	if err != nil {
+		return nil, err
+	}
+
+	_ = s.audit.Insert(ctx, &domain.AuditEntry{
+		ID:            domain.NewID(),
+		PrincipalName: principal,
+		Action:        "pipeline.job.create",
+		Status:        "ALLOWED",
+		CreatedAt:     time.Now(),
+	})
+
+	return created, nil
 }
 
 // ListJobs returns all jobs belonging to the named pipeline.
@@ -221,13 +234,25 @@ func (s *Service) ListJobs(ctx context.Context, pipelineName string) ([]domain.P
 }
 
 // DeleteJob removes a job from a pipeline by ID.
-func (s *Service) DeleteJob(ctx context.Context, _ string, _ string, jobID string) error {
+func (s *Service) DeleteJob(ctx context.Context, principal string, _ string, jobID string) error {
 	// Verify the job exists (also validates jobID).
 	_, err := s.pipelines.GetJobByID(ctx, jobID)
 	if err != nil {
 		return err
 	}
-	return s.pipelines.DeleteJob(ctx, jobID)
+	if err := s.pipelines.DeleteJob(ctx, jobID); err != nil {
+		return err
+	}
+
+	_ = s.audit.Insert(ctx, &domain.AuditEntry{
+		ID:            domain.NewID(),
+		PrincipalName: principal,
+		Action:        "pipeline.job.delete",
+		Status:        "ALLOWED",
+		CreatedAt:     time.Now(),
+	})
+
+	return nil
 }
 
 // === Run Operations ===
@@ -301,7 +326,7 @@ func (s *Service) TriggerRun(ctx context.Context, principal string, pipelineName
 		ID:            domain.NewID(),
 		PrincipalName: principal,
 		Action:        "pipeline.trigger",
-		Status:        "success",
+		Status:        "ALLOWED",
 		CreatedAt:     time.Now(),
 	})
 
@@ -372,7 +397,7 @@ func (s *Service) CancelRun(ctx context.Context, principal string, runID string)
 		ID:            domain.NewID(),
 		PrincipalName: principal,
 		Action:        "pipeline.cancel",
-		Status:        "success",
+		Status:        "ALLOWED",
 		CreatedAt:     time.Now(),
 	})
 
