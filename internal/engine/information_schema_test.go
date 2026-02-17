@@ -161,6 +161,8 @@ func TestIsInformationSchemaQuery(t *testing.T) {
 		{"partial_no_dot", "SELECT * FROM information_schema_foo", false},
 		{"empty_string", "", false},
 		{"contains_in_where", "SELECT 1 WHERE table_name IN (SELECT table_name FROM information_schema.tables)", true},
+		{"mixed_with_regular_table", "SELECT * FROM information_schema.tables t JOIN users u ON t.table_name = u.name", false},
+		{"unsupported_table", "SELECT * FROM information_schema.views", false},
 	}
 
 	for _, tc := range tests {

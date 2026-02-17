@@ -516,7 +516,7 @@ func TestUnknownPrincipalError(t *testing.T) {
 func TestLookupTableID(t *testing.T) {
 	cat, _, ctx := setupTestService(t)
 
-	tableID, schemaID, _, err := cat.LookupTableID(ctx, "titanic")
+	tableID, schemaID, _, err := cat.LookupTableID(ctx, "main", "titanic")
 	if err != nil {
 		t.Fatalf("lookup: %v", err)
 	}
@@ -531,7 +531,7 @@ func TestLookupTableID(t *testing.T) {
 func TestLookupTableIDNotFound(t *testing.T) {
 	cat, _, ctx := setupTestService(t)
 
-	_, _, _, err := cat.LookupTableID(ctx, "nonexistent")
+	_, _, _, err := cat.LookupTableID(ctx, "main", "nonexistent")
 	if err == nil {
 		t.Error("expected error for nonexistent table")
 	}

@@ -161,6 +161,27 @@ func (r *IntrospectionRepo) GetTableByName(ctx context.Context, tableName string
 	return &matches[0], nil
 }
 
+// GetTableBySchemaAndName returns a table by schema and table name.
+func (r *IntrospectionRepo) GetTableBySchemaAndName(ctx context.Context, schemaName, tableName string) (*domain.Table, error) {
+	var t domain.Table
+	err := r.db.QueryRowContext(ctx,
+		`SELECT t.table_id, t.schema_id, t.table_name
+		 FROM ducklake_table t
+		 JOIN ducklake_schema s ON s.schema_id = t.schema_id
+		 WHERE s.schema_name = ?
+		   AND t.table_name = ?
+		   AND s.end_snapshot IS NULL
+		   AND t.end_snapshot IS NULL`, schemaName, tableName).
+		Scan(&t.ID, &t.SchemaID, &t.Name)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, &domain.NotFoundError{Message: "table not found"}
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
+}
+
 // GetSchemaByName returns a schema by its name.
 func (r *IntrospectionRepo) GetSchemaByName(ctx context.Context, schemaName string) (*domain.Schema, error) {
 	var s domain.Schema
