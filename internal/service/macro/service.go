@@ -3,6 +3,7 @@ package macro
 
 import (
 	"context"
+	"sort"
 
 	"duck-demo/internal/domain"
 )
@@ -69,6 +70,11 @@ func (s *Service) List(ctx context.Context, page domain.PageRequest) ([]domain.M
 
 // Update updates a macro.
 func (s *Service) Update(ctx context.Context, principal, name string, req domain.UpdateMacroRequest) (*domain.Macro, error) {
+	if req.Status != nil {
+		if *req.Status != domain.MacroStatusActive && *req.Status != domain.MacroStatusDeprecated {
+			return nil, domain.ErrValidation("status must be ACTIVE or DEPRECATED")
+		}
+	}
 	result, err := s.macros.Update(ctx, name, req)
 	if err != nil {
 		return nil, err
@@ -96,4 +102,69 @@ func (s *Service) Delete(ctx context.Context, principal, name string) error {
 	})
 
 	return nil
+}
+
+// ListRevisions returns revision history for a macro.
+func (s *Service) ListRevisions(ctx context.Context, macroName string) ([]domain.MacroRevision, error) {
+	if _, err := s.macros.GetByName(ctx, macroName); err != nil {
+		return nil, err
+	}
+	return s.macros.ListRevisions(ctx, macroName)
+}
+
+// DiffRevisions computes a semantic diff between two macro revisions.
+func (s *Service) DiffRevisions(ctx context.Context, macroName string, fromVersion, toVersion int) (*domain.MacroRevisionDiff, error) {
+	if fromVersion <= 0 || toVersion <= 0 {
+		return nil, domain.ErrValidation("from_version and to_version must be greater than zero")
+	}
+	if _, err := s.macros.GetByName(ctx, macroName); err != nil {
+		return nil, err
+	}
+	fromRev, err := s.macros.GetRevisionByVersion(ctx, macroName, fromVersion)
+	if err != nil {
+		return nil, err
+	}
+	toRev, err := s.macros.GetRevisionByVersion(ctx, macroName, toVersion)
+	if err != nil {
+		return nil, err
+	}
+
+	fromParams := append([]string(nil), fromRev.Parameters...)
+	toParams := append([]string(nil), toRev.Parameters...)
+	sort.Strings(fromParams)
+	sort.Strings(toParams)
+
+	d := &domain.MacroRevisionDiff{
+		MacroName:          macroName,
+		FromVersion:        fromVersion,
+		ToVersion:          toVersion,
+		FromContentHash:    fromRev.ContentHash,
+		ToContentHash:      toRev.ContentHash,
+		ParametersChanged:  !equalStringSlices(fromParams, toParams),
+		BodyChanged:        fromRev.Body != toRev.Body,
+		DescriptionChanged: fromRev.Description != toRev.Description,
+		StatusChanged:      fromRev.Status != toRev.Status,
+		FromParameters:     fromRev.Parameters,
+		ToParameters:       toRev.Parameters,
+		FromBody:           fromRev.Body,
+		ToBody:             toRev.Body,
+		FromDescription:    fromRev.Description,
+		ToDescription:      toRev.Description,
+		FromStatus:         fromRev.Status,
+		ToStatus:           toRev.Status,
+	}
+	d.Changed = d.ParametersChanged || d.BodyChanged || d.DescriptionChanged || d.StatusChanged
+	return d, nil
+}
+
+func equalStringSlices(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }

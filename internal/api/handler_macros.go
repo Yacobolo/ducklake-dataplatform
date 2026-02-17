@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"math"
 
 	"duck-demo/internal/domain"
 )
@@ -14,6 +15,8 @@ type macroService interface {
 	List(ctx context.Context, page domain.PageRequest) ([]domain.Macro, int64, error)
 	Update(ctx context.Context, principal, name string, req domain.UpdateMacroRequest) (*domain.Macro, error)
 	Delete(ctx context.Context, principal, name string) error
+	ListRevisions(ctx context.Context, macroName string) ([]domain.MacroRevision, error)
+	DiffRevisions(ctx context.Context, macroName string, fromVersion, toVersion int) (*domain.MacroRevisionDiff, error)
 }
 
 // === Macros ===
@@ -95,6 +98,46 @@ func (h *APIHandler) CreateMacro(ctx context.Context, req CreateMacroRequestObje
 	}, nil
 }
 
+// ListMacroRevisions implements the endpoint for listing macro revisions.
+func (h *APIHandler) ListMacroRevisions(ctx context.Context, req ListMacroRevisionsRequestObject) (ListMacroRevisionsResponseObject, error) {
+	revisions, err := h.macros.ListRevisions(ctx, req.MacroName)
+	if err != nil {
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
+			return ListMacroRevisions404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		default:
+			return nil, err
+		}
+	}
+	out := make([]MacroRevision, 0, len(revisions))
+	for _, r := range revisions {
+		out = append(out, macroRevisionToAPI(r))
+	}
+	return ListMacroRevisions200JSONResponse{
+		Body:    MacroRevisionList{Data: &out},
+		Headers: ListMacroRevisions200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// DiffMacroRevisions implements the endpoint for comparing two macro revisions.
+func (h *APIHandler) DiffMacroRevisions(ctx context.Context, req DiffMacroRevisionsRequestObject) (DiffMacroRevisionsResponseObject, error) {
+	diff, err := h.macros.DiffRevisions(ctx, req.MacroName, int(req.Params.FromVersion), int(req.Params.ToVersion))
+	if err != nil {
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
+			return DiffMacroRevisions404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		case errors.As(err, new(*domain.ValidationError)):
+			return DiffMacroRevisions400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		default:
+			return nil, err
+		}
+	}
+	return DiffMacroRevisions200JSONResponse{
+		Body:    macroRevisionDiffToAPI(*diff),
+		Headers: DiffMacroRevisions200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
 // GetMacro implements the endpoint for retrieving a macro by name.
 func (h *APIHandler) GetMacro(ctx context.Context, req GetMacroRequestObject) (GetMacroResponseObject, error) {
 	result, err := h.macros.Get(ctx, req.MacroName)
@@ -120,6 +163,10 @@ func (h *APIHandler) UpdateMacro(ctx context.Context, req UpdateMacroRequestObje
 	}
 	if req.Body.Parameters != nil {
 		domReq.Parameters = *req.Body.Parameters
+	}
+	if req.Body.Status != nil {
+		s := string(*req.Body.Status)
+		domReq.Status = &s
 	}
 
 	cp, _ := domain.PrincipalFromContext(ctx)
@@ -206,4 +253,73 @@ func macroToAPI(m domain.Macro) Macro {
 		resp.Parameters = &m.Parameters
 	}
 	return resp
+}
+
+func macroRevisionToAPI(r domain.MacroRevision) MacroRevision {
+	ct := r.CreatedAt
+	version := safeInt32(r.Version)
+	resp := MacroRevision{
+		Id:          &r.ID,
+		MacroName:   &r.MacroName,
+		Version:     &version,
+		ContentHash: &r.ContentHash,
+		Body:        &r.Body,
+		Description: &r.Description,
+		CreatedBy:   &r.CreatedBy,
+		CreatedAt:   &ct,
+	}
+	if len(r.Parameters) > 0 {
+		resp.Parameters = &r.Parameters
+	}
+	if r.Status != "" {
+		s := MacroRevisionStatus(r.Status)
+		resp.Status = &s
+	}
+	return resp
+}
+
+func macroRevisionDiffToAPI(d domain.MacroRevisionDiff) MacroRevisionDiff {
+	fromVersion := safeInt32(d.FromVersion)
+	toVersion := safeInt32(d.ToVersion)
+	resp := MacroRevisionDiff{
+		MacroName:          &d.MacroName,
+		FromVersion:        &fromVersion,
+		ToVersion:          &toVersion,
+		FromContentHash:    &d.FromContentHash,
+		ToContentHash:      &d.ToContentHash,
+		Changed:            &d.Changed,
+		ParametersChanged:  &d.ParametersChanged,
+		BodyChanged:        &d.BodyChanged,
+		DescriptionChanged: &d.DescriptionChanged,
+		StatusChanged:      &d.StatusChanged,
+		FromBody:           &d.FromBody,
+		ToBody:             &d.ToBody,
+		FromDescription:    &d.FromDescription,
+		ToDescription:      &d.ToDescription,
+	}
+	if len(d.FromParameters) > 0 {
+		resp.FromParameters = &d.FromParameters
+	}
+	if len(d.ToParameters) > 0 {
+		resp.ToParameters = &d.ToParameters
+	}
+	if d.FromStatus != "" {
+		s := MacroRevisionDiffFromStatus(d.FromStatus)
+		resp.FromStatus = &s
+	}
+	if d.ToStatus != "" {
+		s := MacroRevisionDiffToStatus(d.ToStatus)
+		resp.ToStatus = &s
+	}
+	return resp
+}
+
+func safeInt32(v int) int32 {
+	if v > math.MaxInt32 {
+		return math.MaxInt32
+	}
+	if v < math.MinInt32 {
+		return math.MinInt32
+	}
+	return int32(v)
 }

@@ -35,6 +35,43 @@ type Macro struct {
 	UpdatedAt   time.Time
 }
 
+// MacroRevision captures a point-in-time macro definition snapshot.
+type MacroRevision struct {
+	ID          string
+	MacroID     string
+	MacroName   string
+	Version     int
+	ContentHash string
+	Parameters  []string
+	Body        string
+	Description string
+	Status      string
+	CreatedBy   string
+	CreatedAt   time.Time
+}
+
+// MacroRevisionDiff captures the semantic difference between two revisions.
+type MacroRevisionDiff struct {
+	MacroName          string
+	FromVersion        int
+	ToVersion          int
+	FromContentHash    string
+	ToContentHash      string
+	Changed            bool
+	ParametersChanged  bool
+	BodyChanged        bool
+	DescriptionChanged bool
+	StatusChanged      bool
+	FromParameters     []string
+	ToParameters       []string
+	FromBody           string
+	ToBody             string
+	FromDescription    string
+	ToDescription      string
+	FromStatus         string
+	ToStatus           string
+}
+
 // CreateMacroRequest holds parameters for creating a macro.
 type CreateMacroRequest struct {
 	Name        string
@@ -87,6 +124,7 @@ type UpdateMacroRequest struct {
 	Body        *string
 	Description *string
 	Parameters  []string
+	Status      *string
 }
 
 // PromoteNotebookRequest holds parameters for promoting a notebook cell to a model.

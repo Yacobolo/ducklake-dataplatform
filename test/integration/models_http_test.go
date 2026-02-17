@@ -561,6 +561,41 @@ func TestHTTP_MacroCRUD(t *testing.T) {
 			assert.Equal(t, "Triples the input value", result["description"])
 		}},
 
+		{"deprecate_macro", func(t *testing.T) {
+			resp := doRequest(t, "PATCH", env.Server.URL+"/v1/macros/double_val", env.Keys.Admin, map[string]interface{}{
+				"status": "DEPRECATED",
+			})
+			require.Equal(t, 200, resp.StatusCode)
+
+			var result map[string]interface{}
+			decodeJSON(t, resp, &result)
+			assert.Equal(t, "DEPRECATED", result["status"])
+		}},
+
+		{"list_macro_revisions", func(t *testing.T) {
+			resp := doRequest(t, "GET", env.Server.URL+"/v1/macros/double_val/revisions", env.Keys.Admin, nil)
+			require.Equal(t, 200, resp.StatusCode)
+
+			var result map[string]interface{}
+			decodeJSON(t, resp, &result)
+			data := result["data"].([]interface{})
+			require.GreaterOrEqual(t, len(data), 3)
+			latest := data[0].(map[string]interface{})
+			assert.NotEmpty(t, latest["content_hash"])
+			assert.NotNil(t, latest["version"])
+		}},
+
+		{"diff_macro_revisions", func(t *testing.T) {
+			resp := doRequest(t, "GET", env.Server.URL+"/v1/macros/double_val/diff?from_version=1&to_version=3", env.Keys.Admin, nil)
+			require.Equal(t, 200, resp.StatusCode)
+
+			var result map[string]interface{}
+			decodeJSON(t, resp, &result)
+			assert.Equal(t, true, result["changed"])
+			assert.Equal(t, true, result["body_changed"])
+			assert.Equal(t, true, result["status_changed"])
+		}},
+
 		{"update_macro_not_found_404", func(t *testing.T) {
 			resp := doRequest(t, "PATCH", env.Server.URL+"/v1/macros/nonexistent", env.Keys.Admin, map[string]interface{}{
 				"body": "1",

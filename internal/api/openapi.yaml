@@ -425,6 +425,12 @@ components:
       $ref: 'schemas/macros.yaml#/UpdateMacroRequest'
     PaginatedMacros:
       $ref: 'schemas/macros.yaml#/PaginatedMacros'
+    MacroRevision:
+      $ref: 'schemas/macros.yaml#/MacroRevision'
+    MacroRevisionList:
+      $ref: 'schemas/macros.yaml#/MacroRevisionList'
+    MacroRevisionDiff:
+      $ref: 'schemas/macros.yaml#/MacroRevisionDiff'
 
 paths:
   /query:
@@ -641,3 +647,7 @@ paths:
     $ref: 'paths/macros.yaml#/paths/~1macros'
   /macros/{macroName}:
     $ref: 'paths/macros.yaml#/paths/~1macros~1{macroName}'
+  /macros/{macroName}/revisions:
+    $ref: 'paths/macros.yaml#/paths/~1macros~1{macroName}~1revisions'
+  /macros/{macroName}/diff:
+    $ref: 'paths/macros.yaml#/paths/~1macros~1{macroName}~1diff'

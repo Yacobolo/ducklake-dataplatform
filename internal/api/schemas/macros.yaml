@@ -185,6 +185,170 @@ UpdateMacroRequest:
         maxLength: 255
         pattern: '^\S+$'
       example: ["amount"]
+    status:
+      type: string
+      enum: [ACTIVE, DEPRECATED]
+      example: DEPRECATED
+
+MacroRevision:
+  description: Immutable revision snapshot for a macro definition.
+  type: object
+  properties:
+    id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+      example: 550e8400-e29b-41d4-a716-446655440201
+    macro_name:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+      example: cents_to_dollars
+    version:
+      type: integer
+      format: int32
+      minimum: 1
+      maximum: 999999
+      example: 2
+    content_hash:
+      type: string
+      maxLength: 128
+      pattern: '^sha256:[0-9a-f]+$'
+      example: sha256:abcdef012345
+    parameters:
+      type: array
+      maxItems: 50
+      items:
+        type: string
+        maxLength: 255
+        pattern: '^\S+$'
+      example: ["amount"]
+    body:
+      type: string
+      maxLength: 65536
+      pattern: '^[\s\S]*$'
+      example: amount / 100.0
+    description:
+      type: string
+      maxLength: 4096
+      pattern: '^[\s\S]*$'
+      example: Converts cents to dollars
+    status:
+      type: string
+      enum: [ACTIVE, DEPRECATED]
+      example: ACTIVE
+    created_by:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+      example: admin
+    created_at:
+      type: string
+      format: date-time
+      maxLength: 64
+      example: "2025-01-15T09:30:00Z"
+
+MacroRevisionList:
+  description: Revision history for a macro.
+  type: object
+  properties:
+    data:
+      type: array
+      maxItems: 10000
+      items:
+        $ref: '#/MacroRevision'
+      example: []
+
+MacroRevisionDiff:
+  description: Semantic difference between two macro revisions.
+  type: object
+  properties:
+    macro_name:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+      example: cents_to_dollars
+    from_version:
+      type: integer
+      format: int32
+      minimum: 1
+      maximum: 999999
+      example: 1
+    to_version:
+      type: integer
+      format: int32
+      minimum: 1
+      maximum: 999999
+      example: 2
+    from_content_hash:
+      type: string
+      maxLength: 128
+      pattern: '^sha256:[0-9a-f]+$'
+      example: sha256:aaaa
+    to_content_hash:
+      type: string
+      maxLength: 128
+      pattern: '^sha256:[0-9a-f]+$'
+      example: sha256:bbbb
+    changed:
+      type: boolean
+      example: true
+    parameters_changed:
+      type: boolean
+      example: false
+    body_changed:
+      type: boolean
+      example: true
+    description_changed:
+      type: boolean
+      example: false
+    status_changed:
+      type: boolean
+      example: false
+    from_parameters:
+      type: array
+      maxItems: 50
+      items:
+        type: string
+        maxLength: 255
+        pattern: '^\S+$'
+      example: ["amount"]
+    to_parameters:
+      type: array
+      maxItems: 50
+      items:
+        type: string
+        maxLength: 255
+        pattern: '^\S+$'
+      example: ["amount"]
+    from_body:
+      type: string
+      maxLength: 65536
+      pattern: '^[\s\S]*$'
+      example: amount / 100
+    to_body:
+      type: string
+      maxLength: 65536
+      pattern: '^[\s\S]*$'
+      example: amount / 100.0
+    from_description:
+      type: string
+      maxLength: 4096
+      pattern: '^[\s\S]*$'
+      example: old description
+    to_description:
+      type: string
+      maxLength: 4096
+      pattern: '^[\s\S]*$'
+      example: new description
+    from_status:
+      type: string
+      enum: [ACTIVE, DEPRECATED]
+      example: ACTIVE
+    to_status:
+      type: string
+      enum: [ACTIVE, DEPRECATED]
+      example: DEPRECATED
 
 PaginatedMacros:
   description: Paginated list of macros.

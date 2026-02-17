@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -52,7 +53,11 @@ func (r *MacroRepo) Create(ctx context.Context, m *domain.Macro) (*domain.Macro,
 	if err != nil {
 		return nil, mapDBError(err)
 	}
-	return macroFromDB(row), nil
+	created := macroFromDB(row)
+	if _, err := r.createRevision(ctx, created, created.CreatedBy); err != nil {
+		return nil, err
+	}
+	return created, nil
 }
 
 // GetByName returns a macro by name.
@@ -105,6 +110,10 @@ func (r *MacroRepo) Update(ctx context.Context, name string, req domain.UpdateMa
 	if req.Parameters != nil {
 		params = req.Parameters
 	}
+	status := current.Status
+	if req.Status != nil {
+		status = *req.Status
+	}
 	paramsJSON, err := json.Marshal(params)
 	if err != nil {
 		return nil, fmt.Errorf("marshal parameters: %w", err)
@@ -114,12 +123,20 @@ func (r *MacroRepo) Update(ctx context.Context, name string, req domain.UpdateMa
 		Body:        body,
 		Description: description,
 		Parameters:  string(paramsJSON),
+		Status:      status,
 		Name:        name,
 	})
 	if err != nil {
 		return nil, mapDBError(err)
 	}
-	return r.GetByName(ctx, name)
+	updated, err := r.GetByName(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := r.createRevision(ctx, updated, updated.CreatedBy); err != nil {
+		return nil, err
+	}
+	return updated, nil
 }
 
 // Delete removes a macro by name.
@@ -139,6 +156,31 @@ func (r *MacroRepo) ListAll(ctx context.Context) ([]domain.Macro, error) {
 		macros = append(macros, *macroFromDB(row))
 	}
 	return macros, nil
+}
+
+// ListRevisions returns macro revisions ordered by descending version.
+func (r *MacroRepo) ListRevisions(ctx context.Context, macroName string) ([]domain.MacroRevision, error) {
+	rows, err := r.q.ListMacroRevisions(ctx, macroName)
+	if err != nil {
+		return nil, mapDBError(err)
+	}
+	out := make([]domain.MacroRevision, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, *macroRevisionFromDB(row))
+	}
+	return out, nil
+}
+
+// GetRevisionByVersion returns a specific revision version.
+func (r *MacroRepo) GetRevisionByVersion(ctx context.Context, macroName string, version int) (*domain.MacroRevision, error) {
+	row, err := r.q.GetMacroRevisionByVersion(ctx, dbstore.GetMacroRevisionByVersionParams{
+		MacroName: macroName,
+		Version:   int64(version),
+	})
+	if err != nil {
+		return nil, mapDBError(err)
+	}
+	return macroRevisionFromDB(row), nil
 }
 
 // === Private mappers ===
@@ -211,4 +253,71 @@ func mustJSONArray(v []string) string {
 		return "[]"
 	}
 	return string(b)
+}
+
+func (r *MacroRepo) createRevision(ctx context.Context, m *domain.Macro, createdBy string) (*domain.MacroRevision, error) {
+	version, err := r.q.GetLatestMacroRevisionVersion(ctx, m.ID)
+	if err != nil {
+		return nil, mapDBError(err)
+	}
+	payload := struct {
+		Parameters  []string `json:"parameters"`
+		Body        string   `json:"body"`
+		Description string   `json:"description"`
+		Status      string   `json:"status"`
+	}{
+		Parameters:  m.Parameters,
+		Body:        m.Body,
+		Description: m.Description,
+		Status:      m.Status,
+	}
+	b, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("marshal macro revision payload: %w", err)
+	}
+	contentHash := fmt.Sprintf("sha256:%x", sha256.Sum256(b))
+
+	row, err := r.q.CreateMacroRevision(ctx, dbstore.CreateMacroRevisionParams{
+		ID:          newID(),
+		MacroID:     m.ID,
+		MacroName:   m.Name,
+		Version:     version + 1,
+		ContentHash: contentHash,
+		Parameters:  mustJSONArray(m.Parameters),
+		Body:        m.Body,
+		Description: m.Description,
+		Status:      m.Status,
+		CreatedBy:   createdBy,
+	})
+	if err != nil {
+		return nil, mapDBError(err)
+	}
+	return macroRevisionFromDB(row), nil
+}
+
+func macroRevisionFromDB(row dbstore.MacroRevision) *domain.MacroRevision {
+	createdAt, err := time.Parse("2006-01-02 15:04:05", row.CreatedAt)
+	if err != nil {
+		slog.Default().Warn("failed to parse macro revision created_at", "value", row.CreatedAt, "error", err)
+	}
+
+	var params []string
+	_ = json.Unmarshal([]byte(row.Parameters), &params)
+	if params == nil {
+		params = []string{}
+	}
+
+	return &domain.MacroRevision{
+		ID:          row.ID,
+		MacroID:     row.MacroID,
+		MacroName:   row.MacroName,
+		Version:     int(row.Version),
+		ContentHash: row.ContentHash,
+		Parameters:  params,
+		Body:        row.Body,
+		Description: row.Description,
+		Status:      row.Status,
+		CreatedBy:   row.CreatedBy,
+		CreatedAt:   createdAt,
+	}
 }
