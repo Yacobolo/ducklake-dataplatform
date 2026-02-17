@@ -651,6 +651,52 @@ func TestHTTP_ModelFreshness(t *testing.T) {
 	}
 }
 
+// TestHTTP_SourceFreshness verifies source freshness endpoint behavior.
+func TestHTTP_SourceFreshness(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{WithModels: true})
+	require.NotNil(t, env.DuckDB)
+
+	_, err := env.DuckDB.Exec(`CREATE SCHEMA IF NOT EXISTS raw`)
+	require.NoError(t, err)
+	_, err = env.DuckDB.Exec(`CREATE TABLE raw.orders (id INTEGER, updated_at TIMESTAMP)`)
+	require.NoError(t, err)
+	_, err = env.DuckDB.Exec(`INSERT INTO raw.orders VALUES (1, CURRENT_TIMESTAMP)`)
+	require.NoError(t, err)
+
+	t.Run("check_source_freshness_default_params", func(t *testing.T) {
+		resp := doRequest(t, "GET", env.Server.URL+"/v1/sources/raw/orders/freshness", env.Keys.Admin, nil)
+		require.Equal(t, 200, resp.StatusCode)
+
+		var result map[string]interface{}
+		decodeJSON(t, resp, &result)
+		assert.Equal(t, true, result["is_fresh"])
+		assert.Equal(t, "raw", result["source_schema"])
+		assert.Equal(t, "orders", result["source_table"])
+		assert.Equal(t, "updated_at", result["timestamp_column"])
+		assert.EqualValues(t, 3600, int(result["max_lag_seconds"].(float64)))
+		assert.NotNil(t, result["last_loaded_at"])
+	})
+
+	t.Run("check_source_freshness_with_query_params", func(t *testing.T) {
+		resp := doRequest(t, "GET", env.Server.URL+"/v1/sources/raw/orders/freshness?timestamp_column=updated_at&max_lag_seconds=1", env.Keys.Admin, nil)
+		require.Equal(t, 200, resp.StatusCode)
+
+		var result map[string]interface{}
+		decodeJSON(t, resp, &result)
+		assert.Equal(t, "updated_at", result["timestamp_column"])
+		assert.EqualValues(t, 1, int(result["max_lag_seconds"].(float64)))
+	})
+
+	t.Run("check_source_freshness_missing_timestamp_column_returns_400", func(t *testing.T) {
+		_, err := env.DuckDB.Exec(`CREATE TABLE raw.no_ts (id INTEGER)`)
+		require.NoError(t, err)
+
+		resp := doRequest(t, "GET", env.Server.URL+"/v1/sources/raw/no_ts/freshness", env.Keys.Admin, nil)
+		defer resp.Body.Close() //nolint:errcheck
+		require.Equal(t, 400, resp.StatusCode)
+	})
+}
+
 // ---------------------------------------------------------------------------
 // Model Runs (listing only — triggering requires DuckDB)
 // ---------------------------------------------------------------------------
