@@ -904,7 +904,8 @@ func TestCLI_UnknownSecuritySubcommand(t *testing.T) {
 	rootCmd.SetArgs([]string{"security", "nope"})
 
 	err := rootCmd.Execute()
-	require.NoError(t, err)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown subcommand \"nope\"")
 }
 
 func TestCLI_CatalogSetDefault_SendsEmptyJSONObject(t *testing.T) {
@@ -924,7 +925,7 @@ func TestCLI_CatalogSetDefault_SendsEmptyJSONObject(t *testing.T) {
 	assert.JSONEq(t, `{}`, captured.Body)
 }
 
-func TestCLI_ModelsCommandRemoved(t *testing.T) {
+func TestCLI_ModelsCreateRequiresNameOrJSON(t *testing.T) {
 	rec := &requestRecorder{}
 	srv := httptest.NewServer(jsonHandler(rec, 201, `{"id":"m1"}`))
 	defer srv.Close()
@@ -937,7 +938,7 @@ func TestCLI_ModelsCommandRemoved(t *testing.T) {
 
 	err := rootCmd.Execute()
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "unknown command \"models\"")
+	assert.Contains(t, err.Error(), "required flag \"name\" not set (or use --json)")
 }
 
 // === Agent-Friendly Output Tests ===
