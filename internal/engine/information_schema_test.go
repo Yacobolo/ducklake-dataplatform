@@ -156,11 +156,13 @@ func TestIsInformationSchemaQuery(t *testing.T) {
 	}{
 		{"schemata", "SELECT * FROM information_schema.schemata", true},
 		{"tables_uppercase", "SELECT * FROM INFORMATION_SCHEMA.TABLES", true},
-		{"columns_mixed", "SELECT column_name FROM information_schema.columns WHERE table_name = 'foo'", true},
+		{"columns_mixed", "SELECT column_name FROM information_schema.columns WHERE table_name = 'foo'", false},
 		{"no_match", "SELECT * FROM users", false},
 		{"partial_no_dot", "SELECT * FROM information_schema_foo", false},
 		{"empty_string", "", false},
 		{"contains_in_where", "SELECT 1 WHERE table_name IN (SELECT table_name FROM information_schema.tables)", true},
+		{"mixed_with_regular_table", "SELECT * FROM information_schema.tables t JOIN users u ON t.table_name = u.name", false},
+		{"unsupported_table", "SELECT * FROM information_schema.views", false},
 	}
 
 	for _, tc := range tests {

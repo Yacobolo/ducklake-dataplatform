@@ -63,7 +63,7 @@ func (s *IngestionService) RequestUploadURL(
 ) (*domain.UploadURLResult, error) {
 
 	// Authorize: check INSERT on table
-	if err := s.checkInsertPrivilege(ctx, principal, tableName); err != nil {
+	if err := s.checkInsertPrivilege(ctx, principal, schemaName, tableName); err != nil {
 		return nil, err
 	}
 
@@ -117,7 +117,7 @@ func (s *IngestionService) CommitIngestion(
 	}
 
 	// Authorize: check INSERT on table
-	if err := s.checkInsertPrivilege(ctx, principal, tableName); err != nil {
+	if err := s.checkInsertPrivilege(ctx, principal, schemaName, tableName); err != nil {
 		return nil, err
 	}
 
@@ -163,7 +163,7 @@ func (s *IngestionService) LoadExternalFiles(
 	}
 
 	// Authorize: check INSERT on table
-	if err := s.checkInsertPrivilege(ctx, principal, tableName); err != nil {
+	if err := s.checkInsertPrivilege(ctx, principal, schemaName, tableName); err != nil {
 		return nil, err
 	}
 
@@ -239,8 +239,8 @@ func (s *IngestionService) execAddDataFiles(
 }
 
 // checkInsertPrivilege verifies the authenticated principal has INSERT on the table.
-func (s *IngestionService) checkInsertPrivilege(ctx context.Context, principal, tableName string) error {
-	tableID, _, _, err := s.authSvc.LookupTableID(ctx, tableName)
+func (s *IngestionService) checkInsertPrivilege(ctx context.Context, principal, schemaName, tableName string) error {
+	tableID, _, _, err := s.authSvc.LookupTableID(ctx, schemaName+"."+tableName)
 	if err != nil {
 		return domain.ErrNotFound("table %q not found", tableName)
 	}

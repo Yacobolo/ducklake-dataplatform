@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -55,8 +56,14 @@ private:
 	static std::mutex cache_mutex_;
 	static std::unordered_map<std::string, std::shared_ptr<TableManifest>> cache_;
 
-	static std::string CacheKey(const std::string &schema, const std::string &table) {
-		return schema + "." + table;
+	static std::string CacheKey(
+		const std::string &api_url,
+		const std::string &api_key,
+		const std::string &schema,
+		const std::string &table
+	) {
+		auto key_hash = std::hash<std::string>{}(api_key);
+		return api_url + "|" + std::to_string(key_hash) + "|" + schema + "." + table;
 	}
 };
 

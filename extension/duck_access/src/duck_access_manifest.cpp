@@ -2,6 +2,7 @@
 #include "duck_access_http.hpp"
 #include "include/json.hpp"
 
+#include <cctype>
 #include <ctime>
 #include <iomanip>
 #include <sstream>
@@ -14,6 +15,56 @@ namespace duckdb {
 std::mutex ManifestCache::cache_mutex_;
 std::unordered_map<std::string, std::shared_ptr<TableManifest>> ManifestCache::cache_;
 
+static bool ParseRFC3339(const std::string &value, std::chrono::system_clock::time_point &out) {
+	if (value.size() < 20) {
+		return false;
+	}
+
+	std::tm tm = {};
+	std::istringstream base_stream(value.substr(0, 19));
+	base_stream >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
+	if (base_stream.fail()) {
+		return false;
+	}
+
+	std::string rest = value.substr(19);
+	if (!rest.empty() && rest[0] == '.') {
+		size_t idx = 1;
+		while (idx < rest.size() && std::isdigit(static_cast<unsigned char>(rest[idx]))) {
+			idx++;
+		}
+		rest = rest.substr(idx);
+	}
+
+	int offset_seconds = 0;
+	if (rest == "Z") {
+		offset_seconds = 0;
+	} else if (rest.size() == 6 && (rest[0] == '+' || rest[0] == '-') && rest[3] == ':') {
+		int tz_hours = 0;
+		int tz_minutes = 0;
+		try {
+			tz_hours = std::stoi(rest.substr(1, 2));
+			tz_minutes = std::stoi(rest.substr(4, 2));
+		} catch (...) {
+			return false;
+		}
+		offset_seconds = tz_hours * 3600 + tz_minutes * 60;
+		if (rest[0] == '-') {
+			offset_seconds = -offset_seconds;
+		}
+	} else {
+		return false;
+	}
+
+	time_t epoch = timegm(&tm);
+	if (epoch == static_cast<time_t>(-1)) {
+		return false;
+	}
+	epoch -= offset_seconds;
+	out = std::chrono::system_clock::from_time_t(epoch);
+	return true;
+}
+
 std::shared_ptr<TableManifest> ManifestCache::GetOrFetch(
 	const std::string &api_url,
 	const std::string &api_key,
@@ -21,7 +72,7 @@ std::shared_ptr<TableManifest> ManifestCache::GetOrFetch(
 	const std::string &table_name,
 	std::string &out_error
 ) {
-	auto key = CacheKey(schema_name, table_name);
+	auto key = CacheKey(api_url, api_key, schema_name, table_name);
 	auto now = std::chrono::system_clock::now();
 
 	// Check cache under lock
@@ -104,9 +155,16 @@ std::shared_ptr<TableManifest> ManifestCache::GetOrFetch(
 }
 
 void ManifestCache::Invalidate(const std::string &schema_name, const std::string &table_name) {
-	auto key = CacheKey(schema_name, table_name);
 	std::lock_guard<std::mutex> lock(cache_mutex_);
-	cache_.erase(key);
+	auto suffix = "|" + schema_name + "." + table_name;
+	for (auto it = cache_.begin(); it != cache_.end();) {
+		if (it->first.size() >= suffix.size() &&
+		    it->first.compare(it->first.size() - suffix.size(), suffix.size(), suffix) == 0) {
+			it = cache_.erase(it);
+		} else {
+			++it;
+		}
+	}
 }
 
 std::shared_ptr<TableManifest> ManifestCache::ParseManifest(
@@ -121,23 +179,9 @@ std::shared_ptr<TableManifest> ManifestCache::ParseManifest(
 		manifest->schema = j.value("schema", "main");
 		manifest->fetched_at = std::chrono::system_clock::now();
 
-		// Parse expires_at (ISO 8601 format like "2024-01-15T10:30:00Z")
+		// Parse expires_at (RFC3339/ISO8601 format)
 		if (j.contains("expires_at") && j["expires_at"].is_string()) {
-			auto expires_str = j["expires_at"].get<std::string>();
-			std::tm tm = {};
-			std::istringstream ss(expires_str);
-			ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
-			if (!ss.fail()) {
-				// std::get_time does not handle timezone; assume UTC.
-				// timegm (POSIX) interprets tm as UTC; mktime uses local time.
-				#if defined(_WIN32)
-				time_t epoch = _mkgmtime(&tm);
-				#else
-				time_t epoch = timegm(&tm);
-				#endif
-				manifest->expires_at = std::chrono::system_clock::from_time_t(epoch);
-			} else {
-				// Fallback: if parsing fails, default to 1 hour from now.
+			if (!ParseRFC3339(j["expires_at"].get<std::string>(), manifest->expires_at)) {
 				manifest->expires_at = std::chrono::system_clock::now() + std::chrono::hours(1);
 			}
 		} else {

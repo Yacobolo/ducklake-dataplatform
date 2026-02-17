@@ -80,6 +80,26 @@ func TestExtractTableNames_QuotedIdentifiers(t *testing.T) {
 	assertTables(t, tables, []string{"titanic"})
 }
 
+func TestExtractTableRefs_QualifiedNames(t *testing.T) {
+	refs, err := ExtractTableRefs("SELECT * FROM analytics.events e JOIN main.users u ON e.user_id = u.id")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got := make([]string, 0, len(refs))
+	for _, ref := range refs {
+		id := ref.Name
+		if ref.Schema != "" {
+			id = ref.Schema + "." + id
+		}
+		if ref.Catalog != "" {
+			id = ref.Catalog + "." + id
+		}
+		got = append(got, id)
+	}
+	assertTables(t, got, []string{"analytics.events", "main.users"})
+}
+
 func TestExtractTableNames_InvalidSQL(t *testing.T) {
 	_, err := ExtractTableNames("SELEKT * FORM titanic")
 	if err == nil {
@@ -620,6 +640,20 @@ func TestInjectRowFilterSQL_SelfJoin(t *testing.T) {
 	}
 }
 
+func TestInjectRowFilterSQL_QualifiedTableName(t *testing.T) {
+	result, err := InjectRowFilterSQL(
+		`SELECT * FROM analytics.titanic`,
+		"analytics.titanic",
+		`"Pclass" = 1`,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(strings.ToLower(result), "where") {
+		t.Error("did not expect WHERE clause for qualified table filter")
+	}
+}
+
 func TestInjectMultipleRowFilters_ORComposition(t *testing.T) {
 	result, err := InjectMultipleRowFilters(
 		`SELECT * FROM titanic`,
@@ -638,7 +672,7 @@ func TestInjectMultipleRowFilters_ORComposition(t *testing.T) {
 	if !strings.Contains(lower, "survived") {
 		t.Error("expected Survived in OR-composed filter")
 	}
-	// Filters should be combined with OR, so both conditions should appear
+	// Filters should be combined with OR, so both conditions should appear.
 	if !strings.Contains(lower, "or") {
 		t.Error("expected OR in combined filter (two filters compose with OR)")
 	}

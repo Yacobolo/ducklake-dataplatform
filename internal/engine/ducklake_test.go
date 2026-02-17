@@ -189,7 +189,7 @@ func TestDuckLakeRBACIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("lookup schema: %v", err)
 	}
-	titanicID, _, _, err := cat.LookupTableID(ctx, "titanic")
+	titanicID, _, _, err := cat.LookupTableID(ctx, "main.titanic")
 	if err != nil {
 		t.Fatalf("lookup table: %v", err)
 	}

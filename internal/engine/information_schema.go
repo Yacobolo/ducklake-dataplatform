@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"duck-demo/internal/domain"
+	"duck-demo/internal/sqlrewrite"
 )
 
 // CatalogRepoFactory creates per-catalog CatalogRepository instances.
@@ -44,8 +45,22 @@ func (p *InformationSchemaProvider) SetAuthorizationService(catalog domain.Autho
 
 // IsInformationSchemaQuery checks if the SQL references information_schema tables.
 func IsInformationSchemaQuery(sqlQuery string) bool {
-	lower := strings.ToLower(sqlQuery)
-	return strings.Contains(lower, "information_schema.")
+	refs, err := sqlrewrite.ExtractTableRefs(sqlQuery)
+	if err != nil || len(refs) == 0 {
+		return false
+	}
+
+	for _, ref := range refs {
+		isInfoSchema := strings.EqualFold(ref.Schema, "information_schema") || strings.EqualFold(ref.Catalog, "information_schema")
+		if !isInfoSchema {
+			return false
+		}
+		if !isSupportedInformationSchemaTable(ref.Name) {
+			return false
+		}
+	}
+
+	return true
 }
 
 // activeCatalogs returns all ACTIVE catalog names. If the catalog lister is nil
@@ -158,20 +173,42 @@ func (p *InformationSchemaProvider) BuildColumnsRows(ctx context.Context) ([][]i
 // principalName is used to filter results based on RBAC grants so that users
 // only see metadata for objects they have access to.
 func (p *InformationSchemaProvider) HandleQuery(ctx context.Context, db *sql.DB, principalName, sqlQuery string) (*sql.Rows, error) {
-	lower := strings.ToLower(sqlQuery)
-
-	// Create the appropriate virtual table
-	if strings.Contains(lower, "information_schema.schemata") {
-		return p.queryVirtualTable(ctx, db, principalName, "schemata")
+	refs, err := sqlrewrite.ExtractTableRefs(sqlQuery)
+	if err != nil {
+		return nil, fmt.Errorf("parse information_schema query: %w", err)
 	}
-	if strings.Contains(lower, "information_schema.tables") {
-		return p.queryVirtualTable(ctx, db, principalName, "tables")
-	}
-	if strings.Contains(lower, "information_schema.columns") {
-		return p.queryVirtualTable(ctx, db, principalName, "columns")
+	if len(refs) == 0 {
+		return nil, fmt.Errorf("unsupported information_schema query")
 	}
 
-	return nil, fmt.Errorf("unsupported information_schema table")
+	tableName := ""
+	for _, ref := range refs {
+		isInfoSchema := strings.EqualFold(ref.Schema, "information_schema") || strings.EqualFold(ref.Catalog, "information_schema")
+		if !isInfoSchema {
+			return nil, fmt.Errorf("unsupported information_schema query")
+		}
+		if !isSupportedInformationSchemaTable(ref.Name) {
+			return nil, fmt.Errorf("unsupported information_schema table")
+		}
+		if tableName == "" {
+			tableName = strings.ToLower(ref.Name)
+			continue
+		}
+		if !strings.EqualFold(tableName, ref.Name) {
+			return nil, fmt.Errorf("unsupported information_schema query")
+		}
+	}
+
+	return p.queryVirtualTable(ctx, db, principalName, tableName)
+}
+
+func isSupportedInformationSchemaTable(tableName string) bool {
+	switch strings.ToLower(tableName) {
+	case "schemata", "tables", "columns":
+		return true
+	default:
+		return false
+	}
 }
 
 func (p *InformationSchemaProvider) queryVirtualTable(ctx context.Context, db *sql.DB, principalName, table string) (*sql.Rows, error) {
