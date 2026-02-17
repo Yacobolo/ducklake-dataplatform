@@ -181,11 +181,12 @@ func describeSchema(client *gen.Client, catalog, schema string, isJSON bool) err
 	if err != nil {
 		return err
 	}
-	var viewsBody []byte
-	if viewsResp.StatusCode < 300 {
-		viewsBody, _ = gen.ReadBody(viewsResp)
-	} else {
-		_ = viewsResp.Body.Close()
+	if err := gen.CheckError(viewsResp); err != nil {
+		return err
+	}
+	viewsBody, err := gen.ReadBody(viewsResp)
+	if err != nil {
+		return fmt.Errorf("read response: %w", err)
 	}
 
 	// Fetch volumes
@@ -193,11 +194,12 @@ func describeSchema(client *gen.Client, catalog, schema string, isJSON bool) err
 	if err != nil {
 		return err
 	}
-	var volumesBody []byte
-	if volumesResp.StatusCode < 300 {
-		volumesBody, _ = gen.ReadBody(volumesResp)
-	} else {
-		_ = volumesResp.Body.Close()
+	if err := gen.CheckError(volumesResp); err != nil {
+		return err
+	}
+	volumesBody, err := gen.ReadBody(volumesResp)
+	if err != nil {
+		return fmt.Errorf("read response: %w", err)
 	}
 
 	if isJSON {
@@ -284,24 +286,33 @@ func describeTable(client *gen.Client, catalog, schema, table string, isJSON boo
 		return fmt.Errorf("parse response: %w", err)
 	}
 
-	// Try to fetch row filters and column masks (best-effort)
+	// Fetch row filters and column masks.
 	tableID := gen.ExtractField(tableDetail, "table_id")
 	var rowFiltersBody, columnMasksBody []byte
 	if tableID != "" {
 		q := url.Values{}
-		if rfResp, err := client.Do("GET", "/tables/"+url.PathEscape(tableID)+"/row-filters", q, nil); err == nil {
-			if rfResp.StatusCode < 300 {
-				rowFiltersBody, _ = gen.ReadBody(rfResp)
-			} else {
-				_ = rfResp.Body.Close()
-			}
+		rfResp, err := client.Do("GET", "/tables/"+url.PathEscape(tableID)+"/row-filters", q, nil)
+		if err != nil {
+			return err
 		}
-		if cmResp, err := client.Do("GET", "/tables/"+url.PathEscape(tableID)+"/column-masks", q, nil); err == nil {
-			if cmResp.StatusCode < 300 {
-				columnMasksBody, _ = gen.ReadBody(cmResp)
-			} else {
-				_ = cmResp.Body.Close()
-			}
+		if err := gen.CheckError(rfResp); err != nil {
+			return err
+		}
+		rowFiltersBody, err = gen.ReadBody(rfResp)
+		if err != nil {
+			return fmt.Errorf("read response: %w", err)
+		}
+
+		cmResp, err := client.Do("GET", "/tables/"+url.PathEscape(tableID)+"/column-masks", q, nil)
+		if err != nil {
+			return err
+		}
+		if err := gen.CheckError(cmResp); err != nil {
+			return err
+		}
+		columnMasksBody, err = gen.ReadBody(cmResp)
+		if err != nil {
+			return fmt.Errorf("read response: %w", err)
 		}
 	}
 
