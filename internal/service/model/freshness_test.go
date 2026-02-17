@@ -171,9 +171,9 @@ func TestCheckFreshness_StaleWhenPastLag(t *testing.T) {
 func TestCheckSourceFreshness(t *testing.T) {
 	t.Run("auto-detect timestamp column and mark fresh", func(t *testing.T) {
 		svc, db := newDuckDBServiceForTest(t)
-		_, err := db.Exec(`CREATE TABLE analytics.raw_orders (id INTEGER, updated_at TIMESTAMP)`)
+		_, err := db.ExecContext(context.Background(), `CREATE TABLE analytics.raw_orders (id INTEGER, updated_at TIMESTAMP)`)
 		require.NoError(t, err)
-		_, err = db.Exec(`INSERT INTO analytics.raw_orders VALUES (1, CURRENT_TIMESTAMP)`)
+		_, err = db.ExecContext(context.Background(), `INSERT INTO analytics.raw_orders VALUES (1, CURRENT_TIMESTAMP)`)
 		require.NoError(t, err)
 
 		status, err := svc.CheckSourceFreshness(context.Background(), "admin", "analytics", "raw_orders", "", 3600)
@@ -185,10 +185,10 @@ func TestCheckSourceFreshness(t *testing.T) {
 
 	t.Run("stale when max timestamp is old", func(t *testing.T) {
 		svc, db := newDuckDBServiceForTest(t)
-		_, err := db.Exec(`CREATE TABLE analytics.raw_orders (id INTEGER, updated_at TIMESTAMP)`)
+		_, err := db.ExecContext(context.Background(), `CREATE TABLE analytics.raw_orders (id INTEGER, updated_at TIMESTAMP)`)
 		require.NoError(t, err)
 		old := time.Now().UTC().Add(-2 * time.Hour).Format("2006-01-02 15:04:05")
-		_, err = db.Exec(fmt.Sprintf(`INSERT INTO analytics.raw_orders VALUES (1, TIMESTAMP '%s')`, old))
+		_, err = db.ExecContext(context.Background(), fmt.Sprintf(`INSERT INTO analytics.raw_orders VALUES (1, TIMESTAMP '%s')`, old))
 		require.NoError(t, err)
 
 		status, err := svc.CheckSourceFreshness(context.Background(), "admin", "analytics", "raw_orders", "updated_at", 60)
@@ -199,7 +199,7 @@ func TestCheckSourceFreshness(t *testing.T) {
 
 	t.Run("fails without usable timestamp column", func(t *testing.T) {
 		svc, db := newDuckDBServiceForTest(t)
-		_, err := db.Exec(`CREATE TABLE analytics.raw_orders (id INTEGER, amount INTEGER)`)
+		_, err := db.ExecContext(context.Background(), `CREATE TABLE analytics.raw_orders (id INTEGER, amount INTEGER)`)
 		require.NoError(t, err)
 
 		_, err = svc.CheckSourceFreshness(context.Background(), "admin", "analytics", "raw_orders", "", 60)

@@ -311,7 +311,7 @@ func TestHandler_CheckSourceFreshness_DefaultsAndMapping(t *testing.T) {
 		assert.Equal(t, "alice", principal)
 		assert.Equal(t, "raw", sourceSchema)
 		assert.Equal(t, "orders", sourceTable)
-		assert.Equal(t, "", timestampColumn)
+		assert.Empty(t, timestampColumn)
 		assert.EqualValues(t, 3600, maxLagSeconds)
 		now := time.Now().UTC()
 		return &domain.SourceFreshnessStatus{

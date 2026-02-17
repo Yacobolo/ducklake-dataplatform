@@ -5,6 +5,7 @@ package integration
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -695,6 +696,121 @@ func TestHTTP_SourceFreshness(t *testing.T) {
 		defer resp.Body.Close() //nolint:errcheck
 		require.Equal(t, 400, resp.StatusCode)
 	})
+}
+
+func TestHTTP_ModelRun_RepresentativeDAG(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{WithModels: true})
+	require.NotNil(t, env.DuckDB)
+
+	_, err := env.DuckDB.ExecContext(ctx, `CREATE SCHEMA IF NOT EXISTS raw`)
+	require.NoError(t, err)
+	_, err = env.DuckDB.ExecContext(ctx, `CREATE TABLE raw.orders (id INTEGER, amount INTEGER, updated_at TIMESTAMP)`)
+	require.NoError(t, err)
+	_, err = env.DuckDB.ExecContext(ctx, `INSERT INTO raw.orders VALUES (1, 100, CURRENT_TIMESTAMP), (2, 250, CURRENT_TIMESTAMP)`)
+	require.NoError(t, err)
+
+	createModel := func(name, materialization, sqlBody string, config map[string]interface{}) {
+		payload := map[string]interface{}{
+			"project_name":    "analytics",
+			"name":            name,
+			"sql":             sqlBody,
+			"materialization": materialization,
+		}
+		if config != nil {
+			payload["config"] = config
+		}
+		resp := doRequest(t, "POST", env.Server.URL+"/v1/models", env.Keys.Admin, payload)
+		require.Equal(t, 201, resp.StatusCode)
+		_ = resp.Body.Close()
+	}
+
+	createModel("stg_orders", "TABLE", `SELECT id, amount, updated_at FROM {{ source('raw', 'orders') }}`, nil)
+	createModel(
+		"fct_orders",
+		"INCREMENTAL",
+		`{% if is_incremental() %}
+SELECT id, amount, updated_at
+FROM {{ ref('stg_orders') }}
+WHERE updated_at > (SELECT COALESCE(MAX(updated_at), TIMESTAMP '1970-01-01') FROM {{ this }})
+{% else %}
+SELECT id, amount, updated_at
+FROM {{ ref('stg_orders') }}
+{% endif %}`,
+		map[string]interface{}{"unique_key": []string{"id"}},
+	)
+
+	testResp := doRequest(t, "POST", env.Server.URL+"/v1/models/analytics/fct_orders/tests", env.Keys.Admin, map[string]interface{}{
+		"name":      "not_null_id",
+		"test_type": "not_null",
+		"column":    "id",
+	})
+	require.Equal(t, 201, testResp.StatusCode)
+	_ = testResp.Body.Close()
+
+	runResp := doRequest(t, "POST", env.Server.URL+"/v1/model-runs", env.Keys.Admin, map[string]interface{}{
+		"project_name": "analytics",
+		"model_names":  []string{"stg_orders", "fct_orders"},
+		"full_refresh": true,
+	})
+	require.Equal(t, 201, runResp.StatusCode)
+
+	var run map[string]interface{}
+	decodeJSON(t, runResp, &run)
+	runID, ok := run["id"].(string)
+	require.True(t, ok)
+	require.NotEmpty(t, runID)
+
+	deadline := time.Now().Add(10 * time.Second)
+	for {
+		getResp := doRequest(t, "GET", env.Server.URL+"/v1/model-runs/"+runID, env.Keys.Admin, nil)
+		require.Equal(t, 200, getResp.StatusCode)
+		var current map[string]interface{}
+		decodeJSON(t, getResp, &current)
+
+		status, _ := current["status"].(string)
+		if status == "SUCCESS" {
+			break
+		}
+		if status == "FAILED" || status == "CANCELLED" {
+			t.Fatalf("representative DAG run ended with status %s: %v", status, current["error_message"])
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("timed out waiting for model run completion, last status=%s", status)
+		}
+		time.Sleep(75 * time.Millisecond)
+	}
+
+	stepsResp := doRequest(t, "GET", env.Server.URL+"/v1/model-runs/"+runID+"/steps", env.Keys.Admin, nil)
+	require.Equal(t, 200, stepsResp.StatusCode)
+	var stepList map[string]interface{}
+	decodeJSON(t, stepsResp, &stepList)
+	steps := stepList["data"].([]interface{})
+	require.Len(t, steps, 2)
+
+	var fctStepID string
+	for _, item := range steps {
+		step := item.(map[string]interface{})
+		assert.Equal(t, "SUCCESS", step["status"])
+		assert.NotEmpty(t, step["compiled_hash"])
+		if step["model_name"] == "analytics.fct_orders" {
+			fctStepID = step["id"].(string)
+		}
+	}
+	require.NotEmpty(t, fctStepID)
+
+	testResultsResp := doRequest(t, "GET", env.Server.URL+"/v1/model-runs/"+runID+"/steps/"+fctStepID+"/test-results", env.Keys.Admin, nil)
+	require.Equal(t, 200, testResultsResp.StatusCode)
+	var testResults map[string]interface{}
+	decodeJSON(t, testResultsResp, &testResults)
+	results := testResults["data"].([]interface{})
+	require.NotEmpty(t, results)
+	first := results[0].(map[string]interface{})
+	assert.Equal(t, "PASS", first["status"])
+
+	var rowCount int
+	err = env.DuckDB.QueryRowContext(ctx, `SELECT COUNT(*) FROM analytics.fct_orders`).Scan(&rowCount)
+	require.NoError(t, err)
+	assert.Equal(t, 2, rowCount)
 }
 
 // ---------------------------------------------------------------------------

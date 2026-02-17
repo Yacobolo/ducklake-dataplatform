@@ -3,7 +3,6 @@ package model
 import (
 	"context"
 	"database/sql"
-	"io"
 	"log/slog"
 	"sort"
 	"testing"
@@ -32,13 +31,13 @@ func newDuckDBServiceForTest(t *testing.T) (*Service, *sql.DB) {
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = db.Close() })
 
-	_, err = db.Exec("CREATE SCHEMA analytics")
+	_, err = db.ExecContext(context.Background(), "CREATE SCHEMA analytics")
 	require.NoError(t, err)
 
 	return &Service{
 		engine: passthroughSessionEngine{},
 		duckDB: db,
-		logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+		logger: slog.New(slog.DiscardHandler),
 	}, db
 }
 
@@ -114,7 +113,7 @@ func TestSameColumns(t *testing.T) {
 func TestEnforceIncrementalSchemaPolicy(t *testing.T) {
 	t.Run("fail policy rejects schema drift", func(t *testing.T) {
 		svc, db := newDuckDBServiceForTest(t)
-		_, err := db.Exec(`CREATE TABLE analytics.orders (id INTEGER, amount INTEGER)`)
+		_, err := db.ExecContext(context.Background(), `CREATE TABLE analytics.orders (id INTEGER, amount INTEGER)`)
 		require.NoError(t, err)
 
 		conn, err := db.Conn(context.Background())
@@ -139,7 +138,7 @@ func TestEnforceIncrementalSchemaPolicy(t *testing.T) {
 
 	t.Run("fail policy allows stable schema", func(t *testing.T) {
 		svc, db := newDuckDBServiceForTest(t)
-		_, err := db.Exec(`CREATE TABLE analytics.orders (id INTEGER, amount INTEGER)`)
+		_, err := db.ExecContext(context.Background(), `CREATE TABLE analytics.orders (id INTEGER, amount INTEGER)`)
 		require.NoError(t, err)
 
 		conn, err := db.Conn(context.Background())
@@ -163,7 +162,7 @@ func TestEnforceIncrementalSchemaPolicy(t *testing.T) {
 
 	t.Run("unsupported policy returns validation error", func(t *testing.T) {
 		svc, db := newDuckDBServiceForTest(t)
-		_, err := db.Exec(`CREATE TABLE analytics.orders (id INTEGER, amount INTEGER)`)
+		_, err := db.ExecContext(context.Background(), `CREATE TABLE analytics.orders (id INTEGER, amount INTEGER)`)
 		require.NoError(t, err)
 
 		conn, err := db.Conn(context.Background())
@@ -190,9 +189,9 @@ func TestEnforceIncrementalSchemaPolicy(t *testing.T) {
 func TestMaterializeIncremental(t *testing.T) {
 	t.Run("full refresh replaces target table contents", func(t *testing.T) {
 		svc, db := newDuckDBServiceForTest(t)
-		_, err := db.Exec(`CREATE TABLE analytics.orders (id INTEGER, amount INTEGER)`)
+		_, err := db.ExecContext(context.Background(), `CREATE TABLE analytics.orders (id INTEGER, amount INTEGER)`)
 		require.NoError(t, err)
-		_, err = db.Exec(`INSERT INTO analytics.orders VALUES (1, 10), (2, 20)`)
+		_, err = db.ExecContext(context.Background(), `INSERT INTO analytics.orders VALUES (1, 10), (2, 20)`)
 		require.NoError(t, err)
 
 		conn, err := db.Conn(context.Background())
@@ -221,9 +220,9 @@ func TestMaterializeIncremental(t *testing.T) {
 
 	t.Run("merge strategy updates and inserts", func(t *testing.T) {
 		svc, db := newDuckDBServiceForTest(t)
-		_, err := db.Exec(`CREATE TABLE analytics.orders (id INTEGER, amount INTEGER)`)
+		_, err := db.ExecContext(context.Background(), `CREATE TABLE analytics.orders (id INTEGER, amount INTEGER)`)
 		require.NoError(t, err)
-		_, err = db.Exec(`INSERT INTO analytics.orders VALUES (1, 10), (2, 20)`)
+		_, err = db.ExecContext(context.Background(), `INSERT INTO analytics.orders VALUES (1, 10), (2, 20)`)
 		require.NoError(t, err)
 
 		conn, err := db.Conn(context.Background())
@@ -273,9 +272,9 @@ func TestMaterializeIncremental(t *testing.T) {
 
 	t.Run("delete_insert strategy updates and inserts", func(t *testing.T) {
 		svc, db := newDuckDBServiceForTest(t)
-		_, err := db.Exec(`CREATE TABLE analytics.orders (id INTEGER, amount INTEGER)`)
+		_, err := db.ExecContext(context.Background(), `CREATE TABLE analytics.orders (id INTEGER, amount INTEGER)`)
 		require.NoError(t, err)
-		_, err = db.Exec(`INSERT INTO analytics.orders VALUES (1, 10), (2, 20)`)
+		_, err = db.ExecContext(context.Background(), `INSERT INTO analytics.orders VALUES (1, 10), (2, 20)`)
 		require.NoError(t, err)
 
 		conn, err := db.Conn(context.Background())
@@ -326,7 +325,7 @@ func TestMaterializeSeed_UsesTableSemantics(t *testing.T) {
 	assert.EqualValues(t, 2, rows)
 
 	var cnt int
-	err = db.QueryRow(`SELECT COUNT(*) FROM analytics.seed_orders`).Scan(&cnt)
+	err = db.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM analytics.seed_orders`).Scan(&cnt)
 	require.NoError(t, err)
 	assert.Equal(t, 2, cnt)
 }
@@ -355,7 +354,7 @@ func TestMaterializeSnapshot_SCD2Baseline(t *testing.T) {
 		assert.EqualValues(t, 2, rows)
 
 		var currentCount int
-		err = db.QueryRow(`SELECT COUNT(*) FROM analytics.snap_orders WHERE dbt_is_current = TRUE`).Scan(&currentCount)
+		err = db.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM analytics.snap_orders WHERE dbt_is_current = TRUE`).Scan(&currentCount)
 		require.NoError(t, err)
 		assert.Equal(t, 2, currentCount)
 	})
@@ -398,13 +397,13 @@ func TestMaterializeSnapshot_SCD2Baseline(t *testing.T) {
 		assert.EqualValues(t, 4, rows)
 
 		var total, current int
-		err = db.QueryRow(`SELECT COUNT(*), SUM(CASE WHEN dbt_is_current THEN 1 ELSE 0 END) FROM analytics.snap_orders`).Scan(&total, &current)
+		err = db.QueryRowContext(context.Background(), `SELECT COUNT(*), SUM(CASE WHEN dbt_is_current THEN 1 ELSE 0 END) FROM analytics.snap_orders`).Scan(&total, &current)
 		require.NoError(t, err)
 		assert.Equal(t, 4, total)
 		assert.Equal(t, 3, current)
 
 		var historical int
-		err = db.QueryRow(`SELECT COUNT(*) FROM analytics.snap_orders WHERE id = 2 AND dbt_is_current = FALSE AND dbt_valid_to IS NOT NULL`).Scan(&historical)
+		err = db.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM analytics.snap_orders WHERE id = 2 AND dbt_is_current = FALSE AND dbt_valid_to IS NOT NULL`).Scan(&historical)
 		require.NoError(t, err)
 		assert.Equal(t, 1, historical)
 	})
@@ -413,7 +412,7 @@ func TestMaterializeSnapshot_SCD2Baseline(t *testing.T) {
 func queryOrderRows(t *testing.T, db *sql.DB) [][2]int64 {
 	t.Helper()
 
-	rows, err := db.Query(`SELECT id, amount FROM analytics.orders`)
+	rows, err := db.QueryContext(context.Background(), `SELECT id, amount FROM analytics.orders`)
 	require.NoError(t, err)
 	defer func() { _ = rows.Close() }()
 

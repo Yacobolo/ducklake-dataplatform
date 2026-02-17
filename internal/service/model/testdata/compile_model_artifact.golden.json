@@ -1,0 +1,13 @@
+{
+  "compiled_hash": "sha256:c4042a2e1dcc000952066299ec77e1f40509849fdfa9fcd4bd78058565dc254a",
+  "depends_on": [
+    "analytics.stg_orders"
+  ],
+  "macros_used": [
+    "utils.cents_to_dollars"
+  ],
+  "sql": "select (amount / 100.0) as amount_usd\nfrom \"memory\".\"analytics\".\"stg_orders\"\nwhere days_between(current_date, order_date) <= 7",
+  "vars_used": [
+    "window_days"
+  ]
+}
