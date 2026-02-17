@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"duck-demo/internal/db/dbstore"
@@ -54,6 +55,9 @@ func (r *MacroRepo) Create(ctx context.Context, m *domain.Macro) (*domain.Macro,
 		return nil, mapDBError(err)
 	}
 	created := macroFromDB(row)
+	if err := r.upsertCatalogMetadata(ctx, created); err != nil {
+		return nil, err
+	}
 	if _, err := r.createRevision(ctx, created, created.CreatedBy); err != nil {
 		return nil, err
 	}
@@ -167,6 +171,9 @@ func (r *MacroRepo) Update(ctx context.Context, name string, req domain.UpdateMa
 	if err != nil {
 		return nil, err
 	}
+	if err := r.upsertCatalogMetadata(ctx, updated); err != nil {
+		return nil, err
+	}
 	if changedDefinition {
 		if _, err := r.createRevision(ctx, updated, updated.CreatedBy); err != nil {
 			return nil, err
@@ -189,7 +196,16 @@ func equalStrings(a, b []string) bool {
 
 // Delete removes a macro by name.
 func (r *MacroRepo) Delete(ctx context.Context, name string) error {
-	return mapDBError(r.q.DeleteMacro(ctx, name))
+	if err := mapDBError(r.q.DeleteMacro(ctx, name)); err != nil {
+		return err
+	}
+	if err := r.q.SoftDeleteCatalogMetadata(ctx, dbstore.SoftDeleteCatalogMetadataParams{
+		SecurableType: "macro",
+		SecurableName: macroCatalogSecurableName(name),
+	}); err != nil {
+		return fmt.Errorf("soft delete macro catalog metadata: %w", err)
+	}
+	return nil
 }
 
 // ListAll returns all macros ordered by name.
@@ -301,6 +317,26 @@ func mustJSONArray(v []string) string {
 		return "[]"
 	}
 	return string(b)
+}
+
+func (r *MacroRepo) upsertCatalogMetadata(ctx context.Context, macro *domain.Macro) error {
+	if macro == nil {
+		return nil
+	}
+	if err := r.q.UpsertCatalogMetadata(ctx, dbstore.UpsertCatalogMetadataParams{
+		SecurableType: "macro",
+		SecurableName: macroCatalogSecurableName(macro.Name),
+		Comment:       sql.NullString{String: macro.Description, Valid: true},
+		Properties:    sql.NullString{String: mustJSONString(macro.Properties), Valid: true},
+		Owner:         sql.NullString{String: macro.Owner, Valid: true},
+	}); err != nil {
+		return fmt.Errorf("upsert macro catalog metadata: %w", err)
+	}
+	return nil
+}
+
+func macroCatalogSecurableName(name string) string {
+	return "macro." + strings.TrimSpace(name)
 }
 
 func (r *MacroRepo) createRevision(ctx context.Context, m *domain.Macro, createdBy string) (*domain.MacroRevision, error) {

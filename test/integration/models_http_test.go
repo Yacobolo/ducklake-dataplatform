@@ -3,6 +3,7 @@
 package integration
 
 import (
+	"database/sql"
 	"fmt"
 	"strings"
 	"testing"
@@ -586,6 +587,26 @@ func TestHTTP_MacroCRUD(t *testing.T) {
 			assert.Equal(t, "analytics", result["project_name"])
 			assert.Equal(t, "catalog_global", result["visibility"])
 			assert.Equal(t, "data-platform", result["owner"])
+
+			var comment sql.NullString
+			var properties sql.NullString
+			var owner sql.NullString
+			var deletedAt sql.NullString
+			err := env.MetaDB.QueryRowContext(
+				ctx,
+				`SELECT comment, properties, owner, deleted_at
+				 FROM catalog_metadata
+				 WHERE securable_type = 'macro' AND securable_name = ?`,
+				"macro.double_val",
+			).Scan(&comment, &properties, &owner, &deletedAt)
+			require.NoError(t, err)
+			assert.True(t, comment.Valid)
+			assert.Equal(t, "Triples the input value", comment.String)
+			assert.True(t, properties.Valid)
+			assert.Contains(t, properties.String, "finance")
+			assert.True(t, owner.Valid)
+			assert.Equal(t, "data-platform", owner.String)
+			assert.False(t, deletedAt.Valid)
 		}},
 
 		{"deprecate_macro", func(t *testing.T) {
@@ -635,6 +656,16 @@ func TestHTTP_MacroCRUD(t *testing.T) {
 			resp := doRequest(t, "DELETE", env.Server.URL+"/v1/macros/double_val", env.Keys.Admin, nil)
 			defer resp.Body.Close() //nolint:errcheck
 			require.Equal(t, 204, resp.StatusCode)
+
+			var deletedAt sql.NullString
+			err := env.MetaDB.QueryRowContext(
+				ctx,
+				`SELECT deleted_at FROM catalog_metadata
+				 WHERE securable_type = 'macro' AND securable_name = ?`,
+				"macro.double_val",
+			).Scan(&deletedAt)
+			require.NoError(t, err)
+			assert.True(t, deletedAt.Valid)
 		}},
 
 		{"delete_macro_idempotent_204", func(t *testing.T) {

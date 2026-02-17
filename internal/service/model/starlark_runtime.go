@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"duck-demo/internal/domain"
 
@@ -13,12 +14,18 @@ import (
 
 const (
 	defaultStarlarkMaxSteps = uint64(50_000)
+	defaultStarlarkTimeout  = 2 * time.Second
 	maxStarlarkOutputBytes  = 256 * 1024
+	maxStarlarkModuleBytes  = 512 * 1024
+	maxStarlarkArgsBytes    = 64 * 1024
 )
 
 type starlarkMacroRuntime struct {
-	modules  map[string]starlark.StringDict
-	maxSteps uint64
+	modules     map[string]starlark.StringDict
+	maxSteps    uint64
+	evalTimeout time.Duration
+	maxArgBytes int
+	maxModBytes int
 }
 
 func newStarlarkMacroRuntime(defs map[string]compileMacroDefinition) (*starlarkMacroRuntime, error) {
@@ -48,8 +55,11 @@ func newStarlarkMacroRuntime(defs map[string]compileMacroDefinition) (*starlarkM
 
 func newStarlarkMacroRuntimeFromModules(moduleSources map[string]string) (*starlarkMacroRuntime, error) {
 	runtime := &starlarkMacroRuntime{
-		modules:  map[string]starlark.StringDict{},
-		maxSteps: defaultStarlarkMaxSteps,
+		modules:     map[string]starlark.StringDict{},
+		maxSteps:    defaultStarlarkMaxSteps,
+		evalTimeout: defaultStarlarkTimeout,
+		maxArgBytes: maxStarlarkArgsBytes,
+		maxModBytes: maxStarlarkModuleBytes,
 	}
 
 	moduleNames := make([]string, 0, len(moduleSources))
@@ -60,10 +70,20 @@ func newStarlarkMacroRuntimeFromModules(moduleSources map[string]string) (*starl
 
 	for _, module := range moduleNames {
 		src := moduleSources[module]
+		if len(src) > runtime.maxModBytes {
+			return nil, domain.ErrValidation("starlark module %q exceeds %d bytes", module, runtime.maxModBytes)
+		}
 		thread := &starlark.Thread{Name: "compile-macro-module"}
 		thread.SetMaxExecutionSteps(runtime.maxSteps)
-		globals, err := starlark.ExecFileOptions(&syntax.FileOptions{}, thread, module+".star", src, nil)
-		if err != nil {
+		var globals starlark.StringDict
+		if err := runStarlarkWithTimeout(thread, runtime.evalTimeout, func() error {
+			loaded, err := starlark.ExecFileOptions(&syntax.FileOptions{}, thread, module+".star", src, nil)
+			if err != nil {
+				return err
+			}
+			globals = loaded
+			return nil
+		}); err != nil {
 			return nil, fmt.Errorf("load starlark module %q: %w", module, err)
 		}
 		runtime.modules[module] = globals
@@ -94,14 +114,28 @@ func (r *starlarkMacroRuntime) EvalMacro(def compileMacroDefinition, rawArgs []s
 
 	thread := &starlark.Thread{Name: "compile-macro-eval"}
 	thread.SetMaxExecutionSteps(r.maxSteps)
+	argBytes := 0
+	for _, raw := range rawArgs {
+		argBytes += len(raw)
+		if argBytes > r.maxArgBytes {
+			return "", domain.ErrValidation("macro %q arguments exceed %d bytes", def.name, r.maxArgBytes)
+		}
+	}
 
 	args, kwargs, err := parseStarlarkCallArgs(thread, rawArgs)
 	if err != nil {
 		return "", err
 	}
 
-	result, err := starlark.Call(thread, callable, args, kwargs)
-	if err != nil {
+	var result starlark.Value
+	if err := runStarlarkWithTimeout(thread, r.evalTimeout, func() error {
+		callResult, err := starlark.Call(thread, callable, args, kwargs)
+		if err != nil {
+			return err
+		}
+		result = callResult
+		return nil
+	}); err != nil {
 		return "", err
 	}
 
@@ -208,6 +242,32 @@ func splitKeywordArg(raw string) (name, value string, isKw bool) {
 		return "", raw, false
 	}
 	return name, value, true
+}
+
+func runStarlarkWithTimeout(thread *starlark.Thread, timeout time.Duration, fn func() error) error {
+	if timeout <= 0 {
+		return fn()
+	}
+
+	done := make(chan error, 1)
+	go func() {
+		done <- fn()
+	}()
+
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+
+	select {
+	case err := <-done:
+		return err
+	case <-timer.C:
+		thread.Cancel("starlark execution timed out")
+		err := <-done
+		if err != nil {
+			return domain.ErrValidation("starlark execution timed out after %s: %v", timeout, err)
+		}
+		return domain.ErrValidation("starlark execution timed out after %s", timeout)
+	}
 }
 
 func findTopLevelEquals(s string) int {
