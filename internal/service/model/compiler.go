@@ -21,8 +21,9 @@ type compileContext struct {
 	materialize   string
 	models        map[string]domain.Model
 	byName        map[string][]domain.Model
+	sources       map[string]string
 	macros        map[string]compileMacroDefinition
-	macroRuntime  *starlarkMacroRuntime
+	macroRuntimes map[string]*starlarkMacroRuntime
 }
 
 type compileMacroDefinition struct {
@@ -30,6 +31,7 @@ type compileMacroDefinition struct {
 	parameters []string
 	body       string
 	starlark   bool
+	runtimeKey string
 }
 
 type compileResult struct {
@@ -146,6 +148,14 @@ func renderTemplate(sqlText string, ctx compileContext) (string, []string, []str
 				return "", err
 			}
 			key := sourceName + "." + tableName
+			if len(ctx.sources) > 0 {
+				relation, ok := ctx.sources[key]
+				if !ok {
+					return "", domain.ErrValidation("unknown source(%q,%q)", sourceName, tableName)
+				}
+				sourcesSet[key] = struct{}{}
+				return relation, nil
+			}
 			sourcesSet[key] = struct{}{}
 			return renderRelationParts(sourceName, tableName), nil
 		case "var":
@@ -183,10 +193,11 @@ func renderTemplate(sqlText string, ctx compileContext) (string, []string, []str
 			}
 			macrosSet[fnName] = struct{}{}
 			if def.starlark {
-				if ctx.macroRuntime == nil {
+				runtime := ctx.macroRuntimes[def.runtimeKey]
+				if runtime == nil {
 					return "", domain.ErrValidation("starlark macro runtime not available for %q", fnName)
 				}
-				rendered, err := ctx.macroRuntime.EvalMacro(def, args)
+				rendered, err := runtime.EvalMacro(def, args)
 				if err != nil {
 					return "", fmt.Errorf("evaluate macro %q: %w", fnName, err)
 				}

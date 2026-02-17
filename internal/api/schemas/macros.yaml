@@ -34,6 +34,45 @@ Macro:
       maxLength: 4096
       pattern: '^[\s\S]*$'
       example: Converts cents to dollars
+    catalog_name:
+      type: string
+      maxLength: 255
+      pattern: '^[\S]*$'
+      example: memory
+    project_name:
+      type: string
+      maxLength: 255
+      pattern: '^[\S]*$'
+      example: analytics
+    visibility:
+      type: string
+      enum: [project, catalog_global, system]
+      example: project
+    owner:
+      type: string
+      maxLength: 255
+      pattern: '^[\S]*$'
+      example: data-platform
+    properties:
+      type: object
+      additionalProperties:
+        type: string
+        maxLength: 4096
+        pattern: '^[\s\S]*$'
+      example:
+        team: analytics
+    tags:
+      type: array
+      items:
+        type: string
+        maxLength: 255
+        pattern: '^[\S].*$'
+      maxItems: 100
+      example: ["finance", "shared"]
+    status:
+      type: string
+      enum: [ACTIVE, DEPRECATED]
+      example: ACTIVE
     created_by:
       type: string
       maxLength: 255
@@ -83,6 +122,45 @@ CreateMacroRequest:
       maxLength: 4096
       pattern: '^[\s\S]*$'
       example: Converts cents to dollars
+    catalog_name:
+      type: string
+      maxLength: 255
+      pattern: '^[\S]*$'
+      example: memory
+    project_name:
+      type: string
+      maxLength: 255
+      pattern: '^[\S]*$'
+      example: analytics
+    visibility:
+      type: string
+      enum: [project, catalog_global, system]
+      example: project
+    owner:
+      type: string
+      maxLength: 255
+      pattern: '^[\S]*$'
+      example: data-platform
+    properties:
+      type: object
+      additionalProperties:
+        type: string
+        maxLength: 4096
+        pattern: '^[\s\S]*$'
+      example:
+        team: analytics
+    tags:
+      type: array
+      items:
+        type: string
+        maxLength: 255
+        pattern: '^[\S].*$'
+      maxItems: 100
+      example: ["finance", "shared"]
+    status:
+      type: string
+      enum: [ACTIVE, DEPRECATED]
+      example: ACTIVE
 
 UpdateMacroRequest:
   description: Request payload for updating an existing SQL macro.

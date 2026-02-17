@@ -91,6 +91,10 @@ ModelConfig:
       maxLength: 255
       pattern: '^\S.*$'
       example: merge
+    on_schema_change:
+      type: string
+      enum: [ignore, fail]
+      example: fail
 
 ModelContract:
   description: Output contract enforced for a model.
@@ -288,6 +292,13 @@ ModelRun:
       type: boolean
       default: false
       example: false
+    compile_manifest:
+      type: string
+      maxLength: 500000
+      pattern: '^[\s\S]*$'
+      example: '{"version":1,"models":[{"model_name":"analytics.stg_orders"}]}'
+    compile_diagnostics:
+      $ref: '#/ModelRunCompileDiagnostics'
     started_at:
       type: string
       format: date-time
@@ -392,6 +403,27 @@ ModelRunStep:
       format: date-time
       maxLength: 64
       example: "2025-01-15T10:00:00Z"
+
+ModelRunCompileDiagnostics:
+  description: Non-fatal diagnostics captured during compile time.
+  type: object
+  properties:
+    warnings:
+      type: array
+      maxItems: 1000
+      items:
+        type: string
+        maxLength: 4096
+        pattern: '^[\s\S]*$'
+      example: ["source registry is empty; source() references are rendered without strict existence checks"]
+    errors:
+      type: array
+      maxItems: 1000
+      items:
+        type: string
+        maxLength: 4096
+        pattern: '^[\s\S]*$'
+      example: []
 
 TriggerModelRunRequest:
   description: Request payload for triggering a model run.

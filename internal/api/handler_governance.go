@@ -361,7 +361,7 @@ func (h *APIHandler) DeleteTag(ctx context.Context, req DeleteTagRequestObject) 
 func (h *APIHandler) CreateTagAssignment(ctx context.Context, req CreateTagAssignmentRequestObject) (CreateTagAssignmentResponseObject, error) {
 	domReq := domain.AssignTagRequest{
 		TagID:         req.TagId,
-		SecurableType: req.Body.SecurableType,
+		SecurableType: string(req.Body.SecurableType),
 		SecurableID:   req.Body.SecurableId,
 		ColumnName:    req.Body.ColumnName,
 	}

@@ -62,6 +62,8 @@ type ModelConfig struct {
 	UniqueKey []string `json:"unique_key,omitempty"`
 	// For INCREMENTAL: the strategy (merge, delete+insert).
 	IncrementalStrategy string `json:"incremental_strategy,omitempty"`
+	// For INCREMENTAL: schema-change policy (ignore, fail).
+	OnSchemaChange string `json:"on_schema_change,omitempty"`
 }
 
 // QualifiedName returns "project.name" for cross-project references.
@@ -145,19 +147,27 @@ type FreshnessStatus struct {
 
 // ModelRun represents a single execution of the model DAG.
 type ModelRun struct {
-	ID            string
-	Status        string
-	TriggerType   string // "MANUAL", "SCHEDULED", "PIPELINE"
-	TriggeredBy   string
-	TargetCatalog string
-	TargetSchema  string
-	ModelSelector string // which models: "" = all, "stg_orders+", "tag:finance"
-	Variables     map[string]string
-	FullRefresh   bool
-	StartedAt     *time.Time
-	FinishedAt    *time.Time
-	ErrorMessage  *string
-	CreatedAt     time.Time
+	ID                 string
+	Status             string
+	TriggerType        string // "MANUAL", "SCHEDULED", "PIPELINE"
+	TriggeredBy        string
+	TargetCatalog      string
+	TargetSchema       string
+	ModelSelector      string // which models: "" = all, "stg_orders+", "tag:finance"
+	Variables          map[string]string
+	FullRefresh        bool
+	CompileManifest    *string
+	CompileDiagnostics *ModelCompileDiagnostics
+	StartedAt          *time.Time
+	FinishedAt         *time.Time
+	ErrorMessage       *string
+	CreatedAt          time.Time
+}
+
+// ModelCompileDiagnostics captures non-fatal compile diagnostics.
+type ModelCompileDiagnostics struct {
+	Warnings []string `json:"warnings,omitempty"`
+	Errors   []string `json:"errors,omitempty"`
 }
 
 // ModelRunStep represents a single model's execution within a run.

@@ -101,12 +101,13 @@ func TestCompileModelSQL_ValidationErrors(t *testing.T) {
 				parameters: []string{"col"},
 				body:       `"(" + col + " / 100.0)"`,
 				starlark:   true,
+				runtimeKey: "db",
 			},
 		},
 	}
 	runtime, err := newStarlarkMacroRuntime(ctx.macros)
 	require.NoError(t, err)
-	ctx.macroRuntime = runtime
+	ctx.macroRuntimes = map[string]*starlarkMacroRuntime{"db": runtime}
 
 	t.Run("unknown ref", func(t *testing.T) {
 		_, err := compileModelSQL(`select * from {{ ref('missing') }}`, ctx)
@@ -118,6 +119,20 @@ func TestCompileModelSQL_ValidationErrors(t *testing.T) {
 		_, err := compileModelSQL(`select {{ var('required_val') }}`, ctx)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "required var")
+	})
+
+	t.Run("unknown source", func(t *testing.T) {
+		ctx.sources = map[string]string{"raw.orders": `"raw"."orders"`}
+		_, err := compileModelSQL(`select * from {{ source('raw', 'missing') }}`, ctx)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "unknown source")
+	})
+
+	t.Run("source fallback without registry", func(t *testing.T) {
+		ctx.sources = nil
+		compiled, err := compileModelSQL(`select * from {{ source('raw', 'missing') }}`, ctx)
+		require.NoError(t, err)
+		assert.Contains(t, compiled.sql, `"raw"."missing"`)
 	})
 }
 
@@ -134,12 +149,13 @@ func TestCompileModelSQL_CapturesMacros(t *testing.T) {
 				parameters: []string{"col"},
 				body:       `"(" + col + " / 100.0)"`,
 				starlark:   true,
+				runtimeKey: "db",
 			},
 		},
 	}
 	runtime, err := newStarlarkMacroRuntime(ctx.macros)
 	require.NoError(t, err)
-	ctx.macroRuntime = runtime
+	ctx.macroRuntimes = map[string]*starlarkMacroRuntime{"db": runtime}
 
 	compiled, err := compileModelSQL(`select {{ utils.cents_to_dollars('amount') }} as amount_usd`, ctx)
 	require.NoError(t, err)
@@ -175,12 +191,13 @@ func TestCompileModelSQL_StarlarkKeywordAndListArgs(t *testing.T) {
 				parameters: []string{"cols", "separator"},
 				body:       `return separator.join(cols)`,
 				starlark:   true,
+				runtimeKey: "db",
 			},
 		},
 	}
 	runtime, err := newStarlarkMacroRuntime(ctx.macros)
 	require.NoError(t, err)
-	ctx.macroRuntime = runtime
+	ctx.macroRuntimes = map[string]*starlarkMacroRuntime{"db": runtime}
 
 	compiled, err := compileModelSQL(`select {{ utils.union_cols(['a','b','c'], separator=' || ') }} as expr`, ctx)
 	require.NoError(t, err)

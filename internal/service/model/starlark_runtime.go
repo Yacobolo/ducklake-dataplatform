@@ -34,17 +34,32 @@ func newStarlarkMacroRuntime(defs map[string]compileMacroDefinition) (*starlarkM
 		byModule[module] = append(byModule[module], def)
 	}
 
-	runtime := &starlarkMacroRuntime{
-		modules:  map[string]starlark.StringDict{},
-		maxSteps: defaultStarlarkMaxSteps,
-	}
-
+	moduleSources := make(map[string]string, len(byModule))
 	for module, moduleDefs := range byModule {
 		src, err := renderModuleSource(moduleDefs)
 		if err != nil {
 			return nil, fmt.Errorf("render starlark module %q: %w", module, err)
 		}
+		moduleSources[module] = src
+	}
 
+	return newStarlarkMacroRuntimeFromModules(moduleSources)
+}
+
+func newStarlarkMacroRuntimeFromModules(moduleSources map[string]string) (*starlarkMacroRuntime, error) {
+	runtime := &starlarkMacroRuntime{
+		modules:  map[string]starlark.StringDict{},
+		maxSteps: defaultStarlarkMaxSteps,
+	}
+
+	moduleNames := make([]string, 0, len(moduleSources))
+	for module := range moduleSources {
+		moduleNames = append(moduleNames, module)
+	}
+	sort.Strings(moduleNames)
+
+	for _, module := range moduleNames {
+		src := moduleSources[module]
 		thread := &starlark.Thread{Name: "compile-macro-module"}
 		thread.SetMaxExecutionSteps(runtime.maxSteps)
 		globals, err := starlark.ExecFileOptions(&syntax.FileOptions{}, thread, module+".star", src, nil)

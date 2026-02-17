@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"duck-demo/internal/db/dbstore"
@@ -33,15 +34,17 @@ func (r *ModelRunRepo) CreateRun(ctx context.Context, run *domain.ModelRun) (*do
 	}
 
 	row, err := r.q.CreateModelRun(ctx, dbstore.CreateModelRunParams{
-		ID:            newID(),
-		Status:        run.Status,
-		TriggerType:   run.TriggerType,
-		TriggeredBy:   run.TriggeredBy,
-		TargetCatalog: run.TargetCatalog,
-		TargetSchema:  run.TargetSchema,
-		ModelSelector: run.ModelSelector,
-		Variables:     string(varsJSON),
-		FullRefresh:   boolToInt64(run.FullRefresh),
+		ID:                 newID(),
+		Status:             run.Status,
+		TriggerType:        run.TriggerType,
+		TriggeredBy:        run.TriggeredBy,
+		TargetCatalog:      run.TargetCatalog,
+		TargetSchema:       run.TargetSchema,
+		ModelSelector:      run.ModelSelector,
+		Variables:          string(varsJSON),
+		FullRefresh:        boolToInt64(run.FullRefresh),
+		CompileManifest:    ptrToStr(run.CompileManifest),
+		CompileDiagnostics: marshalCompileDiagnostics(run.CompileDiagnostics),
 	})
 	if err != nil {
 		return nil, mapDBError(err)
@@ -201,20 +204,48 @@ func modelRunFromDB(row dbstore.ModelRun) *domain.ModelRun {
 	}
 
 	return &domain.ModelRun{
-		ID:            row.ID,
-		Status:        row.Status,
-		TriggerType:   row.TriggerType,
-		TriggeredBy:   row.TriggeredBy,
-		TargetCatalog: row.TargetCatalog,
-		TargetSchema:  row.TargetSchema,
-		ModelSelector: row.ModelSelector,
-		Variables:     vars,
-		FullRefresh:   row.FullRefresh != 0,
-		StartedAt:     startedAt,
-		FinishedAt:    finishedAt,
-		ErrorMessage:  errMsg,
-		CreatedAt:     createdAt,
+		ID:                 row.ID,
+		Status:             row.Status,
+		TriggerType:        row.TriggerType,
+		TriggeredBy:        row.TriggeredBy,
+		TargetCatalog:      row.TargetCatalog,
+		TargetSchema:       row.TargetSchema,
+		ModelSelector:      row.ModelSelector,
+		Variables:          vars,
+		FullRefresh:        row.FullRefresh != 0,
+		CompileManifest:    strPtrOrNil(strings.TrimSpace(row.CompileManifest)),
+		CompileDiagnostics: unmarshalCompileDiagnostics(row.CompileDiagnostics),
+		StartedAt:          startedAt,
+		FinishedAt:         finishedAt,
+		ErrorMessage:       errMsg,
+		CreatedAt:          createdAt,
 	}
+}
+
+func marshalCompileDiagnostics(d *domain.ModelCompileDiagnostics) string {
+	if d == nil {
+		return "{}"
+	}
+	b, err := json.Marshal(d)
+	if err != nil {
+		return "{}"
+	}
+	return string(b)
+}
+
+func unmarshalCompileDiagnostics(raw string) *domain.ModelCompileDiagnostics {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+	var out domain.ModelCompileDiagnostics
+	if err := json.Unmarshal([]byte(raw), &out); err != nil {
+		return nil
+	}
+	if len(out.Warnings) == 0 && len(out.Errors) == 0 {
+		return nil
+	}
+	return &out
 }
 
 func boolToInt64(v bool) int64 {
@@ -222,6 +253,13 @@ func boolToInt64(v bool) int64 {
 		return 1
 	}
 	return 0
+}
+
+func strPtrOrNil(v string) *string {
+	if strings.TrimSpace(v) == "" {
+		return nil
+	}
+	return &v
 }
 
 func modelRunStepFromDB(row dbstore.ModelRunStep) *domain.ModelRunStep {

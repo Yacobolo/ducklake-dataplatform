@@ -40,6 +40,13 @@ func (r *MacroRepo) Create(ctx context.Context, m *domain.Macro) (*domain.Macro,
 		Parameters:  string(paramsJSON),
 		Body:        m.Body,
 		Description: m.Description,
+		CatalogName: m.CatalogName,
+		ProjectName: m.ProjectName,
+		Visibility:  m.Visibility,
+		Owner:       m.Owner,
+		Properties:  mustJSONString(m.Properties),
+		Tags:        mustJSONArray(m.Tags),
+		Status:      m.Status,
 		CreatedBy:   m.CreatedBy,
 	})
 	if err != nil {
@@ -152,6 +159,18 @@ func macroFromDB(row dbstore.Macro) *domain.Macro {
 		params = []string{}
 	}
 
+	var props map[string]string
+	_ = json.Unmarshal([]byte(row.Properties), &props)
+	if props == nil {
+		props = map[string]string{}
+	}
+
+	var tags []string
+	_ = json.Unmarshal([]byte(row.Tags), &tags)
+	if tags == nil {
+		tags = []string{}
+	}
+
 	return &domain.Macro{
 		ID:          row.ID,
 		Name:        row.Name,
@@ -159,8 +178,37 @@ func macroFromDB(row dbstore.Macro) *domain.Macro {
 		Parameters:  params,
 		Body:        row.Body,
 		Description: row.Description,
+		CatalogName: row.CatalogName,
+		ProjectName: row.ProjectName,
+		Visibility:  row.Visibility,
+		Owner:       row.Owner,
+		Properties:  props,
+		Tags:        tags,
+		Status:      row.Status,
 		CreatedBy:   row.CreatedBy,
 		CreatedAt:   createdAt,
 		UpdatedAt:   updatedAt,
 	}
+}
+
+func mustJSONString(m map[string]string) string {
+	if m == nil {
+		return "{}"
+	}
+	b, err := json.Marshal(m)
+	if err != nil {
+		return "{}"
+	}
+	return string(b)
+}
+
+func mustJSONArray(v []string) string {
+	if v == nil {
+		return "[]"
+	}
+	b, err := json.Marshal(v)
+	if err != nil {
+		return "[]"
+	}
+	return string(b)
 }

@@ -26,7 +26,7 @@ func NewSearchRepo(metaDB, controlDB *sql.DB) *SearchRepo {
 	return &SearchRepo{metaDB: metaDB, controlDB: controlDB}
 }
 
-// Search performs a full-text search across schemas, tables, and columns.
+// Search performs a full-text search across schemas, tables, columns, and macros.
 // Name-based searches query the catalog metastore (ducklake_* tables).
 // Comment/tag/property searches query the control plane (catalog_metadata, tags).
 // Results from both sources are merged and deduplicated.
@@ -103,6 +103,15 @@ func (r *SearchRepo) searchNamesMeta(ctx context.Context, likePattern string, ob
 		args = append(args, likePattern)
 	}
 
+	if objectType == nil || *objectType == "macro" {
+		unions = append(unions, `
+			SELECT 'macro' as type, m.name as name, NULL as schema_name, NULL as table_name,
+				m.description as comment, 'name' as match_field
+			FROM macros m
+			WHERE LOWER(m.name) LIKE ?`)
+		args = append(args, likePattern)
+	}
+
 	if len(unions) == 0 {
 		return nil, nil
 	}
@@ -132,6 +141,31 @@ func (r *SearchRepo) searchGovernanceControl(ctx context.Context, likePattern st
 			FROM catalog_metadata cm
 			WHERE cm.securable_type = 'schema' AND cm.deleted_at IS NULL
 			AND LOWER(cm.properties) LIKE ? AND (cm.comment IS NULL OR LOWER(cm.comment) NOT LIKE ?)`)
+		args = append(args, likePattern, likePattern)
+	}
+
+	if objectType == nil || *objectType == "macro" {
+		unions = append(unions, `
+			SELECT 'macro' as type, m.name as name, NULL as schema_name, NULL as table_name,
+				m.description as comment, 'comment' as match_field
+			FROM macros m
+			WHERE LOWER(m.description) LIKE ?`)
+		args = append(args, likePattern)
+
+		unions = append(unions, `
+			SELECT 'macro' as type, m.name as name, NULL as schema_name, NULL as table_name,
+				m.description as comment, 'property' as match_field
+			FROM macros m
+			WHERE LOWER(m.properties) LIKE ? AND (m.description IS NULL OR LOWER(m.description) NOT LIKE ?)`)
+		args = append(args, likePattern, likePattern)
+
+		unions = append(unions, `
+			SELECT 'macro' as type, m.name as name, NULL as schema_name, NULL as table_name,
+				m.description as comment, 'tag' as match_field
+			FROM macros m
+			JOIN tag_assignments ta ON ta.securable_type = 'macro' AND ta.securable_id = m.id
+			JOIN tags t ON t.id = ta.tag_id
+			WHERE (LOWER(t.key) LIKE ? OR LOWER(COALESCE(t.value, '')) LIKE ?)`)
 		args = append(args, likePattern, likePattern)
 	}
 

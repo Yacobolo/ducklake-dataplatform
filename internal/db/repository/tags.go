@@ -78,6 +78,10 @@ func (r *TagRepo) DeleteTag(ctx context.Context, id string) error {
 
 // AssignTag assigns a tag to a securable object.
 func (r *TagRepo) AssignTag(ctx context.Context, assignment *domain.TagAssignment) (*domain.TagAssignment, error) {
+	if !domain.IsValidTagSecurableType(assignment.SecurableType) {
+		return nil, domain.ErrValidation("securable_type must be one of: schema, table, column, macro")
+	}
+
 	row, err := r.q.CreateTagAssignment(ctx, dbstore.CreateTagAssignmentParams{
 		ID:            newID(),
 		TagID:         assignment.TagID,

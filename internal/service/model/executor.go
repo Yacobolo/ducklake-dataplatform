@@ -378,11 +378,16 @@ func (s *Service) materializeIncremental(ctx context.Context, conn *sql.Conn,
 		return s.materializeTable(ctx, conn, model, config, principal)
 	}
 
+	if err := s.enforceIncrementalSchemaPolicy(ctx, conn, model, config, principal); err != nil {
+		return 0, err
+	}
+
 	// Incremental: MERGE INTO
 	uniqueKeys := model.Config.UniqueKey
 	if len(uniqueKeys) == 0 {
 		return 0, domain.ErrValidation("incremental model %s requires unique_key in config", model.Name)
 	}
+	strategy := resolveIncrementalStrategy(model.Config.IncrementalStrategy)
 
 	// Build ON clause
 	onParts := make([]string, len(uniqueKeys))
@@ -392,12 +397,30 @@ func (s *Service) materializeIncremental(ctx context.Context, conn *sql.Conn,
 	}
 	onClause := strings.Join(onParts, " AND ")
 
-	mergeSQL := fmt.Sprintf(
-		"MERGE INTO %s AS target USING (%s) AS source ON %s WHEN MATCHED THEN UPDATE SET * WHEN NOT MATCHED THEN INSERT *",
-		targetFQN, model.SQL, onClause)
+	switch strategy {
+	case "merge":
+		mergeSQL := fmt.Sprintf(
+			"MERGE INTO %s AS target USING (%s) AS source ON %s WHEN MATCHED THEN UPDATE SET * WHEN NOT MATCHED THEN INSERT *",
+			targetFQN, model.SQL, onClause)
 
-	if err := s.execOnConn(ctx, conn, principal, mergeSQL); err != nil {
-		return 0, err
+		if err := s.execOnConn(ctx, conn, principal, mergeSQL); err != nil {
+			return 0, err
+		}
+	case "delete_insert", "delete+insert":
+		deleteSQL := fmt.Sprintf(
+			"DELETE FROM %s AS target USING (%s) AS source WHERE %s",
+			targetFQN, model.SQL, onClause,
+		)
+		if err := s.execOnConn(ctx, conn, principal, deleteSQL); err != nil {
+			return 0, err
+		}
+
+		insertSQL := fmt.Sprintf("INSERT INTO %s SELECT * FROM (%s)", targetFQN, model.SQL)
+		if err := s.execOnConn(ctx, conn, principal, insertSQL); err != nil {
+			return 0, err
+		}
+	default:
+		return 0, domain.ErrValidation("unsupported incremental_strategy %q for model %s", model.Config.IncrementalStrategy, model.Name)
 	}
 
 	// Count total rows
@@ -417,6 +440,125 @@ func (s *Service) materializeIncremental(ctx context.Context, conn *sql.Conn,
 		s.logger.Warn("row count error", "error", err)
 	}
 	return count, nil
+}
+
+func resolveIncrementalStrategy(strategy string) string {
+	norm := strings.ToLower(strings.TrimSpace(strategy))
+	if norm == "" {
+		return "merge"
+	}
+	if norm == "delete+insert" {
+		return "delete_insert"
+	}
+	return norm
+}
+
+func resolveSchemaChangePolicy(policy string) string {
+	norm := strings.ToLower(strings.TrimSpace(policy))
+	if norm == "" {
+		return "ignore"
+	}
+	return norm
+}
+
+func (s *Service) enforceIncrementalSchemaPolicy(
+	ctx context.Context,
+	conn *sql.Conn,
+	model *domain.Model,
+	config ExecutionConfig,
+	principal string,
+) error {
+	policy := resolveSchemaChangePolicy(model.Config.OnSchemaChange)
+	if policy == "ignore" {
+		return nil
+	}
+	if policy != "fail" {
+		return domain.ErrValidation("unsupported on_schema_change %q for model %s", model.Config.OnSchemaChange, model.Name)
+	}
+
+	targetCols, err := s.targetTableColumns(ctx, conn, config, model, principal)
+	if err != nil {
+		return fmt.Errorf("load target columns for %s: %w", model.QualifiedName(), err)
+	}
+	sourceCols, err := s.queryColumns(ctx, conn, principal, fmt.Sprintf("SELECT * FROM (%s) AS source WHERE 1=0", model.SQL))
+	if err != nil {
+		return fmt.Errorf("load source columns for %s: %w", model.QualifiedName(), err)
+	}
+
+	if !sameColumns(targetCols, sourceCols) {
+		return domain.ErrValidation(
+			"schema change detected for incremental model %s (target=%v source=%v) with on_schema_change=fail",
+			model.QualifiedName(), targetCols, sourceCols,
+		)
+	}
+	return nil
+}
+
+func (s *Service) targetTableColumns(
+	ctx context.Context,
+	conn *sql.Conn,
+	config ExecutionConfig,
+	model *domain.Model,
+	principal string,
+) ([]string, error) {
+	query := fmt.Sprintf(
+		"SELECT column_name FROM information_schema.columns WHERE table_schema = '%s' AND table_name = '%s' ORDER BY ordinal_position",
+		strings.ReplaceAll(config.TargetSchema, "'", "''"),
+		strings.ReplaceAll(model.Name, "'", "''"),
+	)
+	rows, err := s.engine.QueryOnConn(ctx, conn, principal, query)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	cols := make([]string, 0)
+	for rows.Next() {
+		var col string
+		if err := rows.Scan(&col); err != nil {
+			return nil, err
+		}
+		cols = append(cols, strings.ToLower(strings.TrimSpace(col)))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return cols, nil
+}
+
+func (s *Service) queryColumns(ctx context.Context, conn *sql.Conn, principal, query string) ([]string, error) {
+	rows, err := s.engine.QueryOnConn(ctx, conn, principal, query)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	cols, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	out := make([]string, 0, len(cols))
+	for _, c := range cols {
+		out = append(out, strings.ToLower(strings.TrimSpace(c)))
+	}
+	return out, nil
+}
+
+func sameColumns(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 func (s *Service) tableExists(ctx context.Context, conn *sql.Conn, catalog, schema, table, principal string) (bool, error) {

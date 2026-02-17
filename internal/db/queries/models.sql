@@ -42,8 +42,8 @@ UPDATE models SET depends_on = ?, updated_at = datetime('now') WHERE id = ?;
 DELETE FROM models WHERE id = ?;
 
 -- name: CreateModelRun :one
-INSERT INTO model_runs (id, status, trigger_type, triggered_by, target_catalog, target_schema, model_selector, variables, full_refresh)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO model_runs (id, status, trigger_type, triggered_by, target_catalog, target_schema, model_selector, variables, full_refresh, compile_manifest, compile_diagnostics)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetModelRunByID :one

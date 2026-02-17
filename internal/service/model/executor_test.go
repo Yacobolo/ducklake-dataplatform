@@ -33,3 +33,46 @@ func TestCanDirectExecOnConn(t *testing.T) {
 		})
 	}
 }
+
+func TestResolveIncrementalStrategy(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{name: "default merge", in: "", want: "merge"},
+		{name: "normalized merge", in: " MERGE ", want: "merge"},
+		{name: "delete insert alias", in: "delete+insert", want: "delete_insert"},
+		{name: "delete insert canonical", in: "delete_insert", want: "delete_insert"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, resolveIncrementalStrategy(tt.in))
+		})
+	}
+}
+
+func TestResolveSchemaChangePolicy(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{name: "default ignore", in: "", want: "ignore"},
+		{name: "normalize ignore", in: " IGNORE ", want: "ignore"},
+		{name: "pass through fail", in: "fail", want: "fail"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, resolveSchemaChangePolicy(tt.in))
+		})
+	}
+}
+
+func TestSameColumns(t *testing.T) {
+	assert.True(t, sameColumns([]string{"id", "name"}, []string{"id", "name"}))
+	assert.False(t, sameColumns([]string{"id", "name"}, []string{"name", "id"}))
+	assert.False(t, sameColumns([]string{"id"}, []string{"id", "name"}))
+}

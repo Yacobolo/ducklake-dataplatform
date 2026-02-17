@@ -290,10 +290,11 @@ func tagToAPI(t domain.Tag) Tag {
 
 func tagAssignmentToAPI(a domain.TagAssignment) TagAssignment {
 	t := a.AssignedAt
+	st := TagAssignmentSecurableType(a.SecurableType)
 	return TagAssignment{
 		Id:            &a.ID,
 		TagId:         &a.TagID,
-		SecurableType: &a.SecurableType,
+		SecurableType: &st,
 		SecurableId:   &a.SecurableID,
 		ColumnName:    a.ColumnName,
 		AssignedBy:    &a.AssignedBy,

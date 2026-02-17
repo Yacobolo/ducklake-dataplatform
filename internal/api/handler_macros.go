@@ -52,6 +52,27 @@ func (h *APIHandler) CreateMacro(ctx context.Context, req CreateMacroRequestObje
 	if req.Body.Parameters != nil {
 		domReq.Parameters = *req.Body.Parameters
 	}
+	if req.Body.CatalogName != nil {
+		domReq.CatalogName = *req.Body.CatalogName
+	}
+	if req.Body.ProjectName != nil {
+		domReq.ProjectName = *req.Body.ProjectName
+	}
+	if req.Body.Visibility != nil {
+		domReq.Visibility = string(*req.Body.Visibility)
+	}
+	if req.Body.Owner != nil {
+		domReq.Owner = *req.Body.Owner
+	}
+	if req.Body.Properties != nil {
+		domReq.Properties = map[string]string(*req.Body.Properties)
+	}
+	if req.Body.Tags != nil {
+		domReq.Tags = *req.Body.Tags
+	}
+	if req.Body.Status != nil {
+		domReq.Status = string(*req.Body.Status)
+	}
 
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
@@ -156,6 +177,30 @@ func macroToAPI(m domain.Macro) Macro {
 		CreatedBy:   &m.CreatedBy,
 		CreatedAt:   &ct,
 		UpdatedAt:   &ut,
+	}
+	if m.CatalogName != "" {
+		resp.CatalogName = &m.CatalogName
+	}
+	if m.ProjectName != "" {
+		resp.ProjectName = &m.ProjectName
+	}
+	if m.Visibility != "" {
+		v := MacroVisibility(m.Visibility)
+		resp.Visibility = &v
+	}
+	if m.Owner != "" {
+		resp.Owner = &m.Owner
+	}
+	if len(m.Properties) > 0 {
+		props := map[string]string(m.Properties)
+		resp.Properties = &props
+	}
+	if len(m.Tags) > 0 {
+		resp.Tags = &m.Tags
+	}
+	if m.Status != "" {
+		s := MacroStatus(m.Status)
+		resp.Status = &s
 	}
 	if len(m.Parameters) > 0 {
 		resp.Parameters = &m.Parameters

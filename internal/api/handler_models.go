@@ -396,6 +396,19 @@ func modelRunToAPI(r domain.ModelRun) ModelRun {
 		resp.ProjectName = &r.TargetSchema
 	}
 	resp.FullRefresh = &r.FullRefresh
+	if r.CompileManifest != nil {
+		resp.CompileManifest = r.CompileManifest
+	}
+	if r.CompileDiagnostics != nil {
+		d := ModelRunCompileDiagnostics{}
+		if len(r.CompileDiagnostics.Warnings) > 0 {
+			d.Warnings = &r.CompileDiagnostics.Warnings
+		}
+		if len(r.CompileDiagnostics.Errors) > 0 {
+			d.Errors = &r.CompileDiagnostics.Errors
+		}
+		resp.CompileDiagnostics = &d
+	}
 	if names := selectorToModelNames(r.ModelSelector); len(names) > 0 {
 		resp.ModelNames = &names
 	}
@@ -524,6 +537,10 @@ func apiModelConfig(c domain.ModelConfig) ModelConfig {
 	if c.IncrementalStrategy != "" {
 		cfg.IncrementalStrategy = &c.IncrementalStrategy
 	}
+	if c.OnSchemaChange != "" {
+		osc := ModelConfigOnSchemaChange(c.OnSchemaChange)
+		cfg.OnSchemaChange = &osc
+	}
 	return cfg
 }
 
@@ -534,6 +551,9 @@ func domainModelConfig(c ModelConfig) domain.ModelConfig {
 	}
 	if c.IncrementalStrategy != nil {
 		cfg.IncrementalStrategy = *c.IncrementalStrategy
+	}
+	if c.OnSchemaChange != nil {
+		cfg.OnSchemaChange = string(*c.OnSchemaChange)
 	}
 	return cfg
 }

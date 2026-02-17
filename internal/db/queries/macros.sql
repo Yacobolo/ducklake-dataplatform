@@ -1,6 +1,6 @@
 -- name: CreateMacro :one
-INSERT INTO macros (id, name, macro_type, parameters, body, description, created_by)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+INSERT INTO macros (id, name, macro_type, parameters, body, description, catalog_name, project_name, visibility, owner, properties, tags, status, created_by)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetMacroByName :one

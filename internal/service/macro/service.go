@@ -30,6 +30,13 @@ func (s *Service) Create(ctx context.Context, principal string, req domain.Creat
 		Parameters:  req.Parameters,
 		Body:        req.Body,
 		Description: req.Description,
+		CatalogName: req.CatalogName,
+		ProjectName: req.ProjectName,
+		Visibility:  req.Visibility,
+		Owner:       req.Owner,
+		Properties:  req.Properties,
+		Tags:        req.Tags,
+		Status:      req.Status,
 		CreatedBy:   principal,
 	}
 	if m.Parameters == nil {
