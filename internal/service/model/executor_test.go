@@ -1,12 +1,45 @@
 package model
 
 import (
+	"context"
+	"database/sql"
+	"io"
+	"log/slog"
 	"testing"
 
+	"duck-demo/internal/domain"
 	"duck-demo/internal/sqlrewrite"
 
+	_ "github.com/duckdb/duckdb-go/v2"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+type passthroughSessionEngine struct{}
+
+func (passthroughSessionEngine) Query(ctx context.Context, _ string, sqlQuery string) (*sql.Rows, error) {
+	panic("unexpected Query call in executor tests")
+}
+
+func (passthroughSessionEngine) QueryOnConn(ctx context.Context, conn *sql.Conn, _ string, sqlQuery string) (*sql.Rows, error) {
+	return conn.QueryContext(ctx, sqlQuery)
+}
+
+func newDuckDBServiceForTest(t *testing.T) (*Service, *sql.DB) {
+	t.Helper()
+	db, err := sql.Open("duckdb", "")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	_, err = db.Exec("CREATE SCHEMA analytics")
+	require.NoError(t, err)
+
+	return &Service{
+		engine: passthroughSessionEngine{},
+		duckDB: db,
+		logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+	}, db
+}
 
 func TestCanDirectExecOnConn(t *testing.T) {
 	tests := []struct {
@@ -75,4 +108,80 @@ func TestSameColumns(t *testing.T) {
 	assert.True(t, sameColumns([]string{"id", "name"}, []string{"id", "name"}))
 	assert.False(t, sameColumns([]string{"id", "name"}, []string{"name", "id"}))
 	assert.False(t, sameColumns([]string{"id"}, []string{"id", "name"}))
+}
+
+func TestEnforceIncrementalSchemaPolicy(t *testing.T) {
+	t.Run("fail policy rejects schema drift", func(t *testing.T) {
+		svc, db := newDuckDBServiceForTest(t)
+		_, err := db.Exec(`CREATE TABLE analytics.orders (id INTEGER, amount INTEGER)`)
+		require.NoError(t, err)
+
+		conn, err := db.Conn(context.Background())
+		require.NoError(t, err)
+		defer func() { _ = conn.Close() }()
+
+		err = svc.enforceIncrementalSchemaPolicy(
+			context.Background(),
+			conn,
+			&domain.Model{
+				ProjectName: "analytics",
+				Name:        "orders",
+				SQL:         "SELECT 1 AS id, 2 AS amount, 'x' AS extra_col",
+				Config:      domain.ModelConfig{OnSchemaChange: "fail"},
+			},
+			ExecutionConfig{TargetSchema: "analytics"},
+			"admin",
+		)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "schema change detected for incremental model")
+	})
+
+	t.Run("fail policy allows stable schema", func(t *testing.T) {
+		svc, db := newDuckDBServiceForTest(t)
+		_, err := db.Exec(`CREATE TABLE analytics.orders (id INTEGER, amount INTEGER)`)
+		require.NoError(t, err)
+
+		conn, err := db.Conn(context.Background())
+		require.NoError(t, err)
+		defer func() { _ = conn.Close() }()
+
+		err = svc.enforceIncrementalSchemaPolicy(
+			context.Background(),
+			conn,
+			&domain.Model{
+				ProjectName: "analytics",
+				Name:        "orders",
+				SQL:         "SELECT 1 AS id, 2 AS amount",
+				Config:      domain.ModelConfig{OnSchemaChange: "fail"},
+			},
+			ExecutionConfig{TargetSchema: "analytics"},
+			"admin",
+		)
+		require.NoError(t, err)
+	})
+
+	t.Run("unsupported policy returns validation error", func(t *testing.T) {
+		svc, db := newDuckDBServiceForTest(t)
+		_, err := db.Exec(`CREATE TABLE analytics.orders (id INTEGER, amount INTEGER)`)
+		require.NoError(t, err)
+
+		conn, err := db.Conn(context.Background())
+		require.NoError(t, err)
+		defer func() { _ = conn.Close() }()
+
+		err = svc.enforceIncrementalSchemaPolicy(
+			context.Background(),
+			conn,
+			&domain.Model{
+				ProjectName: "analytics",
+				Name:        "orders",
+				SQL:         "SELECT 1 AS id, 2 AS amount",
+				Config:      domain.ModelConfig{OnSchemaChange: "append_new_columns"},
+			},
+			ExecutionConfig{TargetSchema: "analytics"},
+			"admin",
+		)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "unsupported on_schema_change")
+	})
 }
