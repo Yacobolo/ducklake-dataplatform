@@ -139,6 +139,13 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 		rowFilterRepo, columnMaskRepo, introspectionRepo,
 		extTableRepo,
 	)
+	authSvc.SetCatalogTableLookup(func(ctx context.Context, catalogName, schemaName, tableName string) (*domain.TableDetail, error) {
+		repo, err := catalogRepoFactory.ForCatalog(ctx, catalogName)
+		if err != nil {
+			return nil, err
+		}
+		return repo.GetTable(ctx, schemaName, tableName)
+	})
 
 	// === Check for empty database and log bootstrap instructions ===
 	_, total, _ := principalRepo.List(ctx, domain.PageRequest{MaxResults: 1})

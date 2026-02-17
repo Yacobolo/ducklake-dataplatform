@@ -14,6 +14,7 @@ import (
 	internaldb "duck-demo/internal/db"
 	dbstore "duck-demo/internal/db/dbstore"
 	"duck-demo/internal/db/repository"
+	"duck-demo/internal/domain"
 )
 
 // ctx is a package-level background context used by setup helpers.
@@ -589,6 +590,23 @@ func TestLookupTableID_AmbiguousUnqualified(t *testing.T) {
 	_, _, _, err = cat.LookupTableID(context.Background(), "titanic")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "ambiguous")
+}
+
+func TestLookupTableID_CatalogQualified(t *testing.T) {
+	cat, _, ctx := setupTestService(t)
+
+	cat.SetCatalogTableLookup(func(_ context.Context, catalogName, schemaName, tableName string) (*domain.TableDetail, error) {
+		require.Equal(t, "demo", catalogName)
+		require.Equal(t, "titanic", schemaName)
+		require.Equal(t, "passengers", tableName)
+		return &domain.TableDetail{TableID: "table-42", TableType: domain.TableTypeManaged}, nil
+	})
+
+	tableID, schemaID, isExternal, err := cat.LookupTableID(ctx, "demo.titanic.passengers")
+	require.NoError(t, err)
+	assert.Equal(t, "table-42", tableID)
+	assert.Equal(t, "", schemaID)
+	assert.False(t, isExternal)
 }
 
 func TestLookupSchemaID(t *testing.T) {
