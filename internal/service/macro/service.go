@@ -75,6 +75,13 @@ func (s *Service) Update(ctx context.Context, principal, name string, req domain
 			return nil, domain.ErrValidation("status must be ACTIVE or DEPRECATED")
 		}
 	}
+	if req.Visibility != nil {
+		switch *req.Visibility {
+		case domain.MacroVisibilityProject, domain.MacroVisibilityCatalogGlobal, domain.MacroVisibilitySystem:
+		default:
+			return nil, domain.ErrValidation("visibility must be project, catalog_global, or system")
+		}
+	}
 	result, err := s.macros.Update(ctx, name, req)
 	if err != nil {
 		return nil, err
@@ -155,6 +162,17 @@ func (s *Service) DiffRevisions(ctx context.Context, macroName string, fromVersi
 	}
 	d.Changed = d.ParametersChanged || d.BodyChanged || d.DescriptionChanged || d.StatusChanged
 	return d, nil
+}
+
+// GetRevisionByVersion returns a specific revision version for a macro.
+func (s *Service) GetRevisionByVersion(ctx context.Context, macroName string, version int) (*domain.MacroRevision, error) {
+	if version <= 0 {
+		return nil, domain.ErrValidation("version must be greater than zero")
+	}
+	if _, err := s.macros.GetByName(ctx, macroName); err != nil {
+		return nil, err
+	}
+	return s.macros.GetRevisionByVersion(ctx, macroName, version)
 }
 
 func equalStringSlices(a, b []string) bool {

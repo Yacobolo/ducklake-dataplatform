@@ -125,6 +125,12 @@ type UpdateMacroRequest struct {
 	Description *string
 	Parameters  []string
 	Status      *string
+	CatalogName *string
+	ProjectName *string
+	Visibility  *string
+	Owner       *string
+	Properties  map[string]string
+	Tags        []string
 }
 
 // PromoteNotebookRequest holds parameters for promoting a notebook cell to a model.

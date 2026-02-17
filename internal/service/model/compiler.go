@@ -64,6 +64,7 @@ func compileModelSQL(sqlText string, ctx compileContext) (*compileResult, error)
 	for _, dep := range deps {
 		depsSet[dep] = struct{}{}
 	}
+	delete(depsSet, ctx.projectName+"."+ctx.modelName)
 
 	allDeps := mapKeys(depsSet)
 	sort.Strings(allDeps)

@@ -4,6 +4,7 @@ package integration
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -459,6 +460,7 @@ func TestHTTP_ModelTestCRUD(t *testing.T) {
 // TestHTTP_MacroCRUD exercises the full macro lifecycle via the HTTP API.
 func TestHTTP_MacroCRUD(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{WithModels: true})
+	var doubleValID string
 
 	type step struct {
 		name string
@@ -483,6 +485,8 @@ func TestHTTP_MacroCRUD(t *testing.T) {
 			assert.Equal(t, "x * 2", result["body"])
 			assert.Equal(t, "Doubles the input value", result["description"])
 			assert.NotEmpty(t, result["id"])
+			doubleValID, _ = result["id"].(string)
+			require.NotEmpty(t, doubleValID)
 			assert.NotNil(t, result["created_at"])
 		}},
 
@@ -559,6 +563,29 @@ func TestHTTP_MacroCRUD(t *testing.T) {
 			decodeJSON(t, resp, &result)
 			assert.Equal(t, "x * 3", result["body"])
 			assert.Equal(t, "Triples the input value", result["description"])
+			assert.Equal(t, doubleValID, result["id"])
+		}},
+
+		{"update_macro_metadata_upsert", func(t *testing.T) {
+			resp := doRequest(t, "PATCH", env.Server.URL+"/v1/macros/double_val", env.Keys.Admin, map[string]interface{}{
+				"catalog_name": "main",
+				"project_name": "analytics",
+				"visibility":   "catalog_global",
+				"owner":        "data-platform",
+				"properties": map[string]interface{}{
+					"domain": "finance",
+				},
+				"tags": []string{"gold", "shared"},
+			})
+			require.Equal(t, 200, resp.StatusCode)
+
+			var result map[string]interface{}
+			decodeJSON(t, resp, &result)
+			assert.Equal(t, doubleValID, result["id"])
+			assert.Equal(t, "main", result["catalog_name"])
+			assert.Equal(t, "analytics", result["project_name"])
+			assert.Equal(t, "catalog_global", result["visibility"])
+			assert.Equal(t, "data-platform", result["owner"])
 		}},
 
 		{"deprecate_macro", func(t *testing.T) {
@@ -579,7 +606,7 @@ func TestHTTP_MacroCRUD(t *testing.T) {
 			var result map[string]interface{}
 			decodeJSON(t, resp, &result)
 			data := result["data"].([]interface{})
-			require.GreaterOrEqual(t, len(data), 3)
+			require.Equal(t, 3, len(data))
 			latest := data[0].(map[string]interface{})
 			assert.NotEmpty(t, latest["content_hash"])
 			assert.NotNil(t, latest["version"])
@@ -628,6 +655,389 @@ func TestHTTP_MacroCRUD(t *testing.T) {
 		if !t.Run(s.name, s.fn) {
 			t.FailNow()
 		}
+	}
+}
+
+func TestHTTP_MacroImpact(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{WithModels: true})
+
+	createMacroResp := doRequest(t, "POST", env.Server.URL+"/v1/macros", env.Keys.Admin, map[string]interface{}{
+		"name":       "double_val",
+		"macro_type": "SCALAR",
+		"parameters": []string{"x"},
+		"body":       "x * 2",
+	})
+	require.Equal(t, 201, createMacroResp.StatusCode)
+	_ = createMacroResp.Body.Close()
+
+	_, err := env.MetaDB.ExecContext(ctx, `
+		INSERT INTO lineage_edges (id, source_table, target_table, edge_type, principal_name, source_schema, target_schema)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+	`,
+		"11111111-1111-1111-1111-111111111199",
+		"macro.double_val",
+		"analytics.macro_consumer",
+		"MACRO",
+		"admin",
+		"macro",
+		"analytics",
+	)
+	require.NoError(t, err)
+
+	impactResp := doRequest(t, "GET", env.Server.URL+"/v1/macros/double_val/impact", env.Keys.Admin, nil)
+	require.Equal(t, 200, impactResp.StatusCode)
+
+	var impact map[string]interface{}
+	decodeJSON(t, impactResp, &impact)
+	data, ok := impact["data"].([]interface{})
+	require.True(t, ok)
+	require.NotEmpty(t, data)
+
+	found := false
+	for _, item := range data {
+		entry, ok := item.(map[string]interface{})
+		require.True(t, ok)
+		modelName, _ := entry["model_name"].(string)
+		if strings.HasSuffix(modelName, ".macro_consumer") {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "macro impact should include a consumer model ending with .macro_consumer")
+}
+
+func TestHTTP_MacroRevisionDiff_ImpactChanged(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{WithModels: true})
+
+	createMacroResp := doRequest(t, "POST", env.Server.URL+"/v1/macros", env.Keys.Admin, map[string]interface{}{
+		"name":       "double_val",
+		"macro_type": "SCALAR",
+		"parameters": []string{"x"},
+		"body":       "x * 2",
+	})
+	require.Equal(t, 201, createMacroResp.StatusCode)
+	_ = createMacroResp.Body.Close()
+
+	updateMacroResp := doRequest(t, "PATCH", env.Server.URL+"/v1/macros/double_val", env.Keys.Admin, map[string]interface{}{
+		"body": "x * 3",
+	})
+	require.Equal(t, 200, updateMacroResp.StatusCode)
+	_ = updateMacroResp.Body.Close()
+
+	_, err := env.MetaDB.ExecContext(ctx, `
+		UPDATE macro_revisions
+		SET created_at = CASE version
+			WHEN 1 THEN '2024-01-01 00:00:00'
+			WHEN 2 THEN '2024-01-01 00:10:00'
+			ELSE created_at
+		END
+		WHERE macro_name = ?
+	`, "double_val")
+	require.NoError(t, err)
+
+	_, err = env.MetaDB.ExecContext(ctx, `
+		INSERT INTO lineage_edges (id, source_table, target_table, edge_type, principal_name, source_schema, target_schema, created_at)
+		VALUES
+			(?, ?, ?, ?, ?, ?, ?, ?),
+			(?, ?, ?, ?, ?, ?, ?, ?)
+	`,
+		"11111111-1111-1111-1111-111111111211",
+		"macro.double_val",
+		"analytics.always_consumer",
+		"MACRO",
+		"admin",
+		"macro",
+		"analytics",
+		"2023-12-31 23:59:00",
+		"11111111-1111-1111-1111-111111111212",
+		"macro.double_val",
+		"analytics.new_consumer",
+		"MACRO",
+		"admin",
+		"macro",
+		"analytics",
+		"2024-01-01 00:05:00",
+	)
+	require.NoError(t, err)
+
+	diffResp := doRequest(t, "GET", env.Server.URL+"/v1/macros/double_val/diff?from_version=1&to_version=2", env.Keys.Admin, nil)
+	require.Equal(t, 200, diffResp.StatusCode)
+
+	var diff map[string]interface{}
+	decodeJSON(t, diffResp, &diff)
+
+	assert.Equal(t, true, diff["impact_changed"])
+
+	added, ok := diff["impacted_models_added"].([]interface{})
+	require.True(t, ok)
+	assert.Len(t, added, 1)
+	addedModel := added[0].(map[string]interface{})
+	assert.Equal(t, "analytics.new_consumer", addedModel["model_name"])
+
+	unchanged, ok := diff["impacted_models_unchanged"].([]interface{})
+	require.True(t, ok)
+	assert.Len(t, unchanged, 1)
+	unchangedModel := unchanged[0].(map[string]interface{})
+	assert.Equal(t, "analytics.always_consumer", unchangedModel["model_name"])
+
+	removed, ok := diff["impacted_models_removed"]
+	if ok {
+		removedModels, castOK := removed.([]interface{})
+		require.True(t, castOK)
+		assert.Len(t, removedModels, 0)
+	}
+}
+
+func TestHTTP_ModelRun_IncrementalBackfillSemantics(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{WithModels: true})
+	require.NotNil(t, env.DuckDB)
+
+	_, err := env.DuckDB.ExecContext(ctx, `CREATE SCHEMA IF NOT EXISTS raw`)
+	require.NoError(t, err)
+	_, err = env.DuckDB.ExecContext(ctx, `CREATE TABLE raw.orders (id INTEGER, updated_at TIMESTAMP)`)
+	require.NoError(t, err)
+	_, err = env.DuckDB.ExecContext(ctx, `
+		INSERT INTO raw.orders VALUES
+			(1, TIMESTAMP '2024-01-01 00:00:00'),
+			(2, TIMESTAMP '2024-01-02 00:00:00')`)
+	require.NoError(t, err)
+
+	createModel := func(name, materialization, sqlBody string, config map[string]interface{}) {
+		payload := map[string]interface{}{
+			"project_name":    "analytics",
+			"name":            name,
+			"sql":             sqlBody,
+			"materialization": materialization,
+		}
+		if config != nil {
+			payload["config"] = config
+		}
+		resp := doRequest(t, "POST", env.Server.URL+"/v1/models", env.Keys.Admin, payload)
+		require.Equal(t, 201, resp.StatusCode)
+		_ = resp.Body.Close()
+	}
+
+	createModel("stg_orders", "TABLE", `SELECT id, updated_at FROM {{ source('raw', 'orders') }}`, nil)
+	createModel(
+		"fct_orders",
+		"INCREMENTAL",
+		`{% if is_incremental() %}
+SELECT id, updated_at
+FROM {{ ref('stg_orders') }}
+WHERE updated_at > (SELECT COALESCE(MAX(updated_at), '1970-01-01') FROM {{ this }})
+{% else %}
+SELECT id, updated_at
+FROM {{ ref('stg_orders') }}
+{% endif %}`,
+		map[string]interface{}{"unique_key": []string{"id"}},
+	)
+
+	triggerAndWait := func(fullRefresh bool) {
+		runResp := doRequest(t, "POST", env.Server.URL+"/v1/model-runs", env.Keys.Admin, map[string]interface{}{
+			"project_name": "analytics",
+			"model_names":  []string{"stg_orders", "fct_orders"},
+			"full_refresh": fullRefresh,
+		})
+		if runResp.StatusCode != 201 {
+			var errBody map[string]interface{}
+			decodeJSON(t, runResp, &errBody)
+			t.Fatalf("trigger model run returned %d: %v", runResp.StatusCode, errBody)
+		}
+
+		var run map[string]interface{}
+		decodeJSON(t, runResp, &run)
+		runID, ok := run["id"].(string)
+		require.True(t, ok)
+		require.NotEmpty(t, runID)
+
+		deadline := time.Now().Add(10 * time.Second)
+		for {
+			getResp := doRequest(t, "GET", env.Server.URL+"/v1/model-runs/"+runID, env.Keys.Admin, nil)
+			require.Equal(t, 200, getResp.StatusCode)
+			var current map[string]interface{}
+			decodeJSON(t, getResp, &current)
+
+			status, _ := current["status"].(string)
+			if status == "SUCCESS" {
+				return
+			}
+			if status == "FAILED" || status == "CANCELLED" {
+				t.Fatalf("backfill semantics run ended with status %s: %v", status, current["error_message"])
+			}
+			if time.Now().After(deadline) {
+				t.Fatalf("timed out waiting for backfill semantics run completion, last status=%s", status)
+			}
+			time.Sleep(75 * time.Millisecond)
+		}
+	}
+
+	triggerAndWait(true)
+
+	_, err = env.DuckDB.ExecContext(ctx, `
+		INSERT INTO raw.orders VALUES
+			(3, TIMESTAMP '2023-12-31 00:00:00'),
+			(4, TIMESTAMP '2024-01-03 00:00:00')`)
+	require.NoError(t, err)
+
+	triggerAndWait(false)
+
+	var countAfterIncremental int
+	err = env.DuckDB.QueryRowContext(ctx, `SELECT COUNT(*) FROM analytics.fct_orders`).Scan(&countAfterIncremental)
+	require.NoError(t, err)
+	assert.Equal(t, 3, countAfterIncremental)
+
+	var lateRowCount int
+	err = env.DuckDB.QueryRowContext(ctx, `SELECT COUNT(*) FROM analytics.fct_orders WHERE id = 3`).Scan(&lateRowCount)
+	require.NoError(t, err)
+	assert.Equal(t, 0, lateRowCount)
+
+	triggerAndWait(true)
+
+	var countAfterFullRefresh int
+	err = env.DuckDB.QueryRowContext(ctx, `SELECT COUNT(*) FROM analytics.fct_orders`).Scan(&countAfterFullRefresh)
+	require.NoError(t, err)
+	assert.Equal(t, 4, countAfterFullRefresh)
+
+	err = env.DuckDB.QueryRowContext(ctx, `SELECT COUNT(*) FROM analytics.fct_orders WHERE id = 3`).Scan(&lateRowCount)
+	require.NoError(t, err)
+	assert.Equal(t, 1, lateRowCount)
+}
+
+func TestHTTP_ModelRun_IncrementalIdempotency(t *testing.T) {
+	testCases := []struct {
+		name     string
+		strategy string
+	}{
+		{name: "merge_strategy", strategy: "merge"},
+		{name: "delete_insert_strategy", strategy: "delete_insert"},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			env := setupHTTPServer(t, httpTestOpts{WithModels: true})
+			require.NotNil(t, env.DuckDB)
+
+			_, err := env.DuckDB.ExecContext(ctx, `CREATE SCHEMA IF NOT EXISTS raw`)
+			require.NoError(t, err)
+			_, err = env.DuckDB.ExecContext(ctx, `CREATE TABLE raw.orders (id INTEGER, amount INTEGER, updated_at TIMESTAMP)`)
+			require.NoError(t, err)
+			_, err = env.DuckDB.ExecContext(ctx, `
+				INSERT INTO raw.orders VALUES
+					(1, 100, TIMESTAMP '2024-01-01 00:00:00'),
+					(2, 250, TIMESTAMP '2024-01-02 00:00:00')`)
+			require.NoError(t, err)
+
+			createModel := func(name, materialization, sqlBody string, config map[string]interface{}) {
+				payload := map[string]interface{}{
+					"project_name":    "analytics",
+					"name":            name,
+					"sql":             sqlBody,
+					"materialization": materialization,
+				}
+				if config != nil {
+					payload["config"] = config
+				}
+				resp := doRequest(t, "POST", env.Server.URL+"/v1/models", env.Keys.Admin, payload)
+				require.Equal(t, 201, resp.StatusCode)
+				_ = resp.Body.Close()
+			}
+
+			triggerAndWait := func(fullRefresh bool) {
+				runResp := doRequest(t, "POST", env.Server.URL+"/v1/model-runs", env.Keys.Admin, map[string]interface{}{
+					"project_name": "analytics",
+					"model_names":  []string{"stg_orders", "fct_orders"},
+					"full_refresh": fullRefresh,
+				})
+				if runResp.StatusCode != 201 {
+					var errBody map[string]interface{}
+					decodeJSON(t, runResp, &errBody)
+					t.Fatalf("trigger model run returned %d: %v", runResp.StatusCode, errBody)
+				}
+
+				var run map[string]interface{}
+				decodeJSON(t, runResp, &run)
+				runID, ok := run["id"].(string)
+				require.True(t, ok)
+				require.NotEmpty(t, runID)
+
+				deadline := time.Now().Add(10 * time.Second)
+				for {
+					getResp := doRequest(t, "GET", env.Server.URL+"/v1/model-runs/"+runID, env.Keys.Admin, nil)
+					require.Equal(t, 200, getResp.StatusCode)
+					var current map[string]interface{}
+					decodeJSON(t, getResp, &current)
+
+					status, _ := current["status"].(string)
+					if status == "SUCCESS" {
+						return
+					}
+					if status == "FAILED" || status == "CANCELLED" {
+						t.Fatalf("incremental idempotency run ended with status %s: %v", status, current["error_message"])
+					}
+					if time.Now().After(deadline) {
+						t.Fatalf("timed out waiting for incremental idempotency run completion, last status=%s", status)
+					}
+					time.Sleep(75 * time.Millisecond)
+				}
+			}
+
+			createModel("stg_orders", "TABLE", `SELECT id, amount, updated_at FROM {{ source('raw', 'orders') }}`, nil)
+			createModel(
+				"fct_orders",
+				"INCREMENTAL",
+				`{% if is_incremental() %}
+SELECT id, amount, updated_at
+FROM {{ ref('stg_orders') }}
+WHERE updated_at > (SELECT COALESCE(MAX(updated_at), '1970-01-01') FROM {{ this }})
+{% else %}
+SELECT id, amount, updated_at
+FROM {{ ref('stg_orders') }}
+{% endif %}`,
+				map[string]interface{}{
+					"unique_key":           []string{"id"},
+					"incremental_strategy": tc.strategy,
+				},
+			)
+
+			triggerAndWait(true)
+
+			_, err = env.DuckDB.ExecContext(ctx, `
+				INSERT INTO raw.orders VALUES
+					(3, 400, TIMESTAMP '2024-01-03 00:00:00')`)
+			require.NoError(t, err)
+
+			triggerAndWait(false)
+
+			type tableFingerprint struct {
+				count  int
+				sumID  int
+				sumAmt int
+			}
+
+			currentFingerprint := func() tableFingerprint {
+				var fp tableFingerprint
+				err := env.DuckDB.QueryRowContext(
+					ctx,
+					`SELECT COUNT(*), COALESCE(SUM(id), 0), COALESCE(SUM(amount), 0) FROM analytics.fct_orders`,
+				).Scan(&fp.count, &fp.sumID, &fp.sumAmt)
+				require.NoError(t, err)
+				return fp
+			}
+
+			first := currentFingerprint()
+			assert.Equal(t, 3, first.count)
+
+			triggerAndWait(false)
+
+			second := currentFingerprint()
+			assert.Equal(t, first, second)
+
+			var rowCountForID3 int
+			err = env.DuckDB.QueryRowContext(ctx, `SELECT COUNT(*) FROM analytics.fct_orders WHERE id = 3`).Scan(&rowCountForID3)
+			require.NoError(t, err)
+			assert.Equal(t, 1, rowCountForID3)
+		})
 	}
 }
 

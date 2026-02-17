@@ -65,6 +65,7 @@ select * from {{ ref('stg_orders') }}
 		require.NoError(t, err)
 		assert.Contains(t, compiled.sql, `from "analytics"."fct_orders"`)
 		assert.Contains(t, compiled.sql, `where updated_at >`)
+		assert.Equal(t, []string{"analytics.stg_orders"}, compiled.dependsOn)
 	})
 
 	t.Run("full refresh false branch", func(t *testing.T) {

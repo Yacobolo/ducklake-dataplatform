@@ -114,16 +114,50 @@ func (r *MacroRepo) Update(ctx context.Context, name string, req domain.UpdateMa
 	if req.Status != nil {
 		status = *req.Status
 	}
+	catalogName := current.CatalogName
+	if req.CatalogName != nil {
+		catalogName = *req.CatalogName
+	}
+	projectName := current.ProjectName
+	if req.ProjectName != nil {
+		projectName = *req.ProjectName
+	}
+	visibility := current.Visibility
+	if req.Visibility != nil {
+		visibility = *req.Visibility
+	}
+	owner := current.Owner
+	if req.Owner != nil {
+		owner = *req.Owner
+	}
+	properties := current.Properties
+	if req.Properties != nil {
+		properties = req.Properties
+	}
+	tags := current.Tags
+	if req.Tags != nil {
+		tags = req.Tags
+	}
 	paramsJSON, err := json.Marshal(params)
 	if err != nil {
 		return nil, fmt.Errorf("marshal parameters: %w", err)
 	}
+	changedDefinition := body != current.Body ||
+		description != current.Description ||
+		!equalStrings(params, current.Parameters) ||
+		status != current.Status
 
 	err = r.q.UpdateMacro(ctx, dbstore.UpdateMacroParams{
 		Body:        body,
 		Description: description,
 		Parameters:  string(paramsJSON),
 		Status:      status,
+		CatalogName: catalogName,
+		ProjectName: projectName,
+		Visibility:  visibility,
+		Owner:       owner,
+		Properties:  mustJSONString(properties),
+		Tags:        mustJSONArray(tags),
 		Name:        name,
 	})
 	if err != nil {
@@ -133,10 +167,24 @@ func (r *MacroRepo) Update(ctx context.Context, name string, req domain.UpdateMa
 	if err != nil {
 		return nil, err
 	}
-	if _, err := r.createRevision(ctx, updated, updated.CreatedBy); err != nil {
-		return nil, err
+	if changedDefinition {
+		if _, err := r.createRevision(ctx, updated, updated.CreatedBy); err != nil {
+			return nil, err
+		}
 	}
 	return updated, nil
+}
+
+func equalStrings(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 // Delete removes a macro by name.

@@ -431,6 +431,10 @@ components:
       $ref: 'schemas/macros.yaml#/MacroRevisionList'
     MacroRevisionDiff:
       $ref: 'schemas/macros.yaml#/MacroRevisionDiff'
+    MacroImpactModel:
+      $ref: 'schemas/macros.yaml#/MacroImpactModel'
+    MacroImpactList:
+      $ref: 'schemas/macros.yaml#/MacroImpactList'
 
 paths:
   /query:
@@ -649,5 +653,7 @@ paths:
     $ref: 'paths/macros.yaml#/paths/~1macros~1{macroName}'
   /macros/{macroName}/revisions:
     $ref: 'paths/macros.yaml#/paths/~1macros~1{macroName}~1revisions'
+  /macros/{macroName}/impact:
+    $ref: 'paths/macros.yaml#/paths/~1macros~1{macroName}~1impact'
   /macros/{macroName}/diff:
     $ref: 'paths/macros.yaml#/paths/~1macros~1{macroName}~1diff'

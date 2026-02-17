@@ -17,10 +17,16 @@ SELECT * FROM macros ORDER BY name;
 
 -- name: UpdateMacro :exec
 UPDATE macros
-SET body = COALESCE(?, body),
-    description = COALESCE(?, description),
-    parameters = COALESCE(?, parameters),
-    status = COALESCE(?, status),
+SET body = ?,
+    description = ?,
+    parameters = ?,
+    status = ?,
+    catalog_name = ?,
+    project_name = ?,
+    visibility = ?,
+    owner = ?,
+    properties = ?,
+    tags = ?,
     updated_at = datetime('now')
 WHERE name = ?;
 

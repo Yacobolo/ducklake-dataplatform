@@ -189,6 +189,41 @@ UpdateMacroRequest:
       type: string
       enum: [ACTIVE, DEPRECATED]
       example: DEPRECATED
+    catalog_name:
+      type: string
+      maxLength: 255
+      pattern: '^[\S]*$'
+      example: main
+    project_name:
+      type: string
+      maxLength: 255
+      pattern: '^[\S]*$'
+      example: analytics
+    visibility:
+      type: string
+      enum: [project, catalog_global, system]
+      example: catalog_global
+    owner:
+      type: string
+      maxLength: 255
+      pattern: '^[\S]*$'
+      example: data-platform
+    properties:
+      type: object
+      additionalProperties:
+        type: string
+        maxLength: 4096
+        pattern: '^[\s\S]*$'
+      example:
+        team: finance
+    tags:
+      type: array
+      maxItems: 1000
+      items:
+        type: string
+        maxLength: 255
+        pattern: '^\S+$'
+      example: [gold, pii_safe]
 
 MacroRevision:
   description: Immutable revision snapshot for a macro definition.
@@ -349,6 +384,69 @@ MacroRevisionDiff:
       type: string
       enum: [ACTIVE, DEPRECATED]
       example: DEPRECATED
+    impact_changed:
+      type: boolean
+      description: Whether reverse impacted models changed between revisions.
+      example: true
+    impacted_models_added:
+      type: array
+      maxItems: 10000
+      items:
+        $ref: '#/MacroImpactModel'
+      example: []
+    impacted_models_removed:
+      type: array
+      maxItems: 10000
+      items:
+        $ref: '#/MacroImpactModel'
+      example: []
+    impacted_models_unchanged:
+      type: array
+      maxItems: 10000
+      items:
+        $ref: '#/MacroImpactModel'
+      example: []
+
+MacroImpactModel:
+  description: A model relation affected by a macro usage.
+  type: object
+  properties:
+    model_name:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+      example: analytics.fct_orders
+    target_schema:
+      type: string
+      maxLength: 255
+      pattern: '^[\S]*$'
+      example: analytics
+    target_table:
+      type: string
+      maxLength: 1024
+      pattern: '^\S+$'
+      example: analytics.fct_orders
+    last_seen_at:
+      type: string
+      format: date-time
+      maxLength: 64
+      example: "2025-01-15T09:30:00Z"
+
+MacroImpactList:
+  description: Paginated reverse impact view for macro consumers.
+  type: object
+  properties:
+    data:
+      type: array
+      maxItems: 10000
+      items:
+        $ref: '#/MacroImpactModel'
+      example: []
+    next_page_token:
+      type: string
+      maxLength: 1024
+      pattern: '^[\S]*$'
+      example: "eyJpZCI6MTB9"
 
 PaginatedMacros:
   description: Paginated list of macros.
