@@ -23,12 +23,6 @@ type DefaultResolver struct {
 	logger        *slog.Logger
 }
 
-// NewDefaultResolver creates a DefaultResolver with only a local executor.
-// This is used when no compute endpoint repository is available (backward compat).
-func NewDefaultResolver(localExec *LocalExecutor) *DefaultResolver {
-	return &DefaultResolver{localExec: localExec}
-}
-
 // NewResolver creates a fully-wired resolver that can resolve principals to
 // remote executors based on compute assignments.
 func NewResolver(
@@ -57,9 +51,8 @@ func NewResolver(
 //  2. Group assignments (check each group the user belongs to)
 //  3. nil (local fallback)
 func (r *DefaultResolver) Resolve(ctx context.Context, principalName string) (domain.ComputeExecutor, error) {
-	// If no compute repo is configured, always fall back to local
-	if r.computeRepo == nil {
-		return nil, nil
+	if r.computeRepo == nil || r.principalRepo == nil {
+		return nil, fmt.Errorf("compute resolver is not fully configured")
 	}
 
 	// 1. Look up principal

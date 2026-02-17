@@ -180,8 +180,6 @@ func (h *APIHandler) CreateComputeAssignment(ctx context.Context, req CreateComp
 	}
 	if req.Body.IsDefault != nil {
 		domReq.IsDefault = *req.Body.IsDefault
-	} else {
-		domReq.IsDefault = true
 	}
 	if req.Body.FallbackLocal != nil {
 		domReq.FallbackLocal = *req.Body.FallbackLocal

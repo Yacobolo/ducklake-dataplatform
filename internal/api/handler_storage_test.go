@@ -274,8 +274,12 @@ func TestHandler_CreateStorageCredential(t *testing.T) {
 		{
 			name: "happy path returns 201",
 			body: CreateStorageCredentialJSONRequestBody{Name: "my-s3-cred", CredentialType: ct},
-			svcFn: func(_ context.Context, _ string, _ domain.CreateStorageCredentialRequest) (*domain.StorageCredential, error) {
+			svcFn: func(_ context.Context, _ string, req domain.CreateStorageCredentialRequest) (*domain.StorageCredential, error) {
+				if req.URLStyle != "" {
+					return nil, domain.ErrValidation("url_style must be explicit")
+				}
 				c := sampleStorageCredential()
+				c.URLStyle = req.URLStyle
 				return &c, nil
 			},
 			assertFn: func(t *testing.T, resp CreateStorageCredentialResponseObject, err error) {

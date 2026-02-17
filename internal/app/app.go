@@ -208,30 +208,15 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	})
 
 	// === Manifest and Ingestion services (always available, use factory-based metastore) ===
-	var legacyGetPresigner query.FilePresigner
-	var legacyUploadPresigner query.FileUploadPresigner
-	bucket := "duck-demo"
-
-	if cfg.HasS3Config() {
-		s3p, err := query.NewS3Presigner(cfg)
-		if err != nil {
-			deps.Logger.Warn("could not create legacy S3 presigner", "error", err)
-		} else {
-			legacyGetPresigner = s3p
-			legacyUploadPresigner = s3p
-			bucket = s3p.Bucket()
-			deps.Logger.Info("legacy S3 presigner configured")
-		}
-	}
 
 	manifestSvc := query.NewManifestService(
-		metastoreFactory, authSvc, legacyGetPresigner, introspectionRepo, auditRepo,
+		metastoreFactory, authSvc, nil, introspectionRepo, auditRepo,
 		storageCredRepo, externalLocRepo,
 	)
 
 	duckExec := engine.NewDuckDBExecAdapter(deps.DuckDB)
 	ingestionSvc := ingestion.NewIngestionService(
-		duckExec, metastoreFactory, authSvc, legacyUploadPresigner, auditRepo, bucket,
+		duckExec, metastoreFactory, authSvc, nil, auditRepo, "",
 		storageCredRepo, externalLocRepo,
 	)
 

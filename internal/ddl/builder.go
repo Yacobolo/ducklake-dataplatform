@@ -161,13 +161,6 @@ func DropSecret(name string) (string, error) {
 	return fmt.Sprintf("DROP SECRET IF EXISTS %s", QuoteIdentifier(name)), nil
 }
 
-// DropS3Secret returns a DuckDB DDL statement: DROP SECRET IF EXISTS "<name>".
-//
-// Deprecated: Use DropSecret instead. Kept for backward compatibility.
-func DropS3Secret(name string) (string, error) {
-	return DropSecret(name)
-}
-
 // CreateExternalTableView generates a CREATE VIEW statement backed by read_parquet or read_csv.
 //
 //	CREATE VIEW <catalog>."schema"."table" AS SELECT * FROM read_parquet(['s3://...'])

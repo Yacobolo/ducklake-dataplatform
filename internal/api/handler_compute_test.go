@@ -552,8 +552,12 @@ func TestHandler_CreateComputeAssignment(t *testing.T) {
 			name:         "happy path returns 201",
 			endpointName: "analytics-xl",
 			body:         CreateComputeAssignmentJSONRequestBody{PrincipalId: "user-1", PrincipalType: CreateComputeAssignmentRequestPrincipalTypeUser},
-			svcFn: func(_ context.Context, _ string, _ string, _ domain.CreateComputeAssignmentRequest) (*domain.ComputeAssignment, error) {
+			svcFn: func(_ context.Context, _ string, _ string, req domain.CreateComputeAssignmentRequest) (*domain.ComputeAssignment, error) {
+				if req.IsDefault {
+					return nil, domain.ErrValidation("is_default must be explicit")
+				}
 				a := sampleComputeAssignment()
+				a.IsDefault = req.IsDefault
 				return &a, nil
 			},
 			assertFn: func(t *testing.T, resp CreateComputeAssignmentResponseObject, err error) {

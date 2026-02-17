@@ -43,7 +43,6 @@ func TestLoadFromEnv_Defaults(t *testing.T) {
 	assert.Nil(t, cfg.S3Bucket)
 	assert.Equal(t, "ducklake_meta.sqlite", cfg.MetaDBPath)
 	assert.Equal(t, ":8080", cfg.ListenAddr)
-	assert.Equal(t, "dev-secret-change-in-production", cfg.JWTSecret)
 	assert.Equal(t, "0000000000000000000000000000000000000000000000000000000000000000", cfg.EncryptionKey)
 }
 
@@ -131,19 +130,20 @@ func TestLoadDotEnv_SkipsComments(t *testing.T) {
 	_ = os.Unsetenv("TEST_COMMENT_KEY")
 }
 
-func TestLoadFromEnv_ProductionModeRejectsInsecureJWTSecret(t *testing.T) {
+func TestLoadFromEnv_ProductionModeRejectsMissingOIDC(t *testing.T) {
 	t.Setenv("ENV", "production")
-	t.Setenv("JWT_SECRET", "")
+	t.Setenv("AUTH_ISSUER_URL", "")
+	t.Setenv("AUTH_JWKS_URL", "")
 	t.Setenv("ENCRYPTION_KEY", "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789")
 
 	_, err := LoadFromEnv()
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "JWT_SECRET must be set in production")
+	assert.Contains(t, err.Error(), "OIDC must be configured in production")
 }
 
 func TestLoadFromEnv_ProductionModeRejectsInsecureEncryptionKey(t *testing.T) {
 	t.Setenv("ENV", "production")
-	t.Setenv("JWT_SECRET", "a-real-secret")
+	t.Setenv("AUTH_JWKS_URL", "https://auth.example.com/jwks.json")
 	t.Setenv("ENCRYPTION_KEY", "")
 
 	_, err := LoadFromEnv()
@@ -153,7 +153,7 @@ func TestLoadFromEnv_ProductionModeRejectsInsecureEncryptionKey(t *testing.T) {
 
 func TestLoadFromEnv_ProductionModeAcceptsProperConfig(t *testing.T) {
 	t.Setenv("ENV", "production")
-	t.Setenv("JWT_SECRET", "a-real-secret")
+	t.Setenv("AUTH_JWKS_URL", "https://auth.example.com/jwks.json")
 	t.Setenv("ENCRYPTION_KEY", "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789")
 	t.Setenv("CORS_ALLOWED_ORIGINS", "https://app.example.com")
 
@@ -317,7 +317,7 @@ func TestLoadDotEnv_EnvVarPrecedence(t *testing.T) {
 
 func TestLoadFromEnv_CORSWildcardRejectedInProduction(t *testing.T) {
 	t.Setenv("ENV", "production")
-	t.Setenv("JWT_SECRET", "a-real-secret-that-is-not-the-default")
+	t.Setenv("AUTH_JWKS_URL", "https://auth.example.com/jwks.json")
 	t.Setenv("ENCRYPTION_KEY", "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789")
 	t.Setenv("CORS_ALLOWED_ORIGINS", "")
 

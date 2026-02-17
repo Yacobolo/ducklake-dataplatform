@@ -37,6 +37,7 @@ import (
 	"duck-demo/internal/db/crypto"
 	dbstore "duck-demo/internal/db/dbstore"
 	"duck-demo/internal/db/repository"
+	"duck-demo/internal/domain"
 	"duck-demo/internal/engine"
 	"duck-demo/internal/middleware"
 	"duck-demo/internal/service/catalog"
@@ -44,6 +45,8 @@ import (
 	"duck-demo/internal/service/governance"
 	"duck-demo/internal/service/macro"
 	svcmodel "duck-demo/internal/service/model"
+	svcnotebook "duck-demo/internal/service/notebook"
+	svcpipeline "duck-demo/internal/service/pipeline"
 	"duck-demo/internal/service/query"
 	"duck-demo/internal/service/security"
 	"duck-demo/internal/service/storage"
@@ -51,6 +54,50 @@ import (
 
 // ctx is a package-level background context used by setup helpers.
 var ctx = context.Background()
+
+type noOpCatalogAttacher struct{}
+
+func (noOpCatalogAttacher) Attach(_ context.Context, _ domain.CatalogRegistration) error { return nil }
+func (noOpCatalogAttacher) Detach(_ context.Context, _ string) error                     { return nil }
+func (noOpCatalogAttacher) SetDefaultCatalog(_ context.Context, _ string) error          { return nil }
+
+type testHS256Validator struct {
+	secret []byte
+}
+
+func (v *testHS256Validator) Validate(_ context.Context, tokenString string) (*middleware.JWTClaims, error) {
+	token, err := jwt.Parse(tokenString, func(_ *jwt.Token) (interface{}, error) {
+		return v.secret, nil
+	}, jwt.WithValidMethods([]string{"HS256"}))
+	if err != nil {
+		return nil, fmt.Errorf("jwt parse: %w", err)
+	}
+	if !token.Valid {
+		return nil, fmt.Errorf("invalid token")
+	}
+	mapClaims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, fmt.Errorf("unexpected claims type")
+	}
+
+	claims := &middleware.JWTClaims{Raw: map[string]interface{}(mapClaims)}
+	if sub, ok := mapClaims["sub"].(string); ok {
+		claims.Subject = sub
+	}
+	if iss, ok := mapClaims["iss"].(string); ok {
+		claims.Issuer = iss
+	}
+	if email, ok := mapClaims["email"].(string); ok {
+		claims.Email = &email
+	}
+	if name, ok := mapClaims["name"].(string); ok {
+		claims.Name = &name
+	}
+	if aud, ok := mapClaims["aud"].(string); ok {
+		claims.Audience = []string{aud}
+	}
+	return claims, nil
+}
 
 // ---------------------------------------------------------------------------
 // TestMain — shared setup for all integration tests
@@ -654,7 +701,7 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 
 	// Router with auth middleware (API key via SHA-256 hash lookup)
 	r := chi.NewRouter()
-	validator := middleware.NewSharedSecretValidator("test-jwt-secret")
+	validator := &testHS256Validator{secret: []byte("test-jwt-secret")}
 	authenticator := middleware.NewAuthenticator(validator, apiKeyRepo, principalRepo, nil, config.AuthConfig{
 		APIKeyEnabled: true,
 		APIKeyHeader:  "X-API-Key",
@@ -789,7 +836,7 @@ func setupLocalExtensionServer(t *testing.T) *testEnv {
 
 	// Router with auth middleware (API key via SHA-256 hash lookup)
 	r := chi.NewRouter()
-	validator := middleware.NewSharedSecretValidator("test-jwt-secret")
+	validator := &testHS256Validator{secret: []byte("test-jwt-secret")}
 	authenticator := middleware.NewAuthenticator(validator, apiKeyRepo, principalRepo, nil, config.AuthConfig{
 		APIKeyEnabled: true,
 		APIKeyHeader:  "X-API-Key",
@@ -1150,6 +1197,12 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	// catalogRepoFactory with duckDB=nil is safe — GetSchema only reads ducklake_schema from metaDB
 	catalogRegRepo := repository.NewCatalogRegistrationRepo(metaDB)
 	catalogRepoFactory := repository.NewCatalogRepoFactory(catalogRegRepo, metaDB, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	catalogRegSvc := catalog.NewCatalogRegistrationService(catalog.RegistrationServiceDeps{
+		Repo:               catalogRegRepo,
+		Attacher:           noOpCatalogAttacher{},
+		ControlPlaneDBPath: metaPath,
+		Logger:             slog.New(slog.NewTextHandler(io.Discard, nil)),
+	})
 	viewSvc := catalog.NewViewService(viewRepo, catalogRepoFactory, authSvc, auditRepo)
 
 	var duckDB *sql.DB
@@ -1208,6 +1261,12 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 
 		catalogRegRepo = repository.NewCatalogRegistrationRepo(metaDB)
 		catalogRepoFactory = repository.NewCatalogRepoFactory(catalogRegRepo, metaDB, duckDB, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+		catalogRegSvc = catalog.NewCatalogRegistrationService(catalog.RegistrationServiceDeps{
+			Repo:               catalogRegRepo,
+			Attacher:           noOpCatalogAttacher{},
+			ControlPlaneDBPath: env.MetaPath,
+			Logger:             slog.New(slog.NewTextHandler(io.Discard, nil)),
+		})
 		viewSvc = catalog.NewViewService(viewRepo, catalogRepoFactory, authSvc, auditRepo)
 		tableStatsRepo = repository.NewTableStatisticsRepo(metaDB)
 		catalogSvc = catalog.NewCatalogService(catalogRepoFactory, authSvc, auditRepo, tagRepo, tableStatsRepo, nil)
@@ -1219,7 +1278,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	var storageCredSvc *storage.StorageCredentialService
 	var extLocationSvc *storage.ExternalLocationService
 
-	if opts.WithStorageCredentials {
+	{
 		testEncKey := "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 		enc, err := crypto.NewEncryptor(testEncKey)
 		if err != nil {
@@ -1249,7 +1308,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	// Optionally wire compute endpoints with full resolver + engine
 	var computeEndpointSvc *svccompute.ComputeEndpointService
 
-	if opts.WithComputeEndpoints {
+	{
 		testEncKey := "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 		enc, encErr := crypto.NewEncryptor(testEncKey)
 		if encErr != nil {
@@ -1287,11 +1346,27 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		querySvc = query.NewQueryService(eng, auditRepo, lineageRepo)
 	}
 
-	// Optionally wire APIKeyService
-	var apiKeySvc *security.APIKeyService
-	if opts.WithAPIKeyService {
-		apiKeySvc = security.NewAPIKeyService(apiKeyRepo, auditRepo)
-	}
+	// Wire notebook, git repo, and pipeline services so declarative export can
+	// read these resources without endpoint panics.
+	notebookRepo := repository.NewNotebookRepo(metaDB)
+	notebookSvc := svcnotebook.New(notebookRepo, auditRepo)
+	gitRepoRepo := repository.NewGitRepoRepo(metaDB)
+	gitRepoSvc := svcnotebook.NewGitService(gitRepoRepo, auditRepo)
+	pipelineRepo := repository.NewPipelineRepo(metaDB)
+	pipelineRunRepo := repository.NewPipelineRunRepo(metaDB)
+	pipelineSvc := svcpipeline.NewService(
+		pipelineRepo,
+		pipelineRunRepo,
+		auditRepo,
+		nil,
+		nil,
+		nil,
+		slog.New(slog.NewTextHandler(io.Discard, nil)),
+	)
+
+	// Wire APIKeyService by default so API key endpoints are always available
+	// in integration test servers.
+	apiKeySvc := security.NewAPIKeyService(apiKeyRepo, auditRepo)
 
 	// Optionally wire Model + Macro services
 	var modelSvc *svcmodel.Service
@@ -1316,14 +1391,14 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	handler := api.NewHandler(
 		querySvc, principalSvc, groupSvc, grantSvc,
 		rowFilterSvc, columnMaskSvc, auditSvc,
-		manifestSvc, catalogSvc, nil, // catalogRegSvc
+		manifestSvc, catalogSvc, catalogRegSvc,
 		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
 		nil,                                 // ingestionSvc
 		storageCredSvc, extLocationSvc, nil, // volumeSvc
 		computeEndpointSvc,
 		apiKeySvc,
-		nil, nil, nil, // notebookSvc, sessionSvc, gitRepoSvc
-		nil,      // pipelineSvc
+		notebookSvc, nil, gitRepoSvc,
+		pipelineSvc,
 		modelSvc, // modelSvc
 		macroSvc, // macroSvc
 	)
@@ -1338,13 +1413,12 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		nameClaim = "sub"
 	}
 	authCfg := config.AuthConfig{
-		SharedSecret:   string(jwtSecret),
 		APIKeyEnabled:  true,
 		APIKeyHeader:   "X-API-Key",
 		NameClaim:      nameClaim,
 		BootstrapAdmin: opts.BootstrapAdmin,
 	}
-	validator := middleware.NewSharedSecretValidator(string(jwtSecret))
+	validator := &testHS256Validator{secret: jwtSecret}
 	var provisioner middleware.PrincipalProvisioner
 	if opts.WithAuthenticator {
 		provisioner = principalSvc
@@ -2024,7 +2098,7 @@ func setupMultiTableLocalServer(t *testing.T) *multiTableTestEnv {
 	strictHandler := api.NewStrictHandler(handler, nil)
 
 	r := chi.NewRouter()
-	validator := middleware.NewSharedSecretValidator("test-jwt-secret")
+	validator := &testHS256Validator{secret: []byte("test-jwt-secret")}
 	authenticator := middleware.NewAuthenticator(validator, apiKeyRepo, principalRepo, nil, config.AuthConfig{
 		APIKeyEnabled: true,
 		APIKeyHeader:  "X-API-Key",

@@ -5,14 +5,11 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
-
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"duck-demo/internal/config"
 	"duck-demo/internal/domain"
@@ -78,13 +75,6 @@ func nextHandler() (http.Handler, func() (domain.ContextPrincipal, bool)) {
 		cp, found = domain.PrincipalFromContext(r.Context())
 	})
 	return h, func() (domain.ContextPrincipal, bool) { return cp, found }
-}
-
-// signHS256 creates a signed HS256 JWT.
-func signHS256(secret string, claims jwt.MapClaims) string {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	s, _ := token.SignedString([]byte(secret))
-	return s
 }
 
 // hashKey returns the SHA-256 hex hash of a key.
@@ -246,7 +236,10 @@ func TestAuth_BearerPrecedence(t *testing.T) {
 		&stubAPIKeyLookup{keys: map[string]string{
 			hashKey(rawKey): "api-user",
 		}},
-		nil, nil,
+		&stubPrincipalLookup{principals: map[string]*domain.Principal{
+			"jwt-user": {Name: "jwt-user", Type: "user"},
+		}},
+		nil,
 		config.AuthConfig{APIKeyEnabled: true, APIKeyHeader: "X-API-Key", NameClaim: "sub"},
 		nil,
 	)
@@ -352,59 +345,6 @@ func TestAuth_JWTFallbackDeniesEmptyPrincipal(t *testing.T) {
 
 	auth.Middleware()(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
 		t.Fatal("handler should not be called for unresolvable principal")
-	})).ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusUnauthorized, w.Code)
-}
-
-func TestAuth_SharedSecretHS256(t *testing.T) {
-	handler, getPrincipal := nextHandler()
-	secret := "test-secret-key-for-hs256"
-
-	token := signHS256(secret, jwt.MapClaims{
-		"sub": "hs256-user",
-		"exp": time.Now().Add(time.Hour).Unix(),
-	})
-
-	auth := NewAuthenticator(
-		NewSharedSecretValidator(secret),
-		nil, nil, nil,
-		config.AuthConfig{NameClaim: "sub"},
-		nil,
-	)
-
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
-	w := httptest.NewRecorder()
-
-	auth.Middleware()(handler).ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	cp, found := getPrincipal()
-	require.True(t, found)
-	assert.Equal(t, "hs256-user", cp.Name)
-}
-
-func TestAuth_SharedSecretHS256_InvalidToken(t *testing.T) {
-	secret := "test-secret-key-for-hs256"
-	token := signHS256("wrong-secret", jwt.MapClaims{
-		"sub": "user",
-		"exp": time.Now().Add(time.Hour).Unix(),
-	})
-
-	auth := NewAuthenticator(
-		NewSharedSecretValidator(secret),
-		nil, nil, nil,
-		config.AuthConfig{NameClaim: "sub"},
-		nil,
-	)
-
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
-	w := httptest.NewRecorder()
-
-	auth.Middleware()(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
-		t.Fatal("handler should not be called")
 	})).ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
@@ -537,8 +477,8 @@ func TestAuth_JWTAdminClaim_OverridesPrincipalRole(t *testing.T) {
 	assert.True(t, cp.IsAdmin)
 }
 
-func TestAuth_JWTAdminClaim_WorksWithoutPrincipalRepo(t *testing.T) {
-	handler, getPrincipal := nextHandler()
+func TestAuth_JWTAdminClaim_DeniesWithoutPrincipalResolution(t *testing.T) {
+	handler, _ := nextHandler()
 
 	auth := NewAuthenticator(
 		&stubValidator{claims: &JWTClaims{
@@ -558,11 +498,7 @@ func TestAuth_JWTAdminClaim_WorksWithoutPrincipalRepo(t *testing.T) {
 
 	auth.Middleware()(handler).ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusOK, w.Code)
-	cp, found := getPrincipal()
-	require.True(t, found)
-	assert.Equal(t, "ephemeral-admin", cp.Name)
-	assert.True(t, cp.IsAdmin)
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
 }
 
 func strPtr(s string) *string {

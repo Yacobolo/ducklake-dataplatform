@@ -176,16 +176,6 @@ var _ domain.ComputeEndpointRepository = (*mockComputeRepo)(nil)
 
 // === Tests ===
 
-func TestDefaultResolver_NilComputeRepo(t *testing.T) {
-	localDB := openTestDuckDB(t)
-	localExec := NewLocalExecutor(localDB)
-
-	resolver := NewDefaultResolver(localExec)
-	executor, err := resolver.Resolve(context.Background(), "alice")
-	require.NoError(t, err)
-	assert.Nil(t, executor) // Falls back to local
-}
-
 func TestResolver_PrincipalNotFound(t *testing.T) {
 	localDB := openTestDuckDB(t)
 	localExec := NewLocalExecutor(localDB)

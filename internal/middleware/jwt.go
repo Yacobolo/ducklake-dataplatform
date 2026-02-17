@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/golang-jwt/jwt/v5"
 )
 
 // JWTClaims holds the parsed claims from a validated JWT.
@@ -94,56 +93,6 @@ func (v *OIDCValidator) Validate(ctx context.Context, tokenString string) (*JWTC
 	}
 	if name, ok := raw["name"].(string); ok {
 		claims.Name = &name
-	}
-
-	return claims, nil
-}
-
-// SharedSecretValidator validates JWTs using an HS256 shared secret.
-// Used for backward compatibility / development environments.
-type SharedSecretValidator struct {
-	secret []byte
-}
-
-// NewSharedSecretValidator creates a validator using a shared secret.
-func NewSharedSecretValidator(secret string) *SharedSecretValidator {
-	return &SharedSecretValidator{secret: []byte(secret)}
-}
-
-// Validate verifies the JWT using HS256 shared secret.
-func (v *SharedSecretValidator) Validate(_ context.Context, tokenString string) (*JWTClaims, error) {
-	token, err := jwt.Parse(tokenString, func(_ *jwt.Token) (interface{}, error) {
-		return v.secret, nil
-	}, jwt.WithValidMethods([]string{"HS256"}))
-	if err != nil {
-		return nil, fmt.Errorf("jwt parse: %w", err)
-	}
-	if !token.Valid {
-		return nil, fmt.Errorf("invalid token")
-	}
-
-	mapClaims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		return nil, fmt.Errorf("unexpected claims type")
-	}
-
-	claims := &JWTClaims{
-		Raw: map[string]interface{}(mapClaims),
-	}
-	if sub, ok := mapClaims["sub"].(string); ok {
-		claims.Subject = sub
-	}
-	if iss, ok := mapClaims["iss"].(string); ok {
-		claims.Issuer = iss
-	}
-	if email, ok := mapClaims["email"].(string); ok {
-		claims.Email = &email
-	}
-	if name, ok := mapClaims["name"].(string); ok {
-		claims.Name = &name
-	}
-	if aud, ok := mapClaims["aud"].(string); ok {
-		claims.Audience = []string{aud}
 	}
 
 	return claims, nil

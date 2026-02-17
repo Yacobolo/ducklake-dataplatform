@@ -86,8 +86,7 @@ func (c *APIStateClient) fetchAllPages(_ context.Context, path string) ([]json.R
 
 		resp, err := c.client.Do(http.MethodGet, path, q, nil)
 		if err != nil {
-			// Connection error (e.g., server panic) — treat as unavailable.
-			return nil, nil //nolint:nilerr // intentional: unavailable endpoint returns empty
+			return nil, fmt.Errorf("GET %s: %w", path, err)
 		}
 
 		body, err := gen.ReadBody(resp)
@@ -95,14 +94,6 @@ func (c *APIStateClient) fetchAllPages(_ context.Context, path string) ([]json.R
 			return nil, fmt.Errorf("read GET %s: %w", path, err)
 		}
 
-		if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusBadRequest {
-			// Endpoint may not exist or requires unsupported filter params — return empty.
-			return nil, nil
-		}
-		if resp.StatusCode >= 500 {
-			// Server error (e.g., service not wired) — treat as empty.
-			return nil, nil
-		}
 		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 			return nil, fmt.Errorf("GET %s: HTTP %d: %s", path, resp.StatusCode, string(body))
 		}
@@ -309,9 +300,7 @@ type apiAPIKey struct {
 func (c *APIStateClient) readAPIKeys(ctx context.Context, state *declarative.DesiredState) error {
 	pages, err := c.fetchAllPages(ctx, "/api-keys")
 	if err != nil {
-		// The api-keys endpoint may not be available (service not wired) or may
-		// require a principal_id filter. Silently skip.
-		return nil //nolint:nilerr // intentional: unavailable endpoint is silently skipped
+		return err
 	}
 	if len(pages) == 0 {
 		return nil

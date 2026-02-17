@@ -1186,12 +1186,11 @@ func TestReadState_Pagination(t *testing.T) {
 func TestReadState_APIError4xx(t *testing.T) {
 	t.Parallel()
 
-	// fetchAllPages treats 404, 400, and 500+ as empty (not errors).
-	// Only HTTP 4xx other than 400/404 propagate as errors.
+	// fetchAllPages returns errors for non-2xx responses.
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/principals", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusForbidden) // 403 — treated as error
+		w.WriteHeader(http.StatusForbidden)
 		_, _ = w.Write([]byte(`{"code":"FORBIDDEN","message":"access denied"}`))
 	})
 	mux.HandleFunc("/", emptyListHandler())
@@ -1203,10 +1202,9 @@ func TestReadState_APIError4xx(t *testing.T) {
 	assert.Contains(t, err.Error(), "HTTP 403")
 }
 
-func TestReadState_ServerErrorReturnsEmpty(t *testing.T) {
+func TestReadState_ServerErrorReturnsError(t *testing.T) {
 	t.Parallel()
 
-	// 500 errors are silently treated as empty (see fetchAllPages line ~102).
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/principals", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -1215,10 +1213,10 @@ func TestReadState_ServerErrorReturnsEmpty(t *testing.T) {
 	mux.HandleFunc("/", emptyListHandler())
 
 	sc := setupReadStateClient(t, mux)
-	state, err := sc.ReadState(context.Background())
+	_, err := sc.ReadState(context.Background())
 
-	require.NoError(t, err)
-	assert.Empty(t, state.Principals)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "HTTP 500")
 }
 
 func TestReadState_CatalogsWithSchemasAndTables(t *testing.T) {

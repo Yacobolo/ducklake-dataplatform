@@ -22,11 +22,11 @@ type IngestionService struct {
 	executor         domain.DuckDBExecutor
 	metastoreFactory domain.MetastoreQuerierFactory
 	authSvc          domain.AuthorizationService
-	presigner        query.FileUploadPresigner // legacy presigner (from env config), may be nil
+	presigner        query.FileUploadPresigner
 	auditRepo        domain.AuditRepository
 	credRepo         domain.StorageCredentialRepository // for credential-aware presigning
 	locRepo          domain.ExternalLocationRepository  // for resolving schema locations
-	bucket           string                             // S3 bucket name (legacy default)
+	bucket           string
 }
 
 // NewIngestionService creates a new IngestionService.
@@ -67,15 +67,11 @@ func (s *IngestionService) RequestUploadURL(
 		return nil, err
 	}
 
-	// Resolve presigner and bucket: prefer per-schema location, fall back to legacy
+	// Resolve presigner and bucket from per-schema location
 	presigner, bucket, err := s.resolvePresigner(ctx, catalogName, schemaName)
 	if err != nil {
 		return nil, err
 	}
-	if presigner == nil {
-		return nil, domain.ErrValidation("upload not available: S3 presigner not configured")
-	}
-
 	// Generate S3 key
 	id := uuid.New().String()
 	suffix := id + ".parquet"
@@ -292,11 +288,9 @@ func sanitizeFilename(name string) string {
 }
 
 // resolvePresigner returns the appropriate presigner and bucket for a schema.
-// If the schema has a per-schema external location with a stored credential,
-// a dynamic presigner is created from that credential. Otherwise, the legacy
-// presigner and bucket are returned.
+// The schema must have an external location with a stored credential.
 func (s *IngestionService) resolvePresigner(ctx context.Context, catalogName string, schemaName string) (query.FileUploadPresigner, string, error) {
-	// Try per-schema resolution via schema path in ducklake_schema
+	// Resolve per-schema location via schema path in ducklake_schema.
 	if s.metastoreFactory != nil && s.credRepo != nil && s.locRepo != nil {
 		metastore, err := s.metastoreFactory.ForCatalog(ctx, catalogName)
 		if err == nil {
@@ -326,8 +320,7 @@ func (s *IngestionService) resolvePresigner(ctx context.Context, catalogName str
 		}
 	}
 
-	// Fall back to legacy presigner
-	return s.presigner, s.bucket, nil
+	return nil, "", domain.ErrValidation("no storage credential found for schema")
 }
 
 func (s *IngestionService) logAudit(ctx context.Context, principal, action, detail string) {

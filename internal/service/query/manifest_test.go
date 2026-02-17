@@ -45,7 +45,10 @@ func (m *mockMetastoreQuerier) ReadSchemaPath(ctx context.Context, schemaName st
 	if m.ReadSchemaPathFn != nil {
 		return m.ReadSchemaPathFn(ctx, schemaName)
 	}
-	return "", nil
+	if m.ReadDataPathFn != nil {
+		return m.ReadDataPathFn(ctx)
+	}
+	return "s3://bucket/data/", nil
 }
 
 func (m *mockMetastoreQuerier) ListDataFiles(ctx context.Context, tableID string) ([]string, []bool, error) {
@@ -78,6 +81,34 @@ func newManifestService(
 	cred *testutil.MockStorageCredentialRepo,
 	loc *testutil.MockExternalLocationRepo,
 ) *ManifestService {
+	if cred == nil {
+		cred = &testutil.MockStorageCredentialRepo{
+			GetByNameFn: func(_ context.Context, _ string) (*domain.StorageCredential, error) {
+				return &domain.StorageCredential{
+					Name:           "cred-default",
+					CredentialType: domain.CredentialTypeS3,
+					KeyID:          "test-key",
+					Secret:         "test-secret",
+					Endpoint:       "s3.example.com",
+					Region:         "us-east-1",
+					URLStyle:       "path",
+				}, nil
+			},
+		}
+	}
+	if loc == nil {
+		loc = &testutil.MockExternalLocationRepo{
+			ListFn: func(_ context.Context, _ domain.PageRequest) ([]domain.ExternalLocation, int64, error) {
+				locations := []domain.ExternalLocation{{
+					Name:           "loc-default",
+					URL:            "s3://bucket/data/",
+					CredentialName: "cred-default",
+					StorageType:    domain.StorageTypeS3,
+				}}
+				return locations, int64(len(locations)), nil
+			},
+		}
+	}
 	return NewManifestService(msFactory, auth, presigner, intro, audit, cred, loc)
 }
 
@@ -203,7 +234,7 @@ func TestManifestService_GetManifest(t *testing.T) {
 				assert.Equal(t, "id", res.Columns[0].Name)
 				assert.Equal(t, "INTEGER", res.Columns[0].Type)
 				require.Len(t, res.Files, 1)
-				assert.Contains(t, res.Files[0], "signed.example.com")
+				assert.Contains(t, res.Files[0], "s3.example.com")
 				assert.Empty(t, res.RowFilters)
 				assert.Empty(t, res.ColumnMasks)
 				assert.False(t, res.ExpiresAt.IsZero())
@@ -339,7 +370,7 @@ func TestManifestService_GetManifest(t *testing.T) {
 			},
 		},
 		{
-			name: "presign error propagates",
+			name: "missing schema credential mapping returns error",
 			setupAuth: func(auth *testutil.MockAuthService) {
 				auth.LookupTableIDFn = func(_ context.Context, _ string) (string, string, bool, error) {
 					return tableID, schemaID, false, nil
@@ -365,22 +396,20 @@ func TestManifestService_GetManifest(t *testing.T) {
 						ReadDataPathFn: func(_ context.Context) (string, error) {
 							return "s3://bucket/data/", nil
 						},
+						ReadSchemaPathFn: func(_ context.Context, _ string) (string, error) {
+							return "s3://other-bucket/data/", nil
+						},
 						ListDataFilesFn: func(_ context.Context, _ string) ([]string, []bool, error) {
 							return []string{"f.parquet"}, []bool{true}, nil
 						},
 					}, nil
 				}
 			},
-			setupSign: func(p *mockPresigner) {
-				p.PresignGetObjectFn = func(_ context.Context, _ string, _ time.Duration) (string, error) {
-					return "", fmt.Errorf("signing credentials expired")
-				}
-			},
 			wantErr: true,
 			errCheck: func(t *testing.T, err error) {
 				t.Helper()
-				assert.Contains(t, err.Error(), "presign")
-				assert.Contains(t, err.Error(), "signing credentials expired")
+				assert.Contains(t, err.Error(), "resolve presigner")
+				assert.Contains(t, err.Error(), "no storage credential found")
 			},
 		},
 	}
@@ -464,7 +493,7 @@ func TestManifestService_GetManifest_UsesQualifiedLookupName(t *testing.T) {
 				},
 				ReadSchemaPathFn: func(_ context.Context, schemaName string) (string, error) {
 					require.Equal(t, "titanic", schemaName)
-					return "", nil
+					return "s3://bucket/data/", nil
 				},
 				ListDataFilesFn: func(_ context.Context, _ string) ([]string, []bool, error) {
 					return []string{"f.parquet"}, []bool{true}, nil

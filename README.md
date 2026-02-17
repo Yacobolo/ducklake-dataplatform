@@ -41,7 +41,8 @@ The server starts on `:8080` by default. API docs are available at `http://local
 ```bash
 docker build -t duck-demo .
 docker run -p 8080:8080 \
-  -e JWT_SECRET=your-secret-here \
+  -e AUTH_ISSUER_URL=https://issuer.example.com \
+  -e AUTH_AUDIENCE=your-api-audience \
   -e ENCRYPTION_KEY=your-64-char-hex-key \
   -v duck-data:/data \
   duck-demo
@@ -56,7 +57,9 @@ All configuration is via environment variables. See `.env.sample` for a full ref
 | `LISTEN_ADDR` | `:8080` | HTTP listen address |
 | `META_DB_PATH` | `ducklake_meta.sqlite` | SQLite metadata database path |
 | `LOG_LEVEL` | `info` | Log level: debug, info, warn, error |
-| `JWT_SECRET` | (insecure default) | HS256 JWT signing secret |
+| `AUTH_ISSUER_URL` | `` | OIDC issuer URL for JWT validation |
+| `AUTH_JWKS_URL` | `` | Optional JWKS URL override |
+| `AUTH_AUDIENCE` | `` | Required audience for issuer-based validation |
 | `ENCRYPTION_KEY` | (insecure default) | 64-char hex AES-256 key for credential encryption |
 | `ENV` | `development` | Set to `production` to enforce secure config |
 | `RATE_LIMIT_RPS` | `100` | Sustained requests per second |
@@ -64,15 +67,14 @@ All configuration is via environment variables. See `.env.sample` for a full ref
 
 ### Production Mode
 
-Set `ENV=production` to enforce secure defaults. In production mode, the server will refuse to start if `JWT_SECRET` or `ENCRYPTION_KEY` are not explicitly set.
+Set `ENV=production` to enforce secure defaults. In production mode, the server will refuse to start unless OIDC (`AUTH_ISSUER_URL` or `AUTH_JWKS_URL`) and `ENCRYPTION_KEY` are configured.
 
 ### Authentication
 
-The server supports three authentication methods:
+The server supports two authentication methods:
 
 1. **OIDC/JWKS** -- Set `AUTH_ISSUER_URL` (and `AUTH_AUDIENCE`) for external identity providers
-2. **Shared Secret JWT** -- Set `JWT_SECRET` for HS256 token verification (dev/backward compat)
-3. **API Keys** -- Create via the API; sent in the `X-API-Key` header
+2. **API Keys** -- Create via the API; sent in the `X-API-Key` header
 
 ### S3 Storage (Optional)
 
