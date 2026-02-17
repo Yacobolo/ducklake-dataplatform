@@ -196,7 +196,7 @@ func (s *Service) TriggerRun(ctx context.Context, principal string, req domain.T
 
 	selected := allModels
 	if req.Selector != "" {
-		selected, err = SelectModels(req.Selector, allModels)
+		selected, err = s.selectModelsForRun(ctx, principal, req, allModels)
 		if err != nil {
 			return nil, err
 		}
@@ -307,7 +307,7 @@ func (s *Service) TriggerRunSync(ctx context.Context, principal string, req doma
 
 	selected := allModels
 	if req.Selector != "" {
-		selected, err = SelectModels(req.Selector, allModels)
+		selected, err = s.selectModelsForRun(ctx, principal, req, allModels)
 		if err != nil {
 			return err
 		}
@@ -572,9 +572,6 @@ func (s *Service) compileSelectedModels(
 		return nil, nil, fmt.Errorf("load source registry: %w", err)
 	}
 	compileWarnings := make([]string, 0)
-	if len(sources) == 0 {
-		compileWarnings = append(compileWarnings, "source registry is empty; source() references are rendered without strict existence checks")
-	}
 
 	type macroBundle struct {
 		defs     map[string]compileMacroDefinition
@@ -600,6 +597,7 @@ func (s *Service) compileSelectedModels(
 			targetSchema:  req.TargetSchema,
 			vars:          req.Variables,
 			fullRefresh:   req.FullRefresh,
+			strictSources: true,
 			projectName:   m.ProjectName,
 			modelName:     m.Name,
 			materialize:   m.Materialization,
@@ -620,6 +618,96 @@ func (s *Service) compileSelectedModels(
 	}
 
 	return artifacts, compileWarnings, nil
+}
+
+func (s *Service) selectModelsForRun(
+	ctx context.Context,
+	principal string,
+	req domain.TriggerModelRunRequest,
+	allModels []domain.Model,
+) ([]domain.Model, error) {
+	selector := strings.TrimSpace(req.Selector)
+	if selector != "state:modified" {
+		return SelectModels(selector, allModels)
+	}
+
+	artifacts, _, err := s.compileSelectedModels(ctx, principal, allModels, allModels, req)
+	if err != nil {
+		return nil, fmt.Errorf("compile models for state selector: %w", err)
+	}
+
+	baseline, err := s.latestSuccessfulRunHashes(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	selected := selectStateModifiedModels(allModels, artifacts, baseline)
+	if len(selected) == 0 {
+		return nil, domain.ErrValidation("selector state:modified matched no models")
+	}
+
+	return selected, nil
+}
+
+func (s *Service) latestSuccessfulRunHashes(ctx context.Context) (map[string]string, error) {
+	status := domain.ModelRunStatusSuccess
+	runs, _, err := s.runs.ListRuns(ctx, domain.ModelRunFilter{
+		Status: &status,
+		Page:   domain.PageRequest{MaxResults: 1},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list successful runs for state selector: %w", err)
+	}
+	if len(runs) == 0 || runs[0].CompileManifest == nil || strings.TrimSpace(*runs[0].CompileManifest) == "" {
+		return map[string]string{}, nil
+	}
+
+	hashes, err := modelHashByNameFromManifest(*runs[0].CompileManifest)
+	if err != nil {
+		return nil, domain.ErrValidation("invalid compile manifest in latest successful run: %v", err)
+	}
+	return hashes, nil
+}
+
+func selectStateModifiedModels(
+	allModels []domain.Model,
+	artifacts map[string]compileResult,
+	baseline map[string]string,
+) []domain.Model {
+	out := make([]domain.Model, 0, len(allModels))
+	for _, m := range allModels {
+		artifact, ok := artifacts[m.ID]
+		if !ok {
+			continue
+		}
+		if baseline[m.QualifiedName()] != artifact.compiledHash {
+			out = append(out, m)
+		}
+	}
+	return out
+}
+
+func modelHashByNameFromManifest(manifestJSON string) (map[string]string, error) {
+	type manifestModel struct {
+		ModelName    string `json:"model_name"`
+		CompiledHash string `json:"compiled_hash"`
+	}
+	type manifest struct {
+		Models []manifestModel `json:"models"`
+	}
+
+	var m manifest
+	if err := json.Unmarshal([]byte(manifestJSON), &m); err != nil {
+		return nil, err
+	}
+	out := make(map[string]string, len(m.Models))
+	for _, model := range m.Models {
+		if strings.TrimSpace(model.ModelName) == "" {
+			continue
+		}
+		out[model.ModelName] = model.CompiledHash
+	}
+	return out, nil
 }
 
 func (s *Service) loadCompileMacros(

@@ -446,6 +446,9 @@ func selectorToModelNames(selector string) []string {
 	if strings.HasPrefix(selector, "tag:") || strings.HasPrefix(selector, "project:") {
 		return nil
 	}
+	if strings.HasPrefix(selector, "state:") {
+		return nil
+	}
 	if strings.Contains(selector, "+") || selector == "*" {
 		return nil
 	}

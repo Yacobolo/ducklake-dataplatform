@@ -58,3 +58,29 @@ func stringsIndex(t *testing.T, haystack, needle string) int {
 	require.NotEqual(t, -1, i)
 	return i
 }
+
+func TestModelHashByNameFromManifest(t *testing.T) {
+	hashes, err := modelHashByNameFromManifest(`{"version":1,"models":[{"model_name":"analytics.stg_orders","compiled_hash":"sha256:aaa"},{"model_name":"analytics.fct_orders","compiled_hash":"sha256:bbb"}]}`)
+	require.NoError(t, err)
+	assert.Equal(t, "sha256:aaa", hashes["analytics.stg_orders"])
+	assert.Equal(t, "sha256:bbb", hashes["analytics.fct_orders"])
+}
+
+func TestSelectStateModifiedModels(t *testing.T) {
+	allModels := []domain.Model{
+		{ID: "1", ProjectName: "analytics", Name: "stg_orders"},
+		{ID: "2", ProjectName: "analytics", Name: "fct_orders"},
+	}
+	artifacts := map[string]compileResult{
+		"1": {compiledHash: "sha256:old"},
+		"2": {compiledHash: "sha256:new"},
+	}
+	baseline := map[string]string{
+		"analytics.stg_orders": "sha256:old",
+		"analytics.fct_orders": "sha256:old",
+	}
+
+	selected := selectStateModifiedModels(allModels, artifacts, baseline)
+	require.Len(t, selected, 1)
+	assert.Equal(t, "analytics.fct_orders", selected[0].QualifiedName())
+}

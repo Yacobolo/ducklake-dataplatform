@@ -262,3 +262,8 @@ func TestModelRunToAPI_CompileDiagnosticsStableEmptyArrays(t *testing.T) {
 	assert.Empty(t, *got.CompileDiagnostics.Warnings)
 	assert.Empty(t, *got.CompileDiagnostics.Errors)
 }
+
+func TestSelectorToModelNames_IgnoresStateSelector(t *testing.T) {
+	t.Parallel()
+	assert.Nil(t, selectorToModelNames("state:modified"))
+}

@@ -16,6 +16,7 @@ type compileContext struct {
 	targetSchema  string
 	vars          map[string]string
 	fullRefresh   bool
+	strictSources bool
 	projectName   string
 	modelName     string
 	materialize   string
@@ -148,13 +149,13 @@ func renderTemplate(sqlText string, ctx compileContext) (string, []string, []str
 				return "", err
 			}
 			key := sourceName + "." + tableName
-			if len(ctx.sources) > 0 {
-				relation, ok := ctx.sources[key]
-				if !ok {
-					return "", domain.ErrValidation("unknown source(%q,%q)", sourceName, tableName)
-				}
+			relation, ok := ctx.sources[key]
+			if ok {
 				sourcesSet[key] = struct{}{}
 				return relation, nil
+			}
+			if ctx.strictSources || len(ctx.sources) > 0 {
+				return "", domain.ErrValidation("unknown source(%q,%q)", sourceName, tableName)
 			}
 			sourcesSet[key] = struct{}{}
 			return renderRelationParts(sourceName, tableName), nil
