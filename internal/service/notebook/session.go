@@ -388,6 +388,16 @@ func (m *SessionManager) RunAllAsync(ctx context.Context, sessionID string, prin
 		return nil, fmt.Errorf("create job: %w", err)
 	}
 
+	auditPrincipal := caller
+	if auditPrincipal == "" {
+		auditPrincipal = s.principal
+	}
+	_ = m.audit.Insert(ctx, &domain.AuditEntry{
+		PrincipalName: auditPrincipal,
+		Action:        "RUN_ALL_ASYNC",
+		Status:        "ALLOWED",
+	})
+
 	// Launch async execution using the session's cancellable context
 	// instead of context.Background() so that CloseSession/CloseAll
 	// can stop the goroutine.

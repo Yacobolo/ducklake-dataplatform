@@ -60,7 +60,15 @@ func (s *ColumnMaskService) Delete(ctx context.Context, id string) error {
 	if err := requireAdmin(ctx); err != nil {
 		return err
 	}
-	return s.repo.Delete(ctx, id)
+	if err := s.repo.Delete(ctx, id); err != nil {
+		return err
+	}
+	_ = s.audit.Insert(ctx, &domain.AuditEntry{
+		PrincipalName: callerName(ctx),
+		Action:        "DELETE_COLUMN_MASK",
+		Status:        "ALLOWED",
+	})
+	return nil
 }
 
 // Bind associates a column mask with a principal or group. Requires admin privileges.
@@ -77,7 +85,15 @@ func (s *ColumnMaskService) Bind(ctx context.Context, req domain.BindColumnMaskR
 		PrincipalType: req.PrincipalType,
 		SeeOriginal:   req.SeeOriginal,
 	}
-	return s.repo.Bind(ctx, b)
+	if err := s.repo.Bind(ctx, b); err != nil {
+		return err
+	}
+	_ = s.audit.Insert(ctx, &domain.AuditEntry{
+		PrincipalName: callerName(ctx),
+		Action:        "BIND_COLUMN_MASK",
+		Status:        "ALLOWED",
+	})
+	return nil
 }
 
 // Unbind removes a column mask binding from a principal or group. Requires admin privileges.
@@ -93,7 +109,15 @@ func (s *ColumnMaskService) Unbind(ctx context.Context, req domain.BindColumnMas
 		PrincipalID:   req.PrincipalID,
 		PrincipalType: req.PrincipalType,
 	}
-	return s.repo.Unbind(ctx, b)
+	if err := s.repo.Unbind(ctx, b); err != nil {
+		return err
+	}
+	_ = s.audit.Insert(ctx, &domain.AuditEntry{
+		PrincipalName: callerName(ctx),
+		Action:        "UNBIND_COLUMN_MASK",
+		Status:        "ALLOWED",
+	})
+	return nil
 }
 
 // ListBindings returns all bindings for a column mask. Requires admin privileges.

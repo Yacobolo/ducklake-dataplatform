@@ -224,5 +224,12 @@ func (s *Service) ReorderCells(ctx context.Context, principal string, isAdmin bo
 	if err := s.repo.ReorderCells(ctx, notebookID, req.CellIDs); err != nil {
 		return nil, err
 	}
+
+	_ = s.audit.Insert(ctx, &domain.AuditEntry{
+		PrincipalName: principal,
+		Action:        "REORDER_CELLS",
+		Status:        "ALLOWED",
+	})
+
 	return s.repo.ListCells(ctx, notebookID)
 }
