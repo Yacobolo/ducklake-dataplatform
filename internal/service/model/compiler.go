@@ -21,7 +21,15 @@ type compileContext struct {
 	materialize   string
 	models        map[string]domain.Model
 	byName        map[string][]domain.Model
-	macros        map[string]struct{}
+	macros        map[string]compileMacroDefinition
+	macroRuntime  *starlarkMacroRuntime
+}
+
+type compileMacroDefinition struct {
+	name       string
+	parameters []string
+	body       string
+	starlark   bool
 }
 
 type compileResult struct {
@@ -169,10 +177,21 @@ func renderTemplate(sqlText string, ctx compileContext) (string, []string, []str
 			}
 			return "false", nil
 		default:
-			if _, ok := ctx.macros[fnName]; !ok {
+			def, ok := ctx.macros[fnName]
+			if !ok {
 				return "", domain.ErrValidation("unknown macro %q", fnName)
 			}
 			macrosSet[fnName] = struct{}{}
+			if def.starlark {
+				if ctx.macroRuntime == nil {
+					return "", domain.ErrValidation("starlark macro runtime not available for %q", fnName)
+				}
+				rendered, err := ctx.macroRuntime.EvalMacro(def, args)
+				if err != nil {
+					return "", fmt.Errorf("evaluate macro %q: %w", fnName, err)
+				}
+				return rendered, nil
+			}
 			return expr, nil
 		}
 	}
@@ -342,6 +361,7 @@ func splitArgs(s string) ([]string, error) {
 	start := 0
 	inSingle := false
 	inDouble := false
+	depth := 0
 	for i := 0; i < len(s); i++ {
 		switch s[i] {
 		case '\'':
@@ -356,8 +376,18 @@ func splitArgs(s string) ([]string, error) {
 			if !inSingle {
 				inDouble = !inDouble
 			}
-		case ',':
+		case '(', '[', '{':
 			if !inSingle && !inDouble {
+				depth++
+			}
+		case ')', ']', '}':
+			if !inSingle && !inDouble {
+				if depth > 0 {
+					depth--
+				}
+			}
+		case ',':
+			if !inSingle && !inDouble && depth == 0 {
 				args = append(args, strings.TrimSpace(s[start:i]))
 				start = i + 1
 			}

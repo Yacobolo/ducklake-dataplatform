@@ -95,10 +95,18 @@ func TestCompileModelSQL_ValidationErrors(t *testing.T) {
 		materialize: domain.MaterializationTable,
 		models:      map[string]domain.Model{},
 		byName:      map[string][]domain.Model{},
-		macros: map[string]struct{}{
-			"utils.cents_to_dollars": {},
+		macros: map[string]compileMacroDefinition{
+			"utils.cents_to_dollars": {
+				name:       "utils.cents_to_dollars",
+				parameters: []string{"col"},
+				body:       `"(" + col + " / 100.0)"`,
+				starlark:   true,
+			},
 		},
 	}
+	runtime, err := newStarlarkMacroRuntime(ctx.macros)
+	require.NoError(t, err)
+	ctx.macroRuntime = runtime
 
 	t.Run("unknown ref", func(t *testing.T) {
 		_, err := compileModelSQL(`select * from {{ ref('missing') }}`, ctx)
@@ -120,15 +128,23 @@ func TestCompileModelSQL_CapturesMacros(t *testing.T) {
 		materialize: domain.MaterializationTable,
 		models:      map[string]domain.Model{},
 		byName:      map[string][]domain.Model{},
-		macros: map[string]struct{}{
-			"utils.cents_to_dollars": {},
+		macros: map[string]compileMacroDefinition{
+			"utils.cents_to_dollars": {
+				name:       "utils.cents_to_dollars",
+				parameters: []string{"col"},
+				body:       `"(" + col + " / 100.0)"`,
+				starlark:   true,
+			},
 		},
 	}
+	runtime, err := newStarlarkMacroRuntime(ctx.macros)
+	require.NoError(t, err)
+	ctx.macroRuntime = runtime
 
 	compiled, err := compileModelSQL(`select {{ utils.cents_to_dollars('amount') }} as amount_usd`, ctx)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"utils.cents_to_dollars"}, compiled.macrosUsed)
-	assert.Contains(t, compiled.sql, `utils.cents_to_dollars('amount')`)
+	assert.Contains(t, compiled.sql, `(amount / 100.0)`)
 }
 
 func TestCompileModelSQL_FailsOnUnknownMacro(t *testing.T) {
@@ -138,10 +154,35 @@ func TestCompileModelSQL_FailsOnUnknownMacro(t *testing.T) {
 		materialize: domain.MaterializationTable,
 		models:      map[string]domain.Model{},
 		byName:      map[string][]domain.Model{},
-		macros:      map[string]struct{}{},
+		macros:      map[string]compileMacroDefinition{},
 	}
 
 	_, err := compileModelSQL(`select {{ utils.unknown_macro('amount') }} as amount_usd`, ctx)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), `unknown macro "utils.unknown_macro"`)
+}
+
+func TestCompileModelSQL_StarlarkKeywordAndListArgs(t *testing.T) {
+	ctx := compileContext{
+		projectName: "analytics",
+		modelName:   "fct_orders",
+		materialize: domain.MaterializationTable,
+		models:      map[string]domain.Model{},
+		byName:      map[string][]domain.Model{},
+		macros: map[string]compileMacroDefinition{
+			"utils.union_cols": {
+				name:       "utils.union_cols",
+				parameters: []string{"cols", "separator"},
+				body:       `return separator.join(cols)`,
+				starlark:   true,
+			},
+		},
+	}
+	runtime, err := newStarlarkMacroRuntime(ctx.macros)
+	require.NoError(t, err)
+	ctx.macroRuntime = runtime
+
+	compiled, err := compileModelSQL(`select {{ utils.union_cols(['a','b','c'], separator=' || ') }} as expr`, ctx)
+	require.NoError(t, err)
+	assert.Contains(t, compiled.sql, `a || b || c`)
 }

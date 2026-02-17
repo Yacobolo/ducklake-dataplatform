@@ -536,7 +536,7 @@ func (s *Service) compileSelectedModels(ctx context.Context, selected []domain.M
 		byName[m.Name] = append(byName[m.Name], m)
 	}
 
-	knownMacros, err := s.knownMacros(ctx)
+	knownMacros, runtime, err := s.loadCompileMacros(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("load known macros: %w", err)
 	}
@@ -555,6 +555,7 @@ func (s *Service) compileSelectedModels(ctx context.Context, selected []domain.M
 			models:        byQualified,
 			byName:        byName,
 			macros:        knownMacros,
+			macroRuntime:  runtime,
 		}
 		compiled, err := compileModelSQL(m.SQL, ctx)
 		if err != nil {
@@ -569,20 +570,31 @@ func (s *Service) compileSelectedModels(ctx context.Context, selected []domain.M
 	return artifacts, nil
 }
 
-func (s *Service) knownMacros(ctx context.Context) (map[string]struct{}, error) {
-	known := make(map[string]struct{})
+func (s *Service) loadCompileMacros(ctx context.Context) (map[string]compileMacroDefinition, *starlarkMacroRuntime, error) {
+	known := make(map[string]compileMacroDefinition)
 	if s.macros == nil {
-		return known, nil
+		return known, nil, nil
 	}
 
 	macros, err := s.macros.ListAll(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("list macros: %w", err)
+		return nil, nil, fmt.Errorf("list macros: %w", err)
 	}
 	for _, m := range macros {
-		known[m.Name] = struct{}{}
+		known[m.Name] = compileMacroDefinition{
+			name:       m.Name,
+			parameters: m.Parameters,
+			body:       m.Body,
+			starlark:   strings.Contains(m.Name, "."),
+		}
 	}
-	return known, nil
+
+	runtime, err := newStarlarkMacroRuntime(known)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return known, runtime, nil
 }
 
 func (s *Service) syncCompiledArtifacts(selected []domain.Model, artifacts map[string]compileResult, req domain.TriggerModelRunRequest) error {
