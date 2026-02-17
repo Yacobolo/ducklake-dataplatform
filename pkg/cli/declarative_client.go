@@ -296,6 +296,7 @@ type apiAPIKey struct {
 	Name        string  `json:"name"`
 	Principal   string  `json:"principal"`
 	PrincipalID string  `json:"principal_id"`
+	KeyPrefix   string  `json:"key_prefix"`
 	ExpiresAt   *string `json:"expires_at"`
 }
 
@@ -1109,16 +1110,84 @@ func (c *APIStateClient) executeAPIKey(ctx context.Context, action declarative.A
 	}
 }
 
-func (c *APIStateClient) lookupAPIKeyID(ctx context.Context, spec declarative.APIKeySpec) (string, error) {
+// ValidateNoSelfAPIKeyDeletion fails fast when a plan would delete the API key
+// currently used by the CLI for authentication.
+func (c *APIStateClient) ValidateNoSelfAPIKeyDeletion(ctx context.Context, actions []declarative.Action) error {
+	authPrefix := c.currentAPIKeyPrefix()
+	if authPrefix == "" {
+		return nil
+	}
+
+	needsCheck := false
+	for _, action := range actions {
+		if action.ResourceKind != declarative.KindAPIKey {
+			continue
+		}
+		if action.Operation == declarative.OpDelete || action.Operation == declarative.OpUpdate {
+			needsCheck = true
+			break
+		}
+	}
+	if !needsCheck {
+		return nil
+	}
+
+	items, err := c.listAPIKeys(ctx)
+	if err != nil {
+		return fmt.Errorf("list api keys: %w", err)
+	}
+
+	for _, action := range actions {
+		if action.ResourceKind != declarative.KindAPIKey {
+			continue
+		}
+		if action.Operation != declarative.OpDelete && action.Operation != declarative.OpUpdate {
+			continue
+		}
+
+		spec, ok := action.Actual.(declarative.APIKeySpec)
+		if !ok {
+			return fmt.Errorf("invalid api-key action payload for %s", action.Operation)
+		}
+
+		item, err := c.lookupAPIKeyFromList(items, spec)
+		if err != nil {
+			return fmt.Errorf("resolve api key %q for %s: %w", action.ResourceName, action.Operation, err)
+		}
+
+		if item.KeyPrefix != "" && item.KeyPrefix == authPrefix {
+			return fmt.Errorf("plan %s api-key %q would revoke the currently-authenticated API key; rerun with a different API key or --token", action.Operation, spec.Name)
+		}
+	}
+
+	return nil
+}
+
+func (c *APIStateClient) currentAPIKeyPrefix() string {
+	if c == nil || c.client == nil || c.client.APIKey == "" {
+		return ""
+	}
+	if len(c.client.APIKey) <= 8 {
+		return c.client.APIKey
+	}
+	return c.client.APIKey[:8]
+}
+
+func (c *APIStateClient) listAPIKeys(ctx context.Context) ([]apiAPIKey, error) {
 	pages, err := c.fetchAllPages(ctx, "/api-keys")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	var items []apiAPIKey
 	if err := mergePages(pages, &items); err != nil {
-		return "", err
+		return nil, err
 	}
-	for _, item := range items {
+	return items, nil
+}
+
+func (c *APIStateClient) lookupAPIKeyFromList(items []apiAPIKey, spec declarative.APIKeySpec) (*apiAPIKey, error) {
+	for i := range items {
+		item := &items[i]
 		if item.Name != spec.Name {
 			continue
 		}
@@ -1132,14 +1201,26 @@ func (c *APIStateClient) lookupAPIKeyID(ctx context.Context, spec declarative.AP
 			}
 		}
 		if item.ID == "" {
-			return "", fmt.Errorf("api key %q has no id in API response", spec.Name)
+			return nil, fmt.Errorf("api key %q has no id in API response", spec.Name)
 		}
-		return item.ID, nil
+		return item, nil
 	}
 	if spec.Principal != "" {
-		return "", fmt.Errorf("api key %q for principal %q not found", spec.Name, spec.Principal)
+		return nil, fmt.Errorf("api key %q for principal %q not found", spec.Name, spec.Principal)
 	}
-	return "", fmt.Errorf("api key %q not found", spec.Name)
+	return nil, fmt.Errorf("api key %q not found", spec.Name)
+}
+
+func (c *APIStateClient) lookupAPIKeyID(ctx context.Context, spec declarative.APIKeySpec) (string, error) {
+	items, err := c.listAPIKeys(ctx)
+	if err != nil {
+		return "", err
+	}
+	item, err := c.lookupAPIKeyFromList(items, spec)
+	if err != nil {
+		return "", err
+	}
+	return item.ID, nil
 }
 
 // --- Security resource execution ---

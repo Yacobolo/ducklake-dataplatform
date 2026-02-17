@@ -98,6 +98,12 @@ func newApplyCmd(client *gen.Client) *cobra.Command {
 				}
 			}
 
+			// 6.5. Fail fast if this apply would revoke the API key currently
+			// used by the CLI itself.
+			if err := stateClient.ValidateNoSelfAPIKeyDeletion(cmd.Context(), plan.Actions); err != nil {
+				return fmt.Errorf("preflight auth validation: %w", err)
+			}
+
 			// 7. Execute each action.
 			type actionResult struct {
 				Operation    string `json:"operation"`

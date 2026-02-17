@@ -1599,6 +1599,58 @@ func TestExecuteAPIKey_Create(t *testing.T) {
 	assert.Equal(t, expiry, bodyStr(captured[0], "expires_at"))
 }
 
+func TestValidateNoSelfAPIKeyDeletion_BlocksDelete(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/api-keys", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":[{"id":"key-id-1","name":"local-dev","principal":"alice","key_prefix":"duckflix"}]}`))
+	})
+
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+
+	client := gen.NewClient(srv.URL, "duckflix-secret-value", "")
+	sc := NewAPIStateClient(client)
+	sc.index = newResourceIndex()
+
+	err := sc.ValidateNoSelfAPIKeyDeletion(context.Background(), []declarative.Action{
+		{
+			Operation:    declarative.OpDelete,
+			ResourceKind: declarative.KindAPIKey,
+			ResourceName: "local-dev",
+			Actual: declarative.APIKeySpec{
+				Name:      "local-dev",
+				Principal: "alice",
+			},
+		},
+	})
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "currently-authenticated API key")
+}
+
+func TestValidateNoSelfAPIKeyDeletion_AllowsDeleteWhenUsingToken(t *testing.T) {
+	t.Parallel()
+
+	sc := withTestIndex(newTestExecuteClient(t, &[]execCapture{}))
+
+	err := sc.ValidateNoSelfAPIKeyDeletion(context.Background(), []declarative.Action{
+		{
+			Operation:    declarative.OpDelete,
+			ResourceKind: declarative.KindAPIKey,
+			ResourceName: "local-dev",
+			Actual: declarative.APIKeySpec{
+				Name:      "local-dev",
+				Principal: "alice",
+			},
+		},
+	})
+
+	require.NoError(t, err)
+}
+
 // === Additional Execute tests ===
 
 func TestExecutePrincipal_Create(t *testing.T) {
