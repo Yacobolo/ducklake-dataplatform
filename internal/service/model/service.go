@@ -197,7 +197,7 @@ func (s *Service) TriggerRun(ctx context.Context, principal string, req domain.T
 		}
 	}
 
-	compiledArtifacts, err := s.compileSelectedModels(selected, allModels, req)
+	compiledArtifacts, err := s.compileSelectedModels(ctx, selected, allModels, req)
 	if err != nil {
 		return nil, err
 	}
@@ -298,7 +298,7 @@ func (s *Service) TriggerRunSync(ctx context.Context, principal string, req doma
 		}
 	}
 
-	compiledArtifacts, err := s.compileSelectedModels(selected, allModels, req)
+	compiledArtifacts, err := s.compileSelectedModels(ctx, selected, allModels, req)
 	if err != nil {
 		return err
 	}
@@ -528,12 +528,17 @@ func (s *Service) logAudit(ctx context.Context, principal, action, _ string) {
 	})
 }
 
-func (s *Service) compileSelectedModels(selected []domain.Model, allModels []domain.Model, req domain.TriggerModelRunRequest) (map[string]compileResult, error) {
+func (s *Service) compileSelectedModels(ctx context.Context, selected []domain.Model, allModels []domain.Model, req domain.TriggerModelRunRequest) (map[string]compileResult, error) {
 	byQualified := make(map[string]domain.Model, len(allModels))
 	byName := make(map[string][]domain.Model)
 	for _, m := range allModels {
 		byQualified[m.QualifiedName()] = m
 		byName[m.Name] = append(byName[m.Name], m)
+	}
+
+	knownMacros, err := s.knownMacros(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("load known macros: %w", err)
 	}
 
 	artifacts := make(map[string]compileResult, len(selected))
@@ -549,6 +554,7 @@ func (s *Service) compileSelectedModels(selected []domain.Model, allModels []dom
 			materialize:   m.Materialization,
 			models:        byQualified,
 			byName:        byName,
+			macros:        knownMacros,
 		}
 		compiled, err := compileModelSQL(m.SQL, ctx)
 		if err != nil {
@@ -561,6 +567,22 @@ func (s *Service) compileSelectedModels(selected []domain.Model, allModels []dom
 	}
 
 	return artifacts, nil
+}
+
+func (s *Service) knownMacros(ctx context.Context) (map[string]struct{}, error) {
+	known := make(map[string]struct{})
+	if s.macros == nil {
+		return known, nil
+	}
+
+	macros, err := s.macros.ListAll(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list macros: %w", err)
+	}
+	for _, m := range macros {
+		known[m.Name] = struct{}{}
+	}
+	return known, nil
 }
 
 func (s *Service) syncCompiledArtifacts(selected []domain.Model, artifacts map[string]compileResult, req domain.TriggerModelRunRequest) error {
@@ -632,6 +654,21 @@ func (s *Service) persistCompileDependencyLineage(
 			}
 			if err := s.lineage.InsertEdge(ctx, edge); err != nil {
 				return fmt.Errorf("insert lineage edge %s -> %s: %w", sourceName, targetName, err)
+			}
+		}
+
+		for _, macroName := range artifact.macrosUsed {
+			edge := &domain.LineageEdge{
+				SourceTable:   "macro." + macroName,
+				TargetTable:   strPtr(targetName),
+				SourceSchema:  "macro",
+				TargetSchema:  targetSchema,
+				EdgeType:      "MACRO",
+				PrincipalName: principal,
+				QueryHash:     strPtrOrNil(artifact.compiledHash),
+			}
+			if err := s.lineage.InsertEdge(ctx, edge); err != nil {
+				return fmt.Errorf("insert macro lineage edge %s -> %s: %w", macroName, targetName, err)
 			}
 		}
 	}

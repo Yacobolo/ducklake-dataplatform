@@ -21,6 +21,7 @@ type compileContext struct {
 	materialize   string
 	models        map[string]domain.Model
 	byName        map[string][]domain.Model
+	macros        map[string]struct{}
 }
 
 type compileResult struct {
@@ -168,6 +169,9 @@ func renderTemplate(sqlText string, ctx compileContext) (string, []string, []str
 			}
 			return "false", nil
 		default:
+			if _, ok := ctx.macros[fnName]; !ok {
+				return "", domain.ErrValidation("unknown macro %q", fnName)
+			}
 			macrosSet[fnName] = struct{}{}
 			return expr, nil
 		}

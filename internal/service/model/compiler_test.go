@@ -95,6 +95,9 @@ func TestCompileModelSQL_ValidationErrors(t *testing.T) {
 		materialize: domain.MaterializationTable,
 		models:      map[string]domain.Model{},
 		byName:      map[string][]domain.Model{},
+		macros: map[string]struct{}{
+			"utils.cents_to_dollars": {},
+		},
 	}
 
 	t.Run("unknown ref", func(t *testing.T) {
@@ -117,10 +120,28 @@ func TestCompileModelSQL_CapturesMacros(t *testing.T) {
 		materialize: domain.MaterializationTable,
 		models:      map[string]domain.Model{},
 		byName:      map[string][]domain.Model{},
+		macros: map[string]struct{}{
+			"utils.cents_to_dollars": {},
+		},
 	}
 
 	compiled, err := compileModelSQL(`select {{ utils.cents_to_dollars('amount') }} as amount_usd`, ctx)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"utils.cents_to_dollars"}, compiled.macrosUsed)
 	assert.Contains(t, compiled.sql, `utils.cents_to_dollars('amount')`)
+}
+
+func TestCompileModelSQL_FailsOnUnknownMacro(t *testing.T) {
+	ctx := compileContext{
+		projectName: "analytics",
+		modelName:   "fct_orders",
+		materialize: domain.MaterializationTable,
+		models:      map[string]domain.Model{},
+		byName:      map[string][]domain.Model{},
+		macros:      map[string]struct{}{},
+	}
+
+	_, err := compileModelSQL(`select {{ utils.unknown_macro('amount') }} as amount_usd`, ctx)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `unknown macro "utils.unknown_macro"`)
 }
