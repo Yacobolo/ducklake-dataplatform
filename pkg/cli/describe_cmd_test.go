@@ -104,7 +104,7 @@ func TestDescribe_Table(t *testing.T) {
 		w.WriteHeader(200)
 		_, _ = w.Write([]byte(`{"name":"orders","table_id":"t1","table_type":"MANAGED","columns":[{"name":"id","type":"BIGINT"}]}`))
 	})
-	// Row filters and column masks endpoints (best-effort)
+	// Row filters and column masks endpoints.
 	mux.HandleFunc("/v1/tables/t1/row-filters", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
@@ -451,7 +451,6 @@ func TestDescribe_Platform_TextOutput(t *testing.T) {
 }
 
 func TestDescribe_Schema_ViewsEndpointFails(t *testing.T) {
-	// Views endpoint returns 404 (best-effort) — should not fail the overall command
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/catalogs/main/schemas/analytics", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -477,16 +476,35 @@ func TestDescribe_Schema_ViewsEndpointFails(t *testing.T) {
 	rootCmd := newTestRootCmd(t, srv)
 	rootCmd.SetArgs([]string{"--host", srv.URL, "--output", "json", "describe", "main.analytics"})
 
-	old := captureStdout(t)
 	err := rootCmd.Execute()
-	output := old()
-	require.NoError(t, err, "should not fail when views/volumes return 404")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "API error")
+}
 
-	var result map[string]interface{}
-	require.NoError(t, json.Unmarshal([]byte(output), &result))
-	assert.Contains(t, result, "schema")
-	assert.Contains(t, result, "tables")
-	// views and volumes should be nil in JSON since endpoints returned 404
-	assert.Nil(t, result["views"], "views should be nil when endpoint returns 404")
-	assert.Nil(t, result["volumes"], "volumes should be nil when endpoint returns 404")
+func TestDescribe_Table_RowFiltersEndpointFails(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/catalogs/main/schemas/analytics/tables/orders", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(200)
+		_, _ = w.Write([]byte(`{"name":"orders","table_id":"t1","table_type":"MANAGED"}`))
+	})
+	mux.HandleFunc("/v1/tables/t1/row-filters", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(404)
+		_, _ = w.Write([]byte(`{"code":404,"message":"not found"}`))
+	})
+	mux.HandleFunc("/v1/tables/t1/column-masks", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(200)
+		_, _ = w.Write([]byte(`{"data":[]}`))
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	rootCmd := newTestRootCmd(t, srv)
+	rootCmd.SetArgs([]string{"--host", srv.URL, "--output", "json", "describe", "main.analytics.orders"})
+
+	err := rootCmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "API error")
 }

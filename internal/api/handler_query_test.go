@@ -188,15 +188,15 @@ func TestHandler_CreateManifest(t *testing.T) {
 			},
 		},
 		{
-			name: "qualified table string is parsed into catalog schema table",
+			name: "qualified table string is passed through without parsing",
 			body: CreateManifestJSONRequestBody{Table: "demo.titanic.passengers"},
 			svcFn: func(_ context.Context, _ string, catalogName, schemaName, tableName string) (*query.ManifestResult, error) {
-				if catalogName != "demo" || schemaName != "titanic" || tableName != "passengers" {
-					return nil, domain.ErrValidation("unexpected parsed table reference")
+				if catalogName != "" || schemaName != "main" || tableName != "demo.titanic.passengers" {
+					return nil, domain.ErrValidation("unexpected table reference")
 				}
 				return &query.ManifestResult{
-					Table:       "passengers",
-					Schema:      "titanic",
+					Table:       "demo.titanic.passengers",
+					Schema:      "main",
 					Columns:     []query.ManifestColumn{{Name: "id", Type: "INTEGER"}},
 					Files:       []string{"s3://bucket/data/file.parquet"},
 					RowFilters:  []string{},

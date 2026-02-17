@@ -76,8 +76,6 @@ func (h *APIHandler) CreateStorageCredential(ctx context.Context, req CreateStor
 	}
 	if req.Body.UrlStyle != nil {
 		domReq.URLStyle = *req.Body.UrlStyle
-	} else {
-		domReq.URLStyle = "path"
 	}
 	// Azure fields
 	if req.Body.AzureAccountName != nil {
