@@ -112,6 +112,21 @@ type UpdateModelRequest struct {
 	Freshness       *FreshnessPolicy
 }
 
+// Validate checks that the update payload is well-formed.
+func (r *UpdateModelRequest) Validate() error {
+	if r.Materialization == nil {
+		return nil
+	}
+	validMat := map[string]bool{
+		MaterializationView: true, MaterializationTable: true,
+		MaterializationIncremental: true, MaterializationEphemeral: true,
+	}
+	if !validMat[*r.Materialization] {
+		return ErrValidation("materialization must be VIEW, TABLE, INCREMENTAL, or EPHEMERAL")
+	}
+	return nil
+}
+
 // FreshnessStatus holds the result of a freshness check.
 type FreshnessStatus struct {
 	IsFresh       bool
