@@ -431,3 +431,57 @@ func TestManifestService_GetManifest(t *testing.T) {
 		})
 	}
 }
+
+func TestManifestService_GetManifest_UsesQualifiedLookupName(t *testing.T) {
+	t.Parallel()
+
+	auth := &testutil.MockAuthService{}
+	auth.LookupTableIDFn = func(_ context.Context, tableName string) (string, string, bool, error) {
+		require.Equal(t, "demo.titanic.passengers", tableName)
+		return "42", "10", false, nil
+	}
+	auth.CheckPrivilegeFn = func(_ context.Context, _, _ string, _ string, _ string) (bool, error) {
+		return true, nil
+	}
+	auth.GetEffectiveRowFiltersFn = func(_ context.Context, _ string, _ string) ([]string, error) {
+		return nil, nil
+	}
+	auth.GetEffectiveColumnMasksFn = func(_ context.Context, _ string, _ string) (map[string]string, error) {
+		return nil, nil
+	}
+
+	intro := &testutil.MockIntrospectionRepo{}
+	intro.ListColumnsFn = func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.Column, int64, error) {
+		return []domain.Column{{Name: "id", Type: "INTEGER"}}, 1, nil
+	}
+
+	msf := &mockMetastoreQuerierFactory{
+		ForCatalogFn: func(_ context.Context, catalogName string) (domain.MetastoreQuerier, error) {
+			require.Equal(t, "demo", catalogName)
+			return &mockMetastoreQuerier{
+				ReadDataPathFn: func(_ context.Context) (string, error) {
+					return "s3://bucket/data/", nil
+				},
+				ReadSchemaPathFn: func(_ context.Context, schemaName string) (string, error) {
+					require.Equal(t, "titanic", schemaName)
+					return "", nil
+				},
+				ListDataFilesFn: func(_ context.Context, _ string) ([]string, []bool, error) {
+					return []string{"f.parquet"}, []bool{true}, nil
+				},
+			}, nil
+		},
+	}
+
+	ps := &mockPresigner{PresignGetObjectFn: func(_ context.Context, path string, _ time.Duration) (string, error) {
+		return "https://signed.example.com/" + path, nil
+	}}
+
+	audit := &testutil.MockAuditRepo{}
+	svc := newManifestService(msf, auth, ps, intro, audit, nil, nil)
+
+	result, err := svc.GetManifest(context.Background(), "alice", "demo", "titanic", "passengers")
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.Equal(t, "passengers", result.Table)
+}

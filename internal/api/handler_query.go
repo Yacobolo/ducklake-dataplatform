@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
 
 	"duck-demo/internal/domain"
 	"duck-demo/internal/service/query"
@@ -70,9 +71,9 @@ func (h *APIHandler) CreateManifest(ctx context.Context, req CreateManifestReque
 		schemaName = *req.Body.Schema
 	}
 
-	// The manifest endpoint is not catalog-scoped in the URL; use empty string
-	// to let the service resolve the default catalog.
-	result, err := h.manifest.GetManifest(ctx, principal, "", schemaName, req.Body.Table)
+	catalogName, parsedSchema, tableName := parseManifestTableRef(schemaName, req.Body.Table)
+
+	result, err := h.manifest.GetManifest(ctx, principal, catalogName, parsedSchema, tableName)
 	if err != nil {
 		code := errorCodeFromError(err)
 		msg := err.Error()
@@ -107,4 +108,16 @@ func (h *APIHandler) CreateManifest(ctx context.Context, req CreateManifestReque
 		},
 		Headers: CreateManifest200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
+}
+
+func parseManifestTableRef(defaultSchema, tableInput string) (catalogName, schemaName, tableName string) {
+	parts := strings.Split(tableInput, ".")
+	switch len(parts) {
+	case 3:
+		return parts[0], parts[1], parts[2]
+	case 2:
+		return "", parts[0], parts[1]
+	default:
+		return "", defaultSchema, tableInput
+	}
 }

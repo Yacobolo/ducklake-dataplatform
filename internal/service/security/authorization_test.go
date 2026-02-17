@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	internaldb "duck-demo/internal/db"
@@ -534,6 +535,60 @@ func TestLookupTableIDNotFound(t *testing.T) {
 	if err == nil {
 		t.Error("expected error for nonexistent table")
 	}
+}
+
+func TestLookupTableID_SchemaQualified(t *testing.T) {
+	cat, _, ctx := setupTestService(t)
+
+	tableID, schemaID, _, err := cat.LookupTableID(ctx, "main.titanic")
+	require.NoError(t, err)
+	assert.Equal(t, "1", tableID)
+	assert.Equal(t, "0", schemaID)
+}
+
+func TestLookupTableID_AmbiguousUnqualified(t *testing.T) {
+	db, _ := internaldb.OpenTestSQLite(t)
+
+	_, err := db.ExecContext(ctx, `
+		CREATE TABLE ducklake_schema (
+			schema_id INTEGER PRIMARY KEY,
+			schema_uuid TEXT,
+			begin_snapshot INTEGER,
+			end_snapshot INTEGER,
+			schema_name TEXT,
+			path TEXT,
+			path_is_relative INTEGER
+		);
+		CREATE TABLE ducklake_table (
+			table_id INTEGER,
+			table_uuid TEXT,
+			begin_snapshot INTEGER,
+			end_snapshot INTEGER,
+			schema_id INTEGER,
+			table_name TEXT,
+			path TEXT,
+			path_is_relative INTEGER
+		);
+		INSERT INTO ducklake_schema (schema_id, schema_name, begin_snapshot)
+		VALUES (0, 'main', 0), (3, 'analytics', 0);
+		INSERT INTO ducklake_table (table_id, table_name, schema_id, begin_snapshot)
+		VALUES (1, 'titanic', 0, 1), (9, 'titanic', 3, 1);
+	`)
+	require.NoError(t, err)
+
+	cat := NewAuthorizationService(
+		repository.NewPrincipalRepo(db),
+		repository.NewGroupRepo(db),
+		repository.NewGrantRepo(db),
+		repository.NewRowFilterRepo(db),
+		repository.NewColumnMaskRepo(db),
+		repository.NewIntrospectionRepo(db),
+		nil,
+	)
+
+	_, _, _, err = cat.LookupTableID(context.Background(), "titanic")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "ambiguous")
 }
 
 func TestLookupSchemaID(t *testing.T) {

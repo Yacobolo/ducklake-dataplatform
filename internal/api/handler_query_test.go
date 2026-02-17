@@ -187,6 +187,30 @@ func TestHandler_CreateManifest(t *testing.T) {
 				assert.Equal(t, int32(500), serverErr.Body.Code)
 			},
 		},
+		{
+			name: "qualified table string is parsed into catalog schema table",
+			body: CreateManifestJSONRequestBody{Table: "demo.titanic.passengers"},
+			svcFn: func(_ context.Context, _ string, catalogName, schemaName, tableName string) (*query.ManifestResult, error) {
+				if catalogName != "demo" || schemaName != "titanic" || tableName != "passengers" {
+					return nil, domain.ErrValidation("unexpected parsed table reference")
+				}
+				return &query.ManifestResult{
+					Table:       "passengers",
+					Schema:      "titanic",
+					Columns:     []query.ManifestColumn{{Name: "id", Type: "INTEGER"}},
+					Files:       []string{"s3://bucket/data/file.parquet"},
+					RowFilters:  []string{},
+					ColumnMasks: map[string]string{},
+					ExpiresAt:   time.Now().Add(time.Hour),
+				}, nil
+			},
+			assertFn: func(t *testing.T, resp CreateManifestResponseObject, err error) {
+				t.Helper()
+				require.NoError(t, err)
+				_, ok := resp.(CreateManifest200JSONResponse)
+				require.True(t, ok, "expected 200 response, got %T", resp)
+			},
+		},
 	}
 
 	for _, tt := range tests {

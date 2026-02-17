@@ -46,39 +46,57 @@ func Classify(stmt Stmt) StmtType {
 
 // === Table Name Collection ===
 
+// TableRefName is a normalized table reference extracted from SQL.
+type TableRefName struct {
+	Catalog string
+	Schema  string
+	Name    string
+}
+
 // CollectTableNames returns a deduplicated list of table names referenced in
 // the statement (FROM, JOIN, subqueries, CTEs, INSERT/UPDATE/DELETE targets).
 func CollectTableNames(stmt Stmt) []string {
-	seen := make(map[string]bool)
-	var tables []string
-
-	switch s := stmt.(type) {
-	case *SelectStmt:
-		collectTablesFromSelect(s, seen, &tables)
-	case *InsertStmt:
-		if s.Table != nil {
-			addTable(s.Table.Name, seen, &tables)
-		}
-		if s.Query != nil {
-			collectTablesFromSelect(s.Query, seen, &tables)
-		}
-	case *UpdateStmt:
-		if s.Table != nil {
-			addTable(s.Table.Name, seen, &tables)
-		}
-		if s.From != nil {
-			collectTablesFromFrom(s.From, seen, &tables)
-		}
-	case *DeleteStmt:
-		if s.Table != nil {
-			addTable(s.Table.Name, seen, &tables)
-		}
+	refs := CollectTableRefs(stmt)
+	tables := make([]string, 0, len(refs))
+	for _, ref := range refs {
+		tables = append(tables, ref.Name)
 	}
-
 	return tables
 }
 
-func collectTablesFromSelect(sel *SelectStmt, seen map[string]bool, tables *[]string) {
+// CollectTableRefs returns a deduplicated list of table references referenced in
+// the statement (FROM, JOIN, subqueries, CTEs, INSERT/UPDATE/DELETE targets).
+func CollectTableRefs(stmt Stmt) []TableRefName {
+	seen := make(map[string]bool)
+	var refs []TableRefName
+
+	switch s := stmt.(type) {
+	case *SelectStmt:
+		collectTableRefsFromSelect(s, seen, &refs)
+	case *InsertStmt:
+		if s.Table != nil {
+			addTableRef(*s.Table, seen, &refs)
+		}
+		if s.Query != nil {
+			collectTableRefsFromSelect(s.Query, seen, &refs)
+		}
+	case *UpdateStmt:
+		if s.Table != nil {
+			addTableRef(*s.Table, seen, &refs)
+		}
+		if s.From != nil {
+			collectTableRefsFromFrom(s.From, seen, &refs)
+		}
+	case *DeleteStmt:
+		if s.Table != nil {
+			addTableRef(*s.Table, seen, &refs)
+		}
+	}
+
+	return refs
+}
+
+func collectTableRefsFromSelect(sel *SelectStmt, seen map[string]bool, refs *[]TableRefName) {
 	if sel == nil {
 		return
 	}
@@ -86,165 +104,161 @@ func collectTablesFromSelect(sel *SelectStmt, seen map[string]bool, tables *[]st
 	// WITH clause (CTEs)
 	if sel.With != nil {
 		for _, cte := range sel.With.CTEs {
-			collectTablesFromSelect(cte.Select, seen, tables)
+			collectTableRefsFromSelect(cte.Select, seen, refs)
 		}
 	}
 
 	if sel.Body != nil {
-		collectTablesFromBody(sel.Body, seen, tables)
+		collectTableRefsFromBody(sel.Body, seen, refs)
 	}
 }
 
-func collectTablesFromBody(body *SelectBody, seen map[string]bool, tables *[]string) {
+func collectTableRefsFromBody(body *SelectBody, seen map[string]bool, refs *[]TableRefName) {
 	if body == nil {
 		return
 	}
 	if body.Left != nil {
-		collectTablesFromCore(body.Left, seen, tables)
+		collectTableRefsFromCore(body.Left, seen, refs)
 	}
 	if body.Right != nil {
-		collectTablesFromBody(body.Right, seen, tables)
+		collectTableRefsFromBody(body.Right, seen, refs)
 	}
 }
 
-func collectTablesFromCore(sc *SelectCore, seen map[string]bool, tables *[]string) {
+func collectTableRefsFromCore(sc *SelectCore, seen map[string]bool, refs *[]TableRefName) {
 	if sc == nil {
 		return
 	}
 
 	// FROM clause
 	if sc.From != nil {
-		collectTablesFromFrom(sc.From, seen, tables)
+		collectTableRefsFromFrom(sc.From, seen, refs)
 	}
 
 	// WHERE clause subqueries
-	collectTablesFromExpr(sc.Where, seen, tables)
+	collectTableRefsFromExpr(sc.Where, seen, refs)
 
 	// HAVING clause subqueries
-	collectTablesFromExpr(sc.Having, seen, tables)
+	collectTableRefsFromExpr(sc.Having, seen, refs)
 
 	// SELECT list subqueries
 	for _, col := range sc.Columns {
-		collectTablesFromExpr(col.Expr, seen, tables)
+		collectTableRefsFromExpr(col.Expr, seen, refs)
 	}
 
 	// VALUES rows
 	for _, row := range sc.ValuesRows {
 		for _, expr := range row {
-			collectTablesFromExpr(expr, seen, tables)
+			collectTableRefsFromExpr(expr, seen, refs)
 		}
 	}
 }
 
-func collectTablesFromFrom(from *FromClause, seen map[string]bool, tables *[]string) {
+func collectTableRefsFromFrom(from *FromClause, seen map[string]bool, refs *[]TableRefName) {
 	if from == nil {
 		return
 	}
-	collectTablesFromTableRef(from.Source, seen, tables)
+	collectTableRefsFromTableRef(from.Source, seen, refs)
 	for _, join := range from.Joins {
-		collectTablesFromTableRef(join.Right, seen, tables)
+		collectTableRefsFromTableRef(join.Right, seen, refs)
 	}
 }
 
-func collectTablesFromTableRef(ref TableRef, seen map[string]bool, tables *[]string) {
+func collectTableRefsFromTableRef(ref TableRef, seen map[string]bool, refs *[]TableRefName) {
 	if ref == nil {
 		return
 	}
 
 	switch t := ref.(type) {
 	case *TableName:
-		addTable(t.Name, seen, tables)
+		addTableRef(*t, seen, refs)
 	case *DerivedTable:
-		collectTablesFromSelect(t.Select, seen, tables)
+		collectTableRefsFromSelect(t.Select, seen, refs)
 	case *LateralTable:
-		collectTablesFromSelect(t.Select, seen, tables)
+		collectTableRefsFromSelect(t.Select, seen, refs)
 	case *FuncTable:
-		// Table-valued functions in FROM clauses (e.g., read_csv_auto(), range()).
-		// Add a "__func__<name>" sentinel entry so the engine does not treat
-		// the query as a "table-less SELECT" and bypass RBAC. The engine skips
-		// these sentinel entries during table-level privilege checks.
 		if t.Func != nil && t.Func.Name != "" {
-			addTable("__func__"+strings.ToLower(t.Func.Name), seen, tables)
+			addNamedTableRef("", "", "__func__"+strings.ToLower(t.Func.Name), seen, refs)
 		}
 	case *PivotTable:
-		collectTablesFromTableRef(t.Source, seen, tables)
+		collectTableRefsFromTableRef(t.Source, seen, refs)
 	case *UnpivotTable:
-		collectTablesFromTableRef(t.Source, seen, tables)
+		collectTableRefsFromTableRef(t.Source, seen, refs)
 	case *StringTable:
-		addTable(t.Path, seen, tables)
+		addNamedTableRef("", "", t.Path, seen, refs)
 	}
 }
 
-func collectTablesFromExpr(e Expr, seen map[string]bool, tables *[]string) {
+func collectTableRefsFromExpr(e Expr, seen map[string]bool, refs *[]TableRefName) {
 	if e == nil {
 		return
 	}
 
 	switch expr := e.(type) {
 	case *SubqueryExpr:
-		collectTablesFromSelect(expr.Select, seen, tables)
+		collectTableRefsFromSelect(expr.Select, seen, refs)
 	case *ExistsExpr:
-		collectTablesFromSelect(expr.Select, seen, tables)
+		collectTableRefsFromSelect(expr.Select, seen, refs)
 	case *InExpr:
-		collectTablesFromExpr(expr.Expr, seen, tables)
+		collectTableRefsFromExpr(expr.Expr, seen, refs)
 		if expr.Query != nil {
-			collectTablesFromSelect(expr.Query, seen, tables)
+			collectTableRefsFromSelect(expr.Query, seen, refs)
 		}
 		for _, v := range expr.Values {
-			collectTablesFromExpr(v, seen, tables)
+			collectTableRefsFromExpr(v, seen, refs)
 		}
 	case *BinaryExpr:
-		collectTablesFromExpr(expr.Left, seen, tables)
-		collectTablesFromExpr(expr.Right, seen, tables)
+		collectTableRefsFromExpr(expr.Left, seen, refs)
+		collectTableRefsFromExpr(expr.Right, seen, refs)
 	case *UnaryExpr:
-		collectTablesFromExpr(expr.Expr, seen, tables)
+		collectTableRefsFromExpr(expr.Expr, seen, refs)
 	case *ParenExpr:
-		collectTablesFromExpr(expr.Expr, seen, tables)
+		collectTableRefsFromExpr(expr.Expr, seen, refs)
 	case *FuncCall:
 		for _, arg := range expr.Args {
-			collectTablesFromExpr(arg, seen, tables)
+			collectTableRefsFromExpr(arg, seen, refs)
 		}
 	case *CaseExpr:
-		collectTablesFromExpr(expr.Operand, seen, tables)
+		collectTableRefsFromExpr(expr.Operand, seen, refs)
 		for _, w := range expr.Whens {
-			collectTablesFromExpr(w.Condition, seen, tables)
-			collectTablesFromExpr(w.Result, seen, tables)
+			collectTableRefsFromExpr(w.Condition, seen, refs)
+			collectTableRefsFromExpr(w.Result, seen, refs)
 		}
-		collectTablesFromExpr(expr.Else, seen, tables)
+		collectTableRefsFromExpr(expr.Else, seen, refs)
 	case *CastExpr:
-		collectTablesFromExpr(expr.Expr, seen, tables)
+		collectTableRefsFromExpr(expr.Expr, seen, refs)
 	case *TypeCastExpr:
-		collectTablesFromExpr(expr.Expr, seen, tables)
+		collectTableRefsFromExpr(expr.Expr, seen, refs)
 	case *BetweenExpr:
-		collectTablesFromExpr(expr.Expr, seen, tables)
-		collectTablesFromExpr(expr.Low, seen, tables)
-		collectTablesFromExpr(expr.High, seen, tables)
+		collectTableRefsFromExpr(expr.Expr, seen, refs)
+		collectTableRefsFromExpr(expr.Low, seen, refs)
+		collectTableRefsFromExpr(expr.High, seen, refs)
 	case *IsNullExpr:
-		collectTablesFromExpr(expr.Expr, seen, tables)
+		collectTableRefsFromExpr(expr.Expr, seen, refs)
 	case *IsBoolExpr:
-		collectTablesFromExpr(expr.Expr, seen, tables)
+		collectTableRefsFromExpr(expr.Expr, seen, refs)
 	case *LikeExpr:
-		collectTablesFromExpr(expr.Expr, seen, tables)
-		collectTablesFromExpr(expr.Pattern, seen, tables)
+		collectTableRefsFromExpr(expr.Expr, seen, refs)
+		collectTableRefsFromExpr(expr.Pattern, seen, refs)
 	case *IsDistinctExpr:
-		collectTablesFromExpr(expr.Left, seen, tables)
-		collectTablesFromExpr(expr.Right, seen, tables)
+		collectTableRefsFromExpr(expr.Left, seen, refs)
+		collectTableRefsFromExpr(expr.Right, seen, refs)
 	case *CollateExpr:
-		collectTablesFromExpr(expr.Expr, seen, tables)
+		collectTableRefsFromExpr(expr.Expr, seen, refs)
 	case *MapLiteral:
-		for _, e := range expr.Entries {
-			collectTablesFromExpr(e.Value, seen, tables)
+		for _, entry := range expr.Entries {
+			collectTableRefsFromExpr(entry.Value, seen, refs)
 		}
 	case *ListComprehension:
-		collectTablesFromExpr(expr.Expr, seen, tables)
-		collectTablesFromExpr(expr.List, seen, tables)
-		collectTablesFromExpr(expr.Cond, seen, tables)
+		collectTableRefsFromExpr(expr.Expr, seen, refs)
+		collectTableRefsFromExpr(expr.List, seen, refs)
+		collectTableRefsFromExpr(expr.Cond, seen, refs)
 	case *NamedArgExpr:
-		collectTablesFromExpr(expr.Value, seen, tables)
+		collectTableRefsFromExpr(expr.Value, seen, refs)
 	case *GroupingExpr:
 		for _, group := range expr.Groups {
-			for _, e := range group {
-				collectTablesFromExpr(e, seen, tables)
+			for _, groupExpr := range group {
+				collectTableRefsFromExpr(groupExpr, seen, refs)
 			}
 		}
 	case *ParamExpr, *DefaultExpr:
@@ -252,12 +266,26 @@ func collectTablesFromExpr(e Expr, seen map[string]bool, tables *[]string) {
 	}
 }
 
-func addTable(name string, seen map[string]bool, tables *[]string) {
-	if name == "" || seen[name] {
+func addTableRef(table TableName, seen map[string]bool, refs *[]TableRefName) {
+	addNamedTableRef(table.Catalog, table.Schema, table.Name, seen, refs)
+}
+
+func addNamedTableRef(catalog, schema, name string, seen map[string]bool, refs *[]TableRefName) {
+	if name == "" {
 		return
 	}
-	seen[name] = true
-	*tables = append(*tables, name)
+	key := name
+	if schema != "" {
+		key = schema + "." + key
+	}
+	if catalog != "" {
+		key = catalog + "." + key
+	}
+	if seen[key] {
+		return
+	}
+	seen[key] = true
+	*refs = append(*refs, TableRefName{Catalog: catalog, Schema: schema, Name: name})
 }
 
 // === Target Table Extraction ===
