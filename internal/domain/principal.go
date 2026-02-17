@@ -1,6 +1,9 @@
 package domain
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 // Principal represents a user or service principal in the system.
 type Principal struct {
@@ -30,7 +33,7 @@ type CreatePrincipalRequest struct {
 
 // Validate checks that the request is well-formed.
 func (r *CreatePrincipalRequest) Validate() error {
-	if r.Name == "" {
+	if strings.TrimSpace(r.Name) == "" {
 		return ErrValidation("principal name is required")
 	}
 	if r.Type == "" {
@@ -66,7 +69,7 @@ type CreateGroupRequest struct {
 
 // Validate checks that the request is well-formed.
 func (r *CreateGroupRequest) Validate() error {
-	if r.Name == "" {
+	if strings.TrimSpace(r.Name) == "" {
 		return ErrValidation("group name is required")
 	}
 	return nil

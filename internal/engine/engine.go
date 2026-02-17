@@ -214,6 +214,8 @@ func privilegeForStatement(t sqlrewrite.StatementType) (string, error) {
 		return domain.PrivUpdate, nil
 	case sqlrewrite.StmtDelete:
 		return domain.PrivDelete, nil
+	case sqlrewrite.StmtUtilitySet:
+		return domain.PrivUsage, nil
 	case sqlrewrite.StmtDDL:
 		return "", fmt.Errorf("DDL statements are not allowed through the query engine")
 	default:

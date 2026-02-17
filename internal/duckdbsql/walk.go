@@ -17,12 +17,13 @@ const (
 	StmtTypeUpdate
 	StmtTypeDelete
 	StmtTypeDDL
+	StmtTypeUtilitySet
 	StmtTypeOther
 )
 
 // Classify returns the statement type for a parsed statement.
 func Classify(stmt Stmt) StmtType {
-	switch stmt.(type) {
+	switch s := stmt.(type) {
 	case *SelectStmt:
 		return StmtTypeSelect
 	case *InsertStmt:
@@ -34,6 +35,9 @@ func Classify(stmt Stmt) StmtType {
 	case *DDLStmt:
 		return StmtTypeDDL
 	case *UtilityStmt:
+		if s.Type == UtilitySet || s.Type == UtilityReset {
+			return StmtTypeUtilitySet
+		}
 		return StmtTypeOther
 	default:
 		return StmtTypeOther

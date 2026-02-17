@@ -161,6 +161,7 @@ const (
 	StmtUpdate
 	StmtDelete
 	StmtDDL
+	StmtUtilitySet
 	StmtOther
 )
 
@@ -176,6 +177,8 @@ func (t StatementType) String() string {
 		return "DELETE"
 	case StmtDDL:
 		return "DDL"
+	case StmtUtilitySet:
+		return "UTILITY_SET"
 	default:
 		return "OTHER"
 	}
@@ -205,6 +208,8 @@ func ClassifyStatement(sql string) (StatementType, error) {
 		return StmtDelete, nil
 	case duckdbsql.StmtTypeDDL:
 		return StmtDDL, nil
+	case duckdbsql.StmtTypeUtilitySet:
+		return StmtUtilitySet, nil
 	default:
 		return StmtOther, nil
 	}

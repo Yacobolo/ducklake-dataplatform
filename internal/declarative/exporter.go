@@ -1,6 +1,8 @@
 package declarative
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -16,6 +18,10 @@ func ExportDirectory(dir string, state *DesiredState, overwrite bool) error {
 		if err := ensureEmptyOrMissing(dir); err != nil {
 			return err
 		}
+	}
+
+	if err := os.MkdirAll(dir, 0o750); err != nil {
+		return fmt.Errorf("create export directory %s: %w", dir, err)
 	}
 
 	// Security resources.
@@ -348,7 +354,7 @@ func exportCatalogs(dir string, state *DesiredState) error {
 			Metadata:   ObjectMeta{Name: v.ViewName},
 			Spec:       v.Spec,
 		}
-		path := filepath.Join(dir, "catalogs", v.CatalogName, "schemas", v.SchemaName, "views", v.ViewName+".yaml")
+		path := filepath.Join(dir, "catalogs", v.CatalogName, "schemas", v.SchemaName, "views", safeResourceFileName(v.ViewName))
 		if err := writeYAMLFile(path, doc); err != nil {
 			return err
 		}
@@ -362,7 +368,7 @@ func exportCatalogs(dir string, state *DesiredState) error {
 			Metadata:   ObjectMeta{Name: vol.VolumeName},
 			Spec:       vol.Spec,
 		}
-		path := filepath.Join(dir, "catalogs", vol.CatalogName, "schemas", vol.SchemaName, "volumes", vol.VolumeName+".yaml")
+		path := filepath.Join(dir, "catalogs", vol.CatalogName, "schemas", vol.SchemaName, "volumes", safeResourceFileName(vol.VolumeName))
 		if err := writeYAMLFile(path, doc); err != nil {
 			return err
 		}
@@ -381,7 +387,7 @@ func exportNotebooks(dir string, state *DesiredState) error {
 			Metadata:   ObjectMeta{Name: nb.Name},
 			Spec:       nb.Spec,
 		}
-		path := filepath.Join(dir, "notebooks", nb.Name+".yaml")
+		path := filepath.Join(dir, "notebooks", safeResourceFileName(nb.Name))
 		if err := writeYAMLFile(path, doc); err != nil {
 			return err
 		}
@@ -399,7 +405,7 @@ func exportPipelines(dir string, state *DesiredState) error {
 			Metadata:   ObjectMeta{Name: pl.Name},
 			Spec:       pl.Spec,
 		}
-		path := filepath.Join(dir, "pipelines", pl.Name+".yaml")
+		path := filepath.Join(dir, "pipelines", safeResourceFileName(pl.Name))
 		if err := writeYAMLFile(path, doc); err != nil {
 			return err
 		}
@@ -417,7 +423,7 @@ func exportModels(dir string, state *DesiredState) error {
 			Metadata:   ObjectMeta{Name: m.ModelName},
 			Spec:       m.Spec,
 		}
-		path := filepath.Join(dir, "models", m.ProjectName, m.ModelName+".yaml")
+		path := filepath.Join(dir, "models", m.ProjectName, safeResourceFileName(m.ModelName))
 		if err := writeYAMLFile(path, doc); err != nil {
 			return err
 		}
@@ -435,10 +441,20 @@ func exportMacros(dir string, state *DesiredState) error {
 			Metadata:   ObjectMeta{Name: m.Name},
 			Spec:       m.Spec,
 		}
-		path := filepath.Join(dir, "macros", m.Name+".yaml")
+		path := filepath.Join(dir, "macros", safeResourceFileName(m.Name))
 		if err := writeYAMLFile(path, doc); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func safeResourceFileName(name string) string {
+	const maxBaseLen = 180
+	if len(name) <= maxBaseLen {
+		return name + ".yaml"
+	}
+	sum := sha256.Sum256([]byte(name))
+	hash := hex.EncodeToString(sum[:4])
+	return name[:maxBaseLen] + "-" + hash + ".yaml"
 }
