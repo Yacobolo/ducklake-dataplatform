@@ -74,7 +74,48 @@ func TestDBNotebookProvider_GetSQLBlocks(t *testing.T) {
 			},
 			wantErr:      true,
 			wantErrType:  new(*domain.ValidationError),
-			wantContains: "has no SQL cells",
+			wantContains: "has no executable SQL cells",
+		},
+		{
+			name:       "ignores_comment_only_and_empty_sql_cells",
+			notebookID: "nb-with-comments",
+			setupRepo: func() *testutil.MockNotebookRepo {
+				return &testutil.MockNotebookRepo{
+					GetNotebookFn: func(_ context.Context, id string) (*domain.Notebook, error) {
+						return &domain.Notebook{ID: id, Name: "comments"}, nil
+					},
+					ListCellsFn: func(_ context.Context, _ string) ([]domain.Cell, error) {
+						return []domain.Cell{
+							{ID: "c1", CellType: domain.CellTypeSQL, Content: "", Position: 0},
+							{ID: "c2", CellType: domain.CellTypeSQL, Content: "\n  -- divider\n", Position: 1},
+							{ID: "c3", CellType: domain.CellTypeSQL, Content: "/* metadata */", Position: 2},
+							{ID: "c4", CellType: domain.CellTypeSQL, Content: "SELECT 1", Position: 3},
+						}, nil
+					},
+				}
+			},
+			wantBlocks: []string{"SELECT 1"},
+		},
+		{
+			name:       "only_comment_or_empty_sql_cells_is_validation_error",
+			notebookID: "nb-empty-sql",
+			setupRepo: func() *testutil.MockNotebookRepo {
+				return &testutil.MockNotebookRepo{
+					GetNotebookFn: func(_ context.Context, id string) (*domain.Notebook, error) {
+						return &domain.Notebook{ID: id, Name: "empty"}, nil
+					},
+					ListCellsFn: func(_ context.Context, _ string) ([]domain.Cell, error) {
+						return []domain.Cell{
+							{ID: "c1", CellType: domain.CellTypeSQL, Content: "\n", Position: 0},
+							{ID: "c2", CellType: domain.CellTypeSQL, Content: "-- only comment", Position: 1},
+							{ID: "c3", CellType: domain.CellTypeSQL, Content: "/* only block comment */", Position: 2},
+						}, nil
+					},
+				}
+			},
+			wantErr:      true,
+			wantErrType:  new(*domain.ValidationError),
+			wantContains: "has no executable SQL cells",
 		},
 		{
 			name:       "mixed_cells_ordered_by_position",
