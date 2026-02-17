@@ -65,13 +65,13 @@ func (e *SecureEngine) rewriteQuery(ctx context.Context, principalName, sqlQuery
 		return "", err
 	}
 
-	// 2. Extract table names
-	tables, err := sqlrewrite.ExtractTableNames(sqlQuery)
+	// 2. Extract table refs
+	tableRefs, err := sqlrewrite.ExtractTableRefs(sqlQuery)
 	if err != nil {
 		return "", fmt.Errorf("parse SQL: %w", err)
 	}
 
-	if len(tables) == 0 {
+	if len(tableRefs) == 0 {
 		// Table-less SELECT (SELECT 1, SELECT version()) is harmless — allow for
 		// all authenticated users. Non-SELECT table-less statements still require
 		// catalog-level privilege to prevent unguarded execution of functions like
@@ -90,7 +90,10 @@ func (e *SecureEngine) rewriteQuery(ctx context.Context, principalName, sqlQuery
 
 	// 3. Check privileges + collect filters/masks for each table
 	rewritten := sqlQuery
-	for _, tableName := range tables {
+	for _, tableRef := range tableRefs {
+		tableName := tableRef.Name
+		tablePath := formatTableRef(tableRef)
+
 		// Skip sentinel entries added by ExtractTableNames for table-valued
 		// functions (e.g., range(), generate_series()). These sentinels exist
 		// only to prevent the query from being classified as "table-less".
@@ -99,14 +102,15 @@ func (e *SecureEngine) rewriteQuery(ctx context.Context, principalName, sqlQuery
 		if strings.HasPrefix(tableName, "__func__") {
 			continue
 		}
-		tableID, _, isExternal, err := e.catalog.LookupTableID(ctx, tableName)
+
+		tableID, _, isExternal, err := e.catalog.LookupTableID(ctx, tablePath)
 		if err != nil {
-			return "", fmt.Errorf("catalog lookup: %w", err)
+			return "", fmt.Errorf("catalog lookup for %q: %w", tablePath, err)
 		}
 
 		// Block DML on external (read-only) tables
 		if isExternal && stmtType != sqlrewrite.StmtSelect {
-			return "", fmt.Errorf("access denied: table %q is read-only (EXTERNAL)", tableName)
+			return "", fmt.Errorf("access denied: table %q is read-only (EXTERNAL)", tablePath)
 		}
 
 		// Check privilege
@@ -115,7 +119,7 @@ func (e *SecureEngine) rewriteQuery(ctx context.Context, principalName, sqlQuery
 			return "", fmt.Errorf("privilege check: %w", err)
 		}
 		if !allowed {
-			return "", domain.ErrAccessDenied("principal %q lacks %s on table %q", principalName, requiredPriv, tableName)
+			return "", domain.ErrAccessDenied("principal %q lacks %s on table %q", principalName, requiredPriv, tablePath)
 		}
 
 		// Get row filters (for SELECT, UPDATE, and DELETE)
@@ -152,9 +156,20 @@ func (e *SecureEngine) rewriteQuery(ctx context.Context, principalName, sqlQuery
 		}
 	}
 
-	e.logger.Debug("query rewritten", "principal", principalName, "statement", stmtType, "tables", tables, "sql", rewritten)
+	e.logger.Debug("query rewritten", "principal", principalName, "statement", stmtType, "tables", tableRefs, "sql", rewritten)
 
 	return rewritten, nil
+}
+
+func formatTableRef(ref sqlrewrite.TableRef) string {
+	name := ref.Name
+	if ref.Schema != "" {
+		name = ref.Schema + "." + name
+	}
+	if ref.Catalog != "" {
+		name = ref.Catalog + "." + name
+	}
+	return name
 }
 
 // Query executes a SQL query as the given principal, enforcing:

@@ -108,7 +108,11 @@ func newApplyCmd(client *gen.Client) *cobra.Command {
 			}
 			var results []actionResult
 			var succeeded, failed int
+			stop := false
 			for _, action := range plan.Actions {
+				if stop {
+					break
+				}
 				if !isJSON {
 					_, _ = fmt.Fprintf(os.Stdout, "  %s %s %q ... ",
 						action.Operation, action.ResourceKind, action.ResourceName)
@@ -126,6 +130,7 @@ func newApplyCmd(client *gen.Client) *cobra.Command {
 						Error:        err.Error(),
 					})
 					failed++
+					stop = true
 				} else {
 					if !isJSON {
 						_, _ = fmt.Fprintln(os.Stdout, "succeeded")

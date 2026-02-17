@@ -87,6 +87,32 @@ func TestExtractTableNames_InvalidSQL(t *testing.T) {
 	}
 }
 
+func TestExtractTableRefs_QualifiedThreePart(t *testing.T) {
+	refs, err := ExtractTableRefs("SELECT * FROM demo.titanic.passengers")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(refs) != 1 {
+		t.Fatalf("expected 1 ref, got %d", len(refs))
+	}
+	if refs[0].Catalog != "demo" || refs[0].Schema != "titanic" || refs[0].Name != "passengers" {
+		t.Fatalf("unexpected ref: %+v", refs[0])
+	}
+}
+
+func TestExtractTableRefs_SchemaQualified(t *testing.T) {
+	refs, err := ExtractTableRefs("SELECT * FROM analytics.orders")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(refs) != 1 {
+		t.Fatalf("expected 1 ref, got %d", len(refs))
+	}
+	if refs[0].Catalog != "" || refs[0].Schema != "analytics" || refs[0].Name != "orders" {
+		t.Fatalf("unexpected ref: %+v", refs[0])
+	}
+}
+
 // --- RewriteQuery tests (backward-compatible RLSRule API) ---
 
 func TestRewriteQuery_NoRules(t *testing.T) {

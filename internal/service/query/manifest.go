@@ -84,22 +84,23 @@ func (s *ManifestService) GetManifest(
 	start := time.Now()
 
 	// 1. Resolve table name to DuckLake table ID
-	tableID, _, _, err := s.authSvc.LookupTableID(ctx, tableName)
+	lookupName := qualifiedTableName(catalogName, schemaName, tableName)
+	tableID, _, _, err := s.authSvc.LookupTableID(ctx, lookupName)
 	if err != nil {
-		s.logManifestAudit(ctx, principalName, tableName, "DENIED", err.Error(), time.Since(start))
-		return nil, domain.ErrNotFound("table %q not found", tableName)
+		s.logManifestAudit(ctx, principalName, lookupName, "DENIED", err.Error(), time.Since(start))
+		return nil, domain.ErrNotFound("table %q not found", lookupName)
 	}
 
 	// 2. Check RBAC: principal needs SELECT on this table
 	allowed, err := s.authSvc.CheckPrivilege(ctx, principalName, domain.SecurableTable, tableID, domain.PrivSelect)
 	if err != nil {
-		s.logManifestAudit(ctx, principalName, tableName, "ERROR", err.Error(), time.Since(start))
+		s.logManifestAudit(ctx, principalName, lookupName, "ERROR", err.Error(), time.Since(start))
 		return nil, fmt.Errorf("privilege check: %w", err)
 	}
 	if !allowed {
-		s.logManifestAudit(ctx, principalName, tableName, "DENIED",
-			fmt.Sprintf("%q lacks SELECT on table %q", principalName, tableName), time.Since(start))
-		return nil, domain.ErrAccessDenied("%q lacks SELECT on table %q", principalName, tableName)
+		s.logManifestAudit(ctx, principalName, lookupName, "DENIED",
+			fmt.Sprintf("%q lacks SELECT on table %q", principalName, lookupName), time.Since(start))
+		return nil, domain.ErrAccessDenied("%q lacks SELECT on table %q", principalName, lookupName)
 	}
 
 	// 3. Get RLS row filters for this principal on this table.
@@ -166,7 +167,7 @@ func (s *ManifestService) GetManifest(
 		columnMasks = map[string]string{}
 	}
 
-	s.logManifestAudit(ctx, principalName, tableName, "ALLOWED", "", time.Since(start))
+	s.logManifestAudit(ctx, principalName, lookupName, "ALLOWED", "", time.Since(start))
 
 	return &ManifestResult{
 		Table:       tableName,
@@ -177,6 +178,16 @@ func (s *ManifestService) GetManifest(
 		ColumnMasks: columnMasks,
 		ExpiresAt:   time.Now().Add(expiry),
 	}, nil
+}
+
+func qualifiedTableName(catalogName, schemaName, tableName string) string {
+	if catalogName != "" {
+		return catalogName + "." + schemaName + "." + tableName
+	}
+	if schemaName != "" {
+		return schemaName + "." + tableName
+	}
+	return tableName
 }
 
 // resolveDataFiles queries the DuckLake metastore for Parquet file

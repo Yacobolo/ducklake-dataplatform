@@ -129,20 +129,36 @@ func (r *IntrospectionRepo) ListColumns(ctx context.Context, tableID string, pag
 
 // GetTableByName returns a table by its name.
 func (r *IntrospectionRepo) GetTableByName(ctx context.Context, tableName string) (*domain.Table, error) {
-	var t domain.Table
-	var tID, sID int64
-	err := r.db.QueryRowContext(ctx,
-		`SELECT table_id, schema_id, table_name FROM ducklake_table WHERE table_name = ? AND end_snapshot IS NULL`, tableName).
-		Scan(&tID, &sID, &t.Name)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, &domain.NotFoundError{Message: "table not found"}
-	}
+	rows, err := r.db.QueryContext(ctx,
+		`SELECT table_id, schema_id, table_name FROM ducklake_table WHERE table_name = ? AND end_snapshot IS NULL LIMIT 2`, tableName)
 	if err != nil {
 		return nil, err
 	}
-	t.ID = domain.DuckLakeIDToString(tID)
-	t.SchemaID = domain.DuckLakeIDToString(sID)
-	return &t, nil
+	defer rows.Close() //nolint:errcheck
+
+	var matches []domain.Table
+	for rows.Next() {
+		var t domain.Table
+		var tID, sID int64
+		if err := rows.Scan(&tID, &sID, &t.Name); err != nil {
+			return nil, err
+		}
+		t.ID = domain.DuckLakeIDToString(tID)
+		t.SchemaID = domain.DuckLakeIDToString(sID)
+		matches = append(matches, t)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	if len(matches) == 0 {
+		return nil, &domain.NotFoundError{Message: "table not found"}
+	}
+	if len(matches) > 1 {
+		return nil, &domain.ValidationError{Message: "table name is ambiguous; use schema-qualified name"}
+	}
+
+	return &matches[0], nil
 }
 
 // GetSchemaByName returns a schema by its name.

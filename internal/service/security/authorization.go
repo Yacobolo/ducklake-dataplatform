@@ -2,6 +2,7 @@ package security
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -105,15 +106,42 @@ func (s *AuthorizationService) resolveGroupIDs(ctx context.Context, principalID 
 // LookupTableID resolves a table name to its table_id and schema_id.
 // For external tables, isExternal is true.
 func (s *AuthorizationService) LookupTableID(ctx context.Context, tableName string) (tableID, schemaID string, isExternal bool, err error) {
+	catalogName, schemaName, bareTableName := splitTableReference(tableName)
+	_ = catalogName // catalog is not currently used by metastore lookups.
+
+	if schemaName != "" {
+		t, lookupErr := s.lookupManagedTableBySchema(ctx, schemaName, bareTableName)
+		if lookupErr == nil {
+			return t.ID, t.SchemaID, false, nil
+		}
+
+		if s.extTableRepo != nil {
+			et, extErr := s.extTableRepo.GetByName(ctx, schemaName, bareTableName)
+			if extErr == nil {
+				sch, schErr := s.introspection.GetSchemaByName(ctx, et.SchemaName)
+				if schErr == nil {
+					return et.ID, sch.ID, true, nil
+				}
+				return et.ID, "", true, nil
+			}
+		}
+
+		return "", "", false, fmt.Errorf("table %q not found in schema %q", bareTableName, schemaName)
+	}
+
 	// Try DuckLake first
-	t, err := s.introspection.GetTableByName(ctx, tableName)
+	t, err := s.introspection.GetTableByName(ctx, bareTableName)
 	if err == nil {
 		return t.ID, t.SchemaID, false, nil
+	}
+	var notFoundErr *domain.NotFoundError
+	if err != nil && !errors.As(err, &notFoundErr) {
+		return "", "", false, fmt.Errorf("lookup table %q: %w", bareTableName, err)
 	}
 
 	// Fall back to external tables
 	if s.extTableRepo != nil {
-		et, extErr := s.extTableRepo.GetByTableName(ctx, tableName)
+		et, extErr := s.extTableRepo.GetByTableName(ctx, bareTableName)
 		if extErr == nil {
 			// Resolve schema ID via introspection
 			sch, schErr := s.introspection.GetSchemaByName(ctx, et.SchemaName)
@@ -126,7 +154,41 @@ func (s *AuthorizationService) LookupTableID(ctx context.Context, tableName stri
 		}
 	}
 
-	return "", "", false, fmt.Errorf("table %q not found in catalog", tableName)
+	return "", "", false, fmt.Errorf("table %q not found in catalog", bareTableName)
+}
+
+func (s *AuthorizationService) lookupManagedTableBySchema(ctx context.Context, schemaName, tableName string) (*domain.Table, error) {
+	sch, err := s.introspection.GetSchemaByName(ctx, schemaName)
+	if err != nil {
+		return nil, fmt.Errorf("schema %q not found", schemaName)
+	}
+
+	tables, _, err := s.introspection.ListTables(ctx, sch.ID, domain.PageRequest{MaxResults: 10000})
+	if err != nil {
+		return nil, fmt.Errorf("list tables for schema %q: %w", schemaName, err)
+	}
+	for _, table := range tables {
+		if table.Name == tableName {
+			matched := table
+			return &matched, nil
+		}
+	}
+
+	return nil, fmt.Errorf("table %q not found in schema %q", tableName, schemaName)
+}
+
+func splitTableReference(name string) (catalog, schema, table string) {
+	parts := strings.Split(name, ".")
+	switch len(parts) {
+	case 0:
+		return "", "", ""
+	case 1:
+		return "", "", parts[0]
+	case 2:
+		return "", parts[0], parts[1]
+	default:
+		return parts[len(parts)-3], parts[len(parts)-2], parts[len(parts)-1]
+	}
 }
 
 // LookupSchemaID resolves a schema name to its DuckLake schema_id.

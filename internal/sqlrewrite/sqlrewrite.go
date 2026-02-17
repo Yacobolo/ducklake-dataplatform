@@ -30,14 +30,31 @@ type RLSRule struct {
 	Value    interface{} // literal value to compare against
 }
 
-// ExtractTableNames parses a SQL query and returns the deduplicated list
-// of table names referenced in FROM clauses and JOINs.
-func ExtractTableNames(sql string) ([]string, error) {
+// TableRef is a normalized SQL table reference.
+type TableRef = duckdbsql.TableRefName
+
+// ExtractTableRefs parses a SQL query and returns the deduplicated list
+// of table refs referenced in FROM clauses and JOINs.
+func ExtractTableRefs(sql string) ([]TableRef, error) {
 	stmt, err := duckdbsql.Parse(sql)
 	if err != nil {
 		return nil, fmt.Errorf("parse SQL: %w", err)
 	}
-	return duckdbsql.CollectTableNames(stmt), nil
+	return duckdbsql.CollectTableRefs(stmt), nil
+}
+
+// ExtractTableNames parses a SQL query and returns the deduplicated list
+// of table names referenced in FROM clauses and JOINs.
+func ExtractTableNames(sql string) ([]string, error) {
+	refs, err := ExtractTableRefs(sql)
+	if err != nil {
+		return nil, err
+	}
+	tables := make([]string, 0, len(refs))
+	for _, ref := range refs {
+		tables = append(tables, ref.Name)
+	}
+	return tables, nil
 }
 
 // RewriteQuery parses the SQL query, injects WHERE clause conditions based on

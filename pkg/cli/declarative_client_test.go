@@ -1927,6 +1927,76 @@ func TestExecuteTable_CreatePopulatesIndexFromTableID(t *testing.T) {
 	assert.Equal(t, "table-uuid-789", sc.index.tableIDByPath["demo.analytics.orders"])
 }
 
+func TestExecuteSchema_CreateConflictHydratesIndex(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/catalogs/demo/schemas"):
+			w.WriteHeader(http.StatusConflict)
+			_, _ = w.Write([]byte(`{"code":409,"message":"schema exists"}`))
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/catalogs/demo/schemas/analytics"):
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"schema_id":"schema-existing-123","name":"analytics"}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"code":404,"message":"not found"}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	client := gen.NewClient(srv.URL, "", "test-token")
+	sc := NewAPIStateClient(client)
+	sc.index = newResourceIndex()
+
+	action := declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindSchema,
+		ResourceName: "demo.analytics",
+		Desired:      declarative.SchemaResource{CatalogName: "demo", SchemaName: "analytics"},
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.NoError(t, err)
+	assert.Equal(t, "schema-existing-123", sc.index.schemaIDByPath["demo.analytics"])
+}
+
+func TestExecuteTable_CreateConflictHydratesIndex(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/catalogs/demo/schemas/analytics/tables"):
+			w.WriteHeader(http.StatusConflict)
+			_, _ = w.Write([]byte(`{"code":409,"message":"table exists"}`))
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/catalogs/demo/schemas/analytics/tables/orders"):
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"table_id":"table-existing-456","name":"orders"}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"code":404,"message":"not found"}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	client := gen.NewClient(srv.URL, "", "test-token")
+	sc := NewAPIStateClient(client)
+	sc.index = newResourceIndex()
+
+	action := declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindTable,
+		ResourceName: "demo.analytics.orders",
+		Desired:      declarative.TableResource{CatalogName: "demo", SchemaName: "analytics", TableName: "orders"},
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.NoError(t, err)
+	assert.Equal(t, "table-existing-456", sc.index.tableIDByPath["demo.analytics.orders"])
+}
+
 func TestExecute_CrossLayerResolution(t *testing.T) {
 	t.Parallel()
 

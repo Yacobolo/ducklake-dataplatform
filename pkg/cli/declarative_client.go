@@ -986,6 +986,36 @@ func (c *APIStateClient) checkCreateResponse(resp *http.Response) (string, error
 	return id, nil
 }
 
+func (c *APIStateClient) lookupSchemaIDByPath(_ context.Context, catalogName, schemaName string) (string, error) {
+	resp, err := c.client.Do(http.MethodGet, "/catalogs/"+catalogName+"/schemas/"+schemaName, nil, nil)
+	if err != nil {
+		return "", err
+	}
+	id, err := c.checkCreateResponse(resp)
+	if err != nil {
+		return "", err
+	}
+	if id == "" {
+		return "", fmt.Errorf("schema %q has no id in API response", catalogName+"."+schemaName)
+	}
+	return id, nil
+}
+
+func (c *APIStateClient) lookupTableIDByPath(_ context.Context, catalogName, schemaName, tableName string) (string, error) {
+	resp, err := c.client.Do(http.MethodGet, "/catalogs/"+catalogName+"/schemas/"+schemaName+"/tables/"+tableName, nil, nil)
+	if err != nil {
+		return "", err
+	}
+	id, err := c.checkCreateResponse(resp)
+	if err != nil {
+		return "", err
+	}
+	if id == "" {
+		return "", fmt.Errorf("table %q has no id in API response", catalogName+"."+schemaName+"."+tableName)
+	}
+	return id, nil
+}
+
 // === Execute ===
 
 // Execute applies a single planned action to the server via the API.
@@ -1236,7 +1266,7 @@ func (c *APIStateClient) executeCatalog(_ context.Context, action declarative.Ac
 	}
 }
 
-func (c *APIStateClient) executeSchema(_ context.Context, action declarative.Action) error {
+func (c *APIStateClient) executeSchema(ctx context.Context, action declarative.Action) error {
 	// ResourceName is "catalog.schema" format.
 	switch action.Operation {
 	case declarative.OpCreate:
@@ -1256,6 +1286,16 @@ func (c *APIStateClient) executeSchema(_ context.Context, action declarative.Act
 		resp, err := c.client.Do(http.MethodPost, "/catalogs/"+schema.CatalogName+"/schemas", nil, body)
 		if err != nil {
 			return err
+		}
+		if resp.StatusCode == http.StatusConflict {
+			id, lookupErr := c.lookupSchemaIDByPath(ctx, schema.CatalogName, schema.SchemaName)
+			if lookupErr != nil {
+				return fmt.Errorf("schema already exists and lookup failed: %w", lookupErr)
+			}
+			if c.index != nil {
+				c.index.schemaIDByPath[schema.CatalogName+"."+schema.SchemaName] = id
+			}
+			return nil
 		}
 		id, err := c.checkCreateResponse(resp)
 		if err != nil {
@@ -1297,7 +1337,7 @@ func (c *APIStateClient) executeSchema(_ context.Context, action declarative.Act
 	}
 }
 
-func (c *APIStateClient) executeTable(_ context.Context, action declarative.Action) error {
+func (c *APIStateClient) executeTable(ctx context.Context, action declarative.Action) error {
 	// ResourceName is "catalog.schema.table" format.
 	switch action.Operation {
 	case declarative.OpCreate:
@@ -1338,6 +1378,16 @@ func (c *APIStateClient) executeTable(_ context.Context, action declarative.Acti
 		resp, err := c.client.Do(http.MethodPost, basePath, nil, body)
 		if err != nil {
 			return err
+		}
+		if resp.StatusCode == http.StatusConflict {
+			id, lookupErr := c.lookupTableIDByPath(ctx, tbl.CatalogName, tbl.SchemaName, tbl.TableName)
+			if lookupErr != nil {
+				return fmt.Errorf("table already exists and lookup failed: %w", lookupErr)
+			}
+			if c.index != nil {
+				c.index.tableIDByPath[tbl.CatalogName+"."+tbl.SchemaName+"."+tbl.TableName] = id
+			}
+			return nil
 		}
 		id, err := c.checkCreateResponse(resp)
 		if err != nil {

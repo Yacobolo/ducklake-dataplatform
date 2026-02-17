@@ -125,6 +125,49 @@ func TestCollectTableNames(t *testing.T) {
 	}
 }
 
+func TestCollectTableRefs(t *testing.T) {
+	tests := []struct {
+		name string
+		sql  string
+		want []TableRefName
+	}{
+		{
+			name: "three_part_name",
+			sql:  "SELECT * FROM demo.titanic.passengers",
+			want: []TableRefName{{Catalog: "demo", Schema: "titanic", Name: "passengers"}},
+		},
+		{
+			name: "mixed_qualified_names",
+			sql:  "SELECT * FROM analytics.orders o JOIN demo.titanic.passengers p ON o.id = p.id",
+			want: []TableRefName{
+				{Catalog: "", Schema: "analytics", Name: "orders"},
+				{Catalog: "demo", Schema: "titanic", Name: "passengers"},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			stmt, err := Parse(tc.sql)
+			require.NoError(t, err)
+
+			got := CollectTableRefs(stmt)
+			sort.Slice(got, func(i, j int) bool {
+				left := got[i].Catalog + "." + got[i].Schema + "." + got[i].Name
+				right := got[j].Catalog + "." + got[j].Schema + "." + got[j].Name
+				return left < right
+			})
+			sort.Slice(tc.want, func(i, j int) bool {
+				left := tc.want[i].Catalog + "." + tc.want[i].Schema + "." + tc.want[i].Name
+				right := tc.want[j].Catalog + "." + tc.want[j].Schema + "." + tc.want[j].Name
+				return left < right
+			})
+
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
 // === TargetTable tests ===
 
 func TestTargetTable(t *testing.T) {
