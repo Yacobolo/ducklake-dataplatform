@@ -1,6 +1,9 @@
 package domain
 
-import "time"
+import (
+	"time"
+	"unicode/utf8"
+)
 
 // Materialization strategy constants.
 const (
@@ -8,6 +11,7 @@ const (
 	MaterializationTable       = "TABLE"
 	MaterializationIncremental = "INCREMENTAL"
 	MaterializationEphemeral   = "EPHEMERAL"
+	MaxModelNameLength         = 255
 )
 
 // Model run status constants.
@@ -84,6 +88,9 @@ func (r *CreateModelRequest) Validate() error {
 	}
 	if r.Name == "" {
 		return ErrValidation("name is required")
+	}
+	if utf8.RuneCountInString(r.Name) > MaxModelNameLength {
+		return ErrValidation("name must be <= %d characters", MaxModelNameLength)
 	}
 	if r.SQL == "" {
 		return ErrValidation("sql is required")
