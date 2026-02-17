@@ -77,6 +77,23 @@ jobs:
         run: task lint:api
 
   # ── Tests ───────────────────────────────────────────────────
+  arch:
+    name: Architecture Governance
+    needs: generate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Install tools
+        run: |
+          go install github.com/go-task/task/v3/cmd/task@${{ env.TASK_VERSION }}
+          go install gotest.tools/gotestsum@${{ env.GOTESTSUM_VERSION }}
+      - name: Run architecture governance tests
+        run: task test:arch
+
   test:
     name: Tests (${{ matrix.suite }})
     needs: generate

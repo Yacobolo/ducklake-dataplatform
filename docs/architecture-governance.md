@@ -45,8 +45,10 @@ Generated files are excluded from governance checks.
 ## Test policy
 
 - Production files are strict.
-- Cross-layer test composition is allowed only for integration tests.
-- Unit tests should stay mostly same-layer and depend on `internal/domain` and `internal/testutil` when possible.
+- Unit test files under `internal/**` are also governed by import boundaries.
+- Cross-layer composition is allowed only in integration-tagged tests (`//go:build integration`).
+- Integration tests are primarily under `test/integration/**`, and a small number of package-local integration-tagged tests live under `internal/**` where package-private helpers are needed.
+- No external allowlist file is used.
 
 ## Typical refactor direction
 

@@ -905,7 +905,7 @@ func TestCLI_UnknownSecuritySubcommand(t *testing.T) {
 
 	err := rootCmd.Execute()
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "unknown subcommand")
+	assert.Contains(t, err.Error(), "unknown subcommand \"nope\"")
 }
 
 func TestCLI_CatalogSetDefault_SendsEmptyJSONObject(t *testing.T) {
@@ -925,7 +925,7 @@ func TestCLI_CatalogSetDefault_SendsEmptyJSONObject(t *testing.T) {
 	assert.JSONEq(t, `{}`, captured.Body)
 }
 
-func TestCLI_CreateModel_ConfigFlagParsesJSONObject(t *testing.T) {
+func TestCLI_ModelsCreateRequiresNameOrJSON(t *testing.T) {
 	rec := &requestRecorder{}
 	srv := httptest.NewServer(jsonHandler(rec, 201, `{"id":"m1"}`))
 	defer srv.Close()
@@ -934,25 +934,11 @@ func TestCLI_CreateModel_ConfigFlagParsesJSONObject(t *testing.T) {
 	rootCmd.SetArgs([]string{
 		"--host", srv.URL,
 		"models", "models", "create",
-		"--project-name", "analytics",
-		"--name", "stg_orders",
-		"--sql", "select 1",
-		"--config", `{"unique_key":["id"],"incremental_strategy":"merge"}`,
 	})
 
 	err := rootCmd.Execute()
-	require.NoError(t, err)
-
-	captured := rec.last()
-	var body map[string]interface{}
-	require.NoError(t, json.Unmarshal([]byte(captured.Body), &body))
-	cfg, ok := body["config"].(map[string]interface{})
-	require.True(t, ok, "config should be a JSON object")
-	assert.Equal(t, "merge", cfg["incremental_strategy"])
-	vals, ok := cfg["unique_key"].([]interface{})
-	require.True(t, ok)
-	require.Len(t, vals, 1)
-	assert.Equal(t, "id", vals[0])
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "required flag \"name\" not set (or use --json)")
 }
 
 // === Agent-Friendly Output Tests ===

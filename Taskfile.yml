@@ -110,7 +110,7 @@ tasks:
   test:integration:
     desc: Run integration tests (package summary, shows failures inline)
     cmds:
-      - gotestsum --format pkgname-and-test-fails -- -tags integration -timeout 120s ./test/integration/...
+      - gotestsum --format pkgname-and-test-fails -- -tags integration -timeout 120s ./test/integration/... ./internal/api ./internal/service/security ./internal/service/ingestion ./internal/service/storage ./internal/engine
 
   vet:
     desc: Run go vet
