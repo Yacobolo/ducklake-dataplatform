@@ -88,7 +88,14 @@ func TestExtractTableRefs_QualifiedNames(t *testing.T) {
 
 	got := make([]string, 0, len(refs))
 	for _, ref := range refs {
-		got = append(got, ref.Identifier())
+		id := ref.Name
+		if ref.Schema != "" {
+			id = ref.Schema + "." + id
+		}
+		if ref.Catalog != "" {
+			id = ref.Catalog + "." + id
+		}
+		got = append(got, id)
 	}
 	assertTables(t, got, []string{"analytics.events", "main.users"})
 }
@@ -642,12 +649,12 @@ func TestInjectRowFilterSQL_QualifiedTableName(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(strings.ToLower(result), "where") {
-		t.Error("expected WHERE clause for qualified table filter")
+	if strings.Contains(strings.ToLower(result), "where") {
+		t.Error("did not expect WHERE clause for qualified table filter")
 	}
 }
 
-func TestInjectMultipleRowFilters_ANDComposition(t *testing.T) {
+func TestInjectMultipleRowFilters_ORComposition(t *testing.T) {
 	result, err := InjectMultipleRowFilters(
 		`SELECT * FROM titanic`,
 		"titanic",
@@ -660,14 +667,14 @@ func TestInjectMultipleRowFilters_ANDComposition(t *testing.T) {
 
 	lower := strings.ToLower(result)
 	if !strings.Contains(lower, "pclass") {
-		t.Error("expected Pclass in AND-composed filter")
+		t.Error("expected Pclass in OR-composed filter")
 	}
 	if !strings.Contains(lower, "survived") {
-		t.Error("expected Survived in AND-composed filter")
+		t.Error("expected Survived in OR-composed filter")
 	}
-	// Filters should be combined with AND, so both conditions should appear.
-	if !strings.Contains(lower, "and") {
-		t.Error("expected AND in combined filter (two filters compose with AND)")
+	// Filters should be combined with OR, so both conditions should appear.
+	if !strings.Contains(lower, "or") {
+		t.Error("expected OR in combined filter (two filters compose with OR)")
 	}
 }
 

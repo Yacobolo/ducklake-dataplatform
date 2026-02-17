@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"duck-demo/internal/domain"
@@ -52,7 +51,8 @@ func IsInformationSchemaQuery(sqlQuery string) bool {
 	}
 
 	for _, ref := range refs {
-		if !strings.EqualFold(ref.Schema, "information_schema") {
+		isInfoSchema := strings.EqualFold(ref.Schema, "information_schema") || strings.EqualFold(ref.Catalog, "information_schema")
+		if !isInfoSchema {
 			return false
 		}
 		if !isSupportedInformationSchemaTable(ref.Name) {
@@ -183,7 +183,8 @@ func (p *InformationSchemaProvider) HandleQuery(ctx context.Context, db *sql.DB,
 
 	tableName := ""
 	for _, ref := range refs {
-		if !strings.EqualFold(ref.Schema, "information_schema") {
+		isInfoSchema := strings.EqualFold(ref.Schema, "information_schema") || strings.EqualFold(ref.Catalog, "information_schema")
+		if !isInfoSchema {
 			return nil, fmt.Errorf("unsupported information_schema query")
 		}
 		if !isSupportedInformationSchemaTable(ref.Name) {
@@ -275,7 +276,7 @@ func (p *InformationSchemaProvider) isRowVisible(ctx context.Context, principalN
 		if err != nil {
 			return false
 		}
-		allowed, err := p.catalog.CheckPrivilege(ctx, principalName, domain.SecurableSchema, strconv.FormatInt(schema.SchemaID, 10), domain.PrivUsage)
+		allowed, err := p.catalog.CheckPrivilege(ctx, principalName, domain.SecurableSchema, schema.SchemaID, domain.PrivUsage)
 		if err != nil {
 			return false
 		}
@@ -297,7 +298,7 @@ func (p *InformationSchemaProvider) isRowVisible(ctx context.Context, principalN
 		if err != nil {
 			return false
 		}
-		allowed, err := p.catalog.CheckPrivilege(ctx, principalName, domain.SecurableTable, strconv.FormatInt(tbl.TableID, 10), domain.PrivSelect)
+		allowed, err := p.catalog.CheckPrivilege(ctx, principalName, domain.SecurableTable, tbl.TableID, domain.PrivSelect)
 		if err != nil {
 			return false
 		}
@@ -319,7 +320,7 @@ func (p *InformationSchemaProvider) isRowVisible(ctx context.Context, principalN
 		if err != nil {
 			return false
 		}
-		allowed, err := p.catalog.CheckPrivilege(ctx, principalName, domain.SecurableTable, strconv.FormatInt(tbl.TableID, 10), domain.PrivSelect)
+		allowed, err := p.catalog.CheckPrivilege(ctx, principalName, domain.SecurableTable, tbl.TableID, domain.PrivSelect)
 		if err != nil {
 			return false
 		}
