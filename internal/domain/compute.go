@@ -82,6 +82,9 @@ func ValidateCreateComputeEndpointRequest(r CreateComputeEndpointRequest) error 
 			return ErrValidation("size must be SMALL, MEDIUM, or LARGE, got %q", r.Size)
 		}
 	}
+	if r.MaxMemoryGB != nil && *r.MaxMemoryGB <= 0 {
+		return ErrValidation("max_memory_gb must be greater than zero")
+	}
 	return nil
 }
 

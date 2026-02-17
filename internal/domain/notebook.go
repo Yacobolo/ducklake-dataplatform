@@ -1,6 +1,9 @@
 package domain
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 // CellType represents the type of a notebook cell.
 type CellType string
@@ -39,11 +42,12 @@ type Cell struct {
 type CreateNotebookRequest struct {
 	Name        string
 	Description *string
+	Source      *string
 }
 
 // Validate validates the create notebook request.
 func (r *CreateNotebookRequest) Validate() error {
-	if r.Name == "" {
+	if strings.TrimSpace(r.Name) == "" {
 		return ErrValidation("notebook name is required")
 	}
 	return nil

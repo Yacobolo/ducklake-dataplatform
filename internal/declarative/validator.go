@@ -3,6 +3,9 @@ package declarative
 import (
 	"fmt"
 	"strings"
+
+	"duck-demo/internal/duckdbsql"
+	"github.com/robfig/cron/v3"
 )
 
 // ValidationError represents a single validation problem.
@@ -293,6 +296,9 @@ func validatePrincipals(principals []PrincipalSpec, errs *[]ValidationError) {
 		if p.Name == "" {
 			addErr(errs, path, "name is required")
 		}
+		if strings.TrimSpace(p.Name) == "" {
+			addErr(errs, path, "name must not be blank")
+		}
 		if !validPrincipalTypes[p.Type] {
 			addErr(errs, path, "type must be \"user\" or \"service_principal\", got %q", p.Type)
 		}
@@ -316,6 +322,9 @@ func validateGroups(groups []GroupSpec, principalNames, groupNames map[string]bo
 		}
 		if g.Name == "" {
 			addErr(errs, path, "name is required")
+		}
+		if strings.TrimSpace(g.Name) == "" {
+			addErr(errs, path, "name must not be blank")
 		}
 		if g.Name != "" {
 			if seen[g.Name] {
@@ -781,6 +790,11 @@ func validateColumnMasks(
 			if m.MaskExpression == "" {
 				addErr(errs, mpath, "mask_expression is required")
 			}
+			if m.MaskExpression != "" {
+				if _, err := duckdbsql.ParseExpr(m.MaskExpression); err != nil {
+					addErr(errs, mpath, "mask_expression must be valid SQL expression: %v", err)
+				}
+			}
 
 			// Check column exists if table has columns defined.
 			if m.ColumnName != "" && tableColumns[tableKey] != nil && !tableColumns[tableKey][m.ColumnName] {
@@ -975,6 +989,9 @@ func validateComputeEndpoints(endpoints []ComputeEndpointSpec, errs *[]Validatio
 		if e.Name == "" {
 			addErr(errs, path, "name is required")
 		}
+		if strings.TrimSpace(e.Name) == "" {
+			addErr(errs, path, "name must not be blank")
+		}
 		if !validComputeTypes[e.Type] {
 			addErr(errs, path, "type must be \"LOCAL\" or \"REMOTE\", got %q", e.Type)
 		}
@@ -1064,6 +1081,9 @@ func validateNotebooks(notebooks []NotebookResource, errs *[]ValidationError) {
 		if n.Name == "" {
 			addErr(errs, path, "name is required")
 		}
+		if strings.TrimSpace(n.Name) == "" {
+			addErr(errs, path, "name must not be blank")
+		}
 
 		for j, c := range n.Spec.Cells {
 			cpath := fmt.Sprintf("%s.cells[%d]", path, j)
@@ -1095,6 +1115,14 @@ func validatePipelines(pipelines []PipelineResource, notebookNames, endpointName
 		}
 		if p.Name == "" {
 			addErr(errs, path, "name is required")
+		}
+		if strings.TrimSpace(p.Name) == "" {
+			addErr(errs, path, "name must not be blank")
+		}
+		if p.Spec.ScheduleCron != "" {
+			if _, err := cron.ParseStandard(p.Spec.ScheduleCron); err != nil {
+				addErr(errs, path, "schedule_cron is invalid: %v", err)
+			}
 		}
 
 		// Build set of job names within this pipeline for depends_on validation.

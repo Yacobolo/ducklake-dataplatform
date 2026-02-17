@@ -1,6 +1,9 @@
 package domain
 
-import "time"
+import (
+	"time"
+	"unicode/utf8"
+)
 
 // Materialization strategy constants.
 const (
@@ -8,6 +11,7 @@ const (
 	MaterializationTable       = "TABLE"
 	MaterializationIncremental = "INCREMENTAL"
 	MaterializationEphemeral   = "EPHEMERAL"
+	MaxModelNameLength         = 255
 )
 
 // Model run status constants.
@@ -75,6 +79,7 @@ type CreateModelRequest struct {
 	Tags            []string
 	Config          ModelConfig
 	Contract        *ModelContract
+	Freshness       *FreshnessPolicy
 }
 
 // Validate checks that the request is well-formed.
@@ -84,6 +89,9 @@ func (r *CreateModelRequest) Validate() error {
 	}
 	if r.Name == "" {
 		return ErrValidation("name is required")
+	}
+	if utf8.RuneCountInString(r.Name) > MaxModelNameLength {
+		return ErrValidation("name must be <= %d characters", MaxModelNameLength)
 	}
 	if r.SQL == "" {
 		return ErrValidation("sql is required")
@@ -110,6 +118,21 @@ type UpdateModelRequest struct {
 	Config          *ModelConfig
 	Contract        *ModelContract
 	Freshness       *FreshnessPolicy
+}
+
+// Validate checks that the update payload is well-formed.
+func (r *UpdateModelRequest) Validate() error {
+	if r.Materialization == nil {
+		return nil
+	}
+	validMat := map[string]bool{
+		MaterializationView: true, MaterializationTable: true,
+		MaterializationIncremental: true, MaterializationEphemeral: true,
+	}
+	if !validMat[*r.Materialization] {
+		return ErrValidation("materialization must be VIEW, TABLE, INCREMENTAL, or EPHEMERAL")
+	}
+	return nil
 }
 
 // FreshnessStatus holds the result of a freshness check.

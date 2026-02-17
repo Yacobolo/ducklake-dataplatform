@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"duck-demo/internal/domain"
+	"github.com/robfig/cron/v3"
 )
 
 // ScheduleReloader allows the service to notify the scheduler to reload.
@@ -115,6 +116,12 @@ func (s *Service) ListPipelines(ctx context.Context, page domain.PageRequest) ([
 
 // UpdatePipeline applies changes to an existing pipeline and reloads schedules.
 func (s *Service) UpdatePipeline(ctx context.Context, principal string, name string, req domain.UpdatePipelineRequest) (*domain.Pipeline, error) {
+	if req.ScheduleCron != nil && *req.ScheduleCron != "" {
+		if _, err := cron.ParseStandard(*req.ScheduleCron); err != nil {
+			return nil, domain.ErrValidation("schedule_cron is invalid: %v", err)
+		}
+	}
+
 	p, err := s.pipelines.GetPipelineByName(ctx, name)
 	if err != nil {
 		return nil, err
