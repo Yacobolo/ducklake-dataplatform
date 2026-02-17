@@ -41,13 +41,14 @@ const (
 // AuthorizationService provides permission checking using domain repository interfaces.
 // It implements the domain.AuthorizationService interface.
 type AuthorizationService struct {
-	principals    domain.PrincipalRepository
-	groups        domain.GroupRepository
-	grants        domain.GrantRepository
-	rowFilters    domain.RowFilterRepository
-	columnMasks   domain.ColumnMaskRepository
-	introspection domain.IntrospectionRepository
-	extTableRepo  domain.ExternalTableRepository
+	principals         domain.PrincipalRepository
+	groups             domain.GroupRepository
+	grants             domain.GrantRepository
+	rowFilters         domain.RowFilterRepository
+	columnMasks        domain.ColumnMaskRepository
+	introspection      domain.IntrospectionRepository
+	extTableRepo       domain.ExternalTableRepository
+	lookupCatalogTable func(ctx context.Context, catalogName, schemaName, tableName string) (*domain.TableDetail, error)
 }
 
 // NewAuthorizationService creates a new AuthorizationService backed by domain repositories.
@@ -69,6 +70,12 @@ func NewAuthorizationService(
 		introspection: introspection,
 		extTableRepo:  extTableRepo,
 	}
+}
+
+// SetCatalogTableLookup configures catalog-aware table lookup for three-part
+// table references (catalog.schema.table).
+func (s *AuthorizationService) SetCatalogTableLookup(lookup func(ctx context.Context, catalogName, schemaName, tableName string) (*domain.TableDetail, error)) {
+	s.lookupCatalogTable = lookup
 }
 
 // resolveGroupIDs returns the set of group IDs a principal belongs to,
@@ -107,7 +114,18 @@ func (s *AuthorizationService) resolveGroupIDs(ctx context.Context, principalID 
 // For external tables, isExternal is true.
 func (s *AuthorizationService) LookupTableID(ctx context.Context, tableName string) (tableID, schemaID string, isExternal bool, err error) {
 	catalogName, schemaName, bareTableName := splitTableReference(tableName)
-	_ = catalogName // catalog is not currently used by metastore lookups.
+
+	if catalogName != "" && schemaName != "" && s.lookupCatalogTable != nil {
+		tbl, lookupErr := s.lookupCatalogTable(ctx, catalogName, schemaName, bareTableName)
+		if lookupErr == nil {
+			return tbl.TableID, "", strings.EqualFold(tbl.TableType, domain.TableTypeExternal), nil
+		}
+
+		var notFoundErr *domain.NotFoundError
+		if !errors.As(lookupErr, &notFoundErr) {
+			return "", "", false, fmt.Errorf("lookup table %q in catalog %q: %w", bareTableName, catalogName, lookupErr)
+		}
+	}
 
 	if schemaName != "" {
 		t, lookupErr := s.lookupManagedTableBySchema(ctx, schemaName, bareTableName)
