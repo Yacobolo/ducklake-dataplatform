@@ -58,8 +58,10 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("config: %w", err)
 	}
-	if err := cfg.Auth.Validate(); err != nil {
-		return fmt.Errorf("auth config: %w", err)
+	if cfg.Auth.OIDCEnabled() {
+		if err := cfg.Auth.Validate(); err != nil {
+			return fmt.Errorf("auth config: %w", err)
+		}
 	}
 
 	// Create structured logger
