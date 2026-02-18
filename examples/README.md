@@ -1,17 +1,27 @@
 # Examples
 
-This directory contains runnable declarative configurations that demonstrate DuckDB Data Platform as code.
+This directory contains runnable product showcases.
 
-## Available examples
+## Flagship showcase
 
-- `showcase-movielens`: end-to-end Bronze/Silver/Gold transformation pipeline with macros, RBAC, and governance policies.
+- `showcase-movielens`: ingestion API -> models (bronze/silver/gold) -> macro reuse -> notebook -> scheduled pipeline -> RBAC/RLS/column masking.
 
 ## Prerequisites
 
 - Server running (`go run ./cmd/server`)
 - CLI built (`task build-cli`) or run via `go run ./cmd/cli`
 
-## Standard workflow
+## Fastest path
+
+From repository root:
+
+```bash
+export API_KEY="showcase-local-admin-key"
+examples/showcase-movielens/scripts/bootstrap_admin_key.sh
+API_KEY="$API_KEY" examples/showcase-movielens/scripts/run_demo_flow.sh
+```
+
+## Declarative workflow
 
 From repository root, run:
 
@@ -22,9 +32,9 @@ From repository root, run:
 ./bin/duck --token '' --api-key "$API_KEY" plan --config-dir examples/showcase-movielens/config
 ```
 
-See `examples/showcase-movielens/README.md` for one-time local bootstrap of the admin API key.
+See `examples/showcase-movielens/README.md` for full quickstart and feature walkthrough.
 
-After apply, the second `plan` should report no further model/macro changes.
+After apply, the second `plan` should report no further declarative changes.
 
 ## Automated verification
 

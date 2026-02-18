@@ -12,7 +12,7 @@ import (
 // validateContract checks that a materialized model's output matches its contract.
 // Returns nil if no contract is defined or validation passes.
 func (s *Service) validateContract(ctx context.Context, conn *sql.Conn,
-	model *domain.Model, config ExecutionConfig, principal string) error {
+	model *domain.Model, config ExecutionConfig) error {
 
 	if model.Contract == nil || !model.Contract.Enforce || len(model.Contract.Columns) == 0 {
 		return nil
@@ -21,13 +21,9 @@ func (s *Service) validateContract(ctx context.Context, conn *sql.Conn,
 	fqn := quoteIdent(config.TargetSchema) + "." + quoteIdent(model.Name)
 
 	// Query information_schema to get actual columns
-	infoSQL := fmt.Sprintf(
-		"SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_schema = '%s' AND table_name = '%s' ORDER BY ordinal_position",
-		strings.ReplaceAll(config.TargetSchema, "'", "''"),
-		strings.ReplaceAll(model.Name, "'", "''"),
-	)
+	const infoSQL = "SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_schema = ? AND table_name = ? ORDER BY ordinal_position"
 
-	rows, err := s.engine.QueryOnConn(ctx, conn, principal, infoSQL)
+	rows, err := conn.QueryContext(ctx, infoSQL, config.TargetSchema, model.Name)
 	if err != nil {
 		return fmt.Errorf("query information_schema for %s: %w", fqn, err)
 	}

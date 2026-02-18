@@ -568,7 +568,7 @@ func (s *Service) compileSelectedModels(
 		byName[m.Name] = append(byName[m.Name], m)
 	}
 
-	sources, err := s.loadSourceRegistry(ctx, principal)
+	sources, err := s.loadSourceRegistry(ctx)
 	if err != nil {
 		return nil, nil, fmt.Errorf("load source registry: %w", err)
 	}
@@ -882,7 +882,7 @@ func topLevelFunctionNames(moduleSource string) []string {
 	return out
 }
 
-func (s *Service) loadSourceRegistry(ctx context.Context, principal string) (map[string]string, error) {
+func (s *Service) loadSourceRegistry(ctx context.Context) (map[string]string, error) {
 	registry := make(map[string]string)
 	conn, err := s.duckDB.Conn(ctx)
 	if err != nil {
@@ -890,7 +890,7 @@ func (s *Service) loadSourceRegistry(ctx context.Context, principal string) (map
 	}
 	defer func() { _ = conn.Close() }()
 
-	rows, err := s.engine.QueryOnConn(ctx, conn, principal, "SELECT table_schema, table_name FROM information_schema.tables")
+	rows, err := conn.QueryContext(ctx, "SELECT table_schema, table_name FROM information_schema.tables")
 	if err != nil {
 		return nil, fmt.Errorf("query source registry: %w", err)
 	}

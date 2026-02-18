@@ -5,6 +5,7 @@ package app
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -145,6 +146,37 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 			return nil, err
 		}
 		return repo.GetTable(ctx, schemaName, tableName)
+	})
+	authSvc.SetViewRepository(viewRepo)
+	authSvc.SetCatalogViewLookup(func(ctx context.Context, catalogName, schemaName, viewName string) (*domain.ViewDetail, error) {
+		repo, err := catalogRepoFactory.ForCatalog(ctx, catalogName)
+		if err != nil {
+			return nil, err
+		}
+		schema, err := repo.GetSchema(ctx, schemaName)
+		if err != nil {
+			return nil, err
+		}
+		view, err := viewRepo.GetByName(ctx, schema.SchemaID, viewName)
+		if err == nil {
+			return view, nil
+		}
+
+		var notFoundErr *domain.NotFoundError
+		if !errors.As(err, &notFoundErr) {
+			return nil, err
+		}
+
+		query := "SELECT table_name FROM information_schema.tables WHERE table_catalog = ? AND table_schema = ? AND table_name = ? AND table_type = 'VIEW' LIMIT 1"
+		var foundName string
+		if scanErr := deps.DuckDB.QueryRowContext(ctx, query, catalogName, schemaName, viewName).Scan(&foundName); scanErr != nil {
+			if errors.Is(scanErr, sql.ErrNoRows) {
+				return nil, domain.ErrNotFound("view %q not found in schema %q", viewName, schemaName)
+			}
+			return nil, fmt.Errorf("lookup catalog view %q.%q.%q: %w", catalogName, schemaName, viewName, scanErr)
+		}
+
+		return &domain.ViewDetail{SchemaID: schema.SchemaID, Name: foundName}, nil
 	})
 
 	// === Check for empty database and log bootstrap instructions ===

@@ -1,0 +1,28 @@
+apiVersion: duck/v1
+kind: Notebook
+metadata:
+  name: 01_kpi_walkthrough
+spec:
+  description: Quick KPI checks over curated MovieLens outputs
+  owner: ml_admin
+  cells:
+    - type: markdown
+      content: |
+        # MovieLens KPI Walkthrough
+
+        This notebook validates the showcase output after ingestion and model refresh.
+    - type: sql
+      content: |
+        SELECT
+          COUNT(*) AS movies_scored,
+          ROUND(AVG(avg_rating), 3) AS avg_catalog_rating
+        FROM lake.main.gold_movie_scores
+    - type: sql
+      content: |
+        SELECT
+          region,
+          SUM(ratings_submitted) AS submitted,
+          ROUND(AVG(avg_rating_given), 3) AS avg_given
+        FROM lake.main.gold_user_engagement
+        GROUP BY region
+        ORDER BY submitted DESC

@@ -172,6 +172,7 @@ type TagRepository interface {
 // ViewRepository provides CRUD operations for views.
 type ViewRepository interface {
 	Create(ctx context.Context, view *ViewDetail) (*ViewDetail, error)
+	GetByID(ctx context.Context, id string) (*ViewDetail, error)
 	GetByName(ctx context.Context, schemaID string, viewName string) (*ViewDetail, error)
 	List(ctx context.Context, schemaID string, page PageRequest) ([]ViewDetail, int64, error)
 	Delete(ctx context.Context, schemaID string, viewName string) error

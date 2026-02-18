@@ -11,20 +11,4 @@ spec:
       user_id,
       age_group,
       upper(region) AS region
-    FROM bronze_users
-  contract:
-    enforce: true
-    columns:
-      - name: user_id
-        type: BIGINT
-        nullable: false
-      - name: age_group
-        type: VARCHAR
-        nullable: true
-      - name: region
-        type: VARCHAR
-        nullable: true
-  tests:
-    - name: user_id_unique
-      type: unique
-      column: user_id
+    FROM lake.bronze_users

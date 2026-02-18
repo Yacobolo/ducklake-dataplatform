@@ -1,0 +1,16 @@
+apiVersion: duck/v1
+kind: Table
+metadata:
+  name: raw_ratings
+spec:
+  table_type: MANAGED
+  comment: Raw ratings fact loaded through ingestion API
+  columns:
+    - name: user_id
+      type: BIGINT
+    - name: movie_id
+      type: BIGINT
+    - name: rating
+      type: DOUBLE
+    - name: rating_ts
+      type: BIGINT

@@ -63,7 +63,7 @@ func (s *IngestionService) RequestUploadURL(
 ) (*domain.UploadURLResult, error) {
 
 	// Authorize: check INSERT on table
-	if err := s.checkInsertPrivilege(ctx, principal, schemaName, tableName); err != nil {
+	if err := s.checkInsertPrivilege(ctx, principal, catalogName, schemaName, tableName); err != nil {
 		return nil, err
 	}
 
@@ -113,7 +113,7 @@ func (s *IngestionService) CommitIngestion(
 	}
 
 	// Authorize: check INSERT on table
-	if err := s.checkInsertPrivilege(ctx, principal, schemaName, tableName); err != nil {
+	if err := s.checkInsertPrivilege(ctx, principal, catalogName, schemaName, tableName); err != nil {
 		return nil, err
 	}
 
@@ -159,7 +159,7 @@ func (s *IngestionService) LoadExternalFiles(
 	}
 
 	// Authorize: check INSERT on table
-	if err := s.checkInsertPrivilege(ctx, principal, schemaName, tableName); err != nil {
+	if err := s.checkInsertPrivilege(ctx, principal, catalogName, schemaName, tableName); err != nil {
 		return nil, err
 	}
 
@@ -202,28 +202,20 @@ func (s *IngestionService) execAddDataFiles(
 		return nil, domain.ErrValidation("ingestion not available: DuckDB not configured")
 	}
 
-	// Build the file list as a DuckDB list literal
-	quotedPaths := make([]string, len(paths))
-	for i, p := range paths {
-		quotedPaths[i] = "'" + strings.ReplaceAll(p, "'", "''") + "'"
-	}
-	fileList := "[" + strings.Join(quotedPaths, ", ") + "]"
+	for _, path := range paths {
+		q := fmt.Sprintf(
+			"CALL ducklake_add_data_files('%s', '%s', '%s', schema => '%s', allow_missing => %t, ignore_extra_columns => %t)",
+			strings.ReplaceAll(catalogName, "'", "''"),
+			strings.ReplaceAll(tableName, "'", "''"),
+			strings.ReplaceAll(path, "'", "''"),
+			strings.ReplaceAll(schemaName, "'", "''"),
+			opts.AllowMissingColumns,
+			opts.IgnoreExtraColumns,
+		)
 
-	// Build the CALL statement
-	q := fmt.Sprintf(
-		"CALL ducklake_add_data_files('%s', '%s', %s, schema => '%s', allow_missing => %t, ignore_extra_columns => %t)",
-		strings.ReplaceAll(catalogName, "'", "''"),
-		strings.ReplaceAll(tableName, "'", "''"),
-		fileList,
-		strings.ReplaceAll(schemaName, "'", "''"),
-		opts.AllowMissingColumns,
-		opts.IgnoreExtraColumns,
-	)
-
-	// Execute directly on DuckDB (bypasses SecureEngine — CALL not supported by pg_query_go)
-	err := s.executor.ExecContext(ctx, q)
-	if err != nil {
-		return nil, classifyDuckDBError(err)
+		if err := s.executor.ExecContext(ctx, q); err != nil {
+			return nil, classifyDuckDBError(err)
+		}
 	}
 
 	return &domain.IngestionResult{
@@ -235,8 +227,12 @@ func (s *IngestionService) execAddDataFiles(
 }
 
 // checkInsertPrivilege verifies the authenticated principal has INSERT on the table.
-func (s *IngestionService) checkInsertPrivilege(ctx context.Context, principal, schemaName, tableName string) error {
-	tableID, _, _, err := s.authSvc.LookupTableID(ctx, schemaName+"."+tableName)
+func (s *IngestionService) checkInsertPrivilege(ctx context.Context, principal, catalogName, schemaName, tableName string) error {
+	tableRef := catalogName + "." + schemaName + "." + tableName
+	tableID, _, _, err := s.authSvc.LookupTableID(ctx, tableRef)
+	if err != nil {
+		tableID, _, _, err = s.authSvc.LookupTableID(ctx, schemaName+"."+tableName)
+	}
 	if err != nil {
 		return domain.ErrNotFound("table %q not found", tableName)
 	}

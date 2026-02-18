@@ -270,6 +270,7 @@ var _ domain.QueryHistoryRepository = (*MockQueryHistoryRepo)(nil)
 // MockViewRepo implements domain.ViewRepository for testing.
 type MockViewRepo struct {
 	CreateFn    func(ctx context.Context, view *domain.ViewDetail) (*domain.ViewDetail, error)
+	GetByIDFn   func(ctx context.Context, id string) (*domain.ViewDetail, error)
 	GetByNameFn func(ctx context.Context, schemaID string, viewName string) (*domain.ViewDetail, error)
 	ListFn      func(ctx context.Context, schemaID string, page domain.PageRequest) ([]domain.ViewDetail, int64, error)
 	DeleteFn    func(ctx context.Context, schemaID string, viewName string) error
@@ -282,6 +283,14 @@ func (m *MockViewRepo) Create(ctx context.Context, view *domain.ViewDetail) (*do
 		return m.CreateFn(ctx, view)
 	}
 	panic("unexpected call to MockViewRepo.Create")
+}
+
+// GetByID implements the interface method for testing.
+func (m *MockViewRepo) GetByID(ctx context.Context, id string) (*domain.ViewDetail, error) {
+	if m.GetByIDFn != nil {
+		return m.GetByIDFn(ctx, id)
+	}
+	panic("unexpected call to MockViewRepo.GetByID")
 }
 
 // GetByName implements the interface method for testing.

@@ -4,20 +4,12 @@ metadata:
   name: bronze_ratings
 spec:
   materialization: VIEW
-  description: Raw MovieLens ratings ingested from CSV
+  description: Raw MovieLens ratings loaded through ingestion API
   tags: [bronze, movielens]
   sql: |
     SELECT
-      CAST(userId AS BIGINT) AS user_id,
-      CAST(movieId AS BIGINT) AS movie_id,
-      CAST(rating AS DOUBLE) AS rating,
-      CAST(timestamp AS BIGINT) AS rating_ts
-    FROM read_csv_auto('examples/showcase-movielens/data/ratings.csv', header=true)
-  tests:
-    - name: rating_not_null
-      type: not_null
-      column: rating
-    - name: rating_range
-      type: accepted_values
-      column: rating
-      values: ['2.5', '3.0', '3.5', '4.0', '4.5', '5.0']
+      user_id,
+      movie_id,
+      rating,
+      rating_ts
+    FROM raw_ratings

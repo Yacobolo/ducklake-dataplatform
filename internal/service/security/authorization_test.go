@@ -4,6 +4,7 @@ package security
 
 import (
 	"context"
+	"database/sql"
 	"testing"
 
 	"github.com/google/uuid"
@@ -89,12 +90,14 @@ func setupTestService(t *testing.T) (*AuthorizationService, *dbstore.Queries, co
 	rowFilterRepo := repository.NewRowFilterRepo(db)
 	columnMaskRepo := repository.NewColumnMaskRepo(db)
 	introspectionRepo := repository.NewIntrospectionRepo(db)
+	viewRepo := repository.NewViewRepo(db)
 
 	svc := NewAuthorizationService(
 		principalRepo, groupRepo, grantRepo,
 		rowFilterRepo, columnMaskRepo, introspectionRepo,
 		nil,
 	)
+	svc.SetViewRepository(viewRepo)
 
 	// Return dbstore.Queries for test data seeding
 	q := dbstore.New(db)
@@ -629,6 +632,150 @@ func TestLookupTableID_CatalogQualified(t *testing.T) {
 	assert.Equal(t, "table-42", tableID)
 	assert.Equal(t, "", schemaID)
 	assert.False(t, isExternal)
+}
+
+func TestLookupTableID_ViewSchemaQualified(t *testing.T) {
+	cat, q, ctx := setupTestService(t)
+
+	created, err := q.CreateView(ctx, dbstore.CreateViewParams{
+		ID:             uuid.New().String(),
+		SchemaID:       "0",
+		Name:           "titanic_view",
+		ViewDefinition: `SELECT 1 AS x`,
+		Comment:        sql.NullString{},
+		Properties:     sql.NullString{String: "{}", Valid: true},
+		Owner:          "owner",
+		SourceTables:   sql.NullString{String: "[]", Valid: true},
+	})
+	require.NoError(t, err)
+
+	tableID, schemaID, isExternal, err := cat.LookupTableID(ctx, "main.titanic_view")
+	require.NoError(t, err)
+	assert.Equal(t, created.ID, tableID)
+	assert.Equal(t, "0", schemaID)
+	assert.False(t, isExternal)
+}
+
+func TestCheckPrivilege_ViewInheritsSchemaGrant(t *testing.T) {
+	cat, q, ctx := setupTestService(t)
+
+	user, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{ID: uuid.New().String(),
+		Name: "view_reader", Type: "user", IsAdmin: 0,
+	})
+	require.NoError(t, err)
+
+	_, err = q.CreateView(ctx, dbstore.CreateViewParams{
+		ID:             uuid.New().String(),
+		SchemaID:       "0",
+		Name:           "engagement_view",
+		ViewDefinition: `SELECT 1 AS x`,
+		Comment:        sql.NullString{},
+		Properties:     sql.NullString{String: "{}", Valid: true},
+		Owner:          "owner",
+		SourceTables:   sql.NullString{String: "[]", Valid: true},
+	})
+	require.NoError(t, err)
+
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		ID: uuid.New().String(), PrincipalID: user.ID, PrincipalType: "user",
+		SecurableType: SecurableSchema, SecurableID: "0",
+		Privilege: PrivUsage,
+	})
+	require.NoError(t, err)
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		ID: uuid.New().String(), PrincipalID: user.ID, PrincipalType: "user",
+		SecurableType: SecurableSchema, SecurableID: "0",
+		Privilege: PrivSelect,
+	})
+	require.NoError(t, err)
+
+	viewID, _, _, err := cat.LookupTableID(ctx, "main.engagement_view")
+	require.NoError(t, err)
+
+	allowed, err := cat.CheckPrivilege(ctx, "view_reader", SecurableTable, viewID, PrivSelect)
+	require.NoError(t, err)
+	assert.True(t, allowed)
+}
+
+func TestCheckPrivilege_ViewByIDWithoutPriorLookup(t *testing.T) {
+	cat, q, ctx := setupTestService(t)
+
+	user, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{ID: uuid.New().String(),
+		Name: "direct_view_reader", Type: "user", IsAdmin: 0,
+	})
+	require.NoError(t, err)
+
+	view, err := q.CreateView(ctx, dbstore.CreateViewParams{
+		ID:             uuid.New().String(),
+		SchemaID:       "0",
+		Name:           "direct_view",
+		ViewDefinition: `SELECT 1 AS x`,
+		Comment:        sql.NullString{},
+		Properties:     sql.NullString{String: "{}", Valid: true},
+		Owner:          "owner",
+		SourceTables:   sql.NullString{String: "[]", Valid: true},
+	})
+	require.NoError(t, err)
+
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		ID: uuid.New().String(), PrincipalID: user.ID, PrincipalType: "user",
+		SecurableType: SecurableSchema, SecurableID: "0",
+		Privilege: PrivUsage,
+	})
+	require.NoError(t, err)
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		ID: uuid.New().String(), PrincipalID: user.ID, PrincipalType: "user",
+		SecurableType: SecurableSchema, SecurableID: "0",
+		Privilege: PrivSelect,
+	})
+	require.NoError(t, err)
+
+	allowed, err := cat.CheckPrivilege(ctx, "direct_view_reader", SecurableTable, view.ID, PrivSelect)
+	require.NoError(t, err)
+	assert.True(t, allowed)
+}
+
+func TestLookupTableID_CatalogQualifiedViewSynthesizesID(t *testing.T) {
+	cat, _, ctx := setupTestService(t)
+
+	cat.SetCatalogViewLookup(func(_ context.Context, catalogName, schemaName, viewName string) (*domain.ViewDetail, error) {
+		require.Equal(t, "lake", catalogName)
+		require.Equal(t, "main", schemaName)
+		require.Equal(t, "engagement_view", viewName)
+		return &domain.ViewDetail{SchemaID: "0", Name: viewName}, nil
+	})
+
+	tableID, schemaID, isExternal, err := cat.LookupTableID(ctx, "lake.main.engagement_view")
+	require.NoError(t, err)
+	assert.Equal(t, "0", schemaID)
+	assert.False(t, isExternal)
+	assert.Equal(t, syntheticViewID("0", "engagement_view"), tableID)
+}
+
+func TestCheckPrivilege_SyntheticViewIDInheritsSchemaGrant(t *testing.T) {
+	cat, q, ctx := setupTestService(t)
+
+	user, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{ID: uuid.New().String(),
+		Name: "synthetic_view_reader", Type: "user", IsAdmin: 0,
+	})
+	require.NoError(t, err)
+
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		ID: uuid.New().String(), PrincipalID: user.ID, PrincipalType: "user",
+		SecurableType: SecurableSchema, SecurableID: "0",
+		Privilege: PrivUsage,
+	})
+	require.NoError(t, err)
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		ID: uuid.New().String(), PrincipalID: user.ID, PrincipalType: "user",
+		SecurableType: SecurableSchema, SecurableID: "0",
+		Privilege: PrivSelect,
+	})
+	require.NoError(t, err)
+
+	allowed, err := cat.CheckPrivilege(ctx, "synthetic_view_reader", SecurableTable, syntheticViewID("0", "engagement_view"), PrivSelect)
+	require.NoError(t, err)
+	assert.True(t, allowed)
 }
 
 func TestLookupSchemaID(t *testing.T) {

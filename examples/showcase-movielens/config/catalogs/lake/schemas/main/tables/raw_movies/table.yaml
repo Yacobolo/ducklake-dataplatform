@@ -1,0 +1,14 @@
+apiVersion: duck/v1
+kind: Table
+metadata:
+  name: raw_movies
+spec:
+  table_type: MANAGED
+  comment: Raw movie dimension loaded through ingestion API
+  columns:
+    - name: movie_id
+      type: BIGINT
+    - name: title
+      type: VARCHAR
+    - name: genres
+      type: VARCHAR

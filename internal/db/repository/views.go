@@ -12,12 +12,41 @@ import (
 
 // ViewRepo implements domain.ViewRepository using SQLite.
 type ViewRepo struct {
-	q *dbstore.Queries
+	db *sql.DB
+	q  *dbstore.Queries
 }
 
 // NewViewRepo creates a new ViewRepo.
 func NewViewRepo(db *sql.DB) *ViewRepo {
-	return &ViewRepo{q: dbstore.New(db)}
+	return &ViewRepo{db: db, q: dbstore.New(db)}
+}
+
+// GetByID returns a view by ID.
+func (r *ViewRepo) GetByID(ctx context.Context, id string) (*domain.ViewDetail, error) {
+	const query = `
+SELECT id, schema_id, name, view_definition, comment, properties, owner, source_tables, created_at, updated_at, deleted_at
+FROM views
+WHERE id = ? AND deleted_at IS NULL
+`
+	row := r.db.QueryRowContext(ctx, query, id)
+	var v dbstore.View
+	err := row.Scan(
+		&v.ID,
+		&v.SchemaID,
+		&v.Name,
+		&v.ViewDefinition,
+		&v.Comment,
+		&v.Properties,
+		&v.Owner,
+		&v.SourceTables,
+		&v.CreatedAt,
+		&v.UpdatedAt,
+		&v.DeletedAt,
+	)
+	if err != nil {
+		return nil, mapDBError(err)
+	}
+	return mapper.ViewFromDB(v), nil
 }
 
 // Create inserts a new view into the database.
