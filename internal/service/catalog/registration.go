@@ -20,6 +20,7 @@ import (
 type CatalogRegistrationService struct {
 	repo               domain.CatalogRegistrationRepository
 	attacher           domain.CatalogAttacher
+	audit              domain.AuditRepository
 	controlPlaneDBPath string // to enforce SQLite separation
 	logger             *slog.Logger
 
@@ -33,6 +34,7 @@ type CatalogRegistrationService struct {
 type RegistrationServiceDeps struct {
 	Repo               domain.CatalogRegistrationRepository
 	Attacher           domain.CatalogAttacher
+	Audit              domain.AuditRepository
 	ControlPlaneDBPath string
 	Logger             *slog.Logger
 	MetastoreFactory   domain.MetastoreQuerierFactory
@@ -45,6 +47,7 @@ func NewCatalogRegistrationService(deps RegistrationServiceDeps) *CatalogRegistr
 	return &CatalogRegistrationService{
 		repo:                deps.Repo,
 		attacher:            deps.Attacher,
+		audit:               deps.Audit,
 		controlPlaneDBPath:  deps.ControlPlaneDBPath,
 		logger:              deps.Logger,
 		metastoreFactory:    deps.MetastoreFactory,
@@ -119,6 +122,7 @@ func (s *CatalogRegistrationService) Register(ctx context.Context, req domain.Cr
 	_ = s.repo.UpdateStatus(ctx, created.ID, domain.CatalogStatusActive, "")
 	created.Status = domain.CatalogStatusActive
 	created.StatusMessage = ""
+	s.logAudit(ctx, "REGISTER_CATALOG")
 
 	s.logger.Info("catalog registered and attached", "catalog", req.Name)
 	return created, nil
@@ -140,7 +144,13 @@ func (s *CatalogRegistrationService) Update(ctx context.Context, name string, re
 	if err != nil {
 		return nil, err
 	}
-	return s.repo.Update(ctx, existing.ID, req)
+	updated, err := s.repo.Update(ctx, existing.ID, req)
+	if err != nil {
+		return nil, err
+	}
+
+	s.logAudit(ctx, "UPDATE_CATALOG_REGISTRATION")
+	return updated, nil
 }
 
 // Delete detaches and removes a catalog registration.
@@ -177,6 +187,7 @@ func (s *CatalogRegistrationService) Delete(ctx context.Context, name string) er
 	if err := s.repo.Delete(ctx, existing.ID); err != nil {
 		return fmt.Errorf("delete catalog: %w", err)
 	}
+	s.logAudit(ctx, "DELETE_CATALOG_REGISTRATION")
 
 	s.logger.Info("catalog deleted", "catalog", name)
 	return nil
@@ -201,8 +212,26 @@ func (s *CatalogRegistrationService) SetDefault(ctx context.Context, name string
 	if err := s.attacher.SetDefaultCatalog(ctx, name); err != nil {
 		s.logger.Warn("USE catalog failed", "catalog", name, "error", err)
 	}
+	s.logAudit(ctx, "SET_DEFAULT_CATALOG")
 
 	return s.repo.GetByID(ctx, existing.ID)
+}
+
+func (s *CatalogRegistrationService) logAudit(ctx context.Context, action string) {
+	if s.audit == nil {
+		return
+	}
+
+	principal, ok := domain.PrincipalFromContext(ctx)
+	if !ok {
+		principal.Name = "system"
+	}
+
+	_ = s.audit.Insert(ctx, &domain.AuditEntry{
+		PrincipalName: principal.Name,
+		Action:        action,
+		Status:        "ALLOWED",
+	})
 }
 
 // AttachAll loads all registered catalogs and attaches them concurrently at startup.

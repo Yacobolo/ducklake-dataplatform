@@ -336,6 +336,7 @@ func (s *Service) TriggerRunSync(ctx context.Context, principal string, req doma
 		return fmt.Errorf("model run %s: %s", finalRun.Status, msg)
 	}
 
+	s.logAudit(ctx, principal, "trigger_model_run_sync", run.ID)
 	return nil
 }
 

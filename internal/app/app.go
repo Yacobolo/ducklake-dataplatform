@@ -200,6 +200,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	catalogRegSvc := catalog.NewCatalogRegistrationService(catalog.RegistrationServiceDeps{
 		Repo:               catalogRegRepo,
 		Attacher:           secretMgr,
+		Audit:              auditRepo,
 		ControlPlaneDBPath: cfg.MetaDBPath,
 		Logger:             deps.Logger.With("component", "catalog-registration"),
 		MetastoreFactory:   metastoreFactory,
