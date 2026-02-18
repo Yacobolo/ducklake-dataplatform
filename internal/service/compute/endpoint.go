@@ -89,6 +89,11 @@ func (s *ComputeEndpointService) Update(ctx context.Context, principal string, n
 		return nil, err
 	}
 
+	if err := s.requireEndpointPrivilege(ctx, principal, existing.ID, domain.PrivManageCompute); err != nil {
+		s.logAuditDenied(ctx, principal, "UPDATE_COMPUTE_ENDPOINT", fmt.Sprintf("Denied update compute endpoint %q", name))
+		return nil, err
+	}
+
 	// Handle status update if provided
 	if req.Status != nil {
 		switch *req.Status {
@@ -123,6 +128,11 @@ func (s *ComputeEndpointService) Delete(ctx context.Context, principal string, n
 		return err
 	}
 
+	if err := s.requireEndpointPrivilege(ctx, principal, existing.ID, domain.PrivManageCompute); err != nil {
+		s.logAuditDenied(ctx, principal, "DELETE_COMPUTE_ENDPOINT", fmt.Sprintf("Denied delete compute endpoint %q", name))
+		return err
+	}
+
 	if err := s.repo.Delete(ctx, existing.ID); err != nil {
 		return fmt.Errorf("delete compute endpoint: %w", err)
 	}
@@ -140,6 +150,11 @@ func (s *ComputeEndpointService) UpdateStatus(ctx context.Context, principal str
 
 	existing, err := s.repo.GetByName(ctx, name)
 	if err != nil {
+		return err
+	}
+
+	if err := s.requireEndpointPrivilege(ctx, principal, existing.ID, domain.PrivManageCompute); err != nil {
+		s.logAuditDenied(ctx, principal, "UPDATE_COMPUTE_ENDPOINT_STATUS", fmt.Sprintf("Denied update compute endpoint %q status", name))
 		return err
 	}
 
@@ -173,6 +188,11 @@ func (s *ComputeEndpointService) Assign(ctx context.Context, principal string, e
 
 	ep, err := s.repo.GetByName(ctx, endpointName)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := s.requireEndpointPrivilege(ctx, principal, ep.ID, domain.PrivManageCompute); err != nil {
+		s.logAuditDenied(ctx, principal, "ASSIGN_COMPUTE_ENDPOINT", fmt.Sprintf("Denied assign for endpoint %q", endpointName))
 		return nil, err
 	}
 
@@ -228,6 +248,11 @@ func (s *ComputeEndpointService) HealthCheck(ctx context.Context, principal stri
 
 	ep, err := s.repo.GetByName(ctx, endpointName)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := s.requireEndpointPrivilege(ctx, principal, ep.ID, domain.PrivManageCompute); err != nil {
+		s.logAuditDenied(ctx, principal, "GET_COMPUTE_ENDPOINT_HEALTH", fmt.Sprintf("Denied health check for endpoint %q", endpointName))
 		return nil, err
 	}
 
@@ -292,6 +317,17 @@ func (s *ComputeEndpointService) requirePrivilege(ctx context.Context, principal
 	if !allowed {
 		s.logAuditDenied(ctx, principal, action, detail)
 		return domain.ErrAccessDenied("%q lacks %s on catalog", principal, privilege)
+	}
+	return nil
+}
+
+func (s *ComputeEndpointService) requireEndpointPrivilege(ctx context.Context, principal, endpointID, privilege string) error {
+	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableComputeEndpoint, endpointID, privilege)
+	if err != nil {
+		return fmt.Errorf("check privilege: %w", err)
+	}
+	if !allowed {
+		return domain.ErrAccessDenied("%q lacks %s on compute endpoint", principal, privilege)
 	}
 	return nil
 }

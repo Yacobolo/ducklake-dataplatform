@@ -155,15 +155,19 @@ func (s *CatalogService) UpdateSchema(ctx context.Context, catalogName string, p
 		return nil, err
 	}
 
-	if schema.Owner != principal {
-		allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivModify)
+	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivModify)
+	if err != nil {
+		return nil, fmt.Errorf("check privilege: %w", err)
+	}
+	if !allowed {
+		allowed, err = s.auth.CheckPrivilege(ctx, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivCreateSchema)
 		if err != nil {
 			return nil, fmt.Errorf("check privilege: %w", err)
 		}
-		if !allowed {
-			s.logAuditDenied(ctx, principal, "UPDATE_SCHEMA", fmt.Sprintf("Denied update schema %q metadata", name))
-			return nil, domain.ErrAccessDenied("%q lacks permission to update schema %q", principal, name)
-		}
+	}
+	if !allowed {
+		s.logAuditDenied(ctx, principal, "UPDATE_SCHEMA", fmt.Sprintf("Denied update schema %q", name))
+		return nil, domain.ErrAccessDenied("%q lacks permission to update schema %q", principal, name)
 	}
 
 	result, err := repo.UpdateSchema(ctx, name, req.Comment, req.Properties)
@@ -187,15 +191,19 @@ func (s *CatalogService) DeleteSchema(ctx context.Context, catalogName string, p
 		return err
 	}
 
-	if schema.Owner != principal {
-		allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivManage)
+	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivManage)
+	if err != nil {
+		return fmt.Errorf("check privilege: %w", err)
+	}
+	if !allowed {
+		allowed, err = s.auth.CheckPrivilege(ctx, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivCreateSchema)
 		if err != nil {
 			return fmt.Errorf("check privilege: %w", err)
 		}
-		if !allowed {
-			s.logAuditDenied(ctx, principal, "DELETE_SCHEMA", fmt.Sprintf("Denied delete schema %q", name))
-			return domain.ErrAccessDenied("%q lacks permission to delete schema %q", principal, name)
-		}
+	}
+	if !allowed {
+		s.logAuditDenied(ctx, principal, "DELETE_SCHEMA", fmt.Sprintf("Denied delete schema %q", name))
+		return domain.ErrAccessDenied("%q lacks permission to delete schema %q", principal, name)
 	}
 
 	if err := repo.DeleteSchema(ctx, name, force); err != nil {
@@ -322,15 +330,19 @@ func (s *CatalogService) DeleteTable(ctx context.Context, catalogName string, pr
 		return err
 	}
 
-	if tbl.Owner != principal {
-		allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableTable, tbl.TableID, domain.PrivManage)
+	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableTable, tbl.TableID, domain.PrivManage)
+	if err != nil {
+		return fmt.Errorf("check privilege: %w", err)
+	}
+	if !allowed {
+		allowed, err = s.auth.CheckPrivilege(ctx, principal, domain.SecurableTable, tbl.TableID, domain.PrivCreateTable)
 		if err != nil {
 			return fmt.Errorf("check privilege: %w", err)
 		}
-		if !allowed {
-			s.logAuditDenied(ctx, principal, "DROP_TABLE", fmt.Sprintf("Denied drop table %q.%q", schemaName, tableName))
-			return domain.ErrAccessDenied("%q lacks permission to delete table %q.%q", principal, schemaName, tableName)
-		}
+	}
+	if !allowed {
+		s.logAuditDenied(ctx, principal, "DROP_TABLE", fmt.Sprintf("Denied delete table %q.%q", schemaName, tableName))
+		return domain.ErrAccessDenied("%q lacks permission to delete table %q.%q", principal, schemaName, tableName)
 	}
 
 	if err := repo.DeleteTable(ctx, schemaName, tableName); err != nil {
@@ -361,15 +373,19 @@ func (s *CatalogService) UpdateTable(ctx context.Context, catalogName string, pr
 		return nil, err
 	}
 
-	if tbl.Owner != principal {
-		allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableTable, tbl.TableID, domain.PrivModify)
+	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableTable, tbl.TableID, domain.PrivModify)
+	if err != nil {
+		return nil, fmt.Errorf("check privilege: %w", err)
+	}
+	if !allowed {
+		allowed, err = s.auth.CheckPrivilege(ctx, principal, domain.SecurableTable, tbl.TableID, domain.PrivCreateTable)
 		if err != nil {
 			return nil, fmt.Errorf("check privilege: %w", err)
 		}
-		if !allowed {
-			s.logAuditDenied(ctx, principal, "UPDATE_TABLE", fmt.Sprintf("Denied update table %q.%q metadata", schemaName, tableName))
-			return nil, domain.ErrAccessDenied("%q lacks permission to update table %q.%q", principal, schemaName, tableName)
-		}
+	}
+	if !allowed {
+		s.logAuditDenied(ctx, principal, "UPDATE_TABLE", fmt.Sprintf("Denied update table %q.%q", schemaName, tableName))
+		return nil, domain.ErrAccessDenied("%q lacks permission to update table %q.%q", principal, schemaName, tableName)
 	}
 
 	result, err := repo.UpdateTable(ctx, schemaName, tableName, req.Comment, req.Properties, req.Owner)
@@ -419,15 +435,19 @@ func (s *CatalogService) UpdateColumn(ctx context.Context, catalogName string, p
 		return nil, err
 	}
 
-	if tbl.Owner != principal {
-		allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableTable, tbl.TableID, domain.PrivModify)
+	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableTable, tbl.TableID, domain.PrivModify)
+	if err != nil {
+		return nil, fmt.Errorf("check privilege: %w", err)
+	}
+	if !allowed {
+		allowed, err = s.auth.CheckPrivilege(ctx, principal, domain.SecurableTable, tbl.TableID, domain.PrivCreateTable)
 		if err != nil {
 			return nil, fmt.Errorf("check privilege: %w", err)
 		}
-		if !allowed {
-			s.logAuditDenied(ctx, principal, "UPDATE_COLUMN", fmt.Sprintf("Denied update column %q in %q.%q", columnName, schemaName, tableName))
-			return nil, domain.ErrAccessDenied("%q lacks permission to update column metadata", principal)
-		}
+	}
+	if !allowed {
+		s.logAuditDenied(ctx, principal, "UPDATE_COLUMN", fmt.Sprintf("Denied update column %q in %q.%q", columnName, schemaName, tableName))
+		return nil, domain.ErrAccessDenied("%q lacks permission to update column metadata", principal)
 	}
 
 	result, err := repo.UpdateColumn(ctx, schemaName, tableName, columnName, req.Comment, req.Properties)

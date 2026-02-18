@@ -91,9 +91,9 @@ func (s *StorageCredentialService) Update(ctx context.Context, principal string,
 		return nil, err
 	}
 
-	if existing.Owner != principal {
-		if err := s.requirePrivilege(ctx, principal, domain.SecurableStorageCredential, existing.ID, domain.PrivManage, "UPDATE_STORAGE_CREDENTIAL", fmt.Sprintf("Denied update credential %q", name)); err != nil {
-			return nil, err
+	if err := s.requirePrivilege(ctx, principal, domain.SecurableStorageCredential, existing.ID, domain.PrivManage, "UPDATE_STORAGE_CREDENTIAL", fmt.Sprintf("Denied update credential %q", name)); err != nil {
+		if errLegacy := s.requirePrivilege(ctx, principal, domain.SecurableStorageCredential, existing.ID, domain.PrivCreateStorageCredential, "UPDATE_STORAGE_CREDENTIAL", fmt.Sprintf("Denied update credential %q", name)); errLegacy != nil {
+			return nil, errLegacy
 		}
 	}
 
@@ -114,9 +114,9 @@ func (s *StorageCredentialService) Delete(ctx context.Context, principal string,
 		return err
 	}
 
-	if existing.Owner != principal {
-		if err := s.requirePrivilege(ctx, principal, domain.SecurableStorageCredential, existing.ID, domain.PrivManage, "DELETE_STORAGE_CREDENTIAL", fmt.Sprintf("Denied delete credential %q", name)); err != nil {
-			return err
+	if err := s.requirePrivilege(ctx, principal, domain.SecurableStorageCredential, existing.ID, domain.PrivManage, "DELETE_STORAGE_CREDENTIAL", fmt.Sprintf("Denied delete credential %q", name)); err != nil {
+		if errLegacy := s.requirePrivilege(ctx, principal, domain.SecurableStorageCredential, existing.ID, domain.PrivCreateStorageCredential, "DELETE_STORAGE_CREDENTIAL", fmt.Sprintf("Denied delete credential %q", name)); errLegacy != nil {
+			return errLegacy
 		}
 	}
 

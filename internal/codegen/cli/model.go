@@ -119,10 +119,25 @@ type APIEndpointModel struct {
 	Path        string
 	Summary     string
 	Description string
+	Authz       APIAuthzModel
 	Tags        []string
 	Parameters  []APIParamModel
 	BodyFields  []APIFieldModel
 	CLICommand  string // corresponding CLI command path, e.g. "catalog schemas create"
+}
+
+// APIAuthzModel represents endpoint authorization metadata from OpenAPI x-authz.
+type APIAuthzModel struct {
+	Mode        string
+	OwnerBypass bool
+	Checks      []APIAuthzCheckModel
+}
+
+// APIAuthzCheckModel represents a single authz check in x-authz metadata.
+type APIAuthzCheckModel struct {
+	SecurableType     string
+	Privilege         string
+	SecurableIDSource string
 }
 
 // APIParamModel represents a parameter in the API registry.

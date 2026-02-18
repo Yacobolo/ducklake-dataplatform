@@ -21,6 +21,8 @@ func customFunctions() map[string]model.RuleFunction {
 		"checkDeleteReturns204":      &fnCheckDeleteReturns204{},
 		"checkPaginationSchemaMatch": &fnCheckPaginationSchemaMatch{},
 		"checkDiscriminatorRequired": &fnCheckDiscriminatorRequired{},
+		"checkAuthzMetadataPresent":  &fnCheckAuthzMetadataPresent{},
+		"checkAuthzMetadataShape":    &fnCheckAuthzMetadataShape{},
 	}
 }
 
@@ -687,5 +689,157 @@ func (f *fnCheckDiscriminatorRequired) RunRule(nodes []*yaml.Node, ctx model.Rul
 			}
 		}
 	}
+	return results
+}
+
+// ================================================================
+// AUTHZ001 — critical mutating operations must declare x-authz
+// ================================================================
+
+type fnCheckAuthzMetadataPresent struct{}
+
+func (f *fnCheckAuthzMetadataPresent) GetSchema() model.RuleFunctionSchema {
+	return model.RuleFunctionSchema{Name: "checkAuthzMetadataPresent"}
+}
+func (f *fnCheckAuthzMetadataPresent) GetCategory() string { return model.CategoryOperations }
+
+var criticalAuthzOperationIDs = map[string]bool{
+	"createSchema":            true,
+	"updateSchema":            true,
+	"deleteSchema":            true,
+	"createTable":             true,
+	"updateTable":             true,
+	"deleteTable":             true,
+	"updateColumn":            true,
+	"createView":              true,
+	"updateView":              true,
+	"deleteView":              true,
+	"createVolume":            true,
+	"updateVolume":            true,
+	"deleteVolume":            true,
+	"createStorageCredential": true,
+	"updateStorageCredential": true,
+	"deleteStorageCredential": true,
+	"createExternalLocation":  true,
+	"updateExternalLocation":  true,
+	"deleteExternalLocation":  true,
+	"createComputeEndpoint":   true,
+	"updateComputeEndpoint":   true,
+	"deleteComputeEndpoint":   true,
+	"createComputeAssignment": true,
+	"deleteComputeAssignment": true,
+	"createGrant":             true,
+	"deleteGrant":             true,
+}
+
+func (f *fnCheckAuthzMetadataPresent) RunRule(nodes []*yaml.Node, ctx model.RuleFunctionContext) []model.RuleFunctionResult {
+	root := rootNode(nodes)
+	if root == nil {
+		return nil
+	}
+
+	var results []model.RuleFunctionResult
+	forEachOp(root, func(path, method string, op *yaml.Node) {
+		opID := yOpID(op)
+		if !criticalAuthzOperationIDs[opID] {
+			return
+		}
+		if yGet(op, "x-authz") != nil {
+			return
+		}
+		results = append(results, makeResult(
+			fmt.Sprintf("operation %q must declare x-authz metadata", opID),
+			fmt.Sprintf("$.paths.%s.%s", path, method),
+			"check-authz-metadata-present", op, ctx))
+	})
+
+	return results
+}
+
+// ================================================================
+// AUTHZ002 — x-authz metadata shape and enums
+// ================================================================
+
+type fnCheckAuthzMetadataShape struct{}
+
+func (f *fnCheckAuthzMetadataShape) GetSchema() model.RuleFunctionSchema {
+	return model.RuleFunctionSchema{Name: "checkAuthzMetadataShape"}
+}
+func (f *fnCheckAuthzMetadataShape) GetCategory() string { return model.CategoryOperations }
+
+var validAuthzModes = map[string]bool{
+	"none":               true,
+	"authenticated":      true,
+	"admin_only":         true,
+	"privilege":          true,
+	"owner_or_privilege": true,
+}
+
+var validSecurableIDSources = map[string]bool{
+	"catalog_name_param":         true,
+	"catalog_sentinel":           true,
+	"runtime_resolved_object_id": true,
+}
+
+func (f *fnCheckAuthzMetadataShape) RunRule(nodes []*yaml.Node, ctx model.RuleFunctionContext) []model.RuleFunctionResult {
+	root := rootNode(nodes)
+	if root == nil {
+		return nil
+	}
+
+	var results []model.RuleFunctionResult
+	forEachOp(root, func(path, method string, op *yaml.Node) {
+		authz := yGet(op, "x-authz")
+		if authz == nil {
+			return
+		}
+		opID := yOpID(op)
+		if opID == "" {
+			opID = method + " " + path
+		}
+
+		modeNode := yGet(authz, "mode")
+		if modeNode == nil || !validAuthzModes[modeNode.Value] {
+			results = append(results, makeResult(
+				fmt.Sprintf("operation %q x-authz.mode must be one of: none, authenticated, admin_only, privilege, owner_or_privilege", opID),
+				fmt.Sprintf("$.paths.%s.%s.x-authz.mode", path, method),
+				"check-authz-metadata-shape", authz, ctx))
+			return
+		}
+
+		ownerBypassNode := yGet(authz, "owner_bypass")
+		if ownerBypassNode != nil && modeNode.Value != "owner_or_privilege" {
+			results = append(results, makeResult(
+				fmt.Sprintf("operation %q x-authz.owner_bypass is only valid when mode=owner_or_privilege", opID),
+				fmt.Sprintf("$.paths.%s.%s.x-authz.owner_bypass", path, method),
+				"check-authz-metadata-shape", ownerBypassNode, ctx))
+		}
+
+		if modeNode.Value != "privilege" && modeNode.Value != "owner_or_privilege" {
+			return
+		}
+
+		checksNode := yGet(authz, "checks")
+		if checksNode == nil || checksNode.Kind != yaml.SequenceNode || len(checksNode.Content) == 0 {
+			results = append(results, makeResult(
+				fmt.Sprintf("operation %q x-authz.checks must be a non-empty array for mode=%s", opID, modeNode.Value),
+				fmt.Sprintf("$.paths.%s.%s.x-authz.checks", path, method),
+				"check-authz-metadata-shape", authz, ctx))
+			return
+		}
+
+		for _, c := range checksNode.Content {
+			securableType := yGet(c, "securable_type")
+			privilege := yGet(c, "privilege")
+			source := yGet(c, "securable_id_source")
+			if securableType == nil || strings.TrimSpace(securableType.Value) == "" || privilege == nil || strings.TrimSpace(privilege.Value) == "" || source == nil || !validSecurableIDSources[source.Value] {
+				results = append(results, makeResult(
+					fmt.Sprintf("operation %q x-authz.checks entries require securable_type, privilege, and valid securable_id_source", opID),
+					fmt.Sprintf("$.paths.%s.%s.x-authz.checks", path, method),
+					"check-authz-metadata-shape", c, ctx))
+			}
+		}
+	})
+
 	return results
 }

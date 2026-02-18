@@ -33,6 +33,15 @@ func NewViewService(
 
 // CreateView creates a new view in the given schema.
 func (s *ViewService) CreateView(ctx context.Context, catalogName string, principal string, schemaName string, req domain.CreateViewRequest) (*domain.ViewDetail, error) {
+	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, catalogName, domain.PrivCreateTable)
+	if err != nil {
+		return nil, fmt.Errorf("check privilege: %w", err)
+	}
+	if !allowed {
+		s.logAuditDenied(ctx, principal, "CREATE_VIEW", fmt.Sprintf("Denied create view %q in schema %q", req.Name, schemaName))
+		return nil, domain.ErrAccessDenied("%q lacks CREATE_TABLE privilege for creating views", principal)
+	}
+
 	catalogRepo, err := s.catalogFactory.ForCatalog(ctx, catalogName)
 	if err != nil {
 		return nil, err
@@ -42,13 +51,19 @@ func (s *ViewService) CreateView(ctx context.Context, catalogName string, princi
 		return nil, err
 	}
 
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivCreateView)
+	allowed, err = s.auth.CheckPrivilege(ctx, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivCreateView)
 	if err != nil {
 		return nil, fmt.Errorf("check privilege: %w", err)
 	}
 	if !allowed {
+		allowed, err = s.auth.CheckPrivilege(ctx, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivCreateTable)
+		if err != nil {
+			return nil, fmt.Errorf("check privilege: %w", err)
+		}
+	}
+	if !allowed {
 		s.logAuditDenied(ctx, principal, "CREATE_VIEW", fmt.Sprintf("Denied create view %q in schema %q", req.Name, schemaName))
-		return nil, domain.ErrAccessDenied("%q lacks CREATE_VIEW privilege for creating views", principal)
+		return nil, domain.ErrAccessDenied("%q lacks CREATE_TABLE privilege for creating views", principal)
 	}
 
 	view := &domain.ViewDetail{
@@ -133,6 +148,15 @@ func (s *ViewService) DeleteView(ctx context.Context, catalogName string, princi
 		return domain.ErrAccessDenied("%q lacks permission to delete view %q.%q", principal, schemaName, viewName)
 	}
 
+	allowed, err = s.auth.CheckPrivilege(ctx, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivCreateTable)
+	if err != nil {
+		return fmt.Errorf("check privilege: %w", err)
+	}
+	if !allowed {
+		s.logAuditDenied(ctx, principal, "DROP_VIEW", fmt.Sprintf("Denied delete view %q.%q", schemaName, viewName))
+		return domain.ErrAccessDenied("%q lacks permission to delete view %q.%q", principal, schemaName, viewName)
+	}
+
 	if err := s.repo.Delete(ctx, schema.SchemaID, viewName); err != nil {
 		return err
 	}
@@ -152,6 +176,15 @@ func (s *ViewService) UpdateView(ctx context.Context, catalogName string, princi
 		return nil, err
 	}
 	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivModify)
+	if err != nil {
+		return nil, fmt.Errorf("check privilege: %w", err)
+	}
+	if !allowed {
+		s.logAuditDenied(ctx, principal, "UPDATE_VIEW", fmt.Sprintf("Denied update view %q.%q", schemaName, viewName))
+		return nil, domain.ErrAccessDenied("%q lacks permission to update view %q.%q", principal, schemaName, viewName)
+	}
+
+	allowed, err = s.auth.CheckPrivilege(ctx, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivCreateTable)
 	if err != nil {
 		return nil, fmt.Errorf("check privilege: %w", err)
 	}

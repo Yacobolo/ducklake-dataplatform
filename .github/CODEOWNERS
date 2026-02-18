@@ -1,4 +1,4 @@
 * @yacobolo
 
 # Governance-sensitive declarative security policy
-**/security/*.yaml @yacobolo
+/security/*.yaml @yacobolo

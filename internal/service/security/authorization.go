@@ -282,7 +282,7 @@ func (s *AuthorizationService) checkPrivilegeForIdentities(ctx context.Context, 
 		return s.checkSchemaPrivilege(ctx, principalID, groupIDs, securableID, privilege)
 	case domain.SecurableCatalog:
 		return s.hasGrant(ctx, principalID, groupIDs, domain.SecurableCatalog, domain.CatalogID, privilege)
-	case domain.SecurableExternalLocation, domain.SecurableStorageCredential, domain.SecurableVolume:
+	case domain.SecurableExternalLocation, domain.SecurableStorageCredential, domain.SecurableVolume, domain.SecurableComputeEndpoint:
 		return s.checkCatalogScopedPrivilege(ctx, principalID, groupIDs, securableType, securableID, privilege)
 	default:
 		return false, fmt.Errorf("unknown securable type: %s", securableType)
@@ -339,10 +339,12 @@ func (s *AuthorizationService) checkTablePrivilege(ctx context.Context, principa
 		return ok, err
 	}
 
-	// Inherit from schema
-	ok, err = s.hasGrant(ctx, principalID, groupIDs, domain.SecurableSchema, schemaID, privilege)
-	if err != nil || ok {
-		return ok, err
+	if schemaResolved {
+		// Inherit from schema
+		ok, err = s.hasGrant(ctx, principalID, groupIDs, domain.SecurableSchema, schemaID, privilege)
+		if err != nil || ok {
+			return ok, err
+		}
 	}
 
 	// Inherit from catalog

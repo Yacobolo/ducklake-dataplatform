@@ -110,9 +110,9 @@ func (s *ExternalLocationService) Update(ctx context.Context, principal string, 
 		return nil, err
 	}
 
-	if existing.Owner != principal {
-		if err := s.requirePrivilege(ctx, principal, domain.SecurableExternalLocation, existing.ID, domain.PrivManage, "UPDATE_EXTERNAL_LOCATION", fmt.Sprintf("Denied update external location %q", name)); err != nil {
-			return nil, err
+	if err := s.requirePrivilege(ctx, principal, domain.SecurableExternalLocation, existing.ID, domain.PrivManage, "UPDATE_EXTERNAL_LOCATION", fmt.Sprintf("Denied update external location %q", name)); err != nil {
+		if errLegacy := s.requirePrivilege(ctx, principal, domain.SecurableExternalLocation, existing.ID, domain.PrivCreateExternalLocation, "UPDATE_EXTERNAL_LOCATION", fmt.Sprintf("Denied update location %q", name)); errLegacy != nil {
+			return nil, errLegacy
 		}
 	}
 
@@ -133,9 +133,9 @@ func (s *ExternalLocationService) Delete(ctx context.Context, principal string, 
 		return err
 	}
 
-	if existing.Owner != principal {
-		if err := s.requirePrivilege(ctx, principal, domain.SecurableExternalLocation, existing.ID, domain.PrivManage, "DELETE_EXTERNAL_LOCATION", fmt.Sprintf("Denied delete external location %q", name)); err != nil {
-			return err
+	if err := s.requirePrivilege(ctx, principal, domain.SecurableExternalLocation, existing.ID, domain.PrivManage, "DELETE_EXTERNAL_LOCATION", fmt.Sprintf("Denied delete external location %q", name)); err != nil {
+		if errLegacy := s.requirePrivilege(ctx, principal, domain.SecurableExternalLocation, existing.ID, domain.PrivCreateExternalLocation, "DELETE_EXTERNAL_LOCATION", fmt.Sprintf("Denied delete location %q", name)); errLegacy != nil {
+			return errLegacy
 		}
 	}
 

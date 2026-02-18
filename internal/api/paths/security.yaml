@@ -750,6 +750,8 @@ paths:
       summary: Grant a privilege
       description: Creates a new privilege grant for a principal on a securable resource. Returns the created grant.
       tags: [Security]
+      x-authz:
+        mode: admin_only
       requestBody:
         required: true
         content:
@@ -821,6 +823,8 @@ paths:
       summary: Revoke a privilege
       description: Revokes a previously granted privilege by deleting the grant record.
       tags: [Security]
+      x-authz:
+        mode: admin_only
       responses:
         '204':
           description: Revoked

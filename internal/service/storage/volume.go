@@ -80,9 +80,9 @@ func (s *VolumeService) Update(ctx context.Context, principal, catalogName, sche
 		return nil, err
 	}
 
-	if existing.Owner != principal {
-		if err := s.requirePrivilege(ctx, principal, domain.SecurableVolume, existing.ID, domain.PrivManage, "UPDATE_VOLUME", fmt.Sprintf("Denied update volume %q in schema %q", name, schemaName)); err != nil {
-			return nil, err
+	if err := s.requirePrivilege(ctx, principal, domain.SecurableVolume, existing.ID, domain.PrivManage, "UPDATE_VOLUME", fmt.Sprintf("Denied update volume %q in schema %q", name, schemaName)); err != nil {
+		if errLegacy := s.requirePrivilege(ctx, principal, domain.SecurableVolume, existing.ID, domain.PrivCreateVolume, "UPDATE_VOLUME", fmt.Sprintf("Denied update volume %q in schema %q", name, schemaName)); errLegacy != nil {
+			return nil, errLegacy
 		}
 	}
 
@@ -104,9 +104,9 @@ func (s *VolumeService) Delete(ctx context.Context, principal, catalogName, sche
 		return err
 	}
 
-	if existing.Owner != principal {
-		if err := s.requirePrivilege(ctx, principal, domain.SecurableVolume, existing.ID, domain.PrivManage, "DELETE_VOLUME", fmt.Sprintf("Denied delete volume %q from schema %q", name, schemaName)); err != nil {
-			return err
+	if err := s.requirePrivilege(ctx, principal, domain.SecurableVolume, existing.ID, domain.PrivManage, "DELETE_VOLUME", fmt.Sprintf("Denied delete volume %q from schema %q", name, schemaName)); err != nil {
+		if errLegacy := s.requirePrivilege(ctx, principal, domain.SecurableVolume, existing.ID, domain.PrivCreateVolume, "DELETE_VOLUME", fmt.Sprintf("Denied delete volume %q from schema %q", name, schemaName)); errLegacy != nil {
+			return errLegacy
 		}
 	}
 
