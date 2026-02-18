@@ -21,13 +21,9 @@ func (s *Service) validateContract(ctx context.Context, conn *sql.Conn,
 	fqn := quoteIdent(config.TargetSchema) + "." + quoteIdent(model.Name)
 
 	// Query information_schema to get actual columns
-	infoSQL := fmt.Sprintf(
-		"SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_schema = '%s' AND table_name = '%s' ORDER BY ordinal_position",
-		strings.ReplaceAll(config.TargetSchema, "'", "''"),
-		strings.ReplaceAll(model.Name, "'", "''"),
-	)
+	const infoSQL = "SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_schema = ? AND table_name = ? ORDER BY ordinal_position"
 
-	rows, err := conn.QueryContext(ctx, infoSQL)
+	rows, err := conn.QueryContext(ctx, infoSQL, config.TargetSchema, model.Name)
 	if err != nil {
 		return fmt.Errorf("query information_schema for %s: %w", fqn, err)
 	}
