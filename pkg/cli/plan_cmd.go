@@ -24,6 +24,15 @@ func newPlanCmd(client *gen.Client) *cobra.Command {
 		Short: "Show changes required to match the declarative configuration",
 		Long:  "Reads YAML configuration files, compares with the current server state, and shows a plan of changes.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			// Check local -o flag first, then fall back to global --output.
+			effectiveOutput := output
+			if effectiveOutput == "text" && getOutputFormat(cmd) == "json" {
+				effectiveOutput = "json"
+			}
+			if effectiveOutput != "text" && effectiveOutput != "json" {
+				return fmt.Errorf("unsupported output format %q: use 'text' or 'json'", effectiveOutput)
+			}
+
 			// 1. Load desired state from YAML files.
 			desired, err := declarative.LoadDirectoryWithOptions(configDir, declarative.LoadOptions{
 				AllowUnknownFields: allowUnknownFields,
@@ -60,17 +69,12 @@ func newPlanCmd(client *gen.Client) *cobra.Command {
 			plan := declarative.Diff(desired, actual)
 
 			// 5. Format output.
-			// Check local -o flag first, then fall back to global --output
-			effectiveOutput := output
-			if effectiveOutput == "text" && getOutputFormat(cmd) == "json" {
-				effectiveOutput = "json"
-			}
 			switch effectiveOutput {
 			case "json":
 				if err := declarative.FormatJSON(os.Stdout, plan); err != nil {
 					return fmt.Errorf("format plan: %w", err)
 				}
-			default:
+			case "text":
 				declarative.FormatText(os.Stdout, plan, noColor)
 			}
 

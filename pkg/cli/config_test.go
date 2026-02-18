@@ -30,6 +30,7 @@ func TestUserConfig_ActiveProfile(t *testing.T) {
 		name     string
 		override string
 		wantHost string
+		wantErr  string
 	}{
 		{
 			name:     "uses current profile",
@@ -45,12 +46,18 @@ func TestUserConfig_ActiveProfile(t *testing.T) {
 			name:     "nonexistent profile returns empty",
 			override: "nonexistent",
 			wantHost: "",
+			wantErr:  `profile "nonexistent" not found`,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := cfg.ActiveProfile(tt.override)
+			p, err := cfg.ActiveProfile(tt.override)
+			if tt.wantErr != "" {
+				require.EqualError(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
 			assert.Equal(t, tt.wantHost, p.Host)
 		})
 	}

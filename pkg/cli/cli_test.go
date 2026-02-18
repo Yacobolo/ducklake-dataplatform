@@ -667,9 +667,8 @@ func TestCLI_ErrorPropagation_ContainsStatusCode(t *testing.T) {
 
 func TestCLI_DeleteCommand_RequiresYesFlag(t *testing.T) {
 	// Without --yes, delete commands prompt for confirmation interactively.
-	// When stdin is not a TTY (as in tests), fmt.Scanln returns immediately
-	// with an empty string, which ConfirmPrompt interprets as "no" and the
-	// command returns nil without making any request.
+	// When stdin is not a TTY, the CLI should fail fast with an actionable
+	// error so automation receives a non-zero exit.
 	rec := &requestRecorder{}
 	srv := httptest.NewServer(jsonHandler(rec, 204, ``))
 	defer srv.Close()
@@ -691,8 +690,8 @@ func TestCLI_DeleteCommand_RequiresYesFlag(t *testing.T) {
 	defer func() { os.Stdin = oldStdin }()
 
 	err := rootCmd.Execute()
-	// Command should succeed (returns nil) but not make any HTTP request.
-	require.NoError(t, err)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "confirmation required but stdin is not a terminal")
 	assert.Empty(t, rec.requests, "no HTTP request should be made when confirmation is declined")
 }
 

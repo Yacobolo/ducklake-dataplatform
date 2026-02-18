@@ -232,6 +232,12 @@ func run() error {
 			return fmt.Errorf("oidc validator: %w", err)
 		}
 		logger.Info("OIDC JWT validation enabled", "issuer", cfg.Auth.IssuerURL)
+	} else if cfg.Auth.JWTSecret != "" {
+		jwtValidator, err = middleware.NewHS256Validator(cfg.Auth.JWTSecret)
+		if err != nil {
+			return fmt.Errorf("hs256 validator: %w", err)
+		}
+		logger.Info("HS256 JWT validation enabled (dev mode)")
 	}
 
 	// Authenticated API routes under /v1 prefix

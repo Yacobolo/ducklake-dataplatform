@@ -16,6 +16,7 @@ type AuthConfig struct {
 	// OIDC / JWKS configuration
 	IssuerURL      string        // OIDC issuer URL (e.g., https://login.microsoftonline.com/{tenant}/v2.0)
 	JWKSURL        string        // Override JWKS URL (if no .well-known discovery)
+	JWTSecret      string        // HS256 shared secret for local/dev JWT auth
 	Audience       string        // Required JWT audience claim
 	AllowedIssuers []string      // Accepted issuers (defaults to [IssuerURL])
 	JWKSCacheTTL   time.Duration // JWKS cache duration (default: 1h)
@@ -152,6 +153,7 @@ func LoadFromEnv() (*Config, error) {
 	cfg.Auth = AuthConfig{
 		IssuerURL:      os.Getenv("AUTH_ISSUER_URL"),
 		JWKSURL:        os.Getenv("AUTH_JWKS_URL"),
+		JWTSecret:      os.Getenv("JWT_SECRET"),
 		Audience:       os.Getenv("AUTH_AUDIENCE"),
 		APIKeyEnabled:  true,
 		APIKeyHeader:   os.Getenv("AUTH_API_KEY_HEADER"),

@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"sync"
 	"testing"
@@ -2661,6 +2662,156 @@ func TestExecuteTable_CreateConflictHydratesIndex(t *testing.T) {
 	err := sc.Execute(context.Background(), action)
 	require.NoError(t, err)
 	assert.Equal(t, "table-existing-456", sc.index.tableIDByPath["demo.analytics.orders"])
+}
+
+func TestExecuteColumnMask_CreateAlreadyExistsHydratesIndex(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/tables/table-1/column-masks"):
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = w.Write([]byte(`{"code":500,"message":"resource already exists"}`))
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/tables/table-1/column-masks"):
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"data":[{"id":"mask-existing-789","column_name":"name","mask_expression":"'***'","description":"Mask passenger name"}]}`))
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/column-masks/mask-existing-789/bindings"):
+			w.WriteHeader(http.StatusNoContent)
+			_, _ = w.Write([]byte(`{}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"code":404,"message":"not found"}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	client := gen.NewClient(srv.URL, "", "test-token")
+	sc := NewAPIStateClient(client)
+	sc.index = newResourceIndex()
+	sc.index.tableIDByPath["demo.titanic.passengers"] = "table-1"
+	sc.index.groupIDByName["viewers"] = "group-viewers"
+
+	createMask := declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindColumnMask,
+		ResourceName: "demo.titanic.passengers/mask-name",
+		Desired: declarative.ColumnMaskSpec{
+			Name:           "mask-name",
+			ColumnName:     "name",
+			MaskExpression: "'***'",
+			Description:    "Mask passenger name",
+		},
+	}
+
+	err := sc.Execute(context.Background(), createMask)
+	require.NoError(t, err)
+	assert.Equal(t, "mask-existing-789", sc.index.columnMaskIDByPath["demo.titanic.passengers/mask-name"])
+
+	createBinding := declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindColumnMaskBinding,
+		ResourceName: "demo.titanic.passengers/mask-name->group:viewers",
+		Desired: declarative.MaskBindingRef{
+			Principal:     "viewers",
+			PrincipalType: "group",
+			SeeOriginal:   false,
+		},
+	}
+
+	err = sc.Execute(context.Background(), createBinding)
+	require.NoError(t, err)
+}
+
+func TestExecuteTagAssignment_CreateResolvesTableIDViaLookup(t *testing.T) {
+	t.Parallel()
+
+	var assignmentBody map[string]interface{}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/catalogs/demo/schemas/bronze/tables/ratings_raw"):
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"table_id":"table-fresh-321","name":"ratings_raw"}`))
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/tags/tag-classification-pii/assignments"):
+			defer func() { _ = r.Body.Close() }()
+			data, _ := io.ReadAll(r.Body)
+			_ = json.Unmarshal(data, &assignmentBody)
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"id":"assignment-1"}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"code":404,"message":"not found"}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	client := gen.NewClient(srv.URL, "", "test-token")
+	sc := NewAPIStateClient(client)
+	sc.index = newResourceIndex()
+	sc.index.tagIDByKey["classification:pii"] = "tag-classification-pii"
+
+	action := declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindTagAssignment,
+		ResourceName: "classification:pii on table.demo.bronze.ratings_raw",
+		Desired: declarative.TagAssignmentSpec{
+			Tag:           "classification:pii",
+			SecurableType: "table",
+			Securable:     "demo.bronze.ratings_raw",
+		},
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.NoError(t, err)
+	assert.Equal(t, "table-fresh-321", sc.index.tableIDByPath["demo.bronze.ratings_raw"])
+	require.NotNil(t, assignmentBody)
+	assert.Equal(t, "table-fresh-321", assignmentBody["securable_id"])
+}
+
+func TestExecuteTagAssignment_DeleteResolvesTableIDViaLookup(t *testing.T) {
+	t.Parallel()
+
+	var capturedQuery url.Values
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/catalogs/demo/schemas/bronze/tables/ratings_raw"):
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"table_id":"table-fresh-321","name":"ratings_raw"}`))
+		case r.Method == http.MethodDelete && strings.HasSuffix(r.URL.Path, "/tag-assignments"):
+			capturedQuery = r.URL.Query()
+			w.WriteHeader(http.StatusNoContent)
+			_, _ = w.Write([]byte(`{}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"code":404,"message":"not found"}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	client := gen.NewClient(srv.URL, "", "test-token")
+	sc := NewAPIStateClient(client)
+	sc.index = newResourceIndex()
+	sc.index.tagIDByKey["classification:pii"] = "tag-classification-pii"
+
+	action := declarative.Action{
+		Operation:    declarative.OpDelete,
+		ResourceKind: declarative.KindTagAssignment,
+		ResourceName: "classification:pii on table.demo.bronze.ratings_raw",
+		Actual: declarative.TagAssignmentSpec{
+			Tag:           "classification:pii",
+			SecurableType: "table",
+			Securable:     "demo.bronze.ratings_raw",
+		},
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.NoError(t, err)
+	assert.Equal(t, "table-fresh-321", sc.index.tableIDByPath["demo.bronze.ratings_raw"])
+	require.NotNil(t, capturedQuery)
+	assert.Equal(t, "table-fresh-321", capturedQuery.Get("securable_id"))
+	assert.Equal(t, "tag-classification-pii", capturedQuery.Get("tag_id"))
 }
 
 func TestExecute_CrossLayerResolution(t *testing.T) {

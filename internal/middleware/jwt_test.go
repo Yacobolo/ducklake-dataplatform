@@ -3,7 +3,9 @@ package middleware
 import (
 	"context"
 	"testing"
+	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -78,4 +80,47 @@ func TestNewOIDCValidatorFromJWKS(t *testing.T) {
 			assert.NotNil(t, v.verifier)
 		})
 	}
+}
+
+func TestHS256Validator_Validate(t *testing.T) {
+	t.Parallel()
+
+	validator, err := NewHS256Validator("dev-secret")
+	require.NoError(t, err)
+
+	now := time.Now()
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub":   "admin-hunt",
+		"email": "admin@example.com",
+		"admin": true,
+		"iat":   now.Unix(),
+		"exp":   now.Add(time.Hour).Unix(),
+	})
+	signed, err := token.SignedString([]byte("dev-secret"))
+	require.NoError(t, err)
+
+	claims, err := validator.Validate(context.Background(), signed)
+	require.NoError(t, err)
+	assert.Equal(t, "admin-hunt", claims.Subject)
+	require.NotNil(t, claims.Email)
+	assert.Equal(t, "admin@example.com", *claims.Email)
+	assert.True(t, claims.Raw["admin"].(bool))
+}
+
+func TestHS256Validator_InvalidSignature(t *testing.T) {
+	t.Parallel()
+
+	validator, err := NewHS256Validator("expected-secret")
+	require.NoError(t, err)
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub": "admin-hunt",
+		"exp": time.Now().Add(time.Hour).Unix(),
+	})
+	signed, err := token.SignedString([]byte("wrong-secret"))
+	require.NoError(t, err)
+
+	_, err = validator.Validate(context.Background(), signed)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "token verification failed")
 }

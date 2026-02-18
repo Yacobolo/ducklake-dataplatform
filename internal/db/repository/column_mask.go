@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	dbstore "duck-demo/internal/db/dbstore"
 	"duck-demo/internal/db/mapper"
@@ -11,12 +12,13 @@ import (
 
 // ColumnMaskRepo implements domain.ColumnMaskRepository using SQLite.
 type ColumnMaskRepo struct {
-	q *dbstore.Queries
+	db *sql.DB
+	q  *dbstore.Queries
 }
 
 // NewColumnMaskRepo creates a new ColumnMaskRepo.
 func NewColumnMaskRepo(db *sql.DB) *ColumnMaskRepo {
-	return &ColumnMaskRepo{q: dbstore.New(db)}
+	return &ColumnMaskRepo{db: db, q: dbstore.New(db)}
 }
 
 // Create inserts a new column mask into the database.
@@ -55,7 +57,18 @@ func (r *ColumnMaskRepo) GetForTable(ctx context.Context, tableID string, page d
 
 // Delete removes a column mask by ID.
 func (r *ColumnMaskRepo) Delete(ctx context.Context, id string) error {
-	return r.q.DeleteColumnMask(ctx, id)
+	res, err := r.db.ExecContext(ctx, "DELETE FROM column_masks WHERE id = ?", id)
+	if err != nil {
+		return mapDBError(err)
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("rows affected: %w", err)
+	}
+	if rows == 0 {
+		return domain.ErrNotFound("column mask %s not found", id)
+	}
+	return nil
 }
 
 // Bind associates a column mask with a principal or group.

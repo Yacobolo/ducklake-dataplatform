@@ -64,6 +64,16 @@ func TestColumnMaskRepo_Delete(t *testing.T) {
 	assert.Empty(t, masks)
 }
 
+func TestColumnMaskRepo_Delete_NotFound(t *testing.T) {
+	repo := setupColumnMaskRepo(t)
+	ctx := context.Background()
+
+	err := repo.Delete(ctx, "missing-mask-id")
+	require.Error(t, err)
+	var notFound *domain.NotFoundError
+	assert.ErrorAs(t, err, &notFound)
+}
+
 func TestColumnMaskRepo_BindAndUnbind(t *testing.T) {
 	repo := setupColumnMaskRepo(t)
 	ctx := context.Background()
