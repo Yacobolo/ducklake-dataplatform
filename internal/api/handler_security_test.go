@@ -760,6 +760,19 @@ func TestHandler_CreateColumnMask(t *testing.T) {
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
 		},
+		{
+			name: "validation error returns 400",
+			svcFn: func(_ context.Context, _ domain.CreateColumnMaskRequest) (*domain.ColumnMask, error) {
+				return nil, domain.ErrValidation("column_name is required")
+			},
+			assertFn: func(t *testing.T, resp CreateColumnMaskResponseObject, err error) {
+				t.Helper()
+				require.NoError(t, err)
+				badReq, ok := resp.(CreateColumnMask400JSONResponse)
+				require.True(t, ok, "expected 400 response, got %T", resp)
+				assert.Equal(t, int32(400), badReq.Body.Code)
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -813,6 +826,19 @@ func TestHandler_DeleteColumnMask(t *testing.T) {
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
 		},
+		{
+			name: "not found returns 404",
+			svcFn: func(_ context.Context, _ string) error {
+				return domain.ErrNotFound("column mask not found")
+			},
+			assertFn: func(t *testing.T, resp DeleteColumnMaskResponseObject, err error) {
+				t.Helper()
+				require.NoError(t, err)
+				notFound, ok := resp.(DeleteColumnMask404JSONResponse)
+				require.True(t, ok, "expected 404 response, got %T", resp)
+				assert.Equal(t, int32(404), notFound.Body.Code)
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -857,6 +883,19 @@ func TestHandler_BindColumnMask(t *testing.T) {
 				forbidden, ok := resp.(BindColumnMask403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
+			},
+		},
+		{
+			name: "validation error returns 400",
+			svcFn: func(_ context.Context, _ domain.BindColumnMaskRequest) error {
+				return domain.ErrValidation("principal_type must be 'user' or 'group'")
+			},
+			assertFn: func(t *testing.T, resp BindColumnMaskResponseObject, err error) {
+				t.Helper()
+				require.NoError(t, err)
+				badReq, ok := resp.(BindColumnMask400JSONResponse)
+				require.True(t, ok, "expected 400 response, got %T", resp)
+				assert.Equal(t, int32(400), badReq.Body.Code)
 			},
 		},
 	}

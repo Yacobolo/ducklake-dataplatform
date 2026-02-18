@@ -65,7 +65,10 @@ func newRootCmd() *cobra.Command {
 				}
 			}
 
-			p := cfg.ActiveProfile(profile)
+			p, err := cfg.ActiveProfile(profile)
+			if err != nil {
+				return err
+			}
 
 			// Apply precedence: flag > env > profile > default
 			if !cmd.Flags().Changed("host") {
@@ -126,6 +129,12 @@ func newRootCmd() *cobra.Command {
 		// Validate output format
 		if output != "" && output != "table" && output != "json" {
 			return fmt.Errorf("unsupported output format %q: use 'table' or 'json'", output)
+		}
+		if yesFlag := cmd.Flags().Lookup("yes"); yesFlag != nil {
+			yes, _ := cmd.Flags().GetBool("yes")
+			if !yes && !gen.IsStdinTTY() {
+				return fmt.Errorf("confirmation required but stdin is not a terminal; use --yes to skip")
+			}
 		}
 		// Update client with resolved values
 		client.BaseURL = host

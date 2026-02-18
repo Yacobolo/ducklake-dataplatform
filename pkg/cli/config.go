@@ -23,15 +23,18 @@ type Profile struct {
 }
 
 // ActiveProfile returns the profile to use based on the override or current-profile.
-func (c *UserConfig) ActiveProfile(override string) Profile {
+func (c *UserConfig) ActiveProfile(override string) (Profile, error) {
 	name := c.CurrentProfile
 	if override != "" {
 		name = override
 	}
 	if p, ok := c.Profiles[name]; ok {
-		return p
+		return p, nil
 	}
-	return Profile{}
+	if override != "" {
+		return Profile{}, fmt.Errorf("profile %q not found", override)
+	}
+	return Profile{}, nil
 }
 
 // ConfigDir returns the path to ~/.duck/.

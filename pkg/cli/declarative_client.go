@@ -1223,7 +1223,8 @@ func (c *APIStateClient) resolvePrincipalID(name, principalType string) (string,
 }
 
 // resolveSecurableID looks up a securable UUID by type and dot-path.
-func (c *APIStateClient) resolveSecurableID(securableType, path string) (string, error) {
+// It falls back to direct API lookups for schemas/tables when missing in the index.
+func (c *APIStateClient) resolveSecurableID(ctx context.Context, securableType, path string) (string, error) {
 	if c.index == nil {
 		return "", fmt.Errorf("resource index not populated; call ReadState first")
 	}
@@ -1236,9 +1237,25 @@ func (c *APIStateClient) resolveSecurableID(securableType, path string) (string,
 		if id, ok := c.index.schemaIDByPath[path]; ok {
 			return id, nil
 		}
+		parts := strings.SplitN(path, ".", 2)
+		if len(parts) == 2 {
+			id, err := c.lookupSchemaIDByPath(ctx, parts[0], parts[1])
+			if err == nil && id != "" {
+				c.index.schemaIDByPath[path] = id
+				return id, nil
+			}
+		}
 	case "table":
 		if id, ok := c.index.tableIDByPath[path]; ok {
 			return id, nil
+		}
+		parts := strings.SplitN(path, ".", 3)
+		if len(parts) == 3 {
+			id, err := c.lookupTableIDByPath(ctx, parts[0], parts[1], parts[2])
+			if err == nil && id != "" {
+				c.index.tableIDByPath[path] = id
+				return id, nil
+			}
 		}
 	case "volume":
 		if id, ok := c.index.volumeIDByPath[path]; ok {
@@ -1271,6 +1288,22 @@ func (c *APIStateClient) resolveSecurableID(securableType, path string) (string,
 		}
 		if id, ok := c.index.catalogIDByName[path]; ok {
 			return id, nil
+		}
+		parts := strings.SplitN(path, ".", 3)
+		if len(parts) == 3 {
+			id, err := c.lookupTableIDByPath(ctx, parts[0], parts[1], parts[2])
+			if err == nil && id != "" {
+				c.index.tableIDByPath[path] = id
+				return id, nil
+			}
+		}
+		parts = strings.SplitN(path, ".", 2)
+		if len(parts) == 2 {
+			id, err := c.lookupSchemaIDByPath(ctx, parts[0], parts[1])
+			if err == nil && id != "" {
+				c.index.schemaIDByPath[path] = id
+				return id, nil
+			}
 		}
 	}
 	return "", fmt.Errorf("%s %q not found in index", securableType, path)
@@ -1372,6 +1405,48 @@ func (c *APIStateClient) lookupTableIDByPath(_ context.Context, catalogName, sch
 		return "", fmt.Errorf("table %q has no id in API response", catalogName+"."+schemaName+"."+tableName)
 	}
 	return id, nil
+}
+
+type apiColumnMask struct {
+	ID             string `json:"id"`
+	ColumnName     string `json:"column_name"`
+	MaskExpression string `json:"mask_expression"`
+	Description    string `json:"description"`
+}
+
+func (c *APIStateClient) lookupColumnMaskIDBySpec(ctx context.Context, tablePath string, mask declarative.ColumnMaskSpec) (string, error) {
+	tableID, err := c.resolveSecurableID(ctx, "table", tablePath)
+	if err != nil {
+		return "", fmt.Errorf("resolve table for column mask lookup: %w", err)
+	}
+
+	pages, err := c.fetchAllPages(ctx, "/tables/"+tableID+"/column-masks")
+	if err != nil {
+		return "", err
+	}
+
+	var items []apiColumnMask
+	if err := mergePages(pages, &items); err != nil {
+		return "", err
+	}
+
+	for _, item := range items {
+		if item.ColumnName != mask.ColumnName {
+			continue
+		}
+		if item.MaskExpression != mask.MaskExpression {
+			continue
+		}
+		if mask.Description != "" && item.Description != mask.Description {
+			continue
+		}
+		if item.ID == "" {
+			continue
+		}
+		return item.ID, nil
+	}
+
+	return "", fmt.Errorf("column mask %q not found in table %q", mask.Name, tablePath)
 }
 
 // === Execute ===
@@ -2036,7 +2111,7 @@ func (c *APIStateClient) executeGroup(_ context.Context, action declarative.Acti
 	}
 }
 
-func (c *APIStateClient) executeGrant(_ context.Context, action declarative.Action) error {
+func (c *APIStateClient) executeGrant(ctx context.Context, action declarative.Action) error {
 	switch action.Operation {
 	case declarative.OpCreate:
 		grant := action.Desired.(declarative.GrantSpec)
@@ -2044,7 +2119,7 @@ func (c *APIStateClient) executeGrant(_ context.Context, action declarative.Acti
 		if err != nil {
 			return fmt.Errorf("resolve principal for grant: %w", err)
 		}
-		securableID, err := c.resolveSecurableID(grant.SecurableType, grant.Securable)
+		securableID, err := c.resolveSecurableID(ctx, grant.SecurableType, grant.Securable)
 		if err != nil {
 			return fmt.Errorf("resolve securable for grant: %w", err)
 		}
@@ -2067,7 +2142,7 @@ func (c *APIStateClient) executeGrant(_ context.Context, action declarative.Acti
 		if err != nil {
 			return fmt.Errorf("resolve principal for grant delete: %w", err)
 		}
-		securableID, err := c.resolveSecurableID(grant.SecurableType, grant.Securable)
+		securableID, err := c.resolveSecurableID(ctx, grant.SecurableType, grant.Securable)
 		if err != nil {
 			return fmt.Errorf("resolve securable for grant delete: %w", err)
 		}
@@ -2473,7 +2548,7 @@ func (c *APIStateClient) executeTag(_ context.Context, action declarative.Action
 
 // --- Tag assignment execution ---
 
-func (c *APIStateClient) executeTagAssignment(_ context.Context, action declarative.Action) error {
+func (c *APIStateClient) executeTagAssignment(ctx context.Context, action declarative.Action) error {
 	switch action.Operation {
 	case declarative.OpCreate:
 		assignment := action.Desired.(declarative.TagAssignmentSpec)
@@ -2481,7 +2556,7 @@ func (c *APIStateClient) executeTagAssignment(_ context.Context, action declarat
 		if err != nil {
 			return fmt.Errorf("resolve tag for assignment: %w", err)
 		}
-		securableID, err := c.resolveSecurableID(assignment.SecurableType, assignment.Securable)
+		securableID, err := c.resolveSecurableID(ctx, assignment.SecurableType, assignment.Securable)
 		if err != nil {
 			return fmt.Errorf("resolve securable for tag assignment: %w", err)
 		}
@@ -2507,7 +2582,7 @@ func (c *APIStateClient) executeTagAssignment(_ context.Context, action declarat
 		if err != nil {
 			return fmt.Errorf("resolve tag for assignment delete: %w", err)
 		}
-		securableID, err := c.resolveSecurableID(assignment.SecurableType, assignment.Securable)
+		securableID, err := c.resolveSecurableID(ctx, assignment.SecurableType, assignment.Securable)
 		if err != nil {
 			return fmt.Errorf("resolve securable for tag assignment delete: %w", err)
 		}
@@ -2531,14 +2606,14 @@ func (c *APIStateClient) executeTagAssignment(_ context.Context, action declarat
 
 // --- Row filter execution ---
 
-func (c *APIStateClient) executeRowFilter(_ context.Context, action declarative.Action) error {
+func (c *APIStateClient) executeRowFilter(ctx context.Context, action declarative.Action) error {
 	switch action.Operation {
 	case declarative.OpCreate:
 		filter := action.Desired.(declarative.RowFilterSpec)
 		// ResourceName is "catalog.schema.table/filterName" — extract table path.
 		parts := strings.SplitN(action.ResourceName, "/", 2)
 		tablePath := parts[0]
-		tableID, err := c.resolveSecurableID("table", tablePath)
+		tableID, err := c.resolveSecurableID(ctx, "table", tablePath)
 		if err != nil {
 			return fmt.Errorf("resolve table for row filter: %w", err)
 		}
@@ -2627,14 +2702,14 @@ func (c *APIStateClient) executeRowFilterBinding(_ context.Context, action decla
 
 // --- Column mask execution ---
 
-func (c *APIStateClient) executeColumnMask(_ context.Context, action declarative.Action) error {
+func (c *APIStateClient) executeColumnMask(ctx context.Context, action declarative.Action) error {
 	switch action.Operation {
 	case declarative.OpCreate:
 		mask := action.Desired.(declarative.ColumnMaskSpec)
 		// ResourceName is "catalog.schema.table/maskName" — extract table path.
 		parts := strings.SplitN(action.ResourceName, "/", 2)
 		tablePath := parts[0]
-		tableID, err := c.resolveSecurableID("table", tablePath)
+		tableID, err := c.resolveSecurableID(ctx, "table", tablePath)
 		if err != nil {
 			return fmt.Errorf("resolve table for column mask: %w", err)
 		}
@@ -2651,6 +2726,16 @@ func (c *APIStateClient) executeColumnMask(_ context.Context, action declarative
 		}
 		id, err := c.checkCreateResponse(resp)
 		if err != nil {
+			if strings.Contains(strings.ToLower(err.Error()), "resource already exists") {
+				id, lookupErr := c.lookupColumnMaskIDBySpec(ctx, tablePath, mask)
+				if lookupErr != nil {
+					return fmt.Errorf("column mask already exists and lookup failed: %w", lookupErr)
+				}
+				if c.index != nil {
+					c.index.columnMaskIDByPath[action.ResourceName] = id
+				}
+				return nil
+			}
 			return err
 		}
 		if id != "" && c.index != nil {
