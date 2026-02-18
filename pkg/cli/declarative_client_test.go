@@ -1299,6 +1299,77 @@ func TestReadState_OptionalModelAndMacroEndpoints(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, state.Models)
 	assert.Empty(t, state.Macros)
+	assert.Len(t, sc.OptionalReadWarnings(), 2)
+}
+
+func TestReadState_ConnectionErrorsStrictModeAreNotOptional(t *testing.T) {
+	t.Parallel()
+
+	sc := NewAPIStateClientWithOptions(gen.NewClient("http://127.0.0.1:1", "", "test-token"), APIStateClientOptions{
+		CompatibilityMode: CapabilityCompatibilityStrict,
+	})
+
+	_, err := sc.ReadState(context.Background())
+	require.Error(t, err)
+}
+
+func TestReadState_ConnectionErrorsLegacyModeAreOptionalForModelMacro(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/principals", emptyListHandler())
+	mux.HandleFunc("/v1/groups", emptyListHandler())
+	mux.HandleFunc("/v1/api-keys", emptyListHandler())
+	mux.HandleFunc("/v1/catalogs", emptyListHandler())
+	mux.HandleFunc("/v1/storage-credentials", emptyListHandler())
+	mux.HandleFunc("/v1/external-locations", emptyListHandler())
+	mux.HandleFunc("/v1/grants", emptyListHandler())
+	mux.HandleFunc("/v1/compute-endpoints", emptyListHandler())
+	mux.HandleFunc("/v1/tags", emptyListHandler())
+	mux.HandleFunc("/v1/notebooks", emptyListHandler())
+	mux.HandleFunc("/v1/pipelines", emptyListHandler())
+	mux.HandleFunc("/v1/models", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`eof`))
+	})
+	mux.HandleFunc("/v1/macros", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`broken pipe`))
+	})
+
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+
+	sc := NewAPIStateClientWithOptions(gen.NewClient(srv.URL, "", "test-token"), APIStateClientOptions{
+		CompatibilityMode: CapabilityCompatibilityLegacy,
+	})
+
+	state, err := sc.ReadState(context.Background())
+	require.NoError(t, err)
+	assert.Empty(t, state.Models)
+	assert.Empty(t, state.Macros)
+	assert.Len(t, sc.OptionalReadWarnings(), 2)
+}
+
+func TestValidateApplyCapabilities_ModelEndpointRequired(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/models", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"code":"NOT_FOUND"}`))
+	})
+	mux.HandleFunc("/v1/macros", emptyListHandler())
+	mux.HandleFunc("/", emptyListHandler())
+
+	sc := setupReadStateClient(t, mux)
+	err := sc.ValidateApplyCapabilities(context.Background(), []declarative.Action{{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindModel,
+		ResourceName: "analytics.stg_orders",
+	}})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "/models endpoint is unavailable")
 }
 
 // === ReadState helper ===
