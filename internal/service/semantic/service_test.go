@@ -232,6 +232,53 @@ func TestService_ExplainMetricQuery_AmbiguousJoinPath(t *testing.T) {
 	assert.Contains(t, err.Error(), "ambiguous join path")
 }
 
+func TestService_ExplainMetricQuery_RejectsDangerousSQLFragments(t *testing.T) {
+	svc := setupSemanticService(t)
+	ctx := context.Background()
+
+	_, err := svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
+		ProjectName:  "analytics",
+		Name:         "sales",
+		BaseModelRef: "analytics.fct_sales",
+	})
+	require.NoError(t, err)
+
+	_, err = svc.CreateMetric(ctx, "admin", "analytics", "sales", domain.CreateSemanticMetricRequest{
+		SemanticModelID: "placeholder",
+		Name:            "total_revenue",
+		MetricType:      domain.MetricTypeSum,
+		ExpressionMode:  domain.MetricExpressionModeSQL,
+		Expression:      "SUM(amount)",
+	})
+	require.NoError(t, err)
+
+	_, err = svc.ExplainMetricQuery(ctx, MetricQueryRequest{
+		ProjectName:       "analytics",
+		SemanticModelName: "sales",
+		Metrics:           []string{"total_revenue"},
+		Filters:           []string{"1=1; DROP TABLE sales"},
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "must not contain semicolons")
+
+	_, err = svc.CreateMetric(ctx, "admin", "analytics", "sales", domain.CreateSemanticMetricRequest{
+		SemanticModelID: "placeholder",
+		Name:            "external_read",
+		MetricType:      domain.MetricTypeSum,
+		ExpressionMode:  domain.MetricExpressionModeSQL,
+		Expression:      "read_parquet('s3://bucket/data.parquet')",
+	})
+	require.NoError(t, err)
+
+	_, err = svc.ExplainMetricQuery(ctx, MetricQueryRequest{
+		ProjectName:       "analytics",
+		SemanticModelName: "sales",
+		Metrics:           []string{"external_read"},
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "forbidden token")
+}
+
 func ptr(s string) *string {
 	return &s
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -17,6 +18,14 @@ type edge struct {
 	rel  domain.SemanticRelationship
 }
 
+var forbiddenSQLPatterns = []*regexp.Regexp{
+	regexp.MustCompile(`(?i)--`),
+	regexp.MustCompile(`(?i)/\*`),
+	regexp.MustCompile(`(?i)\*/`),
+	regexp.MustCompile(`(?i)\b(attach|detach|install|load|pragma|copy|import|export|call)\b`),
+	regexp.MustCompile(`(?i)\b(read_csv|read_json|read_parquet|parquet_scan|httpfs)\b`),
+}
+
 // ExplainMetricQuery compiles a semantic metric request into executable SQL and join metadata.
 func (s *Service) ExplainMetricQuery(ctx context.Context, req MetricQueryRequest) (*MetricQueryPlan, error) {
 	if strings.TrimSpace(req.ProjectName) == "" {
@@ -27,6 +36,12 @@ func (s *Service) ExplainMetricQuery(ctx context.Context, req MetricQueryRequest
 	}
 	if len(req.Metrics) == 0 {
 		return nil, domain.ErrValidation("at least one metric is required")
+	}
+	if req.Limit != nil && *req.Limit <= 0 {
+		return nil, domain.ErrValidation("limit must be > 0")
+	}
+	if err := validateRequestSQLFragments(req); err != nil {
+		return nil, err
 	}
 
 	baseModel, err := s.models.GetByName(ctx, req.ProjectName, req.SemanticModelName)
@@ -168,6 +183,9 @@ func validateMetricExpression(metric domain.SemanticMetric) error {
 		if strings.Contains(expr, ";") {
 			return domain.ErrValidation("metric %q SQL expression must not contain semicolons", metric.Name)
 		}
+		if forbidden := matchForbiddenSQLPattern(expr); forbidden != "" {
+			return domain.ErrValidation("metric %q SQL expression contains forbidden token: %s", metric.Name, forbidden)
+		}
 		stmt := fmt.Sprintf("SELECT %s FROM semantic_expr_guard", expr)
 		stmtType, err := sqlrewrite.ClassifyStatement(stmt)
 		if err != nil {
@@ -178,6 +196,67 @@ func validateMetricExpression(metric domain.SemanticMetric) error {
 		}
 	}
 	return nil
+}
+
+func validateRequestSQLFragments(req MetricQueryRequest) error {
+	for _, dim := range req.Dimensions {
+		expr := strings.TrimSpace(dim)
+		if expr == "" {
+			return domain.ErrValidation("dimensions must not include empty values")
+		}
+		if strings.Contains(expr, ";") {
+			return domain.ErrValidation("dimension %q must not contain semicolons", dim)
+		}
+		if forbidden := matchForbiddenSQLPattern(expr); forbidden != "" {
+			return domain.ErrValidation("dimension %q contains forbidden token: %s", dim, forbidden)
+		}
+		if _, err := sqlrewrite.ClassifyStatement(fmt.Sprintf("SELECT %s FROM semantic_expr_guard", expr)); err != nil {
+			return domain.ErrValidation("dimension %q is invalid SQL: %v", dim, err)
+		}
+	}
+
+	for _, filter := range req.Filters {
+		expr := strings.TrimSpace(filter)
+		if expr == "" {
+			return domain.ErrValidation("filters must not include empty values")
+		}
+		if strings.Contains(expr, ";") {
+			return domain.ErrValidation("filter %q must not contain semicolons", filter)
+		}
+		if forbidden := matchForbiddenSQLPattern(expr); forbidden != "" {
+			return domain.ErrValidation("filter %q contains forbidden token: %s", filter, forbidden)
+		}
+		if _, err := sqlrewrite.ClassifyStatement(fmt.Sprintf("SELECT 1 FROM semantic_expr_guard WHERE (%s)", expr)); err != nil {
+			return domain.ErrValidation("filter %q is invalid SQL: %v", filter, err)
+		}
+	}
+
+	for _, orderBy := range req.OrderBy {
+		expr := strings.TrimSpace(orderBy)
+		if expr == "" {
+			return domain.ErrValidation("order_by must not include empty values")
+		}
+		if strings.Contains(expr, ";") {
+			return domain.ErrValidation("order_by %q must not contain semicolons", orderBy)
+		}
+		if forbidden := matchForbiddenSQLPattern(expr); forbidden != "" {
+			return domain.ErrValidation("order_by %q contains forbidden token: %s", orderBy, forbidden)
+		}
+		if _, err := sqlrewrite.ClassifyStatement(fmt.Sprintf("SELECT 1 FROM semantic_expr_guard ORDER BY %s", expr)); err != nil {
+			return domain.ErrValidation("order_by %q is invalid SQL: %v", orderBy, err)
+		}
+	}
+
+	return nil
+}
+
+func matchForbiddenSQLPattern(expr string) string {
+	for _, pattern := range forbiddenSQLPatterns {
+		if loc := pattern.FindStringIndex(expr); loc != nil {
+			return expr[loc[0]:loc[1]]
+		}
+	}
+	return ""
 }
 
 func metricSQLExpression(metric domain.SemanticMetric) string {
