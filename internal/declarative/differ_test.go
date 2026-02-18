@@ -1256,6 +1256,138 @@ func TestDiff_NoModelChanges(t *testing.T) {
 	}
 }
 
+func TestDiff_UpdateModelDeepFields(t *testing.T) {
+	desired := &DesiredState{
+		Models: []ModelResource{{
+			ProjectName: "sales",
+			ModelName:   "stg_orders",
+			Spec: ModelSpec{
+				Materialization: "INCREMENTAL",
+				SQL:             "SELECT 2",
+				Config: &ModelConfigSpec{
+					UniqueKey:           []string{"order_id"},
+					IncrementalStrategy: "delete+insert",
+					OnSchemaChange:      "fail",
+				},
+				Contract: &ContractSpec{
+					Enforce: true,
+					Columns: []ContractColumnSpec{{Name: "order_id", Type: "BIGINT", Nullable: false}},
+				},
+				Tests:     []TestSpec{{Name: "not_null_order_id", Type: "not_null", Column: "order_id"}},
+				Freshness: &FreshnessSpecYAML{MaxLagSeconds: 300, CronSchedule: "*/5 * * * *"},
+			},
+		}},
+	}
+	actual := &DesiredState{
+		Models: []ModelResource{{
+			ProjectName: "sales",
+			ModelName:   "stg_orders",
+			Spec: ModelSpec{
+				Materialization: "INCREMENTAL",
+				SQL:             "SELECT 1",
+				Config: &ModelConfigSpec{
+					UniqueKey:           []string{"order_id"},
+					IncrementalStrategy: "merge",
+					OnSchemaChange:      "ignore",
+				},
+				Contract: &ContractSpec{Enforce: false},
+				Tests:    []TestSpec{},
+			},
+		}},
+	}
+
+	plan := Diff(desired, actual)
+	require.NotEmpty(t, plan.Actions)
+	action := plan.Actions[0]
+	fields := map[string]bool{}
+	for _, c := range action.Changes {
+		fields[c.Field] = true
+	}
+	assert.True(t, fields["config"], "expected config diff")
+	assert.True(t, fields["contract"], "expected contract diff")
+	assert.True(t, fields["tests"], "expected tests diff")
+	assert.True(t, fields["freshness"], "expected freshness diff")
+}
+
+func TestDiff_ModelIncrementalDefaultsNoChange(t *testing.T) {
+	desired := &DesiredState{
+		Models: []ModelResource{{
+			ProjectName: "sales",
+			ModelName:   "stg_orders",
+			Spec: ModelSpec{
+				Materialization: "INCREMENTAL",
+				SQL:             "SELECT 1",
+			},
+		}},
+	}
+	actual := &DesiredState{
+		Models: []ModelResource{{
+			ProjectName: "sales",
+			ModelName:   "stg_orders",
+			Spec: ModelSpec{
+				Materialization: "INCREMENTAL",
+				SQL:             "SELECT 1",
+				Config: &ModelConfigSpec{
+					IncrementalStrategy: "merge",
+					OnSchemaChange:      "ignore",
+				},
+			},
+		}},
+	}
+
+	plan := Diff(desired, actual)
+	for _, action := range plan.Actions {
+		assert.NotEqual(t, KindModel, action.ResourceKind, "expected no model updates for default incremental config")
+	}
+}
+
+func TestDiff_UpdateMacroExtendedFields(t *testing.T) {
+	desired := &DesiredState{
+		Macros: []MacroResource{{
+			Name: "fmt_money",
+			Spec: MacroSpec{
+				MacroType:   "SCALAR",
+				Body:        "amount / 100.0",
+				Description: "Convert cents",
+				CatalogName: "main",
+				ProjectName: "analytics",
+				Visibility:  "catalog_global",
+				Owner:       "data-team",
+				Properties:  map[string]string{"team": "finance"},
+				Tags:        []string{"finance", "shared"},
+				Status:      "DEPRECATED",
+			},
+		}},
+	}
+	actual := &DesiredState{
+		Macros: []MacroResource{{
+			Name: "fmt_money",
+			Spec: MacroSpec{
+				MacroType:   "SCALAR",
+				Body:        "amount / 100.0",
+				Description: "Convert cents",
+				Visibility:  "project",
+				Status:      "ACTIVE",
+			},
+		}},
+	}
+
+	plan := Diff(desired, actual)
+	require.NotEmpty(t, plan.Actions)
+	action := plan.Actions[0]
+	fields := map[string]bool{}
+	for _, c := range action.Changes {
+		fields[c.Field] = true
+	}
+	assert.True(t, fields["catalog_name"], "expected catalog_name diff")
+	assert.True(t, fields["project_name"], "expected project_name diff")
+	assert.True(t, fields["visibility"], "expected visibility diff")
+	assert.True(t, fields["owner"], "expected owner diff")
+	assert.True(t, fields["properties"], "expected properties diff")
+	assert.True(t, fields["tags"], "expected tags diff")
+	assert.True(t, fields["status"], "expected status diff")
+}
+
 func TestDiff_GroupMembershipDeleteEmptyName(t *testing.T) {
 	t.Parallel()
 

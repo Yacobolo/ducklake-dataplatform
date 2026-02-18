@@ -1200,6 +1200,21 @@ var validTestTypes = map[string]bool{
 	"custom_sql":      true,
 }
 
+// Valid incremental strategy values for model config.
+var validIncrementalStrategies = map[string]bool{
+	"":              true,
+	"merge":         true,
+	"delete_insert": true,
+	"delete+insert": true,
+}
+
+// Valid on_schema_change values for model config.
+var validOnSchemaChange = map[string]bool{
+	"":       true,
+	"ignore": true,
+	"fail":   true,
+}
+
 func validateModels(models []ModelResource, errs *[]ValidationError) {
 	seen := make(map[string]bool, len(models))
 	for i, m := range models {
@@ -1218,6 +1233,17 @@ func validateModels(models []ModelResource, errs *[]ValidationError) {
 		}
 		if m.Spec.Materialization != "" && !validMaterializationTypes[m.Spec.Materialization] {
 			addErr(errs, path, "materialization must be one of [VIEW, TABLE, INCREMENTAL, EPHEMERAL], got %q", m.Spec.Materialization)
+		}
+		if m.Spec.Config != nil {
+			strategy := strings.ToLower(strings.TrimSpace(m.Spec.Config.IncrementalStrategy))
+			if !validIncrementalStrategies[strategy] {
+				addErr(errs, path, "config.incremental_strategy must be one of [merge, delete_insert, delete+insert], got %q", m.Spec.Config.IncrementalStrategy)
+			}
+
+			onSchemaChange := strings.ToLower(strings.TrimSpace(m.Spec.Config.OnSchemaChange))
+			if !validOnSchemaChange[onSchemaChange] {
+				addErr(errs, path, "config.on_schema_change must be one of [ignore, fail], got %q", m.Spec.Config.OnSchemaChange)
+			}
 		}
 
 		// Validate contract.
@@ -1314,6 +1340,19 @@ var validMacroTypes = map[string]bool{
 	"":       true, // default to SCALAR
 }
 
+var validMacroVisibility = map[string]bool{
+	"":               true,
+	"project":        true,
+	"catalog_global": true,
+	"system":         true,
+}
+
+var validMacroStatus = map[string]bool{
+	"":           true,
+	"ACTIVE":     true,
+	"DEPRECATED": true,
+}
+
 func validateMacros(macros []MacroResource, errs *[]ValidationError) {
 	seen := make(map[string]bool, len(macros))
 	for i, m := range macros {
@@ -1329,6 +1368,12 @@ func validateMacros(macros []MacroResource, errs *[]ValidationError) {
 		}
 		if !validMacroTypes[m.Spec.MacroType] {
 			addErr(errs, path, "macro_type must be \"SCALAR\" or \"TABLE\", got %q", m.Spec.MacroType)
+		}
+		if !validMacroVisibility[m.Spec.Visibility] {
+			addErr(errs, path, "visibility must be one of [project, catalog_global, system], got %q", m.Spec.Visibility)
+		}
+		if !validMacroStatus[m.Spec.Status] {
+			addErr(errs, path, "status must be one of [ACTIVE, DEPRECATED], got %q", m.Spec.Status)
 		}
 		if m.Name != "" {
 			if seen[m.Name] {

@@ -474,6 +474,24 @@ func TestValidate_ModelErrors(t *testing.T) {
 			},
 			"duplicate model",
 		},
+		{
+			"invalid incremental strategy",
+			&DesiredState{
+				Models: []ModelResource{
+					{ProjectName: "sales", ModelName: "stg_orders", Spec: ModelSpec{SQL: "SELECT 1", Materialization: "INCREMENTAL", Config: &ModelConfigSpec{IncrementalStrategy: "upsert"}}},
+				},
+			},
+			"config.incremental_strategy must be one of",
+		},
+		{
+			"invalid on_schema_change",
+			&DesiredState{
+				Models: []ModelResource{
+					{ProjectName: "sales", ModelName: "stg_orders", Spec: ModelSpec{SQL: "SELECT 1", Materialization: "INCREMENTAL", Config: &ModelConfigSpec{OnSchemaChange: "replace"}}},
+				},
+			},
+			"config.on_schema_change must be one of",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -496,9 +514,14 @@ func TestValidate_ModelValid(t *testing.T) {
 		Models: []ModelResource{
 			{ProjectName: "sales", ModelName: "stg_orders", Spec: ModelSpec{
 				SQL:             "SELECT order_id FROM raw_data.orders",
-				Materialization: "TABLE",
+				Materialization: "INCREMENTAL",
 				Description:     "Staged orders",
 				Tags:            []string{"finance"},
+				Config: &ModelConfigSpec{
+					UniqueKey:           []string{"order_id"},
+					IncrementalStrategy: "delete+insert",
+					OnSchemaChange:      "fail",
+				},
 			}},
 			{ProjectName: "sales", ModelName: "fct_orders", Spec: ModelSpec{
 				SQL:             "SELECT * FROM stg_orders",
@@ -516,4 +539,70 @@ func TestValidate_ModelValid(t *testing.T) {
 		}
 	}
 	assert.Empty(t, modelErrs, "valid models should have no model errors: %v", modelErrs)
+}
+
+func TestValidate_MacroErrors(t *testing.T) {
+	tests := []struct {
+		name    string
+		state   *DesiredState
+		wantErr string
+	}{
+		{
+			"invalid macro visibility",
+			&DesiredState{Macros: []MacroResource{{
+				Name: "fmt_money",
+				Spec: MacroSpec{Body: "x", Visibility: "workspace"},
+			}}},
+			"visibility must be one of",
+		},
+		{
+			"invalid macro status",
+			&DesiredState{Macros: []MacroResource{{
+				Name: "fmt_money",
+				Spec: MacroSpec{Body: "x", Status: "DISABLED"},
+			}}},
+			"status must be one of",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			errs := Validate(tt.state)
+			require.NotEmpty(t, errs)
+			found := false
+			for _, e := range errs {
+				if containsStr(e.Error(), tt.wantErr) {
+					found = true
+					break
+				}
+			}
+			assert.True(t, found, "expected error containing %q, got %v", tt.wantErr, errs)
+		})
+	}
+}
+
+func TestValidate_MacroValid(t *testing.T) {
+	state := &DesiredState{Macros: []MacroResource{{
+		Name: "fmt_money",
+		Spec: MacroSpec{
+			MacroType:   "SCALAR",
+			Body:        "amount / 100.0",
+			Visibility:  "project",
+			Status:      "ACTIVE",
+			CatalogName: "main",
+			ProjectName: "analytics",
+			Owner:       "data-team",
+			Properties:  map[string]string{"team": "analytics"},
+			Tags:        []string{"finance"},
+		},
+	}}}
+
+	errs := Validate(state)
+	var macroErrs []ValidationError
+	for _, e := range errs {
+		if containsStr(e.Path, "macro") {
+			macroErrs = append(macroErrs, e)
+		}
+	}
+	assert.Empty(t, macroErrs, "valid macros should have no macro errors: %v", macroErrs)
 }

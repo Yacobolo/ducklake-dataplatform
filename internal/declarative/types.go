@@ -495,10 +495,17 @@ type MacroDoc struct {
 
 // MacroSpec holds the configuration for a SQL macro.
 type MacroSpec struct {
-	MacroType   string   `yaml:"macro_type,omitempty"` // SCALAR or TABLE
-	Parameters  []string `yaml:"parameters,omitempty"`
-	Body        string   `yaml:"body"`
-	Description string   `yaml:"description,omitempty"`
+	MacroType   string            `yaml:"macro_type,omitempty"` // SCALAR or TABLE
+	Parameters  []string          `yaml:"parameters,omitempty"`
+	Body        string            `yaml:"body"`
+	Description string            `yaml:"description,omitempty"`
+	CatalogName string            `yaml:"catalog_name,omitempty"`
+	ProjectName string            `yaml:"project_name,omitempty"`
+	Visibility  string            `yaml:"visibility,omitempty"`
+	Owner       string            `yaml:"owner,omitempty"`
+	Properties  map[string]string `yaml:"properties,omitempty"`
+	Tags        []string          `yaml:"tags,omitempty"`
+	Status      string            `yaml:"status,omitempty"`
 }
 
 // MacroResource is a macro with its resolved name.
@@ -563,6 +570,7 @@ type TestSpec struct {
 type ModelConfigSpec struct {
 	UniqueKey           []string `yaml:"unique_key,omitempty"`
 	IncrementalStrategy string   `yaml:"incremental_strategy,omitempty"`
+	OnSchemaChange      string   `yaml:"on_schema_change,omitempty"`
 }
 
 // ModelResource is a model with project context from the directory tree.

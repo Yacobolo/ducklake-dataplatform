@@ -259,6 +259,64 @@ func TestLoader_PartialCatalogDir(t *testing.T) {
 	assert.Empty(t, state.Catalogs, "no catalog should be loaded when catalog.yaml is missing")
 }
 
+func TestLoader_ModelAndMacroExtendedFields(t *testing.T) {
+	dir := t.TempDir()
+
+	modelDir := filepath.Join(dir, "models", "analytics")
+	require.NoError(t, os.MkdirAll(modelDir, 0o755))
+	modelYAML := `apiVersion: duck/v1
+kind: Model
+metadata:
+  name: stg_orders
+spec:
+  materialization: INCREMENTAL
+  sql: SELECT 1
+  config:
+    unique_key: [order_id]
+    incremental_strategy: delete+insert
+    on_schema_change: fail
+`
+	require.NoError(t, os.WriteFile(filepath.Join(modelDir, "stg_orders.yaml"), []byte(modelYAML), 0o644))
+
+	macroDir := filepath.Join(dir, "macros")
+	require.NoError(t, os.MkdirAll(macroDir, 0o755))
+	macroYAML := `apiVersion: duck/v1
+kind: Macro
+metadata:
+  name: fmt_money
+spec:
+  macro_type: SCALAR
+  parameters: [amount]
+  body: amount / 100.0
+  catalog_name: main
+  project_name: analytics
+  visibility: catalog_global
+  owner: data-team
+  properties:
+    team: finance
+  tags: [finance, shared]
+  status: DEPRECATED
+`
+	require.NoError(t, os.WriteFile(filepath.Join(macroDir, "fmt_money.yaml"), []byte(macroYAML), 0o644))
+
+	state, err := LoadDirectory(dir)
+	require.NoError(t, err)
+
+	require.Len(t, state.Models, 1)
+	assert.Equal(t, "fail", state.Models[0].Spec.Config.OnSchemaChange)
+	assert.Equal(t, "delete+insert", state.Models[0].Spec.Config.IncrementalStrategy)
+
+	require.Len(t, state.Macros, 1)
+	macro := state.Macros[0]
+	assert.Equal(t, "main", macro.Spec.CatalogName)
+	assert.Equal(t, "analytics", macro.Spec.ProjectName)
+	assert.Equal(t, "catalog_global", macro.Spec.Visibility)
+	assert.Equal(t, "data-team", macro.Spec.Owner)
+	assert.Equal(t, map[string]string{"team": "finance"}, macro.Spec.Properties)
+	assert.Equal(t, []string{"finance", "shared"}, macro.Spec.Tags)
+	assert.Equal(t, "DEPRECATED", macro.Spec.Status)
+}
+
 func TestLoader_NonYAMLFilesSkipped(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
