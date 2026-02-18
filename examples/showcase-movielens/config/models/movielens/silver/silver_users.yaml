@@ -1,0 +1,30 @@
+apiVersion: duck/v1
+kind: Model
+metadata:
+  name: silver_users
+spec:
+  materialization: TABLE
+  description: Conformed user dimension
+  tags: [silver, movielens]
+  sql: |
+    SELECT
+      user_id,
+      age_group,
+      upper(region) AS region
+    FROM bronze_users
+  contract:
+    enforce: true
+    columns:
+      - name: user_id
+        type: BIGINT
+        nullable: false
+      - name: age_group
+        type: VARCHAR
+        nullable: true
+      - name: region
+        type: VARCHAR
+        nullable: true
+  tests:
+    - name: user_id_unique
+      type: unique
+      column: user_id

@@ -1,0 +1,35 @@
+apiVersion: duck/v1
+kind: Model
+metadata:
+  name: gold_movie_scores
+spec:
+  materialization: TABLE
+  description: Gold aggregate of movie quality metrics
+  tags: [gold, movielens]
+  sql: |
+    SELECT
+      movie_id,
+      COUNT(*) AS rating_count,
+      ROUND(AVG(rating), 3) AS avg_rating,
+      SUM(CASE WHEN rating >= 4.0 THEN 1 ELSE 0 END) AS positive_ratings
+    FROM silver_ratings_enriched
+    GROUP BY movie_id
+  contract:
+    enforce: true
+    columns:
+      - name: movie_id
+        type: BIGINT
+        nullable: false
+      - name: rating_count
+        type: BIGINT
+        nullable: false
+      - name: avg_rating
+        type: DOUBLE
+        nullable: false
+      - name: positive_ratings
+        type: BIGINT
+        nullable: false
+  tests:
+    - name: movie_id_unique
+      type: unique
+      column: movie_id

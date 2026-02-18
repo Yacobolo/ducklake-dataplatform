@@ -1,0 +1,6 @@
+apiVersion: duck/v1
+kind: Schema
+metadata:
+  name: main
+spec:
+  comment: Core schema used by showcase governance bindings

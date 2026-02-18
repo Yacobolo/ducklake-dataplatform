@@ -1,0 +1,14 @@
+apiVersion: duck/v1
+kind: Model
+metadata:
+  name: bronze_movies
+spec:
+  materialization: VIEW
+  description: Raw MovieLens movies ingested from CSV
+  tags: [bronze, movielens]
+  sql: |
+    SELECT
+      CAST(movieId AS BIGINT) AS movie_id,
+      title,
+      genres
+    FROM read_csv_auto('examples/showcase-movielens/data/movies.csv', header=true)

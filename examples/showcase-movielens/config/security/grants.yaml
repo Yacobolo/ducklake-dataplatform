@@ -1,0 +1,13 @@
+apiVersion: duck/v1
+kind: GrantList
+grants:
+  - principal: movie_analysts
+    principal_type: group
+    securable_type: schema
+    securable: main.main
+    privilege: USAGE
+  - principal: movie_analysts
+    principal_type: group
+    securable_type: table
+    securable: main.main.titanic
+    privilege: SELECT

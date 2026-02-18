@@ -96,6 +96,13 @@ task generate-api   # Regenerate API types/server from openapi.yaml
 
 Declarative schema artifacts are documented in `docs/declarative-schema.md`.
 
+## Examples
+
+Run `examples/` to see declarative "data platform as code" configurations, including a Bronze/Silver/Gold transformation showcase.
+
+- Example index and run instructions: `examples/README.md`
+- Canonical showcase: `examples/showcase-movielens/README.md`
+
 ## Architecture
 
 ```

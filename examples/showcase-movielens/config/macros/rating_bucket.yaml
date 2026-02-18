@@ -1,0 +1,19 @@
+apiVersion: duck/v1
+kind: Macro
+metadata:
+  name: rating_bucket
+spec:
+  macro_type: SCALAR
+  parameters: [rating_value]
+  body: |
+    CASE
+      WHEN rating_value >= 4.5 THEN 'excellent'
+      WHEN rating_value >= 3.5 THEN 'good'
+      WHEN rating_value >= 2.5 THEN 'mixed'
+      ELSE 'low'
+    END
+  description: Bucket ratings into stable quality bands
+  project_name: movielens
+  visibility: project
+  status: ACTIVE
+  tags: [movielens, quality]

@@ -1,0 +1,8 @@
+apiVersion: duck/v1
+kind: RowFilterList
+filters:
+  - name: us-only
+    filter_sql: '"Embarked" = ''S'''
+    bindings:
+      - principal: movie_analysts
+        principal_type: group

@@ -1,0 +1,14 @@
+apiVersion: duck/v1
+kind: Table
+metadata:
+  name: titanic
+spec:
+  table_type: MANAGED
+  comment: Existing table used to demonstrate row and column policy declarations
+  columns:
+    - name: PassengerId
+      type: BIGINT
+    - name: Name
+      type: VARCHAR
+    - name: Embarked
+      type: VARCHAR

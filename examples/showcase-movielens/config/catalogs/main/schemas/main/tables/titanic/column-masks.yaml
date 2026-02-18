@@ -1,0 +1,10 @@
+apiVersion: duck/v1
+kind: ColumnMaskList
+masks:
+  - name: mask-name
+    column_name: Name
+    mask_expression: "'***'"
+    bindings:
+      - principal: movie_analysts
+        principal_type: group
+        see_original: false

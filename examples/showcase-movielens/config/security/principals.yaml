@@ -1,0 +1,12 @@
+apiVersion: duck/v1
+kind: PrincipalList
+principals:
+  - name: ml_admin
+    type: user
+    is_admin: true
+  - name: ml_analyst
+    type: user
+    is_admin: false
+  - name: ml_service
+    type: service_principal
+    is_admin: false
