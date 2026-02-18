@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Duck Data Platform">
+  <rect width="64" height="64" rx="14" fill="#0f766e"/>
+  <ellipse cx="30" cy="33" rx="15" ry="12" fill="#f8fafc"/>
+  <circle cx="25.8" cy="29" r="2.1" fill="#0f172a"/>
+  <path d="M39.2 31.6L52 35.4L39.2 39.2C37.5 39.7 36.1 38.4 36.1 36.7V34.1C36.1 32.4 37.5 31.1 39.2 31.6Z" fill="#f59e0b" stroke="#f59e0b" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M39.6 35.4H51.6" stroke="#b45309" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M15 45h34" stroke="#134e4a" stroke-width="3" stroke-linecap="round"/>
+</svg>

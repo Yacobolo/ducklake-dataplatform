@@ -89,6 +89,42 @@ tasks:
       - task generate:declarative-schema
       - git diff --exit-code -- schemas/declarative/v1
 
+  docs:generate:
+    desc: Generate docs reference pages from API and schemas
+    deps: [bundle-api, generate:declarative-schema]
+    cmds:
+      - go run ./cmd/docsgen -openapi internal/api/openapi.bundled.yaml -declarative-index schemas/declarative/v1/index.json -declarative-dir schemas/declarative/v1 -outdir docs/reference/generated
+    sources:
+      - internal/api/openapi.bundled.yaml
+      - schemas/declarative/v1/index.json
+      - schemas/declarative/v1/kinds/*.schema.json
+      - cmd/docsgen/*.go
+      - internal/docsgen/**/*.go
+    generates:
+      - docs/reference/generated/api/index.md
+      - docs/reference/generated/api/features.md
+      - docs/reference/generated/declarative/index.md
+
+  docs:dev:
+    desc: Start VitePress docs dev server
+    deps: [docs:generate]
+    cmds:
+      - npm install --prefix docs
+      - npm run docs:dev --prefix docs
+
+  docs:build:
+    desc: Build static docs site with VitePress
+    deps: [docs:generate]
+    cmds:
+      - npm ci --prefix docs
+      - npm run docs:build --prefix docs
+
+  verify:docs-generated:
+    desc: Verify generated docs reference pages are up to date
+    cmds:
+      - task docs:generate
+      - git diff --exit-code -- docs/reference/generated
+
   generate:
     desc: Run all code generation
     deps: [generate-api, sqlc, generate-cli, genduckdb, generate:declarative-schema]
@@ -176,7 +212,7 @@ tasks:
       - |
         failed=0
         results=""
-        for step in lint:go lint:api verify:declarative-schema test:arch test:unit test:integration; do
+        for step in lint:go lint:api verify:declarative-schema verify:docs-generated test:arch test:unit test:integration; do
           if task "$step" > /dev/null 2>&1; then
             results="${results}  ${step} ... ok\n"
           else
