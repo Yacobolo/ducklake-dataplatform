@@ -42,7 +42,21 @@ tasks:
     desc: Bundle split OpenAPI files into single resolved spec
     run: once
     cmds:
-      - NODE_OPTIONS="--require ./scripts/redocly-react-global.cjs" npx --yes @redocly/cli@2.18.2 bundle internal/api/openapi.yaml -o internal/api/openapi.bundled.yaml
+      - |
+        attempts=0
+        while [ "$attempts" -lt 3 ]; do
+          attempts=$((attempts + 1))
+          echo "Bundling OpenAPI spec (attempt ${attempts}/3)..."
+          if NODE_OPTIONS="--require ./scripts/redocly-react-global.cjs" npx --yes @redocly/cli@2.18.2 bundle internal/api/openapi.yaml -o internal/api/openapi.bundled.yaml; then
+            exit 0
+          fi
+          if [ "$attempts" -lt 3 ]; then
+            echo "Redocly bundle failed; retrying in 5s..."
+            sleep 5
+          fi
+        done
+        echo "Redocly bundle failed after 3 attempts."
+        exit 1
     sources:
       - internal/api/openapi.yaml
       - internal/api/paths/*.yaml
