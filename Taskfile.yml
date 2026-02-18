@@ -47,7 +47,8 @@ tasks:
         while [ "$attempts" -lt 3 ]; do
           attempts=$((attempts + 1))
           echo "Bundling OpenAPI spec (attempt ${attempts}/3)..."
-          if NODE_OPTIONS="--require ./scripts/redocly-react-global.cjs" npx --yes @redocly/cli@2.18.2 bundle internal/api/openapi.yaml -o internal/api/openapi.bundled.yaml; then
+          REDOCLY_BIN=$(npx --yes -p @redocly/cli@2.18.2 sh -lc 'command -v redocly')
+          if node --require ./scripts/redocly-react-global.cjs "$REDOCLY_BIN" bundle internal/api/openapi.yaml -o internal/api/openapi.bundled.yaml; then
             exit 0
           fi
           if [ "$attempts" -lt 3 ]; then
