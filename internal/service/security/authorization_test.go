@@ -697,6 +697,44 @@ func TestCheckPrivilege_ViewInheritsSchemaGrant(t *testing.T) {
 	assert.True(t, allowed)
 }
 
+func TestCheckPrivilege_ViewByIDWithoutPriorLookup(t *testing.T) {
+	cat, q, ctx := setupTestService(t)
+
+	user, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{ID: uuid.New().String(),
+		Name: "direct_view_reader", Type: "user", IsAdmin: 0,
+	})
+	require.NoError(t, err)
+
+	view, err := q.CreateView(ctx, dbstore.CreateViewParams{
+		ID:             uuid.New().String(),
+		SchemaID:       "0",
+		Name:           "direct_view",
+		ViewDefinition: `SELECT 1 AS x`,
+		Comment:        sql.NullString{},
+		Properties:     sql.NullString{String: "{}", Valid: true},
+		Owner:          "owner",
+		SourceTables:   sql.NullString{String: "[]", Valid: true},
+	})
+	require.NoError(t, err)
+
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		ID: uuid.New().String(), PrincipalID: user.ID, PrincipalType: "user",
+		SecurableType: SecurableSchema, SecurableID: "0",
+		Privilege: PrivUsage,
+	})
+	require.NoError(t, err)
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		ID: uuid.New().String(), PrincipalID: user.ID, PrincipalType: "user",
+		SecurableType: SecurableSchema, SecurableID: "0",
+		Privilege: PrivSelect,
+	})
+	require.NoError(t, err)
+
+	allowed, err := cat.CheckPrivilege(ctx, "direct_view_reader", SecurableTable, view.ID, PrivSelect)
+	require.NoError(t, err)
+	assert.True(t, allowed)
+}
+
 func TestLookupSchemaID(t *testing.T) {
 	cat, _, ctx := setupTestService(t)
 
