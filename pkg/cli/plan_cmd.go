@@ -12,9 +12,11 @@ import (
 
 func newPlanCmd(client *gen.Client) *cobra.Command {
 	var (
-		configDir string
-		output    string
-		noColor   bool
+		configDir                string
+		output                   string
+		noColor                  bool
+		allowUnknownFields       bool
+		legacyOptionalReadErrors bool
 	)
 
 	cmd := &cobra.Command{
@@ -23,7 +25,9 @@ func newPlanCmd(client *gen.Client) *cobra.Command {
 		Long:  "Reads YAML configuration files, compares with the current server state, and shows a plan of changes.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			// 1. Load desired state from YAML files.
-			desired, err := declarative.LoadDirectory(configDir)
+			desired, err := declarative.LoadDirectoryWithOptions(configDir, declarative.LoadOptions{
+				AllowUnknownFields: allowUnknownFields,
+			})
 			if err != nil {
 				return fmt.Errorf("load config: %w", err)
 			}
@@ -37,11 +41,19 @@ func newPlanCmd(client *gen.Client) *cobra.Command {
 				os.Exit(1)
 			}
 
+			compatMode := CapabilityCompatibilityStrict
+			if legacyOptionalReadErrors {
+				compatMode = CapabilityCompatibilityLegacy
+			}
+
 			// 3. Read current state from server.
-			reader := NewAPIStateClient(client)
+			reader := NewAPIStateClientWithOptions(client, APIStateClientOptions{CompatibilityMode: compatMode})
 			actual, err := reader.ReadState(cmd.Context())
 			if err != nil {
 				return fmt.Errorf("read server state: %w", err)
+			}
+			for _, warning := range reader.OptionalReadWarnings() {
+				_, _ = fmt.Fprintf(os.Stderr, "warning: %s\n", warning)
 			}
 
 			// 4. Diff desired vs actual.
@@ -74,6 +86,8 @@ func newPlanCmd(client *gen.Client) *cobra.Command {
 	cmd.Flags().StringVar(&configDir, "config-dir", "./duck-config", "Path to configuration directory")
 	cmd.Flags().StringVarP(&output, "output", "o", "text", "Output format (text, json)")
 	cmd.Flags().BoolVar(&noColor, "no-color", false, "Disable colored output")
+	cmd.Flags().BoolVar(&allowUnknownFields, "allow-unknown-fields", false, "Allow unknown YAML fields in declarative config")
+	cmd.Flags().BoolVar(&legacyOptionalReadErrors, "legacy-optional-read-errors", false, "Treat transport errors as optional for model/macro capability checks")
 
 	return cmd
 }

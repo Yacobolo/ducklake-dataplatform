@@ -2,6 +2,7 @@ package declarative
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"duck-demo/internal/duckdbsql"
@@ -278,6 +279,13 @@ func Validate(state *DesiredState) []ValidationError {
 		tagKeys[formatTagKey(t)] = true
 	}
 
+	macroNames := make(map[string]bool, len(state.Macros))
+	for _, m := range state.Macros {
+		if m.Name != "" {
+			macroNames[m.Name] = true
+		}
+	}
+
 	presetNames := make(map[string]bool, len(state.PrivilegePresets))
 	for _, p := range state.PrivilegePresets {
 		presetNames[p.Name] = true
@@ -347,11 +355,11 @@ func Validate(state *DesiredState) []ValidationError {
 	// 21. Validate pipelines.
 	validatePipelines(state.Pipelines, notebookNames, endpointNames, &errs)
 
-	// 22. Validate models.
-	validateModels(state.Models, &errs)
-
-	// 23. Validate macros.
+	// 22. Validate macros.
 	validateMacros(state.Macros, &errs)
+
+	// 23. Validate models.
+	validateModels(state.Models, macroNames, &errs)
 
 	return errs
 }
@@ -1484,8 +1492,33 @@ var validOnSchemaChange = map[string]bool{
 	"fail":   true,
 }
 
-func validateModels(models []ModelResource, errs *[]ValidationError) {
+type relationshipTestRef struct {
+	path           string
+	currentProject string
+	toModel        string
+	toColumn       string
+}
+
+func validateModels(models []ModelResource, macroNames map[string]bool, errs *[]ValidationError) {
 	seen := make(map[string]bool, len(models))
+	contractColumns := make(map[string]map[string]bool, len(models))
+	relationshipChecks := make([]relationshipTestRef, 0)
+
+	for _, m := range models {
+		if m.ProjectName == "" || m.ModelName == "" || m.Spec.Contract == nil {
+			continue
+		}
+		cols := make(map[string]bool, len(m.Spec.Contract.Columns))
+		for _, col := range m.Spec.Contract.Columns {
+			if col.Name != "" {
+				cols[col.Name] = true
+			}
+		}
+		if len(cols) > 0 {
+			contractColumns[m.ProjectName+"."+m.ModelName] = cols
+		}
+	}
+
 	for i, m := range models {
 		path := fmt.Sprintf("model[%d]", i)
 		if m.ProjectName != "" && m.ModelName != "" {
@@ -1522,6 +1555,31 @@ func validateModels(models []ModelResource, errs *[]ValidationError) {
 
 		// Validate tests.
 		validateModelTests(m.Spec.Tests, path, errs)
+		for j, test := range m.Spec.Tests {
+			testPath := fmt.Sprintf("%s.tests[%d]", path, j)
+			if test.Name != "" {
+				testPath = fmt.Sprintf("%s.tests[%s]", path, test.Name)
+			}
+			if test.Column != "" {
+				if cols, ok := contractColumns[m.ProjectName+"."+m.ModelName]; ok && !cols[test.Column] {
+					addErr(errs, testPath, "column %q is not declared in model contract", test.Column)
+				}
+			}
+			if test.Type == "relationships" && test.ToModel != "" && test.ToColumn != "" {
+				relationshipChecks = append(relationshipChecks, relationshipTestRef{
+					path:           testPath,
+					currentProject: m.ProjectName,
+					toModel:        test.ToModel,
+					toColumn:       test.ToColumn,
+				})
+			}
+		}
+
+		for _, macroName := range referencedMacroNames(m.Spec.SQL) {
+			if !macroNames[macroName] {
+				addErr(errs, path, "sql references unknown macro %q", macroName)
+			}
+		}
 
 		key := m.ProjectName + "." + m.ModelName
 		if m.ProjectName != "" && m.ModelName != "" {
@@ -1531,6 +1589,61 @@ func validateModels(models []ModelResource, errs *[]ValidationError) {
 			seen[key] = true
 		}
 	}
+
+	for _, ref := range relationshipChecks {
+		targetKey, ok := resolveModelReference(ref.currentProject, ref.toModel)
+		if !ok {
+			addErr(errs, ref.path, "to_model must be \"model\" or \"project.model\", got %q", ref.toModel)
+			continue
+		}
+		if !seen[targetKey] {
+			addErr(errs, ref.path, "relationships test references unknown to_model %q", ref.toModel)
+			continue
+		}
+		if cols, hasContract := contractColumns[targetKey]; hasContract && !cols[ref.toColumn] {
+			addErr(errs, ref.path, "relationships test references unknown to_column %q on model %q", ref.toColumn, ref.toModel)
+		}
+	}
+}
+
+func resolveModelReference(currentProject, toModel string) (string, bool) {
+	parts := strings.Split(toModel, ".")
+	if len(parts) == 1 {
+		if currentProject == "" || strings.TrimSpace(parts[0]) == "" {
+			return "", false
+		}
+		return currentProject + "." + parts[0], true
+	}
+	if len(parts) != 2 {
+		return "", false
+	}
+	if strings.TrimSpace(parts[0]) == "" || strings.TrimSpace(parts[1]) == "" {
+		return "", false
+	}
+	return parts[0] + "." + parts[1], true
+}
+
+var macroCallPattern = regexp.MustCompile(`\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\(`)
+
+func referencedMacroNames(sql string) []string {
+	matches := macroCallPattern.FindAllStringSubmatch(sql, -1)
+	if len(matches) == 0 {
+		return nil
+	}
+	seen := make(map[string]struct{}, len(matches))
+	names := make([]string, 0, len(matches))
+	for _, match := range matches {
+		if len(match) < 2 {
+			continue
+		}
+		name := match[1]
+		if _, ok := seen[name]; ok {
+			continue
+		}
+		seen[name] = struct{}{}
+		names = append(names, name)
+	}
+	return names
 }
 
 func validateModelContract(contract *ContractSpec, parentPath string, errs *[]ValidationError) {
@@ -1640,6 +1753,20 @@ func validateMacros(macros []MacroResource, errs *[]ValidationError) {
 		}
 		if !validMacroVisibility[m.Spec.Visibility] {
 			addErr(errs, path, "visibility must be one of [project, catalog_global, system], got %q", m.Spec.Visibility)
+		}
+		if m.Spec.Visibility == "project" && m.Spec.ProjectName == "" {
+			addErr(errs, path, "project_name is required when visibility is project")
+		}
+		if m.Spec.Visibility == "catalog_global" && m.Spec.CatalogName == "" {
+			addErr(errs, path, "catalog_name is required when visibility is catalog_global")
+		}
+		if m.Spec.Visibility == "system" {
+			if m.Spec.ProjectName != "" {
+				addErr(errs, path, "project_name must be empty when visibility is system")
+			}
+			if m.Spec.CatalogName != "" {
+				addErr(errs, path, "catalog_name must be empty when visibility is system")
+			}
 		}
 		if !validMacroStatus[m.Spec.Status] {
 			addErr(errs, path, "status must be one of [ACTIVE, DEPRECATED], got %q", m.Spec.Status)

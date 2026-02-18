@@ -351,6 +351,53 @@ spec:
 	assert.Equal(t, "DEPRECATED", macro.Spec.Status)
 }
 
+func TestLoader_StrictUnknownFields_DefaultRejectsUnknown(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	modelDir := filepath.Join(dir, "models", "analytics")
+	require.NoError(t, os.MkdirAll(modelDir, 0o755))
+
+	content := `apiVersion: duck/v1
+kind: Model
+metadata:
+  name: stg_orders
+spec:
+  sql: SELECT 1
+  materialization: VIEW
+  unknown_field: true
+`
+	require.NoError(t, os.WriteFile(filepath.Join(modelDir, "stg_orders.yaml"), []byte(content), 0o644))
+
+	_, err := LoadDirectory(dir)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "field unknown_field not found")
+}
+
+func TestLoader_AllowUnknownFields_Option(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	modelDir := filepath.Join(dir, "models", "analytics")
+	require.NoError(t, os.MkdirAll(modelDir, 0o755))
+
+	content := `apiVersion: duck/v1
+kind: Model
+metadata:
+  name: stg_orders
+spec:
+  sql: SELECT 1
+  materialization: VIEW
+  unknown_field: true
+`
+	require.NoError(t, os.WriteFile(filepath.Join(modelDir, "stg_orders.yaml"), []byte(content), 0o644))
+
+	state, err := LoadDirectoryWithOptions(dir, LoadOptions{AllowUnknownFields: true})
+	require.NoError(t, err)
+	require.Len(t, state.Models, 1)
+	assert.Equal(t, "stg_orders", state.Models[0].ModelName)
+}
+
 func TestLoader_NonYAMLFilesSkipped(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
