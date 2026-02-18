@@ -1,0 +1,115 @@
+{
+  "$defs": {
+    "ObjectMeta": {
+      "additionalProperties": false,
+      "properties": {
+        "deletion_protection": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "PipelineDoc": {
+      "additionalProperties": false,
+      "properties": {
+        "apiVersion": {
+          "enum": [
+            "duck/v1"
+          ],
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "Pipeline"
+          ],
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/$defs/PipelineSpec"
+        }
+      },
+      "required": [
+        "apiVersion",
+        "kind",
+        "metadata",
+        "spec"
+      ],
+      "type": "object"
+    },
+    "PipelineJobSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "compute_endpoint": {
+          "type": "string"
+        },
+        "depends_on": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "name": {
+          "type": "string"
+        },
+        "notebook": {
+          "type": "string"
+        },
+        "order": {
+          "type": "integer"
+        },
+        "retry_count": {
+          "type": "integer"
+        },
+        "timeout_seconds": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "name",
+        "notebook"
+      ],
+      "type": "object"
+    },
+    "PipelineSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "concurrency_limit": {
+          "type": "integer"
+        },
+        "description": {
+          "type": "string"
+        },
+        "is_paused": {
+          "type": "boolean"
+        },
+        "jobs": {
+          "items": {
+            "$ref": "#/$defs/PipelineJobSpec"
+          },
+          "type": "array"
+        },
+        "schedule_cron": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "$id": "schemas/declarative/v1/kinds/pipeline.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    {
+      "$ref": "#/$defs/PipelineDoc"
+    }
+  ],
+  "title": "Duck declarative Pipeline"
+}

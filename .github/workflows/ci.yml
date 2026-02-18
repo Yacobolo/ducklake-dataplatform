@@ -55,6 +55,7 @@ jobs:
             internal/api/server.gen.go
             internal/db/dbstore/
             pkg/cli/gen/
+            schemas/declarative/
           retention-days: 1
 
   # ── Lint ────────────────────────────────────────────────────
@@ -75,6 +76,8 @@ jobs:
         run: go install github.com/go-task/task/v3/cmd/task@${{ env.TASK_VERSION }}
       - name: Lint OpenAPI spec
         run: task lint:api
+      - name: Verify declarative schema artifacts
+        run: task verify:declarative-schema
 
   # ── Tests ───────────────────────────────────────────────────
   arch:

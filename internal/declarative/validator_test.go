@@ -615,6 +615,96 @@ func TestValidate_ModelErrors(t *testing.T) {
 			},
 			"config.on_schema_change must be one of",
 		},
+		{
+			"relationships to_model must exist",
+			&DesiredState{
+				Models: []ModelResource{
+					{
+						ProjectName: "sales",
+						ModelName:   "stg_orders",
+						Spec: ModelSpec{
+							SQL:             "SELECT 1 AS order_id",
+							Materialization: "VIEW",
+							Tests: []TestSpec{{
+								Name:     "rel_orders",
+								Type:     "relationships",
+								Column:   "order_id",
+								ToModel:  "missing_model",
+								ToColumn: "order_id",
+							}},
+						},
+					},
+				},
+			},
+			"references unknown to_model",
+		},
+		{
+			"relationships to_column must exist when target has contract",
+			&DesiredState{
+				Models: []ModelResource{
+					{
+						ProjectName: "sales",
+						ModelName:   "stg_orders",
+						Spec: ModelSpec{
+							SQL:             "SELECT 1 AS order_id",
+							Materialization: "VIEW",
+							Contract:        &ContractSpec{Columns: []ContractColumnSpec{{Name: "order_id", Type: "BIGINT"}}},
+							Tests: []TestSpec{{
+								Name:     "rel_orders",
+								Type:     "relationships",
+								Column:   "order_id",
+								ToModel:  "dim_orders",
+								ToColumn: "missing_col",
+							}},
+						},
+					},
+					{
+						ProjectName: "sales",
+						ModelName:   "dim_orders",
+						Spec: ModelSpec{
+							SQL:             "SELECT 1 AS order_id",
+							Materialization: "VIEW",
+							Contract:        &ContractSpec{Columns: []ContractColumnSpec{{Name: "order_id", Type: "BIGINT"}}},
+						},
+					},
+				},
+			},
+			"references unknown to_column",
+		},
+		{
+			"column test must reference declared contract column",
+			&DesiredState{
+				Models: []ModelResource{{
+					ProjectName: "sales",
+					ModelName:   "stg_orders",
+					Spec: ModelSpec{
+						SQL:             "SELECT 1 AS order_id",
+						Materialization: "VIEW",
+						Contract:        &ContractSpec{Columns: []ContractColumnSpec{{Name: "order_id", Type: "BIGINT"}}},
+						Tests: []TestSpec{{
+							Name:   "nn_status",
+							Type:   "not_null",
+							Column: "status",
+						}},
+					},
+				}},
+			},
+			"is not declared in model contract",
+		},
+		{
+			"sql macro reference must exist",
+			&DesiredState{
+				Models: []ModelResource{{
+					ProjectName: "sales",
+					ModelName:   "stg_orders",
+					Spec: ModelSpec{
+						SQL:             "SELECT {{ missing_macro(amount) }} AS amount",
+						Materialization: "VIEW",
+					},
+				}},
+			},
+			"references unknown macro",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -634,9 +724,10 @@ func TestValidate_ModelErrors(t *testing.T) {
 
 func TestValidate_ModelValid(t *testing.T) {
 	state := &DesiredState{
+		Macros: []MacroResource{{Name: "fmt_money", Spec: MacroSpec{Body: "amount / 100.0"}}},
 		Models: []ModelResource{
 			{ProjectName: "sales", ModelName: "stg_orders", Spec: ModelSpec{
-				SQL:             "SELECT order_id FROM raw_data.orders",
+				SQL:             "SELECT {{ fmt_money(amount) }} AS amt, order_id FROM raw_data.orders",
 				Materialization: "INCREMENTAL",
 				Description:     "Staged orders",
 				Tags:            []string{"finance"},
@@ -685,6 +776,30 @@ func TestValidate_MacroErrors(t *testing.T) {
 				Spec: MacroSpec{Body: "x", Status: "DISABLED"},
 			}}},
 			"status must be one of",
+		},
+		{
+			"project visibility requires project_name",
+			&DesiredState{Macros: []MacroResource{{
+				Name: "fmt_money",
+				Spec: MacroSpec{Body: "x", Visibility: "project"},
+			}}},
+			"project_name is required when visibility is project",
+		},
+		{
+			"catalog_global visibility requires catalog_name",
+			&DesiredState{Macros: []MacroResource{{
+				Name: "fmt_money",
+				Spec: MacroSpec{Body: "x", Visibility: "catalog_global"},
+			}}},
+			"catalog_name is required when visibility is catalog_global",
+		},
+		{
+			"system visibility forbids project and catalog",
+			&DesiredState{Macros: []MacroResource{{
+				Name: "fmt_money",
+				Spec: MacroSpec{Body: "x", Visibility: "system", ProjectName: "analytics", CatalogName: "main"},
+			}}},
+			"must be empty when visibility is system",
 		},
 	}
 

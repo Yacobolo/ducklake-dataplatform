@@ -1,0 +1,75 @@
+{
+  "$defs": {
+    "ObjectMeta": {
+      "additionalProperties": false,
+      "properties": {
+        "deletion_protection": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "VolumeDoc": {
+      "additionalProperties": false,
+      "properties": {
+        "apiVersion": {
+          "enum": [
+            "duck/v1"
+          ],
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "Volume"
+          ],
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/$defs/VolumeSpec"
+        }
+      },
+      "required": [
+        "apiVersion",
+        "kind",
+        "metadata",
+        "spec"
+      ],
+      "type": "object"
+    },
+    "VolumeSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "comment": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string"
+        },
+        "storage_location": {
+          "type": "string"
+        },
+        "volume_type": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "$id": "schemas/declarative/v1/kinds/volume.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    {
+      "$ref": "#/$defs/VolumeDoc"
+    }
+  ],
+  "title": "Duck declarative Volume"
+}

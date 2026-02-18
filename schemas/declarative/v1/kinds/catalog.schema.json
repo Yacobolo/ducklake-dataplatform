@@ -1,0 +1,83 @@
+{
+  "$defs": {
+    "CatalogDoc": {
+      "additionalProperties": false,
+      "properties": {
+        "apiVersion": {
+          "enum": [
+            "duck/v1"
+          ],
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "Catalog"
+          ],
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/$defs/CatalogSpec"
+        }
+      },
+      "required": [
+        "apiVersion",
+        "kind",
+        "metadata",
+        "spec"
+      ],
+      "type": "object"
+    },
+    "CatalogSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "comment": {
+          "type": "string"
+        },
+        "data_path": {
+          "type": "string"
+        },
+        "dsn": {
+          "type": "string"
+        },
+        "is_default": {
+          "type": "boolean"
+        },
+        "metastore_type": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "data_path",
+        "dsn",
+        "metastore_type"
+      ],
+      "type": "object"
+    },
+    "ObjectMeta": {
+      "additionalProperties": false,
+      "properties": {
+        "deletion_protection": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "schemas/declarative/v1/kinds/catalog.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    {
+      "$ref": "#/$defs/CatalogDoc"
+    }
+  ],
+  "title": "Duck declarative Catalog"
+}

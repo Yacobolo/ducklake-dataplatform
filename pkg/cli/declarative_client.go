@@ -56,8 +56,10 @@ func newResourceIndex() *resourceIndex {
 
 // APIStateClient implements both StateReader and StateWriter using the gen.Client.
 type APIStateClient struct {
-	client *gen.Client
-	index  *resourceIndex
+	client               *gen.Client
+	index                *resourceIndex
+	compatibilityMode    CapabilityCompatibilityMode
+	optionalReadWarnings []string
 }
 
 // Compile-time interface checks.
@@ -68,7 +70,15 @@ var (
 
 // NewAPIStateClient creates a new client adapter.
 func NewAPIStateClient(client *gen.Client) *APIStateClient {
-	return &APIStateClient{client: client}
+	return NewAPIStateClientWithOptions(client, APIStateClientOptions{})
+}
+
+// NewAPIStateClientWithOptions creates a new client adapter with behavior options.
+func NewAPIStateClientWithOptions(client *gen.Client, options APIStateClientOptions) *APIStateClient {
+	return &APIStateClient{
+		client:            client,
+		compatibilityMode: normalizeCompatibilityMode(options.CompatibilityMode),
+	}
 }
 
 // listResponse is the generic JSON envelope for paginated list endpoints.
@@ -147,6 +157,7 @@ func mergePages(pages []json.RawMessage, target interface{}) error {
 // It also populates the internal resource index for name→ID resolution during Execute.
 func (c *APIStateClient) ReadState(ctx context.Context) (*declarative.DesiredState, error) {
 	c.index = newResourceIndex()
+	c.optionalReadWarnings = nil
 	state := &declarative.DesiredState{}
 
 	if err := c.readPrincipals(ctx, state); err != nil {
@@ -183,14 +194,16 @@ func (c *APIStateClient) ReadState(ctx context.Context) (*declarative.DesiredSta
 		return nil, fmt.Errorf("read pipelines: %w", err)
 	}
 	if err := c.readMacros(ctx, state); err != nil {
-		if !isOptionalReadError(err) {
+		if !c.isOptionalReadError(err) {
 			return nil, fmt.Errorf("read macros: %w", err)
 		}
+		c.addOptionalReadWarning("macros", err)
 	}
 	if err := c.readModels(ctx, state); err != nil {
-		if !isOptionalReadError(err) {
+		if !c.isOptionalReadError(err) {
 			return nil, fmt.Errorf("read models: %w", err)
 		}
+		c.addOptionalReadWarning("models", err)
 	}
 
 	return state, nil
@@ -995,7 +1008,7 @@ type apiModelTest struct {
 func (c *APIStateClient) listModelTests(ctx context.Context, projectName, modelName string) ([]apiModelTest, bool, error) {
 	pages, err := c.fetchAllPages(ctx, "/models/"+projectName+"/"+modelName+"/tests")
 	if err != nil {
-		if isOptionalReadError(err) {
+		if c.isOptionalReadError(err) {
 			return nil, false, nil
 		}
 		return nil, false, err
@@ -1009,20 +1022,6 @@ func (c *APIStateClient) listModelTests(ctx context.Context, projectName, modelN
 		return nil, false, err
 	}
 	return tests, true, nil
-}
-
-func isOptionalReadError(err error) bool {
-	if err == nil {
-		return false
-	}
-	msg := strings.ToLower(err.Error())
-	if strings.Contains(msg, "http 404") || strings.Contains(msg, "http 405") || strings.Contains(msg, "http 501") {
-		return true
-	}
-	if strings.Contains(msg, "eof") || strings.Contains(msg, "connection reset by peer") || strings.Contains(msg, "broken pipe") {
-		return true
-	}
-	return false
 }
 
 func toDeclarativeTestSpec(test apiModelTest) declarative.TestSpec {

@@ -1,0 +1,66 @@
+{
+  "$defs": {
+    "ComputeAssignmentListDoc": {
+      "additionalProperties": false,
+      "properties": {
+        "apiVersion": {
+          "enum": [
+            "duck/v1"
+          ],
+          "type": "string"
+        },
+        "assignments": {
+          "items": {
+            "$ref": "#/$defs/ComputeAssignmentSpec"
+          },
+          "type": "array"
+        },
+        "kind": {
+          "enum": [
+            "ComputeAssignmentList"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "apiVersion",
+        "kind"
+      ],
+      "type": "object"
+    },
+    "ComputeAssignmentSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "endpoint": {
+          "type": "string"
+        },
+        "fallback_local": {
+          "type": "boolean"
+        },
+        "is_default": {
+          "type": "boolean"
+        },
+        "principal": {
+          "type": "string"
+        },
+        "principal_type": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "endpoint",
+        "principal",
+        "principal_type"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "schemas/declarative/v1/kinds/compute-assignment-list.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    {
+      "$ref": "#/$defs/ComputeAssignmentListDoc"
+    }
+  ],
+  "title": "Duck declarative ComputeAssignmentList"
+}

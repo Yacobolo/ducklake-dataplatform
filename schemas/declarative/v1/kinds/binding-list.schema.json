@@ -1,0 +1,68 @@
+{
+  "$defs": {
+    "BindingListDoc": {
+      "additionalProperties": false,
+      "properties": {
+        "apiVersion": {
+          "enum": [
+            "duck/v1"
+          ],
+          "type": "string"
+        },
+        "bindings": {
+          "items": {
+            "$ref": "#/$defs/BindingSpec"
+          },
+          "type": "array"
+        },
+        "kind": {
+          "enum": [
+            "BindingList"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "apiVersion",
+        "kind"
+      ],
+      "type": "object"
+    },
+    "BindingSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "preset": {
+          "type": "string"
+        },
+        "principal": {
+          "type": "string"
+        },
+        "principal_type": {
+          "type": "string"
+        },
+        "scope": {
+          "type": "string"
+        },
+        "scope_type": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "preset",
+        "principal",
+        "principal_type",
+        "scope",
+        "scope_type"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "schemas/declarative/v1/kinds/binding-list.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    {
+      "$ref": "#/$defs/BindingListDoc"
+    }
+  ],
+  "title": "Duck declarative BindingList"
+}

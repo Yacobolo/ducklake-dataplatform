@@ -1,0 +1,60 @@
+{
+  "$defs": {
+    "PrincipalListDoc": {
+      "additionalProperties": false,
+      "properties": {
+        "apiVersion": {
+          "enum": [
+            "duck/v1"
+          ],
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "PrincipalList"
+          ],
+          "type": "string"
+        },
+        "principals": {
+          "items": {
+            "$ref": "#/$defs/PrincipalSpec"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "apiVersion",
+        "kind"
+      ],
+      "type": "object"
+    },
+    "PrincipalSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "is_admin": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "is_admin",
+        "name",
+        "type"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "schemas/declarative/v1/kinds/principal-list.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    {
+      "$ref": "#/$defs/PrincipalListDoc"
+    }
+  ],
+  "title": "Duck declarative PrincipalList"
+}
