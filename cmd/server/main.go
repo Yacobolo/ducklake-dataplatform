@@ -8,9 +8,11 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -248,7 +250,7 @@ func run() error {
 
 	// Start server
 	logger.Info("HTTP API listening", "addr", cfg.ListenAddr)
-	logger.Info("try", "curl", fmt.Sprintf("curl -H 'Authorization: Bearer <jwt>' http://localhost%s/v1/principals", cfg.ListenAddr))
+	logger.Info("try", "curl", fmt.Sprintf("curl -H 'Authorization: Bearer <jwt>' http://%s/v1/principals", curlHostForListenAddr(cfg.ListenAddr)))
 	srv := &http.Server{
 		Addr:         cfg.ListenAddr,
 		Handler:      r,
@@ -274,6 +276,23 @@ func run() error {
 		return fmt.Errorf("server: %w", err)
 	}
 	return nil
+}
+
+func curlHostForListenAddr(listenAddr string) string {
+	if host, port, err := net.SplitHostPort(listenAddr); err == nil {
+		host = strings.TrimSpace(host)
+		if host == "" || host == "0.0.0.0" || host == "::" {
+			host = "localhost"
+		}
+		return net.JoinHostPort(host, port)
+	}
+	if strings.HasPrefix(listenAddr, ":") {
+		return "localhost" + listenAddr
+	}
+	if strings.TrimSpace(listenAddr) == "" {
+		return "localhost:8080"
+	}
+	return listenAddr
 }
 
 // runAdmin handles "admin promote" and "admin demote" subcommands.
