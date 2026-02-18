@@ -1273,7 +1273,7 @@ func formatContract(contract *ContractSpec) string {
 
 	cols := make([]normalizedColumn, len(contract.Columns))
 	for i, col := range contract.Columns {
-		cols[i] = normalizedColumn{Name: col.Name, Type: col.Type, Nullable: col.Nullable}
+		cols[i] = normalizedColumn(col)
 	}
 	sort.Slice(cols, func(i, j int) bool {
 		if cols[i].Name != cols[j].Name {
