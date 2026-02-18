@@ -1,3 +1,4 @@
+// Package openapi renders markdown docs from an OpenAPI specification.
 package openapi
 
 import (
@@ -53,10 +54,10 @@ func Generate(specPath, outDir string) error {
 	if err := os.RemoveAll(outDir); err != nil {
 		return fmt.Errorf("clean output dir: %w", err)
 	}
-	if err := os.MkdirAll(filepath.Join(outDir, "endpoints"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(outDir, "endpoints"), 0o750); err != nil {
 		return fmt.Errorf("create endpoints dir: %w", err)
 	}
-	if err := os.MkdirAll(filepath.Join(outDir, "schemas"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(outDir, "schemas"), 0o750); err != nil {
 		return fmt.Errorf("create schemas dir: %w", err)
 	}
 
@@ -350,7 +351,7 @@ func writeParamTable(b *strings.Builder, title string, params []paramDoc) {
 	b.WriteString("| Name | Type | Required | Description |\n")
 	b.WriteString("| --- | --- | --- | --- |\n")
 	for _, param := range params {
-		b.WriteString(fmt.Sprintf("| `%s` | `%s` | `%t` | %s |\n", param.Name, param.Type, param.Required, tableSafe(param.Description)))
+		_, _ = fmt.Fprintf(b, "| `%s` | `%s` | `%t` | %s |\n", param.Name, param.Type, param.Required, tableSafe(param.Description))
 	}
 	b.WriteString("\n")
 }
@@ -452,10 +453,10 @@ func generatedHeader() string {
 }
 
 func writeFile(path, content string) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
 		return fmt.Errorf("create directory %q: %w", filepath.Dir(path), err)
 	}
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 		return fmt.Errorf("write %q: %w", path, err)
 	}
 	return nil

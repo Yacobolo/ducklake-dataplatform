@@ -1,3 +1,4 @@
+// Package main generates markdown reference docs from OpenAPI and declarative schemas.
 package main
 
 import (

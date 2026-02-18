@@ -1,3 +1,4 @@
+// Package declarative renders markdown docs from declarative JSON schemas.
 package declarative
 
 import (
@@ -32,7 +33,7 @@ type kindDoc struct {
 
 // Generate renders declarative schema docs into markdown files.
 func Generate(indexPath, schemaDir, outDir string) error {
-	indexBytes, err := os.ReadFile(indexPath)
+	indexBytes, err := os.ReadFile(filepath.Clean(indexPath)) // #nosec G304 -- path is provided by trusted local tooling
 	if err != nil {
 		return fmt.Errorf("read manifest: %w", err)
 	}
@@ -45,7 +46,7 @@ func Generate(indexPath, schemaDir, outDir string) error {
 	if err := os.RemoveAll(outDir); err != nil {
 		return fmt.Errorf("clean output dir: %w", err)
 	}
-	if err := os.MkdirAll(filepath.Join(outDir, "kinds"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(outDir, "kinds"), 0o750); err != nil {
 		return fmt.Errorf("create kinds dir: %w", err)
 	}
 
@@ -82,7 +83,7 @@ func Generate(indexPath, schemaDir, outDir string) error {
 }
 
 func parseKindSchema(path string) (kindDoc, error) {
-	bytes, err := os.ReadFile(path)
+	bytes, err := os.ReadFile(filepath.Clean(path)) // #nosec G304 -- path is derived from validated schema manifest entries
 	if err != nil {
 		return kindDoc{}, fmt.Errorf("read file: %w", err)
 	}
@@ -323,10 +324,10 @@ func generatedHeader() string {
 }
 
 func writeFile(path, content string) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
 		return fmt.Errorf("create directory %q: %w", filepath.Dir(path), err)
 	}
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 		return fmt.Errorf("write %q: %w", path, err)
 	}
 	return nil
