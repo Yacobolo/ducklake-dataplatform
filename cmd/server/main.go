@@ -279,20 +279,21 @@ func run() error {
 }
 
 func curlHostForListenAddr(listenAddr string) string {
-	if host, port, err := net.SplitHostPort(listenAddr); err == nil {
+	trimmed := strings.TrimSpace(listenAddr)
+	if host, port, err := net.SplitHostPort(trimmed); err == nil {
 		host = strings.TrimSpace(host)
 		if host == "" || host == "0.0.0.0" || host == "::" {
 			host = "localhost"
 		}
 		return net.JoinHostPort(host, port)
 	}
-	if strings.HasPrefix(listenAddr, ":") {
-		return "localhost" + listenAddr
+	if strings.HasPrefix(trimmed, ":") {
+		return "localhost" + trimmed
 	}
-	if strings.TrimSpace(listenAddr) == "" {
+	if trimmed == "" {
 		return "localhost:8080"
 	}
-	return listenAddr
+	return trimmed
 }
 
 // runAdmin handles "admin promote" and "admin demote" subcommands.
