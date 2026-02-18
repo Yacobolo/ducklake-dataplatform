@@ -38,6 +38,26 @@ tasks:
     cmds:
       - go run . -gen=all -outdir=../../internal/duckdbsql/catalog/
 
+  ast:bench:
+    desc: Build/reuse DuckDB AST DB and run query bench
+    cmds:
+      - go run ./cmd/astdbbench -repo . -duckdb ./.tmp/astbench/ast.duckdb -mode both -reuse
+
+  ast:bench:quick:
+    desc: Quick DuckDB AST run on internal/ subset
+    cmds:
+      - go run ./cmd/astdbbench -repo . -subdir internal -max-files 250 -duckdb ./.tmp/astbench/ast.quick.duckdb -mode both -reuse
+
+  ast:query:
+    desc: Run query benchmarks using existing full DuckDB AST DB
+    cmds:
+      - go run ./cmd/astdbbench -repo . -duckdb ./.tmp/astbench/ast.duckdb -mode query -reuse
+
+  ast:query:quick:
+    desc: Run query benchmarks using existing quick DuckDB AST DB
+    cmds:
+      - go run ./cmd/astdbbench -repo . -subdir internal -max-files 250 -duckdb ./.tmp/astbench/ast.quick.duckdb -mode query -reuse
+
   bundle-api:
     desc: Bundle split OpenAPI files into single resolved spec
     cmds:
