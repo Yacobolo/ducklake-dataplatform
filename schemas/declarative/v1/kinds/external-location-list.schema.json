@@ -1,0 +1,69 @@
+{
+  "$defs": {
+    "ExternalLocationListDoc": {
+      "additionalProperties": false,
+      "properties": {
+        "apiVersion": {
+          "enum": [
+            "duck/v1"
+          ],
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "ExternalLocationList"
+          ],
+          "type": "string"
+        },
+        "locations": {
+          "items": {
+            "$ref": "#/$defs/ExternalLocationSpec"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "apiVersion",
+        "kind"
+      ],
+      "type": "object"
+    },
+    "ExternalLocationSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "comment": {
+          "type": "string"
+        },
+        "credential_name": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "read_only": {
+          "type": "boolean"
+        },
+        "storage_type": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "credential_name",
+        "name",
+        "url"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "schemas/declarative/v1/kinds/external-location-list.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    {
+      "$ref": "#/$defs/ExternalLocationListDoc"
+    }
+  ],
+  "title": "Duck declarative ExternalLocationList"
+}

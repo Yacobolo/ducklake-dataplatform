@@ -1,0 +1,81 @@
+{
+  "$defs": {
+    "FilterBindingRef": {
+      "additionalProperties": false,
+      "properties": {
+        "principal": {
+          "type": "string"
+        },
+        "principal_type": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "principal",
+        "principal_type"
+      ],
+      "type": "object"
+    },
+    "RowFilterListDoc": {
+      "additionalProperties": false,
+      "properties": {
+        "apiVersion": {
+          "enum": [
+            "duck/v1"
+          ],
+          "type": "string"
+        },
+        "filters": {
+          "items": {
+            "$ref": "#/$defs/RowFilterSpec"
+          },
+          "type": "array"
+        },
+        "kind": {
+          "enum": [
+            "RowFilterList"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "apiVersion",
+        "kind"
+      ],
+      "type": "object"
+    },
+    "RowFilterSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "bindings": {
+          "items": {
+            "$ref": "#/$defs/FilterBindingRef"
+          },
+          "type": "array"
+        },
+        "description": {
+          "type": "string"
+        },
+        "filter_sql": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "filter_sql",
+        "name"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "schemas/declarative/v1/kinds/row-filter-list.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    {
+      "$ref": "#/$defs/RowFilterListDoc"
+    }
+  ],
+  "title": "Duck declarative RowFilterList"
+}

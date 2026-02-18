@@ -1,0 +1,84 @@
+{
+  "$defs": {
+    "TagAssignmentSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "column_name": {
+          "type": "string"
+        },
+        "securable": {
+          "type": "string"
+        },
+        "securable_type": {
+          "type": "string"
+        },
+        "tag": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "securable",
+        "securable_type",
+        "tag"
+      ],
+      "type": "object"
+    },
+    "TagConfigDoc": {
+      "additionalProperties": false,
+      "properties": {
+        "apiVersion": {
+          "enum": [
+            "duck/v1"
+          ],
+          "type": "string"
+        },
+        "assignments": {
+          "items": {
+            "$ref": "#/$defs/TagAssignmentSpec"
+          },
+          "type": "array"
+        },
+        "kind": {
+          "enum": [
+            "TagConfig"
+          ],
+          "type": "string"
+        },
+        "tags": {
+          "items": {
+            "$ref": "#/$defs/TagSpec"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "apiVersion",
+        "kind"
+      ],
+      "type": "object"
+    },
+    "TagSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "key"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "schemas/declarative/v1/kinds/tag-config.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    {
+      "$ref": "#/$defs/TagConfigDoc"
+    }
+  ],
+  "title": "Duck declarative TagConfig"
+}

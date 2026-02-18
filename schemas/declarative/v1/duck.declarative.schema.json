@@ -1,0 +1,74 @@
+{
+  "$id": "schemas/declarative/v1/duck.declarative.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Union schema for all declarative duck/v1 YAML documents.",
+  "oneOf": [
+    {
+      "$ref": "kinds/principal-list.schema.json"
+    },
+    {
+      "$ref": "kinds/group-list.schema.json"
+    },
+    {
+      "$ref": "kinds/grant-list.schema.json"
+    },
+    {
+      "$ref": "kinds/privilege-preset-list.schema.json"
+    },
+    {
+      "$ref": "kinds/binding-list.schema.json"
+    },
+    {
+      "$ref": "kinds/api-key-list.schema.json"
+    },
+    {
+      "$ref": "kinds/catalog.schema.json"
+    },
+    {
+      "$ref": "kinds/schema.schema.json"
+    },
+    {
+      "$ref": "kinds/table.schema.json"
+    },
+    {
+      "$ref": "kinds/view.schema.json"
+    },
+    {
+      "$ref": "kinds/volume.schema.json"
+    },
+    {
+      "$ref": "kinds/row-filter-list.schema.json"
+    },
+    {
+      "$ref": "kinds/column-mask-list.schema.json"
+    },
+    {
+      "$ref": "kinds/tag-config.schema.json"
+    },
+    {
+      "$ref": "kinds/storage-credential-list.schema.json"
+    },
+    {
+      "$ref": "kinds/external-location-list.schema.json"
+    },
+    {
+      "$ref": "kinds/compute-endpoint-list.schema.json"
+    },
+    {
+      "$ref": "kinds/compute-assignment-list.schema.json"
+    },
+    {
+      "$ref": "kinds/notebook.schema.json"
+    },
+    {
+      "$ref": "kinds/pipeline.schema.json"
+    },
+    {
+      "$ref": "kinds/model.schema.json"
+    },
+    {
+      "$ref": "kinds/macro.schema.json"
+    }
+  ],
+  "title": "Duck declarative document"
+}

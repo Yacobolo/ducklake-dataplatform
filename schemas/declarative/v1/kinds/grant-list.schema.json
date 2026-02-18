@@ -1,0 +1,68 @@
+{
+  "$defs": {
+    "GrantListDoc": {
+      "additionalProperties": false,
+      "properties": {
+        "apiVersion": {
+          "enum": [
+            "duck/v1"
+          ],
+          "type": "string"
+        },
+        "grants": {
+          "items": {
+            "$ref": "#/$defs/GrantSpec"
+          },
+          "type": "array"
+        },
+        "kind": {
+          "enum": [
+            "GrantList"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "apiVersion",
+        "kind"
+      ],
+      "type": "object"
+    },
+    "GrantSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "principal": {
+          "type": "string"
+        },
+        "principal_type": {
+          "type": "string"
+        },
+        "privilege": {
+          "type": "string"
+        },
+        "securable": {
+          "type": "string"
+        },
+        "securable_type": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "principal",
+        "principal_type",
+        "privilege",
+        "securable",
+        "securable_type"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "schemas/declarative/v1/kinds/grant-list.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    {
+      "$ref": "#/$defs/GrantListDoc"
+    }
+  ],
+  "title": "Duck declarative GrantList"
+}

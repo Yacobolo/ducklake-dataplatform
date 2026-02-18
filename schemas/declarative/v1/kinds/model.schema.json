@@ -1,0 +1,199 @@
+{
+  "$defs": {
+    "ContractColumnSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "nullable": {
+          "type": "boolean"
+        },
+        "type": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "nullable",
+        "type"
+      ],
+      "type": "object"
+    },
+    "ContractSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "columns": {
+          "items": {
+            "$ref": "#/$defs/ContractColumnSpec"
+          },
+          "type": "array"
+        },
+        "enforce": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "enforce"
+      ],
+      "type": "object"
+    },
+    "FreshnessSpecYAML": {
+      "additionalProperties": false,
+      "properties": {
+        "cron_schedule": {
+          "type": "string"
+        },
+        "max_lag_seconds": {
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "ModelConfigSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "incremental_strategy": {
+          "type": "string"
+        },
+        "on_schema_change": {
+          "type": "string"
+        },
+        "unique_key": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "ModelDoc": {
+      "additionalProperties": false,
+      "properties": {
+        "apiVersion": {
+          "enum": [
+            "duck/v1"
+          ],
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "Model"
+          ],
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/$defs/ModelSpec"
+        }
+      },
+      "required": [
+        "apiVersion",
+        "kind",
+        "metadata",
+        "spec"
+      ],
+      "type": "object"
+    },
+    "ModelSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "config": {
+          "$ref": "#/$defs/ModelConfigSpec"
+        },
+        "contract": {
+          "$ref": "#/$defs/ContractSpec"
+        },
+        "description": {
+          "type": "string"
+        },
+        "freshness": {
+          "$ref": "#/$defs/FreshnessSpecYAML"
+        },
+        "materialization": {
+          "type": "string"
+        },
+        "sql": {
+          "type": "string"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "tests": {
+          "items": {
+            "$ref": "#/$defs/TestSpec"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "materialization",
+        "sql"
+      ],
+      "type": "object"
+    },
+    "ObjectMeta": {
+      "additionalProperties": false,
+      "properties": {
+        "deletion_protection": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "TestSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "column": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "sql": {
+          "type": "string"
+        },
+        "to_column": {
+          "type": "string"
+        },
+        "to_model": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "values": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "type"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "schemas/declarative/v1/kinds/model.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    {
+      "$ref": "#/$defs/ModelDoc"
+    }
+  ],
+  "title": "Duck declarative Model"
+}

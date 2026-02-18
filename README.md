@@ -89,9 +89,12 @@ task test           # Run all tests (unit + integration)
 task vet            # Run go vet
 task lint           # Run all linters
 task generate       # Regenerate all code (API types + sqlc + CLI)
+task generate:declarative-schema # Regenerate declarative JSON Schema artifacts
 task sqlc           # Regenerate DB query code
 task generate-api   # Regenerate API types/server from openapi.yaml
 ```
+
+Declarative schema artifacts are documented in `docs/declarative-schema.md`.
 
 ## Architecture
 
