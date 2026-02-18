@@ -29,6 +29,7 @@ import (
 	"duck-demo/internal/domain"
 	"duck-demo/internal/engine"
 	"duck-demo/internal/middleware"
+	"duck-demo/internal/ui"
 )
 
 func main() {
@@ -240,7 +241,7 @@ func run() error {
 		logger.Info("HS256 JWT validation enabled (dev mode)")
 	}
 
-	// Authenticated API routes under /v1 prefix
+	// Authenticated API routes under /v1 prefix (disabled in development)
 	authenticator := middleware.NewAuthenticator(
 		jwtValidator,
 		application.APIKeyRepo,
@@ -249,9 +250,36 @@ func run() error {
 		cfg.Auth,
 		logger,
 	)
-	r.Route("/v1", func(r chi.Router) {
-		r.Use(authenticator.Middleware())
-		api.HandlerFromMux(strictHandler, r)
+	if cfg.IsProduction() {
+		r.Route("/v1", func(r chi.Router) {
+			r.Use(authenticator.Middleware())
+			api.HandlerFromMux(strictHandler, r)
+		})
+	} else {
+		logger.Warn("development mode: API auth disabled for /v1")
+		r.Route("/v1", func(r chi.Router) {
+			api.HandlerFromMux(strictHandler, r)
+		})
+	}
+
+	uiHandler := ui.NewHandler(
+		svc.CatalogRegistration,
+		svc.Catalog,
+		svc.Pipeline,
+		svc.Notebook,
+		svc.SessionManager,
+		svc.Macro,
+		svc.Model,
+		cfg.Auth,
+		cfg.IsProduction(),
+	)
+	uiAuth := authenticator.MiddlewareWithUnauthorized(ui.RedirectToLogin)
+	if !cfg.IsProduction() {
+		logger.Warn("development mode: UI auth disabled for /ui")
+		uiAuth = func(next http.Handler) http.Handler { return next }
+	}
+	r.Route("/ui", func(r chi.Router) {
+		ui.MountRoutes(r, uiHandler, uiAuth)
 	})
 
 	// Start server
