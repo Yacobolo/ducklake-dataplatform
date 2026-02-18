@@ -12,3 +12,11 @@ if (typeof global.React === "undefined") {
     },
   };
 }
+
+if (typeof globalThis.React === "undefined") {
+  globalThis.React = global.React;
+}
+
+if (typeof React === "undefined") {
+  React = global.React;
+}
