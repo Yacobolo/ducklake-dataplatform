@@ -64,6 +64,12 @@ paths:
       summary: Create a compute endpoint
       tags: [Compute]
       description: Creates a new compute endpoint. Requires MANAGE_COMPUTE on catalog.
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: MANAGE_COMPUTE
+            securable_id_source: catalog_sentinel
       requestBody:
         required: true
         content:
@@ -195,6 +201,12 @@ paths:
       summary: Update a compute endpoint
       tags: [Compute]
       description: Updates compute endpoint fields. Requires MANAGE_COMPUTE on catalog.
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: MANAGE_COMPUTE
+            securable_id_source: catalog_sentinel
       requestBody:
         required: true
         content:
@@ -264,6 +276,12 @@ paths:
       summary: Delete a compute endpoint
       tags: [Compute]
       description: Deletes a compute endpoint. Requires MANAGE_COMPUTE on catalog.
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: MANAGE_COMPUTE
+            securable_id_source: catalog_sentinel
       responses:
         '204':
           description: Compute endpoint deleted

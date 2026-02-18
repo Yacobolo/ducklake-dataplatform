@@ -8,10 +8,25 @@ type APIEndpoint struct {
 	Path        string     `json:"path"`
 	Summary     string     `json:"summary"`
 	Description string     `json:"description,omitempty"`
+	Authz       APIAuthz   `json:"authz,omitempty"`
 	Tags        []string   `json:"tags,omitempty"`
 	Parameters  []APIParam `json:"parameters,omitempty"`
 	BodyFields  []APIField `json:"body_fields,omitempty"`
 	CLICommand  string     `json:"cli_command,omitempty"`
+}
+
+// APIAuthz represents endpoint authorization metadata from OpenAPI x-authz.
+type APIAuthz struct {
+	Mode        string          `json:"mode,omitempty"`
+	OwnerBypass bool            `json:"owner_bypass,omitempty"`
+	Checks      []APIAuthzCheck `json:"checks,omitempty"`
+}
+
+// APIAuthzCheck represents one required authorization check.
+type APIAuthzCheck struct {
+	SecurableType     string `json:"securable_type"`
+	Privilege         string `json:"privilege"`
+	SecurableIDSource string `json:"securable_id_source"`
 }
 
 // APIParam represents an API parameter for discovery.
@@ -40,6 +55,19 @@ var APIEndpoints = []APIEndpoint{
 		Path:        {{quote .Path}},
 		Summary:     {{quote .Summary}},
 		Description: {{quote .Description}},
+		{{- if .Authz.Mode}}
+		Authz: APIAuthz{
+			Mode: {{quote .Authz.Mode}},
+			OwnerBypass: {{.Authz.OwnerBypass}},
+			{{- if .Authz.Checks}}
+			Checks: []APIAuthzCheck{
+				{{- range .Authz.Checks}}
+				{SecurableType: {{quote .SecurableType}}, Privilege: {{quote .Privilege}}, SecurableIDSource: {{quote .SecurableIDSource}}},
+				{{- end}}
+			},
+			{{- end}}
+		},
+		{{- end}}
 		{{- if .Tags}}
 		Tags:        []string{ {{- range $i, $t := .Tags}}{{if $i}}, {{end}}{{quote $t}}{{end -}} },
 		{{- end}}

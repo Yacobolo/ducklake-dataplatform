@@ -265,6 +265,90 @@ paths:
 	assert.Empty(t, vs)
 }
 
+func TestCheckAuthzMetadataPresent_Missing(t *testing.T) {
+	spec := specHeader + `
+paths:
+  /catalogs/{catalogName}/schemas/{schemaName}/tables:
+    post:
+      operationId: createTable
+      tags: [Catalogs]
+      summary: Create table
+      description: Create a table.
+      responses:
+        '201':
+          description: Created
+`
+	vs := findRule(mustLint(t, spec), "check-authz-metadata-present")
+	require.Len(t, vs, 1)
+	assert.Contains(t, vs[0].Message, "createTable")
+}
+
+func TestCheckAuthzMetadataPresent_Present(t *testing.T) {
+	spec := specHeader + `
+paths:
+  /catalogs/{catalogName}/schemas/{schemaName}/tables:
+    post:
+      operationId: createTable
+      tags: [Catalogs]
+      summary: Create table
+      description: Create a table.
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: schema
+            privilege: CREATE_TABLE
+            securable_id_source: runtime_resolved_object_id
+      responses:
+        '201':
+          description: Created
+`
+	vs := findRule(mustLint(t, spec), "check-authz-metadata-present")
+	assert.Empty(t, vs)
+}
+
+func TestCheckAuthzMetadataShape_Invalid(t *testing.T) {
+	spec := specHeader + `
+paths:
+  /catalogs/{catalogName}/schemas/{schemaName}/tables:
+    post:
+      operationId: createTable
+      tags: [Catalogs]
+      summary: Create table
+      description: Create a table.
+      x-authz:
+        mode: privilege
+        owner_bypass: true
+        checks:
+          - securable_type: schema
+            privilege: CREATE_TABLE
+            securable_id_source: bogus
+      responses:
+        '201':
+          description: Created
+`
+	vs := findRule(mustLint(t, spec), "check-authz-metadata-shape")
+	require.NotEmpty(t, vs)
+}
+
+func TestCheckAuthzMetadataShape_ValidAdminOnly(t *testing.T) {
+	spec := specHeader + `
+paths:
+  /grants:
+    post:
+      operationId: createGrant
+      tags: [Security]
+      summary: Create grant
+      description: Create grant.
+      x-authz:
+        mode: admin_only
+      responses:
+        '201':
+          description: Created
+`
+	vs := findRule(mustLint(t, spec), "check-authz-metadata-shape")
+	assert.Empty(t, vs)
+}
+
 func TestCheckPostCreateStatus_ActionVerbExcluded(t *testing.T) {
 	spec := specHeader + `
 paths:

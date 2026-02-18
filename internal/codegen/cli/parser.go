@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -821,6 +822,7 @@ func ExtractAPIEndpoints(spec *openapi3.T, groups []GroupModel) []APIEndpointMod
 				Path:        urlPath,
 				Summary:     op.Summary,
 				Description: op.Description,
+				Authz:       parseAuthzExtension(op),
 				Tags:        op.Tags,
 				CLICommand:  cliCmdMap[op.OperationID],
 			}
@@ -884,6 +886,101 @@ func ExtractAPIEndpoints(spec *openapi3.T, groups []GroupModel) []APIEndpointMod
 	})
 
 	return endpoints
+}
+
+func parseAuthzExtension(op *openapi3.Operation) APIAuthzModel {
+	if op == nil || len(op.Extensions) == 0 {
+		return APIAuthzModel{}
+	}
+
+	raw, ok := op.Extensions["x-authz"]
+	if !ok {
+		return APIAuthzModel{}
+	}
+
+	m, ok := toStringAnyMap(raw)
+	if !ok {
+		return APIAuthzModel{}
+	}
+
+	authz := APIAuthzModel{
+		Mode:        stringField(m, "mode"),
+		OwnerBypass: boolField(m, "owner_bypass"),
+	}
+
+	checks, ok := m["checks"].([]interface{})
+	if !ok {
+		return authz
+	}
+
+	for _, item := range checks {
+		cm, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		authz.Checks = append(authz.Checks, APIAuthzCheckModel{
+			SecurableType:     stringField(cm, "securable_type"),
+			Privilege:         stringField(cm, "privilege"),
+			SecurableIDSource: stringField(cm, "securable_id_source"),
+		})
+	}
+
+	return authz
+}
+
+func stringField(m map[string]interface{}, key string) string {
+	v, ok := m[key]
+	if !ok {
+		return ""
+	}
+	s, ok := v.(string)
+	if !ok {
+		return ""
+	}
+	return s
+}
+
+func boolField(m map[string]interface{}, key string) bool {
+	v, ok := m[key]
+	if !ok {
+		return false
+	}
+	b, ok := v.(bool)
+	if !ok {
+		return false
+	}
+	return b
+}
+
+func toStringAnyMap(value interface{}) (map[string]interface{}, bool) {
+	switch typed := value.(type) {
+	case map[string]interface{}:
+		return typed, true
+	case map[interface{}]interface{}:
+		out := make(map[string]interface{}, len(typed))
+		for key, val := range typed {
+			s, ok := key.(string)
+			if !ok {
+				continue
+			}
+			out[s] = val
+		}
+		return out, true
+	case []byte:
+		var out map[string]interface{}
+		if err := json.Unmarshal(typed, &out); err != nil {
+			return nil, false
+		}
+		return out, true
+	case json.RawMessage:
+		var out map[string]interface{}
+		if err := json.Unmarshal(typed, &out); err != nil {
+			return nil, false
+		}
+		return out, true
+	default:
+		return nil, false
+	}
 }
 
 func sortedKeys[V any](m map[string]V) []string {

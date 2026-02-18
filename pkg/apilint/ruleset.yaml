@@ -208,3 +208,19 @@ rules:
     resolved: false
     then:
       function: checkDiscriminatorRequired
+
+  check-authz-metadata-present:
+    description: "Critical mutating operations must declare x-authz metadata"
+    given: "$"
+    severity: error
+    resolved: false
+    then:
+      function: checkAuthzMetadataPresent
+
+  check-authz-metadata-shape:
+    description: "x-authz metadata must use valid mode and check fields"
+    given: "$"
+    severity: error
+    resolved: false
+    then:
+      function: checkAuthzMetadataShape

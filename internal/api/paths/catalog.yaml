@@ -481,6 +481,12 @@ paths:
       summary: Create a new schema
       description: Creates a new schema in the catalog with the specified name and optional properties.
       tags: [Catalogs]
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: CREATE_SCHEMA
+            securable_id_source: catalog_name_param
       requestBody:
         required: true
         content:
@@ -605,6 +611,12 @@ paths:
       summary: Update schema metadata
       description: Updates the metadata of an existing schema, such as its comment or properties.
       tags: [Catalogs]
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: CREATE_SCHEMA
+            securable_id_source: catalog_sentinel
       requestBody:
         required: true
         content:
@@ -671,6 +683,12 @@ paths:
       summary: Delete a schema
       description: Permanently removes a schema from the catalog. Use the force parameter to delete schemas that still contain tables.
       tags: [Catalogs]
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: CREATE_SCHEMA
+            securable_id_source: catalog_sentinel
       parameters:
         - name: force
           in: query
@@ -786,6 +804,12 @@ paths:
       summary: Create a new table in a schema
       description: Creates a new table with the specified columns and properties within the given schema.
       tags: [Catalogs]
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: CREATE_TABLE
+            securable_id_source: catalog_sentinel
       requestBody:
         required: true
         content:
@@ -934,6 +958,12 @@ paths:
       summary: Update table metadata
       description: Updates the metadata of an existing table, such as its comment or properties.
       tags: [Catalogs]
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: CREATE_TABLE
+            securable_id_source: catalog_sentinel
       requestBody:
         required: true
         content:
@@ -1008,6 +1038,12 @@ paths:
       summary: Delete a table
       description: Permanently removes a table and all its data from the schema.
       tags: [Catalogs]
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: CREATE_TABLE
+            securable_id_source: catalog_sentinel
       responses:
         '204':
           description: Table deleted
@@ -1123,6 +1159,12 @@ paths:
       summary: Update column metadata
       description: Updates the metadata of a specific column, such as its comment or nullable flag.
       tags: [Catalogs]
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: CREATE_TABLE
+            securable_id_source: catalog_sentinel
       requestBody:
         required: true
         content:
@@ -1308,6 +1350,12 @@ paths:
       summary: Create a view in a schema
       description: Creates a new view with the specified SQL definition within the given schema.
       tags: [Catalogs]
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: CREATE_TABLE
+            securable_id_source: catalog_sentinel
       requestBody:
         required: true
         content:
@@ -1440,6 +1488,12 @@ paths:
       summary: Update a view's metadata
       description: Updates the metadata of an existing view, such as its comment or SQL definition.
       tags: [Catalogs]
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: CREATE_TABLE
+            securable_id_source: catalog_sentinel
       requestBody:
         required: true
         content:
@@ -1508,6 +1562,12 @@ paths:
       summary: Delete a view
       description: Permanently removes a view from the schema.
       tags: [Catalogs]
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: CREATE_TABLE
+            securable_id_source: catalog_sentinel
       responses:
         '204':
           description: View deleted
@@ -1618,6 +1678,12 @@ paths:
         Creates a new volume. EXTERNAL volumes require a storage_location.
         MANAGED volumes auto-generate a storage location.
         Requires CREATE_VOLUME on catalog.
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: CREATE_VOLUME
+            securable_id_source: catalog_sentinel
       requestBody:
         required: true
         content:
@@ -1746,6 +1812,12 @@ paths:
       summary: Update a volume
       description: Updates volume fields. Requires CREATE_VOLUME on catalog.
       tags: [Catalogs]
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: CREATE_VOLUME
+            securable_id_source: catalog_sentinel
       requestBody:
         required: true
         content:
@@ -1812,6 +1884,12 @@ paths:
       summary: Delete a volume
       description: Deletes a volume. Requires CREATE_VOLUME on catalog.
       tags: [Catalogs]
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: CREATE_VOLUME
+            securable_id_source: catalog_sentinel
       responses:
         '204':
           description: Volume deleted
