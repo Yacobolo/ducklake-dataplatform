@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"duck-demo/internal/domain"
+	"duck-demo/internal/service/auditutil"
 )
 
 // ComputeEndpointService provides CRUD operations for compute endpoints
@@ -39,7 +40,7 @@ func NewComputeEndpointService(
 // Create validates and persists a new compute endpoint.
 // Requires MANAGE_COMPUTE on catalog.
 func (s *ComputeEndpointService) Create(ctx context.Context, principal string, req domain.CreateComputeEndpointRequest) (*domain.ComputeEndpoint, error) {
-	if err := s.requirePrivilege(ctx, principal, domain.PrivManageCompute); err != nil {
+	if err := s.requirePrivilege(ctx, principal, domain.PrivManageCompute, "CREATE_COMPUTE_ENDPOINT", fmt.Sprintf("Denied create compute endpoint %q", req.Name)); err != nil {
 		return nil, err
 	}
 
@@ -79,7 +80,7 @@ func (s *ComputeEndpointService) List(ctx context.Context, page domain.PageReque
 // Update updates a compute endpoint by name.
 // Requires MANAGE_COMPUTE on catalog.
 func (s *ComputeEndpointService) Update(ctx context.Context, principal string, name string, req domain.UpdateComputeEndpointRequest) (*domain.ComputeEndpoint, error) {
-	if err := s.requirePrivilege(ctx, principal, domain.PrivManageCompute); err != nil {
+	if err := s.requirePrivilege(ctx, principal, domain.PrivManageCompute, "UPDATE_COMPUTE_ENDPOINT", fmt.Sprintf("Denied update compute endpoint %q", name)); err != nil {
 		return nil, err
 	}
 
@@ -113,7 +114,7 @@ func (s *ComputeEndpointService) Update(ctx context.Context, principal string, n
 // Delete removes a compute endpoint by name.
 // Requires MANAGE_COMPUTE on catalog.
 func (s *ComputeEndpointService) Delete(ctx context.Context, principal string, name string) error {
-	if err := s.requirePrivilege(ctx, principal, domain.PrivManageCompute); err != nil {
+	if err := s.requirePrivilege(ctx, principal, domain.PrivManageCompute, "DELETE_COMPUTE_ENDPOINT", fmt.Sprintf("Denied delete compute endpoint %q", name)); err != nil {
 		return err
 	}
 
@@ -133,7 +134,7 @@ func (s *ComputeEndpointService) Delete(ctx context.Context, principal string, n
 // UpdateStatus changes the status of a compute endpoint.
 // Requires MANAGE_COMPUTE on catalog.
 func (s *ComputeEndpointService) UpdateStatus(ctx context.Context, principal string, name string, status string) error {
-	if err := s.requirePrivilege(ctx, principal, domain.PrivManageCompute); err != nil {
+	if err := s.requirePrivilege(ctx, principal, domain.PrivManageCompute, "UPDATE_COMPUTE_ENDPOINT_STATUS", fmt.Sprintf("Denied update compute endpoint %q status", name)); err != nil {
 		return err
 	}
 
@@ -162,7 +163,7 @@ func (s *ComputeEndpointService) UpdateStatus(ctx context.Context, principal str
 // Assign creates a compute assignment.
 // Requires MANAGE_COMPUTE on catalog.
 func (s *ComputeEndpointService) Assign(ctx context.Context, principal string, endpointName string, req domain.CreateComputeAssignmentRequest) (*domain.ComputeAssignment, error) {
-	if err := s.requirePrivilege(ctx, principal, domain.PrivManageCompute); err != nil {
+	if err := s.requirePrivilege(ctx, principal, domain.PrivManageCompute, "ASSIGN_COMPUTE_ENDPOINT", fmt.Sprintf("Denied assign compute endpoint %q", endpointName)); err != nil {
 		return nil, err
 	}
 
@@ -196,7 +197,7 @@ func (s *ComputeEndpointService) Assign(ctx context.Context, principal string, e
 // Unassign removes a compute assignment.
 // Requires MANAGE_COMPUTE on catalog.
 func (s *ComputeEndpointService) Unassign(ctx context.Context, principal string, assignmentID string) error {
-	if err := s.requirePrivilege(ctx, principal, domain.PrivManageCompute); err != nil {
+	if err := s.requirePrivilege(ctx, principal, domain.PrivManageCompute, "UNASSIGN_COMPUTE_ENDPOINT", fmt.Sprintf("Denied unassign compute assignment %q", assignmentID)); err != nil {
 		return err
 	}
 
@@ -221,7 +222,7 @@ func (s *ComputeEndpointService) ListAssignments(ctx context.Context, endpointNa
 // HealthCheck proxies a health check to the remote compute agent.
 // Requires MANAGE_COMPUTE on catalog.
 func (s *ComputeEndpointService) HealthCheck(ctx context.Context, principal string, endpointName string) (*domain.ComputeEndpointHealthResult, error) {
-	if err := s.requirePrivilege(ctx, principal, domain.PrivManageCompute); err != nil {
+	if err := s.requirePrivilege(ctx, principal, domain.PrivManageCompute, "HEALTH_CHECK_COMPUTE_ENDPOINT", fmt.Sprintf("Denied health check compute endpoint %q", endpointName)); err != nil {
 		return nil, err
 	}
 
@@ -283,22 +284,22 @@ func (s *ComputeEndpointService) HealthCheck(ctx context.Context, principal stri
 }
 
 // requirePrivilege checks that the principal has the given privilege on the catalog.
-func (s *ComputeEndpointService) requirePrivilege(ctx context.Context, principal string, privilege string) error {
+func (s *ComputeEndpointService) requirePrivilege(ctx context.Context, principal string, privilege, action, detail string) error {
 	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, privilege)
 	if err != nil {
 		return fmt.Errorf("check privilege: %w", err)
 	}
 	if !allowed {
+		s.logAuditDenied(ctx, principal, action, detail)
 		return domain.ErrAccessDenied("%q lacks %s on catalog", principal, privilege)
 	}
 	return nil
 }
 
 func (s *ComputeEndpointService) logAudit(ctx context.Context, principal, action, detail string) {
-	_ = s.audit.Insert(ctx, &domain.AuditEntry{
-		PrincipalName: principal,
-		Action:        action,
-		Status:        "ALLOWED",
-		OriginalSQL:   &detail,
-	})
+	auditutil.LogAllowed(ctx, s.audit, principal, action, detail)
+}
+
+func (s *ComputeEndpointService) logAuditDenied(ctx context.Context, principal, action, detail string) {
+	auditutil.LogDenied(ctx, s.audit, principal, action, detail)
 }

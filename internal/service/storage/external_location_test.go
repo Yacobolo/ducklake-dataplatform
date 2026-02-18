@@ -85,8 +85,13 @@ func TestExternalLocationService_Create(t *testing.T) {
 				return false, nil
 			},
 		}
+		locRepo := &mockExternalLocationRepo{
+			GetByNameFn: func(_ context.Context, _ string) (*domain.ExternalLocation, error) {
+				return &domain.ExternalLocation{ID: "1", Name: "my-loc", CredentialName: "my-cred"}, nil
+			},
+		}
 		svc := NewExternalLocationService(
-			&mockExternalLocationRepo{}, &mockStorageCredentialRepo{},
+			locRepo, &mockStorageCredentialRepo{},
 			auth, &mockAuditRepo{}, nil, discardLogger(),
 		)
 
@@ -255,8 +260,13 @@ func TestExternalLocationService_Delete(t *testing.T) {
 				return false, nil
 			},
 		}
+		locRepo := &mockExternalLocationRepo{
+			GetByNameFn: func(_ context.Context, _ string) (*domain.ExternalLocation, error) {
+				return &domain.ExternalLocation{ID: "1", Name: "my-loc", CredentialName: "my-cred"}, nil
+			},
+		}
 		svc := NewExternalLocationService(
-			&mockExternalLocationRepo{}, &mockStorageCredentialRepo{},
+			locRepo, &mockStorageCredentialRepo{},
 			auth, &mockAuditRepo{}, nil, discardLogger(),
 		)
 

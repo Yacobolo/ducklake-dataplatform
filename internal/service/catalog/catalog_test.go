@@ -342,6 +342,11 @@ func TestCatalogService_DeleteSchema(t *testing.T) {
 			if tt.setupRepo != nil {
 				tt.setupRepo(repo)
 			}
+			if repo.GetSchemaFn == nil {
+				repo.GetSchemaFn = func(_ context.Context, name string) (*domain.SchemaDetail, error) {
+					return &domain.SchemaDetail{SchemaID: "schema-1", Name: name}, nil
+				}
+			}
 			audit := &mockAuditRepo{}
 			svc := newTestCatalogService(repo, auth, audit, &mockTagRepo{}, &mockStatsRepo{}, nil)
 
@@ -510,6 +515,11 @@ func TestCatalogService_CreateTable(t *testing.T) {
 			if tt.setupRepo != nil {
 				tt.setupRepo(repo)
 			}
+			if repo.GetSchemaFn == nil {
+				repo.GetSchemaFn = func(_ context.Context, name string) (*domain.SchemaDetail, error) {
+					return &domain.SchemaDetail{SchemaID: "schema-1", Name: name}, nil
+				}
+			}
 			audit := &mockAuditRepo{}
 
 			var locations domain.ExternalLocationRepository
@@ -606,6 +616,11 @@ func TestCatalogService_UpdateTable(t *testing.T) {
 			if tt.setupRepo != nil {
 				tt.setupRepo(repo)
 			}
+			if repo.GetTableFn == nil {
+				repo.GetTableFn = func(_ context.Context, schemaName, tableName string) (*domain.TableDetail, error) {
+					return &domain.TableDetail{TableID: "table-1", SchemaName: schemaName, Name: tableName}, nil
+				}
+			}
 			audit := &mockAuditRepo{}
 			tags := &mockTagRepo{
 				ListTagsForSecurableFn: func(_ context.Context, _ string, _ string, _ *string) ([]domain.Tag, error) {
@@ -688,6 +703,11 @@ func TestCatalogService_DeleteTable(t *testing.T) {
 			repo := &mockCatalogRepo{}
 			if tt.setupRepo != nil {
 				tt.setupRepo(repo)
+			}
+			if repo.GetTableFn == nil {
+				repo.GetTableFn = func(_ context.Context, schemaName, tableName string) (*domain.TableDetail, error) {
+					return &domain.TableDetail{TableID: "table-1", SchemaName: schemaName, Name: tableName}, nil
+				}
 			}
 			audit := &mockAuditRepo{}
 			svc := newTestCatalogService(repo, auth, audit, &mockTagRepo{}, &mockStatsRepo{}, nil)

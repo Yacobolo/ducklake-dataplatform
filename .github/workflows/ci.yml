@@ -94,6 +94,21 @@ jobs:
       - name: Run architecture governance tests
         run: task test:arch
 
+  security-governance:
+    name: Security Governance
+    needs: generate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Install Task
+        run: go install github.com/go-task/task/v3/cmd/task@${{ env.TASK_VERSION }}
+      - name: Validate declarative security governance
+        run: go test ./internal/declarative -run "Preset|Binding|Grant"
+
   test:
     name: Tests (${{ matrix.suite }})
     needs: generate

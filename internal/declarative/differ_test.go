@@ -101,6 +101,37 @@ func TestDiff_CreateAndDeleteGrants(t *testing.T) {
 	assert.Equal(t, 1, ops[OpDelete])
 }
 
+func TestDiff_ExpandsBindingPresetsToGrants(t *testing.T) {
+	desired := &DesiredState{
+		Principals: []PrincipalSpec{{Name: "user1", Type: "user"}},
+		Catalogs:   []CatalogResource{{CatalogName: "main", Spec: CatalogSpec{MetastoreType: "sqlite", DSN: "/db", DataPath: "/data"}}},
+		Schemas:    []SchemaResource{{CatalogName: "main", SchemaName: "analytics"}},
+		PrivilegePresets: []PrivilegePresetSpec{{
+			Name:       "reader",
+			Privileges: []string{"USE_SCHEMA", "SELECT"},
+		}},
+		Bindings: []BindingSpec{{
+			Principal:     "user1",
+			PrincipalType: "user",
+			Preset:        "reader",
+			ScopeType:     "schema",
+			Scope:         "main.analytics",
+		}},
+	}
+
+	actual := &DesiredState{}
+
+	plan := Diff(desired, actual)
+
+	grantCreates := 0
+	for _, a := range plan.Actions {
+		if a.ResourceKind == KindPrivilegeGrant && a.Operation == OpCreate {
+			grantCreates++
+		}
+	}
+	assert.Equal(t, 2, grantCreates, "binding preset should expand to two grant create actions")
+}
+
 func TestDiff_DeletionProtection(t *testing.T) {
 	// Catalog exists on server with deletion_protection but missing from desired
 	desired := &DesiredState{}

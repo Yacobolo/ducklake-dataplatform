@@ -37,20 +37,18 @@ func (s *ViewService) CreateView(ctx context.Context, catalogName string, princi
 	if err != nil {
 		return nil, err
 	}
+	schema, err := catalogRepo.GetSchema(ctx, schemaName)
+	if err != nil {
+		return nil, err
+	}
 
-	// Check CREATE_TABLE privilege (views require same privilege)
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateTable)
+	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivCreateView)
 	if err != nil {
 		return nil, fmt.Errorf("check privilege: %w", err)
 	}
 	if !allowed {
-		return nil, domain.ErrAccessDenied("%q lacks CREATE_TABLE privilege for creating views", principal)
-	}
-
-	// Resolve schema ID
-	schema, err := catalogRepo.GetSchema(ctx, schemaName)
-	if err != nil {
-		return nil, err
+		s.logAuditDenied(ctx, principal, "CREATE_VIEW", fmt.Sprintf("Denied create view %q in schema %q", req.Name, schemaName))
+		return nil, domain.ErrAccessDenied("%q lacks CREATE_VIEW privilege for creating views", principal)
 	}
 
 	view := &domain.ViewDetail{
@@ -118,15 +116,6 @@ func (s *ViewService) ListViews(ctx context.Context, catalogName string, schemaN
 
 // DeleteView drops a view from the given schema.
 func (s *ViewService) DeleteView(ctx context.Context, catalogName string, principal string, schemaName, viewName string) error {
-
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateTable)
-	if err != nil {
-		return fmt.Errorf("check privilege: %w", err)
-	}
-	if !allowed {
-		return domain.ErrAccessDenied("%q lacks permission to delete view %q.%q", principal, schemaName, viewName)
-	}
-
 	repo, err := s.catalogFactory.ForCatalog(ctx, catalogName)
 	if err != nil {
 		return err
@@ -134,6 +123,14 @@ func (s *ViewService) DeleteView(ctx context.Context, catalogName string, princi
 	schema, err := repo.GetSchema(ctx, schemaName)
 	if err != nil {
 		return err
+	}
+	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivManage)
+	if err != nil {
+		return fmt.Errorf("check privilege: %w", err)
+	}
+	if !allowed {
+		s.logAuditDenied(ctx, principal, "DROP_VIEW", fmt.Sprintf("Denied drop view %q.%q", schemaName, viewName))
+		return domain.ErrAccessDenied("%q lacks permission to delete view %q.%q", principal, schemaName, viewName)
 	}
 
 	if err := s.repo.Delete(ctx, schema.SchemaID, viewName); err != nil {
@@ -146,15 +143,6 @@ func (s *ViewService) DeleteView(ctx context.Context, catalogName string, princi
 
 // UpdateView updates a view's metadata.
 func (s *ViewService) UpdateView(ctx context.Context, catalogName string, principal string, schemaName, viewName string, req domain.UpdateViewRequest) (*domain.ViewDetail, error) {
-
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateTable)
-	if err != nil {
-		return nil, fmt.Errorf("check privilege: %w", err)
-	}
-	if !allowed {
-		return nil, domain.ErrAccessDenied("%q lacks permission to update view %q.%q", principal, schemaName, viewName)
-	}
-
 	repo, err := s.catalogFactory.ForCatalog(ctx, catalogName)
 	if err != nil {
 		return nil, err
@@ -162,6 +150,14 @@ func (s *ViewService) UpdateView(ctx context.Context, catalogName string, princi
 	schema, err := repo.GetSchema(ctx, schemaName)
 	if err != nil {
 		return nil, err
+	}
+	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivModify)
+	if err != nil {
+		return nil, fmt.Errorf("check privilege: %w", err)
+	}
+	if !allowed {
+		s.logAuditDenied(ctx, principal, "UPDATE_VIEW", fmt.Sprintf("Denied update view %q.%q", schemaName, viewName))
+		return nil, domain.ErrAccessDenied("%q lacks permission to update view %q.%q", principal, schemaName, viewName)
 	}
 
 	result, err := s.repo.Update(ctx, schema.SchemaID, viewName, req.Comment, req.Properties, req.ViewDefinition)
@@ -181,6 +177,15 @@ func (s *ViewService) logAudit(ctx context.Context, principal, action, detail st
 		PrincipalName: principal,
 		Action:        action,
 		Status:        "ALLOWED",
+		OriginalSQL:   &detail,
+	})
+}
+
+func (s *ViewService) logAuditDenied(ctx context.Context, principal, action, detail string) {
+	_ = s.audit.Insert(ctx, &domain.AuditEntry{
+		PrincipalName: principal,
+		Action:        action,
+		Status:        "DENIED",
 		OriginalSQL:   &detail,
 	})
 }

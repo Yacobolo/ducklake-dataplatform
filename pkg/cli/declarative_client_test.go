@@ -1651,6 +1651,135 @@ func TestValidateNoSelfAPIKeyDeletion_AllowsDeleteWhenUsingToken(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestReadState_GrantsResolvedFromIDs(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/principals", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{"id": "p-1", "name": "alice", "type": "user", "is_admin": false},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/v1/catalogs", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{"id": "cat-1", "name": "demo", "metastore_type": "sqlite", "dsn": ":memory:", "data_path": "/tmp"},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/v1/catalogs/demo/schemas", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{"id": "sch-1", "name": "analytics"},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/v1/catalogs/demo/schemas/analytics/tables", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{"id": "tbl-1", "name": "orders", "table_type": "MANAGED"},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/v1/catalogs/demo/schemas/analytics/views", emptyListHandler())
+	mux.HandleFunc("/v1/catalogs/demo/schemas/analytics/volumes", emptyListHandler())
+	mux.HandleFunc("/v1/grants", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{
+					"principal_id":   "p-1",
+					"principal_type": "user",
+					"securable_type": "table",
+					"securable_id":   "tbl-1",
+					"privilege":      "SELECT",
+				},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/", emptyListHandler())
+
+	sc := setupReadStateClient(t, mux)
+	state, err := sc.ReadState(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, state.Grants, 1)
+	assert.Equal(t, "alice", state.Grants[0].Principal)
+	assert.Equal(t, "user", state.Grants[0].PrincipalType)
+	assert.Equal(t, "table", state.Grants[0].SecurableType)
+	assert.Equal(t, "demo.analytics.orders", state.Grants[0].Securable)
+	assert.Equal(t, "SELECT", state.Grants[0].Privilege)
+}
+
+func TestReadState_GrantsUnresolvedSecurableIsSkipped(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/principals", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"data": []map[string]interface{}{{"id": "p-1", "name": "alice", "type": "user"}},
+		})
+	})
+	mux.HandleFunc("/v1/grants", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"data": []map[string]interface{}{{
+				"principal_id":   "p-1",
+				"principal_type": "user",
+				"securable_type": "table",
+				"securable_id":   "tbl-missing",
+				"privilege":      "SELECT",
+			}},
+		})
+	})
+	mux.HandleFunc("/", emptyListHandler())
+
+	sc := setupReadStateClient(t, mux)
+	state, err := sc.ReadState(context.Background())
+	require.NoError(t, err)
+	assert.Empty(t, state.Grants)
+}
+
+func TestReadState_GrantsUnresolvedPrincipalIsSkipped(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/grants", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"data": []map[string]interface{}{{
+				"principal_id":   "p-missing",
+				"principal_type": "user",
+				"securable_type": "catalog",
+				"securable_id":   "cat-1",
+				"privilege":      "USE_CATALOG",
+			}},
+		})
+	})
+	mux.HandleFunc("/v1/principals/p-missing", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"code":"NOT_FOUND","message":"not found"}`))
+	})
+	mux.HandleFunc("/", emptyListHandler())
+
+	sc := setupReadStateClient(t, mux)
+	state, err := sc.ReadState(context.Background())
+	require.NoError(t, err)
+	assert.Empty(t, state.Grants)
+}
+
 // === Additional Execute tests ===
 
 func TestExecutePrincipal_Create(t *testing.T) {

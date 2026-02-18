@@ -16,7 +16,7 @@ func Diff(desired, actual *DesiredState) *Plan {
 	// Diff each resource type. Order doesn't matter here — SortActions handles ordering later.
 	diffPrincipals(plan, desired.Principals, actual.Principals)
 	diffGroups(plan, desired.Groups, actual.Groups)
-	diffGrants(plan, desired.Grants, actual.Grants)
+	diffGrants(plan, effectiveGrants(desired), effectiveGrants(actual))
 	diffCatalogs(plan, desired.Catalogs, actual.Catalogs)
 	diffSchemas(plan, desired.Schemas, actual.Schemas)
 	diffTables(plan, desired.Tables, actual.Tables)
@@ -246,19 +246,15 @@ func diffGroupMembers(plan *Plan, groupName string, desired, actual []MemberRef)
 
 // === Grants ===
 
-func grantKey(g GrantSpec) string {
-	return fmt.Sprintf("%s|%s|%s|%s|%s", g.Principal, g.PrincipalType, g.SecurableType, g.Securable, g.Privilege)
-}
-
 func diffGrants(plan *Plan, desired, actual []GrantSpec) {
 	actualMap := make(map[string]GrantSpec, len(actual))
 	for _, a := range actual {
-		actualMap[grantKey(a)] = a
+		actualMap[grantIdentityKey(a)] = a
 	}
 
 	seen := make(map[string]bool, len(desired))
 	for _, d := range desired {
-		k := grantKey(d)
+		k := grantIdentityKey(d)
 		seen[k] = true
 		if _, exists := actualMap[k]; !exists {
 			name := fmt.Sprintf("%s:%s on %s.%s", d.PrincipalType, d.Principal, d.SecurableType, d.Securable)
@@ -267,7 +263,7 @@ func diffGrants(plan *Plan, desired, actual []GrantSpec) {
 	}
 
 	for _, a := range actual {
-		if !seen[grantKey(a)] {
+		if !seen[grantIdentityKey(a)] {
 			name := fmt.Sprintf("%s:%s on %s.%s", a.PrincipalType, a.Principal, a.SecurableType, a.Securable)
 			addDelete(plan, KindPrivilegeGrant, name, a)
 		}

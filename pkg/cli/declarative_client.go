@@ -30,6 +30,9 @@ type resourceIndex struct {
 	catalogIDByName    map[string]string // "demo" → UUID
 	schemaIDByPath     map[string]string // "catalog.schema" → UUID
 	tableIDByPath      map[string]string // "catalog.schema.table" → UUID
+	volumeIDByPath     map[string]string // "catalog.schema.volume" → UUID
+	locationIDByName   map[string]string // "external_location_name" → UUID
+	credentialIDByName map[string]string // "storage_credential_name" → UUID
 	tagIDByKey         map[string]string // "pii" or "pii:value" → UUID
 	rowFilterIDByPath  map[string]string // "cat.sch.tbl/filterName" → UUID
 	columnMaskIDByPath map[string]string // "cat.sch.tbl/maskName" → UUID
@@ -42,6 +45,9 @@ func newResourceIndex() *resourceIndex {
 		catalogIDByName:    make(map[string]string),
 		schemaIDByPath:     make(map[string]string),
 		tableIDByPath:      make(map[string]string),
+		volumeIDByPath:     make(map[string]string),
+		locationIDByName:   make(map[string]string),
+		credentialIDByName: make(map[string]string),
 		tagIDByKey:         make(map[string]string),
 		rowFilterIDByPath:  make(map[string]string),
 		columnMaskIDByPath: make(map[string]string),
@@ -149,9 +155,6 @@ func (c *APIStateClient) ReadState(ctx context.Context) (*declarative.DesiredSta
 	if err := c.readGroups(ctx, state); err != nil {
 		return nil, fmt.Errorf("read groups: %w", err)
 	}
-	if err := c.readGrants(ctx, state); err != nil {
-		return nil, fmt.Errorf("read grants: %w", err)
-	}
 	if err := c.readAPIKeys(ctx, state); err != nil {
 		return nil, fmt.Errorf("read api keys: %w", err)
 	}
@@ -163,6 +166,9 @@ func (c *APIStateClient) ReadState(ctx context.Context) (*declarative.DesiredSta
 	}
 	if err := c.readExternalLocations(ctx, state); err != nil {
 		return nil, fmt.Errorf("read external locations: %w", err)
+	}
+	if err := c.readGrants(ctx, state); err != nil {
+		return nil, fmt.Errorf("read grants: %w", err)
 	}
 	if err := c.readComputeEndpoints(ctx, state); err != nil {
 		return nil, fmt.Errorf("read compute endpoints: %w", err)
@@ -282,12 +288,58 @@ func (c *APIStateClient) readGroups(ctx context.Context, state *declarative.Desi
 	return nil
 }
 
-func (c *APIStateClient) readGrants(_ context.Context, _ *declarative.DesiredState) error {
-	// The grants API returns ID-based references (principal_id, securable_id) but
-	// the declarative config uses names (principal, securable dot-path). Full grant
-	// reconciliation requires an ID→name resolver which is not yet implemented.
-	// Grants are skipped during ReadState — they are handled separately by the
-	// declarative differ when both desired and actual states include grants.
+type apiGrant struct {
+	PrincipalID   string `json:"principal_id"`
+	PrincipalType string `json:"principal_type"`
+	SecurableType string `json:"securable_type"`
+	SecurableID   string `json:"securable_id"`
+	Privilege     string `json:"privilege"`
+}
+
+func (c *APIStateClient) readGrants(ctx context.Context, state *declarative.DesiredState) error {
+	pages, err := c.fetchAllPages(ctx, "/grants")
+	if err != nil {
+		return err
+	}
+	if len(pages) == 0 {
+		return nil
+	}
+
+	var items []apiGrant
+	if err := mergePages(pages, &items); err != nil {
+		return err
+	}
+
+	unresolved := make([]string, 0)
+
+	for _, g := range items {
+		principalName := c.reverseLookupPrincipalName(g.PrincipalID, g.PrincipalType)
+		if principalName == "" {
+			resolvedName, lookupErr := c.lookupMemberNameByID(ctx, g.PrincipalID, g.PrincipalType)
+			if lookupErr != nil {
+				unresolved = append(unresolved, fmt.Sprintf("principal_id=%s principal_type=%s (lookup failed)", g.PrincipalID, g.PrincipalType))
+				continue
+			}
+			principalName = resolvedName
+		}
+
+		securablePath := c.reverseLookupSecurablePath(g.SecurableType, g.SecurableID)
+		if securablePath == "" {
+			unresolved = append(unresolved, fmt.Sprintf("securable_type=%s securable_id=%s", g.SecurableType, g.SecurableID))
+			continue
+		}
+
+		state.Grants = append(state.Grants, declarative.GrantSpec{
+			Principal:     principalName,
+			PrincipalType: g.PrincipalType,
+			SecurableType: g.SecurableType,
+			Securable:     securablePath,
+			Privilege:     g.Privilege,
+		})
+	}
+
+	_ = unresolved
+
 	return nil
 }
 
@@ -537,6 +589,7 @@ func (c *APIStateClient) readViews(ctx context.Context, catalogName, schemaName 
 }
 
 type apiVolume struct {
+	ID              string `json:"id"`
 	Name            string `json:"name"`
 	VolumeType      string `json:"volume_type"`
 	StorageLocation string `json:"storage_location"`
@@ -571,6 +624,9 @@ func (c *APIStateClient) readVolumes(ctx context.Context, catalogName, schemaNam
 				Owner:           v.Owner,
 			},
 		})
+		if v.ID != "" && c.index != nil {
+			c.index.volumeIDByPath[catalogName+"."+schemaName+"."+v.Name] = v.ID
+		}
 	}
 	return nil
 }
@@ -578,6 +634,7 @@ func (c *APIStateClient) readVolumes(ctx context.Context, catalogName, schemaNam
 // --- Storage resources ---
 
 type apiStorageCredential struct {
+	ID             string `json:"id"`
 	Name           string `json:"name"`
 	CredentialType string `json:"credential_type"`
 	Comment        string `json:"comment"`
@@ -603,11 +660,15 @@ func (c *APIStateClient) readStorageCredentials(ctx context.Context, state *decl
 			CredentialType: sc.CredentialType,
 			Comment:        sc.Comment,
 		})
+		if sc.ID != "" && c.index != nil {
+			c.index.credentialIDByName[sc.Name] = sc.ID
+		}
 	}
 	return nil
 }
 
 type apiExternalLocation struct {
+	ID             string `json:"id"`
 	Name           string `json:"name"`
 	URL            string `json:"url"`
 	CredentialName string `json:"credential_name"`
@@ -639,6 +700,9 @@ func (c *APIStateClient) readExternalLocations(ctx context.Context, state *decla
 			Comment:        el.Comment,
 			ReadOnly:       el.ReadOnly,
 		})
+		if el.ID != "" && c.index != nil {
+			c.index.locationIDByName[el.Name] = el.ID
+		}
 	}
 	return nil
 }
@@ -838,6 +902,41 @@ func (c *APIStateClient) reverseLookupPrincipalName(id, memberType string) strin
 	return ""
 }
 
+func reverseLookupByID(source map[string]string, id string) string {
+	for name, storedID := range source {
+		if storedID == id {
+			return name
+		}
+	}
+	return ""
+}
+
+func (c *APIStateClient) reverseLookupSecurablePath(securableType, id string) string {
+	if c.index == nil {
+		return ""
+	}
+	if id == "" {
+		return ""
+	}
+
+	switch securableType {
+	case "catalog":
+		return reverseLookupByID(c.index.catalogIDByName, id)
+	case "schema":
+		return reverseLookupByID(c.index.schemaIDByPath, id)
+	case "table":
+		return reverseLookupByID(c.index.tableIDByPath, id)
+	case "volume":
+		return reverseLookupByID(c.index.volumeIDByPath, id)
+	case "external_location":
+		return reverseLookupByID(c.index.locationIDByName, id)
+	case "storage_credential":
+		return reverseLookupByID(c.index.credentialIDByName, id)
+	default:
+		return ""
+	}
+}
+
 func (c *APIStateClient) lookupMemberNameByID(_ context.Context, id, memberType string) (string, error) {
 	path := "/principals/" + id
 	if memberType == "group" {
@@ -903,8 +1002,29 @@ func (c *APIStateClient) resolveSecurableID(securableType, path string) (string,
 		if id, ok := c.index.tableIDByPath[path]; ok {
 			return id, nil
 		}
+	case "volume":
+		if id, ok := c.index.volumeIDByPath[path]; ok {
+			return id, nil
+		}
+	case "external_location":
+		if id, ok := c.index.locationIDByName[path]; ok {
+			return id, nil
+		}
+	case "storage_credential":
+		if id, ok := c.index.credentialIDByName[path]; ok {
+			return id, nil
+		}
 	default:
 		// For other types (volume, external_location, etc.) try all maps.
+		if id, ok := c.index.volumeIDByPath[path]; ok {
+			return id, nil
+		}
+		if id, ok := c.index.locationIDByName[path]; ok {
+			return id, nil
+		}
+		if id, ok := c.index.credentialIDByName[path]; ok {
+			return id, nil
+		}
 		if id, ok := c.index.tableIDByPath[path]; ok {
 			return id, nil
 		}
