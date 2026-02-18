@@ -204,9 +204,9 @@ paths:
       x-authz:
         mode: privilege
         checks:
-          - securable_type: catalog
+          - securable_type: compute_endpoint
             privilege: MANAGE_COMPUTE
-            securable_id_source: catalog_sentinel
+            securable_id_source: runtime_resolved_object_id
       requestBody:
         required: true
         content:
@@ -279,9 +279,9 @@ paths:
       x-authz:
         mode: privilege
         checks:
-          - securable_type: catalog
+          - securable_type: compute_endpoint
             privilege: MANAGE_COMPUTE
-            securable_id_source: catalog_sentinel
+            securable_id_source: runtime_resolved_object_id
       responses:
         '204':
           description: Compute endpoint deleted
@@ -386,6 +386,12 @@ paths:
       summary: Assign a principal to a compute endpoint
       tags: [Compute]
       description: Creates a compute assignment. Requires MANAGE_COMPUTE on catalog.
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: compute_endpoint
+            privilege: MANAGE_COMPUTE
+            securable_id_source: runtime_resolved_object_id
       requestBody:
         required: true
         content:
@@ -456,6 +462,12 @@ paths:
       summary: Check health of a compute endpoint
       tags: [Compute]
       description: Proxies a health check to the remote compute agent. Requires MANAGE_COMPUTE on catalog.
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: compute_endpoint
+            privilege: MANAGE_COMPUTE
+            securable_id_source: runtime_resolved_object_id
       responses:
         '200':
           description: Health check result
@@ -545,6 +557,12 @@ paths:
       summary: Remove a compute assignment
       tags: [Compute]
       description: Removes a compute assignment. Requires MANAGE_COMPUTE on catalog.
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: MANAGE_COMPUTE
+            securable_id_source: catalog_sentinel
       responses:
         '204':
           description: Assignment deleted

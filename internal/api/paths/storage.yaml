@@ -202,9 +202,9 @@ paths:
       x-authz:
         mode: privilege
         checks:
-          - securable_type: catalog
+          - securable_type: storage_credential
             privilege: CREATE_STORAGE_CREDENTIAL
-            securable_id_source: catalog_sentinel
+            securable_id_source: runtime_resolved_object_id
       requestBody:
         required: true
         content:
@@ -275,9 +275,9 @@ paths:
       x-authz:
         mode: privilege
         checks:
-          - securable_type: catalog
+          - securable_type: storage_credential
             privilege: CREATE_STORAGE_CREDENTIAL
-            securable_id_source: catalog_sentinel
+            securable_id_source: runtime_resolved_object_id
       responses:
         '204':
           description: Credential deleted
@@ -521,9 +521,9 @@ paths:
       x-authz:
         mode: privilege
         checks:
-          - securable_type: catalog
+          - securable_type: external_location
             privilege: CREATE_EXTERNAL_LOCATION
-            securable_id_source: catalog_sentinel
+            securable_id_source: runtime_resolved_object_id
       requestBody:
         required: true
         content:
@@ -595,9 +595,9 @@ paths:
       x-authz:
         mode: privilege
         checks:
-          - securable_type: catalog
+          - securable_type: external_location
             privilege: CREATE_EXTERNAL_LOCATION
-            securable_id_source: catalog_sentinel
+            securable_id_source: runtime_resolved_object_id
       responses:
         '204':
           description: Location deleted

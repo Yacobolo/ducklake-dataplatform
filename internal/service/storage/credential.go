@@ -94,6 +94,15 @@ func (s *StorageCredentialService) Update(ctx context.Context, principal string,
 		return nil, err
 	}
 
+	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableStorageCredential, existing.ID, domain.PrivCreateStorageCredential)
+	if err != nil {
+		return nil, fmt.Errorf("check privilege: %w", err)
+	}
+	if !allowed {
+		s.logAuditDenied(ctx, principal, "UPDATE_STORAGE_CREDENTIAL", fmt.Sprintf("Denied update credential %q", name))
+		return nil, domain.ErrAccessDenied("%q lacks %s on storage credential %q", principal, domain.PrivCreateStorageCredential, name)
+	}
+
 	result, err := s.repo.Update(ctx, existing.ID, req)
 	if err != nil {
 		return nil, fmt.Errorf("update storage credential: %w", err)
@@ -113,6 +122,15 @@ func (s *StorageCredentialService) Delete(ctx context.Context, principal string,
 	existing, err := s.repo.GetByName(ctx, name)
 	if err != nil {
 		return err
+	}
+
+	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableStorageCredential, existing.ID, domain.PrivCreateStorageCredential)
+	if err != nil {
+		return fmt.Errorf("check privilege: %w", err)
+	}
+	if !allowed {
+		s.logAuditDenied(ctx, principal, "DELETE_STORAGE_CREDENTIAL", fmt.Sprintf("Denied delete credential %q", name))
+		return domain.ErrAccessDenied("%q lacks %s on storage credential %q", principal, domain.PrivCreateStorageCredential, name)
 	}
 
 	if err := s.repo.Delete(ctx, existing.ID); err != nil {
@@ -140,6 +158,15 @@ func (s *StorageCredentialService) logAudit(ctx context.Context, principal, acti
 		PrincipalName: principal,
 		Action:        action,
 		Status:        "ALLOWED",
+		OriginalSQL:   &detail,
+	})
+}
+
+func (s *StorageCredentialService) logAuditDenied(ctx context.Context, principal, action, detail string) {
+	_ = s.audit.Insert(ctx, &domain.AuditEntry{
+		PrincipalName: principal,
+		Action:        action,
+		Status:        "DENIED",
 		OriginalSQL:   &detail,
 	})
 }

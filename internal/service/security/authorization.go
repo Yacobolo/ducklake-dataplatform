@@ -253,7 +253,7 @@ func (s *AuthorizationService) checkPrivilegeForIdentities(ctx context.Context, 
 		return s.checkSchemaPrivilege(ctx, principalID, groupIDs, securableID, privilege)
 	case domain.SecurableCatalog:
 		return s.hasGrant(ctx, principalID, groupIDs, domain.SecurableCatalog, domain.CatalogID, privilege)
-	case domain.SecurableExternalLocation, domain.SecurableStorageCredential, domain.SecurableVolume:
+	case domain.SecurableExternalLocation, domain.SecurableStorageCredential, domain.SecurableVolume, domain.SecurableComputeEndpoint:
 		return s.checkCatalogScopedPrivilege(ctx, principalID, groupIDs, securableType, securableID, privilege)
 	default:
 		return false, fmt.Errorf("unknown securable type: %s", securableType)
@@ -262,33 +262,45 @@ func (s *AuthorizationService) checkPrivilegeForIdentities(ctx context.Context, 
 
 func (s *AuthorizationService) checkTablePrivilege(ctx context.Context, principalID string, groupIDs []string, tableID string, privilege string) (bool, error) {
 	var schemaID string
+	resolvedSchema := false
 
 	// Try managed table first
 	switch table, err := s.introspection.GetTable(ctx, tableID); {
 	case err == nil:
 		schemaID = table.SchemaID
+		resolvedSchema = true
 	case s.extTableRepo != nil:
 		// Try external table
 		et, extErr := s.extTableRepo.GetByID(ctx, tableID)
 		if extErr != nil {
-			return false, fmt.Errorf("lookup table %s: %w", tableID, err)
+			var extNotFound *domain.NotFoundError
+			if !errors.As(extErr, &extNotFound) {
+				return false, fmt.Errorf("lookup table %s: %w", tableID, err)
+			}
+			break
 		}
 		sch, schErr := s.introspection.GetSchemaByName(ctx, et.SchemaName)
 		if schErr != nil {
 			return false, fmt.Errorf("lookup schema %q for external table: %w", et.SchemaName, schErr)
 		}
 		schemaID = sch.ID
+		resolvedSchema = true
 	default:
-		return false, fmt.Errorf("lookup table %s: %w", tableID, err)
+		var tableNotFound *domain.NotFoundError
+		if !errors.As(err, &tableNotFound) {
+			return false, fmt.Errorf("lookup table %s: %w", tableID, err)
+		}
 	}
 
-	// USAGE gate: must have USAGE on the schema
-	hasUsage, err := s.checkSchemaPrivilege(ctx, principalID, groupIDs, schemaID, domain.PrivUsage)
-	if err != nil {
-		return false, err
-	}
-	if !hasUsage {
-		return false, nil
+	if resolvedSchema {
+		// USAGE gate: must have USAGE on the schema
+		hasUsage, err := s.checkSchemaPrivilege(ctx, principalID, groupIDs, schemaID, domain.PrivUsage)
+		if err != nil {
+			return false, err
+		}
+		if !hasUsage {
+			return false, nil
+		}
 	}
 
 	// Check grant on the table itself
@@ -297,10 +309,12 @@ func (s *AuthorizationService) checkTablePrivilege(ctx context.Context, principa
 		return ok, err
 	}
 
-	// Inherit from schema
-	ok, err = s.hasGrant(ctx, principalID, groupIDs, domain.SecurableSchema, schemaID, privilege)
-	if err != nil || ok {
-		return ok, err
+	if resolvedSchema {
+		// Inherit from schema
+		ok, err = s.hasGrant(ctx, principalID, groupIDs, domain.SecurableSchema, schemaID, privilege)
+		if err != nil || ok {
+			return ok, err
+		}
 	}
 
 	// Inherit from catalog

@@ -67,6 +67,28 @@ func newTestCatalogService(
 	)
 }
 
+func ensureCatalogLookupDefaults(repo *mockCatalogRepo, schemaName, tableName string) {
+	if repo.GetSchemaFn == nil {
+		repo.GetSchemaFn = func(_ context.Context, name string) (*domain.SchemaDetail, error) {
+			if name == "" {
+				name = schemaName
+			}
+			return &domain.SchemaDetail{SchemaID: "schema-1", Name: name, CatalogName: "lake"}, nil
+		}
+	}
+	if repo.GetTableFn == nil {
+		repo.GetTableFn = func(_ context.Context, sch, tbl string) (*domain.TableDetail, error) {
+			if sch == "" {
+				sch = schemaName
+			}
+			if tbl == "" {
+				tbl = tableName
+			}
+			return &domain.TableDetail{TableID: "table-1", SchemaName: sch, Name: tbl, CatalogName: "lake"}, nil
+		}
+	}
+}
+
 // === CreateSchema ===
 
 func TestCatalogService_CreateSchema(t *testing.T) {
@@ -342,6 +364,7 @@ func TestCatalogService_DeleteSchema(t *testing.T) {
 			if tt.setupRepo != nil {
 				tt.setupRepo(repo)
 			}
+			ensureCatalogLookupDefaults(repo, tt.schema, "")
 			audit := &mockAuditRepo{}
 			svc := newTestCatalogService(repo, auth, audit, &mockTagRepo{}, &mockStatsRepo{}, nil)
 
@@ -510,6 +533,7 @@ func TestCatalogService_CreateTable(t *testing.T) {
 			if tt.setupRepo != nil {
 				tt.setupRepo(repo)
 			}
+			ensureCatalogLookupDefaults(repo, tt.schema, tt.req.Name)
 			audit := &mockAuditRepo{}
 
 			var locations domain.ExternalLocationRepository
@@ -606,6 +630,7 @@ func TestCatalogService_UpdateTable(t *testing.T) {
 			if tt.setupRepo != nil {
 				tt.setupRepo(repo)
 			}
+			ensureCatalogLookupDefaults(repo, "main", "events")
 			audit := &mockAuditRepo{}
 			tags := &mockTagRepo{
 				ListTagsForSecurableFn: func(_ context.Context, _ string, _ string, _ *string) ([]domain.Tag, error) {
@@ -689,6 +714,7 @@ func TestCatalogService_DeleteTable(t *testing.T) {
 			if tt.setupRepo != nil {
 				tt.setupRepo(repo)
 			}
+			ensureCatalogLookupDefaults(repo, "main", "events")
 			audit := &mockAuditRepo{}
 			svc := newTestCatalogService(repo, auth, audit, &mockTagRepo{}, &mockStatsRepo{}, nil)
 

@@ -726,6 +726,8 @@ var criticalAuthzOperationIDs = map[string]bool{
 	"createComputeEndpoint":   true,
 	"updateComputeEndpoint":   true,
 	"deleteComputeEndpoint":   true,
+	"createComputeAssignment": true,
+	"deleteComputeAssignment": true,
 	"createGrant":             true,
 	"deleteGrant":             true,
 }

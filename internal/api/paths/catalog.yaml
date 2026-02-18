@@ -614,9 +614,9 @@ paths:
       x-authz:
         mode: privilege
         checks:
-          - securable_type: catalog
+          - securable_type: schema
             privilege: CREATE_SCHEMA
-            securable_id_source: catalog_sentinel
+            securable_id_source: runtime_resolved_object_id
       requestBody:
         required: true
         content:
@@ -686,9 +686,9 @@ paths:
       x-authz:
         mode: privilege
         checks:
-          - securable_type: catalog
+          - securable_type: schema
             privilege: CREATE_SCHEMA
-            securable_id_source: catalog_sentinel
+            securable_id_source: runtime_resolved_object_id
       parameters:
         - name: force
           in: query
@@ -807,9 +807,9 @@ paths:
       x-authz:
         mode: privilege
         checks:
-          - securable_type: catalog
+          - securable_type: schema
             privilege: CREATE_TABLE
-            securable_id_source: catalog_sentinel
+            securable_id_source: runtime_resolved_object_id
       requestBody:
         required: true
         content:
@@ -961,9 +961,9 @@ paths:
       x-authz:
         mode: privilege
         checks:
-          - securable_type: catalog
+          - securable_type: table
             privilege: CREATE_TABLE
-            securable_id_source: catalog_sentinel
+            securable_id_source: runtime_resolved_object_id
       requestBody:
         required: true
         content:
@@ -1041,9 +1041,9 @@ paths:
       x-authz:
         mode: privilege
         checks:
-          - securable_type: catalog
+          - securable_type: table
             privilege: CREATE_TABLE
-            securable_id_source: catalog_sentinel
+            securable_id_source: runtime_resolved_object_id
       responses:
         '204':
           description: Table deleted
@@ -1162,9 +1162,9 @@ paths:
       x-authz:
         mode: privilege
         checks:
-          - securable_type: catalog
+          - securable_type: table
             privilege: CREATE_TABLE
-            securable_id_source: catalog_sentinel
+            securable_id_source: runtime_resolved_object_id
       requestBody:
         required: true
         content:
@@ -1353,9 +1353,9 @@ paths:
       x-authz:
         mode: privilege
         checks:
-          - securable_type: catalog
+          - securable_type: schema
             privilege: CREATE_TABLE
-            securable_id_source: catalog_sentinel
+            securable_id_source: runtime_resolved_object_id
       requestBody:
         required: true
         content:
@@ -1491,9 +1491,9 @@ paths:
       x-authz:
         mode: privilege
         checks:
-          - securable_type: catalog
+          - securable_type: schema
             privilege: CREATE_TABLE
-            securable_id_source: catalog_sentinel
+            securable_id_source: runtime_resolved_object_id
       requestBody:
         required: true
         content:
@@ -1565,9 +1565,9 @@ paths:
       x-authz:
         mode: privilege
         checks:
-          - securable_type: catalog
+          - securable_type: schema
             privilege: CREATE_TABLE
-            securable_id_source: catalog_sentinel
+            securable_id_source: runtime_resolved_object_id
       responses:
         '204':
           description: View deleted
@@ -1815,9 +1815,9 @@ paths:
       x-authz:
         mode: privilege
         checks:
-          - securable_type: catalog
+          - securable_type: volume
             privilege: CREATE_VOLUME
-            securable_id_source: catalog_sentinel
+            securable_id_source: runtime_resolved_object_id
       requestBody:
         required: true
         content:
@@ -1887,9 +1887,9 @@ paths:
       x-authz:
         mode: privilege
         checks:
-          - securable_type: catalog
+          - securable_type: volume
             privilege: CREATE_VOLUME
-            securable_id_source: catalog_sentinel
+            securable_id_source: runtime_resolved_object_id
       responses:
         '204':
           description: Volume deleted

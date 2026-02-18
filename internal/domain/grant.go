@@ -33,6 +33,7 @@ const (
 	SecurableExternalLocation  = "external_location"
 	SecurableStorageCredential = "storage_credential"
 	SecurableVolume            = "volume"
+	SecurableComputeEndpoint   = "compute_endpoint"
 )
 
 // CatalogID is the sentinel securable_id for catalog-level grants.

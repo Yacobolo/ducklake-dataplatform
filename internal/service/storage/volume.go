@@ -83,6 +83,15 @@ func (s *VolumeService) Update(ctx context.Context, principal, catalogName, sche
 		return nil, err
 	}
 
+	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableVolume, existing.ID, domain.PrivCreateVolume)
+	if err != nil {
+		return nil, fmt.Errorf("check privilege: %w", err)
+	}
+	if !allowed {
+		s.logAuditDenied(ctx, principal, "UPDATE_VOLUME", fmt.Sprintf("Denied update volume %q in schema %q", name, schemaName))
+		return nil, domain.ErrAccessDenied("%q lacks %s on volume %q", principal, domain.PrivCreateVolume, name)
+	}
+
 	result, err := s.repo.Update(ctx, existing.ID, req)
 	if err != nil {
 		return nil, fmt.Errorf("update volume: %w", err)
@@ -103,6 +112,15 @@ func (s *VolumeService) Delete(ctx context.Context, principal, catalogName, sche
 	existing, err := s.repo.GetByName(ctx, schemaName, name)
 	if err != nil {
 		return err
+	}
+
+	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableVolume, existing.ID, domain.PrivCreateVolume)
+	if err != nil {
+		return fmt.Errorf("check privilege: %w", err)
+	}
+	if !allowed {
+		s.logAuditDenied(ctx, principal, "DELETE_VOLUME", fmt.Sprintf("Denied delete volume %q from schema %q", name, schemaName))
+		return domain.ErrAccessDenied("%q lacks %s on volume %q", principal, domain.PrivCreateVolume, name)
 	}
 
 	if err := s.repo.Delete(ctx, existing.ID); err != nil {
@@ -130,6 +148,15 @@ func (s *VolumeService) logAudit(ctx context.Context, principal, action, detail 
 		PrincipalName: principal,
 		Action:        action,
 		Status:        "ALLOWED",
+		OriginalSQL:   &detail,
+	})
+}
+
+func (s *VolumeService) logAuditDenied(ctx context.Context, principal, action, detail string) {
+	_ = s.audit.Insert(ctx, &domain.AuditEntry{
+		PrincipalName: principal,
+		Action:        action,
+		Status:        "DENIED",
 		OriginalSQL:   &detail,
 	})
 }
