@@ -5,7 +5,7 @@
 Duck declarative Macro
 
 - Schema file: `kinds/macro.schema.json`
-- SHA256: `a61d8df9b9de3f92207b816fc1abbb5c878fd23e7cdacf371562247f5ab297b7`
+- SHA256: `fe3a76e6ed90c61b5be605c11462910fcc8f97e58609050cd92b6e22a5b2bed6`
 
 ## Spec Fields
 

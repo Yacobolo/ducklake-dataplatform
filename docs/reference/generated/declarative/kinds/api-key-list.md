@@ -5,7 +5,7 @@
 Duck declarative APIKeyList
 
 - Schema file: `kinds/api-key-list.schema.json`
-- SHA256: `401f7cd6f970226909e93e0e383e07915e868a7ba674169be7a4fc7e57c3dc23`
+- SHA256: `90233e3aa0c3ba6174f1e8589f8cbcd962d4c7bcca5d3853ee7643099d9f9a15`
 
 ## Spec Fields
 
