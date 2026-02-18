@@ -78,7 +78,12 @@ func LoadDirectoryWithOptions(dir string, opts LoadOptions) (*DesiredState, erro
 		return nil, err
 	}
 
-	// 9. macros/
+	// 9. semantic_models/
+	if err := loadSemanticModels(dir, state, opts); err != nil {
+		return nil, err
+	}
+
+	// 10. macros/
 	if err := loadMacros(dir, state, opts); err != nil {
 		return nil, err
 	}
@@ -721,6 +726,35 @@ func loadModels(root string, state *DesiredState, opts LoadOptions) error {
 	return nil
 }
 
+// loadSemanticModels walks the semantic_models/<project>/**/*.yaml directory tree recursively.
+// The first-level directory is the project name; semantic model name is from the filename.
+// Subdirectories within a project are organizational only.
+func loadSemanticModels(root string, state *DesiredState, opts LoadOptions) error {
+	semanticDir := filepath.Join(root, "semantic_models")
+	if !dirExists(semanticDir) {
+		return nil
+	}
+
+	projectEntries, err := os.ReadDir(semanticDir)
+	if err != nil {
+		return fmt.Errorf("read semantic_models directory: %w", err)
+	}
+
+	for _, projEntry := range projectEntries {
+		if !projEntry.IsDir() {
+			continue
+		}
+		projectName := projEntry.Name()
+		projectPath := filepath.Join(semanticDir, projectName)
+
+		if err := loadSemanticModelsRecursive(projectPath, projectName, state, opts); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // loadMacros walks the macros/ directory. Each .yaml file is a macro.
 func loadMacros(root string, state *DesiredState, opts LoadOptions) error {
 	macroDir := filepath.Join(root, "macros")
@@ -804,6 +838,54 @@ func loadModelsRecursive(dir, projectName string, state *DesiredState, opts Load
 			return fmt.Errorf("%s: metadata.name %q does not match file name %q", modelFile, modelDoc.Metadata.Name, modelName)
 		}
 		state.Models = append(state.Models, ModelResource{
+			ProjectName: projectName,
+			ModelName:   modelName,
+			Spec:        modelDoc.Spec,
+		})
+	}
+
+	return nil
+}
+
+// loadSemanticModelsRecursive walks a project subtree and loads all semantic model YAML files.
+func loadSemanticModelsRecursive(dir, projectName string, state *DesiredState, opts LoadOptions) error {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return fmt.Errorf("read semantic_models directory %s: %w", dir, err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			if err := loadSemanticModelsRecursive(filepath.Join(dir, entry.Name()), projectName, state, opts); err != nil {
+				return err
+			}
+			continue
+		}
+
+		if !strings.HasSuffix(entry.Name(), ".yaml") {
+			continue
+		}
+
+		modelName := strings.TrimSuffix(entry.Name(), ".yaml")
+		modelFile := filepath.Join(dir, entry.Name())
+
+		var modelDoc SemanticModelDoc
+		found, err := loadYAMLFile(modelFile, &modelDoc, opts)
+		if err != nil {
+			return err
+		}
+		if !found {
+			continue
+		}
+
+		if err := validateDocument(modelFile, modelDoc.APIVersion, modelDoc.Kind, KindNameSemanticModel); err != nil {
+			return err
+		}
+		if modelDoc.Metadata.Name != modelName {
+			return fmt.Errorf("%s: metadata.name %q does not match file name %q", modelFile, modelDoc.Metadata.Name, modelName)
+		}
+
+		state.SemanticModels = append(state.SemanticModels, SemanticModelResource{
 			ProjectName: projectName,
 			ModelName:   modelName,
 			Spec:        modelDoc.Spec,

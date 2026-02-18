@@ -12,6 +12,9 @@ group_overrides:
     short: "Notebooks, cells, sessions, and Git repositories"
   Pipelines:
     short: "Data pipelines, jobs, and runs"
+  Semantic:
+    name: semantic
+    short: "Semantic models, metrics, and query planning"
 
 # Only commands that deviate from conventions need entries.
 # Convention defaults:
@@ -200,6 +203,15 @@ command_overrides:
 
   listQueryHistory:
     table_columns: [id, principal_name, status, duration_ms, created_at]
+
+  # === Semantic ===
+  explainMetricQuery:
+    verb: explain
+    command_path: []
+
+  runMetricQuery:
+    verb: run
+    command_path: []
 
   # === Storage: command_path override (URL uses storage-credentials/external-locations) ===
   listStorageCredentials:

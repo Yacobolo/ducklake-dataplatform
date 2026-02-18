@@ -64,6 +64,11 @@ func ExportDirectory(dir string, state *DesiredState, overwrite bool) error {
 		return err
 	}
 
+	// Semantic models.
+	if err := exportSemanticModels(dir, state); err != nil {
+		return err
+	}
+
 	// Macros.
 	if err := exportMacros(dir, state); err != nil {
 		return err
@@ -446,6 +451,24 @@ func exportModels(dir string, state *DesiredState) error {
 			Spec:       m.Spec,
 		}
 		path := filepath.Join(dir, "models", m.ProjectName, safeResourceFileName(m.ModelName))
+		if err := writeYAMLFile(path, doc); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// === Semantic Models ===
+
+func exportSemanticModels(dir string, state *DesiredState) error {
+	for _, m := range state.SemanticModels {
+		doc := SemanticModelDoc{
+			APIVersion: SupportedAPIVersion,
+			Kind:       KindNameSemanticModel,
+			Metadata:   ObjectMeta{Name: m.ModelName},
+			Spec:       m.Spec,
+		}
+		path := filepath.Join(dir, "semantic_models", m.ProjectName, safeResourceFileName(m.ModelName))
 		if err := writeYAMLFile(path, doc); err != nil {
 			return err
 		}

@@ -147,6 +147,7 @@ func run() error {
 		svc.Pipeline,
 		svc.Model,
 		svc.Macro,
+		svc.Semantic,
 	)
 
 	// Create strict handler wrapper

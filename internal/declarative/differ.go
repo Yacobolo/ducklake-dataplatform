@@ -35,6 +35,7 @@ func Diff(desired, actual *DesiredState) *Plan {
 	diffNotebooks(plan, desired.Notebooks, actual.Notebooks)
 	diffPipelines(plan, desired.Pipelines, actual.Pipelines)
 	diffModels(plan, desired.Models, actual.Models)
+	diffSemanticModels(plan, desired.SemanticModels, actual.SemanticModels)
 	diffMacros(plan, desired.Macros, actual.Macros)
 
 	plan.SortActions()
@@ -1396,6 +1397,49 @@ func diffModels(plan *Plan, desired, actual []ModelResource) {
 		k := modelKey(a.ProjectName, a.ModelName)
 		if !seen[k] {
 			addDelete(plan, KindModel, k, a)
+		}
+	}
+}
+
+// === Semantic Models ===
+
+func semanticModelKey(projectName, modelName string) string {
+	return projectName + "." + modelName
+}
+
+func diffSemanticModels(plan *Plan, desired, actual []SemanticModelResource) {
+	actualMap := make(map[string]SemanticModelResource, len(actual))
+	for _, a := range actual {
+		actualMap[semanticModelKey(a.ProjectName, a.ModelName)] = a
+	}
+
+	seen := make(map[string]bool, len(desired))
+	for _, d := range desired {
+		k := semanticModelKey(d.ProjectName, d.ModelName)
+		seen[k] = true
+		a, exists := actualMap[k]
+		if !exists {
+			addCreate(plan, KindSemanticModel, k, "", d)
+			continue
+		}
+
+		var changes []FieldDiff
+		diffField(&changes, "description", a.Spec.Description, d.Spec.Description)
+		diffField(&changes, "base_model_ref", a.Spec.BaseModelRef, d.Spec.BaseModelRef)
+		diffField(&changes, "default_time_dimension", a.Spec.DefaultTimeDimension, d.Spec.DefaultTimeDimension)
+		diffField(&changes, "tags", formatStringSlice(a.Spec.Tags), formatStringSlice(d.Spec.Tags))
+		diffField(&changes, "metrics", stableJSON(a.Spec.Metrics), stableJSON(d.Spec.Metrics))
+		diffField(&changes, "relationships", stableJSON(a.Spec.Relationships), stableJSON(d.Spec.Relationships))
+		diffField(&changes, "pre_aggregations", stableJSON(a.Spec.PreAggregations), stableJSON(d.Spec.PreAggregations))
+		if len(changes) > 0 {
+			addUpdate(plan, KindSemanticModel, k, "", d, a, changes)
+		}
+	}
+
+	for _, a := range actual {
+		k := semanticModelKey(a.ProjectName, a.ModelName)
+		if !seen[k] {
+			addDelete(plan, KindSemanticModel, k, a)
 		}
 	}
 }
