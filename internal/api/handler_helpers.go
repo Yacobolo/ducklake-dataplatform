@@ -79,7 +79,7 @@ func groupMemberToAPI(m domain.GroupMember, groupID string) GroupMember {
 func grantToAPI(g domain.PrivilegeGrant) PrivilegeGrant {
 	t := g.GrantedAt
 	pt := PrivilegeGrantPrincipalType(g.PrincipalType)
-	privilege := g.Privilege
+	privilege := PrivilegeName(g.Privilege)
 	return PrivilegeGrant{
 		Id:            &g.ID,
 		PrincipalId:   &g.PrincipalID,

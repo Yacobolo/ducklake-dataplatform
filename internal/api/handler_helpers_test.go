@@ -181,7 +181,7 @@ func TestHelpers_grantToAPI(t *testing.T) {
 	require.NotNil(t, result.SecurableId)
 	assert.Equal(t, "t-1", *result.SecurableId)
 	require.NotNil(t, result.Privilege)
-	assert.Equal(t, "SELECT", *result.Privilege)
+	assert.Equal(t, PrivilegeName("SELECT"), *result.Privilege)
 	require.NotNil(t, result.GrantedAt)
 	assert.Equal(t, helpersFixedTime, *result.GrantedAt)
 }
