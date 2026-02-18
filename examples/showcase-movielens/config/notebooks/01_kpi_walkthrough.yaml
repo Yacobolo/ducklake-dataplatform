@@ -16,13 +16,13 @@ spec:
         SELECT
           COUNT(*) AS movies_scored,
           ROUND(AVG(avg_rating), 3) AS avg_catalog_rating
-        FROM lake.main.gold_movie_scores;
+        FROM lake.main.gold_movie_scores
     - type: sql
       content: |
         SELECT
           region,
           SUM(ratings_submitted) AS submitted,
           ROUND(AVG(avg_rating_given), 3) AS avg_given
-        FROM lake.gold_user_engagement
+        FROM lake.main.gold_user_engagement
         GROUP BY region
-        ORDER BY submitted DESC;
+        ORDER BY submitted DESC

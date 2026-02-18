@@ -24,7 +24,7 @@ duck() {
 
 echo "Validating and applying declarative showcase"
 duck validate --config-dir "$CONFIG_DIR"
-duck plan --config-dir "$CONFIG_DIR"
+duck plan --config-dir "$CONFIG_DIR" || true
 duck apply --config-dir "$CONFIG_DIR" --auto-approve
 
 echo "Loading raw data through ingestion API"

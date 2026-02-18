@@ -10,6 +10,8 @@ import (
 	"duck-demo/internal/domain"
 )
 
+const syntheticViewIDPrefix = "__view__:"
+
 // AuthorizationService provides permission checking using domain repository interfaces.
 // It implements the domain.AuthorizationService interface.
 type AuthorizationService struct {
@@ -125,7 +127,7 @@ func (s *AuthorizationService) LookupTableID(ctx context.Context, tableName stri
 	if catalogName != "" && schemaName != "" && s.lookupCatalogView != nil {
 		view, lookupErr := s.lookupCatalogView(ctx, catalogName, schemaName, bareTableName)
 		if lookupErr == nil {
-			return view.ID, view.SchemaID, false, nil
+			return resolvedViewIdentity(view, bareTableName)
 		}
 
 		var notFoundErr *domain.NotFoundError
@@ -142,7 +144,7 @@ func (s *AuthorizationService) LookupTableID(ctx context.Context, tableName stri
 
 		view, viewErr := s.lookupViewBySchema(ctx, schemaName, bareTableName)
 		if viewErr == nil {
-			return view.ID, view.SchemaID, false, nil
+			return resolvedViewIdentity(view, bareTableName)
 		}
 		var viewNotFoundErr *domain.NotFoundError
 		if viewErr != nil && !errors.As(viewErr, &viewNotFoundErr) {
@@ -175,7 +177,7 @@ func (s *AuthorizationService) LookupTableID(ctx context.Context, tableName stri
 
 	view, viewErr := s.lookupViewByName(ctx, bareTableName)
 	if viewErr == nil {
-		return view.ID, view.SchemaID, false, nil
+		return resolvedViewIdentity(view, bareTableName)
 	}
 	var viewNotFoundErr *domain.NotFoundError
 	if viewErr != nil && !errors.As(viewErr, &viewNotFoundErr) {
@@ -388,11 +390,18 @@ func (s *AuthorizationService) checkTablePrivilege(ctx context.Context, principa
 		schemaResolved bool
 	)
 
-	// Try managed table first.
-	table, err := s.introspection.GetTable(ctx, tableID)
-	if err == nil {
-		schemaID = table.SchemaID
+	if parsedSchemaID, ok := schemaIDFromSyntheticViewID(tableID); ok {
+		schemaID = parsedSchemaID
 		schemaResolved = true
+	}
+
+	// Try managed table first.
+	if !schemaResolved {
+		table, err := s.introspection.GetTable(ctx, tableID)
+		if err == nil {
+			schemaID = table.SchemaID
+			schemaResolved = true
+		}
 	}
 
 	// Fall back to external table lookup.
@@ -449,6 +458,35 @@ func (s *AuthorizationService) checkTablePrivilege(ctx context.Context, principa
 
 	// Inherit from catalog
 	return s.hasGrant(ctx, principalID, groupIDs, domain.SecurableCatalog, domain.CatalogID, privilege)
+}
+
+func resolvedViewIdentity(view *domain.ViewDetail, fallbackName string) (tableID, schemaID string, isExternal bool, err error) {
+	if view == nil {
+		return "", "", false, domain.ErrNotFound("view %q not found", fallbackName)
+	}
+	if view.SchemaID == "" {
+		return "", "", false, fmt.Errorf("view %q missing schema id", fallbackName)
+	}
+	if view.ID == "" {
+		return syntheticViewID(view.SchemaID, fallbackName), view.SchemaID, false, nil
+	}
+	return view.ID, view.SchemaID, false, nil
+}
+
+func syntheticViewID(schemaID, viewName string) string {
+	return syntheticViewIDPrefix + schemaID + ":" + strings.ToLower(strings.TrimSpace(viewName))
+}
+
+func schemaIDFromSyntheticViewID(id string) (string, bool) {
+	if !strings.HasPrefix(id, syntheticViewIDPrefix) {
+		return "", false
+	}
+	rest := strings.TrimPrefix(id, syntheticViewIDPrefix)
+	parts := strings.SplitN(rest, ":", 2)
+	if len(parts) != 2 || parts[0] == "" {
+		return "", false
+	}
+	return parts[0], true
 }
 
 func (s *AuthorizationService) checkSchemaPrivilege(ctx context.Context, principalID string, groupIDs []string, schemaID string, privilege string) (bool, error) {
