@@ -1,0 +1,73 @@
+name: Docs
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GO_VERSION: "1.25.7"
+  NODE_VERSION: "20"
+  TASK_VERSION: "v3.45.4"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Docs Site
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Task
+        run: go install github.com/go-task/task/v3/cmd/task@${{ env.TASK_VERSION }}
+
+      - name: Compute VitePress base path
+        run: |
+          repo="${GITHUB_REPOSITORY#*/}"
+          if [[ "$repo" == *.github.io ]]; then
+            echo "DOCS_BASE=/" >> "$GITHUB_ENV"
+          else
+            echo "DOCS_BASE=/$repo/" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build docs
+        run: task docs:build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/.vitepress/dist
+
+  deploy:
+    name: Deploy to GitHub Pages
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+      contents: read
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

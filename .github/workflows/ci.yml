@@ -21,6 +21,10 @@ env:
   GOVULNCHECK_VERSION: "v1.1.4"
   GOLANGCI_LINT_VERSION: "v2.7"
 
+permissions:
+  contents: read
+  actions: read
+
 jobs:
   # ── Generate ────────────────────────────────────────────────
   # Shared job: produces generated code artifact once so downstream

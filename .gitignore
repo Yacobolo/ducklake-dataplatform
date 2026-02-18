@@ -53,3 +53,8 @@ pkg/cli/gen/*.gen.go
 /server
 /server_test
 /bin/
+
+# Docs site build/deps
+docs/node_modules/
+docs/.vitepress/dist/
+docs/.vitepress/cache/
