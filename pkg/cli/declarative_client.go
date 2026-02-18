@@ -177,10 +177,14 @@ func (c *APIStateClient) ReadState(ctx context.Context) (*declarative.DesiredSta
 		return nil, fmt.Errorf("read pipelines: %w", err)
 	}
 	if err := c.readMacros(ctx, state); err != nil {
-		return nil, fmt.Errorf("read macros: %w", err)
+		if !isOptionalReadError(err) {
+			return nil, fmt.Errorf("read macros: %w", err)
+		}
 	}
 	if err := c.readModels(ctx, state); err != nil {
-		return nil, fmt.Errorf("read models: %w", err)
+		if !isOptionalReadError(err) {
+			return nil, fmt.Errorf("read models: %w", err)
+		}
 	}
 
 	return state, nil
@@ -927,6 +931,9 @@ type apiModelTest struct {
 func (c *APIStateClient) listModelTests(ctx context.Context, projectName, modelName string) ([]apiModelTest, error) {
 	pages, err := c.fetchAllPages(ctx, "/models/"+projectName+"/"+modelName+"/tests")
 	if err != nil {
+		if isOptionalReadError(err) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	if len(pages) == 0 {
@@ -938,6 +945,20 @@ func (c *APIStateClient) listModelTests(ctx context.Context, projectName, modelN
 		return nil, err
 	}
 	return tests, nil
+}
+
+func isOptionalReadError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	if strings.Contains(msg, "http 404") || strings.Contains(msg, "http 405") || strings.Contains(msg, "http 501") {
+		return true
+	}
+	if strings.Contains(msg, "eof") || strings.Contains(msg, "connection reset by peer") || strings.Contains(msg, "broken pipe") {
+		return true
+	}
+	return false
 }
 
 func toDeclarativeTestSpec(test apiModelTest) declarative.TestSpec {
