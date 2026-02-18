@@ -10,41 +10,6 @@ import (
 	"duck-demo/internal/domain"
 )
 
-// Privilege constants re-exported from domain for backward compatibility.
-const (
-	PrivSelect        = domain.PrivSelect
-	PrivInsert        = domain.PrivInsert
-	PrivUpdate        = domain.PrivUpdate
-	PrivDelete        = domain.PrivDelete
-	PrivUseCatalog    = domain.PrivUseCatalog
-	PrivUseSchema     = domain.PrivUseSchema
-	PrivUsage         = domain.PrivUsage
-	PrivCreateTable   = domain.PrivCreateTable
-	PrivCreateView    = domain.PrivCreateView
-	PrivCreateSchema  = domain.PrivCreateSchema
-	PrivModify        = domain.PrivModify
-	PrivManage        = domain.PrivManage
-	PrivApplyTag      = domain.PrivApplyTag
-	PrivAllPrivileges = domain.PrivAllPrivileges
-
-	PrivCreateExternalLocation  = domain.PrivCreateExternalLocation
-	PrivCreateStorageCredential = domain.PrivCreateStorageCredential
-	PrivCreateVolume            = domain.PrivCreateVolume
-	PrivReadVolume              = domain.PrivReadVolume
-	PrivWriteVolume             = domain.PrivWriteVolume
-	PrivReadFiles               = domain.PrivReadFiles
-	PrivWriteFiles              = domain.PrivWriteFiles
-
-	SecurableCatalog           = domain.SecurableCatalog
-	SecurableSchema            = domain.SecurableSchema
-	SecurableTable             = domain.SecurableTable
-	SecurableExternalLocation  = domain.SecurableExternalLocation
-	SecurableStorageCredential = domain.SecurableStorageCredential
-	SecurableVolume            = domain.SecurableVolume
-
-	CatalogID = domain.CatalogID
-)
-
 // AuthorizationService provides permission checking using domain repository interfaces.
 // It implements the domain.AuthorizationService interface.
 type AuthorizationService struct {
@@ -325,31 +290,44 @@ func (s *AuthorizationService) checkPrivilegeForIdentities(ctx context.Context, 
 }
 
 func (s *AuthorizationService) checkTablePrivilege(ctx context.Context, principalID string, groupIDs []string, tableID string, privilege string) (bool, error) {
-	var schemaID string
+	var (
+		schemaID       string
+		schemaResolved bool
+	)
 
-	// Try managed table first
-	switch table, err := s.introspection.GetTable(ctx, tableID); {
-	case err == nil:
+	// Try managed table first.
+	table, err := s.introspection.GetTable(ctx, tableID)
+	if err == nil {
 		schemaID = table.SchemaID
-	case s.extTableRepo != nil:
-		// Try external table
+		schemaResolved = true
+	}
+
+	// Fall back to external table lookup.
+	if !schemaResolved && s.extTableRepo != nil {
 		et, extErr := s.extTableRepo.GetByID(ctx, tableID)
-		if extErr != nil {
-			return false, fmt.Errorf("lookup table %s: %w", tableID, err)
+		if extErr == nil {
+			sch, schErr := s.introspection.GetSchemaByName(ctx, et.SchemaName)
+			if schErr == nil {
+				schemaID = sch.ID
+				schemaResolved = true
+			}
 		}
-		sch, schErr := s.introspection.GetSchemaByName(ctx, et.SchemaName)
-		if schErr != nil {
-			return false, fmt.Errorf("lookup schema %q for external table: %w", et.SchemaName, schErr)
-		}
-		schemaID = sch.ID
-	default:
-		return false, fmt.Errorf("lookup table %s: %w", tableID, err)
+	}
+
+	if !schemaResolved {
+		return false, nil
 	}
 
 	// USE_SCHEMA gate: principal must be able to use the parent schema.
 	hasUseSchema, err := s.checkSchemaPrivilege(ctx, principalID, groupIDs, schemaID, domain.PrivUseSchema)
 	if err != nil {
 		return false, err
+	}
+	if !hasUseSchema {
+		hasUseSchema, err = s.checkSchemaPrivilege(ctx, principalID, groupIDs, schemaID, "USAGE")
+		if err != nil {
+			return false, err
+		}
 	}
 	if !hasUseSchema {
 		return false, nil

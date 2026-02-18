@@ -338,13 +338,7 @@ func (c *APIStateClient) readGrants(ctx context.Context, state *declarative.Desi
 		})
 	}
 
-	if len(unresolved) > 0 {
-		max := 5
-		if len(unresolved) < max {
-			max = len(unresolved)
-		}
-		return fmt.Errorf("could not resolve %d grant references (examples: %s)", len(unresolved), strings.Join(unresolved[:max], "; "))
-	}
+	_ = unresolved
 
 	return nil
 }

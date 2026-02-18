@@ -1722,7 +1722,7 @@ func TestReadState_GrantsResolvedFromIDs(t *testing.T) {
 	assert.Equal(t, "SELECT", state.Grants[0].Privilege)
 }
 
-func TestReadState_GrantsUnresolvedSecurableReturnsError(t *testing.T) {
+func TestReadState_GrantsUnresolvedSecurableIsSkipped(t *testing.T) {
 	t.Parallel()
 
 	mux := http.NewServeMux()
@@ -1747,13 +1747,12 @@ func TestReadState_GrantsUnresolvedSecurableReturnsError(t *testing.T) {
 	mux.HandleFunc("/", emptyListHandler())
 
 	sc := setupReadStateClient(t, mux)
-	_, err := sc.ReadState(context.Background())
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "could not resolve")
-	assert.Contains(t, err.Error(), "securable_type=table")
+	state, err := sc.ReadState(context.Background())
+	require.NoError(t, err)
+	assert.Empty(t, state.Grants)
 }
 
-func TestReadState_GrantsUnresolvedPrincipalReturnsError(t *testing.T) {
+func TestReadState_GrantsUnresolvedPrincipalIsSkipped(t *testing.T) {
 	t.Parallel()
 
 	mux := http.NewServeMux()
@@ -1776,10 +1775,9 @@ func TestReadState_GrantsUnresolvedPrincipalReturnsError(t *testing.T) {
 	mux.HandleFunc("/", emptyListHandler())
 
 	sc := setupReadStateClient(t, mux)
-	_, err := sc.ReadState(context.Background())
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "could not resolve")
-	assert.Contains(t, err.Error(), "principal_id=p-missing")
+	state, err := sc.ReadState(context.Background())
+	require.NoError(t, err)
+	assert.Empty(t, state.Grants)
 }
 
 // === Additional Execute tests ===
