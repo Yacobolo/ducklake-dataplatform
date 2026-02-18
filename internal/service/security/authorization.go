@@ -20,9 +20,12 @@ type AuthorizationService struct {
 	columnMasks        domain.ColumnMaskRepository
 	introspection      domain.IntrospectionRepository
 	extTableRepo       domain.ExternalTableRepository
+	viewRepo           domain.ViewRepository
 	lookupCatalogTable func(ctx context.Context, catalogName, schemaName, tableName string) (*domain.TableDetail, error)
+	lookupCatalogView  func(ctx context.Context, catalogName, schemaName, viewName string) (*domain.ViewDetail, error)
 	cacheMu            sync.RWMutex
 	privilegeCache     map[string]bool
+	viewSchemaByID     map[string]string
 }
 
 // NewAuthorizationService creates a new AuthorizationService backed by domain repositories.
@@ -44,6 +47,7 @@ func NewAuthorizationService(
 		introspection:  introspection,
 		extTableRepo:   extTableRepo,
 		privilegeCache: make(map[string]bool),
+		viewSchemaByID: make(map[string]string),
 	}
 }
 
@@ -52,12 +56,24 @@ func (s *AuthorizationService) InvalidatePrivilegeCache() {
 	s.cacheMu.Lock()
 	defer s.cacheMu.Unlock()
 	s.privilegeCache = make(map[string]bool)
+	s.viewSchemaByID = make(map[string]string)
 }
 
 // SetCatalogTableLookup configures catalog-aware table lookup for three-part
 // table references (catalog.schema.table).
 func (s *AuthorizationService) SetCatalogTableLookup(lookup func(ctx context.Context, catalogName, schemaName, tableName string) (*domain.TableDetail, error)) {
 	s.lookupCatalogTable = lookup
+}
+
+// SetCatalogViewLookup configures catalog-aware view lookup for three-part
+// object references (catalog.schema.view).
+func (s *AuthorizationService) SetCatalogViewLookup(lookup func(ctx context.Context, catalogName, schemaName, viewName string) (*domain.ViewDetail, error)) {
+	s.lookupCatalogView = lookup
+}
+
+// SetViewRepository configures direct view lookup support.
+func (s *AuthorizationService) SetViewRepository(repo domain.ViewRepository) {
+	s.viewRepo = repo
 }
 
 // resolveGroupIDs returns the set of group IDs a principal belongs to,
@@ -109,10 +125,33 @@ func (s *AuthorizationService) LookupTableID(ctx context.Context, tableName stri
 		}
 	}
 
+	if catalogName != "" && schemaName != "" && s.lookupCatalogView != nil {
+		view, lookupErr := s.lookupCatalogView(ctx, catalogName, schemaName, bareTableName)
+		if lookupErr == nil {
+			s.rememberViewSchema(view.ID, view.SchemaID)
+			return view.ID, view.SchemaID, false, nil
+		}
+
+		var notFoundErr *domain.NotFoundError
+		if !errors.As(lookupErr, &notFoundErr) {
+			return "", "", false, fmt.Errorf("lookup view %q in catalog %q: %w", bareTableName, catalogName, lookupErr)
+		}
+	}
+
 	if schemaName != "" {
 		t, lookupErr := s.lookupManagedTableBySchema(ctx, schemaName, bareTableName)
 		if lookupErr == nil {
 			return t.ID, t.SchemaID, false, nil
+		}
+
+		view, viewErr := s.lookupViewBySchema(ctx, schemaName, bareTableName)
+		if viewErr == nil {
+			s.rememberViewSchema(view.ID, view.SchemaID)
+			return view.ID, view.SchemaID, false, nil
+		}
+		var viewNotFoundErr *domain.NotFoundError
+		if viewErr != nil && !errors.As(viewErr, &viewNotFoundErr) {
+			return "", "", false, fmt.Errorf("lookup view %q in schema %q: %w", bareTableName, schemaName, viewErr)
 		}
 
 		if s.extTableRepo != nil {
@@ -139,6 +178,16 @@ func (s *AuthorizationService) LookupTableID(ctx context.Context, tableName stri
 		return "", "", false, fmt.Errorf("lookup table %q: %w", bareTableName, err)
 	}
 
+	view, viewErr := s.lookupViewByName(ctx, bareTableName)
+	if viewErr == nil {
+		s.rememberViewSchema(view.ID, view.SchemaID)
+		return view.ID, view.SchemaID, false, nil
+	}
+	var viewNotFoundErr *domain.NotFoundError
+	if viewErr != nil && !errors.As(viewErr, &viewNotFoundErr) {
+		return "", "", false, fmt.Errorf("lookup view %q: %w", bareTableName, viewErr)
+	}
+
 	// Fall back to external tables
 	if s.extTableRepo != nil {
 		et, extErr := s.extTableRepo.GetByTableName(ctx, bareTableName)
@@ -155,6 +204,56 @@ func (s *AuthorizationService) LookupTableID(ctx context.Context, tableName stri
 	}
 
 	return "", "", false, fmt.Errorf("table %q not found in catalog", bareTableName)
+}
+
+func (s *AuthorizationService) lookupViewBySchema(ctx context.Context, schemaName, viewName string) (*domain.ViewDetail, error) {
+	if s.viewRepo == nil {
+		return nil, domain.ErrNotFound("view %q not found in schema %q", viewName, schemaName)
+	}
+
+	schema, err := s.introspection.GetSchemaByName(ctx, schemaName)
+	if err != nil {
+		return nil, domain.ErrNotFound("schema %q not found", schemaName)
+	}
+
+	view, err := s.viewRepo.GetByName(ctx, schema.ID, viewName)
+	if err != nil {
+		return nil, err
+	}
+	return view, nil
+}
+
+func (s *AuthorizationService) lookupViewByName(ctx context.Context, viewName string) (*domain.ViewDetail, error) {
+	if s.viewRepo == nil {
+		return nil, domain.ErrNotFound("view %q not found", viewName)
+	}
+
+	schemas, _, err := s.introspection.ListSchemas(ctx, domain.PageRequest{MaxResults: 10000})
+	if err != nil {
+		return nil, fmt.Errorf("list schemas: %w", err)
+	}
+
+	var match *domain.ViewDetail
+	for _, schema := range schemas {
+		view, viewErr := s.viewRepo.GetByName(ctx, schema.ID, viewName)
+		if viewErr == nil {
+			if match != nil {
+				return nil, fmt.Errorf("ambiguous view name %q", viewName)
+			}
+			match = view
+			continue
+		}
+
+		var notFoundErr *domain.NotFoundError
+		if !errors.As(viewErr, &notFoundErr) {
+			return nil, viewErr
+		}
+	}
+
+	if match == nil {
+		return nil, domain.ErrNotFound("view %q not found", viewName)
+	}
+	return match, nil
 }
 
 func (s *AuthorizationService) lookupManagedTableBySchema(ctx context.Context, schemaName, tableName string) (*domain.Table, error) {
@@ -314,6 +413,14 @@ func (s *AuthorizationService) checkTablePrivilege(ctx context.Context, principa
 		}
 	}
 
+	// Fall back to view schema (recorded during LookupTableID resolution).
+	if !schemaResolved {
+		if cachedSchemaID, ok := s.viewSchemaForID(tableID); ok {
+			schemaID = cachedSchemaID
+			schemaResolved = true
+		}
+	}
+
 	if !schemaResolved {
 		return false, nil
 	}
@@ -347,6 +454,22 @@ func (s *AuthorizationService) checkTablePrivilege(ctx context.Context, principa
 
 	// Inherit from catalog
 	return s.hasGrant(ctx, principalID, groupIDs, domain.SecurableCatalog, domain.CatalogID, privilege)
+}
+
+func (s *AuthorizationService) rememberViewSchema(viewID, schemaID string) {
+	if viewID == "" || schemaID == "" {
+		return
+	}
+	s.cacheMu.Lock()
+	defer s.cacheMu.Unlock()
+	s.viewSchemaByID[viewID] = schemaID
+}
+
+func (s *AuthorizationService) viewSchemaForID(viewID string) (string, bool) {
+	s.cacheMu.RLock()
+	defer s.cacheMu.RUnlock()
+	schemaID, ok := s.viewSchemaByID[viewID]
+	return schemaID, ok
 }
 
 func (s *AuthorizationService) checkSchemaPrivilege(ctx context.Context, principalID string, groupIDs []string, schemaID string, privilege string) (bool, error) {

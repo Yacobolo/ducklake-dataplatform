@@ -146,6 +146,18 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 		}
 		return repo.GetTable(ctx, schemaName, tableName)
 	})
+	authSvc.SetViewRepository(viewRepo)
+	authSvc.SetCatalogViewLookup(func(ctx context.Context, catalogName, schemaName, viewName string) (*domain.ViewDetail, error) {
+		repo, err := catalogRepoFactory.ForCatalog(ctx, catalogName)
+		if err != nil {
+			return nil, err
+		}
+		schema, err := repo.GetSchema(ctx, schemaName)
+		if err != nil {
+			return nil, err
+		}
+		return viewRepo.GetByName(ctx, schema.SchemaID, viewName)
+	})
 
 	// === Check for empty database and log bootstrap instructions ===
 	_, total, _ := principalRepo.List(ctx, domain.PageRequest{MaxResults: 1})
