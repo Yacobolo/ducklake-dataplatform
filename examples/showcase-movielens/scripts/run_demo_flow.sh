@@ -54,13 +54,45 @@ if command -v jq >/dev/null 2>&1; then
     duck --output json models steps list "$RUN_ID"
     exit 1
   fi
+
+  FRESHNESS_JSON="$(duck --output json models freshness check-model-freshness movielens gold_user_engagement)"
+  IS_FRESH="$(printf "%s" "$FRESHNESS_JSON" | jq -r '.is_fresh')"
+  if [[ "$IS_FRESH" != "true" ]]; then
+    echo "freshness check failed for movielens.gold_user_engagement" >&2
+    printf "%s\n" "$FRESHNESS_JSON" >&2
+    exit 1
+  fi
 else
   duck models model-runs trigger-model-run --project-name movielens --model-names "$MODEL_NAMES" --target-catalog lake --target-schema main
   sleep 3
 fi
 
 echo "Triggering pipeline run"
-duck pipelines runs trigger movielens_daily
+if command -v jq >/dev/null 2>&1; then
+  PIPELINE_JSON="$(duck --output json pipelines runs trigger movielens_daily)"
+  PIPELINE_RUN_ID="$(printf "%s" "$PIPELINE_JSON" | jq -r '.id')"
+  if [[ -z "$PIPELINE_RUN_ID" || "$PIPELINE_RUN_ID" == "null" ]]; then
+    echo "failed to parse pipeline run id" >&2
+    exit 1
+  fi
+
+  PIPELINE_STATUS="PENDING"
+  for _ in {1..40}; do
+    PIPELINE_STATUS="$(duck --output json pipelines runs get "$PIPELINE_RUN_ID" | jq -r '.status')"
+    if [[ "$PIPELINE_STATUS" == "SUCCESS" || "$PIPELINE_STATUS" == "FAILED" || "$PIPELINE_STATUS" == "CANCELLED" ]]; then
+      break
+    fi
+    sleep 1
+  done
+
+  if [[ "$PIPELINE_STATUS" != "SUCCESS" ]]; then
+    echo "pipeline run failed with status: $PIPELINE_STATUS" >&2
+    duck --output json pipelines runs list-job-runs "$PIPELINE_RUN_ID"
+    exit 1
+  fi
+else
+  duck pipelines runs trigger movielens_daily
+fi
 
 echo "Spot-checking curated outputs"
 duck query execute --sql "SELECT COUNT(*) AS total_rows FROM lake.main.gold_movie_scores"
