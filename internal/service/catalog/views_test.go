@@ -94,7 +94,11 @@ func TestViewService_CreateView(t *testing.T) {
 	})
 
 	t.Run("access_denied", func(t *testing.T) {
-		catalog := &mockCatalogRepo{}
+		catalog := &mockCatalogRepo{
+			GetSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
+				return schema, nil
+			},
+		}
 		auth := &mockAuthService{
 			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ string, _ string) (bool, error) {
 				return false, nil
@@ -111,7 +115,11 @@ func TestViewService_CreateView(t *testing.T) {
 	})
 
 	t.Run("auth_check_error", func(t *testing.T) {
-		catalog := &mockCatalogRepo{}
+		catalog := &mockCatalogRepo{
+			GetSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
+				return schema, nil
+			},
+		}
 		auth := &mockAuthService{
 			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ string, _ string) (bool, error) {
 				return false, errTest
@@ -375,13 +383,18 @@ func TestViewService_DeleteView(t *testing.T) {
 	})
 
 	t.Run("access_denied", func(t *testing.T) {
+		catalog := &mockCatalogRepo{
+			GetSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
+				return schema, nil
+			},
+		}
 		auth := &mockAuthService{
 			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ string, _ string) (bool, error) {
 				return false, nil
 			},
 		}
 
-		svc := newTestViewService(&mockViewRepo{}, &mockCatalogRepo{}, auth, &mockAuditRepo{})
+		svc := newTestViewService(&mockViewRepo{}, catalog, auth, &mockAuditRepo{})
 		err := svc.DeleteView(ctxWithPrincipal("analyst"), "lake", "analyst", "main", "v_test")
 
 		require.Error(t, err)

@@ -11,7 +11,10 @@ import (
 )
 
 func newValidateCmd(_ *gen.Client) *cobra.Command {
-	var configDir string
+	var (
+		configDir          string
+		allowUnknownFields bool
+	)
 
 	cmd := &cobra.Command{
 		Use:   "validate",
@@ -19,7 +22,9 @@ func newValidateCmd(_ *gen.Client) *cobra.Command {
 		Long:  "Reads YAML configuration files and checks them for errors without contacting the server.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			// 1. Load desired state from YAML files.
-			desired, err := declarative.LoadDirectory(configDir)
+			desired, err := declarative.LoadDirectoryWithOptions(configDir, declarative.LoadOptions{
+				AllowUnknownFields: allowUnknownFields,
+			})
 			if err != nil {
 				return fmt.Errorf("load config: %w", err)
 			}
@@ -58,6 +63,7 @@ func newValidateCmd(_ *gen.Client) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&configDir, "config-dir", "./duck-config", "Path to configuration directory")
+	cmd.Flags().BoolVar(&allowUnknownFields, "allow-unknown-fields", false, "Allow unknown YAML fields in declarative config")
 
 	return cmd
 }

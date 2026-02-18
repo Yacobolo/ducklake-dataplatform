@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 
 	"duck-demo/internal/domain"
 )
@@ -20,6 +21,8 @@ type AuthorizationService struct {
 	introspection      domain.IntrospectionRepository
 	extTableRepo       domain.ExternalTableRepository
 	lookupCatalogTable func(ctx context.Context, catalogName, schemaName, tableName string) (*domain.TableDetail, error)
+	cacheMu            sync.RWMutex
+	privilegeCache     map[string]bool
 }
 
 // NewAuthorizationService creates a new AuthorizationService backed by domain repositories.
@@ -33,14 +36,22 @@ func NewAuthorizationService(
 	extTableRepo domain.ExternalTableRepository,
 ) *AuthorizationService {
 	return &AuthorizationService{
-		principals:    principals,
-		groups:        groups,
-		grants:        grants,
-		rowFilters:    rowFilters,
-		columnMasks:   columnMasks,
-		introspection: introspection,
-		extTableRepo:  extTableRepo,
+		principals:     principals,
+		groups:         groups,
+		grants:         grants,
+		rowFilters:     rowFilters,
+		columnMasks:    columnMasks,
+		introspection:  introspection,
+		extTableRepo:   extTableRepo,
+		privilegeCache: make(map[string]bool),
 	}
+}
+
+// InvalidatePrivilegeCache clears memoized privilege decisions.
+func (s *AuthorizationService) InvalidatePrivilegeCache() {
+	s.cacheMu.Lock()
+	defer s.cacheMu.Unlock()
+	s.privilegeCache = make(map[string]bool)
 }
 
 // SetCatalogTableLookup configures catalog-aware table lookup for three-part
@@ -226,6 +237,14 @@ func (s *AuthorizationService) hasGrant(ctx context.Context, principalID string,
 //  3. Walk up hierarchy: table -> schema -> catalog
 //  4. ALL_PRIVILEGES expansion
 func (s *AuthorizationService) CheckPrivilege(ctx context.Context, principalName string, securableType string, securableID string, privilege string) (bool, error) {
+	cacheKey := principalName + "|" + securableType + "|" + securableID + "|" + privilege
+	s.cacheMu.RLock()
+	if cached, ok := s.privilegeCache[cacheKey]; ok {
+		s.cacheMu.RUnlock()
+		return cached, nil
+	}
+	s.cacheMu.RUnlock()
+
 	principal, err := s.principals.GetByName(ctx, principalName)
 	if err != nil {
 		return false, fmt.Errorf("principal %q not found", principalName)
@@ -233,6 +252,9 @@ func (s *AuthorizationService) CheckPrivilege(ctx context.Context, principalName
 
 	// Admin bypass
 	if principal.IsAdmin {
+		s.cacheMu.Lock()
+		s.privilegeCache[cacheKey] = true
+		s.cacheMu.Unlock()
 		return true, nil
 	}
 
@@ -242,7 +264,14 @@ func (s *AuthorizationService) CheckPrivilege(ctx context.Context, principalName
 		return false, err
 	}
 
-	return s.checkPrivilegeForIdentities(ctx, principal.ID, groupIDs, securableType, securableID, privilege)
+	allowed, err := s.checkPrivilegeForIdentities(ctx, principal.ID, groupIDs, securableType, securableID, privilege)
+	if err != nil {
+		return false, err
+	}
+	s.cacheMu.Lock()
+	s.privilegeCache[cacheKey] = allowed
+	s.cacheMu.Unlock()
+	return allowed, nil
 }
 
 func (s *AuthorizationService) checkPrivilegeForIdentities(ctx context.Context, principalID string, groupIDs []string, securableType string, securableID string, privilege string) (bool, error) {
@@ -261,46 +290,47 @@ func (s *AuthorizationService) checkPrivilegeForIdentities(ctx context.Context, 
 }
 
 func (s *AuthorizationService) checkTablePrivilege(ctx context.Context, principalID string, groupIDs []string, tableID string, privilege string) (bool, error) {
-	var schemaID string
-	resolvedSchema := false
+	var (
+		schemaID       string
+		schemaResolved bool
+	)
 
-	// Try managed table first
-	switch table, err := s.introspection.GetTable(ctx, tableID); {
-	case err == nil:
+	// Try managed table first.
+	table, err := s.introspection.GetTable(ctx, tableID)
+	if err == nil {
 		schemaID = table.SchemaID
-		resolvedSchema = true
-	case s.extTableRepo != nil:
-		// Try external table
+		schemaResolved = true
+	}
+
+	// Fall back to external table lookup.
+	if !schemaResolved && s.extTableRepo != nil {
 		et, extErr := s.extTableRepo.GetByID(ctx, tableID)
-		if extErr != nil {
-			var extNotFound *domain.NotFoundError
-			if !errors.As(extErr, &extNotFound) {
-				return false, fmt.Errorf("lookup table %s: %w", tableID, err)
+		if extErr == nil {
+			sch, schErr := s.introspection.GetSchemaByName(ctx, et.SchemaName)
+			if schErr == nil {
+				schemaID = sch.ID
+				schemaResolved = true
 			}
-			break
-		}
-		sch, schErr := s.introspection.GetSchemaByName(ctx, et.SchemaName)
-		if schErr != nil {
-			return false, fmt.Errorf("lookup schema %q for external table: %w", et.SchemaName, schErr)
-		}
-		schemaID = sch.ID
-		resolvedSchema = true
-	default:
-		var tableNotFound *domain.NotFoundError
-		if !errors.As(err, &tableNotFound) {
-			return false, fmt.Errorf("lookup table %s: %w", tableID, err)
 		}
 	}
 
-	if resolvedSchema {
-		// USAGE gate: must have USAGE on the schema
-		hasUsage, err := s.checkSchemaPrivilege(ctx, principalID, groupIDs, schemaID, domain.PrivUsage)
+	if !schemaResolved {
+		return false, nil
+	}
+
+	// USE_SCHEMA gate: principal must be able to use the parent schema.
+	hasUseSchema, err := s.checkSchemaPrivilege(ctx, principalID, groupIDs, schemaID, domain.PrivUseSchema)
+	if err != nil {
+		return false, err
+	}
+	if !hasUseSchema {
+		hasUseSchema, err = s.checkSchemaPrivilege(ctx, principalID, groupIDs, schemaID, "USAGE")
 		if err != nil {
 			return false, err
 		}
-		if !hasUsage {
-			return false, nil
-		}
+	}
+	if !hasUseSchema {
+		return false, nil
 	}
 
 	// Check grant on the table itself
@@ -309,7 +339,7 @@ func (s *AuthorizationService) checkTablePrivilege(ctx context.Context, principa
 		return ok, err
 	}
 
-	if resolvedSchema {
+	if schemaResolved {
 		// Inherit from schema
 		ok, err = s.hasGrant(ctx, principalID, groupIDs, domain.SecurableSchema, schemaID, privilege)
 		if err != nil || ok {

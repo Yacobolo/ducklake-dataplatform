@@ -185,6 +185,38 @@ PaginatedGroupMembers:
       pattern: '^\S+$'
       example: eyJpZCI6MTB9
 
+PrivilegeName:
+  description: Canonical privilege name.
+  type: string
+  maxLength: 64
+  example: SELECT
+  enum:
+    - SELECT
+    - INSERT
+    - UPDATE
+    - DELETE
+    - USE_CATALOG
+    - USE_SCHEMA
+    - USAGE
+    - CREATE_TABLE
+    - CREATE_VIEW
+    - CREATE_SCHEMA
+    - CREATE_EXTERNAL_LOCATION
+    - CREATE_STORAGE_CREDENTIAL
+    - CREATE_VOLUME
+    - READ_VOLUME
+    - WRITE_VOLUME
+    - READ_FILES
+    - WRITE_FILES
+    - MODIFY
+    - MANAGE
+    - APPLY_TAG
+    - MANAGE_TAGS
+    - MANAGE_POLICIES
+    - MANAGE_COMPUTE
+    - MANAGE_PIPELINES
+    - ALL_PRIVILEGES
+
 PrivilegeGrant:
   description: A privilege grant linking a principal to a securable resource with a specific permission.
   type: object
@@ -215,9 +247,8 @@ PrivilegeGrant:
       maxLength: 36
       example: "550e8400-e29b-41d4-a716-446655440000"
     privilege:
-      type: string
-      maxLength: 64
-      pattern: '^\S+$'
+      allOf:
+        - $ref: '#/PrivilegeName'
       example: SELECT
     granted_by:
       type: string
@@ -258,9 +289,8 @@ CreateGrantRequest:
       maxLength: 36
       example: "550e8400-e29b-41d4-a716-446655440000"
     privilege:
-      type: string
-      maxLength: 64
-      pattern: '^\S+$'
+      allOf:
+        - $ref: '#/PrivilegeName'
       example: SELECT
 
 PaginatedGrants:

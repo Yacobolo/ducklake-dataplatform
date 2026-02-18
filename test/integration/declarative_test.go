@@ -37,7 +37,9 @@ func writeYAML(t *testing.T, dir, relPath, content string) {
 func makeStateClient(t *testing.T, serverURL, apiKey string) *cli.APIStateClient {
 	t.Helper()
 	client := gen.NewClient(serverURL, apiKey, "")
-	return cli.NewAPIStateClient(client)
+	return cli.NewAPIStateClientWithOptions(client, cli.APIStateClientOptions{
+		CompatibilityMode: cli.CapabilityCompatibilityLegacy,
+	})
 }
 
 // ---------------------------------------------------------------------------
@@ -108,6 +110,13 @@ func actionsOfKindAndOp(plan *declarative.Plan, kind declarative.ResourceKind, o
 		}
 	}
 	return result
+}
+
+func executeActions(t *testing.T, stateClient *cli.APIStateClient, actions []declarative.Action) {
+	t.Helper()
+	for _, action := range actions {
+		require.NoError(t, stateClient.Execute(context.Background(), action), "execute %s %s", action.Operation, action.ResourceName)
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -828,4 +837,175 @@ func TestDeclarative_GrantLifecycle(t *testing.T) {
 	grantDeletes := actionsOfKindAndOp(plan, declarative.KindPrivilegeGrant, declarative.OpDelete)
 	assert.Empty(t, grantCreates, "no new grants should be needed")
 	assert.Empty(t, grantDeletes, "no grants should be deleted")
+}
+
+// ---------------------------------------------------------------------------
+// TestDeclarative_ModelLifecycle — full declarative model lifecycle against
+// fully wired model services.
+// ---------------------------------------------------------------------------
+
+func TestDeclarative_ModelLifecycle(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{WithModels: true})
+	stateClient := makeStateClient(t, env.Server.URL, env.Keys.Admin)
+
+	dir := t.TempDir()
+	writeYAML(t, dir, "models/analytics/stg_orders.yaml", `apiVersion: duck/v1
+kind: Model
+metadata:
+  name: stg_orders
+spec:
+  materialization: INCREMENTAL
+  description: "staging orders"
+  sql: |
+    SELECT 1 AS order_id, 'active' AS status
+  contract:
+    enforce: false
+  config:
+    unique_key: [order_id]
+    incremental_strategy: delete+insert
+    on_schema_change: fail
+  tests:
+    - name: not_null_order_id
+      type: not_null
+      column: order_id
+`)
+
+	desired, err := declarative.LoadDirectory(dir)
+	require.NoError(t, err)
+	require.Empty(t, declarative.Validate(desired))
+
+	actual, err := stateClient.ReadState(context.Background())
+	require.NoError(t, err)
+
+	plan := declarative.Diff(desired, actual)
+	modelCreates := actionsOfKindAndOp(plan, declarative.KindModel, declarative.OpCreate)
+	require.Len(t, modelCreates, 1, "expected one model create")
+	assert.Equal(t, "analytics.stg_orders", modelCreates[0].ResourceName)
+	executeActions(t, stateClient, modelCreates)
+
+	actualAfterCreate, err := stateClient.ReadState(context.Background())
+	require.NoError(t, err)
+	replan := declarative.Diff(desired, actualAfterCreate)
+	assert.Empty(t, actionsOfKindAndOp(replan, declarative.KindModel, declarative.OpCreate), "model should be idempotent after create")
+	assert.Empty(t, actionsOfKindAndOp(replan, declarative.KindModel, declarative.OpUpdate), "model should be idempotent after create")
+
+	writeYAML(t, dir, "models/analytics/stg_orders.yaml", `apiVersion: duck/v1
+kind: Model
+metadata:
+  name: stg_orders
+spec:
+  materialization: INCREMENTAL
+  description: "staging orders updated"
+  sql: |
+    SELECT 1 AS order_id, 'active' AS status, 10.0 AS amount
+  contract:
+    enforce: false
+  config:
+    unique_key: [order_id]
+    incremental_strategy: merge
+    on_schema_change: ignore
+  tests:
+    - name: not_null_order_id
+      type: not_null
+      column: order_id
+`)
+
+	desiredUpdated, err := declarative.LoadDirectory(dir)
+	require.NoError(t, err)
+	planUpdate := declarative.Diff(desiredUpdated, actualAfterCreate)
+	modelUpdates := actionsOfKindAndOp(planUpdate, declarative.KindModel, declarative.OpUpdate)
+	require.Len(t, modelUpdates, 1)
+	executeActions(t, stateClient, modelUpdates)
+
+	actualAfterUpdate, err := stateClient.ReadState(context.Background())
+	require.NoError(t, err)
+	replanUpdate := declarative.Diff(desiredUpdated, actualAfterUpdate)
+	assert.Empty(t, actionsOfKindAndOp(replanUpdate, declarative.KindModel, declarative.OpCreate))
+	assert.Empty(t, actionsOfKindAndOp(replanUpdate, declarative.KindModel, declarative.OpUpdate))
+
+	require.NoError(t, os.Remove(filepath.Join(dir, "models", "analytics", "stg_orders.yaml")))
+	desiredDeleted, err := declarative.LoadDirectory(dir)
+	require.NoError(t, err)
+	planDelete := declarative.Diff(desiredDeleted, actualAfterUpdate)
+	modelDeletes := actionsOfKindAndOp(planDelete, declarative.KindModel, declarative.OpDelete)
+	require.Len(t, modelDeletes, 1)
+	executeActions(t, stateClient, modelDeletes)
+
+	actualAfterDelete, err := stateClient.ReadState(context.Background())
+	require.NoError(t, err)
+	replanDelete := declarative.Diff(desiredDeleted, actualAfterDelete)
+	assert.Empty(t, actionsOfKindAndOp(replanDelete, declarative.KindModel, declarative.OpDelete))
+}
+
+func TestDeclarative_MacroLifecycle(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{WithModels: true})
+	stateClient := makeStateClient(t, env.Server.URL, env.Keys.Admin)
+
+	dir := t.TempDir()
+	writeYAML(t, dir, "macros/fmt_money.yaml", `apiVersion: duck/v1
+kind: Macro
+metadata:
+  name: fmt_money
+spec:
+  macro_type: SCALAR
+  parameters: [amount]
+  body: amount/100.0
+  project_name: analytics
+  visibility: project
+  status: ACTIVE
+`)
+
+	desired, err := declarative.LoadDirectory(dir)
+	require.NoError(t, err)
+	require.Empty(t, declarative.Validate(desired))
+
+	actual, err := stateClient.ReadState(context.Background())
+	require.NoError(t, err)
+	plan := declarative.Diff(desired, actual)
+	macroCreates := actionsOfKindAndOp(plan, declarative.KindMacro, declarative.OpCreate)
+	require.Len(t, macroCreates, 1)
+	executeActions(t, stateClient, macroCreates)
+
+	actualAfterCreate, err := stateClient.ReadState(context.Background())
+	require.NoError(t, err)
+	replan := declarative.Diff(desired, actualAfterCreate)
+	assert.Empty(t, actionsOfKindAndOp(replan, declarative.KindMacro, declarative.OpCreate))
+	assert.Empty(t, actionsOfKindAndOp(replan, declarative.KindMacro, declarative.OpUpdate))
+
+	writeYAML(t, dir, "macros/fmt_money.yaml", `apiVersion: duck/v1
+kind: Macro
+metadata:
+  name: fmt_money
+spec:
+  macro_type: SCALAR
+  parameters: [amount]
+  body: round(amount/100.0, 2)
+  project_name: analytics
+  visibility: project
+  status: DEPRECATED
+`)
+	desiredUpdated, err := declarative.LoadDirectory(dir)
+	require.NoError(t, err)
+	planUpdate := declarative.Diff(desiredUpdated, actualAfterCreate)
+	macroUpdates := actionsOfKindAndOp(planUpdate, declarative.KindMacro, declarative.OpUpdate)
+	require.Len(t, macroUpdates, 1)
+	executeActions(t, stateClient, macroUpdates)
+
+	actualAfterUpdate, err := stateClient.ReadState(context.Background())
+	require.NoError(t, err)
+	replanUpdate := declarative.Diff(desiredUpdated, actualAfterUpdate)
+	assert.Empty(t, actionsOfKindAndOp(replanUpdate, declarative.KindMacro, declarative.OpUpdate))
+
+	require.NoError(t, os.Remove(filepath.Join(dir, "macros", "fmt_money.yaml")))
+	desiredDeleted, err := declarative.LoadDirectory(dir)
+	require.NoError(t, err)
+	planDelete := declarative.Diff(desiredDeleted, actualAfterUpdate)
+	macroDeletes := actionsOfKindAndOp(planDelete, declarative.KindMacro, declarative.OpDelete)
+	require.Len(t, macroDeletes, 1)
+	executeActions(t, stateClient, macroDeletes)
+
+	actualAfterDelete, err := stateClient.ReadState(context.Background())
+	require.NoError(t, err)
+	replanDelete := declarative.Diff(desiredDeleted, actualAfterDelete)
+	assert.Empty(t, actionsOfKindAndOp(replanDelete, declarative.KindMacro, declarative.OpDelete))
 }

@@ -55,6 +55,7 @@ jobs:
             internal/api/server.gen.go
             internal/db/dbstore/
             pkg/cli/gen/
+            schemas/declarative/
           retention-days: 1
 
   # ── Lint ────────────────────────────────────────────────────
@@ -75,6 +76,8 @@ jobs:
         run: go install github.com/go-task/task/v3/cmd/task@${{ env.TASK_VERSION }}
       - name: Lint OpenAPI spec
         run: task lint:api
+      - name: Verify declarative schema artifacts
+        run: task verify:declarative-schema
 
   # ── Tests ───────────────────────────────────────────────────
   arch:
@@ -93,6 +96,21 @@ jobs:
           go install gotest.tools/gotestsum@${{ env.GOTESTSUM_VERSION }}
       - name: Run architecture governance tests
         run: task test:arch
+
+  security-governance:
+    name: Security Governance
+    needs: generate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Install Task
+        run: go install github.com/go-task/task/v3/cmd/task@${{ env.TASK_VERSION }}
+      - name: Validate declarative security governance
+        run: go test ./internal/declarative -run "Preset|Binding|Grant"
 
   test:
     name: Tests (${{ matrix.suite }})

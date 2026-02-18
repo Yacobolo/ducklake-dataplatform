@@ -3,6 +3,7 @@
 package declarative
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -16,7 +17,7 @@ func Diff(desired, actual *DesiredState) *Plan {
 	// Diff each resource type. Order doesn't matter here — SortActions handles ordering later.
 	diffPrincipals(plan, desired.Principals, actual.Principals)
 	diffGroups(plan, desired.Groups, actual.Groups)
-	diffGrants(plan, desired.Grants, actual.Grants)
+	diffGrants(plan, effectiveGrants(desired), effectiveGrants(actual))
 	diffCatalogs(plan, desired.Catalogs, actual.Catalogs)
 	diffSchemas(plan, desired.Schemas, actual.Schemas)
 	diffTables(plan, desired.Tables, actual.Tables)
@@ -246,19 +247,15 @@ func diffGroupMembers(plan *Plan, groupName string, desired, actual []MemberRef)
 
 // === Grants ===
 
-func grantKey(g GrantSpec) string {
-	return fmt.Sprintf("%s|%s|%s|%s|%s", g.Principal, g.PrincipalType, g.SecurableType, g.Securable, g.Privilege)
-}
-
 func diffGrants(plan *Plan, desired, actual []GrantSpec) {
 	actualMap := make(map[string]GrantSpec, len(actual))
 	for _, a := range actual {
-		actualMap[grantKey(a)] = a
+		actualMap[grantIdentityKey(a)] = a
 	}
 
 	seen := make(map[string]bool, len(desired))
 	for _, d := range desired {
-		k := grantKey(d)
+		k := grantIdentityKey(d)
 		seen[k] = true
 		if _, exists := actualMap[k]; !exists {
 			name := fmt.Sprintf("%s:%s on %s.%s", d.PrincipalType, d.Principal, d.SecurableType, d.Securable)
@@ -267,7 +264,7 @@ func diffGrants(plan *Plan, desired, actual []GrantSpec) {
 	}
 
 	for _, a := range actual {
-		if !seen[grantKey(a)] {
+		if !seen[grantIdentityKey(a)] {
 			name := fmt.Sprintf("%s:%s on %s.%s", a.PrincipalType, a.Principal, a.SecurableType, a.Securable)
 			addDelete(plan, KindPrivilegeGrant, name, a)
 		}
@@ -1176,6 +1173,190 @@ func formatStringSlice(s []string) string {
 	return strings.Join(sorted, ",")
 }
 
+func normalizeIncrementalStrategy(strategy string) string {
+	value := strings.ToLower(strings.TrimSpace(strategy))
+	if value == "delete+insert" {
+		return "delete_insert"
+	}
+	return value
+}
+
+func normalizeOnSchemaChange(value string) string {
+	return strings.ToLower(strings.TrimSpace(value))
+}
+
+func normalizeMacroType(value string) string {
+	v := strings.ToUpper(strings.TrimSpace(value))
+	if v == "" {
+		return "SCALAR"
+	}
+	return v
+}
+
+func normalizeMacroVisibility(value string) string {
+	v := strings.ToLower(strings.TrimSpace(value))
+	if v == "" {
+		return "project"
+	}
+	return v
+}
+
+func normalizeMacroStatus(value string) string {
+	v := strings.ToUpper(strings.TrimSpace(value))
+	if v == "" {
+		return "ACTIVE"
+	}
+	return v
+}
+
+func normalizeModelConfig(spec ModelSpec) *ModelConfigSpec {
+	if spec.Config == nil {
+		if strings.EqualFold(spec.Materialization, "INCREMENTAL") {
+			return &ModelConfigSpec{
+				IncrementalStrategy: "merge",
+				OnSchemaChange:      "ignore",
+			}
+		}
+		return nil
+	}
+
+	normalized := &ModelConfigSpec{
+		UniqueKey:           append([]string(nil), spec.Config.UniqueKey...),
+		IncrementalStrategy: normalizeIncrementalStrategy(spec.Config.IncrementalStrategy),
+		OnSchemaChange:      normalizeOnSchemaChange(spec.Config.OnSchemaChange),
+	}
+
+	if strings.EqualFold(spec.Materialization, "INCREMENTAL") {
+		if normalized.IncrementalStrategy == "" {
+			normalized.IncrementalStrategy = "merge"
+		}
+		if normalized.OnSchemaChange == "" {
+			normalized.OnSchemaChange = "ignore"
+		}
+	}
+
+	if len(normalized.UniqueKey) > 0 {
+		sort.Strings(normalized.UniqueKey)
+	}
+
+	if len(normalized.UniqueKey) == 0 && normalized.IncrementalStrategy == "" && normalized.OnSchemaChange == "" {
+		return nil
+	}
+
+	return normalized
+}
+
+func stableJSON(value interface{}) string {
+	if value == nil {
+		return ""
+	}
+	data, err := json.Marshal(value)
+	if err != nil {
+		return fmt.Sprintf("%v", value)
+	}
+	return string(data)
+}
+
+func formatContract(contract *ContractSpec) string {
+	if contract == nil {
+		return ""
+	}
+	type normalizedColumn struct {
+		Name     string `json:"name"`
+		Type     string `json:"type"`
+		Nullable bool   `json:"nullable"`
+	}
+
+	cols := make([]normalizedColumn, len(contract.Columns))
+	for i, col := range contract.Columns {
+		cols[i] = normalizedColumn(col)
+	}
+	sort.Slice(cols, func(i, j int) bool {
+		if cols[i].Name != cols[j].Name {
+			return cols[i].Name < cols[j].Name
+		}
+		if cols[i].Type != cols[j].Type {
+			return cols[i].Type < cols[j].Type
+		}
+		return !cols[i].Nullable && cols[j].Nullable
+	})
+
+	return stableJSON(struct {
+		Enforce bool               `json:"enforce"`
+		Columns []normalizedColumn `json:"columns,omitempty"`
+	}{
+		Enforce: contract.Enforce,
+		Columns: cols,
+	})
+}
+
+func formatFreshness(freshness *FreshnessSpecYAML) string {
+	if freshness == nil {
+		return ""
+	}
+	if freshness.MaxLagSeconds == 0 && freshness.CronSchedule == "" {
+		return ""
+	}
+	return stableJSON(struct {
+		MaxLagSeconds int64  `json:"max_lag_seconds,omitempty"`
+		CronSchedule  string `json:"cron_schedule,omitempty"`
+	}{
+		MaxLagSeconds: freshness.MaxLagSeconds,
+		CronSchedule:  freshness.CronSchedule,
+	})
+}
+
+func formatModelTests(tests []TestSpec) string {
+	if len(tests) == 0 {
+		return ""
+	}
+	type normalizedTest struct {
+		Name     string   `json:"name"`
+		Type     string   `json:"type"`
+		Column   string   `json:"column,omitempty"`
+		Values   []string `json:"values,omitempty"`
+		ToModel  string   `json:"to_model,omitempty"`
+		ToColumn string   `json:"to_column,omitempty"`
+		SQL      string   `json:"sql,omitempty"`
+	}
+
+	normalized := make([]normalizedTest, len(tests))
+	for i, test := range tests {
+		values := append([]string(nil), test.Values...)
+		sort.Strings(values)
+		normalized[i] = normalizedTest{
+			Name:     test.Name,
+			Type:     test.Type,
+			Column:   test.Column,
+			Values:   values,
+			ToModel:  test.ToModel,
+			ToColumn: test.ToColumn,
+			SQL:      test.SQL,
+		}
+	}
+
+	sort.Slice(normalized, func(i, j int) bool {
+		if normalized[i].Name != normalized[j].Name {
+			return normalized[i].Name < normalized[j].Name
+		}
+		if normalized[i].Type != normalized[j].Type {
+			return normalized[i].Type < normalized[j].Type
+		}
+		if normalized[i].Column != normalized[j].Column {
+			return normalized[i].Column < normalized[j].Column
+		}
+		if normalized[i].ToModel != normalized[j].ToModel {
+			return normalized[i].ToModel < normalized[j].ToModel
+		}
+		if normalized[i].ToColumn != normalized[j].ToColumn {
+			return normalized[i].ToColumn < normalized[j].ToColumn
+		}
+		return normalized[i].SQL < normalized[j].SQL
+	})
+
+	return stableJSON(normalized)
+}
+
 // === Models ===
 
 func modelKey(projectName, modelName string) string {
@@ -1202,6 +1383,10 @@ func diffModels(plan *Plan, desired, actual []ModelResource) {
 		diffField(&changes, "description", a.Spec.Description, d.Spec.Description)
 		diffField(&changes, "sql", a.Spec.SQL, d.Spec.SQL)
 		diffField(&changes, "tags", formatStringSlice(a.Spec.Tags), formatStringSlice(d.Spec.Tags))
+		diffField(&changes, "config", stableJSON(normalizeModelConfig(a.Spec)), stableJSON(normalizeModelConfig(d.Spec)))
+		diffField(&changes, "contract", formatContract(a.Spec.Contract), formatContract(d.Spec.Contract))
+		diffField(&changes, "tests", formatModelTests(a.Spec.Tests), formatModelTests(d.Spec.Tests))
+		diffField(&changes, "freshness", formatFreshness(a.Spec.Freshness), formatFreshness(d.Spec.Freshness))
 		if len(changes) > 0 {
 			addUpdate(plan, KindModel, k, "", d, a, changes)
 		}
@@ -1232,10 +1417,17 @@ func diffMacros(plan *Plan, desired, actual []MacroResource) {
 			continue
 		}
 		var changes []FieldDiff
-		diffField(&changes, "macro_type", a.Spec.MacroType, d.Spec.MacroType)
+		diffField(&changes, "macro_type", normalizeMacroType(a.Spec.MacroType), normalizeMacroType(d.Spec.MacroType))
 		diffField(&changes, "body", a.Spec.Body, d.Spec.Body)
 		diffField(&changes, "description", a.Spec.Description, d.Spec.Description)
 		diffField(&changes, "parameters", formatStringSlice(a.Spec.Parameters), formatStringSlice(d.Spec.Parameters))
+		diffField(&changes, "catalog_name", a.Spec.CatalogName, d.Spec.CatalogName)
+		diffField(&changes, "project_name", a.Spec.ProjectName, d.Spec.ProjectName)
+		diffField(&changes, "visibility", normalizeMacroVisibility(a.Spec.Visibility), normalizeMacroVisibility(d.Spec.Visibility))
+		diffField(&changes, "owner", a.Spec.Owner, d.Spec.Owner)
+		diffMapField(&changes, "properties", a.Spec.Properties, d.Spec.Properties)
+		diffField(&changes, "tags", formatStringSlice(a.Spec.Tags), formatStringSlice(d.Spec.Tags))
+		diffField(&changes, "status", normalizeMacroStatus(a.Spec.Status), normalizeMacroStatus(d.Spec.Status))
 		if len(changes) > 0 {
 			addUpdate(plan, KindMacro, d.Name, "", d, a, changes)
 		}

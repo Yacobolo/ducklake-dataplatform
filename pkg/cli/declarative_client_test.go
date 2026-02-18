@@ -964,6 +964,414 @@ func TestExecute_UnimplementedKindReturnsError(t *testing.T) {
 	assert.Contains(t, err.Error(), "not yet implemented")
 }
 
+func TestExecuteMacro_CreateUpdateDelete(t *testing.T) {
+	var captured []execCapture
+	sc := newTestExecuteClient(t, &captured)
+
+	create := declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindMacro,
+		ResourceName: "fmt_money",
+		Desired: declarative.MacroResource{
+			Name: "fmt_money",
+			Spec: declarative.MacroSpec{
+				MacroType:   "SCALAR",
+				Parameters:  []string{"amount"},
+				Body:        "amount / 100.0",
+				CatalogName: "main",
+				ProjectName: "analytics",
+				Visibility:  "catalog_global",
+				Owner:       "data-team",
+				Properties:  map[string]string{"team": "finance"},
+				Tags:        []string{"finance"},
+				Status:      "ACTIVE",
+			},
+		},
+	}
+
+	require.NoError(t, sc.Execute(context.Background(), create))
+	require.Len(t, captured, 1)
+	assert.Equal(t, http.MethodPost, captured[0].Method)
+	assert.Contains(t, captured[0].Path, "/macros")
+	assert.Equal(t, "fmt_money", bodyStr(captured[0], "name"))
+	assert.Equal(t, "catalog_global", bodyStr(captured[0], "visibility"))
+
+	update := create
+	update.Operation = declarative.OpUpdate
+	update.Desired = declarative.MacroResource{
+		Name: "fmt_money",
+		Spec: declarative.MacroSpec{
+			Body:       "amount / 100",
+			Parameters: []string{"amount"},
+			Status:     "DEPRECATED",
+		},
+	}
+	require.NoError(t, sc.Execute(context.Background(), update))
+	require.Len(t, captured, 2)
+	assert.Equal(t, http.MethodPatch, captured[1].Method)
+	assert.Contains(t, captured[1].Path, "/macros/fmt_money")
+	assert.Equal(t, "DEPRECATED", bodyStr(captured[1], "status"))
+
+	deleteAction := declarative.Action{
+		Operation:    declarative.OpDelete,
+		ResourceKind: declarative.KindMacro,
+		ResourceName: "fmt_money",
+	}
+	require.NoError(t, sc.Execute(context.Background(), deleteAction))
+	require.Len(t, captured, 3)
+	assert.Equal(t, http.MethodDelete, captured[2].Method)
+	assert.Contains(t, captured[2].Path, "/macros/fmt_money")
+}
+
+func TestExecuteModel_CreateWithTestReconcile(t *testing.T) {
+	t.Parallel()
+
+	var (
+		mu       sync.Mutex
+		captured []execCapture
+	)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+
+		ec := execCapture{Method: r.Method, Path: r.URL.Path, Query: r.URL.Query()}
+		if r.Body != nil {
+			data, _ := io.ReadAll(r.Body)
+			if len(data) > 0 {
+				var m map[string]interface{}
+				_ = json.Unmarshal(data, &m)
+				ec.Body = m
+			}
+		}
+		captured = append(captured, ec)
+
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/models/analytics/stg_orders/tests":
+			_, _ = w.Write([]byte(`{"data":[]}`))
+		default:
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"id":"generated-uuid-123"}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	sc := NewAPIStateClient(gen.NewClient(srv.URL, "", "test-token"))
+	sc.index = newResourceIndex()
+
+	action := declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindModel,
+		ResourceName: "analytics.stg_orders",
+		Desired: declarative.ModelResource{
+			ProjectName: "analytics",
+			ModelName:   "stg_orders",
+			Spec: declarative.ModelSpec{
+				Materialization: "INCREMENTAL",
+				SQL:             "SELECT 1",
+				Config: &declarative.ModelConfigSpec{
+					UniqueKey:           []string{"order_id"},
+					IncrementalStrategy: "delete+insert",
+					OnSchemaChange:      "fail",
+				},
+				Tests: []declarative.TestSpec{{Name: "not_null_order_id", Type: "not_null", Column: "order_id"}},
+			},
+		},
+	}
+
+	require.NoError(t, sc.Execute(context.Background(), action))
+
+	mu.Lock()
+	defer mu.Unlock()
+	require.Len(t, captured, 3)
+	assert.Equal(t, http.MethodPost, captured[0].Method)
+	assert.Equal(t, "/v1/models", captured[0].Path)
+	config, ok := captured[0].Body["config"].(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, "delete_insert", config["incremental_strategy"])
+	assert.Equal(t, "fail", config["on_schema_change"])
+
+	assert.Equal(t, http.MethodGet, captured[1].Method)
+	assert.Equal(t, "/v1/models/analytics/stg_orders/tests", captured[1].Path)
+
+	assert.Equal(t, http.MethodPost, captured[2].Method)
+	assert.Equal(t, "/v1/models/analytics/stg_orders/tests", captured[2].Path)
+	assert.Equal(t, "not_null_order_id", bodyStr(captured[2], "name"))
+}
+
+func TestExecuteModel_UpdateReconcilesTests(t *testing.T) {
+	t.Parallel()
+
+	var (
+		mu       sync.Mutex
+		captured []execCapture
+	)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+
+		ec := execCapture{Method: r.Method, Path: r.URL.Path, Query: r.URL.Query()}
+		if r.Body != nil {
+			data, _ := io.ReadAll(r.Body)
+			if len(data) > 0 {
+				var m map[string]interface{}
+				_ = json.Unmarshal(data, &m)
+				ec.Body = m
+			}
+		}
+		captured = append(captured, ec)
+
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodGet && r.URL.Path == "/v1/models/analytics/stg_orders/tests" {
+			_, _ = w.Write([]byte(`{"data":[{"id":"t1","name":"not_null_order_id","test_type":"not_null","column":"id"},{"id":"t2","name":"legacy_unique","test_type":"unique","column":"legacy_id"}]}`))
+			return
+		}
+		if r.Method == http.MethodDelete {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"id":"generated-uuid-123"}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	sc := NewAPIStateClient(gen.NewClient(srv.URL, "", "test-token"))
+	sc.index = newResourceIndex()
+
+	action := declarative.Action{
+		Operation:    declarative.OpUpdate,
+		ResourceKind: declarative.KindModel,
+		ResourceName: "analytics.stg_orders",
+		Desired: declarative.ModelResource{
+			ProjectName: "analytics",
+			ModelName:   "stg_orders",
+			Spec: declarative.ModelSpec{
+				Materialization: "TABLE",
+				SQL:             "SELECT 2",
+				Tests: []declarative.TestSpec{
+					{Name: "not_null_order_id", Type: "not_null", Column: "order_id"},
+					{Name: "accepted_status", Type: "accepted_values", Column: "status", Values: []string{"active", "pending"}},
+				},
+			},
+		},
+	}
+
+	require.NoError(t, sc.Execute(context.Background(), action))
+
+	mu.Lock()
+	defer mu.Unlock()
+	require.GreaterOrEqual(t, len(captured), 6)
+	assert.Equal(t, http.MethodPatch, captured[0].Method)
+	assert.Equal(t, "/v1/models/analytics/stg_orders", captured[0].Path)
+	assert.Equal(t, http.MethodGet, captured[1].Method)
+	assert.Equal(t, "/v1/models/analytics/stg_orders/tests", captured[1].Path)
+
+	paths := make([]string, 0, len(captured))
+	for _, c := range captured {
+		paths = append(paths, c.Method+" "+c.Path)
+	}
+	assert.Contains(t, paths, "DELETE /v1/models/analytics/stg_orders/tests/t1")
+	assert.Contains(t, paths, "DELETE /v1/models/analytics/stg_orders/tests/t2")
+	assert.Contains(t, paths, "POST /v1/models/analytics/stg_orders/tests")
+}
+
+func TestExecuteModel_SkipsTestsWhenEndpointUnavailable(t *testing.T) {
+	t.Parallel()
+
+	var (
+		mu       sync.Mutex
+		captured []execCapture
+	)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+
+		ec := execCapture{Method: r.Method, Path: r.URL.Path, Query: r.URL.Query()}
+		if r.Body != nil {
+			data, _ := io.ReadAll(r.Body)
+			if len(data) > 0 {
+				var m map[string]interface{}
+				_ = json.Unmarshal(data, &m)
+				ec.Body = m
+			}
+		}
+		captured = append(captured, ec)
+
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodGet && r.URL.Path == "/v1/models/analytics/stg_orders/tests" {
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"code":"NOT_FOUND","message":"tests endpoint disabled"}`))
+			return
+		}
+		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`{"id":"generated-uuid-123"}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	sc := NewAPIStateClient(gen.NewClient(srv.URL, "", "test-token"))
+	sc.index = newResourceIndex()
+
+	action := declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindModel,
+		ResourceName: "analytics.stg_orders",
+		Desired: declarative.ModelResource{
+			ProjectName: "analytics",
+			ModelName:   "stg_orders",
+			Spec: declarative.ModelSpec{
+				Materialization: "INCREMENTAL",
+				SQL:             "SELECT 1",
+				Tests: []declarative.TestSpec{
+					{Name: "not_null_order_id", Type: "not_null", Column: "order_id"},
+				},
+			},
+		},
+	}
+
+	require.NoError(t, sc.Execute(context.Background(), action))
+
+	mu.Lock()
+	defer mu.Unlock()
+	require.Len(t, captured, 2)
+	assert.Equal(t, http.MethodPost, captured[0].Method)
+	assert.Equal(t, "/v1/models", captured[0].Path)
+	assert.Equal(t, http.MethodGet, captured[1].Method)
+	assert.Equal(t, "/v1/models/analytics/stg_orders/tests", captured[1].Path)
+}
+
+func TestReadState_ModelsAndMacros(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/models", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":[{"project_name":"analytics","name":"stg_orders","sql":"SELECT 1","materialization":"INCREMENTAL","description":"orders","tags":["finance"],"config":{"unique_key":["order_id"],"incremental_strategy":"merge","on_schema_change":"ignore"},"contract":{"enforce":true,"columns":[{"name":"order_id","type":"BIGINT","nullable":false}]},"freshness_policy":{"max_lag_seconds":300,"cron_schedule":"*/5 * * * *"}}]}`))
+	})
+	mux.HandleFunc("/v1/models/analytics/stg_orders/tests", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":[{"id":"t1","name":"accepted_status","test_type":"accepted_values","column":"status","config":{"values":["active","pending"]}}]}`))
+	})
+	mux.HandleFunc("/v1/macros", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":[{"name":"fmt_money","macro_type":"SCALAR","parameters":["amount"],"body":"amount/100.0","catalog_name":"main","project_name":"analytics","visibility":"project","owner":"data-team","properties":{"team":"finance"},"tags":["finance"],"status":"ACTIVE"}]}`))
+	})
+	mux.HandleFunc("/", emptyListHandler())
+
+	sc := setupReadStateClient(t, mux)
+	state, err := sc.ReadState(context.Background())
+	require.NoError(t, err)
+
+	require.Len(t, state.Models, 1)
+	model := state.Models[0]
+	assert.Equal(t, "analytics", model.ProjectName)
+	assert.Equal(t, "stg_orders", model.ModelName)
+	assert.Equal(t, "ignore", model.Spec.Config.OnSchemaChange)
+	require.Len(t, model.Spec.Tests, 1)
+	assert.Equal(t, "accepted_values", model.Spec.Tests[0].Type)
+
+	require.Len(t, state.Macros, 1)
+	macro := state.Macros[0]
+	assert.Equal(t, "fmt_money", macro.Name)
+	assert.Equal(t, "analytics", macro.Spec.ProjectName)
+	assert.Equal(t, "project", macro.Spec.Visibility)
+	assert.Equal(t, "ACTIVE", macro.Spec.Status)
+}
+
+func TestReadState_OptionalModelAndMacroEndpoints(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/models", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"code":"NOT_FOUND","message":"models disabled"}`))
+	})
+	mux.HandleFunc("/v1/macros", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"code":"NOT_FOUND","message":"macros disabled"}`))
+	})
+	mux.HandleFunc("/", emptyListHandler())
+
+	sc := setupReadStateClient(t, mux)
+	state, err := sc.ReadState(context.Background())
+	require.NoError(t, err)
+	assert.Empty(t, state.Models)
+	assert.Empty(t, state.Macros)
+	assert.Len(t, sc.OptionalReadWarnings(), 2)
+}
+
+func TestReadState_ConnectionErrorsStrictModeAreNotOptional(t *testing.T) {
+	t.Parallel()
+
+	sc := NewAPIStateClientWithOptions(gen.NewClient("http://127.0.0.1:1", "", "test-token"), APIStateClientOptions{
+		CompatibilityMode: CapabilityCompatibilityStrict,
+	})
+
+	_, err := sc.ReadState(context.Background())
+	require.Error(t, err)
+}
+
+func TestReadState_ConnectionErrorsLegacyModeAreOptionalForModelMacro(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/principals", emptyListHandler())
+	mux.HandleFunc("/v1/groups", emptyListHandler())
+	mux.HandleFunc("/v1/api-keys", emptyListHandler())
+	mux.HandleFunc("/v1/catalogs", emptyListHandler())
+	mux.HandleFunc("/v1/storage-credentials", emptyListHandler())
+	mux.HandleFunc("/v1/external-locations", emptyListHandler())
+	mux.HandleFunc("/v1/grants", emptyListHandler())
+	mux.HandleFunc("/v1/compute-endpoints", emptyListHandler())
+	mux.HandleFunc("/v1/tags", emptyListHandler())
+	mux.HandleFunc("/v1/notebooks", emptyListHandler())
+	mux.HandleFunc("/v1/pipelines", emptyListHandler())
+	mux.HandleFunc("/v1/models", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`eof`))
+	})
+	mux.HandleFunc("/v1/macros", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`broken pipe`))
+	})
+
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+
+	sc := NewAPIStateClientWithOptions(gen.NewClient(srv.URL, "", "test-token"), APIStateClientOptions{
+		CompatibilityMode: CapabilityCompatibilityLegacy,
+	})
+
+	state, err := sc.ReadState(context.Background())
+	require.NoError(t, err)
+	assert.Empty(t, state.Models)
+	assert.Empty(t, state.Macros)
+	assert.Len(t, sc.OptionalReadWarnings(), 2)
+}
+
+func TestValidateApplyCapabilities_ModelEndpointRequired(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/models", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"code":"NOT_FOUND"}`))
+	})
+	mux.HandleFunc("/v1/macros", emptyListHandler())
+	mux.HandleFunc("/", emptyListHandler())
+
+	sc := setupReadStateClient(t, mux)
+	err := sc.ValidateApplyCapabilities(context.Background(), []declarative.Action{{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindModel,
+		ResourceName: "analytics.stg_orders",
+	}})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "/models endpoint is unavailable")
+}
+
 // === ReadState helper ===
 
 // setupReadStateClient creates an APIStateClient backed by a test server with the given mux.
@@ -1649,6 +2057,135 @@ func TestValidateNoSelfAPIKeyDeletion_AllowsDeleteWhenUsingToken(t *testing.T) {
 	})
 
 	require.NoError(t, err)
+}
+
+func TestReadState_GrantsResolvedFromIDs(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/principals", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{"id": "p-1", "name": "alice", "type": "user", "is_admin": false},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/v1/catalogs", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{"id": "cat-1", "name": "demo", "metastore_type": "sqlite", "dsn": ":memory:", "data_path": "/tmp"},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/v1/catalogs/demo/schemas", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{"id": "sch-1", "name": "analytics"},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/v1/catalogs/demo/schemas/analytics/tables", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{"id": "tbl-1", "name": "orders", "table_type": "MANAGED"},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/v1/catalogs/demo/schemas/analytics/views", emptyListHandler())
+	mux.HandleFunc("/v1/catalogs/demo/schemas/analytics/volumes", emptyListHandler())
+	mux.HandleFunc("/v1/grants", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{
+					"principal_id":   "p-1",
+					"principal_type": "user",
+					"securable_type": "table",
+					"securable_id":   "tbl-1",
+					"privilege":      "SELECT",
+				},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/", emptyListHandler())
+
+	sc := setupReadStateClient(t, mux)
+	state, err := sc.ReadState(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, state.Grants, 1)
+	assert.Equal(t, "alice", state.Grants[0].Principal)
+	assert.Equal(t, "user", state.Grants[0].PrincipalType)
+	assert.Equal(t, "table", state.Grants[0].SecurableType)
+	assert.Equal(t, "demo.analytics.orders", state.Grants[0].Securable)
+	assert.Equal(t, "SELECT", state.Grants[0].Privilege)
+}
+
+func TestReadState_GrantsUnresolvedSecurableIsSkipped(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/principals", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"data": []map[string]interface{}{{"id": "p-1", "name": "alice", "type": "user"}},
+		})
+	})
+	mux.HandleFunc("/v1/grants", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"data": []map[string]interface{}{{
+				"principal_id":   "p-1",
+				"principal_type": "user",
+				"securable_type": "table",
+				"securable_id":   "tbl-missing",
+				"privilege":      "SELECT",
+			}},
+		})
+	})
+	mux.HandleFunc("/", emptyListHandler())
+
+	sc := setupReadStateClient(t, mux)
+	state, err := sc.ReadState(context.Background())
+	require.NoError(t, err)
+	assert.Empty(t, state.Grants)
+}
+
+func TestReadState_GrantsUnresolvedPrincipalIsSkipped(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/grants", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"data": []map[string]interface{}{{
+				"principal_id":   "p-missing",
+				"principal_type": "user",
+				"securable_type": "catalog",
+				"securable_id":   "cat-1",
+				"privilege":      "USE_CATALOG",
+			}},
+		})
+	})
+	mux.HandleFunc("/v1/principals/p-missing", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"code":"NOT_FOUND","message":"not found"}`))
+	})
+	mux.HandleFunc("/", emptyListHandler())
+
+	sc := setupReadStateClient(t, mux)
+	state, err := sc.ReadState(context.Background())
+	require.NoError(t, err)
+	assert.Empty(t, state.Grants)
 }
 
 // === Additional Execute tests ===

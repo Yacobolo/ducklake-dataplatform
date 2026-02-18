@@ -6,15 +6,24 @@ import (
 	"duck-demo/internal/domain"
 )
 
+type privilegeCacheInvalidator interface {
+	InvalidatePrivilegeCache()
+}
+
 // GrantService provides privilege grant and revoke operations.
 type GrantService struct {
-	repo  domain.GrantRepository
-	audit domain.AuditRepository
+	repo        domain.GrantRepository
+	audit       domain.AuditRepository
+	invalidator privilegeCacheInvalidator
 }
 
 // NewGrantService creates a new GrantService.
-func NewGrantService(repo domain.GrantRepository, audit domain.AuditRepository) *GrantService {
-	return &GrantService{repo: repo, audit: audit}
+func NewGrantService(repo domain.GrantRepository, audit domain.AuditRepository, invalidator ...privilegeCacheInvalidator) *GrantService {
+	var inv privilegeCacheInvalidator
+	if len(invalidator) > 0 {
+		inv = invalidator[0]
+	}
+	return &GrantService{repo: repo, audit: audit, invalidator: inv}
 }
 
 // Grant creates a new privilege grant. Requires admin privileges.
@@ -43,6 +52,9 @@ func (s *GrantService) Grant(ctx context.Context, req domain.CreateGrantRequest)
 		Action:        "GRANT",
 		Status:        "ALLOWED",
 	})
+	if s.invalidator != nil {
+		s.invalidator.InvalidatePrivilegeCache()
+	}
 	return result, nil
 }
 
@@ -59,6 +71,9 @@ func (s *GrantService) Revoke(ctx context.Context, _ string, grantID string) err
 		Action:        "REVOKE",
 		Status:        "ALLOWED",
 	})
+	if s.invalidator != nil {
+		s.invalidator.InvalidatePrivilegeCache()
+	}
 	return nil
 }
 

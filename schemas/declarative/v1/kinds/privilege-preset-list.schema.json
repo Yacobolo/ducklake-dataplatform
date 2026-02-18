@@ -1,0 +1,61 @@
+{
+  "$defs": {
+    "PrivilegePresetListDoc": {
+      "additionalProperties": false,
+      "properties": {
+        "apiVersion": {
+          "enum": [
+            "duck/v1"
+          ],
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "PrivilegePresetList"
+          ],
+          "type": "string"
+        },
+        "presets": {
+          "items": {
+            "$ref": "#/$defs/PrivilegePresetSpec"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "apiVersion",
+        "kind"
+      ],
+      "type": "object"
+    },
+    "PrivilegePresetSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "privileges": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "schemas/declarative/v1/kinds/privilege-preset-list.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    {
+      "$ref": "#/$defs/PrivilegePresetListDoc"
+    }
+  ],
+  "title": "Duck declarative PrivilegePresetList"
+}

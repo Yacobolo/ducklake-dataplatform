@@ -33,6 +33,12 @@ func TestValidate_ValidFullState(t *testing.T) {
 			{Principal: "analysts", PrincipalType: "group", SecurableType: "schema", Securable: "main.analytics", Privilege: "USAGE"},
 			{Principal: "analyst1", PrincipalType: "user", SecurableType: "table", Securable: "main.analytics.orders", Privilege: "SELECT"},
 		},
+		PrivilegePresets: []PrivilegePresetSpec{
+			{Name: "reader", Privileges: []string{"USE_CATALOG", "USE_SCHEMA", "SELECT"}},
+		},
+		Bindings: []BindingSpec{
+			{Principal: "analysts", PrincipalType: "group", Preset: "reader", ScopeType: "schema", Scope: "main.analytics"},
+		},
 		Catalogs: []CatalogResource{
 			{CatalogName: "main", Spec: CatalogSpec{MetastoreType: "sqlite", DSN: "/data/meta.sqlite", DataPath: "s3://bucket/"}},
 		},
@@ -62,6 +68,123 @@ func TestValidate_ValidFullState(t *testing.T) {
 
 	errs := Validate(state)
 	assert.Empty(t, errs, "valid state should have no errors: %v", errs)
+}
+
+func TestValidate_PresetAndBindingErrors(t *testing.T) {
+	state := &DesiredState{
+		Principals: []PrincipalSpec{{Name: "user1", Type: "user"}},
+		Catalogs:   []CatalogResource{{CatalogName: "main", Spec: CatalogSpec{MetastoreType: "sqlite", DSN: "/db", DataPath: "/data"}}},
+		PrivilegePresets: []PrivilegePresetSpec{
+			{Name: "", Privileges: []string{"SELECT"}},
+			{Name: "bad-priv", Privileges: []string{"NOT_REAL"}},
+		},
+		Bindings: []BindingSpec{
+			{Principal: "user1", PrincipalType: "user", Preset: "missing", ScopeType: "catalog", Scope: "main"},
+			{Principal: "ghost", PrincipalType: "user", Preset: "bad-priv", ScopeType: "banana", Scope: "main"},
+		},
+	}
+
+	errs := Validate(state)
+	require.NotEmpty(t, errs)
+
+	messages := make([]string, 0, len(errs))
+	for _, e := range errs {
+		messages = append(messages, e.Error())
+	}
+
+	assert.Condition(t, func() bool {
+		for _, m := range messages {
+			if containsStr(m, "privilege_preset") && containsStr(m, "name is required") {
+				return true
+			}
+		}
+		return false
+	})
+
+	assert.Condition(t, func() bool {
+		for _, m := range messages {
+			if containsStr(m, "unknown privilege") && containsStr(m, "NOT_REAL") {
+				return true
+			}
+		}
+		return false
+	})
+
+	assert.Condition(t, func() bool {
+		for _, m := range messages {
+			if containsStr(m, "unknown preset") {
+				return true
+			}
+		}
+		return false
+	})
+}
+
+func TestValidate_BindingPrivilegeScopeRules(t *testing.T) {
+	state := &DesiredState{
+		Principals: []PrincipalSpec{{Name: "user1", Type: "user"}},
+		Catalogs:   []CatalogResource{{CatalogName: "main", Spec: CatalogSpec{MetastoreType: "sqlite", DSN: "/db", DataPath: "/data"}}},
+		PrivilegePresets: []PrivilegePresetSpec{{
+			Name:       "bad-catalog-reader",
+			Privileges: []string{"SELECT"},
+		}},
+		Bindings: []BindingSpec{{
+			Principal:     "user1",
+			PrincipalType: "user",
+			Preset:        "bad-catalog-reader",
+			ScopeType:     "catalog",
+			Scope:         "main",
+		}},
+	}
+
+	errs := Validate(state)
+	require.NotEmpty(t, errs)
+
+	found := false
+	for _, e := range errs {
+		if containsStr(e.Error(), "not allowed on scope_type") && containsStr(e.Error(), "SELECT") {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "expected binding scope privilege validation error, got %v", errs)
+}
+
+func TestValidate_DuplicateEffectiveGrantFromBinding(t *testing.T) {
+	state := &DesiredState{
+		Principals: []PrincipalSpec{{Name: "user1", Type: "user"}},
+		Catalogs:   []CatalogResource{{CatalogName: "main", Spec: CatalogSpec{MetastoreType: "sqlite", DSN: "/db", DataPath: "/data"}}},
+		Grants: []GrantSpec{{
+			Principal:     "user1",
+			PrincipalType: "user",
+			SecurableType: "catalog",
+			Securable:     "main",
+			Privilege:     "USE_CATALOG",
+		}},
+		PrivilegePresets: []PrivilegePresetSpec{{
+			Name:       "catalog-user",
+			Privileges: []string{"USE_CATALOG"},
+		}},
+		Bindings: []BindingSpec{{
+			Principal:     "user1",
+			PrincipalType: "user",
+			Preset:        "catalog-user",
+			ScopeType:     "catalog",
+			Scope:         "main",
+		}},
+	}
+
+	errs := Validate(state)
+	require.NotEmpty(t, errs)
+
+	found := false
+	for _, e := range errs {
+		if containsStr(e.Error(), "duplicate effective grant") {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "expected duplicate effective grant error, got %v", errs)
 }
 
 func TestValidate_PrincipalErrors(t *testing.T) {
@@ -474,6 +597,114 @@ func TestValidate_ModelErrors(t *testing.T) {
 			},
 			"duplicate model",
 		},
+		{
+			"invalid incremental strategy",
+			&DesiredState{
+				Models: []ModelResource{
+					{ProjectName: "sales", ModelName: "stg_orders", Spec: ModelSpec{SQL: "SELECT 1", Materialization: "INCREMENTAL", Config: &ModelConfigSpec{IncrementalStrategy: "upsert"}}},
+				},
+			},
+			"config.incremental_strategy must be one of",
+		},
+		{
+			"invalid on_schema_change",
+			&DesiredState{
+				Models: []ModelResource{
+					{ProjectName: "sales", ModelName: "stg_orders", Spec: ModelSpec{SQL: "SELECT 1", Materialization: "INCREMENTAL", Config: &ModelConfigSpec{OnSchemaChange: "replace"}}},
+				},
+			},
+			"config.on_schema_change must be one of",
+		},
+		{
+			"relationships to_model must exist",
+			&DesiredState{
+				Models: []ModelResource{
+					{
+						ProjectName: "sales",
+						ModelName:   "stg_orders",
+						Spec: ModelSpec{
+							SQL:             "SELECT 1 AS order_id",
+							Materialization: "VIEW",
+							Tests: []TestSpec{{
+								Name:     "rel_orders",
+								Type:     "relationships",
+								Column:   "order_id",
+								ToModel:  "missing_model",
+								ToColumn: "order_id",
+							}},
+						},
+					},
+				},
+			},
+			"references unknown to_model",
+		},
+		{
+			"relationships to_column must exist when target has contract",
+			&DesiredState{
+				Models: []ModelResource{
+					{
+						ProjectName: "sales",
+						ModelName:   "stg_orders",
+						Spec: ModelSpec{
+							SQL:             "SELECT 1 AS order_id",
+							Materialization: "VIEW",
+							Contract:        &ContractSpec{Columns: []ContractColumnSpec{{Name: "order_id", Type: "BIGINT"}}},
+							Tests: []TestSpec{{
+								Name:     "rel_orders",
+								Type:     "relationships",
+								Column:   "order_id",
+								ToModel:  "dim_orders",
+								ToColumn: "missing_col",
+							}},
+						},
+					},
+					{
+						ProjectName: "sales",
+						ModelName:   "dim_orders",
+						Spec: ModelSpec{
+							SQL:             "SELECT 1 AS order_id",
+							Materialization: "VIEW",
+							Contract:        &ContractSpec{Columns: []ContractColumnSpec{{Name: "order_id", Type: "BIGINT"}}},
+						},
+					},
+				},
+			},
+			"references unknown to_column",
+		},
+		{
+			"column test must reference declared contract column",
+			&DesiredState{
+				Models: []ModelResource{{
+					ProjectName: "sales",
+					ModelName:   "stg_orders",
+					Spec: ModelSpec{
+						SQL:             "SELECT 1 AS order_id",
+						Materialization: "VIEW",
+						Contract:        &ContractSpec{Columns: []ContractColumnSpec{{Name: "order_id", Type: "BIGINT"}}},
+						Tests: []TestSpec{{
+							Name:   "nn_status",
+							Type:   "not_null",
+							Column: "status",
+						}},
+					},
+				}},
+			},
+			"is not declared in model contract",
+		},
+		{
+			"sql macro reference must exist",
+			&DesiredState{
+				Models: []ModelResource{{
+					ProjectName: "sales",
+					ModelName:   "stg_orders",
+					Spec: ModelSpec{
+						SQL:             "SELECT {{ missing_macro(amount) }} AS amount",
+						Materialization: "VIEW",
+					},
+				}},
+			},
+			"references unknown macro",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -493,12 +724,18 @@ func TestValidate_ModelErrors(t *testing.T) {
 
 func TestValidate_ModelValid(t *testing.T) {
 	state := &DesiredState{
+		Macros: []MacroResource{{Name: "fmt_money", Spec: MacroSpec{Body: "amount / 100.0"}}},
 		Models: []ModelResource{
 			{ProjectName: "sales", ModelName: "stg_orders", Spec: ModelSpec{
-				SQL:             "SELECT order_id FROM raw_data.orders",
-				Materialization: "TABLE",
+				SQL:             "SELECT {{ fmt_money(amount) }} AS amt, order_id FROM raw_data.orders",
+				Materialization: "INCREMENTAL",
 				Description:     "Staged orders",
 				Tags:            []string{"finance"},
+				Config: &ModelConfigSpec{
+					UniqueKey:           []string{"order_id"},
+					IncrementalStrategy: "delete+insert",
+					OnSchemaChange:      "fail",
+				},
 			}},
 			{ProjectName: "sales", ModelName: "fct_orders", Spec: ModelSpec{
 				SQL:             "SELECT * FROM stg_orders",
@@ -516,4 +753,94 @@ func TestValidate_ModelValid(t *testing.T) {
 		}
 	}
 	assert.Empty(t, modelErrs, "valid models should have no model errors: %v", modelErrs)
+}
+
+func TestValidate_MacroErrors(t *testing.T) {
+	tests := []struct {
+		name    string
+		state   *DesiredState
+		wantErr string
+	}{
+		{
+			"invalid macro visibility",
+			&DesiredState{Macros: []MacroResource{{
+				Name: "fmt_money",
+				Spec: MacroSpec{Body: "x", Visibility: "workspace"},
+			}}},
+			"visibility must be one of",
+		},
+		{
+			"invalid macro status",
+			&DesiredState{Macros: []MacroResource{{
+				Name: "fmt_money",
+				Spec: MacroSpec{Body: "x", Status: "DISABLED"},
+			}}},
+			"status must be one of",
+		},
+		{
+			"project visibility requires project_name",
+			&DesiredState{Macros: []MacroResource{{
+				Name: "fmt_money",
+				Spec: MacroSpec{Body: "x", Visibility: "project"},
+			}}},
+			"project_name is required when visibility is project",
+		},
+		{
+			"catalog_global visibility requires catalog_name",
+			&DesiredState{Macros: []MacroResource{{
+				Name: "fmt_money",
+				Spec: MacroSpec{Body: "x", Visibility: "catalog_global"},
+			}}},
+			"catalog_name is required when visibility is catalog_global",
+		},
+		{
+			"system visibility forbids project and catalog",
+			&DesiredState{Macros: []MacroResource{{
+				Name: "fmt_money",
+				Spec: MacroSpec{Body: "x", Visibility: "system", ProjectName: "analytics", CatalogName: "main"},
+			}}},
+			"must be empty when visibility is system",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			errs := Validate(tt.state)
+			require.NotEmpty(t, errs)
+			found := false
+			for _, e := range errs {
+				if containsStr(e.Error(), tt.wantErr) {
+					found = true
+					break
+				}
+			}
+			assert.True(t, found, "expected error containing %q, got %v", tt.wantErr, errs)
+		})
+	}
+}
+
+func TestValidate_MacroValid(t *testing.T) {
+	state := &DesiredState{Macros: []MacroResource{{
+		Name: "fmt_money",
+		Spec: MacroSpec{
+			MacroType:   "SCALAR",
+			Body:        "amount / 100.0",
+			Visibility:  "project",
+			Status:      "ACTIVE",
+			CatalogName: "main",
+			ProjectName: "analytics",
+			Owner:       "data-team",
+			Properties:  map[string]string{"team": "analytics"},
+			Tags:        []string{"finance"},
+		},
+	}}}
+
+	errs := Validate(state)
+	var macroErrs []ValidationError
+	for _, e := range errs {
+		if containsStr(e.Path, "macro") {
+			macroErrs = append(macroErrs, e)
+		}
+	}
+	assert.Empty(t, macroErrs, "valid macros should have no macro errors: %v", macroErrs)
 }

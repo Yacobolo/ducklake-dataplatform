@@ -67,14 +67,20 @@ func TestStorageCredentialService_Create(t *testing.T) {
 			},
 		}
 		audit := &mockAuditRepo{}
-		svc := NewStorageCredentialService(&mockStorageCredentialRepo{}, auth, audit)
+		repo := &mockStorageCredentialRepo{
+			GetByNameFn: func(_ context.Context, _ string) (*domain.StorageCredential, error) {
+				return &domain.StorageCredential{ID: "1", Name: "my-cred"}, nil
+			},
+		}
+		svc := NewStorageCredentialService(repo, auth, audit)
 
 		_, err := svc.Create(ctxWithPrincipal("nobody"), "nobody", validReq)
 
 		require.Error(t, err)
 		var denied *domain.AccessDeniedError
 		require.ErrorAs(t, err, &denied)
-		assert.Empty(t, audit.Entries)
+		require.NotNil(t, audit.LastEntry())
+		assert.Equal(t, "DENIED", audit.LastEntry().Status)
 	})
 
 	t.Run("validation_error", func(t *testing.T) {
@@ -217,14 +223,20 @@ func TestStorageCredentialService_Delete(t *testing.T) {
 			},
 		}
 		audit := &mockAuditRepo{}
-		svc := NewStorageCredentialService(&mockStorageCredentialRepo{}, auth, audit)
+		repo := &mockStorageCredentialRepo{
+			GetByNameFn: func(_ context.Context, _ string) (*domain.StorageCredential, error) {
+				return &domain.StorageCredential{ID: "1", Name: "my-cred"}, nil
+			},
+		}
+		svc := NewStorageCredentialService(repo, auth, audit)
 
 		err := svc.Delete(ctxWithPrincipal("nobody"), "nobody", "my-cred")
 
 		require.Error(t, err)
 		var denied *domain.AccessDeniedError
 		require.ErrorAs(t, err, &denied)
-		assert.Empty(t, audit.Entries)
+		require.NotNil(t, audit.LastEntry())
+		assert.Equal(t, "DENIED", audit.LastEntry().Status)
 	})
 
 	t.Run("not_found", func(t *testing.T) {
@@ -286,7 +298,12 @@ func TestStorageCredentialService_Update(t *testing.T) {
 				return false, nil
 			},
 		}
-		svc := NewStorageCredentialService(&mockStorageCredentialRepo{}, auth, &mockAuditRepo{})
+		repo := &mockStorageCredentialRepo{
+			GetByNameFn: func(_ context.Context, _ string) (*domain.StorageCredential, error) {
+				return &domain.StorageCredential{ID: "1", Name: "my-cred", Endpoint: "s3.example.com"}, nil
+			},
+		}
+		svc := NewStorageCredentialService(repo, auth, &mockAuditRepo{})
 
 		_, err := svc.Update(ctxWithPrincipal("nobody"), "nobody", "my-cred", updateReq)
 

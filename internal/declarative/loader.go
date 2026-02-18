@@ -1,6 +1,7 @@
 package declarative
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,10 +10,21 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// LoadOptions configures YAML loading behavior.
+type LoadOptions struct {
+	AllowUnknownFields bool
+}
+
 // LoadDirectory reads all YAML files from the given directory and returns
 // the desired state. It infers resource context (catalog, schema, table)
 // from the directory structure.
 func LoadDirectory(dir string) (*DesiredState, error) {
+	return LoadDirectoryWithOptions(dir, LoadOptions{})
+}
+
+// LoadDirectoryWithOptions reads all YAML files from the given directory using
+// caller-provided loading options.
+func LoadDirectoryWithOptions(dir string, opts LoadOptions) (*DesiredState, error) {
 	state := &DesiredState{}
 
 	// Check root dir exists.
@@ -27,47 +39,47 @@ func LoadDirectory(dir string) (*DesiredState, error) {
 	// Load each section. Missing directories are OK (partial configs).
 
 	// 1. security/
-	if err := loadSecurity(dir, state); err != nil {
+	if err := loadSecurity(dir, state, opts); err != nil {
 		return nil, err
 	}
 
 	// 2. governance/
-	if err := loadGovernance(dir, state); err != nil {
+	if err := loadGovernance(dir, state, opts); err != nil {
 		return nil, err
 	}
 
 	// 3. storage/
-	if err := loadStorage(dir, state); err != nil {
+	if err := loadStorage(dir, state, opts); err != nil {
 		return nil, err
 	}
 
 	// 4. compute/
-	if err := loadCompute(dir, state); err != nil {
+	if err := loadCompute(dir, state, opts); err != nil {
 		return nil, err
 	}
 
 	// 5. catalogs/ (hierarchical walk)
-	if err := loadCatalogs(dir, state); err != nil {
+	if err := loadCatalogs(dir, state, opts); err != nil {
 		return nil, err
 	}
 
 	// 6. notebooks/
-	if err := loadNotebooks(dir, state); err != nil {
+	if err := loadNotebooks(dir, state, opts); err != nil {
 		return nil, err
 	}
 
 	// 7. pipelines/
-	if err := loadPipelines(dir, state); err != nil {
+	if err := loadPipelines(dir, state, opts); err != nil {
 		return nil, err
 	}
 
 	// 8. models/
-	if err := loadModels(dir, state); err != nil {
+	if err := loadModels(dir, state, opts); err != nil {
 		return nil, err
 	}
 
 	// 9. macros/
-	if err := loadMacros(dir, state); err != nil {
+	if err := loadMacros(dir, state, opts); err != nil {
 		return nil, err
 	}
 
@@ -78,7 +90,7 @@ func LoadDirectory(dir string) (*DesiredState, error) {
 // Returns (false, nil) if file doesn't exist (optional files).
 // Returns (false, err) on read/parse errors.
 // Returns (true, nil) on success.
-func loadYAMLFile(path string, target interface{}) (bool, error) {
+func loadYAMLFile(path string, target interface{}, opts LoadOptions) (bool, error) {
 	data, err := os.ReadFile(path) //nolint:gosec // intentional: reading user-specified config files
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -86,7 +98,16 @@ func loadYAMLFile(path string, target interface{}) (bool, error) {
 		}
 		return false, fmt.Errorf("read %s: %w", path, err)
 	}
-	if err := yaml.Unmarshal(data, target); err != nil {
+	if opts.AllowUnknownFields {
+		if err := yaml.Unmarshal(data, target); err != nil {
+			return false, fmt.Errorf("parse %s: %w", path, err)
+		}
+		return true, nil
+	}
+
+	decoder := yaml.NewDecoder(bytes.NewReader(data))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(target); err != nil {
 		return false, fmt.Errorf("parse %s: %w", path, err)
 	}
 	return true, nil
@@ -111,7 +132,7 @@ func dirExists(path string) bool {
 
 // loadSecurity reads security/principals.yaml, security/groups.yaml,
 // security/grants.yaml, and security/api-keys.yaml. All files are optional.
-func loadSecurity(root string, state *DesiredState) error {
+func loadSecurity(root string, state *DesiredState, opts LoadOptions) error {
 	secDir := filepath.Join(root, "security")
 	if !dirExists(secDir) {
 		return nil
@@ -120,7 +141,7 @@ func loadSecurity(root string, state *DesiredState) error {
 	// principals.yaml
 	principalsPath := filepath.Join(secDir, "principals.yaml")
 	var principalDoc PrincipalListDoc
-	if found, err := loadYAMLFile(principalsPath, &principalDoc); err != nil {
+	if found, err := loadYAMLFile(principalsPath, &principalDoc, opts); err != nil {
 		return err
 	} else if found {
 		if err := validateDocument(principalsPath, principalDoc.APIVersion, principalDoc.Kind, KindNamePrincipalList); err != nil {
@@ -132,7 +153,7 @@ func loadSecurity(root string, state *DesiredState) error {
 	// groups.yaml
 	groupsPath := filepath.Join(secDir, "groups.yaml")
 	var groupDoc GroupListDoc
-	if found, err := loadYAMLFile(groupsPath, &groupDoc); err != nil {
+	if found, err := loadYAMLFile(groupsPath, &groupDoc, opts); err != nil {
 		return err
 	} else if found {
 		if err := validateDocument(groupsPath, groupDoc.APIVersion, groupDoc.Kind, KindNameGroupList); err != nil {
@@ -144,7 +165,7 @@ func loadSecurity(root string, state *DesiredState) error {
 	// grants.yaml
 	grantsPath := filepath.Join(secDir, "grants.yaml")
 	var grantDoc GrantListDoc
-	if found, err := loadYAMLFile(grantsPath, &grantDoc); err != nil {
+	if found, err := loadYAMLFile(grantsPath, &grantDoc, opts); err != nil {
 		return err
 	} else if found {
 		if err := validateDocument(grantsPath, grantDoc.APIVersion, grantDoc.Kind, KindNameGrantList); err != nil {
@@ -153,10 +174,34 @@ func loadSecurity(root string, state *DesiredState) error {
 		state.Grants = grantDoc.Grants
 	}
 
+	// privilege-presets.yaml
+	presetsPath := filepath.Join(secDir, "privilege-presets.yaml")
+	var presetDoc PrivilegePresetListDoc
+	if found, err := loadYAMLFile(presetsPath, &presetDoc, opts); err != nil {
+		return err
+	} else if found {
+		if err := validateDocument(presetsPath, presetDoc.APIVersion, presetDoc.Kind, KindNamePrivilegePresetList); err != nil {
+			return err
+		}
+		state.PrivilegePresets = presetDoc.Presets
+	}
+
+	// bindings.yaml
+	bindingsPath := filepath.Join(secDir, "bindings.yaml")
+	var bindingDoc BindingListDoc
+	if found, err := loadYAMLFile(bindingsPath, &bindingDoc, opts); err != nil {
+		return err
+	} else if found {
+		if err := validateDocument(bindingsPath, bindingDoc.APIVersion, bindingDoc.Kind, KindNameBindingList); err != nil {
+			return err
+		}
+		state.Bindings = bindingDoc.Bindings
+	}
+
 	// api-keys.yaml (optional)
 	apiKeysPath := filepath.Join(secDir, "api-keys.yaml")
 	var apiKeyDoc APIKeyListDoc
-	if found, err := loadYAMLFile(apiKeysPath, &apiKeyDoc); err != nil {
+	if found, err := loadYAMLFile(apiKeysPath, &apiKeyDoc, opts); err != nil {
 		return err
 	} else if found {
 		if err := validateDocument(apiKeysPath, apiKeyDoc.APIVersion, apiKeyDoc.Kind, KindNameAPIKeyList); err != nil {
@@ -169,7 +214,7 @@ func loadSecurity(root string, state *DesiredState) error {
 }
 
 // loadGovernance reads governance/tags.yaml.
-func loadGovernance(root string, state *DesiredState) error {
+func loadGovernance(root string, state *DesiredState, opts LoadOptions) error {
 	govDir := filepath.Join(root, "governance")
 	if !dirExists(govDir) {
 		return nil
@@ -177,7 +222,7 @@ func loadGovernance(root string, state *DesiredState) error {
 
 	tagsPath := filepath.Join(govDir, "tags.yaml")
 	var tagDoc TagConfigDoc
-	if found, err := loadYAMLFile(tagsPath, &tagDoc); err != nil {
+	if found, err := loadYAMLFile(tagsPath, &tagDoc, opts); err != nil {
 		return err
 	} else if found {
 		if err := validateDocument(tagsPath, tagDoc.APIVersion, tagDoc.Kind, KindNameTagConfig); err != nil {
@@ -191,7 +236,7 @@ func loadGovernance(root string, state *DesiredState) error {
 }
 
 // loadStorage reads storage/credentials.yaml and storage/locations.yaml.
-func loadStorage(root string, state *DesiredState) error {
+func loadStorage(root string, state *DesiredState, opts LoadOptions) error {
 	storDir := filepath.Join(root, "storage")
 	if !dirExists(storDir) {
 		return nil
@@ -200,7 +245,7 @@ func loadStorage(root string, state *DesiredState) error {
 	// credentials.yaml
 	credsPath := filepath.Join(storDir, "credentials.yaml")
 	var credDoc StorageCredentialListDoc
-	if found, err := loadYAMLFile(credsPath, &credDoc); err != nil {
+	if found, err := loadYAMLFile(credsPath, &credDoc, opts); err != nil {
 		return err
 	} else if found {
 		if err := validateDocument(credsPath, credDoc.APIVersion, credDoc.Kind, KindNameStorageCredentialList); err != nil {
@@ -212,7 +257,7 @@ func loadStorage(root string, state *DesiredState) error {
 	// locations.yaml
 	locsPath := filepath.Join(storDir, "locations.yaml")
 	var locDoc ExternalLocationListDoc
-	if found, err := loadYAMLFile(locsPath, &locDoc); err != nil {
+	if found, err := loadYAMLFile(locsPath, &locDoc, opts); err != nil {
 		return err
 	} else if found {
 		if err := validateDocument(locsPath, locDoc.APIVersion, locDoc.Kind, KindNameExternalLocationList); err != nil {
@@ -225,7 +270,7 @@ func loadStorage(root string, state *DesiredState) error {
 }
 
 // loadCompute reads compute/endpoints.yaml and compute/assignments.yaml.
-func loadCompute(root string, state *DesiredState) error {
+func loadCompute(root string, state *DesiredState, opts LoadOptions) error {
 	compDir := filepath.Join(root, "compute")
 	if !dirExists(compDir) {
 		return nil
@@ -234,7 +279,7 @@ func loadCompute(root string, state *DesiredState) error {
 	// endpoints.yaml
 	endpointsPath := filepath.Join(compDir, "endpoints.yaml")
 	var epDoc ComputeEndpointListDoc
-	if found, err := loadYAMLFile(endpointsPath, &epDoc); err != nil {
+	if found, err := loadYAMLFile(endpointsPath, &epDoc, opts); err != nil {
 		return err
 	} else if found {
 		if err := validateDocument(endpointsPath, epDoc.APIVersion, epDoc.Kind, KindNameComputeEndpointList); err != nil {
@@ -246,7 +291,7 @@ func loadCompute(root string, state *DesiredState) error {
 	// assignments.yaml
 	assignPath := filepath.Join(compDir, "assignments.yaml")
 	var assignDoc ComputeAssignmentListDoc
-	if found, err := loadYAMLFile(assignPath, &assignDoc); err != nil {
+	if found, err := loadYAMLFile(assignPath, &assignDoc, opts); err != nil {
 		return err
 	} else if found {
 		if err := validateDocument(assignPath, assignDoc.APIVersion, assignDoc.Kind, KindNameComputeAssignmentList); err != nil {
@@ -260,7 +305,7 @@ func loadCompute(root string, state *DesiredState) error {
 
 // loadCatalogs walks the catalogs/ directory tree, loading catalogs, schemas,
 // tables, views, volumes, row filters, and column masks.
-func loadCatalogs(root string, state *DesiredState) error {
+func loadCatalogs(root string, state *DesiredState, opts LoadOptions) error {
 	catDir := filepath.Join(root, "catalogs")
 	if !dirExists(catDir) {
 		return nil
@@ -278,7 +323,7 @@ func loadCatalogs(root string, state *DesiredState) error {
 		catalogName := entry.Name()
 		catalogPath := filepath.Join(catDir, catalogName)
 
-		if err := loadOneCatalog(catalogPath, catalogName, state); err != nil {
+		if err := loadOneCatalog(catalogPath, catalogName, state, opts); err != nil {
 			return err
 		}
 	}
@@ -287,11 +332,11 @@ func loadCatalogs(root string, state *DesiredState) error {
 }
 
 // loadOneCatalog loads a single catalog directory: catalog.yaml and schemas/.
-func loadOneCatalog(catalogPath, catalogName string, state *DesiredState) error {
+func loadOneCatalog(catalogPath, catalogName string, state *DesiredState, opts LoadOptions) error {
 	// catalog.yaml
 	catFile := filepath.Join(catalogPath, "catalog.yaml")
 	var catDoc CatalogDoc
-	found, err := loadYAMLFile(catFile, &catDoc)
+	found, err := loadYAMLFile(catFile, &catDoc, opts)
 	if err != nil {
 		return err
 	}
@@ -327,7 +372,7 @@ func loadOneCatalog(catalogPath, catalogName string, state *DesiredState) error 
 		schemaName := se.Name()
 		schemaPath := filepath.Join(schemasDir, schemaName)
 
-		if err := loadOneSchema(schemaPath, catalogName, schemaName, state); err != nil {
+		if err := loadOneSchema(schemaPath, catalogName, schemaName, state, opts); err != nil {
 			return err
 		}
 	}
@@ -336,11 +381,11 @@ func loadOneCatalog(catalogPath, catalogName string, state *DesiredState) error 
 }
 
 // loadOneSchema loads a single schema directory: schema.yaml, tables/, views/, volumes/.
-func loadOneSchema(schemaPath, catalogName, schemaName string, state *DesiredState) error {
+func loadOneSchema(schemaPath, catalogName, schemaName string, state *DesiredState, opts LoadOptions) error {
 	// schema.yaml
 	schemaFile := filepath.Join(schemaPath, "schema.yaml")
 	var schemaDoc SchemaDoc
-	found, err := loadYAMLFile(schemaFile, &schemaDoc)
+	found, err := loadYAMLFile(schemaFile, &schemaDoc, opts)
 	if err != nil {
 		return err
 	}
@@ -360,17 +405,17 @@ func loadOneSchema(schemaPath, catalogName, schemaName string, state *DesiredSta
 	}
 
 	// tables/
-	if err := loadTables(schemaPath, catalogName, schemaName, state); err != nil {
+	if err := loadTables(schemaPath, catalogName, schemaName, state, opts); err != nil {
 		return err
 	}
 
 	// views/
-	if err := loadViews(schemaPath, catalogName, schemaName, state); err != nil {
+	if err := loadViews(schemaPath, catalogName, schemaName, state, opts); err != nil {
 		return err
 	}
 
 	// volumes/
-	if err := loadVolumes(schemaPath, catalogName, schemaName, state); err != nil {
+	if err := loadVolumes(schemaPath, catalogName, schemaName, state, opts); err != nil {
 		return err
 	}
 
@@ -378,7 +423,7 @@ func loadOneSchema(schemaPath, catalogName, schemaName string, state *DesiredSta
 }
 
 // loadTables walks tables/ within a schema directory.
-func loadTables(schemaPath, catalogName, schemaName string, state *DesiredState) error {
+func loadTables(schemaPath, catalogName, schemaName string, state *DesiredState, opts LoadOptions) error {
 	tablesDir := filepath.Join(schemaPath, "tables")
 	if !dirExists(tablesDir) {
 		return nil
@@ -396,7 +441,7 @@ func loadTables(schemaPath, catalogName, schemaName string, state *DesiredState)
 		tableName := entry.Name()
 		tablePath := filepath.Join(tablesDir, tableName)
 
-		if err := loadOneTable(tablePath, catalogName, schemaName, tableName, state); err != nil {
+		if err := loadOneTable(tablePath, catalogName, schemaName, tableName, state, opts); err != nil {
 			return err
 		}
 	}
@@ -405,11 +450,11 @@ func loadTables(schemaPath, catalogName, schemaName string, state *DesiredState)
 }
 
 // loadOneTable loads a single table directory: table.yaml, row-filters.yaml, column-masks.yaml.
-func loadOneTable(tablePath, catalogName, schemaName, tableName string, state *DesiredState) error {
+func loadOneTable(tablePath, catalogName, schemaName, tableName string, state *DesiredState, opts LoadOptions) error {
 	// table.yaml
 	tableFile := filepath.Join(tablePath, "table.yaml")
 	var tableDoc TableDoc
-	found, err := loadYAMLFile(tableFile, &tableDoc)
+	found, err := loadYAMLFile(tableFile, &tableDoc, opts)
 	if err != nil {
 		return err
 	}
@@ -432,7 +477,7 @@ func loadOneTable(tablePath, catalogName, schemaName, tableName string, state *D
 	// row-filters.yaml (optional)
 	rfFile := filepath.Join(tablePath, "row-filters.yaml")
 	var rfDoc RowFilterListDoc
-	if rfFound, rfErr := loadYAMLFile(rfFile, &rfDoc); rfErr != nil {
+	if rfFound, rfErr := loadYAMLFile(rfFile, &rfDoc, opts); rfErr != nil {
 		return rfErr
 	} else if rfFound {
 		if err := validateDocument(rfFile, rfDoc.APIVersion, rfDoc.Kind, KindNameRowFilterList); err != nil {
@@ -449,7 +494,7 @@ func loadOneTable(tablePath, catalogName, schemaName, tableName string, state *D
 	// column-masks.yaml (optional)
 	cmFile := filepath.Join(tablePath, "column-masks.yaml")
 	var cmDoc ColumnMaskListDoc
-	if cmFound, cmErr := loadYAMLFile(cmFile, &cmDoc); cmErr != nil {
+	if cmFound, cmErr := loadYAMLFile(cmFile, &cmDoc, opts); cmErr != nil {
 		return cmErr
 	} else if cmFound {
 		if err := validateDocument(cmFile, cmDoc.APIVersion, cmDoc.Kind, KindNameColumnMaskList); err != nil {
@@ -467,7 +512,7 @@ func loadOneTable(tablePath, catalogName, schemaName, tableName string, state *D
 }
 
 // loadViews walks views/ within a schema directory. Each .yaml file is a view.
-func loadViews(schemaPath, catalogName, schemaName string, state *DesiredState) error {
+func loadViews(schemaPath, catalogName, schemaName string, state *DesiredState, opts LoadOptions) error {
 	viewsDir := filepath.Join(schemaPath, "views")
 	if !dirExists(viewsDir) {
 		return nil
@@ -487,7 +532,7 @@ func loadViews(schemaPath, catalogName, schemaName string, state *DesiredState) 
 		viewFile := filepath.Join(viewsDir, entry.Name())
 
 		var viewDoc ViewDoc
-		found, err := loadYAMLFile(viewFile, &viewDoc)
+		found, err := loadYAMLFile(viewFile, &viewDoc, opts)
 		if err != nil {
 			return err
 		}
@@ -513,7 +558,7 @@ func loadViews(schemaPath, catalogName, schemaName string, state *DesiredState) 
 }
 
 // loadVolumes walks volumes/ within a schema directory. Each .yaml file is a volume.
-func loadVolumes(schemaPath, catalogName, schemaName string, state *DesiredState) error {
+func loadVolumes(schemaPath, catalogName, schemaName string, state *DesiredState, opts LoadOptions) error {
 	volumesDir := filepath.Join(schemaPath, "volumes")
 	if !dirExists(volumesDir) {
 		return nil
@@ -533,7 +578,7 @@ func loadVolumes(schemaPath, catalogName, schemaName string, state *DesiredState
 		volumeFile := filepath.Join(volumesDir, entry.Name())
 
 		var volDoc VolumeDoc
-		found, err := loadYAMLFile(volumeFile, &volDoc)
+		found, err := loadYAMLFile(volumeFile, &volDoc, opts)
 		if err != nil {
 			return err
 		}
@@ -559,7 +604,7 @@ func loadVolumes(schemaPath, catalogName, schemaName string, state *DesiredState
 }
 
 // loadNotebooks walks the notebooks/ directory. Each .yaml file is a notebook.
-func loadNotebooks(root string, state *DesiredState) error {
+func loadNotebooks(root string, state *DesiredState, opts LoadOptions) error {
 	nbDir := filepath.Join(root, "notebooks")
 	if !dirExists(nbDir) {
 		return nil
@@ -579,7 +624,7 @@ func loadNotebooks(root string, state *DesiredState) error {
 		nbFile := filepath.Join(nbDir, entry.Name())
 
 		var nbDoc NotebookDoc
-		found, err := loadYAMLFile(nbFile, &nbDoc)
+		found, err := loadYAMLFile(nbFile, &nbDoc, opts)
 		if err != nil {
 			return err
 		}
@@ -603,7 +648,7 @@ func loadNotebooks(root string, state *DesiredState) error {
 }
 
 // loadPipelines walks the pipelines/ directory. Each .yaml file is a pipeline.
-func loadPipelines(root string, state *DesiredState) error {
+func loadPipelines(root string, state *DesiredState, opts LoadOptions) error {
 	plDir := filepath.Join(root, "pipelines")
 	if !dirExists(plDir) {
 		return nil
@@ -623,7 +668,7 @@ func loadPipelines(root string, state *DesiredState) error {
 		plFile := filepath.Join(plDir, entry.Name())
 
 		var plDoc PipelineDoc
-		found, err := loadYAMLFile(plFile, &plDoc)
+		found, err := loadYAMLFile(plFile, &plDoc, opts)
 		if err != nil {
 			return err
 		}
@@ -649,7 +694,7 @@ func loadPipelines(root string, state *DesiredState) error {
 // loadModels walks the models/<project>/**/*.yaml directory tree recursively.
 // The first-level directory is the project name; model name is from the filename.
 // Subdirectories within a project are organizational only.
-func loadModels(root string, state *DesiredState) error {
+func loadModels(root string, state *DesiredState, opts LoadOptions) error {
 	modelsDir := filepath.Join(root, "models")
 	if !dirExists(modelsDir) {
 		return nil
@@ -668,7 +713,7 @@ func loadModels(root string, state *DesiredState) error {
 		projectName := projEntry.Name()
 		projectPath := filepath.Join(modelsDir, projectName)
 
-		if err := loadModelsRecursive(projectPath, projectName, state); err != nil {
+		if err := loadModelsRecursive(projectPath, projectName, state, opts); err != nil {
 			return err
 		}
 	}
@@ -677,7 +722,7 @@ func loadModels(root string, state *DesiredState) error {
 }
 
 // loadMacros walks the macros/ directory. Each .yaml file is a macro.
-func loadMacros(root string, state *DesiredState) error {
+func loadMacros(root string, state *DesiredState, opts LoadOptions) error {
 	macroDir := filepath.Join(root, "macros")
 	if !dirExists(macroDir) {
 		return nil
@@ -697,7 +742,7 @@ func loadMacros(root string, state *DesiredState) error {
 		macroFile := filepath.Join(macroDir, entry.Name())
 
 		var macroDoc MacroDoc
-		found, err := loadYAMLFile(macroFile, &macroDoc)
+		found, err := loadYAMLFile(macroFile, &macroDoc, opts)
 		if err != nil {
 			return err
 		}
@@ -721,7 +766,7 @@ func loadMacros(root string, state *DesiredState) error {
 }
 
 // loadModelsRecursive walks a directory tree under a project, loading all .yaml files as models.
-func loadModelsRecursive(dir, projectName string, state *DesiredState) error {
+func loadModelsRecursive(dir, projectName string, state *DesiredState, opts LoadOptions) error {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return fmt.Errorf("read models directory %s: %w", dir, err)
@@ -730,7 +775,7 @@ func loadModelsRecursive(dir, projectName string, state *DesiredState) error {
 	for _, entry := range entries {
 		if entry.IsDir() {
 			// Recurse into subdirectories (organizational only).
-			if err := loadModelsRecursive(filepath.Join(dir, entry.Name()), projectName, state); err != nil {
+			if err := loadModelsRecursive(filepath.Join(dir, entry.Name()), projectName, state, opts); err != nil {
 				return err
 			}
 			continue
@@ -744,7 +789,7 @@ func loadModelsRecursive(dir, projectName string, state *DesiredState) error {
 		modelFile := filepath.Join(dir, entry.Name())
 
 		var modelDoc ModelDoc
-		found, err := loadYAMLFile(modelFile, &modelDoc)
+		found, err := loadYAMLFile(modelFile, &modelDoc, opts)
 		if err != nil {
 			return err
 		}

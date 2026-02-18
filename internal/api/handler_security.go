@@ -333,7 +333,7 @@ func (h *APIHandler) CreateGrant(ctx context.Context, req CreateGrantRequestObje
 		PrincipalType: string(req.Body.PrincipalType),
 		SecurableType: req.Body.SecurableType,
 		SecurableID:   req.Body.SecurableId,
-		Privilege:     req.Body.Privilege,
+		Privilege:     string(req.Body.Privilege),
 	}
 	result, err := h.grants.Grant(ctx, domReq)
 	if err != nil {

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 
 	"duck-demo/internal/domain"
+	"duck-demo/internal/service/auditutil"
 )
 
 // ExternalLocationService provides CRUD operations for external locations
@@ -44,7 +45,7 @@ func NewExternalLocationService(
 // if this is the first location.
 // Requires CREATE_EXTERNAL_LOCATION on catalog.
 func (s *ExternalLocationService) Create(ctx context.Context, principal string, req domain.CreateExternalLocationRequest) (*domain.ExternalLocation, error) {
-	if err := s.requirePrivilege(ctx, principal, domain.PrivCreateExternalLocation); err != nil {
+	if err := s.requirePrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateExternalLocation, "CREATE_EXTERNAL_LOCATION", fmt.Sprintf("Denied create external location %q", req.Name)); err != nil {
 		return nil, err
 	}
 
@@ -102,24 +103,17 @@ func (s *ExternalLocationService) List(ctx context.Context, page domain.PageRequ
 }
 
 // Update updates an external location by name.
-// Requires CREATE_EXTERNAL_LOCATION on catalog.
+// Requires MANAGE on external location.
 func (s *ExternalLocationService) Update(ctx context.Context, principal string, name string, req domain.UpdateExternalLocationRequest) (*domain.ExternalLocation, error) {
-	if err := s.requirePrivilege(ctx, principal, domain.PrivCreateExternalLocation); err != nil {
-		return nil, err
-	}
-
 	existing, err := s.locRepo.GetByName(ctx, name)
 	if err != nil {
 		return nil, err
 	}
 
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableExternalLocation, existing.ID, domain.PrivCreateExternalLocation)
-	if err != nil {
-		return nil, fmt.Errorf("check privilege: %w", err)
-	}
-	if !allowed {
-		s.logAuditDenied(ctx, principal, "UPDATE_EXTERNAL_LOCATION", fmt.Sprintf("Denied update location %q", name))
-		return nil, domain.ErrAccessDenied("%q lacks %s on external location %q", principal, domain.PrivCreateExternalLocation, name)
+	if err := s.requirePrivilege(ctx, principal, domain.SecurableExternalLocation, existing.ID, domain.PrivManage, "UPDATE_EXTERNAL_LOCATION", fmt.Sprintf("Denied update external location %q", name)); err != nil {
+		if errLegacy := s.requirePrivilege(ctx, principal, domain.SecurableExternalLocation, existing.ID, domain.PrivCreateExternalLocation, "UPDATE_EXTERNAL_LOCATION", fmt.Sprintf("Denied update location %q", name)); errLegacy != nil {
+			return nil, errLegacy
+		}
 	}
 
 	result, err := s.locRepo.Update(ctx, existing.ID, req)
@@ -132,24 +126,17 @@ func (s *ExternalLocationService) Update(ctx context.Context, principal string, 
 }
 
 // Delete removes an external location and its associated DuckDB secret.
-// Requires CREATE_EXTERNAL_LOCATION on catalog.
+// Requires MANAGE on external location.
 func (s *ExternalLocationService) Delete(ctx context.Context, principal string, name string) error {
-	if err := s.requirePrivilege(ctx, principal, domain.PrivCreateExternalLocation); err != nil {
-		return err
-	}
-
 	existing, err := s.locRepo.GetByName(ctx, name)
 	if err != nil {
 		return err
 	}
 
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableExternalLocation, existing.ID, domain.PrivCreateExternalLocation)
-	if err != nil {
-		return fmt.Errorf("check privilege: %w", err)
-	}
-	if !allowed {
-		s.logAuditDenied(ctx, principal, "DELETE_EXTERNAL_LOCATION", fmt.Sprintf("Denied delete location %q", name))
-		return domain.ErrAccessDenied("%q lacks %s on external location %q", principal, domain.PrivCreateExternalLocation, name)
+	if err := s.requirePrivilege(ctx, principal, domain.SecurableExternalLocation, existing.ID, domain.PrivManage, "DELETE_EXTERNAL_LOCATION", fmt.Sprintf("Denied delete external location %q", name)); err != nil {
+		if errLegacy := s.requirePrivilege(ctx, principal, domain.SecurableExternalLocation, existing.ID, domain.PrivCreateExternalLocation, "DELETE_EXTERNAL_LOCATION", fmt.Sprintf("Denied delete location %q", name)); errLegacy != nil {
+			return errLegacy
+		}
 	}
 
 	// Drop the DuckDB secret for this location's credential
@@ -190,14 +177,15 @@ func (s *ExternalLocationService) RestoreSecrets(ctx context.Context) error {
 	return nil
 }
 
-// requirePrivilege checks that the principal has the given privilege on the catalog.
-func (s *ExternalLocationService) requirePrivilege(ctx context.Context, principal string, privilege string) error {
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, privilege)
+// requirePrivilege checks that the principal has the given privilege on a securable.
+func (s *ExternalLocationService) requirePrivilege(ctx context.Context, principal, securableType, securableID, privilege, action, detail string) error {
+	allowed, err := s.auth.CheckPrivilege(ctx, principal, securableType, securableID, privilege)
 	if err != nil {
 		return fmt.Errorf("check privilege: %w", err)
 	}
 	if !allowed {
-		return domain.ErrAccessDenied("%q lacks %s on catalog", principal, privilege)
+		s.logAuditDenied(ctx, principal, action, detail)
+		return domain.ErrAccessDenied("%q lacks %s on %s %q", principal, privilege, securableType, securableID)
 	}
 	return nil
 }
@@ -225,19 +213,9 @@ func (s *ExternalLocationService) createDuckDBSecret(ctx context.Context, secret
 }
 
 func (s *ExternalLocationService) logAudit(ctx context.Context, principal, action, detail string) {
-	_ = s.audit.Insert(ctx, &domain.AuditEntry{
-		PrincipalName: principal,
-		Action:        action,
-		Status:        "ALLOWED",
-		OriginalSQL:   &detail,
-	})
+	auditutil.LogAllowed(ctx, s.audit, principal, action, detail)
 }
 
 func (s *ExternalLocationService) logAuditDenied(ctx context.Context, principal, action, detail string) {
-	_ = s.audit.Insert(ctx, &domain.AuditEntry{
-		PrincipalName: principal,
-		Action:        action,
-		Status:        "DENIED",
-		OriginalSQL:   &detail,
-	})
+	auditutil.LogDenied(ctx, s.audit, principal, action, detail)
 }

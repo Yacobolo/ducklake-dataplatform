@@ -174,6 +174,62 @@ func TestExporter_PlanAfterExport(t *testing.T) {
 	assert.False(t, plan.HasChanges(), "plan after export should show no changes, got %d actions, %d errors", len(plan.Actions), len(plan.Errors))
 }
 
+func TestExporter_RoundTripModelsAndMacros(t *testing.T) {
+	original := &DesiredState{
+		Models: []ModelResource{{
+			ProjectName: "analytics",
+			ModelName:   "stg_orders",
+			Spec: ModelSpec{
+				Materialization: "INCREMENTAL",
+				SQL:             "SELECT 1",
+				Config: &ModelConfigSpec{
+					UniqueKey:           []string{"order_id"},
+					IncrementalStrategy: "delete+insert",
+					OnSchemaChange:      "fail",
+				},
+			},
+		}},
+		Macros: []MacroResource{{
+			Name: "fmt_money",
+			Spec: MacroSpec{
+				MacroType:   "SCALAR",
+				Parameters:  []string{"amount"},
+				Body:        "amount / 100.0",
+				CatalogName: "main",
+				ProjectName: "analytics",
+				Visibility:  "catalog_global",
+				Owner:       "data-team",
+				Properties:  map[string]string{"team": "finance"},
+				Tags:        []string{"finance", "shared"},
+				Status:      "DEPRECATED",
+			},
+		}},
+	}
+
+	dir := t.TempDir()
+	err := ExportDirectory(dir, original, false)
+	require.NoError(t, err)
+
+	assertFileExists(t, filepath.Join(dir, "models", "analytics", "stg_orders.yaml"))
+	assertFileExists(t, filepath.Join(dir, "macros", "fmt_money.yaml"))
+
+	loaded, err := LoadDirectory(dir)
+	require.NoError(t, err)
+
+	require.Len(t, loaded.Models, 1)
+	assert.Equal(t, "fail", loaded.Models[0].Spec.Config.OnSchemaChange)
+	assert.Equal(t, "delete+insert", loaded.Models[0].Spec.Config.IncrementalStrategy)
+
+	require.Len(t, loaded.Macros, 1)
+	assert.Equal(t, original.Macros[0].Spec.CatalogName, loaded.Macros[0].Spec.CatalogName)
+	assert.Equal(t, original.Macros[0].Spec.ProjectName, loaded.Macros[0].Spec.ProjectName)
+	assert.Equal(t, original.Macros[0].Spec.Visibility, loaded.Macros[0].Spec.Visibility)
+	assert.Equal(t, original.Macros[0].Spec.Owner, loaded.Macros[0].Spec.Owner)
+	assert.Equal(t, original.Macros[0].Spec.Properties, loaded.Macros[0].Spec.Properties)
+	assert.Equal(t, original.Macros[0].Spec.Tags, loaded.Macros[0].Spec.Tags)
+	assert.Equal(t, original.Macros[0].Spec.Status, loaded.Macros[0].Spec.Status)
+}
+
 // strPtr is defined in validator_test.go (same package).
 
 func assertFileExists(t *testing.T, path string) {

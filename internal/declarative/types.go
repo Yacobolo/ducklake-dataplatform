@@ -56,6 +56,36 @@ type GrantListDoc struct {
 	Grants     []GrantSpec `yaml:"grants"`
 }
 
+// PrivilegePresetListDoc declares reusable privilege bundles.
+type PrivilegePresetListDoc struct {
+	APIVersion string                `yaml:"apiVersion"`
+	Kind       string                `yaml:"kind"`
+	Presets    []PrivilegePresetSpec `yaml:"presets"`
+}
+
+// PrivilegePresetSpec describes a named privilege bundle.
+type PrivilegePresetSpec struct {
+	Name        string   `yaml:"name"`
+	Description string   `yaml:"description,omitempty"`
+	Privileges  []string `yaml:"privileges"`
+}
+
+// BindingListDoc declares principal/group bindings to privilege presets.
+type BindingListDoc struct {
+	APIVersion string        `yaml:"apiVersion"`
+	Kind       string        `yaml:"kind"`
+	Bindings   []BindingSpec `yaml:"bindings"`
+}
+
+// BindingSpec binds a principal or group to a preset at a specific scope.
+type BindingSpec struct {
+	Principal     string `yaml:"principal"`
+	PrincipalType string `yaml:"principal_type"` // user or group
+	Preset        string `yaml:"preset"`
+	ScopeType     string `yaml:"scope_type"` // catalog, schema, table, external_location, storage_credential, volume
+	Scope         string `yaml:"scope"`      // dot-path for scoped objects
+}
+
 // GrantSpec describes a single privilege grant on a securable object.
 type GrantSpec struct {
 	Principal     string `yaml:"principal"`
@@ -400,6 +430,8 @@ type DesiredState struct {
 	Principals         []PrincipalSpec
 	Groups             []GroupSpec
 	Grants             []GrantSpec
+	PrivilegePresets   []PrivilegePresetSpec
+	Bindings           []BindingSpec
 	RowFilters         []RowFilterResource
 	ColumnMasks        []ColumnMaskResource
 	Tags               []TagSpec
@@ -495,10 +527,17 @@ type MacroDoc struct {
 
 // MacroSpec holds the configuration for a SQL macro.
 type MacroSpec struct {
-	MacroType   string   `yaml:"macro_type,omitempty"` // SCALAR or TABLE
-	Parameters  []string `yaml:"parameters,omitempty"`
-	Body        string   `yaml:"body"`
-	Description string   `yaml:"description,omitempty"`
+	MacroType   string            `yaml:"macro_type,omitempty"` // SCALAR or TABLE
+	Parameters  []string          `yaml:"parameters,omitempty"`
+	Body        string            `yaml:"body"`
+	Description string            `yaml:"description,omitempty"`
+	CatalogName string            `yaml:"catalog_name,omitempty"`
+	ProjectName string            `yaml:"project_name,omitempty"`
+	Visibility  string            `yaml:"visibility,omitempty"`
+	Owner       string            `yaml:"owner,omitempty"`
+	Properties  map[string]string `yaml:"properties,omitempty"`
+	Tags        []string          `yaml:"tags,omitempty"`
+	Status      string            `yaml:"status,omitempty"`
 }
 
 // MacroResource is a macro with its resolved name.
@@ -563,6 +602,7 @@ type TestSpec struct {
 type ModelConfigSpec struct {
 	UniqueKey           []string `yaml:"unique_key,omitempty"`
 	IncrementalStrategy string   `yaml:"incremental_strategy,omitempty"`
+	OnSchemaChange      string   `yaml:"on_schema_change,omitempty"`
 }
 
 // ModelResource is a model with project context from the directory tree.

@@ -14,9 +14,11 @@ import (
 
 func newApplyCmd(client *gen.Client) *cobra.Command {
 	var (
-		configDir   string
-		autoApprove bool
-		noColor     bool
+		configDir                string
+		autoApprove              bool
+		noColor                  bool
+		allowUnknownFields       bool
+		legacyOptionalReadErrors bool
 	)
 
 	cmd := &cobra.Command{
@@ -26,8 +28,15 @@ func newApplyCmd(client *gen.Client) *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			isJSON := getOutputFormat(cmd) == "json"
 
+			compatMode := CapabilityCompatibilityStrict
+			if legacyOptionalReadErrors {
+				compatMode = CapabilityCompatibilityLegacy
+			}
+
 			// 1. Load desired state from YAML files.
-			desired, err := declarative.LoadDirectory(configDir)
+			desired, err := declarative.LoadDirectoryWithOptions(configDir, declarative.LoadOptions{
+				AllowUnknownFields: allowUnknownFields,
+			})
 			if err != nil {
 				return fmt.Errorf("load config: %w", err)
 			}
@@ -53,10 +62,15 @@ func newApplyCmd(client *gen.Client) *cobra.Command {
 			}
 
 			// 3. Read current state from server.
-			stateClient := NewAPIStateClient(client)
+			stateClient := NewAPIStateClientWithOptions(client, APIStateClientOptions{CompatibilityMode: compatMode})
 			actual, err := stateClient.ReadState(cmd.Context())
 			if err != nil {
 				return fmt.Errorf("read server state: %w", err)
+			}
+			if !isJSON {
+				for _, warning := range stateClient.OptionalReadWarnings() {
+					_, _ = fmt.Fprintf(os.Stderr, "warning: %s\n", warning)
+				}
 			}
 
 			// 4. Diff desired vs actual.
@@ -103,6 +117,9 @@ func newApplyCmd(client *gen.Client) *cobra.Command {
 			if err := stateClient.ValidateNoSelfAPIKeyDeletion(cmd.Context(), plan.Actions); err != nil {
 				return fmt.Errorf("preflight auth validation: %w", err)
 			}
+			if err := stateClient.ValidateApplyCapabilities(cmd.Context(), plan.Actions); err != nil {
+				return fmt.Errorf("preflight capability validation: %w", err)
+			}
 
 			// 7. Execute each action.
 			type actionResult struct {
@@ -112,19 +129,17 @@ func newApplyCmd(client *gen.Client) *cobra.Command {
 				Status       string `json:"status"`
 				Error        string `json:"error,omitempty"`
 			}
-			var results []actionResult
+			results := make([]actionResult, 0, len(plan.Actions))
 			var succeeded, failed int
-			stop := false
-			for _, action := range plan.Actions {
-				if stop {
-					break
-				}
+			failedAt := -1
+			for i, action := range plan.Actions {
 				if !isJSON {
 					_, _ = fmt.Fprintf(os.Stdout, "  %s %s %q ... ",
 						action.Operation, action.ResourceKind, action.ResourceName)
 				}
 
-				if err := stateClient.Execute(cmd.Context(), action); err != nil {
+				err := stateClient.Execute(cmd.Context(), action)
+				if err != nil {
 					if !isJSON {
 						_, _ = fmt.Fprintf(os.Stdout, "failed: %v\n", err)
 					}
@@ -136,18 +151,30 @@ func newApplyCmd(client *gen.Client) *cobra.Command {
 						Error:        err.Error(),
 					})
 					failed++
-					stop = true
-				} else {
-					if !isJSON {
-						_, _ = fmt.Fprintln(os.Stdout, "succeeded")
-					}
+					failedAt = i
+					break
+				}
+				if !isJSON {
+					_, _ = fmt.Fprintln(os.Stdout, "succeeded")
+				}
+				results = append(results, actionResult{
+					Operation:    action.Operation.String(),
+					ResourceKind: action.ResourceKind.String(),
+					ResourceName: action.ResourceName,
+					Status:       "succeeded",
+				})
+				succeeded++
+			}
+
+			if failedAt >= 0 {
+				for _, action := range plan.Actions[failedAt+1:] {
 					results = append(results, actionResult{
 						Operation:    action.Operation.String(),
 						ResourceKind: action.ResourceKind.String(),
 						ResourceName: action.ResourceName,
-						Status:       "succeeded",
+						Status:       "skipped",
+						Error:        "not executed due to earlier failure",
 					})
-					succeeded++
 				}
 			}
 
@@ -178,6 +205,8 @@ func newApplyCmd(client *gen.Client) *cobra.Command {
 	cmd.Flags().StringVar(&configDir, "config-dir", "./duck-config", "Path to configuration directory")
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive confirmation prompt")
 	cmd.Flags().BoolVar(&noColor, "no-color", false, "Disable colored output")
+	cmd.Flags().BoolVar(&allowUnknownFields, "allow-unknown-fields", false, "Allow unknown YAML fields in declarative config")
+	cmd.Flags().BoolVar(&legacyOptionalReadErrors, "legacy-optional-read-errors", false, "Treat transport errors as optional for model/macro capability checks")
 
 	return cmd
 }

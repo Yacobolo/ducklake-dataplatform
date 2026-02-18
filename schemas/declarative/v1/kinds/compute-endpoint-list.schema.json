@@ -1,0 +1,68 @@
+{
+  "$defs": {
+    "ComputeEndpointListDoc": {
+      "additionalProperties": false,
+      "properties": {
+        "apiVersion": {
+          "enum": [
+            "duck/v1"
+          ],
+          "type": "string"
+        },
+        "endpoints": {
+          "items": {
+            "$ref": "#/$defs/ComputeEndpointSpec"
+          },
+          "type": "array"
+        },
+        "kind": {
+          "enum": [
+            "ComputeEndpointList"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "apiVersion",
+        "kind"
+      ],
+      "type": "object"
+    },
+    "ComputeEndpointSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "auth_token_from_env": {
+          "type": "string"
+        },
+        "max_memory_gb": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "size": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "type"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "schemas/declarative/v1/kinds/compute-endpoint-list.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    {
+      "$ref": "#/$defs/ComputeEndpointListDoc"
+    }
+  ],
+  "title": "Duck declarative ComputeEndpointList"
+}

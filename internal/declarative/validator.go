@@ -2,6 +2,7 @@ package declarative
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"duck-demo/internal/duckdbsql"
@@ -49,15 +50,33 @@ var validSecurableTypes = map[string]bool{
 	"volume":             true,
 }
 
+// Valid scope types for preset bindings.
+var validBindingScopeTypes = map[string]bool{
+	"catalog":            true,
+	"schema":             true,
+	"table":              true,
+	"external_location":  true,
+	"storage_credential": true,
+	"volume":             true,
+}
+
 // Valid privilege names.
 var validPrivileges = map[string]bool{
 	"SELECT":                    true,
 	"INSERT":                    true,
 	"UPDATE":                    true,
 	"DELETE":                    true,
+	"USE_CATALOG":               true,
+	"USE_SCHEMA":                true,
 	"USAGE":                     true,
 	"CREATE_TABLE":              true,
+	"CREATE_VIEW":               true,
 	"CREATE_SCHEMA":             true,
+	"MODIFY":                    true,
+	"MANAGE":                    true,
+	"APPLY_TAG":                 true,
+	"MANAGE_TAGS":               true,
+	"MANAGE_POLICIES":           true,
 	"ALL_PRIVILEGES":            true,
 	"CREATE_EXTERNAL_LOCATION":  true,
 	"CREATE_STORAGE_CREDENTIAL": true,
@@ -68,6 +87,76 @@ var validPrivileges = map[string]bool{
 	"WRITE_FILES":               true,
 	"MANAGE_COMPUTE":            true,
 	"MANAGE_PIPELINES":          true,
+}
+
+var allowedPrivilegesBySecurable = map[string]map[string]bool{
+	"catalog": {
+		"USE_CATALOG":               true,
+		"USAGE":                     true,
+		"CREATE_SCHEMA":             true,
+		"CREATE_EXTERNAL_LOCATION":  true,
+		"CREATE_STORAGE_CREDENTIAL": true,
+		"MANAGE_COMPUTE":            true,
+		"MANAGE_PIPELINES":          true,
+		"MANAGE_TAGS":               true,
+		"MODIFY":                    true,
+		"MANAGE":                    true,
+		"ALL_PRIVILEGES":            true,
+	},
+	"schema": {
+		"USE_CATALOG":    true,
+		"USE_SCHEMA":     true,
+		"USAGE":          true,
+		"SELECT":         true,
+		"INSERT":         true,
+		"UPDATE":         true,
+		"DELETE":         true,
+		"CREATE_TABLE":   true,
+		"CREATE_VIEW":    true,
+		"CREATE_VOLUME":  true,
+		"MODIFY":         true,
+		"MANAGE":         true,
+		"APPLY_TAG":      true,
+		"MANAGE_TAGS":    true,
+		"ALL_PRIVILEGES": true,
+	},
+	"table": {
+		"SELECT":          true,
+		"INSERT":          true,
+		"UPDATE":          true,
+		"DELETE":          true,
+		"MODIFY":          true,
+		"MANAGE":          true,
+		"APPLY_TAG":       true,
+		"MANAGE_POLICIES": true,
+		"MANAGE_TAGS":     true,
+		"ALL_PRIVILEGES":  true,
+	},
+	"volume": {
+		"READ_VOLUME":    true,
+		"WRITE_VOLUME":   true,
+		"MODIFY":         true,
+		"MANAGE":         true,
+		"APPLY_TAG":      true,
+		"MANAGE_TAGS":    true,
+		"ALL_PRIVILEGES": true,
+	},
+	"external_location": {
+		"READ_FILES":     true,
+		"WRITE_FILES":    true,
+		"MODIFY":         true,
+		"MANAGE":         true,
+		"APPLY_TAG":      true,
+		"MANAGE_TAGS":    true,
+		"ALL_PRIVILEGES": true,
+	},
+	"storage_credential": {
+		"MODIFY":         true,
+		"MANAGE":         true,
+		"APPLY_TAG":      true,
+		"MANAGE_TAGS":    true,
+		"ALL_PRIVILEGES": true,
+	},
 }
 
 // Valid metastore types.
@@ -190,6 +279,18 @@ func Validate(state *DesiredState) []ValidationError {
 		tagKeys[formatTagKey(t)] = true
 	}
 
+	macroNames := make(map[string]bool, len(state.Macros))
+	for _, m := range state.Macros {
+		if m.Name != "" {
+			macroNames[m.Name] = true
+		}
+	}
+
+	presetNames := make(map[string]bool, len(state.PrivilegePresets))
+	for _, p := range state.PrivilegePresets {
+		presetNames[p.Name] = true
+	}
+
 	// 1. Validate principals.
 	validatePrincipals(state.Principals, &errs)
 
@@ -199,61 +300,189 @@ func Validate(state *DesiredState) []ValidationError {
 	// 3. Validate grants.
 	validateGrants(state.Grants, principalNames, groupNames, catalogNames, schemaKeys, tableKeys, locationNames, credentialNames, volumeKeys, &errs)
 
-	// 4. Validate catalogs.
+	// 4. Validate privilege presets.
+	validatePrivilegePresets(state.PrivilegePresets, &errs)
+
+	// 5. Validate preset bindings.
+	validateBindings(state.Bindings, principalNames, groupNames, presetNames, catalogNames, schemaKeys, tableKeys, locationNames, credentialNames, volumeKeys, &errs)
+	validateEffectiveBindingGrants(state.Grants, state.PrivilegePresets, state.Bindings, &errs)
+
+	// 6. Validate catalogs.
 	validateCatalogs(state.Catalogs, &errs)
 
-	// 5. Validate schemas.
+	// 7. Validate schemas.
 	validateSchemas(state.Schemas, catalogNames, &errs)
 
-	// 6. Validate tables.
+	// 8. Validate tables.
 	validateTables(state.Tables, schemaKeys, &errs)
 
-	// 7. Validate views.
+	// 9. Validate views.
 	validateViews(state.Views, schemaKeys, &errs)
 
-	// 8. Validate volumes.
+	// 10. Validate volumes.
 	validateVolumes(state.Volumes, schemaKeys, &errs)
 
-	// 9. Validate row filters.
+	// 11. Validate row filters.
 	validateRowFilters(state.RowFilters, tableKeys, principalNames, groupNames, &errs)
 
-	// 10. Validate column masks.
+	// 12. Validate column masks.
 	validateColumnMasks(state.ColumnMasks, tableKeys, tableColumns, principalNames, groupNames, &errs)
 
-	// 11. Validate tags.
+	// 13. Validate tags.
 	validateTags(state.Tags, &errs)
 
-	// 12. Validate tag assignments.
+	// 14. Validate tag assignments.
 	validateTagAssignments(state.TagAssignments, tagKeys, schemaKeys, tableKeys, tableColumns, &errs)
 
-	// 13. Validate storage credentials.
+	// 15. Validate storage credentials.
 	validateStorageCredentials(state.StorageCredentials, &errs)
 
-	// 14. Validate external locations.
+	// 16. Validate external locations.
 	validateExternalLocations(state.ExternalLocations, credentialNames, &errs)
 
-	// 15. Validate compute endpoints.
+	// 17. Validate compute endpoints.
 	validateComputeEndpoints(state.ComputeEndpoints, &errs)
 
-	// 16. Validate compute assignments.
+	// 18. Validate compute assignments.
 	validateComputeAssignments(state.ComputeAssignments, endpointNames, principalNames, groupNames, &errs)
 
-	// 17. Validate API keys.
+	// 19. Validate API keys.
 	validateAPIKeys(state.APIKeys, principalNames, &errs)
 
-	// 18. Validate notebooks.
+	// 20. Validate notebooks.
 	validateNotebooks(state.Notebooks, &errs)
 
-	// 19. Validate pipelines.
+	// 21. Validate pipelines.
 	validatePipelines(state.Pipelines, notebookNames, endpointNames, &errs)
 
-	// 20. Validate models.
-	validateModels(state.Models, &errs)
-
-	// 21. Validate macros.
+	// 22. Validate macros.
 	validateMacros(state.Macros, &errs)
 
+	// 23. Validate models.
+	validateModels(state.Models, macroNames, &errs)
+
 	return errs
+}
+
+func validatePrivilegePresets(presets []PrivilegePresetSpec, errs *[]ValidationError) {
+	seen := make(map[string]bool, len(presets))
+	for i, p := range presets {
+		path := fmt.Sprintf("privilege_preset[%d]", i)
+		if p.Name != "" {
+			path = fmt.Sprintf("privilege_preset[%s]", p.Name)
+		}
+		if p.Name == "" {
+			addErr(errs, path, "name is required")
+		}
+		if p.Name != "" {
+			if seen[p.Name] {
+				addErr(errs, path, "duplicate preset name %q", p.Name)
+			}
+			seen[p.Name] = true
+		}
+		if len(p.Privileges) == 0 {
+			addErr(errs, path, "privileges must contain at least one entry")
+		}
+		for j, priv := range p.Privileges {
+			ppath := fmt.Sprintf("%s.privileges[%d]", path, j)
+			if !validPrivileges[priv] {
+				addErr(errs, ppath, "unknown privilege %q", priv)
+			}
+		}
+	}
+}
+
+func validateBindings(
+	bindings []BindingSpec,
+	principalNames, groupNames, presetNames, catalogNames, schemaKeys, tableKeys, locationNames, credentialNames, volumeKeys map[string]bool,
+	errs *[]ValidationError,
+) {
+	seen := make(map[string]bool, len(bindings))
+	for i, b := range bindings {
+		path := fmt.Sprintf("binding[%d]", i)
+
+		if b.Principal == "" {
+			addErr(errs, path, "principal is required")
+		}
+		if !validGrantPrincipalTypes[b.PrincipalType] {
+			addErr(errs, path, "principal_type must be \"user\" or \"group\", got %q", b.PrincipalType)
+		}
+		if b.PrincipalType == "user" && b.Principal != "" && !principalNames[b.Principal] {
+			addErr(errs, path, "principal %q references unknown user", b.Principal)
+		}
+		if b.PrincipalType == "group" && b.Principal != "" && !groupNames[b.Principal] {
+			addErr(errs, path, "principal %q references unknown group", b.Principal)
+		}
+
+		if b.Preset == "" {
+			addErr(errs, path, "preset is required")
+		} else if !presetNames[b.Preset] {
+			addErr(errs, path, "preset %q references unknown preset", b.Preset)
+		}
+
+		if !validBindingScopeTypes[b.ScopeType] {
+			addErr(errs, path, "scope_type must be one of [catalog, schema, table, external_location, storage_credential, volume], got %q", b.ScopeType)
+		}
+		if b.Scope == "" {
+			addErr(errs, path, "scope is required")
+		}
+		if b.Scope != "" && validBindingScopeTypes[b.ScopeType] {
+			validateBindingScope(b.ScopeType, b.Scope, catalogNames, schemaKeys, tableKeys, locationNames, credentialNames, volumeKeys, path, errs)
+		}
+
+		key := fmt.Sprintf("%s|%s|%s|%s|%s", b.Principal, b.PrincipalType, b.Preset, b.ScopeType, b.Scope)
+		if seen[key] {
+			addErr(errs, path, "duplicate binding")
+		}
+		seen[key] = true
+	}
+}
+
+func validateBindingScope(
+	scopeType, scope string,
+	catalogNames, schemaKeys, tableKeys, locationNames, credentialNames, volumeKeys map[string]bool,
+	path string,
+	errs *[]ValidationError,
+) {
+	parts := strings.Split(scope, ".")
+	switch scopeType {
+	case "catalog":
+		if len(parts) != 1 {
+			addErr(errs, path, "catalog scope must be a single name, got %q", scope)
+		} else if !catalogNames[scope] {
+			addErr(errs, path, "scope references unknown catalog %q", scope)
+		}
+	case "schema":
+		if len(parts) != 2 {
+			addErr(errs, path, "schema scope must be \"catalog.schema\", got %q", scope)
+		} else if !schemaKeys[scope] {
+			addErr(errs, path, "scope references unknown schema %q", scope)
+		}
+	case "table":
+		if len(parts) != 3 {
+			addErr(errs, path, "table scope must be \"catalog.schema.table\", got %q", scope)
+		} else if !tableKeys[scope] {
+			addErr(errs, path, "scope references unknown table %q", scope)
+		}
+	case "external_location":
+		if len(parts) != 1 {
+			addErr(errs, path, "external_location scope must be a single name, got %q", scope)
+		} else if !locationNames[scope] {
+			addErr(errs, path, "scope references unknown external location %q", scope)
+		}
+	case "storage_credential":
+		if len(parts) != 1 {
+			addErr(errs, path, "storage_credential scope must be a single name, got %q", scope)
+		} else if !credentialNames[scope] {
+			addErr(errs, path, "scope references unknown storage credential %q", scope)
+		}
+	case "volume":
+		if len(parts) != 3 {
+			addErr(errs, path, "volume scope must be \"catalog.schema.volume\", got %q", scope)
+		} else if !volumeKeys[scope] {
+			addErr(errs, path, "scope references unknown volume %q", scope)
+		}
+	}
 }
 
 // addErr appends a formatted validation error.
@@ -444,6 +673,8 @@ func validateGrants(
 		}
 		if !validPrivileges[g.Privilege] {
 			addErr(errs, path, "unknown privilege %q", g.Privilege)
+		} else if validSecurableTypes[g.SecurableType] && !isPrivilegeAllowedOnSecurable(g.SecurableType, g.Privilege) {
+			addErr(errs, path, "privilege %q is not allowed on securable_type %q", g.Privilege, g.SecurableType)
 		}
 
 		// Validate securable path format and existence.
@@ -504,6 +735,52 @@ func validateGrantSecurable(
 			addErr(errs, path, "securable references unknown volume %q", g.Securable)
 		}
 	}
+}
+
+func validateEffectiveBindingGrants(explicit []GrantSpec, presets []PrivilegePresetSpec, bindings []BindingSpec, errs *[]ValidationError) {
+	presetByName := make(map[string]PrivilegePresetSpec, len(presets))
+	for _, p := range presets {
+		presetByName[p.Name] = p
+	}
+
+	seen := make(map[string]bool, len(explicit)+(len(bindings)*2))
+	for _, g := range explicit {
+		seen[grantIdentityKey(g)] = true
+	}
+
+	for i, b := range bindings {
+		preset, ok := presetByName[b.Preset]
+		if !ok {
+			continue
+		}
+		path := fmt.Sprintf("binding[%d]", i)
+		for _, privilege := range preset.Privileges {
+			if !isPrivilegeAllowedOnSecurable(b.ScopeType, privilege) {
+				addErr(errs, path, "privilege %q is not allowed on scope_type %q", privilege, b.ScopeType)
+			}
+
+			key := grantIdentityKey(GrantSpec{
+				Principal:     b.Principal,
+				PrincipalType: b.PrincipalType,
+				SecurableType: b.ScopeType,
+				Securable:     b.Scope,
+				Privilege:     privilege,
+			})
+			if seen[key] {
+				addErr(errs, path, "duplicate effective grant generated for preset binding")
+				continue
+			}
+			seen[key] = true
+		}
+	}
+}
+
+func isPrivilegeAllowedOnSecurable(securableType, privilege string) bool {
+	allowed, ok := allowedPrivilegesBySecurable[securableType]
+	if !ok {
+		return false
+	}
+	return allowed[privilege]
 }
 
 // === Catalogs ===
@@ -1200,8 +1477,48 @@ var validTestTypes = map[string]bool{
 	"custom_sql":      true,
 }
 
-func validateModels(models []ModelResource, errs *[]ValidationError) {
+// Valid incremental strategy values for model config.
+var validIncrementalStrategies = map[string]bool{
+	"":              true,
+	"merge":         true,
+	"delete_insert": true,
+	"delete+insert": true,
+}
+
+// Valid on_schema_change values for model config.
+var validOnSchemaChange = map[string]bool{
+	"":       true,
+	"ignore": true,
+	"fail":   true,
+}
+
+type relationshipTestRef struct {
+	path           string
+	currentProject string
+	toModel        string
+	toColumn       string
+}
+
+func validateModels(models []ModelResource, macroNames map[string]bool, errs *[]ValidationError) {
 	seen := make(map[string]bool, len(models))
+	contractColumns := make(map[string]map[string]bool, len(models))
+	relationshipChecks := make([]relationshipTestRef, 0)
+
+	for _, m := range models {
+		if m.ProjectName == "" || m.ModelName == "" || m.Spec.Contract == nil {
+			continue
+		}
+		cols := make(map[string]bool, len(m.Spec.Contract.Columns))
+		for _, col := range m.Spec.Contract.Columns {
+			if col.Name != "" {
+				cols[col.Name] = true
+			}
+		}
+		if len(cols) > 0 {
+			contractColumns[m.ProjectName+"."+m.ModelName] = cols
+		}
+	}
+
 	for i, m := range models {
 		path := fmt.Sprintf("model[%d]", i)
 		if m.ProjectName != "" && m.ModelName != "" {
@@ -1219,6 +1536,17 @@ func validateModels(models []ModelResource, errs *[]ValidationError) {
 		if m.Spec.Materialization != "" && !validMaterializationTypes[m.Spec.Materialization] {
 			addErr(errs, path, "materialization must be one of [VIEW, TABLE, INCREMENTAL, EPHEMERAL], got %q", m.Spec.Materialization)
 		}
+		if m.Spec.Config != nil {
+			strategy := strings.ToLower(strings.TrimSpace(m.Spec.Config.IncrementalStrategy))
+			if !validIncrementalStrategies[strategy] {
+				addErr(errs, path, "config.incremental_strategy must be one of [merge, delete_insert, delete+insert], got %q", m.Spec.Config.IncrementalStrategy)
+			}
+
+			onSchemaChange := strings.ToLower(strings.TrimSpace(m.Spec.Config.OnSchemaChange))
+			if !validOnSchemaChange[onSchemaChange] {
+				addErr(errs, path, "config.on_schema_change must be one of [ignore, fail], got %q", m.Spec.Config.OnSchemaChange)
+			}
+		}
 
 		// Validate contract.
 		if m.Spec.Contract != nil {
@@ -1227,6 +1555,31 @@ func validateModels(models []ModelResource, errs *[]ValidationError) {
 
 		// Validate tests.
 		validateModelTests(m.Spec.Tests, path, errs)
+		for j, test := range m.Spec.Tests {
+			testPath := fmt.Sprintf("%s.tests[%d]", path, j)
+			if test.Name != "" {
+				testPath = fmt.Sprintf("%s.tests[%s]", path, test.Name)
+			}
+			if test.Column != "" {
+				if cols, ok := contractColumns[m.ProjectName+"."+m.ModelName]; ok && !cols[test.Column] {
+					addErr(errs, testPath, "column %q is not declared in model contract", test.Column)
+				}
+			}
+			if test.Type == "relationships" && test.ToModel != "" && test.ToColumn != "" {
+				relationshipChecks = append(relationshipChecks, relationshipTestRef{
+					path:           testPath,
+					currentProject: m.ProjectName,
+					toModel:        test.ToModel,
+					toColumn:       test.ToColumn,
+				})
+			}
+		}
+
+		for _, macroName := range referencedMacroNames(m.Spec.SQL) {
+			if !macroNames[macroName] {
+				addErr(errs, path, "sql references unknown macro %q", macroName)
+			}
+		}
 
 		key := m.ProjectName + "." + m.ModelName
 		if m.ProjectName != "" && m.ModelName != "" {
@@ -1236,6 +1589,61 @@ func validateModels(models []ModelResource, errs *[]ValidationError) {
 			seen[key] = true
 		}
 	}
+
+	for _, ref := range relationshipChecks {
+		targetKey, ok := resolveModelReference(ref.currentProject, ref.toModel)
+		if !ok {
+			addErr(errs, ref.path, "to_model must be \"model\" or \"project.model\", got %q", ref.toModel)
+			continue
+		}
+		if !seen[targetKey] {
+			addErr(errs, ref.path, "relationships test references unknown to_model %q", ref.toModel)
+			continue
+		}
+		if cols, hasContract := contractColumns[targetKey]; hasContract && !cols[ref.toColumn] {
+			addErr(errs, ref.path, "relationships test references unknown to_column %q on model %q", ref.toColumn, ref.toModel)
+		}
+	}
+}
+
+func resolveModelReference(currentProject, toModel string) (string, bool) {
+	parts := strings.Split(toModel, ".")
+	if len(parts) == 1 {
+		if currentProject == "" || strings.TrimSpace(parts[0]) == "" {
+			return "", false
+		}
+		return currentProject + "." + parts[0], true
+	}
+	if len(parts) != 2 {
+		return "", false
+	}
+	if strings.TrimSpace(parts[0]) == "" || strings.TrimSpace(parts[1]) == "" {
+		return "", false
+	}
+	return parts[0] + "." + parts[1], true
+}
+
+var macroCallPattern = regexp.MustCompile(`\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\(`)
+
+func referencedMacroNames(sql string) []string {
+	matches := macroCallPattern.FindAllStringSubmatch(sql, -1)
+	if len(matches) == 0 {
+		return nil
+	}
+	seen := make(map[string]struct{}, len(matches))
+	names := make([]string, 0, len(matches))
+	for _, match := range matches {
+		if len(match) < 2 {
+			continue
+		}
+		name := match[1]
+		if _, ok := seen[name]; ok {
+			continue
+		}
+		seen[name] = struct{}{}
+		names = append(names, name)
+	}
+	return names
 }
 
 func validateModelContract(contract *ContractSpec, parentPath string, errs *[]ValidationError) {
@@ -1314,6 +1722,19 @@ var validMacroTypes = map[string]bool{
 	"":       true, // default to SCALAR
 }
 
+var validMacroVisibility = map[string]bool{
+	"":               true,
+	"project":        true,
+	"catalog_global": true,
+	"system":         true,
+}
+
+var validMacroStatus = map[string]bool{
+	"":           true,
+	"ACTIVE":     true,
+	"DEPRECATED": true,
+}
+
 func validateMacros(macros []MacroResource, errs *[]ValidationError) {
 	seen := make(map[string]bool, len(macros))
 	for i, m := range macros {
@@ -1329,6 +1750,26 @@ func validateMacros(macros []MacroResource, errs *[]ValidationError) {
 		}
 		if !validMacroTypes[m.Spec.MacroType] {
 			addErr(errs, path, "macro_type must be \"SCALAR\" or \"TABLE\", got %q", m.Spec.MacroType)
+		}
+		if !validMacroVisibility[m.Spec.Visibility] {
+			addErr(errs, path, "visibility must be one of [project, catalog_global, system], got %q", m.Spec.Visibility)
+		}
+		if m.Spec.Visibility == "project" && m.Spec.ProjectName == "" {
+			addErr(errs, path, "project_name is required when visibility is project")
+		}
+		if m.Spec.Visibility == "catalog_global" && m.Spec.CatalogName == "" {
+			addErr(errs, path, "catalog_name is required when visibility is catalog_global")
+		}
+		if m.Spec.Visibility == "system" {
+			if m.Spec.ProjectName != "" {
+				addErr(errs, path, "project_name must be empty when visibility is system")
+			}
+			if m.Spec.CatalogName != "" {
+				addErr(errs, path, "catalog_name must be empty when visibility is system")
+			}
+		}
+		if !validMacroStatus[m.Spec.Status] {
+			addErr(errs, path, "status must be one of [ACTIVE, DEPRECATED], got %q", m.Spec.Status)
 		}
 		if m.Name != "" {
 			if seen[m.Name] {

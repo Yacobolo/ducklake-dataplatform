@@ -71,9 +71,27 @@ tasks:
     generates:
       - pkg/cli/gen/*.gen.go
 
+  generate:declarative-schema:
+    desc: Generate declarative JSON Schema artifacts
+    cmds:
+      - go run ./cmd/declarative-schema-gen -outdir schemas/declarative/v1
+    sources:
+      - internal/declarative/*.go
+      - cmd/declarative-schema-gen/*.go
+    generates:
+      - schemas/declarative/v1/duck.declarative.schema.json
+      - schemas/declarative/v1/index.json
+      - schemas/declarative/v1/kinds/*.schema.json
+
+  verify:declarative-schema:
+    desc: Verify declarative schema artifacts are up to date
+    cmds:
+      - task generate:declarative-schema
+      - git diff --exit-code -- schemas/declarative/v1
+
   generate:
     desc: Run all code generation
-    deps: [generate-api, sqlc, generate-cli, genduckdb]
+    deps: [generate-api, sqlc, generate-cli, genduckdb, generate:declarative-schema]
 
   build:
     desc: Build all packages
@@ -148,7 +166,7 @@ tasks:
       - |
         failed=0
         results=""
-        for step in lint:go lint:api test:arch test:unit test:integration; do
+        for step in lint:go lint:api verify:declarative-schema test:arch test:unit test:integration; do
           if task "$step" > /dev/null 2>&1; then
             results="${results}  ${step} ... ok\n"
           else
