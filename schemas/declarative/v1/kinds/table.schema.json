@@ -66,6 +66,23 @@
     },
     "TableSpec": {
       "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "table_type": {
+                "const": "EXTERNAL"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "source_path",
+              "file_format"
+            ]
+          }
+        }
+      ],
       "properties": {
         "columns": {
           "items": {
@@ -95,6 +112,11 @@
           "type": "string"
         },
         "table_type": {
+          "enum": [
+            "",
+            "MANAGED",
+            "EXTERNAL"
+          ],
           "type": "string"
         }
       },

@@ -11,4 +11,4 @@ spec:
       user_id,
       age_group,
       region
-    FROM raw_users
+    FROM lake.main.raw_users

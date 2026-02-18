@@ -12,4 +12,4 @@ spec:
       movie_id,
       rating,
       rating_ts
-    FROM raw_ratings
+    FROM lake.main.raw_ratings

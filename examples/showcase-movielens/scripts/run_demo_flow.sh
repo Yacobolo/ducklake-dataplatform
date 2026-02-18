@@ -24,7 +24,14 @@ duck() {
 
 echo "Validating and applying declarative showcase"
 duck validate --config-dir "$CONFIG_DIR"
-duck plan --config-dir "$CONFIG_DIR" || true
+set +e
+duck plan --config-dir "$CONFIG_DIR"
+plan_exit_code=$?
+set -e
+if [[ "$plan_exit_code" -ne 0 && "$plan_exit_code" -ne 2 ]]; then
+  echo "plan failed with exit code: $plan_exit_code" >&2
+  exit "$plan_exit_code"
+fi
 duck apply --config-dir "$CONFIG_DIR" --auto-approve
 
 echo "Loading raw data through ingestion API"

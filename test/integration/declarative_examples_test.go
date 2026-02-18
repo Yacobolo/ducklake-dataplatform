@@ -18,6 +18,10 @@ import (
 )
 
 type exampleExpectation struct {
+	MinPrincipalCreates   int `yaml:"min_principal_creates"`
+	MinGroupCreates       int `yaml:"min_group_creates"`
+	MinGrantCreates       int `yaml:"min_grant_creates"`
+	MinGroupMemberCreates int `yaml:"min_group_membership_creates"`
 	MinModelCreates       int `yaml:"min_model_creates"`
 	MinMacroCreates       int `yaml:"min_macro_creates"`
 	MinNotebookCreates    int `yaml:"min_notebook_creates"`
@@ -71,6 +75,10 @@ func TestDeclarativeExamples_Lifecycle(t *testing.T) {
 
 			plan := declarative.Diff(desired, actual)
 
+			principalCreates := actionsOfKindAndOp(plan, declarative.KindPrincipal, declarative.OpCreate)
+			groupCreates := actionsOfKindAndOp(plan, declarative.KindGroup, declarative.OpCreate)
+			grantCreates := actionsOfKindAndOp(plan, declarative.KindPrivilegeGrant, declarative.OpCreate)
+			groupMembershipCreates := actionsOfKindAndOp(plan, declarative.KindGroupMembership, declarative.OpCreate)
 			modelCreates := actionsOfKindAndOp(plan, declarative.KindModel, declarative.OpCreate)
 			macroCreates := actionsOfKindAndOp(plan, declarative.KindMacro, declarative.OpCreate)
 			notebookCreates := actionsOfKindAndOp(plan, declarative.KindNotebook, declarative.OpCreate)
@@ -80,6 +88,10 @@ func TestDeclarativeExamples_Lifecycle(t *testing.T) {
 			expectation, hasExpectation, expErr := loadExampleExpectation(assertionsPath, exampleName)
 			require.NoError(t, expErr)
 			if hasExpectation {
+				assert.GreaterOrEqual(t, len(principalCreates), expectation.MinPrincipalCreates, "expected principal creates for %s", exampleName)
+				assert.GreaterOrEqual(t, len(groupCreates), expectation.MinGroupCreates, "expected group creates for %s", exampleName)
+				assert.GreaterOrEqual(t, len(grantCreates), expectation.MinGrantCreates, "expected grant creates for %s", exampleName)
+				assert.GreaterOrEqual(t, len(groupMembershipCreates), expectation.MinGroupMemberCreates, "expected group membership creates for %s", exampleName)
 				assert.GreaterOrEqual(t, len(modelCreates), expectation.MinModelCreates, "expected model creates for %s", exampleName)
 				assert.GreaterOrEqual(t, len(macroCreates), expectation.MinMacroCreates, "expected macro creates for %s", exampleName)
 				assert.GreaterOrEqual(t, len(notebookCreates), expectation.MinNotebookCreates, "expected notebook creates for %s", exampleName)
@@ -108,7 +120,11 @@ func filterExampleApplyActions(actions []declarative.Action) []declarative.Actio
 	filtered := make([]declarative.Action, 0, len(actions))
 	for _, action := range actions {
 		switch action.ResourceKind {
-		case declarative.KindNotebook, declarative.KindPipeline, declarative.KindPipelineJob, declarative.KindModel, declarative.KindMacro:
+		case declarative.KindNotebook,
+			declarative.KindPipeline,
+			declarative.KindPipelineJob,
+			declarative.KindModel,
+			declarative.KindMacro:
 			filtered = append(filtered, action)
 		}
 	}

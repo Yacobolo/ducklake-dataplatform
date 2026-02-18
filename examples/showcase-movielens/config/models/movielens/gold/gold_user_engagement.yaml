@@ -16,5 +16,5 @@ spec:
       COUNT(*) AS ratings_submitted,
       ROUND(AVG(rating), 3) AS avg_rating_given,
       SUM(CASE WHEN rating_bucket = 'excellent' THEN 1 ELSE 0 END) AS excellent_votes
-    FROM lake.silver_ratings_enriched
+    FROM lake.main.silver_ratings_enriched
     GROUP BY user_id, region

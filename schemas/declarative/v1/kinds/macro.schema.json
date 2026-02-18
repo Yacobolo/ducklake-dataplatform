@@ -32,6 +32,55 @@
     },
     "MacroSpec": {
       "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "visibility": {
+                "const": "project"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "project_name"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "visibility": {
+                "const": "catalog_global"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "catalog_name"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "visibility": {
+                "const": "system"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "catalog_name": {
+                "maxLength": 0
+              },
+              "project_name": {
+                "maxLength": 0
+              }
+            }
+          }
+        }
+      ],
       "properties": {
         "body": {
           "type": "string"
@@ -43,6 +92,11 @@
           "type": "string"
         },
         "macro_type": {
+          "enum": [
+            "",
+            "SCALAR",
+            "TABLE"
+          ],
           "type": "string"
         },
         "owner": {
@@ -64,6 +118,11 @@
           "type": "object"
         },
         "status": {
+          "enum": [
+            "",
+            "ACTIVE",
+            "DEPRECATED"
+          ],
           "type": "string"
         },
         "tags": {
@@ -73,6 +132,12 @@
           "type": "array"
         },
         "visibility": {
+          "enum": [
+            "",
+            "project",
+            "catalog_global",
+            "system"
+          ],
           "type": "string"
         }
       },
