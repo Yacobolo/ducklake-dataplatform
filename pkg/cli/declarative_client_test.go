@@ -1177,6 +1177,71 @@ func TestExecuteModel_UpdateReconcilesTests(t *testing.T) {
 	assert.Contains(t, paths, "POST /v1/models/analytics/stg_orders/tests")
 }
 
+func TestExecuteModel_SkipsTestsWhenEndpointUnavailable(t *testing.T) {
+	t.Parallel()
+
+	var (
+		mu       sync.Mutex
+		captured []execCapture
+	)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+
+		ec := execCapture{Method: r.Method, Path: r.URL.Path, Query: r.URL.Query()}
+		if r.Body != nil {
+			data, _ := io.ReadAll(r.Body)
+			if len(data) > 0 {
+				var m map[string]interface{}
+				_ = json.Unmarshal(data, &m)
+				ec.Body = m
+			}
+		}
+		captured = append(captured, ec)
+
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodGet && r.URL.Path == "/v1/models/analytics/stg_orders/tests" {
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"code":"NOT_FOUND","message":"tests endpoint disabled"}`))
+			return
+		}
+		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`{"id":"generated-uuid-123"}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	sc := NewAPIStateClient(gen.NewClient(srv.URL, "", "test-token"))
+	sc.index = newResourceIndex()
+
+	action := declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindModel,
+		ResourceName: "analytics.stg_orders",
+		Desired: declarative.ModelResource{
+			ProjectName: "analytics",
+			ModelName:   "stg_orders",
+			Spec: declarative.ModelSpec{
+				Materialization: "INCREMENTAL",
+				SQL:             "SELECT 1",
+				Tests: []declarative.TestSpec{
+					{Name: "not_null_order_id", Type: "not_null", Column: "order_id"},
+				},
+			},
+		},
+	}
+
+	require.NoError(t, sc.Execute(context.Background(), action))
+
+	mu.Lock()
+	defer mu.Unlock()
+	require.Len(t, captured, 2)
+	assert.Equal(t, http.MethodPost, captured[0].Method)
+	assert.Equal(t, "/v1/models", captured[0].Path)
+	assert.Equal(t, http.MethodGet, captured[1].Method)
+	assert.Equal(t, "/v1/models/analytics/stg_orders/tests", captured[1].Path)
+}
+
 func TestReadState_ModelsAndMacros(t *testing.T) {
 	t.Parallel()
 
@@ -1213,6 +1278,27 @@ func TestReadState_ModelsAndMacros(t *testing.T) {
 	assert.Equal(t, "analytics", macro.Spec.ProjectName)
 	assert.Equal(t, "project", macro.Spec.Visibility)
 	assert.Equal(t, "ACTIVE", macro.Spec.Status)
+}
+
+func TestReadState_OptionalModelAndMacroEndpoints(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/models", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"code":"NOT_FOUND","message":"models disabled"}`))
+	})
+	mux.HandleFunc("/v1/macros", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"code":"NOT_FOUND","message":"macros disabled"}`))
+	})
+	mux.HandleFunc("/", emptyListHandler())
+
+	sc := setupReadStateClient(t, mux)
+	state, err := sc.ReadState(context.Background())
+	require.NoError(t, err)
+	assert.Empty(t, state.Models)
+	assert.Empty(t, state.Macros)
 }
 
 // === ReadState helper ===

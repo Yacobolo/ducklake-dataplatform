@@ -928,23 +928,23 @@ type apiModelTest struct {
 	Config   *apiModelTestConfig `json:"config"`
 }
 
-func (c *APIStateClient) listModelTests(ctx context.Context, projectName, modelName string) ([]apiModelTest, error) {
+func (c *APIStateClient) listModelTests(ctx context.Context, projectName, modelName string) ([]apiModelTest, bool, error) {
 	pages, err := c.fetchAllPages(ctx, "/models/"+projectName+"/"+modelName+"/tests")
 	if err != nil {
 		if isOptionalReadError(err) {
-			return nil, nil
+			return nil, false, nil
 		}
-		return nil, err
+		return nil, false, err
 	}
 	if len(pages) == 0 {
-		return nil, nil
+		return nil, true, nil
 	}
 
 	var tests []apiModelTest
 	if err := mergePages(pages, &tests); err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	return tests, nil
+	return tests, true, nil
 }
 
 func isOptionalReadError(err error) bool {
@@ -1028,7 +1028,7 @@ func (c *APIStateClient) readModels(ctx context.Context, state *declarative.Desi
 	}
 
 	for _, m := range items {
-		tests, err := c.listModelTests(ctx, m.ProjectName, m.Name)
+		tests, _, err := c.listModelTests(ctx, m.ProjectName, m.Name)
 		if err != nil {
 			return fmt.Errorf("list tests for model %s.%s: %w", m.ProjectName, m.Name, err)
 		}
@@ -1592,9 +1592,12 @@ func testsEquivalent(desired declarative.TestSpec, actual apiModelTest) bool {
 }
 
 func (c *APIStateClient) reconcileModelTests(ctx context.Context, projectName, modelName string, desired []declarative.TestSpec) error {
-	actual, err := c.listModelTests(ctx, projectName, modelName)
+	actual, supported, err := c.listModelTests(ctx, projectName, modelName)
 	if err != nil {
 		return err
+	}
+	if !supported {
+		return nil
 	}
 
 	actualByName := make(map[string]apiModelTest, len(actual))

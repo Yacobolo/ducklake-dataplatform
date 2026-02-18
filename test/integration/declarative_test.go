@@ -829,3 +829,57 @@ func TestDeclarative_GrantLifecycle(t *testing.T) {
 	assert.Empty(t, grantCreates, "no new grants should be needed")
 	assert.Empty(t, grantDeletes, "no grants should be deleted")
 }
+
+// ---------------------------------------------------------------------------
+// TestDeclarative_ModelPlanAndApplyCompatibility — model resources are planned
+// correctly and apply either succeeds (if endpoint exists) or fails explicitly.
+// ---------------------------------------------------------------------------
+
+func TestDeclarative_ModelPlanAndApplyCompatibility(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{})
+	stateClient := makeStateClient(t, env.Server.URL, env.Keys.Admin)
+
+	dir := t.TempDir()
+	writeYAML(t, dir, "models/analytics/stg_orders.yaml", `apiVersion: duck/v1
+kind: Model
+metadata:
+  name: stg_orders
+spec:
+  materialization: INCREMENTAL
+  description: "staging orders"
+  sql: |
+    SELECT 1 AS order_id, 'active' AS status
+  config:
+    unique_key: [order_id]
+    incremental_strategy: delete+insert
+    on_schema_change: fail
+  tests:
+    - name: not_null_order_id
+      type: not_null
+      column: order_id
+`)
+
+	desired, err := declarative.LoadDirectory(dir)
+	require.NoError(t, err)
+	require.Empty(t, declarative.Validate(desired))
+
+	actual, err := stateClient.ReadState(context.Background())
+	require.NoError(t, err)
+
+	plan := declarative.Diff(desired, actual)
+	modelCreates := actionsOfKindAndOp(plan, declarative.KindModel, declarative.OpCreate)
+	require.Len(t, modelCreates, 1, "expected one model create")
+	assert.Equal(t, "analytics.stg_orders", modelCreates[0].ResourceName)
+
+	err = stateClient.Execute(context.Background(), modelCreates[0])
+	if err != nil {
+		assert.Contains(t, err.Error(), "/models", "apply failures should clearly point to model endpoint")
+		return
+	}
+
+	actualAfterCreate, err := stateClient.ReadState(context.Background())
+	require.NoError(t, err)
+	replan := declarative.Diff(desired, actualAfterCreate)
+	assert.Empty(t, actionsOfKindAndOp(replan, declarative.KindModel, declarative.OpCreate), "model should be idempotent after create")
+	assert.Empty(t, actionsOfKindAndOp(replan, declarative.KindModel, declarative.OpUpdate), "model should be idempotent after create")
+}
