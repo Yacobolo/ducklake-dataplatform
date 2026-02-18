@@ -41,7 +41,7 @@ tasks:
   bundle-api:
     desc: Bundle split OpenAPI files into single resolved spec
     cmds:
-      - npx --yes @redocly/cli bundle internal/api/openapi.yaml -o internal/api/openapi.bundled.yaml
+      - NODE_OPTIONS="--require ./scripts/redocly-react-global.cjs" npx --yes @redocly/cli bundle internal/api/openapi.yaml -o internal/api/openapi.bundled.yaml
     sources:
       - internal/api/openapi.yaml
       - internal/api/paths/*.yaml
