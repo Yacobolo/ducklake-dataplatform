@@ -1,0 +1,8 @@
+apiVersion: duck/v1
+kind: Catalog
+metadata:
+  name: lake
+spec:
+  metastore_type: sqlite
+  dsn: ./ducklake_meta.sqlite
+  data_path: ./ducklake_data/

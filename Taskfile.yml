@@ -130,6 +130,16 @@ tasks:
     cmds:
       - gotestsum --format pkgname-and-test-fails -- -tags integration -timeout 120s ./test/integration/... ./internal/api ./internal/service/security ./internal/service/ingestion ./internal/service/storage ./internal/engine
 
+  examples:test:
+    desc: Run declarative examples integration suite
+    cmds:
+      - gotestsum --format pkgname-and-test-fails -- -tags integration -run TestDeclarativeExamples_ ./test/integration/...
+
+  examples:validate:
+    desc: Validate all example declarative config directories
+    cmds:
+      - for dir in examples/*/config; do go run ./cmd/cli validate --config-dir "$dir"; done
+
   vet:
     desc: Run go vet
     cmds:

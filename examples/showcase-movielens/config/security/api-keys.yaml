@@ -1,0 +1,5 @@
+apiVersion: duck/v1
+kind: APIKeyList
+api_keys:
+  - name: showcase-admin
+    principal: ml_admin

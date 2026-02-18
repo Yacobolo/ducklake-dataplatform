@@ -1,0 +1,34 @@
+apiVersion: duck/v1
+kind: Model
+metadata:
+  name: silver_movies
+spec:
+  materialization: TABLE
+  description: Conformed movie dimension with release year extraction
+  tags: [silver, movielens]
+  sql: |
+    SELECT
+      movie_id,
+      title,
+      genres,
+      regexp_extract(title, '\\((\\d{4})\\)$', 1) AS release_year
+    FROM bronze_movies
+  contract:
+    enforce: true
+    columns:
+      - name: movie_id
+        type: BIGINT
+        nullable: false
+      - name: title
+        type: VARCHAR
+        nullable: false
+      - name: genres
+        type: VARCHAR
+        nullable: true
+      - name: release_year
+        type: VARCHAR
+        nullable: true
+  tests:
+    - name: movie_id_unique
+      type: unique
+      column: movie_id

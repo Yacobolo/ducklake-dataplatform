@@ -1,0 +1,11 @@
+apiVersion: duck/v1
+kind: TagConfig
+tags:
+  - key: domain
+    value: media_analytics
+  - key: sensitivity
+    value: high
+assignments:
+  - tag: domain:media_analytics
+    securable_type: table
+    securable: lake.main.titanic

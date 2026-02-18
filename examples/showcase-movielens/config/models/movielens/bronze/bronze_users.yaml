@@ -1,0 +1,14 @@
+apiVersion: duck/v1
+kind: Model
+metadata:
+  name: bronze_users
+spec:
+  materialization: VIEW
+  description: Raw user demographic attributes for showcase analysis
+  tags: [bronze, movielens]
+  sql: |
+    SELECT
+      CAST(userId AS BIGINT) AS user_id,
+      age_group,
+      region
+    FROM read_csv_auto('examples/showcase-movielens/data/users.csv', header=true)
