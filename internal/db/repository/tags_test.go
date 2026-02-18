@@ -129,6 +129,49 @@ func TestTagRepo_AssignAndUnassign(t *testing.T) {
 	assert.Empty(t, assignments)
 }
 
+func TestTagRepo_AssignTag_MacroSecurable(t *testing.T) {
+	repo := setupTagRepo(t)
+	ctx := context.Background()
+
+	tag, err := repo.CreateTag(ctx, &domain.Tag{
+		Key:       "domain",
+		Value:     tagPtrStr("shared"),
+		CreatedBy: "admin",
+	})
+	require.NoError(t, err)
+
+	assignment, err := repo.AssignTag(ctx, &domain.TagAssignment{
+		TagID:         tag.ID,
+		SecurableType: domain.TagSecurableTypeMacro,
+		SecurableID:   "macro-1",
+		AssignedBy:    "admin",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, domain.TagSecurableTypeMacro, assignment.SecurableType)
+}
+
+func TestTagRepo_AssignTag_InvalidSecurableType(t *testing.T) {
+	repo := setupTagRepo(t)
+	ctx := context.Background()
+
+	tag, err := repo.CreateTag(ctx, &domain.Tag{
+		Key:       "domain",
+		Value:     tagPtrStr("shared"),
+		CreatedBy: "admin",
+	})
+	require.NoError(t, err)
+
+	_, err = repo.AssignTag(ctx, &domain.TagAssignment{
+		TagID:         tag.ID,
+		SecurableType: "invalid",
+		SecurableID:   "obj-1",
+		AssignedBy:    "admin",
+	})
+	require.Error(t, err)
+	var validationErr *domain.ValidationError
+	require.ErrorAs(t, err, &validationErr)
+}
+
 func TestTagRepo_ListTagsForSecurable(t *testing.T) {
 	repo := setupTagRepo(t)
 	ctx := context.Background()

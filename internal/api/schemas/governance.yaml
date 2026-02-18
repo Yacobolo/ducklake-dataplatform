@@ -1,10 +1,10 @@
 SearchResult:
-  description: A search result representing a matched schema, table, or column object.
+  description: A search result representing a matched schema, table, column, or macro object.
   type: object
   properties:
     type:
       type: string
-      description: "Object type: schema, table, or column"
+      description: "Object type: schema, table, column, or macro"
       maxLength: 64
       pattern: '^\S+$'
       example: example-value
@@ -103,7 +103,7 @@ CreateTagRequest:
       example: example-value
 
 TagAssignment:
-  description: An assignment linking a tag to a securable object, optionally scoped to a specific column.
+  description: An assignment linking a tag to a securable object (schema, table, column, or macro), optionally scoped to a specific column.
   type: object
   properties:
     id:
@@ -118,6 +118,7 @@ TagAssignment:
       example: "550e8400-e29b-41d4-a716-446655440000"
     securable_type:
       type: string
+      enum: [schema, table, column, macro]
       maxLength: 64
       pattern: '^\S+$'
       example: table
@@ -144,13 +145,14 @@ TagAssignment:
       example: '2025-01-15T10:30:00Z'
 
 CreateTagAssignmentRequest:
-  description: Request payload for creating a new tag assignment on a securable object.
+  description: Request payload for creating a new tag assignment on a securable object (schema, table, column, or macro).
   type: object
   additionalProperties: false
   required: [securable_type, securable_id]
   properties:
     securable_type:
       type: string
+      enum: [schema, table, column, macro]
       maxLength: 64
       pattern: '^\S+$'
       example: table

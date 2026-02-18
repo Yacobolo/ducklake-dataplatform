@@ -42,8 +42,8 @@ UPDATE models SET depends_on = ?, updated_at = datetime('now') WHERE id = ?;
 DELETE FROM models WHERE id = ?;
 
 -- name: CreateModelRun :one
-INSERT INTO model_runs (id, status, trigger_type, triggered_by, target_catalog, target_schema, model_selector, variables)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO model_runs (id, status, trigger_type, triggered_by, target_catalog, target_schema, model_selector, variables, full_refresh, compile_manifest, compile_diagnostics)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetModelRunByID :one
@@ -66,8 +66,8 @@ UPDATE model_runs SET status = 'RUNNING', started_at = datetime('now') WHERE id 
 UPDATE model_runs SET status = ?, finished_at = datetime('now'), error_message = ? WHERE id = ?;
 
 -- name: CreateModelRunStep :one
-INSERT INTO model_run_steps (id, run_id, model_id, model_name, status, tier)
-VALUES (?, ?, ?, ?, ?, ?)
+INSERT INTO model_run_steps (id, run_id, model_id, model_name, compiled_sql, compiled_hash, depends_on, vars_used, macros_used, status, tier)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: ListModelRunStepsByRun :many

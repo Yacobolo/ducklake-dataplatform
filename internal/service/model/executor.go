@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"duck-demo/internal/domain"
+	"duck-demo/internal/sqlrewrite"
 )
 
 var validVariableName = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
@@ -18,6 +19,7 @@ type ExecutionConfig struct {
 	TargetCatalog string
 	TargetSchema  string
 	Variables     map[string]string
+	FullRefresh   bool
 }
 
 // executeRun processes a model run in a background goroutine.
@@ -41,6 +43,15 @@ func (s *Service) executeRun(ctx context.Context, runID string,
 		return
 	}
 
+	if err := s.verifyMacrosLoadable(ctx, principal); err != nil {
+		errMsg := fmt.Sprintf("macro validation failed: %v", err)
+		for _, st := range stepsOrEmpty(ctx, s, runID) {
+			_ = s.runs.UpdateStepFinished(ctx, st.ID, domain.ModelRunStatusFailed, nil, &errMsg)
+		}
+		_ = s.runs.UpdateRunFinished(ctx, runID, domain.ModelRunStatusFailed, &errMsg)
+		return
+	}
+
 	// Build step map
 	steps, err := s.runs.ListStepsByRun(ctx, runID)
 	if err != nil {
@@ -49,8 +60,10 @@ func (s *Service) executeRun(ctx context.Context, runID string,
 		return
 	}
 	stepByModelID := make(map[string]string, len(steps))
+	stepMetaByModelID := make(map[string]domain.ModelRunStep, len(steps))
 	for _, st := range steps {
 		stepByModelID[st.ModelID] = st.ID
+		stepMetaByModelID[st.ModelID] = st
 	}
 
 	runFailed := false
@@ -88,7 +101,17 @@ func (s *Service) executeRun(ctx context.Context, runID string,
 				logger.Error("failed to update step started", "model", node.Model.QualifiedName(), "error", err)
 			}
 
-			rowsAffected, err := s.executeSingleModel(ctx, node.Model, config, principal, logger)
+			execModel := *node.Model
+			stepMeta, ok := stepMetaByModelID[node.Model.ID]
+			if !ok || stepMeta.CompiledSQL == nil || strings.TrimSpace(*stepMeta.CompiledSQL) == "" {
+				runFailed = true
+				errMsg := fmt.Sprintf("missing compiled SQL artifact for %s", node.Model.QualifiedName())
+				_ = s.runs.UpdateStepFinished(ctx, stepID, domain.ModelRunStatusFailed, nil, &errMsg)
+				continue
+			}
+			execModel.SQL = *stepMeta.CompiledSQL
+
+			rowsAffected, err := s.executeSingleModel(ctx, &execModel, config, principal, logger)
 			if err != nil {
 				runFailed = true
 				errMsg := err.Error()
@@ -97,7 +120,7 @@ func (s *Service) executeRun(ctx context.Context, runID string,
 			}
 
 			// Post-materialization: contract validation and tests
-			if err := s.postMaterialize(ctx, node.Model, config, stepID, principal, logger); err != nil {
+			if err := s.postMaterialize(ctx, &execModel, config, stepID, principal, logger); err != nil {
 				runFailed = true
 				errMsg := err.Error()
 				_ = s.runs.UpdateStepFinished(ctx, stepID, domain.ModelRunStatusFailed, rowsAffected, &errMsg)
@@ -120,6 +143,29 @@ func (s *Service) executeRun(ctx context.Context, runID string,
 	}
 }
 
+func (s *Service) verifyMacrosLoadable(ctx context.Context, principal string) error {
+	if s.macros == nil {
+		return nil
+	}
+	conn, err := s.duckDB.Conn(ctx)
+	if err != nil {
+		return fmt.Errorf("acquire connection for macro validation: %w", err)
+	}
+	defer func() { _ = conn.Close() }()
+	if err := s.loadMacros(ctx, conn, principal); err != nil {
+		return err
+	}
+	return nil
+}
+
+func stepsOrEmpty(ctx context.Context, s *Service, runID string) []domain.ModelRunStep {
+	steps, err := s.runs.ListStepsByRun(ctx, runID)
+	if err != nil {
+		return nil
+	}
+	return steps
+}
+
 // loadMacros creates all macros on the connection before model execution.
 func (s *Service) loadMacros(ctx context.Context, conn *sql.Conn, principal string) error {
 	if s.macros == nil {
@@ -128,8 +174,7 @@ func (s *Service) loadMacros(ctx context.Context, conn *sql.Conn, principal stri
 
 	macros, err := s.macros.ListAll(ctx)
 	if err != nil {
-		s.logger.Warn("failed to load macros", "error", err)
-		return nil // non-fatal: continue without macros
+		return fmt.Errorf("list macros: %w", err)
 	}
 
 	for _, m := range macros {
@@ -149,8 +194,7 @@ func (s *Service) loadMacros(ctx context.Context, conn *sql.Conn, principal stri
 		}
 
 		if err := s.execOnConn(ctx, conn, principal, ddl); err != nil {
-			s.logger.Warn("failed to create macro", "macro", m.Name, "error", err)
-			// Non-fatal: continue with other macros.
+			return fmt.Errorf("create macro %q: %w", m.Name, err)
 		}
 	}
 	return nil
@@ -198,9 +242,28 @@ func (s *Service) executeSingleModel(ctx context.Context, model *domain.Model,
 		}
 		logger.Info("incremental materialized", "rows", n)
 		return &n, nil
+	case domain.MaterializationSeed:
+		n, err := s.materializeSeed(ctx, conn, model, config, principal)
+		if err != nil {
+			return nil, err
+		}
+		logger.Info("seed materialized", "rows", n)
+		return &n, nil
+	case domain.MaterializationSnapshot:
+		n, err := s.materializeSnapshot(ctx, conn, model, config, principal)
+		if err != nil {
+			return nil, err
+		}
+		logger.Info("snapshot materialized", "rows", n)
+		return &n, nil
 	default:
 		return nil, fmt.Errorf("unsupported materialization: %s", model.Materialization)
 	}
+}
+
+func (s *Service) materializeSeed(ctx context.Context, conn *sql.Conn,
+	model *domain.Model, config ExecutionConfig, principal string) (int64, error) {
+	return s.materializeTable(ctx, conn, model, config, principal)
 }
 
 func (s *Service) injectVariables(ctx context.Context, conn *sql.Conn,
@@ -230,22 +293,21 @@ func (s *Service) injectVariables(ctx context.Context, conn *sql.Conn,
 
 func (s *Service) materializeView(ctx context.Context, conn *sql.Conn,
 	model *domain.Model, config ExecutionConfig, principal string) error {
-	ddl := fmt.Sprintf("CREATE OR REPLACE VIEW %s.%s AS (%s)",
-		quoteIdent(config.TargetSchema), quoteIdent(model.Name), model.SQL)
+	relation := relationFQN(config.TargetCatalog, config.TargetSchema, model.Name)
+	ddl := fmt.Sprintf("CREATE OR REPLACE VIEW %s AS (%s)", relation, model.SQL)
 	return s.execOnConn(ctx, conn, principal, ddl)
 }
 
 func (s *Service) materializeTable(ctx context.Context, conn *sql.Conn,
 	model *domain.Model, config ExecutionConfig, principal string) (int64, error) {
-	ddl := fmt.Sprintf("CREATE OR REPLACE TABLE %s.%s AS (%s)",
-		quoteIdent(config.TargetSchema), quoteIdent(model.Name), model.SQL)
+	relation := relationFQN(config.TargetCatalog, config.TargetSchema, model.Name)
+	ddl := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s)", relation, model.SQL)
 	// Execute and count rows via a separate count query
 	if err := s.execOnConn(ctx, conn, principal, ddl); err != nil {
 		return 0, err
 	}
 	// Count rows in the materialized table
-	countSQL := fmt.Sprintf("SELECT COUNT(*) FROM %s.%s",
-		quoteIdent(config.TargetSchema), quoteIdent(model.Name))
+	countSQL := fmt.Sprintf("SELECT COUNT(*) FROM %s", relation)
 	rows, err := s.engine.QueryOnConn(ctx, conn, principal, countSQL)
 	if err != nil {
 		return 0, fmt.Errorf("count materialized rows: %w", err)
@@ -264,6 +326,18 @@ func (s *Service) materializeTable(ctx context.Context, conn *sql.Conn,
 }
 
 func (s *Service) execOnConn(ctx context.Context, conn *sql.Conn, principal, query string) error {
+	stmtType, err := sqlrewrite.ClassifyStatement(query)
+	if err != nil {
+		return fmt.Errorf("classify statement: %w", err)
+	}
+
+	if canDirectExecOnConn(stmtType, query) {
+		if _, err := conn.ExecContext(ctx, query); err != nil {
+			return err
+		}
+		return nil
+	}
+
 	rows, err := s.engine.QueryOnConn(ctx, conn, principal, query)
 	if err != nil {
 		return err
@@ -306,11 +380,14 @@ func (s *Service) postMaterialize(ctx context.Context, model *domain.Model,
 
 func (s *Service) materializeIncremental(ctx context.Context, conn *sql.Conn,
 	model *domain.Model, config ExecutionConfig, principal string) (int64, error) {
+	if config.FullRefresh {
+		return s.materializeTable(ctx, conn, model, config, principal)
+	}
 
-	targetFQN := quoteIdent(config.TargetSchema) + "." + quoteIdent(model.Name)
+	targetFQN := relationFQN(config.TargetCatalog, config.TargetSchema, model.Name)
 
 	// Check if target table exists
-	exists, err := s.tableExists(ctx, conn, config.TargetSchema, model.Name, principal)
+	exists, err := s.tableExists(ctx, conn, config.TargetCatalog, config.TargetSchema, model.Name, principal)
 	if err != nil {
 		return 0, fmt.Errorf("check table existence: %w", err)
 	}
@@ -320,11 +397,16 @@ func (s *Service) materializeIncremental(ctx context.Context, conn *sql.Conn,
 		return s.materializeTable(ctx, conn, model, config, principal)
 	}
 
+	if err := s.enforceIncrementalSchemaPolicy(ctx, conn, model, config, principal); err != nil {
+		return 0, err
+	}
+
 	// Incremental: MERGE INTO
 	uniqueKeys := model.Config.UniqueKey
 	if len(uniqueKeys) == 0 {
 		return 0, domain.ErrValidation("incremental model %s requires unique_key in config", model.Name)
 	}
+	strategy := resolveIncrementalStrategy(model.Config.IncrementalStrategy)
 
 	// Build ON clause
 	onParts := make([]string, len(uniqueKeys))
@@ -334,12 +416,30 @@ func (s *Service) materializeIncremental(ctx context.Context, conn *sql.Conn,
 	}
 	onClause := strings.Join(onParts, " AND ")
 
-	mergeSQL := fmt.Sprintf(
-		"MERGE INTO %s AS target USING (%s) AS source ON %s WHEN MATCHED THEN UPDATE SET * WHEN NOT MATCHED THEN INSERT *",
-		targetFQN, model.SQL, onClause)
+	switch strategy {
+	case "merge":
+		mergeSQL := fmt.Sprintf(
+			"MERGE INTO %s AS target USING (%s) AS source ON %s WHEN MATCHED THEN UPDATE SET * WHEN NOT MATCHED THEN INSERT *",
+			targetFQN, model.SQL, onClause)
 
-	if err := s.execOnConn(ctx, conn, principal, mergeSQL); err != nil {
-		return 0, err
+		if err := s.execOnConn(ctx, conn, principal, mergeSQL); err != nil {
+			return 0, err
+		}
+	case "delete_insert", "delete+insert":
+		deleteSQL := fmt.Sprintf(
+			"DELETE FROM %s AS target USING (%s) AS source WHERE %s",
+			targetFQN, model.SQL, onClause,
+		)
+		if err := s.execOnConn(ctx, conn, principal, deleteSQL); err != nil {
+			return 0, err
+		}
+
+		insertSQL := fmt.Sprintf("INSERT INTO %s SELECT * FROM (%s)", targetFQN, model.SQL)
+		if err := s.execOnConn(ctx, conn, principal, insertSQL); err != nil {
+			return 0, err
+		}
+	default:
+		return 0, domain.ErrValidation("unsupported incremental_strategy %q for model %s", model.Config.IncrementalStrategy, model.Name)
 	}
 
 	// Count total rows
@@ -361,12 +461,247 @@ func (s *Service) materializeIncremental(ctx context.Context, conn *sql.Conn,
 	return count, nil
 }
 
-func (s *Service) tableExists(ctx context.Context, conn *sql.Conn, schema, table, principal string) (bool, error) {
-	checkSQL := fmt.Sprintf(
-		"SELECT 1 FROM information_schema.tables WHERE table_schema = '%s' AND table_name = '%s'",
-		strings.ReplaceAll(schema, "'", "''"),
-		strings.ReplaceAll(table, "'", "''"),
+func (s *Service) materializeSnapshot(ctx context.Context, conn *sql.Conn,
+	model *domain.Model, config ExecutionConfig, principal string) (int64, error) {
+	targetFQN := relationFQN(config.TargetCatalog, config.TargetSchema, model.Name)
+	exists, err := s.tableExists(ctx, conn, config.TargetCatalog, config.TargetSchema, model.Name, principal)
+	if err != nil {
+		return 0, fmt.Errorf("check snapshot table existence: %w", err)
+	}
+
+	if config.FullRefresh || !exists {
+		createSQL := fmt.Sprintf(
+			"CREATE OR REPLACE TABLE %s AS SELECT src.*, CURRENT_TIMESTAMP AS dbt_valid_from, CAST(NULL AS TIMESTAMP) AS dbt_valid_to, TRUE AS dbt_is_current FROM (%s) AS src",
+			targetFQN,
+			model.SQL,
+		)
+		if err := s.execOnConn(ctx, conn, principal, createSQL); err != nil {
+			return 0, err
+		}
+		return s.countRows(ctx, conn, principal, targetFQN)
+	}
+
+	uniqueKeys := model.Config.UniqueKey
+	if len(uniqueKeys) == 0 {
+		return 0, domain.ErrValidation("snapshot model %s requires unique_key in config", model.Name)
+	}
+
+	sourceCols, err := s.queryColumns(ctx, conn, principal, fmt.Sprintf("SELECT * FROM (%s) AS source WHERE 1=0", model.SQL))
+	if err != nil {
+		return 0, fmt.Errorf("load snapshot source columns for %s: %w", model.QualifiedName(), err)
+	}
+	if len(sourceCols) == 0 {
+		return 0, domain.ErrValidation("snapshot model %s compiled SQL returned no columns", model.Name)
+	}
+
+	keySet := make(map[string]struct{}, len(uniqueKeys))
+	for _, k := range uniqueKeys {
+		keySet[strings.ToLower(strings.TrimSpace(k))] = struct{}{}
+	}
+
+	nonKeyCols := make([]string, 0, len(sourceCols))
+	for _, col := range sourceCols {
+		if _, ok := keySet[col]; ok {
+			continue
+		}
+		nonKeyCols = append(nonKeyCols, col)
+	}
+	if len(nonKeyCols) == 0 {
+		return 0, domain.ErrValidation("snapshot model %s requires at least one non-unique_key column", model.Name)
+	}
+
+	onParts := make([]string, len(uniqueKeys))
+	for i, key := range uniqueKeys {
+		qk := quoteIdent(key)
+		onParts[i] = fmt.Sprintf("target.%s = source.%s", qk, qk)
+	}
+	onClause := strings.Join(onParts, " AND ")
+
+	changeParts := make([]string, len(nonKeyCols))
+	for i, col := range nonKeyCols {
+		qc := quoteIdent(col)
+		changeParts[i] = fmt.Sprintf("target.%s IS DISTINCT FROM source.%s", qc, qc)
+	}
+	changeClause := strings.Join(changeParts, " OR ")
+
+	updateSQL := fmt.Sprintf(
+		"UPDATE %s AS target SET dbt_valid_to = CURRENT_TIMESTAMP, dbt_is_current = FALSE FROM (%s) AS source WHERE target.dbt_is_current = TRUE AND %s AND (%s)",
+		targetFQN,
+		model.SQL,
+		onClause,
+		changeClause,
 	)
+	if err := s.execOnConn(ctx, conn, principal, updateSQL); err != nil {
+		return 0, err
+	}
+
+	insertSQL := fmt.Sprintf(
+		"INSERT INTO %s SELECT source.*, CURRENT_TIMESTAMP AS dbt_valid_from, CAST(NULL AS TIMESTAMP) AS dbt_valid_to, TRUE AS dbt_is_current FROM (%s) AS source LEFT JOIN %s AS target ON %s AND target.dbt_is_current = TRUE WHERE target.%s IS NULL OR (%s)",
+		targetFQN,
+		model.SQL,
+		targetFQN,
+		onClause,
+		quoteIdent(uniqueKeys[0]),
+		changeClause,
+	)
+	if err := s.execOnConn(ctx, conn, principal, insertSQL); err != nil {
+		return 0, err
+	}
+
+	return s.countRows(ctx, conn, principal, targetFQN)
+}
+
+func (s *Service) countRows(ctx context.Context, conn *sql.Conn, principal, relation string) (int64, error) {
+	rows, err := s.engine.QueryOnConn(ctx, conn, principal, fmt.Sprintf("SELECT COUNT(*) FROM %s", relation))
+	if err != nil {
+		return 0, nil
+	}
+	defer func() { _ = rows.Close() }()
+	var count int64
+	if rows.Next() {
+		_ = rows.Scan(&count)
+	}
+	if err := rows.Err(); err != nil {
+		s.logger.Warn("row count error", "error", err)
+	}
+	return count, nil
+}
+
+func resolveIncrementalStrategy(strategy string) string {
+	norm := strings.ToLower(strings.TrimSpace(strategy))
+	if norm == "" {
+		return "merge"
+	}
+	if norm == "delete+insert" {
+		return "delete_insert"
+	}
+	return norm
+}
+
+func resolveSchemaChangePolicy(policy string) string {
+	norm := strings.ToLower(strings.TrimSpace(policy))
+	if norm == "" {
+		return "ignore"
+	}
+	return norm
+}
+
+func (s *Service) enforceIncrementalSchemaPolicy(
+	ctx context.Context,
+	conn *sql.Conn,
+	model *domain.Model,
+	config ExecutionConfig,
+	principal string,
+) error {
+	policy := resolveSchemaChangePolicy(model.Config.OnSchemaChange)
+	if policy == "ignore" {
+		return nil
+	}
+	if policy != "fail" {
+		return domain.ErrValidation("unsupported on_schema_change %q for model %s", model.Config.OnSchemaChange, model.Name)
+	}
+
+	targetCols, err := s.targetTableColumns(ctx, conn, config, model, principal)
+	if err != nil {
+		return fmt.Errorf("load target columns for %s: %w", model.QualifiedName(), err)
+	}
+	sourceCols, err := s.queryColumns(ctx, conn, principal, fmt.Sprintf("SELECT * FROM (%s) AS source WHERE 1=0", model.SQL))
+	if err != nil {
+		return fmt.Errorf("load source columns for %s: %w", model.QualifiedName(), err)
+	}
+
+	if !sameColumns(targetCols, sourceCols) {
+		return domain.ErrValidation(
+			"schema change detected for incremental model %s (target=%v source=%v) with on_schema_change=fail",
+			model.QualifiedName(), targetCols, sourceCols,
+		)
+	}
+	return nil
+}
+
+func (s *Service) targetTableColumns(
+	ctx context.Context,
+	conn *sql.Conn,
+	config ExecutionConfig,
+	model *domain.Model,
+	principal string,
+) ([]string, error) {
+	query := fmt.Sprintf(
+		"SELECT column_name FROM information_schema.columns WHERE table_schema = '%s' AND table_name = '%s' ORDER BY ordinal_position",
+		strings.ReplaceAll(config.TargetSchema, "'", "''"),
+		strings.ReplaceAll(model.Name, "'", "''"),
+	)
+	rows, err := s.engine.QueryOnConn(ctx, conn, principal, query)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	cols := make([]string, 0)
+	for rows.Next() {
+		var col string
+		if err := rows.Scan(&col); err != nil {
+			return nil, err
+		}
+		cols = append(cols, strings.ToLower(strings.TrimSpace(col)))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return cols, nil
+}
+
+func (s *Service) queryColumns(ctx context.Context, conn *sql.Conn, principal, query string) ([]string, error) {
+	rows, err := s.engine.QueryOnConn(ctx, conn, principal, query)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	cols, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	out := make([]string, 0, len(cols))
+	for _, c := range cols {
+		out = append(out, strings.ToLower(strings.TrimSpace(c)))
+	}
+	return out, nil
+}
+
+func sameColumns(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func (s *Service) tableExists(ctx context.Context, conn *sql.Conn, catalog, schema, table, principal string) (bool, error) {
+	var checkSQL string
+	if catalog != "" {
+		checkSQL = fmt.Sprintf(
+			"SELECT 1 FROM information_schema.tables WHERE table_catalog = '%s' AND table_schema = '%s' AND table_name = '%s'",
+			strings.ReplaceAll(catalog, "'", "''"),
+			strings.ReplaceAll(schema, "'", "''"),
+			strings.ReplaceAll(table, "'", "''"),
+		)
+	} else {
+		checkSQL = fmt.Sprintf(
+			"SELECT 1 FROM information_schema.tables WHERE table_schema = '%s' AND table_name = '%s'",
+			strings.ReplaceAll(schema, "'", "''"),
+			strings.ReplaceAll(table, "'", "''"),
+		)
+	}
 	rows, err := s.engine.QueryOnConn(ctx, conn, principal, checkSQL)
 	if err != nil {
 		return false, err
@@ -381,6 +716,41 @@ func (s *Service) tableExists(ctx context.Context, conn *sql.Conn, schema, table
 
 func quoteIdent(name string) string {
 	return `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
+}
+
+func relationFQN(catalog, schema, name string) string {
+	if catalog == "" {
+		return quoteIdent(schema) + "." + quoteIdent(name)
+	}
+	return quoteIdent(catalog) + "." + quoteIdent(schema) + "." + quoteIdent(name)
+}
+
+func canDirectExecOnConn(stmtType sqlrewrite.StatementType, query string) bool {
+	norm := strings.ToUpper(strings.TrimSpace(query))
+
+	if strings.HasPrefix(norm, "SET VARIABLE ") {
+		return true
+	}
+
+	if stmtType != sqlrewrite.StmtDDL {
+		return false
+	}
+
+	allowedDDLPrefixes := []string{
+		"CREATE OR REPLACE VIEW ",
+		"CREATE OR REPLACE TABLE ",
+		"CREATE TEMP TABLE ",
+		"DROP TABLE ",
+		"CREATE OR REPLACE MACRO ",
+	}
+
+	for _, p := range allowedDDLPrefixes {
+		if strings.HasPrefix(norm, p) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // resolveEphemeralModels injects ephemeral model SQL as CTEs into downstream models.

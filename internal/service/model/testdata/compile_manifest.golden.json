@@ -1,0 +1,1 @@
+{"version":1,"models":[{"model_name":"analytics.fct_orders","compiled_hash":"sha256:b","depends_on":["analytics.stg_orders"]},{"model_name":"analytics.stg_orders","compiled_hash":"sha256:a","depends_on":["source:raw.orders"],"vars_used":["window_days"],"macros_used":["utils.cast_money"]}]}

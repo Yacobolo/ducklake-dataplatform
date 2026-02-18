@@ -364,4 +364,6 @@ type MacroRepository interface {
 	Update(ctx context.Context, name string, req UpdateMacroRequest) (*Macro, error)
 	Delete(ctx context.Context, name string) error
 	ListAll(ctx context.Context) ([]Macro, error)
+	ListRevisions(ctx context.Context, macroName string) ([]MacroRevision, error)
+	GetRevisionByVersion(ctx context.Context, macroName string, version int) (*MacroRevision, error)
 }

@@ -413,6 +413,8 @@ components:
       $ref: 'schemas/models.yaml#/ModelTestResultList'
     FreshnessStatus:
       $ref: 'schemas/models.yaml#/FreshnessStatus'
+    SourceFreshnessStatus:
+      $ref: 'schemas/models.yaml#/SourceFreshnessStatus'
     PromoteNotebookRequest:
       $ref: 'schemas/models.yaml#/PromoteNotebookRequest'
     Macro:
@@ -423,6 +425,16 @@ components:
       $ref: 'schemas/macros.yaml#/UpdateMacroRequest'
     PaginatedMacros:
       $ref: 'schemas/macros.yaml#/PaginatedMacros'
+    MacroRevision:
+      $ref: 'schemas/macros.yaml#/MacroRevision'
+    MacroRevisionList:
+      $ref: 'schemas/macros.yaml#/MacroRevisionList'
+    MacroRevisionDiff:
+      $ref: 'schemas/macros.yaml#/MacroRevisionDiff'
+    MacroImpactModel:
+      $ref: 'schemas/macros.yaml#/MacroImpactModel'
+    MacroImpactList:
+      $ref: 'schemas/macros.yaml#/MacroImpactList'
 
 paths:
   /query:
@@ -628,6 +640,8 @@ paths:
     $ref: 'paths/models.yaml#/paths/~1model-runs~1{runId}~1steps~1{stepId}~1test-results'
   /models/{projectName}/{modelName}/freshness:
     $ref: 'paths/models.yaml#/paths/~1models~1{projectName}~1{modelName}~1freshness'
+  /sources/{sourceSchema}/{sourceTable}/freshness:
+    $ref: 'paths/models.yaml#/paths/~1sources~1{sourceSchema}~1{sourceTable}~1freshness'
   /models/from-notebook:
     $ref: 'paths/models.yaml#/paths/~1models~1from-notebook'
   /model-runs/{runId}/cancel:
@@ -637,3 +651,9 @@ paths:
     $ref: 'paths/macros.yaml#/paths/~1macros'
   /macros/{macroName}:
     $ref: 'paths/macros.yaml#/paths/~1macros~1{macroName}'
+  /macros/{macroName}/revisions:
+    $ref: 'paths/macros.yaml#/paths/~1macros~1{macroName}~1revisions'
+  /macros/{macroName}/impact:
+    $ref: 'paths/macros.yaml#/paths/~1macros~1{macroName}~1impact'
+  /macros/{macroName}/diff:
+    $ref: 'paths/macros.yaml#/paths/~1macros~1{macroName}~1diff'

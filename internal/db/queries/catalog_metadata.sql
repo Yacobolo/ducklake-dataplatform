@@ -9,6 +9,7 @@ ON CONFLICT(securable_type, securable_name)
 DO UPDATE SET comment = COALESCE(excluded.comment, comment),
               properties = COALESCE(excluded.properties, properties),
               owner = COALESCE(excluded.owner, owner),
+              deleted_at = NULL,
               updated_at = datetime('now');
 
 -- name: InsertOrReplaceCatalogMetadata :exec

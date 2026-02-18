@@ -27,6 +27,7 @@ type modelService interface {
 	DeleteTest(ctx context.Context, principal, projectName, modelName, testID string) error
 	ListTestResults(ctx context.Context, runID, stepID string) ([]domain.ModelTestResult, error)
 	CheckFreshness(ctx context.Context, projectName, modelName string) (*domain.FreshnessStatus, error)
+	CheckSourceFreshness(ctx context.Context, principal, sourceSchema, sourceTable, timestampColumn string, maxLagSeconds int64) (*domain.SourceFreshnessStatus, error)
 	PromoteNotebook(ctx context.Context, principal string, req domain.PromoteNotebookRequest) (*domain.Model, error)
 }
 
@@ -209,6 +210,15 @@ func (h *APIHandler) TriggerModelRun(ctx context.Context, req TriggerModelRunReq
 		TargetSchema:  req.Body.ProjectName,
 		TriggerType:   domain.ModelTriggerTypeManual,
 	}
+	if req.Body.TargetCatalog != nil {
+		domReq.TargetCatalog = *req.Body.TargetCatalog
+	}
+	if req.Body.TargetSchema != nil {
+		domReq.TargetSchema = *req.Body.TargetSchema
+	}
+	if req.Body.FullRefresh != nil {
+		domReq.FullRefresh = *req.Body.FullRefresh
+	}
 	if req.Body.ModelNames != nil && len(*req.Body.ModelNames) > 0 {
 		domReq.Selector = strings.Join(*req.Body.ModelNames, ",")
 	}
@@ -386,6 +396,21 @@ func modelRunToAPI(r domain.ModelRun) ModelRun {
 	if r.TargetSchema != "" {
 		resp.ProjectName = &r.TargetSchema
 	}
+	resp.FullRefresh = &r.FullRefresh
+	if r.CompileManifest != nil {
+		resp.CompileManifest = r.CompileManifest
+	}
+	if r.CompileDiagnostics != nil {
+		warnings := make([]string, len(r.CompileDiagnostics.Warnings))
+		copy(warnings, r.CompileDiagnostics.Warnings)
+		errors := make([]string, len(r.CompileDiagnostics.Errors))
+		copy(errors, r.CompileDiagnostics.Errors)
+		d := ModelRunCompileDiagnostics{
+			Warnings: &warnings,
+			Errors:   &errors,
+		}
+		resp.CompileDiagnostics = &d
+	}
 	if names := selectorToModelNames(r.ModelSelector); len(names) > 0 {
 		resp.ModelNames = &names
 	}
@@ -422,6 +447,9 @@ func selectorToModelNames(selector string) []string {
 	if strings.HasPrefix(selector, "tag:") || strings.HasPrefix(selector, "project:") {
 		return nil
 	}
+	if strings.HasPrefix(selector, "state:") {
+		return nil
+	}
 	if strings.Contains(selector, "+") || selector == "*" {
 		return nil
 	}
@@ -450,6 +478,21 @@ func modelRunStepToAPI(s domain.ModelRunStep) ModelRunStep {
 		ModelName: &s.ModelName,
 		Status:    &status,
 		CreatedAt: &ct,
+	}
+	if s.CompiledSQL != nil {
+		resp.CompiledSql = s.CompiledSQL
+	}
+	if s.CompiledHash != nil {
+		resp.CompiledHash = s.CompiledHash
+	}
+	if len(s.DependsOn) > 0 {
+		resp.DependsOn = &s.DependsOn
+	}
+	if len(s.VarsUsed) > 0 {
+		resp.VarsUsed = &s.VarsUsed
+	}
+	if len(s.MacrosUsed) > 0 {
+		resp.MacrosUsed = &s.MacrosUsed
 	}
 	if s.RowsAffected != nil {
 		resp.RowsAffected = s.RowsAffected
@@ -499,6 +542,10 @@ func apiModelConfig(c domain.ModelConfig) ModelConfig {
 	if c.IncrementalStrategy != "" {
 		cfg.IncrementalStrategy = &c.IncrementalStrategy
 	}
+	if c.OnSchemaChange != "" {
+		osc := ModelConfigOnSchemaChange(c.OnSchemaChange)
+		cfg.OnSchemaChange = &osc
+	}
 	return cfg
 }
 
@@ -509,6 +556,9 @@ func domainModelConfig(c ModelConfig) domain.ModelConfig {
 	}
 	if c.IncrementalStrategy != nil {
 		cfg.IncrementalStrategy = *c.IncrementalStrategy
+	}
+	if c.OnSchemaChange != nil {
+		cfg.OnSchemaChange = string(*c.OnSchemaChange)
 	}
 	return cfg
 }
@@ -774,6 +824,57 @@ func freshnessStatusToAPI(s domain.FreshnessStatus) FreshnessStatus {
 	}
 	if s.LastRunAt != nil {
 		resp.LastRunAt = s.LastRunAt
+	}
+	if s.StaleSince != nil {
+		resp.StaleSince = s.StaleSince
+	}
+	return resp
+}
+
+// CheckSourceFreshness implements the endpoint for checking source freshness status.
+func (h *APIHandler) CheckSourceFreshness(ctx context.Context, req CheckSourceFreshnessRequestObject) (CheckSourceFreshnessResponseObject, error) {
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
+
+	maxLagSeconds := int64(3600)
+	if req.Params.MaxLagSeconds != nil {
+		maxLagSeconds = *req.Params.MaxLagSeconds
+	}
+	timestampColumn := ""
+	if req.Params.TimestampColumn != nil {
+		timestampColumn = *req.Params.TimestampColumn
+	}
+
+	result, err := h.models.CheckSourceFreshness(ctx, principal, req.SourceSchema, req.SourceTable, timestampColumn, maxLagSeconds)
+	if err != nil {
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
+			return CheckSourceFreshness404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		case errors.As(err, new(*domain.ValidationError)):
+			return CheckSourceFreshness400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		default:
+			return nil, err
+		}
+	}
+
+	return CheckSourceFreshness200JSONResponse{
+		Body:    sourceFreshnessStatusToAPI(*result),
+		Headers: CheckSourceFreshness200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+func sourceFreshnessStatusToAPI(s domain.SourceFreshnessStatus) SourceFreshnessStatus {
+	resp := SourceFreshnessStatus{
+		IsFresh:       &s.IsFresh,
+		SourceSchema:  &s.SourceSchema,
+		SourceTable:   &s.SourceTable,
+		MaxLagSeconds: &s.MaxLagSeconds,
+	}
+	if s.TimestampCol != "" {
+		resp.TimestampColumn = &s.TimestampCol
+	}
+	if s.LastLoadedAt != nil {
+		resp.LastLoadedAt = s.LastLoadedAt
 	}
 	if s.StaleSince != nil {
 		resp.StaleSince = s.StaleSince

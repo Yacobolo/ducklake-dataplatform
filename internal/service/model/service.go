@@ -3,8 +3,14 @@ package model
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log/slog"
+	"os"
+	"path/filepath"
+	"regexp"
+	"sort"
+	"strings"
 	"sync"
 
 	"duck-demo/internal/domain"
@@ -190,14 +196,34 @@ func (s *Service) TriggerRun(ctx context.Context, principal string, req domain.T
 
 	selected := allModels
 	if req.Selector != "" {
-		selected, err = SelectModels(req.Selector, allModels)
+		selected, err = s.selectModelsForRun(ctx, principal, req, allModels)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	// Resolve ephemeral models: inject CTEs and remove from execution set
+	compiledArtifacts, compileWarnings, err := s.compileSelectedModels(ctx, principal, selected, allModels, req)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.persistCompileDependencyLineage(ctx, selected, compiledArtifacts, req, principal); err != nil {
+		return nil, fmt.Errorf("persist compile dependency lineage: %w", err)
+	}
+
+	// Resolve ephemeral models: inject CTEs and remove from execution set.
+	// This can alter SQL for downstream models, so keep artifacts in sync.
 	selected = resolveEphemeralModels(selected)
+	if err := s.syncCompiledArtifacts(selected, compiledArtifacts, req); err != nil {
+		return nil, err
+	}
+	manifestJSON, err := buildCompileManifest(selected, compiledArtifacts)
+	if err != nil {
+		return nil, fmt.Errorf("build compile manifest: %w", err)
+	}
+	diagnosticsJSON, err := buildCompileDiagnostics(compileWarnings, nil)
+	if err != nil {
+		return nil, fmt.Errorf("build compile diagnostics: %w", err)
+	}
 
 	// Resolve DAG
 	tiers, err := ResolveDAG(selected)
@@ -207,13 +233,16 @@ func (s *Service) TriggerRun(ctx context.Context, principal string, req domain.T
 
 	// Create run
 	run := &domain.ModelRun{
-		Status:        domain.ModelRunStatusPending,
-		TriggerType:   req.TriggerType,
-		TriggeredBy:   principal,
-		TargetCatalog: req.TargetCatalog,
-		TargetSchema:  req.TargetSchema,
-		ModelSelector: req.Selector,
-		Variables:     req.Variables,
+		Status:             domain.ModelRunStatusPending,
+		TriggerType:        req.TriggerType,
+		TriggeredBy:        principal,
+		TargetCatalog:      req.TargetCatalog,
+		TargetSchema:       req.TargetSchema,
+		ModelSelector:      req.Selector,
+		Variables:          req.Variables,
+		FullRefresh:        req.FullRefresh,
+		CompileManifest:    strPtrOrNil(manifestJSON),
+		CompileDiagnostics: diagnosticsFromJSONOrNil(diagnosticsJSON),
 	}
 	run, err = s.runs.CreateRun(ctx, run)
 	if err != nil {
@@ -223,12 +252,18 @@ func (s *Service) TriggerRun(ctx context.Context, principal string, req domain.T
 	// Create steps
 	for _, tier := range tiers {
 		for _, node := range tier {
+			artifact := compiledArtifacts[node.Model.ID]
 			step := &domain.ModelRunStep{
-				RunID:     run.ID,
-				ModelID:   node.Model.ID,
-				ModelName: node.Model.QualifiedName(),
-				Status:    domain.ModelRunStatusPending,
-				Tier:      node.Tier,
+				RunID:        run.ID,
+				ModelID:      node.Model.ID,
+				ModelName:    node.Model.QualifiedName(),
+				CompiledSQL:  strPtrOrNil(artifact.sql),
+				CompiledHash: strPtrOrNil(artifact.compiledHash),
+				DependsOn:    artifact.dependsOn,
+				VarsUsed:     artifact.varsUsed,
+				MacrosUsed:   artifact.macrosUsed,
+				Status:       domain.ModelRunStatusPending,
+				Tier:         node.Tier,
 			}
 			if _, err := s.runs.CreateStep(ctx, step); err != nil {
 				return nil, fmt.Errorf("create step for %s: %w", node.Model.QualifiedName(), err)
@@ -243,6 +278,7 @@ func (s *Service) TriggerRun(ctx context.Context, principal string, req domain.T
 		TargetCatalog: req.TargetCatalog,
 		TargetSchema:  req.TargetSchema,
 		Variables:     req.Variables,
+		FullRefresh:   req.FullRefresh,
 	}
 	go s.executeRun(runCtx, run.ID, selected, tiers, config, principal)
 
@@ -271,13 +307,32 @@ func (s *Service) TriggerRunSync(ctx context.Context, principal string, req doma
 
 	selected := allModels
 	if req.Selector != "" {
-		selected, err = SelectModels(req.Selector, allModels)
+		selected, err = s.selectModelsForRun(ctx, principal, req, allModels)
 		if err != nil {
 			return err
 		}
 	}
 
+	compiledArtifacts, compileWarnings, err := s.compileSelectedModels(ctx, principal, selected, allModels, req)
+	if err != nil {
+		return err
+	}
+	if err := s.persistCompileDependencyLineage(ctx, selected, compiledArtifacts, req, principal); err != nil {
+		return fmt.Errorf("persist compile dependency lineage: %w", err)
+	}
+
 	selected = resolveEphemeralModels(selected)
+	if err := s.syncCompiledArtifacts(selected, compiledArtifacts, req); err != nil {
+		return err
+	}
+	manifestJSON, err := buildCompileManifest(selected, compiledArtifacts)
+	if err != nil {
+		return fmt.Errorf("build compile manifest: %w", err)
+	}
+	diagnosticsJSON, err := buildCompileDiagnostics(compileWarnings, nil)
+	if err != nil {
+		return fmt.Errorf("build compile diagnostics: %w", err)
+	}
 
 	tiers, err := ResolveDAG(selected)
 	if err != nil {
@@ -286,13 +341,16 @@ func (s *Service) TriggerRunSync(ctx context.Context, principal string, req doma
 
 	// Create run
 	run := &domain.ModelRun{
-		Status:        domain.ModelRunStatusPending,
-		TriggerType:   req.TriggerType,
-		TriggeredBy:   principal,
-		TargetCatalog: req.TargetCatalog,
-		TargetSchema:  req.TargetSchema,
-		ModelSelector: req.Selector,
-		Variables:     req.Variables,
+		Status:             domain.ModelRunStatusPending,
+		TriggerType:        req.TriggerType,
+		TriggeredBy:        principal,
+		TargetCatalog:      req.TargetCatalog,
+		TargetSchema:       req.TargetSchema,
+		ModelSelector:      req.Selector,
+		Variables:          req.Variables,
+		FullRefresh:        req.FullRefresh,
+		CompileManifest:    strPtrOrNil(manifestJSON),
+		CompileDiagnostics: diagnosticsFromJSONOrNil(diagnosticsJSON),
 	}
 	run, err = s.runs.CreateRun(ctx, run)
 	if err != nil {
@@ -302,12 +360,18 @@ func (s *Service) TriggerRunSync(ctx context.Context, principal string, req doma
 	// Create steps
 	for _, tier := range tiers {
 		for _, node := range tier {
+			artifact := compiledArtifacts[node.Model.ID]
 			step := &domain.ModelRunStep{
-				RunID:     run.ID,
-				ModelID:   node.Model.ID,
-				ModelName: node.Model.QualifiedName(),
-				Status:    domain.ModelRunStatusPending,
-				Tier:      node.Tier,
+				RunID:        run.ID,
+				ModelID:      node.Model.ID,
+				ModelName:    node.Model.QualifiedName(),
+				CompiledSQL:  strPtrOrNil(artifact.sql),
+				CompiledHash: strPtrOrNil(artifact.compiledHash),
+				DependsOn:    artifact.dependsOn,
+				VarsUsed:     artifact.varsUsed,
+				MacrosUsed:   artifact.macrosUsed,
+				Status:       domain.ModelRunStatusPending,
+				Tier:         node.Tier,
 			}
 			if _, err := s.runs.CreateStep(ctx, step); err != nil {
 				return fmt.Errorf("create step for %s: %w", node.Model.QualifiedName(), err)
@@ -320,6 +384,7 @@ func (s *Service) TriggerRunSync(ctx context.Context, principal string, req doma
 		TargetCatalog: req.TargetCatalog,
 		TargetSchema:  req.TargetSchema,
 		Variables:     req.Variables,
+		FullRefresh:   req.FullRefresh,
 	}
 	s.executeRun(ctx, run.ID, selected, tiers, config, principal)
 
@@ -487,4 +552,538 @@ func (s *Service) logAudit(ctx context.Context, principal, action, _ string) {
 		Action:        action,
 		Status:        "ALLOWED",
 	})
+}
+
+func (s *Service) compileSelectedModels(
+	ctx context.Context,
+	principal string,
+	selected []domain.Model,
+	allModels []domain.Model,
+	req domain.TriggerModelRunRequest,
+) (map[string]compileResult, []string, error) {
+	byQualified := make(map[string]domain.Model, len(allModels))
+	byName := make(map[string][]domain.Model)
+	for _, m := range allModels {
+		byQualified[m.QualifiedName()] = m
+		byName[m.Name] = append(byName[m.Name], m)
+	}
+
+	sources, err := s.loadSourceRegistry(ctx, principal)
+	if err != nil {
+		return nil, nil, fmt.Errorf("load source registry: %w", err)
+	}
+	compileWarnings := make([]string, 0)
+
+	type macroBundle struct {
+		defs     map[string]compileMacroDefinition
+		runtimes map[string]*starlarkMacroRuntime
+	}
+	bundleByProject := make(map[string]macroBundle)
+
+	artifacts := make(map[string]compileResult, len(selected))
+	for i := range selected {
+		m := selected[i]
+		bundle, ok := bundleByProject[m.ProjectName]
+		if !ok {
+			defs, runtimes, err := s.loadCompileMacros(ctx, principal, m.ProjectName)
+			if err != nil {
+				return nil, nil, fmt.Errorf("load compile macros for project %s: %w", m.ProjectName, err)
+			}
+			bundle = macroBundle{defs: defs, runtimes: runtimes}
+			bundleByProject[m.ProjectName] = bundle
+		}
+
+		ctx := compileContext{
+			targetCatalog: req.TargetCatalog,
+			targetSchema:  req.TargetSchema,
+			vars:          req.Variables,
+			fullRefresh:   req.FullRefresh,
+			strictSources: true,
+			projectName:   m.ProjectName,
+			modelName:     m.Name,
+			materialize:   m.Materialization,
+			models:        byQualified,
+			byName:        byName,
+			sources:       sources,
+			macros:        bundle.defs,
+			macroRuntimes: bundle.runtimes,
+		}
+		compiled, err := compileModelSQL(m.SQL, ctx)
+		if err != nil {
+			return nil, nil, fmt.Errorf("compile model %s: %w", m.QualifiedName(), err)
+		}
+
+		selected[i].SQL = compiled.sql
+		selected[i].DependsOn = compiled.dependsOn
+		artifacts[m.ID] = *compiled
+	}
+
+	return artifacts, compileWarnings, nil
+}
+
+func (s *Service) selectModelsForRun(
+	ctx context.Context,
+	principal string,
+	req domain.TriggerModelRunRequest,
+	allModels []domain.Model,
+) ([]domain.Model, error) {
+	selector := strings.TrimSpace(req.Selector)
+	if selector != "state:modified" {
+		return SelectModels(selector, allModels)
+	}
+
+	artifacts, _, err := s.compileSelectedModels(ctx, principal, allModels, allModels, req)
+	if err != nil {
+		return nil, fmt.Errorf("compile models for state selector: %w", err)
+	}
+
+	baseline, err := s.latestSuccessfulRunHashes(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	selected := selectStateModifiedModels(allModels, artifacts, baseline)
+	if len(selected) == 0 {
+		return nil, domain.ErrValidation("selector state:modified matched no models")
+	}
+
+	return selected, nil
+}
+
+func (s *Service) latestSuccessfulRunHashes(ctx context.Context) (map[string]string, error) {
+	status := domain.ModelRunStatusSuccess
+	runs, _, err := s.runs.ListRuns(ctx, domain.ModelRunFilter{
+		Status: &status,
+		Page:   domain.PageRequest{MaxResults: 1},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list successful runs for state selector: %w", err)
+	}
+	if len(runs) == 0 || runs[0].CompileManifest == nil || strings.TrimSpace(*runs[0].CompileManifest) == "" {
+		return map[string]string{}, nil
+	}
+
+	hashes, err := modelHashByNameFromManifest(*runs[0].CompileManifest)
+	if err != nil {
+		return nil, domain.ErrValidation("invalid compile manifest in latest successful run: %v", err)
+	}
+	return hashes, nil
+}
+
+func selectStateModifiedModels(
+	allModels []domain.Model,
+	artifacts map[string]compileResult,
+	baseline map[string]string,
+) []domain.Model {
+	out := make([]domain.Model, 0, len(allModels))
+	for _, m := range allModels {
+		artifact, ok := artifacts[m.ID]
+		if !ok {
+			continue
+		}
+		if baseline[m.QualifiedName()] != artifact.compiledHash {
+			out = append(out, m)
+		}
+	}
+	return out
+}
+
+func modelHashByNameFromManifest(manifestJSON string) (map[string]string, error) {
+	type manifestModel struct {
+		ModelName    string `json:"model_name"`
+		CompiledHash string `json:"compiled_hash"`
+	}
+	type manifest struct {
+		Models []manifestModel `json:"models"`
+	}
+
+	var m manifest
+	if err := json.Unmarshal([]byte(manifestJSON), &m); err != nil {
+		return nil, err
+	}
+	out := make(map[string]string, len(m.Models))
+	for _, model := range m.Models {
+		if strings.TrimSpace(model.ModelName) == "" {
+			continue
+		}
+		out[model.ModelName] = model.CompiledHash
+	}
+	return out, nil
+}
+
+func (s *Service) loadCompileMacros(
+	ctx context.Context,
+	_ string,
+	projectName string,
+) (map[string]compileMacroDefinition, map[string]*starlarkMacroRuntime, error) {
+	known := make(map[string]compileMacroDefinition)
+	runtimes := make(map[string]*starlarkMacroRuntime)
+	if s.macros == nil {
+		return known, runtimes, nil
+	}
+
+	macros, err := s.macros.ListAll(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("list macros: %w", err)
+	}
+	dbDefs := make(map[string]compileMacroDefinition)
+	for _, m := range macros {
+		def := compileMacroDefinition{
+			name:       m.Name,
+			parameters: m.Parameters,
+			body:       m.Body,
+			starlark:   strings.Contains(m.Name, "."),
+			runtimeKey: "db",
+		}
+		dbDefs[m.Name] = def
+		known[m.Name] = def
+	}
+
+	dbRuntime, err := newStarlarkMacroRuntime(dbDefs)
+	if err != nil {
+		return nil, nil, err
+	}
+	runtimes["db"] = dbRuntime
+
+	starDefs, starRuntimes, err := s.loadStarMacroScopes(projectName)
+	if err != nil {
+		return nil, nil, err
+	}
+	for runtimeKey, rt := range starRuntimes {
+		runtimes[runtimeKey] = rt
+	}
+	for name, def := range starDefs {
+		known[name] = def
+	}
+
+	return known, runtimes, nil
+}
+
+func (s *Service) loadStarMacroScopes(projectName string) (map[string]compileMacroDefinition, map[string]*starlarkMacroRuntime, error) {
+	root, err := os.Getwd()
+	if err != nil {
+		return nil, nil, fmt.Errorf("resolve working directory for star macros: %w", err)
+	}
+	macrosDir := filepath.Join(root, "macros")
+	if _, err := os.Stat(macrosDir); err != nil {
+		if os.IsNotExist(err) {
+			return map[string]compileMacroDefinition{}, map[string]*starlarkMacroRuntime{}, nil
+		}
+		return nil, nil, fmt.Errorf("stat macros directory: %w", err)
+	}
+
+	defs := make(map[string]compileMacroDefinition)
+	runtimes := make(map[string]*starlarkMacroRuntime)
+	scopes := []struct {
+		key       string
+		dir       string
+		isProject bool
+	}{
+		{key: "system", dir: filepath.Join(macrosDir, "system")},
+		{key: "catalog_global", dir: filepath.Join(macrosDir, "catalog_global")},
+		{key: "project", dir: filepath.Join(macrosDir, projectName), isProject: true},
+	}
+
+	for _, scope := range scopes {
+		moduleSources, err := loadStarModules(scope.dir)
+		if err != nil {
+			return nil, nil, err
+		}
+		if len(moduleSources) == 0 {
+			continue
+		}
+
+		runtime, err := newStarlarkMacroRuntimeFromModules(moduleSources)
+		if err != nil {
+			return nil, nil, fmt.Errorf("load %s star runtime: %w", scope.key, err)
+		}
+		runtimes[scope.key] = runtime
+
+		moduleNames := make([]string, 0, len(moduleSources))
+		for module := range moduleSources {
+			moduleNames = append(moduleNames, module)
+		}
+		sort.Strings(moduleNames)
+
+		for _, module := range moduleNames {
+			fnNames := topLevelFunctionNames(moduleSources[module])
+			for _, fn := range fnNames {
+				name := module + "." + fn
+				defs[name] = compileMacroDefinition{
+					name:       name,
+					starlark:   true,
+					runtimeKey: scope.key,
+				}
+			}
+		}
+	}
+
+	return defs, runtimes, nil
+}
+
+func loadStarModules(scopeDir string) (map[string]string, error) {
+	moduleSources := make(map[string]string)
+	if _, err := os.Stat(scopeDir); err != nil {
+		if os.IsNotExist(err) {
+			return moduleSources, nil
+		}
+		return nil, fmt.Errorf("stat star scope directory %q: %w", scopeDir, err)
+	}
+
+	err := filepath.WalkDir(scopeDir, func(path string, d os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if d.IsDir() || !strings.HasSuffix(d.Name(), ".star") {
+			return nil
+		}
+
+		rel, err := filepath.Rel(scopeDir, path)
+		if err != nil {
+			return fmt.Errorf("relative star path for %q: %w", path, err)
+		}
+		module := strings.TrimSuffix(filepath.ToSlash(rel), ".star")
+		module = strings.ReplaceAll(module, "/", ".")
+		if module == "" {
+			return domain.ErrValidation("invalid star macro module for %q", path)
+		}
+		content, err := os.ReadFile(path) // #nosec G304 -- path is constrained to walked scopeDir .star files
+		if err != nil {
+			return fmt.Errorf("read star macro file %q: %w", path, err)
+		}
+		moduleSources[module] = string(content)
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("walk star scope %q: %w", scopeDir, err)
+	}
+
+	return moduleSources, nil
+}
+
+var starlarkDefRe = regexp.MustCompile(`(?m)^def\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(`)
+
+func topLevelFunctionNames(moduleSource string) []string {
+	matches := starlarkDefRe.FindAllStringSubmatch(moduleSource, -1)
+	seen := make(map[string]struct{}, len(matches))
+	out := make([]string, 0, len(matches))
+	for _, m := range matches {
+		if len(m) < 2 {
+			continue
+		}
+		name := m[1]
+		if _, ok := seen[name]; ok {
+			continue
+		}
+		seen[name] = struct{}{}
+		out = append(out, name)
+	}
+	sort.Strings(out)
+	return out
+}
+
+func (s *Service) loadSourceRegistry(ctx context.Context, principal string) (map[string]string, error) {
+	registry := make(map[string]string)
+	conn, err := s.duckDB.Conn(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("acquire connection for source registry: %w", err)
+	}
+	defer func() { _ = conn.Close() }()
+
+	rows, err := s.engine.QueryOnConn(ctx, conn, principal, "SELECT table_schema, table_name FROM information_schema.tables")
+	if err != nil {
+		return nil, fmt.Errorf("query source registry: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	for rows.Next() {
+		var schemaName string
+		var tableName string
+		if err := rows.Scan(&schemaName, &tableName); err != nil {
+			return nil, fmt.Errorf("scan source registry row: %w", err)
+		}
+		registry[schemaName+"."+tableName] = renderRelationParts(schemaName, tableName)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate source registry rows: %w", err)
+	}
+
+	return registry, nil
+}
+
+func (s *Service) syncCompiledArtifacts(selected []domain.Model, artifacts map[string]compileResult, req domain.TriggerModelRunRequest) error {
+	for _, m := range selected {
+		artifact := artifacts[m.ID]
+		if artifact.sql == m.SQL {
+			continue
+		}
+		hash, err := computeCompiledHash(m.SQL, compileContext{
+			targetCatalog: req.TargetCatalog,
+			targetSchema:  req.TargetSchema,
+			vars:          req.Variables,
+			fullRefresh:   req.FullRefresh,
+			projectName:   m.ProjectName,
+			modelName:     m.Name,
+			materialize:   m.Materialization,
+		})
+		if err != nil {
+			return fmt.Errorf("hash compiled SQL for %s: %w", m.QualifiedName(), err)
+		}
+		artifact.sql = m.SQL
+		artifact.compiledHash = hash
+		artifacts[m.ID] = artifact
+	}
+	return nil
+}
+
+func strPtrOrNil(v string) *string {
+	if strings.TrimSpace(v) == "" {
+		return nil
+	}
+	return &v
+}
+
+func buildCompileManifest(selected []domain.Model, artifacts map[string]compileResult) (string, error) {
+	type manifestModel struct {
+		ModelName    string   `json:"model_name"`
+		CompiledHash string   `json:"compiled_hash"`
+		DependsOn    []string `json:"depends_on,omitempty"`
+		VarsUsed     []string `json:"vars_used,omitempty"`
+		MacrosUsed   []string `json:"macros_used,omitempty"`
+	}
+	type manifest struct {
+		Version int             `json:"version"`
+		Models  []manifestModel `json:"models"`
+	}
+
+	models := make([]manifestModel, 0, len(selected))
+	for _, m := range selected {
+		artifact, ok := artifacts[m.ID]
+		if !ok {
+			continue
+		}
+		models = append(models, manifestModel{
+			ModelName:    m.QualifiedName(),
+			CompiledHash: artifact.compiledHash,
+			DependsOn:    artifact.dependsOn,
+			VarsUsed:     artifact.varsUsed,
+			MacrosUsed:   artifact.macrosUsed,
+		})
+	}
+	sort.Slice(models, func(i, j int) bool { return models[i].ModelName < models[j].ModelName })
+
+	b, err := json.Marshal(manifest{Version: 1, Models: models})
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
+func buildCompileDiagnostics(warnings, errors []string) (string, error) {
+	diagnostics := domain.ModelCompileDiagnostics{
+		Warnings: dedupeSorted(warnings),
+		Errors:   dedupeSorted(errors),
+	}
+	b, err := json.Marshal(diagnostics)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
+func diagnosticsFromJSONOrNil(raw string) *domain.ModelCompileDiagnostics {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+	var out domain.ModelCompileDiagnostics
+	if err := json.Unmarshal([]byte(raw), &out); err != nil {
+		return nil
+	}
+	return &out
+}
+
+func (s *Service) persistCompileDependencyLineage(
+	ctx context.Context,
+	selected []domain.Model,
+	artifacts map[string]compileResult,
+	req domain.TriggerModelRunRequest,
+	principal string,
+) error {
+	if s.lineage == nil {
+		return nil
+	}
+
+	for _, m := range selected {
+		artifact, ok := artifacts[m.ID]
+		if !ok {
+			continue
+		}
+		targetSchema := req.TargetSchema
+		targetTable := m.Name
+		targetName := makeLineageTableName(req.TargetCatalog, targetSchema, targetTable)
+
+		for _, dep := range artifact.dependsOn {
+			sourceSchema, sourceTable := depToLineageSource(dep, req.TargetSchema)
+			if sourceTable == "" {
+				continue
+			}
+			sourceName := makeLineageTableName(req.TargetCatalog, sourceSchema, sourceTable)
+			edge := &domain.LineageEdge{
+				SourceTable:   sourceName,
+				TargetTable:   strPtr(targetName),
+				SourceSchema:  sourceSchema,
+				TargetSchema:  targetSchema,
+				EdgeType:      "READ",
+				PrincipalName: principal,
+				QueryHash:     strPtrOrNil(artifact.compiledHash),
+			}
+			if err := s.lineage.InsertEdge(ctx, edge); err != nil {
+				return fmt.Errorf("insert lineage edge %s -> %s: %w", sourceName, targetName, err)
+			}
+		}
+
+		for _, macroName := range artifact.macrosUsed {
+			edge := &domain.LineageEdge{
+				SourceTable:   "macro." + macroName,
+				TargetTable:   strPtr(targetName),
+				SourceSchema:  "macro",
+				TargetSchema:  targetSchema,
+				EdgeType:      "MACRO",
+				PrincipalName: principal,
+				QueryHash:     strPtrOrNil(artifact.compiledHash),
+			}
+			if err := s.lineage.InsertEdge(ctx, edge); err != nil {
+				return fmt.Errorf("insert macro lineage edge %s -> %s: %w", macroName, targetName, err)
+			}
+		}
+	}
+
+	return nil
+}
+
+func depToLineageSource(dep, defaultSchema string) (schema, table string) {
+	if strings.HasPrefix(dep, "source:") {
+		dep = strings.TrimPrefix(dep, "source:")
+		parts := strings.Split(dep, ".")
+		switch len(parts) {
+		case 1:
+			return defaultSchema, parts[0]
+		default:
+			return parts[len(parts)-2], parts[len(parts)-1]
+		}
+	}
+
+	parts := strings.Split(dep, ".")
+	if len(parts) == 1 {
+		return defaultSchema, parts[0]
+	}
+	return defaultSchema, parts[len(parts)-1]
+}
+
+func makeLineageTableName(catalog, schema, table string) string {
+	if strings.TrimSpace(catalog) == "" {
+		return schema + "." + table
+	}
+	return catalog + "." + schema + "." + table
 }

@@ -28,7 +28,7 @@ func (r *CreateTagRequest) Validate() error {
 // AssignTagRequest holds parameters for assigning a tag to a securable.
 type AssignTagRequest struct {
 	TagID         string
-	SecurableType string // "schema", "table", "column"
+	SecurableType string // "schema", "table", "column", "macro"
 	SecurableID   string
 	ColumnName    *string
 }
@@ -41,6 +41,9 @@ func (r *AssignTagRequest) Validate() error {
 	if r.SecurableType == "" {
 		return ErrValidation("securable_type is required")
 	}
+	if !IsValidTagSecurableType(r.SecurableType) {
+		return ErrValidation("securable_type must be one of: schema, table, column, macro")
+	}
 	return nil
 }
 
@@ -48,11 +51,29 @@ func (r *AssignTagRequest) Validate() error {
 type TagAssignment struct {
 	ID            string
 	TagID         string
-	SecurableType string // "schema", "table", "column"
+	SecurableType string // "schema", "table", "column", "macro"
 	SecurableID   string
 	ColumnName    *string
 	AssignedBy    string
 	AssignedAt    time.Time
+}
+
+// Valid securable types for tag assignments.
+const (
+	TagSecurableTypeSchema = "schema"
+	TagSecurableTypeTable  = "table"
+	TagSecurableTypeColumn = "column"
+	TagSecurableTypeMacro  = "macro"
+)
+
+// IsValidTagSecurableType reports whether the securable type supports tag assignment.
+func IsValidTagSecurableType(securableType string) bool {
+	switch securableType {
+	case TagSecurableTypeSchema, TagSecurableTypeTable, TagSecurableTypeColumn, TagSecurableTypeMacro:
+		return true
+	default:
+		return false
+	}
 }
 
 // Classification tag key prefixes for governed taxonomy.

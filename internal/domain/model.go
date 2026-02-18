@@ -12,6 +12,8 @@ const (
 	MaterializationIncremental = "INCREMENTAL"
 	MaterializationEphemeral   = "EPHEMERAL"
 	MaxModelNameLength         = 255
+	MaterializationSeed        = "SEED"
+	MaterializationSnapshot    = "SNAPSHOT"
 )
 
 // Model run status constants.
@@ -62,6 +64,8 @@ type ModelConfig struct {
 	UniqueKey []string `json:"unique_key,omitempty"`
 	// For INCREMENTAL: the strategy (merge, delete+insert).
 	IncrementalStrategy string `json:"incremental_strategy,omitempty"`
+	// For INCREMENTAL: schema-change policy (ignore, fail).
+	OnSchemaChange string `json:"on_schema_change,omitempty"`
 }
 
 // QualifiedName returns "project.name" for cross-project references.
@@ -99,12 +103,13 @@ func (r *CreateModelRequest) Validate() error {
 	validMat := map[string]bool{
 		MaterializationView: true, MaterializationTable: true,
 		MaterializationIncremental: true, MaterializationEphemeral: true,
+		MaterializationSeed: true, MaterializationSnapshot: true,
 	}
 	if r.Materialization == "" {
 		r.Materialization = MaterializationView
 	}
 	if !validMat[r.Materialization] {
-		return ErrValidation("materialization must be VIEW, TABLE, INCREMENTAL, or EPHEMERAL")
+		return ErrValidation("materialization must be VIEW, TABLE, INCREMENTAL, EPHEMERAL, SEED, or SNAPSHOT")
 	}
 	return nil
 }
@@ -143,20 +148,40 @@ type FreshnessStatus struct {
 	StaleSince    *time.Time
 }
 
+// SourceFreshnessStatus holds freshness status for a source relation.
+type SourceFreshnessStatus struct {
+	IsFresh       bool
+	SourceSchema  string
+	SourceTable   string
+	TimestampCol  string
+	LastLoadedAt  *time.Time
+	MaxLagSeconds int64
+	StaleSince    *time.Time
+}
+
 // ModelRun represents a single execution of the model DAG.
 type ModelRun struct {
-	ID            string
-	Status        string
-	TriggerType   string // "MANUAL", "SCHEDULED", "PIPELINE"
-	TriggeredBy   string
-	TargetCatalog string
-	TargetSchema  string
-	ModelSelector string // which models: "" = all, "stg_orders+", "tag:finance"
-	Variables     map[string]string
-	StartedAt     *time.Time
-	FinishedAt    *time.Time
-	ErrorMessage  *string
-	CreatedAt     time.Time
+	ID                 string
+	Status             string
+	TriggerType        string // "MANUAL", "SCHEDULED", "PIPELINE"
+	TriggeredBy        string
+	TargetCatalog      string
+	TargetSchema       string
+	ModelSelector      string // which models: "" = all, "stg_orders+", "tag:finance"
+	Variables          map[string]string
+	FullRefresh        bool
+	CompileManifest    *string
+	CompileDiagnostics *ModelCompileDiagnostics
+	StartedAt          *time.Time
+	FinishedAt         *time.Time
+	ErrorMessage       *string
+	CreatedAt          time.Time
+}
+
+// ModelCompileDiagnostics captures non-fatal compile diagnostics.
+type ModelCompileDiagnostics struct {
+	Warnings []string `json:"warnings,omitempty"`
+	Errors   []string `json:"errors,omitempty"`
 }
 
 // ModelRunStep represents a single model's execution within a run.
@@ -165,6 +190,11 @@ type ModelRunStep struct {
 	RunID        string
 	ModelID      string
 	ModelName    string // "project.name" qualified
+	CompiledSQL  *string
+	CompiledHash *string
+	DependsOn    []string
+	VarsUsed     []string
+	MacrosUsed   []string
 	Status       string
 	Tier         int // DAG tier (0 = roots)
 	RowsAffected *int64
@@ -187,6 +217,7 @@ type TriggerModelRunRequest struct {
 	Selector      string
 	TriggerType   string
 	Variables     map[string]string
+	FullRefresh   bool
 }
 
 // Validate checks that the request is well-formed.

@@ -4,7 +4,7 @@ paths:
       operationId: searchCatalog
       summary: Search catalog objects
       tags: [Governance]
-      description: Full-text search across schemas, tables, and columns.
+      description: Full-text search across schemas, tables, columns, and macros.
       parameters:
         - name: query
           in: query
@@ -16,7 +16,7 @@ paths:
             pattern: '[\s\S]+'
         - name: type
           in: query
-          description: "Filter by object type: schema, table, or column"
+          description: "Filter by object type: schema, table, column, or macro"
           schema:
             type: string
             maxLength: 64

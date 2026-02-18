@@ -21,6 +21,32 @@ func SelectModels(selector string, allModels []domain.Model) ([]domain.Model, er
 		return allModels, nil
 	}
 
+	if strings.Contains(selector, ",") {
+		selected := make(map[string]bool)
+		parts := strings.Split(selector, ",")
+		for _, part := range parts {
+			part = strings.TrimSpace(part)
+			if part == "" {
+				continue
+			}
+			subset, err := SelectModels(part, allModels)
+			if err != nil {
+				return nil, err
+			}
+			for _, m := range subset {
+				selected[m.QualifiedName()] = true
+			}
+		}
+
+		var result []domain.Model
+		for _, m := range allModels {
+			if selected[m.QualifiedName()] {
+				result = append(result, m)
+			}
+		}
+		return result, nil
+	}
+
 	// Tag selector
 	if strings.HasPrefix(selector, "tag:") {
 		tag := strings.TrimPrefix(selector, "tag:")

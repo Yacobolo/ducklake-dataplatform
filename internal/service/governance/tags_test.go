@@ -53,6 +53,43 @@ func TestTagService_CreateTag(t *testing.T) {
 		require.ErrorIs(t, err, errTest)
 		assert.Empty(t, audit.Entries, "audit should not be logged on error")
 	})
+
+	t.Run("accepts macro securable type", func(t *testing.T) {
+		repo := &mockTagRepo{
+			AssignTagFn: func(_ context.Context, a *domain.TagAssignment) (*domain.TagAssignment, error) {
+				return &domain.TagAssignment{
+					ID:            "macro-assignment",
+					TagID:         a.TagID,
+					SecurableType: a.SecurableType,
+					SecurableID:   a.SecurableID,
+					AssignedBy:    a.AssignedBy,
+					AssignedAt:    time.Now(),
+				}, nil
+			},
+		}
+		svc := NewTagService(repo, &mockAuditRepo{})
+
+		result, err := svc.AssignTag(ctxWithPrincipal("bob"), "bob", domain.AssignTagRequest{
+			TagID:         "1",
+			SecurableType: domain.TagSecurableTypeMacro,
+			SecurableID:   "macro-id-1",
+		})
+
+		require.NoError(t, err)
+		assert.Equal(t, domain.TagSecurableTypeMacro, result.SecurableType)
+	})
+
+	t.Run("invalid securable type rejected", func(t *testing.T) {
+		svc := NewTagService(&mockTagRepo{}, &mockAuditRepo{})
+		_, err := svc.AssignTag(ctxWithPrincipal("bob"), "bob", domain.AssignTagRequest{
+			TagID:         "1",
+			SecurableType: "job",
+			SecurableID:   "job-1",
+		})
+		require.Error(t, err)
+		var validationErr *domain.ValidationError
+		require.ErrorAs(t, err, &validationErr)
+	})
 }
 
 // === GetTag ===

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"duck-demo/internal/db/dbstore"
@@ -33,14 +34,17 @@ func (r *ModelRunRepo) CreateRun(ctx context.Context, run *domain.ModelRun) (*do
 	}
 
 	row, err := r.q.CreateModelRun(ctx, dbstore.CreateModelRunParams{
-		ID:            newID(),
-		Status:        run.Status,
-		TriggerType:   run.TriggerType,
-		TriggeredBy:   run.TriggeredBy,
-		TargetCatalog: run.TargetCatalog,
-		TargetSchema:  run.TargetSchema,
-		ModelSelector: run.ModelSelector,
-		Variables:     string(varsJSON),
+		ID:                 newID(),
+		Status:             run.Status,
+		TriggerType:        run.TriggerType,
+		TriggeredBy:        run.TriggeredBy,
+		TargetCatalog:      run.TargetCatalog,
+		TargetSchema:       run.TargetSchema,
+		ModelSelector:      run.ModelSelector,
+		Variables:          string(varsJSON),
+		FullRefresh:        boolToInt64(run.FullRefresh),
+		CompileManifest:    ptrToStr(run.CompileManifest),
+		CompileDiagnostics: marshalCompileDiagnostics(run.CompileDiagnostics),
 	})
 	if err != nil {
 		return nil, mapDBError(err)
@@ -105,13 +109,31 @@ func (r *ModelRunRepo) UpdateRunFinished(ctx context.Context, id string, status 
 
 // CreateStep inserts a new model run step.
 func (r *ModelRunRepo) CreateStep(ctx context.Context, step *domain.ModelRunStep) (*domain.ModelRunStep, error) {
+	dependsOnJSON, err := json.Marshal(step.DependsOn)
+	if err != nil {
+		return nil, fmt.Errorf("marshal depends_on: %w", err)
+	}
+	varsUsedJSON, err := json.Marshal(step.VarsUsed)
+	if err != nil {
+		return nil, fmt.Errorf("marshal vars_used: %w", err)
+	}
+	macrosUsedJSON, err := json.Marshal(step.MacrosUsed)
+	if err != nil {
+		return nil, fmt.Errorf("marshal macros_used: %w", err)
+	}
+
 	row, err := r.q.CreateModelRunStep(ctx, dbstore.CreateModelRunStepParams{
-		ID:        newID(),
-		RunID:     step.RunID,
-		ModelID:   step.ModelID,
-		ModelName: step.ModelName,
-		Status:    step.Status,
-		Tier:      int64(step.Tier),
+		ID:           newID(),
+		RunID:        step.RunID,
+		ModelID:      step.ModelID,
+		ModelName:    step.ModelName,
+		CompiledSql:  nullStrFromPtr(step.CompiledSQL),
+		CompiledHash: nullStrFromPtr(step.CompiledHash),
+		DependsOn:    string(dependsOnJSON),
+		VarsUsed:     string(varsUsedJSON),
+		MacrosUsed:   string(macrosUsedJSON),
+		Status:       step.Status,
+		Tier:         int64(step.Tier),
 	})
 	if err != nil {
 		return nil, mapDBError(err)
@@ -182,19 +204,59 @@ func modelRunFromDB(row dbstore.ModelRun) *domain.ModelRun {
 	}
 
 	return &domain.ModelRun{
-		ID:            row.ID,
-		Status:        row.Status,
-		TriggerType:   row.TriggerType,
-		TriggeredBy:   row.TriggeredBy,
-		TargetCatalog: row.TargetCatalog,
-		TargetSchema:  row.TargetSchema,
-		ModelSelector: row.ModelSelector,
-		Variables:     vars,
-		StartedAt:     startedAt,
-		FinishedAt:    finishedAt,
-		ErrorMessage:  errMsg,
-		CreatedAt:     createdAt,
+		ID:                 row.ID,
+		Status:             row.Status,
+		TriggerType:        row.TriggerType,
+		TriggeredBy:        row.TriggeredBy,
+		TargetCatalog:      row.TargetCatalog,
+		TargetSchema:       row.TargetSchema,
+		ModelSelector:      row.ModelSelector,
+		Variables:          vars,
+		FullRefresh:        row.FullRefresh != 0,
+		CompileManifest:    strPtrOrNil(strings.TrimSpace(row.CompileManifest)),
+		CompileDiagnostics: unmarshalCompileDiagnostics(row.CompileDiagnostics),
+		StartedAt:          startedAt,
+		FinishedAt:         finishedAt,
+		ErrorMessage:       errMsg,
+		CreatedAt:          createdAt,
 	}
+}
+
+func marshalCompileDiagnostics(d *domain.ModelCompileDiagnostics) string {
+	if d == nil {
+		return "{}"
+	}
+	b, err := json.Marshal(d)
+	if err != nil {
+		return "{}"
+	}
+	return string(b)
+}
+
+func unmarshalCompileDiagnostics(raw string) *domain.ModelCompileDiagnostics {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+	var out domain.ModelCompileDiagnostics
+	if err := json.Unmarshal([]byte(raw), &out); err != nil {
+		return nil
+	}
+	return &out
+}
+
+func boolToInt64(v bool) int64 {
+	if v {
+		return 1
+	}
+	return 0
+}
+
+func strPtrOrNil(v string) *string {
+	if strings.TrimSpace(v) == "" {
+		return nil
+	}
+	return &v
 }
 
 func modelRunStepFromDB(row dbstore.ModelRunStep) *domain.ModelRunStep {
@@ -222,11 +284,38 @@ func modelRunStepFromDB(row dbstore.ModelRunStep) *domain.ModelRunStep {
 		rowsAffected = &row.RowsAffected.Int64
 	}
 
+	dependsOn := make([]string, 0)
+	if row.DependsOn != "" {
+		_ = json.Unmarshal([]byte(row.DependsOn), &dependsOn)
+	}
+	varsUsed := make([]string, 0)
+	if row.VarsUsed != "" {
+		_ = json.Unmarshal([]byte(row.VarsUsed), &varsUsed)
+	}
+	macrosUsed := make([]string, 0)
+	if row.MacrosUsed != "" {
+		_ = json.Unmarshal([]byte(row.MacrosUsed), &macrosUsed)
+	}
+
+	var compiledSQL *string
+	if row.CompiledSql.Valid {
+		compiledSQL = &row.CompiledSql.String
+	}
+	var compiledHash *string
+	if row.CompiledHash.Valid {
+		compiledHash = &row.CompiledHash.String
+	}
+
 	return &domain.ModelRunStep{
 		ID:           row.ID,
 		RunID:        row.RunID,
 		ModelID:      row.ModelID,
 		ModelName:    row.ModelName,
+		CompiledSQL:  compiledSQL,
+		CompiledHash: compiledHash,
+		DependsOn:    dependsOn,
+		VarsUsed:     varsUsed,
+		MacrosUsed:   macrosUsed,
 		Status:       row.Status,
 		Tier:         int(row.Tier),
 		RowsAffected: rowsAffected,

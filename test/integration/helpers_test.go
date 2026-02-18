@@ -1125,6 +1125,16 @@ type httpTestEnv struct {
 	ExtLocationSvc *storage.ExternalLocationService // nil unless WithStorageCredentials
 }
 
+type integrationSessionEngine struct{}
+
+func (integrationSessionEngine) Query(ctx context.Context, _ string, sqlQuery string) (*sql.Rows, error) {
+	return nil, fmt.Errorf("integration session engine requires pinned connection for query %q", sqlQuery)
+}
+
+func (integrationSessionEngine) QueryOnConn(ctx context.Context, conn *sql.Conn, _ string, sqlQuery string) (*sql.Rows, error) {
+	return conn.QueryContext(ctx, sqlQuery)
+}
+
 // setupHTTPServer creates a fully-wired in-process HTTP server with real auth
 // middleware and real SQLite repositories. Does NOT require S3 credentials.
 func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
@@ -1372,6 +1382,18 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	var modelSvc *svcmodel.Service
 	var macroSvc *macro.Service
 	if opts.WithModels {
+		if duckDB == nil {
+			duckDB, err = sql.Open("duckdb", "")
+			if err != nil {
+				t.Fatalf("open duckdb for model service: %v", err)
+			}
+			t.Cleanup(func() { _ = duckDB.Close() })
+		}
+		_, err = duckDB.Exec("CREATE SCHEMA IF NOT EXISTS analytics")
+		if err != nil {
+			t.Fatalf("create analytics schema for model service: %v", err)
+		}
+
 		modelRepo := repository.NewModelRepo(metaDB)
 		modelRunRepo := repository.NewModelRunRepo(metaDB)
 		modelTestRepo := repository.NewModelTestRepo(metaDB)
@@ -1380,7 +1402,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		modelSvc = svcmodel.NewService(
 			modelRepo, modelRunRepo, modelTestRepo, modelTestResultRepo, auditRepo,
 			lineageRepo, colLineageRepo,
-			nil, nil, // engine + duckDB — nil for CRUD-only tests
+			integrationSessionEngine{}, duckDB,
 			slog.New(slog.NewTextHandler(io.Discard, nil)),
 		)
 		macroRepo := repository.NewMacroRepo(metaDB)

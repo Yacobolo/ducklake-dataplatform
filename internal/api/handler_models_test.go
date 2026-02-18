@@ -13,8 +13,9 @@ import (
 )
 
 type mockModelService struct {
-	triggerRunFn func(ctx context.Context, principal string, req domain.TriggerModelRunRequest) (*domain.ModelRun, error)
-	listRunsFn   func(ctx context.Context, filter domain.ModelRunFilter) ([]domain.ModelRun, int64, error)
+	triggerRunFn           func(ctx context.Context, principal string, req domain.TriggerModelRunRequest) (*domain.ModelRun, error)
+	listRunsFn             func(ctx context.Context, filter domain.ModelRunFilter) ([]domain.ModelRun, int64, error)
+	checkSourceFreshnessFn func(ctx context.Context, principal, sourceSchema, sourceTable, timestampColumn string, maxLagSeconds int64) (*domain.SourceFreshnessStatus, error)
 }
 
 func (m *mockModelService) CreateModel(context.Context, string, domain.CreateModelRequest) (*domain.Model, error) {
@@ -71,6 +72,12 @@ func (m *mockModelService) ListTestResults(context.Context, string, string) ([]d
 func (m *mockModelService) CheckFreshness(context.Context, string, string) (*domain.FreshnessStatus, error) {
 	panic("not implemented")
 }
+func (m *mockModelService) CheckSourceFreshness(ctx context.Context, principal, sourceSchema, sourceTable, timestampColumn string, maxLagSeconds int64) (*domain.SourceFreshnessStatus, error) {
+	if m.checkSourceFreshnessFn == nil {
+		panic("not implemented")
+	}
+	return m.checkSourceFreshnessFn(ctx, principal, sourceSchema, sourceTable, timestampColumn, maxLagSeconds)
+}
 func (m *mockModelService) PromoteNotebook(context.Context, string, domain.PromoteNotebookRequest) (*domain.Model, error) {
 	panic("not implemented")
 }
@@ -115,6 +122,70 @@ func TestHandler_TriggerModelRun_UsesAllModelNames(t *testing.T) {
 	assert.Equal(t, "analytics", *created.Body.ProjectName)
 	require.NotNil(t, created.Body.ModelNames)
 	assert.Equal(t, []string{"stg_orders", "fct_orders"}, *created.Body.ModelNames)
+}
+
+func TestHandler_TriggerModelRun_MapsPayloadFields(t *testing.T) {
+	t.Parallel()
+
+	ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice", IsAdmin: true})
+
+	reqBody := TriggerModelRunJSONRequestBody{
+		ProjectName:   "proj_a",
+		ModelNames:    &[]string{"stg_orders", "+fct_orders"},
+		FullRefresh:   boolPtr(true),
+		TargetCatalog: strPtr("analytics"),
+		TargetSchema:  strPtr("mart"),
+	}
+
+	var gotPrincipal string
+	var gotReq domain.TriggerModelRunRequest
+	h := &APIHandler{
+		models: &mockModelService{triggerRunFn: func(_ context.Context, principal string, req domain.TriggerModelRunRequest) (*domain.ModelRun, error) {
+			gotPrincipal = principal
+			gotReq = req
+			now := time.Now().UTC()
+			return &domain.ModelRun{ID: "run-1", Status: domain.ModelRunStatusPending, TriggerType: domain.ModelTriggerTypeManual, TriggeredBy: principal, CreatedAt: now}, nil
+		}},
+	}
+
+	resp, err := h.TriggerModelRun(ctx, TriggerModelRunRequestObject{Body: &reqBody})
+	require.NoError(t, err)
+	_, ok := resp.(TriggerModelRun201JSONResponse)
+	require.True(t, ok, "expected 201 response, got %T", resp)
+
+	assert.Equal(t, "alice", gotPrincipal)
+	assert.Equal(t, "analytics", gotReq.TargetCatalog)
+	assert.Equal(t, "mart", gotReq.TargetSchema)
+	assert.Equal(t, "stg_orders,+fct_orders", gotReq.Selector)
+	assert.True(t, gotReq.FullRefresh)
+	assert.Equal(t, domain.ModelTriggerTypeManual, gotReq.TriggerType)
+}
+
+func TestHandler_TriggerModelRun_DefaultTargetValues(t *testing.T) {
+	t.Parallel()
+
+	ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice", IsAdmin: true})
+
+	reqBody := TriggerModelRunJSONRequestBody{ProjectName: "proj_a"}
+
+	var gotReq domain.TriggerModelRunRequest
+	h := &APIHandler{
+		models: &mockModelService{triggerRunFn: func(_ context.Context, _ string, req domain.TriggerModelRunRequest) (*domain.ModelRun, error) {
+			gotReq = req
+			now := time.Now().UTC()
+			return &domain.ModelRun{ID: "run-2", Status: domain.ModelRunStatusPending, TriggerType: domain.ModelTriggerTypeManual, TriggeredBy: "alice", CreatedAt: now}, nil
+		}},
+	}
+
+	resp, err := h.TriggerModelRun(ctx, TriggerModelRunRequestObject{Body: &reqBody})
+	require.NoError(t, err)
+	_, ok := resp.(TriggerModelRun201JSONResponse)
+	require.True(t, ok, "expected 201 response, got %T", resp)
+
+	assert.Equal(t, "memory", gotReq.TargetCatalog)
+	assert.Equal(t, "proj_a", gotReq.TargetSchema)
+	assert.Empty(t, gotReq.Selector)
+	assert.False(t, gotReq.FullRefresh)
 }
 
 func TestHandler_ListModelRuns_InvalidStatusReturns400(t *testing.T) {
@@ -172,4 +243,101 @@ func TestHandler_ListModelRuns_IncludesModelNamesAndProject(t *testing.T) {
 	assert.Equal(t, "analytics", *run.ProjectName)
 	require.NotNil(t, run.ModelNames)
 	assert.Equal(t, []string{"stg_orders", "fct_orders"}, *run.ModelNames)
+}
+
+func boolPtr(v bool) *bool { return &v }
+
+func TestModelRunToAPI_CompileDiagnosticsStableEmptyArrays(t *testing.T) {
+	t.Parallel()
+
+	run := domain.ModelRun{
+		ID:          "run-empty-diags",
+		Status:      domain.ModelRunStatusSuccess,
+		TriggerType: domain.ModelTriggerTypeManual,
+		TriggeredBy: "admin",
+		CreatedAt:   time.Date(2026, 2, 17, 12, 0, 0, 0, time.UTC),
+		CompileDiagnostics: &domain.ModelCompileDiagnostics{
+			Warnings: nil,
+			Errors:   nil,
+		},
+	}
+
+	got := modelRunToAPI(run)
+	require.NotNil(t, got.CompileDiagnostics)
+	require.NotNil(t, got.CompileDiagnostics.Warnings)
+	require.NotNil(t, got.CompileDiagnostics.Errors)
+	assert.Empty(t, *got.CompileDiagnostics.Warnings)
+	assert.Empty(t, *got.CompileDiagnostics.Errors)
+}
+
+func TestSelectorToModelNames_IgnoresStateSelector(t *testing.T) {
+	t.Parallel()
+	assert.Nil(t, selectorToModelNames("state:modified"))
+}
+
+func TestSourceFreshnessStatusToAPI_MapsFields(t *testing.T) {
+	t.Parallel()
+	now := time.Now().UTC()
+	status := domain.SourceFreshnessStatus{
+		IsFresh:       true,
+		SourceSchema:  "raw",
+		SourceTable:   "orders",
+		TimestampCol:  "updated_at",
+		LastLoadedAt:  &now,
+		MaxLagSeconds: 3600,
+	}
+
+	apiStatus := sourceFreshnessStatusToAPI(status)
+	require.NotNil(t, apiStatus.IsFresh)
+	assert.True(t, *apiStatus.IsFresh)
+	require.NotNil(t, apiStatus.SourceSchema)
+	assert.Equal(t, "raw", *apiStatus.SourceSchema)
+	require.NotNil(t, apiStatus.SourceTable)
+	assert.Equal(t, "orders", *apiStatus.SourceTable)
+	require.NotNil(t, apiStatus.TimestampColumn)
+	assert.Equal(t, "updated_at", *apiStatus.TimestampColumn)
+	require.NotNil(t, apiStatus.LastLoadedAt)
+	require.NotNil(t, apiStatus.MaxLagSeconds)
+	assert.EqualValues(t, 3600, *apiStatus.MaxLagSeconds)
+}
+
+func TestHandler_CheckSourceFreshness_DefaultsAndMapping(t *testing.T) {
+	t.Parallel()
+
+	ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice", IsAdmin: true})
+	called := false
+	h := &APIHandler{models: &mockModelService{checkSourceFreshnessFn: func(_ context.Context, principal, sourceSchema, sourceTable, timestampColumn string, maxLagSeconds int64) (*domain.SourceFreshnessStatus, error) {
+		called = true
+		assert.Equal(t, "alice", principal)
+		assert.Equal(t, "raw", sourceSchema)
+		assert.Equal(t, "orders", sourceTable)
+		assert.Empty(t, timestampColumn)
+		assert.EqualValues(t, 3600, maxLagSeconds)
+		now := time.Now().UTC()
+		return &domain.SourceFreshnessStatus{
+			IsFresh:       true,
+			SourceSchema:  sourceSchema,
+			SourceTable:   sourceTable,
+			TimestampCol:  "updated_at",
+			LastLoadedAt:  &now,
+			MaxLagSeconds: maxLagSeconds,
+		}, nil
+	}}}
+
+	resp, err := h.CheckSourceFreshness(ctx, CheckSourceFreshnessRequestObject{
+		SourceSchema: "raw",
+		SourceTable:  "orders",
+		Params:       CheckSourceFreshnessParams{},
+	})
+	require.NoError(t, err)
+	require.True(t, called)
+
+	okResp, ok := resp.(CheckSourceFreshness200JSONResponse)
+	require.True(t, ok, "expected 200 response, got %T", resp)
+	require.NotNil(t, okResp.Body.SourceSchema)
+	assert.Equal(t, "raw", *okResp.Body.SourceSchema)
+	require.NotNil(t, okResp.Body.SourceTable)
+	assert.Equal(t, "orders", *okResp.Body.SourceTable)
+	require.NotNil(t, okResp.Body.TimestampColumn)
+	assert.Equal(t, "updated_at", *okResp.Body.TimestampColumn)
 }

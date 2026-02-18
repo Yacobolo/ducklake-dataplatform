@@ -6,6 +6,13 @@ import "time"
 const (
 	MacroTypeScalar = "SCALAR"
 	MacroTypeTable  = "TABLE"
+
+	MacroVisibilityProject       = "project"
+	MacroVisibilityCatalogGlobal = "catalog_global"
+	MacroVisibilitySystem        = "system"
+
+	MacroStatusActive     = "ACTIVE"
+	MacroStatusDeprecated = "DEPRECATED"
 )
 
 // Macro represents a DuckDB SQL macro definition.
@@ -16,9 +23,53 @@ type Macro struct {
 	Parameters  []string
 	Body        string
 	Description string
+	CatalogName string
+	ProjectName string
+	Visibility  string
+	Owner       string
+	Properties  map[string]string
+	Tags        []string
+	Status      string
 	CreatedBy   string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+}
+
+// MacroRevision captures a point-in-time macro definition snapshot.
+type MacroRevision struct {
+	ID          string
+	MacroID     string
+	MacroName   string
+	Version     int
+	ContentHash string
+	Parameters  []string
+	Body        string
+	Description string
+	Status      string
+	CreatedBy   string
+	CreatedAt   time.Time
+}
+
+// MacroRevisionDiff captures the semantic difference between two revisions.
+type MacroRevisionDiff struct {
+	MacroName          string
+	FromVersion        int
+	ToVersion          int
+	FromContentHash    string
+	ToContentHash      string
+	Changed            bool
+	ParametersChanged  bool
+	BodyChanged        bool
+	DescriptionChanged bool
+	StatusChanged      bool
+	FromParameters     []string
+	ToParameters       []string
+	FromBody           string
+	ToBody             string
+	FromDescription    string
+	ToDescription      string
+	FromStatus         string
+	ToStatus           string
 }
 
 // CreateMacroRequest holds parameters for creating a macro.
@@ -28,6 +79,13 @@ type CreateMacroRequest struct {
 	Parameters  []string
 	Body        string
 	Description string
+	CatalogName string
+	ProjectName string
+	Visibility  string
+	Owner       string
+	Properties  map[string]string
+	Tags        []string
+	Status      string
 }
 
 // Validate checks that the request is well-formed.
@@ -44,6 +102,20 @@ func (r *CreateMacroRequest) Validate() error {
 	if r.MacroType != MacroTypeScalar && r.MacroType != MacroTypeTable {
 		return ErrValidation("macro_type must be SCALAR or TABLE")
 	}
+	if r.Visibility == "" {
+		r.Visibility = MacroVisibilityProject
+	}
+	switch r.Visibility {
+	case MacroVisibilityProject, MacroVisibilityCatalogGlobal, MacroVisibilitySystem:
+	default:
+		return ErrValidation("visibility must be project, catalog_global, or system")
+	}
+	if r.Status == "" {
+		r.Status = MacroStatusActive
+	}
+	if r.Status != MacroStatusActive && r.Status != MacroStatusDeprecated {
+		return ErrValidation("status must be ACTIVE or DEPRECATED")
+	}
 	return nil
 }
 
@@ -52,6 +124,13 @@ type UpdateMacroRequest struct {
 	Body        *string
 	Description *string
 	Parameters  []string
+	Status      *string
+	CatalogName *string
+	ProjectName *string
+	Visibility  *string
+	Owner       *string
+	Properties  map[string]string
+	Tags        []string
 }
 
 // PromoteNotebookRequest holds parameters for promoting a notebook cell to a model.
