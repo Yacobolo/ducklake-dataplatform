@@ -114,9 +114,9 @@ func TestVolumeService_GetByName(t *testing.T) {
 				return expected, nil
 			},
 		}
-		svc := NewVolumeService(repo, &mockAuthService{}, &mockAuditRepo{})
+		svc := NewVolumeService(repo, allowAllAuth(), &mockAuditRepo{})
 
-		got, err := svc.GetByName(context.Background(), "catalog1", "schema1", "my-vol")
+		got, err := svc.GetByName(context.Background(), "alice", "catalog1", "schema1", "my-vol")
 		require.NoError(t, err)
 		assert.Equal(t, expected, got)
 	})
@@ -127,9 +127,9 @@ func TestVolumeService_GetByName(t *testing.T) {
 				return nil, domain.ErrNotFound("volume not found")
 			},
 		}
-		svc := NewVolumeService(repo, &mockAuthService{}, &mockAuditRepo{})
+		svc := NewVolumeService(repo, allowAllAuth(), &mockAuditRepo{})
 
-		_, err := svc.GetByName(context.Background(), "catalog1", "schema1", "missing")
+		_, err := svc.GetByName(context.Background(), "alice", "catalog1", "schema1", "missing")
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
 		require.ErrorAs(t, err, &notFound)
@@ -148,9 +148,9 @@ func TestVolumeService_List(t *testing.T) {
 				return vols, 2, nil
 			},
 		}
-		svc := NewVolumeService(repo, &mockAuthService{}, &mockAuditRepo{})
+		svc := NewVolumeService(repo, allowAllAuth(), &mockAuditRepo{})
 
-		got, total, err := svc.List(context.Background(), "catalog1", "schema1", domain.PageRequest{})
+		got, total, err := svc.List(context.Background(), "alice", "catalog1", "schema1", domain.PageRequest{})
 		require.NoError(t, err)
 		assert.Len(t, got, 2)
 		assert.Equal(t, int64(2), total)

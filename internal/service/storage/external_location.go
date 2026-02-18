@@ -93,12 +93,14 @@ func (s *ExternalLocationService) Create(ctx context.Context, principal string, 
 }
 
 // GetByName returns an external location by name.
-func (s *ExternalLocationService) GetByName(ctx context.Context, name string) (*domain.ExternalLocation, error) {
+func (s *ExternalLocationService) GetByName(ctx context.Context, principal, name string) (*domain.ExternalLocation, error) {
+	_ = principal
 	return s.locRepo.GetByName(ctx, name)
 }
 
 // List returns a paginated list of external locations.
-func (s *ExternalLocationService) List(ctx context.Context, page domain.PageRequest) ([]domain.ExternalLocation, int64, error) {
+func (s *ExternalLocationService) List(ctx context.Context, principal string, page domain.PageRequest) ([]domain.ExternalLocation, int64, error) {
+	_ = principal
 	return s.locRepo.List(ctx, page)
 }
 

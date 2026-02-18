@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"duck-demo/internal/domain"
+	"duck-demo/internal/service/auditutil"
 	"duck-demo/internal/sqlrewrite"
 )
 
@@ -226,8 +227,7 @@ func (s *QueryService) logAudit(ctx context.Context, principal, action string, o
 	stmtType := "QUERY"
 	entry.StatementType = &stmtType
 
-	// Best-effort audit logging — don't fail the query if audit fails
-	_ = s.audit.Insert(ctx, entry)
+	_ = auditutil.Insert(ctx, s.audit, entry)
 }
 
 // TablesAccessedStr returns a comma-separated list of tables for display.

@@ -19,3 +19,11 @@ func ctxWithPrincipal(name string) context.Context {
 type mockStorageCredentialRepo = testutil.MockStorageCredentialRepo
 type mockAuthService = testutil.MockAuthService
 type mockAuditRepo = testutil.MockAuditRepo
+
+func allowAllAuth() *mockAuthService {
+	return &mockAuthService{
+		CheckPrivilegeFn: func(_ context.Context, _, _, _ string, _ string) (bool, error) {
+			return true, nil
+		},
+	}
+}

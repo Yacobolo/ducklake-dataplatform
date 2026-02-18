@@ -29,10 +29,11 @@ func setupAgentTest(t *testing.T) *httptest.Server {
 	require.NoError(t, err)
 
 	handler := NewHandler(HandlerConfig{
-		DB:          db,
-		AgentToken:  testToken,
-		StartTime:   time.Now(),
-		MaxMemoryGB: 4,
+		DB:                    db,
+		AgentToken:            testToken,
+		StartTime:             time.Now(),
+		MaxMemoryGB:           4,
+		RequireSignedRequests: true,
 	})
 
 	srv := httptest.NewServer(handler)
@@ -41,6 +42,30 @@ func setupAgentTest(t *testing.T) *httptest.Server {
 		_ = db.Close()
 	})
 
+	return srv
+}
+
+func setupAgentTestWithConfig(t *testing.T, cfg HandlerConfig) *httptest.Server {
+	t.Helper()
+
+	db, err := sql.Open("duckdb", "")
+	require.NoError(t, err)
+	if cfg.DB == nil {
+		cfg.DB = db
+	}
+	if cfg.AgentToken == "" {
+		cfg.AgentToken = testToken
+	}
+	if cfg.StartTime.IsZero() {
+		cfg.StartTime = time.Now()
+	}
+
+	handler := NewHandler(cfg)
+	srv := httptest.NewServer(handler)
+	t.Cleanup(func() {
+		srv.Close()
+		_ = db.Close()
+	})
 	return srv
 }
 
@@ -55,7 +80,7 @@ func postExecute(t *testing.T, srv *httptest.Server, token string, body interfac
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 	if token != "" {
-		req.Header.Set("X-Agent-Token", token)
+		compute.AttachSignedAgentHeaders(req, token, payload, time.Now())
 	}
 
 	resp, err := http.DefaultClient.Do(req)
@@ -103,7 +128,7 @@ func TestAgentHandler_BadRequest(t *testing.T) {
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, srv.URL+"/execute", bytes.NewReader([]byte("{invalid json")))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Agent-Token", testToken)
+	compute.AttachSignedAgentHeaders(req, testToken, []byte("{invalid json"), time.Now())
 
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
@@ -173,6 +198,7 @@ func TestAgentHandler_Health(t *testing.T) {
 
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, srv.URL+"/health", nil)
 	require.NoError(t, err)
+	compute.AttachSignedAgentHeaders(req, testToken, nil, time.Now())
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	defer func() { _ = resp.Body.Close() }()
@@ -207,4 +233,32 @@ func TestAgentHandler_EmptyResult(t *testing.T) {
 	assert.Equal(t, 0, result.RowCount)
 	assert.Empty(t, result.Rows)
 	assert.NotEmpty(t, result.Columns, "columns should still be present even for empty results")
+}
+
+func TestAgentHandler_EmptySQLValidation(t *testing.T) {
+	t.Parallel()
+	srv := setupAgentTest(t)
+
+	resp := postExecute(t, srv, testToken, compute.ExecuteRequest{SQL: "   "})
+	defer func() { _ = resp.Body.Close() }()
+
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	var errResp compute.ErrorResponse
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&errResp))
+	assert.Equal(t, "VALIDATION_ERROR", errResp.Code)
+}
+
+func TestAgentHandler_ResultLimitExceeded(t *testing.T) {
+	t.Parallel()
+	srv := setupAgentTestWithConfig(t, HandlerConfig{MaxResultRows: 1})
+
+	resp := postExecute(t, srv, testToken, compute.ExecuteRequest{SQL: "SELECT * FROM generate_series(1, 2)"})
+	defer func() { _ = resp.Body.Close() }()
+
+	assert.Equal(t, http.StatusRequestEntityTooLarge, resp.StatusCode)
+
+	var errResp compute.ErrorResponse
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&errResp))
+	assert.Equal(t, "RESULT_LIMIT_EXCEEDED", errResp.Code)
 }

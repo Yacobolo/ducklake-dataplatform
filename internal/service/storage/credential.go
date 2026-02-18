@@ -74,12 +74,14 @@ func (s *StorageCredentialService) Create(ctx context.Context, principal string,
 }
 
 // GetByName returns a storage credential by name.
-func (s *StorageCredentialService) GetByName(ctx context.Context, name string) (*domain.StorageCredential, error) {
+func (s *StorageCredentialService) GetByName(ctx context.Context, principal, name string) (*domain.StorageCredential, error) {
+	_ = principal
 	return s.repo.GetByName(ctx, name)
 }
 
 // List returns a paginated list of storage credentials.
-func (s *StorageCredentialService) List(ctx context.Context, page domain.PageRequest) ([]domain.StorageCredential, int64, error) {
+func (s *StorageCredentialService) List(ctx context.Context, principal string, page domain.PageRequest) ([]domain.StorageCredential, int64, error) {
+	_ = principal
 	return s.repo.List(ctx, page)
 }
 
