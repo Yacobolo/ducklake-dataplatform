@@ -1,9 +1,10 @@
 apiVersion: duck/v1
 kind: ColumnMaskList
 masks:
-  - name: mask-name
-    column_name: Name
-    mask_expression: "'***'"
+  - name: age_group_mask
+    column_name: age_group
+    description: Analysts see generalized age groups
+    mask_expression: "'masked'"
     bindings:
       - principal: movie_analysts
         principal_type: group

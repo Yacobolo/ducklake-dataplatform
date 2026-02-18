@@ -358,7 +358,7 @@ func (s *Service) postMaterialize(ctx context.Context, model *domain.Model,
 	defer func() { _ = conn.Close() }()
 
 	// Contract validation
-	if err := s.validateContract(ctx, conn, model, config, principal); err != nil {
+	if err := s.validateContract(ctx, conn, model, config); err != nil {
 		logger.Error("contract validation failed", "model", model.QualifiedName(), "error", err)
 		return err
 	}

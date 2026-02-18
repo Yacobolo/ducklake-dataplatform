@@ -3,3 +3,5 @@ kind: APIKeyList
 api_keys:
   - name: showcase-admin
     principal: ml_admin
+  - name: showcase-ingestor
+    principal: ml_service

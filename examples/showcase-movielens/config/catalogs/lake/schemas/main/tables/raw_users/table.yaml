@@ -1,0 +1,14 @@
+apiVersion: duck/v1
+kind: Table
+metadata:
+  name: raw_users
+spec:
+  table_type: MANAGED
+  comment: Raw user dimension with policy-controlled access
+  columns:
+    - name: user_id
+      type: BIGINT
+    - name: age_group
+      type: VARCHAR
+    - name: region
+      type: VARCHAR

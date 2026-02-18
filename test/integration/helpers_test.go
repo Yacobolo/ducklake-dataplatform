@@ -1360,6 +1360,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	// read these resources without endpoint panics.
 	notebookRepo := repository.NewNotebookRepo(metaDB)
 	notebookSvc := svcnotebook.New(notebookRepo, auditRepo)
+	notebookProvider := svcpipeline.NewDBNotebookProvider(notebookRepo)
 	gitRepoRepo := repository.NewGitRepoRepo(metaDB)
 	gitRepoSvc := svcnotebook.NewGitService(gitRepoRepo, auditRepo)
 	pipelineRepo := repository.NewPipelineRepo(metaDB)
@@ -1368,7 +1369,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		pipelineRepo,
 		pipelineRunRepo,
 		auditRepo,
-		nil,
+		notebookProvider,
 		nil,
 		nil,
 		slog.New(slog.NewTextHandler(io.Discard, nil)),

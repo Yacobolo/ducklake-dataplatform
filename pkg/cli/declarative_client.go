@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 
 	"duck-demo/internal/declarative"
@@ -33,9 +34,13 @@ type resourceIndex struct {
 	volumeIDByPath     map[string]string // "catalog.schema.volume" → UUID
 	locationIDByName   map[string]string // "external_location_name" → UUID
 	credentialIDByName map[string]string // "storage_credential_name" → UUID
+	computeIDByName    map[string]string // "local" → UUID
 	tagIDByKey         map[string]string // "pii" or "pii:value" → UUID
 	rowFilterIDByPath  map[string]string // "cat.sch.tbl/filterName" → UUID
 	columnMaskIDByPath map[string]string // "cat.sch.tbl/maskName" → UUID
+	notebookIDByName   map[string]string // "kpi_walkthrough" → UUID
+	pipelineIDByName   map[string]string // "daily_pipeline" → UUID
+	jobIDByPath        map[string]string // "pipeline/job" → UUID
 }
 
 func newResourceIndex() *resourceIndex {
@@ -48,9 +53,13 @@ func newResourceIndex() *resourceIndex {
 		volumeIDByPath:     make(map[string]string),
 		locationIDByName:   make(map[string]string),
 		credentialIDByName: make(map[string]string),
+		computeIDByName:    make(map[string]string),
 		tagIDByKey:         make(map[string]string),
 		rowFilterIDByPath:  make(map[string]string),
 		columnMaskIDByPath: make(map[string]string),
+		notebookIDByName:   make(map[string]string),
+		pipelineIDByName:   make(map[string]string),
+		jobIDByPath:        make(map[string]string),
 	}
 }
 
@@ -733,6 +742,7 @@ func (c *APIStateClient) readExternalLocations(ctx context.Context, state *decla
 // --- Compute resources ---
 
 type apiComputeEndpoint struct {
+	ID   string `json:"id"`
 	Name string `json:"name"`
 	URL  string `json:"url"`
 	Type string `json:"type"`
@@ -768,6 +778,9 @@ func (c *APIStateClient) readComputeEndpoints(ctx context.Context, state *declar
 			Type: ep.Type,
 			Size: ep.Size,
 		})
+		if ep.ID != "" && c.index != nil {
+			c.index.computeIDByName[ep.Name] = ep.ID
+		}
 
 		// Fetch assignments for this endpoint.
 		assignPages, err := c.fetchAllPages(ctx, "/compute-endpoints/"+ep.Name+"/assignments")
@@ -838,9 +851,22 @@ func tagKey(key string, value *string) string {
 // --- Workflow resources (simplified) ---
 
 type apiNotebook struct {
+	ID          string `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Owner       string `json:"owner"`
+}
+
+type apiNotebookCell struct {
+	ID       string `json:"id"`
+	CellType string `json:"cell_type"`
+	Content  string `json:"content"`
+	Position int    `json:"position"`
+}
+
+type apiNotebookDetail struct {
+	Notebook apiNotebook       `json:"notebook"`
+	Cells    []apiNotebookCell `json:"cells"`
 }
 
 func (c *APIStateClient) readNotebooks(ctx context.Context, state *declarative.DesiredState) error {
@@ -858,23 +884,77 @@ func (c *APIStateClient) readNotebooks(ctx context.Context, state *declarative.D
 	}
 
 	for _, nb := range items {
+		if nb.ID != "" && c.index != nil {
+			c.index.notebookIDByName[nb.Name] = nb.ID
+		}
+
+		cells := make([]declarative.CellSpec, 0)
+		if nb.ID != "" {
+			detail, err := c.readNotebookDetail(ctx, nb.ID)
+			if err != nil {
+				return fmt.Errorf("notebook %q detail: %w", nb.Name, err)
+			}
+			sort.Slice(detail.Cells, func(i, j int) bool {
+				return detail.Cells[i].Position < detail.Cells[j].Position
+			})
+			cells = make([]declarative.CellSpec, 0, len(detail.Cells))
+			for _, cell := range detail.Cells {
+				cells = append(cells, declarative.CellSpec{
+					Type:    cell.CellType,
+					Content: cell.Content,
+				})
+			}
+		}
+
 		state.Notebooks = append(state.Notebooks, declarative.NotebookResource{
 			Name: nb.Name,
 			Spec: declarative.NotebookSpec{
 				Description: nb.Description,
 				Owner:       nb.Owner,
-				// Cells omitted for simplicity — would require per-notebook fetch.
+				Cells:       cells,
 			},
 		})
 	}
 	return nil
 }
 
+func (c *APIStateClient) readNotebookDetail(_ context.Context, notebookID string) (*apiNotebookDetail, error) {
+	resp, err := c.client.Do(http.MethodGet, "/notebooks/"+notebookID, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	body, err := gen.ReadBody(resp)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("GET /notebooks/%s: HTTP %d: %s", notebookID, resp.StatusCode, string(body))
+	}
+	var detail apiNotebookDetail
+	if err := json.Unmarshal(body, &detail); err != nil {
+		return nil, err
+	}
+	return &detail, nil
+}
+
 type apiPipeline struct {
-	Name         string `json:"name"`
-	Description  string `json:"description"`
-	ScheduleCron string `json:"schedule_cron"`
-	IsPaused     bool   `json:"is_paused"`
+	ID               string `json:"id"`
+	Name             string `json:"name"`
+	Description      string `json:"description"`
+	ScheduleCron     string `json:"schedule_cron"`
+	IsPaused         bool   `json:"is_paused"`
+	ConcurrencyLimit *int   `json:"concurrency_limit"`
+}
+
+type apiPipelineJob struct {
+	ID                string   `json:"id"`
+	Name              string   `json:"name"`
+	ComputeEndpointID string   `json:"compute_endpoint_id"`
+	DependsOn         []string `json:"depends_on"`
+	NotebookID        string   `json:"notebook_id"`
+	TimeoutSeconds    *int     `json:"timeout_seconds"`
+	RetryCount        *int     `json:"retry_count"`
+	JobOrder          *int     `json:"job_order"`
 }
 
 func (c *APIStateClient) readPipelines(ctx context.Context, state *declarative.DesiredState) error {
@@ -892,17 +972,76 @@ func (c *APIStateClient) readPipelines(ctx context.Context, state *declarative.D
 	}
 
 	for _, pl := range items {
+		if pl.ID != "" && c.index != nil {
+			c.index.pipelineIDByName[pl.Name] = pl.ID
+		}
+
+		jobs, err := c.readPipelineJobs(ctx, pl.Name)
+		if err != nil {
+			return fmt.Errorf("pipeline %q jobs: %w", pl.Name, err)
+		}
+
+		jobSpecs := make([]declarative.PipelineJobSpec, 0, len(jobs))
+		for _, job := range jobs {
+			notebookName := job.NotebookID
+			if c.index != nil {
+				for name, id := range c.index.notebookIDByName {
+					if id == job.NotebookID {
+						notebookName = name
+						break
+					}
+				}
+			}
+			computeEndpoint := ""
+			if job.ComputeEndpointID != "" && c.index != nil {
+				for name, id := range c.index.computeIDByName {
+					if id == job.ComputeEndpointID {
+						computeEndpoint = name
+						break
+					}
+				}
+			}
+			jobSpecs = append(jobSpecs, declarative.PipelineJobSpec{
+				Name:            job.Name,
+				Notebook:        notebookName,
+				ComputeEndpoint: computeEndpoint,
+				DependsOn:       job.DependsOn,
+				TimeoutSeconds:  job.TimeoutSeconds,
+				RetryCount:      job.RetryCount,
+				Order:           job.JobOrder,
+			})
+			if job.ID != "" && c.index != nil {
+				c.index.jobIDByPath[pl.Name+"/"+job.Name] = job.ID
+			}
+		}
+
 		state.Pipelines = append(state.Pipelines, declarative.PipelineResource{
 			Name: pl.Name,
 			Spec: declarative.PipelineSpec{
-				Description:  pl.Description,
-				ScheduleCron: pl.ScheduleCron,
-				IsPaused:     pl.IsPaused,
-				// Jobs omitted for simplicity — would require per-pipeline fetch.
+				Description:      pl.Description,
+				ScheduleCron:     pl.ScheduleCron,
+				IsPaused:         pl.IsPaused,
+				ConcurrencyLimit: pl.ConcurrencyLimit,
+				Jobs:             jobSpecs,
 			},
 		})
 	}
 	return nil
+}
+
+func (c *APIStateClient) readPipelineJobs(ctx context.Context, pipelineName string) ([]apiPipelineJob, error) {
+	pages, err := c.fetchAllPages(ctx, "/pipelines/"+pipelineName+"/jobs")
+	if err != nil {
+		return nil, err
+	}
+	if len(pages) == 0 {
+		return []apiPipelineJob{}, nil
+	}
+	var jobs []apiPipelineJob
+	if err := mergePages(pages, &jobs); err != nil {
+		return nil, err
+	}
+	return jobs, nil
 }
 
 type apiMacro struct {
@@ -1409,6 +1548,12 @@ func (c *APIStateClient) Execute(ctx context.Context, action declarative.Action)
 		return c.executeColumnMaskBinding(ctx, action)
 	case declarative.KindAPIKey:
 		return c.executeAPIKey(ctx, action)
+	case declarative.KindNotebook:
+		return c.executeNotebook(ctx, action)
+	case declarative.KindPipeline:
+		return c.executePipeline(ctx, action)
+	case declarative.KindPipelineJob:
+		return c.executePipelineJob(ctx, action)
 	case declarative.KindMacro:
 		return c.executeMacro(ctx, action)
 	case declarative.KindModel:
@@ -1470,6 +1615,390 @@ func (c *APIStateClient) executeAPIKey(ctx context.Context, action declarative.A
 	default:
 		return fmt.Errorf("unsupported operation %s for api-key", action.Operation)
 	}
+}
+
+func (c *APIStateClient) executeNotebook(ctx context.Context, action declarative.Action) error {
+	switch action.Operation {
+	case declarative.OpCreate:
+		nb := action.Desired.(declarative.NotebookResource)
+		body := map[string]interface{}{
+			"name": nb.Name,
+		}
+		if nb.Spec.Description != "" {
+			body["description"] = nb.Spec.Description
+		}
+		resp, err := c.client.Do(http.MethodPost, "/notebooks", nil, body)
+		if err != nil {
+			return err
+		}
+		var notebookID string
+		if resp.StatusCode == http.StatusConflict {
+			notebookID, err = c.lookupNotebookIDByName(ctx, nb.Name)
+			if err != nil {
+				return fmt.Errorf("notebook already exists and lookup failed: %w", err)
+			}
+		} else {
+			notebookID, err = c.checkCreateResponse(resp)
+			if err != nil {
+				return err
+			}
+			if notebookID == "" {
+				notebookID, err = c.lookupNotebookIDByName(ctx, nb.Name)
+				if err != nil {
+					return fmt.Errorf("lookup created notebook %q: %w", nb.Name, err)
+				}
+			}
+		}
+		if c.index != nil {
+			c.index.notebookIDByName[nb.Name] = notebookID
+		}
+		return c.syncNotebookCells(ctx, notebookID, nb.Spec.Cells)
+
+	case declarative.OpUpdate:
+		nb := action.Desired.(declarative.NotebookResource)
+		notebookID, err := c.resolveNotebookID(ctx, nb.Name)
+		if err != nil {
+			return fmt.Errorf("resolve notebook for update: %w", err)
+		}
+		body := map[string]interface{}{
+			"name":        nb.Name,
+			"description": nb.Spec.Description,
+		}
+		resp, err := c.client.Do(http.MethodPatch, "/notebooks/"+notebookID, nil, body)
+		if err != nil {
+			return err
+		}
+		if err := gen.CheckError(resp); err != nil {
+			return err
+		}
+		return c.syncNotebookCells(ctx, notebookID, nb.Spec.Cells)
+
+	case declarative.OpDelete:
+		notebookName := action.ResourceName
+		if actual, ok := action.Actual.(declarative.NotebookResource); ok && actual.Name != "" {
+			notebookName = actual.Name
+		}
+		notebookID, err := c.resolveNotebookID(ctx, notebookName)
+		if err != nil {
+			return fmt.Errorf("resolve notebook for delete: %w", err)
+		}
+		resp, err := c.client.Do(http.MethodDelete, "/notebooks/"+notebookID, nil, nil)
+		if err != nil {
+			return err
+		}
+		if err := gen.CheckError(resp); err != nil {
+			return err
+		}
+		if c.index != nil {
+			delete(c.index.notebookIDByName, notebookName)
+		}
+		return nil
+
+	default:
+		return fmt.Errorf("unsupported operation %s for notebook", action.Operation)
+	}
+}
+
+func (c *APIStateClient) executePipeline(_ context.Context, action declarative.Action) error {
+	switch action.Operation {
+	case declarative.OpCreate:
+		pipeline := action.Desired.(declarative.PipelineResource)
+		body := map[string]interface{}{
+			"name": pipeline.Name,
+		}
+		if pipeline.Spec.Description != "" {
+			body["description"] = pipeline.Spec.Description
+		}
+		if pipeline.Spec.ScheduleCron != "" {
+			body["schedule_cron"] = pipeline.Spec.ScheduleCron
+		}
+		body["is_paused"] = pipeline.Spec.IsPaused
+		if pipeline.Spec.ConcurrencyLimit != nil {
+			body["concurrency_limit"] = *pipeline.Spec.ConcurrencyLimit
+		}
+		resp, err := c.client.Do(http.MethodPost, "/pipelines", nil, body)
+		if err != nil {
+			return err
+		}
+		id, err := c.checkCreateResponse(resp)
+		if err != nil {
+			return err
+		}
+		if id != "" && c.index != nil {
+			c.index.pipelineIDByName[pipeline.Name] = id
+		}
+		return nil
+
+	case declarative.OpUpdate:
+		pipeline := action.Desired.(declarative.PipelineResource)
+		body := map[string]interface{}{
+			"description":   pipeline.Spec.Description,
+			"schedule_cron": pipeline.Spec.ScheduleCron,
+			"is_paused":     pipeline.Spec.IsPaused,
+		}
+		if pipeline.Spec.ConcurrencyLimit != nil {
+			body["concurrency_limit"] = *pipeline.Spec.ConcurrencyLimit
+		}
+		resp, err := c.client.Do(http.MethodPatch, "/pipelines/"+pipeline.Name, nil, body)
+		if err != nil {
+			return err
+		}
+		return gen.CheckError(resp)
+
+	case declarative.OpDelete:
+		pipelineName := action.ResourceName
+		resp, err := c.client.Do(http.MethodDelete, "/pipelines/"+pipelineName, nil, nil)
+		if err != nil {
+			return err
+		}
+		if err := gen.CheckError(resp); err != nil {
+			return err
+		}
+		if c.index != nil {
+			delete(c.index.pipelineIDByName, pipelineName)
+		}
+		return nil
+
+	default:
+		return fmt.Errorf("unsupported operation %s for pipeline", action.Operation)
+	}
+}
+
+func (c *APIStateClient) executePipelineJob(ctx context.Context, action declarative.Action) error {
+	pipelineName, jobName, err := splitPipelineJobResourceName(action.ResourceName)
+	if err != nil {
+		return err
+	}
+
+	switch action.Operation {
+	case declarative.OpCreate:
+		job := action.Desired.(declarative.PipelineJobSpec)
+		if job.Name == "" {
+			job.Name = jobName
+		}
+		return c.createPipelineJob(ctx, pipelineName, job)
+
+	case declarative.OpUpdate:
+		actualJob, _ := action.Actual.(declarative.PipelineJobSpec)
+		if actualJob.Name == "" {
+			actualJob.Name = jobName
+		}
+		if err := c.deletePipelineJobByName(ctx, pipelineName, actualJob.Name); err != nil {
+			return err
+		}
+		desiredJob := action.Desired.(declarative.PipelineJobSpec)
+		if desiredJob.Name == "" {
+			desiredJob.Name = jobName
+		}
+		return c.createPipelineJob(ctx, pipelineName, desiredJob)
+
+	case declarative.OpDelete:
+		actualJob, _ := action.Actual.(declarative.PipelineJobSpec)
+		if actualJob.Name != "" {
+			jobName = actualJob.Name
+		}
+		return c.deletePipelineJobByName(ctx, pipelineName, jobName)
+
+	default:
+		return fmt.Errorf("unsupported operation %s for pipeline-job", action.Operation)
+	}
+}
+
+func (c *APIStateClient) syncNotebookCells(ctx context.Context, notebookID string, desired []declarative.CellSpec) error {
+	detail, err := c.readNotebookDetail(ctx, notebookID)
+	if err != nil {
+		return err
+	}
+
+	for _, cell := range detail.Cells {
+		resp, err := c.client.Do(http.MethodDelete, "/notebooks/"+notebookID+"/cells/"+cell.ID, nil, nil)
+		if err != nil {
+			return err
+		}
+		if err := gen.CheckError(resp); err != nil {
+			return err
+		}
+	}
+
+	for i, cell := range desired {
+		body := map[string]interface{}{
+			"cell_type": cell.Type,
+			"position":  i,
+		}
+		if cell.Content != "" {
+			body["content"] = cell.Content
+		}
+		resp, err := c.client.Do(http.MethodPost, "/notebooks/"+notebookID+"/cells", nil, body)
+		if err != nil {
+			return err
+		}
+		if err := gen.CheckError(resp); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (c *APIStateClient) createPipelineJob(ctx context.Context, pipelineName string, job declarative.PipelineJobSpec) error {
+	notebookID, err := c.resolveNotebookID(ctx, job.Notebook)
+	if err != nil {
+		return fmt.Errorf("resolve notebook for pipeline job %q: %w", job.Name, err)
+	}
+
+	body := map[string]interface{}{
+		"name":        job.Name,
+		"notebook_id": notebookID,
+	}
+	if job.ComputeEndpoint != "" {
+		computeID, err := c.resolveComputeEndpointID(ctx, job.ComputeEndpoint)
+		if err != nil {
+			return fmt.Errorf("resolve compute endpoint for pipeline job %q: %w", job.Name, err)
+		}
+		body["compute_endpoint_id"] = computeID
+	}
+	if len(job.DependsOn) > 0 {
+		body["depends_on"] = job.DependsOn
+	}
+	if job.TimeoutSeconds != nil {
+		body["timeout_seconds"] = *job.TimeoutSeconds
+	}
+	if job.RetryCount != nil {
+		body["retry_count"] = *job.RetryCount
+	}
+	if job.Order != nil {
+		body["job_order"] = *job.Order
+	}
+
+	resp, err := c.client.Do(http.MethodPost, "/pipelines/"+pipelineName+"/jobs", nil, body)
+	if err != nil {
+		return err
+	}
+	id, err := c.checkCreateResponse(resp)
+	if err != nil {
+		return err
+	}
+	if id != "" && c.index != nil {
+		c.index.jobIDByPath[pipelineName+"/"+job.Name] = id
+	}
+	return nil
+}
+
+func (c *APIStateClient) deletePipelineJobByName(ctx context.Context, pipelineName, jobName string) error {
+	jobID, err := c.lookupPipelineJobID(ctx, pipelineName, jobName)
+	if err != nil {
+		return fmt.Errorf("resolve pipeline job for delete: %w", err)
+	}
+	resp, err := c.client.Do(http.MethodDelete, "/pipelines/"+pipelineName+"/jobs/"+jobID, nil, nil)
+	if err != nil {
+		return err
+	}
+	if err := gen.CheckError(resp); err != nil {
+		return err
+	}
+	if c.index != nil {
+		delete(c.index.jobIDByPath, pipelineName+"/"+jobName)
+	}
+	return nil
+}
+
+func (c *APIStateClient) resolveNotebookID(ctx context.Context, notebookName string) (string, error) {
+	if c.index != nil {
+		if id, ok := c.index.notebookIDByName[notebookName]; ok {
+			return id, nil
+		}
+	}
+	return c.lookupNotebookIDByName(ctx, notebookName)
+}
+
+func (c *APIStateClient) lookupNotebookIDByName(ctx context.Context, notebookName string) (string, error) {
+	pages, err := c.fetchAllPages(ctx, "/notebooks")
+	if err != nil {
+		return "", err
+	}
+	if len(pages) == 0 {
+		return "", fmt.Errorf("notebook %q not found", notebookName)
+	}
+	var notebooks []apiNotebook
+	if err := mergePages(pages, &notebooks); err != nil {
+		return "", err
+	}
+	for _, notebook := range notebooks {
+		if notebook.Name == notebookName {
+			if notebook.ID == "" {
+				return "", fmt.Errorf("notebook %q has empty id", notebookName)
+			}
+			if c.index != nil {
+				c.index.notebookIDByName[notebookName] = notebook.ID
+			}
+			return notebook.ID, nil
+		}
+	}
+	return "", fmt.Errorf("notebook %q not found", notebookName)
+}
+
+func (c *APIStateClient) resolveComputeEndpointID(ctx context.Context, endpointName string) (string, error) {
+	if c.index != nil {
+		if id, ok := c.index.computeIDByName[endpointName]; ok {
+			return id, nil
+		}
+	}
+	pages, err := c.fetchAllPages(ctx, "/compute-endpoints")
+	if err != nil {
+		return "", err
+	}
+	if len(pages) == 0 {
+		return "", fmt.Errorf("compute endpoint %q not found", endpointName)
+	}
+	var endpoints []apiComputeEndpoint
+	if err := mergePages(pages, &endpoints); err != nil {
+		return "", err
+	}
+	for _, endpoint := range endpoints {
+		if endpoint.Name == endpointName {
+			if endpoint.ID == "" {
+				return "", fmt.Errorf("compute endpoint %q has empty id", endpointName)
+			}
+			if c.index != nil {
+				c.index.computeIDByName[endpointName] = endpoint.ID
+			}
+			return endpoint.ID, nil
+		}
+	}
+	return "", fmt.Errorf("compute endpoint %q not found", endpointName)
+}
+
+func (c *APIStateClient) lookupPipelineJobID(ctx context.Context, pipelineName, jobName string) (string, error) {
+	jobPath := pipelineName + "/" + jobName
+	if c.index != nil {
+		if id, ok := c.index.jobIDByPath[jobPath]; ok {
+			return id, nil
+		}
+	}
+	jobs, err := c.readPipelineJobs(ctx, pipelineName)
+	if err != nil {
+		return "", err
+	}
+	for _, job := range jobs {
+		if job.Name == jobName {
+			if job.ID == "" {
+				return "", fmt.Errorf("pipeline job %q has empty id", jobPath)
+			}
+			if c.index != nil {
+				c.index.jobIDByPath[jobPath] = job.ID
+			}
+			return job.ID, nil
+		}
+	}
+	return "", fmt.Errorf("pipeline job %q not found", jobPath)
+}
+
+func splitPipelineJobResourceName(resourceName string) (string, string, error) {
+	parts := strings.SplitN(resourceName, "/", 2)
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return "", "", fmt.Errorf("invalid pipeline-job resource name: %s", resourceName)
+	}
+	return parts[0], parts[1], nil
 }
 
 // ValidateNoSelfAPIKeyDeletion fails fast when a plan would delete the API key

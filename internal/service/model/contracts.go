@@ -12,7 +12,7 @@ import (
 // validateContract checks that a materialized model's output matches its contract.
 // Returns nil if no contract is defined or validation passes.
 func (s *Service) validateContract(ctx context.Context, conn *sql.Conn,
-	model *domain.Model, config ExecutionConfig, principal string) error {
+	model *domain.Model, config ExecutionConfig) error {
 
 	if model.Contract == nil || !model.Contract.Enforce || len(model.Contract.Columns) == 0 {
 		return nil
@@ -27,7 +27,7 @@ func (s *Service) validateContract(ctx context.Context, conn *sql.Conn,
 		strings.ReplaceAll(model.Name, "'", "''"),
 	)
 
-	rows, err := s.engine.QueryOnConn(ctx, conn, principal, infoSQL)
+	rows, err := conn.QueryContext(ctx, infoSQL)
 	if err != nil {
 		return fmt.Errorf("query information_schema for %s: %w", fqn, err)
 	}

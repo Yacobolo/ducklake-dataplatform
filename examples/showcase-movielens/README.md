@@ -1,52 +1,87 @@
 # MovieLens Showcase
 
-This showcase demonstrates a layered declarative analytics project:
+This is the flagship end-to-end showcase for the platform:
 
-- Bronze: raw ingested records from MovieLens subset files.
-- Silver: conformed entities and cleaned fact rows.
-- Gold: business-facing aggregates for analytics consumption.
-
-It also includes governance-as-code resources (tags, row filters, column masks) and RBAC declarations.
+1. Load raw data through the ingestion API.
+2. Transform it with declarative models (bronze -> silver -> gold).
+3. Reuse a declarative macro in transformation SQL.
+4. Run a notebook with KPI checks.
+5. Schedule the notebook in a pipeline.
+6. Demonstrate RBAC, row filters, and column masks on MovieLens tables.
 
 ## Directory layout
 
-- `config/`: declarative resources (`models`, `macros`, `security`, `governance`, `catalogs`)
-- `data/`: small deterministic MovieLens subset used by Bronze model SQL
-- `assertions.yaml`: optional expectations used by integration tests
+- `config/`: declarative resources (catalog, tables, security, governance, models, macros, notebooks, pipelines)
+- `data/`: tiny deterministic MovieLens CSV seed set
+- `scripts/`: helper scripts for local bootstrap and demo execution
+- `assertions.yaml`: example lifecycle expectations used by integration tests
 
-## Run
+## Quickstart (10-15 minutes)
 
-For local demos, bootstrap a one-time admin API key directly in your metadata SQLite before running declarative apply.
-
-Example bootstrap (replace paths/DB as needed):
+From repository root:
 
 ```bash
-API_KEY="showcase-local-admin-key"
-HASH=$(printf "%s" "$API_KEY" | shasum -a 256 | awk '{print $1}')
-
-sqlite3 ducklake_meta.sqlite "
-INSERT OR IGNORE INTO principals(id,name,type,is_admin)
-VALUES ('showcase-admin-id','ml_admin','user',1);
-
-INSERT OR IGNORE INTO api_keys(id,key_hash,principal_id,name,key_prefix)
-VALUES (
-  'showcase-admin-key-id',
-  '$HASH',
-  (SELECT id FROM principals WHERE name='ml_admin'),
-  'showcase-admin',
-  'showcase'
-);
-"
+task build
+task build-cli
+go run ./cmd/server
 ```
 
-Use that key for CLI commands (and force empty token so API key auth is used):
+In a second terminal:
 
 ```bash
+export API_KEY="showcase-local-admin-key"
+examples/showcase-movielens/scripts/bootstrap_admin_key.sh
+
 ./bin/duck --token '' --api-key "$API_KEY" validate --config-dir examples/showcase-movielens/config
 ./bin/duck --token '' --api-key "$API_KEY" plan --config-dir examples/showcase-movielens/config
 ./bin/duck --token '' --api-key "$API_KEY" apply --config-dir examples/showcase-movielens/config --auto-approve
-./bin/duck --token '' --api-key "$API_KEY" plan --config-dir examples/showcase-movielens/config
+
+examples/showcase-movielens/scripts/ingest_seed_data.sh
+
+./bin/duck --token '' --api-key "$API_KEY" models model-runs trigger-model-run \
+  --project-name movielens \
+  --model-names bronze_movies,bronze_users,bronze_ratings,silver_movies,silver_users,silver_ratings_enriched,gold_movie_scores,gold_user_engagement \
+  --target-catalog lake \
+  --target-schema main
+
+./bin/duck --token '' --api-key "$API_KEY" pipelines runs trigger movielens_daily
+./bin/duck --token '' --api-key "$API_KEY" query execute --sql "SELECT * FROM lake.main.gold_movie_scores ORDER BY avg_rating DESC LIMIT 5"
 ```
+
+Or run the full happy path in one command:
+
+```bash
+API_KEY="showcase-local-admin-key" examples/showcase-movielens/scripts/run_demo_flow.sh
+```
+
+## Deep Dive
+
+### Ingestion API
+
+- `scripts/ingest_seed_data.sh` converts seed CSV files to parquet, then calls `ingestion load` for `raw_movies`, `raw_users`, and `raw_ratings`.
+- Raw table definitions live under `config/catalogs/lake/schemas/main/tables/raw_*`.
+
+### Models + Macro
+
+- Medallion models are under `config/models/movielens/bronze|silver|gold`.
+- The `rating_bucket` macro is declared in `config/macros/rating_bucket.yaml` and used by `silver_ratings_enriched`.
+
+### Notebook + Pipeline
+
+- Notebook: `config/notebooks/01_kpi_walkthrough.yaml`
+- Scheduled pipeline: `config/pipelines/movielens_daily.yaml`
+
+### Governance + RBAC
+
+- Grants: `config/security/grants.yaml`
+- Row filter + column mask on `raw_users`: `config/catalogs/lake/schemas/main/tables/raw_users/`
+- Table tags: `config/governance/tags.yaml`
+
+## Troubleshooting
+
+- If helper scripts fail, ensure the server is running and `./bin/duck` exists (`task build-cli`).
+- If bootstrap fails, confirm `ducklake_meta.sqlite` exists in repo root (server startup creates it).
+- If ingestion fails with file-path issues, verify `ducklake_data/showcase_ingest/*.parquet` exists after running `ingest_seed_data.sh`.
 
 ## Dataset attribution
 

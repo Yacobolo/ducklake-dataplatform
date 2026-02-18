@@ -9,5 +9,35 @@ grants:
   - principal: movie_analysts
     principal_type: group
     securable_type: table
-    securable: lake.main.titanic
+    securable: lake.main.raw_movies
     privilege: SELECT
+  - principal: movie_analysts
+    principal_type: group
+    securable_type: table
+    securable: lake.main.raw_ratings
+    privilege: SELECT
+  - principal: movie_analysts
+    principal_type: group
+    securable_type: table
+    securable: lake.main.raw_users
+    privilege: SELECT
+  - principal: ml_service
+    principal_type: user
+    securable_type: schema
+    securable: lake.main
+    privilege: USAGE
+  - principal: ml_service
+    principal_type: user
+    securable_type: table
+    securable: lake.main.raw_movies
+    privilege: INSERT
+  - principal: ml_service
+    principal_type: user
+    securable_type: table
+    securable: lake.main.raw_users
+    privilege: INSERT
+  - principal: ml_service
+    principal_type: user
+    securable_type: table
+    securable: lake.main.raw_ratings
+    privilege: INSERT

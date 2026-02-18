@@ -69,6 +69,10 @@ func withTestIndex(sc *APIStateClient) *APIStateClient {
 	sc.index.tagIDByKey["pii:email"] = "tag-id-pii-email"
 	sc.index.rowFilterIDByPath["demo.titanic.passengers/first_class"] = "rf-id-first"
 	sc.index.columnMaskIDByPath["demo.titanic.passengers/mask_name"] = "cm-id-name"
+	sc.index.notebookIDByName["nb1"] = "notebook-id-1"
+	sc.index.pipelineIDByName["pipe1"] = "pipeline-id-1"
+	sc.index.jobIDByPath["pipe1/job1"] = "job-id-1"
+	sc.index.computeIDByName["local"] = "compute-id-local"
 	return sc
 }
 
@@ -955,13 +959,84 @@ func TestExecute_UnimplementedKindReturnsError(t *testing.T) {
 
 	action := declarative.Action{
 		Operation:    declarative.OpCreate,
-		ResourceKind: declarative.KindPipelineJob, // not implemented
-		ResourceName: "some-job",
+		ResourceKind: declarative.KindVolume,
+		ResourceName: "demo.analytics.stage",
 	}
 
 	err := sc.Execute(context.Background(), action)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "not yet implemented")
+}
+
+func TestExecuteNotebook_CreateCreatesCells(t *testing.T) {
+	var captured []execCapture
+	sc := newTestExecuteClient(t, &captured)
+
+	action := declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindNotebook,
+		ResourceName: "kpi_walkthrough",
+		Desired: declarative.NotebookResource{
+			Name: "kpi_walkthrough",
+			Spec: declarative.NotebookSpec{
+				Description: "KPI notebook",
+				Cells: []declarative.CellSpec{
+					{Type: "markdown", Content: "# Header"},
+					{Type: "sql", Content: "SELECT 1"},
+				},
+			},
+		},
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.NoError(t, err)
+	require.GreaterOrEqual(t, len(captured), 4)
+
+	assert.Equal(t, http.MethodPost, captured[0].Method)
+	assert.Contains(t, captured[0].Path, "/notebooks")
+	assert.Equal(t, "kpi_walkthrough", bodyStr(captured[0], "name"))
+
+	assert.Equal(t, http.MethodPost, captured[2].Method)
+	assert.Contains(t, captured[2].Path, "/notebooks/generated-uuid-123/cells")
+	assert.Equal(t, "markdown", bodyStr(captured[2], "cell_type"))
+
+	assert.Equal(t, http.MethodPost, captured[3].Method)
+	assert.Contains(t, captured[3].Path, "/notebooks/generated-uuid-123/cells")
+	assert.Equal(t, "sql", bodyStr(captured[3], "cell_type"))
+}
+
+func TestExecutePipelineJob_CreateResolvesNotebookAndComputeIDs(t *testing.T) {
+	var captured []execCapture
+	sc := withTestIndex(newTestExecuteClient(t, &captured))
+
+	timeout := 300
+	retries := 2
+	order := 1
+	action := declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindPipelineJob,
+		ResourceName: "pipe1/job1",
+		Desired: declarative.PipelineJobSpec{
+			Name:            "job1",
+			Notebook:        "nb1",
+			ComputeEndpoint: "local",
+			DependsOn:       []string{"job0"},
+			TimeoutSeconds:  &timeout,
+			RetryCount:      &retries,
+			Order:           &order,
+		},
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.NoError(t, err)
+	require.Len(t, captured, 1)
+
+	req := captured[0]
+	assert.Equal(t, http.MethodPost, req.Method)
+	assert.Contains(t, req.Path, "/pipelines/pipe1/jobs")
+	assert.Equal(t, "notebook-id-1", bodyStr(req, "notebook_id"))
+	assert.Equal(t, "compute-id-local", bodyStr(req, "compute_endpoint_id"))
+	assert.Equal(t, "job1", bodyStr(req, "name"))
 }
 
 func TestExecuteMacro_CreateUpdateDelete(t *testing.T) {
@@ -1864,7 +1939,23 @@ func TestReadState_NotebooksAndPipelines(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		resp := map[string]interface{}{
 			"data": []map[string]interface{}{
-				{"name": "nb1", "description": "My notebook", "owner": "alice"},
+				{"id": "nb-id-1", "name": "nb1", "description": "My notebook", "owner": "alice"},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/v1/notebooks/nb-id-1", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"notebook": map[string]interface{}{
+				"id":          "nb-id-1",
+				"name":        "nb1",
+				"description": "My notebook",
+				"owner":       "alice",
+			},
+			"cells": []map[string]interface{}{
+				{"id": "cell-1", "cell_type": "markdown", "content": "# Intro", "position": 0},
+				{"id": "cell-2", "cell_type": "sql", "content": "SELECT 1", "position": 1},
 			},
 		}
 		_ = json.NewEncoder(w).Encode(resp)
@@ -1874,10 +1965,30 @@ func TestReadState_NotebooksAndPipelines(t *testing.T) {
 		resp := map[string]interface{}{
 			"data": []map[string]interface{}{
 				{
-					"name":          "pipe1",
-					"description":   "ETL pipeline",
-					"schedule_cron": "0 0 * * *",
-					"is_paused":     true,
+					"id":                "pipe-id-1",
+					"name":              "pipe1",
+					"description":       "ETL pipeline",
+					"schedule_cron":     "0 0 * * *",
+					"is_paused":         true,
+					"concurrency_limit": 1,
+				},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/v1/pipelines/pipe1/jobs", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{
+					"id":                  "job-id-1",
+					"name":                "daily-kpi",
+					"notebook_id":         "nb-id-1",
+					"compute_endpoint_id": "",
+					"depends_on":          []string{},
+					"timeout_seconds":     300,
+					"retry_count":         1,
+					"job_order":           0,
 				},
 			},
 		}
@@ -1894,12 +2005,20 @@ func TestReadState_NotebooksAndPipelines(t *testing.T) {
 	assert.Equal(t, "nb1", state.Notebooks[0].Name)
 	assert.Equal(t, "My notebook", state.Notebooks[0].Spec.Description)
 	assert.Equal(t, "alice", state.Notebooks[0].Spec.Owner)
+	require.Len(t, state.Notebooks[0].Spec.Cells, 2)
+	assert.Equal(t, "markdown", state.Notebooks[0].Spec.Cells[0].Type)
+	assert.Equal(t, "SELECT 1", state.Notebooks[0].Spec.Cells[1].Content)
 
 	require.Len(t, state.Pipelines, 1)
 	assert.Equal(t, "pipe1", state.Pipelines[0].Name)
 	assert.Equal(t, "ETL pipeline", state.Pipelines[0].Spec.Description)
 	assert.Equal(t, "0 0 * * *", state.Pipelines[0].Spec.ScheduleCron)
 	assert.True(t, state.Pipelines[0].Spec.IsPaused)
+	require.NotNil(t, state.Pipelines[0].Spec.ConcurrencyLimit)
+	assert.Equal(t, 1, *state.Pipelines[0].Spec.ConcurrencyLimit)
+	require.Len(t, state.Pipelines[0].Spec.Jobs, 1)
+	assert.Equal(t, "daily-kpi", state.Pipelines[0].Spec.Jobs[0].Name)
+	assert.Equal(t, "nb1", state.Pipelines[0].Spec.Jobs[0].Notebook)
 }
 
 func TestReadState_APIKeys(t *testing.T) {

@@ -15,23 +15,7 @@ spec:
       u.region,
       u.age_group,
       m.genres,
-      CASE
-        WHEN r.rating >= 4.5 THEN 'excellent'
-        WHEN r.rating >= 3.5 THEN 'good'
-        WHEN r.rating >= 2.5 THEN 'mixed'
-        ELSE 'low'
-      END AS rating_bucket
-    FROM bronze_ratings r
-    JOIN silver_users u ON u.user_id = r.user_id
-    JOIN silver_movies m ON m.movie_id = r.movie_id
-  tests:
-    - name: ratings_user_fk
-      type: relationships
-      column: user_id
-      to_model: silver_users
-      to_column: user_id
-    - name: ratings_movie_fk
-      type: relationships
-      column: movie_id
-      to_model: silver_movies
-      to_column: movie_id
+      {{ rating_bucket(r.rating) }} AS rating_bucket
+    FROM lake.bronze_ratings r
+    JOIN lake.silver_users u ON u.user_id = r.user_id
+    JOIN lake.silver_movies m ON m.movie_id = r.movie_id

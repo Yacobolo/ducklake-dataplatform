@@ -1,0 +1,15 @@
+apiVersion: duck/v1
+kind: Pipeline
+metadata:
+  name: movielens_daily
+spec:
+  description: Daily showcase run for notebook-based KPI checks
+  schedule_cron: "0 9 * * *"
+  is_paused: false
+  concurrency_limit: 1
+  jobs:
+    - name: kpi_walkthrough
+      notebook: 01_kpi_walkthrough
+      order: 1
+      retry_count: 1
+      timeout_seconds: 300

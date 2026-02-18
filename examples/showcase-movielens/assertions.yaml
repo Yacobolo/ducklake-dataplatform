@@ -2,3 +2,6 @@ example: showcase-movielens
 expectations:
   min_model_creates: 8
   min_macro_creates: 1
+  min_notebook_creates: 1
+  min_pipeline_creates: 1
+  min_pipeline_job_creates: 1

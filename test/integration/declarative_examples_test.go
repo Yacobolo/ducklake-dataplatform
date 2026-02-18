@@ -4,6 +4,7 @@ package integration
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -11,20 +12,22 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 
 	"duck-demo/internal/declarative"
 )
 
 type exampleExpectation struct {
-	MinModelCreates int
-	MinMacroCreates int
+	MinModelCreates       int `yaml:"min_model_creates"`
+	MinMacroCreates       int `yaml:"min_macro_creates"`
+	MinNotebookCreates    int `yaml:"min_notebook_creates"`
+	MinPipelineCreates    int `yaml:"min_pipeline_creates"`
+	MinPipelineJobCreates int `yaml:"min_pipeline_job_creates"`
 }
 
-var exampleExpectations = map[string]exampleExpectation{
-	"showcase-movielens": {
-		MinModelCreates: 8,
-		MinMacroCreates: 1,
-	},
+type exampleAssertionsDoc struct {
+	Example      string             `yaml:"example"`
+	Expectations exampleExpectation `yaml:"expectations"`
 }
 
 func TestDeclarativeExamples_Lifecycle(t *testing.T) {
@@ -51,6 +54,7 @@ func TestDeclarativeExamples_Lifecycle(t *testing.T) {
 	for _, exampleName := range exampleNames {
 		exampleName := exampleName
 		configDir := filepath.Join(examplesRoot, exampleName, "config")
+		assertionsPath := filepath.Join(examplesRoot, exampleName, "assertions.yaml")
 
 		t.Run(exampleName, func(t *testing.T) {
 			env := setupHTTPServer(t, httpTestOpts{WithModels: true})
@@ -69,38 +73,88 @@ func TestDeclarativeExamples_Lifecycle(t *testing.T) {
 
 			modelCreates := actionsOfKindAndOp(plan, declarative.KindModel, declarative.OpCreate)
 			macroCreates := actionsOfKindAndOp(plan, declarative.KindMacro, declarative.OpCreate)
+			notebookCreates := actionsOfKindAndOp(plan, declarative.KindNotebook, declarative.OpCreate)
+			pipelineCreates := actionsOfKindAndOp(plan, declarative.KindPipeline, declarative.OpCreate)
+			pipelineJobCreates := actionsOfKindAndOp(plan, declarative.KindPipelineJob, declarative.OpCreate)
 
-			expectation, hasExpectation := exampleExpectations[exampleName]
+			expectation, hasExpectation, expErr := loadExampleExpectation(assertionsPath, exampleName)
+			require.NoError(t, expErr)
 			if hasExpectation {
 				assert.GreaterOrEqual(t, len(modelCreates), expectation.MinModelCreates, "expected model creates for %s", exampleName)
 				assert.GreaterOrEqual(t, len(macroCreates), expectation.MinMacroCreates, "expected macro creates for %s", exampleName)
+				assert.GreaterOrEqual(t, len(notebookCreates), expectation.MinNotebookCreates, "expected notebook creates for %s", exampleName)
+				assert.GreaterOrEqual(t, len(pipelineCreates), expectation.MinPipelineCreates, "expected pipeline creates for %s", exampleName)
+				assert.GreaterOrEqual(t, len(pipelineJobCreates), expectation.MinPipelineJobCreates, "expected pipeline job creates for %s", exampleName)
 			}
 
-			actions := filterModelAndMacroActions(plan.Actions)
-			require.NotEmpty(t, actions, "expected model/macro actions for %s", exampleName)
+			actions := filterExampleApplyActions(plan.Actions)
+			require.NotEmpty(t, actions, "expected showcase actions for %s", exampleName)
 			executeExampleActions(t, stateClient, actions)
 
 			actualAfterApply, readAfterErr := stateClient.ReadState(context.Background())
 			require.NoError(t, readAfterErr, "read state after apply for %s", exampleName)
 
 			replan := declarative.Diff(desired, actualAfterApply)
-			assert.Empty(t, actionsOfKindAndOp(replan, declarative.KindModel, declarative.OpCreate), "expected no model creates after apply for %s", exampleName)
-			assert.Empty(t, actionsOfKindAndOp(replan, declarative.KindModel, declarative.OpUpdate), "expected no model updates after apply for %s", exampleName)
-			assert.Empty(t, actionsOfKindAndOp(replan, declarative.KindMacro, declarative.OpCreate), "expected no macro creates after apply for %s", exampleName)
-			assert.Empty(t, actionsOfKindAndOp(replan, declarative.KindMacro, declarative.OpUpdate), "expected no macro updates after apply for %s", exampleName)
+			assertNoCreateOrUpdate(t, replan, declarative.KindModel, "model", exampleName)
+			assertNoCreateOrUpdate(t, replan, declarative.KindMacro, "macro", exampleName)
+			assertNoNotebookDrift(t, replan, exampleName)
+			assertNoCreateOrUpdate(t, replan, declarative.KindPipeline, "pipeline", exampleName)
+			assertNoCreateOrUpdate(t, replan, declarative.KindPipelineJob, "pipeline job", exampleName)
 		})
 	}
 }
 
-func filterModelAndMacroActions(actions []declarative.Action) []declarative.Action {
+func filterExampleApplyActions(actions []declarative.Action) []declarative.Action {
 	filtered := make([]declarative.Action, 0, len(actions))
 	for _, action := range actions {
 		switch action.ResourceKind {
-		case declarative.KindModel, declarative.KindMacro:
+		case declarative.KindNotebook, declarative.KindPipeline, declarative.KindPipelineJob, declarative.KindModel, declarative.KindMacro:
 			filtered = append(filtered, action)
 		}
 	}
 	return filtered
+}
+
+func loadExampleExpectation(assertionsPath, exampleName string) (exampleExpectation, bool, error) {
+	if _, err := os.Stat(assertionsPath); err != nil {
+		if os.IsNotExist(err) {
+			return exampleExpectation{}, false, nil
+		}
+		return exampleExpectation{}, false, err
+	}
+
+	content, err := os.ReadFile(assertionsPath)
+	if err != nil {
+		return exampleExpectation{}, false, err
+	}
+
+	var doc exampleAssertionsDoc
+	if err := yaml.Unmarshal(content, &doc); err != nil {
+		return exampleExpectation{}, false, err
+	}
+
+	if doc.Example != "" && doc.Example != exampleName {
+		return exampleExpectation{}, false, fmt.Errorf("assertions example %q does not match directory name %q", doc.Example, exampleName)
+	}
+
+	return doc.Expectations, true, nil
+}
+
+func assertNoCreateOrUpdate(t *testing.T, plan *declarative.Plan, kind declarative.ResourceKind, label, exampleName string) {
+	t.Helper()
+	assert.Empty(t, actionsOfKindAndOp(plan, kind, declarative.OpCreate), "expected no %s creates after apply for %s", label, exampleName)
+	assert.Empty(t, actionsOfKindAndOp(plan, kind, declarative.OpUpdate), "expected no %s updates after apply for %s", label, exampleName)
+}
+
+func assertNoNotebookDrift(t *testing.T, plan *declarative.Plan, exampleName string) {
+	t.Helper()
+	assert.Empty(t, actionsOfKindAndOp(plan, declarative.KindNotebook, declarative.OpCreate), "expected no notebook creates after apply for %s", exampleName)
+	updates := actionsOfKindAndOp(plan, declarative.KindNotebook, declarative.OpUpdate)
+	for _, action := range updates {
+		for _, change := range action.Changes {
+			assert.Equal(t, "owner", change.Field, "expected only notebook owner drift after apply for %s", exampleName)
+		}
+	}
 }
 
 func executeExampleActions(t *testing.T, stateClient stateExecutor, actions []declarative.Action) {
