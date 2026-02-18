@@ -182,6 +182,16 @@ func (c *APIStateClient) ReadState(ctx context.Context) (*declarative.DesiredSta
 	if err := c.readPipelines(ctx, state); err != nil {
 		return nil, fmt.Errorf("read pipelines: %w", err)
 	}
+	if err := c.readMacros(ctx, state); err != nil {
+		if !isOptionalReadError(err) {
+			return nil, fmt.Errorf("read macros: %w", err)
+		}
+	}
+	if err := c.readModels(ctx, state); err != nil {
+		if !isOptionalReadError(err) {
+			return nil, fmt.Errorf("read models: %w", err)
+		}
+	}
 
 	return state, nil
 }
@@ -882,6 +892,235 @@ func (c *APIStateClient) readPipelines(ctx context.Context, state *declarative.D
 	return nil
 }
 
+type apiMacro struct {
+	Name        string            `json:"name"`
+	MacroType   string            `json:"macro_type"`
+	Parameters  []string          `json:"parameters"`
+	Body        string            `json:"body"`
+	Description string            `json:"description"`
+	CatalogName string            `json:"catalog_name"`
+	ProjectName string            `json:"project_name"`
+	Visibility  string            `json:"visibility"`
+	Owner       string            `json:"owner"`
+	Properties  map[string]string `json:"properties"`
+	Tags        []string          `json:"tags"`
+	Status      string            `json:"status"`
+}
+
+func (c *APIStateClient) readMacros(ctx context.Context, state *declarative.DesiredState) error {
+	pages, err := c.fetchAllPages(ctx, "/macros")
+	if err != nil {
+		return err
+	}
+	if len(pages) == 0 {
+		return nil
+	}
+
+	var items []apiMacro
+	if err := mergePages(pages, &items); err != nil {
+		return err
+	}
+
+	for _, m := range items {
+		state.Macros = append(state.Macros, declarative.MacroResource{
+			Name: m.Name,
+			Spec: declarative.MacroSpec{
+				MacroType:   m.MacroType,
+				Parameters:  m.Parameters,
+				Body:        m.Body,
+				Description: m.Description,
+				CatalogName: m.CatalogName,
+				ProjectName: m.ProjectName,
+				Visibility:  m.Visibility,
+				Owner:       m.Owner,
+				Properties:  m.Properties,
+				Tags:        m.Tags,
+				Status:      m.Status,
+			},
+		})
+	}
+
+	return nil
+}
+
+type apiModelConfig struct {
+	UniqueKey           []string `json:"unique_key"`
+	IncrementalStrategy string   `json:"incremental_strategy"`
+	OnSchemaChange      string   `json:"on_schema_change"`
+}
+
+type apiModelContractColumn struct {
+	Name     string `json:"name"`
+	Type     string `json:"type"`
+	Nullable bool   `json:"nullable"`
+}
+
+type apiModelContract struct {
+	Enforce bool                     `json:"enforce"`
+	Columns []apiModelContractColumn `json:"columns"`
+}
+
+type apiModelFreshness struct {
+	MaxLagSeconds int64  `json:"max_lag_seconds"`
+	CronSchedule  string `json:"cron_schedule"`
+}
+
+type apiModel struct {
+	ProjectName     string             `json:"project_name"`
+	Name            string             `json:"name"`
+	SQL             string             `json:"sql"`
+	Materialization string             `json:"materialization"`
+	Description     string             `json:"description"`
+	Tags            []string           `json:"tags"`
+	Config          *apiModelConfig    `json:"config"`
+	Contract        *apiModelContract  `json:"contract"`
+	FreshnessPolicy *apiModelFreshness `json:"freshness_policy"`
+}
+
+type apiModelTestConfig struct {
+	Values    []string `json:"values"`
+	ToModel   string   `json:"to_model"`
+	ToColumn  string   `json:"to_column"`
+	CustomSQL string   `json:"custom_sql"`
+}
+
+type apiModelTest struct {
+	ID       string              `json:"id"`
+	Name     string              `json:"name"`
+	TestType string              `json:"test_type"`
+	Column   string              `json:"column"`
+	Config   *apiModelTestConfig `json:"config"`
+}
+
+func (c *APIStateClient) listModelTests(ctx context.Context, projectName, modelName string) ([]apiModelTest, bool, error) {
+	pages, err := c.fetchAllPages(ctx, "/models/"+projectName+"/"+modelName+"/tests")
+	if err != nil {
+		if isOptionalReadError(err) {
+			return nil, false, nil
+		}
+		return nil, false, err
+	}
+	if len(pages) == 0 {
+		return nil, true, nil
+	}
+
+	var tests []apiModelTest
+	if err := mergePages(pages, &tests); err != nil {
+		return nil, false, err
+	}
+	return tests, true, nil
+}
+
+func isOptionalReadError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	if strings.Contains(msg, "http 404") || strings.Contains(msg, "http 405") || strings.Contains(msg, "http 501") {
+		return true
+	}
+	if strings.Contains(msg, "eof") || strings.Contains(msg, "connection reset by peer") || strings.Contains(msg, "broken pipe") {
+		return true
+	}
+	return false
+}
+
+func toDeclarativeTestSpec(test apiModelTest) declarative.TestSpec {
+	result := declarative.TestSpec{
+		Name:   test.Name,
+		Type:   test.TestType,
+		Column: test.Column,
+	}
+	if test.Config == nil {
+		return result
+	}
+	result.Values = append([]string(nil), test.Config.Values...)
+	result.ToModel = test.Config.ToModel
+	result.ToColumn = test.Config.ToColumn
+	result.SQL = test.Config.CustomSQL
+	return result
+}
+
+func toDeclarativeContract(contract *apiModelContract) *declarative.ContractSpec {
+	if contract == nil {
+		return nil
+	}
+	columns := make([]declarative.ContractColumnSpec, len(contract.Columns))
+	for i, col := range contract.Columns {
+		columns[i] = declarative.ContractColumnSpec{
+			Name:     col.Name,
+			Type:     col.Type,
+			Nullable: col.Nullable,
+		}
+	}
+	return &declarative.ContractSpec{Enforce: contract.Enforce, Columns: columns}
+}
+
+func toDeclarativeConfig(config *apiModelConfig) *declarative.ModelConfigSpec {
+	if config == nil {
+		return nil
+	}
+	return &declarative.ModelConfigSpec{
+		UniqueKey:           append([]string(nil), config.UniqueKey...),
+		IncrementalStrategy: config.IncrementalStrategy,
+		OnSchemaChange:      config.OnSchemaChange,
+	}
+}
+
+func toDeclarativeFreshness(freshness *apiModelFreshness) *declarative.FreshnessSpecYAML {
+	if freshness == nil {
+		return nil
+	}
+	return &declarative.FreshnessSpecYAML{
+		MaxLagSeconds: freshness.MaxLagSeconds,
+		CronSchedule:  freshness.CronSchedule,
+	}
+}
+
+func (c *APIStateClient) readModels(ctx context.Context, state *declarative.DesiredState) error {
+	pages, err := c.fetchAllPages(ctx, "/models")
+	if err != nil {
+		return err
+	}
+	if len(pages) == 0 {
+		return nil
+	}
+
+	var items []apiModel
+	if err := mergePages(pages, &items); err != nil {
+		return err
+	}
+
+	for _, m := range items {
+		tests, _, err := c.listModelTests(ctx, m.ProjectName, m.Name)
+		if err != nil {
+			return fmt.Errorf("list tests for model %s.%s: %w", m.ProjectName, m.Name, err)
+		}
+
+		testSpecs := make([]declarative.TestSpec, len(tests))
+		for i, test := range tests {
+			testSpecs[i] = toDeclarativeTestSpec(test)
+		}
+
+		state.Models = append(state.Models, declarative.ModelResource{
+			ProjectName: m.ProjectName,
+			ModelName:   m.Name,
+			Spec: declarative.ModelSpec{
+				Materialization: m.Materialization,
+				Description:     m.Description,
+				Tags:            m.Tags,
+				SQL:             m.SQL,
+				Config:          toDeclarativeConfig(m.Config),
+				Contract:        toDeclarativeContract(m.Contract),
+				Tests:           testSpecs,
+				Freshness:       toDeclarativeFreshness(m.FreshnessPolicy),
+			},
+		})
+	}
+
+	return nil
+}
+
 // === Name-to-ID Resolution ===
 
 // reverseLookupPrincipalName finds the principal name for a given ID by
@@ -1171,6 +1410,10 @@ func (c *APIStateClient) Execute(ctx context.Context, action declarative.Action)
 		return c.executeColumnMaskBinding(ctx, action)
 	case declarative.KindAPIKey:
 		return c.executeAPIKey(ctx, action)
+	case declarative.KindMacro:
+		return c.executeMacro(ctx, action)
+	case declarative.KindModel:
+		return c.executeModel(ctx, action)
 	default:
 		return fmt.Errorf("execute %s %s: resource kind not yet implemented", action.Operation, action.ResourceKind)
 	}
@@ -1341,6 +1584,359 @@ func (c *APIStateClient) lookupAPIKeyID(ctx context.Context, spec declarative.AP
 		return "", err
 	}
 	return item.ID, nil
+}
+
+func canonicalIncrementalStrategy(value string) string {
+	v := strings.ToLower(strings.TrimSpace(value))
+	if v == "delete+insert" {
+		return "delete_insert"
+	}
+	return v
+}
+
+func canonicalOnSchemaChange(value string) string {
+	return strings.ToLower(strings.TrimSpace(value))
+}
+
+func modelConfigBody(config *declarative.ModelConfigSpec) map[string]interface{} {
+	if config == nil {
+		return nil
+	}
+	body := map[string]interface{}{}
+	if len(config.UniqueKey) > 0 {
+		body["unique_key"] = config.UniqueKey
+	}
+	if value := canonicalIncrementalStrategy(config.IncrementalStrategy); value != "" {
+		body["incremental_strategy"] = value
+	}
+	if value := canonicalOnSchemaChange(config.OnSchemaChange); value != "" {
+		body["on_schema_change"] = value
+	}
+	if len(body) == 0 {
+		return nil
+	}
+	return body
+}
+
+func modelContractBody(contract *declarative.ContractSpec) map[string]interface{} {
+	if contract == nil {
+		return nil
+	}
+	body := map[string]interface{}{
+		"enforce": contract.Enforce,
+	}
+	if len(contract.Columns) > 0 {
+		columns := make([]map[string]interface{}, len(contract.Columns))
+		for i, col := range contract.Columns {
+			columns[i] = map[string]interface{}{
+				"name":     col.Name,
+				"type":     col.Type,
+				"nullable": col.Nullable,
+			}
+		}
+		body["columns"] = columns
+	}
+	return body
+}
+
+func modelFreshnessBody(freshness *declarative.FreshnessSpecYAML) map[string]interface{} {
+	if freshness == nil {
+		return nil
+	}
+	body := map[string]interface{}{}
+	if freshness.MaxLagSeconds > 0 {
+		body["max_lag_seconds"] = freshness.MaxLagSeconds
+	}
+	if freshness.CronSchedule != "" {
+		body["cron_schedule"] = freshness.CronSchedule
+	}
+	if len(body) == 0 {
+		return nil
+	}
+	return body
+}
+
+func toModelTestBody(test declarative.TestSpec) map[string]interface{} {
+	body := map[string]interface{}{
+		"name":      test.Name,
+		"test_type": test.Type,
+	}
+	if test.Column != "" {
+		body["column"] = test.Column
+	}
+
+	config := map[string]interface{}{}
+	if len(test.Values) > 0 {
+		config["values"] = test.Values
+	}
+	if test.ToModel != "" {
+		config["to_model"] = test.ToModel
+	}
+	if test.ToColumn != "" {
+		config["to_column"] = test.ToColumn
+	}
+	if test.SQL != "" {
+		config["custom_sql"] = test.SQL
+	}
+	if len(config) > 0 {
+		body["config"] = config
+	}
+
+	return body
+}
+
+func testsEquivalent(desired declarative.TestSpec, actual apiModelTest) bool {
+	if desired.Name != actual.Name || desired.Type != actual.TestType || desired.Column != actual.Column {
+		return false
+	}
+
+	var actualValues []string
+	actualToModel := ""
+	actualToColumn := ""
+	actualSQL := ""
+	if actual.Config != nil {
+		actualValues = append(actualValues, actual.Config.Values...)
+		actualToModel = actual.Config.ToModel
+		actualToColumn = actual.Config.ToColumn
+		actualSQL = actual.Config.CustomSQL
+	}
+
+	if strings.Join(desired.Values, "\x00") != strings.Join(actualValues, "\x00") {
+		return false
+	}
+	if desired.ToModel != actualToModel || desired.ToColumn != actualToColumn || desired.SQL != actualSQL {
+		return false
+	}
+
+	return true
+}
+
+func (c *APIStateClient) reconcileModelTests(ctx context.Context, projectName, modelName string, desired []declarative.TestSpec) error {
+	actual, supported, err := c.listModelTests(ctx, projectName, modelName)
+	if err != nil {
+		return err
+	}
+	if !supported {
+		return nil
+	}
+
+	actualByName := make(map[string]apiModelTest, len(actual))
+	for _, test := range actual {
+		actualByName[test.Name] = test
+	}
+
+	seen := make(map[string]struct{}, len(desired))
+	for _, wanted := range desired {
+		seen[wanted.Name] = struct{}{}
+		current, exists := actualByName[wanted.Name]
+		if exists {
+			if testsEquivalent(wanted, current) {
+				continue
+			}
+			if current.ID == "" {
+				return fmt.Errorf("model test %q missing id for replace", wanted.Name)
+			}
+			resp, err := c.client.Do(http.MethodDelete, "/models/"+projectName+"/"+modelName+"/tests/"+current.ID, nil, nil)
+			if err != nil {
+				return err
+			}
+			if err := gen.CheckError(resp); err != nil {
+				return err
+			}
+		}
+
+		resp, err := c.client.Do(http.MethodPost, "/models/"+projectName+"/"+modelName+"/tests", nil, toModelTestBody(wanted))
+		if err != nil {
+			return err
+		}
+		if err := gen.CheckError(resp); err != nil {
+			return err
+		}
+	}
+
+	for name, current := range actualByName {
+		if _, ok := seen[name]; ok {
+			continue
+		}
+		if current.ID == "" {
+			return fmt.Errorf("model test %q missing id for delete", current.Name)
+		}
+		resp, err := c.client.Do(http.MethodDelete, "/models/"+projectName+"/"+modelName+"/tests/"+current.ID, nil, nil)
+		if err != nil {
+			return err
+		}
+		if err := gen.CheckError(resp); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (c *APIStateClient) executeMacro(_ context.Context, action declarative.Action) error {
+	switch action.Operation {
+	case declarative.OpCreate:
+		macro := action.Desired.(declarative.MacroResource)
+		body := map[string]interface{}{
+			"name": macro.Name,
+			"body": macro.Spec.Body,
+		}
+		if macro.Spec.MacroType != "" {
+			body["macro_type"] = macro.Spec.MacroType
+		}
+		if len(macro.Spec.Parameters) > 0 {
+			body["parameters"] = macro.Spec.Parameters
+		}
+		if macro.Spec.Description != "" {
+			body["description"] = macro.Spec.Description
+		}
+		if macro.Spec.CatalogName != "" {
+			body["catalog_name"] = macro.Spec.CatalogName
+		}
+		if macro.Spec.ProjectName != "" {
+			body["project_name"] = macro.Spec.ProjectName
+		}
+		if macro.Spec.Visibility != "" {
+			body["visibility"] = macro.Spec.Visibility
+		}
+		if macro.Spec.Owner != "" {
+			body["owner"] = macro.Spec.Owner
+		}
+		if len(macro.Spec.Properties) > 0 {
+			body["properties"] = macro.Spec.Properties
+		}
+		if len(macro.Spec.Tags) > 0 {
+			body["tags"] = macro.Spec.Tags
+		}
+		if macro.Spec.Status != "" {
+			body["status"] = macro.Spec.Status
+		}
+
+		resp, err := c.client.Do(http.MethodPost, "/macros", nil, body)
+		if err != nil {
+			return err
+		}
+		return gen.CheckError(resp)
+
+	case declarative.OpUpdate:
+		macro := action.Desired.(declarative.MacroResource)
+		body := map[string]interface{}{}
+		if macro.Spec.Body != "" {
+			body["body"] = macro.Spec.Body
+		}
+		body["parameters"] = macro.Spec.Parameters
+		body["description"] = macro.Spec.Description
+		if macro.Spec.CatalogName != "" {
+			body["catalog_name"] = macro.Spec.CatalogName
+		}
+		if macro.Spec.ProjectName != "" {
+			body["project_name"] = macro.Spec.ProjectName
+		}
+		if macro.Spec.Visibility != "" {
+			body["visibility"] = macro.Spec.Visibility
+		}
+		if macro.Spec.Owner != "" {
+			body["owner"] = macro.Spec.Owner
+		}
+		body["properties"] = macro.Spec.Properties
+		body["tags"] = macro.Spec.Tags
+		if macro.Spec.Status != "" {
+			body["status"] = macro.Spec.Status
+		}
+
+		resp, err := c.client.Do(http.MethodPatch, "/macros/"+macro.Name, nil, body)
+		if err != nil {
+			return err
+		}
+		return gen.CheckError(resp)
+
+	case declarative.OpDelete:
+		resp, err := c.client.Do(http.MethodDelete, "/macros/"+action.ResourceName, nil, nil)
+		if err != nil {
+			return err
+		}
+		return gen.CheckError(resp)
+
+	default:
+		return fmt.Errorf("unsupported operation %s for macro", action.Operation)
+	}
+}
+
+func (c *APIStateClient) executeModel(ctx context.Context, action declarative.Action) error {
+	switch action.Operation {
+	case declarative.OpCreate:
+		model := action.Desired.(declarative.ModelResource)
+		body := map[string]interface{}{
+			"project_name": model.ProjectName,
+			"name":         model.ModelName,
+			"sql":          model.Spec.SQL,
+		}
+		if model.Spec.Materialization != "" {
+			body["materialization"] = model.Spec.Materialization
+		}
+		if model.Spec.Description != "" {
+			body["description"] = model.Spec.Description
+		}
+		if len(model.Spec.Tags) > 0 {
+			body["tags"] = model.Spec.Tags
+		}
+		if config := modelConfigBody(model.Spec.Config); config != nil {
+			body["config"] = config
+		}
+		if contract := modelContractBody(model.Spec.Contract); contract != nil {
+			body["contract"] = contract
+		}
+		if freshness := modelFreshnessBody(model.Spec.Freshness); freshness != nil {
+			body["freshness_policy"] = freshness
+		}
+
+		resp, err := c.client.Do(http.MethodPost, "/models", nil, body)
+		if err != nil {
+			return err
+		}
+		if err := gen.CheckError(resp); err != nil {
+			return err
+		}
+		return c.reconcileModelTests(ctx, model.ProjectName, model.ModelName, model.Spec.Tests)
+
+	case declarative.OpUpdate:
+		model := action.Desired.(declarative.ModelResource)
+		body := map[string]interface{}{
+			"sql": model.Spec.SQL,
+		}
+		if model.Spec.Materialization != "" {
+			body["materialization"] = model.Spec.Materialization
+		}
+		body["description"] = model.Spec.Description
+		body["tags"] = model.Spec.Tags
+		body["config"] = modelConfigBody(model.Spec.Config)
+		body["contract"] = modelContractBody(model.Spec.Contract)
+		body["freshness_policy"] = modelFreshnessBody(model.Spec.Freshness)
+
+		path := "/models/" + model.ProjectName + "/" + model.ModelName
+		resp, err := c.client.Do(http.MethodPatch, path, nil, body)
+		if err != nil {
+			return err
+		}
+		if err := gen.CheckError(resp); err != nil {
+			return err
+		}
+		return c.reconcileModelTests(ctx, model.ProjectName, model.ModelName, model.Spec.Tests)
+
+	case declarative.OpDelete:
+		parts := strings.SplitN(action.ResourceName, ".", 2)
+		if len(parts) != 2 {
+			return fmt.Errorf("invalid model resource name: %s", action.ResourceName)
+		}
+		resp, err := c.client.Do(http.MethodDelete, "/models/"+parts[0]+"/"+parts[1], nil, nil)
+		if err != nil {
+			return err
+		}
+		return gen.CheckError(resp)
+
+	default:
+		return fmt.Errorf("unsupported operation %s for model", action.Operation)
+	}
 }
 
 // --- Security resource execution ---
