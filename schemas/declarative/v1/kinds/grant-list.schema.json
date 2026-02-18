@@ -35,15 +35,54 @@
           "type": "string"
         },
         "principal_type": {
+          "enum": [
+            "user",
+            "group"
+          ],
           "type": "string"
         },
         "privilege": {
+          "enum": [
+            "SELECT",
+            "INSERT",
+            "UPDATE",
+            "DELETE",
+            "USE_CATALOG",
+            "USE_SCHEMA",
+            "USAGE",
+            "CREATE_TABLE",
+            "CREATE_VIEW",
+            "CREATE_SCHEMA",
+            "MODIFY",
+            "MANAGE",
+            "APPLY_TAG",
+            "MANAGE_TAGS",
+            "MANAGE_POLICIES",
+            "ALL_PRIVILEGES",
+            "CREATE_EXTERNAL_LOCATION",
+            "CREATE_STORAGE_CREDENTIAL",
+            "CREATE_VOLUME",
+            "READ_VOLUME",
+            "WRITE_VOLUME",
+            "READ_FILES",
+            "WRITE_FILES",
+            "MANAGE_COMPUTE",
+            "MANAGE_PIPELINES"
+          ],
           "type": "string"
         },
         "securable": {
           "type": "string"
         },
         "securable_type": {
+          "enum": [
+            "catalog",
+            "schema",
+            "table",
+            "external_location",
+            "storage_credential",
+            "volume"
+          ],
           "type": "string"
         }
       },

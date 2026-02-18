@@ -2,7 +2,7 @@ apiVersion: duck/v1
 kind: GroupList
 groups:
   - name: movie_analysts
-    description: Analysts who can query curated MovieLens outputs
+    description: Analysts with read access to MovieLens source tables
     members:
       - name: ml_analyst
         type: user

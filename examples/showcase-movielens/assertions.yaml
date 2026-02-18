@@ -1,5 +1,9 @@
 example: showcase-movielens
 expectations:
+  min_principal_creates: 3
+  min_group_creates: 1
+  min_group_membership_creates: 1
+  min_grant_creates: 8
   min_model_creates: 8
   min_macro_creates: 1
   min_notebook_creates: 1

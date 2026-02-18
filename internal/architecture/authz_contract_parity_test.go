@@ -1,6 +1,7 @@
 package architecture_test
 
 import (
+	"encoding/json"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -9,10 +10,22 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/stretchr/testify/require"
 
 	"duck-demo/pkg/cli/gen"
 )
+
+type apiAuthz struct {
+	Mode   string
+	Checks []apiAuthzCheck
+}
+
+type apiAuthzCheck struct {
+	SecurableType     string
+	Privilege         string
+	SecurableIDSource string
+}
 
 type authzContractExpectation struct {
 	mode                 string
@@ -30,6 +43,7 @@ func TestAuthzContractParity_CriticalEndpoints(t *testing.T) {
 	for _, endpoint := range gen.APIEndpoints {
 		endpointByOperation[endpoint.OperationID] = endpoint
 	}
+	authzByOperation := loadAuthzByOperation(t)
 
 	expects := map[string]authzContractExpectation{
 		"createSchema": {
@@ -281,13 +295,15 @@ func TestAuthzContractParity_CriticalEndpoints(t *testing.T) {
 	}
 
 	for opID, exp := range expects {
-		endpoint, ok := endpointByOperation[opID]
+		_, ok := endpointByOperation[opID]
 		require.Truef(t, ok, "missing generated endpoint for %s", opID)
-		require.Equalf(t, exp.mode, endpoint.Authz.Mode, "authz mode drift for %s", opID)
+		authz, ok := authzByOperation[opID]
+		require.Truef(t, ok, "missing x-authz metadata for %s", opID)
+		require.Equalf(t, exp.mode, authz.Mode, "authz mode drift for %s", opID)
 
 		if exp.mode == "privilege" || exp.mode == "owner_or_privilege" {
-			require.NotEmptyf(t, endpoint.Authz.Checks, "authz checks missing for %s", opID)
-			require.Truef(t, hasMatchingCheck(endpoint.Authz.Checks, exp), "authz check drift for %s", opID)
+			require.NotEmptyf(t, authz.Checks, "authz checks missing for %s", opID)
+			require.Truef(t, hasMatchingCheck(authz.Checks, exp), "authz check drift for %s", opID)
 		}
 
 		body := authzMethodBody(t, exp.serviceFile, exp.serviceMethod)
@@ -300,13 +316,116 @@ func TestAuthzContractParity_CriticalEndpoints(t *testing.T) {
 	}
 }
 
-func hasMatchingCheck(checks []gen.APIAuthzCheck, exp authzContractExpectation) bool {
+func hasMatchingCheck(checks []apiAuthzCheck, exp authzContractExpectation) bool {
 	for _, check := range checks {
 		if check.SecurableType == exp.securableType && check.Privilege == exp.privilege && check.SecurableIDSource == exp.securableIDSource {
 			return true
 		}
 	}
 	return false
+}
+
+func loadAuthzByOperation(t *testing.T) map[string]apiAuthz {
+	t.Helper()
+
+	specPath := filepath.Join(repoRootDir(), "internal", "api", "openapi.bundled.yaml")
+	loader := openapi3.NewLoader()
+	doc, err := loader.LoadFromFile(specPath)
+	require.NoErrorf(t, err, "load openapi spec %s", specPath)
+
+	result := make(map[string]apiAuthz)
+	for _, pathItem := range doc.Paths.Map() {
+		for _, operation := range pathItem.Operations() {
+			if operation == nil || operation.OperationID == "" {
+				continue
+			}
+			authz, ok := parseOperationAuthz(operation)
+			if !ok {
+				continue
+			}
+			result[operation.OperationID] = authz
+		}
+	}
+
+	return result
+}
+
+func parseOperationAuthz(operation *openapi3.Operation) (apiAuthz, bool) {
+	if operation == nil || len(operation.Extensions) == 0 {
+		return apiAuthz{}, false
+	}
+
+	raw, ok := operation.Extensions["x-authz"]
+	if !ok {
+		return apiAuthz{}, false
+	}
+
+	m, ok := toStringAnyMap(raw)
+	if !ok {
+		return apiAuthz{}, false
+	}
+
+	authz := apiAuthz{Mode: stringField(m, "mode")}
+	items, ok := m["checks"].([]interface{})
+	if !ok {
+		return authz, true
+	}
+	for _, item := range items {
+		checkMap, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		authz.Checks = append(authz.Checks, apiAuthzCheck{
+			SecurableType:     stringField(checkMap, "securable_type"),
+			Privilege:         stringField(checkMap, "privilege"),
+			SecurableIDSource: stringField(checkMap, "securable_id_source"),
+		})
+	}
+
+	return authz, true
+}
+
+func toStringAnyMap(value interface{}) (map[string]interface{}, bool) {
+	switch typed := value.(type) {
+	case map[string]interface{}:
+		return typed, true
+	case map[interface{}]interface{}:
+		out := make(map[string]interface{}, len(typed))
+		for key, val := range typed {
+			s, ok := key.(string)
+			if !ok {
+				continue
+			}
+			out[s] = val
+		}
+		return out, true
+	case []byte:
+		var out map[string]interface{}
+		if err := json.Unmarshal(typed, &out); err != nil {
+			return nil, false
+		}
+		return out, true
+	case json.RawMessage:
+		var out map[string]interface{}
+		if err := json.Unmarshal(typed, &out); err != nil {
+			return nil, false
+		}
+		return out, true
+	default:
+		return nil, false
+	}
+}
+
+func stringField(m map[string]interface{}, key string) string {
+	v, ok := m[key]
+	if !ok {
+		return ""
+	}
+	s, ok := v.(string)
+	if !ok {
+		return ""
+	}
+	return s
 }
 
 func authzMethodBody(t *testing.T, relPath, method string) string {

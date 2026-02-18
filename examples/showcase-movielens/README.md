@@ -65,6 +65,7 @@ API_KEY="showcase-local-admin-key" examples/showcase-movielens/scripts/run_demo_
 
 - Medallion models are under `config/models/movielens/bronze|silver|gold`.
 - The `rating_bucket` macro is declared in `config/macros/rating_bucket.yaml` and used by `silver_ratings_enriched`.
+- Model SQL in this showcase uses fully qualified names (`catalog.schema.object`) for clarity.
 
 ### Notebook + Pipeline
 
@@ -82,6 +83,7 @@ API_KEY="showcase-local-admin-key" examples/showcase-movielens/scripts/run_demo_
 - If helper scripts fail, ensure the server is running and `./bin/duck` exists (`task build-cli`).
 - If bootstrap fails, confirm `ducklake_meta.sqlite` exists in repo root (server startup creates it).
 - If ingestion fails with file-path issues, verify `ducklake_data/showcase_ingest/*.parquet` exists after running `ingest_seed_data.sh`.
+- `duck plan` exits with status `2` when changes are detected; treat this as expected drift, not a hard failure.
 
 ## Dataset attribution
 

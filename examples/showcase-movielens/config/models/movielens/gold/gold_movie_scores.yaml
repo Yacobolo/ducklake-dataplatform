@@ -12,5 +12,5 @@ spec:
       COUNT(*) AS rating_count,
       ROUND(AVG(rating), 3) AS avg_rating,
       SUM(CASE WHEN rating >= 4.0 THEN 1 ELSE 0 END) AS positive_ratings
-    FROM lake.silver_ratings_enriched
+    FROM lake.main.silver_ratings_enriched
     GROUP BY movie_id

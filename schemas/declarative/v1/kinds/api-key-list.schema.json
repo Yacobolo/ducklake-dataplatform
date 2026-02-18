@@ -32,6 +32,7 @@
       "additionalProperties": false,
       "properties": {
         "expires_at": {
+          "format": "date-time",
           "type": "string"
         },
         "name": {
