@@ -16,11 +16,36 @@ It also includes governance-as-code resources (tags, row filters, column masks) 
 
 ## Run
 
+For local demos, bootstrap a one-time admin API key directly in your metadata SQLite before running declarative apply.
+
+Example bootstrap (replace paths/DB as needed):
+
 ```bash
-./bin/duck validate --config-dir examples/showcase-movielens/config
-./bin/duck plan --config-dir examples/showcase-movielens/config
-./bin/duck apply --config-dir examples/showcase-movielens/config --auto-approve
-./bin/duck plan --config-dir examples/showcase-movielens/config
+API_KEY="showcase-local-admin-key"
+HASH=$(printf "%s" "$API_KEY" | shasum -a 256 | awk '{print $1}')
+
+sqlite3 ducklake_meta.sqlite "
+INSERT OR IGNORE INTO principals(id,name,type,is_admin)
+VALUES ('showcase-admin-id','ml_admin','user',1);
+
+INSERT OR IGNORE INTO api_keys(id,key_hash,principal_id,name,key_prefix)
+VALUES (
+  'showcase-admin-key-id',
+  '$HASH',
+  (SELECT id FROM principals WHERE name='ml_admin'),
+  'showcase-admin',
+  'showcase'
+);
+"
+```
+
+Use that key for CLI commands (and force empty token so API key auth is used):
+
+```bash
+./bin/duck --token '' --api-key "$API_KEY" validate --config-dir examples/showcase-movielens/config
+./bin/duck --token '' --api-key "$API_KEY" plan --config-dir examples/showcase-movielens/config
+./bin/duck --token '' --api-key "$API_KEY" apply --config-dir examples/showcase-movielens/config --auto-approve
+./bin/duck --token '' --api-key "$API_KEY" plan --config-dir examples/showcase-movielens/config
 ```
 
 ## Dataset attribution

@@ -4,8 +4,8 @@ tags:
   - key: domain
     value: media_analytics
   - key: sensitivity
-    value: pii
+    value: high
 assignments:
   - tag: domain:media_analytics
     securable_type: table
-    securable: main.main.titanic
+    securable: lake.main.titanic

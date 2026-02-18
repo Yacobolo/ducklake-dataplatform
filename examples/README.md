@@ -16,11 +16,13 @@ This directory contains runnable declarative configurations that demonstrate Duc
 From repository root, run:
 
 ```bash
-./bin/duck validate --config-dir examples/showcase-movielens/config
-./bin/duck plan --config-dir examples/showcase-movielens/config
-./bin/duck apply --config-dir examples/showcase-movielens/config --auto-approve
-./bin/duck plan --config-dir examples/showcase-movielens/config
+./bin/duck --token '' --api-key "$API_KEY" validate --config-dir examples/showcase-movielens/config
+./bin/duck --token '' --api-key "$API_KEY" plan --config-dir examples/showcase-movielens/config
+./bin/duck --token '' --api-key "$API_KEY" apply --config-dir examples/showcase-movielens/config --auto-approve
+./bin/duck --token '' --api-key "$API_KEY" plan --config-dir examples/showcase-movielens/config
 ```
+
+See `examples/showcase-movielens/README.md` for one-time local bootstrap of the admin API key.
 
 After apply, the second `plan` should report no further model/macro changes.
 

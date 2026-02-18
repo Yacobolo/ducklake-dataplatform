@@ -4,10 +4,10 @@ grants:
   - principal: movie_analysts
     principal_type: group
     securable_type: schema
-    securable: main.main
+    securable: lake.main
     privilege: USAGE
   - principal: movie_analysts
     principal_type: group
     securable_type: table
-    securable: main.main.titanic
+    securable: lake.main.titanic
     privilege: SELECT
