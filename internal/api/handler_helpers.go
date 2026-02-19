@@ -2,6 +2,7 @@ package api
 
 import (
 	"math"
+	"reflect"
 
 	"duck-demo/internal/domain"
 )
@@ -17,6 +18,19 @@ func safeIntToInt32(v int) int32 {
 		return math.MinInt32
 	}
 	return int32(v)
+}
+
+func isNilService(v interface{}) bool {
+	if v == nil {
+		return true
+	}
+	rv := reflect.ValueOf(v)
+	switch rv.Kind() {
+	case reflect.Ptr, reflect.Map, reflect.Slice, reflect.Interface, reflect.Func:
+		return rv.IsNil()
+	default:
+		return false
+	}
 }
 
 // pageFromParams extracts a PageRequest from optional max_results/page_token params.

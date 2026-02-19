@@ -1,0 +1,201 @@
+{
+  "$defs": {
+    "ObjectMeta": {
+      "additionalProperties": false,
+      "properties": {
+        "deletion_protection": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "SemanticMetricSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "certification_state": {
+          "type": "string"
+        },
+        "default_time_grain": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "expression": {
+          "type": "string"
+        },
+        "expression_mode": {
+          "type": "string"
+        },
+        "format": {
+          "type": "string"
+        },
+        "metric_type": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "expression",
+        "metric_type",
+        "name"
+      ],
+      "type": "object"
+    },
+    "SemanticModelDoc": {
+      "additionalProperties": false,
+      "properties": {
+        "apiVersion": {
+          "enum": [
+            "duck/v1"
+          ],
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "SemanticModel"
+          ],
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/$defs/SemanticModelSpec"
+        }
+      },
+      "required": [
+        "apiVersion",
+        "kind",
+        "metadata",
+        "spec"
+      ],
+      "type": "object"
+    },
+    "SemanticModelSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "base_model_ref": {
+          "type": "string"
+        },
+        "default_time_dimension": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "metrics": {
+          "items": {
+            "$ref": "#/$defs/SemanticMetricSpec"
+          },
+          "type": "array"
+        },
+        "pre_aggregations": {
+          "items": {
+            "$ref": "#/$defs/SemanticPreAggSpec"
+          },
+          "type": "array"
+        },
+        "relationships": {
+          "items": {
+            "$ref": "#/$defs/SemanticRelationshipSpec"
+          },
+          "type": "array"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "base_model_ref"
+      ],
+      "type": "object"
+    },
+    "SemanticPreAggSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "dimension_set": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "grain": {
+          "type": "string"
+        },
+        "metric_set": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "name": {
+          "type": "string"
+        },
+        "refresh_policy": {
+          "type": "string"
+        },
+        "target_relation": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "target_relation"
+      ],
+      "type": "object"
+    },
+    "SemanticRelationshipSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "cost": {
+          "type": "integer"
+        },
+        "is_default": {
+          "type": "boolean"
+        },
+        "join_sql": {
+          "type": "string"
+        },
+        "max_hops": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "relationship_type": {
+          "type": "string"
+        },
+        "to_model": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "join_sql",
+        "name",
+        "relationship_type",
+        "to_model"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "schemas/declarative/v1/kinds/semantic-model.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    {
+      "$ref": "#/$defs/SemanticModelDoc"
+    }
+  ],
+  "title": "Duck declarative SemanticModel"
+}

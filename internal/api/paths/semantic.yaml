@@ -555,3 +555,49 @@ paths:
           $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
         '500':
           $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /metrics/{metricName}/freshness:
+    parameters:
+      - name: metricName
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
+    get:
+      operationId: checkMetricFreshness
+      summary: Check metric freshness
+      tags: [Semantic]
+      parameters:
+        - name: project_name
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 255
+            pattern: '^\S+$'
+        - name: semantic_model_name
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 255
+            pattern: '^\S+$'
+      responses:
+        '200':
+          description: Metric freshness status
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/semantic.yaml#/MetricFreshnessStatus'
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'

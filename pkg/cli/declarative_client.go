@@ -1839,7 +1839,7 @@ func semanticModelPath(projectName, modelName string) string {
 	return projectName + "." + modelName
 }
 
-func (c *APIStateClient) resolveSemanticModelRefID(ctx context.Context, defaultProject, modelRef string) (string, error) {
+func (c *APIStateClient) resolveSemanticModelRefID(_ context.Context, defaultProject, modelRef string) (string, error) {
 	projectName := defaultProject
 	modelName := modelRef
 	if strings.Contains(modelRef, ".") {

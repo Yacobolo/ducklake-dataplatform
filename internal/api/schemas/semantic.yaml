@@ -490,3 +490,25 @@ MetricQueryRunResponse:
       $ref: '#/MetricQueryPlan'
     result:
       $ref: './common.yaml#/QueryResult'
+
+MetricFreshnessStatus:
+  type: object
+  properties:
+    metric_name:
+      type: string
+    project_name:
+      type: string
+    semantic_model_name:
+      type: string
+    freshness_status:
+      type: string
+    freshness_basis:
+      type: array
+      items:
+        type: string
+    selected_pre_aggregation:
+      type: string
+      nullable: true
+    checked_at:
+      type: string
+      format: date-time

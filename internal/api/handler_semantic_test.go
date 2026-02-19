@@ -17,6 +17,7 @@ type mockSemanticService struct {
 	createSemanticModelFn func(ctx context.Context, principal string, req domain.CreateSemanticModelRequest) (*domain.SemanticModel, error)
 	listSemanticModelsFn  func(ctx context.Context, projectName *string, page domain.PageRequest) ([]domain.SemanticModel, int64, error)
 	getSemanticModelFn    func(ctx context.Context, projectName, name string) (*domain.SemanticModel, error)
+	listMetricsFn         func(ctx context.Context, projectName, semanticModelName string) ([]domain.SemanticMetric, error)
 	explainMetricQueryFn  func(ctx context.Context, req semantic.MetricQueryRequest) (*semantic.MetricQueryPlan, error)
 	runMetricQueryFn      func(ctx context.Context, principal string, req semantic.MetricQueryRequest) (*semantic.MetricQueryResult, error)
 }
@@ -54,7 +55,10 @@ func (m *mockSemanticService) CreateMetric(context.Context, string, string, stri
 	panic("CreateMetric not implemented")
 }
 
-func (m *mockSemanticService) ListMetrics(context.Context, string, string) ([]domain.SemanticMetric, error) {
+func (m *mockSemanticService) ListMetrics(ctx context.Context, projectName, semanticModelName string) ([]domain.SemanticMetric, error) {
+	if m.listMetricsFn != nil {
+		return m.listMetricsFn(ctx, projectName, semanticModelName)
+	}
 	panic("ListMetrics not implemented")
 }
 
@@ -320,4 +324,73 @@ func TestHandler_RunMetricQuery_UsesPrincipalAndMapsResult(t *testing.T) {
 	assert.EqualValues(t, 1, *okResp.Result.RowCount)
 	require.NotNil(t, okResp.Result.Columns)
 	assert.Equal(t, []string{"order_date", "total_revenue"}, *okResp.Result.Columns)
+}
+
+func TestHandler_CheckMetricFreshness_ResolvesMetricAndReturnsFreshness(t *testing.T) {
+	t.Parallel()
+
+	h := &APIHandler{
+		semantics: &mockSemanticService{
+			listSemanticModelsFn: func(_ context.Context, _ *string, _ domain.PageRequest) ([]domain.SemanticModel, int64, error) {
+				return []domain.SemanticModel{{ProjectName: "analytics", Name: "sales", BaseModelRef: "analytics.fct_sales"}}, 1, nil
+			},
+			listMetricsFn: func(_ context.Context, projectName, semanticModelName string) ([]domain.SemanticMetric, error) {
+				assert.Equal(t, "analytics", projectName)
+				assert.Equal(t, "sales", semanticModelName)
+				return []domain.SemanticMetric{{Name: "total_revenue"}}, nil
+			},
+			explainMetricQueryFn: func(_ context.Context, req semantic.MetricQueryRequest) (*semantic.MetricQueryPlan, error) {
+				assert.Equal(t, "analytics", req.ProjectName)
+				assert.Equal(t, "sales", req.SemanticModelName)
+				assert.Equal(t, []string{"total_revenue"}, req.Metrics)
+				return &semantic.MetricQueryPlan{
+					FreshnessStatus:        "fresh",
+					FreshnessBasis:         []string{"analytics.fct_sales"},
+					SelectedPreAggregation: nil,
+				}, nil
+			},
+		},
+	}
+
+	resp, err := h.CheckMetricFreshness(context.Background(), CheckMetricFreshnessRequestObject{MetricName: "total_revenue"})
+	require.NoError(t, err)
+
+	okResp, ok := resp.(CheckMetricFreshness200JSONResponse)
+	require.True(t, ok, "expected 200 response, got %T", resp)
+	require.NotNil(t, okResp.MetricName)
+	assert.Equal(t, "total_revenue", *okResp.MetricName)
+	require.NotNil(t, okResp.ProjectName)
+	assert.Equal(t, "analytics", *okResp.ProjectName)
+	require.NotNil(t, okResp.SemanticModelName)
+	assert.Equal(t, "sales", *okResp.SemanticModelName)
+	require.NotNil(t, okResp.FreshnessStatus)
+	assert.Equal(t, "fresh", *okResp.FreshnessStatus)
+	require.NotNil(t, okResp.FreshnessBasis)
+	assert.Equal(t, []string{"analytics.fct_sales"}, *okResp.FreshnessBasis)
+	require.NotNil(t, okResp.CheckedAt)
+}
+
+func TestHandler_CheckMetricFreshness_AmbiguousMetricReturns400(t *testing.T) {
+	t.Parallel()
+
+	h := &APIHandler{
+		semantics: &mockSemanticService{
+			listSemanticModelsFn: func(_ context.Context, _ *string, _ domain.PageRequest) ([]domain.SemanticModel, int64, error) {
+				return []domain.SemanticModel{{ProjectName: "analytics", Name: "sales"}, {ProjectName: "analytics", Name: "marketing"}}, 2, nil
+			},
+			listMetricsFn: func(_ context.Context, _, semanticModelName string) ([]domain.SemanticMetric, error) {
+				if semanticModelName == "sales" || semanticModelName == "marketing" {
+					return []domain.SemanticMetric{{Name: "total_revenue"}}, nil
+				}
+				return nil, nil
+			},
+		},
+	}
+
+	resp, err := h.CheckMetricFreshness(context.Background(), CheckMetricFreshnessRequestObject{MetricName: "total_revenue"})
+	require.NoError(t, err)
+
+	badReq, ok := resp.(CheckMetricFreshness400JSONResponse)
+	require.True(t, ok, "expected 400 response, got %T", resp)
+	assert.Contains(t, badReq.Body.Message, "ambiguous")
 }

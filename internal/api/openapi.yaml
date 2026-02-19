@@ -479,6 +479,8 @@ components:
       $ref: 'schemas/semantic.yaml#/MetricQueryExplainResponse'
     MetricQueryRunResponse:
       $ref: 'schemas/semantic.yaml#/MetricQueryRunResponse'
+    MetricFreshnessStatus:
+      $ref: 'schemas/semantic.yaml#/MetricFreshnessStatus'
 
 paths:
   /query:
@@ -722,3 +724,5 @@ paths:
     $ref: 'paths/semantic.yaml#/paths/~1metric-queries:explain'
   /metric-queries:run:
     $ref: 'paths/semantic.yaml#/paths/~1metric-queries:run'
+  /metrics/{metricName}/freshness:
+    $ref: 'paths/semantic.yaml#/paths/~1metrics~1{metricName}~1freshness'

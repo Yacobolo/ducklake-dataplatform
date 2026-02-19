@@ -27,6 +27,14 @@ type macroService interface {
 
 // ListMacros implements the endpoint for listing SQL macros.
 func (h *APIHandler) ListMacros(ctx context.Context, req ListMacrosRequestObject) (ListMacrosResponseObject, error) {
+	if isNilService(h.macros) {
+		empty := []Macro{}
+		return ListMacros200JSONResponse{
+			Body:    PaginatedMacros{Data: &empty, NextPageToken: nil},
+			Headers: ListMacros200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		}, nil
+	}
+
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	macros, total, err := h.macros.List(ctx, page)
 	if err != nil {

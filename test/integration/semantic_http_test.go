@@ -171,6 +171,70 @@ func TestSemanticAPI_RunMetricQuery(t *testing.T) {
 	require.Len(t, runBody.Result.Rows, 1)
 }
 
+func TestSemanticAPI_RunMetricQuery_RLSMaskParityWithRawSQL(t *testing.T) {
+	t.Parallel()
+
+	env := setupHTTPServer(t, httpTestOpts{WithSemantic: true, WithComputeEndpoints: true, SeedDuckLakeMetadata: true})
+	require.NotNil(t, env.DuckDB)
+
+	_, err := env.DuckDB.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS titanic (Name VARCHAR, Pclass INTEGER)`)
+	require.NoError(t, err)
+	_, err = env.DuckDB.ExecContext(ctx, `DELETE FROM titanic`)
+	require.NoError(t, err)
+	_, err = env.DuckDB.ExecContext(ctx, `INSERT INTO titanic VALUES ('Alice', 1), ('Bob', 1), ('Carol', 2)`)
+	require.NoError(t, err)
+
+	createModelResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models", env.Keys.Admin, map[string]interface{}{
+		"project_name":   "analytics",
+		"name":           "titanic_security_parity",
+		"base_model_ref": "main.titanic",
+	})
+	require.Equal(t, http.StatusCreated, createModelResp.StatusCode, responseBodyOnStatusMismatch(t, createModelResp, http.StatusCreated))
+
+	createMetricResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/analytics/titanic_security_parity/metrics", env.Keys.Admin, map[string]interface{}{
+		"name":                "passenger_count",
+		"metric_type":         "COUNT",
+		"expression_mode":     "SQL",
+		"expression":          "COUNT(*)",
+		"certification_state": "CERTIFIED",
+	})
+	require.Equal(t, http.StatusCreated, createMetricResp.StatusCode, responseBodyOnStatusMismatch(t, createMetricResp, http.StatusCreated))
+
+	semanticRunResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/metric-queries:run", env.Keys.Analyst, map[string]interface{}{
+		"project_name":        "analytics",
+		"semantic_model_name": "titanic_security_parity",
+		"metrics":             []string{"passenger_count"},
+		"dimensions":          []string{"Name"},
+		"order_by":            []string{"Name"},
+	})
+	require.Equal(t, http.StatusOK, semanticRunResp.StatusCode, responseBodyOnStatusMismatch(t, semanticRunResp, http.StatusOK))
+
+	rawResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/query", env.Keys.Analyst, map[string]interface{}{
+		"sql": "SELECT Name, COUNT(*) AS passenger_count FROM main.titanic GROUP BY Name ORDER BY Name",
+	})
+	require.Equal(t, http.StatusOK, rawResp.StatusCode, responseBodyOnStatusMismatch(t, rawResp, http.StatusOK))
+
+	var semanticBody struct {
+		Result struct {
+			Columns  []string        `json:"columns"`
+			Rows     [][]interface{} `json:"rows"`
+			RowCount int64           `json:"row_count"`
+		} `json:"result"`
+	}
+	decodeJSON(t, semanticRunResp, &semanticBody)
+
+	var rawBody struct {
+		Columns  []string        `json:"columns"`
+		Rows     [][]interface{} `json:"rows"`
+		RowCount int64           `json:"row_count"`
+	}
+	decodeJSON(t, rawResp, &rawBody)
+
+	assert.Equal(t, rawBody.Columns, semanticBody.Result.Columns)
+	assert.EqualValues(t, rawBody.RowCount, semanticBody.Result.RowCount)
+	assert.Equal(t, rawBody.Rows, semanticBody.Result.Rows)
+}
+
 func responseBodyOnStatusMismatch(t *testing.T, resp *http.Response, expected int) string {
 	t.Helper()
 	if resp.StatusCode == expected {

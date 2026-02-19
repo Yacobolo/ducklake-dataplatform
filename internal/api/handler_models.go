@@ -35,6 +35,14 @@ type modelService interface {
 
 // ListModels implements the endpoint for listing transformation models.
 func (h *APIHandler) ListModels(ctx context.Context, req ListModelsRequestObject) (ListModelsResponseObject, error) {
+	if isNilService(h.models) {
+		empty := []Model{}
+		return ListModels200JSONResponse{
+			Body:    PaginatedModels{Data: &empty, NextPageToken: nil},
+			Headers: ListModels200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		}, nil
+	}
+
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	models, total, err := h.models.ListModels(ctx, req.Params.ProjectName, page)
 	if err != nil {

@@ -5,6 +5,7 @@ import (
 	"unicode/utf8"
 )
 
+// Semantic-layer constant values and limits.
 const (
 	MaxSemanticNameLength = 255
 
