@@ -2,8 +2,11 @@ package ui
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
+	"strings"
 
 	"duck-demo/internal/config"
 	"duck-demo/internal/domain"
@@ -12,6 +15,7 @@ import (
 	"duck-demo/internal/service/model"
 	"duck-demo/internal/service/notebook"
 	"duck-demo/internal/service/pipeline"
+	"duck-demo/internal/service/query"
 
 	gomponents "maragu.dev/gomponents"
 )
@@ -19,6 +23,8 @@ import (
 type Handler struct {
 	CatalogRegistration *catalog.CatalogRegistrationService
 	Catalog             *catalog.CatalogService
+	Query               *query.QueryService
+	View                *catalog.ViewService
 	Pipeline            *pipeline.Service
 	Notebook            *notebook.Service
 	SessionManager      *notebook.SessionManager
@@ -31,6 +37,8 @@ type Handler struct {
 func NewHandler(
 	catalogRegistration *catalog.CatalogRegistrationService,
 	catalogSvc *catalog.CatalogService,
+	querySvc *query.QueryService,
+	viewSvc *catalog.ViewService,
 	pipelineSvc *pipeline.Service,
 	notebookSvc *notebook.Service,
 	sessionManager *notebook.SessionManager,
@@ -42,6 +50,8 @@ func NewHandler(
 	return &Handler{
 		CatalogRegistration: catalogRegistration,
 		Catalog:             catalogSvc,
+		Query:               querySvc,
+		View:                viewSvc,
 		Pipeline:            pipelineSvc,
 		Notebook:            notebookSvc,
 		SessionManager:      sessionManager,
@@ -86,4 +96,27 @@ func principalFromContext(ctx context.Context) domain.ContextPrincipal {
 		return domain.ContextPrincipal{Name: "unknown", Type: "user"}
 	}
 	return p
+}
+
+func principalLabel(ctx context.Context) (string, bool) {
+	p, ok := domain.PrincipalFromContext(ctx)
+	if !ok {
+		return "unknown", false
+	}
+	if strings.TrimSpace(p.Name) == "" {
+		return "unknown", p.IsAdmin
+	}
+	return p.Name, p.IsAdmin
+}
+
+func redirectWithNotice(w http.ResponseWriter, r *http.Request, path, notice string) {
+	if strings.TrimSpace(notice) == "" {
+		http.Redirect(w, r, path, http.StatusSeeOther)
+		return
+	}
+	sep := "?"
+	if strings.Contains(path, "?") {
+		sep = "&"
+	}
+	http.Redirect(w, r, fmt.Sprintf("%s%snotice=%s", path, sep, url.QueryEscape(notice)), http.StatusSeeOther)
 }

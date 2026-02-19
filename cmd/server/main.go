@@ -265,6 +265,8 @@ func run() error {
 	uiHandler := ui.NewHandler(
 		svc.CatalogRegistration,
 		svc.Catalog,
+		svc.Query,
+		svc.View,
 		svc.Pipeline,
 		svc.Notebook,
 		svc.SessionManager,

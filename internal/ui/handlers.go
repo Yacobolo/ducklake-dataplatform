@@ -23,11 +23,12 @@ func (h *Handler) Home(w http.ResponseWriter, r *http.Request) {
 		p,
 		html.Div(
 			html.Class("grid"),
-			html.Div(html.Class("card"), html.H2(gomponents.Text("Catalogs")), html.P(gomponents.Text("Browse registered catalogs and metastore summary.")), html.A(html.Href("/ui/catalogs"), gomponents.Text("Open catalogs ->"))),
-			html.Div(html.Class("card"), html.H2(gomponents.Text("Pipelines")), html.P(gomponents.Text("Inspect pipeline definitions, jobs, and recent runs.")), html.A(html.Href("/ui/pipelines"), gomponents.Text("Open pipelines ->"))),
-			html.Div(html.Class("card"), html.H2(gomponents.Text("Notebooks")), html.P(gomponents.Text("Read notebook metadata and cell snapshots.")), html.A(html.Href("/ui/notebooks"), gomponents.Text("Open notebooks ->"))),
-			html.Div(html.Class("card"), html.H2(gomponents.Text("Macros")), html.P(gomponents.Text("Inspect macro definitions and revisions.")), html.A(html.Href("/ui/macros"), gomponents.Text("Open macros ->"))),
-			html.Div(html.Class("card"), html.H2(gomponents.Text("Models")), html.P(gomponents.Text("Read model SQL, dependencies, and config.")), html.A(html.Href("/ui/models"), gomponents.Text("Open models ->"))),
+			html.Div(html.Class(cardClass()), html.H2(gomponents.Text("SQL Editor")), html.P(gomponents.Text("Run ad-hoc SQL with current principal permissions.")), html.A(html.Href("/ui/sql"), gomponents.Text("Open SQL editor ->"))),
+			html.Div(html.Class(cardClass()), html.H2(gomponents.Text("Catalogs")), html.P(gomponents.Text("Browse registered catalogs and metastore summary.")), html.A(html.Href("/ui/catalogs"), gomponents.Text("Open catalogs ->"))),
+			html.Div(html.Class(cardClass()), html.H2(gomponents.Text("Pipelines")), html.P(gomponents.Text("Inspect pipeline definitions, jobs, and recent runs.")), html.A(html.Href("/ui/pipelines"), gomponents.Text("Open pipelines ->"))),
+			html.Div(html.Class(cardClass()), html.H2(gomponents.Text("Notebooks")), html.P(gomponents.Text("Read notebook metadata and cell snapshots.")), html.A(html.Href("/ui/notebooks"), gomponents.Text("Open notebooks ->"))),
+			html.Div(html.Class(cardClass()), html.H2(gomponents.Text("Macros")), html.P(gomponents.Text("Inspect macro definitions and revisions.")), html.A(html.Href("/ui/macros"), gomponents.Text("Open macros ->"))),
+			html.Div(html.Class(cardClass()), html.H2(gomponents.Text("Models")), html.P(gomponents.Text("Read model SQL, dependencies, and config.")), html.A(html.Href("/ui/models"), gomponents.Text("Open models ->"))),
 		),
 	)
 	renderHTML(w, http.StatusOK, page)
@@ -60,15 +61,16 @@ func (h *Handler) CatalogsList(w http.ResponseWriter, r *http.Request) {
 		"Catalogs",
 		"catalogs",
 		p,
+		html.Div(html.Class(cardClass()), html.A(html.Href("/ui/catalogs/new"), gomponents.Text("+ New catalog"))),
 		html.Div(
 			data.Signals(map[string]any{"q": ""}),
 			html.Div(
-				html.Class("card"),
+				html.Class(cardClass()),
 				html.Label(gomponents.Text("Quick filter")),
 				html.Input(html.Type("text"), data.Bind("q"), html.Placeholder("Filter by catalog name or status")),
 			),
 			html.Div(
-				html.Class("card table-wrap"),
+				html.Class(cardClass("table-wrap")),
 				html.Table(
 					html.THead(
 						html.Tr(
@@ -99,7 +101,21 @@ func (h *Handler) CatalogsDetail(w http.ResponseWriter, r *http.Request) {
 	schemaRows := make([]gomponents.Node, 0, len(schemas))
 	for i := range schemas {
 		s := schemas[i]
-		schemaRows = append(schemaRows, html.Tr(html.Td(gomponents.Text(s.Name)), html.Td(gomponents.Text(s.Owner)), html.Td(gomponents.Text(formatTime(s.UpdatedAt)))))
+		schemaPath := "/ui/catalogs/" + catalogName + "/schemas/" + s.Name
+		schemaRows = append(schemaRows, html.Tr(
+			html.Td(html.A(html.Href(schemaPath), gomponents.Text(s.Name))),
+			html.Td(gomponents.Text(s.Owner)),
+			html.Td(gomponents.Text(formatTime(s.UpdatedAt))),
+			html.Td(
+				html.A(html.Href("/ui/catalogs/"+catalogName+"/schemas/"+s.Name+"/edit"), gomponents.Text("Edit")),
+				html.Form(
+					html.Method("post"),
+					html.Action("/ui/catalogs/"+catalogName+"/schemas/"+s.Name+"/delete"),
+					csrfField(r),
+					html.Button(html.Type("submit"), html.Class(secondaryButtonClass()), gomponents.Text("Delete")),
+				),
+			),
+		))
 	}
 
 	summaryNode := html.P(gomponents.Text("Metastore summary unavailable"))
@@ -117,13 +133,22 @@ func (h *Handler) CatalogsDetail(w http.ResponseWriter, r *http.Request) {
 		"Catalog: "+registration.Name,
 		"catalogs",
 		p,
-		html.Div(html.Class("card"), html.P(gomponents.Text("Status: "+string(registration.Status))), html.P(gomponents.Text("Data path: "+registration.DataPath)), html.P(gomponents.Text("Default: "+fmt.Sprintf("%t", registration.IsDefault)))),
-		html.Div(html.Class("card"), html.H2(gomponents.Text("Metastore")), summaryNode),
 		html.Div(
-			html.Class("card table-wrap"),
+			html.Class(cardClass()),
+			html.P(gomponents.Text("Status: "+string(registration.Status))),
+			html.P(gomponents.Text("Data path: "+registration.DataPath)),
+			html.P(gomponents.Text("Default: "+fmt.Sprintf("%t", registration.IsDefault))),
+			html.A(html.Href("/ui/catalogs/"+registration.Name+"/edit"), gomponents.Text("Edit catalog")),
+			html.Form(html.Method("post"), html.Action("/ui/catalogs/"+registration.Name+"/set-default"), csrfField(r), html.Button(html.Type("submit"), html.Class(secondaryButtonClass()), gomponents.Text("Set default"))),
+			html.Form(html.Method("post"), html.Action("/ui/catalogs/"+registration.Name+"/delete"), csrfField(r), html.Button(html.Type("submit"), html.Class(secondaryButtonClass()), gomponents.Text("Delete catalog"))),
+			html.A(html.Href("/ui/catalogs/"+registration.Name+"/schemas/new"), gomponents.Text("+ New schema")),
+		),
+		html.Div(html.Class(cardClass()), html.H2(gomponents.Text("Metastore")), summaryNode),
+		html.Div(
+			html.Class(cardClass("table-wrap")),
 			html.H2(gomponents.Text("Schemas")),
 			html.Table(
-				html.THead(html.Tr(html.Th(gomponents.Text("Name")), html.Th(gomponents.Text("Owner")), html.Th(gomponents.Text("Updated")))),
+				html.THead(html.Tr(html.Th(gomponents.Text("Name")), html.Th(gomponents.Text("Owner")), html.Th(gomponents.Text("Updated")), html.Th(gomponents.Text("Actions")))),
 				html.TBody(gomponents.Group(schemaRows)),
 			),
 		),
@@ -155,10 +180,11 @@ func (h *Handler) PipelinesList(w http.ResponseWriter, r *http.Request) {
 		"Pipelines",
 		"pipelines",
 		p,
+		html.Div(html.Class(cardClass()), html.A(html.Href("/ui/pipelines/new"), gomponents.Text("+ New pipeline"))),
 		html.Div(
 			data.Signals(map[string]any{"q": ""}),
-			html.Div(html.Class("card"), html.Label(gomponents.Text("Quick filter")), html.Input(html.Type("text"), data.Bind("q"), html.Placeholder("Filter by pipeline name"))),
-			html.Div(html.Class("card table-wrap"), html.Table(html.THead(html.Tr(html.Th(gomponents.Text("Name")), html.Th(gomponents.Text("Paused")), html.Th(gomponents.Text("Schedule")), html.Th(gomponents.Text("Updated")))), html.TBody(gomponents.Group(rows)))),
+			html.Div(html.Class(cardClass()), html.Label(gomponents.Text("Quick filter")), html.Input(html.Type("text"), data.Bind("q"), html.Placeholder("Filter by pipeline name"))),
+			html.Div(html.Class(cardClass("table-wrap")), html.Table(html.THead(html.Tr(html.Th(gomponents.Text("Name")), html.Th(gomponents.Text("Paused")), html.Th(gomponents.Text("Schedule")), html.Th(gomponents.Text("Updated")))), html.TBody(gomponents.Group(rows)))),
 		),
 		paginationCard("/ui/pipelines", pageReq, total),
 	))
@@ -177,12 +203,32 @@ func (h *Handler) PipelinesDetail(w http.ResponseWriter, r *http.Request) {
 	jobRows := make([]gomponents.Node, 0, len(jobs))
 	for i := range jobs {
 		j := jobs[i]
-		jobRows = append(jobRows, html.Tr(html.Td(gomponents.Text(j.Name)), html.Td(gomponents.Text(j.JobType)), html.Td(gomponents.Text(j.ModelSelector)), html.Td(gomponents.Text(j.NotebookID))))
+		jobRows = append(jobRows, html.Tr(
+			html.Td(gomponents.Text(j.Name)),
+			html.Td(gomponents.Text(j.JobType)),
+			html.Td(gomponents.Text(j.ModelSelector)),
+			html.Td(gomponents.Text(j.NotebookID)),
+			html.Td(html.Form(html.Method("post"), html.Action("/ui/pipelines/"+name+"/jobs/"+j.ID+"/delete"), csrfField(r), html.Button(html.Type("submit"), html.Class(secondaryButtonClass()), gomponents.Text("Delete")))),
+		))
 	}
 	runRows := make([]gomponents.Node, 0, len(runs))
 	for i := range runs {
 		run := runs[i]
-		runRows = append(runRows, html.Tr(html.Td(gomponents.Text(run.ID)), html.Td(gomponents.Text(run.Status)), html.Td(gomponents.Text(run.TriggerType)), html.Td(gomponents.Text(formatTimePtr(run.StartedAt))), html.Td(gomponents.Text(formatTimePtr(run.FinishedAt)))))
+		runRows = append(runRows, html.Tr(
+			html.Td(gomponents.Text(run.ID)),
+			html.Td(gomponents.Text(run.Status)),
+			html.Td(gomponents.Text(run.TriggerType)),
+			html.Td(gomponents.Text(formatTimePtr(run.StartedAt))),
+			html.Td(gomponents.Text(formatTimePtr(run.FinishedAt))),
+			html.Td(
+				html.Form(
+					html.Method("post"),
+					html.Action("/ui/pipelines/runs/"+run.ID+"/cancel"),
+					csrfField(r),
+					html.Button(html.Type("submit"), html.Class(secondaryButtonClass()), gomponents.Text("Cancel")),
+				),
+			),
+		))
 	}
 
 	p := principalFromContext(r.Context())
@@ -190,9 +236,18 @@ func (h *Handler) PipelinesDetail(w http.ResponseWriter, r *http.Request) {
 		"Pipeline: "+pipe.Name,
 		"pipelines",
 		p,
-		html.Div(html.Class("card"), html.P(gomponents.Text("Created by: "+pipe.CreatedBy)), html.P(gomponents.Text("Concurrency: "+strconv.Itoa(pipe.ConcurrencyLimit))), html.P(gomponents.Text("Schedule: "+strOrDash(pipe.ScheduleCron)))),
-		html.Div(html.Class("card table-wrap"), html.H2(gomponents.Text("Jobs")), html.Table(html.THead(html.Tr(html.Th(gomponents.Text("Name")), html.Th(gomponents.Text("Type")), html.Th(gomponents.Text("Selector")), html.Th(gomponents.Text("Notebook")))), html.TBody(gomponents.Group(jobRows)))),
-		html.Div(html.Class("card table-wrap"), html.H2(gomponents.Text("Recent runs")), html.Table(html.THead(html.Tr(html.Th(gomponents.Text("Run ID")), html.Th(gomponents.Text("Status")), html.Th(gomponents.Text("Trigger")), html.Th(gomponents.Text("Started")), html.Th(gomponents.Text("Finished")))), html.TBody(gomponents.Group(runRows)))),
+		html.Div(
+			html.Class(cardClass()),
+			html.P(gomponents.Text("Created by: "+pipe.CreatedBy)),
+			html.P(gomponents.Text("Concurrency: "+strconv.Itoa(pipe.ConcurrencyLimit))),
+			html.P(gomponents.Text("Schedule: "+strOrDash(pipe.ScheduleCron))),
+			html.A(html.Href("/ui/pipelines/"+name+"/edit"), gomponents.Text("Edit pipeline")),
+			html.Form(html.Method("post"), html.Action("/ui/pipelines/"+name+"/delete"), csrfField(r), html.Button(html.Type("submit"), html.Class(secondaryButtonClass()), gomponents.Text("Delete pipeline"))),
+			html.Form(html.Method("post"), html.Action("/ui/pipelines/"+name+"/runs/trigger"), csrfField(r), html.Button(html.Type("submit"), html.Class(primaryButtonClass()), gomponents.Text("Trigger run"))),
+			html.A(html.Href("/ui/pipelines/"+name+"/jobs/new"), gomponents.Text("+ New job")),
+		),
+		html.Div(html.Class(cardClass("table-wrap")), html.H2(gomponents.Text("Jobs")), html.Table(html.THead(html.Tr(html.Th(gomponents.Text("Name")), html.Th(gomponents.Text("Type")), html.Th(gomponents.Text("Selector")), html.Th(gomponents.Text("Notebook")), html.Th(gomponents.Text("Actions")))), html.TBody(gomponents.Group(jobRows)))),
+		html.Div(html.Class(cardClass("table-wrap")), html.H2(gomponents.Text("Recent runs")), html.Table(html.THead(html.Tr(html.Th(gomponents.Text("Run ID")), html.Th(gomponents.Text("Status")), html.Th(gomponents.Text("Trigger")), html.Th(gomponents.Text("Started")), html.Th(gomponents.Text("Finished")), html.Th(gomponents.Text("Actions")))), html.TBody(gomponents.Group(runRows)))),
 	))
 }
 
@@ -220,10 +275,11 @@ func (h *Handler) NotebooksList(w http.ResponseWriter, r *http.Request) {
 		"Notebooks",
 		"notebooks",
 		p,
+		html.Div(html.Class(cardClass()), html.A(html.Href("/ui/notebooks/new"), gomponents.Text("+ New notebook"))),
 		html.Div(
 			data.Signals(map[string]any{"q": ""}),
-			html.Div(html.Class("card"), html.Label(gomponents.Text("Quick filter")), html.Input(html.Type("text"), data.Bind("q"), html.Placeholder("Filter by notebook or owner"))),
-			html.Div(html.Class("card table-wrap"), html.Table(html.THead(html.Tr(html.Th(gomponents.Text("Name")), html.Th(gomponents.Text("Owner")), html.Th(gomponents.Text("Updated")))), html.TBody(gomponents.Group(rows)))),
+			html.Div(html.Class(cardClass()), html.Label(gomponents.Text("Quick filter")), html.Input(html.Type("text"), data.Bind("q"), html.Placeholder("Filter by notebook or owner"))),
+			html.Div(html.Class(cardClass("table-wrap")), html.Table(html.THead(html.Tr(html.Th(gomponents.Text("Name")), html.Th(gomponents.Text("Owner")), html.Th(gomponents.Text("Updated")))), html.TBody(gomponents.Group(rows)))),
 		),
 		paginationCard("/ui/notebooks", pageReq, total),
 	))
@@ -241,7 +297,13 @@ func (h *Handler) NotebooksDetail(w http.ResponseWriter, r *http.Request) {
 	cellNodes := make([]gomponents.Node, 0, len(cells))
 	for i := range cells {
 		cell := cells[i]
-		cellNodes = append(cellNodes, html.Div(html.Class("card"), html.H3(gomponents.Text(fmt.Sprintf("Cell %d (%s)", cell.Position, cell.CellType))), html.Pre(gomponents.Text(cell.Content))))
+		cellNodes = append(cellNodes, html.Div(
+			html.Class(cardClass()),
+			html.H3(gomponents.Text(fmt.Sprintf("Cell %d (%s)", cell.Position, cell.CellType))),
+			html.Pre(gomponents.Text(cell.Content)),
+			html.A(html.Href("/ui/notebooks/"+id+"/cells/"+cell.ID+"/edit"), gomponents.Text("Edit cell")),
+			html.Form(html.Method("post"), html.Action("/ui/notebooks/"+id+"/cells/"+cell.ID+"/delete"), csrfField(r), html.Button(html.Type("submit"), html.Class(secondaryButtonClass()), gomponents.Text("Delete cell"))),
+		))
 	}
 
 	jobRows := make([]gomponents.Node, 0, len(jobs))
@@ -255,8 +317,15 @@ func (h *Handler) NotebooksDetail(w http.ResponseWriter, r *http.Request) {
 		"Notebook: "+nb.Name,
 		"notebooks",
 		p,
-		html.Div(html.Class("card"), html.P(gomponents.Text("Owner: "+nb.Owner)), html.P(gomponents.Text("Description: "+stringPtr(nb.Description)))),
-		html.Div(html.Class("card table-wrap"), html.H2(gomponents.Text("Recent jobs")), html.Table(html.THead(html.Tr(html.Th(gomponents.Text("Job ID")), html.Th(gomponents.Text("State")), html.Th(gomponents.Text("Updated")))), html.TBody(gomponents.Group(jobRows)))),
+		html.Div(
+			html.Class(cardClass()),
+			html.P(gomponents.Text("Owner: "+nb.Owner)),
+			html.P(gomponents.Text("Description: "+stringPtr(nb.Description))),
+			html.A(html.Href("/ui/notebooks/"+id+"/edit"), gomponents.Text("Edit notebook")),
+			html.Form(html.Method("post"), html.Action("/ui/notebooks/"+id+"/delete"), csrfField(r), html.Button(html.Type("submit"), html.Class(secondaryButtonClass()), gomponents.Text("Delete notebook"))),
+			html.A(html.Href("/ui/notebooks/"+id+"/cells/new"), gomponents.Text("+ New cell")),
+		),
+		html.Div(html.Class(cardClass("table-wrap")), html.H2(gomponents.Text("Recent jobs")), html.Table(html.THead(html.Tr(html.Th(gomponents.Text("Job ID")), html.Th(gomponents.Text("State")), html.Th(gomponents.Text("Updated")))), html.TBody(gomponents.Group(jobRows)))),
 		gomponents.Group(cellNodes),
 	))
 }
@@ -286,10 +355,11 @@ func (h *Handler) MacrosList(w http.ResponseWriter, r *http.Request) {
 		"Macros",
 		"macros",
 		p,
+		html.Div(html.Class(cardClass()), html.A(html.Href("/ui/macros/new"), gomponents.Text("+ New macro"))),
 		html.Div(
 			data.Signals(map[string]any{"q": ""}),
-			html.Div(html.Class("card"), html.Label(gomponents.Text("Quick filter")), html.Input(html.Type("text"), data.Bind("q"), html.Placeholder("Filter by macro name or visibility"))),
-			html.Div(html.Class("card table-wrap"), html.Table(html.THead(html.Tr(html.Th(gomponents.Text("Name")), html.Th(gomponents.Text("Type")), html.Th(gomponents.Text("Visibility")), html.Th(gomponents.Text("Status")))), html.TBody(gomponents.Group(rows)))),
+			html.Div(html.Class(cardClass()), html.Label(gomponents.Text("Quick filter")), html.Input(html.Type("text"), data.Bind("q"), html.Placeholder("Filter by macro name or visibility"))),
+			html.Div(html.Class(cardClass("table-wrap")), html.Table(html.THead(html.Tr(html.Th(gomponents.Text("Name")), html.Th(gomponents.Text("Type")), html.Th(gomponents.Text("Visibility")), html.Th(gomponents.Text("Status")))), html.TBody(gomponents.Group(rows)))),
 		),
 		paginationCard("/ui/macros", pageReq, total),
 	))
@@ -315,9 +385,17 @@ func (h *Handler) MacrosDetail(w http.ResponseWriter, r *http.Request) {
 		"Macro: "+m.Name,
 		"macros",
 		p,
-		html.Div(html.Class("card"), html.P(gomponents.Text("Type: "+m.MacroType)), html.P(gomponents.Text("Visibility: "+m.Visibility)), html.P(gomponents.Text("Status: "+m.Status)), html.P(gomponents.Text("Owner: "+m.Owner))),
-		html.Div(html.Class("card"), html.H2(gomponents.Text("Definition")), html.Pre(gomponents.Text(m.Body))),
-		html.Div(html.Class("card table-wrap"), html.H2(gomponents.Text("Revisions")), html.Table(html.THead(html.Tr(html.Th(gomponents.Text("Version")), html.Th(gomponents.Text("Status")), html.Th(gomponents.Text("Created by")), html.Th(gomponents.Text("Created")))), html.TBody(gomponents.Group(revRows)))),
+		html.Div(
+			html.Class(cardClass()),
+			html.P(gomponents.Text("Type: "+m.MacroType)),
+			html.P(gomponents.Text("Visibility: "+m.Visibility)),
+			html.P(gomponents.Text("Status: "+m.Status)),
+			html.P(gomponents.Text("Owner: "+m.Owner)),
+			html.A(html.Href("/ui/macros/"+name+"/edit"), gomponents.Text("Edit macro")),
+			html.Form(html.Method("post"), html.Action("/ui/macros/"+name+"/delete"), csrfField(r), html.Button(html.Type("submit"), html.Class(secondaryButtonClass()), gomponents.Text("Delete macro"))),
+		),
+		html.Div(html.Class(cardClass()), html.H2(gomponents.Text("Definition")), html.Pre(gomponents.Text(m.Body))),
+		html.Div(html.Class(cardClass("table-wrap")), html.H2(gomponents.Text("Revisions")), html.Table(html.THead(html.Tr(html.Th(gomponents.Text("Version")), html.Th(gomponents.Text("Status")), html.Th(gomponents.Text("Created by")), html.Th(gomponents.Text("Created")))), html.TBody(gomponents.Group(revRows)))),
 	))
 }
 
@@ -351,10 +429,11 @@ func (h *Handler) ModelsList(w http.ResponseWriter, r *http.Request) {
 		"Models",
 		"models",
 		p,
+		html.Div(html.Class(cardClass()), html.A(html.Href("/ui/models/new"), gomponents.Text("+ New model"))),
 		html.Div(
 			data.Signals(map[string]any{"q": ""}),
-			html.Div(html.Class("card"), html.Label(gomponents.Text("Quick filter")), html.Input(html.Type("text"), data.Bind("q"), html.Placeholder("Filter by project.model or materialization"))),
-			html.Div(html.Class("card table-wrap"), html.Table(html.THead(html.Tr(html.Th(gomponents.Text("Model")), html.Th(gomponents.Text("Materialization")), html.Th(gomponents.Text("Dependencies")), html.Th(gomponents.Text("Updated")))), html.TBody(gomponents.Group(rows)))),
+			html.Div(html.Class(cardClass()), html.Label(gomponents.Text("Quick filter")), html.Input(html.Type("text"), data.Bind("q"), html.Placeholder("Filter by project.model or materialization"))),
+			html.Div(html.Class(cardClass("table-wrap")), html.Table(html.THead(html.Tr(html.Th(gomponents.Text("Model")), html.Th(gomponents.Text("Materialization")), html.Th(gomponents.Text("Dependencies")), html.Th(gomponents.Text("Updated")))), html.TBody(gomponents.Group(rows)))),
 		),
 		paginationCard("/ui/models", pageReq, total),
 	))
@@ -373,7 +452,12 @@ func (h *Handler) ModelsDetail(w http.ResponseWriter, r *http.Request) {
 	testRows := make([]gomponents.Node, 0, len(tests))
 	for i := range tests {
 		t := tests[i]
-		testRows = append(testRows, html.Tr(html.Td(gomponents.Text(t.Name)), html.Td(gomponents.Text(t.TestType)), html.Td(gomponents.Text(t.Column))))
+		testRows = append(testRows, html.Tr(
+			html.Td(gomponents.Text(t.Name)),
+			html.Td(gomponents.Text(t.TestType)),
+			html.Td(gomponents.Text(t.Column)),
+			html.Td(html.Form(html.Method("post"), html.Action("/ui/models/"+projectName+"/"+modelName+"/tests/"+t.ID+"/delete"), csrfField(r), html.Button(html.Type("submit"), html.Class(secondaryButtonClass()), gomponents.Text("Delete")))),
+		))
 	}
 
 	p := principalFromContext(r.Context())
@@ -381,9 +465,40 @@ func (h *Handler) ModelsDetail(w http.ResponseWriter, r *http.Request) {
 		"Model: "+m.ProjectName+"."+m.Name,
 		"models",
 		p,
-		html.Div(html.Class("card"), html.P(gomponents.Text("Materialization: "+m.Materialization)), html.P(gomponents.Text("Owner: "+m.Owner)), html.P(gomponents.Text("Depends on: "+stringsJoin(m.DependsOn))), html.P(gomponents.Text("Config: "+mapJSON(modelConfigMap(m.Config))))),
-		html.Div(html.Class("card"), html.H2(gomponents.Text("SQL")), html.Pre(gomponents.Text(m.SQL))),
-		html.Div(html.Class("card table-wrap"), html.H2(gomponents.Text("Tests")), html.Table(html.THead(html.Tr(html.Th(gomponents.Text("Name")), html.Th(gomponents.Text("Type")), html.Th(gomponents.Text("Column")))), html.TBody(gomponents.Group(testRows)))),
+		html.Div(
+			html.Class(cardClass()),
+			html.P(gomponents.Text("Materialization: "+m.Materialization)),
+			html.P(gomponents.Text("Owner: "+m.Owner)),
+			html.P(gomponents.Text("Depends on: "+stringsJoin(m.DependsOn))),
+			html.P(gomponents.Text("Config: "+mapJSON(modelConfigMap(m.Config)))),
+			html.A(html.Href("/ui/models/"+projectName+"/"+modelName+"/edit"), gomponents.Text("Edit model")),
+			html.Form(html.Method("post"), html.Action("/ui/models/"+projectName+"/"+modelName+"/delete"), csrfField(r), html.Button(html.Type("submit"), html.Class(secondaryButtonClass()), gomponents.Text("Delete model"))),
+			html.A(html.Href("/ui/models/"+projectName+"/"+modelName+"/tests/new"), gomponents.Text("+ New test")),
+			html.Form(
+				html.Method("post"),
+				html.Action("/ui/models/runs/trigger"),
+				csrfField(r),
+				html.Input(html.Type("hidden"), html.Name("project_name"), html.Value(projectName)),
+				html.Input(html.Type("hidden"), html.Name("model_name"), html.Value(modelName)),
+				html.Label(gomponents.Text("Target catalog")),
+				html.Input(html.Name("target_catalog"), html.Required()),
+				html.Label(gomponents.Text("Target schema")),
+				html.Input(html.Name("target_schema"), html.Required()),
+				html.Label(gomponents.Text("Selector")),
+				html.Input(html.Name("selector"), html.Value(m.ProjectName+"."+m.Name)),
+				html.Button(html.Type("submit"), html.Class(primaryButtonClass()), gomponents.Text("Trigger model run")),
+			),
+			html.Form(
+				html.Method("post"),
+				html.Action("/ui/models/runs/manual-cancel"),
+				csrfField(r),
+				html.Label(gomponents.Text("Run ID to cancel")),
+				html.Input(html.Name("run_id")),
+				html.Button(html.Type("submit"), html.Class(secondaryButtonClass()), gomponents.Text("Cancel model run")),
+			),
+		),
+		html.Div(html.Class(cardClass()), html.H2(gomponents.Text("SQL")), html.Pre(gomponents.Text(m.SQL))),
+		html.Div(html.Class(cardClass("table-wrap")), html.H2(gomponents.Text("Tests")), html.Table(html.THead(html.Tr(html.Th(gomponents.Text("Name")), html.Th(gomponents.Text("Type")), html.Th(gomponents.Text("Column")), html.Th(gomponents.Text("Actions")))), html.TBody(gomponents.Group(testRows)))),
 	))
 }
 
@@ -427,6 +542,7 @@ func (h *Handler) renderServiceError(w http.ResponseWriter, r *http.Request, err
 	var notFound *domain.NotFoundError
 	var accessDenied *domain.AccessDeniedError
 	var validation *domain.ValidationError
+	var conflict *domain.ConflictError
 	if errors.As(err, &notFound) {
 		status = http.StatusNotFound
 		title = "Not Found"
@@ -439,6 +555,10 @@ func (h *Handler) renderServiceError(w http.ResponseWriter, r *http.Request, err
 		status = http.StatusBadRequest
 		title = "Invalid Request"
 		message = validation.Error()
+	} else if errors.As(err, &conflict) {
+		status = http.StatusConflict
+		title = "Conflict"
+		message = conflict.Error()
 	}
 
 	_ = r

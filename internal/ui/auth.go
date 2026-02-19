@@ -134,6 +134,7 @@ func loginPage(errMsg string) gomponents.Node {
 			),
 			html.Button(
 				html.Type("submit"),
+				html.Class("btn btn-primary"),
 				gomponents.Text("Sign In"),
 			),
 		),
@@ -148,6 +149,10 @@ func loginPage(errMsg string) gomponents.Node {
 			html.Meta(html.Charset("utf-8")),
 			html.Meta(html.Name("viewport"), html.Content("width=device-width, initial-scale=1")),
 			html.TitleEl(gomponents.Text("Sign in | Duck UI")),
+			html.Link(html.Rel("preconnect"), html.Href("https://fonts.googleapis.com")),
+			html.Link(html.Rel("preconnect"), html.Href("https://fonts.gstatic.com"), gomponents.Attr("crossorigin", "")),
+			html.Link(html.Rel("stylesheet"), html.Href("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap")),
+			html.Link(html.Rel("stylesheet"), html.Href("https://cdn.jsdelivr.net/npm/@primer/css@22.1.0/dist/primer.min.css")),
 			html.Link(html.Rel("stylesheet"), html.Href("/ui/static/app.css")),
 		),
 		html.Body(
