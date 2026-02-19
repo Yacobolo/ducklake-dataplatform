@@ -1009,3 +1009,111 @@ spec:
 	replanDelete := declarative.Diff(desiredDeleted, actualAfterDelete)
 	assert.Empty(t, actionsOfKindAndOp(replanDelete, declarative.KindMacro, declarative.OpDelete))
 }
+
+func TestDeclarative_SemanticModelLifecycle(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{WithSemantic: true})
+	stateClient := makeStateClient(t, env.Server.URL, env.Keys.Admin)
+
+	dir := t.TempDir()
+	writeYAML(t, dir, "semantic_models/analytics/customers.yaml", `apiVersion: duck/v1
+kind: SemanticModel
+metadata:
+  name: customers
+spec:
+  base_model_ref: analytics.dim_customers
+`)
+	writeYAML(t, dir, "semantic_models/analytics/sales.yaml", `apiVersion: duck/v1
+kind: SemanticModel
+metadata:
+  name: sales
+spec:
+  description: sales semantic model
+  base_model_ref: analytics.fct_sales
+  default_time_dimension: order_date
+  metrics:
+    - name: total_revenue
+      metric_type: SUM
+      expression_mode: SQL
+      expression: SUM(amount)
+      certification_state: DRAFT
+  pre_aggregations:
+    - name: daily_sales
+      metric_set: [total_revenue]
+      dimension_set: [order_date]
+      target_relation: analytics.agg_daily_sales
+`)
+
+	desired, err := declarative.LoadDirectory(dir)
+	require.NoError(t, err)
+	require.Empty(t, declarative.Validate(desired))
+
+	actual, err := stateClient.ReadState(context.Background())
+	require.NoError(t, err)
+
+	plan := declarative.Diff(desired, actual)
+	creates := actionsOfKindAndOp(plan, declarative.KindSemanticModel, declarative.OpCreate)
+	require.Len(t, creates, 2)
+	executeActions(t, stateClient, creates)
+
+	actualAfterCreate, err := stateClient.ReadState(context.Background())
+	require.NoError(t, err)
+	replan := declarative.Diff(desired, actualAfterCreate)
+	assert.Empty(t, actionsOfKindAndOp(replan, declarative.KindSemanticModel, declarative.OpCreate))
+	assert.Empty(t, actionsOfKindAndOp(replan, declarative.KindSemanticModel, declarative.OpUpdate))
+
+	writeYAML(t, dir, "semantic_models/analytics/sales.yaml", `apiVersion: duck/v1
+kind: SemanticModel
+metadata:
+  name: sales
+spec:
+  description: sales semantic model updated
+  base_model_ref: analytics.fct_sales
+  default_time_dimension: order_date
+  metrics:
+    - name: total_revenue
+      metric_type: SUM
+      expression_mode: SQL
+      expression: SUM(amount_usd)
+      certification_state: CERTIFIED
+  relationships:
+    - name: sales_to_customers
+      to_model: analytics.customers
+      relationship_type: MANY_TO_ONE
+      join_sql: sales.customer_id = customers.customer_id
+  pre_aggregations:
+    - name: monthly_sales
+      metric_set: [total_revenue]
+      dimension_set: [order_month]
+      target_relation: analytics.agg_monthly_sales
+`)
+
+	desiredUpdated, err := declarative.LoadDirectory(dir)
+	require.NoError(t, err)
+	require.Empty(t, declarative.Validate(desiredUpdated))
+
+	planUpdate := declarative.Diff(desiredUpdated, actualAfterCreate)
+	updates := actionsOfKindAndOp(planUpdate, declarative.KindSemanticModel, declarative.OpUpdate)
+	require.Len(t, updates, 1)
+	executeActions(t, stateClient, updates)
+
+	actualAfterUpdate, err := stateClient.ReadState(context.Background())
+	require.NoError(t, err)
+	replanUpdate := declarative.Diff(desiredUpdated, actualAfterUpdate)
+	assert.Empty(t, actionsOfKindAndOp(replanUpdate, declarative.KindSemanticModel, declarative.OpCreate))
+	assert.Empty(t, actionsOfKindAndOp(replanUpdate, declarative.KindSemanticModel, declarative.OpUpdate))
+
+	require.NoError(t, os.Remove(filepath.Join(dir, "semantic_models", "analytics", "sales.yaml")))
+	require.NoError(t, os.Remove(filepath.Join(dir, "semantic_models", "analytics", "customers.yaml")))
+
+	desiredDeleted, err := declarative.LoadDirectory(dir)
+	require.NoError(t, err)
+	planDelete := declarative.Diff(desiredDeleted, actualAfterUpdate)
+	deletes := actionsOfKindAndOp(planDelete, declarative.KindSemanticModel, declarative.OpDelete)
+	require.Len(t, deletes, 2)
+	executeActions(t, stateClient, deletes)
+
+	actualAfterDelete, err := stateClient.ReadState(context.Background())
+	require.NoError(t, err)
+	replanDelete := declarative.Diff(desiredDeleted, actualAfterDelete)
+	assert.Empty(t, actionsOfKindAndOp(replanDelete, declarative.KindSemanticModel, declarative.OpDelete))
+}
