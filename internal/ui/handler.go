@@ -2,9 +2,7 @@ package ui
 
 import (
 	"context"
-	"fmt"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 
@@ -107,16 +105,4 @@ func principalLabel(ctx context.Context) (string, bool) {
 		return "unknown", p.IsAdmin
 	}
 	return p.Name, p.IsAdmin
-}
-
-func redirectWithNotice(w http.ResponseWriter, r *http.Request, path, notice string) {
-	if strings.TrimSpace(notice) == "" {
-		http.Redirect(w, r, path, http.StatusSeeOther)
-		return
-	}
-	sep := "?"
-	if strings.Contains(path, "?") {
-		sep = "&"
-	}
-	http.Redirect(w, r, fmt.Sprintf("%s%snotice=%s", path, sep, url.QueryEscape(notice)), http.StatusSeeOther)
 }

@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -9,7 +10,6 @@ import (
 	"duck-demo/internal/domain"
 
 	gomponents "maragu.dev/gomponents"
-	data "maragu.dev/gomponents-datastar"
 	html "maragu.dev/gomponents/html"
 )
 
@@ -153,9 +153,15 @@ func mapJSON(m map[string]string) string {
 	if len(m) == 0 {
 		return "{}"
 	}
-	parts := make([]string, 0, len(m))
-	for k, v := range m {
-		parts = append(parts, fmt.Sprintf("%s=%s", k, v))
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	parts := make([]string, 0, len(keys))
+	for i := range keys {
+		k := keys[i]
+		parts = append(parts, fmt.Sprintf("%s=%s", k, m[k]))
 	}
 	return strings.Join(parts, ", ")
 }
@@ -183,15 +189,6 @@ func min(a, b int) int {
 		return a
 	}
 	return b
-}
-
-func filterInput(placeholder string) gomponents.Node {
-	return html.Div(
-		html.Class(cardClass()),
-		data.Signals(map[string]any{"q": ""}),
-		html.Label(gomponents.Text("Quick filter")),
-		html.Input(html.Type("text"), html.Placeholder(placeholder), data.Bind("q")),
-	)
 }
 
 func cardClass(extra ...string) string {

@@ -76,6 +76,12 @@ func csrfField(r *http.Request) gomponents.Node {
 	)
 }
 
+func csrfFieldProvider(r *http.Request) func() gomponents.Node {
+	return func() gomponents.Node {
+		return csrfField(r)
+	}
+}
+
 func readCSRFCookie(r *http.Request) string {
 	cookie, err := r.Cookie(csrfCookieName)
 	if err != nil {

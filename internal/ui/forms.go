@@ -1,9 +1,18 @@
 package ui
 
 import (
+	"net/http"
 	"strconv"
 	"strings"
 )
+
+func parseFormOrRenderBadRequest(w http.ResponseWriter, r *http.Request) bool {
+	if err := r.ParseForm(); err != nil {
+		renderHTML(w, http.StatusBadRequest, errorPage("Invalid Request", "Unable to parse form."))
+		return false
+	}
+	return true
+}
 
 func formString(values map[string][]string, key string) string {
 	if values == nil {
