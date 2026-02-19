@@ -3,56 +3,56 @@ package ui
 import (
 	"fmt"
 
-	gomponents "maragu.dev/gomponents"
-	html "maragu.dev/gomponents/html"
+	. "maragu.dev/gomponents"
+	. "maragu.dev/gomponents/html"
 )
 
-func loginPage(errMsg string) gomponents.Node {
-	content := []gomponents.Node{
-		html.H1(gomponents.Text("Duck Platform")),
-		html.P(gomponents.Text("Sign in with an API token for the read-only UI.")),
-		html.Form(
-			html.Method("post"),
-			html.Action("/ui/login"),
-			html.Class("login-form"),
-			html.Label(gomponents.Text("Credential type")),
-			html.Select(
-				html.Name("kind"),
-				html.Option(html.Value("bearer"), gomponents.Text("JWT bearer token")),
-				html.Option(html.Value("api_key"), gomponents.Text("API key")),
+func loginPage(errMsg string) Node {
+	content := []Node{
+		H1(Text("Duck Platform")),
+		P(Text("Sign in with an API token for the read-only UI.")),
+		Form(
+			Method("post"),
+			Action("/ui/login"),
+			Class("login-form"),
+			Label(Text("Credential type")),
+			Select(
+				Name("kind"),
+				Option(Value("bearer"), Text("JWT bearer token")),
+				Option(Value("api_key"), Text("API key")),
 			),
-			html.Label(gomponents.Text("Token")),
-			html.Textarea(
-				html.Name("token"),
-				html.Placeholder("Paste token here"),
-				html.Required(),
+			Label(Text("Token")),
+			Textarea(
+				Name("token"),
+				Placeholder("Paste token here"),
+				Required(),
 			),
-			html.Button(
-				html.Type("submit"),
-				html.Class("btn btn-primary"),
-				gomponents.Text("Sign In"),
+			Button(
+				Type("submit"),
+				Class("btn btn-primary"),
+				Text("Sign In"),
 			),
 		),
 	}
 	if errMsg != "" {
-		content = append([]gomponents.Node{html.P(html.Class("error"), gomponents.Text(fmt.Sprintf("Error: %s", errMsg)))}, content...)
+		content = append([]Node{P(Class("error"), Text(fmt.Sprintf("Error: %s", errMsg)))}, content...)
 	}
 
-	return html.HTML(
-		html.Lang("en"),
-		html.Head(
-			html.Meta(html.Charset("utf-8")),
-			html.Meta(html.Name("viewport"), html.Content("width=device-width, initial-scale=1")),
-			html.TitleEl(gomponents.Text("Sign in | Duck UI")),
-			html.Link(html.Rel("preconnect"), html.Href("https://fonts.googleapis.com")),
-			html.Link(html.Rel("preconnect"), html.Href("https://fonts.gstatic.com"), gomponents.Attr("crossorigin", "")),
-			html.Link(html.Rel("stylesheet"), html.Href("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap")),
-			html.Link(html.Rel("stylesheet"), html.Href("https://cdn.jsdelivr.net/npm/@primer/css@22.1.0/dist/primer.min.css")),
-			html.Link(html.Rel("stylesheet"), html.Href("/ui/static/app.css")),
+	return HTML(
+		Lang("en"),
+		Head(
+			Meta(Charset("utf-8")),
+			Meta(Name("viewport"), Content("width=device-width, initial-scale=1")),
+			TitleEl(Text("Sign in | Duck UI")),
+			Link(Rel("preconnect"), Href("https://fonts.googleapis.com")),
+			Link(Rel("preconnect"), Href("https://fonts.gstatic.com"), Attr("crossorigin", "")),
+			Link(Rel("stylesheet"), Href("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap")),
+			Link(Rel("stylesheet"), Href("https://cdn.jsdelivr.net/npm/@primer/css@22.1.0/dist/primer.min.css")),
+			Link(Rel("stylesheet"), Href("/ui/static/app.css")),
 		),
-		html.Body(
-			html.Class("login-body"),
-			html.Main(html.Class("login-wrap"), gomponents.Group(content)),
+		Body(
+			Class("login-body"),
+			Main(Class("login-wrap"), Group(content)),
 		),
 	)
 }

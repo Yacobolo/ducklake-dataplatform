@@ -3,9 +3,9 @@ package ui
 import (
 	"duck-demo/internal/domain"
 
-	gomponents "maragu.dev/gomponents"
+	. "maragu.dev/gomponents"
 	data "maragu.dev/gomponents-datastar"
-	html "maragu.dev/gomponents/html"
+	. "maragu.dev/gomponents/html"
 )
 
 type modelsListRowData struct {
@@ -24,29 +24,30 @@ type modelsListPageData struct {
 	Total     int64
 }
 
-func modelsListPage(d modelsListPageData) gomponents.Node {
-	rows := make([]gomponents.Node, 0, len(d.Rows))
+func modelsListPage(d modelsListPageData) Node {
+	rows := make([]Node, 0, len(d.Rows))
 	for i := range d.Rows {
 		row := d.Rows[i]
-		rows = append(rows, html.Tr(
+		rows = append(rows, Tr(
 			data.Show(containsExpr(row.FilterValue)),
-			html.Td(html.A(html.Href(row.DetailURL), gomponents.Text(row.ModelName))),
-			html.Td(gomponents.Text(row.Materialized)),
-			html.Td(gomponents.Text(row.Dependencies)),
-			html.Td(gomponents.Text(row.UpdatedAtText)),
+			Td(A(Href(row.DetailURL), Text(row.ModelName))),
+			Td(statusLabel(row.Materialized, "accent")),
+			Td(Text(row.Dependencies)),
+			Td(Text(row.UpdatedAtText)),
 		))
+	}
+	tableNode := Node(emptyStateCard("No models available.", "New model", "/ui/models/new"))
+	if len(rows) > 0 {
+		tableNode = Div(Class(cardClass("table-wrap")), Table(Class("data-table"), THead(Tr(Th(Text("Model")), Th(Text("Materialization")), Th(Text("Dependencies")), Th(Text("Updated")))), TBody(Group(rows))))
 	}
 
 	return appPage(
 		"Models",
 		"models",
 		d.Principal,
-		html.Div(html.Class(cardClass()), html.A(html.Href("/ui/models/new"), gomponents.Text("+ New model"))),
-		html.Div(
-			data.Signals(map[string]any{"q": ""}),
-			html.Div(html.Class(cardClass()), html.Label(gomponents.Text("Quick filter")), html.Input(html.Type("text"), data.Bind("q"), html.Placeholder("Filter by project.model or materialization"))),
-			html.Div(html.Class(cardClass("table-wrap")), html.Table(html.THead(html.Tr(html.Th(gomponents.Text("Model")), html.Th(gomponents.Text("Materialization")), html.Th(gomponents.Text("Dependencies")), html.Th(gomponents.Text("Updated")))), html.TBody(gomponents.Group(rows)))),
-		),
+		pageToolbar("/ui/models/new", "New model"),
+		quickFilterCard("Filter by project.model or materialization"),
+		tableNode,
 		paginationCard("/ui/models", d.Page, d.Total),
 	)
 }
@@ -77,25 +78,18 @@ type modelsDetailPageData struct {
 	Tests             []modelTestRowData
 	TriggerProject    string
 	TriggerModel      string
-	CSRFFieldProvider func() gomponents.Node
+	CSRFFieldProvider func() Node
 }
 
-func modelsDetailPage(d modelsDetailPageData) gomponents.Node {
-	testRows := make([]gomponents.Node, 0, len(d.Tests))
+func modelsDetailPage(d modelsDetailPageData) Node {
+	testRows := make([]Node, 0, len(d.Tests))
 	for i := range d.Tests {
 		t := d.Tests[i]
-		testRows = append(testRows, html.Tr(
-			html.Td(gomponents.Text(t.Name)),
-			html.Td(gomponents.Text(t.TestType)),
-			html.Td(gomponents.Text(t.Column)),
-			html.Td(
-				html.Form(
-					html.Method("post"),
-					html.Action(t.DeleteURL),
-					d.CSRFFieldProvider(),
-					html.Button(html.Type("submit"), html.Class(secondaryButtonClass()), gomponents.Text("Delete")),
-				),
-			),
+		testRows = append(testRows, Tr(
+			Td(Text(t.Name)),
+			Td(Text(t.TestType)),
+			Td(Text(t.Column)),
+			Td(Class("text-right"), actionMenu("Actions", actionMenuPost(t.DeleteURL, "Delete test", d.CSRFFieldProvider, true))),
 		))
 	}
 
@@ -103,39 +97,86 @@ func modelsDetailPage(d modelsDetailPageData) gomponents.Node {
 		"Model: "+d.QualifiedName,
 		"models",
 		d.Principal,
-		html.Div(
-			html.Class(cardClass()),
-			html.P(gomponents.Text("Materialization: "+d.Materialization)),
-			html.P(gomponents.Text("Owner: "+d.Owner)),
-			html.P(gomponents.Text("Depends on: "+d.DependsOn)),
-			html.P(gomponents.Text("Config: "+d.ConfigText)),
-			html.A(html.Href(d.EditURL), gomponents.Text("Edit model")),
-			html.Form(html.Method("post"), html.Action(d.DeleteURL), d.CSRFFieldProvider(), html.Button(html.Type("submit"), html.Class(secondaryButtonClass()), gomponents.Text("Delete model"))),
-			html.A(html.Href(d.NewTestURL), gomponents.Text("+ New test")),
-			html.Form(
-				html.Method("post"),
-				html.Action(d.TriggerRunURL),
+		Div(
+			Class(cardClass()),
+			P(Text("Materialization: "), statusLabel(d.Materialization, "accent")),
+			P(Text("Owner: "+d.Owner)),
+			P(Text("Depends on: "+d.DependsOn)),
+			P(Text("Config: "+d.ConfigText)),
+			Div(Class("BtnGroup"), A(Href(d.EditURL), Class(secondaryButtonClass()), Text("Edit")), A(Href(d.NewTestURL), Class(primaryButtonClass()), Text("New test")), Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldProvider(), Button(Type("submit"), Class("btn btn-danger"), Text("Delete")))),
+			Form(
+				Method("post"),
+				Action(d.TriggerRunURL),
 				d.CSRFFieldProvider(),
-				html.Input(html.Type("hidden"), html.Name("project_name"), html.Value(d.TriggerProject)),
-				html.Input(html.Type("hidden"), html.Name("model_name"), html.Value(d.TriggerModel)),
-				html.Label(gomponents.Text("Target catalog")),
-				html.Input(html.Name("target_catalog"), html.Required()),
-				html.Label(gomponents.Text("Target schema")),
-				html.Input(html.Name("target_schema"), html.Required()),
-				html.Label(gomponents.Text("Selector")),
-				html.Input(html.Name("selector"), html.Value(d.DefaultSelector)),
-				html.Button(html.Type("submit"), html.Class(primaryButtonClass()), gomponents.Text("Trigger model run")),
+				Input(Type("hidden"), Name("project_name"), Value(d.TriggerProject)),
+				Input(Type("hidden"), Name("model_name"), Value(d.TriggerModel)),
+				Label(Text("Target catalog")),
+				Input(Name("target_catalog"), Class("form-control"), Required()),
+				Label(Text("Target schema")),
+				Input(Name("target_schema"), Class("form-control"), Required()),
+				Label(Text("Selector")),
+				Input(Name("selector"), Class("form-control"), Value(d.DefaultSelector)),
+				Button(Type("submit"), Class(primaryButtonClass()), Text("Trigger model run")),
 			),
-			html.Form(
-				html.Method("post"),
-				html.Action(d.CancelRunURL),
+			Form(
+				Method("post"),
+				Action(d.CancelRunURL),
 				d.CSRFFieldProvider(),
-				html.Label(gomponents.Text("Run ID to cancel")),
-				html.Input(html.Name("run_id")),
-				html.Button(html.Type("submit"), html.Class(secondaryButtonClass()), gomponents.Text("Cancel model run")),
+				Label(Text("Run ID to cancel")),
+				Input(Name("run_id"), Class("form-control")),
+				Button(Type("submit"), Class(secondaryButtonClass()), Text("Cancel model run")),
 			),
 		),
-		html.Div(html.Class(cardClass()), html.H2(gomponents.Text("SQL")), html.Pre(gomponents.Text(d.SQL))),
-		html.Div(html.Class(cardClass("table-wrap")), html.H2(gomponents.Text("Tests")), html.Table(html.THead(html.Tr(html.Th(gomponents.Text("Name")), html.Th(gomponents.Text("Type")), html.Th(gomponents.Text("Column")), html.Th(gomponents.Text("Actions")))), html.TBody(gomponents.Group(testRows)))),
+		Div(Class(cardClass()), H2(Text("SQL")), Pre(Text(d.SQL))),
+		Div(Class(cardClass("table-wrap")), H2(Text("Tests")), Table(Class("data-table"), THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Column")), Th(Class("text-right"), Text("Actions")))), TBody(Group(testRows)))),
+	)
+}
+
+func modelsNewPage(principal domain.ContextPrincipal, csrfFieldProvider func() Node) Node {
+	return formPage(principal, "New Model", "models", "/ui/models", csrfFieldProvider,
+		Label(Text("Project")),
+		Input(Name("project_name"), Required()),
+		Label(Text("Name")),
+		Input(Name("name"), Required()),
+		Label(Text("Materialization")),
+		Select(Name("materialization"), Option(Value("VIEW"), Text("VIEW")), Option(Value("TABLE"), Text("TABLE")), Option(Value("INCREMENTAL"), Text("INCREMENTAL")), Option(Value("EPHEMERAL"), Text("EPHEMERAL"))),
+		Label(Text("Description")),
+		Textarea(Name("description")),
+		Label(Text("Tags (comma separated)")),
+		Input(Name("tags")),
+		Label(Text("SQL")),
+		Textarea(Name("sql"), Required()),
+	)
+}
+
+func modelsEditPage(principal domain.ContextPrincipal, projectName, modelName string, model *domain.Model, csrfFieldProvider func() Node) Node {
+	return formPage(principal, "Edit Model", "models", "/ui/models/"+projectName+"/"+modelName+"/update", csrfFieldProvider,
+		Label(Text("Materialization")),
+		Select(Name("materialization"), optionSelected("VIEW", model.Materialization), optionSelected("TABLE", model.Materialization), optionSelected("INCREMENTAL", model.Materialization), optionSelected("EPHEMERAL", model.Materialization)),
+		Label(Text("Description")),
+		Textarea(Name("description"), Text(model.Description)),
+		Label(Text("Tags (comma separated)")),
+		Input(Name("tags"), Value(csvValues(model.Tags))),
+		Label(Text("SQL")),
+		Textarea(Name("sql"), Text(model.SQL), Required()),
+	)
+}
+
+func modelTestsNewPage(principal domain.ContextPrincipal, projectName, modelName string, csrfFieldProvider func() Node) Node {
+	return formPage(principal, "New Model Test", "models", "/ui/models/"+projectName+"/"+modelName+"/tests", csrfFieldProvider,
+		Label(Text("Name")),
+		Input(Name("name"), Required()),
+		Label(Text("Type")),
+		Select(Name("test_type"), Option(Value("not_null"), Text("not_null")), Option(Value("unique"), Text("unique")), Option(Value("accepted_values"), Text("accepted_values")), Option(Value("relationships"), Text("relationships")), Option(Value("custom_sql"), Text("custom_sql"))),
+		Label(Text("Column")),
+		Input(Name("column")),
+		Label(Text("Values (accepted_values, comma separated)")),
+		Input(Name("values")),
+		Label(Text("To Model (relationships)")),
+		Input(Name("to_model")),
+		Label(Text("To Column (relationships)")),
+		Input(Name("to_column")),
+		Label(Text("SQL (custom_sql)")),
+		Textarea(Name("test_sql")),
 	)
 }

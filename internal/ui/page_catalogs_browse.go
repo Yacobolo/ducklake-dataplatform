@@ -3,8 +3,8 @@ package ui
 import (
 	"duck-demo/internal/domain"
 
-	gomponents "maragu.dev/gomponents"
-	html "maragu.dev/gomponents/html"
+	. "maragu.dev/gomponents"
+	. "maragu.dev/gomponents/html"
 )
 
 type schemaTableRowData struct {
@@ -35,25 +35,25 @@ type schemaDetailPageData struct {
 	DeleteURL   string
 	Tables      []schemaTableRowData
 	Views       []schemaViewRowData
-	CSRFField   func() gomponents.Node
+	CSRFField   func() Node
 }
 
-func schemaDetailPage(d schemaDetailPageData) gomponents.Node {
-	tableRows := make([]gomponents.Node, 0, len(d.Tables))
+func schemaDetailPage(d schemaDetailPageData) Node {
+	tableRows := make([]Node, 0, len(d.Tables))
 	for i := range d.Tables {
 		t := d.Tables[i]
-		tableRows = append(tableRows, html.Tr(html.Td(html.A(html.Href(t.URL), gomponents.Text(t.Name))), html.Td(gomponents.Text(t.Type)), html.Td(gomponents.Text(t.Owner)), html.Td(gomponents.Text(t.Updated))))
+		tableRows = append(tableRows, Tr(Td(A(Href(t.URL), Text(t.Name))), Td(Text(t.Type)), Td(Text(t.Owner)), Td(Text(t.Updated))))
 	}
-	viewRows := make([]gomponents.Node, 0, len(d.Views))
+	viewRows := make([]Node, 0, len(d.Views))
 	for i := range d.Views {
 		v := d.Views[i]
-		viewRows = append(viewRows, html.Tr(html.Td(html.A(html.Href(v.URL), gomponents.Text(v.Name))), html.Td(gomponents.Text(v.Owner)), html.Td(gomponents.Text(v.Updated))))
+		viewRows = append(viewRows, Tr(Td(A(Href(v.URL), Text(v.Name))), Td(Text(v.Owner)), Td(Text(v.Updated))))
 	}
 
 	return appPage("Schema: "+d.CatalogName+"."+d.SchemaName, "catalogs", d.Principal,
-		html.Div(html.Class(cardClass()), html.P(gomponents.Text("Owner: "+d.Owner)), html.P(gomponents.Text("Comment: "+d.Comment)), html.P(gomponents.Text("Properties: "+d.Properties)), html.P(gomponents.Text("Tags: "+d.Tags)), html.A(html.Href(d.BackURL), gomponents.Text("<- Back to catalog")), html.A(html.Href(d.EditURL), gomponents.Text("Edit schema")), html.Form(html.Method("post"), html.Action(d.DeleteURL), d.CSRFField(), html.Button(html.Type("submit"), html.Class(secondaryButtonClass()), gomponents.Text("Delete schema")))),
-		html.Div(html.Class(cardClass("table-wrap")), html.H2(gomponents.Text("Tables")), html.Table(html.THead(html.Tr(html.Th(gomponents.Text("Name")), html.Th(gomponents.Text("Type")), html.Th(gomponents.Text("Owner")), html.Th(gomponents.Text("Updated")))), html.TBody(gomponents.Group(tableRows)))),
-		html.Div(html.Class(cardClass("table-wrap")), html.H2(gomponents.Text("Views")), html.Table(html.THead(html.Tr(html.Th(gomponents.Text("Name")), html.Th(gomponents.Text("Owner")), html.Th(gomponents.Text("Updated")))), html.TBody(gomponents.Group(viewRows)))),
+		Div(Class(cardClass()), P(Text("Owner: "+d.Owner)), P(Text("Comment: "+d.Comment)), P(Text("Properties: "+d.Properties)), P(Text("Tags: "+d.Tags)), A(Href(d.BackURL), Text("<- Back to catalog")), A(Href(d.EditURL), Text("Edit schema")), Form(Method("post"), Action(d.DeleteURL), d.CSRFField(), Button(Type("submit"), Class(secondaryButtonClass()), Text("Delete schema")))),
+		Div(Class(cardClass("table-wrap")), H2(Text("Tables")), Table(THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Owner")), Th(Text("Updated")))), TBody(Group(tableRows)))),
+		Div(Class(cardClass("table-wrap")), H2(Text("Views")), Table(THead(Tr(Th(Text("Name")), Th(Text("Owner")), Th(Text("Updated")))), TBody(Group(viewRows)))),
 	)
 }
 
@@ -78,15 +78,15 @@ type tableDetailPageData struct {
 	ColumnRows []tableColumnRowData
 }
 
-func tableDetailPage(d tableDetailPageData) gomponents.Node {
-	rows := make([]gomponents.Node, 0, len(d.ColumnRows))
+func tableDetailPage(d tableDetailPageData) Node {
+	rows := make([]Node, 0, len(d.ColumnRows))
 	for i := range d.ColumnRows {
 		c := d.ColumnRows[i]
-		rows = append(rows, html.Tr(html.Td(gomponents.Text(c.Name)), html.Td(gomponents.Text(c.Type)), html.Td(gomponents.Text(c.Nullable)), html.Td(gomponents.Text(c.Comment)), html.Td(gomponents.Text(c.Properties))))
+		rows = append(rows, Tr(Td(Text(c.Name)), Td(Text(c.Type)), Td(Text(c.Nullable)), Td(Text(c.Comment)), Td(Text(c.Properties))))
 	}
 	return appPage(d.Title, "catalogs", d.Principal,
-		html.Div(html.Class(cardClass()), html.P(gomponents.Text("Type: "+d.Type)), html.P(gomponents.Text("Owner: "+d.Owner)), html.P(gomponents.Text("Comment: "+d.Comment)), html.P(gomponents.Text("Properties: "+d.Properties)), html.P(gomponents.Text("Tags: "+d.Tags)), html.P(gomponents.Text("Updated: "+d.Updated)), html.A(html.Href(d.BackURL), gomponents.Text("<- Back to schema"))),
-		html.Div(html.Class(cardClass("table-wrap")), html.H2(gomponents.Text("Columns")), html.Table(html.THead(html.Tr(html.Th(gomponents.Text("Name")), html.Th(gomponents.Text("Type")), html.Th(gomponents.Text("Nullable")), html.Th(gomponents.Text("Comment")), html.Th(gomponents.Text("Properties")))), html.TBody(gomponents.Group(rows)))),
+		Div(Class(cardClass()), P(Text("Type: "+d.Type)), P(Text("Owner: "+d.Owner)), P(Text("Comment: "+d.Comment)), P(Text("Properties: "+d.Properties)), P(Text("Tags: "+d.Tags)), P(Text("Updated: "+d.Updated)), A(Href(d.BackURL), Text("<- Back to schema"))),
+		Div(Class(cardClass("table-wrap")), H2(Text("Columns")), Table(THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Nullable")), Th(Text("Comment")), Th(Text("Properties")))), TBody(Group(rows)))),
 	)
 }
 
@@ -104,20 +104,20 @@ type viewDetailPageData struct {
 	ColumnsAvailable bool
 }
 
-func viewDetailPage(d viewDetailPageData) gomponents.Node {
-	columnSection := gomponents.Node(html.P(html.Class(mutedClass()), gomponents.Text("Columns unavailable for this view.")))
+func viewDetailPage(d viewDetailPageData) Node {
+	columnSection := Node(P(Class(mutedClass()), Text("Columns unavailable for this view.")))
 	if d.ColumnsAvailable {
-		rows := make([]gomponents.Node, 0, len(d.ColumnRows))
+		rows := make([]Node, 0, len(d.ColumnRows))
 		for i := range d.ColumnRows {
 			c := d.ColumnRows[i]
-			rows = append(rows, html.Tr(html.Td(gomponents.Text(c.Name)), html.Td(gomponents.Text(c.Type)), html.Td(gomponents.Text(c.Nullable)), html.Td(gomponents.Text(c.Comment)), html.Td(gomponents.Text(c.Properties))))
+			rows = append(rows, Tr(Td(Text(c.Name)), Td(Text(c.Type)), Td(Text(c.Nullable)), Td(Text(c.Comment)), Td(Text(c.Properties))))
 		}
-		columnSection = html.Table(html.THead(html.Tr(html.Th(gomponents.Text("Name")), html.Th(gomponents.Text("Type")), html.Th(gomponents.Text("Nullable")), html.Th(gomponents.Text("Comment")), html.Th(gomponents.Text("Properties")))), html.TBody(gomponents.Group(rows)))
+		columnSection = Table(THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Nullable")), Th(Text("Comment")), Th(Text("Properties")))), TBody(Group(rows)))
 	}
 
 	return appPage(d.Title, "catalogs", d.Principal,
-		html.Div(html.Class(cardClass()), html.P(gomponents.Text("Owner: "+d.Owner)), html.P(gomponents.Text("Comment: "+d.Comment)), html.P(gomponents.Text("Properties: "+d.Properties)), html.P(gomponents.Text("Tags: -")), html.P(gomponents.Text("Source tables: "+d.SourceTables)), html.P(gomponents.Text("Updated: "+d.Updated)), html.A(html.Href(d.BackURL), gomponents.Text("<- Back to schema"))),
-		html.Div(html.Class(cardClass()), html.H2(gomponents.Text("Definition")), html.Pre(gomponents.Text(d.Definition))),
-		html.Div(html.Class(cardClass("table-wrap")), html.H2(gomponents.Text("Columns")), columnSection),
+		Div(Class(cardClass()), P(Text("Owner: "+d.Owner)), P(Text("Comment: "+d.Comment)), P(Text("Properties: "+d.Properties)), P(Text("Tags: -")), P(Text("Source tables: "+d.SourceTables)), P(Text("Updated: "+d.Updated)), A(Href(d.BackURL), Text("<- Back to schema"))),
+		Div(Class(cardClass()), H2(Text("Definition")), Pre(Text(d.Definition))),
+		Div(Class(cardClass("table-wrap")), H2(Text("Columns")), columnSection),
 	)
 }

@@ -139,6 +139,18 @@ a:hover {
   overflow-x: auto;
 }
 
+.toolbar {
+  background: var(--canvas-subtle);
+}
+
+.gap-2 {
+  gap: var(--space-2);
+}
+
+.text-right {
+  text-align: right;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -160,6 +172,16 @@ th {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.02em;
+}
+
+.data-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.data-table tbody tr:nth-child(even) {
+  background: #fcfcfd;
 }
 
 code,
@@ -195,6 +217,16 @@ select {
   background: var(--canvas);
 }
 
+input[type="checkbox"] {
+  width: auto;
+  max-width: none;
+}
+
+.form-control,
+.form-select {
+  width: 100%;
+}
+
 textarea {
   min-height: 180px;
   resize: vertical;
@@ -219,6 +251,29 @@ form {
   flex-wrap: wrap;
   gap: var(--space-2);
   margin-top: var(--space-1);
+}
+
+.dropdown-menu {
+  min-width: 180px;
+}
+
+.dropdown-item {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.dropdown-item:hover {
+  background: var(--canvas-subtle);
+  text-decoration: none;
+}
+
+.blankslate {
+  text-align: center;
+  padding: 24px;
 }
 
 

@@ -1,11 +1,13 @@
 package ui
 
 import (
+	"strconv"
+
 	"duck-demo/internal/domain"
 
-	gomponents "maragu.dev/gomponents"
+	. "maragu.dev/gomponents"
 	data "maragu.dev/gomponents-datastar"
-	html "maragu.dev/gomponents/html"
+	. "maragu.dev/gomponents/html"
 )
 
 type pipelinesListRowData struct {
@@ -17,18 +19,27 @@ type pipelinesListRowData struct {
 	Updated  string
 }
 
-func pipelinesListPage(principal domain.ContextPrincipal, rows []pipelinesListRowData, page domain.PageRequest, total int64) gomponents.Node {
-	tableRows := make([]gomponents.Node, 0, len(rows))
+func pipelinesListPage(principal domain.ContextPrincipal, rows []pipelinesListRowData, page domain.PageRequest, total int64) Node {
+	tableRows := make([]Node, 0, len(rows))
 	for i := range rows {
 		row := rows[i]
-		tableRows = append(tableRows, html.Tr(data.Show(containsExpr(row.Filter)), html.Td(html.A(html.Href(row.URL), gomponents.Text(row.Name))), html.Td(gomponents.Text(row.Paused)), html.Td(gomponents.Text(row.Schedule)), html.Td(gomponents.Text(row.Updated))))
+		tone := "severe"
+		if row.Paused == "false" {
+			tone = "success"
+		}
+		tableRows = append(tableRows, Tr(data.Show(containsExpr(row.Filter)), Td(A(Href(row.URL), Text(row.Name))), Td(statusLabel(row.Paused, tone)), Td(Text(row.Schedule)), Td(Text(row.Updated))))
+	}
+	tableNode := Node(emptyStateCard("No pipelines yet.", "New pipeline", "/ui/pipelines/new"))
+	if len(tableRows) > 0 {
+		tableNode = Div(Class(cardClass("table-wrap")), Table(Class("data-table"), THead(Tr(Th(Text("Name")), Th(Text("Paused")), Th(Text("Schedule")), Th(Text("Updated")))), TBody(Group(tableRows))))
 	}
 	return appPage(
 		"Pipelines",
 		"pipelines",
 		principal,
-		html.Div(html.Class(cardClass()), html.A(html.Href("/ui/pipelines/new"), gomponents.Text("+ New pipeline"))),
-		html.Div(data.Signals(map[string]any{"q": ""}), html.Div(html.Class(cardClass()), html.Label(gomponents.Text("Quick filter")), html.Input(html.Type("text"), data.Bind("q"), html.Placeholder("Filter by pipeline name"))), html.Div(html.Class(cardClass("table-wrap")), html.Table(html.THead(html.Tr(html.Th(gomponents.Text("Name")), html.Th(gomponents.Text("Paused")), html.Th(gomponents.Text("Schedule")), html.Th(gomponents.Text("Updated")))), html.TBody(gomponents.Group(tableRows))))),
+		pageToolbar("/ui/pipelines/new", "New pipeline"),
+		quickFilterCard("Filter by pipeline name"),
+		tableNode,
 		paginationCard("/ui/pipelines", page, total),
 	)
 }
@@ -62,26 +73,74 @@ type pipelineDetailPageData struct {
 	NewJobURL     string
 	Jobs          []pipelineJobRowData
 	Runs          []pipelineRunRowData
-	CSRFFieldFunc func() gomponents.Node
+	CSRFFieldFunc func() Node
 }
 
-func pipelineDetailPage(d pipelineDetailPageData) gomponents.Node {
-	jobRows := make([]gomponents.Node, 0, len(d.Jobs))
+func pipelineDetailPage(d pipelineDetailPageData) Node {
+	jobRows := make([]Node, 0, len(d.Jobs))
 	for i := range d.Jobs {
 		j := d.Jobs[i]
-		jobRows = append(jobRows, html.Tr(html.Td(gomponents.Text(j.Name)), html.Td(gomponents.Text(j.JobType)), html.Td(gomponents.Text(j.Selector)), html.Td(gomponents.Text(j.Notebook)), html.Td(html.Form(html.Method("post"), html.Action(j.DeleteURL), d.CSRFFieldFunc(), html.Button(html.Type("submit"), html.Class(secondaryButtonClass()), gomponents.Text("Delete"))))))
+		jobRows = append(jobRows, Tr(Td(Text(j.Name)), Td(statusLabel(j.JobType, "accent")), Td(Text(j.Selector)), Td(Text(j.Notebook)), Td(Class("text-right"), actionMenu("Actions", actionMenuPost(j.DeleteURL, "Delete job", d.CSRFFieldFunc, true)))))
 	}
-	runRows := make([]gomponents.Node, 0, len(d.Runs))
+	runRows := make([]Node, 0, len(d.Runs))
 	for i := range d.Runs {
 		r := d.Runs[i]
-		runRows = append(runRows, html.Tr(html.Td(gomponents.Text(r.ID)), html.Td(gomponents.Text(r.Status)), html.Td(gomponents.Text(r.Trigger)), html.Td(gomponents.Text(r.Started)), html.Td(gomponents.Text(r.Finished)), html.Td(html.Form(html.Method("post"), html.Action(r.CancelURL), d.CSRFFieldFunc(), html.Button(html.Type("submit"), html.Class(secondaryButtonClass()), gomponents.Text("Cancel"))))))
+		runRows = append(runRows, Tr(Td(Text(r.ID)), Td(statusLabel(r.Status, "attention")), Td(Text(r.Trigger)), Td(Text(r.Started)), Td(Text(r.Finished)), Td(Class("text-right"), actionMenu("Actions", actionMenuPost(r.CancelURL, "Cancel run", d.CSRFFieldFunc, true)))))
 	}
 	return appPage(
 		"Pipeline: "+d.Name,
 		"pipelines",
 		d.Principal,
-		html.Div(html.Class(cardClass()), html.P(gomponents.Text("Created by: "+d.CreatedBy)), html.P(gomponents.Text("Concurrency: "+d.Concurrency)), html.P(gomponents.Text("Schedule: "+d.Schedule)), html.A(html.Href(d.EditURL), gomponents.Text("Edit pipeline")), html.Form(html.Method("post"), html.Action(d.DeleteURL), d.CSRFFieldFunc(), html.Button(html.Type("submit"), html.Class(secondaryButtonClass()), gomponents.Text("Delete pipeline"))), html.Form(html.Method("post"), html.Action(d.TriggerURL), d.CSRFFieldFunc(), html.Button(html.Type("submit"), html.Class(primaryButtonClass()), gomponents.Text("Trigger run"))), html.A(html.Href(d.NewJobURL), gomponents.Text("+ New job"))),
-		html.Div(html.Class(cardClass("table-wrap")), html.H2(gomponents.Text("Jobs")), html.Table(html.THead(html.Tr(html.Th(gomponents.Text("Name")), html.Th(gomponents.Text("Type")), html.Th(gomponents.Text("Selector")), html.Th(gomponents.Text("Notebook")), html.Th(gomponents.Text("Actions")))), html.TBody(gomponents.Group(jobRows)))),
-		html.Div(html.Class(cardClass("table-wrap")), html.H2(gomponents.Text("Recent runs")), html.Table(html.THead(html.Tr(html.Th(gomponents.Text("Run ID")), html.Th(gomponents.Text("Status")), html.Th(gomponents.Text("Trigger")), html.Th(gomponents.Text("Started")), html.Th(gomponents.Text("Finished")), html.Th(gomponents.Text("Actions")))), html.TBody(gomponents.Group(runRows)))),
+		Div(Class(cardClass()), P(Text("Created by: "+d.CreatedBy)), P(Text("Concurrency: "+d.Concurrency)), P(Text("Schedule: "+d.Schedule)), Div(Class("BtnGroup"), A(Href(d.EditURL), Class(secondaryButtonClass()), Text("Edit")), A(Href(d.NewJobURL), Class(secondaryButtonClass()), Text("New job")), Form(Method("post"), Action(d.TriggerURL), d.CSRFFieldFunc(), Button(Type("submit"), Class(primaryButtonClass()), Text("Trigger run"))), Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldFunc(), Button(Type("submit"), Class("btn btn-danger"), Text("Delete"))))),
+		Div(Class(cardClass("table-wrap")), H2(Text("Jobs")), Table(Class("data-table"), THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Selector")), Th(Text("Notebook")), Th(Class("text-right"), Text("Actions")))), TBody(Group(jobRows)))),
+		Div(Class(cardClass("table-wrap")), H2(Text("Recent runs")), Table(Class("data-table"), THead(Tr(Th(Text("Run ID")), Th(Text("Status")), Th(Text("Trigger")), Th(Text("Started")), Th(Text("Finished")), Th(Class("text-right"), Text("Actions")))), TBody(Group(runRows)))),
+	)
+}
+
+func pipelinesNewPage(principal domain.ContextPrincipal, csrfFieldProvider func() Node) Node {
+	return formPage(principal, "New Pipeline", "pipelines", "/ui/pipelines", csrfFieldProvider,
+		Label(Text("Name")),
+		Input(Name("name"), Required()),
+		Label(Text("Description")),
+		Textarea(Name("description")),
+		Label(Text("Schedule Cron")),
+		Input(Name("schedule_cron")),
+		Label(Text("Concurrency Limit")),
+		Input(Name("concurrency_limit"), Value("1")),
+		Label(Text("Paused")),
+		Input(Type("checkbox"), Name("is_paused")),
+	)
+}
+
+func pipelinesEditPage(principal domain.ContextPrincipal, pipelineName string, pipeline *domain.Pipeline, csrfFieldProvider func() Node) Node {
+	pausedInput := []Node{Type("checkbox"), Name("is_paused")}
+	if pipeline.IsPaused {
+		pausedInput = append(pausedInput, Checked())
+	}
+
+	return formPage(principal, "Edit Pipeline", "pipelines", "/ui/pipelines/"+pipelineName+"/update", csrfFieldProvider,
+		Label(Text("Description")),
+		Textarea(Name("description"), Text(pipeline.Description)),
+		Label(Text("Schedule Cron")),
+		Input(Name("schedule_cron"), Value(optionalStringValue(pipeline.ScheduleCron))),
+		Label(Text("Concurrency Limit")),
+		Input(Name("concurrency_limit"), Value(strconv.Itoa(pipeline.ConcurrencyLimit))),
+		Label(Text("Paused")),
+		Input(pausedInput...),
+	)
+}
+
+func pipelineJobsNewPage(principal domain.ContextPrincipal, pipelineName string, csrfFieldProvider func() Node) Node {
+	return formPage(principal, "New Pipeline Job", "pipelines", "/ui/pipelines/"+pipelineName+"/jobs", csrfFieldProvider,
+		Label(Text("Name")),
+		Input(Name("name"), Required()),
+		Label(Text("Type")),
+		Select(Name("job_type"), Option(Value("NOTEBOOK"), Text("NOTEBOOK")), Option(Value("MODEL_RUN"), Text("MODEL_RUN"))),
+		Label(Text("Notebook ID")),
+		Input(Name("notebook_id")),
+		Label(Text("Model Selector")),
+		Input(Name("model_selector")),
+		Label(Text("Depends On (comma separated job names)")),
+		Input(Name("depends_on")),
 	)
 }

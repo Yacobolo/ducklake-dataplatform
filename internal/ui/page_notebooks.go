@@ -1,11 +1,13 @@
 package ui
 
 import (
+	"strconv"
+
 	"duck-demo/internal/domain"
 
-	gomponents "maragu.dev/gomponents"
+	. "maragu.dev/gomponents"
 	data "maragu.dev/gomponents-datastar"
-	html "maragu.dev/gomponents/html"
+	. "maragu.dev/gomponents/html"
 )
 
 type notebooksListRowData struct {
@@ -16,13 +18,17 @@ type notebooksListRowData struct {
 	Updated string
 }
 
-func notebooksListPage(principal domain.ContextPrincipal, rows []notebooksListRowData, page domain.PageRequest, total int64) gomponents.Node {
-	tableRows := make([]gomponents.Node, 0, len(rows))
+func notebooksListPage(principal domain.ContextPrincipal, rows []notebooksListRowData, page domain.PageRequest, total int64) Node {
+	tableRows := make([]Node, 0, len(rows))
 	for i := range rows {
 		r := rows[i]
-		tableRows = append(tableRows, html.Tr(data.Show(containsExpr(r.Filter)), html.Td(html.A(html.Href(r.URL), gomponents.Text(r.Name))), html.Td(gomponents.Text(r.Owner)), html.Td(gomponents.Text(r.Updated))))
+		tableRows = append(tableRows, Tr(data.Show(containsExpr(r.Filter)), Td(A(Href(r.URL), Text(r.Name))), Td(Text(r.Owner)), Td(Text(r.Updated))))
 	}
-	return appPage("Notebooks", "notebooks", principal, html.Div(html.Class(cardClass()), html.A(html.Href("/ui/notebooks/new"), gomponents.Text("+ New notebook"))), html.Div(data.Signals(map[string]any{"q": ""}), html.Div(html.Class(cardClass()), html.Label(gomponents.Text("Quick filter")), html.Input(html.Type("text"), data.Bind("q"), html.Placeholder("Filter by notebook or owner"))), html.Div(html.Class(cardClass("table-wrap")), html.Table(html.THead(html.Tr(html.Th(gomponents.Text("Name")), html.Th(gomponents.Text("Owner")), html.Th(gomponents.Text("Updated")))), html.TBody(gomponents.Group(tableRows))))), paginationCard("/ui/notebooks", page, total))
+	tableNode := Node(emptyStateCard("No notebooks yet.", "New notebook", "/ui/notebooks/new"))
+	if len(tableRows) > 0 {
+		tableNode = Div(Class(cardClass("table-wrap")), Table(Class("data-table"), THead(Tr(Th(Text("Name")), Th(Text("Owner")), Th(Text("Updated")))), TBody(Group(tableRows))))
+	}
+	return appPage("Notebooks", "notebooks", principal, pageToolbar("/ui/notebooks/new", "New notebook"), quickFilterCard("Filter by notebook or owner"), tableNode, paginationCard("/ui/notebooks", page, total))
 }
 
 type notebookCellRowData struct {
@@ -48,19 +54,59 @@ type notebookDetailPageData struct {
 	NewCellURL    string
 	Jobs          []notebookJobRowData
 	Cells         []notebookCellRowData
-	CSRFFieldFunc func() gomponents.Node
+	CSRFFieldFunc func() Node
 }
 
-func notebookDetailPage(d notebookDetailPageData) gomponents.Node {
-	jobRows := make([]gomponents.Node, 0, len(d.Jobs))
+func notebookDetailPage(d notebookDetailPageData) Node {
+	jobRows := make([]Node, 0, len(d.Jobs))
 	for i := range d.Jobs {
 		j := d.Jobs[i]
-		jobRows = append(jobRows, html.Tr(html.Td(gomponents.Text(j.ID)), html.Td(gomponents.Text(j.State)), html.Td(gomponents.Text(j.Updated))))
+		jobRows = append(jobRows, Tr(Td(Text(j.ID)), Td(Text(j.State)), Td(Text(j.Updated))))
 	}
-	cellNodes := make([]gomponents.Node, 0, len(d.Cells))
+	cellNodes := make([]Node, 0, len(d.Cells))
 	for i := range d.Cells {
 		c := d.Cells[i]
-		cellNodes = append(cellNodes, html.Div(html.Class(cardClass()), html.H3(gomponents.Text(c.Title)), html.Pre(gomponents.Text(c.Content)), html.A(html.Href(c.EditURL), gomponents.Text("Edit cell")), html.Form(html.Method("post"), html.Action(c.DeleteURL), d.CSRFFieldFunc(), html.Button(html.Type("submit"), html.Class(secondaryButtonClass()), gomponents.Text("Delete cell")))))
+		cellNodes = append(cellNodes, Div(Class(cardClass()), H3(Text(c.Title)), Pre(Text(c.Content)), Div(Class("BtnGroup"), A(Href(c.EditURL), Class("btn btn-sm"), Text("Edit")), Form(Method("post"), Action(c.DeleteURL), d.CSRFFieldFunc(), Button(Type("submit"), Class("btn btn-sm btn-danger"), Text("Delete"))))))
 	}
-	return appPage("Notebook: "+d.Name, "notebooks", d.Principal, html.Div(html.Class(cardClass()), html.P(gomponents.Text("Owner: "+d.Owner)), html.P(gomponents.Text("Description: "+d.Description)), html.A(html.Href(d.EditURL), gomponents.Text("Edit notebook")), html.Form(html.Method("post"), html.Action(d.DeleteURL), d.CSRFFieldFunc(), html.Button(html.Type("submit"), html.Class(secondaryButtonClass()), gomponents.Text("Delete notebook"))), html.A(html.Href(d.NewCellURL), gomponents.Text("+ New cell"))), html.Div(html.Class(cardClass("table-wrap")), html.H2(gomponents.Text("Recent jobs")), html.Table(html.THead(html.Tr(html.Th(gomponents.Text("Job ID")), html.Th(gomponents.Text("State")), html.Th(gomponents.Text("Updated")))), html.TBody(gomponents.Group(jobRows)))), gomponents.Group(cellNodes))
+	return appPage("Notebook: "+d.Name, "notebooks", d.Principal, Div(Class(cardClass()), P(Text("Owner: "+d.Owner)), P(Text("Description: "+d.Description)), Div(Class("BtnGroup"), A(Href(d.EditURL), Class(secondaryButtonClass()), Text("Edit")), A(Href(d.NewCellURL), Class(primaryButtonClass()), Text("New cell")), Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldFunc(), Button(Type("submit"), Class("btn btn-danger"), Text("Delete"))))), Div(Class(cardClass("table-wrap")), H2(Text("Recent jobs")), Table(Class("data-table"), THead(Tr(Th(Text("Job ID")), Th(Text("State")), Th(Text("Updated")))), TBody(Group(jobRows)))), Group(cellNodes))
+}
+
+func notebooksNewPage(principal domain.ContextPrincipal, csrfFieldProvider func() Node) Node {
+	return formPage(principal, "New Notebook", "notebooks", "/ui/notebooks", csrfFieldProvider,
+		Label(Text("Name")),
+		Input(Name("name"), Required()),
+		Label(Text("Description")),
+		Textarea(Name("description")),
+		Label(Text("Initial SQL Source")),
+		Textarea(Name("source")),
+	)
+}
+
+func notebooksEditPage(principal domain.ContextPrincipal, notebookID string, notebook *domain.Notebook, csrfFieldProvider func() Node) Node {
+	return formPage(principal, "Edit Notebook", "notebooks", "/ui/notebooks/"+notebookID+"/update", csrfFieldProvider,
+		Label(Text("Name")),
+		Input(Name("name"), Value(notebook.Name), Required()),
+		Label(Text("Description")),
+		Textarea(Name("description"), Text(optionalStringValue(notebook.Description))),
+	)
+}
+
+func notebookCellsNewPage(principal domain.ContextPrincipal, notebookID string, csrfFieldProvider func() Node) Node {
+	return formPage(principal, "New Notebook Cell", "notebooks", "/ui/notebooks/"+notebookID+"/cells", csrfFieldProvider,
+		Label(Text("Cell Type")),
+		Select(Name("cell_type"), Option(Value("sql"), Text("sql")), Option(Value("markdown"), Text("markdown"))),
+		Label(Text("Content")),
+		Textarea(Name("content"), Required()),
+		Label(Text("Position (optional)")),
+		Input(Name("position")),
+	)
+}
+
+func notebookCellsEditPage(principal domain.ContextPrincipal, notebookID, cellID string, cell *domain.Cell, csrfFieldProvider func() Node) Node {
+	return formPage(principal, "Edit Notebook Cell", "notebooks", "/ui/notebooks/"+notebookID+"/cells/"+cellID+"/update", csrfFieldProvider,
+		Label(Text("Content")),
+		Textarea(Name("content"), Text(cell.Content), Required()),
+		Label(Text("Position")),
+		Input(Name("position"), Value(strconv.Itoa(cell.Position))),
+	)
 }

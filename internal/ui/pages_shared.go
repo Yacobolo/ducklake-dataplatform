@@ -9,8 +9,9 @@ import (
 
 	"duck-demo/internal/domain"
 
-	gomponents "maragu.dev/gomponents"
-	html "maragu.dev/gomponents/html"
+	. "maragu.dev/gomponents"
+	data "maragu.dev/gomponents-datastar"
+	. "maragu.dev/gomponents/html"
 )
 
 type navItem struct {
@@ -30,18 +31,18 @@ var navItems = []navItem{
 	{Label: "Models", Href: "/ui/models", Key: "models", Icon: "boxes"},
 }
 
-func appPage(title, active string, principal domain.ContextPrincipal, body ...gomponents.Node) gomponents.Node {
-	nav := make([]gomponents.Node, 0, len(navItems))
+func appPage(title, active string, principal domain.ContextPrincipal, body ...Node) Node {
+	nav := make([]Node, 0, len(navItems))
 	for _, item := range navItems {
 		className := "app-nav-link Link--secondary d-flex flex-items-center"
 		if item.Key == active {
 			className += " active"
 		}
-		nav = append(nav, html.A(
-			html.Href(item.Href),
-			html.Class(className),
-			html.I(html.Class("nav-icon"), gomponents.Attr("data-lucide", item.Icon), gomponents.Attr("aria-hidden", "true")),
-			html.Span(gomponents.Text(item.Label)),
+		nav = append(nav, A(
+			Href(item.Href),
+			Class(className),
+			I(Class("nav-icon"), Attr("data-lucide", item.Icon), Attr("aria-hidden", "true")),
+			Span(Text(item.Label)),
 		))
 	}
 
@@ -50,80 +51,80 @@ func appPage(title, active string, principal domain.ContextPrincipal, body ...go
 		principalLabel = "unknown"
 	}
 
-	return html.HTML(
-		html.Lang("en"),
-		html.Head(
-			html.Meta(html.Charset("utf-8")),
-			html.Meta(html.Name("viewport"), html.Content("width=device-width, initial-scale=1")),
-			html.TitleEl(gomponents.Text(title+" | Duck UI")),
-			html.Link(html.Rel("preconnect"), html.Href("https://fonts.googleapis.com")),
-			html.Link(html.Rel("preconnect"), html.Href("https://fonts.gstatic.com"), gomponents.Attr("crossorigin", "")),
-			html.Link(html.Rel("stylesheet"), html.Href("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap")),
-			html.Link(html.Rel("stylesheet"), html.Href("https://cdn.jsdelivr.net/npm/@primer/css@22.1.0/dist/primer.min.css")),
-			html.Link(html.Rel("stylesheet"), html.Href("/ui/static/app.css")),
-			html.Script(html.Src("https://unpkg.com/lucide@latest/dist/umd/lucide.min.js")),
-			html.Script(
-				html.Type("module"),
-				html.Src("https://cdn.jsdelivr.net/gh/starfederation/datastar@1.0.0-RC.7/bundles/datastar.js"),
+	return HTML(
+		Lang("en"),
+		Head(
+			Meta(Charset("utf-8")),
+			Meta(Name("viewport"), Content("width=device-width, initial-scale=1")),
+			TitleEl(Text(title+" | Duck UI")),
+			Link(Rel("preconnect"), Href("https://fonts.googleapis.com")),
+			Link(Rel("preconnect"), Href("https://fonts.gstatic.com"), Attr("crossorigin", "")),
+			Link(Rel("stylesheet"), Href("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap")),
+			Link(Rel("stylesheet"), Href("https://cdn.jsdelivr.net/npm/@primer/css@22.1.0/dist/primer.min.css")),
+			Link(Rel("stylesheet"), Href("/ui/static/app.css")),
+			Script(Src("https://unpkg.com/lucide@latest/dist/umd/lucide.min.js")),
+			Script(
+				Type("module"),
+				Src("https://cdn.jsdelivr.net/gh/starfederation/datastar@1.0.0-RC.7/bundles/datastar.js"),
 			),
 		),
-		html.Body(
-			html.Main(html.Class("app-shell"),
-				html.Aside(
-					html.Class("app-sidebar"),
-					html.Div(
-						html.Class("brand"),
-						html.Strong(gomponents.Text("Duck Platform")),
-						html.P(html.Class("color-fg-muted text-small mb-0"), gomponents.Text("Metadata browser and editor")),
+		Body(
+			Main(Class("app-shell"),
+				Aside(
+					Class("app-sidebar"),
+					Div(
+						Class("brand"),
+						Strong(Text("Duck Platform")),
+						P(Class("color-fg-muted text-small mb-0"), Text("Metadata browser and editor")),
 					),
-					html.Nav(html.Class("app-nav"), gomponents.Group(nav)),
+					Nav(Class("app-nav"), Group(nav)),
 				),
-				html.Section(
-					html.Class("app-main"),
-					html.Div(
-						html.Class("topbar"),
-						html.Div(
-							html.H1(html.Class("page-title"), gomponents.Text(title)),
+				Section(
+					Class("app-main"),
+					Div(
+						Class("topbar"),
+						Div(
+							H1(Class("page-title"), Text(title)),
 						),
-						html.Div(
-							html.P(html.Class("color-fg-muted text-small mb-2"), gomponents.Text("Signed in as "+principalLabel)),
-							html.Form(
-								html.Method("post"),
-								html.Action("/ui/logout"),
-								html.Button(html.Type("submit"), html.Class("btn btn-sm"), gomponents.Text("Sign out")),
+						Div(
+							P(Class("color-fg-muted text-small mb-2"), Text("Signed in as "+principalLabel)),
+							Form(
+								Method("post"),
+								Action("/ui/logout"),
+								Button(Type("submit"), Class("btn btn-sm"), Text("Sign out")),
 							),
 						),
 					),
-					html.Div(html.Class("content"), gomponents.Group(body)),
+					Div(Class("content"), Group(body)),
 				),
 			),
-			html.Script(gomponents.Text("if (window.lucide) { window.lucide.createIcons(); }")),
+			Script(Text("if (window.lucide) { window.lucide.createIcons(); }")),
 		),
 	)
 }
 
-func errorPage(title, message string) gomponents.Node {
-	return html.HTML(
-		html.Lang("en"),
-		html.Head(
-			html.Meta(html.Charset("utf-8")),
-			html.Meta(html.Name("viewport"), html.Content("width=device-width, initial-scale=1")),
-			html.TitleEl(gomponents.Text(title+" | Duck UI")),
-			html.Link(html.Rel("preconnect"), html.Href("https://fonts.googleapis.com")),
-			html.Link(html.Rel("preconnect"), html.Href("https://fonts.gstatic.com"), gomponents.Attr("crossorigin", "")),
-			html.Link(html.Rel("stylesheet"), html.Href("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap")),
-			html.Link(html.Rel("stylesheet"), html.Href("https://cdn.jsdelivr.net/npm/@primer/css@22.1.0/dist/primer.min.css")),
-			html.Link(html.Rel("stylesheet"), html.Href("/ui/static/app.css")),
-			html.Script(html.Src("https://unpkg.com/lucide@latest/dist/umd/lucide.min.js")),
+func errorPage(title, message string) Node {
+	return HTML(
+		Lang("en"),
+		Head(
+			Meta(Charset("utf-8")),
+			Meta(Name("viewport"), Content("width=device-width, initial-scale=1")),
+			TitleEl(Text(title+" | Duck UI")),
+			Link(Rel("preconnect"), Href("https://fonts.googleapis.com")),
+			Link(Rel("preconnect"), Href("https://fonts.gstatic.com"), Attr("crossorigin", "")),
+			Link(Rel("stylesheet"), Href("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap")),
+			Link(Rel("stylesheet"), Href("https://cdn.jsdelivr.net/npm/@primer/css@22.1.0/dist/primer.min.css")),
+			Link(Rel("stylesheet"), Href("/ui/static/app.css")),
+			Script(Src("https://unpkg.com/lucide@latest/dist/umd/lucide.min.js")),
 		),
-		html.Body(
-			html.Main(
-				html.Class("layout"),
-				html.H1(html.Class("page-title"), gomponents.Text(title)),
-				html.P(gomponents.Text(message)),
-				html.P(html.A(html.Href("/ui"), gomponents.Text("Back to overview"))),
+		Body(
+			Main(
+				Class("layout"),
+				H1(Class("page-title"), Text(title)),
+				P(Text(message)),
+				P(A(Href("/ui"), Text("Back to overview"))),
 			),
-			html.Script(gomponents.Text("if (window.lucide) { window.lucide.createIcons(); }")),
+			Script(Text("if (window.lucide) { window.lucide.createIcons(); }")),
 		),
 	)
 }
@@ -171,16 +172,16 @@ func containsExpr(value string) string {
 	return "$q === '' || " + strconv.Quote(lower) + ".includes($q.toLowerCase())"
 }
 
-func paginationCard(basePath string, page domain.PageRequest, total int64) gomponents.Node {
+func paginationCard(basePath string, page domain.PageRequest, total int64) Node {
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	if nextToken == "" {
-		return html.Div(html.Class(cardClass()), html.P(html.Class(mutedClass()), gomponents.Text(fmt.Sprintf("Showing %d of %d entries.", min(page.Limit(), int(total)), total))))
+		return Div(Class(cardClass()), P(Class(mutedClass()), Text(fmt.Sprintf("Showing %d of %d entries.", min(page.Limit(), int(total)), total))))
 	}
 	url := fmt.Sprintf("%s?max_results=%d&page_token=%s", basePath, page.Limit(), nextToken)
-	return html.Div(
-		html.Class(cardClass()),
-		html.P(html.Class(mutedClass()), gomponents.Text(fmt.Sprintf("Showing up to %d of %d entries.", page.Limit(), total))),
-		html.A(html.Href(url), gomponents.Text("Next page ->")),
+	return Div(
+		Class(cardClass()),
+		P(Class(mutedClass()), Text(fmt.Sprintf("Showing up to %d of %d entries.", page.Limit(), total))),
+		A(Href(url), Text("Next page ->")),
 	)
 }
 
@@ -207,4 +208,79 @@ func primaryButtonClass() string {
 
 func secondaryButtonClass() string {
 	return "btn"
+}
+
+func quickFilterCard(placeholder string, extraControls ...Node) Node {
+	controls := []Node{
+		Div(
+			Class("d-flex flex-items-center gap-2 flex-1"),
+			Label(Class("sr-only"), Text("Quick filter")),
+			Input(Type("search"), Class("form-control"), Placeholder(placeholder), data.Bind("q"), AutoComplete("off")),
+		),
+	}
+	controls = append(controls, extraControls...)
+	return Div(
+		Class(cardClass("toolbar")),
+		data.Signals(map[string]any{"q": ""}),
+		Div(Class("d-flex flex-wrap flex-items-center gap-2"), Group(controls)),
+	)
+}
+
+func pageToolbar(newHref, newLabel string) Node {
+	return Div(
+		Class(cardClass("toolbar")),
+		Div(
+			Class("d-flex flex-justify-between flex-items-center flex-wrap gap-2"),
+			P(Class("color-fg-muted text-small mb-0"), Text("Browse and manage resources.")),
+			A(Href(newHref), Class(primaryButtonClass()), Text(newLabel)),
+		),
+	)
+}
+
+func emptyStateCard(message, ctaLabel, ctaHref string) Node {
+	cta := Node(nil)
+	if ctaLabel != "" && ctaHref != "" {
+		cta = A(Href(ctaHref), Class(primaryButtonClass()), Text(ctaLabel))
+	}
+	return Div(
+		Class(cardClass("blankslate")),
+		P(Class("color-fg-muted mb-2"), Text(message)),
+		cta,
+	)
+}
+
+func statusLabel(text, tone string) Node {
+	className := "Label"
+	if tone != "" {
+		className += " Label--" + tone
+	}
+	return Span(Class(className), Text(text))
+}
+
+func actionMenu(label string, items ...Node) Node {
+	return Details(
+		Class("dropdown details-reset details-overlay d-inline-block"),
+		Summary(Class("btn btn-sm"), Text(label)),
+		Div(
+			Class("dropdown-menu dropdown-menu-sw"),
+			Group(items),
+		),
+	)
+}
+
+func actionMenuLink(href, label string) Node {
+	return A(Href(href), Class("dropdown-item"), Text(label))
+}
+
+func actionMenuPost(action, label string, csrfField func() Node, danger bool) Node {
+	btnClass := "dropdown-item"
+	if danger {
+		btnClass += " color-fg-danger"
+	}
+	return Form(
+		Method("post"),
+		Action(action),
+		csrfField(),
+		Button(Type("submit"), Class(btnClass), Text(label)),
+	)
 }
