@@ -444,6 +444,7 @@ type DesiredState struct {
 	Notebooks          []NotebookResource
 	Pipelines          []PipelineResource
 	Models             []ModelResource
+	SemanticModels     []SemanticModelResource
 	Macros             []MacroResource
 }
 
@@ -610,6 +611,67 @@ type ModelResource struct {
 	ProjectName string
 	ModelName   string
 	Spec        ModelSpec
+}
+
+// === Semantic Models ===
+
+// SemanticModelDoc declares a semantic model.
+type SemanticModelDoc struct {
+	APIVersion string            `yaml:"apiVersion"`
+	Kind       string            `yaml:"kind"`
+	Metadata   ObjectMeta        `yaml:"metadata"`
+	Spec       SemanticModelSpec `yaml:"spec"`
+}
+
+// SemanticModelSpec holds semantic-layer configuration for a model.
+type SemanticModelSpec struct {
+	Description          string                     `yaml:"description,omitempty"`
+	BaseModelRef         string                     `yaml:"base_model_ref"`
+	DefaultTimeDimension string                     `yaml:"default_time_dimension,omitempty"`
+	Tags                 []string                   `yaml:"tags,omitempty"`
+	Metrics              []SemanticMetricSpec       `yaml:"metrics,omitempty"`
+	Relationships        []SemanticRelationshipSpec `yaml:"relationships,omitempty"`
+	PreAggregations      []SemanticPreAggSpec       `yaml:"pre_aggregations,omitempty"`
+}
+
+// SemanticMetricSpec defines a metric declaration in declarative config.
+type SemanticMetricSpec struct {
+	Name               string `yaml:"name"`
+	Description        string `yaml:"description,omitempty"`
+	MetricType         string `yaml:"metric_type"`
+	ExpressionMode     string `yaml:"expression_mode,omitempty"`
+	Expression         string `yaml:"expression"`
+	DefaultTimeGrain   string `yaml:"default_time_grain,omitempty"`
+	Format             string `yaml:"format,omitempty"`
+	CertificationState string `yaml:"certification_state,omitempty"`
+}
+
+// SemanticRelationshipSpec defines an edge to another semantic model.
+type SemanticRelationshipSpec struct {
+	Name             string `yaml:"name"`
+	ToModel          string `yaml:"to_model"`
+	RelationshipType string `yaml:"relationship_type"`
+	JoinSQL          string `yaml:"join_sql"`
+	IsDefault        bool   `yaml:"is_default,omitempty"`
+	Cost             int    `yaml:"cost,omitempty"`
+	MaxHops          int    `yaml:"max_hops,omitempty"`
+}
+
+// SemanticPreAggSpec defines a pre-aggregation mapping.
+type SemanticPreAggSpec struct {
+	Name           string   `yaml:"name"`
+	MetricSet      []string `yaml:"metric_set,omitempty"`
+	DimensionSet   []string `yaml:"dimension_set,omitempty"`
+	Grain          string   `yaml:"grain,omitempty"`
+	TargetRelation string   `yaml:"target_relation"`
+	RefreshPolicy  string   `yaml:"refresh_policy,omitempty"`
+}
+
+// SemanticModelResource is a semantic model with project context from directory tree.
+type SemanticModelResource struct {
+	ProjectName string
+	ModelName   string
+	Spec        SemanticModelSpec
 }
 
 // ActualState mirrors DesiredState but populated from the server.

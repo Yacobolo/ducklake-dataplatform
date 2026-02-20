@@ -368,3 +368,44 @@ type MacroRepository interface {
 	ListRevisions(ctx context.Context, macroName string) ([]MacroRevision, error)
 	GetRevisionByVersion(ctx context.Context, macroName string, version int) (*MacroRevision, error)
 }
+
+// SemanticModelRepository provides CRUD operations for semantic models.
+type SemanticModelRepository interface {
+	Create(ctx context.Context, m *SemanticModel) (*SemanticModel, error)
+	GetByID(ctx context.Context, id string) (*SemanticModel, error)
+	GetByName(ctx context.Context, projectName, name string) (*SemanticModel, error)
+	List(ctx context.Context, projectName *string, page PageRequest) ([]SemanticModel, int64, error)
+	Update(ctx context.Context, id string, req UpdateSemanticModelRequest) (*SemanticModel, error)
+	Delete(ctx context.Context, id string) error
+	ListAll(ctx context.Context) ([]SemanticModel, error)
+}
+
+// SemanticMetricRepository provides CRUD operations for semantic metrics.
+type SemanticMetricRepository interface {
+	Create(ctx context.Context, m *SemanticMetric) (*SemanticMetric, error)
+	GetByID(ctx context.Context, id string) (*SemanticMetric, error)
+	GetByName(ctx context.Context, semanticModelID, name string) (*SemanticMetric, error)
+	ListByModel(ctx context.Context, semanticModelID string) ([]SemanticMetric, error)
+	Update(ctx context.Context, id string, req UpdateSemanticMetricRequest) (*SemanticMetric, error)
+	Delete(ctx context.Context, id string) error
+}
+
+// SemanticRelationshipRepository provides CRUD operations for semantic relationships.
+type SemanticRelationshipRepository interface {
+	Create(ctx context.Context, r *SemanticRelationship) (*SemanticRelationship, error)
+	GetByID(ctx context.Context, id string) (*SemanticRelationship, error)
+	GetByName(ctx context.Context, name string) (*SemanticRelationship, error)
+	List(ctx context.Context, page PageRequest) ([]SemanticRelationship, int64, error)
+	Update(ctx context.Context, id string, req UpdateSemanticRelationshipRequest) (*SemanticRelationship, error)
+	Delete(ctx context.Context, id string) error
+}
+
+// SemanticPreAggregationRepository provides CRUD operations for semantic pre-aggregations.
+type SemanticPreAggregationRepository interface {
+	Create(ctx context.Context, p *SemanticPreAggregation) (*SemanticPreAggregation, error)
+	GetByID(ctx context.Context, id string) (*SemanticPreAggregation, error)
+	GetByName(ctx context.Context, semanticModelID, name string) (*SemanticPreAggregation, error)
+	ListByModel(ctx context.Context, semanticModelID string) ([]SemanticPreAggregation, error)
+	Update(ctx context.Context, id string, req UpdateSemanticPreAggregationRequest) (*SemanticPreAggregation, error)
+	Delete(ctx context.Context, id string) error
+}

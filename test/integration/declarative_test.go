@@ -1009,3 +1009,184 @@ spec:
 	replanDelete := declarative.Diff(desiredDeleted, actualAfterDelete)
 	assert.Empty(t, actionsOfKindAndOp(replanDelete, declarative.KindMacro, declarative.OpDelete))
 }
+
+func TestDeclarative_SemanticModelLifecycle(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{WithSemantic: true})
+	stateClient := makeStateClient(t, env.Server.URL, env.Keys.Admin)
+
+	dir := t.TempDir()
+	writeYAML(t, dir, "semantic_models/analytics/customers.yaml", `apiVersion: duck/v1
+kind: SemanticModel
+metadata:
+  name: customers
+spec:
+  base_model_ref: analytics.dim_customers
+`)
+	writeYAML(t, dir, "semantic_models/analytics/sales.yaml", `apiVersion: duck/v1
+kind: SemanticModel
+metadata:
+  name: sales
+spec:
+  description: sales semantic model
+  base_model_ref: analytics.fct_sales
+  default_time_dimension: order_date
+  metrics:
+    - name: total_revenue
+      metric_type: SUM
+      expression_mode: SQL
+      expression: SUM(amount)
+      certification_state: DRAFT
+  pre_aggregations:
+    - name: daily_sales
+      metric_set: [total_revenue]
+      dimension_set: [order_date]
+      target_relation: analytics.agg_daily_sales
+`)
+
+	desired, err := declarative.LoadDirectory(dir)
+	require.NoError(t, err)
+	require.Empty(t, declarative.Validate(desired))
+
+	actual, err := stateClient.ReadState(context.Background())
+	require.NoError(t, err)
+
+	plan := declarative.Diff(desired, actual)
+	creates := actionsOfKindAndOp(plan, declarative.KindSemanticModel, declarative.OpCreate)
+	require.Len(t, creates, 2)
+	executeActions(t, stateClient, creates)
+
+	actualAfterCreate, err := stateClient.ReadState(context.Background())
+	require.NoError(t, err)
+	replan := declarative.Diff(desired, actualAfterCreate)
+	assert.Empty(t, actionsOfKindAndOp(replan, declarative.KindSemanticModel, declarative.OpCreate))
+	assert.Empty(t, actionsOfKindAndOp(replan, declarative.KindSemanticModel, declarative.OpUpdate))
+
+	writeYAML(t, dir, "semantic_models/analytics/sales.yaml", `apiVersion: duck/v1
+kind: SemanticModel
+metadata:
+  name: sales
+spec:
+  description: sales semantic model updated
+  base_model_ref: analytics.fct_sales
+  default_time_dimension: order_date
+  metrics:
+    - name: total_revenue
+      metric_type: SUM
+      expression_mode: SQL
+      expression: SUM(amount_usd)
+      certification_state: CERTIFIED
+  relationships:
+    - name: sales_to_customers
+      to_model: analytics.customers
+      relationship_type: MANY_TO_ONE
+      join_sql: sales.customer_id = customers.customer_id
+  pre_aggregations:
+    - name: monthly_sales
+      metric_set: [total_revenue]
+      dimension_set: [order_month]
+      target_relation: analytics.agg_monthly_sales
+`)
+
+	desiredUpdated, err := declarative.LoadDirectory(dir)
+	require.NoError(t, err)
+	require.Empty(t, declarative.Validate(desiredUpdated))
+
+	planUpdate := declarative.Diff(desiredUpdated, actualAfterCreate)
+	updates := actionsOfKindAndOp(planUpdate, declarative.KindSemanticModel, declarative.OpUpdate)
+	require.Len(t, updates, 1)
+	executeActions(t, stateClient, updates)
+
+	actualAfterUpdate, err := stateClient.ReadState(context.Background())
+	require.NoError(t, err)
+	replanUpdate := declarative.Diff(desiredUpdated, actualAfterUpdate)
+	assert.Empty(t, actionsOfKindAndOp(replanUpdate, declarative.KindSemanticModel, declarative.OpCreate))
+	assert.Empty(t, actionsOfKindAndOp(replanUpdate, declarative.KindSemanticModel, declarative.OpUpdate))
+
+	require.NoError(t, os.Remove(filepath.Join(dir, "semantic_models", "analytics", "sales.yaml")))
+	require.NoError(t, os.Remove(filepath.Join(dir, "semantic_models", "analytics", "customers.yaml")))
+
+	desiredDeleted, err := declarative.LoadDirectory(dir)
+	require.NoError(t, err)
+	planDelete := declarative.Diff(desiredDeleted, actualAfterUpdate)
+	deletes := actionsOfKindAndOp(planDelete, declarative.KindSemanticModel, declarative.OpDelete)
+	require.Len(t, deletes, 2)
+	executeActions(t, stateClient, deletes)
+
+	actualAfterDelete, err := stateClient.ReadState(context.Background())
+	require.NoError(t, err)
+	replanDelete := declarative.Diff(desiredDeleted, actualAfterDelete)
+	assert.Empty(t, actionsOfKindAndOp(replanDelete, declarative.KindSemanticModel, declarative.OpDelete))
+}
+
+func TestDeclarative_SemanticApplyThenExplainAndRun(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{WithSemantic: true, WithComputeEndpoints: true, SeedDuckLakeMetadata: true})
+	stateClient := makeStateClient(t, env.Server.URL, env.Keys.Admin)
+	require.NotNil(t, env.DuckDB)
+
+	_, err := env.DuckDB.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS titanic (Fare DOUBLE)`)
+	require.NoError(t, err)
+	_, err = env.DuckDB.ExecContext(ctx, `DELETE FROM titanic`)
+	require.NoError(t, err)
+	_, err = env.DuckDB.ExecContext(ctx, `INSERT INTO titanic VALUES (10.5), (20.0), (5.0)`)
+	require.NoError(t, err)
+
+	dir := t.TempDir()
+	writeYAML(t, dir, "semantic_models/analytics/sales_runtime.yaml", `apiVersion: duck/v1
+kind: SemanticModel
+metadata:
+  name: sales_runtime
+spec:
+  base_model_ref: main.titanic
+  metrics:
+    - name: total_fare
+      metric_type: SUM
+      expression_mode: SQL
+      expression: SUM(Fare)
+      certification_state: CERTIFIED
+`)
+
+	desired, err := declarative.LoadDirectory(dir)
+	require.NoError(t, err)
+	require.Empty(t, declarative.Validate(desired))
+
+	plan := declarative.Diff(desired, &declarative.DesiredState{})
+	creates := actionsOfKindAndOp(plan, declarative.KindSemanticModel, declarative.OpCreate)
+	require.Len(t, creates, 1)
+	executeActions(t, stateClient, creates)
+
+	explainResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/metric-queries:explain", env.Keys.Admin, map[string]interface{}{
+		"project_name":        "analytics",
+		"semantic_model_name": "sales_runtime",
+		"metrics":             []string{"total_fare"},
+	})
+	if explainResp.StatusCode != http.StatusOK {
+		require.Equal(t, http.StatusOK, explainResp.StatusCode, string(readBody(t, explainResp)))
+	}
+
+	var explainBody struct {
+		Plan struct {
+			GeneratedSQL string `json:"generated_sql"`
+		} `json:"plan"`
+	}
+	decodeJSON(t, explainResp, &explainBody)
+	assert.NotEmpty(t, explainBody.Plan.GeneratedSQL)
+
+	runResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/metric-queries:run", env.Keys.Admin, map[string]interface{}{
+		"project_name":        "analytics",
+		"semantic_model_name": "sales_runtime",
+		"metrics":             []string{"total_fare"},
+	})
+	if runResp.StatusCode != http.StatusOK {
+		require.Equal(t, http.StatusOK, runResp.StatusCode, string(readBody(t, runResp)))
+	}
+
+	var runBody struct {
+		Result struct {
+			RowCount int64           `json:"row_count"`
+			Rows     [][]interface{} `json:"rows"`
+		} `json:"result"`
+	}
+	decodeJSON(t, runResp, &runBody)
+	assert.EqualValues(t, 1, runBody.Result.RowCount)
+	require.Len(t, runBody.Result.Rows, 1)
+}

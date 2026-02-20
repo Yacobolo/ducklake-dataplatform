@@ -67,6 +67,9 @@
       "$ref": "kinds/model.schema.json"
     },
     {
+      "$ref": "kinds/semantic-model.schema.json"
+    },
+    {
       "$ref": "kinds/macro.schema.json"
     }
   ],

@@ -41,6 +41,8 @@ tags:
     description: Pipeline workflow scheduling and orchestration.
   - name: Models
     description: Transformation model definitions, runs, DAG management, macros, and freshness.
+  - name: Semantic
+    description: Semantic models, metrics, relationships, query explain, and query run endpoints.
 
 components:
   securitySchemes:
@@ -435,6 +437,50 @@ components:
       $ref: 'schemas/macros.yaml#/MacroImpactModel'
     MacroImpactList:
       $ref: 'schemas/macros.yaml#/MacroImpactList'
+    SemanticModel:
+      $ref: 'schemas/semantic.yaml#/SemanticModel'
+    CreateSemanticModelRequest:
+      $ref: 'schemas/semantic.yaml#/CreateSemanticModelRequest'
+    UpdateSemanticModelRequest:
+      $ref: 'schemas/semantic.yaml#/UpdateSemanticModelRequest'
+    PaginatedSemanticModels:
+      $ref: 'schemas/semantic.yaml#/PaginatedSemanticModels'
+    SemanticMetric:
+      $ref: 'schemas/semantic.yaml#/SemanticMetric'
+    CreateSemanticMetricRequest:
+      $ref: 'schemas/semantic.yaml#/CreateSemanticMetricRequest'
+    UpdateSemanticMetricRequest:
+      $ref: 'schemas/semantic.yaml#/UpdateSemanticMetricRequest'
+    SemanticMetricList:
+      $ref: 'schemas/semantic.yaml#/SemanticMetricList'
+    SemanticRelationship:
+      $ref: 'schemas/semantic.yaml#/SemanticRelationship'
+    CreateSemanticRelationshipRequest:
+      $ref: 'schemas/semantic.yaml#/CreateSemanticRelationshipRequest'
+    UpdateSemanticRelationshipRequest:
+      $ref: 'schemas/semantic.yaml#/UpdateSemanticRelationshipRequest'
+    PaginatedSemanticRelationships:
+      $ref: 'schemas/semantic.yaml#/PaginatedSemanticRelationships'
+    SemanticPreAggregation:
+      $ref: 'schemas/semantic.yaml#/SemanticPreAggregation'
+    CreateSemanticPreAggregationRequest:
+      $ref: 'schemas/semantic.yaml#/CreateSemanticPreAggregationRequest'
+    UpdateSemanticPreAggregationRequest:
+      $ref: 'schemas/semantic.yaml#/UpdateSemanticPreAggregationRequest'
+    SemanticPreAggregationList:
+      $ref: 'schemas/semantic.yaml#/SemanticPreAggregationList'
+    MetricQueryRequest:
+      $ref: 'schemas/semantic.yaml#/MetricQueryRequest'
+    MetricQueryJoinStep:
+      $ref: 'schemas/semantic.yaml#/MetricQueryJoinStep'
+    MetricQueryPlan:
+      $ref: 'schemas/semantic.yaml#/MetricQueryPlan'
+    MetricQueryExplainResponse:
+      $ref: 'schemas/semantic.yaml#/MetricQueryExplainResponse'
+    MetricQueryRunResponse:
+      $ref: 'schemas/semantic.yaml#/MetricQueryRunResponse'
+    MetricFreshnessStatus:
+      $ref: 'schemas/semantic.yaml#/MetricFreshnessStatus'
 
 paths:
   /query:
@@ -657,3 +703,26 @@ paths:
     $ref: 'paths/macros.yaml#/paths/~1macros~1{macroName}~1impact'
   /macros/{macroName}/diff:
     $ref: 'paths/macros.yaml#/paths/~1macros~1{macroName}~1diff'
+  # === Semantic ===
+  /semantic-models:
+    $ref: 'paths/semantic.yaml#/paths/~1semantic-models'
+  /semantic-models/{projectName}/{semanticModelName}:
+    $ref: 'paths/semantic.yaml#/paths/~1semantic-models~1{projectName}~1{semanticModelName}'
+  /semantic-models/{projectName}/{semanticModelName}/metrics:
+    $ref: 'paths/semantic.yaml#/paths/~1semantic-models~1{projectName}~1{semanticModelName}~1metrics'
+  /semantic-models/{projectName}/{semanticModelName}/metrics/{metricName}:
+    $ref: 'paths/semantic.yaml#/paths/~1semantic-models~1{projectName}~1{semanticModelName}~1metrics~1{metricName}'
+  /semantic-models/{projectName}/{semanticModelName}/pre-aggregations:
+    $ref: 'paths/semantic.yaml#/paths/~1semantic-models~1{projectName}~1{semanticModelName}~1pre-aggregations'
+  /semantic-models/{projectName}/{semanticModelName}/pre-aggregations/{preAggregationName}:
+    $ref: 'paths/semantic.yaml#/paths/~1semantic-models~1{projectName}~1{semanticModelName}~1pre-aggregations~1{preAggregationName}'
+  /semantic-relationships:
+    $ref: 'paths/semantic.yaml#/paths/~1semantic-relationships'
+  /semantic-relationships/{relationshipName}:
+    $ref: 'paths/semantic.yaml#/paths/~1semantic-relationships~1{relationshipName}'
+  /metric-queries:explain:
+    $ref: 'paths/semantic.yaml#/paths/~1metric-queries:explain'
+  /metric-queries:run:
+    $ref: 'paths/semantic.yaml#/paths/~1metric-queries:run'
+  /metrics/{metricName}/freshness:
+    $ref: 'paths/semantic.yaml#/paths/~1metrics~1{metricName}~1freshness'

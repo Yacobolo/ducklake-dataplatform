@@ -49,6 +49,7 @@ import (
 	svcpipeline "duck-demo/internal/service/pipeline"
 	"duck-demo/internal/service/query"
 	"duck-demo/internal/service/security"
+	svcsemantic "duck-demo/internal/service/semantic"
 	"duck-demo/internal/service/storage"
 )
 
@@ -696,6 +697,7 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 		nil, // pipelineSvc
 		nil, // modelSvc
 		nil, // macroSvc
+		nil, // semanticSvc
 	)
 	strictHandler := api.NewStrictHandler(handler, nil)
 
@@ -831,6 +833,7 @@ func setupLocalExtensionServer(t *testing.T) *testEnv {
 		nil, // pipelineSvc
 		nil, // modelSvc
 		nil, // macroSvc
+		nil, // semanticSvc
 	)
 	strictHandler := api.NewStrictHandler(handler, nil)
 
@@ -1114,6 +1117,9 @@ type httpTestOpts struct {
 	// WithModels wires ModelService and MacroService into the handler (enables
 	// model CRUD, DAG, run, test, freshness, and macro endpoints).
 	WithModels bool
+	// WithSemantic wires SemanticService into the handler (enables semantic
+	// models, metrics, relationships, pre-aggregations, explain, and run endpoints).
+	WithSemantic bool
 }
 
 // httpTestEnv bundles the test server, API keys, and direct DB access.
@@ -1411,6 +1417,22 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		modelSvc.SetMacroRepo(macroRepo)
 	}
 
+	// Optionally wire Semantic service.
+	var semanticSvc *svcsemantic.Service
+	if opts.WithSemantic {
+		semanticModelRepo := repository.NewSemanticModelRepo(metaDB)
+		semanticMetricRepo := repository.NewSemanticMetricRepo(metaDB)
+		semanticRelationshipRepo := repository.NewSemanticRelationshipRepo(metaDB)
+		semanticPreAggRepo := repository.NewSemanticPreAggregationRepo(metaDB)
+		semanticSvc = svcsemantic.NewService(
+			semanticModelRepo,
+			semanticMetricRepo,
+			semanticRelationshipRepo,
+			semanticPreAggRepo,
+		)
+		semanticSvc.SetQueryExecutor(querySvc)
+	}
+
 	handler := api.NewHandler(
 		querySvc, principalSvc, groupSvc, grantSvc,
 		rowFilterSvc, columnMaskSvc, auditSvc,
@@ -1424,6 +1446,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		pipelineSvc,
 		modelSvc, // modelSvc
 		macroSvc, // macroSvc
+		semanticSvc,
 	)
 	strictHandler := api.NewStrictHandler(handler, nil)
 
@@ -2117,6 +2140,7 @@ func setupMultiTableLocalServer(t *testing.T) *multiTableTestEnv {
 		nil, // pipelineSvc
 		nil, // modelSvc
 		nil, // macroSvc
+		nil, // semanticSvc
 	)
 	strictHandler := api.NewStrictHandler(handler, nil)
 

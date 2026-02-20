@@ -361,6 +361,9 @@ func Validate(state *DesiredState) []ValidationError {
 	// 23. Validate models.
 	validateModels(state.Models, macroNames, &errs)
 
+	// 24. Validate semantic models.
+	validateSemanticModels(state.SemanticModels, &errs)
+
 	return errs
 }
 
@@ -1733,6 +1736,88 @@ var validMacroStatus = map[string]bool{
 	"":           true,
 	"ACTIVE":     true,
 	"DEPRECATED": true,
+}
+
+func validateSemanticModels(models []SemanticModelResource, errs *[]ValidationError) {
+	seenModels := make(map[string]bool, len(models))
+	for i, m := range models {
+		key := m.ProjectName + "." + m.ModelName
+		path := fmt.Sprintf("semantic_model[%s]", key)
+		if m.ProjectName == "" {
+			addErr(errs, path, "project name is required")
+		}
+		if m.ModelName == "" {
+			addErr(errs, path, "model name is required")
+		}
+		if seenModels[key] {
+			addErr(errs, path, "duplicate semantic model %q", key)
+		}
+		seenModels[key] = true
+
+		if strings.TrimSpace(m.Spec.BaseModelRef) == "" {
+			addErr(errs, path, "spec.base_model_ref is required")
+		}
+
+		seenMetrics := make(map[string]bool, len(m.Spec.Metrics))
+		for j, metric := range m.Spec.Metrics {
+			mpath := fmt.Sprintf("semantic_model[%d].metrics[%d]", i, j)
+			if strings.TrimSpace(metric.Name) == "" {
+				addErr(errs, mpath, "name is required")
+			}
+			if strings.TrimSpace(metric.MetricType) == "" {
+				addErr(errs, mpath, "metric_type is required")
+			}
+			if strings.TrimSpace(metric.Expression) == "" {
+				addErr(errs, mpath, "expression is required")
+			}
+			if metric.Name != "" {
+				if seenMetrics[metric.Name] {
+					addErr(errs, mpath, "duplicate metric name %q", metric.Name)
+				}
+				seenMetrics[metric.Name] = true
+			}
+		}
+
+		seenRelationships := make(map[string]bool, len(m.Spec.Relationships))
+		for j, rel := range m.Spec.Relationships {
+			rpath := fmt.Sprintf("semantic_model[%d].relationships[%d]", i, j)
+			if strings.TrimSpace(rel.Name) == "" {
+				addErr(errs, rpath, "name is required")
+			}
+			if strings.TrimSpace(rel.ToModel) == "" {
+				addErr(errs, rpath, "to_model is required")
+			}
+			if strings.TrimSpace(rel.RelationshipType) == "" {
+				addErr(errs, rpath, "relationship_type is required")
+			}
+			if strings.TrimSpace(rel.JoinSQL) == "" {
+				addErr(errs, rpath, "join_sql is required")
+			}
+			if rel.Name != "" {
+				if seenRelationships[rel.Name] {
+					addErr(errs, rpath, "duplicate relationship name %q", rel.Name)
+				}
+				seenRelationships[rel.Name] = true
+			}
+		}
+
+		seenPreAggs := make(map[string]bool, len(m.Spec.PreAggregations))
+		for j, p := range m.Spec.PreAggregations {
+			ppath := fmt.Sprintf("semantic_model[%d].pre_aggregations[%d]", i, j)
+			if strings.TrimSpace(p.Name) == "" {
+				addErr(errs, ppath, "name is required")
+			}
+			if strings.TrimSpace(p.TargetRelation) == "" {
+				addErr(errs, ppath, "target_relation is required")
+			}
+			if p.Name != "" {
+				if seenPreAggs[p.Name] {
+					addErr(errs, ppath, "duplicate pre_aggregation name %q", p.Name)
+				}
+				seenPreAggs[p.Name] = true
+			}
+		}
+	}
 }
 
 func validateMacros(macros []MacroResource, errs *[]ValidationError) {
