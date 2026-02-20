@@ -5,7 +5,7 @@
 Duck declarative Table
 
 - Schema file: `kinds/table.schema.json`
-- SHA256: `14c546b5f2958f58a6389a206efb693fe8768bf9d9c286cd2c12e7ee85686950`
+- SHA256: `ba5f538e24c38543b7e8ec9f2288624ecb6f265d9b1f320ebecdd513778bcda8`
 
 ## Spec Fields
 

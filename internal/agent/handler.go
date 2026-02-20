@@ -4,10 +4,14 @@
 package agent
 
 import (
+	"context"
+	"crypto/subtle"
 	"database/sql"
 	"encoding/json"
+	"io"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"duck-demo/internal/compute"
@@ -15,11 +19,16 @@ import (
 
 // HandlerConfig holds the parameters needed to build the agent HTTP handler.
 type HandlerConfig struct {
-	DB          *sql.DB
-	AgentToken  string
-	StartTime   time.Time
-	MaxMemoryGB int
-	Logger      *slog.Logger
+	DB                    *sql.DB
+	AgentToken            string
+	StartTime             time.Time
+	MaxMemoryGB           int
+	MaxResultRows         int
+	MaxConcurrentQueries  int
+	QueryTimeout          time.Duration
+	RequireSignedRequests bool
+	SignatureMaxSkew      time.Duration
+	Logger                *slog.Logger
 }
 
 // NewHandler builds the compute agent's http.Handler with /execute and /health
@@ -30,14 +39,27 @@ func NewHandler(cfg HandlerConfig) http.Handler {
 	if logger == nil {
 		logger = slog.Default()
 	}
+	if cfg.MaxResultRows <= 0 {
+		cfg.MaxResultRows = 10000
+	}
+	if cfg.MaxConcurrentQueries <= 0 {
+		cfg.MaxConcurrentQueries = 8
+	}
+	if cfg.QueryTimeout <= 0 {
+		cfg.QueryTimeout = 2 * time.Minute
+	}
+	if cfg.SignatureMaxSkew <= 0 {
+		cfg.SignatureMaxSkew = 2 * time.Minute
+	}
+
+	querySem := make(chan struct{}, cfg.MaxConcurrentQueries)
 
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("POST /execute", func(w http.ResponseWriter, r *http.Request) {
 		requestID := r.Header.Get("X-Request-ID")
 
-		// Validate token
-		if r.Header.Get("X-Agent-Token") != cfg.AgentToken {
+		if subtle.ConstantTimeCompare([]byte(r.Header.Get(compute.HeaderAgentAuth)), []byte(cfg.AgentToken)) != 1 {
 			writeJSON(w, http.StatusUnauthorized, compute.ErrorResponse{
 				Error:     "unauthorized",
 				Code:      "AUTH_ERROR",
@@ -46,8 +68,41 @@ func NewHandler(cfg HandlerConfig) http.Handler {
 			return
 		}
 
+		bodyBytes, err := io.ReadAll(r.Body)
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, compute.ErrorResponse{
+				Error:     "invalid request body",
+				Code:      "PARSE_ERROR",
+				RequestID: requestID,
+			})
+			return
+		}
+
+		if cfg.RequireSignedRequests {
+			if err := compute.VerifySignedAgentHeaders(r, cfg.AgentToken, bodyBytes, time.Now(), cfg.SignatureMaxSkew); err != nil {
+				writeJSON(w, http.StatusUnauthorized, compute.ErrorResponse{
+					Error:     "invalid request signature",
+					Code:      "AUTH_ERROR",
+					RequestID: requestID,
+				})
+				return
+			}
+		}
+
+		select {
+		case querySem <- struct{}{}:
+			defer func() { <-querySem }()
+		default:
+			writeJSON(w, http.StatusTooManyRequests, compute.ErrorResponse{
+				Error:     "too many concurrent queries",
+				Code:      "TOO_MANY_REQUESTS",
+				RequestID: requestID,
+			})
+			return
+		}
+
 		var req compute.ExecuteRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		if err := json.Unmarshal(bodyBytes, &req); err != nil {
 			writeJSON(w, http.StatusBadRequest, compute.ErrorResponse{
 				Error:     "invalid request body",
 				Code:      "PARSE_ERROR",
@@ -58,10 +113,21 @@ func NewHandler(cfg HandlerConfig) http.Handler {
 		if requestID == "" {
 			requestID = req.RequestID
 		}
+		if strings.TrimSpace(req.SQL) == "" {
+			writeJSON(w, http.StatusBadRequest, compute.ErrorResponse{
+				Error:     "sql is required",
+				Code:      "VALIDATION_ERROR",
+				RequestID: requestID,
+			})
+			return
+		}
 
 		logger.Info("executing query", "request_id", requestID)
 
-		rows, err := cfg.DB.QueryContext(r.Context(), req.SQL)
+		queryCtx, cancel := context.WithTimeout(r.Context(), cfg.QueryTimeout)
+		defer cancel()
+
+		rows, err := cfg.DB.QueryContext(queryCtx, req.SQL)
 		if err != nil {
 			logger.Error("query execution failed", "request_id", requestID, "error", err)
 			writeJSON(w, http.StatusInternalServerError, compute.ErrorResponse{
@@ -85,6 +151,14 @@ func NewHandler(cfg HandlerConfig) http.Handler {
 
 		var resultRows [][]interface{}
 		for rows.Next() {
+			if len(resultRows) >= cfg.MaxResultRows {
+				writeJSON(w, http.StatusRequestEntityTooLarge, compute.ErrorResponse{
+					Error:     "result row limit exceeded",
+					Code:      "RESULT_LIMIT_EXCEEDED",
+					RequestID: requestID,
+				})
+				return
+			}
 			values := make([]interface{}, len(cols))
 			ptrs := make([]interface{}, len(cols))
 			for i := range values {
@@ -120,6 +194,26 @@ func NewHandler(cfg HandlerConfig) http.Handler {
 	})
 
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
+		requestID := r.Header.Get("X-Request-ID")
+		if subtle.ConstantTimeCompare([]byte(r.Header.Get(compute.HeaderAgentAuth)), []byte(cfg.AgentToken)) != 1 {
+			writeJSON(w, http.StatusUnauthorized, compute.ErrorResponse{
+				Error:     "unauthorized",
+				Code:      "AUTH_ERROR",
+				RequestID: requestID,
+			})
+			return
+		}
+		if cfg.RequireSignedRequests {
+			if err := compute.VerifySignedAgentHeaders(r, cfg.AgentToken, nil, time.Now(), cfg.SignatureMaxSkew); err != nil {
+				writeJSON(w, http.StatusUnauthorized, compute.ErrorResponse{
+					Error:     "invalid request signature",
+					Code:      "AUTH_ERROR",
+					RequestID: requestID,
+				})
+				return
+			}
+		}
+
 		var version string
 		row := cfg.DB.QueryRowContext(r.Context(), "SELECT version()")
 		_ = row.Scan(&version)

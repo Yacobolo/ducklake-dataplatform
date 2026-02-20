@@ -156,6 +156,7 @@ func TestLoadFromEnv_ProductionModeAcceptsProperConfig(t *testing.T) {
 	t.Setenv("AUTH_JWKS_URL", "https://auth.example.com/jwks.json")
 	t.Setenv("ENCRYPTION_KEY", "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789")
 	t.Setenv("CORS_ALLOWED_ORIGINS", "https://app.example.com")
+	t.Setenv("ALLOW_INSECURE_HTTP", "true")
 
 	cfg, err := LoadFromEnv()
 	require.NoError(t, err)

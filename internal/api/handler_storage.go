@@ -9,27 +9,27 @@ import (
 
 // storageCredentialService defines the storage credential operations used by the API handler.
 type storageCredentialService interface {
-	List(ctx context.Context, page domain.PageRequest) ([]domain.StorageCredential, int64, error)
+	List(ctx context.Context, principal string, page domain.PageRequest) ([]domain.StorageCredential, int64, error)
 	Create(ctx context.Context, principal string, req domain.CreateStorageCredentialRequest) (*domain.StorageCredential, error)
-	GetByName(ctx context.Context, name string) (*domain.StorageCredential, error)
+	GetByName(ctx context.Context, principal, name string) (*domain.StorageCredential, error)
 	Update(ctx context.Context, principal string, name string, req domain.UpdateStorageCredentialRequest) (*domain.StorageCredential, error)
 	Delete(ctx context.Context, principal string, name string) error
 }
 
 // externalLocationService defines the external location operations used by the API handler.
 type externalLocationService interface {
-	List(ctx context.Context, page domain.PageRequest) ([]domain.ExternalLocation, int64, error)
+	List(ctx context.Context, principal string, page domain.PageRequest) ([]domain.ExternalLocation, int64, error)
 	Create(ctx context.Context, principal string, req domain.CreateExternalLocationRequest) (*domain.ExternalLocation, error)
-	GetByName(ctx context.Context, name string) (*domain.ExternalLocation, error)
+	GetByName(ctx context.Context, principal, name string) (*domain.ExternalLocation, error)
 	Update(ctx context.Context, principal string, name string, req domain.UpdateExternalLocationRequest) (*domain.ExternalLocation, error)
 	Delete(ctx context.Context, principal string, name string) error
 }
 
 // volumeService defines the volume operations used by the API handler.
 type volumeService interface {
-	List(ctx context.Context, catalogName string, schemaName string, page domain.PageRequest) ([]domain.Volume, int64, error)
+	List(ctx context.Context, principal, catalogName string, schemaName string, page domain.PageRequest) ([]domain.Volume, int64, error)
 	Create(ctx context.Context, principal, catalogName, schemaName string, req domain.CreateVolumeRequest) (*domain.Volume, error)
-	GetByName(ctx context.Context, catalogName string, schemaName, name string) (*domain.Volume, error)
+	GetByName(ctx context.Context, principal, catalogName string, schemaName, name string) (*domain.Volume, error)
 	Update(ctx context.Context, principal, catalogName, schemaName, name string, req domain.UpdateVolumeRequest) (*domain.Volume, error)
 	Delete(ctx context.Context, principal, catalogName, schemaName, name string) error
 }
@@ -39,7 +39,8 @@ type volumeService interface {
 // ListStorageCredentials implements the endpoint for listing all storage credentials.
 func (h *APIHandler) ListStorageCredentials(ctx context.Context, req ListStorageCredentialsRequestObject) (ListStorageCredentialsResponseObject, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
-	creds, total, err := h.storageCreds.List(ctx, page)
+	principal := principalFromCtx(ctx)
+	creds, total, err := h.storageCreds.List(ctx, principal, page)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +128,8 @@ func (h *APIHandler) CreateStorageCredential(ctx context.Context, req CreateStor
 
 // GetStorageCredential implements the endpoint for retrieving a storage credential by name.
 func (h *APIHandler) GetStorageCredential(ctx context.Context, req GetStorageCredentialRequestObject) (GetStorageCredentialResponseObject, error) {
-	result, err := h.storageCreds.GetByName(ctx, req.CredentialName)
+	principal := principalFromCtx(ctx)
+	result, err := h.storageCreds.GetByName(ctx, principal, req.CredentialName)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
@@ -203,7 +205,8 @@ func (h *APIHandler) DeleteStorageCredential(ctx context.Context, req DeleteStor
 // ListExternalLocations implements the endpoint for listing all external locations.
 func (h *APIHandler) ListExternalLocations(ctx context.Context, req ListExternalLocationsRequestObject) (ListExternalLocationsResponseObject, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
-	locs, total, err := h.externalLocations.List(ctx, page)
+	principal := principalFromCtx(ctx)
+	locs, total, err := h.externalLocations.List(ctx, principal, page)
 	if err != nil {
 		return nil, err
 	}
@@ -266,7 +269,8 @@ func (h *APIHandler) CreateExternalLocation(ctx context.Context, req CreateExter
 
 // GetExternalLocation implements the endpoint for retrieving an external location by name.
 func (h *APIHandler) GetExternalLocation(ctx context.Context, req GetExternalLocationRequestObject) (GetExternalLocationResponseObject, error) {
-	result, err := h.externalLocations.GetByName(ctx, req.LocationName)
+	principal := principalFromCtx(ctx)
+	result, err := h.externalLocations.GetByName(ctx, principal, req.LocationName)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
@@ -380,7 +384,8 @@ func externalLocationToAPI(l domain.ExternalLocation) ExternalLocation {
 // ListVolumes implements the endpoint for listing volumes in a schema.
 func (h *APIHandler) ListVolumes(ctx context.Context, request ListVolumesRequestObject) (ListVolumesResponseObject, error) {
 	page := pageFromParams(request.Params.MaxResults, request.Params.PageToken)
-	vols, total, err := h.volumes.List(ctx, string(request.CatalogName), request.SchemaName, page)
+	principal := principalFromCtx(ctx)
+	vols, total, err := h.volumes.List(ctx, principal, string(request.CatalogName), request.SchemaName, page)
 	if err != nil {
 		return nil, err
 	}
@@ -434,7 +439,8 @@ func (h *APIHandler) CreateVolume(ctx context.Context, request CreateVolumeReque
 
 // GetVolume implements the endpoint for retrieving a volume by name.
 func (h *APIHandler) GetVolume(ctx context.Context, request GetVolumeRequestObject) (GetVolumeResponseObject, error) {
-	result, err := h.volumes.GetByName(ctx, string(request.CatalogName), request.SchemaName, request.VolumeName)
+	principal := principalFromCtx(ctx)
+	result, err := h.volumes.GetByName(ctx, principal, string(request.CatalogName), request.SchemaName, request.VolumeName)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):

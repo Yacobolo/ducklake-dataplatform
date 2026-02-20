@@ -175,9 +175,9 @@ func TestExternalLocationService_GetByName(t *testing.T) {
 				return &domain.ExternalLocation{ID: "1", Name: name, URL: "s3://bucket/path/"}, nil
 			},
 		}
-		svc := NewExternalLocationService(repo, &mockStorageCredentialRepo{}, &mockAuthService{}, &mockAuditRepo{}, nil, discardLogger())
+		svc := NewExternalLocationService(repo, &mockStorageCredentialRepo{}, allowAllAuth(), &mockAuditRepo{}, nil, discardLogger())
 
-		result, err := svc.GetByName(context.Background(), "my-loc")
+		result, err := svc.GetByName(context.Background(), "admin_user", "my-loc")
 
 		require.NoError(t, err)
 		assert.Equal(t, "my-loc", result.Name)
@@ -189,9 +189,9 @@ func TestExternalLocationService_GetByName(t *testing.T) {
 				return nil, domain.ErrNotFound("not found")
 			},
 		}
-		svc := NewExternalLocationService(repo, &mockStorageCredentialRepo{}, &mockAuthService{}, &mockAuditRepo{}, nil, discardLogger())
+		svc := NewExternalLocationService(repo, &mockStorageCredentialRepo{}, allowAllAuth(), &mockAuditRepo{}, nil, discardLogger())
 
-		_, err := svc.GetByName(context.Background(), "missing")
+		_, err := svc.GetByName(context.Background(), "admin_user", "missing")
 
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
@@ -211,9 +211,9 @@ func TestExternalLocationService_List(t *testing.T) {
 				}, 2, nil
 			},
 		}
-		svc := NewExternalLocationService(repo, &mockStorageCredentialRepo{}, &mockAuthService{}, &mockAuditRepo{}, nil, discardLogger())
+		svc := NewExternalLocationService(repo, &mockStorageCredentialRepo{}, allowAllAuth(), &mockAuditRepo{}, nil, discardLogger())
 
-		locs, total, err := svc.List(context.Background(), domain.PageRequest{MaxResults: 100})
+		locs, total, err := svc.List(context.Background(), "admin_user", domain.PageRequest{MaxResults: 100})
 
 		require.NoError(t, err)
 		assert.Equal(t, int64(2), total)
@@ -287,7 +287,7 @@ func TestExternalLocationService_RestoreSecrets(t *testing.T) {
 				return nil, 0, nil
 			},
 		}
-		svc := NewExternalLocationService(nil, credRepo, &mockAuthService{}, &mockAuditRepo{}, nil, discardLogger())
+		svc := NewExternalLocationService(nil, credRepo, allowAllAuth(), &mockAuditRepo{}, nil, discardLogger())
 
 		err := svc.RestoreSecrets(context.Background())
 
@@ -317,7 +317,7 @@ func TestExternalLocationService_RestoreSecrets(t *testing.T) {
 		}
 
 		secretMgr := testSecretManager(duckDB)
-		svc := NewExternalLocationService(locRepo, credRepo, &mockAuthService{}, &mockAuditRepo{}, secretMgr, discardLogger())
+		svc := NewExternalLocationService(locRepo, credRepo, allowAllAuth(), &mockAuditRepo{}, secretMgr, discardLogger())
 
 		err := svc.RestoreSecrets(context.Background())
 

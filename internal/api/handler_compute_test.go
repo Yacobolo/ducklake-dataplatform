@@ -14,22 +14,22 @@ import (
 // === Mock ===
 
 type mockComputeEndpointService struct {
-	listFn            func(ctx context.Context, page domain.PageRequest) ([]domain.ComputeEndpoint, int64, error)
+	listFn            func(ctx context.Context, principal string, page domain.PageRequest) ([]domain.ComputeEndpoint, int64, error)
 	createFn          func(ctx context.Context, principal string, req domain.CreateComputeEndpointRequest) (*domain.ComputeEndpoint, error)
-	getFn             func(ctx context.Context, name string) (*domain.ComputeEndpoint, error)
+	getFn             func(ctx context.Context, principal, name string) (*domain.ComputeEndpoint, error)
 	updateFn          func(ctx context.Context, principal string, name string, req domain.UpdateComputeEndpointRequest) (*domain.ComputeEndpoint, error)
 	deleteFn          func(ctx context.Context, principal string, name string) error
-	listAssignmentsFn func(ctx context.Context, endpointName string, page domain.PageRequest) ([]domain.ComputeAssignment, int64, error)
+	listAssignmentsFn func(ctx context.Context, principal, endpointName string, page domain.PageRequest) ([]domain.ComputeAssignment, int64, error)
 	assignFn          func(ctx context.Context, principal string, endpointName string, req domain.CreateComputeAssignmentRequest) (*domain.ComputeAssignment, error)
 	unassignFn        func(ctx context.Context, principal string, assignmentID string) error
 	healthCheckFn     func(ctx context.Context, principal string, endpointName string) (*domain.ComputeEndpointHealthResult, error)
 }
 
-func (m *mockComputeEndpointService) List(ctx context.Context, page domain.PageRequest) ([]domain.ComputeEndpoint, int64, error) {
+func (m *mockComputeEndpointService) List(ctx context.Context, principal string, page domain.PageRequest) ([]domain.ComputeEndpoint, int64, error) {
 	if m.listFn == nil {
 		panic("mockComputeEndpointService.List called but not configured")
 	}
-	return m.listFn(ctx, page)
+	return m.listFn(ctx, principal, page)
 }
 
 func (m *mockComputeEndpointService) Create(ctx context.Context, principal string, req domain.CreateComputeEndpointRequest) (*domain.ComputeEndpoint, error) {
@@ -39,11 +39,11 @@ func (m *mockComputeEndpointService) Create(ctx context.Context, principal strin
 	return m.createFn(ctx, principal, req)
 }
 
-func (m *mockComputeEndpointService) GetByName(ctx context.Context, name string) (*domain.ComputeEndpoint, error) {
+func (m *mockComputeEndpointService) GetByName(ctx context.Context, principal, name string) (*domain.ComputeEndpoint, error) {
 	if m.getFn == nil {
 		panic("mockComputeEndpointService.GetByName called but not configured")
 	}
-	return m.getFn(ctx, name)
+	return m.getFn(ctx, principal, name)
 }
 
 func (m *mockComputeEndpointService) Update(ctx context.Context, principal string, name string, req domain.UpdateComputeEndpointRequest) (*domain.ComputeEndpoint, error) {
@@ -60,11 +60,11 @@ func (m *mockComputeEndpointService) Delete(ctx context.Context, principal strin
 	return m.deleteFn(ctx, principal, name)
 }
 
-func (m *mockComputeEndpointService) ListAssignments(ctx context.Context, endpointName string, page domain.PageRequest) ([]domain.ComputeAssignment, int64, error) {
+func (m *mockComputeEndpointService) ListAssignments(ctx context.Context, principal, endpointName string, page domain.PageRequest) ([]domain.ComputeAssignment, int64, error) {
 	if m.listAssignmentsFn == nil {
 		panic("mockComputeEndpointService.ListAssignments called but not configured")
 	}
-	return m.listAssignmentsFn(ctx, endpointName, page)
+	return m.listAssignmentsFn(ctx, principal, endpointName, page)
 }
 
 func (m *mockComputeEndpointService) Assign(ctx context.Context, principal string, endpointName string, req domain.CreateComputeAssignmentRequest) (*domain.ComputeAssignment, error) {
@@ -136,13 +136,13 @@ func TestHandler_ListComputeEndpoints(t *testing.T) {
 	tests := []struct {
 		name     string
 		params   ListComputeEndpointsParams
-		svcFn    func(ctx context.Context, page domain.PageRequest) ([]domain.ComputeEndpoint, int64, error)
+		svcFn    func(ctx context.Context, principal string, page domain.PageRequest) ([]domain.ComputeEndpoint, int64, error)
 		assertFn func(t *testing.T, resp ListComputeEndpointsResponseObject, err error)
 	}{
 		{
 			name:   "happy path returns 200 with results",
 			params: ListComputeEndpointsParams{},
-			svcFn: func(_ context.Context, _ domain.PageRequest) ([]domain.ComputeEndpoint, int64, error) {
+			svcFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.ComputeEndpoint, int64, error) {
 				return []domain.ComputeEndpoint{sampleComputeEndpoint()}, 1, nil
 			},
 			assertFn: func(t *testing.T, resp ListComputeEndpointsResponseObject, err error) {
@@ -158,7 +158,7 @@ func TestHandler_ListComputeEndpoints(t *testing.T) {
 		{
 			name:   "empty list returns 200 with empty data",
 			params: ListComputeEndpointsParams{},
-			svcFn: func(_ context.Context, _ domain.PageRequest) ([]domain.ComputeEndpoint, int64, error) {
+			svcFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.ComputeEndpoint, int64, error) {
 				return []domain.ComputeEndpoint{}, 0, nil
 			},
 			assertFn: func(t *testing.T, resp ListComputeEndpointsResponseObject, err error) {
@@ -173,7 +173,7 @@ func TestHandler_ListComputeEndpoints(t *testing.T) {
 		{
 			name:   "service error propagates",
 			params: ListComputeEndpointsParams{},
-			svcFn: func(_ context.Context, _ domain.PageRequest) ([]domain.ComputeEndpoint, int64, error) {
+			svcFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.ComputeEndpoint, int64, error) {
 				return nil, 0, assert.AnError
 			},
 			assertFn: func(t *testing.T, resp ListComputeEndpointsResponseObject, err error) {
@@ -297,13 +297,13 @@ func TestHandler_GetComputeEndpoint(t *testing.T) {
 	tests := []struct {
 		name         string
 		endpointName string
-		svcFn        func(ctx context.Context, name string) (*domain.ComputeEndpoint, error)
+		svcFn        func(ctx context.Context, principal, name string) (*domain.ComputeEndpoint, error)
 		assertFn     func(t *testing.T, resp GetComputeEndpointResponseObject, err error)
 	}{
 		{
 			name:         "happy path returns 200",
 			endpointName: "analytics-xl",
-			svcFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
+			svcFn: func(_ context.Context, _ string, _ string) (*domain.ComputeEndpoint, error) {
 				ep := sampleComputeEndpoint()
 				return &ep, nil
 			},
@@ -318,7 +318,7 @@ func TestHandler_GetComputeEndpoint(t *testing.T) {
 		{
 			name:         "not found returns 404",
 			endpointName: "nonexistent",
-			svcFn: func(_ context.Context, name string) (*domain.ComputeEndpoint, error) {
+			svcFn: func(_ context.Context, _ string, name string) (*domain.ComputeEndpoint, error) {
 				return nil, domain.ErrNotFound("endpoint %s not found", name)
 			},
 			assertFn: func(t *testing.T, resp GetComputeEndpointResponseObject, err error) {
@@ -487,14 +487,14 @@ func TestHandler_ListComputeAssignments(t *testing.T) {
 		name         string
 		endpointName string
 		params       ListComputeAssignmentsParams
-		svcFn        func(ctx context.Context, endpointName string, page domain.PageRequest) ([]domain.ComputeAssignment, int64, error)
+		svcFn        func(ctx context.Context, principal, endpointName string, page domain.PageRequest) ([]domain.ComputeAssignment, int64, error)
 		assertFn     func(t *testing.T, resp ListComputeAssignmentsResponseObject, err error)
 	}{
 		{
 			name:         "happy path returns 200",
 			endpointName: "analytics-xl",
 			params:       ListComputeAssignmentsParams{},
-			svcFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.ComputeAssignment, int64, error) {
+			svcFn: func(_ context.Context, _ string, _ string, _ domain.PageRequest) ([]domain.ComputeAssignment, int64, error) {
 				return []domain.ComputeAssignment{sampleComputeAssignment()}, 1, nil
 			},
 			assertFn: func(t *testing.T, resp ListComputeAssignmentsResponseObject, err error) {
@@ -511,7 +511,7 @@ func TestHandler_ListComputeAssignments(t *testing.T) {
 			name:         "not found returns 404",
 			endpointName: "nonexistent",
 			params:       ListComputeAssignmentsParams{},
-			svcFn: func(_ context.Context, name string, _ domain.PageRequest) ([]domain.ComputeAssignment, int64, error) {
+			svcFn: func(_ context.Context, _ string, name string, _ domain.PageRequest) ([]domain.ComputeAssignment, int64, error) {
 				return nil, 0, domain.ErrNotFound("endpoint %s not found", name)
 			},
 			assertFn: func(t *testing.T, resp ListComputeAssignmentsResponseObject, err error) {

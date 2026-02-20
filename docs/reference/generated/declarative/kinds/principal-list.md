@@ -5,7 +5,7 @@
 Duck declarative PrincipalList
 
 - Schema file: `kinds/principal-list.schema.json`
-- SHA256: `8efb087a91b4741f773cb5e57565c928a095a4057d48c8a621d83bc6535e3903`
+- SHA256: `950660b984996c155f9e12c25948f3c8443d5b76940c3c0289eb532c8de151d4`
 
 ## Spec Fields
 

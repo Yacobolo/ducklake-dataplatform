@@ -22,6 +22,8 @@ func TestRemoteExecutor_QueryContext(t *testing.T) {
 			assert.Equal(t, "POST", r.Method)
 			assert.Equal(t, "/execute", r.URL.Path)
 			assert.Equal(t, "test-token", r.Header.Get("X-Agent-Token"))
+			assert.NotEmpty(t, r.Header.Get("X-Agent-Timestamp"))
+			assert.NotEmpty(t, r.Header.Get("X-Agent-Signature"))
 			assert.NotEmpty(t, r.Header.Get("X-Request-ID"))
 
 			var req ExecuteRequest
@@ -148,6 +150,8 @@ func TestRemoteExecutor_Ping(t *testing.T) {
 			assert.Equal(t, "GET", r.Method)
 			assert.Equal(t, "/health", r.URL.Path)
 			assert.Equal(t, "test-token", r.Header.Get("X-Agent-Token"))
+			assert.NotEmpty(t, r.Header.Get("X-Agent-Timestamp"))
+			assert.NotEmpty(t, r.Header.Get("X-Agent-Signature"))
 
 			w.Header().Set("Content-Type", "application/json")
 			_ = json.NewEncoder(w).Encode(map[string]interface{}{
