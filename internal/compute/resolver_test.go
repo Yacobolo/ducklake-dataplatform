@@ -506,3 +506,39 @@ func TestResolver_SelectsFromNonDefaultAssignments(t *testing.T) {
 	_, isRemote := executor.(*RemoteExecutor)
 	assert.True(t, isRemote)
 }
+
+func TestResolver_RoutingDisabledFallsBackLocal(t *testing.T) {
+	localDB := openTestDuckDB(t)
+	localExec := NewLocalExecutor(localDB)
+
+	principalRepo := &mockPrincipalRepo{
+		getByNameFn: func(_ context.Context, _ string) (*domain.Principal, error) {
+			return &domain.Principal{ID: "1", Name: "alice"}, nil
+		},
+	}
+
+	resolver := NewResolver(localExec, &mockComputeRepo{}, principalRepo, &mockGroupRepo{}, nil, nil)
+	resolver.SetRoutingEnabled(false)
+
+	executor, err := resolver.Resolve(context.Background(), "alice")
+	require.NoError(t, err)
+	assert.Nil(t, executor)
+}
+
+func TestResolver_CanaryUsersRestrictRouting(t *testing.T) {
+	localDB := openTestDuckDB(t)
+	localExec := NewLocalExecutor(localDB)
+
+	principalRepo := &mockPrincipalRepo{
+		getByNameFn: func(_ context.Context, _ string) (*domain.Principal, error) {
+			return &domain.Principal{ID: "1", Name: "alice"}, nil
+		},
+	}
+
+	resolver := NewResolver(localExec, &mockComputeRepo{}, principalRepo, &mockGroupRepo{}, nil, nil)
+	resolver.SetCanaryUsers([]string{"bob"})
+
+	executor, err := resolver.Resolve(context.Background(), "alice")
+	require.NoError(t, err)
+	assert.Nil(t, executor)
+}

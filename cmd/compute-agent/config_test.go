@@ -38,6 +38,7 @@ func TestLoadAgentConfig(t *testing.T) {
 		assert.Equal(t, 0, cfg.MaxMemoryGB)
 		assert.Equal(t, 10*time.Minute, cfg.QueryResultTTL)
 		assert.Equal(t, 1*time.Minute, cfg.CleanupInterval)
+		assert.True(t, cfg.CursorMode)
 	})
 
 	t.Run("custom_values", func(t *testing.T) {
@@ -66,6 +67,16 @@ func TestLoadAgentConfig(t *testing.T) {
 		assert.Equal(t, 64, cfg.MaxMemoryGB)
 		assert.Equal(t, 30*time.Minute, cfg.QueryResultTTL)
 		assert.Equal(t, 45*time.Second, cfg.CleanupInterval)
+		assert.True(t, cfg.CursorMode)
+	})
+
+	t.Run("cursor_mode_disabled", func(t *testing.T) {
+		t.Setenv("AGENT_TOKEN", "tok")
+		t.Setenv("FEATURE_CURSOR_MODE", "false")
+
+		cfg, err := loadAgentConfig()
+		require.NoError(t, err)
+		assert.False(t, cfg.CursorMode)
 	})
 
 	t.Run("invalid_max_memory_gb", func(t *testing.T) {

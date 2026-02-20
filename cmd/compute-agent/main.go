@@ -97,6 +97,7 @@ func run() error {
 		MaxMemoryGB:     cfg.MaxMemoryGB,
 		QueryResultTTL:  cfg.QueryResultTTL,
 		CleanupInterval: cfg.CleanupInterval,
+		CursorMode:      cfg.CursorMode,
 		Logger:          logger,
 	})
 

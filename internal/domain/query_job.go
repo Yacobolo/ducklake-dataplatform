@@ -25,6 +25,10 @@ type QueryJob struct {
 	Rows          [][]interface{}
 	RowCount      int
 	ErrorMessage  *string
+	AttemptCount  int
+	MaxAttempts   int
+	LastHeartbeat *time.Time
+	NextRetryAt   *time.Time
 	CreatedAt     time.Time
 	StartedAt     *time.Time
 	CompletedAt   *time.Time

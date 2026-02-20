@@ -17,6 +17,7 @@ This runbook describes how to operate remote compute agents with lifecycle-based
 - `POST /queries/{queryID}/cancel` request cancellation.
 - `DELETE /queries/{queryID}` delete query state.
 - `GET /health` scrape readiness and load signals.
+- `GET /metrics` scrape Prometheus-style operational metrics.
 
 ## Agent Environment
 
@@ -25,6 +26,14 @@ This runbook describes how to operate remote compute agents with lifecycle-based
 - `MAX_MEMORY_GB` (optional): DuckDB max memory setting.
 - `QUERY_RESULT_TTL` (default `10m`): retention window for completed query results.
 - `QUERY_CLEANUP_INTERVAL` (default `1m`): cleanup cadence for expired lifecycle jobs.
+- `FEATURE_CURSOR_MODE` (default `true`): kill switch for lifecycle/cursor endpoints.
+
+Gateway controls:
+
+- `FEATURE_REMOTE_ROUTING` (default `true`): kill switch for remote endpoint routing.
+- `FEATURE_ASYNC_QUEUE` (default `true`): kill switch for control-plane async query queue APIs.
+- `FEATURE_CURSOR_MODE` (default `true`): kill switch for lifecycle/cursor usage in remote executor.
+- `REMOTE_CANARY_USERS` (optional CSV): restrict remote routing rollout to selected principals.
 
 ## Operational Metrics and SLO Inputs
 

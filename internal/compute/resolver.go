@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	computerouter "duck-demo/internal/compute/router"
 	"duck-demo/internal/domain"
@@ -18,13 +19,15 @@ var _ domain.ComputeResolver = (*DefaultResolver)(nil)
 // ComputeExecutor by looking up compute assignments in the repository.
 // Resolution order: direct user assignment → group assignments → local fallback.
 type DefaultResolver struct {
-	localExec     *LocalExecutor
-	computeRepo   domain.ComputeEndpointRepository
-	principalRepo domain.PrincipalRepository
-	groupRepo     domain.GroupRepository
-	cache         *RemoteCache
-	selector      computerouter.EndpointSelector
-	logger        *slog.Logger
+	localExec      *LocalExecutor
+	computeRepo    domain.ComputeEndpointRepository
+	principalRepo  domain.PrincipalRepository
+	groupRepo      domain.GroupRepository
+	cache          *RemoteCache
+	selector       computerouter.EndpointSelector
+	logger         *slog.Logger
+	routingEnabled bool
+	canaryUsers    map[string]struct{}
 }
 
 // NewResolver creates a fully-wired resolver that can resolve principals to
@@ -38,14 +41,35 @@ func NewResolver(
 	logger *slog.Logger,
 ) *DefaultResolver {
 	return &DefaultResolver{
-		localExec:     localExec,
-		computeRepo:   computeRepo,
-		principalRepo: principalRepo,
-		groupRepo:     groupRepo,
-		cache:         cache,
-		selector:      computerouter.NewActiveFirstSelector(),
-		logger:        logger,
+		localExec:      localExec,
+		computeRepo:    computeRepo,
+		principalRepo:  principalRepo,
+		groupRepo:      groupRepo,
+		cache:          cache,
+		selector:       computerouter.NewActiveFirstSelector(),
+		logger:         logger,
+		routingEnabled: true,
+		canaryUsers:    map[string]struct{}{},
 	}
+}
+
+// SetRoutingEnabled toggles remote routing globally.
+func (r *DefaultResolver) SetRoutingEnabled(enabled bool) {
+	r.routingEnabled = enabled
+}
+
+// SetCanaryUsers restricts remote routing to a user allowlist.
+// Empty list means all users are eligible.
+func (r *DefaultResolver) SetCanaryUsers(users []string) {
+	allow := make(map[string]struct{}, len(users))
+	for _, user := range users {
+		trimmed := strings.TrimSpace(user)
+		if trimmed == "" {
+			continue
+		}
+		allow[trimmed] = struct{}{}
+	}
+	r.canaryUsers = allow
 }
 
 // Resolve maps a principal name to a ComputeExecutor. Returns nil when no
@@ -56,6 +80,15 @@ func NewResolver(
 //  2. Group assignments (check each group the user belongs to)
 //  3. nil (local fallback)
 func (r *DefaultResolver) Resolve(ctx context.Context, principalName string) (domain.ComputeExecutor, error) {
+	if !r.routingEnabled {
+		return nil, nil
+	}
+	if len(r.canaryUsers) > 0 {
+		if _, ok := r.canaryUsers[principalName]; !ok {
+			return nil, nil
+		}
+	}
+
 	if r.computeRepo == nil || r.principalRepo == nil {
 		return nil, fmt.Errorf("compute resolver is not fully configured")
 	}

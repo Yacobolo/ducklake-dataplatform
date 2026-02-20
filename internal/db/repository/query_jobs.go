@@ -30,11 +30,14 @@ func (r *QueryJobRepo) Create(ctx context.Context, job *domain.QueryJob) (*domai
 	if job.ID == "" {
 		job.ID = domain.NewID()
 	}
+	if job.MaxAttempts <= 0 {
+		job.MaxAttempts = 1
+	}
 
 	_, err := r.db.ExecContext(ctx, `
-		INSERT INTO query_jobs (id, principal_name, request_id, sql_text, status)
-		VALUES (?, ?, ?, ?, ?)
-	`, job.ID, job.PrincipalName, job.RequestID, job.SQLText, string(job.Status))
+		INSERT INTO query_jobs (id, principal_name, request_id, sql_text, status, attempt_count, max_attempts)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+	`, job.ID, job.PrincipalName, job.RequestID, job.SQLText, string(job.Status), job.AttemptCount, job.MaxAttempts)
 	if err != nil {
 		return nil, mapDBError(err)
 	}
@@ -46,7 +49,8 @@ func (r *QueryJobRepo) Create(ctx context.Context, job *domain.QueryJob) (*domai
 func (r *QueryJobRepo) GetByID(ctx context.Context, id string) (*domain.QueryJob, error) {
 	return r.getOne(ctx, `
 		SELECT id, principal_name, request_id, sql_text, status, columns_json, rows_json, row_count,
-		       error_message, created_at, started_at, completed_at, updated_at
+		       error_message, attempt_count, max_attempts, last_heartbeat_at, next_retry_at,
+		       created_at, started_at, completed_at, updated_at
 		FROM query_jobs WHERE id = ?
 	`, id)
 }
@@ -55,19 +59,47 @@ func (r *QueryJobRepo) GetByID(ctx context.Context, id string) (*domain.QueryJob
 func (r *QueryJobRepo) GetByRequestID(ctx context.Context, principalName, requestID string) (*domain.QueryJob, error) {
 	return r.getOne(ctx, `
 		SELECT id, principal_name, request_id, sql_text, status, columns_json, rows_json, row_count,
-		       error_message, created_at, started_at, completed_at, updated_at
+		       error_message, attempt_count, max_attempts, last_heartbeat_at, next_retry_at,
+		       created_at, started_at, completed_at, updated_at
 		FROM query_jobs
 		WHERE principal_name = ? AND request_id = ?
 	`, principalName, requestID)
 }
 
 // MarkRunning updates a queued job to running.
-func (r *QueryJobRepo) MarkRunning(ctx context.Context, id string) error {
+func (r *QueryJobRepo) MarkRunning(ctx context.Context, id string, attempt int) error {
 	_, err := r.db.ExecContext(ctx, `
 		UPDATE query_jobs
-		SET status = ?, started_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+		SET status = ?, attempt_count = ?, started_at = CURRENT_TIMESTAMP,
+		    next_retry_at = NULL, updated_at = CURRENT_TIMESTAMP
 		WHERE id = ?
-	`, string(domain.QueryJobStatusRunning), id)
+	`, string(domain.QueryJobStatusRunning), attempt, id)
+	if err != nil {
+		return mapDBError(err)
+	}
+	return nil
+}
+
+// MarkRetrying updates a failed attempt to queued with retry metadata.
+func (r *QueryJobRepo) MarkRetrying(ctx context.Context, id string, attempt int, nextRetryAt time.Time, message string) error {
+	_, err := r.db.ExecContext(ctx, `
+		UPDATE query_jobs
+		SET status = ?, attempt_count = ?, next_retry_at = ?, error_message = ?, updated_at = CURRENT_TIMESTAMP
+		WHERE id = ?
+	`, string(domain.QueryJobStatusQueued), attempt, nextRetryAt.UTC(), message, id)
+	if err != nil {
+		return mapDBError(err)
+	}
+	return nil
+}
+
+// Heartbeat records worker progress for a running job.
+func (r *QueryJobRepo) Heartbeat(ctx context.Context, id string, at time.Time) error {
+	_, err := r.db.ExecContext(ctx, `
+		UPDATE query_jobs
+		SET last_heartbeat_at = ?, updated_at = CURRENT_TIMESTAMP
+		WHERE id = ?
+	`, at.UTC(), id)
 	if err != nil {
 		return mapDBError(err)
 	}
@@ -88,7 +120,7 @@ func (r *QueryJobRepo) MarkSucceeded(ctx context.Context, id string, columns []s
 	_, err = r.db.ExecContext(ctx, `
 		UPDATE query_jobs
 		SET status = ?, columns_json = ?, rows_json = ?, row_count = ?, error_message = NULL,
-		    completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+		    next_retry_at = NULL, completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
 		WHERE id = ?
 	`, string(domain.QueryJobStatusSucceeded), string(columnsJSON), string(rowsJSON), rowCount, id)
 	if err != nil {
@@ -101,7 +133,7 @@ func (r *QueryJobRepo) MarkSucceeded(ctx context.Context, id string, columns []s
 func (r *QueryJobRepo) MarkFailed(ctx context.Context, id string, message string) error {
 	_, err := r.db.ExecContext(ctx, `
 		UPDATE query_jobs
-		SET status = ?, error_message = ?, completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+		SET status = ?, error_message = ?, next_retry_at = NULL, completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
 		WHERE id = ?
 	`, string(domain.QueryJobStatusFailed), message, id)
 	if err != nil {
@@ -144,12 +176,11 @@ func (r *QueryJobRepo) Delete(ctx context.Context, id string) error {
 
 func (r *QueryJobRepo) getOne(ctx context.Context, stmt string, args ...interface{}) (*domain.QueryJob, error) {
 	var (
-		job                    domain.QueryJob
-		status                 string
-		columnsJSON, rowsJSON  sql.NullString
-		errorMessage           sql.NullString
-		startedAt, completedAt sql.NullTime
-		createdAt, updatedAt   time.Time
+		job                                                  domain.QueryJob
+		status                                               string
+		columnsJSON, rowsJSON, errorMessage                  sql.NullString
+		startedAt, completedAt, lastHeartbeatAt, nextRetryAt sql.NullTime
+		createdAt, updatedAt                                 time.Time
 	)
 
 	err := r.db.QueryRowContext(ctx, stmt, args...).Scan(
@@ -162,6 +193,10 @@ func (r *QueryJobRepo) getOne(ctx context.Context, stmt string, args ...interfac
 		&rowsJSON,
 		&job.RowCount,
 		&errorMessage,
+		&job.AttemptCount,
+		&job.MaxAttempts,
+		&lastHeartbeatAt,
+		&nextRetryAt,
 		&createdAt,
 		&startedAt,
 		&completedAt,
@@ -185,6 +220,14 @@ func (r *QueryJobRepo) getOne(ctx context.Context, stmt string, args ...interfac
 	if completedAt.Valid {
 		t := completedAt.Time
 		job.CompletedAt = &t
+	}
+	if lastHeartbeatAt.Valid {
+		t := lastHeartbeatAt.Time
+		job.LastHeartbeat = &t
+	}
+	if nextRetryAt.Valid {
+		t := nextRetryAt.Time
+		job.NextRetryAt = &t
 	}
 	if columnsJSON.Valid && columnsJSON.String != "" {
 		if err := json.Unmarshal([]byte(columnsJSON.String), &job.Columns); err != nil {
