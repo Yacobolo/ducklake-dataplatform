@@ -1,64 +1,28 @@
-package compute
+package compute_test
 
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
-	"net/http"
-	"net/http/httptest"
+	"log/slog"
+	"net"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"time"
 
 	_ "github.com/duckdb/duckdb-go/v2"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
+
+	"duck-demo/internal/agent"
+	"duck-demo/internal/compute"
 )
 
 func TestRemoteExecutor_QueryContext(t *testing.T) {
 	localDB := openTestDuckDB(t)
 
 	t.Run("query_lifecycle_endpoints", func(t *testing.T) {
-		queryID := "q-123"
-		statusCalls := 0
-
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			switch {
-			case r.Method == http.MethodPost && r.URL.Path == "/queries":
-				_ = json.NewEncoder(w).Encode(SubmitQueryResponse{QueryID: queryID, Status: QueryStatusQueued})
-			case r.Method == http.MethodGet && r.URL.Path == "/queries/"+queryID:
-				statusCalls++
-				state := QueryStatusRunning
-				if statusCalls > 1 {
-					state = QueryStatusSucceeded
-				}
-				_ = json.NewEncoder(w).Encode(QueryStatusResponse{QueryID: queryID, Status: state})
-			case r.Method == http.MethodGet && r.URL.Path == "/queries/"+queryID+"/results":
-				if r.URL.Query().Get("page_token") == "" {
-					_ = json.NewEncoder(w).Encode(FetchQueryResultsResponse{
-						QueryID:       queryID,
-						Columns:       []string{"id"},
-						Rows:          [][]interface{}{{1}},
-						RowCount:      2,
-						NextPageToken: EncodePageToken(1),
-					})
-					return
-				}
-				_ = json.NewEncoder(w).Encode(FetchQueryResultsResponse{
-					QueryID:  queryID,
-					Columns:  []string{"id"},
-					Rows:     [][]interface{}{{2}},
-					RowCount: 2,
-				})
-			case r.Method == http.MethodDelete && r.URL.Path == "/queries/"+queryID:
-				w.WriteHeader(http.StatusOK)
-			default:
-				w.WriteHeader(http.StatusNotFound)
-			}
-		}))
-		defer server.Close()
-
-		exec := NewRemoteExecutor(server.URL, "tok", localDB)
-		rows, err := exec.QueryContext(context.Background(), "SELECT 1")
+		exec := newGRPCRemoteExecutor(t, localDB, true)
+		rows, err := exec.QueryContext(context.Background(), "SELECT 1 AS id UNION ALL SELECT 2 AS id")
 		require.NoError(t, err)
 		defer func() { _ = rows.Close() }()
 
@@ -72,35 +36,9 @@ func TestRemoteExecutor_QueryContext(t *testing.T) {
 		assert.Equal(t, []string{"1", "2"}, got)
 	})
 
-	t.Run("successful_query", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/queries" {
-				w.WriteHeader(http.StatusNotFound)
-				return
-			}
-			assert.Equal(t, "POST", r.Method)
-			assert.Equal(t, "/execute", r.URL.Path)
-			assert.Equal(t, "test-token", r.Header.Get("X-Agent-Token"))
-			assert.NotEmpty(t, r.Header.Get("X-Agent-Timestamp"))
-			assert.NotEmpty(t, r.Header.Get("X-Agent-Signature"))
-			assert.NotEmpty(t, r.Header.Get("X-Request-ID"))
-
-			var req ExecuteRequest
-			assert.NoError(t, json.NewDecoder(r.Body).Decode(&req))
-			assert.Equal(t, "SELECT 1", req.SQL)
-			assert.NotEmpty(t, req.RequestID)
-
-			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(ExecuteResponse{
-				Columns:  []string{"id", "name"},
-				Rows:     [][]interface{}{{1, "Alice"}, {2, "Bob"}},
-				RowCount: 2,
-			})
-		}))
-		defer server.Close()
-
-		exec := NewRemoteExecutor(server.URL, "test-token", localDB)
-		rows, err := exec.QueryContext(context.Background(), "SELECT 1")
+	t.Run("successful_query_execute_path", func(t *testing.T) {
+		exec := newGRPCRemoteExecutor(t, localDB, false)
+		rows, err := exec.QueryContext(context.Background(), "SELECT 1 AS id, 'Alice' AS name")
 		require.NoError(t, err)
 		defer func() { _ = rows.Close() }()
 
@@ -108,34 +46,16 @@ func TestRemoteExecutor_QueryContext(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, []string{"id", "name"}, cols)
 
-		var results [][]string
-		for rows.Next() {
-			var id, name string
-			require.NoError(t, rows.Scan(&id, &name))
-			results = append(results, []string{id, name})
-		}
+		require.True(t, rows.Next())
+		var id, name string
+		require.NoError(t, rows.Scan(&id, &name))
+		assert.Equal(t, "1", id)
+		assert.Equal(t, "Alice", name)
 		require.NoError(t, rows.Err())
-		assert.Len(t, results, 2)
-		assert.Equal(t, "1", results[0][0])
-		assert.Equal(t, "Alice", results[0][1])
 	})
 
 	t.Run("empty_result", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/queries" {
-				w.WriteHeader(http.StatusNotFound)
-				return
-			}
-			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(ExecuteResponse{
-				Columns:  []string{},
-				Rows:     [][]interface{}{},
-				RowCount: 0,
-			})
-		}))
-		defer server.Close()
-
-		exec := NewRemoteExecutor(server.URL, "tok", localDB)
+		exec := newGRPCRemoteExecutor(t, localDB, false)
 		rows, err := exec.QueryContext(context.Background(), "SELECT 1 WHERE false")
 		require.NoError(t, err)
 		defer func() { _ = rows.Close() }()
@@ -145,66 +65,22 @@ func TestRemoteExecutor_QueryContext(t *testing.T) {
 	})
 
 	t.Run("agent_error_response", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/queries" {
-				w.WriteHeader(http.StatusNotFound)
-				return
-			}
-			w.WriteHeader(http.StatusInternalServerError)
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
-				"error": "table not found",
-				"code":  "EXECUTION_ERROR",
-			})
-		}))
-		defer server.Close()
-
-		exec := NewRemoteExecutor(server.URL, "tok", localDB)
+		exec := newGRPCRemoteExecutor(t, localDB, false)
 		_, err := exec.QueryContext(context.Background(), "SELECT * FROM nonexistent") //nolint:sqlclosecheck,rowserrcheck // error path
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "table not found")
-	})
-
-	t.Run("invalid_json_response", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/queries" {
-				w.WriteHeader(http.StatusNotFound)
-				return
-			}
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte("not json"))
-		}))
-		defer server.Close()
-
-		exec := NewRemoteExecutor(server.URL, "tok", localDB)
-		_, err := exec.QueryContext(context.Background(), "SELECT 1") //nolint:sqlclosecheck,rowserrcheck // error path
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "decode response")
+		assert.Contains(t, err.Error(), "nonexistent")
 	})
 
 	t.Run("connection_refused", func(t *testing.T) {
-		exec := NewRemoteExecutor("http://127.0.0.1:1", "tok", localDB)
+		exec := compute.NewRemoteExecutor("grpc://127.0.0.1:1", "tok", localDB)
 		_, err := exec.QueryContext(context.Background(), "SELECT 1") //nolint:sqlclosecheck,rowserrcheck // error path
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "submit query lifecycle request")
+		assert.Contains(t, err.Error(), "connection refused")
 	})
 
 	t.Run("null_values_in_response", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/queries" {
-				w.WriteHeader(http.StatusNotFound)
-				return
-			}
-			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(ExecuteResponse{
-				Columns:  []string{"id", "name"},
-				Rows:     [][]interface{}{{1, nil}, {2, "Bob"}},
-				RowCount: 2,
-			})
-		}))
-		defer server.Close()
-
-		exec := NewRemoteExecutor(server.URL, "tok", localDB)
-		rows, err := exec.QueryContext(context.Background(), "SELECT 1")
+		exec := newGRPCRemoteExecutor(t, localDB, false)
+		rows, err := exec.QueryContext(context.Background(), "SELECT 1 AS id, NULL AS name UNION ALL SELECT 2 AS id, 'Bob' AS name")
 		require.NoError(t, err)
 		defer func() { _ = rows.Close() }()
 
@@ -221,41 +97,57 @@ func TestRemoteExecutor_QueryContext(t *testing.T) {
 
 func TestRemoteExecutor_Ping(t *testing.T) {
 	t.Run("healthy", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			assert.Equal(t, "GET", r.Method)
-			assert.Equal(t, "/health", r.URL.Path)
-			assert.Equal(t, "test-token", r.Header.Get("X-Agent-Token"))
-			assert.NotEmpty(t, r.Header.Get("X-Agent-Timestamp"))
-			assert.NotEmpty(t, r.Header.Get("X-Agent-Signature"))
-
-			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
-				"status": "ok",
-			})
-		}))
-		defer server.Close()
-
-		exec := NewRemoteExecutor(server.URL, "test-token", openTestDuckDB(t))
+		exec := newGRPCRemoteExecutor(t, openTestDuckDB(t), true)
 		err := exec.Ping(context.Background())
 		require.NoError(t, err)
 	})
 
-	t.Run("unhealthy_status", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			w.WriteHeader(http.StatusServiceUnavailable)
-		}))
-		defer server.Close()
-
-		exec := NewRemoteExecutor(server.URL, "tok", openTestDuckDB(t))
-		err := exec.Ping(context.Background())
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "unhealthy: status 503")
-	})
-
 	t.Run("unreachable", func(t *testing.T) {
-		exec := NewRemoteExecutor("http://127.0.0.1:1", "tok", openTestDuckDB(t))
+		exec := compute.NewRemoteExecutor("grpc://127.0.0.1:1", "tok", openTestDuckDB(t))
 		err := exec.Ping(context.Background())
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "health check")
+		assert.Contains(t, err.Error(), "connection refused")
 	})
+}
+
+func newGRPCRemoteExecutor(t *testing.T, localDB *sql.DB, cursorMode bool) *compute.RemoteExecutor {
+	t.Helper()
+
+	agentDB := openTestDuckDB(t)
+	grpcAgent := agent.NewComputeGRPCServer(agent.HandlerConfig{
+		DB:         agentDB,
+		AgentToken: "tok",
+		StartTime:  time.Now(),
+		CursorMode: true,
+		Logger:     slog.Default(),
+	})
+
+	compute.EnsureGRPCJSONCodec()
+	grpcServer := grpc.NewServer()
+	agent.RegisterComputeWorkerGRPCServer(grpcServer, grpcAgent)
+
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		grpcServer.GracefulStop()
+		_ = ln.Close()
+	})
+	go func() {
+		_ = grpcServer.Serve(ln)
+	}()
+
+	return compute.NewRemoteExecutor("grpc://"+ln.Addr().String(), "tok", localDB, compute.RemoteExecutorOptions{
+		CursorModeEnabled: cursorMode,
+		InternalGRPC:      true,
+	})
+}
+
+func openTestDuckDB(t *testing.T) *sql.DB {
+	t.Helper()
+	db, err := sql.Open("duckdb", "")
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_ = db.Close()
+	})
+	return db
 }

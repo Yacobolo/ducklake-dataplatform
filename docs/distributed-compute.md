@@ -6,34 +6,37 @@ This runbook describes how to operate remote compute agents with lifecycle-based
 
 - Gateway (`cmd/server`) remains the single policy enforcement point (RBAC, RLS, column masking).
 - Workers (`cmd/compute-agent`) only execute already rewritten SQL.
-- Gateway-to-worker transport is currently HTTP/JSON; proto contracts are staged in `internal/compute/proto/compute_worker.proto`.
+- Gateway-to-worker transport supports dual stack: HTTP/JSON and internal gRPC (`duckdemo.compute.v1.ComputeWorker`).
 
 ## Agent Endpoints
 
-- `POST /execute` compatibility path for synchronous execution.
-- `POST /queries` submit an async query.
-- `GET /queries/{queryID}` inspect lifecycle state.
-- `GET /queries/{queryID}/results` fetch paged results.
-- `POST /queries/{queryID}/cancel` request cancellation.
-- `DELETE /queries/{queryID}` delete query state.
-- `GET /health` scrape readiness and load signals.
-- `GET /metrics` scrape Prometheus-style operational metrics.
+- Internal query execution/lifecycle APIs are exposed over gRPC (`duckdemo.compute.v1.ComputeWorker`).
+- HTTP surface is observability-only:
+  - `GET /health` readiness and load signals.
+  - `GET /metrics` Prometheus-style operational metrics.
 
 ## Agent Environment
 
 - `AGENT_TOKEN` (required): shared auth token for gateway calls.
 - `LISTEN_ADDR` (default `:9443`): HTTP listen address.
+- `GRPC_LISTEN_ADDR` (default `:9444`): gRPC listen address for internal worker transport.
 - `MAX_MEMORY_GB` (optional): DuckDB max memory setting.
 - `QUERY_RESULT_TTL` (default `10m`): retention window for completed query results.
 - `QUERY_CLEANUP_INTERVAL` (default `1m`): cleanup cadence for expired lifecycle jobs.
 - `FEATURE_CURSOR_MODE` (default `true`): kill switch for lifecycle/cursor endpoints.
+- `FEATURE_INTERNAL_GRPC` (default `true`): enables internal gRPC worker API.
 
 Gateway controls:
 
 - `FEATURE_REMOTE_ROUTING` (default `true`): kill switch for remote endpoint routing.
 - `FEATURE_ASYNC_QUEUE` (default `true`): kill switch for control-plane async query queue APIs.
 - `FEATURE_CURSOR_MODE` (default `true`): kill switch for lifecycle/cursor usage in remote executor.
+- `FEATURE_INTERNAL_GRPC` (default `true`): enables gRPC transport for remote execution when endpoint URL uses `grpc://` or `grpcs://`.
+- `FEATURE_FLIGHT_SQL` (default `true`): enables Flight SQL listener scaffolding; full protocol compatibility is still a rollout-phase item.
+- `FEATURE_PG_WIRE` (default `true`): enables PG-wire preview listener (startup + simple query protocol path); full compatibility is still a rollout-phase item.
 - `REMOTE_CANARY_USERS` (optional CSV): restrict remote routing rollout to selected principals.
+- `FLIGHT_SQL_LISTEN_ADDR` (default `:32010`): bind address for external Flight SQL listener when enabled.
+- `PG_WIRE_LISTEN_ADDR` (default `:5433`): bind address for external PG-wire listener when enabled.
 
 ## Operational Metrics and SLO Inputs
 
@@ -66,3 +69,9 @@ Recommended initial SLOs:
 - If worker health degrades, resolver honors `fallback_local` assignment policy.
 - Lifecycle client automatically falls back to legacy `/execute` when lifecycle endpoints are unsupported.
 - To reduce memory pressure quickly, lower `QUERY_RESULT_TTL` and/or shorten `QUERY_CLEANUP_INTERVAL`.
+
+## Protocol Preview Notes
+
+- Flight SQL preview currently exposes gRPC health only; query RPCs are pending.
+- PG-wire preview currently supports startup handshake and simple query messages (`Q`) mapped to control-plane query execution.
+- PG-wire preview maps startup `user` parameter to platform principal name; full auth negotiation and extended query flow are pending.

@@ -17,23 +17,35 @@ type AgentConfig struct {
 	S3Bucket        string
 	AgentToken      string
 	ListenAddr      string
+	GRPCListenAddr  string
 	MaxMemoryGB     int
 	QueryResultTTL  time.Duration
 	CleanupInterval time.Duration
 	CursorMode      bool
+	InternalGRPC    bool
 }
 
 func loadAgentConfig() (*AgentConfig, error) {
 	cfg := &AgentConfig{
-		CatalogDSN: os.Getenv("CATALOG_DSN"),
-		S3KeyID:    os.Getenv("S3_KEY_ID"),
-		S3Secret:   os.Getenv("S3_SECRET"),
-		S3Endpoint: os.Getenv("S3_ENDPOINT"),
-		S3Region:   os.Getenv("S3_REGION"),
-		S3Bucket:   os.Getenv("S3_BUCKET"),
-		AgentToken: os.Getenv("AGENT_TOKEN"),
-		ListenAddr: os.Getenv("LISTEN_ADDR"),
-		CursorMode: true,
+		CatalogDSN:     os.Getenv("CATALOG_DSN"),
+		S3KeyID:        os.Getenv("S3_KEY_ID"),
+		S3Secret:       os.Getenv("S3_SECRET"),
+		S3Endpoint:     os.Getenv("S3_ENDPOINT"),
+		S3Region:       os.Getenv("S3_REGION"),
+		S3Bucket:       os.Getenv("S3_BUCKET"),
+		AgentToken:     os.Getenv("AGENT_TOKEN"),
+		ListenAddr:     os.Getenv("LISTEN_ADDR"),
+		GRPCListenAddr: os.Getenv("GRPC_LISTEN_ADDR"),
+		CursorMode:     true,
+		InternalGRPC:   true,
+	}
+	if v := os.Getenv("FEATURE_INTERNAL_GRPC"); v != "" {
+		switch v {
+		case "1", "true", "TRUE", "on", "ON", "yes", "YES":
+			cfg.InternalGRPC = true
+		case "0", "false", "FALSE", "off", "OFF", "no", "NO":
+			cfg.InternalGRPC = false
+		}
 	}
 	if v := os.Getenv("FEATURE_CURSOR_MODE"); v != "" {
 		switch v {
@@ -67,6 +79,9 @@ func loadAgentConfig() (*AgentConfig, error) {
 	}
 	if cfg.ListenAddr == "" {
 		cfg.ListenAddr = ":9443"
+	}
+	if cfg.GRPCListenAddr == "" {
+		cfg.GRPCListenAddr = ":9444"
 	}
 	if cfg.S3Bucket == "" {
 		cfg.S3Bucket = "duck-demo"

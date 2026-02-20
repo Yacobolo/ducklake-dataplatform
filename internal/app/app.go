@@ -133,12 +133,13 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	localExec := compute.NewLocalExecutor(deps.DuckDB)
 	remoteCache := compute.NewRemoteCacheWithOptions(deps.DuckDB, compute.RemoteExecutorOptions{
 		CursorModeEnabled: cfg.FeatureCursorMode,
+		InternalGRPC:      cfg.FeatureInternalGRPC,
 	})
 	fullResolver := compute.NewResolver(
 		localExec, computeEndpointRepo, principalRepo, groupRepo,
 		remoteCache, deps.Logger.With("component", "compute-resolver"),
 	)
-	fullResolver.SetRoutingEnabled(cfg.FeatureRemoteRouting)
+	fullResolver.SetRoutingEnabled(cfg.FeatureRemoteRouting && cfg.FeatureInternalGRPC)
 	fullResolver.SetCanaryUsers(cfg.RemoteCanaryUsers)
 
 	// === 6. Authorization (needs all security repos + extTableRepo) ===

@@ -1,19 +1,15 @@
 package compute
 
 import (
-	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/tls"
 	"database/sql"
 	"encoding/hex"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
 	"net/http"
-	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -23,20 +19,21 @@ import (
 
 var _ domain.ComputeExecutor = (*RemoteExecutor)(nil)
 
-// RemoteExecutor sends pre-secured SQL to a remote compute agent via HTTP
+// RemoteExecutor sends pre-secured SQL to a remote compute agent via gRPC
 // and materializes results into a local DuckDB temp table to return *sql.Rows.
 type RemoteExecutor struct {
 	endpointURL string
 	authToken   string
 	localDB     *sql.DB // for temp table materialization
-	httpClient  *http.Client
 	cursorMode  bool
+	grpcClient  *grpcWorkerClient
+	grpcMu      sync.Mutex
 }
 
 // NewRemoteExecutor creates a RemoteExecutor that sends queries to the given
 // endpoint URL and materializes results into the local DuckDB instance.
 func NewRemoteExecutor(endpointURL, authToken string, localDB *sql.DB, opts ...RemoteExecutorOptions) *RemoteExecutor {
-	options := RemoteExecutorOptions{CursorModeEnabled: true}
+	options := RemoteExecutorOptions{CursorModeEnabled: true, InternalGRPC: true}
 	if len(opts) > 0 {
 		options = opts[0]
 	}
@@ -46,14 +43,6 @@ func NewRemoteExecutor(endpointURL, authToken string, localDB *sql.DB, opts ...R
 		authToken:   authToken,
 		localDB:     localDB,
 		cursorMode:  options.CursorModeEnabled,
-		httpClient: &http.Client{
-			Timeout: 5 * time.Minute,
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{
-					MinVersion: tls.VersionTLS12,
-				},
-			},
-		},
 	}
 }
 
@@ -61,61 +50,46 @@ func NewRemoteExecutor(endpointURL, authToken string, localDB *sql.DB, opts ...R
 // into a local DuckDB temp table, returning *sql.Rows from that table.
 func (e *RemoteExecutor) QueryContext(ctx context.Context, query string) (*sql.Rows, error) {
 	requestID := uuid.New().String()
-	if !e.cursorMode {
-		result, err := e.queryViaLegacyExecute(ctx, query, requestID)
-		if err != nil {
-			return nil, err
+	client, err := e.ensureGRPCClient()
+	if err != nil {
+		return nil, err
+	}
+
+	if e.cursorMode {
+		rows, lifecycleErr := e.queryViaGRPCLifecycleToRows(ctx, client, query, requestID)
+		if lifecycleErr == nil {
+			return rows, nil
 		}
-		return e.materialize(ctx, result) //nolint:sqlclosecheck // rows are returned to caller
+		if !isGRPCUnavailable(lifecycleErr) {
+			return nil, lifecycleErr
+		}
 	}
 
-	rows, err := e.queryViaLifecycleToRows(ctx, query, requestID)
-	if err == nil {
-		return rows, nil
-	}
-
-	var unsupported *unsupportedLifecycleError
-	if !errors.As(err, &unsupported) {
-		return nil, err
-	}
-
-	result, err := e.queryViaLegacyExecute(ctx, query, requestID)
+	result, err := client.execute(ctx, ExecuteRequest{SQL: query, RequestID: requestID})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("grpc execute: %w", err)
 	}
-
-	return e.materialize(ctx, result) //nolint:sqlclosecheck // rows are returned to caller
-}
-
-type unsupportedLifecycleError struct {
-	status int
-}
-
-func (e *unsupportedLifecycleError) Error() string {
-	return fmt.Sprintf("query lifecycle endpoints are unsupported (status %d)", e.status)
-}
-
-func (e *RemoteExecutor) queryViaLifecycleToRows(ctx context.Context, query, requestID string) (*sql.Rows, error) {
-	submit := SubmitQueryRequest{SQL: query, RequestID: requestID}
-	var submitResp SubmitQueryResponse
-	status, err := e.postJSON(ctx, "/queries", submit, &submitResp, requestID)
-	if status == http.StatusNotFound || status == http.StatusMethodNotAllowed {
-		return nil, &unsupportedLifecycleError{status: status}
+	if result.Error != "" {
+		return nil, fmt.Errorf("remote execution failed: %s", result.Error)
 	}
+	return e.materialize(ctx, result)
+}
+
+func (e *RemoteExecutor) queryViaGRPCLifecycleToRows(ctx context.Context, client *grpcWorkerClient, query, requestID string) (*sql.Rows, error) {
+	submitResp, err := client.submitQuery(ctx, SubmitQueryRequest{SQL: query, RequestID: requestID})
 	if err != nil {
-		return nil, fmt.Errorf("submit query lifecycle request: %w", err)
+		return nil, fmt.Errorf("submit grpc query lifecycle request: %w", err)
 	}
-	if status != http.StatusAccepted && status != http.StatusOK {
-		return nil, fmt.Errorf("submit query lifecycle request failed: status %d", status)
+	if submitResp.QueryID == "" {
+		return nil, fmt.Errorf("submit grpc query lifecycle request failed: missing query id")
 	}
 
 	queryID := submitResp.QueryID
-	if queryID == "" {
-		return nil, fmt.Errorf("submit query lifecycle request failed: missing query id")
-	}
-	defer e.deleteQuery(context.Background(), queryID, requestID)
+	defer func() {
+		_ = client.deleteQuery(context.Background(), DeleteQueryRequest{QueryID: queryID}, requestID)
+	}()
 
-	statusResp, err := e.waitForQueryCompletion(ctx, queryID, requestID)
+	statusResp, err := e.waitForQueryCompletionGRPC(ctx, client, queryID, requestID)
 	if err != nil {
 		return nil, err
 	}
@@ -127,59 +101,21 @@ func (e *RemoteExecutor) queryViaLifecycleToRows(ctx context.Context, query, req
 		return nil, fmt.Errorf("remote execution failed: %s", errMsg)
 	}
 
-	return e.materializeFromLifecycle(ctx, queryID, requestID)
+	result, err := e.fetchAllPagesGRPC(ctx, client, queryID, requestID)
+	if err != nil {
+		return nil, err
+	}
+	return e.materialize(ctx, result)
 }
 
-func (e *RemoteExecutor) queryViaLegacyExecute(ctx context.Context, query, requestID string) (ExecuteResponse, error) {
-
-	reqBody := ExecuteRequest{SQL: query, RequestID: requestID}
-	bodyBytes, err := json.Marshal(reqBody)
-	if err != nil {
-		return ExecuteResponse{}, fmt.Errorf("marshal request: %w", err)
-	}
-
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost,
-		e.endpointURL+"/execute", bytes.NewReader(bodyBytes))
-	if err != nil {
-		return ExecuteResponse{}, fmt.Errorf("create request: %w", err)
-	}
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("X-Request-ID", requestID)
-	AttachSignedAgentHeaders(httpReq, e.authToken, bodyBytes, time.Now())
-
-	resp, err := e.httpClient.Do(httpReq)
-	if err != nil {
-		return ExecuteResponse{}, fmt.Errorf("remote execute: %w", err)
-	}
-	defer resp.Body.Close() //nolint:errcheck
-
-	var result ExecuteResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return ExecuteResponse{}, fmt.Errorf("decode response: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusOK || result.Error != "" {
-		errMsg := result.Error
-		if errMsg == "" {
-			errMsg = fmt.Sprintf("remote agent returned status %d", resp.StatusCode)
-		}
-		return ExecuteResponse{}, fmt.Errorf("remote execution failed: %s", errMsg)
-	}
-
-	return result, nil
-}
-
-func (e *RemoteExecutor) waitForQueryCompletion(ctx context.Context, queryID, requestID string) (QueryStatusResponse, error) {
+func (e *RemoteExecutor) waitForQueryCompletionGRPC(ctx context.Context, client *grpcWorkerClient, queryID, requestID string) (QueryStatusResponse, error) {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 
 	for {
-		statusResp, statusCode, err := e.getQueryStatus(ctx, queryID, requestID)
+		statusResp, err := client.getQueryStatus(ctx, GetQueryStatusRequest{QueryID: queryID}, requestID)
 		if err != nil {
-			return QueryStatusResponse{}, err
-		}
-		if statusCode != http.StatusOK {
-			return QueryStatusResponse{}, fmt.Errorf("query status failed: status %d", statusCode)
+			return QueryStatusResponse{}, fmt.Errorf("query status failed: %w", err)
 		}
 
 		switch statusResp.Status {
@@ -189,24 +125,24 @@ func (e *RemoteExecutor) waitForQueryCompletion(ctx context.Context, queryID, re
 
 		select {
 		case <-ctx.Done():
-			_ = e.cancelQuery(context.Background(), queryID, requestID)
+			_ = client.cancelQuery(context.Background(), CancelQueryRequest{QueryID: queryID}, requestID)
 			return QueryStatusResponse{}, fmt.Errorf("wait for query completion: %w", ctx.Err())
 		case <-ticker.C:
 		}
 	}
 }
 
-func (e *RemoteExecutor) fetchAllPages(ctx context.Context, queryID, requestID string) (ExecuteResponse, error) {
+func (e *RemoteExecutor) fetchAllPagesGRPC(ctx context.Context, client *grpcWorkerClient, queryID, requestID string) (ExecuteResponse, error) {
 	pageToken := ""
 	result := ExecuteResponse{Columns: nil, Rows: make([][]interface{}, 0)}
 
 	for {
-		pageResp, statusCode, err := e.fetchQueryResultsPage(ctx, queryID, pageToken, requestID)
+		pageResp, err := client.fetchQueryResults(ctx, FetchQueryResultsRequest{
+			QueryID:   queryID,
+			PageToken: pageToken,
+		}, requestID)
 		if err != nil {
-			return ExecuteResponse{}, err
-		}
-		if statusCode != http.StatusOK {
-			return ExecuteResponse{}, fmt.Errorf("fetch query results failed: status %d", statusCode)
+			return ExecuteResponse{}, fmt.Errorf("fetch query results failed: %w", err)
 		}
 
 		if result.Columns == nil {
@@ -226,183 +162,19 @@ func (e *RemoteExecutor) fetchAllPages(ctx context.Context, queryID, requestID s
 	}
 }
 
-func (e *RemoteExecutor) materializeFromLifecycle(ctx context.Context, queryID, requestID string) (*sql.Rows, error) {
-	tableName := "_remote_result_" + randomSuffix()
+func (e *RemoteExecutor) ensureGRPCClient() (*grpcWorkerClient, error) {
+	e.grpcMu.Lock()
+	defer e.grpcMu.Unlock()
 
-	conn, err := e.localDB.Conn(ctx)
+	if e.grpcClient != nil {
+		return e.grpcClient, nil
+	}
+	client, err := newGRPCWorkerClient(e.endpointURL, e.authToken)
 	if err != nil {
-		return nil, fmt.Errorf("pin connection: %w", err)
+		return nil, err
 	}
-	defer conn.Close() //nolint:errcheck
-
-	pageToken := ""
-	created := false
-	for {
-		pageResp, statusCode, err := e.fetchQueryResultsPage(ctx, queryID, pageToken, requestID)
-		if err != nil {
-			return nil, err
-		}
-		if statusCode != http.StatusOK {
-			return nil, fmt.Errorf("fetch query results failed: status %d", statusCode)
-		}
-
-		if !created {
-			if err := createResultTable(ctx, conn, tableName, pageResp.Columns); err != nil {
-				return nil, err
-			}
-			created = true
-		}
-		if err := insertResultRows(ctx, conn, tableName, pageResp.Rows, pageResp.Columns); err != nil {
-			return nil, err
-		}
-
-		if pageResp.NextPageToken == "" {
-			break
-		}
-		pageToken = pageResp.NextPageToken
-	}
-
-	if !created {
-		return e.localDB.QueryContext(ctx, "SELECT 1 WHERE false")
-	}
-
-	selectSQL := fmt.Sprintf("SELECT * FROM %q", tableName) //nolint:gosec // tableName is generated internally
-	rows, err := e.localDB.QueryContext(ctx, selectSQL)
-	if err != nil {
-		return nil, fmt.Errorf("select from temp: %w", err)
-	}
-	return rows, nil
-}
-
-func (e *RemoteExecutor) postJSON(ctx context.Context, path string, payload interface{}, out interface{}, requestID string) (int, error) {
-	bodyBytes, err := json.Marshal(payload)
-	if err != nil {
-		return 0, fmt.Errorf("marshal request: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, e.endpointURL+path, bytes.NewReader(bodyBytes))
-	if err != nil {
-		return 0, fmt.Errorf("create request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Agent-Token", e.authToken)
-	req.Header.Set("X-Request-ID", requestID)
-
-	resp, err := e.httpClient.Do(req)
-	if err != nil {
-		return 0, fmt.Errorf("send request: %w", err)
-	}
-	defer resp.Body.Close() //nolint:errcheck
-
-	if err := decodeJSONOrError(resp, out); err != nil {
-		return resp.StatusCode, err
-	}
-	return resp.StatusCode, nil
-}
-
-func (e *RemoteExecutor) getQueryStatus(ctx context.Context, queryID, requestID string) (QueryStatusResponse, int, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, e.endpointURL+"/queries/"+url.PathEscape(queryID), nil)
-	if err != nil {
-		return QueryStatusResponse{}, 0, fmt.Errorf("create status request: %w", err)
-	}
-	req.Header.Set("X-Agent-Token", e.authToken)
-	req.Header.Set("X-Request-ID", requestID)
-
-	resp, err := e.httpClient.Do(req)
-	if err != nil {
-		return QueryStatusResponse{}, 0, fmt.Errorf("query status request: %w", err)
-	}
-	defer resp.Body.Close() //nolint:errcheck
-
-	var out QueryStatusResponse
-	if err := decodeJSONOrError(resp, &out); err != nil {
-		return QueryStatusResponse{}, resp.StatusCode, err
-	}
-	return out, resp.StatusCode, nil
-}
-
-func (e *RemoteExecutor) fetchQueryResultsPage(ctx context.Context, queryID, pageToken, requestID string) (FetchQueryResultsResponse, int, error) {
-	u := e.endpointURL + "/queries/" + url.PathEscape(queryID) + "/results"
-	if pageToken != "" {
-		u += "?page_token=" + url.QueryEscape(pageToken)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
-	if err != nil {
-		return FetchQueryResultsResponse{}, 0, fmt.Errorf("create results request: %w", err)
-	}
-	req.Header.Set("X-Agent-Token", e.authToken)
-	req.Header.Set("X-Request-ID", requestID)
-
-	resp, err := e.httpClient.Do(req)
-	if err != nil {
-		return FetchQueryResultsResponse{}, 0, fmt.Errorf("query results request: %w", err)
-	}
-	defer resp.Body.Close() //nolint:errcheck
-
-	var out FetchQueryResultsResponse
-	if err := decodeJSONOrError(resp, &out); err != nil {
-		return FetchQueryResultsResponse{}, resp.StatusCode, err
-	}
-	return out, resp.StatusCode, nil
-}
-
-func (e *RemoteExecutor) cancelQuery(ctx context.Context, queryID, requestID string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, e.endpointURL+"/queries/"+url.PathEscape(queryID)+"/cancel", bytes.NewReader([]byte("{}")))
-	if err != nil {
-		return fmt.Errorf("create cancel request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Agent-Token", e.authToken)
-	req.Header.Set("X-Request-ID", requestID)
-
-	resp, err := e.httpClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("cancel query request: %w", err)
-	}
-	defer resp.Body.Close() //nolint:errcheck
-
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNotFound {
-		return fmt.Errorf("cancel query failed: status %d", resp.StatusCode)
-	}
-	return nil
-}
-
-func (e *RemoteExecutor) deleteQuery(ctx context.Context, queryID, requestID string) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, e.endpointURL+"/queries/"+url.PathEscape(queryID), nil)
-	if err != nil {
-		return
-	}
-	req.Header.Set("X-Agent-Token", e.authToken)
-	req.Header.Set("X-Request-ID", requestID)
-
-	resp, err := e.httpClient.Do(req)
-	if err != nil {
-		return
-	}
-	_ = resp.Body.Close()
-}
-
-func decodeJSONOrError(resp *http.Response, out interface{}) error {
-	if resp.StatusCode >= 400 {
-		body, _ := io.ReadAll(resp.Body)
-		var errResp ErrorResponse
-		if err := json.Unmarshal(body, &errResp); err == nil && errResp.Error != "" {
-			return fmt.Errorf("remote request failed: %s", errResp.Error)
-		}
-		if len(body) > 0 {
-			return fmt.Errorf("remote request failed: status %d: %s", resp.StatusCode, string(body))
-		}
-		return fmt.Errorf("remote request failed: status %d", resp.StatusCode)
-	}
-
-	if out == nil {
-		return nil
-	}
-	if err := json.NewDecoder(resp.Body).Decode(out); err != nil {
-		return fmt.Errorf("decode response: %w", err)
-	}
-	return nil
+	e.grpcClient = client
+	return client, nil
 }
 
 // materialize creates a DuckDB temp table from the remote response and returns
@@ -410,20 +182,16 @@ func decodeJSONOrError(resp *http.Response, out interface{}) error {
 // it and queries the temp table from the pool, preventing connection leaks.
 func (e *RemoteExecutor) materialize(ctx context.Context, result ExecuteResponse) (*sql.Rows, error) {
 	if len(result.Columns) == 0 {
-		// Return empty result set
 		return e.localDB.QueryContext(ctx, "SELECT 1 WHERE false")
 	}
 
 	suffix := randomSuffix()
 	tableName := "_remote_result_" + suffix
 
-	// Use a pinned connection for temp table creation + inserts.
 	if err := e.populateTempTable(ctx, tableName, result); err != nil {
 		return nil, err
 	}
 
-	// Query the temp table from the pool. The pinned connection was closed
-	// inside populateTempTable, preventing a connection leak.
 	selectSQL := fmt.Sprintf("SELECT * FROM %q", tableName) //nolint:gosec // tableName is generated internally, not user input
 	rows, err := e.localDB.QueryContext(ctx, selectSQL)
 	if err != nil {
@@ -433,8 +201,6 @@ func (e *RemoteExecutor) materialize(ctx context.Context, result ExecuteResponse
 	return rows, nil
 }
 
-// populateTempTable creates and populates a temp table on a pinned connection,
-// then closes the connection before returning.
 func (e *RemoteExecutor) populateTempTable(ctx context.Context, tableName string, result ExecuteResponse) error {
 	conn, err := e.localDB.Conn(ctx)
 	if err != nil {
@@ -506,27 +272,38 @@ func insertResultRows(ctx context.Context, conn *sql.Conn, tableName string, row
 
 // Ping performs a health check against the remote agent.
 func (e *RemoteExecutor) Ping(ctx context.Context) error {
-	pingCtx := ctx
-	if _, hasDeadline := ctx.Deadline(); !hasDeadline {
-		var cancel context.CancelFunc
-		pingCtx, cancel = context.WithTimeout(ctx, 5*time.Second)
-		defer cancel()
+	if strings.HasPrefix(e.endpointURL, "http://") || strings.HasPrefix(e.endpointURL, "https://") {
+		client := &http.Client{
+			Timeout: 5 * time.Second,
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12},
+			},
+		}
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, e.endpointURL+"/health", nil)
+		if err != nil {
+			return fmt.Errorf("create health request: %w", err)
+		}
+		req.Header.Set("X-Agent-Token", e.authToken)
+
+		resp, err := client.Do(req)
+		if err != nil {
+			return fmt.Errorf("health check: %w", err)
+		}
+		defer resp.Body.Close() //nolint:errcheck
+
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("unhealthy: status %d", resp.StatusCode)
+		}
+		return nil
 	}
 
-	req, err := http.NewRequestWithContext(pingCtx, http.MethodGet, e.endpointURL+"/health", nil)
+	client, err := e.ensureGRPCClient()
 	if err != nil {
-		return fmt.Errorf("create health request: %w", err)
+		return err
 	}
-	AttachSignedAgentHeaders(req, e.authToken, nil, time.Now())
-
-	resp, err := e.httpClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("health check: %w", err)
-	}
-	defer resp.Body.Close() //nolint:errcheck
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("unhealthy: status %d", resp.StatusCode)
+	if _, err := client.health(ctx); err != nil {
+		return fmt.Errorf("grpc health check: %w", err)
 	}
 	return nil
 }
@@ -535,7 +312,6 @@ func (e *RemoteExecutor) Ping(ctx context.Context) error {
 func randomSuffix() string {
 	b := make([]byte, 4)
 	if _, err := rand.Read(b); err != nil {
-		// Fallback to a fixed suffix (should never happen)
 		return "fallback"
 	}
 	return hex.EncodeToString(b)
