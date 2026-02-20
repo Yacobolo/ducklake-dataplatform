@@ -56,6 +56,8 @@ All configuration is via environment variables. See `.env.sample` for a full ref
 | Variable | Default | Description |
 |---|---|---|
 | `LISTEN_ADDR` | `:8080` | HTTP listen address |
+| `FLIGHT_SQL_LISTEN_ADDR` | `:32010` | Flight SQL TCP listen address (used when `FEATURE_FLIGHT_SQL=true`) |
+| `PG_WIRE_LISTEN_ADDR` | `:5433` | PostgreSQL wire TCP listen address (used when `FEATURE_PG_WIRE=true`) |
 | `META_DB_PATH` | `ducklake_meta.sqlite` | SQLite metadata database path |
 | `LOG_LEVEL` | `info` | Log level: debug, info, warn, error |
 | `AUTH_ISSUER_URL` | `` | OIDC issuer URL for JWT validation |
@@ -65,6 +67,9 @@ All configuration is via environment variables. See `.env.sample` for a full ref
 | `ENV` | `development` | Set to `production` to enforce secure config |
 | `RATE_LIMIT_RPS` | `100` | Sustained requests per second |
 | `RATE_LIMIT_BURST` | `200` | Maximum burst capacity |
+| `FEATURE_INTERNAL_GRPC` | `true` | Enable internal gRPC worker transport (`grpc://`/`grpcs://` endpoint URLs) |
+| `FEATURE_FLIGHT_SQL` | `true` | Enable Flight SQL preview listener (gRPC health) |
+| `FEATURE_PG_WIRE` | `true` | Enable PostgreSQL wire preview listener (startup + simple query) |
 
 ### Production Mode
 

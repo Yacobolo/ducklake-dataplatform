@@ -10,13 +10,10 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"github.com/google/uuid"
 
 	"duck-demo/internal/compute"
 )
@@ -36,6 +33,7 @@ type HandlerConfig struct {
 	QueryResultTTL  time.Duration
 	CleanupInterval time.Duration
 	CursorMode      bool
+	MetricsProvider func() (active, queued, running, completed, stored, cleaned int64)
 	Logger          *slog.Logger
 }
 
@@ -298,235 +296,13 @@ func isTerminalStatus(status string) bool {
 // NewHandler builds the compute agent's http.Handler with query execution and
 // health routes. The handler validates X-Agent-Token on all compute routes.
 func NewHandler(cfg HandlerConfig) http.Handler {
-	logger := cfg.Logger
-	if logger == nil {
-		logger = slog.Default()
-	}
-
-	var activeQueries atomic.Int64
-	jobs := newQueryStore(cfg.QueryResultTTL, cfg.CleanupInterval)
-	jobs.db = cfg.DB
-
 	mux := http.NewServeMux()
-
-	authorize := func(w http.ResponseWriter, r *http.Request, requestID string) bool {
-		if r.Header.Get("X-Agent-Token") == cfg.AgentToken {
-			return true
-		}
-		writeJSON(w, http.StatusUnauthorized, compute.ErrorResponse{Error: "unauthorized", Code: "AUTH_ERROR", RequestID: requestID})
-		return false
+	ttl := cfg.QueryResultTTL
+	if ttl <= 0 {
+		ttl = defaultQueryResultTTL
 	}
-
-	mux.HandleFunc("POST /execute", func(w http.ResponseWriter, r *http.Request) {
-		requestID := r.Header.Get("X-Request-ID")
-		if !authorize(w, r, requestID) {
-			return
-		}
-
-		var req compute.ExecuteRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeJSON(w, http.StatusBadRequest, compute.ErrorResponse{Error: "invalid request body", Code: "PARSE_ERROR", RequestID: requestID})
-			return
-		}
-		if requestID == "" {
-			requestID = req.RequestID
-		}
-
-		result, err := runQuery(r.Context(), cfg.DB, req.SQL, &activeQueries)
-		if err != nil {
-			logger.Error("query execution failed", "request_id", requestID, "error", err)
-			writeJSON(w, http.StatusInternalServerError, compute.ErrorResponse{Error: err.Error(), Code: "EXECUTION_ERROR", RequestID: requestID})
-			return
-		}
-		result.RequestID = requestID
-		writeJSON(w, http.StatusOK, result)
-	})
-
-	mux.HandleFunc("POST /queries", func(w http.ResponseWriter, r *http.Request) {
-		if !cfg.CursorMode {
-			writeJSON(w, http.StatusNotFound, compute.ErrorResponse{Error: "query lifecycle is disabled", Code: "NOT_FOUND", RequestID: r.Header.Get("X-Request-ID")})
-			return
-		}
-		requestID := r.Header.Get("X-Request-ID")
-		if !authorize(w, r, requestID) {
-			return
-		}
-
-		var req compute.SubmitQueryRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeJSON(w, http.StatusBadRequest, compute.ErrorResponse{Error: "invalid request body", Code: "PARSE_ERROR", RequestID: requestID})
-			return
-		}
-		if req.SQL == "" {
-			writeJSON(w, http.StatusBadRequest, compute.ErrorResponse{Error: "sql is required", Code: "VALIDATION_ERROR", RequestID: requestID})
-			return
-		}
-		if requestID == "" {
-			requestID = req.RequestID
-		}
-		jobs.maybeCleanup(time.Now())
-
-		if existing, ok := jobs.getByRequestID(requestID); ok {
-			status := existing.statusResponse().Status
-			writeJSON(w, http.StatusAccepted, compute.SubmitQueryResponse{QueryID: existing.id, Status: status, RequestID: requestID})
-			return
-		}
-
-		job := &queryJob{
-			id:        uuid.NewString(),
-			requestID: requestID,
-			status:    compute.QueryStatusQueued,
-			createdAt: time.Now(),
-		}
-		jobs.set(job)
-
-		go func() {
-			ctx, cancel := context.WithCancel(context.Background())
-			job.setRunning(cancel)
-
-			columns, tableName, rowCount, err := runQueryToTable(ctx, cfg.DB, req.SQL, &activeQueries, job.id)
-			if err != nil {
-				if ctx.Err() == context.Canceled {
-					job.setCanceled()
-					return
-				}
-				job.setFailed(err)
-				return
-			}
-			job.setSucceeded(columns, tableName, rowCount)
-		}()
-
-		writeJSON(w, http.StatusAccepted, compute.SubmitQueryResponse{QueryID: job.id, Status: compute.QueryStatusQueued, RequestID: requestID})
-	})
-
-	mux.HandleFunc("GET /queries/{queryID}", func(w http.ResponseWriter, r *http.Request) {
-		if !cfg.CursorMode {
-			writeJSON(w, http.StatusNotFound, compute.ErrorResponse{Error: "query lifecycle is disabled", Code: "NOT_FOUND", RequestID: r.Header.Get("X-Request-ID")})
-			return
-		}
-		requestID := r.Header.Get("X-Request-ID")
-		if !authorize(w, r, requestID) {
-			return
-		}
-
-		jobs.maybeCleanup(time.Now())
-
-		jobID := r.PathValue("queryID")
-		job, ok := jobs.get(jobID)
-		if !ok {
-			writeJSON(w, http.StatusNotFound, compute.ErrorResponse{Error: "query not found", Code: "NOT_FOUND", RequestID: requestID})
-			return
-		}
-		writeJSON(w, http.StatusOK, job.statusResponse())
-	})
-
-	mux.HandleFunc("GET /queries/{queryID}/results", func(w http.ResponseWriter, r *http.Request) {
-		if !cfg.CursorMode {
-			writeJSON(w, http.StatusNotFound, compute.ErrorResponse{Error: "query lifecycle is disabled", Code: "NOT_FOUND", RequestID: r.Header.Get("X-Request-ID")})
-			return
-		}
-		requestID := r.Header.Get("X-Request-ID")
-		if !authorize(w, r, requestID) {
-			return
-		}
-
-		jobs.maybeCleanup(time.Now())
-
-		jobID := r.PathValue("queryID")
-		job, ok := jobs.get(jobID)
-		if !ok {
-			writeJSON(w, http.StatusNotFound, compute.ErrorResponse{Error: "query not found", Code: "NOT_FOUND", RequestID: requestID})
-			return
-		}
-
-		status := job.statusResponse()
-		switch status.Status {
-		case compute.QueryStatusQueued, compute.QueryStatusRunning:
-			writeJSON(w, http.StatusConflict, compute.ErrorResponse{Error: "query is not ready", Code: "QUERY_NOT_READY", RequestID: requestID})
-			return
-		case compute.QueryStatusFailed, compute.QueryStatusCanceled:
-			writeJSON(w, http.StatusConflict, compute.ErrorResponse{Error: status.Error, Code: "QUERY_NOT_AVAILABLE", RequestID: requestID})
-			return
-		}
-
-		pageToken := r.URL.Query().Get("page_token")
-		offset := compute.DecodePageToken(pageToken)
-		limit := defaultPageSize
-		if raw := r.URL.Query().Get("max_results"); raw != "" {
-			if parsed, err := strconv.Atoi(raw); err == nil && parsed > 0 {
-				if parsed > 5000 {
-					parsed = 5000
-				}
-				limit = parsed
-			}
-		}
-
-		page, err := job.resultPage(r.Context(), cfg.DB, offset, limit)
-		if err != nil {
-			writeJSON(w, http.StatusInternalServerError, compute.ErrorResponse{Error: err.Error(), Code: "EXECUTION_ERROR", RequestID: requestID})
-			return
-		}
-		writeJSON(w, http.StatusOK, page)
-	})
-
-	mux.HandleFunc("POST /queries/{queryID}/cancel", func(w http.ResponseWriter, r *http.Request) {
-		if !cfg.CursorMode {
-			writeJSON(w, http.StatusNotFound, compute.ErrorResponse{Error: "query lifecycle is disabled", Code: "NOT_FOUND", RequestID: r.Header.Get("X-Request-ID")})
-			return
-		}
-		requestID := r.Header.Get("X-Request-ID")
-		if !authorize(w, r, requestID) {
-			return
-		}
-
-		jobs.maybeCleanup(time.Now())
-
-		jobID := r.PathValue("queryID")
-		job, ok := jobs.get(jobID)
-		if !ok {
-			writeJSON(w, http.StatusNotFound, compute.ErrorResponse{Error: "query not found", Code: "NOT_FOUND", RequestID: requestID})
-			return
-		}
-		job.cancelQuery()
-		writeJSON(w, http.StatusOK, compute.CancelQueryResponse{QueryID: jobID, Status: job.statusResponse().Status, RequestID: requestID})
-	})
-
-	mux.HandleFunc("DELETE /queries/{queryID}", func(w http.ResponseWriter, r *http.Request) {
-		if !cfg.CursorMode {
-			writeJSON(w, http.StatusNotFound, compute.ErrorResponse{Error: "query lifecycle is disabled", Code: "NOT_FOUND", RequestID: r.Header.Get("X-Request-ID")})
-			return
-		}
-		requestID := r.Header.Get("X-Request-ID")
-		if !authorize(w, r, requestID) {
-			return
-		}
-
-		jobs.maybeCleanup(time.Now())
-
-		jobID := r.PathValue("queryID")
-		job, ok := jobs.get(jobID)
-		if !ok {
-			writeJSON(w, http.StatusNotFound, compute.ErrorResponse{Error: "query not found", Code: "NOT_FOUND", RequestID: requestID})
-			return
-		}
-		job.cancelQuery()
-		status := job.statusResponse().Status
-		job.mu.RLock()
-		tableName := job.tableName
-		job.mu.RUnlock()
-		if tableName != "" {
-			_, _ = cfg.DB.ExecContext(context.Background(), fmt.Sprintf("DROP TABLE IF EXISTS %q", tableName)) //nolint:gosec // internal generated identifier
-		}
-		jobs.delete(jobID)
-		if status == "" {
-			status = compute.QueryStatusCanceled
-		}
-		writeJSON(w, http.StatusOK, compute.CancelQueryResponse{QueryID: jobID, Status: status, RequestID: requestID})
-	})
 
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
-		jobs.maybeCleanup(time.Now())
-
 		var version string
 		row := cfg.DB.QueryRowContext(r.Context(), "SELECT version()")
 		_ = row.Scan(&version)
@@ -535,7 +311,11 @@ func NewHandler(cfg HandlerConfig) http.Handler {
 		memRow := cfg.DB.QueryRowContext(r.Context(), "SELECT memory_usage FROM duckdb_memory()")
 		_ = memRow.Scan(&memUsedBytes)
 		memUsedMB := memUsedBytes / (1024 * 1024)
-		queuedJobs, runningJobs, completedJobs, storedJobs, cleanedJobs := jobs.metrics()
+		var activeQueries int64
+		queuedJobs, runningJobs, completedJobs, storedJobs, cleanedJobs := int64(0), int64(0), int64(0), int64(0), int64(0)
+		if cfg.MetricsProvider != nil {
+			activeQueries, queuedJobs, runningJobs, completedJobs, storedJobs, cleanedJobs = cfg.MetricsProvider()
+		}
 
 		writeJSON(w, http.StatusOK, map[string]interface{}{
 			"status":                   "ok",
@@ -543,19 +323,22 @@ func NewHandler(cfg HandlerConfig) http.Handler {
 			"duckdb_version":           version,
 			"memory_used_mb":           memUsedMB,
 			"max_memory_gb":            cfg.MaxMemoryGB,
-			"active_queries":           activeQueries.Load(),
+			"active_queries":           activeQueries,
 			"queued_jobs":              queuedJobs,
 			"running_jobs":             runningJobs,
 			"completed_jobs":           completedJobs,
 			"stored_jobs":              storedJobs,
 			"cleaned_jobs":             cleanedJobs,
-			"query_result_ttl_seconds": int(jobs.ttl.Seconds()),
+			"query_result_ttl_seconds": int(ttl.Seconds()),
 		})
 	})
 
 	mux.HandleFunc("GET /metrics", func(w http.ResponseWriter, _ *http.Request) {
-		jobs.maybeCleanup(time.Now())
-		queuedJobs, runningJobs, completedJobs, storedJobs, cleanedJobs := jobs.metrics()
+		var activeQueries int64
+		queuedJobs, runningJobs, completedJobs, storedJobs, cleanedJobs := int64(0), int64(0), int64(0), int64(0), int64(0)
+		if cfg.MetricsProvider != nil {
+			activeQueries, queuedJobs, runningJobs, completedJobs, storedJobs, cleanedJobs = cfg.MetricsProvider()
+		}
 		w.Header().Set("Content-Type", "text/plain; version=0.0.4")
 		_, _ = fmt.Fprintf(w,
 			"# HELP duck_compute_active_queries Number of currently running SQL statements\n"+
@@ -576,7 +359,7 @@ func NewHandler(cfg HandlerConfig) http.Handler {
 				"# HELP duck_compute_cleaned_jobs_total Number of cleaned jobs\n"+
 				"# TYPE duck_compute_cleaned_jobs_total counter\n"+
 				"duck_compute_cleaned_jobs_total %d\n",
-			activeQueries.Load(), queuedJobs, runningJobs, completedJobs, storedJobs, cleanedJobs,
+			activeQueries, queuedJobs, runningJobs, completedJobs, storedJobs, cleanedJobs,
 		)
 	})
 

@@ -56,6 +56,8 @@ type Config struct {
 	S3Bucket      *string
 	MetaDBPath    string // path to SQLite metadata file (control plane)
 	ListenAddr    string // HTTP listen address (default ":8080")
+	FlightSQLAddr string // Flight SQL listen address (default ":32010")
+	PGWireAddr    string // PostgreSQL wire listen address (default ":5433")
 	EncryptionKey string // 64-char hex string (32-byte AES key) for encrypting stored credentials
 	LogLevel      string // log level: debug, info, warn, error (default "info")
 	Env           string // environment: "development" (default) or "production"
@@ -74,6 +76,9 @@ type Config struct {
 	FeatureRemoteRouting bool
 	FeatureAsyncQueue    bool
 	FeatureCursorMode    bool
+	FeatureInternalGRPC  bool
+	FeatureFlightSQL     bool
+	FeaturePGWire        bool
 	RemoteCanaryUsers    []string
 
 	// Warnings collects non-fatal warnings generated during config loading.
@@ -112,12 +117,17 @@ func LoadFromEnv() (*Config, error) {
 	cfg := &Config{
 		MetaDBPath:           os.Getenv("META_DB_PATH"),
 		ListenAddr:           os.Getenv("LISTEN_ADDR"),
+		FlightSQLAddr:        os.Getenv("FLIGHT_SQL_LISTEN_ADDR"),
+		PGWireAddr:           os.Getenv("PG_WIRE_LISTEN_ADDR"),
 		EncryptionKey:        os.Getenv("ENCRYPTION_KEY"),
 		LogLevel:             os.Getenv("LOG_LEVEL"),
 		Env:                  os.Getenv("ENV"),
 		FeatureRemoteRouting: parseBoolEnvDefault("FEATURE_REMOTE_ROUTING", true),
 		FeatureAsyncQueue:    parseBoolEnvDefault("FEATURE_ASYNC_QUEUE", true),
 		FeatureCursorMode:    parseBoolEnvDefault("FEATURE_CURSOR_MODE", true),
+		FeatureInternalGRPC:  parseBoolEnvDefault("FEATURE_INTERNAL_GRPC", true),
+		FeatureFlightSQL:     parseBoolEnvDefault("FEATURE_FLIGHT_SQL", true),
+		FeaturePGWire:        parseBoolEnvDefault("FEATURE_PG_WIRE", true),
 	}
 
 	// Rate limiting
@@ -206,6 +216,12 @@ func LoadFromEnv() (*Config, error) {
 	}
 	if cfg.ListenAddr == "" {
 		cfg.ListenAddr = ":8080"
+	}
+	if cfg.FlightSQLAddr == "" {
+		cfg.FlightSQLAddr = ":32010"
+	}
+	if cfg.PGWireAddr == "" {
+		cfg.PGWireAddr = ":5433"
 	}
 	if !cfg.Auth.OIDCEnabled() {
 		cfg.Warnings = append(cfg.Warnings, "OIDC is not configured — set AUTH_ISSUER_URL or AUTH_JWKS_URL")

@@ -1,6 +1,6 @@
 // Package main is the entry point for the compute agent binary.
 // The agent opens an in-memory DuckDB, optionally attaches a DuckLake catalog
-// via PostgreSQL, and exposes query execution/lifecycle endpoints over HTTP.
+// via PostgreSQL, and exposes query execution/lifecycle over gRPC.
 package main
 
 import (
@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -17,6 +18,9 @@ import (
 	_ "github.com/duckdb/duckdb-go/v2"
 
 	"duck-demo/internal/agent"
+	"duck-demo/internal/compute"
+
+	"google.golang.org/grpc"
 )
 
 func main() {
@@ -90,7 +94,7 @@ func run() error {
 		logger.Info("DuckLake attached via PostgreSQL", "catalog_dsn", "[redacted]", "data_path", dataPath)
 	}
 
-	handler := agent.NewHandler(agent.HandlerConfig{
+	handlerCfg := agent.HandlerConfig{
 		DB:              db,
 		AgentToken:      cfg.AgentToken,
 		StartTime:       time.Now(),
@@ -99,7 +103,39 @@ func run() error {
 		CleanupInterval: cfg.CleanupInterval,
 		CursorMode:      cfg.CursorMode,
 		Logger:          logger,
-	})
+	}
+	handler := agent.NewHandler(handlerCfg)
+
+	var grpcServer *grpc.Server
+	var grpcCompute *agent.ComputeGRPCServer
+	if cfg.InternalGRPC {
+		compute.EnsureGRPCJSONCodec()
+		grpcServer = grpc.NewServer()
+		grpcCompute = agent.NewComputeGRPCServer(handlerCfg)
+		agent.RegisterComputeWorkerGRPCServer(grpcServer, grpcCompute)
+		handler = agent.NewHandler(agent.HandlerConfig{
+			DB:              db,
+			AgentToken:      cfg.AgentToken,
+			StartTime:       handlerCfg.StartTime,
+			MaxMemoryGB:     cfg.MaxMemoryGB,
+			QueryResultTTL:  cfg.QueryResultTTL,
+			CleanupInterval: cfg.CleanupInterval,
+			CursorMode:      cfg.CursorMode,
+			MetricsProvider: grpcCompute.Metrics,
+			Logger:          logger,
+		})
+
+		grpcLn, err := net.Listen("tcp", cfg.GRPCListenAddr)
+		if err != nil {
+			return fmt.Errorf("listen grpc: %w", err)
+		}
+		go func() {
+			logger.Info("compute agent gRPC listening", "addr", cfg.GRPCListenAddr)
+			if serveErr := grpcServer.Serve(grpcLn); serveErr != nil {
+				logger.Error("grpc server stopped", "error", serveErr)
+			}
+		}()
+	}
 
 	srv := &http.Server{
 		Addr:         cfg.ListenAddr,
@@ -113,6 +149,9 @@ func run() error {
 	go func() {
 		<-ctx.Done()
 		logger.Info("shutting down agent")
+		if grpcServer != nil {
+			grpcServer.GracefulStop()
+		}
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer shutdownCancel()
 		_ = srv.Shutdown(shutdownCtx)

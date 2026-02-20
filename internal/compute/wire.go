@@ -46,6 +46,28 @@ type SubmitQueryRequest struct {
 	RequestID string `json:"request_id,omitempty"`
 }
 
+// GetQueryStatusRequest requests current query lifecycle status.
+type GetQueryStatusRequest struct {
+	QueryID string `json:"query_id"`
+}
+
+// FetchQueryResultsRequest requests a page of lifecycle query results.
+type FetchQueryResultsRequest struct {
+	QueryID    string `json:"query_id"`
+	PageToken  string `json:"page_token,omitempty"`
+	MaxResults int    `json:"max_results,omitempty"`
+}
+
+// CancelQueryRequest requests cancellation for a lifecycle query.
+type CancelQueryRequest struct {
+	QueryID string `json:"query_id"`
+}
+
+// DeleteQueryRequest removes query lifecycle state and retained results.
+type DeleteQueryRequest struct {
+	QueryID string `json:"query_id"`
+}
+
 // SubmitQueryResponse is returned when query job is accepted.
 type SubmitQueryResponse struct {
 	QueryID   string `json:"query_id"`
@@ -79,6 +101,25 @@ type CancelQueryResponse struct {
 	QueryID   string `json:"query_id"`
 	Status    string `json:"status"`
 	RequestID string `json:"request_id,omitempty"`
+}
+
+// HealthRequest requests worker health details.
+type HealthRequest struct{}
+
+// HealthResponse mirrors worker readiness and queue pressure signals.
+type HealthResponse struct {
+	Status                string `json:"status"`
+	UptimeSeconds         int    `json:"uptime_seconds,omitempty"`
+	DuckDBVersion         string `json:"duckdb_version,omitempty"`
+	MemoryUsedMB          int64  `json:"memory_used_mb,omitempty"`
+	MaxMemoryGB           int    `json:"max_memory_gb,omitempty"`
+	ActiveQueries         int64  `json:"active_queries,omitempty"`
+	QueuedJobs            int64  `json:"queued_jobs,omitempty"`
+	RunningJobs           int64  `json:"running_jobs,omitempty"`
+	CompletedJobs         int64  `json:"completed_jobs,omitempty"`
+	StoredJobs            int64  `json:"stored_jobs,omitempty"`
+	CleanedJobs           int64  `json:"cleaned_jobs,omitempty"`
+	QueryResultTTLSeconds int    `json:"query_result_ttl_seconds,omitempty"`
 }
 
 // DecodePageToken converts opaque page token into an integer offset.

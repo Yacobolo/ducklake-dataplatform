@@ -20,12 +20,13 @@ type RemoteCache struct {
 // RemoteExecutorOptions control optional remote execution behavior.
 type RemoteExecutorOptions struct {
 	CursorModeEnabled bool
+	InternalGRPC      bool
 }
 
 // NewRemoteCache creates a RemoteCache that materializes remote results into
 // the given local DuckDB instance.
 func NewRemoteCache(localDB *sql.DB) *RemoteCache {
-	return NewRemoteCacheWithOptions(localDB, RemoteExecutorOptions{CursorModeEnabled: true})
+	return NewRemoteCacheWithOptions(localDB, RemoteExecutorOptions{CursorModeEnabled: true, InternalGRPC: true})
 }
 
 // NewRemoteCacheWithOptions creates a RemoteCache with explicit remote executor options.
