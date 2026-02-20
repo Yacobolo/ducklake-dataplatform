@@ -14,35 +14,40 @@ import (
 )
 
 func (h *Handler) CatalogsList(w http.ResponseWriter, r *http.Request) {
-	pageReq := pageFromRequest(r, 30)
-	items, total, err := h.CatalogRegistration.List(r.Context(), pageReq)
+	items, _, err := h.CatalogRegistration.List(r.Context(), domain.PageRequest{MaxResults: 200})
 	if err != nil {
 		h.renderServiceError(w, r, err)
 		return
 	}
-
-	rows := make([]catalogsListRowData, 0, len(items))
-	for i := range items {
-		item := items[i]
-		rows = append(rows, catalogsListRowData{Filter: item.Name + " " + string(item.Status), Name: item.Name, URL: "/ui/catalogs/" + item.Name, Status: string(item.Status), Metastore: string(item.MetastoreType), Updated: formatTime(item.UpdatedAt)})
+	if len(items) == 0 {
+		renderHTML(w, http.StatusOK, catalogsListPage(principalFromContext(r.Context()), nil, domain.PageRequest{MaxResults: 30}, 0))
+		return
 	}
-	renderHTML(w, http.StatusOK, catalogsListPage(principalFromContext(r.Context()), rows, pageReq, total))
+
+	selectedCatalog := strings.TrimSpace(r.URL.Query().Get("catalog"))
+	if selectedCatalog == "" {
+		for i := range items {
+			if items[i].IsDefault {
+				selectedCatalog = items[i].Name
+				break
+			}
+		}
+	}
+	if selectedCatalog == "" {
+		selectedCatalog = items[0].Name
+	}
+
+	h.renderCatalogWorkspace(w, r, items, selectedCatalog)
 }
 
 func (h *Handler) CatalogsDetail(w http.ResponseWriter, r *http.Request) {
 	catalogName := chi.URLParam(r, "catalogName")
-	registration, err := h.CatalogRegistration.Get(r.Context(), catalogName)
-	if err != nil {
-		h.renderServiceError(w, r, err)
-		return
-	}
+	q := r.URL.Query()
+	q.Set("catalog", catalogName)
+	http.Redirect(w, r, "/ui/catalogs?"+q.Encode(), http.StatusSeeOther)
+}
 
-	catalogs, _, err := h.CatalogRegistration.List(r.Context(), domain.PageRequest{MaxResults: 200})
-	if err != nil {
-		h.renderServiceError(w, r, err)
-		return
-	}
-
+func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request, catalogs []domain.CatalogRegistration, catalogName string) {
 	selectedSchema := strings.TrimSpace(r.URL.Query().Get("schema"))
 	selectedType := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("type")))
 	selectedName := strings.TrimSpace(r.URL.Query().Get("name"))
@@ -55,9 +60,25 @@ func (h *Handler) CatalogsDetail(w http.ResponseWriter, r *http.Request) {
 		selectedType = "catalog"
 	}
 
+	var registration *domain.CatalogRegistration
+	for i := range catalogs {
+		if catalogs[i].Name == catalogName {
+			item := catalogs[i]
+			registration = &item
+			break
+		}
+	}
+	if registration == nil {
+		c, err := h.CatalogRegistration.Get(r.Context(), catalogName)
+		if err != nil {
+			h.renderServiceError(w, r, err)
+			return
+		}
+		registration = c
+	}
+
 	summary, summaryErr := h.Catalog.GetMetastoreSummary(r.Context(), catalogName)
 	schemas, _, schemasErr := h.Catalog.ListSchemas(r.Context(), catalogName, domain.PageRequest{MaxResults: 200})
-
 	if selectedSchema == "" && len(schemas) > 0 {
 		selectedSchema = schemas[0].Name
 	}
@@ -69,7 +90,7 @@ func (h *Handler) CatalogsDetail(w http.ResponseWriter, r *http.Request) {
 			Name:      item.Name,
 			Status:    string(item.Status),
 			IsDefault: item.IsDefault,
-			URL:       "/ui/catalogs/" + url.PathEscape(item.Name),
+			URL:       catalogExplorerURL(item.Name, "", "catalog", ""),
 			Active:    item.Name == catalogName,
 		})
 	}
@@ -119,10 +140,11 @@ func (h *Handler) CatalogsDetail(w http.ResponseWriter, r *http.Request) {
 		explorerSchemas = append(explorerSchemas, schemaNode)
 	}
 
-	panel := catalogWorkspacePanelData{Mode: "catalog", Title: registration.Name}
+	panel := catalogWorkspacePanelData{Mode: "catalog", Title: registration.Name, Subtitle: "Catalog"}
 	metastoreItems := make([]catalogWorkspaceMetaItemData, 0, 8)
 	metastoreItems = append(metastoreItems,
 		catalogWorkspaceMetaItemData{Label: "Status", Value: string(registration.Status)},
+		catalogWorkspaceMetaItemData{Label: "Metastore", Value: string(registration.MetastoreType)},
 		catalogWorkspaceMetaItemData{Label: "Data path", Value: registration.DataPath},
 		catalogWorkspaceMetaItemData{Label: "Default", Value: fmt.Sprintf("%t", registration.IsDefault)},
 	)
@@ -278,7 +300,7 @@ func (h *Handler) CatalogsUpdate(w http.ResponseWriter, r *http.Request) {
 		h.renderServiceError(w, r, err)
 		return
 	}
-	http.Redirect(w, r, "/ui/catalogs/"+name, http.StatusSeeOther)
+	http.Redirect(w, r, catalogExplorerURL(name, "", "catalog", ""), http.StatusSeeOther)
 }
 
 func (h *Handler) CatalogsDelete(w http.ResponseWriter, r *http.Request) {
@@ -296,7 +318,7 @@ func (h *Handler) CatalogsSetDefault(w http.ResponseWriter, r *http.Request) {
 		h.renderServiceError(w, r, err)
 		return
 	}
-	http.Redirect(w, r, "/ui/catalogs/"+name, http.StatusSeeOther)
+	http.Redirect(w, r, catalogExplorerURL(name, "", "catalog", ""), http.StatusSeeOther)
 }
 
 func (h *Handler) CatalogSchemasNew(w http.ResponseWriter, r *http.Request) {
@@ -319,7 +341,7 @@ func (h *Handler) CatalogSchemasCreate(w http.ResponseWriter, r *http.Request) {
 		h.renderServiceError(w, r, err)
 		return
 	}
-	http.Redirect(w, r, "/ui/catalogs/"+catalogName, http.StatusSeeOther)
+	http.Redirect(w, r, catalogExplorerURL(catalogName, "", "catalog", ""), http.StatusSeeOther)
 }
 
 func (h *Handler) CatalogSchemasDetail(w http.ResponseWriter, r *http.Request) {
@@ -353,7 +375,7 @@ func (h *Handler) CatalogSchemasUpdate(w http.ResponseWriter, r *http.Request) {
 		h.renderServiceError(w, r, err)
 		return
 	}
-	http.Redirect(w, r, "/ui/catalogs/"+catalogName, http.StatusSeeOther)
+	http.Redirect(w, r, catalogExplorerURL(catalogName, schemaName, "schema", ""), http.StatusSeeOther)
 }
 
 func (h *Handler) CatalogSchemasDelete(w http.ResponseWriter, r *http.Request) {
@@ -364,7 +386,7 @@ func (h *Handler) CatalogSchemasDelete(w http.ResponseWriter, r *http.Request) {
 		h.renderServiceError(w, r, err)
 		return
 	}
-	http.Redirect(w, r, "/ui/catalogs/"+catalogName, http.StatusSeeOther)
+	http.Redirect(w, r, catalogExplorerURL(catalogName, "", "catalog", ""), http.StatusSeeOther)
 }
 
 func (h *Handler) CatalogTablesDetail(w http.ResponseWriter, r *http.Request) {
@@ -392,8 +414,11 @@ func catalogExplorerURL(catalogName, schemaName, objectType, objectName string) 
 	if objectName != "" {
 		q.Set("name", objectName)
 	}
+	if catalogName != "" {
+		q.Set("catalog", catalogName)
+	}
 	query := q.Encode()
-	base := "/ui/catalogs/" + url.PathEscape(catalogName)
+	base := "/ui/catalogs"
 	if query == "" {
 		return base
 	}
