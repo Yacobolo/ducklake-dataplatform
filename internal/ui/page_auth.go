@@ -40,6 +40,9 @@ func loginPage(errMsg string) Node {
 
 	return HTML(
 		Lang("en"),
+		Attr("data-color-mode", "auto"),
+		Attr("data-light-theme", "light"),
+		Attr("data-dark-theme", "dark"),
 		Head(
 			Meta(Charset("utf-8")),
 			Meta(Name("viewport"), Content("width=device-width, initial-scale=1")),
@@ -47,7 +50,6 @@ func loginPage(errMsg string) Node {
 			Link(Rel("preconnect"), Href("https://fonts.googleapis.com")),
 			Link(Rel("preconnect"), Href("https://fonts.gstatic.com"), Attr("crossorigin", "")),
 			Link(Rel("stylesheet"), Href("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap")),
-			Link(Rel("stylesheet"), Href("https://cdn.jsdelivr.net/npm/@primer/css@22.1.0/dist/primer.min.css")),
 			Link(Rel("stylesheet"), Href("/ui/static/app.css")),
 		),
 		Body(

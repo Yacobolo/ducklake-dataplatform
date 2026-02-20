@@ -1,0 +1,13 @@
+{
+  "name": "duck-ui-web",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Frontend asset workspace for internal UI",
+  "scripts": {
+    "build": "npm run sync:primitives",
+    "sync:primitives": "node ./scripts/sync-primer-primitives.mjs"
+  },
+  "dependencies": {
+    "@primer/primitives": "11.4.0"
+  }
+}

@@ -58,3 +58,4 @@ pkg/cli/gen/*.gen.go
 docs/node_modules/
 docs/.vitepress/dist/
 docs/.vitepress/cache/
+web/node_modules/

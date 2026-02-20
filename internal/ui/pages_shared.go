@@ -53,14 +53,17 @@ func appPage(title, active string, principal domain.ContextPrincipal, body ...No
 
 	return HTML(
 		Lang("en"),
+		Attr("data-color-mode", "auto"),
+		Attr("data-light-theme", "light"),
+		Attr("data-dark-theme", "dark"),
 		Head(
 			Meta(Charset("utf-8")),
 			Meta(Name("viewport"), Content("width=device-width, initial-scale=1")),
 			TitleEl(Text(title+" | Duck UI")),
+			Link(Rel("icon"), Href("data:,")),
 			Link(Rel("preconnect"), Href("https://fonts.googleapis.com")),
 			Link(Rel("preconnect"), Href("https://fonts.gstatic.com"), Attr("crossorigin", "")),
 			Link(Rel("stylesheet"), Href("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap")),
-			Link(Rel("stylesheet"), Href("https://cdn.jsdelivr.net/npm/@primer/css@22.1.0/dist/primer.min.css")),
 			Link(Rel("stylesheet"), Href("/ui/static/app.css")),
 			Script(Src("https://unpkg.com/lucide@latest/dist/umd/lucide.min.js")),
 			Script(
@@ -98,7 +101,7 @@ func appPage(title, active string, principal domain.ContextPrincipal, body ...No
 					Div(Class("content"), Group(body)),
 				),
 			),
-			Script(Text("if (window.lucide) { window.lucide.createIcons(); }")),
+			Script(Raw("if (window.lucide) { window.lucide.createIcons(); } document.addEventListener('click', function(e){ var t=e.target; if(!(t instanceof Element)){return;} document.querySelectorAll('details.dropdown[open]').forEach(function(d){ if(!d.contains(t)){ d.removeAttribute('open'); }}); });")),
 		),
 	)
 }
@@ -106,14 +109,17 @@ func appPage(title, active string, principal domain.ContextPrincipal, body ...No
 func errorPage(title, message string) Node {
 	return HTML(
 		Lang("en"),
+		Attr("data-color-mode", "auto"),
+		Attr("data-light-theme", "light"),
+		Attr("data-dark-theme", "dark"),
 		Head(
 			Meta(Charset("utf-8")),
 			Meta(Name("viewport"), Content("width=device-width, initial-scale=1")),
 			TitleEl(Text(title+" | Duck UI")),
+			Link(Rel("icon"), Href("data:,")),
 			Link(Rel("preconnect"), Href("https://fonts.googleapis.com")),
 			Link(Rel("preconnect"), Href("https://fonts.gstatic.com"), Attr("crossorigin", "")),
 			Link(Rel("stylesheet"), Href("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap")),
-			Link(Rel("stylesheet"), Href("https://cdn.jsdelivr.net/npm/@primer/css@22.1.0/dist/primer.min.css")),
 			Link(Rel("stylesheet"), Href("/ui/static/app.css")),
 			Script(Src("https://unpkg.com/lucide@latest/dist/umd/lucide.min.js")),
 		),
@@ -124,7 +130,7 @@ func errorPage(title, message string) Node {
 				P(Text(message)),
 				P(A(Href("/ui"), Text("Back to overview"))),
 			),
-			Script(Text("if (window.lucide) { window.lucide.createIcons(); }")),
+			Script(Raw("if (window.lucide) { window.lucide.createIcons(); }")),
 		),
 	)
 }
@@ -258,9 +264,19 @@ func statusLabel(text, tone string) Node {
 }
 
 func actionMenu(label string, items ...Node) Node {
+	summaryClass := "btn btn-sm"
+	summaryContent := Node(Text(label))
+	if label == "More" || label == "Actions" {
+		summaryClass = "btn btn-sm btn-icon"
+		summaryContent = Group([]Node{
+			I(Class("btn-icon-glyph"), Attr("data-lucide", "ellipsis"), Attr("aria-hidden", "true")),
+			Span(Class("sr-only"), Text(label)),
+		})
+	}
+
 	return Details(
 		Class("dropdown details-reset details-overlay d-inline-block"),
-		Summary(Class("btn btn-sm"), Text(label)),
+		Summary(Class(summaryClass), Title(label), Attr("aria-label", label), summaryContent),
 		Div(
 			Class("dropdown-menu dropdown-menu-sw"),
 			Group(items),
@@ -269,18 +285,57 @@ func actionMenu(label string, items ...Node) Node {
 }
 
 func actionMenuLink(href, label string) Node {
-	return A(Href(href), Class("dropdown-item"), Text(label))
+	icon := actionIconForLabel(label)
+	return A(
+		Href(href),
+		Class("dropdown-item"),
+		I(Class("dropdown-item-icon"), Attr("data-lucide", icon), Attr("aria-hidden", "true")),
+		Span(Text(label)),
+	)
 }
 
 func actionMenuPost(action, label string, csrfField func() Node, danger bool) Node {
 	btnClass := "dropdown-item"
 	if danger {
-		btnClass += " color-fg-danger"
+		btnClass += " dropdown-item-danger color-fg-danger"
 	}
-	return Form(
+	icon := actionIconForLabel(label)
+	button := Form(
 		Method("post"),
 		Action(action),
 		csrfField(),
-		Button(Type("submit"), Class(btnClass), Text(label)),
+		Button(
+			Type("submit"),
+			Class(btnClass),
+			I(Class("dropdown-item-icon"), Attr("data-lucide", icon), Attr("aria-hidden", "true")),
+			Span(Text(label)),
+		),
 	)
+	if danger {
+		return Group([]Node{
+			Div(Class("dropdown-divider")),
+			button,
+		})
+	}
+	return button
+}
+
+func actionIconForLabel(label string) string {
+	lower := strings.ToLower(strings.TrimSpace(label))
+	switch {
+	case strings.Contains(lower, "delete"):
+		return "trash-2"
+	case strings.Contains(lower, "cancel"):
+		return "x-circle"
+	case strings.Contains(lower, "edit"):
+		return "pencil"
+	case strings.Contains(lower, "open"):
+		return "square-arrow-out-up-right"
+	case strings.Contains(lower, "move"):
+		return "move-vertical"
+	case strings.Contains(lower, "insert") || strings.Contains(lower, "add"):
+		return "plus"
+	default:
+		return "circle"
+	}
 }

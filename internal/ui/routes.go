@@ -70,8 +70,12 @@ func MountRoutes(r chi.Router, h *Handler, authMiddleware func(http.Handler) htt
 		r.Post("/notebooks/{notebookID}/cells", h.NotebookCellsCreate)
 		r.Get("/notebooks/{notebookID}/cells/{cellID}/edit", h.NotebookCellsEdit)
 		r.Post("/notebooks/{notebookID}/cells/{cellID}/update", h.NotebookCellsUpdate)
+		r.Post("/notebooks/{notebookID}/cells/{cellID}/run", h.NotebookCellsRun)
+		r.Post("/notebooks/{notebookID}/cells/{cellID}/move", h.NotebookCellsMove)
+		r.Get("/notebooks/{notebookID}/cells/{cellID}/download.csv", h.NotebookCellsDownloadCSV)
 		r.Post("/notebooks/{notebookID}/cells/{cellID}/delete", h.NotebookCellsDelete)
 		r.Post("/notebooks/{notebookID}/cells/reorder", h.NotebookCellsReorder)
+		r.Post("/notebooks/{notebookID}/run-all", h.NotebookRunAll)
 
 		r.Get("/macros", h.MacrosList)
 		r.Get("/macros/{macroName}", h.MacrosDetail)
