@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"log/slog"
 
+	computerouter "duck-demo/internal/compute/router"
 	"duck-demo/internal/domain"
 )
+
+const assignmentLookupPageSize = 200
 
 var _ domain.ComputeResolver = (*DefaultResolver)(nil)
 
@@ -20,6 +23,7 @@ type DefaultResolver struct {
 	principalRepo domain.PrincipalRepository
 	groupRepo     domain.GroupRepository
 	cache         *RemoteCache
+	selector      computerouter.EndpointSelector
 	logger        *slog.Logger
 }
 
@@ -39,6 +43,7 @@ func NewResolver(
 		principalRepo: principalRepo,
 		groupRepo:     groupRepo,
 		cache:         cache,
+		selector:      computerouter.NewActiveFirstSelector(),
 		logger:        logger,
 	}
 }
@@ -92,10 +97,69 @@ func (r *DefaultResolver) Resolve(ctx context.Context, principalName string) (do
 				return nil, fmt.Errorf("resolve group assignment: %w", err)
 			}
 		}
+
+		selected, err := r.selectFromAssignments(ctx, principal.ID, groups)
+		if err != nil {
+			return nil, err
+		}
+		if selected != nil {
+			return r.resolveEndpoint(ctx, selected)
+		}
+	} else {
+		selected, err := r.selectFromAssignments(ctx, principal.ID, nil)
+		if err != nil {
+			return nil, err
+		}
+		if selected != nil {
+			return r.resolveEndpoint(ctx, selected)
+		}
 	}
 
 	// 4. Default: local fallback
 	return nil, nil
+}
+
+func (r *DefaultResolver) selectFromAssignments(ctx context.Context, principalID string, groups []domain.Group) (*domain.ComputeEndpoint, error) {
+	if r.computeRepo == nil {
+		return nil, fmt.Errorf("compute repository is not configured")
+	}
+
+	candidates := make([]domain.ComputeEndpoint, 0)
+	seen := map[string]struct{}{}
+
+	appendUnique := func(endpoints []domain.ComputeEndpoint) {
+		for _, ep := range endpoints {
+			if _, ok := seen[ep.ID]; ok {
+				continue
+			}
+			seen[ep.ID] = struct{}{}
+			candidates = append(candidates, ep)
+		}
+	}
+
+	userEndpoints, err := r.computeRepo.GetAssignmentsForPrincipal(ctx, principalID, "user")
+	if err != nil {
+		return nil, fmt.Errorf("resolve user assignments: %w", err)
+	}
+	appendUnique(userEndpoints)
+
+	for _, g := range groups {
+		groupEndpoints, err := r.computeRepo.GetAssignmentsForPrincipal(ctx, g.ID, "group")
+		if err != nil {
+			return nil, fmt.Errorf("resolve group assignments: %w", err)
+		}
+		appendUnique(groupEndpoints)
+	}
+
+	if len(candidates) == 0 {
+		return nil, nil
+	}
+
+	if r.selector == nil {
+		r.selector = computerouter.NewActiveFirstSelector()
+	}
+
+	return r.selector.Select(ctx, candidates)
 }
 
 // resolveEndpoint returns a ComputeExecutor for the given endpoint.
@@ -114,13 +178,49 @@ func (r *DefaultResolver) resolveEndpoint(ctx context.Context, ep *domain.Comput
 
 	// Health check
 	if err := remote.Ping(ctx); err != nil {
-		if r.logger != nil {
-			r.logger.Warn("remote agent unhealthy", "endpoint", ep.Name, "error", err)
+		fallbackLocal, lookupErr := r.fallbackLocalEnabled(ctx, ep)
+		if lookupErr != nil {
+			return nil, fmt.Errorf("resolve assignment fallback policy for endpoint %q: %w", ep.Name, lookupErr)
 		}
-		// Check if fallback_local is enabled for this assignment
-		// For now, fall back to local on failure
+
+		if r.logger != nil {
+			r.logger.Warn("remote agent unhealthy", "endpoint", ep.Name, "error", err, "fallback_local", fallbackLocal)
+		}
+
+		if fallbackLocal {
+			return nil, nil
+		}
+
 		return nil, fmt.Errorf("remote agent %q unhealthy: %w", ep.Name, err)
 	}
 
 	return remote, nil
+}
+
+func (r *DefaultResolver) fallbackLocalEnabled(ctx context.Context, ep *domain.ComputeEndpoint) (bool, error) {
+	if r.computeRepo == nil {
+		return false, fmt.Errorf("compute repository is not configured")
+	}
+
+	offset := 0
+	for {
+		assignments, total, err := r.computeRepo.ListAssignments(ctx, ep.ID, domain.PageRequest{
+			MaxResults: assignmentLookupPageSize,
+			PageToken:  domain.EncodePageToken(offset),
+		})
+		if err != nil {
+			return false, fmt.Errorf("list assignments for endpoint %q: %w", ep.Name, err)
+		}
+
+		for _, assignment := range assignments {
+			if assignment.IsDefault && assignment.FallbackLocal {
+				return true, nil
+			}
+		}
+
+		offset += len(assignments)
+		if int64(offset) >= total || len(assignments) == 0 {
+			return false, nil
+		}
+	}
 }

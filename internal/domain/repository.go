@@ -127,6 +127,18 @@ type QueryHistoryRepository interface {
 	List(ctx context.Context, filter QueryHistoryFilter) ([]QueryHistoryEntry, int64, error)
 }
 
+// QueryJobRepository provides CRUD operations for durable async query jobs.
+type QueryJobRepository interface {
+	Create(ctx context.Context, job *QueryJob) (*QueryJob, error)
+	GetByID(ctx context.Context, id string) (*QueryJob, error)
+	GetByRequestID(ctx context.Context, principalName, requestID string) (*QueryJob, error)
+	MarkRunning(ctx context.Context, id string) error
+	MarkSucceeded(ctx context.Context, id string, columns []string, rows [][]interface{}, rowCount int) error
+	MarkFailed(ctx context.Context, id string, message string) error
+	MarkCanceled(ctx context.Context, id string) error
+	Delete(ctx context.Context, id string) error
+}
+
 // LineageRepository provides operations for lineage edges.
 type LineageRepository interface {
 	InsertEdge(ctx context.Context, edge *LineageEdge) error

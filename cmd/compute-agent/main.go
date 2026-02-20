@@ -1,6 +1,6 @@
 // Package main is the entry point for the compute agent binary.
 // The agent opens an in-memory DuckDB, optionally attaches a DuckLake catalog
-// via PostgreSQL, and exposes POST /execute and GET /health over HTTP.
+// via PostgreSQL, and exposes query execution/lifecycle endpoints over HTTP.
 package main
 
 import (
@@ -91,11 +91,13 @@ func run() error {
 	}
 
 	handler := agent.NewHandler(agent.HandlerConfig{
-		DB:          db,
-		AgentToken:  cfg.AgentToken,
-		StartTime:   time.Now(),
-		MaxMemoryGB: cfg.MaxMemoryGB,
-		Logger:      logger,
+		DB:              db,
+		AgentToken:      cfg.AgentToken,
+		StartTime:       time.Now(),
+		MaxMemoryGB:     cfg.MaxMemoryGB,
+		QueryResultTTL:  cfg.QueryResultTTL,
+		CleanupInterval: cfg.CleanupInterval,
+		Logger:          logger,
 	})
 
 	srv := &http.Server{

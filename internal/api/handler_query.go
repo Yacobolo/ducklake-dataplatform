@@ -14,6 +14,13 @@ type queryService interface {
 	Execute(ctx context.Context, principalName, sqlQuery string) (*query.QueryResult, error)
 }
 
+type queryAsyncService interface {
+	SubmitAsync(ctx context.Context, principalName, sqlQuery, requestID string) (*domain.QueryJob, error)
+	GetAsyncJob(ctx context.Context, principalName, jobID string) (*domain.QueryJob, error)
+	CancelAsyncJob(ctx context.Context, principalName, jobID string) error
+	DeleteAsyncJob(ctx context.Context, principalName, jobID string) error
+}
+
 // ManifestService defines the manifest operations used by the API handler.
 // Exported because callers need to handle nil-to-interface conversion for
 // this optional service.
@@ -58,6 +65,218 @@ func (h *APIHandler) ExecuteQuery(ctx context.Context, req ExecuteQueryRequestOb
 		},
 		Headers: ExecuteQuery200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
+}
+
+// SubmitQuery implements async query submission endpoint.
+func (h *APIHandler) SubmitQuery(ctx context.Context, req SubmitQueryRequestObject) (SubmitQueryResponseObject, error) {
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
+
+	asyncSvc, ok := h.query.(queryAsyncService)
+	if !ok {
+		return SubmitQuery500JSONResponse{InternalErrorJSONResponse{Body: Error{Code: 500, Message: "async query service is not configured"}, Headers: InternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+	}
+
+	requestID := ""
+	if req.Body.RequestId != nil {
+		requestID = *req.Body.RequestId
+	}
+	job, err := asyncSvc.SubmitAsync(ctx, principal, req.Body.Sql, requestID)
+	if err != nil {
+		code := errorCodeFromError(err)
+		switch int(code) {
+		case http.StatusBadRequest:
+			return SubmitQuery400JSONResponse{BadRequestJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		default:
+			return SubmitQuery500JSONResponse{InternalErrorJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: InternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		}
+	}
+
+	status := string(job.Status)
+	apiStatus := SubmitQueryResponseStatus(status)
+	return SubmitQuery202JSONResponse{
+		Body:    SubmitQueryResponse{QueryId: job.ID, Status: apiStatus},
+		Headers: SubmitQuery202ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// GetQuery implements async query status endpoint.
+func (h *APIHandler) GetQuery(ctx context.Context, req GetQueryRequestObject) (GetQueryResponseObject, error) {
+	job, err := h.lookupAsyncJob(ctx, req.QueryId)
+	if err != nil {
+		code := errorCodeFromError(err)
+		if int(code) == http.StatusNotFound {
+			return GetQuery404JSONResponse{NotFoundJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		}
+		return GetQuery500JSONResponse{InternalErrorJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: InternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+	}
+
+	body := queryJobToAPI(job)
+	return GetQuery200JSONResponse{
+		Body:    body,
+		Headers: GetQuery200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// GetQueryResults returns a page of async query results.
+func (h *APIHandler) GetQueryResults(ctx context.Context, req GetQueryResultsRequestObject) (GetQueryResultsResponseObject, error) {
+	job, err := h.lookupAsyncJob(ctx, req.QueryId)
+	if err != nil {
+		code := errorCodeFromError(err)
+		if int(code) == http.StatusNotFound {
+			return GetQueryResults404JSONResponse{NotFoundJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		}
+		return GetQueryResults500JSONResponse{InternalErrorJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: InternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+	}
+
+	if job.Status == domain.QueryJobStatusQueued || job.Status == domain.QueryJobStatusRunning {
+		return GetQueryResults409JSONResponse{ConflictJSONResponse{Body: Error{Code: 409, Message: "query is not ready"}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+	}
+	if job.Status == domain.QueryJobStatusFailed || job.Status == domain.QueryJobStatusCanceled {
+		msg := "query results are not available"
+		if job.ErrorMessage != nil && *job.ErrorMessage != "" {
+			msg = *job.ErrorMessage
+		}
+		return GetQueryResults409JSONResponse{ConflictJSONResponse{Body: Error{Code: 409, Message: msg}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+	}
+
+	maxResults := int32(100)
+	if req.Params.MaxResults != nil {
+		maxResults = *req.Params.MaxResults
+	}
+	pageToken := ""
+	if req.Params.PageToken != nil {
+		pageToken = *req.Params.PageToken
+	}
+
+	offset := domain.PageRequest{PageToken: pageToken}.Offset()
+	limit := int(maxResults)
+	if limit <= 0 {
+		limit = 100
+	}
+
+	end := offset + limit
+	if end > len(job.Rows) {
+		end = len(job.Rows)
+	}
+	rows := make([][]interface{}, 0, end-offset)
+	for i := offset; i < end; i++ {
+		row := make([]interface{}, len(job.Rows[i]))
+		copy(row, job.Rows[i])
+		rows = append(rows, row)
+	}
+	nextPageToken := ""
+	if end < len(job.Rows) {
+		nextPageToken = domain.EncodePageToken(end)
+	}
+
+	result := QueryResult{Columns: &job.Columns, Rows: &rows}
+	rowCount := int64(job.RowCount)
+	result.RowCount = &rowCount
+	if nextPageToken != "" {
+		result.NextPageToken = &nextPageToken
+	}
+
+	return GetQueryResults200JSONResponse{
+		Body:    result,
+		Headers: GetQueryResults200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// CancelQuery cancels async query execution.
+func (h *APIHandler) CancelQuery(ctx context.Context, req CancelQueryRequestObject) (CancelQueryResponseObject, error) {
+	job, err := h.lookupAsyncJob(ctx, req.QueryId)
+	if err != nil {
+		code := errorCodeFromError(err)
+		if int(code) == http.StatusNotFound {
+			return CancelQuery404JSONResponse{NotFoundJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		}
+		return CancelQuery500JSONResponse{InternalErrorJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: InternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+	}
+
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
+	asyncSvc, ok := h.query.(queryAsyncService)
+	if !ok {
+		return CancelQuery500JSONResponse{InternalErrorJSONResponse{Body: Error{Code: 500, Message: "async query service is not configured"}, Headers: InternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+	}
+	if err := asyncSvc.CancelAsyncJob(ctx, principal, req.QueryId); err != nil {
+		code := errorCodeFromError(err)
+		if int(code) == http.StatusNotFound {
+			return CancelQuery404JSONResponse{NotFoundJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		}
+		return CancelQuery500JSONResponse{InternalErrorJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: InternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+	}
+
+	status := string(job.Status)
+	if job.Status == domain.QueryJobStatusQueued || job.Status == domain.QueryJobStatusRunning {
+		status = string(domain.QueryJobStatusCanceled)
+	}
+	apiStatus := CancelQueryResponseStatus(status)
+	return CancelQuery200JSONResponse{
+		Body:    CancelQueryResponse{QueryId: job.ID, Status: apiStatus},
+		Headers: CancelQuery200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// DeleteQuery deletes async query state.
+func (h *APIHandler) DeleteQuery(ctx context.Context, req DeleteQueryRequestObject) (DeleteQueryResponseObject, error) {
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
+
+	asyncSvc, ok := h.query.(queryAsyncService)
+	if !ok {
+		return DeleteQuery500JSONResponse{InternalErrorJSONResponse{Body: Error{Code: 500, Message: "async query service is not configured"}, Headers: InternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+	}
+
+	if err := asyncSvc.DeleteAsyncJob(ctx, principal, req.QueryId); err != nil {
+		code := errorCodeFromError(err)
+		if int(code) == http.StatusNotFound {
+			return DeleteQuery404JSONResponse{NotFoundJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		}
+		return DeleteQuery500JSONResponse{InternalErrorJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: InternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+	}
+
+	return DeleteQuery204Response{Headers: DeleteQuery204ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+}
+
+func (h *APIHandler) lookupAsyncJob(ctx context.Context, queryID string) (*domain.QueryJob, error) {
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
+
+	asyncSvc, ok := h.query.(queryAsyncService)
+	if !ok {
+		return nil, domain.ErrNotImplemented("async query service is not configured")
+	}
+
+	job, err := asyncSvc.GetAsyncJob(ctx, principal, queryID)
+	if err != nil {
+		return nil, err
+	}
+
+	return job, nil
+}
+
+func queryJobToAPI(job *domain.QueryJob) QueryJob {
+	status := string(job.Status)
+	rowCount := int64(job.RowCount)
+	resp := QueryJob{
+		QueryId:   job.ID,
+		Status:    QueryJobStatus(status),
+		RowCount:  rowCount,
+		RequestId: &job.RequestID,
+		CreatedAt: &job.CreatedAt,
+	}
+	if job.ErrorMessage != nil {
+		resp.Error = job.ErrorMessage
+	}
+	if job.StartedAt != nil {
+		resp.StartedAt = job.StartedAt
+	}
+	if job.CompletedAt != nil {
+		resp.CompletedAt = job.CompletedAt
+	}
+	return resp
 }
 
 // CreateManifest implements the endpoint for generating a table read manifest.

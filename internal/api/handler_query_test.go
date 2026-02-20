@@ -12,6 +12,45 @@ import (
 	"duck-demo/internal/service/query"
 )
 
+type mockQueryAsyncService struct {
+	submitFn func(ctx context.Context, principalName, sqlQuery, requestID string) (*domain.QueryJob, error)
+	getFn    func(ctx context.Context, principalName, jobID string) (*domain.QueryJob, error)
+	cancelFn func(ctx context.Context, principalName, jobID string) error
+	deleteFn func(ctx context.Context, principalName, jobID string) error
+}
+
+func (m *mockQueryAsyncService) Execute(_ context.Context, _, _ string) (*query.QueryResult, error) {
+	return nil, domain.ErrNotImplemented("not used")
+}
+
+func (m *mockQueryAsyncService) SubmitAsync(ctx context.Context, principalName, sqlQuery, requestID string) (*domain.QueryJob, error) {
+	if m.submitFn == nil {
+		panic("submitFn not set")
+	}
+	return m.submitFn(ctx, principalName, sqlQuery, requestID)
+}
+
+func (m *mockQueryAsyncService) GetAsyncJob(ctx context.Context, principalName, jobID string) (*domain.QueryJob, error) {
+	if m.getFn == nil {
+		panic("getFn not set")
+	}
+	return m.getFn(ctx, principalName, jobID)
+}
+
+func (m *mockQueryAsyncService) CancelAsyncJob(ctx context.Context, principalName, jobID string) error {
+	if m.cancelFn == nil {
+		panic("cancelFn not set")
+	}
+	return m.cancelFn(ctx, principalName, jobID)
+}
+
+func (m *mockQueryAsyncService) DeleteAsyncJob(ctx context.Context, principalName, jobID string) error {
+	if m.deleteFn == nil {
+		panic("deleteFn not set")
+	}
+	return m.deleteFn(ctx, principalName, jobID)
+}
+
 // === Test helpers (prefixed with "queryTest" to avoid collisions) ===
 
 func queryTestCtx() context.Context {
@@ -291,4 +330,53 @@ func TestHandler_ProfileTable(t *testing.T) {
 			tt.assertFn(t, resp, err)
 		})
 	}
+}
+
+func TestHandler_SubmitQuery(t *testing.T) {
+	t.Parallel()
+
+	handler := &APIHandler{query: &mockQueryAsyncService{submitFn: func(_ context.Context, principalName, sqlQuery, requestID string) (*domain.QueryJob, error) {
+		require.Equal(t, "test-user", principalName)
+		require.Equal(t, "SELECT 1", sqlQuery)
+		require.Equal(t, "req-1", requestID)
+		return &domain.QueryJob{ID: "job-1", Status: domain.QueryJobStatusQueued}, nil
+	}}}
+
+	body := SubmitQueryJSONRequestBody{Sql: "SELECT 1", RequestId: queryTestStrPtr("req-1")}
+	resp, err := handler.SubmitQuery(queryTestCtx(), SubmitQueryRequestObject{Body: &body})
+	require.NoError(t, err)
+
+	ok, okType := resp.(SubmitQuery202JSONResponse)
+	require.True(t, okType)
+	assert.Equal(t, "job-1", ok.Body.QueryId)
+	assert.Equal(t, SubmitQueryResponseStatus("QUEUED"), ok.Body.Status)
+}
+
+func TestHandler_GetQueryResults_Paged(t *testing.T) {
+	t.Parallel()
+
+	handler := &APIHandler{query: &mockQueryAsyncService{getFn: func(_ context.Context, principalName, jobID string) (*domain.QueryJob, error) {
+		require.Equal(t, "test-user", principalName)
+		require.Equal(t, "job-1", jobID)
+		return &domain.QueryJob{
+			ID:       "job-1",
+			Status:   domain.QueryJobStatusSucceeded,
+			Columns:  []string{"id"},
+			Rows:     [][]interface{}{{1}, {2}},
+			RowCount: 2,
+		}, nil
+	}}}
+
+	maxResults := int32(1)
+	resp, err := handler.GetQueryResults(queryTestCtx(), GetQueryResultsRequestObject{
+		QueryId: "job-1",
+		Params:  GetQueryResultsParams{MaxResults: &maxResults},
+	})
+	require.NoError(t, err)
+
+	ok, okType := resp.(GetQueryResults200JSONResponse)
+	require.True(t, okType)
+	require.NotNil(t, ok.Body.Rows)
+	require.Len(t, *ok.Body.Rows, 1)
+	require.NotNil(t, ok.Body.NextPageToken)
 }

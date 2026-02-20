@@ -4,19 +4,22 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 )
 
 // AgentConfig holds configuration for the compute agent, loaded from environment variables.
 type AgentConfig struct {
-	CatalogDSN  string
-	S3KeyID     string
-	S3Secret    string
-	S3Endpoint  string
-	S3Region    string
-	S3Bucket    string
-	AgentToken  string
-	ListenAddr  string
-	MaxMemoryGB int
+	CatalogDSN      string
+	S3KeyID         string
+	S3Secret        string
+	S3Endpoint      string
+	S3Region        string
+	S3Bucket        string
+	AgentToken      string
+	ListenAddr      string
+	MaxMemoryGB     int
+	QueryResultTTL  time.Duration
+	CleanupInterval time.Duration
 }
 
 func loadAgentConfig() (*AgentConfig, error) {
@@ -37,6 +40,20 @@ func loadAgentConfig() (*AgentConfig, error) {
 		}
 		cfg.MaxMemoryGB = n
 	}
+	if v := os.Getenv("QUERY_RESULT_TTL"); v != "" {
+		d, err := time.ParseDuration(v)
+		if err != nil {
+			return nil, fmt.Errorf("invalid QUERY_RESULT_TTL: %w", err)
+		}
+		cfg.QueryResultTTL = d
+	}
+	if v := os.Getenv("QUERY_CLEANUP_INTERVAL"); v != "" {
+		d, err := time.ParseDuration(v)
+		if err != nil {
+			return nil, fmt.Errorf("invalid QUERY_CLEANUP_INTERVAL: %w", err)
+		}
+		cfg.CleanupInterval = d
+	}
 	if cfg.AgentToken == "" {
 		return nil, fmt.Errorf("AGENT_TOKEN is required")
 	}
@@ -45,6 +62,12 @@ func loadAgentConfig() (*AgentConfig, error) {
 	}
 	if cfg.S3Bucket == "" {
 		cfg.S3Bucket = "duck-demo"
+	}
+	if cfg.QueryResultTTL <= 0 {
+		cfg.QueryResultTTL = 10 * time.Minute
+	}
+	if cfg.CleanupInterval <= 0 {
+		cfg.CleanupInterval = 1 * time.Minute
 	}
 	return cfg, nil
 }
