@@ -38,6 +38,10 @@
           "type": "string"
         },
         "type": {
+          "enum": [
+            "user",
+            "service_principal"
+          ],
           "type": "string"
         }
       },

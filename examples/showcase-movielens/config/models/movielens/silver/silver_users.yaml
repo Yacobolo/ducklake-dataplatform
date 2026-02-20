@@ -11,4 +11,4 @@ spec:
       user_id,
       age_group,
       upper(region) AS region
-    FROM lake.bronze_users
+    FROM lake.main.bronze_users

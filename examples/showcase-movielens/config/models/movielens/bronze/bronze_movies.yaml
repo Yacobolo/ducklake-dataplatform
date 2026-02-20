@@ -11,4 +11,4 @@ spec:
       movie_id,
       title,
       genres
-    FROM raw_movies
+    FROM lake.main.raw_movies

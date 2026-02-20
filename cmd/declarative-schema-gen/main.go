@@ -16,6 +16,38 @@ import (
 	"duck-demo/internal/declarative"
 )
 
+var (
+	grantPrincipalTypes = []string{"user", "group"}
+	grantSecurableTypes = []string{"catalog", "schema", "table", "external_location", "storage_credential", "volume"}
+	grantPrivileges     = []string{
+		"SELECT",
+		"INSERT",
+		"UPDATE",
+		"DELETE",
+		"USE_CATALOG",
+		"USE_SCHEMA",
+		"USAGE",
+		"CREATE_TABLE",
+		"CREATE_VIEW",
+		"CREATE_SCHEMA",
+		"MODIFY",
+		"MANAGE",
+		"APPLY_TAG",
+		"MANAGE_TAGS",
+		"MANAGE_POLICIES",
+		"ALL_PRIVILEGES",
+		"CREATE_EXTERNAL_LOCATION",
+		"CREATE_STORAGE_CREDENTIAL",
+		"CREATE_VOLUME",
+		"READ_VOLUME",
+		"WRITE_VOLUME",
+		"READ_FILES",
+		"WRITE_FILES",
+		"MANAGE_COMPUTE",
+		"MANAGE_PIPELINES",
+	}
+)
+
 type schemaGenerator struct {
 	defs map[string]map[string]interface{}
 }
@@ -120,6 +152,120 @@ func lowerFirst(value string) string {
 	return strings.ToLower(value[:1]) + value[1:]
 }
 
+func getDefProperty(defs map[string]map[string]interface{}, defName, propName string) map[string]interface{} {
+	def, ok := defs[defName]
+	if !ok {
+		return nil
+	}
+	props, ok := def["properties"].(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	prop, ok := props[propName].(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	return prop
+}
+
+func addAllOfRule(def map[string]interface{}, rule map[string]interface{}) {
+	existing, ok := def["allOf"]
+	if !ok {
+		def["allOf"] = []interface{}{rule}
+		return
+	}
+	list, ok := existing.([]interface{})
+	if !ok {
+		def["allOf"] = []interface{}{rule}
+		return
+	}
+	def["allOf"] = append(list, rule)
+}
+
+func setStringEnum(defs map[string]map[string]interface{}, defName, propName string, values []string) {
+	prop := getDefProperty(defs, defName, propName)
+	if prop == nil {
+		return
+	}
+	prop["enum"] = values
+}
+
+func applyKindConstraints(kind string, defs map[string]map[string]interface{}) {
+	switch kind {
+	case declarative.KindNamePrincipalList:
+		setStringEnum(defs, "PrincipalSpec", "type", []string{"user", "service_principal"})
+
+	case declarative.KindNameGrantList:
+		setStringEnum(defs, "GrantSpec", "principal_type", grantPrincipalTypes)
+		setStringEnum(defs, "GrantSpec", "securable_type", grantSecurableTypes)
+		setStringEnum(defs, "GrantSpec", "privilege", grantPrivileges)
+
+	case declarative.KindNameTable:
+		setStringEnum(defs, "TableSpec", "table_type", []string{"", "MANAGED", "EXTERNAL"})
+		if tableSpec, ok := defs["TableSpec"]; ok {
+			addAllOfRule(tableSpec, map[string]interface{}{
+				"if": map[string]interface{}{
+					"properties": map[string]interface{}{
+						"table_type": map[string]interface{}{"const": "EXTERNAL"},
+					},
+				},
+				"then": map[string]interface{}{
+					"required": []string{"source_path", "file_format"},
+				},
+			})
+		}
+
+	case declarative.KindNameAPIKeyList:
+		prop := getDefProperty(defs, "APIKeySpec", "expires_at")
+		if prop != nil {
+			prop["format"] = "date-time"
+		}
+
+	case declarative.KindNameMacro:
+		setStringEnum(defs, "MacroSpec", "macro_type", []string{"", "SCALAR", "TABLE"})
+		setStringEnum(defs, "MacroSpec", "visibility", []string{"", "project", "catalog_global", "system"})
+		setStringEnum(defs, "MacroSpec", "status", []string{"", "ACTIVE", "DEPRECATED"})
+
+		macroSpec, ok := defs["MacroSpec"]
+		if !ok {
+			return
+		}
+		addAllOfRule(macroSpec, map[string]interface{}{
+			"if": map[string]interface{}{
+				"properties": map[string]interface{}{
+					"visibility": map[string]interface{}{"const": "project"},
+				},
+			},
+			"then": map[string]interface{}{
+				"required": []string{"project_name"},
+			},
+		})
+		addAllOfRule(macroSpec, map[string]interface{}{
+			"if": map[string]interface{}{
+				"properties": map[string]interface{}{
+					"visibility": map[string]interface{}{"const": "catalog_global"},
+				},
+			},
+			"then": map[string]interface{}{
+				"required": []string{"catalog_name"},
+			},
+		})
+		addAllOfRule(macroSpec, map[string]interface{}{
+			"if": map[string]interface{}{
+				"properties": map[string]interface{}{
+					"visibility": map[string]interface{}{"const": "system"},
+				},
+			},
+			"then": map[string]interface{}{
+				"properties": map[string]interface{}{
+					"project_name": map[string]interface{}{"maxLength": 0},
+					"catalog_name": map[string]interface{}{"maxLength": 0},
+				},
+			},
+		})
+	}
+}
+
 func encodeCanonicalJSON(path string, content interface{}) (string, error) {
 	data, err := json.MarshalIndent(content, "", "  ")
 	if err != nil {
@@ -169,6 +315,8 @@ func main() {
 				}
 			}
 		}
+
+		applyKindConstraints(doc.Kind, gen.defs)
 
 		relPath := filepath.ToSlash(filepath.Join("kinds", doc.FileName+".schema.json"))
 		fullPath := filepath.Join(outDir, relPath)
