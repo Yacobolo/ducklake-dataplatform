@@ -17,8 +17,67 @@ import (
 func TestRemoteExecutor_QueryContext(t *testing.T) {
 	localDB := openTestDuckDB(t)
 
+	t.Run("query_lifecycle_endpoints", func(t *testing.T) {
+		queryID := "q-123"
+		statusCalls := 0
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch {
+			case r.Method == http.MethodPost && r.URL.Path == "/queries":
+				_ = json.NewEncoder(w).Encode(SubmitQueryResponse{QueryID: queryID, Status: QueryStatusQueued})
+			case r.Method == http.MethodGet && r.URL.Path == "/queries/"+queryID:
+				statusCalls++
+				state := QueryStatusRunning
+				if statusCalls > 1 {
+					state = QueryStatusSucceeded
+				}
+				_ = json.NewEncoder(w).Encode(QueryStatusResponse{QueryID: queryID, Status: state})
+			case r.Method == http.MethodGet && r.URL.Path == "/queries/"+queryID+"/results":
+				if r.URL.Query().Get("page_token") == "" {
+					_ = json.NewEncoder(w).Encode(FetchQueryResultsResponse{
+						QueryID:       queryID,
+						Columns:       []string{"id"},
+						Rows:          [][]interface{}{{1}},
+						RowCount:      2,
+						NextPageToken: EncodePageToken(1),
+					})
+					return
+				}
+				_ = json.NewEncoder(w).Encode(FetchQueryResultsResponse{
+					QueryID:  queryID,
+					Columns:  []string{"id"},
+					Rows:     [][]interface{}{{2}},
+					RowCount: 2,
+				})
+			case r.Method == http.MethodDelete && r.URL.Path == "/queries/"+queryID:
+				w.WriteHeader(http.StatusOK)
+			default:
+				w.WriteHeader(http.StatusNotFound)
+			}
+		}))
+		defer server.Close()
+
+		exec := NewRemoteExecutor(server.URL, "tok", localDB)
+		rows, err := exec.QueryContext(context.Background(), "SELECT 1")
+		require.NoError(t, err)
+		defer func() { _ = rows.Close() }()
+
+		var got []string
+		for rows.Next() {
+			var id string
+			require.NoError(t, rows.Scan(&id))
+			got = append(got, id)
+		}
+		require.NoError(t, rows.Err())
+		assert.Equal(t, []string{"1", "2"}, got)
+	})
+
 	t.Run("successful_query", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/queries" {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
 			assert.Equal(t, "POST", r.Method)
 			assert.Equal(t, "/execute", r.URL.Path)
 			assert.Equal(t, "test-token", r.Header.Get("X-Agent-Token"))
@@ -62,7 +121,11 @@ func TestRemoteExecutor_QueryContext(t *testing.T) {
 	})
 
 	t.Run("empty_result", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/queries" {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
 			w.Header().Set("Content-Type", "application/json")
 			_ = json.NewEncoder(w).Encode(ExecuteResponse{
 				Columns:  []string{},
@@ -82,7 +145,11 @@ func TestRemoteExecutor_QueryContext(t *testing.T) {
 	})
 
 	t.Run("agent_error_response", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/queries" {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
 			w.WriteHeader(http.StatusInternalServerError)
 			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"error": "table not found",
@@ -98,7 +165,11 @@ func TestRemoteExecutor_QueryContext(t *testing.T) {
 	})
 
 	t.Run("invalid_json_response", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/queries" {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
 			w.Header().Set("Content-Type", "application/json")
 			_, _ = w.Write([]byte("not json"))
 		}))
@@ -114,11 +185,15 @@ func TestRemoteExecutor_QueryContext(t *testing.T) {
 		exec := NewRemoteExecutor("http://127.0.0.1:1", "tok", localDB)
 		_, err := exec.QueryContext(context.Background(), "SELECT 1") //nolint:sqlclosecheck,rowserrcheck // error path
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "remote execute")
+		assert.Contains(t, err.Error(), "submit query lifecycle request")
 	})
 
 	t.Run("null_values_in_response", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/queries" {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
 			w.Header().Set("Content-Type", "application/json")
 			_ = json.NewEncoder(w).Encode(ExecuteResponse{
 				Columns:  []string{"id", "name"},

@@ -1,0 +1,103 @@
+syntax = "proto3";
+
+package duckdemo.compute.v1;
+
+option go_package = "duck-demo/internal/compute/proto;computeproto";
+
+service ComputeWorker {
+  rpc Execute(ExecuteRequest) returns (ExecuteResponse);
+  rpc SubmitQuery(SubmitQueryRequest) returns (SubmitQueryResponse);
+  rpc GetQueryStatus(GetQueryStatusRequest) returns (QueryStatusResponse);
+  rpc FetchQueryResults(FetchQueryResultsRequest) returns (FetchQueryResultsResponse);
+  rpc CancelQuery(CancelQueryRequest) returns (CancelQueryResponse);
+  rpc DeleteQuery(DeleteQueryRequest) returns (DeleteQueryResponse);
+  rpc Health(HealthRequest) returns (HealthResponse);
+}
+
+message RequestContext {
+  string request_id = 1;
+  string principal_name = 2;
+}
+
+message ExecuteRequest {
+  string sql = 1;
+  RequestContext context = 2;
+}
+
+message ExecuteResponse {
+  repeated string columns = 1;
+  repeated ResultRow rows = 2;
+  int64 row_count = 3;
+}
+
+message SubmitQueryRequest {
+  string sql = 1;
+  RequestContext context = 2;
+}
+
+message SubmitQueryResponse {
+  string query_id = 1;
+  string status = 2;
+}
+
+message GetQueryStatusRequest {
+  string query_id = 1;
+}
+
+message QueryStatusResponse {
+  string query_id = 1;
+  string status = 2;
+  string error = 3;
+  repeated string columns = 4;
+  int64 row_count = 5;
+  string completed_at_rfc3339 = 6;
+}
+
+message FetchQueryResultsRequest {
+  string query_id = 1;
+  string page_token = 2;
+  int32 max_results = 3;
+}
+
+message FetchQueryResultsResponse {
+  string query_id = 1;
+  repeated string columns = 2;
+  repeated ResultRow rows = 3;
+  int64 row_count = 4;
+  string next_page_token = 5;
+}
+
+message CancelQueryRequest {
+  string query_id = 1;
+}
+
+message CancelQueryResponse {
+  string query_id = 1;
+  string status = 2;
+}
+
+message DeleteQueryRequest {
+  string query_id = 1;
+}
+
+message DeleteQueryResponse {
+  string query_id = 1;
+  string status = 2;
+}
+
+message ResultRow {
+  repeated string values = 1;
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+  int64 uptime_seconds = 2;
+  int64 active_queries = 3;
+  int64 queued_jobs = 4;
+  int64 running_jobs = 5;
+  int64 completed_jobs = 6;
+  int64 stored_jobs = 7;
+  int64 cleaned_jobs = 8;
+}

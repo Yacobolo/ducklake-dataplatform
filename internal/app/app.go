@@ -114,6 +114,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	storageCredRepo := repository.NewStorageCredentialRepo(deps.WriteDB, encryptor)
 	computeEndpointRepo := repository.NewComputeEndpointRepo(deps.WriteDB, encryptor)
 	catalogRegRepo := repository.NewCatalogRegistrationRepo(deps.WriteDB)
+	queryJobRepo := repository.NewQueryJobRepo(deps.WriteDB)
 
 	// === 3. Factories (multi-catalog) ===
 	catalogRepoFactory := repository.NewCatalogRepoFactory(
@@ -207,6 +208,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	querySvc := query.NewQueryService(eng, auditRepo, lineageRepo)
 	catalogAdapter := query.NewCatalogAdapter(introspectionRepo)
 	querySvc.SetColumnLineage(colLineageRepo, catalogAdapter)
+	querySvc.SetJobRepository(queryJobRepo)
 	principalSvc := security.NewPrincipalService(principalRepo, auditRepo)
 	groupSvc := security.NewGroupService(groupRepo, auditRepo)
 	grantSvc := security.NewGrantService(grantRepo, auditRepo, authSvc)

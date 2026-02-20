@@ -1,6 +1,6 @@
 // Package main is the entry point for the compute agent binary.
 // The agent opens an in-memory DuckDB, optionally attaches a DuckLake catalog
-// via PostgreSQL, and exposes POST /execute and GET /health over HTTP.
+// via PostgreSQL, and exposes query execution/lifecycle endpoints over HTTP.
 package main
 
 import (
@@ -91,16 +91,13 @@ func run() error {
 	}
 
 	handler := agent.NewHandler(agent.HandlerConfig{
-		DB:                    db,
-		AgentToken:            cfg.AgentToken,
-		StartTime:             time.Now(),
-		MaxMemoryGB:           cfg.MaxMemoryGB,
-		MaxResultRows:         cfg.MaxResultRows,
-		MaxConcurrentQueries:  cfg.MaxConcurrentQueries,
-		QueryTimeout:          cfg.QueryTimeout,
-		RequireSignedRequests: cfg.RequireSignedRequests,
-		SignatureMaxSkew:      cfg.SignatureMaxSkew,
-		Logger:                logger,
+		DB:              db,
+		AgentToken:      cfg.AgentToken,
+		StartTime:       time.Now(),
+		MaxMemoryGB:     cfg.MaxMemoryGB,
+		QueryResultTTL:  cfg.QueryResultTTL,
+		CleanupInterval: cfg.CleanupInterval,
+		Logger:          logger,
 	})
 
 	srv := &http.Server{
@@ -121,14 +118,6 @@ func run() error {
 	}()
 
 	logger.Info("compute agent listening", "addr", cfg.ListenAddr)
-	if cfg.TLSCertFile != "" && cfg.TLSKeyFile != "" {
-		logger.Info("TLS enabled for compute agent", "cert_file", cfg.TLSCertFile)
-		if err := srv.ListenAndServeTLS(cfg.TLSCertFile, cfg.TLSKeyFile); err != nil && err != http.ErrServerClosed {
-			return fmt.Errorf("server: %w", err)
-		}
-		return nil
-	}
-
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		return fmt.Errorf("server: %w", err)
 	}

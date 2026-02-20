@@ -2,6 +2,7 @@ package main
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,6 +27,8 @@ func TestLoadAgentConfig(t *testing.T) {
 		t.Setenv("S3_BUCKET", "")
 		t.Setenv("LISTEN_ADDR", "")
 		t.Setenv("MAX_MEMORY_GB", "")
+		t.Setenv("QUERY_RESULT_TTL", "")
+		t.Setenv("QUERY_CLEANUP_INTERVAL", "")
 
 		cfg, err := loadAgentConfig()
 		require.NoError(t, err)
@@ -33,6 +36,8 @@ func TestLoadAgentConfig(t *testing.T) {
 		assert.Equal(t, ":9443", cfg.ListenAddr)   // default
 		assert.Equal(t, "duck-demo", cfg.S3Bucket) // default
 		assert.Equal(t, 0, cfg.MaxMemoryGB)
+		assert.Equal(t, 10*time.Minute, cfg.QueryResultTTL)
+		assert.Equal(t, 1*time.Minute, cfg.CleanupInterval)
 	})
 
 	t.Run("custom_values", func(t *testing.T) {
@@ -45,6 +50,8 @@ func TestLoadAgentConfig(t *testing.T) {
 		t.Setenv("S3_BUCKET", "custom-bucket")
 		t.Setenv("LISTEN_ADDR", ":8080")
 		t.Setenv("MAX_MEMORY_GB", "64")
+		t.Setenv("QUERY_RESULT_TTL", "30m")
+		t.Setenv("QUERY_CLEANUP_INTERVAL", "45s")
 
 		cfg, err := loadAgentConfig()
 		require.NoError(t, err)
@@ -57,6 +64,8 @@ func TestLoadAgentConfig(t *testing.T) {
 		assert.Equal(t, "custom-bucket", cfg.S3Bucket)
 		assert.Equal(t, ":8080", cfg.ListenAddr)
 		assert.Equal(t, 64, cfg.MaxMemoryGB)
+		assert.Equal(t, 30*time.Minute, cfg.QueryResultTTL)
+		assert.Equal(t, 45*time.Second, cfg.CleanupInterval)
 	})
 
 	t.Run("invalid_max_memory_gb", func(t *testing.T) {
@@ -66,5 +75,23 @@ func TestLoadAgentConfig(t *testing.T) {
 		_, err := loadAgentConfig()
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid MAX_MEMORY_GB")
+	})
+
+	t.Run("invalid_query_result_ttl", func(t *testing.T) {
+		t.Setenv("AGENT_TOKEN", "tok")
+		t.Setenv("QUERY_RESULT_TTL", "bogus")
+
+		_, err := loadAgentConfig()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid QUERY_RESULT_TTL")
+	})
+
+	t.Run("invalid_query_cleanup_interval", func(t *testing.T) {
+		t.Setenv("AGENT_TOKEN", "tok")
+		t.Setenv("QUERY_CLEANUP_INTERVAL", "bad")
+
+		_, err := loadAgentConfig()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid QUERY_CLEANUP_INTERVAL")
 	})
 }

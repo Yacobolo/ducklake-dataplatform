@@ -13,6 +13,7 @@ Secure SQL query layer over DuckDB with RBAC, row-level security, and column mas
 - **Storage Management** -- Storage credentials (S3/Azure/GCS), external locations, and volumes
 - **Ingestion** -- Upload and load data into managed tables via presigned URLs
 - **Compute Routing** -- Route queries to local or remote DuckDB compute endpoints
+- **Async Remote Query Lifecycle** -- Remote agents support submit/status/results/cancel endpoints for paged result retrieval
 - **API Key Auth** -- Create and manage API keys alongside JWT/OIDC authentication
 - **DuckDB Extension** -- Client-side DuckDB extension for transparent table virtualization
 
@@ -95,6 +96,7 @@ task generate-api   # Regenerate API types/server from openapi.yaml
 ```
 
 Declarative schema artifacts are documented in `docs/declarative-schema.md`.
+Distributed compute operations are documented in `docs/distributed-compute.md`.
 
 ## Examples
 

@@ -193,8 +193,15 @@ func TestParse_FullSpec(t *testing.T) {
 			assert.Greater(t, len(g.Commands), 15, "security should have many commands")
 
 		case "query":
-			assert.Len(t, g.Commands, 1)
-			assert.Equal(t, "executeQuery", g.Commands[0].OperationID)
+			assert.GreaterOrEqual(t, len(g.Commands), 1)
+			foundExecute := false
+			for _, cmd := range g.Commands {
+				if cmd.OperationID == "executeQuery" {
+					foundExecute = true
+					break
+				}
+			}
+			assert.True(t, foundExecute, "executeQuery command not found")
 
 		case "notebooks":
 			assert.Greater(t, len(g.Commands), 15, "notebooks should have many commands")
