@@ -56,10 +56,30 @@ func (r *memQueryJobRepo) GetByRequestID(_ context.Context, principalName, reque
 	return nil, domain.ErrNotFound("job not found")
 }
 
-func (r *memQueryJobRepo) MarkRunning(_ context.Context, id string) error {
+func (r *memQueryJobRepo) MarkRunning(_ context.Context, id string, attempt int) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.jobs[id].Status = domain.QueryJobStatusRunning
+	r.jobs[id].AttemptCount = attempt
+	return nil
+}
+
+func (r *memQueryJobRepo) MarkRetrying(_ context.Context, id string, attempt int, nextRetryAt time.Time, message string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	job := r.jobs[id]
+	job.Status = domain.QueryJobStatusQueued
+	job.AttemptCount = attempt
+	job.NextRetryAt = &nextRetryAt
+	job.ErrorMessage = &message
+	return nil
+}
+
+func (r *memQueryJobRepo) Heartbeat(_ context.Context, id string, at time.Time) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	job := r.jobs[id]
+	job.LastHeartbeat = &at
 	return nil
 }
 
@@ -150,4 +170,16 @@ func TestQueryService_SubmitAsync_CompletesAndStoresRows(t *testing.T) {
 		require.True(t, time.Now().Before(deadline), "job did not complete in time")
 		time.Sleep(20 * time.Millisecond)
 	}
+}
+
+func TestQueryService_SubmitAsync_Disabled(t *testing.T) {
+	t.Parallel()
+
+	svc := NewQueryService(&testutil.MockSessionEngine{}, &testutil.MockAuditRepo{}, nil)
+	svc.SetJobRepository(newMemQueryJobRepo())
+	svc.SetAsyncEnabled(false)
+
+	_, err := svc.SubmitAsync(context.Background(), "alice", "SELECT 1", "req-disabled")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "disabled")
 }

@@ -7,9 +7,11 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -33,6 +35,7 @@ type HandlerConfig struct {
 	MaxMemoryGB     int
 	QueryResultTTL  time.Duration
 	CleanupInterval time.Duration
+	CursorMode      bool
 	Logger          *slog.Logger
 }
 
@@ -42,7 +45,8 @@ type queryJob struct {
 	requestID   string
 	status      string
 	columns     []string
-	rows        [][]interface{}
+	rowCount    int
+	tableName   string
 	errorMsg    string
 	createdAt   time.Time
 	completedAt time.Time
@@ -57,7 +61,7 @@ func (j *queryJob) statusResponse() compute.QueryStatusResponse {
 		QueryID:   j.id,
 		Status:    j.status,
 		Columns:   append([]string(nil), j.columns...),
-		RowCount:  len(j.rows),
+		RowCount:  j.rowCount,
 		Error:     j.errorMsg,
 		RequestID: j.requestID,
 	}
@@ -67,9 +71,13 @@ func (j *queryJob) statusResponse() compute.QueryStatusResponse {
 	return resp
 }
 
-func (j *queryJob) resultPage(offset, limit int) compute.FetchQueryResultsResponse {
+func (j *queryJob) resultPage(ctx context.Context, db *sql.DB, offset, limit int) (compute.FetchQueryResultsResponse, error) {
 	j.mu.RLock()
-	defer j.mu.RUnlock()
+	tableName := j.tableName
+	columns := append([]string(nil), j.columns...)
+	rowCount := j.rowCount
+	requestID := j.requestID
+	j.mu.RUnlock()
 
 	if offset < 0 {
 		offset = 0
@@ -78,29 +86,24 @@ func (j *queryJob) resultPage(offset, limit int) compute.FetchQueryResultsRespon
 		limit = defaultPageSize
 	}
 
-	end := offset + limit
-	if end > len(j.rows) {
-		end = len(j.rows)
-	}
-
-	rows := make([][]interface{}, 0, end-offset)
-	for i := offset; i < end; i++ {
-		rows = append(rows, append([]interface{}(nil), j.rows[i]...))
+	rows, err := queryResultPage(ctx, db, tableName, offset, limit)
+	if err != nil {
+		return compute.FetchQueryResultsResponse{}, err
 	}
 
 	nextPageToken := ""
-	if end < len(j.rows) {
-		nextPageToken = compute.EncodePageToken(end)
+	if offset+len(rows) < rowCount {
+		nextPageToken = compute.EncodePageToken(offset + len(rows))
 	}
 
 	return compute.FetchQueryResultsResponse{
 		QueryID:       j.id,
-		Columns:       append([]string(nil), j.columns...),
+		Columns:       columns,
 		Rows:          rows,
-		RowCount:      len(j.rows),
+		RowCount:      rowCount,
 		NextPageToken: nextPageToken,
-		RequestID:     j.requestID,
-	}
+		RequestID:     requestID,
+	}, nil
 }
 
 func (j *queryJob) setRunning(cancel context.CancelFunc) {
@@ -110,12 +113,13 @@ func (j *queryJob) setRunning(cancel context.CancelFunc) {
 	j.cancel = cancel
 }
 
-func (j *queryJob) setSucceeded(columns []string, rows [][]interface{}) {
+func (j *queryJob) setSucceeded(columns []string, tableName string, rowCount int) {
 	j.mu.Lock()
 	defer j.mu.Unlock()
 	j.status = compute.QueryStatusSucceeded
 	j.columns = append([]string(nil), columns...)
-	j.rows = rows
+	j.rowCount = rowCount
+	j.tableName = tableName
 	j.errorMsg = ""
 	j.completedAt = time.Now()
 	j.cancel = nil
@@ -157,6 +161,7 @@ func (j *queryJob) cancelQuery() {
 
 type queryStore struct {
 	mu              sync.RWMutex
+	db              *sql.DB
 	jobs            map[string]*queryJob
 	requestToQuery  map[string]string
 	ttl             time.Duration
@@ -235,6 +240,7 @@ func (s *queryStore) maybeCleanup(now time.Time) {
 		job.mu.RLock()
 		status := job.status
 		completedAt := job.completedAt
+		tableName := job.tableName
 		job.mu.RUnlock()
 
 		if !isTerminalStatus(status) || completedAt.IsZero() {
@@ -242,6 +248,10 @@ func (s *queryStore) maybeCleanup(now time.Time) {
 		}
 		if now.Sub(completedAt) < s.ttl {
 			continue
+		}
+
+		if tableName != "" {
+			_, _ = s.db.ExecContext(context.Background(), fmt.Sprintf("DROP TABLE IF EXISTS %q", tableName)) //nolint:gosec // internal generated identifier
 		}
 
 		delete(s.jobs, id)
@@ -295,6 +305,7 @@ func NewHandler(cfg HandlerConfig) http.Handler {
 
 	var activeQueries atomic.Int64
 	jobs := newQueryStore(cfg.QueryResultTTL, cfg.CleanupInterval)
+	jobs.db = cfg.DB
 
 	mux := http.NewServeMux()
 
@@ -332,6 +343,10 @@ func NewHandler(cfg HandlerConfig) http.Handler {
 	})
 
 	mux.HandleFunc("POST /queries", func(w http.ResponseWriter, r *http.Request) {
+		if !cfg.CursorMode {
+			writeJSON(w, http.StatusNotFound, compute.ErrorResponse{Error: "query lifecycle is disabled", Code: "NOT_FOUND", RequestID: r.Header.Get("X-Request-ID")})
+			return
+		}
 		requestID := r.Header.Get("X-Request-ID")
 		if !authorize(w, r, requestID) {
 			return
@@ -369,7 +384,7 @@ func NewHandler(cfg HandlerConfig) http.Handler {
 			ctx, cancel := context.WithCancel(context.Background())
 			job.setRunning(cancel)
 
-			result, err := runQuery(ctx, cfg.DB, req.SQL, &activeQueries)
+			columns, tableName, rowCount, err := runQueryToTable(ctx, cfg.DB, req.SQL, &activeQueries, job.id)
 			if err != nil {
 				if ctx.Err() == context.Canceled {
 					job.setCanceled()
@@ -378,13 +393,17 @@ func NewHandler(cfg HandlerConfig) http.Handler {
 				job.setFailed(err)
 				return
 			}
-			job.setSucceeded(result.Columns, result.Rows)
+			job.setSucceeded(columns, tableName, rowCount)
 		}()
 
 		writeJSON(w, http.StatusAccepted, compute.SubmitQueryResponse{QueryID: job.id, Status: compute.QueryStatusQueued, RequestID: requestID})
 	})
 
 	mux.HandleFunc("GET /queries/{queryID}", func(w http.ResponseWriter, r *http.Request) {
+		if !cfg.CursorMode {
+			writeJSON(w, http.StatusNotFound, compute.ErrorResponse{Error: "query lifecycle is disabled", Code: "NOT_FOUND", RequestID: r.Header.Get("X-Request-ID")})
+			return
+		}
 		requestID := r.Header.Get("X-Request-ID")
 		if !authorize(w, r, requestID) {
 			return
@@ -402,6 +421,10 @@ func NewHandler(cfg HandlerConfig) http.Handler {
 	})
 
 	mux.HandleFunc("GET /queries/{queryID}/results", func(w http.ResponseWriter, r *http.Request) {
+		if !cfg.CursorMode {
+			writeJSON(w, http.StatusNotFound, compute.ErrorResponse{Error: "query lifecycle is disabled", Code: "NOT_FOUND", RequestID: r.Header.Get("X-Request-ID")})
+			return
+		}
 		requestID := r.Header.Get("X-Request-ID")
 		if !authorize(w, r, requestID) {
 			return
@@ -438,10 +461,19 @@ func NewHandler(cfg HandlerConfig) http.Handler {
 			}
 		}
 
-		writeJSON(w, http.StatusOK, job.resultPage(offset, limit))
+		page, err := job.resultPage(r.Context(), cfg.DB, offset, limit)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, compute.ErrorResponse{Error: err.Error(), Code: "EXECUTION_ERROR", RequestID: requestID})
+			return
+		}
+		writeJSON(w, http.StatusOK, page)
 	})
 
 	mux.HandleFunc("POST /queries/{queryID}/cancel", func(w http.ResponseWriter, r *http.Request) {
+		if !cfg.CursorMode {
+			writeJSON(w, http.StatusNotFound, compute.ErrorResponse{Error: "query lifecycle is disabled", Code: "NOT_FOUND", RequestID: r.Header.Get("X-Request-ID")})
+			return
+		}
 		requestID := r.Header.Get("X-Request-ID")
 		if !authorize(w, r, requestID) {
 			return
@@ -460,6 +492,10 @@ func NewHandler(cfg HandlerConfig) http.Handler {
 	})
 
 	mux.HandleFunc("DELETE /queries/{queryID}", func(w http.ResponseWriter, r *http.Request) {
+		if !cfg.CursorMode {
+			writeJSON(w, http.StatusNotFound, compute.ErrorResponse{Error: "query lifecycle is disabled", Code: "NOT_FOUND", RequestID: r.Header.Get("X-Request-ID")})
+			return
+		}
 		requestID := r.Header.Get("X-Request-ID")
 		if !authorize(w, r, requestID) {
 			return
@@ -474,8 +510,18 @@ func NewHandler(cfg HandlerConfig) http.Handler {
 			return
 		}
 		job.cancelQuery()
+		status := job.statusResponse().Status
+		job.mu.RLock()
+		tableName := job.tableName
+		job.mu.RUnlock()
+		if tableName != "" {
+			_, _ = cfg.DB.ExecContext(context.Background(), fmt.Sprintf("DROP TABLE IF EXISTS %q", tableName)) //nolint:gosec // internal generated identifier
+		}
 		jobs.delete(jobID)
-		writeJSON(w, http.StatusOK, compute.CancelQueryResponse{QueryID: jobID, Status: compute.QueryStatusCanceled, RequestID: requestID})
+		if status == "" {
+			status = compute.QueryStatusCanceled
+		}
+		writeJSON(w, http.StatusOK, compute.CancelQueryResponse{QueryID: jobID, Status: status, RequestID: requestID})
 	})
 
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
@@ -507,7 +553,139 @@ func NewHandler(cfg HandlerConfig) http.Handler {
 		})
 	})
 
+	mux.HandleFunc("GET /metrics", func(w http.ResponseWriter, _ *http.Request) {
+		jobs.maybeCleanup(time.Now())
+		queuedJobs, runningJobs, completedJobs, storedJobs, cleanedJobs := jobs.metrics()
+		w.Header().Set("Content-Type", "text/plain; version=0.0.4")
+		_, _ = fmt.Fprintf(w,
+			"# HELP duck_compute_active_queries Number of currently running SQL statements\n"+
+				"# TYPE duck_compute_active_queries gauge\n"+
+				"duck_compute_active_queries %d\n"+
+				"# HELP duck_compute_queued_jobs Number of queued lifecycle jobs\n"+
+				"# TYPE duck_compute_queued_jobs gauge\n"+
+				"duck_compute_queued_jobs %d\n"+
+				"# HELP duck_compute_running_jobs Number of running lifecycle jobs\n"+
+				"# TYPE duck_compute_running_jobs gauge\n"+
+				"duck_compute_running_jobs %d\n"+
+				"# HELP duck_compute_completed_jobs Number of retained completed lifecycle jobs\n"+
+				"# TYPE duck_compute_completed_jobs gauge\n"+
+				"duck_compute_completed_jobs %d\n"+
+				"# HELP duck_compute_stored_jobs Number of stored lifecycle jobs\n"+
+				"# TYPE duck_compute_stored_jobs gauge\n"+
+				"duck_compute_stored_jobs %d\n"+
+				"# HELP duck_compute_cleaned_jobs_total Number of cleaned jobs\n"+
+				"# TYPE duck_compute_cleaned_jobs_total counter\n"+
+				"duck_compute_cleaned_jobs_total %d\n",
+			activeQueries.Load(), queuedJobs, runningJobs, completedJobs, storedJobs, cleanedJobs,
+		)
+	})
+
 	return mux
+}
+
+func runQueryToTable(ctx context.Context, db *sql.DB, sqlQuery string, activeQueries *atomic.Int64, queryID string) ([]string, string, int, error) {
+	activeQueries.Add(1)
+	defer activeQueries.Add(-1)
+
+	rows, err := db.QueryContext(ctx, sqlQuery)
+	if err != nil {
+		return nil, "", 0, err
+	}
+	defer rows.Close() //nolint:errcheck
+
+	cols, err := rows.Columns()
+	if err != nil {
+		return nil, "", 0, err
+	}
+
+	tableName := "_agent_result_" + strings.ReplaceAll(queryID, "-", "")
+	if err := createResultTable(ctx, db, tableName, cols); err != nil {
+		return nil, "", 0, err
+	}
+
+	insertSQL := fmt.Sprintf("INSERT INTO %q VALUES (%s)", tableName, strings.TrimRight(strings.Repeat("?,", len(cols)), ",")) //nolint:gosec // internal identifier
+	count := 0
+	for rows.Next() {
+		values := make([]interface{}, len(cols))
+		ptrs := make([]interface{}, len(cols))
+		for i := range values {
+			ptrs[i] = &values[i]
+		}
+		if err := rows.Scan(ptrs...); err != nil {
+			return nil, "", 0, err
+		}
+
+		args := make([]interface{}, len(cols))
+		for i, v := range values {
+			if v == nil {
+				args[i] = nil
+				continue
+			}
+			args[i] = fmt.Sprintf("%v", v)
+		}
+		if _, err := db.ExecContext(ctx, insertSQL, args...); err != nil {
+			return nil, "", 0, err
+		}
+		count++
+	}
+	if err := rows.Err(); err != nil {
+		return nil, "", 0, err
+	}
+
+	return cols, tableName, count, nil
+}
+
+func createResultTable(ctx context.Context, db *sql.DB, tableName string, cols []string) error {
+	colDefs := make([]string, 0, len(cols))
+	for _, col := range cols {
+		colDefs = append(colDefs, fmt.Sprintf("%q VARCHAR", col))
+	}
+	createSQL := fmt.Sprintf("CREATE TABLE %q (%s)", tableName, strings.Join(colDefs, ", "))
+	_, err := db.ExecContext(ctx, createSQL)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func queryResultPage(ctx context.Context, db *sql.DB, tableName string, offset, limit int) ([][]interface{}, error) {
+	query := fmt.Sprintf("SELECT * FROM %q LIMIT ? OFFSET ?", tableName) //nolint:gosec // internal identifier
+	rows, err := db.QueryContext(ctx, query, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close() //nolint:errcheck
+
+	cols, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([][]interface{}, 0)
+	for rows.Next() {
+		values := make([]interface{}, len(cols))
+		ptrs := make([]interface{}, len(cols))
+		for i := range values {
+			ptrs[i] = &values[i]
+		}
+		if err := rows.Scan(ptrs...); err != nil {
+			return nil, err
+		}
+		row := make([]interface{}, len(values))
+		for i, v := range values {
+			if b, ok := v.([]byte); ok {
+				row[i] = string(b)
+			} else {
+				row[i] = v
+			}
+		}
+		out = append(out, row)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return out, nil
 }
 
 func runQuery(ctx context.Context, db *sql.DB, sqlQuery string, activeQueries *atomic.Int64) (compute.ExecuteResponse, error) {

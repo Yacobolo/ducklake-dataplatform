@@ -34,11 +34,12 @@ type QueryService struct {
 	defaultSchema string
 	jobRepo       domain.QueryJobRepository
 	jobCancels    sync.Map
+	asyncEnabled  bool
 }
 
 // NewQueryService creates a new QueryService.
 func NewQueryService(eng domain.QueryEngine, audit domain.AuditRepository, lineage domain.LineageRepository) *QueryService {
-	return &QueryService{engine: eng, audit: audit, lineage: lineage, defaultSchema: "main"}
+	return &QueryService{engine: eng, audit: audit, lineage: lineage, defaultSchema: "main", asyncEnabled: true}
 }
 
 // SetColumnLineage configures column-level lineage capture.
@@ -51,6 +52,11 @@ func (s *QueryService) SetColumnLineage(colRepo domain.ColumnLineageRepository, 
 // SetJobRepository configures durable async query lifecycle storage.
 func (s *QueryService) SetJobRepository(repo domain.QueryJobRepository) {
 	s.jobRepo = repo
+}
+
+// SetAsyncEnabled toggles async query lifecycle endpoints.
+func (s *QueryService) SetAsyncEnabled(enabled bool) {
+	s.asyncEnabled = enabled
 }
 
 // Execute runs a SQL query as the given principal and returns structured results.

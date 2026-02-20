@@ -20,6 +20,7 @@ type AgentConfig struct {
 	MaxMemoryGB     int
 	QueryResultTTL  time.Duration
 	CleanupInterval time.Duration
+	CursorMode      bool
 }
 
 func loadAgentConfig() (*AgentConfig, error) {
@@ -32,6 +33,13 @@ func loadAgentConfig() (*AgentConfig, error) {
 		S3Bucket:   os.Getenv("S3_BUCKET"),
 		AgentToken: os.Getenv("AGENT_TOKEN"),
 		ListenAddr: os.Getenv("LISTEN_ADDR"),
+		CursorMode: true,
+	}
+	if v := os.Getenv("FEATURE_CURSOR_MODE"); v != "" {
+		switch v {
+		case "0", "false", "FALSE", "off", "OFF", "no", "NO":
+			cfg.CursorMode = false
+		}
 	}
 	if v := os.Getenv("MAX_MEMORY_GB"); v != "" {
 		n, err := strconv.Atoi(v)

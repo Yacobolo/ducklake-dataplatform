@@ -132,7 +132,9 @@ type QueryJobRepository interface {
 	Create(ctx context.Context, job *QueryJob) (*QueryJob, error)
 	GetByID(ctx context.Context, id string) (*QueryJob, error)
 	GetByRequestID(ctx context.Context, principalName, requestID string) (*QueryJob, error)
-	MarkRunning(ctx context.Context, id string) error
+	MarkRunning(ctx context.Context, id string, attempt int) error
+	MarkRetrying(ctx context.Context, id string, attempt int, nextRetryAt time.Time, message string) error
+	Heartbeat(ctx context.Context, id string, at time.Time) error
 	MarkSucceeded(ctx context.Context, id string, columns []string, rows [][]interface{}, rowCount int) error
 	MarkFailed(ctx context.Context, id string, message string) error
 	MarkCanceled(ctx context.Context, id string) error

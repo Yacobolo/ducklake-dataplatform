@@ -73,6 +73,12 @@ type Config struct {
 	// Auth holds identity provider and authentication configuration.
 	Auth AuthConfig
 
+	// Distributed execution feature controls.
+	FeatureRemoteRouting bool
+	FeatureAsyncQueue    bool
+	FeatureCursorMode    bool
+	RemoteCanaryUsers    []string
+
 	// Warnings collects non-fatal warnings generated during config loading.
 	// These are logged by the caller after the logger is initialised.
 	Warnings []string
@@ -107,13 +113,16 @@ func (c *Config) HasS3Config() bool {
 // S3 variables are optional — the app can start without them.
 func LoadFromEnv() (*Config, error) {
 	cfg := &Config{
-		MetaDBPath:    os.Getenv("META_DB_PATH"),
-		ListenAddr:    os.Getenv("LISTEN_ADDR"),
-		TLSCertFile:   os.Getenv("TLS_CERT_FILE"),
-		TLSKeyFile:    os.Getenv("TLS_KEY_FILE"),
-		EncryptionKey: os.Getenv("ENCRYPTION_KEY"),
-		LogLevel:      os.Getenv("LOG_LEVEL"),
-		Env:           os.Getenv("ENV"),
+		MetaDBPath:           os.Getenv("META_DB_PATH"),
+		ListenAddr:           os.Getenv("LISTEN_ADDR"),
+		TLSCertFile:          os.Getenv("TLS_CERT_FILE"),
+		TLSKeyFile:           os.Getenv("TLS_KEY_FILE"),
+		EncryptionKey:        os.Getenv("ENCRYPTION_KEY"),
+		LogLevel:             os.Getenv("LOG_LEVEL"),
+		Env:                  os.Getenv("ENV"),
+		FeatureRemoteRouting: parseBoolEnvDefault("FEATURE_REMOTE_ROUTING", true),
+		FeatureAsyncQueue:    parseBoolEnvDefault("FEATURE_ASYNC_QUEUE", true),
+		FeatureCursorMode:    parseBoolEnvDefault("FEATURE_CURSOR_MODE", true),
 	}
 
 	// Rate limiting
@@ -155,6 +164,13 @@ func LoadFromEnv() (*Config, error) {
 	}
 	if strings.EqualFold(os.Getenv("ALLOW_INSECURE_HTTP"), "true") {
 		cfg.AllowInsecureHTTP = true
+	}
+	if v := os.Getenv("REMOTE_CANARY_USERS"); v != "" {
+		users := strings.Split(v, ",")
+		for i := range users {
+			users[i] = strings.TrimSpace(users[i])
+		}
+		cfg.RemoteCanaryUsers = compactNonEmpty(users)
 	}
 
 	// Auth config
@@ -239,6 +255,30 @@ func LoadFromEnv() (*Config, error) {
 	}
 
 	return cfg, nil
+}
+
+func parseBoolEnvDefault(key string, defaultVal bool) bool {
+	v := strings.TrimSpace(strings.ToLower(os.Getenv(key)))
+	if v == "" {
+		return defaultVal
+	}
+	if v == "0" || v == "false" || v == "no" || v == "off" {
+		return false
+	}
+	if v == "1" || v == "true" || v == "yes" || v == "on" {
+		return true
+	}
+	return defaultVal
+}
+
+func compactNonEmpty(values []string) []string {
+	out := make([]string, 0, len(values))
+	for _, v := range values {
+		if v != "" {
+			out = append(out, v)
+		}
+	}
+	return out
 }
 
 // LoadDotEnv reads a .env file and sets any variables not already in the environment.

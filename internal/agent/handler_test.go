@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -25,7 +26,7 @@ const testToken = "test-agent-token-42"
 // returns an httptest.Server. The caller should defer cleanup().
 func setupAgentTest(t *testing.T) *httptest.Server {
 	t.Helper()
-	return setupAgentTestWithConfig(t, HandlerConfig{})
+	return setupAgentTestWithConfig(t, HandlerConfig{CursorMode: true})
 }
 
 func setupAgentTestWithConfig(t *testing.T, cfg HandlerConfig) *httptest.Server {
@@ -207,6 +208,23 @@ func TestAgentHandler_Health(t *testing.T) {
 	assert.Contains(t, health, "query_result_ttl_seconds")
 }
 
+func TestAgentHandler_Metrics(t *testing.T) {
+	t.Parallel()
+	srv := setupAgentTest(t)
+
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, srv.URL+"/metrics", nil)
+	require.NoError(t, err)
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	assert.Contains(t, string(body), "duck_compute_active_queries")
+	assert.Contains(t, string(body), "duck_compute_cleaned_jobs_total")
+}
+
 // === Empty result ===
 
 func TestAgentHandler_EmptyResult(t *testing.T) {
@@ -343,7 +361,7 @@ func TestAgentHandler_QueryLifecycleIdempotentRequestID(t *testing.T) {
 
 func TestAgentHandler_QueryResultTTL_CleansExpiredJob(t *testing.T) {
 	t.Parallel()
-	srv := setupAgentTestWithConfig(t, HandlerConfig{QueryResultTTL: 30 * time.Millisecond, CleanupInterval: 10 * time.Millisecond})
+	srv := setupAgentTestWithConfig(t, HandlerConfig{QueryResultTTL: 30 * time.Millisecond, CleanupInterval: 10 * time.Millisecond, CursorMode: true})
 
 	payload, err := json.Marshal(compute.SubmitQueryRequest{SQL: "SELECT 1", RequestID: "ttl-req"})
 	require.NoError(t, err)
@@ -402,4 +420,23 @@ func TestAgentHandler_QueryResultTTL_CleansExpiredJob(t *testing.T) {
 	defer func() { _ = statusResp.Body.Close() }()
 
 	assert.Equal(t, http.StatusNotFound, statusResp.StatusCode)
+}
+
+func TestAgentHandler_QueryLifecycle_Disabled(t *testing.T) {
+	t.Parallel()
+
+	srv := setupAgentTestWithConfig(t, HandlerConfig{CursorMode: false})
+	payload, err := json.Marshal(compute.SubmitQueryRequest{SQL: "SELECT 1"})
+	require.NoError(t, err)
+
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, srv.URL+"/queries", bytes.NewReader(payload))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Agent-Token", testToken)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 }

@@ -44,6 +44,24 @@ func TestLoadFromEnv_Defaults(t *testing.T) {
 	assert.Equal(t, "ducklake_meta.sqlite", cfg.MetaDBPath)
 	assert.Equal(t, ":8080", cfg.ListenAddr)
 	assert.Equal(t, "0000000000000000000000000000000000000000000000000000000000000000", cfg.EncryptionKey)
+	assert.True(t, cfg.FeatureRemoteRouting)
+	assert.True(t, cfg.FeatureAsyncQueue)
+	assert.True(t, cfg.FeatureCursorMode)
+}
+
+func TestLoadFromEnv_DistributedFeatureFlags(t *testing.T) {
+	t.Setenv("FEATURE_REMOTE_ROUTING", "false")
+	t.Setenv("FEATURE_ASYNC_QUEUE", "0")
+	t.Setenv("FEATURE_CURSOR_MODE", "off")
+	t.Setenv("REMOTE_CANARY_USERS", "alice, bob , ,carol")
+
+	cfg, err := LoadFromEnv()
+	require.NoError(t, err)
+
+	assert.False(t, cfg.FeatureRemoteRouting)
+	assert.False(t, cfg.FeatureAsyncQueue)
+	assert.False(t, cfg.FeatureCursorMode)
+	assert.Equal(t, []string{"alice", "bob", "carol"}, cfg.RemoteCanaryUsers)
 }
 
 func TestLoadFromEnv_NoS3(t *testing.T) {

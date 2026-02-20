@@ -131,11 +131,15 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 
 	// === 5. Compute resolver (needs endpoint repo, principal repo, group repo) ===
 	localExec := compute.NewLocalExecutor(deps.DuckDB)
-	remoteCache := compute.NewRemoteCache(deps.DuckDB)
+	remoteCache := compute.NewRemoteCacheWithOptions(deps.DuckDB, compute.RemoteExecutorOptions{
+		CursorModeEnabled: cfg.FeatureCursorMode,
+	})
 	fullResolver := compute.NewResolver(
 		localExec, computeEndpointRepo, principalRepo, groupRepo,
 		remoteCache, deps.Logger.With("component", "compute-resolver"),
 	)
+	fullResolver.SetRoutingEnabled(cfg.FeatureRemoteRouting)
+	fullResolver.SetCanaryUsers(cfg.RemoteCanaryUsers)
 
 	// === 6. Authorization (needs all security repos + extTableRepo) ===
 	authSvc := security.NewAuthorizationService(
@@ -206,6 +210,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 
 	// === 8. All services (all deps available at construction) ===
 	querySvc := query.NewQueryService(eng, auditRepo, lineageRepo)
+	querySvc.SetAsyncEnabled(cfg.FeatureAsyncQueue)
 	catalogAdapter := query.NewCatalogAdapter(introspectionRepo)
 	querySvc.SetColumnLineage(colLineageRepo, catalogAdapter)
 	querySvc.SetJobRepository(queryJobRepo)

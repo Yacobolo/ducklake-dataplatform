@@ -30,15 +30,22 @@ type RemoteExecutor struct {
 	authToken   string
 	localDB     *sql.DB // for temp table materialization
 	httpClient  *http.Client
+	cursorMode  bool
 }
 
 // NewRemoteExecutor creates a RemoteExecutor that sends queries to the given
 // endpoint URL and materializes results into the local DuckDB instance.
-func NewRemoteExecutor(endpointURL, authToken string, localDB *sql.DB) *RemoteExecutor {
+func NewRemoteExecutor(endpointURL, authToken string, localDB *sql.DB, opts ...RemoteExecutorOptions) *RemoteExecutor {
+	options := RemoteExecutorOptions{CursorModeEnabled: true}
+	if len(opts) > 0 {
+		options = opts[0]
+	}
+
 	return &RemoteExecutor{
 		endpointURL: strings.TrimRight(endpointURL, "/"),
 		authToken:   authToken,
 		localDB:     localDB,
+		cursorMode:  options.CursorModeEnabled,
 		httpClient: &http.Client{
 			Timeout: 5 * time.Minute,
 			Transport: &http.Transport{
@@ -54,10 +61,17 @@ func NewRemoteExecutor(endpointURL, authToken string, localDB *sql.DB) *RemoteEx
 // into a local DuckDB temp table, returning *sql.Rows from that table.
 func (e *RemoteExecutor) QueryContext(ctx context.Context, query string) (*sql.Rows, error) {
 	requestID := uuid.New().String()
-
-	result, err := e.queryViaLifecycle(ctx, query, requestID)
-	if err == nil {
+	if !e.cursorMode {
+		result, err := e.queryViaLegacyExecute(ctx, query, requestID)
+		if err != nil {
+			return nil, err
+		}
 		return e.materialize(ctx, result) //nolint:sqlclosecheck // rows are returned to caller
+	}
+
+	rows, err := e.queryViaLifecycleToRows(ctx, query, requestID)
+	if err == nil {
+		return rows, nil
 	}
 
 	var unsupported *unsupportedLifecycleError
@@ -65,7 +79,7 @@ func (e *RemoteExecutor) QueryContext(ctx context.Context, query string) (*sql.R
 		return nil, err
 	}
 
-	result, err = e.queryViaLegacyExecute(ctx, query, requestID)
+	result, err := e.queryViaLegacyExecute(ctx, query, requestID)
 	if err != nil {
 		return nil, err
 	}
@@ -81,39 +95,39 @@ func (e *unsupportedLifecycleError) Error() string {
 	return fmt.Sprintf("query lifecycle endpoints are unsupported (status %d)", e.status)
 }
 
-func (e *RemoteExecutor) queryViaLifecycle(ctx context.Context, query, requestID string) (ExecuteResponse, error) {
+func (e *RemoteExecutor) queryViaLifecycleToRows(ctx context.Context, query, requestID string) (*sql.Rows, error) {
 	submit := SubmitQueryRequest{SQL: query, RequestID: requestID}
 	var submitResp SubmitQueryResponse
 	status, err := e.postJSON(ctx, "/queries", submit, &submitResp, requestID)
 	if status == http.StatusNotFound || status == http.StatusMethodNotAllowed {
-		return ExecuteResponse{}, &unsupportedLifecycleError{status: status}
+		return nil, &unsupportedLifecycleError{status: status}
 	}
 	if err != nil {
-		return ExecuteResponse{}, fmt.Errorf("submit query lifecycle request: %w", err)
+		return nil, fmt.Errorf("submit query lifecycle request: %w", err)
 	}
 	if status != http.StatusAccepted && status != http.StatusOK {
-		return ExecuteResponse{}, fmt.Errorf("submit query lifecycle request failed: status %d", status)
+		return nil, fmt.Errorf("submit query lifecycle request failed: status %d", status)
 	}
 
 	queryID := submitResp.QueryID
 	if queryID == "" {
-		return ExecuteResponse{}, fmt.Errorf("submit query lifecycle request failed: missing query id")
+		return nil, fmt.Errorf("submit query lifecycle request failed: missing query id")
 	}
 	defer e.deleteQuery(context.Background(), queryID, requestID)
 
 	statusResp, err := e.waitForQueryCompletion(ctx, queryID, requestID)
 	if err != nil {
-		return ExecuteResponse{}, err
+		return nil, err
 	}
 	if statusResp.Status == QueryStatusFailed || statusResp.Status == QueryStatusCanceled {
 		errMsg := statusResp.Error
 		if errMsg == "" {
 			errMsg = "query did not complete successfully"
 		}
-		return ExecuteResponse{}, fmt.Errorf("remote execution failed: %s", errMsg)
+		return nil, fmt.Errorf("remote execution failed: %s", errMsg)
 	}
 
-	return e.fetchAllPages(ctx, queryID, requestID)
+	return e.materializeFromLifecycle(ctx, queryID, requestID)
 }
 
 func (e *RemoteExecutor) queryViaLegacyExecute(ctx context.Context, query, requestID string) (ExecuteResponse, error) {
@@ -210,6 +224,54 @@ func (e *RemoteExecutor) fetchAllPages(ctx context.Context, queryID, requestID s
 		}
 		pageToken = pageResp.NextPageToken
 	}
+}
+
+func (e *RemoteExecutor) materializeFromLifecycle(ctx context.Context, queryID, requestID string) (*sql.Rows, error) {
+	tableName := "_remote_result_" + randomSuffix()
+
+	conn, err := e.localDB.Conn(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("pin connection: %w", err)
+	}
+	defer conn.Close() //nolint:errcheck
+
+	pageToken := ""
+	created := false
+	for {
+		pageResp, statusCode, err := e.fetchQueryResultsPage(ctx, queryID, pageToken, requestID)
+		if err != nil {
+			return nil, err
+		}
+		if statusCode != http.StatusOK {
+			return nil, fmt.Errorf("fetch query results failed: status %d", statusCode)
+		}
+
+		if !created {
+			if err := createResultTable(ctx, conn, tableName, pageResp.Columns); err != nil {
+				return nil, err
+			}
+			created = true
+		}
+		if err := insertResultRows(ctx, conn, tableName, pageResp.Rows, pageResp.Columns); err != nil {
+			return nil, err
+		}
+
+		if pageResp.NextPageToken == "" {
+			break
+		}
+		pageToken = pageResp.NextPageToken
+	}
+
+	if !created {
+		return e.localDB.QueryContext(ctx, "SELECT 1 WHERE false")
+	}
+
+	selectSQL := fmt.Sprintf("SELECT * FROM %q", tableName) //nolint:gosec // tableName is generated internally
+	rows, err := e.localDB.QueryContext(ctx, selectSQL)
+	if err != nil {
+		return nil, fmt.Errorf("select from temp: %w", err)
+	}
+	return rows, nil
 }
 
 func (e *RemoteExecutor) postJSON(ctx context.Context, path string, payload interface{}, out interface{}, requestID string) (int, error) {
@@ -380,38 +442,65 @@ func (e *RemoteExecutor) populateTempTable(ctx context.Context, tableName string
 	}
 	defer conn.Close() //nolint:errcheck
 
-	// Build CREATE TEMP TABLE with VARCHAR columns (type info not available from JSON)
-	var colDefs []string
-	for _, col := range result.Columns {
+	if err := createResultTable(ctx, conn, tableName, result.Columns); err != nil {
+		return err
+	}
+	if err := insertResultRows(ctx, conn, tableName, result.Rows, result.Columns); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func createResultTable(ctx context.Context, conn *sql.Conn, tableName string, columns []string) error {
+	if len(columns) == 0 {
+		if _, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE TABLE %q (_empty VARCHAR)", tableName)); err != nil {
+			return fmt.Errorf("create temp table: %w", err)
+		}
+		if _, err := conn.ExecContext(ctx, fmt.Sprintf("ALTER TABLE %q DROP COLUMN _empty", tableName)); err != nil {
+			return fmt.Errorf("prepare empty temp table: %w", err)
+		}
+		return nil
+	}
+
+	colDefs := make([]string, 0, len(columns))
+	for _, col := range columns {
 		colDefs = append(colDefs, fmt.Sprintf("%q VARCHAR", col))
 	}
-	createSQL := fmt.Sprintf("CREATE TEMP TABLE %q (%s)", tableName, strings.Join(colDefs, ", "))
+	createSQL := fmt.Sprintf("CREATE TABLE %q (%s)", tableName, strings.Join(colDefs, ", "))
 	if _, err := conn.ExecContext(ctx, createSQL); err != nil {
 		return fmt.Errorf("create temp table: %w", err)
 	}
+	return nil
+}
 
-	// Insert rows using parameterized queries
-	if len(result.Rows) > 0 {
-		placeholders := make([]string, len(result.Columns))
-		for i := range placeholders {
-			placeholders[i] = "?"
-		}
-		insertSQL := fmt.Sprintf("INSERT INTO %q VALUES (%s)", tableName, strings.Join(placeholders, ", ")) //nolint:gosec // tableName is generated internally
-		for _, row := range result.Rows {
-			args := make([]interface{}, len(row))
-			for i, v := range row {
-				if v == nil {
-					args[i] = nil
-				} else {
-					args[i] = fmt.Sprintf("%v", v)
-				}
-			}
-			if _, err := conn.ExecContext(ctx, insertSQL, args...); err != nil {
-				return fmt.Errorf("insert row: %w", err)
-			}
-		}
+func insertResultRows(ctx context.Context, conn *sql.Conn, tableName string, rows [][]interface{}, columns []string) error {
+	if len(rows) == 0 || len(columns) == 0 {
+		return nil
 	}
 
+	placeholders := make([]string, len(columns))
+	for i := range placeholders {
+		placeholders[i] = "?"
+	}
+	insertSQL := fmt.Sprintf("INSERT INTO %q VALUES (%s)", tableName, strings.Join(placeholders, ", ")) //nolint:gosec // tableName is generated internally
+	for _, row := range rows {
+		args := make([]interface{}, len(columns))
+		for i := range columns {
+			if i < len(row) {
+				if row[i] == nil {
+					args[i] = nil
+				} else {
+					args[i] = fmt.Sprintf("%v", row[i])
+				}
+				continue
+			}
+			args[i] = nil
+		}
+		if _, err := conn.ExecContext(ctx, insertSQL, args...); err != nil {
+			return fmt.Errorf("insert row: %w", err)
+		}
+	}
 	return nil
 }
 
