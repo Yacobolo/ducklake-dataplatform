@@ -74,45 +74,48 @@ func appPage(title, active string, principal domain.ContextPrincipal, body ...No
 		),
 		Body(
 			Main(Class("app-shell"),
-				Aside(
-					Class("app-sidebar"),
+				Header(
+					Class("app-header"),
 					Div(
-						Class("brand"),
+						Class("app-header-brand"),
 						Strong(Text("Duck Platform")),
-						P(Class("color-fg-muted text-small mb-0"), Text("Metadata browser and editor")),
 					),
-					Nav(Class("app-nav"), Group(nav)),
-				),
-				Section(
-					Class("app-main"),
 					Div(
-						Class("topbar"),
-						Div(
-							H1(Class("page-title"), Text(title)),
+						Class("app-header-meta"),
+						P(Class("color-fg-muted text-small mb-0"), Text("Signed in as "+principalLabel)),
+						Button(
+							Type("button"),
+							ID("theme-toggle"),
+							Class("btn btn-sm btn-icon"),
+							Title("Toggle theme"),
+							Attr("aria-label", "Toggle theme"),
+							Span(ID("theme-icon-sun"), I(Class("btn-icon-glyph"), Attr("data-lucide", "sun"), Attr("aria-hidden", "true"))),
+							Span(ID("theme-icon-moon"), Class("is-hidden"), I(Class("btn-icon-glyph"), Attr("data-lucide", "moon"), Attr("aria-hidden", "true"))),
+							Span(Class("sr-only"), Text("Toggle theme")),
 						),
-						Div(
-							Class("topbar-meta"),
-							Div(
-								Class("theme-picker"),
-								Label(Class("sr-only"), For("theme-mode"), Text("Theme mode")),
-								Select(
-									ID("theme-mode"),
-									Class("form-select"),
-									Attr("aria-label", "Theme mode"),
-									Option(Value("auto"), Text("System")),
-									Option(Value("light"), Text("Light")),
-									Option(Value("dark"), Text("Dark")),
-								),
-							),
-							P(Class("color-fg-muted text-small mb-2"), Text("Signed in as "+principalLabel)),
-							Form(
-								Method("post"),
-								Action("/ui/logout"),
-								Button(Type("submit"), Class("btn btn-sm"), Text("Sign out")),
-							),
+						Form(
+							Method("post"),
+							Action("/ui/logout"),
+							Button(Type("submit"), Class("btn btn-sm"), Text("Sign out")),
 						),
 					),
-					Div(Class("content"), Group(body)),
+				),
+				Div(
+					Class("app-body"),
+					Aside(
+						Class("app-sidebar"),
+						Nav(Class("app-nav"), Group(nav)),
+					),
+					Section(
+						Class("app-main"),
+						Div(
+							Class("topbar"),
+							Div(
+								H1(Class("page-title"), Text(title)),
+							),
+						),
+						Div(Class("content"), Group(body)),
+					),
 				),
 			),
 			Script(Raw(themeBehaviorScript)),

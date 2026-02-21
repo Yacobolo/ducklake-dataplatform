@@ -14,7 +14,7 @@
   --space-4: var(--stack-gap-normal);
   --space-5: var(--stack-gap-spacious);
   --size-icon: calc(var(--control-small-size) / 2);
-  --size-sidebar-width: calc(var(--overlay-width-xsmall) + var(--control-xlarge-size) + var(--control-large-gap));
+  --size-sidebar-width: calc(var(--overlay-width-xsmall) + var(--control-large-size));
   --size-content-max-width: var(--breakpoint-xlarge);
   --size-layout-max-width: calc(var(--breakpoint-large) - var(--control-medium-size));
   --size-login-max-width: calc(var(--overlay-width-small) + var(--overlay-width-xsmall) + var(--control-xlarge-size));

@@ -35,13 +35,21 @@
   border-left-color: var(--borderColor-accent-emphasis);
 }
 
-.app-nav-link {
+.app-nav a.app-nav-link {
+  display: flex;
+  align-items: center;
   gap: var(--space-2);
 }
 
 .nav-icon {
   width: var(--size-icon);
   height: var(--size-icon);
+  flex: 0 0 var(--size-icon);
+  display: block;
+}
+
+.app-nav-link span {
+  line-height: var(--text-caption-lineHeight);
 }
 
 @media (max-width: var(--breakpoint-medium)) {
