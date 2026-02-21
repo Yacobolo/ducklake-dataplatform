@@ -63,3 +63,20 @@ a:focus-visible {
   background: var(--bgColor-default);
   box-shadow: var(--shadow-resting-xsmall);
 }
+
+.skip-link {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translateY(-100%);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--borderRadius-medium);
+  background: var(--bgColor-default);
+  color: var(--fgColor-accent);
+  box-shadow: var(--shadow-floating-small);
+  z-index: 20;
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+}

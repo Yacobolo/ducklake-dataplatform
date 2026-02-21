@@ -52,10 +52,30 @@
   line-height: var(--text-caption-lineHeight);
 }
 
+.app-shell.sidebar-compact .app-nav a.app-nav-link {
+  justify-content: center;
+  padding-left: var(--space-1);
+  padding-right: var(--space-1);
+}
+
+.app-shell.sidebar-compact .app-nav-text {
+  display: none;
+}
+
 @media (max-width: var(--breakpoint-medium)) {
   .app-nav {
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-2);
+  }
+
+  .app-shell.sidebar-compact .app-nav a.app-nav-link {
+    justify-content: flex-start;
+    padding-left: var(--space-2);
+    padding-right: var(--space-3);
+  }
+
+  .app-shell.sidebar-compact .app-nav-text {
+    display: inline;
   }
 }

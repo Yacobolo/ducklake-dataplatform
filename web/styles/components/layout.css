@@ -16,8 +16,9 @@
 }
 
 .app-header-brand {
-  display: grid;
-  gap: var(--space-1);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .app-header-brand strong {
@@ -31,6 +32,14 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
+}
+
+#nav-toggle {
+  display: none;
+}
+
+#sidebar-toggle {
+  display: inline-flex;
 }
 
 .is-hidden {
@@ -49,6 +58,10 @@
   flex: 1;
 }
 
+.app-overlay {
+  display: none;
+}
+
 .app-sidebar {
   background: var(--canvas);
   border-right: var(--borderWidth-default) solid var(--border);
@@ -58,6 +71,15 @@
   height: calc(100vh - (var(--control-xlarge-size) + (var(--space-2) * 2)));
   overflow-y: auto;
   box-shadow: var(--shadow-resting-xsmall);
+}
+
+.app-shell.sidebar-compact .app-body {
+  grid-template-columns: calc(var(--control-xlarge-size) + var(--space-4)) minmax(0, 1fr);
+}
+
+.app-shell.sidebar-compact .app-sidebar {
+  padding-left: var(--space-1);
+  padding-right: var(--space-1);
 }
 
 .app-main {
@@ -105,15 +127,49 @@
     justify-content: space-between;
   }
 
+  #nav-toggle {
+    display: inline-flex;
+  }
+
+  #sidebar-toggle {
+    display: none;
+  }
+
   .app-body {
     grid-template-columns: 1fr;
   }
 
   .app-sidebar {
-    position: static;
-    height: auto;
-    border-right: 0;
-    border-bottom: var(--borderWidth-default) solid var(--border);
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(var(--size-sidebar-width), calc(var(--overlay-width-small) + var(--space-5)));
+    height: 100vh;
+    border-right: var(--borderWidth-default) solid var(--border);
+    border-bottom: 0;
+    transform: translateX(-100%);
+    transition: transform var(--base-duration-100) ease;
+    z-index: 20;
+  }
+
+  .app-shell.nav-open .app-sidebar {
+    transform: translateX(0);
+  }
+
+  .app-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--overlay-backdrop-bgColor);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--base-duration-100) ease;
+    z-index: 10;
+  }
+
+  .app-shell.nav-open .app-overlay {
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .app-main {

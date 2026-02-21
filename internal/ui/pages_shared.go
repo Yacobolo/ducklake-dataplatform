@@ -35,14 +35,17 @@ func appPage(title, active string, principal domain.ContextPrincipal, body ...No
 	nav := make([]Node, 0, len(navItems))
 	for _, item := range navItems {
 		className := "app-nav-link Link--secondary d-flex flex-items-center"
+		currentAttr := Node(nil)
 		if item.Key == active {
 			className += " active"
+			currentAttr = Attr("aria-current", "page")
 		}
 		nav = append(nav, A(
 			Href(item.Href),
 			Class(className),
+			currentAttr,
 			I(Class("nav-icon"), Attr("data-lucide", item.Icon), Attr("aria-hidden", "true")),
-			Span(Text(item.Label)),
+			Span(Class("app-nav-text"), Text(item.Label)),
 		))
 	}
 
@@ -73,15 +76,35 @@ func appPage(title, active string, principal domain.ContextPrincipal, body ...No
 			),
 		),
 		Body(
+			A(Href("#main-content"), Class("skip-link"), Text("Skip to content")),
 			Main(Class("app-shell"),
 				Header(
 					Class("app-header"),
 					Div(
 						Class("app-header-brand"),
+						Button(
+							Type("button"),
+							ID("nav-toggle"),
+							Class("btn btn-sm btn-icon app-header-menu"),
+							Attr("aria-label", "Toggle navigation"),
+							Attr("aria-controls", "app-sidebar"),
+							Attr("aria-expanded", "false"),
+							I(Class("btn-icon-glyph"), Attr("data-lucide", "menu"), Attr("aria-hidden", "true")),
+							Span(Class("sr-only"), Text("Toggle navigation")),
+						),
 						Strong(Text("Duck Platform")),
 					),
 					Div(
 						Class("app-header-meta"),
+						Button(
+							Type("button"),
+							ID("sidebar-toggle"),
+							Class("btn btn-sm btn-icon"),
+							Attr("aria-label", "Toggle compact sidebar"),
+							Title("Toggle compact sidebar"),
+							I(Class("btn-icon-glyph"), Attr("data-lucide", "panel-left"), Attr("aria-hidden", "true")),
+							Span(Class("sr-only"), Text("Toggle compact sidebar")),
+						),
 						P(Class("color-fg-muted text-small mb-0"), Text("Signed in as "+principalLabel)),
 						Button(
 							Type("button"),
@@ -104,10 +127,13 @@ func appPage(title, active string, principal domain.ContextPrincipal, body ...No
 					Class("app-body"),
 					Aside(
 						Class("app-sidebar"),
+						ID("app-sidebar"),
 						Nav(Class("app-nav"), Group(nav)),
 					),
 					Section(
 						Class("app-main"),
+						ID("main-content"),
+						Attr("tabindex", "-1"),
 						Div(
 							Class("topbar"),
 							Div(
@@ -117,8 +143,10 @@ func appPage(title, active string, principal domain.ContextPrincipal, body ...No
 						Div(Class("content"), Group(body)),
 					),
 				),
+				Div(Class("app-overlay"), ID("app-overlay"), Attr("aria-hidden", "true")),
 			),
 			Script(Raw(themeBehaviorScript)),
+			Script(Raw(shellBehaviorScript)),
 			Script(Raw("if (window.lucide) { window.lucide.createIcons(); } document.addEventListener('click', function(e){ var t=e.target; if(!(t instanceof Element)){return;} document.querySelectorAll('details.dropdown[open]').forEach(function(d){ if(!d.contains(t)){ d.removeAttribute('open'); }}); });")),
 		),
 	)
