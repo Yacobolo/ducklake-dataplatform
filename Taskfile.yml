@@ -136,7 +136,7 @@ tasks:
       - npm run docs:build --prefix docs
 
   ui:assets:
-    desc: Install web deps and sync UI token assets
+    desc: Install web deps and build UI CSS assets
     cmds:
       - npm ci --prefix web
       - npm run build --prefix web

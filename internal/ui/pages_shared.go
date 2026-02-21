@@ -64,7 +64,7 @@ func appPage(title, active string, principal domain.ContextPrincipal, body ...No
 			Link(Rel("preconnect"), Href("https://fonts.googleapis.com")),
 			Link(Rel("preconnect"), Href("https://fonts.gstatic.com"), Attr("crossorigin", "")),
 			Link(Rel("stylesheet"), Href("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap")),
-			Link(Rel("stylesheet"), Href("/ui/static/app.css")),
+			Link(Rel("stylesheet"), Href(uiStylesheetHref())),
 			Script(Src("https://unpkg.com/lucide@latest/dist/umd/lucide.min.js")),
 			Script(
 				Type("module"),
@@ -120,7 +120,7 @@ func errorPage(title, message string) Node {
 			Link(Rel("preconnect"), Href("https://fonts.googleapis.com")),
 			Link(Rel("preconnect"), Href("https://fonts.gstatic.com"), Attr("crossorigin", "")),
 			Link(Rel("stylesheet"), Href("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap")),
-			Link(Rel("stylesheet"), Href("/ui/static/app.css")),
+			Link(Rel("stylesheet"), Href(uiStylesheetHref())),
 			Script(Src("https://unpkg.com/lucide@latest/dist/umd/lucide.min.js")),
 		),
 		Body(

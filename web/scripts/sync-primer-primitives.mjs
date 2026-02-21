@@ -6,13 +6,15 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const rootDir = join(__dirname, "..", "..");
 
-const sourceDir = join(rootDir, "web", "node_modules", "@primer", "primitives", "dist", "css");
+const sourceDir = join(rootDir, "web", "tokens");
 const targetDir = join(rootDir, "internal", "ui", "assets", "static", "vendor", "primer-primitives", "dist", "css");
 
 const includeDirs = [
   ["base", "size"],
+  ["base", "motion"],
   ["base", "typography"],
   ["functional", "size"],
+  ["functional", "typography"],
   ["functional", "themes"],
 ];
 
@@ -23,4 +25,4 @@ for (const parts of includeDirs) {
   cpSync(from, to, { recursive: true });
 }
 
-console.log("Synced Primer Primitives CSS into internal/ui/assets/static/vendor/primer-primitives.");
+console.log("Synced local tokens into internal/ui/assets/static/vendor/primer-primitives.");
