@@ -51,6 +51,7 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 	selectedSchema := strings.TrimSpace(r.URL.Query().Get("schema"))
 	selectedType := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("type")))
 	selectedName := strings.TrimSpace(r.URL.Query().Get("name"))
+	activeTab := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("tab")))
 	if selectedType == "" {
 		selectedType = "catalog"
 	}
@@ -58,6 +59,9 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 	case "catalog", "schema", "table", "view":
 	default:
 		selectedType = "catalog"
+	}
+	if activeTab == "" {
+		activeTab = "overview"
 	}
 
 	var registration *domain.CatalogRegistration
@@ -101,6 +105,7 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 		schemaNode := catalogWorkspaceSchemaNodeData{
 			Name:      s.Name,
 			Owner:     s.Owner,
+			Created:   formatTime(s.CreatedAt),
 			Updated:   formatTime(s.UpdatedAt),
 			URL:       catalogExplorerURL(catalogName, s.Name, "schema", ""),
 			Active:    selectedType == "schema" && selectedSchema == s.Name,
@@ -115,9 +120,12 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 			for j := range tables {
 				t := tables[j]
 				tableNodes = append(tableNodes, catalogWorkspaceObjectNodeData{
-					Name:   t.Name,
-					URL:    catalogExplorerURL(catalogName, s.Name, "table", t.Name),
-					Active: selectedType == "table" && selectedSchema == s.Name && selectedName == t.Name,
+					Name:    t.Name,
+					URL:     catalogExplorerURL(catalogName, s.Name, "table", t.Name),
+					Active:  selectedType == "table" && selectedSchema == s.Name && selectedName == t.Name,
+					Owner:   t.Owner,
+					Created: formatTime(t.CreatedAt),
+					Kind:    "table",
 				})
 			}
 			schemaNode.Tables = tableNodes
@@ -129,9 +137,12 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 			for j := range views {
 				v := views[j]
 				viewNodes = append(viewNodes, catalogWorkspaceObjectNodeData{
-					Name:   v.Name,
-					URL:    catalogExplorerURL(catalogName, s.Name, "view", v.Name),
-					Active: selectedType == "view" && selectedSchema == s.Name && selectedName == v.Name,
+					Name:    v.Name,
+					URL:     catalogExplorerURL(catalogName, s.Name, "view", v.Name),
+					Active:  selectedType == "view" && selectedSchema == s.Name && selectedName == v.Name,
+					Owner:   v.Owner,
+					Created: formatTime(v.CreatedAt),
+					Kind:    "view",
 				})
 			}
 			schemaNode.Views = viewNodes
@@ -140,7 +151,7 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 		explorerSchemas = append(explorerSchemas, schemaNode)
 	}
 
-	panel := catalogWorkspacePanelData{Mode: "catalog", Title: registration.Name, Subtitle: "Catalog"}
+	panel := catalogWorkspacePanelData{Mode: "catalog", Title: registration.Name, Subtitle: "Catalog", Description: dashIfEmpty(registration.Comment)}
 	metastoreItems := make([]catalogWorkspaceMetaItemData, 0, 8)
 	metastoreItems = append(metastoreItems,
 		catalogWorkspaceMetaItemData{Label: "Status", Value: string(registration.Status)},
@@ -173,13 +184,15 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 		schema, schemaErr := h.Catalog.GetSchema(r.Context(), catalogName, selectedSchema)
 		if schemaErr == nil {
 			panel = catalogWorkspacePanelData{
-				Mode:      "schema",
-				Title:     selectedSchema,
-				Subtitle:  "Schema",
-				EditURL:   "/ui/catalogs/" + url.PathEscape(catalogName) + "/schemas/" + url.PathEscape(selectedSchema) + "/edit",
-				DeleteURL: "/ui/catalogs/" + url.PathEscape(catalogName) + "/schemas/" + url.PathEscape(selectedSchema) + "/delete",
+				Mode:        "schema",
+				Title:       selectedSchema,
+				Subtitle:    "Schema",
+				Description: dashIfEmpty(schema.Comment),
+				EditURL:     "/ui/catalogs/" + url.PathEscape(catalogName) + "/schemas/" + url.PathEscape(selectedSchema) + "/edit",
+				DeleteURL:   "/ui/catalogs/" + url.PathEscape(catalogName) + "/schemas/" + url.PathEscape(selectedSchema) + "/delete",
 				MetaItems: []catalogWorkspaceMetaItemData{
 					{Label: "Owner", Value: schema.Owner},
+					{Label: "Created at", Value: formatTime(schema.CreatedAt)},
 					{Label: "Comment", Value: dashIfEmpty(schema.Comment)},
 					{Label: "Properties", Value: mapJSON(schema.Properties)},
 					{Label: "Tags", Value: tagsLabel(schema.Tags)},
@@ -197,12 +210,14 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 				columnRows = append(columnRows, tableColumnRowData{Name: c.Name, Type: c.Type, Nullable: fmt.Sprintf("%t", c.Nullable), Comment: dashIfEmpty(c.Comment), Properties: mapJSON(c.Properties)})
 			}
 			panel = catalogWorkspacePanelData{
-				Mode:     "table",
-				Title:    selectedName,
-				Subtitle: "Table",
+				Mode:        "table",
+				Title:       selectedName,
+				Subtitle:    "Table",
+				Description: dashIfEmpty(table.Comment),
 				MetaItems: []catalogWorkspaceMetaItemData{
 					{Label: "Type", Value: table.TableType},
 					{Label: "Owner", Value: table.Owner},
+					{Label: "Created at", Value: formatTime(table.CreatedAt)},
 					{Label: "Comment", Value: dashIfEmpty(table.Comment)},
 					{Label: "Properties", Value: mapJSON(table.Properties)},
 					{Label: "Tags", Value: tagsLabel(table.Tags)},
@@ -223,11 +238,13 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 				columnRows = append(columnRows, tableColumnRowData{Name: c.Name, Type: c.Type, Nullable: fmt.Sprintf("%t", c.Nullable), Comment: dashIfEmpty(c.Comment), Properties: mapJSON(c.Properties)})
 			}
 			panel = catalogWorkspacePanelData{
-				Mode:     "view",
-				Title:    selectedName,
-				Subtitle: "View",
+				Mode:        "view",
+				Title:       selectedName,
+				Subtitle:    "View",
+				Description: stringPtr(v.Comment),
 				MetaItems: []catalogWorkspaceMetaItemData{
 					{Label: "Owner", Value: v.Owner},
+					{Label: "Created at", Value: formatTime(v.CreatedAt)},
 					{Label: "Comment", Value: stringPtr(v.Comment)},
 					{Label: "Properties", Value: mapJSON(v.Properties)},
 					{Label: "Source tables", Value: stringsJoin(v.SourceTables)},
@@ -240,6 +257,10 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 		}
 	}
 
+	if !isCatalogTabAllowed(panel.Mode, activeTab) {
+		activeTab = "overview"
+	}
+
 	renderHTML(w, http.StatusOK, catalogWorkspacePage(catalogWorkspacePageData{
 		Principal:          principalFromContext(r.Context()),
 		Catalogs:           sidebarCatalogs,
@@ -247,6 +268,7 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 		SelectedSchemaName: selectedSchema,
 		SelectedType:       selectedType,
 		SelectedName:       selectedName,
+		ActiveTab:          activeTab,
 		Schemas:            explorerSchemas,
 		Panel:              panel,
 		QuickFilterMessage: "Filter catalogs, schemas, tables, and views",
