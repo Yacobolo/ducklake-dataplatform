@@ -35,7 +35,7 @@ td {
 th {
   background: var(--canvas-subtle);
   color: var(--muted);
-  font-weight: 600;
+  font-weight: var(--base-text-weight-semibold);
   text-transform: uppercase;
   letter-spacing: 0.02em;
 }

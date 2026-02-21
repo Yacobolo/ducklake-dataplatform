@@ -8,7 +8,7 @@
   padding: var(--space-1) var(--space-3);
   font-size: var(--text-body-size-medium);
   line-height: var(--text-caption-lineHeight);
-  font-weight: 500;
+  font-weight: var(--base-text-weight-medium);
   cursor: pointer;
   text-decoration: none;
   box-shadow: var(--button-default-shadow-resting);
@@ -24,6 +24,7 @@
 
 .btn:hover {
   background: var(--button-default-bgColor-hover);
+  color: var(--button-default-fgColor-rest);
   text-decoration: none;
 }
 
@@ -75,6 +76,7 @@
 
 .btn-primary:hover {
   background: var(--button-primary-bgColor-hover);
+  color: var(--button-primary-fgColor-rest);
 }
 
 .btn-primary:active {

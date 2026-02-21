@@ -5,7 +5,7 @@
   padding: 0 var(--space-2);
   font-size: var(--text-caption-size);
   line-height: var(--text-caption-lineHeight);
-  font-weight: 500;
+  font-weight: var(--base-text-weight-medium);
   background: var(--label-gray-bgColor-rest);
   color: var(--label-gray-fgColor-rest);
 }

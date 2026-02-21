@@ -78,7 +78,7 @@
   margin: 0;
   font-size: calc(var(--text-title-size-medium) + var(--borderWidth-thick));
   line-height: var(--text-title-lineHeight-medium);
-  font-weight: 600;
+  font-weight: var(--base-text-weight-semibold);
 }
 
 @media (max-width: var(--breakpoint-medium)) {

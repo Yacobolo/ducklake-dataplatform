@@ -17,6 +17,7 @@ pre {
 .form-select,
 textarea,
 select,
+input:not([type]),
 input[type="text"],
 input[type="search"],
 input[type="number"],
@@ -35,6 +36,7 @@ input[type="password"] {
 .form-select:focus-visible,
 textarea:focus-visible,
 select:focus-visible,
+input:not([type]):focus-visible,
 input[type="text"]:focus-visible,
 input[type="search"]:focus-visible,
 input[type="number"]:focus-visible,
@@ -51,16 +53,36 @@ textarea {
 }
 
 label {
+  display: block;
+  margin-bottom: var(--space-1);
   font-size: var(--text-caption-size);
-  font-weight: 600;
+  font-weight: var(--base-text-weight-semibold);
   color: var(--fgColor-muted);
+}
+
+.stack-form > :not(label):not(.form-actions) {
+  margin-bottom: var(--space-3);
+}
+
+.stack-form > :last-child {
+  margin-bottom: 0;
+}
+
+.form-actions {
+  margin-top: var(--space-2);
 }
 
 .button-row {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-2);
   margin-top: var(--space-1);
+}
+
+.button-row > form {
+  margin: 0;
+  display: inline-flex;
 }
 
 .blankslate {
