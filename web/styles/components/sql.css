@@ -1,14 +1,17 @@
 .app-main-sql {
   display: flex;
   min-height: 0;
+  height: calc(100vh - (var(--control-xlarge-size) + (var(--space-2) * 2)));
+  overflow: hidden;
 }
 
 .content-sql {
   max-width: none;
   flex: 1;
+  height: 100%;
   min-height: 0;
   display: grid;
-  grid-template-rows: minmax(0, 3fr) minmax(0, 2fr);
+  grid-template-rows: minmax(0, 2fr) minmax(0, 1fr);
   gap: var(--space-3);
   overflow: hidden;
 }
@@ -58,12 +61,6 @@
 
 .sql-context-field .form-select {
   min-width: calc(var(--overlay-width-xsmall) + var(--space-5));
-}
-
-.sql-divider {
-  height: var(--borderWidth-default);
-  background: var(--borderColor-muted);
-  margin: var(--space-2) 0;
 }
 
 .sql-editor-frame {
@@ -213,6 +210,8 @@ sql-editor-surface {
 @media (max-width: var(--breakpoint-medium)) {
   .app-main-sql {
     display: block;
+    height: auto;
+    overflow: visible;
   }
 
   .content-sql {

@@ -112,7 +112,6 @@ func sqlEditorPage(principal domain.ContextPrincipal, sqlText string, result *qu
 					),
 				),
 			),
-			Div(Class("sql-divider")),
 			Form(
 				Method("post"),
 				Action("/ui/sql/run"),

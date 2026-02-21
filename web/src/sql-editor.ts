@@ -18,8 +18,10 @@ class SqlEditorSurface extends LitElement {
       display: grid;
       grid-template-columns: calc(var(--control-small-size) + var(--space-3)) minmax(0, 1fr);
       min-height: 0;
+      height: 100%;
       flex: 1;
       background: linear-gradient(180deg, var(--bgColor-default), var(--bgColor-muted));
+      overflow: hidden;
     }
 
     .gutter {
@@ -34,11 +36,14 @@ class SqlEditorSurface extends LitElement {
       white-space: pre;
       user-select: none;
       overflow: hidden;
+      height: 100%;
+      box-sizing: border-box;
     }
 
     .input-wrap {
       position: relative;
       min-height: 0;
+      height: 100%;
       overflow: hidden;
     }
 
@@ -106,11 +111,11 @@ class SqlEditorSurface extends LitElement {
       opacity: 0;
       pointer-events: none;
       transition: opacity var(--base-duration-100) ease;
-      z-index: 1;
+      z-index: 0;
     }
 
     .input-wrap:focus-within .active-line {
-      opacity: 1;
+      opacity: 0.35;
     }
 
     ::slotted(textarea.sql-editor-textarea) {
@@ -120,6 +125,7 @@ class SqlEditorSurface extends LitElement {
       min-height: 0;
       width: 100%;
       height: 100%;
+      max-height: 100%;
       resize: none;
       padding-left: var(--space-2);
       background: var(--bgColor-transparent);
@@ -256,6 +262,14 @@ class SqlEditorSurface extends LitElement {
     const value = this.textarea.value || "";
     const lines = value.split("\n").length;
     this.lineCount = Math.max(16, lines + 2);
+    const gutter = this.renderRoot.querySelector(".gutter");
+    if (gutter instanceof HTMLElement) {
+      const nums = [];
+      for (let i = 1; i <= this.lineCount; i += 1) {
+        nums.push(String(i));
+      }
+      gutter.textContent = nums.join("\n");
+    }
     this.updateHighlight(value);
 
     const computed = window.getComputedStyle(this.textarea);
@@ -269,10 +283,21 @@ class SqlEditorSurface extends LitElement {
     this.activeLine = value.slice(0, caret).split("\n").length;
     this.activeTop = topPadding + ((this.activeLine - 1) * this.lineHeight) - this.textarea.scrollTop;
 
+    const activeLine = this.renderRoot.querySelector(".active-line");
+    if (activeLine instanceof HTMLElement) {
+      activeLine.style.height = `${this.lineHeight}px`;
+      activeLine.style.transform = `translateY(${this.activeTop}px)`;
+    }
+
     const highlight = this.renderRoot.querySelector(".highlight-layer");
     if (highlight instanceof HTMLElement) {
       highlight.scrollTop = this.textarea.scrollTop;
       highlight.scrollLeft = this.textarea.scrollLeft;
+    }
+
+    const gutterScroll = this.renderRoot.querySelector(".gutter");
+    if (gutterScroll instanceof HTMLElement) {
+      gutterScroll.scrollTop = this.textarea.scrollTop;
     }
   }
 
