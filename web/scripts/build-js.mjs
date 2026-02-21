@@ -7,10 +7,11 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const rootDir = join(__dirname, "..", "..");
+const webDir = join(rootDir, "web");
 
 const entryFiles = [
-  join(rootDir, "web", "src", "sql-editor.ts"),
-  join(rootDir, "web", "src", "notebook.ts"),
+  join(webDir, "src", "sql-editor.ts"),
+  join(webDir, "src", "notebook.ts"),
 ];
 
 const outputDir = join(rootDir, "internal", "ui", "assets", "static", "js");
@@ -25,6 +26,7 @@ if (mode !== "dev" && mode !== "prod") {
 mkdirSync(outputDir, { recursive: true });
 
 const result = await build({
+  absWorkingDir: webDir,
   entryPoints: entryFiles,
   outdir: outputDir,
   bundle: true,

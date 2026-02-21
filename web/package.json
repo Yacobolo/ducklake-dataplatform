@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@primer/primitives": "11.4.0",
+    "highlight.js": "11.11.1",
     "lit": "3.3.1"
   }
 }
