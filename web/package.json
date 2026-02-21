@@ -4,16 +4,20 @@
   "version": "0.1.0",
   "description": "Frontend asset workspace for internal UI",
   "scripts": {
-    "build": "npm run sync:tokens && npm run build:css:prod",
+    "build": "npm run sync:tokens && npm run build:css:prod && npm run build:js:prod",
     "sync:tokens": "node ./scripts/sync-primer-primitives.mjs",
     "build:css:dev": "node ./scripts/build-css.mjs --mode=dev",
     "build:css:prod": "node ./scripts/build-css.mjs --mode=prod",
-    "watch:css": "npm run sync:tokens && esbuild ./styles/app.css --bundle --sourcemap --outfile=../internal/ui/assets/static/css/app.css --watch"
+    "build:js:dev": "node ./scripts/build-js.mjs --mode=dev",
+    "build:js:prod": "node ./scripts/build-js.mjs --mode=prod",
+    "watch:css": "npm run sync:tokens && esbuild ./styles/app.css --bundle --sourcemap --outfile=../internal/ui/assets/static/css/app.css --watch",
+    "watch:js": "esbuild ./src/sql-editor.ts ./src/notebook.ts --bundle --format=iife --outdir=../internal/ui/assets/static/js --sourcemap --watch"
   },
   "devDependencies": {
     "esbuild": "0.25.10"
   },
   "dependencies": {
-    "@primer/primitives": "11.4.0"
+    "@primer/primitives": "11.4.0",
+    "lit": "3.3.1"
   }
 }

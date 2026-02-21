@@ -54,6 +54,13 @@ func appPage(title, active string, principal domain.ContextPrincipal, body ...No
 		principalLabel = "unknown"
 	}
 
+	mainClass := "app-main"
+	contentClass := "content"
+	if active == "sql" {
+		mainClass += " app-main-sql"
+		contentClass += " content-sql"
+	}
+
 	return HTML(
 		Lang("en"),
 		Attr("data-color-mode", "auto"),
@@ -131,16 +138,11 @@ func appPage(title, active string, principal domain.ContextPrincipal, body ...No
 						Nav(Class("app-nav"), Group(nav)),
 					),
 					Section(
-						Class("app-main"),
+						Class(mainClass),
 						ID("main-content"),
 						Attr("tabindex", "-1"),
-						Div(
-							Class("topbar"),
-							Div(
-								H1(Class("page-title"), Text(title)),
-							),
-						),
-						Div(Class("content"), Group(body)),
+						H1(Class("sr-only"), Text(title)),
+						Div(Class(contentClass), Group(body)),
 					),
 				),
 				Div(Class("app-overlay"), ID("app-overlay"), Attr("aria-hidden", "true")),

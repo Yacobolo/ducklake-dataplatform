@@ -2,7 +2,7 @@
   const workspace = document.querySelector("[data-reorder-url]");
   const reorderURL = workspace instanceof HTMLElement ? workspace.dataset.reorderUrl || "" : "";
 
-  const cells = () => Array.from(document.querySelectorAll("[data-notebook-cell='true']"));
+  const cells = () => Array.from(document.querySelectorAll<HTMLElement>("[data-notebook-cell='true']"));
   const csrf = () => {
     const input = document.querySelector("input[name='csrf_token']");
     return input instanceof HTMLInputElement ? input.value : "";
@@ -13,15 +13,15 @@
     if (!focused) {
       return null;
     }
-    return focused.closest("[data-notebook-cell='true']");
+    return focused.closest<HTMLElement>("[data-notebook-cell='true']");
   };
 
-  const focusCellEditor = (cell) => {
+  const focusCellEditor = (cell: HTMLElement | null) => {
     if (!cell) {
       return;
     }
     const editor = cell.querySelector("[data-cell-editor='true']");
-    if (editor instanceof HTMLElement) {
+    if (editor instanceof HTMLTextAreaElement || editor instanceof HTMLInputElement) {
       editor.focus();
       const end = editor.value.length;
       if (typeof editor.setSelectionRange === "function") {
@@ -30,7 +30,7 @@
     }
   };
 
-  const moveFocus = (delta) => {
+  const moveFocus = (delta: number) => {
     const list = cells();
     const current = activeCell();
     if (!current || list.length === 0) {
@@ -102,7 +102,7 @@
     return;
   }
 
-  let draggedCell = null;
+  let draggedCell: HTMLElement | null = null;
 
   const submitOrder = async () => {
     const ordered = cells();
@@ -121,7 +121,7 @@
     const response = await fetch(reorderURL, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-      body: params.toString()
+      body: params.toString(),
     });
     if (!response.ok) {
       window.location.reload();
@@ -129,9 +129,6 @@
   };
 
   cells().forEach((cell) => {
-    if (!(cell instanceof HTMLElement)) {
-      return;
-    }
     cell.draggable = true;
 
     cell.addEventListener("dragstart", (event) => {

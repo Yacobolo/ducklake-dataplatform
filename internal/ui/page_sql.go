@@ -12,12 +12,21 @@ import (
 )
 
 func sqlEditorPage(principal domain.ContextPrincipal, sqlText string, result *query.QueryResult, runError string, state sqlEditorContext, csrfFieldProvider func() Node) Node {
-	resultNode := Node(P(Class(mutedClass()), Text("Run a query to see results.")))
+	resultNode := Node(Div(
+		Class("sql-result-card sql-results-empty"),
+		Div(
+			Class("sql-results-empty-body"),
+			I(Class("sql-results-empty-icon"), Attr("data-lucide", "table"), Attr("aria-hidden", "true")),
+			P(Class("sql-results-empty-title"), Text("No results yet")),
+			P(Class(mutedClass()), Text("Run a query to preview rows here.")),
+			Code(Text("SELECT * FROM <schema>.<table> LIMIT 50;")),
+		),
+	))
 
 	if runError != "" {
 		resultNode = Div(
-			Class(cardClass("flash flash-error")),
-			H2(Text("Query Error")),
+			Class("sql-result-card flash flash-error"),
+			H2(Class("sql-results-title"), Text("Query Error")),
 			Pre(Text(runError)),
 		)
 	} else if result != nil {
@@ -48,18 +57,25 @@ func sqlEditorPage(principal domain.ContextPrincipal, sqlText string, result *qu
 		}
 
 		resultNode = Div(
-			Class(cardClass("table-wrap")),
-			H2(Text("Results")),
-			P(Class(mutedClass()), Text(meta)),
-			Table(
-				Class("data-table"),
-				THead(Tr(Group(headerCols))),
-				TBody(Group(rows)),
+			Class("sql-result-card table-wrap"),
+			Div(
+				Class("sql-results-header"),
+				H2(Class("sql-results-title"), Text("Results (Table View)")),
+				P(Class(mutedClass()), Text(meta)),
+			),
+			Div(
+				Class("sql-results-scroll"),
+				Table(
+					Class("data-table"),
+					THead(Tr(Group(headerCols))),
+					TBody(Group(rows)),
+				),
 			),
 		)
 	}
 
 	snippetsNode := snippetLinks(state.SelectedCatalog, state.SelectedSchema)
+	snippetsMenuNode := snippetMenu(state.SelectedCatalog, state.SelectedSchema)
 	catalogOptions := make([]Node, 0, len(state.Catalogs)+1)
 	catalogOptions = append(catalogOptions, optionSelectedValue("", state.SelectedCatalog, "(choose catalog)"))
 	for i := range state.Catalogs {
@@ -77,38 +93,78 @@ func sqlEditorPage(principal domain.ContextPrincipal, sqlText string, result *qu
 		"sql",
 		principal,
 		Div(
-			Class(cardClass()),
+			Class("sql-workspace"),
 			Form(
 				Method("get"),
 				Action("/ui/sql"),
-				Label(Text("Catalog")),
-				Select(Class("form-select"), Name("catalog"), Group(catalogOptions)),
-				Label(Text("Schema")),
-				Select(Class("form-select"), Name("schema"), Group(schemaOptions)),
-				Div(Class("button-row"), Button(Type("submit"), Class(secondaryButtonClass()), Text("Set context"))),
+				Class("sql-context-bar"),
+				Div(
+					Class("sql-context-fields"),
+					Div(
+						Class("sql-context-field"),
+						Label(Text("Catalog")),
+						Select(Class("form-select"), Name("catalog"), Attr("onchange", "this.form.submit()"), Group(catalogOptions)),
+					),
+					Div(
+						Class("sql-context-field"),
+						Label(Text("Schema")),
+						Select(Class("form-select"), Name("schema"), Attr("onchange", "this.form.submit()"), Group(schemaOptions)),
+					),
+				),
 			),
-			P(Class(mutedClass()), Text("Context does not rewrite SQL automatically. It powers snippets and export naming.")),
-			H2(Text("Default snippets")),
-			snippetsNode,
-		),
-		Div(
-			Class(cardClass()),
+			Div(Class("sql-divider")),
 			Form(
 				Method("post"),
 				Action("/ui/sql/run"),
+				Class("sql-editor-frame"),
 				csrfFieldProvider(),
 				Input(Type("hidden"), Name("catalog"), Value(state.SelectedCatalog)),
 				Input(Type("hidden"), Name("schema"), Value(state.SelectedSchema)),
-				Label(Text("SQL")),
-				Textarea(Class("form-control"), Name("sql"), Required(), Text(sqlText)),
 				Div(
-					Class("button-row"),
-					Button(Type("submit"), Class(primaryButtonClass()), Text("Run query")),
-					Button(Type("submit"), Class(secondaryButtonClass()), FormAction("/ui/sql/download.csv"), Text("Download CSV")),
+					Class("sql-editor-toolbar"),
+					Div(
+						Class("button-row"),
+						Button(
+							Type("submit"),
+							Class(primaryButtonClass()),
+							I(Class("btn-icon-glyph"), Attr("data-lucide", "play"), Attr("aria-hidden", "true")),
+							Span(Text("Run query")),
+						),
+						Button(
+							Type("submit"),
+							Class(secondaryButtonClass()),
+							FormAction("/ui/sql/download.csv"),
+							I(Class("btn-icon-glyph"), Attr("data-lucide", "download"), Attr("aria-hidden", "true")),
+							Span(Text("Download CSV")),
+						),
+					),
+					Div(
+						Class("sql-snippet-toolbar"),
+						P(Class("sql-snippet-label"), Text("Snippets:")),
+						Div(Class("sql-snippet-inline"), snippetsNode),
+						Div(Class("sql-snippet-collapsed"), snippetsMenuNode),
+					),
+				),
+				Div(
+					Class("sql-editor-host"),
+					El(
+						"sql-editor-surface",
+						Textarea(
+							Class("form-control sql-editor-textarea"),
+							Name("sql"),
+							Required(),
+							Attr("spellcheck", "false"),
+							Text(sqlText),
+						),
+					),
 				),
 			),
 		),
-		resultNode,
+		Div(
+			Class("sql-results-panel"),
+			resultNode,
+		),
+		Script(Src(uiScriptHref("sql-editor.js"))),
 	)
 }
 
@@ -120,15 +176,7 @@ func optionSelectedValue(value, selected, label string) Node {
 }
 
 func snippetLinks(catalogName, schemaName string) Node {
-	snippets := []struct {
-		ID    string
-		Label string
-	}{
-		{ID: "show_tables", Label: "Show tables"},
-		{ID: "show_views", Label: "Show views"},
-		{ID: "describe_table", Label: "Describe table"},
-		{ID: "sample_rows", Label: "Sample rows"},
-	}
+	snippets := sqlSnippets()
 
 	links := make([]Node, 0, len(snippets))
 	for i := range snippets {
@@ -140,7 +188,75 @@ func snippetLinks(catalogName, schemaName string) Node {
 		if schemaName != "" {
 			q.Set("schema", schemaName)
 		}
-		links = append(links, A(Href("/ui/sql?"+q.Encode()), Text(snippets[i].Label)))
+		links = append(links,
+			A(
+				Href("/ui/sql?"+q.Encode()),
+				Class("btn btn-sm"),
+				I(Class("btn-icon-glyph"), Attr("data-lucide", snippetIcon(snippets[i].ID)), Attr("aria-hidden", "true")),
+				Span(Text(snippets[i].Label)),
+			),
+		)
 	}
-	return Div(Class("snippet-list"), Group(links))
+	return Div(Class("snippet-list sql-snippet-list"), Group(links))
+}
+
+func snippetMenu(catalogName, schemaName string) Node {
+	snippets := sqlSnippets()
+	items := make([]Node, 0, len(snippets))
+	for i := range snippets {
+		q := url.Values{}
+		q.Set("snippet", snippets[i].ID)
+		if catalogName != "" {
+			q.Set("catalog", catalogName)
+		}
+		if schemaName != "" {
+			q.Set("schema", schemaName)
+		}
+		items = append(items,
+			A(
+				Href("/ui/sql?"+q.Encode()),
+				Class("dropdown-item"),
+				I(Class("dropdown-item-icon"), Attr("data-lucide", snippetIcon(snippets[i].ID)), Attr("aria-hidden", "true")),
+				Span(Text(snippets[i].Label)),
+			),
+		)
+	}
+
+	return Details(
+		Class("dropdown details-reset details-overlay d-inline-block sql-snippet-dropdown"),
+		Summary(Class("btn btn-sm"), Text("Snippets")),
+		Div(
+			Class("dropdown-menu dropdown-menu-sw"),
+			Group(items),
+		),
+	)
+}
+
+type sqlSnippet struct {
+	ID    string
+	Label string
+}
+
+func sqlSnippets() []sqlSnippet {
+	return []sqlSnippet{
+		{ID: "show_tables", Label: "Show tables"},
+		{ID: "show_views", Label: "Show views"},
+		{ID: "describe_table", Label: "Describe table"},
+		{ID: "sample_rows", Label: "Sample rows"},
+	}
+}
+
+func snippetIcon(id string) string {
+	switch id {
+	case "show_tables":
+		return "table"
+	case "show_views":
+		return "eye"
+	case "describe_table":
+		return "list"
+	case "sample_rows":
+		return "file-text"
+	default:
+		return "sparkles"
+	}
 }

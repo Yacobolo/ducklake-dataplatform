@@ -344,7 +344,7 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 		),
 		jobsCard,
 		workspaceNode,
-		Script(Src("/ui/static/notebook.js")),
+		Script(Src(uiScriptHref("notebook.js"))),
 	)
 }
 
