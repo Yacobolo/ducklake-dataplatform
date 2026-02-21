@@ -1,10 +1,10 @@
 .Label {
   display: inline-block;
-  border: 1px solid transparent;
-  border-radius: var(--borderRadius-full, 999px);
-  padding: 0 var(--base-size-8, 8px);
-  font-size: 0.75rem;
-  line-height: 1.25rem;
+  border: var(--borderWidth-default) solid var(--bgColor-transparent);
+  border-radius: var(--borderRadius-full);
+  padding: 0 var(--space-2);
+  font-size: var(--text-caption-size);
+  line-height: var(--text-caption-lineHeight);
   font-weight: 500;
   background: var(--label-gray-bgColor-rest);
   color: var(--label-gray-fgColor-rest);
@@ -50,12 +50,12 @@
   position: absolute;
   right: 0;
   z-index: 20;
-  min-width: 11rem;
-  margin-top: var(--base-size-4, 4px);
-  padding: var(--base-size-4, 4px);
+  min-width: var(--overlay-width-xsmall);
+  margin-top: var(--space-1);
+  padding: var(--space-1);
   background: var(--overlay-bgColor);
-  border: 1px solid var(--overlay-borderColor);
-  border-radius: var(--borderRadius-medium, 6px);
+  border: var(--borderWidth-default) solid var(--overlay-borderColor);
+  border-radius: var(--borderRadius-medium);
   box-shadow: var(--shadow-floating-small);
 }
 
@@ -69,20 +69,24 @@
   gap: var(--space-2);
   width: 100%;
   border: 0;
-  border-radius: var(--borderRadius-medium, 6px);
-  padding: var(--base-size-6, 6px) var(--base-size-8, 8px);
-  background: transparent;
+  border-radius: var(--borderRadius-medium);
+  padding: var(--space-1) var(--space-2);
+  background: var(--bgColor-transparent);
   color: var(--fgColor-default);
-  font-size: 0.8125rem;
+  font-size: var(--text-codeBlock-size);
   text-align: left;
   text-decoration: none;
   cursor: pointer;
 }
 
+.dropdown-item:visited {
+  color: var(--fgColor-default);
+}
+
 .dropdown-item-icon {
-  width: 14px;
-  height: 14px;
-  flex: 0 0 14px;
+  width: var(--size-icon);
+  height: var(--size-icon);
+  flex: 0 0 var(--size-icon);
 }
 
 .dropdown-item:hover {
@@ -90,9 +94,14 @@
   text-decoration: none;
 }
 
+.dropdown-item:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--outline-focus-offset);
+}
+
 .dropdown-divider {
-  margin: var(--base-size-4, 4px) var(--base-size-4, 4px);
-  border-top: 1px solid var(--borderColor-muted);
+  margin: var(--space-1) var(--space-1);
+  border-top: var(--borderWidth-default) solid var(--borderColor-muted);
 }
 
 .dropdown-item-danger {

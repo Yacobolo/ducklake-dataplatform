@@ -1,13 +1,13 @@
 code,
 pre {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: 12px;
+  font-family: var(--fontStack-monospace);
+  font-size: var(--text-caption-size);
 }
 
 pre {
   margin: 0;
   background: var(--canvas-subtle);
-  border: 1px solid var(--border);
+  border: var(--borderWidth-default) solid var(--border);
   border-radius: var(--radius);
   padding: var(--space-3);
   overflow-x: auto;
@@ -24,11 +24,11 @@ input[type="email"],
 input[type="password"] {
   width: 100%;
   max-width: 100%;
-  border: 1px solid var(--control-borderColor-rest);
-  border-radius: var(--borderRadius-medium, 6px);
+  border: var(--borderWidth-default) solid var(--control-borderColor-rest);
+  border-radius: var(--borderRadius-medium);
   background: var(--bgColor-default);
   color: var(--fgColor-default);
-  padding: var(--base-size-8, 8px) var(--base-size-12, 12px);
+  padding: var(--space-2) var(--space-3);
 }
 
 .form-control:focus-visible,
@@ -46,12 +46,12 @@ input[type="password"]:focus-visible {
 }
 
 textarea {
-  min-height: calc(var(--base-size-64, 64px) * 2.25);
+  min-height: var(--size-editor-min-height);
   resize: vertical;
 }
 
 label {
-  font-size: 0.75rem;
+  font-size: var(--text-caption-size);
   font-weight: 600;
   color: var(--fgColor-muted);
 }
@@ -65,8 +65,8 @@ label {
 
 .blankslate {
   text-align: center;
-  padding: var(--base-size-24, 24px);
-  border: 1px dashed var(--borderColor-muted);
+  padding: var(--space-5);
+  border: var(--borderWidth-default) dashed var(--borderColor-muted);
   background: linear-gradient(180deg, var(--bgColor-default), var(--bgColor-muted));
 }
 
@@ -77,11 +77,11 @@ label {
 }
 
 .snippet-list a {
-  border: 1px solid var(--border);
-  border-radius: var(--borderRadius-full, 999px);
-  padding: var(--base-size-4, 4px) var(--base-size-10, 10px);
+  border: var(--borderWidth-default) solid var(--border);
+  border-radius: var(--borderRadius-full);
+  padding: var(--space-1) var(--space-2);
   background: var(--canvas-subtle);
-  font-size: 12px;
+  font-size: var(--text-caption-size);
 }
 
 .error {
@@ -90,7 +90,7 @@ label {
 }
 
 .flash {
-  border-left: 4px solid var(--borderColor-attention-emphasis);
+  border-left: var(--borderWidth-thicker) solid var(--borderColor-attention-emphasis);
 }
 
 .flash-error {

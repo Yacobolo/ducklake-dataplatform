@@ -1,9 +1,9 @@
 .p-3 {
-  padding: var(--base-size-16, 16px);
+  padding: var(--space-4);
 }
 
 .mb-3 {
-  margin-bottom: var(--base-size-16, 16px);
+  margin-bottom: var(--space-4);
 }
 
 .d-flex {
@@ -43,7 +43,7 @@
 }
 
 .text-small {
-  font-size: 0.75rem;
+  font-size: var(--text-caption-size);
 }
 
 .text-right {
@@ -62,16 +62,25 @@
   color: var(--fgColor-muted);
 }
 
+.Link--secondary:visited {
+  color: var(--fgColor-muted);
+}
+
 .Link--secondary:hover {
   color: var(--fgColor-default);
 }
 
+.Link--secondary:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--outline-focus-offset);
+}
+
 .sr-only {
   position: absolute;
-  width: 1px;
-  height: 1px;
+  width: var(--borderWidth-default);
+  height: var(--borderWidth-default);
   padding: 0;
-  margin: -1px;
+  margin: calc(var(--borderWidth-default) * -1);
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
   border: 0;

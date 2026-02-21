@@ -1,5 +1,7 @@
 @import "../../tokens/functional/size/border.css";
 @import "../../tokens/functional/size/breakpoints.css";
+@import "../../tokens/functional/size/radius.css";
 @import "../../tokens/functional/size/size.css";
+@import "../../tokens/functional/typography/typography.css";
 @import "../../tokens/functional/themes/light.css";
 @import "../../tokens/functional/themes/dark.css";

@@ -1,12 +1,12 @@
 .app-shell {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 248px minmax(0, 1fr);
+  grid-template-columns: var(--size-sidebar-width) minmax(0, 1fr);
 }
 
 .app-sidebar {
   background: var(--canvas);
-  border-right: 1px solid var(--border);
+  border-right: var(--borderWidth-default) solid var(--border);
   padding: var(--space-5) var(--space-3);
   position: sticky;
   top: 0;
@@ -17,7 +17,7 @@
 
 .brand {
   padding: var(--space-3);
-  border: 1px solid var(--border);
+  border: var(--borderWidth-default) solid var(--border);
   background:
     linear-gradient(135deg, var(--bgColor-default), var(--bgColor-muted));
   margin-bottom: var(--space-4);
@@ -26,7 +26,7 @@
 
 .brand strong {
   display: block;
-  font-size: 13px;
+  font-size: var(--text-codeBlock-size);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -36,11 +36,11 @@
 }
 
 .content {
-  max-width: 1280px;
+  max-width: var(--size-content-max-width);
 }
 
 .layout {
-  max-width: 980px;
+  max-width: var(--size-layout-max-width);
   margin: 0 auto;
   padding: var(--space-5);
 }
@@ -52,7 +52,7 @@
   gap: var(--space-3);
   margin-bottom: var(--space-4);
   padding: var(--space-3);
-  border: 1px solid var(--border);
+  border: var(--borderWidth-default) solid var(--border);
   border-radius: var(--radius);
   background: var(--canvas);
   box-shadow: var(--shadow-resting-small);
@@ -71,17 +71,17 @@
 }
 
 .theme-picker .form-select {
-  min-width: 9rem;
+  min-width: calc(var(--control-xlarge-size) * 3);
 }
 
 .page-title {
   margin: 0;
-  font-size: 1.375rem;
-  line-height: 1.2;
+  font-size: calc(var(--text-title-size-medium) + var(--borderWidth-thick));
+  line-height: var(--text-title-lineHeight-medium);
   font-weight: 600;
 }
 
-@media (max-width: 920px) {
+@media (max-width: var(--breakpoint-medium)) {
   .app-shell {
     grid-template-columns: 1fr;
   }
@@ -90,7 +90,7 @@
     position: static;
     height: auto;
     border-right: 0;
-    border-bottom: 1px solid var(--border);
+    border-bottom: var(--borderWidth-default) solid var(--border);
   }
 
   .app-main {

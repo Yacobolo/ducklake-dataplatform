@@ -6,18 +6,18 @@
 
 .notebook-workspace {
   display: grid;
-  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  grid-template-columns: minmax(var(--overlay-width-xsmall), var(--overlay-width-small)) minmax(0, 1fr);
   gap: var(--space-3);
 }
 
 .notebook-outline {
   position: sticky;
-  top: calc(var(--base-size-64, 64px) + var(--space-3));
+  top: var(--size-sticky-offset);
   align-self: start;
 }
 
 .notebook-outline-list {
-  max-height: 55vh;
+  max-height: var(--size-outline-max-height);
   overflow: auto;
   margin-top: var(--space-2);
 }
@@ -35,16 +35,25 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  border: 1px solid var(--border);
-  border-radius: var(--borderRadius-medium, 6px);
+  border: var(--borderWidth-default) solid var(--border);
+  border-radius: var(--borderRadius-medium);
   padding: var(--space-1) var(--space-2);
   color: var(--fgColor-default);
   text-decoration: none;
 }
 
+.notebook-outline-link:visited {
+  color: var(--fgColor-default);
+}
+
 .notebook-outline-link:hover {
   background: var(--bgColor-muted);
   text-decoration: none;
+}
+
+.notebook-outline-link:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--outline-focus-offset);
 }
 
 .notebook-cells {
@@ -57,10 +66,10 @@
 }
 
 .notebook-cell {
-  padding: var(--base-size-16, 16px);
-  border-bottom: 1px solid var(--border);
+  padding: var(--space-4);
+  border-bottom: var(--borderWidth-default) solid var(--border);
   background: var(--bgColor-default);
-  scroll-margin-top: calc(var(--base-size-64, 64px) + var(--space-3));
+  scroll-margin-top: var(--size-sticky-offset);
 }
 
 .notebook-cell:last-child {
@@ -68,7 +77,7 @@
 }
 
 .notebook-cell:target {
-  box-shadow: inset 0 0 0 2px var(--borderColor-accent-emphasis);
+  box-shadow: inset 0 0 0 var(--borderWidth-thick) var(--borderColor-accent-emphasis);
 }
 
 .notebook-cell-title {
@@ -88,8 +97,8 @@
 }
 
 .notebook-editor {
-  min-height: 170px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  min-height: var(--size-editor-min-height);
+  font-family: var(--fontStack-monospace);
 }
 
 .notebook-cell-actions {
@@ -100,8 +109,8 @@
 .notebook-output {
   margin-top: var(--space-2);
   padding: var(--space-2);
-  border: 1px solid var(--borderColor-muted);
-  border-radius: var(--borderRadius-medium, 6px);
+  border: var(--borderWidth-default) solid var(--borderColor-muted);
+  border-radius: var(--borderRadius-medium);
   background: var(--bgColor-muted);
 }
 
@@ -137,10 +146,10 @@
 }
 
 .notebook-cell.drag-over {
-  box-shadow: inset 0 0 0 2px var(--borderColor-accent-emphasis);
+  box-shadow: inset 0 0 0 var(--borderWidth-thick) var(--borderColor-accent-emphasis);
 }
 
-@media (max-width: 920px) {
+@media (max-width: var(--breakpoint-medium)) {
   .notebook-workspace {
     grid-template-columns: 1fr;
   }

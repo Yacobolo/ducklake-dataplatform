@@ -7,12 +7,20 @@
   --border: var(--borderColor-default);
   --accent: var(--fgColor-accent);
   --danger: var(--fgColor-danger);
-  --radius: var(--borderRadius-medium, 4px);
-  --space-1: var(--base-size-4, 6px);
-  --space-2: var(--base-size-8, 8px);
-  --space-3: var(--base-size-12, 10px);
-  --space-4: var(--base-size-16, 12px);
-  --space-5: var(--base-size-24, 16px);
+  --radius: var(--borderRadius-medium);
+  --space-1: var(--control-xsmall-gap);
+  --space-2: var(--stack-gap-condensed);
+  --space-3: var(--controlStack-medium-gap-spacious);
+  --space-4: var(--stack-gap-normal);
+  --space-5: var(--stack-gap-spacious);
+  --size-icon: calc(var(--control-small-size) / 2);
+  --size-sidebar-width: calc(var(--overlay-width-xsmall) + var(--control-xlarge-size) + var(--control-large-gap));
+  --size-content-max-width: var(--breakpoint-xlarge);
+  --size-layout-max-width: calc(var(--breakpoint-large) - var(--control-medium-size));
+  --size-login-max-width: calc(var(--overlay-width-small) + var(--overlay-width-xsmall) + var(--control-xlarge-size));
+  --size-sticky-offset: calc(var(--control-xlarge-size) + var(--space-4) + var(--space-3));
+  --size-editor-min-height: calc(var(--control-xlarge-size) * 3);
+  --size-outline-max-height: calc(var(--overlay-height-large) + var(--control-medium-size));
 }
 
 * {
@@ -21,9 +29,9 @@
 
 body {
   margin: 0;
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-  font-size: 14px;
-  line-height: 1.4;
+  font-family: var(--fontStack-system);
+  font-size: var(--text-body-size-medium);
+  line-height: var(--text-body-lineHeight-medium);
   color: var(--text);
   background:
     radial-gradient(circle at top right, var(--bgColor-accent-muted), var(--bgColor-transparent) 34%),
@@ -31,9 +39,27 @@ body {
     var(--bg);
 }
 
+a,
+a:visited {
+  color: var(--fgColor-accent);
+}
+
+a:hover {
+  color: var(--fgColor-accent);
+}
+
+a:active {
+  color: var(--fgColor-accent);
+}
+
+a:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--outline-focus-offset);
+}
+
 .Box {
-  border: 1px solid var(--borderColor-default);
-  border-radius: var(--borderRadius-medium, 6px);
+  border: var(--borderWidth-default) solid var(--borderColor-default);
+  border-radius: var(--borderRadius-medium);
   background: var(--bgColor-default);
   box-shadow: var(--shadow-resting-xsmall);
 }
