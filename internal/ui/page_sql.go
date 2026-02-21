@@ -12,6 +12,7 @@ import (
 )
 
 func sqlEditorPage(principal domain.ContextPrincipal, sqlText string, result *query.QueryResult, runError string, state sqlEditorContext, csrfFieldProvider func() Node) Node {
+	csvActionNode := Node(nil)
 	resultNode := Node(Div(
 		Class("sql-result-card sql-results-empty"),
 		Div(
@@ -30,6 +31,22 @@ func sqlEditorPage(principal domain.ContextPrincipal, sqlText string, result *qu
 			Pre(Text(runError)),
 		)
 	} else if result != nil {
+		csvActionNode = Form(
+			Method("post"),
+			Action("/ui/sql/download.csv"),
+			Class("sql-results-actions"),
+			csrfFieldProvider(),
+			Input(Type("hidden"), Name("catalog"), Value(state.SelectedCatalog)),
+			Input(Type("hidden"), Name("schema"), Value(state.SelectedSchema)),
+			Input(Type("hidden"), Name("sql"), Value(sqlText)),
+			Button(
+				Type("submit"),
+				Class("btn btn-sm"),
+				I(Class("btn-icon-glyph"), Attr("data-lucide", "download"), Attr("aria-hidden", "true")),
+				Span(Text("Download CSV")),
+			),
+		)
+
 		headerCols := make([]Node, 0, len(result.Columns))
 		for i := range result.Columns {
 			headerCols = append(headerCols, Th(Text(result.Columns[i])))
@@ -60,8 +77,12 @@ func sqlEditorPage(principal domain.ContextPrincipal, sqlText string, result *qu
 			Class("sql-result-card table-wrap"),
 			Div(
 				Class("sql-results-header"),
-				H2(Class("sql-results-title"), Text("Results (Table View)")),
-				P(Class(mutedClass()), Text(meta)),
+				Div(
+					Class("sql-results-meta"),
+					H2(Class("sql-results-title"), Text("Results (Table View)")),
+					P(Class(mutedClass()), Text(meta)),
+				),
+				csvActionNode,
 			),
 			Div(
 				Class("sql-results-scroll"),
@@ -125,17 +146,19 @@ func sqlEditorPage(principal domain.ContextPrincipal, sqlText string, result *qu
 						Class("button-row"),
 						Button(
 							Type("submit"),
+							ID("sql-run-query"),
 							Class(primaryButtonClass()),
 							I(Class("btn-icon-glyph"), Attr("data-lucide", "play"), Attr("aria-hidden", "true")),
 							Span(Text("Run query")),
 						),
 						Button(
-							Type("submit"),
+							Type("button"),
+							ID("sql-format-query"),
 							Class(secondaryButtonClass()),
-							FormAction("/ui/sql/download.csv"),
-							I(Class("btn-icon-glyph"), Attr("data-lucide", "download"), Attr("aria-hidden", "true")),
-							Span(Text("Download CSV")),
+							I(Class("btn-icon-glyph"), Attr("data-lucide", "align-left"), Attr("aria-hidden", "true")),
+							Span(Text("Format SQL")),
 						),
+						Span(Class("sql-shortcut-hint"), Text("Run: Cmd/Ctrl+Enter  Format: Cmd/Ctrl+Shift+F")),
 					),
 					Div(
 						Class("sql-snippet-toolbar"),

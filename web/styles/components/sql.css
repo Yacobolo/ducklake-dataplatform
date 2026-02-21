@@ -88,7 +88,16 @@
 }
 
 .sql-editor-toolbar .button-row {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   margin-top: 0;
+}
+
+.sql-shortcut-hint {
+  color: var(--fgColor-muted);
+  font-size: var(--text-caption-size);
+  line-height: var(--text-caption-lineHeight);
 }
 
 .sql-snippet-toolbar {
@@ -152,6 +161,8 @@ sql-editor-surface {
   padding: var(--space-3);
   height: 100%;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .sql-results-empty {
@@ -192,7 +203,29 @@ sql-editor-surface {
   justify-content: space-between;
   align-items: center;
   gap: var(--space-2);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--canvas);
+  border-bottom: var(--borderWidth-default) solid var(--borderColor-muted);
+  padding-bottom: var(--space-2);
   margin-bottom: var(--space-2);
+}
+
+.sql-results-meta {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.sql-results-meta p {
+  margin: 0;
+}
+
+.sql-results-actions {
+  margin: 0;
+  display: inline-flex;
 }
 
 .sql-results-title {
@@ -203,6 +236,7 @@ sql-editor-surface {
 }
 
 .sql-results-scroll {
+  flex: 1;
   min-height: 0;
   overflow: auto;
 }
@@ -240,6 +274,10 @@ sql-editor-surface {
   .sql-editor-toolbar .button-row .btn {
     flex: 1;
     text-align: center;
+  }
+
+  .sql-shortcut-hint {
+    display: none;
   }
 
   .sql-snippet-inline {

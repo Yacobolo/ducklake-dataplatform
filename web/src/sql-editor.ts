@@ -1,6 +1,7 @@
 import { LitElement, css, html } from "lit";
 import hljs from "highlight.js/lib/core";
 import sql from "highlight.js/lib/languages/sql";
+import { format as formatSQL } from "sql-formatter";
 
 hljs.registerLanguage("sql", sql);
 
@@ -163,6 +164,7 @@ class SqlEditorSurface extends LitElement {
   private lineHeight = 20;
   private activeTop = 0;
   private textarea: HTMLTextAreaElement | null = null;
+  private formatButton: HTMLButtonElement | null = null;
   private highlightedHTML = "";
 
   private readonly onSlotChange = (event: Event) => {
@@ -176,6 +178,29 @@ class SqlEditorSurface extends LitElement {
     this.syncState();
   };
 
+  private readonly onKeyDown = (event: KeyboardEvent) => {
+    const isEnter = event.key === "Enter";
+    const isMeta = event.metaKey || event.ctrlKey;
+    if (isMeta && isEnter) {
+      const runButton = document.getElementById("sql-run-query");
+      if (runButton instanceof HTMLButtonElement) {
+        event.preventDefault();
+        runButton.click();
+      }
+      return;
+    }
+
+    if (isMeta && event.shiftKey && event.key.toLowerCase() === "f") {
+      event.preventDefault();
+      this.formatEditorSQL();
+    }
+  };
+
+  private readonly onFormatClick = (event: Event) => {
+    event.preventDefault();
+    this.formatEditorSQL();
+  };
+
   connectedCallback(): void {
     super.connectedCallback();
     window.addEventListener("resize", this.onInput);
@@ -183,6 +208,7 @@ class SqlEditorSurface extends LitElement {
 
   disconnectedCallback(): void {
     window.removeEventListener("resize", this.onInput);
+    this.detachFormatButton();
     this.detachTextarea();
     super.disconnectedCallback();
   }
@@ -193,6 +219,7 @@ class SqlEditorSurface extends LitElement {
       slot.addEventListener("slotchange", this.onSlotChange);
       this.attachTextarea(slot);
     }
+    this.attachFormatButton();
   }
 
   render() {
@@ -238,6 +265,7 @@ class SqlEditorSurface extends LitElement {
     textarea.addEventListener("keyup", this.onInput);
     textarea.addEventListener("click", this.onInput);
     textarea.addEventListener("select", this.onInput);
+    textarea.addEventListener("keydown", this.onKeyDown);
     this.syncState();
   }
 
@@ -251,7 +279,60 @@ class SqlEditorSurface extends LitElement {
     this.textarea.removeEventListener("keyup", this.onInput);
     this.textarea.removeEventListener("click", this.onInput);
     this.textarea.removeEventListener("select", this.onInput);
+    this.textarea.removeEventListener("keydown", this.onKeyDown);
     this.textarea = null;
+  }
+
+  private attachFormatButton(): void {
+    const button = document.getElementById("sql-format-query");
+    if (!(button instanceof HTMLButtonElement)) {
+      this.detachFormatButton();
+      return;
+    }
+
+    if (this.formatButton === button) {
+      return;
+    }
+
+    this.detachFormatButton();
+    this.formatButton = button;
+    this.formatButton.addEventListener("click", this.onFormatClick);
+  }
+
+  private detachFormatButton(): void {
+    if (!(this.formatButton instanceof HTMLButtonElement)) {
+      this.formatButton = null;
+      return;
+    }
+    this.formatButton.removeEventListener("click", this.onFormatClick);
+    this.formatButton = null;
+  }
+
+  private formatEditorSQL(): void {
+    if (!(this.textarea instanceof HTMLTextAreaElement)) {
+      return;
+    }
+
+    const source = this.textarea.value || "";
+    if (source.trim() === "") {
+      return;
+    }
+
+    try {
+      const formatted = formatSQL(source, {
+        language: "duckdb",
+        keywordCase: "upper",
+        indentStyle: "standard",
+        tabWidth: 2,
+        expressionWidth: 60,
+      });
+      if (formatted !== source) {
+        this.textarea.value = formatted;
+        this.syncState();
+      }
+    } catch {
+      // Keep original SQL when formatter fails.
+    }
   }
 
   private syncState(): void {

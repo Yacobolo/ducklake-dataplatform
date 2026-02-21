@@ -19,6 +19,7 @@
   "dependencies": {
     "@primer/primitives": "11.4.0",
     "highlight.js": "11.11.1",
-    "lit": "3.3.1"
+    "lit": "3.3.1",
+    "sql-formatter": "15.6.10"
   }
 }
