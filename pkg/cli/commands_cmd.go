@@ -55,6 +55,7 @@ This is designed for AI agents to discover available CLI capabilities in a singl
 
   # Get full command metadata for agent consumption
   duck commands --output json`,
+		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			entries := walkCommands(cmd.Root(), "")
 

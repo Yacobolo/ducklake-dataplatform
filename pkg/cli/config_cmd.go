@@ -29,6 +29,7 @@ func newConfigShowCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "show",
 		Short: "Display current configuration",
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			cfg, err := LoadUserConfig()
 			if err != nil {
@@ -95,6 +96,7 @@ func newConfigSetProfileCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "set-profile",
 		Short: "Create or update a configuration profile",
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if name == "" {
 				return fmt.Errorf("--name is required")

@@ -13,6 +13,7 @@ func newVersionCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",
 		Short: "Print the CLI version",
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if getOutputFormat(cmd) == "json" {
 				return gen.PrintJSON(os.Stdout, map[string]string{
