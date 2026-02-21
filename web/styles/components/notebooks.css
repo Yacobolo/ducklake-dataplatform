@@ -38,12 +38,12 @@
   border: 1px solid var(--border);
   border-radius: var(--borderRadius-medium, 6px);
   padding: var(--space-1) var(--space-2);
-  color: var(--fgColor-default, #1f2328);
+  color: var(--fgColor-default);
   text-decoration: none;
 }
 
 .notebook-outline-link:hover {
-  background: var(--bgColor-muted, #f6f8fa);
+  background: var(--bgColor-muted);
   text-decoration: none;
 }
 
@@ -59,7 +59,7 @@
 .notebook-cell {
   padding: var(--base-size-16, 16px);
   border-bottom: 1px solid var(--border);
-  background: var(--bgColor-default, #fff);
+  background: var(--bgColor-default);
   scroll-margin-top: calc(var(--base-size-64, 64px) + var(--space-3));
 }
 
@@ -68,7 +68,7 @@
 }
 
 .notebook-cell:target {
-  box-shadow: inset 0 0 0 2px var(--borderColor-accent-emphasis, #0969da);
+  box-shadow: inset 0 0 0 2px var(--borderColor-accent-emphasis);
 }
 
 .notebook-cell-title {
@@ -100,9 +100,9 @@
 .notebook-output {
   margin-top: var(--space-2);
   padding: var(--space-2);
-  border: 1px solid var(--borderColor-muted, #d1d9e0b3);
+  border: 1px solid var(--borderColor-muted);
   border-radius: var(--borderRadius-medium, 6px);
-  background: var(--bgColor-muted, #f6f8fa);
+  background: var(--bgColor-muted);
 }
 
 .notebook-output h4 {
@@ -114,7 +114,7 @@
 }
 
 .notebook-run-strip table {
-  background: var(--bgColor-default, #fff);
+  background: var(--bgColor-default);
 }
 
 .notebook-insert-rail {
@@ -137,7 +137,7 @@
 }
 
 .notebook-cell.drag-over {
-  box-shadow: inset 0 0 0 2px var(--borderColor-accent-emphasis, #0969da);
+  box-shadow: inset 0 0 0 2px var(--borderColor-accent-emphasis);
 }
 
 @media (max-width: 920px) {

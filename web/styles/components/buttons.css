@@ -1,17 +1,17 @@
 .btn {
   appearance: none;
   display: inline-block;
-  border: 1px solid var(--button-default-borderColor-rest, var(--control-borderColor-rest, var(--borderColor-default, #d1d9e0)));
+  border: 1px solid var(--button-default-borderColor-rest);
   border-radius: var(--borderRadius-medium, 6px);
-  background: var(--button-default-bgColor-rest, var(--control-bgColor-rest, var(--bgColor-muted, #f6f8fa)));
-  color: var(--button-default-fgColor-rest, var(--control-fgColor-rest, var(--fgColor-default, #1f2328)));
+  background: var(--button-default-bgColor-rest);
+  color: var(--button-default-fgColor-rest);
   padding: var(--base-size-4, 4px) var(--base-size-12, 12px);
   font-size: 0.875rem;
   line-height: 1.25rem;
   font-weight: 500;
   cursor: pointer;
   text-decoration: none;
-  box-shadow: var(--button-default-shadow-resting, var(--shadow-resting-xsmall, none));
+  box-shadow: var(--button-default-shadow-resting);
   transition:
     background-color var(--base-duration-100, 120ms) ease,
     border-color var(--base-duration-100, 120ms) ease,
@@ -19,20 +19,20 @@
 }
 
 .btn:hover {
-  background: var(--button-default-bgColor-hover, var(--control-bgColor-hover, var(--bgColor-muted, #f6f8fa)));
+  background: var(--button-default-bgColor-hover);
   text-decoration: none;
 }
 
 .btn:active {
-  background: var(--button-default-bgColor-active, var(--control-bgColor-active, var(--bgColor-muted, #f6f8fa)));
+  background: var(--button-default-bgColor-active);
 }
 
 .btn:disabled,
 .btn[aria-disabled="true"] {
   cursor: not-allowed;
-  color: var(--fgColor-disabled, #818b98);
-  background: var(--button-default-bgColor-disabled, var(--control-bgColor-disabled, var(--bgColor-disabled, #eff2f5)));
-  border-color: var(--control-borderColor-disabled, var(--borderColor-disabled, #818b981a));
+  color: var(--fgColor-disabled);
+  background: var(--button-default-bgColor-disabled);
+  border-color: var(--control-borderColor-disabled);
 }
 
 .btn-sm {
@@ -60,29 +60,29 @@
 }
 
 .btn-primary {
-  color: var(--button-primary-fgColor-rest, var(--fgColor-onEmphasis, #ffffff));
-  background: var(--button-primary-bgColor-rest, var(--bgColor-success-emphasis, #1f883d));
-  border-color: var(--button-primary-borderColor-rest, var(--borderColor-translucent, transparent));
+  color: var(--button-primary-fgColor-rest);
+  background: var(--button-primary-bgColor-rest);
+  border-color: var(--button-primary-borderColor-rest);
 }
 
 .btn-primary:hover {
-  background: var(--button-primary-bgColor-hover, var(--bgColor-success-emphasis, #1f883d));
+  background: var(--button-primary-bgColor-hover);
 }
 
 .btn-primary:active {
-  background: var(--button-primary-bgColor-active, var(--bgColor-success-emphasis, #1f883d));
+  background: var(--button-primary-bgColor-active);
 }
 
 .btn-danger {
-  color: var(--button-danger-fgColor-rest, var(--fgColor-danger, #d1242f));
-  background: var(--button-danger-bgColor-rest, var(--control-bgColor-rest, var(--bgColor-muted, #f6f8fa)));
-  border-color: var(--button-danger-borderColor-rest, var(--control-borderColor-rest, var(--borderColor-default, #d1d9e0)));
+  color: var(--button-danger-fgColor-rest);
+  background: var(--button-danger-bgColor-rest);
+  border-color: var(--button-danger-borderColor-rest);
 }
 
 .btn-danger:hover {
-  color: var(--button-danger-fgColor-hover, var(--fgColor-onEmphasis, #ffffff));
-  background: var(--button-danger-bgColor-hover, var(--bgColor-danger-emphasis, #cf222e));
-  border-color: var(--button-danger-borderColor-hover, var(--borderColor-translucent, transparent));
+  color: var(--button-danger-fgColor-hover);
+  background: var(--button-danger-bgColor-hover);
+  border-color: var(--button-danger-borderColor-hover);
 }
 
 .BtnGroup {

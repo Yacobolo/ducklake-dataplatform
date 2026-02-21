@@ -14,15 +14,15 @@
 }
 
 .app-nav a:hover {
-  background: var(--bgColor-muted, #f6f8fa);
+  background: var(--bgColor-muted);
   text-decoration: none;
 }
 
 .app-nav a.active {
   color: var(--text);
-  background: var(--bgColor-accent-muted, #ddf4ff);
-  border-color: var(--borderColor-accent-muted, #54aeff66);
-  border-left-color: var(--borderColor-accent-emphasis, #0969da);
+  background: var(--bgColor-accent-muted);
+  border-color: var(--borderColor-accent-muted);
+  border-left-color: var(--borderColor-accent-emphasis);
 }
 
 .app-nav-link {

@@ -12,7 +12,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: var(--base-size-20, 20px);
-  box-shadow: var(--shadow-floating-small, 0 6px 18px rgba(31, 35, 40, 0.12));
+  box-shadow: var(--shadow-floating-small);
 }
 
 .login-form {

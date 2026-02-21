@@ -1,12 +1,12 @@
 :root {
-  --bg: var(--bgColor-muted, #f6f8fa);
-  --canvas: var(--bgColor-default, #ffffff);
-  --canvas-subtle: var(--bgColor-muted, #f6f8fa);
-  --text: var(--fgColor-default, #1f2328);
-  --muted: var(--fgColor-muted, #59636e);
-  --border: var(--borderColor-default, #d1d9e0);
-  --accent: var(--fgColor-accent, #0969da);
-  --danger: var(--fgColor-danger, #d1242f);
+  --bg: var(--bgColor-muted);
+  --canvas: var(--bgColor-default);
+  --canvas-subtle: var(--bgColor-muted);
+  --text: var(--fgColor-default);
+  --muted: var(--fgColor-muted);
+  --border: var(--borderColor-default);
+  --accent: var(--fgColor-accent);
+  --danger: var(--fgColor-danger);
   --radius: var(--borderRadius-medium, 4px);
   --space-1: var(--base-size-4, 6px);
   --space-2: var(--base-size-8, 8px);
@@ -26,14 +26,14 @@ body {
   line-height: 1.4;
   color: var(--text);
   background:
-    radial-gradient(circle at top right, var(--bgColor-accent-muted, #ddf4ff), transparent 34%),
-    radial-gradient(circle at top left, var(--bgColor-neutral-muted, #818b981f), transparent 28%),
+    radial-gradient(circle at top right, var(--bgColor-accent-muted), var(--bgColor-transparent) 34%),
+    radial-gradient(circle at top left, var(--bgColor-neutral-muted), var(--bgColor-transparent) 28%),
     var(--bg);
 }
 
 .Box {
-  border: 1px solid var(--borderColor-default, #d1d9e0);
+  border: 1px solid var(--borderColor-default);
   border-radius: var(--borderRadius-medium, 6px);
-  background: var(--bgColor-default, #ffffff);
-  box-shadow: var(--shadow-resting-xsmall, 0px 1px 1px 0px #1f23280f);
+  background: var(--bgColor-default);
+  box-shadow: var(--shadow-resting-xsmall);
 }

@@ -61,6 +61,7 @@ func appPage(title, active string, principal domain.ContextPrincipal, body ...No
 			Meta(Name("viewport"), Content("width=device-width, initial-scale=1")),
 			TitleEl(Text(title+" | Duck UI")),
 			Link(Rel("icon"), Href("data:,")),
+			Script(Raw(themeInitScript)),
 			Link(Rel("preconnect"), Href("https://fonts.googleapis.com")),
 			Link(Rel("preconnect"), Href("https://fonts.gstatic.com"), Attr("crossorigin", "")),
 			Link(Rel("stylesheet"), Href("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap")),
@@ -90,6 +91,19 @@ func appPage(title, active string, principal domain.ContextPrincipal, body ...No
 							H1(Class("page-title"), Text(title)),
 						),
 						Div(
+							Class("topbar-meta"),
+							Div(
+								Class("theme-picker"),
+								Label(Class("sr-only"), For("theme-mode"), Text("Theme mode")),
+								Select(
+									ID("theme-mode"),
+									Class("form-select"),
+									Attr("aria-label", "Theme mode"),
+									Option(Value("auto"), Text("System")),
+									Option(Value("light"), Text("Light")),
+									Option(Value("dark"), Text("Dark")),
+								),
+							),
 							P(Class("color-fg-muted text-small mb-2"), Text("Signed in as "+principalLabel)),
 							Form(
 								Method("post"),
@@ -101,6 +115,7 @@ func appPage(title, active string, principal domain.ContextPrincipal, body ...No
 					Div(Class("content"), Group(body)),
 				),
 			),
+			Script(Raw(themeBehaviorScript)),
 			Script(Raw("if (window.lucide) { window.lucide.createIcons(); } document.addEventListener('click', function(e){ var t=e.target; if(!(t instanceof Element)){return;} document.querySelectorAll('details.dropdown[open]').forEach(function(d){ if(!d.contains(t)){ d.removeAttribute('open'); }}); });")),
 		),
 	)
@@ -117,6 +132,7 @@ func errorPage(title, message string) Node {
 			Meta(Name("viewport"), Content("width=device-width, initial-scale=1")),
 			TitleEl(Text(title+" | Duck UI")),
 			Link(Rel("icon"), Href("data:,")),
+			Script(Raw(themeInitScript)),
 			Link(Rel("preconnect"), Href("https://fonts.googleapis.com")),
 			Link(Rel("preconnect"), Href("https://fonts.gstatic.com"), Attr("crossorigin", "")),
 			Link(Rel("stylesheet"), Href("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap")),
@@ -130,6 +146,7 @@ func errorPage(title, message string) Node {
 				P(Text(message)),
 				P(A(Href("/ui"), Text("Back to overview"))),
 			),
+			Script(Raw(themeBehaviorScript)),
 			Script(Raw("if (window.lucide) { window.lucide.createIcons(); }")),
 		),
 	)

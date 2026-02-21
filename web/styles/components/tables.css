@@ -13,7 +13,7 @@
 }
 
 .toolbar {
-  background: linear-gradient(180deg, var(--bgColor-muted, #f6f8fa), var(--bgColor-default, #ffffff));
+  background: linear-gradient(180deg, var(--bgColor-muted), var(--bgColor-default));
 }
 
 table {
@@ -47,9 +47,9 @@ th {
 }
 
 .data-table tbody tr:nth-child(even) {
-  background: var(--bgColor-muted, #f6f8fa);
+  background: var(--bgColor-muted);
 }
 
 .data-table tbody tr:hover {
-  background: var(--control-bgColor-hover, #eff2f5);
+  background: var(--control-bgColor-hover);
 }

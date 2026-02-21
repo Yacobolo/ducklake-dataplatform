@@ -51,19 +51,19 @@
 }
 
 .color-fg-muted {
-  color: var(--fgColor-muted, #59636e);
+  color: var(--fgColor-muted);
 }
 
 .color-fg-danger {
-  color: var(--fgColor-danger, #d1242f);
+  color: var(--fgColor-danger);
 }
 
 .Link--secondary {
-  color: var(--fgColor-muted, #59636e);
+  color: var(--fgColor-muted);
 }
 
 .Link--secondary:hover {
-  color: var(--fgColor-default, #1f2328);
+  color: var(--fgColor-default);
 }
 
 .sr-only {

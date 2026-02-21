@@ -47,6 +47,7 @@ func loginPage(errMsg string) Node {
 			Meta(Charset("utf-8")),
 			Meta(Name("viewport"), Content("width=device-width, initial-scale=1")),
 			TitleEl(Text("Sign in | Duck UI")),
+			Script(Raw(themeInitScript)),
 			Link(Rel("preconnect"), Href("https://fonts.googleapis.com")),
 			Link(Rel("preconnect"), Href("https://fonts.gstatic.com"), Attr("crossorigin", "")),
 			Link(Rel("stylesheet"), Href("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap")),
@@ -55,6 +56,7 @@ func loginPage(errMsg string) Node {
 		Body(
 			Class("login-body"),
 			Main(Class("login-wrap"), Group(content)),
+			Script(Raw(themeBehaviorScript)),
 		),
 	)
 }

@@ -6,28 +6,28 @@
   font-size: 0.75rem;
   line-height: 1.25rem;
   font-weight: 500;
-  background: var(--label-gray-bgColor-rest, var(--bgColor-neutral-muted, #818b981f));
-  color: var(--label-gray-fgColor-rest, var(--fgColor-muted, #59636e));
+  background: var(--label-gray-bgColor-rest);
+  color: var(--label-gray-fgColor-rest);
 }
 
 .Label--accent {
-  background: var(--label-blue-bgColor-rest, var(--bgColor-accent-muted, #ddf4ff));
-  color: var(--label-blue-fgColor-rest, var(--fgColor-accent, #0969da));
+  background: var(--label-blue-bgColor-rest);
+  color: var(--label-blue-fgColor-rest);
 }
 
 .Label--attention {
-  background: var(--label-yellow-bgColor-rest, var(--bgColor-attention-muted, #fff8c5));
-  color: var(--label-yellow-fgColor-rest, var(--fgColor-attention, #9a6700));
+  background: var(--label-yellow-bgColor-rest);
+  color: var(--label-yellow-fgColor-rest);
 }
 
 .Label--success {
-  background: var(--label-green-bgColor-rest, var(--bgColor-success-muted, #dafbe1));
-  color: var(--label-green-fgColor-rest, var(--fgColor-success, #1a7f37));
+  background: var(--label-green-bgColor-rest);
+  color: var(--label-green-fgColor-rest);
 }
 
 .Label--severe {
-  background: var(--label-orange-bgColor-rest, var(--bgColor-severe-muted, #fff1e5));
-  color: var(--label-orange-fgColor-rest, var(--fgColor-severe, #bc4c00));
+  background: var(--label-orange-bgColor-rest);
+  color: var(--label-orange-fgColor-rest);
 }
 
 .details-reset > summary {
@@ -53,10 +53,10 @@
   min-width: 11rem;
   margin-top: var(--base-size-4, 4px);
   padding: var(--base-size-4, 4px);
-  background: var(--overlay-bgColor, var(--bgColor-default, #ffffff));
-  border: 1px solid var(--overlay-borderColor, var(--borderColor-default, #d1d9e0));
+  background: var(--overlay-bgColor);
+  border: 1px solid var(--overlay-borderColor);
   border-radius: var(--borderRadius-medium, 6px);
-  box-shadow: var(--shadow-floating-small, 0 6px 18px rgba(31, 35, 40, 0.12));
+  box-shadow: var(--shadow-floating-small);
 }
 
 .dropdown-menu-sw {
@@ -72,7 +72,7 @@
   border-radius: var(--borderRadius-medium, 6px);
   padding: var(--base-size-6, 6px) var(--base-size-8, 8px);
   background: transparent;
-  color: var(--fgColor-default, #1f2328);
+  color: var(--fgColor-default);
   font-size: 0.8125rem;
   text-align: left;
   text-decoration: none;
@@ -86,24 +86,24 @@
 }
 
 .dropdown-item:hover {
-  background: var(--control-bgColor-hover, var(--bgColor-muted, #f6f8fa));
+  background: var(--control-bgColor-hover);
   text-decoration: none;
 }
 
 .dropdown-divider {
   margin: var(--base-size-4, 4px) var(--base-size-4, 4px);
-  border-top: 1px solid var(--borderColor-muted, #d1d9e0b3);
+  border-top: 1px solid var(--borderColor-muted);
 }
 
 .dropdown-item-danger {
-  color: var(--fgColor-danger, #d1242f);
+  color: var(--fgColor-danger);
 }
 
 .dropdown-item-danger .dropdown-item-icon {
-  color: var(--fgColor-danger, #d1242f);
+  color: var(--fgColor-danger);
 }
 
 .dropdown-item-danger:hover {
-  background: var(--bgColor-danger-muted, #ffebe9);
-  color: var(--fgColor-danger, #d1242f);
+  background: var(--bgColor-danger-muted);
+  color: var(--fgColor-danger);
 }
