@@ -115,6 +115,9 @@ func newConfigSetProfileCmd() *cobra.Command {
 
 			p := cfg.Profiles[name]
 			if cmd.Flags().Changed("host") {
+				if err := validateHostURL(host); err != nil {
+					return err
+				}
 				p.Host = host
 			}
 			if cmd.Flags().Changed("api-key") {

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMaskSecret(t *testing.T) {
@@ -61,4 +62,14 @@ func TestMaskConfig_EmptyProfiles(t *testing.T) {
 
 	masked := maskConfig(cfg)
 	assert.Empty(t, masked.Profiles)
+}
+
+func TestConfigSetProfileRejectsInvalidHost(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+
+	cmd := newConfigSetProfileCmd()
+	cmd.SetArgs([]string{"--name", "bad", "--host", "localhost:8080"})
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid host")
 }
