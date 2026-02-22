@@ -1,6 +1,6 @@
 :root {
-  --bg: var(--bgColor-muted);
-  --canvas: var(--bgColor-default);
+  --bg: var(--bgColor-default);
+  --canvas: var(--bgColor-muted);
   --canvas-subtle: var(--bgColor-muted);
   --text: var(--fgColor-default);
   --muted: var(--fgColor-muted);
@@ -33,10 +33,7 @@ body {
   font-size: var(--text-body-size-medium);
   line-height: var(--text-body-lineHeight-medium);
   color: var(--text);
-  background:
-    radial-gradient(circle at top right, var(--bgColor-accent-muted), var(--bgColor-transparent) 34%),
-    radial-gradient(circle at top left, var(--bgColor-neutral-muted), var(--bgColor-transparent) 28%),
-    var(--bg);
+  background: var(--bg);
 }
 
 a,

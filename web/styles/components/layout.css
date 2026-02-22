@@ -84,6 +84,7 @@
 
 .app-main {
   padding: var(--space-5);
+  background: var(--bgColor-default);
 }
 
 .content {

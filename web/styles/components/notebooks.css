@@ -165,7 +165,7 @@
 .notebook-cell-frame {
   border: var(--border-default);
   border-radius: var(--borderRadius-medium);
-  background: var(--bgColor-default);
+  background: var(--bgColor-transparent);
   overflow: hidden;
   border-color: var(--borderColor-muted);
   opacity: 0.96;
@@ -225,7 +225,7 @@
   gap: var(--space-2);
   padding: var(--space-2);
   border-bottom: var(--border-muted);
-  background: var(--bgColor-muted);
+  background: var(--bgColor-transparent);
 }
 
 .notebook-cell-header-compact {
