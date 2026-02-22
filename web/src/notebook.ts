@@ -46,6 +46,167 @@
     }
   };
 
+  const setActiveCell = (cell: HTMLElement | null) => {
+    cells().forEach((item) => {
+      if (item === cell) {
+        item.classList.add("is-active-cell");
+      } else {
+        item.classList.remove("is-active-cell");
+      }
+    });
+  };
+
+  const formForCell = (cell: HTMLElement | null) => {
+    if (!cell) {
+      return null;
+    }
+    const form = cell.querySelector(".notebook-cell-form");
+    return form instanceof HTMLFormElement ? form : null;
+  };
+
+  const editorForCell = (cell: HTMLElement | null) => {
+    if (!cell) {
+      return null;
+    }
+    const editor = cell.querySelector("[data-cell-editor='true']");
+    return editor instanceof HTMLTextAreaElement || editor instanceof HTMLInputElement ? editor : null;
+  };
+
+  const encodeForm = (form: HTMLFormElement) => {
+    const params = new URLSearchParams();
+    const data = new FormData(form);
+    for (const [key, value] of data.entries()) {
+      params.append(key, String(value));
+    }
+    return params;
+  };
+
+  const syncMarkdownPreviewFromResponse = (cell: HTMLElement, htmlText: string) => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlText, "text/html");
+    const id = cell.getAttribute("id");
+    if (!id) {
+      return;
+    }
+    const freshPreview = doc.querySelector<HTMLElement>(`#${id} [data-markdown-preview='true']`);
+    const currentPreview = cell.querySelector<HTMLElement>("[data-markdown-preview='true']");
+    if (freshPreview && currentPreview) {
+      currentPreview.innerHTML = freshPreview.innerHTML;
+    }
+  };
+
+  const saveCell = async (cell: HTMLElement | null) => {
+    if (!cell) {
+      return;
+    }
+    const form = formForCell(cell);
+    if (!form || form.dataset.dirty !== "true") {
+      return;
+    }
+
+    const response = await fetch(form.action, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+      body: encodeForm(form).toString(),
+    });
+
+    if (!response.ok) {
+      window.location.reload();
+      return;
+    }
+
+    form.dataset.dirty = "false";
+    if (cell.dataset.cellType === "markdown") {
+      const htmlText = await response.text();
+      syncMarkdownPreviewFromResponse(cell, htmlText);
+    }
+  };
+
+  const enterMarkdownEdit = (cell: HTMLElement | null) => {
+    if (!cell || cell.dataset.cellType !== "markdown") {
+      return;
+    }
+    cell.classList.add("is-editing-markdown");
+    focusCellEditor(cell);
+  };
+
+  const exitMarkdownEdit = (cell: HTMLElement | null) => {
+    if (!cell || cell.dataset.cellType !== "markdown") {
+      return;
+    }
+    cell.classList.remove("is-editing-markdown");
+    const preview = cell.querySelector<HTMLElement>("[data-markdown-preview='true']");
+    preview?.focus();
+  };
+
+  document.addEventListener("input", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement) || !target.matches("[data-cell-editor='true']")) {
+      return;
+    }
+    const cell = target.closest<HTMLElement>("[data-notebook-cell='true']");
+    const form = formForCell(cell);
+    if (form) {
+      form.dataset.dirty = "true";
+    }
+  });
+
+  document.addEventListener("focusout", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement) || !target.matches("[data-cell-editor='true']")) {
+      return;
+    }
+    const cell = target.closest<HTMLElement>("[data-notebook-cell='true']");
+    const next = event.relatedTarget;
+    if (next instanceof HTMLElement && cell?.contains(next)) {
+      return;
+    }
+    void saveCell(cell);
+  });
+
+  document.addEventListener("focusin", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+    const cell = target.closest<HTMLElement>("[data-notebook-cell='true']");
+    if (cell) {
+      setActiveCell(cell);
+    }
+  });
+
+  document.addEventListener("pointerdown", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+    const selected = target.closest<HTMLElement>("[data-notebook-cell='true']");
+    setActiveCell(selected);
+    const editingCells = document.querySelectorAll<HTMLElement>("[data-cell-type='markdown'].is-editing-markdown");
+    editingCells.forEach((cell) => {
+      if (cell.contains(target)) {
+        return;
+      }
+      void saveCell(cell).finally(() => {
+        exitMarkdownEdit(cell);
+      });
+    });
+  });
+
+  document.addEventListener("dblclick", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+    const preview = target.closest<HTMLElement>("[data-markdown-preview='true']");
+    if (!preview) {
+      return;
+    }
+    const cell = preview.closest<HTMLElement>("[data-notebook-cell='true']");
+    setActiveCell(cell);
+    enterMarkdownEdit(cell);
+  });
+
   document.addEventListener("keydown", (event) => {
     const target = event.target;
     if (!(target instanceof HTMLElement)) {
@@ -54,6 +215,21 @@
 
     const isEditor = target.matches("textarea, input, select");
     const current = activeCell();
+
+    if (event.key === "Escape" && current?.dataset.cellType === "markdown" && current.classList.contains("is-editing-markdown")) {
+      event.preventDefault();
+      void saveCell(current).finally(() => {
+        exitMarkdownEdit(current);
+      });
+      return;
+    }
+
+    if (event.key === "Enter" && target.matches("[data-markdown-preview='true']")) {
+      event.preventDefault();
+      const cell = target.closest<HTMLElement>("[data-notebook-cell='true']");
+      enterMarkdownEdit(cell);
+      return;
+    }
 
     if (event.key === "Enter" && event.shiftKey && current) {
       const runButton = current.querySelector("[data-run-cell='true']");

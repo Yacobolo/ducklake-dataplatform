@@ -1,16 +1,25 @@
 package ui
 
 import (
+	"bytes"
 	"fmt"
+	"html"
 	"strconv"
 	"strings"
 	"time"
 
 	"duck-demo/internal/domain"
 
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
+
 	. "maragu.dev/gomponents"
 	data "maragu.dev/gomponents-datastar"
 	. "maragu.dev/gomponents/html"
+)
+
+var markdownRenderer = goldmark.New(
+	goldmark.WithExtensions(extension.GFM),
 )
 
 type notebooksListRowData struct {
@@ -95,9 +104,10 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 	for i := range d.Cells {
 		c := d.Cells[i]
 		formID := "cell-form-" + c.ID
+		isMarkdown := c.CellType == string(domain.CellTypeMarkdown)
 
 		typeTone := "accent"
-		if c.CellType == string(domain.CellTypeMarkdown) {
+		if isMarkdown {
 			typeTone = "attention"
 		}
 
@@ -113,31 +123,6 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 				Attr("aria-label", "Run cell"),
 				I(Class("btn-icon-glyph"), Attr("data-lucide", "play"), Attr("aria-hidden", "true")),
 				Span(Class("sr-only"), Text("Run")),
-			)
-		}
-
-		saveLabel := "Save markdown"
-		saveIconLabel := "Save cell"
-		if c.CellType == string(domain.CellTypeMarkdown) {
-			saveIconLabel = saveLabel
-		}
-
-		saveButton := Node(Button(
-			Type("submit"),
-			FormAction(c.UpdateURL),
-			Class("btn btn-sm btn-icon"),
-			Title(saveIconLabel),
-			Attr("aria-label", saveIconLabel),
-			I(Class("btn-icon-glyph"), Attr("data-lucide", "save"), Attr("aria-hidden", "true")),
-			Span(Class("sr-only"), Text(saveIconLabel)),
-		))
-		if c.CellType == string(domain.CellTypeMarkdown) {
-			saveButton = Button(
-				Type("submit"),
-				FormAction(c.UpdateURL),
-				Class("btn btn-sm btn-primary"),
-				I(Class("btn-icon-glyph"), Attr("data-lucide", "save"), Attr("aria-hidden", "true")),
-				Span(Text(saveLabel)),
 			)
 		}
 
@@ -165,16 +150,18 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 			)
 		}
 
+		editorFormClass := "notebook-cell-form"
+		if isMarkdown {
+			editorFormClass += " notebook-markdown-editor"
+		}
+
 		editorForm := Form(
 			Method("post"),
 			ID(formID),
+			Class(editorFormClass),
 			Action(c.UpdateURL),
 			d.CSRFFieldFunc(),
 			editorInput,
-			Div(
-				Class("button-row notebook-cell-primary-actions"),
-				saveButton,
-			),
 		)
 
 		cellMeta := fmt.Sprintf("Cell %d", c.Position+1)
@@ -208,6 +195,46 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 			lastRunNode = Span(Class("notebook-cell-timestamp"), titleNode, Text(lastRunLabel))
 		}
 
+		cellMenuItems := []Node{}
+		if !isMarkdown {
+			cellMenuItems = append(cellMenuItems, actionMenuLink(c.OpenInSQLURL, "Open cell in SQL editor"))
+		}
+		cellMenuItems = append(cellMenuItems,
+			Form(
+				Method("post"),
+				Action(c.MoveURL),
+				d.CSRFFieldFunc(),
+				Input(Type("hidden"), Name("direction"), Value("up")),
+				Button(Type("submit"), Class("dropdown-item"), Text("Move cell up")),
+			),
+			Form(
+				Method("post"),
+				Action(c.MoveURL),
+				d.CSRFFieldFunc(),
+				Input(Type("hidden"), Name("direction"), Value("down")),
+				Button(Type("submit"), Class("dropdown-item"), Text("Move cell down")),
+			),
+			Form(
+				Method("post"),
+				Action("/ui/notebooks/"+d.NotebookID+"/cells"),
+				d.CSRFFieldFunc(),
+				Input(Type("hidden"), Name("cell_type"), Value("sql")),
+				Input(Type("hidden"), Name("content"), Value("")),
+				Input(Type("hidden"), Name("position"), Value(strconv.Itoa(c.Position))),
+				Button(Type("submit"), Class("dropdown-item"), Attr("data-add-above", "true"), Text("Insert SQL cell above")),
+			),
+			Form(
+				Method("post"),
+				Action("/ui/notebooks/"+d.NotebookID+"/cells"),
+				d.CSRFFieldFunc(),
+				Input(Type("hidden"), Name("cell_type"), Value("sql")),
+				Input(Type("hidden"), Name("content"), Value("")),
+				Input(Type("hidden"), Name("position"), Value(strconv.Itoa(c.Position+1))),
+				Button(Type("submit"), Class("dropdown-item"), Attr("data-add-below", "true"), Text("Insert SQL cell below")),
+			),
+			actionMenuPost(c.DeleteURL, "Delete cell", d.CSRFFieldFunc, true),
+		)
+
 		cellMenu := Details(
 			Class("dropdown details-reset details-overlay d-inline-block"),
 			Summary(
@@ -219,40 +246,7 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 			),
 			Div(
 				Class("dropdown-menu dropdown-menu-sw"),
-				actionMenuLink(c.OpenInSQLURL, "Open cell in SQL editor"),
-				Form(
-					Method("post"),
-					Action(c.MoveURL),
-					d.CSRFFieldFunc(),
-					Input(Type("hidden"), Name("direction"), Value("up")),
-					Button(Type("submit"), Class("dropdown-item"), Text("Move cell up")),
-				),
-				Form(
-					Method("post"),
-					Action(c.MoveURL),
-					d.CSRFFieldFunc(),
-					Input(Type("hidden"), Name("direction"), Value("down")),
-					Button(Type("submit"), Class("dropdown-item"), Text("Move cell down")),
-				),
-				Form(
-					Method("post"),
-					Action("/ui/notebooks/"+d.NotebookID+"/cells"),
-					d.CSRFFieldFunc(),
-					Input(Type("hidden"), Name("cell_type"), Value("sql")),
-					Input(Type("hidden"), Name("content"), Value("")),
-					Input(Type("hidden"), Name("position"), Value(strconv.Itoa(c.Position))),
-					Button(Type("submit"), Class("dropdown-item"), Attr("data-add-above", "true"), Text("Insert SQL cell above")),
-				),
-				Form(
-					Method("post"),
-					Action("/ui/notebooks/"+d.NotebookID+"/cells"),
-					d.CSRFFieldFunc(),
-					Input(Type("hidden"), Name("cell_type"), Value("sql")),
-					Input(Type("hidden"), Name("content"), Value("")),
-					Input(Type("hidden"), Name("position"), Value(strconv.Itoa(c.Position+1))),
-					Button(Type("submit"), Class("dropdown-item"), Attr("data-add-below", "true"), Text("Insert SQL cell below")),
-				),
-				actionMenuPost(c.DeleteURL, "Delete cell", d.CSRFFieldFunc, true),
+				Group(cellMenuItems),
 			),
 		)
 
@@ -272,12 +266,32 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 
 		cellNodes = append(cellNodes, notebookInsertRail(d.NotebookID, c.Position, d.CSRFFieldFunc))
 
+		mainContent := Node(
+			Div(
+				editorForm,
+				notebookResultNode(c),
+			),
+		)
+		if isMarkdown {
+			mainContent = Div(
+				Div(
+					Class("notebook-markdown-preview markdown-body"),
+					Attr("data-markdown-preview", "true"),
+					Attr("tabindex", "0"),
+					Title("Double-click to edit markdown"),
+					Raw(renderMarkdownHTML(c.Content)),
+				),
+				editorForm,
+			)
+		}
+
 		cellNodes = append(cellNodes,
 			Div(
 				Class("notebook-cell"),
 				ID("cell-"+c.ID),
 				Attr("data-notebook-cell", "true"),
 				Attr("data-cell-id", c.ID),
+				Attr("data-cell-type", c.CellType),
 				data.Show(containsExpr(c.Title+" "+c.CellType+" "+c.Content)),
 				Div(Class("notebook-cell-shell"),
 					Div(
@@ -297,12 +311,11 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 							Div(
 								Class("notebook-cell-header-right"),
 								lastRunNode,
-								statusLabel(c.CellType, typeTone),
+								Span(Class("notebook-cell-type-badge"), statusLabel(c.CellType, typeTone)),
 								cellActions,
 							),
 						),
-						editorForm,
-						notebookResultNode(c),
+						mainContent,
 					),
 				),
 			),
@@ -540,6 +553,18 @@ func humanRelativeTime(ts time.Time) string {
 		return fmt.Sprintf("%dh ago", int(d.Hours()))
 	}
 	return fmt.Sprintf("%dd ago", int(d.Hours()/24))
+}
+
+func renderMarkdownHTML(source string) string {
+	if strings.TrimSpace(source) == "" {
+		return `<p class="notebook-markdown-empty">Double-click to add markdown.</p>`
+	}
+
+	var out bytes.Buffer
+	if err := markdownRenderer.Convert([]byte(source), &out); err != nil {
+		return "<pre>" + html.EscapeString(source) + "</pre>"
+	}
+	return out.String()
 }
 
 func notebooksNewPage(principal domain.ContextPrincipal, csrfFieldProvider func() Node) Node {
