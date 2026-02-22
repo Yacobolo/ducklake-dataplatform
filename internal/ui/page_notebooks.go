@@ -164,14 +164,14 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 			editorInput,
 		)
 
-		cellMeta := fmt.Sprintf("Cell %d", c.Position+1)
+		cellMeta := ""
 		lastRunLabel := ""
 		lastRunTitle := ""
 		if c.CellType == string(domain.CellTypeSQL) {
-			cellMeta = fmt.Sprintf("Cell %d, not run", c.Position+1)
+			cellMeta = "Not run"
 			lastRunLabel = "Not run"
 			if c.LastResult != nil {
-				cellMeta = fmt.Sprintf("Cell %d, runtime %s", c.Position+1, humanDuration(c.LastResult.Duration))
+				cellMeta = "runtime " + humanDuration(c.LastResult.Duration)
 				if c.LastRunAt != nil && !c.LastRunAt.IsZero() {
 					lastRunLabel = "Last run " + humanRelativeTime(*c.LastRunAt)
 					lastRunTitle = formatTime(*c.LastRunAt)
@@ -179,11 +179,17 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 					lastRunLabel = "Last run unavailable"
 				}
 				if c.LastResult.Error != "" {
-					cellMeta = fmt.Sprintf("Cell %d, error in %s", c.Position+1, humanDuration(c.LastResult.Duration))
+					cellMeta = "Error in " + humanDuration(c.LastResult.Duration)
 				} else {
-					cellMeta = fmt.Sprintf("Cell %d, %d row(s), %s", c.Position+1, c.LastResult.RowCount, humanDuration(c.LastResult.Duration))
+					cellMeta = fmt.Sprintf("%d row(s), %s", c.LastResult.RowCount, humanDuration(c.LastResult.Duration))
 				}
 			}
+		}
+
+		cellMetaNode := Node(nil)
+		hasCellMeta := strings.TrimSpace(cellMeta) != ""
+		if hasCellMeta {
+			cellMetaNode = Span(Class("notebook-cell-meta"), Text(cellMeta))
 		}
 
 		lastRunNode := Node(nil)
@@ -264,6 +270,17 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 			cellMenu,
 		)
 
+		headerClass := "notebook-cell-header"
+		headerTitle := Node(nil)
+		if hasCellMeta {
+			headerTitle = Div(
+				Class("notebook-cell-title"),
+				cellMetaNode,
+			)
+		} else {
+			headerClass += " notebook-cell-header-compact"
+		}
+
 		cellNodes = append(cellNodes, notebookInsertRail(d.NotebookID, c.Position, d.CSRFFieldFunc))
 
 		mainContent := Node(
@@ -306,12 +323,8 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 						Div(
 							Class("notebook-cell-frame"),
 							Div(
-								Class("notebook-cell-header"),
-								Div(
-									Class("notebook-cell-title"),
-									Span(Class("notebook-cell-name"), Text(c.Title)),
-									Span(Class("notebook-cell-meta"), Text(cellMeta)),
-								),
+								Class(headerClass),
+								headerTitle,
 								Div(
 									Class("notebook-cell-header-right"),
 									lastRunNode,
@@ -431,20 +444,25 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 func notebookInsertRail(notebookID string, position int, csrfField func() Node) Node {
 	return Div(
 		Class("notebook-insert-rail"),
-		Form(
-			Method("post"),
-			Action("/ui/notebooks/"+notebookID+"/cells"),
-			csrfField(),
-			Input(Type("hidden"), Name("cell_type"), Value("sql")),
-			Input(Type("hidden"), Name("content"), Value("")),
-			Input(Type("hidden"), Name("position"), Value(strconv.Itoa(position))),
-			Button(
-				Type("submit"),
-				Class("btn btn-sm btn-icon notebook-insert-btn"),
-				Title("Insert SQL cell"),
-				Attr("aria-label", "Insert SQL cell"),
-				I(Class("btn-icon-glyph"), Attr("data-lucide", "plus"), Attr("aria-hidden", "true")),
-				Span(Class("sr-only"), Text("Insert SQL cell")),
+		Div(
+			Class("notebook-insert-actions"),
+			Form(
+				Method("post"),
+				Action("/ui/notebooks/"+notebookID+"/cells"),
+				csrfField(),
+				Input(Type("hidden"), Name("cell_type"), Value("sql")),
+				Input(Type("hidden"), Name("content"), Value("")),
+				Input(Type("hidden"), Name("position"), Value(strconv.Itoa(position))),
+				Button(Type("submit"), Class("btn btn-sm notebook-insert-btn"), Text("SQL")),
+			),
+			Form(
+				Method("post"),
+				Action("/ui/notebooks/"+notebookID+"/cells"),
+				csrfField(),
+				Input(Type("hidden"), Name("cell_type"), Value("markdown")),
+				Input(Type("hidden"), Name("content"), Value("")),
+				Input(Type("hidden"), Name("position"), Value(strconv.Itoa(position))),
+				Button(Type("submit"), Class("btn btn-sm notebook-insert-btn"), Text("Markdown")),
 			),
 		),
 	)

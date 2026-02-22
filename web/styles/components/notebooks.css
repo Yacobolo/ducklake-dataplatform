@@ -117,12 +117,12 @@
 .notebook-cells {
   min-width: 0;
   display: grid;
-  gap: var(--space-1);
+  gap: 0;
 }
 
 .notebook-cell {
   position: relative;
-  padding: 0 var(--space-2);
+  padding: 0 var(--space-1);
   scroll-margin-top: var(--size-sticky-offset);
   transition: background-color var(--base-duration-100) var(--base-easing-ease), box-shadow var(--base-duration-100) var(--base-easing-ease);
 }
@@ -226,6 +226,12 @@
   padding: var(--space-2);
   border-bottom: var(--border-muted);
   background: var(--bgColor-muted);
+}
+
+.notebook-cell-header-compact {
+  display: flex;
+  justify-content: flex-end;
+  padding-left: var(--space-1);
 }
 
 .notebook-cell-header .btn.btn-sm.btn-icon {
@@ -345,8 +351,8 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  height: var(--overlay-height-xsmall);
-  margin: 0 var(--space-2);
+  height: var(--control-medium-size);
+  margin: 0 var(--space-1);
 }
 
 .notebook-insert-rail::before {
@@ -364,18 +370,31 @@
 .notebook-insert-btn {
   opacity: 0;
   pointer-events: none;
-  transform: scale(0.95);
+  transform: translateY(0);
   transition: opacity var(--base-duration-100) var(--base-easing-ease), transform var(--base-duration-100) var(--base-easing-ease);
   position: relative;
   z-index: 1;
   background: var(--bgColor-default);
 }
 
+.notebook-insert-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  position: relative;
+  z-index: 1;
+}
+
+.notebook-insert-actions form {
+  margin: 0;
+  display: flex;
+}
+
 .notebook-insert-rail:hover .notebook-insert-btn,
 .notebook-insert-rail:focus-within .notebook-insert-btn {
   opacity: 1;
   pointer-events: auto;
-  transform: scale(1);
+  transform: translateY(0);
 }
 
 .notebook-insert-rail:hover::before,
