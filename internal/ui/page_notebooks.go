@@ -268,12 +268,14 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 
 		mainContent := Node(
 			Div(
+				Class("notebook-cell-body"),
 				editorForm,
 				notebookResultNode(c),
 			),
 		)
 		if isMarkdown {
 			mainContent = Div(
+				Class("notebook-cell-body"),
 				Div(
 					Class("notebook-markdown-preview markdown-body"),
 					Attr("data-markdown-preview", "true"),
@@ -302,20 +304,23 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 					Div(
 						Class("notebook-cell-main"),
 						Div(
-							Class("notebook-cell-header"),
+							Class("notebook-cell-frame"),
 							Div(
-								Class("notebook-cell-title"),
-								Span(Class("notebook-cell-name"), Text(c.Title)),
-								Span(Class("notebook-cell-meta"), Text(cellMeta)),
+								Class("notebook-cell-header"),
+								Div(
+									Class("notebook-cell-title"),
+									Span(Class("notebook-cell-name"), Text(c.Title)),
+									Span(Class("notebook-cell-meta"), Text(cellMeta)),
+								),
+								Div(
+									Class("notebook-cell-header-right"),
+									lastRunNode,
+									Span(Class("notebook-cell-type-badge"), statusLabel(c.CellType, typeTone)),
+									cellActions,
+								),
 							),
-							Div(
-								Class("notebook-cell-header-right"),
-								lastRunNode,
-								Span(Class("notebook-cell-type-badge"), statusLabel(c.CellType, typeTone)),
-								cellActions,
-							),
+							mainContent,
 						),
-						mainContent,
 					),
 				),
 			),
