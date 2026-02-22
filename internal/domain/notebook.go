@@ -101,12 +101,13 @@ type NotebookSession struct {
 
 // CellExecutionResult holds the output of executing a single cell.
 type CellExecutionResult struct {
-	CellID   string
-	Columns  []string
-	Rows     [][]interface{}
-	RowCount int
-	Error    *string
-	Duration time.Duration
+	CellID     string
+	Columns    []string
+	Rows       [][]interface{}
+	RowCount   int
+	Error      *string
+	Duration   time.Duration
+	ExecutedAt *time.Time
 }
 
 // RunAllResult holds the aggregated output from executing all cells.

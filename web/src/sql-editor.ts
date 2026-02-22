@@ -11,6 +11,7 @@ class SqlEditorSurface extends LitElement {
     activeLine: { state: true },
     lineHeight: { state: true },
     activeTop: { state: true },
+    minLines: { type: Number, attribute: "min-lines" },
   };
 
   static styles = css`
@@ -19,8 +20,10 @@ class SqlEditorSurface extends LitElement {
       display: grid;
       grid-template-columns: calc(var(--control-small-size) + var(--space-3)) minmax(0, 1fr);
       min-height: 0;
-      height: 100%;
-      flex: 1;
+      width: 100%;
+      height: var(--sql-editor-height, 100%);
+      flex: var(--sql-editor-flex, 1);
+      direction: ltr;
       background: linear-gradient(180deg, var(--bgColor-default), var(--bgColor-muted));
       overflow: hidden;
     }
@@ -163,6 +166,7 @@ class SqlEditorSurface extends LitElement {
   private activeLine = 1;
   private lineHeight = 20;
   private activeTop = 0;
+  private minLines = 16;
   private textarea: HTMLTextAreaElement | null = null;
   private formatButton: HTMLButtonElement | null = null;
   private highlightedHTML = "";
@@ -342,7 +346,7 @@ class SqlEditorSurface extends LitElement {
 
     const value = this.textarea.value || "";
     const lines = value.split("\n").length;
-    this.lineCount = Math.max(16, lines + 2);
+    this.lineCount = Math.max(this.minLines, lines + 1);
     const gutter = this.renderRoot.querySelector(".gutter");
     if (gutter instanceof HTMLElement) {
       const nums = [];

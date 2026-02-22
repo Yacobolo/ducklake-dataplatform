@@ -42,12 +42,18 @@ func (h *Handler) NotebooksDetail(w http.ResponseWriter, r *http.Request) {
 	cellNodes := make([]notebookCellRowData, 0, len(cells))
 	for i := range cells {
 		cell := cells[i]
+		lastResult := parseNotebookCellResult(cell.LastResult)
+		var lastRunAt *time.Time
+		if lastResult != nil && lastResult.ExecutedAt != nil && !lastResult.ExecutedAt.IsZero() {
+			lastRunAt = lastResult.ExecutedAt
+		}
 		cellNodes = append(cellNodes, notebookCellRowData{
 			ID:           cell.ID,
 			Title:        fmt.Sprintf("Cell %d", cell.Position),
 			CellType:     string(cell.CellType),
 			Content:      cell.Content,
 			Position:     cell.Position,
+			LastRunAt:    lastRunAt,
 			EditURL:      "/ui/notebooks/" + id + "/cells/" + cell.ID + "/edit",
 			UpdateURL:    "/ui/notebooks/" + id + "/cells/" + cell.ID + "/update",
 			DeleteURL:    "/ui/notebooks/" + id + "/cells/" + cell.ID + "/delete",
@@ -55,7 +61,7 @@ func (h *Handler) NotebooksDetail(w http.ResponseWriter, r *http.Request) {
 			MoveURL:      "/ui/notebooks/" + id + "/cells/" + cell.ID + "/move",
 			DownloadURL:  "/ui/notebooks/" + id + "/cells/" + cell.ID + "/download.csv",
 			OpenInSQLURL: "/ui/sql?sql=" + url.QueryEscape(cell.Content),
-			LastResult:   parseNotebookCellResult(cell.LastResult),
+			LastResult:   lastResult,
 		})
 	}
 
@@ -402,11 +408,12 @@ func (h *Handler) NotebookCellsReorder(w http.ResponseWriter, r *http.Request) {
 }
 
 type persistedNotebookCellResult struct {
-	Columns  []string        `json:"Columns"`
-	Rows     [][]interface{} `json:"Rows"`
-	RowCount int             `json:"RowCount"`
-	Error    *string         `json:"Error"`
-	Duration time.Duration   `json:"Duration"`
+	Columns    []string        `json:"Columns"`
+	Rows       [][]interface{} `json:"Rows"`
+	RowCount   int             `json:"RowCount"`
+	Error      *string         `json:"Error"`
+	Duration   time.Duration   `json:"Duration"`
+	ExecutedAt *time.Time      `json:"ExecutedAt"`
 }
 
 func parseNotebookCellResult(raw *string) *notebookCellResultData {
@@ -429,10 +436,11 @@ func parseNotebookCellResult(raw *string) *notebookCellResultData {
 	}
 
 	out := &notebookCellResultData{
-		Columns:  parsed.Columns,
-		Rows:     rows,
-		RowCount: parsed.RowCount,
-		Duration: parsed.Duration,
+		Columns:    parsed.Columns,
+		Rows:       rows,
+		RowCount:   parsed.RowCount,
+		Duration:   parsed.Duration,
+		ExecutedAt: parsed.ExecutedAt,
 	}
 	if parsed.Error != nil {
 		out.Error = *parsed.Error

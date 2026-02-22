@@ -1,7 +1,34 @@
 .notebook-toolbar {
   position: sticky;
-  top: var(--space-3);
+  top: var(--space-2);
   z-index: 5;
+  padding: var(--space-3);
+  border: var(--border-default);
+  border-radius: var(--borderRadius-large);
+  background: var(--bgColor-default);
+}
+
+.notebook-title {
+  margin: 0;
+}
+
+.notebook-toolbar-meta {
+  margin-top: var(--space-1);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.notebook-toolbar-meta-item {
+  color: var(--fgColor-muted);
+}
+
+.notebook-toolbar-actions {
+  margin-top: var(--space-2);
+}
+
+.notebook-toolbar-status {
+  justify-content: flex-end;
 }
 
 .notebook-workspace {
@@ -14,6 +41,36 @@
   position: sticky;
   top: var(--size-sticky-offset);
   align-self: start;
+}
+
+.notebook-outline-panel {
+  margin: 0;
+  border: var(--border-default);
+  border-radius: var(--borderRadius-large);
+  background: var(--bgColor-default);
+}
+
+.notebook-outline-summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  font-weight: var(--base-text-weight-semibold);
+}
+
+.notebook-outline-summary::-webkit-details-marker {
+  display: none;
+}
+
+.notebook-outline-count {
+  color: var(--fgColor-muted);
+}
+
+.notebook-outline-body {
+  padding: 0 var(--space-3) var(--space-3);
 }
 
 .notebook-outline-list {
@@ -35,11 +92,12 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  border: var(--borderWidth-default) solid var(--border);
+  border: var(--border-default);
   border-radius: var(--borderRadius-medium);
   padding: var(--space-1) var(--space-2);
   color: var(--fgColor-default);
   text-decoration: none;
+  transition: background-color var(--base-duration-100) var(--base-easing-ease);
 }
 
 .notebook-outline-link:visited {
@@ -58,18 +116,23 @@
 
 .notebook-cells {
   min-width: 0;
-}
-
-.notebook-sheet {
-  padding: 0;
+  border: var(--border-default);
+  border-radius: var(--borderRadius-large);
+  background: var(--bgColor-default);
   overflow: hidden;
 }
 
 .notebook-cell {
-  padding: var(--space-4);
-  border-bottom: var(--borderWidth-default) solid var(--border);
+  padding: var(--space-2) var(--space-3) var(--space-3);
+  border-bottom: var(--border-default);
   background: var(--bgColor-default);
   scroll-margin-top: var(--size-sticky-offset);
+  transition: background-color var(--base-duration-100) var(--base-easing-ease);
+}
+
+.notebook-cell:hover,
+.notebook-cell:focus-within {
+  background: var(--bgColor-muted);
 }
 
 .notebook-cell:last-child {
@@ -80,64 +143,178 @@
   box-shadow: inset 0 0 0 var(--borderWidth-thick) var(--borderColor-accent-emphasis);
 }
 
+.notebook-cell-shell {
+  display: grid;
+  grid-template-columns: var(--control-medium-size) minmax(0, 1fr);
+  gap: var(--space-2);
+}
+
+.notebook-cell-gutter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding-top: var(--space-1);
+  border-right: var(--border-muted);
+}
+
+.notebook-cell-gutter-run {
+  color: var(--fgColor-success);
+}
+
+.notebook-cell-gutter-index {
+  color: var(--fgColor-muted);
+  font-family: var(--fontStack-monospace);
+}
+
+.notebook-cell-main {
+  min-width: 0;
+}
+
+.notebook-cell-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
 .notebook-cell-title {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  margin-top: 0;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.notebook-cell-header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.notebook-cell-timestamp {
+  color: var(--fgColor-muted);
+  font-family: var(--fontStack-monospace);
+  white-space: nowrap;
+}
+
+.notebook-cell-name {
+  font-weight: var(--base-text-weight-semibold);
+}
+
+.notebook-cell-meta {
+  color: var(--fgColor-muted);
 }
 
 .notebook-cell-title .Label {
-  margin-right: auto;
+  margin: 0;
 }
 
 .notebook-cell-primary-actions {
-  margin-top: var(--space-2);
+  margin-top: var(--space-1);
 }
 
 .notebook-editor {
   min-height: var(--size-editor-min-height);
   font-family: var(--fontStack-monospace);
+  border: var(--border-default);
+  background: var(--bgColor-default);
+}
+
+.notebook-sql-editor-host {
+  display: flex;
+  min-height: var(--size-editor-min-height);
+  border: var(--border-default);
+  border-radius: var(--borderRadius-medium);
+  overflow: hidden;
+  background: var(--bgColor-default);
+}
+
+.notebook-sql-editor-host:focus-within {
+  outline: var(--focus-outline);
+  outline-offset: var(--outline-focus-offset);
+}
+
+.notebook-sql-editor-host sql-editor-surface {
+  flex: 1;
+  min-height: var(--size-editor-min-height);
+}
+
+.notebook-sql-editor-host .sql-editor-textarea {
+  border: 0;
+  border-radius: 0;
+  min-height: var(--size-editor-min-height);
 }
 
 .notebook-cell-actions {
-  margin-left: auto;
   margin-top: 0;
+  opacity: 0;
+  transition: opacity var(--base-duration-100) var(--base-easing-ease);
+}
+
+.notebook-cell:hover .notebook-cell-actions,
+.notebook-cell:focus-within .notebook-cell-actions,
+.notebook-cell:target .notebook-cell-actions {
+  opacity: 1;
 }
 
 .notebook-output {
   margin-top: var(--space-2);
-  padding: var(--space-2);
-  border: var(--borderWidth-default) solid var(--borderColor-muted);
-  border-radius: var(--borderRadius-medium);
-  background: var(--bgColor-muted);
+  padding-top: var(--space-2);
+  border-top: var(--border-muted);
 }
 
 .notebook-output h4 {
   margin: 0;
 }
 
-.notebook-run-strip h3 {
-  margin: 0 0 var(--space-2);
-}
-
-.notebook-run-strip table {
-  background: var(--bgColor-default);
+.notebook-output.table-wrap {
+  border-radius: 0;
+  border: 0;
+  background: transparent;
+  padding-inline: 0;
 }
 
 .notebook-insert-rail {
+  position: relative;
   display: flex;
   justify-content: center;
-  padding: var(--space-1) 0;
+  align-items: center;
+  height: var(--overlay-height-xsmall);
+  margin: 0 var(--space-3);
+}
+
+.notebook-insert-rail::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  border-top: var(--border-muted);
+  opacity: 0;
+  transform: translateY(-50%);
+  transition: opacity var(--base-duration-100) var(--base-easing-ease);
 }
 
 .notebook-insert-btn {
-  opacity: 0.6;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.95);
+  transition: opacity var(--base-duration-100) var(--base-easing-ease), transform var(--base-duration-100) var(--base-easing-ease);
+  position: relative;
+  z-index: 1;
+  background: var(--bgColor-default);
 }
 
 .notebook-insert-rail:hover .notebook-insert-btn,
-.notebook-insert-btn:focus {
+.notebook-insert-rail:focus-within .notebook-insert-btn {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+
+.notebook-insert-rail:hover::before,
+.notebook-insert-rail:focus-within::before {
   opacity: 1;
 }
 
@@ -149,7 +326,25 @@
   box-shadow: inset 0 0 0 var(--borderWidth-thick) var(--borderColor-accent-emphasis);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .notebook-outline-link,
+  .notebook-cell,
+  .notebook-cell-actions,
+  .notebook-insert-rail::before,
+  .notebook-insert-btn {
+    transition: none;
+  }
+}
+
 @media (max-width: var(--breakpoint-medium)) {
+  .notebook-toolbar {
+    position: static;
+  }
+
+  .notebook-toolbar-status {
+    justify-content: flex-start;
+  }
+
   .notebook-workspace {
     grid-template-columns: 1fr;
   }
@@ -158,7 +353,36 @@
     position: static;
   }
 
-  .notebook-sheet {
-    border-radius: 0;
+  .notebook-cells,
+  .notebook-outline-panel {
+    border-radius: var(--borderRadius-medium);
+  }
+
+  .notebook-cell-header {
+    grid-template-columns: 1fr;
+    gap: var(--space-1);
+  }
+
+  .notebook-cell-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .notebook-cell-gutter {
+    border-right: 0;
+    border-bottom: var(--border-muted);
+    padding-bottom: var(--space-1);
+    flex-direction: row;
+    justify-content: flex-start;
+  }
+
+  .notebook-cell-actions {
+    opacity: 1;
+  }
+
+  .notebook-insert-rail::before,
+  .notebook-insert-btn {
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
   }
 }

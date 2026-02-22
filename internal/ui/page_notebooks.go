@@ -40,6 +40,7 @@ type notebookCellRowData struct {
 	CellType     string
 	Content      string
 	Position     int
+	LastRunAt    *time.Time
 	EditURL      string
 	UpdateURL    string
 	DeleteURL    string
@@ -51,11 +52,12 @@ type notebookCellRowData struct {
 }
 
 type notebookCellResultData struct {
-	Columns  []string
-	Rows     [][]string
-	RowCount int
-	Error    string
-	Duration time.Duration
+	Columns    []string
+	Rows       [][]string
+	RowCount   int
+	Error      string
+	Duration   time.Duration
+	ExecutedAt *time.Time
 }
 
 type notebookJobRowData struct {
@@ -82,24 +84,17 @@ type notebookDetailPageData struct {
 
 func notebookDetailPage(d notebookDetailPageData) Node {
 	totalErrors := 0
-	jobRows := make([]Node, 0, len(d.Jobs))
 	for i := range d.Jobs {
 		j := d.Jobs[i]
 		if strings.EqualFold(j.State, string(domain.JobStateFailed)) {
 			totalErrors++
 		}
-		jobRows = append(jobRows,
-			Tr(
-				Td(Text(j.ID)),
-				Td(statusLabel(j.State, notebookJobTone(j.State))),
-				Td(Text(j.Updated)),
-			),
-		)
 	}
 	cellNodes := make([]Node, 0, len(d.Cells))
 	outlineNodes := make([]Node, 0, len(d.Cells))
 	for i := range d.Cells {
 		c := d.Cells[i]
+		formID := "cell-form-" + c.ID
 
 		typeTone := "accent"
 		if c.CellType == string(domain.CellTypeMarkdown) {
@@ -110,16 +105,15 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 		if c.CellType == string(domain.CellTypeSQL) {
 			runButton = Button(
 				Type("submit"),
-				Class("btn btn-sm btn-primary"),
+				Attr("form", formID),
+				FormAction(c.RunURL),
+				Class("btn btn-sm btn-icon notebook-cell-gutter-run"),
 				Attr("data-run-cell", "true"),
+				Title("Run cell"),
+				Attr("aria-label", "Run cell"),
 				I(Class("btn-icon-glyph"), Attr("data-lucide", "play"), Attr("aria-hidden", "true")),
-				Span(Text("Run")),
+				Span(Class("sr-only"), Text("Run")),
 			)
-		}
-
-		formAction := c.RunURL
-		if c.CellType == string(domain.CellTypeMarkdown) {
-			formAction = c.UpdateURL
 		}
 
 		saveLabel := "Save markdown"
@@ -147,22 +141,72 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 			)
 		}
 
+		editorInput := Node(Textarea(
+			Name("content"),
+			Class("form-control notebook-editor"),
+			Attr("data-cell-editor", "true"),
+			Text(c.Content),
+		))
+		if c.CellType == string(domain.CellTypeSQL) {
+			editorInput = Div(
+				Class("notebook-sql-editor-host"),
+				El(
+					"sql-editor-surface",
+					Attr("min-lines", "4"),
+					Style("--sql-editor-height:auto; --sql-editor-flex:0 0 auto;"),
+					Textarea(
+						Name("content"),
+						Class("form-control sql-editor-textarea"),
+						Attr("data-cell-editor", "true"),
+						Attr("spellcheck", "false"),
+						Text(c.Content),
+					),
+				),
+			)
+		}
+
 		editorForm := Form(
 			Method("post"),
-			Action(formAction),
+			ID(formID),
+			Action(c.UpdateURL),
 			d.CSRFFieldFunc(),
-			Textarea(
-				Name("content"),
-				Class("form-control notebook-editor"),
-				Attr("data-cell-editor", "true"),
-				Text(c.Content),
-			),
+			editorInput,
 			Div(
 				Class("button-row notebook-cell-primary-actions"),
-				runButton,
 				saveButton,
 			),
 		)
+
+		cellMeta := fmt.Sprintf("Cell %d", c.Position+1)
+		lastRunLabel := ""
+		lastRunTitle := ""
+		if c.CellType == string(domain.CellTypeSQL) {
+			cellMeta = fmt.Sprintf("Cell %d, not run", c.Position+1)
+			lastRunLabel = "Not run"
+			if c.LastResult != nil {
+				cellMeta = fmt.Sprintf("Cell %d, runtime %s", c.Position+1, humanDuration(c.LastResult.Duration))
+				if c.LastRunAt != nil && !c.LastRunAt.IsZero() {
+					lastRunLabel = "Last run " + humanRelativeTime(*c.LastRunAt)
+					lastRunTitle = formatTime(*c.LastRunAt)
+				} else {
+					lastRunLabel = "Last run unavailable"
+				}
+				if c.LastResult.Error != "" {
+					cellMeta = fmt.Sprintf("Cell %d, error in %s", c.Position+1, humanDuration(c.LastResult.Duration))
+				} else {
+					cellMeta = fmt.Sprintf("Cell %d, %d row(s), %s", c.Position+1, c.LastResult.RowCount, humanDuration(c.LastResult.Duration))
+				}
+			}
+		}
+
+		lastRunNode := Node(nil)
+		if lastRunLabel != "" {
+			titleNode := Node(nil)
+			if lastRunTitle != "" {
+				titleNode = Title(lastRunTitle)
+			}
+			lastRunNode = Span(Class("notebook-cell-timestamp"), titleNode, Text(lastRunLabel))
+		}
 
 		cellMenu := Details(
 			Class("dropdown details-reset details-overlay d-inline-block"),
@@ -235,14 +279,32 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 				Attr("data-notebook-cell", "true"),
 				Attr("data-cell-id", c.ID),
 				data.Show(containsExpr(c.Title+" "+c.CellType+" "+c.Content)),
-				H3(
-					Class("notebook-cell-title"),
-					Text(c.Title+" "),
-					statusLabel(c.CellType, typeTone),
-					cellActions,
+				Div(Class("notebook-cell-shell"),
+					Div(
+						Class("notebook-cell-gutter"),
+						runButton,
+						Span(Class("notebook-cell-gutter-index"), Text(strconv.Itoa(c.Position+1))),
+					),
+					Div(
+						Class("notebook-cell-main"),
+						Div(
+							Class("notebook-cell-header"),
+							Div(
+								Class("notebook-cell-title"),
+								Span(Class("notebook-cell-name"), Text(c.Title)),
+								Span(Class("notebook-cell-meta"), Text(cellMeta)),
+							),
+							Div(
+								Class("notebook-cell-header-right"),
+								lastRunNode,
+								statusLabel(c.CellType, typeTone),
+								cellActions,
+							),
+						),
+						editorForm,
+						notebookResultNode(c),
+					),
 				),
-				editorForm,
-				notebookResultNode(c),
 			),
 		)
 
@@ -264,46 +326,42 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 		cellNodes = append(cellNodes, notebookInsertRail(d.NotebookID, last.Position+1, d.CSRFFieldFunc))
 	}
 
-	jobsCard := Node(emptyStateCard("No jobs yet.", "", ""))
-	if len(jobRows) > 0 {
-		jobsCard = Div(
-			Class(cardClass("notebook-run-strip")),
-			H3(Text("Recent runs")),
-			Div(
-				Class("table-wrap"),
-				Table(
-					Class("data-table"),
-					THead(Tr(Th(Text("Job ID")), Th(Text("State")), Th(Text("Updated")))),
-					TBody(Group(jobRows)),
-				),
-			),
-		)
-	}
-
 	workspaceNode := Div(
 		Class("notebook-workspace"),
 		Attr("data-reorder-url", d.ReorderURL),
 		Aside(
-			Class(cardClass("notebook-outline")),
-			H3(Text("Notebook outline")),
-			P(Class(mutedClass()), Text("Filter and jump to a cell quickly.")),
-			Div(
-				Class("d-flex flex-items-center gap-2"),
-				Label(Class("sr-only"), Text("Filter cells")),
-				Input(Type("search"), Class("form-control"), Placeholder("Filter cells"), data.Bind("q"), AutoComplete("off")),
-			),
-			Div(Class("notebook-outline-list"),
-				Ul(Group(outlineNodes)),
+			Class("notebook-outline"),
+			Details(
+				Class("notebook-outline-panel"),
+				Attr("open", "open"),
+				Summary(
+					Class("notebook-outline-summary"),
+					Span(Text("Outline")),
+					Span(Class("notebook-outline-count"), Text(strconv.Itoa(len(d.Cells))+" cells")),
+				),
+				Div(
+					Class("notebook-outline-body"),
+					Div(
+						Class("d-flex flex-items-center gap-2"),
+						Label(Class("sr-only"), Text("Filter cells")),
+						Input(Type("search"), Class("form-control"), Placeholder("Filter cells"), data.Bind("q"), AutoComplete("off")),
+					),
+					Div(Class("notebook-outline-list"),
+						Ul(Group(outlineNodes)),
+					),
+				),
 			),
 		),
 		Div(
 			Class("notebook-cells"),
-			Div(
-				Class(cardClass("notebook-sheet")),
-				Group(cellNodes),
-			),
+			Group(cellNodes),
 		),
 	)
+
+	descriptionNode := Node(nil)
+	if strings.TrimSpace(d.Description) != "" {
+		descriptionNode = Span(Class("notebook-toolbar-meta-item"), Text(d.Description))
+	}
 
 	return appPage(
 		"Notebook: "+d.Name,
@@ -311,18 +369,22 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 		d.Principal,
 		data.Signals(map[string]any{"q": ""}),
 		Div(
-			Class(cardClass("notebook-toolbar")),
-			Div(Class("d-flex flex-justify-between flex-wrap flex-items-center gap-2"),
+			Class("notebook-toolbar"),
+			Div(Class("d-flex flex-justify-between flex-wrap flex-items-start gap-2"),
 				Div(
-					H2(Text(d.Name)),
-					P(Class(mutedClass()), Text("Owner: "+d.Owner+" | "+"Description: "+d.Description)),
+					H2(Class("notebook-title"), Text(d.Name)),
+					Div(
+						Class("notebook-toolbar-meta"),
+						Span(Class("notebook-toolbar-meta-item"), Text("Owner "+d.Owner)),
+						descriptionNode,
+					),
 				),
-				Div(Class("button-row"),
+				Div(Class("button-row notebook-toolbar-status"),
 					statusLabel(fmt.Sprintf("%d jobs", len(d.Jobs)), "accent"),
 					statusLabel(fmt.Sprintf("%d failures", totalErrors), "severe"),
 				),
 			),
-			Div(Class("button-row"),
+			Div(Class("button-row notebook-toolbar-actions"),
 				Form(Method("post"), Action(d.RunAllURL), d.CSRFFieldFunc(), Button(Type("submit"), Class(primaryButtonClass()), Text("Run all"))),
 				A(Href(d.NewCellURL), Class(secondaryButtonClass()), Text("New cell")),
 				Details(
@@ -342,8 +404,8 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 				),
 			),
 		),
-		jobsCard,
 		workspaceNode,
+		Script(Src(uiScriptHref("sql-editor.js"))),
 		Script(Src(uiScriptHref("notebook.js"))),
 	)
 }
@@ -458,6 +520,26 @@ func humanDuration(d time.Duration) string {
 		return fmt.Sprintf("%dms", d.Milliseconds())
 	}
 	return d.Truncate(time.Millisecond).String()
+}
+
+func humanRelativeTime(ts time.Time) string {
+	if ts.IsZero() {
+		return "-"
+	}
+	d := time.Since(ts)
+	if d < 0 {
+		d = 0
+	}
+	if d < time.Minute {
+		return fmt.Sprintf("%ds ago", int(d.Seconds()))
+	}
+	if d < time.Hour {
+		return fmt.Sprintf("%dm ago", int(d.Minutes()))
+	}
+	if d < 24*time.Hour {
+		return fmt.Sprintf("%dh ago", int(d.Hours()))
+	}
+	return fmt.Sprintf("%dd ago", int(d.Hours()/24))
 }
 
 func notebooksNewPage(principal domain.ContextPrincipal, csrfFieldProvider func() Node) Node {
