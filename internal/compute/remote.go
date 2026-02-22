@@ -3,11 +3,9 @@ package compute
 import (
 	"context"
 	"crypto/rand"
-	"crypto/tls"
 	"database/sql"
 	"encoding/hex"
 	"fmt"
-	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -272,32 +270,6 @@ func insertResultRows(ctx context.Context, conn *sql.Conn, tableName string, row
 
 // Ping performs a health check against the remote agent.
 func (e *RemoteExecutor) Ping(ctx context.Context) error {
-	if strings.HasPrefix(e.endpointURL, "http://") || strings.HasPrefix(e.endpointURL, "https://") {
-		client := &http.Client{
-			Timeout: 5 * time.Second,
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12},
-			},
-		}
-
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, e.endpointURL+"/health", nil)
-		if err != nil {
-			return fmt.Errorf("create health request: %w", err)
-		}
-		req.Header.Set("X-Agent-Token", e.authToken)
-
-		resp, err := client.Do(req)
-		if err != nil {
-			return fmt.Errorf("health check: %w", err)
-		}
-		defer resp.Body.Close() //nolint:errcheck
-
-		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("unhealthy: status %d", resp.StatusCode)
-		}
-		return nil
-	}
-
 	client, err := e.ensureGRPCClient()
 	if err != nil {
 		return err

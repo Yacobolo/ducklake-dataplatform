@@ -448,7 +448,7 @@ func TestComputeEndpointService_HealthCheck(t *testing.T) {
 		assert.ErrorAs(t, err, &notFound)
 	})
 
-	t.Run("remote_endpoint_unreachable", func(t *testing.T) {
+	t.Run("remote_endpoint_invalid_scheme_unreachable", func(t *testing.T) {
 		repo := &mockComputeEndpointRepo{
 			GetByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
 				return &domain.ComputeEndpoint{
@@ -461,7 +461,7 @@ func TestComputeEndpointService_HealthCheck(t *testing.T) {
 
 		_, err := svc.HealthCheck(context.Background(), "admin", "remote-ep")
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "health check failed")
+		assert.Contains(t, err.Error(), "grpc health check failed")
 	})
 
 	t.Run("remote_endpoint_grpc_unreachable", func(t *testing.T) {

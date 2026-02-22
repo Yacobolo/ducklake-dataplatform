@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"duck-demo/internal/domain"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -230,6 +232,56 @@ func TestServer_ExtendedQueryProtocol_WithBinaryIntParameter(t *testing.T) {
 	require.Equal(t, byte('Z'), typeByte)
 }
 
+func TestServer_StartupRequiresUser(t *testing.T) {
+	srv := NewServer("127.0.0.1:0", nil, func(_ context.Context, _ string, _ string) (*QueryResult, error) {
+		return &QueryResult{}, nil
+	})
+	require.NoError(t, srv.Start())
+	t.Cleanup(func() {
+		_ = srv.Shutdown(context.Background())
+	})
+
+	conn, err := net.DialTimeout("tcp", srv.Addr(), time.Second)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = conn.Close() })
+
+	_, err = conn.Write(startupPacketWithoutUser(t))
+	require.NoError(t, err)
+
+	typeByte, payload := readPGMessage(t, conn)
+	require.Equal(t, byte('E'), typeByte)
+	require.Contains(t, string(payload), "28000")
+	require.Contains(t, string(payload), "startup user is required")
+}
+
+func TestServer_QueryError_MapsDomainSQLState(t *testing.T) {
+	srv := NewServer("127.0.0.1:0", nil, func(_ context.Context, _ string, _ string) (*QueryResult, error) {
+		return nil, domain.ErrAccessDenied("denied")
+	})
+	require.NoError(t, srv.Start())
+	t.Cleanup(func() {
+		_ = srv.Shutdown(context.Background())
+	})
+
+	conn, err := net.DialTimeout("tcp", srv.Addr(), time.Second)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = conn.Close() })
+
+	_, err = conn.Write(startupPacket(t))
+	require.NoError(t, err)
+	for i := 0; i < 5; i++ {
+		_, _ = readPGMessage(t, conn)
+	}
+
+	_, err = conn.Write(simpleQueryPacket(t, "SELECT 1"))
+	require.NoError(t, err)
+
+	typeByte, payload := readPGMessage(t, conn)
+	require.Equal(t, byte('E'), typeByte)
+	require.Contains(t, string(payload), "42501")
+	require.Contains(t, string(payload), "denied")
+}
+
 func TestServer_CancelRequest_CancelsInFlightQuery(t *testing.T) {
 	queryStarted := make(chan struct{}, 1)
 	srv := NewServer("127.0.0.1:0", nil, func(ctx context.Context, principal string, sqlQuery string) (*QueryResult, error) {
@@ -318,6 +370,18 @@ func startupPacket(t *testing.T) []byte {
 	t.Helper()
 
 	params := []byte("user\x00duck\x00database\x00duck\x00\x00")
+	buf := bytes.NewBuffer(make([]byte, 0, 8+len(params)))
+	require.NoError(t, binary.Write(buf, binary.BigEndian, int32(8+len(params))))
+	require.NoError(t, binary.Write(buf, binary.BigEndian, pgProtocolVersion3))
+	_, err := buf.Write(params)
+	require.NoError(t, err)
+	return buf.Bytes()
+}
+
+func startupPacketWithoutUser(t *testing.T) []byte {
+	t.Helper()
+
+	params := []byte("database\x00duck\x00\x00")
 	buf := bytes.NewBuffer(make([]byte, 0, 8+len(params)))
 	require.NoError(t, binary.Write(buf, binary.BigEndian, int32(8+len(params))))
 	require.NoError(t, binary.Write(buf, binary.BigEndian, pgProtocolVersion3))

@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"time"
+
+	computeproto "duck-demo/internal/compute/proto"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -15,18 +18,9 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-const (
-	grpcMethodExecute          = "/duckdemo.compute.v1.ComputeWorker/Execute"
-	grpcMethodSubmitQuery      = "/duckdemo.compute.v1.ComputeWorker/SubmitQuery"
-	grpcMethodGetQueryStatus   = "/duckdemo.compute.v1.ComputeWorker/GetQueryStatus"
-	grpcMethodFetchQueryResult = "/duckdemo.compute.v1.ComputeWorker/FetchQueryResults"
-	grpcMethodCancelQuery      = "/duckdemo.compute.v1.ComputeWorker/CancelQuery"
-	grpcMethodDeleteQuery      = "/duckdemo.compute.v1.ComputeWorker/DeleteQuery"
-	grpcMethodHealth           = "/duckdemo.compute.v1.ComputeWorker/Health"
-)
-
 type grpcWorkerClient struct {
 	conn      *grpc.ClientConn
+	client    computeproto.ComputeWorkerClient
 	authToken string
 }
 
@@ -51,7 +45,7 @@ func newGRPCWorkerClient(endpointURL, authToken string) (*grpcWorkerClient, erro
 		return nil, fmt.Errorf("dial grpc worker: %w", err)
 	}
 
-	return &grpcWorkerClient{conn: conn, authToken: authToken}, nil
+	return &grpcWorkerClient{conn: conn, client: computeproto.NewComputeWorkerClient(conn), authToken: authToken}, nil
 }
 
 func grpcDialTarget(endpointURL string) (target string, secure bool, err error) {
@@ -86,62 +80,96 @@ func (c *grpcWorkerClient) withMetadata(ctx context.Context, requestID string) c
 	return metadata.NewOutgoingContext(ctx, metadata.Pairs(pairs...))
 }
 
-func (c *grpcWorkerClient) invoke(ctx context.Context, method string, req, resp interface{}, requestID string) error {
-	ctxWithMD := c.withMetadata(ctx, requestID)
-	if err := c.conn.Invoke(ctxWithMD, method, req, resp); err != nil {
-		return fmt.Errorf("grpc invoke %s: %w", method, err)
+func (c *grpcWorkerClient) withTimeout(ctx context.Context) (context.Context, context.CancelFunc) {
+	if _, hasDeadline := ctx.Deadline(); hasDeadline {
+		return ctx, func() {}
 	}
-	return nil
+	return context.WithTimeout(ctx, 30*time.Second)
 }
 
 func (c *grpcWorkerClient) execute(ctx context.Context, req ExecuteRequest) (ExecuteResponse, error) {
-	var out ExecuteResponse
-	if err := c.invoke(ctx, grpcMethodExecute, &req, &out, req.RequestID); err != nil {
+	ctx, cancel := c.withTimeout(ctx)
+	defer cancel()
+	ctx = c.withMetadata(ctx, req.RequestID)
+	out, err := c.client.Execute(ctx, &computeproto.ExecuteRequest{
+		Sql: req.SQL,
+		Context: &computeproto.RequestContext{
+			RequestId: req.RequestID,
+		},
+	})
+	if err != nil {
 		return ExecuteResponse{}, err
 	}
-	return out, nil
+	return executeResponseFromProto(out), nil
 }
 
 func (c *grpcWorkerClient) submitQuery(ctx context.Context, req SubmitQueryRequest) (SubmitQueryResponse, error) {
-	var out SubmitQueryResponse
-	if err := c.invoke(ctx, grpcMethodSubmitQuery, &req, &out, req.RequestID); err != nil {
+	ctx, cancel := c.withTimeout(ctx)
+	defer cancel()
+	ctx = c.withMetadata(ctx, req.RequestID)
+	out, err := c.client.SubmitQuery(ctx, &computeproto.SubmitQueryRequest{
+		Sql: req.SQL,
+		Context: &computeproto.RequestContext{
+			RequestId: req.RequestID,
+		},
+	})
+	if err != nil {
 		return SubmitQueryResponse{}, err
 	}
-	return out, nil
+	return submitQueryResponseFromProto(out, req.RequestID), nil
 }
 
 func (c *grpcWorkerClient) getQueryStatus(ctx context.Context, req GetQueryStatusRequest, requestID string) (QueryStatusResponse, error) {
-	var out QueryStatusResponse
-	if err := c.invoke(ctx, grpcMethodGetQueryStatus, &req, &out, requestID); err != nil {
+	ctx, cancel := c.withTimeout(ctx)
+	defer cancel()
+	ctx = c.withMetadata(ctx, requestID)
+	out, err := c.client.GetQueryStatus(ctx, &computeproto.GetQueryStatusRequest{QueryId: req.QueryID})
+	if err != nil {
 		return QueryStatusResponse{}, err
 	}
-	return out, nil
+	return queryStatusResponseFromProto(out, requestID), nil
 }
 
 func (c *grpcWorkerClient) fetchQueryResults(ctx context.Context, req FetchQueryResultsRequest, requestID string) (FetchQueryResultsResponse, error) {
-	var out FetchQueryResultsResponse
-	if err := c.invoke(ctx, grpcMethodFetchQueryResult, &req, &out, requestID); err != nil {
+	ctx, cancel := c.withTimeout(ctx)
+	defer cancel()
+	ctx = c.withMetadata(ctx, requestID)
+	out, err := c.client.FetchQueryResults(ctx, &computeproto.FetchQueryResultsRequest{
+		QueryId:    req.QueryID,
+		PageToken:  req.PageToken,
+		MaxResults: int32(req.MaxResults),
+	})
+	if err != nil {
 		return FetchQueryResultsResponse{}, err
 	}
-	return out, nil
+	return fetchQueryResultsResponseFromProto(out, requestID), nil
 }
 
 func (c *grpcWorkerClient) cancelQuery(ctx context.Context, req CancelQueryRequest, requestID string) error {
-	var out CancelQueryResponse
-	return c.invoke(ctx, grpcMethodCancelQuery, &req, &out, requestID)
+	ctx, cancel := c.withTimeout(ctx)
+	defer cancel()
+	ctx = c.withMetadata(ctx, requestID)
+	_, err := c.client.CancelQuery(ctx, &computeproto.CancelQueryRequest{QueryId: req.QueryID})
+	return err
 }
 
 func (c *grpcWorkerClient) deleteQuery(ctx context.Context, req DeleteQueryRequest, requestID string) error {
-	var out CancelQueryResponse
-	return c.invoke(ctx, grpcMethodDeleteQuery, &req, &out, requestID)
+	ctx, cancel := c.withTimeout(ctx)
+	defer cancel()
+	ctx = c.withMetadata(ctx, requestID)
+	_, err := c.client.DeleteQuery(ctx, &computeproto.DeleteQueryRequest{QueryId: req.QueryID})
+	return err
 }
 
 func (c *grpcWorkerClient) health(ctx context.Context) (HealthResponse, error) {
-	var out HealthResponse
-	if err := c.invoke(ctx, grpcMethodHealth, &HealthRequest{}, &out, ""); err != nil {
+	ctx, cancel := c.withTimeout(ctx)
+	defer cancel()
+	ctx = c.withMetadata(ctx, "")
+	out, err := c.client.Health(ctx, &computeproto.HealthRequest{})
+	if err != nil {
 		return HealthResponse{}, err
 	}
-	return out, nil
+	return healthResponseFromProto(out), nil
 }
 
 func isGRPCUnavailable(err error) bool {
@@ -158,4 +186,92 @@ func isGRPCUnavailable(err error) bool {
 	default:
 		return false
 	}
+}
+
+func executeResponseFromProto(resp *computeproto.ExecuteResponse) ExecuteResponse {
+	if resp == nil {
+		return ExecuteResponse{}
+	}
+	out := ExecuteResponse{
+		Columns:  append([]string(nil), resp.Columns...),
+		Rows:     rowsFromProto(resp.Rows),
+		RowCount: int(resp.RowCount),
+	}
+	return out
+}
+
+func submitQueryResponseFromProto(resp *computeproto.SubmitQueryResponse, requestID string) SubmitQueryResponse {
+	if resp == nil {
+		return SubmitQueryResponse{RequestID: requestID}
+	}
+	return SubmitQueryResponse{
+		QueryID:   resp.QueryId,
+		Status:    resp.Status,
+		RequestID: requestID,
+	}
+}
+
+func queryStatusResponseFromProto(resp *computeproto.QueryStatusResponse, requestID string) QueryStatusResponse {
+	if resp == nil {
+		return QueryStatusResponse{RequestID: requestID}
+	}
+	return QueryStatusResponse{
+		QueryID:     resp.QueryId,
+		Status:      resp.Status,
+		Columns:     append([]string(nil), resp.Columns...),
+		RowCount:    int(resp.RowCount),
+		Error:       resp.Error,
+		CompletedAt: resp.CompletedAtRfc3339,
+		RequestID:   requestID,
+	}
+}
+
+func fetchQueryResultsResponseFromProto(resp *computeproto.FetchQueryResultsResponse, requestID string) FetchQueryResultsResponse {
+	if resp == nil {
+		return FetchQueryResultsResponse{RequestID: requestID}
+	}
+	return FetchQueryResultsResponse{
+		QueryID:       resp.QueryId,
+		Columns:       append([]string(nil), resp.Columns...),
+		Rows:          rowsFromProto(resp.Rows),
+		RowCount:      int(resp.RowCount),
+		NextPageToken: resp.NextPageToken,
+		RequestID:     requestID,
+	}
+}
+
+func healthResponseFromProto(resp *computeproto.HealthResponse) HealthResponse {
+	if resp == nil {
+		return HealthResponse{}
+	}
+	return HealthResponse{
+		Status:                resp.Status,
+		UptimeSeconds:         int(resp.UptimeSeconds),
+		DuckDBVersion:         resp.DuckdbVersion,
+		MemoryUsedMB:          resp.MemoryUsedMb,
+		MaxMemoryGB:           int(resp.MaxMemoryGb),
+		ActiveQueries:         resp.ActiveQueries,
+		QueuedJobs:            resp.QueuedJobs,
+		RunningJobs:           resp.RunningJobs,
+		CompletedJobs:         resp.CompletedJobs,
+		StoredJobs:            resp.StoredJobs,
+		CleanedJobs:           resp.CleanedJobs,
+		QueryResultTTLSeconds: int(resp.ResultTtlSecs),
+	}
+}
+
+func rowsFromProto(rows []*computeproto.ResultRow) [][]interface{} {
+	out := make([][]interface{}, 0, len(rows))
+	for _, row := range rows {
+		if row == nil {
+			out = append(out, nil)
+			continue
+		}
+		values := make([]interface{}, len(row.Values))
+		for i := range row.Values {
+			values[i] = row.Values[i]
+		}
+		out = append(out, values)
+	}
+	return out
 }

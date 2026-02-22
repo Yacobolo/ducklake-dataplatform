@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"duck-demo/internal/compute"
+	computeproto "duck-demo/internal/compute/proto"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -14,22 +15,20 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type computeWorkerServer interface {
-	Execute(context.Context, *compute.ExecuteRequest) (*compute.ExecuteResponse, error)
-	SubmitQuery(context.Context, *compute.SubmitQueryRequest) (*compute.SubmitQueryResponse, error)
-	GetQueryStatus(context.Context, *compute.GetQueryStatusRequest) (*compute.QueryStatusResponse, error)
-	FetchQueryResults(context.Context, *compute.FetchQueryResultsRequest) (*compute.FetchQueryResultsResponse, error)
-	CancelQuery(context.Context, *compute.CancelQueryRequest) (*compute.CancelQueryResponse, error)
-	DeleteQuery(context.Context, *compute.DeleteQueryRequest) (*compute.CancelQueryResponse, error)
-	Health(context.Context, *compute.HealthRequest) (*compute.HealthResponse, error)
-}
-
 type ComputeGRPCServer struct {
 	cfg HandlerConfig
 
 	activeQueries atomic.Int64
 	jobs          *queryStore
 }
+
+type computeWorkerAdapter struct {
+	computeproto.UnimplementedComputeWorkerServer
+
+	server *ComputeGRPCServer
+}
+
+var _ computeproto.ComputeWorkerServer = (*computeWorkerAdapter)(nil)
 
 func NewComputeGRPCServer(cfg HandlerConfig) *ComputeGRPCServer {
 	jobs := newQueryStore(cfg.QueryResultTTL, cfg.CleanupInterval)
@@ -43,42 +42,52 @@ func (s *ComputeGRPCServer) Metrics() (active, queued, running, completed, store
 }
 
 // RegisterComputeWorkerGRPCServer registers ComputeWorker gRPC methods.
-func RegisterComputeWorkerGRPCServer(registrar grpc.ServiceRegistrar, server computeWorkerServer) {
-	registrar.RegisterService(&computeWorkerServiceDesc, server)
+func RegisterComputeWorkerGRPCServer(registrar grpc.ServiceRegistrar, server *ComputeGRPCServer) {
+	computeproto.RegisterComputeWorkerServer(registrar, &computeWorkerAdapter{server: server})
 }
 
-func (s *ComputeGRPCServer) Execute(ctx context.Context, req *compute.ExecuteRequest) (*compute.ExecuteResponse, error) {
-	if err := s.authorize(ctx); err != nil {
+func (a *computeWorkerAdapter) Execute(ctx context.Context, req *computeproto.ExecuteRequest) (*computeproto.ExecuteResponse, error) {
+	if err := a.server.authorize(ctx); err != nil {
 		return nil, err
 	}
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "request is required")
 	}
 
-	result, err := runQuery(ctx, s.cfg.DB, req.SQL, &s.activeQueries)
+	requestID := requestIDFromContext(req.Context)
+	result, err := runQuery(ctx, a.server.cfg.DB, req.Sql, &a.server.activeQueries)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	result.RequestID = req.RequestID
-	return &result, nil
+
+	rows := make([]*computeproto.ResultRow, 0, len(result.Rows))
+	for _, row := range result.Rows {
+		rows = append(rows, protoRow(row))
+	}
+
+	return &computeproto.ExecuteResponse{
+		Columns:  append([]string(nil), result.Columns...),
+		Rows:     rows,
+		RowCount: int64(result.RowCount),
+	}, withRequestIDHeader(ctx, requestID)
 }
 
-func (s *ComputeGRPCServer) SubmitQuery(ctx context.Context, req *compute.SubmitQueryRequest) (*compute.SubmitQueryResponse, error) {
-	if err := s.authorize(ctx); err != nil {
+func (a *computeWorkerAdapter) SubmitQuery(ctx context.Context, req *computeproto.SubmitQueryRequest) (*computeproto.SubmitQueryResponse, error) {
+	if err := a.server.authorize(ctx); err != nil {
 		return nil, err
 	}
-	if !s.cfg.CursorMode {
+	if !a.server.cfg.CursorMode {
 		return nil, status.Error(codes.Unimplemented, "query lifecycle is disabled")
 	}
-	if req == nil || req.SQL == "" {
+	if req == nil || req.Sql == "" {
 		return nil, status.Error(codes.InvalidArgument, "sql is required")
 	}
 
-	requestID := req.RequestID
-	s.jobs.maybeCleanup(time.Now())
-	if existing, ok := s.jobs.getByRequestID(requestID); ok {
+	requestID := requestIDFromContext(req.Context)
+	a.server.jobs.maybeCleanup(time.Now())
+	if existing, ok := a.server.jobs.getByRequestID(requestID); ok {
 		state := existing.statusResponse()
-		return &compute.SubmitQueryResponse{QueryID: existing.id, Status: state.Status, RequestID: requestID}, nil
+		return &computeproto.SubmitQueryResponse{QueryId: existing.id, Status: state.Status}, withRequestIDHeader(ctx, requestID)
 	}
 
 	job := &queryJob{
@@ -87,13 +96,13 @@ func (s *ComputeGRPCServer) SubmitQuery(ctx context.Context, req *compute.Submit
 		status:    compute.QueryStatusQueued,
 		createdAt: time.Now(),
 	}
-	s.jobs.set(job)
+	a.server.jobs.set(job)
 
 	go func(sqlQuery string) {
 		jobCtx, cancel := context.WithCancel(context.Background())
 		job.setRunning(cancel)
 
-		columns, tableName, rowCount, err := runQueryToTable(jobCtx, s.cfg.DB, sqlQuery, &s.activeQueries, job.id)
+		columns, tableName, rowCount, err := runQueryToTable(jobCtx, a.server.cfg.DB, sqlQuery, &a.server.activeQueries, job.id)
 		if err != nil {
 			if jobCtx.Err() == context.Canceled {
 				job.setCanceled()
@@ -103,44 +112,51 @@ func (s *ComputeGRPCServer) SubmitQuery(ctx context.Context, req *compute.Submit
 			return
 		}
 		job.setSucceeded(columns, tableName, rowCount)
-	}(req.SQL)
+	}(req.Sql)
 
-	return &compute.SubmitQueryResponse{QueryID: job.id, Status: compute.QueryStatusQueued, RequestID: requestID}, nil
+	return &computeproto.SubmitQueryResponse{QueryId: job.id, Status: compute.QueryStatusQueued}, withRequestIDHeader(ctx, requestID)
 }
 
-func (s *ComputeGRPCServer) GetQueryStatus(ctx context.Context, req *compute.GetQueryStatusRequest) (*compute.QueryStatusResponse, error) {
-	if err := s.authorize(ctx); err != nil {
+func (a *computeWorkerAdapter) GetQueryStatus(ctx context.Context, req *computeproto.GetQueryStatusRequest) (*computeproto.QueryStatusResponse, error) {
+	if err := a.server.authorize(ctx); err != nil {
 		return nil, err
 	}
-	if !s.cfg.CursorMode {
+	if !a.server.cfg.CursorMode {
 		return nil, status.Error(codes.Unimplemented, "query lifecycle is disabled")
 	}
-	if req == nil || req.QueryID == "" {
+	if req == nil || req.QueryId == "" {
 		return nil, status.Error(codes.InvalidArgument, "query_id is required")
 	}
 
-	s.jobs.maybeCleanup(time.Now())
-	job, ok := s.jobs.get(req.QueryID)
+	a.server.jobs.maybeCleanup(time.Now())
+	job, ok := a.server.jobs.get(req.QueryId)
 	if !ok {
 		return nil, status.Error(codes.NotFound, "query not found")
 	}
-	out := job.statusResponse()
-	return &out, nil
+	state := job.statusResponse()
+	return &computeproto.QueryStatusResponse{
+		QueryId:            state.QueryID,
+		Status:             state.Status,
+		Error:              state.Error,
+		Columns:            append([]string(nil), state.Columns...),
+		RowCount:           int64(state.RowCount),
+		CompletedAtRfc3339: state.CompletedAt,
+	}, withRequestIDHeader(ctx, state.RequestID)
 }
 
-func (s *ComputeGRPCServer) FetchQueryResults(ctx context.Context, req *compute.FetchQueryResultsRequest) (*compute.FetchQueryResultsResponse, error) {
-	if err := s.authorize(ctx); err != nil {
+func (a *computeWorkerAdapter) FetchQueryResults(ctx context.Context, req *computeproto.FetchQueryResultsRequest) (*computeproto.FetchQueryResultsResponse, error) {
+	if err := a.server.authorize(ctx); err != nil {
 		return nil, err
 	}
-	if !s.cfg.CursorMode {
+	if !a.server.cfg.CursorMode {
 		return nil, status.Error(codes.Unimplemented, "query lifecycle is disabled")
 	}
-	if req == nil || req.QueryID == "" {
+	if req == nil || req.QueryId == "" {
 		return nil, status.Error(codes.InvalidArgument, "query_id is required")
 	}
 
-	s.jobs.maybeCleanup(time.Now())
-	job, ok := s.jobs.get(req.QueryID)
+	a.server.jobs.maybeCleanup(time.Now())
+	job, ok := a.server.jobs.get(req.QueryId)
 	if !ok {
 		return nil, status.Error(codes.NotFound, "query not found")
 	}
@@ -154,7 +170,7 @@ func (s *ComputeGRPCServer) FetchQueryResults(ctx context.Context, req *compute.
 	}
 
 	offset := compute.DecodePageToken(req.PageToken)
-	limit := req.MaxResults
+	limit := int(req.MaxResults)
 	if limit <= 0 {
 		limit = defaultPageSize
 	}
@@ -162,47 +178,58 @@ func (s *ComputeGRPCServer) FetchQueryResults(ctx context.Context, req *compute.
 		limit = 5000
 	}
 
-	page, err := job.resultPage(ctx, s.cfg.DB, offset, limit)
+	page, err := job.resultPage(ctx, a.server.cfg.DB, offset, limit)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	return &page, nil
+	rows := make([]*computeproto.ResultRow, 0, len(page.Rows))
+	for _, row := range page.Rows {
+		rows = append(rows, protoRow(row))
+	}
+
+	return &computeproto.FetchQueryResultsResponse{
+		QueryId:       page.QueryID,
+		Columns:       append([]string(nil), page.Columns...),
+		Rows:          rows,
+		RowCount:      int64(page.RowCount),
+		NextPageToken: page.NextPageToken,
+	}, withRequestIDHeader(ctx, page.RequestID)
 }
 
-func (s *ComputeGRPCServer) CancelQuery(ctx context.Context, req *compute.CancelQueryRequest) (*compute.CancelQueryResponse, error) {
-	if err := s.authorize(ctx); err != nil {
+func (a *computeWorkerAdapter) CancelQuery(ctx context.Context, req *computeproto.CancelQueryRequest) (*computeproto.CancelQueryResponse, error) {
+	if err := a.server.authorize(ctx); err != nil {
 		return nil, err
 	}
-	if !s.cfg.CursorMode {
+	if !a.server.cfg.CursorMode {
 		return nil, status.Error(codes.Unimplemented, "query lifecycle is disabled")
 	}
-	if req == nil || req.QueryID == "" {
+	if req == nil || req.QueryId == "" {
 		return nil, status.Error(codes.InvalidArgument, "query_id is required")
 	}
 
-	s.jobs.maybeCleanup(time.Now())
-	job, ok := s.jobs.get(req.QueryID)
+	a.server.jobs.maybeCleanup(time.Now())
+	job, ok := a.server.jobs.get(req.QueryId)
 	if !ok {
 		return nil, status.Error(codes.NotFound, "query not found")
 	}
 	job.cancelQuery()
 	state := job.statusResponse()
-	return &compute.CancelQueryResponse{QueryID: req.QueryID, Status: state.Status, RequestID: state.RequestID}, nil
+	return &computeproto.CancelQueryResponse{QueryId: req.QueryId, Status: state.Status}, withRequestIDHeader(ctx, state.RequestID)
 }
 
-func (s *ComputeGRPCServer) DeleteQuery(ctx context.Context, req *compute.DeleteQueryRequest) (*compute.CancelQueryResponse, error) {
-	if err := s.authorize(ctx); err != nil {
+func (a *computeWorkerAdapter) DeleteQuery(ctx context.Context, req *computeproto.DeleteQueryRequest) (*computeproto.DeleteQueryResponse, error) {
+	if err := a.server.authorize(ctx); err != nil {
 		return nil, err
 	}
-	if !s.cfg.CursorMode {
+	if !a.server.cfg.CursorMode {
 		return nil, status.Error(codes.Unimplemented, "query lifecycle is disabled")
 	}
-	if req == nil || req.QueryID == "" {
+	if req == nil || req.QueryId == "" {
 		return nil, status.Error(codes.InvalidArgument, "query_id is required")
 	}
 
-	s.jobs.maybeCleanup(time.Now())
-	job, ok := s.jobs.get(req.QueryID)
+	a.server.jobs.maybeCleanup(time.Now())
+	job, ok := a.server.jobs.get(req.QueryId)
 	if !ok {
 		return nil, status.Error(codes.NotFound, "query not found")
 	}
@@ -212,34 +239,35 @@ func (s *ComputeGRPCServer) DeleteQuery(ctx context.Context, req *compute.Delete
 	tableName := job.tableName
 	job.mu.RUnlock()
 	if tableName != "" {
-		_, _ = s.cfg.DB.ExecContext(context.Background(), fmt.Sprintf("DROP TABLE IF EXISTS %q", tableName)) //nolint:gosec
+		_, _ = a.server.cfg.DB.ExecContext(context.Background(), fmt.Sprintf("DROP TABLE IF EXISTS %q", tableName)) //nolint:gosec
 	}
-	s.jobs.delete(req.QueryID)
+	a.server.jobs.delete(req.QueryId)
 	if state.Status == "" {
 		state.Status = compute.QueryStatusCanceled
 	}
-	return &compute.CancelQueryResponse{QueryID: req.QueryID, Status: state.Status, RequestID: state.RequestID}, nil
+	return &computeproto.DeleteQueryResponse{QueryId: req.QueryId, Status: state.Status}, withRequestIDHeader(ctx, state.RequestID)
 }
 
-func (s *ComputeGRPCServer) Health(ctx context.Context, _ *compute.HealthRequest) (*compute.HealthResponse, error) {
-	if err := s.authorize(ctx); err != nil {
+func (a *computeWorkerAdapter) Health(ctx context.Context, _ *computeproto.HealthRequest) (*computeproto.HealthResponse, error) {
+	if err := a.server.authorize(ctx); err != nil {
 		return nil, err
 	}
 
-	s.jobs.maybeCleanup(time.Now())
-	queuedJobs, runningJobs, completedJobs, storedJobs, cleanedJobs := s.jobs.metrics()
-	return &compute.HealthResponse{
-		Status:                "ok",
-		UptimeSeconds:         int(time.Since(s.cfg.StartTime).Seconds()),
-		ActiveQueries:         s.activeQueries.Load(),
-		QueuedJobs:            queuedJobs,
-		RunningJobs:           runningJobs,
-		CompletedJobs:         completedJobs,
-		StoredJobs:            storedJobs,
-		CleanedJobs:           cleanedJobs,
-		MaxMemoryGB:           s.cfg.MaxMemoryGB,
-		QueryResultTTLSeconds: int(s.jobs.ttl.Seconds()),
-	}, nil
+	a.server.jobs.maybeCleanup(time.Now())
+	queuedJobs, runningJobs, completedJobs, storedJobs, cleanedJobs := a.server.jobs.metrics()
+	resp := &computeproto.HealthResponse{
+		Status:        "ok",
+		UptimeSeconds: int64(time.Since(a.server.cfg.StartTime).Seconds()),
+		ActiveQueries: a.server.activeQueries.Load(),
+		QueuedJobs:    queuedJobs,
+		RunningJobs:   runningJobs,
+		CompletedJobs: completedJobs,
+		StoredJobs:    storedJobs,
+		CleanedJobs:   cleanedJobs,
+		MaxMemoryGb:   int32(a.server.cfg.MaxMemoryGB),
+		ResultTtlSecs: int32(a.server.jobs.ttl.Seconds()),
+	}
+	return resp, nil
 }
 
 func (s *ComputeGRPCServer) authorize(ctx context.Context) error {
@@ -264,139 +292,34 @@ func metadataValue(ctx context.Context, key string) string {
 	return values[0]
 }
 
+func requestIDFromContext(ctx *computeproto.RequestContext) string {
+	if ctx == nil {
+		return ""
+	}
+	return ctx.RequestId
+}
+
+func withRequestIDHeader(ctx context.Context, requestID string) error {
+	if requestID == "" {
+		return nil
+	}
+	return grpc.SetHeader(ctx, metadata.Pairs("x-request-id", requestID))
+}
+
+func protoRow(row []interface{}) *computeproto.ResultRow {
+	values := make([]string, len(row))
+	for i := range row {
+		if row[i] == nil {
+			values[i] = ""
+			continue
+		}
+		values[i] = fmt.Sprintf("%v", row[i])
+	}
+	return &computeproto.ResultRow{Values: values}
+}
+
 var queryIDCounter atomic.Uint64
 
 func newQueryID() string {
 	return fmt.Sprintf("q-%d", queryIDCounter.Add(1))
 }
-
-var computeWorkerServiceDesc = grpc.ServiceDesc{
-	ServiceName: "duckdemo.compute.v1.ComputeWorker",
-	HandlerType: (*computeWorkerServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{MethodName: "Execute", Handler: executeHandler},
-		{MethodName: "SubmitQuery", Handler: submitQueryHandler},
-		{MethodName: "GetQueryStatus", Handler: getQueryStatusHandler},
-		{MethodName: "FetchQueryResults", Handler: fetchQueryResultsHandler},
-		{MethodName: "CancelQuery", Handler: cancelQueryHandler},
-		{MethodName: "DeleteQuery", Handler: deleteQueryHandler},
-		{MethodName: "Health", Handler: healthHandler},
-	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: "internal/compute/proto/compute_worker.proto",
-}
-
-func executeHandler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(compute.ExecuteRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(computeWorkerServer).Execute(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{Server: srv, FullMethod: grpcMethodExecute}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(computeWorkerServer).Execute(ctx, req.(*compute.ExecuteRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func submitQueryHandler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(compute.SubmitQueryRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(computeWorkerServer).SubmitQuery(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{Server: srv, FullMethod: grpcMethodSubmitQuery}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(computeWorkerServer).SubmitQuery(ctx, req.(*compute.SubmitQueryRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func getQueryStatusHandler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(compute.GetQueryStatusRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(computeWorkerServer).GetQueryStatus(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{Server: srv, FullMethod: grpcMethodGetQueryStatus}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(computeWorkerServer).GetQueryStatus(ctx, req.(*compute.GetQueryStatusRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func fetchQueryResultsHandler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(compute.FetchQueryResultsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(computeWorkerServer).FetchQueryResults(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{Server: srv, FullMethod: grpcMethodFetchQueryResult}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(computeWorkerServer).FetchQueryResults(ctx, req.(*compute.FetchQueryResultsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func cancelQueryHandler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(compute.CancelQueryRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(computeWorkerServer).CancelQuery(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{Server: srv, FullMethod: grpcMethodCancelQuery}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(computeWorkerServer).CancelQuery(ctx, req.(*compute.CancelQueryRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func deleteQueryHandler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(compute.DeleteQueryRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(computeWorkerServer).DeleteQuery(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{Server: srv, FullMethod: grpcMethodDeleteQuery}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(computeWorkerServer).DeleteQuery(ctx, req.(*compute.DeleteQueryRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func healthHandler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(compute.HealthRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(computeWorkerServer).Health(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{Server: srv, FullMethod: grpcMethodHealth}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(computeWorkerServer).Health(ctx, req.(*compute.HealthRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-const (
-	grpcMethodExecute          = "/duckdemo.compute.v1.ComputeWorker/Execute"
-	grpcMethodSubmitQuery      = "/duckdemo.compute.v1.ComputeWorker/SubmitQuery"
-	grpcMethodGetQueryStatus   = "/duckdemo.compute.v1.ComputeWorker/GetQueryStatus"
-	grpcMethodFetchQueryResult = "/duckdemo.compute.v1.ComputeWorker/FetchQueryResults"
-	grpcMethodCancelQuery      = "/duckdemo.compute.v1.ComputeWorker/CancelQuery"
-	grpcMethodDeleteQuery      = "/duckdemo.compute.v1.ComputeWorker/DeleteQuery"
-	grpcMethodHealth           = "/duckdemo.compute.v1.ComputeWorker/Health"
-)

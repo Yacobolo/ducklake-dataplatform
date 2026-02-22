@@ -4,14 +4,12 @@ package compute
 import (
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
-	"net/http"
 	"net/url"
 	"strings"
-	"time"
 
 	workercompute "duck-demo/internal/compute"
+	computeproto "duck-demo/internal/compute/proto"
 	"duck-demo/internal/domain"
 	"duck-demo/internal/service/auditutil"
 
@@ -296,59 +294,7 @@ func (s *ComputeEndpointService) HealthCheck(ctx context.Context, principal stri
 		return &domain.ComputeEndpointHealthResult{Status: &status}, nil
 	}
 
-	// Proxy health check to remote agent
-	if strings.HasPrefix(strings.ToLower(ep.URL), "grpc://") || strings.HasPrefix(strings.ToLower(ep.URL), "grpcs://") {
-		return s.grpcHealthCheck(ctx, ep.URL, ep.AuthToken)
-	}
-
-	return s.httpHealthCheck(ctx, ep.URL, ep.AuthToken)
-}
-
-func (s *ComputeEndpointService) httpHealthCheck(ctx context.Context, endpointURL, authToken string) (*domain.ComputeEndpointHealthResult, error) {
-	client := &http.Client{
-		Timeout: 10 * time.Second,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				MinVersion: tls.VersionTLS12,
-			},
-		},
-	}
-
-	url := strings.TrimRight(endpointURL, "/") + "/health"
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("create health request: %w", err)
-	}
-	workercompute.AttachSignedAgentHeaders(req, authToken, nil, time.Now())
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("health check failed: %w", err)
-	}
-	defer resp.Body.Close() //nolint:errcheck
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("agent returned status %d", resp.StatusCode)
-	}
-
-	var body struct {
-		Status        string `json:"status"`
-		UptimeSeconds int    `json:"uptime_seconds"`
-		DuckdbVersion string `json:"duckdb_version"`
-		MemoryUsedMb  int    `json:"memory_used_mb"`
-		MaxMemoryGb   int    `json:"max_memory_gb"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
-		return nil, fmt.Errorf("decode health response: %w", err)
-	}
-
-	return &domain.ComputeEndpointHealthResult{
-		Status:        &body.Status,
-		UptimeSeconds: &body.UptimeSeconds,
-		DuckdbVersion: &body.DuckdbVersion,
-		MemoryUsedMb:  &body.MemoryUsedMb,
-		MaxMemoryGb:   &body.MaxMemoryGb,
-	}, nil
+	return s.grpcHealthCheck(ctx, ep.URL, ep.AuthToken)
 }
 
 func (s *ComputeEndpointService) grpcHealthCheck(ctx context.Context, endpointURL, authToken string) (*domain.ComputeEndpointHealthResult, error) {
@@ -378,21 +324,17 @@ func (s *ComputeEndpointService) grpcHealthCheck(ctx context.Context, endpointUR
 	defer conn.Close() //nolint:errcheck
 
 	ctxWithMD := metadata.NewOutgoingContext(ctx, metadata.Pairs("x-agent-token", authToken))
-	var resp workercompute.HealthResponse
-	if err := conn.Invoke(
-		ctxWithMD,
-		"/duckdemo.compute.v1.ComputeWorker/Health",
-		&workercompute.HealthRequest{},
-		&resp,
-	); err != nil {
+	client := computeproto.NewComputeWorkerClient(conn)
+	resp, err := client.Health(ctxWithMD, &computeproto.HealthRequest{})
+	if err != nil {
 		return nil, fmt.Errorf("grpc health check failed: %w", err)
 	}
 
 	status := resp.Status
-	uptime := resp.UptimeSeconds
-	duckDBVersion := resp.DuckDBVersion
-	memoryUsedMB := int(resp.MemoryUsedMB)
-	maxMemoryGB := resp.MaxMemoryGB
+	uptime := int(resp.UptimeSeconds)
+	duckDBVersion := resp.DuckdbVersion
+	memoryUsedMB := int(resp.MemoryUsedMb)
+	maxMemoryGB := int(resp.MaxMemoryGb)
 
 	return &domain.ComputeEndpointHealthResult{
 		Status:        &status,

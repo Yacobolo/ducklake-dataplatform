@@ -134,6 +134,109 @@ func TestServer_GetSqlInfo(t *testing.T) {
 	require.GreaterOrEqual(t, rdr.Record().NumRows(), int64(1))
 }
 
+func TestServer_CancelStatementQuery(t *testing.T) {
+	srv := NewServer("127.0.0.1:0", nil, func(_ context.Context, _ string, _ string) (*QueryResult, error) {
+		return &QueryResult{
+			Columns: []string{"value"},
+			Rows:    [][]interface{}{{"1"}},
+		}, nil
+	})
+	require.NoError(t, srv.Start())
+	t.Cleanup(func() {
+		_ = srv.Shutdown(context.Background())
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	client, err := arrowflightsql.NewClient(
+		srv.Addr(),
+		nil,
+		nil,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithBlock(),
+	)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_ = client.Close()
+	})
+
+	info, err := client.Execute(ctx, "SELECT 1")
+	require.NoError(t, err)
+
+	status, err := client.CancelQuery(ctx, info)
+	require.NoError(t, err)
+	require.Equal(t, arrowflightsql.CancelResultCancelled, status)
+
+	_, err = client.DoGet(ctx, info.Endpoint[0].Ticket)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "query canceled")
+}
+
+func TestServer_MetadataDiscovery(t *testing.T) {
+	srv := NewServer("127.0.0.1:0", nil, func(_ context.Context, _ string, sqlQuery string) (*QueryResult, error) {
+		switch {
+		case strings.Contains(sqlQuery, "DISTINCT table_catalog"):
+			return &QueryResult{Columns: []string{"table_catalog"}, Rows: [][]interface{}{{"main"}}}, nil
+		case strings.Contains(sqlQuery, "DISTINCT table_catalog, table_schema"):
+			return &QueryResult{Columns: []string{"table_catalog", "table_schema"}, Rows: [][]interface{}{{"main", "public"}}}, nil
+		case strings.Contains(sqlQuery, "DISTINCT table_type"):
+			return &QueryResult{Columns: []string{"table_type"}, Rows: [][]interface{}{{"BASE TABLE"}}}, nil
+		default:
+			return &QueryResult{}, nil
+		}
+	})
+	require.NoError(t, srv.Start())
+	t.Cleanup(func() {
+		_ = srv.Shutdown(context.Background())
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	client, err := arrowflightsql.NewClient(
+		srv.Addr(),
+		nil,
+		nil,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithBlock(),
+	)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_ = client.Close()
+	})
+
+	catalogs, err := client.GetCatalogs(ctx)
+	require.NoError(t, err)
+	require.NotEmpty(t, catalogs.Endpoint)
+
+	catalogReader, err := client.DoGet(ctx, catalogs.Endpoint[0].Ticket)
+	require.NoError(t, err)
+	t.Cleanup(func() { catalogReader.Release() })
+	require.True(t, catalogReader.Next())
+	require.Equal(t, int64(1), catalogReader.Record().NumRows())
+
+	schemas, err := client.GetDBSchemas(ctx, nil)
+	require.NoError(t, err)
+	require.NotEmpty(t, schemas.Endpoint)
+
+	schemaReader, err := client.DoGet(ctx, schemas.Endpoint[0].Ticket)
+	require.NoError(t, err)
+	t.Cleanup(func() { schemaReader.Release() })
+	require.True(t, schemaReader.Next())
+	require.Equal(t, int64(1), schemaReader.Record().NumRows())
+
+	tableTypes, err := client.GetTableTypes(ctx)
+	require.NoError(t, err)
+	require.NotEmpty(t, tableTypes.Endpoint)
+
+	typesReader, err := client.DoGet(ctx, tableTypes.Endpoint[0].Ticket)
+	require.NoError(t, err)
+	t.Cleanup(func() { typesReader.Release() })
+	require.True(t, typesReader.Next())
+	require.Equal(t, int64(1), typesReader.Record().NumRows())
+}
+
 func TestServer_GetTables(t *testing.T) {
 	srv := NewServer("127.0.0.1:0", nil, func(_ context.Context, principal string, sqlQuery string) (*QueryResult, error) {
 		require.Equal(t, "anonymous", principal)

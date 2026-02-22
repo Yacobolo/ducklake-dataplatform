@@ -31,11 +31,16 @@ type queryServer struct {
 	query QueryExecutor
 
 	mu      sync.Mutex
-	tickets map[string]*QueryResult
+	tickets map[string]*statementTicket
+}
+
+type statementTicket struct {
+	result   *QueryResult
+	canceled bool
 }
 
 func newQueryServer(_ string, _ *slog.Logger, query QueryExecutor) *queryServer {
-	srv := &queryServer{query: query, tickets: make(map[string]*QueryResult)}
+	srv := &queryServer{query: query, tickets: make(map[string]*statementTicket)}
 	_ = srv.RegisterSqlInfo(arrowflightsql.SqlInfoFlightSqlServerName, "duck-demo")
 	_ = srv.RegisterSqlInfo(arrowflightsql.SqlInfoFlightSqlServerVersion, "dev")
 	_ = srv.RegisterSqlInfo(arrowflightsql.SqlInfoFlightSqlServerArrowVersion, "18")
@@ -54,7 +59,7 @@ func (s *queryServer) GetFlightInfoStatement(ctx context.Context, stmt arrowflig
 
 	handle := uuid.NewString()
 	s.mu.Lock()
-	s.tickets[handle] = result
+	s.tickets[handle] = &statementTicket{result: result}
 	s.mu.Unlock()
 
 	ticket, err := arrowflightsql.CreateStatementQueryTicket([]byte(handle))
@@ -76,6 +81,103 @@ func (s *queryServer) GetFlightInfoStatement(ctx context.Context, stmt arrowflig
 		TotalBytes:   -1,
 		Ordered:      true,
 	}, nil
+}
+
+func (s *queryServer) GetFlightInfoCatalogs(_ context.Context, desc *arrowflight.FlightDescriptor) (*arrowflight.FlightInfo, error) {
+	schema := catalogsSchema()
+	return &arrowflight.FlightInfo{
+		Schema:           arrowflight.SerializeSchema(schema, memory.DefaultAllocator),
+		FlightDescriptor: desc,
+		Endpoint: []*arrowflight.FlightEndpoint{{
+			Ticket: &arrowflight.Ticket{Ticket: desc.Cmd},
+			Location: []*arrowflight.Location{{
+				Uri: arrowflight.LocationReuseConnection,
+			}},
+		}},
+		TotalRecords: -1,
+		TotalBytes:   -1,
+		Ordered:      true,
+	}, nil
+}
+
+func (s *queryServer) DoGetCatalogs(ctx context.Context) (*arrow.Schema, <-chan arrowflight.StreamChunk, error) {
+	principal := principalFromContext(ctx)
+	result, err := s.query(ctx, principal, "SELECT DISTINCT table_catalog FROM information_schema.tables ORDER BY table_catalog")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	schema := catalogsSchema()
+	record, err := recordFromCatalogsResult(schema, result)
+	if err != nil {
+		return nil, nil, err
+	}
+	return streamSingleRecord(ctx, schema, record)
+}
+
+func (s *queryServer) GetFlightInfoSchemas(_ context.Context, req arrowflightsql.GetDBSchemas, desc *arrowflight.FlightDescriptor) (*arrowflight.FlightInfo, error) {
+	schema := dbSchemasSchema()
+	_ = req
+	return &arrowflight.FlightInfo{
+		Schema:           arrowflight.SerializeSchema(schema, memory.DefaultAllocator),
+		FlightDescriptor: desc,
+		Endpoint: []*arrowflight.FlightEndpoint{{
+			Ticket: &arrowflight.Ticket{Ticket: desc.Cmd},
+			Location: []*arrowflight.Location{{
+				Uri: arrowflight.LocationReuseConnection,
+			}},
+		}},
+		TotalRecords: -1,
+		TotalBytes:   -1,
+		Ordered:      true,
+	}, nil
+}
+
+func (s *queryServer) DoGetDBSchemas(ctx context.Context, req arrowflightsql.GetDBSchemas) (*arrow.Schema, <-chan arrowflight.StreamChunk, error) {
+	principal := principalFromContext(ctx)
+	result, err := s.query(ctx, principal, buildDBSchemasQuery(req))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	schema := dbSchemasSchema()
+	record, err := recordFromDBSchemasResult(schema, result)
+	if err != nil {
+		return nil, nil, err
+	}
+	return streamSingleRecord(ctx, schema, record)
+}
+
+func (s *queryServer) GetFlightInfoTableTypes(_ context.Context, desc *arrowflight.FlightDescriptor) (*arrowflight.FlightInfo, error) {
+	schema := tableTypesSchema()
+	return &arrowflight.FlightInfo{
+		Schema:           arrowflight.SerializeSchema(schema, memory.DefaultAllocator),
+		FlightDescriptor: desc,
+		Endpoint: []*arrowflight.FlightEndpoint{{
+			Ticket: &arrowflight.Ticket{Ticket: desc.Cmd},
+			Location: []*arrowflight.Location{{
+				Uri: arrowflight.LocationReuseConnection,
+			}},
+		}},
+		TotalRecords: -1,
+		TotalBytes:   -1,
+		Ordered:      true,
+	}, nil
+}
+
+func (s *queryServer) DoGetTableTypes(ctx context.Context) (*arrow.Schema, <-chan arrowflight.StreamChunk, error) {
+	principal := principalFromContext(ctx)
+	result, err := s.query(ctx, principal, "SELECT DISTINCT table_type FROM information_schema.tables ORDER BY table_type")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	schema := tableTypesSchema()
+	record, err := recordFromTableTypesResult(schema, result)
+	if err != nil {
+		return nil, nil, err
+	}
+	return streamSingleRecord(ctx, schema, record)
 }
 
 func (s *queryServer) GetFlightInfoTables(_ context.Context, req arrowflightsql.GetTables, desc *arrowflight.FlightDescriptor) (*arrowflight.FlightInfo, error) {
@@ -144,13 +246,52 @@ func (s *queryServer) DoGetStatement(ctx context.Context, queryTicket arrowfligh
 	if !ok {
 		return nil, nil, fmt.Errorf("unknown statement handle")
 	}
+	if result.canceled {
+		return nil, nil, fmt.Errorf("query canceled")
+	}
 
-	schema := schemaFromColumns(result.Columns)
-	record, err := recordFromResult(schema, result)
+	schema := schemaFromColumns(result.result.Columns)
+	record, err := recordFromResult(schema, result.result)
 	if err != nil {
 		return nil, nil, err
 	}
 	return streamSingleRecord(ctx, schema, record)
+}
+
+func (s *queryServer) CancelQuery(_ context.Context, req arrowflightsql.ActionCancelQueryRequest) (arrowflightsql.CancelResult, error) {
+	if req == nil || req.GetInfo() == nil {
+		return arrowflightsql.CancelResultNotCancellable, nil
+	}
+
+	handle, ok := statementHandleFromFlightInfo(req.GetInfo())
+	if !ok {
+		return arrowflightsql.CancelResultNotCancellable, nil
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	ticket, exists := s.tickets[handle]
+	if !exists {
+		return arrowflightsql.CancelResultCancelled, nil
+	}
+	ticket.canceled = true
+	return arrowflightsql.CancelResultCancelled, nil
+}
+
+func statementHandleFromFlightInfo(info *arrowflight.FlightInfo) (string, bool) {
+	if info == nil || len(info.Endpoint) == 0 || info.Endpoint[0] == nil || info.Endpoint[0].Ticket == nil {
+		return "", false
+	}
+	ticket, err := arrowflightsql.GetStatementQueryTicket(info.Endpoint[0].Ticket)
+	if err != nil {
+		return "", false
+	}
+	handle := string(ticket.GetStatementHandle())
+	if handle == "" {
+		return "", false
+	}
+	return handle, true
 }
 
 func schemaFromColumns(columns []string) *arrow.Schema {
@@ -218,6 +359,62 @@ func tablesSchema(includeSchema bool) *arrow.Schema {
 		fields = append(fields, arrow.Field{Name: "table_schema", Type: arrow.BinaryTypes.Binary, Nullable: false})
 	}
 	return arrow.NewSchema(fields, nil)
+}
+
+func catalogsSchema() *arrow.Schema {
+	return arrow.NewSchema([]arrow.Field{{Name: "catalog_name", Type: arrow.BinaryTypes.String, Nullable: true}}, nil)
+}
+
+func dbSchemasSchema() *arrow.Schema {
+	return arrow.NewSchema([]arrow.Field{
+		{Name: "catalog_name", Type: arrow.BinaryTypes.String, Nullable: true},
+		{Name: "db_schema_name", Type: arrow.BinaryTypes.String, Nullable: false},
+	}, nil)
+}
+
+func tableTypesSchema() *arrow.Schema {
+	return arrow.NewSchema([]arrow.Field{{Name: "table_type", Type: arrow.BinaryTypes.String, Nullable: false}}, nil)
+}
+
+func recordFromCatalogsResult(schema *arrow.Schema, result *QueryResult) (arrow.Record, error) {
+	b := array.NewStringBuilder(memory.DefaultAllocator)
+	for _, row := range result.Rows {
+		appendNullableString(b, rowValue(row, 0))
+	}
+	column := b.NewArray()
+	b.Release()
+	record := array.NewRecord(schema, []arrow.Array{column}, int64(len(result.Rows)))
+	column.Release()
+	return record, nil
+}
+
+func recordFromDBSchemasResult(schema *arrow.Schema, result *QueryResult) (arrow.Record, error) {
+	catalogBuilder := array.NewStringBuilder(memory.DefaultAllocator)
+	schemaBuilder := array.NewStringBuilder(memory.DefaultAllocator)
+	for _, row := range result.Rows {
+		appendNullableString(catalogBuilder, rowValue(row, 0))
+		appendRequiredString(schemaBuilder, rowValue(row, 1))
+	}
+	catalogCol := catalogBuilder.NewArray()
+	schemaCol := schemaBuilder.NewArray()
+	catalogBuilder.Release()
+	schemaBuilder.Release()
+	record := array.NewRecord(schema, []arrow.Array{catalogCol, schemaCol}, int64(len(result.Rows)))
+	catalogCol.Release()
+	schemaCol.Release()
+	return record, nil
+}
+
+func recordFromTableTypesResult(schema *arrow.Schema, result *QueryResult) (arrow.Record, error) {
+	b := array.NewStringBuilder(memory.DefaultAllocator)
+	for _, row := range result.Rows {
+		appendRequiredString(b, rowValue(row, 0))
+	}
+	column := b.NewArray()
+	b.Release()
+	record := array.NewRecord(schema, []arrow.Array{column}, int64(len(result.Rows)))
+	column.Release()
+	return record, nil
 }
 
 func recordFromTablesResult(schema *arrow.Schema, result *QueryResult, includeSchema bool, tableSchemas map[string][]byte) (arrow.Record, error) {
@@ -324,6 +521,24 @@ func buildTablesQuery(req arrowflightsql.GetTables) string {
 		query += " WHERE " + strings.Join(filters, " AND ")
 	}
 	query += " ORDER BY table_catalog, table_schema, table_name, table_type"
+	return query
+}
+
+func buildDBSchemasQuery(req arrowflightsql.GetDBSchemas) string {
+	query := "SELECT DISTINCT table_catalog, table_schema FROM information_schema.tables"
+	filters := make([]string, 0, 2)
+
+	if catalog := req.GetCatalog(); catalog != nil {
+		filters = append(filters, fmt.Sprintf("table_catalog = %s", quoteSQLLiteral(*catalog)))
+	}
+	if schemaPattern := req.GetDBSchemaFilterPattern(); schemaPattern != nil {
+		filters = append(filters, fmt.Sprintf("table_schema LIKE %s", quoteSQLLiteral(*schemaPattern)))
+	}
+
+	if len(filters) > 0 {
+		query += " WHERE " + strings.Join(filters, " AND ")
+	}
+	query += " ORDER BY table_catalog, table_schema"
 	return query
 }
 

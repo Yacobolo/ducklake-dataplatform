@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -15,6 +16,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"duck-demo/internal/domain"
 )
 
 const (
@@ -188,12 +191,12 @@ func (s *Server) handleConn(conn net.Conn) {
 				}
 			}
 			startupParams := parseStartupParams(payload)
-			if u, ok := startupParams["user"]; ok {
-				principal = u
+			u, ok := startupParams["user"]
+			if !ok || strings.TrimSpace(u) == "" {
+				_ = writePGErrorCode(conn, "startup user is required", "28000")
+				return
 			}
-			if principal == "" {
-				principal = "anonymous"
-			}
+			principal = strings.TrimSpace(u)
 			if err := writeAuthenticationOK(conn); err != nil {
 				return
 			}
@@ -444,7 +447,7 @@ func (s *Server) handleExecute(conn net.Conn, state *extendedState, principal st
 	result, err := s.query(queryCtx, principal, query)
 	s.untrackActiveQuery(key)
 	if err != nil {
-		_ = writePGError(conn, err.Error())
+		_ = writePGQueryError(conn, err)
 		return
 	}
 
@@ -498,7 +501,7 @@ func (s *Server) handleSimpleQuery(conn net.Conn, principal string, payload []by
 	result, err := s.query(queryCtx, principal, query)
 	s.untrackActiveQuery(key)
 	if err != nil {
-		_ = writePGError(conn, err.Error())
+		_ = writePGQueryError(conn, err)
 		_ = writeReadyForQuery(conn)
 		return
 	}
@@ -565,12 +568,23 @@ func readStartupHeader(r io.Reader) (int32, int32, error) {
 }
 
 func writePGError(conn net.Conn, message string) error {
+	return writePGErrorCode(conn, message, "0A000")
+}
+
+func writePGQueryError(conn net.Conn, err error) error {
+	if err == nil {
+		return writePGError(conn, "query failed")
+	}
+	return writePGErrorCode(conn, err.Error(), sqlStateForError(err))
+}
+
+func writePGErrorCode(conn net.Conn, message, code string) error {
 	body := make([]byte, 0, 128)
 	body = append(body, 'S')
 	body = append(body, []byte("ERROR")...)
 	body = append(body, 0)
 	body = append(body, 'C')
-	body = append(body, []byte("0A000")...)
+	body = append(body, []byte(code)...)
 	body = append(body, 0)
 	body = append(body, 'M')
 	body = append(body, []byte(message)...)
@@ -584,6 +598,35 @@ func writePGError(conn net.Conn, message string) error {
 
 	_, err := conn.Write(packet)
 	return err
+}
+
+func sqlStateForError(err error) string {
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return "57014"
+	}
+
+	var accessDenied *domain.AccessDeniedError
+	if errors.As(err, &accessDenied) {
+		return "42501"
+	}
+	var notFound *domain.NotFoundError
+	if errors.As(err, &notFound) {
+		return "42704"
+	}
+	var validation *domain.ValidationError
+	if errors.As(err, &validation) {
+		return "22023"
+	}
+	var conflict *domain.ConflictError
+	if errors.As(err, &conflict) {
+		return "23505"
+	}
+	var notImplemented *domain.NotImplementedError
+	if errors.As(err, &notImplemented) {
+		return "0A000"
+	}
+
+	return "XX000"
 }
 
 func writeAuthenticationOK(conn net.Conn) error {
