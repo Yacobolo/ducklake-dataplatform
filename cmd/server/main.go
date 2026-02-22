@@ -122,7 +122,13 @@ func run() error {
 	}
 	var flightServer *flightsql.Server
 	if cfg.FeatureFlightSQL {
-		flightServer = flightsql.NewServer(cfg.FlightSQLAddr, logger.With("component", "flightsql"))
+		flightServer = flightsql.NewServer(cfg.FlightSQLAddr, logger.With("component", "flightsql"), func(ctx context.Context, principal string, sqlQuery string) (*flightsql.QueryResult, error) {
+			res, err := application.Services.Query.Execute(ctx, principal, sqlQuery)
+			if err != nil {
+				return nil, err
+			}
+			return &flightsql.QueryResult{Columns: res.Columns, Rows: res.Rows}, nil
+		})
 		if err := flightServer.Start(); err != nil {
 			return fmt.Errorf("start Flight SQL listener: %w", err)
 		}

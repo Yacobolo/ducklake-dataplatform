@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	arrowflight "github.com/apache/arrow-go/v18/arrow/flight"
+	arrowflightsql "github.com/apache/arrow-go/v18/arrow/flight/flightsql"
 	"google.golang.org/grpc"
 	grpcHealth "google.golang.org/grpc/health"
 	grpcHealthV1 "google.golang.org/grpc/health/grpc_health_v1"
@@ -18,6 +20,7 @@ import (
 type Server struct {
 	addr   string
 	logger *slog.Logger
+	query  QueryExecutor
 
 	mu         sync.Mutex
 	ln         net.Listener
@@ -26,11 +29,16 @@ type Server struct {
 	wg         sync.WaitGroup
 }
 
-func NewServer(addr string, logger *slog.Logger) *Server {
+func NewServer(addr string, logger *slog.Logger, query QueryExecutor) *Server {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &Server{addr: addr, logger: logger}
+	if query == nil {
+		query = func(_ context.Context, _ string, _ string) (*QueryResult, error) {
+			return nil, fmt.Errorf("flight sql query executor is not configured")
+		}
+	}
+	return &Server{addr: addr, logger: logger, query: query}
 }
 
 func (s *Server) Start() error {
@@ -45,6 +53,7 @@ func (s *Server) Start() error {
 		return fmt.Errorf("listen flight sql: %w", err)
 	}
 	grpcSrv := grpc.NewServer()
+	arrowflight.RegisterFlightServiceServer(grpcSrv, arrowflightsql.NewFlightServer(newQueryServer(ln.Addr().String(), s.logger, s.query)))
 	healthSrv := grpcHealth.NewServer()
 	healthSrv.SetServingStatus("", grpcHealthV1.HealthCheckResponse_SERVING)
 	grpcHealthV1.RegisterHealthServer(grpcSrv, healthSrv)

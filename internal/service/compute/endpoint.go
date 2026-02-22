@@ -7,12 +7,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
-	compute2 "duck-demo/internal/compute"
+	workercompute "duck-demo/internal/compute"
 	"duck-demo/internal/domain"
 	"duck-demo/internal/service/auditutil"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 )
 
 // ComputeEndpointService provides CRUD operations for compute endpoints
@@ -108,6 +114,11 @@ func (s *ComputeEndpointService) Update(ctx context.Context, principal string, n
 	if err := s.requireEndpointPrivilege(ctx, principal, existing.ID, domain.PrivManageCompute); err != nil {
 		s.logAuditDenied(ctx, principal, "UPDATE_COMPUTE_ENDPOINT", fmt.Sprintf("Denied update compute endpoint %q", name))
 		return nil, err
+	}
+	if req.URL != nil {
+		if err := domain.ValidateComputeEndpointURL(*req.URL, existing.Type); err != nil {
+			return nil, err
+		}
 	}
 
 	// Handle status update if provided
@@ -286,6 +297,14 @@ func (s *ComputeEndpointService) HealthCheck(ctx context.Context, principal stri
 	}
 
 	// Proxy health check to remote agent
+	if strings.HasPrefix(strings.ToLower(ep.URL), "grpc://") || strings.HasPrefix(strings.ToLower(ep.URL), "grpcs://") {
+		return s.grpcHealthCheck(ctx, ep.URL, ep.AuthToken)
+	}
+
+	return s.httpHealthCheck(ctx, ep.URL, ep.AuthToken)
+}
+
+func (s *ComputeEndpointService) httpHealthCheck(ctx context.Context, endpointURL, authToken string) (*domain.ComputeEndpointHealthResult, error) {
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 		Transport: &http.Transport{
@@ -295,12 +314,12 @@ func (s *ComputeEndpointService) HealthCheck(ctx context.Context, principal stri
 		},
 	}
 
-	url := strings.TrimRight(ep.URL, "/") + "/health"
+	url := strings.TrimRight(endpointURL, "/") + "/health"
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("create health request: %w", err)
 	}
-	compute2.AttachSignedAgentHeaders(req, ep.AuthToken, nil, time.Now())
+	workercompute.AttachSignedAgentHeaders(req, authToken, nil, time.Now())
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -329,6 +348,58 @@ func (s *ComputeEndpointService) HealthCheck(ctx context.Context, principal stri
 		DuckdbVersion: &body.DuckdbVersion,
 		MemoryUsedMb:  &body.MemoryUsedMb,
 		MaxMemoryGb:   &body.MaxMemoryGb,
+	}, nil
+}
+
+func (s *ComputeEndpointService) grpcHealthCheck(ctx context.Context, endpointURL, authToken string) (*domain.ComputeEndpointHealthResult, error) {
+	u, err := url.Parse(endpointURL)
+	if err != nil {
+		return nil, fmt.Errorf("parse grpc endpoint url: %w", err)
+	}
+	if u.Host == "" {
+		return nil, fmt.Errorf("grpc endpoint host is required")
+	}
+
+	workercompute.EnsureGRPCJSONCodec()
+
+	creds := insecure.NewCredentials()
+	if strings.EqualFold(u.Scheme, "grpcs") {
+		creds = credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS12})
+	}
+
+	conn, err := grpc.NewClient(
+		u.Host,
+		grpc.WithTransportCredentials(creds),
+		grpc.WithDefaultCallOptions(grpc.CallContentSubtype("json")),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("dial grpc health endpoint: %w", err)
+	}
+	defer conn.Close() //nolint:errcheck
+
+	ctxWithMD := metadata.NewOutgoingContext(ctx, metadata.Pairs("x-agent-token", authToken))
+	var resp workercompute.HealthResponse
+	if err := conn.Invoke(
+		ctxWithMD,
+		"/duckdemo.compute.v1.ComputeWorker/Health",
+		&workercompute.HealthRequest{},
+		&resp,
+	); err != nil {
+		return nil, fmt.Errorf("grpc health check failed: %w", err)
+	}
+
+	status := resp.Status
+	uptime := resp.UptimeSeconds
+	duckDBVersion := resp.DuckDBVersion
+	memoryUsedMB := int(resp.MemoryUsedMB)
+	maxMemoryGB := resp.MaxMemoryGB
+
+	return &domain.ComputeEndpointHealthResult{
+		Status:        &status,
+		UptimeSeconds: &uptime,
+		DuckdbVersion: &duckDBVersion,
+		MemoryUsedMb:  &memoryUsedMB,
+		MaxMemoryGb:   &maxMemoryGB,
 	}, nil
 }
 

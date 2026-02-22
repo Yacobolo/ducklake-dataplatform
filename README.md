@@ -13,7 +13,7 @@ Secure SQL query layer over DuckDB with RBAC, row-level security, and column mas
 - **Storage Management** -- Storage credentials (S3/Azure/GCS), external locations, and volumes
 - **Ingestion** -- Upload and load data into managed tables via presigned URLs
 - **Compute Routing** -- Route queries to local or remote DuckDB compute endpoints
-- **Async Remote Query Lifecycle** -- Remote agents support submit/status/results/cancel endpoints for paged result retrieval
+- **Async Remote Query Lifecycle** -- Remote agents support submit/status/results/cancel APIs for paged result retrieval
 - **API Key Auth** -- Create and manage API keys alongside JWT/OIDC authentication
 - **DuckDB Extension** -- Client-side DuckDB extension for transparent table virtualization
 
@@ -68,8 +68,8 @@ All configuration is via environment variables. See `.env.sample` for a full ref
 | `RATE_LIMIT_RPS` | `100` | Sustained requests per second |
 | `RATE_LIMIT_BURST` | `200` | Maximum burst capacity |
 | `FEATURE_INTERNAL_GRPC` | `true` | Enable internal gRPC worker transport (`grpc://`/`grpcs://` endpoint URLs) |
-| `FEATURE_FLIGHT_SQL` | `true` | Enable Flight SQL preview listener (gRPC health) |
-| `FEATURE_PG_WIRE` | `true` | Enable PostgreSQL wire preview listener (startup + simple query) |
+| `FEATURE_FLIGHT_SQL` | `true` | Enable Flight SQL listener |
+| `FEATURE_PG_WIRE` | `true` | Enable PostgreSQL wire listener |
 
 ### Production Mode
 

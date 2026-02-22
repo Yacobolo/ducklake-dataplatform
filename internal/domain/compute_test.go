@@ -18,7 +18,7 @@ func TestValidateCreateComputeEndpointRequest(t *testing.T) {
 			name: "valid_remote",
 			req: CreateComputeEndpointRequest{
 				Name:      "analytics-xl",
-				URL:       "https://compute-1.example.com:9443",
+				URL:       "grpc://compute-1.example.com:9444",
 				Type:      "REMOTE",
 				AuthToken: "secret",
 			},
@@ -37,7 +37,7 @@ func TestValidateCreateComputeEndpointRequest(t *testing.T) {
 			name: "valid_with_size",
 			req: CreateComputeEndpointRequest{
 				Name: "sized",
-				URL:  "https://example.com",
+				URL:  "grpc://example.com:9444",
 				Type: "REMOTE",
 				Size: "LARGE",
 			},
@@ -46,7 +46,7 @@ func TestValidateCreateComputeEndpointRequest(t *testing.T) {
 		{
 			name: "missing_name",
 			req: CreateComputeEndpointRequest{
-				URL:  "https://example.com",
+				URL:  "grpc://example.com:9444",
 				Type: "REMOTE",
 			},
 			wantErr: true,
@@ -65,7 +65,7 @@ func TestValidateCreateComputeEndpointRequest(t *testing.T) {
 			name: "missing_type",
 			req: CreateComputeEndpointRequest{
 				Name: "test",
-				URL:  "https://example.com",
+				URL:  "grpc://example.com:9444",
 			},
 			wantErr: true,
 			errMsg:  "type is required",
@@ -74,7 +74,7 @@ func TestValidateCreateComputeEndpointRequest(t *testing.T) {
 			name: "invalid_type",
 			req: CreateComputeEndpointRequest{
 				Name: "test",
-				URL:  "https://example.com",
+				URL:  "grpc://example.com:9444",
 				Type: "CLOUD",
 			},
 			wantErr: true,
@@ -84,7 +84,7 @@ func TestValidateCreateComputeEndpointRequest(t *testing.T) {
 			name: "invalid_size",
 			req: CreateComputeEndpointRequest{
 				Name: "test",
-				URL:  "https://example.com",
+				URL:  "grpc://example.com:9444",
 				Type: "REMOTE",
 				Size: "HUGE",
 			},
@@ -95,7 +95,7 @@ func TestValidateCreateComputeEndpointRequest(t *testing.T) {
 			name: "valid_size_small",
 			req: CreateComputeEndpointRequest{
 				Name: "test",
-				URL:  "https://example.com",
+				URL:  "grpc://example.com:9444",
 				Type: "REMOTE",
 				Size: "SMALL",
 			},
@@ -105,11 +105,21 @@ func TestValidateCreateComputeEndpointRequest(t *testing.T) {
 			name: "valid_size_medium",
 			req: CreateComputeEndpointRequest{
 				Name: "test",
-				URL:  "https://example.com",
+				URL:  "grpc://example.com:9444",
 				Type: "REMOTE",
 				Size: "MEDIUM",
 			},
 			wantErr: false,
+		},
+		{
+			name: "invalid_remote_scheme",
+			req: CreateComputeEndpointRequest{
+				Name: "test",
+				URL:  "https://example.com",
+				Type: "REMOTE",
+			},
+			wantErr: true,
+			errMsg:  "remote url must use grpc:// or grpcs://",
 		},
 	}
 

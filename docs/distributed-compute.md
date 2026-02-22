@@ -6,7 +6,7 @@ This runbook describes how to operate remote compute agents with lifecycle-based
 
 - Gateway (`cmd/server`) remains the single policy enforcement point (RBAC, RLS, column masking).
 - Workers (`cmd/compute-agent`) only execute already rewritten SQL.
-- Gateway-to-worker transport supports dual stack: HTTP/JSON and internal gRPC (`duckdemo.compute.v1.ComputeWorker`).
+- Gateway-to-worker transport is internal gRPC (`duckdemo.compute.v1.ComputeWorker`).
 
 ## Agent Endpoints
 
@@ -32,8 +32,8 @@ Gateway controls:
 - `FEATURE_ASYNC_QUEUE` (default `true`): kill switch for control-plane async query queue APIs.
 - `FEATURE_CURSOR_MODE` (default `true`): kill switch for lifecycle/cursor usage in remote executor.
 - `FEATURE_INTERNAL_GRPC` (default `true`): enables gRPC transport for remote execution when endpoint URL uses `grpc://` or `grpcs://`.
-- `FEATURE_FLIGHT_SQL` (default `true`): enables Flight SQL listener scaffolding; full protocol compatibility is still a rollout-phase item.
-- `FEATURE_PG_WIRE` (default `true`): enables PG-wire preview listener (startup + simple query protocol path); full compatibility is still a rollout-phase item.
+- `FEATURE_FLIGHT_SQL` (default `true`): enables Flight SQL listener.
+- `FEATURE_PG_WIRE` (default `true`): enables PG-wire listener.
 - `REMOTE_CANARY_USERS` (optional CSV): restrict remote routing rollout to selected principals.
 - `FLIGHT_SQL_LISTEN_ADDR` (default `:32010`): bind address for external Flight SQL listener when enabled.
 - `PG_WIRE_LISTEN_ADDR` (default `:5433`): bind address for external PG-wire listener when enabled.
@@ -67,11 +67,11 @@ Recommended initial SLOs:
 ## Failure and Recovery
 
 - If worker health degrades, resolver honors `fallback_local` assignment policy.
-- Lifecycle client automatically falls back to legacy `/execute` when lifecycle endpoints are unsupported.
+- Remote execution uses gRPC lifecycle APIs with gRPC execute fallback when lifecycle mode is disabled.
 - To reduce memory pressure quickly, lower `QUERY_RESULT_TTL` and/or shorten `QUERY_CLEANUP_INTERVAL`.
 
-## Protocol Preview Notes
+## Protocol Status
 
-- Flight SQL preview currently exposes gRPC health only; query RPCs are pending.
-- PG-wire preview currently supports startup handshake and simple query messages (`Q`) mapped to control-plane query execution.
-- PG-wire preview maps startup `user` parameter to platform principal name; full auth negotiation and extended query flow are pending.
+- Flight SQL listener is active; query RPC compatibility work is still in progress.
+- PG-wire supports startup handshake, simple query (`Q`), and unnamed extended-query flow (`Parse/Bind/Describe/Execute/Sync`) mapped to control-plane query execution, including text-parameter binds.
+- PG-wire maps startup `user` parameter to platform principal name; full auth negotiation and extended query flow are still in progress.

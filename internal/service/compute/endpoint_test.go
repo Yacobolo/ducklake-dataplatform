@@ -2,12 +2,20 @@ package compute
 
 import (
 	"context"
+	"database/sql"
+	"log/slog"
+	"net"
 	"testing"
+	"time"
 
+	"duck-demo/internal/agent"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
 
 	"duck-demo/internal/domain"
+
+	_ "github.com/duckdb/duckdb-go/v2"
 )
 
 // === Test Helpers ===
@@ -48,7 +56,7 @@ func TestComputeEndpointService_Create(t *testing.T) {
 		svc := newTestComputeEndpointService(repo, allowManageCompute(), audit)
 
 		result, err := svc.Create(context.Background(), "admin", domain.CreateComputeEndpointRequest{
-			Name: "test-ep", URL: "https://example.com", Type: "REMOTE", AuthToken: "secret",
+			Name: "test-ep", URL: "grpc://example.com:9444", Type: "REMOTE", AuthToken: "secret",
 		})
 		require.NoError(t, err)
 		assert.Equal(t, "test-ep", result.Name)
@@ -60,7 +68,7 @@ func TestComputeEndpointService_Create(t *testing.T) {
 		svc := newTestComputeEndpointService(&mockComputeEndpointRepo{}, denyManageCompute(), &mockAuditRepo{})
 
 		_, err := svc.Create(context.Background(), "user1", domain.CreateComputeEndpointRequest{
-			Name: "test", URL: "https://example.com", Type: "REMOTE",
+			Name: "test", URL: "grpc://example.com:9444", Type: "REMOTE",
 		})
 		require.Error(t, err)
 		var accessDenied *domain.AccessDeniedError
@@ -71,7 +79,7 @@ func TestComputeEndpointService_Create(t *testing.T) {
 		svc := newTestComputeEndpointService(&mockComputeEndpointRepo{}, allowManageCompute(), &mockAuditRepo{})
 
 		_, err := svc.Create(context.Background(), "admin", domain.CreateComputeEndpointRequest{
-			Name: "", URL: "https://example.com", Type: "REMOTE",
+			Name: "", URL: "grpc://example.com:9444", Type: "REMOTE",
 		})
 		require.Error(t, err)
 		var valErr *domain.ValidationError
@@ -87,7 +95,7 @@ func TestComputeEndpointService_Create(t *testing.T) {
 		svc := newTestComputeEndpointService(repo, allowManageCompute(), &mockAuditRepo{})
 
 		_, err := svc.Create(context.Background(), "admin", domain.CreateComputeEndpointRequest{
-			Name: "test", URL: "https://example.com", Type: "REMOTE",
+			Name: "test", URL: "grpc://example.com:9444", Type: "REMOTE",
 		})
 		require.Error(t, err)
 		assert.ErrorIs(t, err, errTest)
@@ -148,7 +156,7 @@ func TestComputeEndpointService_List(t *testing.T) {
 
 func TestComputeEndpointService_Update(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
-		newURL := "https://new.example.com"
+		newURL := "grpc://new.example.com:9444"
 		repo := &mockComputeEndpointRepo{
 			GetByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
 				return &domain.ComputeEndpoint{ID: "1", Name: "ep1"}, nil
@@ -162,13 +170,13 @@ func TestComputeEndpointService_Update(t *testing.T) {
 
 		result, err := svc.Update(context.Background(), "admin", "ep1", domain.UpdateComputeEndpointRequest{URL: &newURL})
 		require.NoError(t, err)
-		assert.Equal(t, "https://new.example.com", result.URL)
+		assert.Equal(t, "grpc://new.example.com:9444", result.URL)
 		assert.True(t, audit.HasAction("UPDATE_COMPUTE_ENDPOINT"))
 	})
 
 	t.Run("access_denied", func(t *testing.T) {
 		svc := newTestComputeEndpointService(&mockComputeEndpointRepo{}, denyManageCompute(), &mockAuditRepo{})
-		url := "https://x.com"
+		url := "grpc://x.com:9444"
 		_, err := svc.Update(context.Background(), "user1", "ep1", domain.UpdateComputeEndpointRequest{URL: &url})
 		require.Error(t, err)
 		var accessDenied *domain.AccessDeniedError
@@ -182,11 +190,26 @@ func TestComputeEndpointService_Update(t *testing.T) {
 			},
 		}
 		svc := newTestComputeEndpointService(repo, allowManageCompute(), &mockAuditRepo{})
-		url := "https://x.com"
+		url := "grpc://x.com:9444"
 		_, err := svc.Update(context.Background(), "admin", "nonexistent", domain.UpdateComputeEndpointRequest{URL: &url})
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
 		assert.ErrorAs(t, err, &notFound)
+	})
+
+	t.Run("invalid_remote_url_scheme", func(t *testing.T) {
+		httpURL := "https://x.com"
+		repo := &mockComputeEndpointRepo{
+			GetByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
+				return &domain.ComputeEndpoint{ID: "1", Name: "ep1", Type: "REMOTE"}, nil
+			},
+		}
+		svc := newTestComputeEndpointService(repo, allowManageCompute(), &mockAuditRepo{})
+		_, err := svc.Update(context.Background(), "admin", "ep1", domain.UpdateComputeEndpointRequest{URL: &httpURL})
+		require.Error(t, err)
+		var valErr *domain.ValidationError
+		assert.ErrorAs(t, err, &valErr)
+		assert.Contains(t, err.Error(), "grpc:// or grpcs://")
 	})
 }
 
@@ -440,6 +463,75 @@ func TestComputeEndpointService_HealthCheck(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "health check failed")
 	})
+
+	t.Run("remote_endpoint_grpc_unreachable", func(t *testing.T) {
+		repo := &mockComputeEndpointRepo{
+			GetByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
+				return &domain.ComputeEndpoint{
+					ID: "1", Name: "remote-grpc-ep", Type: "REMOTE",
+					URL: "grpc://127.0.0.1:1", AuthToken: "tok",
+				}, nil
+			},
+		}
+		svc := newTestComputeEndpointService(repo, allowManageCompute(), &mockAuditRepo{})
+
+		_, err := svc.HealthCheck(context.Background(), "admin", "remote-grpc-ep")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "grpc health check failed")
+	})
+
+	t.Run("remote_endpoint_grpc_healthy", func(t *testing.T) {
+		addr := startTestComputeGRPCServer(t, "tok")
+		repo := &mockComputeEndpointRepo{
+			GetByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
+				return &domain.ComputeEndpoint{
+					ID: "1", Name: "remote-grpc-ep", Type: "REMOTE",
+					URL: "grpc://" + addr, AuthToken: "tok",
+				}, nil
+			},
+		}
+		svc := newTestComputeEndpointService(repo, allowManageCompute(), &mockAuditRepo{})
+
+		result, err := svc.HealthCheck(context.Background(), "admin", "remote-grpc-ep")
+		require.NoError(t, err)
+		require.NotNil(t, result.Status)
+		assert.Equal(t, "ok", *result.Status)
+	})
+}
+
+func startTestComputeGRPCServer(t *testing.T, token string) string {
+	t.Helper()
+
+	db, err := sql.Open("duckdb", "")
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_ = db.Close()
+	})
+
+	server := agent.NewComputeGRPCServer(agent.HandlerConfig{
+		DB:         db,
+		AgentToken: token,
+		StartTime:  time.Now(),
+		CursorMode: true,
+		Logger:     slog.Default(),
+	})
+
+	grpcServer := grpc.NewServer()
+	agent.RegisterComputeWorkerGRPCServer(grpcServer, server)
+
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		grpcServer.GracefulStop()
+		_ = ln.Close()
+	})
+
+	go func() {
+		_ = grpcServer.Serve(ln)
+	}()
+
+	return ln.Addr().String()
 }
 
 func init() {
