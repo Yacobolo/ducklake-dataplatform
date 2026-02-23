@@ -88,6 +88,7 @@ type notebookDetailPageData struct {
 	ReorderURL    string
 	Jobs          []notebookJobRowData
 	Cells         []notebookCellRowData
+	Explorer      []catalogExplorerCatalogItem
 	CSRFFieldFunc func() Node
 }
 
@@ -320,80 +321,100 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 		cellNodes = append(cellNodes, notebookInsertRail(d.NotebookID, last.Position+1, d.CSRFFieldFunc))
 	}
 
-	workspaceNode := Div(
-		Class("notebook-workspace"),
-		Attr("data-reorder-url", d.ReorderURL),
-		Aside(
-			Class("notebook-outline"),
-			Details(
-				Class("notebook-outline-panel"),
-				Attr("open", "open"),
-				Summary(
-					Class("notebook-outline-summary"),
-					Span(Text("Outline")),
-					Span(Class("notebook-outline-count"), Text(strconv.Itoa(len(d.Cells))+" cells")),
-				),
-				Div(
-					Class("notebook-outline-body"),
-					Div(
-						Class("notebook-outline-filter d-flex flex-items-center gap-2"),
-						Label(Class("sr-only"), Text("Filter cells")),
-						Input(Type("search"), Class("form-control"), Placeholder("Filter cells"), data.Bind("q"), AutoComplete("off")),
-					),
-					Div(Class("notebook-outline-list"),
-						Ul(Group(outlineNodes)),
-					),
-				),
-			),
+	outlinePanel := Details(
+		Class("notebook-outline-panel"),
+		Attr("open", "open"),
+		Summary(
+			Class("notebook-outline-summary"),
+			Span(Text("Outline")),
+			Span(Class("notebook-outline-count"), Text(strconv.Itoa(len(d.Cells))+" cells")),
 		),
 		Div(
-			Class("notebook-cells"),
-			Group(cellNodes),
+			Class("notebook-outline-body"),
+			Div(
+				Class("notebook-outline-filter d-flex flex-items-center gap-2"),
+				Label(Class("sr-only"), Text("Filter cells")),
+				Input(Type("search"), Class("form-control"), Placeholder("Filter cells"), data.Bind("q"), AutoComplete("off")),
+			),
+			Div(Class("notebook-outline-list"),
+				Ul(Group(outlineNodes)),
+			),
 		),
 	)
+
+	explorerPanel := catalogExplorerPanel(catalogExplorerPanelData{
+		Title:             "Catalog Explorer",
+		FilterPlaceholder: "Filter catalogs or schemas",
+		Catalogs:          d.Explorer,
+		EmptyCatalogsText: "No catalogs found.",
+	})
 
 	descriptionNode := Node(nil)
 	if strings.TrimSpace(d.Description) != "" {
 		descriptionNode = Span(Class("notebook-toolbar-meta-item"), Text(d.Description))
 	}
 
+	toolbarNode := Div(
+		Class("notebook-toolbar"),
+		Div(Class("notebook-toolbar-main d-flex flex-justify-between flex-wrap flex-items-start gap-2"),
+			Div(
+				H2(Class("notebook-title"), Text(d.Name)),
+				Div(
+					Class("notebook-toolbar-meta"),
+					Span(Class("notebook-toolbar-meta-item"), Text("Owner "+d.Owner)),
+					descriptionNode,
+				),
+			),
+			Div(Class("button-row notebook-toolbar-actions"),
+				Form(Method("post"), Action(d.RunAllURL), d.CSRFFieldFunc(), Button(Type("submit"), Class(primaryButtonClass()), Text("Run all"))),
+				A(Href(d.NewCellURL), Class(secondaryButtonClass()), Text("New cell")),
+				Details(
+					Class("dropdown details-reset details-overlay d-inline-block"),
+					Summary(
+						Class("btn btn-sm btn-icon"),
+						Title("Notebook actions"),
+						Attr("aria-label", "Notebook actions"),
+						I(Class("btn-icon-glyph"), Attr("data-lucide", "ellipsis"), Attr("aria-hidden", "true")),
+						Span(Class("sr-only"), Text("Notebook actions")),
+					),
+					Div(
+						Class("dropdown-menu dropdown-menu-sw"),
+						actionMenuLink(d.EditURL, "Notebook settings"),
+						actionMenuPost(d.DeleteURL, "Delete notebook", d.CSRFFieldFunc, true),
+					),
+				),
+			),
+		),
+	)
+
+	workspaceNode := workspaceLayout(
+		"notebook-workspace",
+		workspaceAside(
+			"notebook-"+d.NotebookID,
+			"notebook-aside",
+			[]workspaceAsideTab{
+				{ID: "outline", Label: "Outline", Icon: "list-tree", Count: strconv.Itoa(len(d.Cells)), Content: outlinePanel, PanelClass: "notebook-outline-panel-wrap"},
+				{ID: "explorer", Label: "Explorer", Icon: "database", Content: explorerPanel},
+				{ID: "runs", Label: "Runs", Icon: "workflow", Content: P(Class("color-fg-muted text-small"), Text("Pipeline run history will appear here."))},
+			},
+			"outline",
+		),
+		Div(
+			Class("notebook-main"),
+			toolbarNode,
+			Div(
+				Class("notebook-cells"),
+				Attr("data-reorder-url", d.ReorderURL),
+				Group(cellNodes),
+			),
+		),
+	)
+
 	return appPage(
 		"Notebook: "+d.Name,
 		"notebooks",
 		d.Principal,
 		data.Signals(map[string]any{"q": ""}),
-		Div(
-			Class("notebook-toolbar"),
-			Div(Class("notebook-toolbar-main d-flex flex-justify-between flex-wrap flex-items-start gap-2"),
-				Div(
-					H2(Class("notebook-title"), Text(d.Name)),
-					Div(
-						Class("notebook-toolbar-meta"),
-						Span(Class("notebook-toolbar-meta-item"), Text("Owner "+d.Owner)),
-						descriptionNode,
-					),
-				),
-				Div(Class("button-row notebook-toolbar-actions"),
-					Form(Method("post"), Action(d.RunAllURL), d.CSRFFieldFunc(), Button(Type("submit"), Class(primaryButtonClass()), Text("Run all"))),
-					A(Href(d.NewCellURL), Class(secondaryButtonClass()), Text("New cell")),
-					Details(
-						Class("dropdown details-reset details-overlay d-inline-block"),
-						Summary(
-							Class("btn btn-sm btn-icon"),
-							Title("Notebook actions"),
-							Attr("aria-label", "Notebook actions"),
-							I(Class("btn-icon-glyph"), Attr("data-lucide", "ellipsis"), Attr("aria-hidden", "true")),
-							Span(Class("sr-only"), Text("Notebook actions")),
-						),
-						Div(
-							Class("dropdown-menu dropdown-menu-sw"),
-							actionMenuLink(d.EditURL, "Notebook settings"),
-							actionMenuPost(d.DeleteURL, "Delete notebook", d.CSRFFieldFunc, true),
-						),
-					),
-				),
-			),
-		),
 		workspaceNode,
 		Script(Src(uiScriptHref("sql-editor.js"))),
 		Script(Src(uiScriptHref("notebook.js"))),

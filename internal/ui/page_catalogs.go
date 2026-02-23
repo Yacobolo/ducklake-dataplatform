@@ -107,112 +107,51 @@ type catalogWorkspacePageData struct {
 }
 
 func catalogWorkspacePage(d catalogWorkspacePageData) Node {
-	explorerNodes := make([]Node, 0, len(d.Schemas))
+	explorerSchemas := make([]catalogExplorerSchemaItem, 0, len(d.Schemas))
 	for i := range d.Schemas {
 		schema := d.Schemas[i]
-		tableNodes := make([]Node, 0, len(schema.Tables))
+		objects := make([]catalogExplorerObjectItem, 0, len(schema.Tables)+len(schema.Views))
 		for j := range schema.Tables {
 			t := schema.Tables[j]
-			className := "catalog-tree-leaf"
-			if t.Active {
-				className += " active"
-			}
-			tableNodes = append(tableNodes, Li(data.Show(containsExpr(schema.Name+" "+t.Name+" table")), A(Href(t.URL), Class(className), I(Class("nav-icon"), Attr("data-lucide", "table"), Attr("aria-hidden", "true")), Span(Text(t.Name)))))
+			objects = append(objects, catalogExplorerObjectItem{Name: t.Name, URL: t.URL, Icon: "table", Active: t.Active})
 		}
-
-		viewNodes := make([]Node, 0, len(schema.Views))
 		for j := range schema.Views {
 			v := schema.Views[j]
-			className := "catalog-tree-leaf"
-			if v.Active {
-				className += " active"
-			}
-			viewNodes = append(viewNodes, Li(data.Show(containsExpr(schema.Name+" "+v.Name+" view")), A(Href(v.URL), Class(className), I(Class("nav-icon"), Attr("data-lucide", "eye"), Attr("aria-hidden", "true")), Span(Text(v.Name)))))
+			objects = append(objects, catalogExplorerObjectItem{Name: v.Name, URL: v.URL, Icon: "eye", Active: v.Active})
 		}
 
-		schemaClass := "catalog-tree-schema-link"
-		if schema.Active {
-			schemaClass += " active"
-		}
-
-		openAttr := Node(nil)
-		if schema.Open {
-			openAttr = Attr("open", "")
-		}
-
-		objectNodes := make([]Node, 0, len(tableNodes)+len(viewNodes))
-		objectNodes = append(objectNodes, tableNodes...)
-		objectNodes = append(objectNodes, viewNodes...)
-
-		objectSection := Node(P(Class("catalog-tree-empty"), Text("No tables or views")))
-		if len(objectNodes) > 0 {
-			objectSection = Ul(Class("catalog-tree-list"), Group(objectNodes))
-		}
-
-		explorerNodes = append(explorerNodes,
-			Li(Class("catalog-tree-node"),
-				data.Show(containsExpr(schema.Name+" "+stringsJoin(objectNames(schema.Tables))+" "+stringsJoin(objectNames(schema.Views)))),
-				Details(
-					Class("details-reset catalog-tree-disclosure"),
-					openAttr,
-					Summary(
-						Class("catalog-tree-summary"),
-						Div(Class("catalog-tree-summary-main"),
-							I(Class("nav-icon catalog-tree-caret"), Attr("data-lucide", "chevron-right"), Attr("aria-hidden", "true")),
-							A(Href(schema.URL), Class(schemaClass), I(Class("nav-icon"), Attr("data-lucide", "folder"), Attr("aria-hidden", "true")), Span(Text(schema.Name))),
-						),
-					),
-					Div(Class("catalog-tree-children"), objectSection),
-				),
-			),
-		)
+		explorerSchemas = append(explorerSchemas, catalogExplorerSchemaItem{
+			Name:      schema.Name,
+			URL:       schema.URL,
+			Active:    schema.Active,
+			Open:      schema.Open,
+			Objects:   objects,
+			EmptyText: "No tables or views",
+		})
 	}
 
-	catalogTreeNodes := make([]Node, 0, len(d.Catalogs))
+	explorerCatalogs := make([]catalogExplorerCatalogItem, 0, len(d.Catalogs))
 	for i := range d.Catalogs {
-		c := d.Catalogs[i]
-		catalogClass := "catalog-tree-catalog-link"
-		if c.Active && d.SelectedType == "catalog" {
-			catalogClass += " active"
+		catalog := d.Catalogs[i]
+		catalogItem := catalogExplorerCatalogItem{
+			Name:      catalog.Name,
+			URL:       catalog.URL,
+			Active:    catalog.Active && d.SelectedType == "catalog",
+			Open:      catalog.Active,
+			EmptyText: "No schemas in this catalog.",
 		}
-
-		showValue := c.Name + " " + c.Status
-		if c.Active {
-			showValue += " " + stringsJoin(schemaNames(d.Schemas))
+		if catalog.Active {
+			catalogItem.Schemas = explorerSchemas
 		}
-
-		if c.Active {
-			childrenNode := Node(P(Class("catalog-tree-empty"), Text("No schemas in this catalog.")))
-			if len(explorerNodes) > 0 {
-				childrenNode = Ul(Class("catalog-tree-catalog-children"), Group(explorerNodes))
-			}
-			catalogTreeNodes = append(catalogTreeNodes,
-				Li(Class("catalog-tree-catalog-node"),
-					data.Show(containsExpr(showValue)),
-					Details(
-						Class("details-reset catalog-tree-disclosure catalog-tree-catalog-disclosure"),
-						Attr("open", ""),
-						Summary(
-							Class("catalog-tree-summary"),
-							Div(Class("catalog-tree-summary-main"),
-								I(Class("nav-icon catalog-tree-caret"), Attr("data-lucide", "chevron-right"), Attr("aria-hidden", "true")),
-								A(Href(c.URL), Class(catalogClass), I(Class("nav-icon"), Attr("data-lucide", "database"), Attr("aria-hidden", "true")), Span(Text(c.Name))),
-							),
-						),
-						childrenNode,
-					),
-				),
-			)
-			continue
-		}
-
-		catalogTreeNodes = append(catalogTreeNodes,
-			Li(Class("catalog-tree-catalog-node"),
-				data.Show(containsExpr(showValue)),
-				A(Href(c.URL), Class(catalogClass), I(Class("nav-icon"), Attr("data-lucide", "database"), Attr("aria-hidden", "true")), Span(Text(c.Name))),
-			),
-		)
+		explorerCatalogs = append(explorerCatalogs, catalogItem)
 	}
+
+	explorerPanel := catalogExplorerPanel(catalogExplorerPanelData{
+		Title:             "Catalog Explorer",
+		FilterPlaceholder: d.QuickFilterMessage,
+		Catalogs:          explorerCatalogs,
+		EmptyCatalogsText: "No catalogs found.",
+	})
 
 	metaNodes := make([]Node, 0, len(d.Panel.MetaItems))
 	for i := range d.Panel.MetaItems {
@@ -324,22 +263,20 @@ func catalogWorkspacePage(d catalogWorkspacePageData) Node {
 		"catalogs",
 		d.Principal,
 		data.Signals(map[string]any{"q": "", "childq": ""}),
-		Div(
-			Class("catalog-workspace"),
-			Aside(
-				Class("catalog-rail"),
-				Div(Class("catalog-rail-head"),
-					Div(Class("catalog-rail-head-row"),
-						P(Class("catalog-rail-kicker"), Text("Catalog Explorer")),
-						A(Href("/ui/catalogs/new"), Class("btn btn-sm btn-icon"), Title("New catalog"), Attr("aria-label", "New catalog"), I(Class("btn-icon-glyph"), Attr("data-lucide", "plus"), Attr("aria-hidden", "true")), Span(Class("sr-only"), Text("New catalog"))),
-					),
-					Div(Class("catalog-rail-search"),
-						I(Class("nav-icon"), Attr("data-lucide", "search"), Attr("aria-hidden", "true")),
-						Label(Class("sr-only"), Text("Filter catalog explorer")),
-						Input(Type("search"), Class("form-control"), Placeholder(d.QuickFilterMessage), data.Bind("q"), AutoComplete("off")),
-					),
-				),
-				Ul(Class("catalog-tree-root"), Group(catalogTreeNodes)),
+		workspaceLayout(
+			"catalog-workspace",
+			workspaceAside(
+				"catalog-workspace",
+				"catalog-aside",
+				[]workspaceAsideTab{
+					{
+						ID:      "explorer",
+						Label:   "Explorer",
+						Icon:    "database",
+						Content: explorerPanel,
+					},
+				},
+				"explorer",
 			),
 			Section(
 				Class("catalog-detail"),

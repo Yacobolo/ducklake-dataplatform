@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -70,6 +71,53 @@ func (h *Handler) NotebooksDetail(w http.ResponseWriter, r *http.Request) {
 		job := jobs[i]
 		jobRows = append(jobRows, notebookJobRowData{ID: job.ID, State: string(job.State), Updated: formatTime(job.UpdatedAt)})
 	}
+
+	selectedCatalog := strings.TrimSpace(r.URL.Query().Get("catalog"))
+	selectedSchema := strings.TrimSpace(r.URL.Query().Get("schema"))
+	catalogs, _, err := h.CatalogRegistration.List(r.Context(), domain.PageRequest{MaxResults: 100})
+	if err != nil {
+		catalogs = nil
+	}
+	if selectedCatalog == "" && len(catalogs) > 0 {
+		selectedCatalog = catalogs[0].Name
+	}
+
+	var schemas []domain.SchemaDetail
+	if selectedCatalog != "" {
+		s, _, err := h.Catalog.ListSchemas(r.Context(), selectedCatalog, domain.PageRequest{MaxResults: 200})
+		if err == nil {
+			schemas = s
+		}
+	}
+	if selectedSchema == "" && len(schemas) > 0 {
+		selectedSchema = schemas[0].Name
+	}
+
+	explorerCatalogs := make([]catalogExplorerCatalogItem, 0, len(catalogs))
+	for i := range catalogs {
+		catalog := catalogs[i]
+		catalogItem := catalogExplorerCatalogItem{
+			Name:      catalog.Name,
+			URL:       notebookExplorerURL(id, catalog.Name, ""),
+			Active:    catalog.Name == selectedCatalog,
+			Open:      catalog.Name == selectedCatalog,
+			EmptyText: "No schemas in this catalog.",
+		}
+		if catalog.Name == selectedCatalog {
+			schemaItems := make([]catalogExplorerSchemaItem, 0, len(schemas))
+			for j := range schemas {
+				schema := schemas[j]
+				schemaItems = append(schemaItems, catalogExplorerSchemaItem{
+					Name:   schema.Name,
+					URL:    notebookExplorerURL(id, catalog.Name, schema.Name),
+					Active: schema.Name == selectedSchema,
+				})
+			}
+			catalogItem.Schemas = schemaItems
+		}
+		explorerCatalogs = append(explorerCatalogs, catalogItem)
+	}
+
 	renderHTML(w, http.StatusOK, notebookDetailPage(notebookDetailPageData{
 		Principal:     principalFromContext(r.Context()),
 		NotebookID:    id,
@@ -83,8 +131,25 @@ func (h *Handler) NotebooksDetail(w http.ResponseWriter, r *http.Request) {
 		ReorderURL:    "/ui/notebooks/" + id + "/cells/reorder",
 		Jobs:          jobRows,
 		Cells:         cellNodes,
+		Explorer:      explorerCatalogs,
 		CSRFFieldFunc: csrfFieldProvider(r),
 	}))
+}
+
+func notebookExplorerURL(notebookID, catalogName, schemaName string) string {
+	q := url.Values{}
+	if catalogName != "" {
+		q.Set("catalog", catalogName)
+	}
+	if schemaName != "" {
+		q.Set("schema", schemaName)
+	}
+	base := "/ui/notebooks/" + notebookID
+	encoded := q.Encode()
+	if encoded == "" {
+		return base
+	}
+	return base + "?" + encoded
 }
 
 func (h *Handler) NotebooksNew(w http.ResponseWriter, r *http.Request) {

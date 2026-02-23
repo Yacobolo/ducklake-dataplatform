@@ -10,6 +10,15 @@
   flex: 1;
   height: 100%;
   min-height: 0;
+  overflow: visible;
+}
+
+.sql-workspace-layout {
+  min-height: 100%;
+}
+
+.sql-main {
+  min-height: 0;
   display: grid;
   grid-template-rows: minmax(0, 2fr) minmax(0, 1fr);
   gap: var(--space-3);
@@ -247,6 +256,11 @@ sql-editor-surface {
   }
 
   .content-sql {
+    display: block;
+    overflow: visible;
+  }
+
+  .sql-main {
     display: block;
     overflow: visible;
   }

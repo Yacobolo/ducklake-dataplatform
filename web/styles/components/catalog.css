@@ -1,11 +1,7 @@
 .catalog-workspace {
-  display: grid;
-  grid-template-columns: minmax(var(--overlay-width-small), calc(var(--overlay-width-small) + var(--space-5))) minmax(0, 1fr);
-  gap: var(--space-3);
-  min-height: calc(100vh - (var(--control-xlarge-size) + (var(--space-2) * 2)) - var(--space-5));
+  min-height: 0;
 }
 
-.catalog-rail,
 .catalog-detail {
   min-width: 0;
   border: var(--borderWidth-default) solid var(--border);
@@ -15,11 +11,9 @@
 }
 
 .catalog-rail {
-  position: sticky;
-  top: var(--size-sticky-offset);
+  min-width: 0;
   max-height: calc(100vh - var(--size-sticky-offset) - var(--space-3));
   overflow: auto;
-  padding: var(--space-2);
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -430,11 +424,6 @@
 }
 
 @media (max-width: var(--breakpoint-medium)) {
-  .catalog-workspace {
-    grid-template-columns: 1fr;
-    min-height: 0;
-  }
-
   .catalog-rail {
     position: static;
     max-height: none;

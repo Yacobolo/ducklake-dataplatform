@@ -3,11 +3,13 @@ package ui
 import (
 	"fmt"
 	"net/url"
+	"strconv"
 
 	"duck-demo/internal/domain"
 	"duck-demo/internal/service/query"
 
 	. "maragu.dev/gomponents"
+	data "maragu.dev/gomponents-datastar"
 	. "maragu.dev/gomponents/html"
 )
 
@@ -109,85 +111,147 @@ func sqlEditorPage(principal domain.ContextPrincipal, sqlText string, result *qu
 		schemaOptions = append(schemaOptions, optionSelectedValue(state.Schemas[i].Name, state.SelectedSchema, state.Schemas[i].Name))
 	}
 
+	explorerCatalogs := make([]catalogExplorerCatalogItem, 0, len(state.Catalogs))
+	for i := range state.Catalogs {
+		catalog := state.Catalogs[i]
+		catalogItem := catalogExplorerCatalogItem{
+			Name:      catalog.Name,
+			URL:       sqlContextURL(catalog.Name, ""),
+			Active:    catalog.Name == state.SelectedCatalog,
+			Open:      catalog.Name == state.SelectedCatalog,
+			EmptyText: "No schemas in this catalog.",
+		}
+		if catalog.Name == state.SelectedCatalog {
+			schemaItems := make([]catalogExplorerSchemaItem, 0, len(state.Schemas))
+			for j := range state.Schemas {
+				schema := state.Schemas[j]
+				schemaItems = append(schemaItems, catalogExplorerSchemaItem{
+					Name:   schema.Name,
+					URL:    sqlContextURL(catalog.Name, schema.Name),
+					Active: schema.Name == state.SelectedSchema,
+				})
+			}
+			catalogItem.Schemas = schemaItems
+		}
+		explorerCatalogs = append(explorerCatalogs, catalogItem)
+	}
+
+	explorerPanel := catalogExplorerPanel(catalogExplorerPanelData{
+		Title:             "Catalog Explorer",
+		FilterPlaceholder: "Filter catalogs or schemas",
+		Catalogs:          explorerCatalogs,
+		EmptyCatalogsText: "No catalogs found.",
+	})
+
 	return appPage(
 		"SQL Editor",
 		"sql",
 		principal,
-		Div(
-			Class("sql-workspace"),
-			Form(
-				Method("get"),
-				Action("/ui/sql"),
-				Class("sql-context-bar"),
+		data.Signals(map[string]any{"q": ""}),
+		workspaceLayout(
+			"sql-workspace-layout",
+			workspaceAside(
+				"sql-workspace",
+				"sql-aside",
+				[]workspaceAsideTab{
+					{ID: "explorer", Label: "Explorer", Icon: "database", Count: strconv.Itoa(len(state.Catalogs)), Content: explorerPanel, PanelClass: "sql-aside-explorer-panel"},
+				},
+				"explorer",
+			),
+			Div(
+				Class("sql-main"),
 				Div(
-					Class("sql-context-fields"),
-					Div(
-						Class("sql-context-field"),
-						Label(Text("Catalog")),
-						Select(Class("form-select"), Name("catalog"), Attr("onchange", "this.form.submit()"), Group(catalogOptions)),
+					Class("sql-workspace"),
+					Form(
+						Method("get"),
+						Action("/ui/sql"),
+						Class("sql-context-bar"),
+						Div(
+							Class("sql-context-fields"),
+							Div(
+								Class("sql-context-field"),
+								Label(Text("Catalog")),
+								Select(Class("form-select"), Name("catalog"), Attr("onchange", "this.form.submit()"), Group(catalogOptions)),
+							),
+							Div(
+								Class("sql-context-field"),
+								Label(Text("Schema")),
+								Select(Class("form-select"), Name("schema"), Attr("onchange", "this.form.submit()"), Group(schemaOptions)),
+							),
+						),
 					),
-					Div(
-						Class("sql-context-field"),
-						Label(Text("Schema")),
-						Select(Class("form-select"), Name("schema"), Attr("onchange", "this.form.submit()"), Group(schemaOptions)),
+					Form(
+						Method("post"),
+						Action("/ui/sql/run"),
+						Class("sql-editor-frame"),
+						csrfFieldProvider(),
+						Input(Type("hidden"), Name("catalog"), Value(state.SelectedCatalog)),
+						Input(Type("hidden"), Name("schema"), Value(state.SelectedSchema)),
+						Div(
+							Class("sql-editor-toolbar"),
+							Div(
+								Class("button-row"),
+								Button(
+									Type("submit"),
+									ID("sql-run-query"),
+									Class(primaryButtonClass()),
+									I(Class("btn-icon-glyph"), Attr("data-lucide", "play"), Attr("aria-hidden", "true")),
+									Span(Text("Run query")),
+								),
+								Button(
+									Type("button"),
+									ID("sql-format-query"),
+									Class(secondaryButtonClass()),
+									I(Class("btn-icon-glyph"), Attr("data-lucide", "align-left"), Attr("aria-hidden", "true")),
+									Span(Text("Format SQL")),
+								),
+								Span(Class("sql-shortcut-hint"), Text("Run: Cmd/Ctrl+Enter  Format: Cmd/Ctrl+Shift+F")),
+							),
+							Div(
+								Class("sql-snippet-toolbar"),
+								P(Class("sql-snippet-label"), Text("Snippets:")),
+								Div(Class("sql-snippet-inline"), snippetsNode),
+								Div(Class("sql-snippet-collapsed"), snippetsMenuNode),
+							),
+						),
+						Div(
+							Class("sql-editor-host"),
+							El(
+								"sql-editor-surface",
+								Textarea(
+									Class("form-control sql-editor-textarea"),
+									Name("sql"),
+									Required(),
+									Attr("spellcheck", "false"),
+									Text(sqlText),
+								),
+							),
+						),
 					),
+				),
+				Div(
+					Class("sql-results-panel"),
+					resultNode,
 				),
 			),
-			Form(
-				Method("post"),
-				Action("/ui/sql/run"),
-				Class("sql-editor-frame"),
-				csrfFieldProvider(),
-				Input(Type("hidden"), Name("catalog"), Value(state.SelectedCatalog)),
-				Input(Type("hidden"), Name("schema"), Value(state.SelectedSchema)),
-				Div(
-					Class("sql-editor-toolbar"),
-					Div(
-						Class("button-row"),
-						Button(
-							Type("submit"),
-							ID("sql-run-query"),
-							Class(primaryButtonClass()),
-							I(Class("btn-icon-glyph"), Attr("data-lucide", "play"), Attr("aria-hidden", "true")),
-							Span(Text("Run query")),
-						),
-						Button(
-							Type("button"),
-							ID("sql-format-query"),
-							Class(secondaryButtonClass()),
-							I(Class("btn-icon-glyph"), Attr("data-lucide", "align-left"), Attr("aria-hidden", "true")),
-							Span(Text("Format SQL")),
-						),
-						Span(Class("sql-shortcut-hint"), Text("Run: Cmd/Ctrl+Enter  Format: Cmd/Ctrl+Shift+F")),
-					),
-					Div(
-						Class("sql-snippet-toolbar"),
-						P(Class("sql-snippet-label"), Text("Snippets:")),
-						Div(Class("sql-snippet-inline"), snippetsNode),
-						Div(Class("sql-snippet-collapsed"), snippetsMenuNode),
-					),
-				),
-				Div(
-					Class("sql-editor-host"),
-					El(
-						"sql-editor-surface",
-						Textarea(
-							Class("form-control sql-editor-textarea"),
-							Name("sql"),
-							Required(),
-							Attr("spellcheck", "false"),
-							Text(sqlText),
-						),
-					),
-				),
-			),
-		),
-		Div(
-			Class("sql-results-panel"),
-			resultNode,
 		),
 		Script(Src(uiScriptHref("sql-editor.js"))),
 	)
+}
+
+func sqlContextURL(catalogName, schemaName string) string {
+	q := url.Values{}
+	if catalogName != "" {
+		q.Set("catalog", catalogName)
+	}
+	if schemaName != "" {
+		q.Set("schema", schemaName)
+	}
+	encoded := q.Encode()
+	if encoded == "" {
+		return "/ui/sql"
+	}
+	return "/ui/sql?" + encoded
 }
 
 func optionSelectedValue(value, selected, label string) Node {

@@ -21,6 +21,48 @@ type navItem struct {
 	Icon  string
 }
 
+type workspaceAsideTab struct {
+	ID         string
+	Label      string
+	Icon       string
+	Count      string
+	PanelClass string
+	Content    Node
+}
+
+type catalogExplorerObjectItem struct {
+	Name   string
+	URL    string
+	Icon   string
+	Active bool
+}
+
+type catalogExplorerSchemaItem struct {
+	Name      string
+	URL       string
+	Active    bool
+	Open      bool
+	Objects   []catalogExplorerObjectItem
+	EmptyText string
+}
+
+type catalogExplorerCatalogItem struct {
+	Name      string
+	URL       string
+	Active    bool
+	Open      bool
+	Schemas   []catalogExplorerSchemaItem
+	EmptyText string
+}
+
+type catalogExplorerPanelData struct {
+	Title             string
+	FilterPlaceholder string
+	Catalogs          []catalogExplorerCatalogItem
+	NewCatalogURL     string
+	EmptyCatalogsText string
+}
+
 var navItems = []navItem{
 	{Label: "Overview", Href: "/ui", Key: "home", Icon: "house"},
 	{Label: "SQL Editor", Href: "/ui/sql", Key: "sql", Icon: "square-terminal"},
@@ -184,6 +226,295 @@ func errorPage(title, message string) Node {
 			Script(Raw("if (window.lucide) { window.lucide.createIcons(); }")),
 		),
 	)
+}
+
+func workspaceLayout(className string, aside Node, main ...Node) Node {
+	classes := "workspace-layout"
+	if strings.TrimSpace(className) != "" {
+		classes += " " + strings.TrimSpace(className)
+	}
+
+	return Div(
+		Class(classes),
+		Attr("data-workspace-layout", "true"),
+		aside,
+		Section(Class("workspace-main"), Group(main)),
+	)
+}
+
+func workspaceAside(storageKey, className string, tabs []workspaceAsideTab, defaultTab string) Node {
+	classes := "workspace-aside"
+	if strings.TrimSpace(className) != "" {
+		classes += " " + strings.TrimSpace(className)
+	}
+
+	if len(tabs) == 0 {
+		return Aside(Class(classes))
+	}
+
+	activeTab := strings.TrimSpace(defaultTab)
+	if activeTab == "" {
+		activeTab = tabs[0].ID
+	}
+	if !workspaceTabExists(tabs, activeTab) {
+		activeTab = tabs[0].ID
+	}
+
+	tabButtons := make([]Node, 0, len(tabs))
+	tabPanels := make([]Node, 0, len(tabs))
+	for i := range tabs {
+		tab := tabs[i]
+		tabID := "workspace-tab-" + tab.ID
+		panelID := "workspace-panel-" + tab.ID
+
+		tabClass := "workspace-aside-tab"
+		panelClass := "workspace-aside-panel"
+		selected := "false"
+		if tab.ID == activeTab {
+			tabClass += " is-active"
+			panelClass += " is-active"
+			selected = "true"
+		}
+		if strings.TrimSpace(tab.PanelClass) != "" {
+			panelClass += " " + strings.TrimSpace(tab.PanelClass)
+		}
+
+		countNode := Node(nil)
+		if strings.TrimSpace(tab.Count) != "" {
+			countNode = Span(Class("workspace-aside-tab-count"), Text(tab.Count))
+		}
+
+		tabButtons = append(tabButtons,
+			Button(
+				Type("button"),
+				Class(tabClass),
+				ID(tabID),
+				Title(tab.Label),
+				Attr("aria-label", tab.Label),
+				Attr("role", "tab"),
+				Attr("aria-selected", selected),
+				Attr("aria-controls", panelID),
+				Attr("data-workspace-aside-tab", tab.ID),
+				I(Class("workspace-aside-tab-icon"), Attr("data-lucide", tab.Icon), Attr("aria-hidden", "true")),
+				Span(Class("workspace-aside-tab-label"), Text(tab.Label)),
+				countNode,
+			),
+		)
+
+		tabPanels = append(tabPanels,
+			Section(
+				Class(panelClass),
+				ID(panelID),
+				Attr("role", "tabpanel"),
+				Attr("aria-labelledby", tabID),
+				Attr("data-workspace-aside-panel", tab.ID),
+				tab.Content,
+			),
+		)
+	}
+
+	storageAttr := Node(nil)
+	if strings.TrimSpace(storageKey) != "" {
+		storageAttr = Attr("data-workspace-aside-storage", strings.TrimSpace(storageKey))
+	}
+
+	collapseButton := Button(
+		Type("button"),
+		Class("workspace-aside-toggle btn btn-sm btn-icon"),
+		Attr("data-workspace-aside-toggle", "true"),
+		Attr("aria-label", "Collapse sidebar"),
+		Attr("aria-expanded", "true"),
+		Title("Collapse sidebar"),
+		I(Class("btn-icon-glyph"), Attr("data-lucide", "panel-left-close"), Attr("aria-hidden", "true")),
+		Span(Class("sr-only"), Text("Collapse sidebar")),
+	)
+
+	return Aside(
+		Class(classes),
+		Attr("data-workspace-aside", "true"),
+		Attr("data-workspace-aside-default", activeTab),
+		storageAttr,
+		Div(
+			Class("workspace-aside-shell"),
+			Div(
+				Class("workspace-aside-head"),
+				Div(Class("workspace-aside-tabs"), Attr("role", "tablist"), Group(tabButtons)),
+				collapseButton,
+			),
+			Div(Class("workspace-aside-panels"), Group(tabPanels)),
+		),
+	)
+}
+
+func workspaceTabExists(tabs []workspaceAsideTab, tabID string) bool {
+	for i := range tabs {
+		if tabs[i].ID == tabID {
+			return true
+		}
+	}
+	return false
+}
+
+func catalogExplorerPanel(d catalogExplorerPanelData) Node {
+	catalogNodes := make([]Node, 0, len(d.Catalogs))
+	for i := range d.Catalogs {
+		catalog := d.Catalogs[i]
+		catalogClass := "catalog-tree-catalog-link"
+		if catalog.Active {
+			catalogClass += " active"
+		}
+
+		schemaNodes := make([]Node, 0, len(catalog.Schemas))
+		for j := range catalog.Schemas {
+			schema := catalog.Schemas[j]
+			schemaClass := "catalog-tree-schema-link"
+			if schema.Active {
+				schemaClass += " active"
+			}
+
+			openAttr := Node(nil)
+			if schema.Open {
+				openAttr = Attr("open", "")
+			}
+
+			objectNodes := make([]Node, 0, len(schema.Objects))
+			for k := range schema.Objects {
+				obj := schema.Objects[k]
+				leafClass := "catalog-tree-leaf"
+				if obj.Active {
+					leafClass += " active"
+				}
+				icon := strings.TrimSpace(obj.Icon)
+				if icon == "" {
+					icon = "table"
+				}
+				objectNodes = append(objectNodes,
+					Li(
+						A(Href(obj.URL), Class(leafClass), I(Class("nav-icon"), Attr("data-lucide", icon), Attr("aria-hidden", "true")), Span(Text(obj.Name))),
+					),
+				)
+			}
+
+			objectSection := Node(P(Class("catalog-tree-empty"), Text(fallbackString(schema.EmptyText, "No objects in this schema."))))
+			if len(objectNodes) > 0 {
+				objectSection = Ul(Class("catalog-tree-list"), Group(objectNodes))
+			}
+
+			schemaFilter := schema.Name + " " + catalogExplorerNames(schema.Objects)
+			schemaNodes = append(schemaNodes,
+				Li(
+					Class("catalog-tree-node"),
+					data.Show(containsExpr(schemaFilter)),
+					Details(
+						Class("details-reset catalog-tree-disclosure"),
+						openAttr,
+						Summary(
+							Class("catalog-tree-summary"),
+							Div(Class("catalog-tree-summary-main"),
+								I(Class("nav-icon catalog-tree-caret"), Attr("data-lucide", "chevron-right"), Attr("aria-hidden", "true")),
+								A(Href(schema.URL), Class(schemaClass), I(Class("nav-icon"), Attr("data-lucide", "folder"), Attr("aria-hidden", "true")), Span(Text(schema.Name))),
+							),
+						),
+						Div(Class("catalog-tree-children"), objectSection),
+					),
+				),
+			)
+		}
+
+		childrenNode := Node(P(Class("catalog-tree-empty"), Text(fallbackString(catalog.EmptyText, "No schemas in this catalog."))))
+		if len(schemaNodes) > 0 {
+			childrenNode = Ul(Class("catalog-tree-catalog-children"), Group(schemaNodes))
+		}
+
+		showValue := catalog.Name + " " + catalogExplorerNamesFromSchemas(catalog.Schemas)
+		catalogItem := Node(
+			Li(
+				Class("catalog-tree-catalog-node"),
+				data.Show(containsExpr(showValue)),
+				A(Href(catalog.URL), Class(catalogClass), I(Class("nav-icon"), Attr("data-lucide", "database"), Attr("aria-hidden", "true")), Span(Text(catalog.Name))),
+			),
+		)
+
+		if catalog.Open || len(schemaNodes) > 0 {
+			openAttr := Node(nil)
+			if catalog.Open {
+				openAttr = Attr("open", "")
+			}
+			catalogItem = Li(
+				Class("catalog-tree-catalog-node"),
+				data.Show(containsExpr(showValue)),
+				Details(
+					Class("details-reset catalog-tree-disclosure catalog-tree-catalog-disclosure"),
+					openAttr,
+					Summary(
+						Class("catalog-tree-summary"),
+						Div(Class("catalog-tree-summary-main"),
+							I(Class("nav-icon catalog-tree-caret"), Attr("data-lucide", "chevron-right"), Attr("aria-hidden", "true")),
+							A(Href(catalog.URL), Class(catalogClass), I(Class("nav-icon"), Attr("data-lucide", "database"), Attr("aria-hidden", "true")), Span(Text(catalog.Name))),
+						),
+					),
+					childrenNode,
+				),
+			)
+		}
+
+		catalogNodes = append(catalogNodes, catalogItem)
+	}
+
+	body := Node(P(Class("catalog-tree-empty"), Text(fallbackString(d.EmptyCatalogsText, "No catalogs found."))))
+	if len(catalogNodes) > 0 {
+		body = Ul(Class("catalog-tree-root"), Group(catalogNodes))
+	}
+
+	newCatalogButton := Node(nil)
+	if strings.TrimSpace(d.NewCatalogURL) != "" {
+		newCatalogButton = A(Href(d.NewCatalogURL), Class("btn btn-sm btn-icon"), Title("New catalog"), Attr("aria-label", "New catalog"), I(Class("btn-icon-glyph"), Attr("data-lucide", "plus"), Attr("aria-hidden", "true")), Span(Class("sr-only"), Text("New catalog")))
+	}
+
+	filterNode := Node(nil)
+	if strings.TrimSpace(d.FilterPlaceholder) != "" {
+		filterNode = Div(Class("catalog-rail-search"),
+			I(Class("nav-icon"), Attr("data-lucide", "search"), Attr("aria-hidden", "true")),
+			Label(Class("sr-only"), Text("Filter catalog explorer")),
+			Input(Type("search"), Class("form-control"), Placeholder(d.FilterPlaceholder), data.Bind("q"), AutoComplete("off")),
+		)
+	}
+
+	return Div(
+		Class("catalog-rail"),
+		Div(Class("catalog-rail-head"),
+			Div(Class("catalog-rail-head-row"),
+				P(Class("catalog-rail-kicker"), Text(fallbackString(d.Title, "Catalog Explorer"))),
+				newCatalogButton,
+			),
+			filterNode,
+		),
+		body,
+	)
+}
+
+func catalogExplorerNames(items []catalogExplorerObjectItem) string {
+	names := make([]string, 0, len(items))
+	for i := range items {
+		names = append(names, items[i].Name)
+	}
+	return strings.Join(names, " ")
+}
+
+func catalogExplorerNamesFromSchemas(items []catalogExplorerSchemaItem) string {
+	names := make([]string, 0, len(items))
+	for i := range items {
+		names = append(names, items[i].Name)
+	}
+	return strings.Join(names, " ")
+}
+
+func fallbackString(value, fallback string) string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return fallback
+	}
+	return trimmed
 }
 
 func formatTime(ts time.Time) string {

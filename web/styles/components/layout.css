@@ -90,6 +90,8 @@
 
 .app-main {
   --app-main-pad-block: var(--space-4);
+  display: flex;
+  flex-direction: column;
   min-height: 0;
   overflow: auto;
   padding: var(--app-main-pad-block) clamp(var(--space-3), 3vw, var(--space-5));
@@ -97,13 +99,21 @@
 }
 
 .app-main-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
   width: 100%;
+  min-height: 0;
 }
 
 .content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
   width: 100%;
   max-width: var(--size-content-max-width);
   margin: 0 auto;
+  min-height: 0;
 }
 
 .layout {
