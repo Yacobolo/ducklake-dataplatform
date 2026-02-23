@@ -54,6 +54,31 @@
         item.classList.remove("is-active-cell");
       }
     });
+
+    const cellID = cell?.id || "";
+    const outlineLinks = document.querySelectorAll<HTMLAnchorElement>("[data-outline-link='true']");
+    outlineLinks.forEach((link) => {
+      const anchor = link.dataset.cellAnchor || "";
+      if (anchor === cellID) {
+        link.classList.add("is-active-outline-link");
+      } else {
+        link.classList.remove("is-active-outline-link");
+      }
+    });
+
+    const rails = document.querySelectorAll<HTMLElement>(".notebook-insert-rail");
+    rails.forEach((rail) => rail.classList.remove("is-near-active"));
+    if (!cell) {
+      return;
+    }
+    const prev = cell.previousElementSibling;
+    const next = cell.nextElementSibling;
+    if (prev instanceof HTMLElement && prev.classList.contains("notebook-insert-rail")) {
+      prev.classList.add("is-near-active");
+    }
+    if (next instanceof HTMLElement && next.classList.contains("notebook-insert-rail")) {
+      next.classList.add("is-near-active");
+    }
   };
 
   const formForCell = (cell: HTMLElement | null) => {
@@ -207,6 +232,28 @@
     enterMarkdownEdit(cell);
   });
 
+  document.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+    const link = target.closest<HTMLAnchorElement>("[data-outline-link='true']");
+    if (!link) {
+      return;
+    }
+    const anchor = link.dataset.cellAnchor;
+    if (!anchor) {
+      return;
+    }
+    const cell = document.getElementById(anchor);
+    if (!(cell instanceof HTMLElement)) {
+      return;
+    }
+    event.preventDefault();
+    setActiveCell(cell);
+    cell.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
   document.addEventListener("keydown", (event) => {
     const target = event.target;
     if (!(target instanceof HTMLElement)) {
@@ -273,6 +320,11 @@
       }
     }
   });
+
+  const hashCell = window.location.hash ? document.querySelector<HTMLElement>(window.location.hash) : null;
+  if (hashCell?.matches("[data-notebook-cell='true']")) {
+    setActiveCell(hashCell);
+  }
 
   if (!reorderURL) {
     return;

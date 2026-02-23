@@ -105,6 +105,28 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 		c := d.Cells[i]
 		formID := "cell-form-" + c.ID
 		isMarkdown := c.CellType == string(domain.CellTypeMarkdown)
+		cellTypeIcon := "square-terminal"
+		cellTypeLabel := "SQL cell"
+		if isMarkdown {
+			cellTypeIcon = "pilcrow"
+			cellTypeLabel = "Markdown cell"
+		}
+
+		runStateNode := Node(nil)
+		if c.CellType == string(domain.CellTypeSQL) {
+			runStateClass := "notebook-cell-run-state is-idle"
+			runStateLabel := "Not run"
+			if c.LastResult != nil {
+				if c.LastResult.Error != "" {
+					runStateClass = "notebook-cell-run-state is-error"
+					runStateLabel = "Last run failed"
+				} else {
+					runStateClass = "notebook-cell-run-state is-success"
+					runStateLabel = "Last run succeeded"
+				}
+			}
+			runStateNode = Span(Class(runStateClass), Title(runStateLabel), Attr("aria-label", runStateLabel))
+		}
 
 		typeTone := "accent"
 		if isMarkdown {
@@ -164,43 +186,6 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 			editorInput,
 		)
 
-		cellMeta := ""
-		lastRunLabel := ""
-		lastRunTitle := ""
-		if c.CellType == string(domain.CellTypeSQL) {
-			cellMeta = "Not run"
-			lastRunLabel = "Not run"
-			if c.LastResult != nil {
-				cellMeta = "runtime " + humanDuration(c.LastResult.Duration)
-				if c.LastRunAt != nil && !c.LastRunAt.IsZero() {
-					lastRunLabel = "Last run " + humanRelativeTime(*c.LastRunAt)
-					lastRunTitle = formatTime(*c.LastRunAt)
-				} else {
-					lastRunLabel = "Last run unavailable"
-				}
-				if c.LastResult.Error != "" {
-					cellMeta = "Error in " + humanDuration(c.LastResult.Duration)
-				} else {
-					cellMeta = fmt.Sprintf("%d row(s), %s", c.LastResult.RowCount, humanDuration(c.LastResult.Duration))
-				}
-			}
-		}
-
-		cellMetaNode := Node(nil)
-		hasCellMeta := strings.TrimSpace(cellMeta) != ""
-		if hasCellMeta {
-			cellMetaNode = Span(Class("notebook-cell-meta"), Text(cellMeta))
-		}
-
-		lastRunNode := Node(nil)
-		if lastRunLabel != "" {
-			titleNode := Node(nil)
-			if lastRunTitle != "" {
-				titleNode = Title(lastRunTitle)
-			}
-			lastRunNode = Span(Class("notebook-cell-timestamp"), titleNode, Text(lastRunLabel))
-		}
-
 		cellMenuItems := []Node{}
 		if !isMarkdown {
 			cellMenuItems = append(cellMenuItems, actionMenuLink(c.OpenInSQLURL, "Open cell in SQL editor"))
@@ -257,7 +242,7 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 		)
 
 		cellActions := Div(
-			Class("button-row notebook-cell-actions"),
+			Class("notebook-cell-actions"),
 			Button(
 				Type("button"),
 				Class("btn btn-sm btn-icon"),
@@ -269,17 +254,6 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 			),
 			cellMenu,
 		)
-
-		headerClass := "notebook-cell-header"
-		headerTitle := Node(nil)
-		if hasCellMeta {
-			headerTitle = Div(
-				Class("notebook-cell-title"),
-				cellMetaNode,
-			)
-		} else {
-			headerClass += " notebook-cell-header-compact"
-		}
 
 		cellNodes = append(cellNodes, notebookInsertRail(d.NotebookID, c.Position, d.CSRFFieldFunc))
 
@@ -305,7 +279,7 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 		}
 
 		cellNodes = append(cellNodes,
-			Div(
+			Article(
 				Class("notebook-cell"),
 				ID("cell-"+c.ID),
 				Attr("data-notebook-cell", "true"),
@@ -313,37 +287,59 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 				Attr("data-cell-type", c.CellType),
 				data.Show(containsExpr(c.Title+" "+c.CellType+" "+c.Content)),
 				Div(Class("notebook-cell-shell"),
-					Div(
-						Class("notebook-cell-gutter"),
+					Aside(
+						Class("notebook-cell-gutter notebook-cell-gutter-left"),
 						runButton,
-						Span(Class("notebook-cell-gutter-index"), Text(strconv.Itoa(c.Position+1))),
+						runStateNode,
+						Div(
+							Class("notebook-cell-gutter-meta"),
+							Span(Class("notebook-cell-gutter-index"), Text(strconv.Itoa(c.Position+1))),
+							I(
+								Class("notebook-cell-gutter-type"),
+								Attr("data-lucide", cellTypeIcon),
+								Title(cellTypeLabel),
+								Attr("aria-hidden", "true"),
+							),
+						),
 					),
 					Div(
-						Class("notebook-cell-main"),
+						Class("notebook-cell-content"),
 						Div(
 							Class("notebook-cell-frame"),
-							Div(
-								Class(headerClass),
-								headerTitle,
-								Div(
-									Class("notebook-cell-header-right"),
-									lastRunNode,
-									Span(Class("notebook-cell-type-badge"), statusLabel(c.CellType, typeTone)),
-									cellActions,
-								),
-							),
 							mainContent,
 						),
+					),
+					Aside(
+						Class("notebook-cell-gutter notebook-cell-gutter-right"),
+						cellActions,
 					),
 				),
 			),
 		)
 
+		outlineText := strings.TrimSpace(c.Title)
+		outlineLevel := 1
+		if isMarkdown {
+			if heading, level, ok := firstMarkdownHeading(c.Content); ok {
+				outlineText = heading
+				outlineLevel = level
+			} else if outlineText == "" {
+				outlineText = "Markdown"
+			}
+		} else if outlineText == "" {
+			outlineText = fmt.Sprintf("SQL %d", c.Position+1)
+		}
+
 		outlineNodes = append(outlineNodes,
 			Li(
-				data.Show(containsExpr(c.Title+" "+c.CellType+" "+c.Content)),
-				A(Href("#cell-"+c.ID), Class("notebook-outline-link"),
-					Text(c.Title+" "),
+				data.Show(containsExpr(outlineText+" "+c.CellType+" "+c.Content)),
+				A(
+					Href("#cell-"+c.ID),
+					Class("notebook-outline-link"),
+					Attr("data-outline-link", "true"),
+					Attr("data-cell-anchor", "cell-"+c.ID),
+					Attr("data-outline-level", strconv.Itoa(outlineLevel)),
+					Text(outlineText+" "),
 					statusLabel(c.CellType, typeTone),
 				),
 			),
@@ -576,6 +572,34 @@ func humanRelativeTime(ts time.Time) string {
 		return fmt.Sprintf("%dh ago", int(d.Hours()))
 	}
 	return fmt.Sprintf("%dd ago", int(d.Hours()/24))
+}
+
+func firstMarkdownHeading(source string) (string, int, bool) {
+	for _, raw := range strings.Split(source, "\n") {
+		line := strings.TrimSpace(raw)
+		if !strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		level := 0
+		for level < len(line) && line[level] == '#' {
+			level++
+		}
+		if level == 0 || level > 6 {
+			continue
+		}
+		if level < len(line) && line[level] != ' ' {
+			continue
+		}
+
+		heading := strings.TrimSpace(line[level:])
+		if heading == "" {
+			continue
+		}
+		return heading, level, true
+	}
+
+	return "", 0, false
 }
 
 func renderMarkdownHTML(source string) string {
