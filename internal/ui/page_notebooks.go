@@ -302,7 +302,7 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 					Attr("data-outline-link", "true"),
 					Attr("data-cell-anchor", "cell-"+c.ID),
 					Attr("data-outline-level", strconv.Itoa(outlineLevel)),
-					Text(outlineText+" "),
+					Span(Class("notebook-outline-label"), Text(outlineText)),
 					Span(
 						Class("notebook-outline-kind"),
 						I(Class("notebook-outline-kind-icon"), Attr("data-lucide", outlineKindIcon), Attr("aria-hidden", "true")),

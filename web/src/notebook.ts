@@ -65,20 +65,6 @@
         link.classList.remove("is-active-outline-link");
       }
     });
-
-    const rails = document.querySelectorAll<HTMLElement>(".notebook-insert-rail");
-    rails.forEach((rail) => rail.classList.remove("is-near-active"));
-    if (!cell) {
-      return;
-    }
-    const prev = cell.previousElementSibling;
-    const next = cell.nextElementSibling;
-    if (prev instanceof HTMLElement && prev.classList.contains("notebook-insert-rail")) {
-      prev.classList.add("is-near-active");
-    }
-    if (next instanceof HTMLElement && next.classList.contains("notebook-insert-rail")) {
-      next.classList.add("is-near-active");
-    }
   };
 
   const formForCell = (cell: HTMLElement | null) => {

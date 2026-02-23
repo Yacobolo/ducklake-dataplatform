@@ -42,7 +42,7 @@
   z-index: 0;
   display: grid;
   grid-template-columns: minmax(var(--overlay-width-xsmall), var(--overlay-width-small)) minmax(0, 1fr);
-  gap: var(--space-2);
+  gap: var(--space-3);
   margin-top: var(--space-2);
 }
 
@@ -50,8 +50,8 @@
   position: sticky;
   top: var(--size-sticky-offset);
   align-self: start;
-  padding-right: var(--space-2);
-  border-right: var(--border-muted);
+  padding-right: var(--space-3);
+  border-right: var(--borderWidth-thin) solid var(--borderColor-muted);
 }
 
 .notebook-outline-panel {
@@ -68,7 +68,8 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  padding: 0 0 var(--space-2);
+  padding: 0 0 var(--space-1);
+  font: var(--text-body-shorthand-small);
   font-weight: var(--base-text-weight-semibold);
   border-bottom: var(--border-muted);
 }
@@ -79,10 +80,12 @@
 
 .notebook-outline-count {
   color: var(--fgColor-muted);
+  font-weight: var(--base-text-weight-normal);
+  font-size: var(--text-caption-size);
 }
 
 .notebook-outline-body {
-  padding: var(--space-2) 0 0;
+  padding: var(--space-1) 0 0;
 }
 
 .notebook-outline-filter {
@@ -92,7 +95,7 @@
 .notebook-outline-list {
   max-height: var(--size-outline-max-height);
   overflow: auto;
-  margin-top: var(--space-2);
+  margin-top: var(--space-1);
 }
 
 .notebook-outline-list ul {
@@ -115,13 +118,22 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-2);
+  gap: var(--space-1);
   border: 0;
   border-radius: 0;
-  padding: var(--space-1) 0;
+  padding: calc(var(--space-1) + var(--space-1) / 2) 0;
   color: var(--fgColor-default);
   text-decoration: none;
   transition: background-color var(--base-duration-100) var(--base-easing-ease);
+}
+
+.notebook-outline-label {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: var(--text-body-shorthand-small);
 }
 
 .notebook-outline-link:visited {
@@ -147,6 +159,7 @@
 .notebook-outline-kind {
   display: inline-flex;
   align-items: center;
+  flex-shrink: 0;
   color: var(--fgColor-muted);
 }
 
@@ -164,6 +177,12 @@
 .notebook-outline-link[data-outline-level="5"],
 .notebook-outline-link[data-outline-level="6"] {
   padding-left: calc(var(--space-2) + var(--space-2));
+}
+
+.notebook-outline-link[data-outline-level="3"] .notebook-outline-label,
+.notebook-outline-link[data-outline-level="4"] .notebook-outline-label,
+.notebook-outline-link[data-outline-level="5"] .notebook-outline-label,
+.notebook-outline-link[data-outline-level="6"] .notebook-outline-label {
   font-size: var(--text-caption-size);
 }
 
@@ -242,7 +261,7 @@
 }
 
 .notebook-cell.is-active-cell .notebook-cell-frame {
-  border-color: var(--borderColor-accent-emphasis);
+  border-color: var(--borderColor-muted);
   box-shadow: none;
 }
 
@@ -300,6 +319,11 @@
 
 .notebook-cell[data-cell-type="markdown"].is-editing-markdown .notebook-markdown-editor {
   display: block;
+}
+
+.notebook-cell[data-cell-type="markdown"].is-editing-markdown .notebook-cell-frame,
+.notebook-cell[data-cell-type="markdown"].is-editing-markdown .notebook-cell-frame:focus-within {
+  border-color: var(--borderColor-muted);
 }
 
 .notebook-markdown-preview:focus-visible {
@@ -373,6 +397,19 @@
 
 .notebook-cell[data-cell-type="markdown"] .notebook-editor {
   min-height: calc(var(--control-xlarge-size) * 2);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: var(--space-3) var(--space-3) var(--space-2);
+}
+
+.notebook-cell[data-cell-type="markdown"] .notebook-cell-body {
+  padding: 0;
+}
+
+.notebook-cell[data-cell-type="markdown"] .notebook-editor:focus-visible {
+  outline: none;
+  border-color: var(--borderColor-transparent);
 }
 
 .notebook-cell-body {
@@ -489,16 +526,14 @@
 }
 
 .notebook-insert-rail:hover .notebook-insert-btn,
-.notebook-insert-rail:focus-within .notebook-insert-btn,
-.notebook-insert-rail.is-near-active .notebook-insert-btn {
+.notebook-insert-rail:focus-within .notebook-insert-btn {
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0);
 }
 
 .notebook-insert-rail:hover::before,
-.notebook-insert-rail:focus-within::before,
-.notebook-insert-rail.is-near-active::before {
+.notebook-insert-rail:focus-within::before {
   opacity: 1;
 }
 
