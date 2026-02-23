@@ -92,13 +92,6 @@ type notebookDetailPageData struct {
 }
 
 func notebookDetailPage(d notebookDetailPageData) Node {
-	totalErrors := 0
-	for i := range d.Jobs {
-		j := d.Jobs[i]
-		if strings.EqualFold(j.State, string(domain.JobStateFailed)) {
-			totalErrors++
-		}
-	}
 	cellNodes := make([]Node, 0, len(d.Cells))
 	outlineNodes := make([]Node, 0, len(d.Cells))
 	for i := range d.Cells {
@@ -365,7 +358,7 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 		data.Signals(map[string]any{"q": ""}),
 		Div(
 			Class("notebook-toolbar"),
-			Div(Class("d-flex flex-justify-between flex-wrap flex-items-start gap-2"),
+			Div(Class("notebook-toolbar-main d-flex flex-justify-between flex-wrap flex-items-start gap-2"),
 				Div(
 					H2(Class("notebook-title"), Text(d.Name)),
 					Div(
@@ -374,27 +367,23 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 						descriptionNode,
 					),
 				),
-				Div(Class("button-row notebook-toolbar-status"),
-					statusLabel(fmt.Sprintf("%d jobs", len(d.Jobs)), "accent"),
-					statusLabel(fmt.Sprintf("%d failures", totalErrors), "severe"),
-				),
-			),
-			Div(Class("button-row notebook-toolbar-actions"),
-				Form(Method("post"), Action(d.RunAllURL), d.CSRFFieldFunc(), Button(Type("submit"), Class(primaryButtonClass()), Text("Run all"))),
-				A(Href(d.NewCellURL), Class(secondaryButtonClass()), Text("New cell")),
-				Details(
-					Class("dropdown details-reset details-overlay d-inline-block"),
-					Summary(
-						Class("btn btn-sm btn-icon"),
-						Title("Notebook actions"),
-						Attr("aria-label", "Notebook actions"),
-						I(Class("btn-icon-glyph"), Attr("data-lucide", "ellipsis"), Attr("aria-hidden", "true")),
-						Span(Class("sr-only"), Text("Notebook actions")),
-					),
-					Div(
-						Class("dropdown-menu dropdown-menu-sw"),
-						actionMenuLink(d.EditURL, "Notebook settings"),
-						actionMenuPost(d.DeleteURL, "Delete notebook", d.CSRFFieldFunc, true),
+				Div(Class("button-row notebook-toolbar-actions"),
+					Form(Method("post"), Action(d.RunAllURL), d.CSRFFieldFunc(), Button(Type("submit"), Class(primaryButtonClass()), Text("Run all"))),
+					A(Href(d.NewCellURL), Class(secondaryButtonClass()), Text("New cell")),
+					Details(
+						Class("dropdown details-reset details-overlay d-inline-block"),
+						Summary(
+							Class("btn btn-sm btn-icon"),
+							Title("Notebook actions"),
+							Attr("aria-label", "Notebook actions"),
+							I(Class("btn-icon-glyph"), Attr("data-lucide", "ellipsis"), Attr("aria-hidden", "true")),
+							Span(Class("sr-only"), Text("Notebook actions")),
+						),
+						Div(
+							Class("dropdown-menu dropdown-menu-sw"),
+							actionMenuLink(d.EditURL, "Notebook settings"),
+							actionMenuPost(d.DeleteURL, "Delete notebook", d.CSRFFieldFunc, true),
+						),
 					),
 				),
 			),

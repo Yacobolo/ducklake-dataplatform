@@ -1,10 +1,17 @@
 .notebook-toolbar {
   position: sticky;
-  top: var(--space-2);
-  z-index: 5;
-  padding: 0 0 var(--space-3);
-  margin-bottom: var(--space-3);
+  top: calc(-1 * var(--app-main-pad-block));
+  z-index: 20;
+  margin-top: calc(-1 * var(--app-main-pad-block));
+  padding: calc(var(--app-main-pad-block) + var(--space-2)) 0 var(--space-2);
+  margin-bottom: var(--space-2);
+  background: var(--bgColor-default);
   border-bottom: var(--border-muted);
+  isolation: isolate;
+}
+
+.notebook-toolbar-main {
+  align-items: center;
 }
 
 .notebook-title {
@@ -12,10 +19,10 @@
 }
 
 .notebook-toolbar-meta {
-  margin-top: var(--space-1);
+  margin-top: calc(var(--space-1) / 2);
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--space-1);
 }
 
 .notebook-toolbar-meta-item {
@@ -23,14 +30,16 @@
 }
 
 .notebook-toolbar-actions {
-  margin-top: var(--space-2);
+  margin-top: 0;
 }
 
-.notebook-toolbar-status {
-  justify-content: flex-end;
+.notebook-toolbar .btn {
+  min-height: var(--control-medium-size);
 }
 
 .notebook-workspace {
+  position: relative;
+  z-index: 0;
   display: grid;
   grid-template-columns: minmax(var(--overlay-width-xsmall), var(--overlay-width-small)) minmax(0, 1fr);
   gap: var(--space-2);
@@ -487,10 +496,13 @@
 @media (max-width: var(--breakpoint-medium)) {
   .notebook-toolbar {
     position: static;
+    top: auto;
+    margin-top: 0;
+    padding: 0 0 var(--space-2);
   }
 
-  .notebook-toolbar-status {
-    justify-content: flex-start;
+  .notebook-toolbar-main {
+    align-items: stretch;
   }
 
   .notebook-workspace {

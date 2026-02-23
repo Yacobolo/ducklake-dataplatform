@@ -89,9 +89,10 @@
 }
 
 .app-main {
+  --app-main-pad-block: var(--space-4);
   min-height: 0;
   overflow: auto;
-  padding: var(--space-4) clamp(var(--space-3), 3vw, var(--space-5));
+  padding: var(--app-main-pad-block) clamp(var(--space-3), 3vw, var(--space-5));
   background: var(--bgColor-default);
 }
 
@@ -188,6 +189,7 @@
   }
 
   .app-main {
-    padding: var(--space-3);
+    --app-main-pad-block: var(--space-3);
+    padding: var(--app-main-pad-block);
   }
 }
