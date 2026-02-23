@@ -105,28 +105,6 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 		c := d.Cells[i]
 		formID := "cell-form-" + c.ID
 		isMarkdown := c.CellType == string(domain.CellTypeMarkdown)
-		cellTypeIcon := "square-terminal"
-		cellTypeLabel := "SQL cell"
-		if isMarkdown {
-			cellTypeIcon = "pilcrow"
-			cellTypeLabel = "Markdown cell"
-		}
-
-		runStateNode := Node(nil)
-		if c.CellType == string(domain.CellTypeSQL) {
-			runStateClass := "notebook-cell-run-state is-idle"
-			runStateLabel := "Not run"
-			if c.LastResult != nil {
-				if c.LastResult.Error != "" {
-					runStateClass = "notebook-cell-run-state is-error"
-					runStateLabel = "Last run failed"
-				} else {
-					runStateClass = "notebook-cell-run-state is-success"
-					runStateLabel = "Last run succeeded"
-				}
-			}
-			runStateNode = Span(Class(runStateClass), Title(runStateLabel), Attr("aria-label", runStateLabel))
-		}
 
 		typeTone := "accent"
 		if isMarkdown {
@@ -290,17 +268,7 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 					Aside(
 						Class("notebook-cell-gutter notebook-cell-gutter-left"),
 						runButton,
-						runStateNode,
-						Div(
-							Class("notebook-cell-gutter-meta"),
-							Span(Class("notebook-cell-gutter-index"), Text(strconv.Itoa(c.Position+1))),
-							I(
-								Class("notebook-cell-gutter-type"),
-								Attr("data-lucide", cellTypeIcon),
-								Title(cellTypeLabel),
-								Attr("aria-hidden", "true"),
-							),
-						),
+						Span(Class("notebook-cell-gutter-index"), Text(strconv.Itoa(c.Position+1))),
 					),
 					Div(
 						Class("notebook-cell-content"),

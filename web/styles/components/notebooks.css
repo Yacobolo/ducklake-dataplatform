@@ -178,34 +178,6 @@
   font-family: var(--fontStack-monospace);
 }
 
-.notebook-cell-gutter-meta {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-}
-
-.notebook-cell-run-state {
-  width: calc(var(--space-1) + var(--borderWidth-thin));
-  height: calc(var(--space-1) + var(--borderWidth-thin));
-  border-radius: var(--borderRadius-full);
-  background: var(--fgColor-muted);
-  opacity: 0.8;
-}
-
-.notebook-cell-run-state.is-success {
-  background: var(--fgColor-success);
-}
-
-.notebook-cell-run-state.is-error {
-  background: var(--fgColor-danger);
-}
-
-.notebook-cell-gutter-type {
-  width: var(--size-icon);
-  height: var(--size-icon);
-  color: var(--fgColor-muted);
-}
-
 .notebook-cell-content {
   min-width: 0;
 }
