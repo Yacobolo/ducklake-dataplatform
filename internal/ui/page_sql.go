@@ -97,18 +97,67 @@ func sqlEditorPage(principal domain.ContextPrincipal, sqlText string, result *qu
 		)
 	}
 
-	snippetsNode := snippetLinks(state.SelectedCatalog, state.SelectedSchema)
-	snippetsMenuNode := snippetMenu(state.SelectedCatalog, state.SelectedSchema)
-	catalogOptions := make([]Node, 0, len(state.Catalogs)+1)
-	catalogOptions = append(catalogOptions, optionSelectedValue("", state.SelectedCatalog, "(choose catalog)"))
-	for i := range state.Catalogs {
-		catalogOptions = append(catalogOptions, optionSelectedValue(state.Catalogs[i].Name, state.SelectedCatalog, state.Catalogs[i].Name))
+	selectedCatalogLabel := state.SelectedCatalog
+	if selectedCatalogLabel == "" {
+		selectedCatalogLabel = "Choose catalog"
 	}
 
-	schemaOptions := make([]Node, 0, len(state.Schemas)+1)
-	schemaOptions = append(schemaOptions, optionSelectedValue("", state.SelectedSchema, "(choose schema)"))
-	for i := range state.Schemas {
-		schemaOptions = append(schemaOptions, optionSelectedValue(state.Schemas[i].Name, state.SelectedSchema, state.Schemas[i].Name))
+	selectedSchemaLabel := state.SelectedSchema
+	if selectedSchemaLabel == "" {
+		selectedSchemaLabel = "Choose schema"
+	}
+
+	catalogMenuItems := make([]Node, 0, len(state.Catalogs)+1)
+	catalogMenuItems = append(catalogMenuItems,
+		A(
+			Href(sqlContextURL("", "")),
+			Class("dropdown-item"),
+			I(Class("dropdown-item-icon"), Attr("data-lucide", "circle"), Attr("aria-hidden", "true")),
+			Span(Text("Choose catalog")),
+		),
+	)
+	for i := range state.Catalogs {
+		catalog := state.Catalogs[i]
+		catalogMenuItems = append(catalogMenuItems,
+			A(
+				Href(sqlContextURL(catalog.Name, "")),
+				Class("dropdown-item"),
+				I(Class("dropdown-item-icon"), Attr("data-lucide", "database"), Attr("aria-hidden", "true")),
+				Span(Text(catalog.Name)),
+			),
+		)
+	}
+
+	schemaMenuItems := make([]Node, 0, len(state.Schemas)+1)
+	if state.SelectedCatalog == "" {
+		schemaMenuItems = append(schemaMenuItems,
+			Div(
+				Class("dropdown-item color-fg-muted"),
+				Attr("aria-disabled", "true"),
+				I(Class("dropdown-item-icon"), Attr("data-lucide", "info"), Attr("aria-hidden", "true")),
+				Span(Text("Choose a catalog first")),
+			),
+		)
+	} else {
+		schemaMenuItems = append(schemaMenuItems,
+			A(
+				Href(sqlContextURL(state.SelectedCatalog, "")),
+				Class("dropdown-item"),
+				I(Class("dropdown-item-icon"), Attr("data-lucide", "circle"), Attr("aria-hidden", "true")),
+				Span(Text("Choose schema")),
+			),
+		)
+		for i := range state.Schemas {
+			schema := state.Schemas[i]
+			schemaMenuItems = append(schemaMenuItems,
+				A(
+					Href(sqlContextURL(state.SelectedCatalog, schema.Name)),
+					Class("dropdown-item"),
+					I(Class("dropdown-item-icon"), Attr("data-lucide", "folder"), Attr("aria-hidden", "true")),
+					Span(Text(schema.Name)),
+				),
+			)
+		}
 	}
 
 	explorerCatalogs := make([]catalogExplorerCatalogItem, 0, len(state.Catalogs))
@@ -161,22 +210,40 @@ func sqlEditorPage(principal domain.ContextPrincipal, sqlText string, result *qu
 			Div(
 				Class("sql-main"),
 				Div(
-					Class("sql-workspace"),
-					Form(
-						Method("get"),
-						Action("/ui/sql"),
+					Class("sql-editor-panel"),
+					Div(
 						Class("sql-context-bar"),
 						Div(
-							Class("sql-context-fields"),
-							Div(
-								Class("sql-context-field"),
-								Label(Text("Catalog")),
-								Select(Class("form-select"), Name("catalog"), Attr("onchange", "this.form.submit()"), Group(catalogOptions)),
+							Class("sql-context-pickers"),
+							Details(
+								Class("dropdown details-reset details-overlay d-inline-block sql-context-picker"),
+								Summary(
+									Class("btn btn-sm sql-context-picker-button"),
+									Title("Select catalog"),
+									Attr("aria-label", "Select catalog"),
+									I(Class("btn-icon-glyph"), Attr("data-lucide", "database"), Attr("aria-hidden", "true")),
+									Span(Class("sql-context-picker-label"), Text(selectedCatalogLabel)),
+									I(Class("btn-icon-glyph"), Attr("data-lucide", "chevrons-up-down"), Attr("aria-hidden", "true")),
+								),
+								Div(
+									Class("dropdown-menu dropdown-menu-sw sql-context-picker-menu"),
+									Group(catalogMenuItems),
+								),
 							),
-							Div(
-								Class("sql-context-field"),
-								Label(Text("Schema")),
-								Select(Class("form-select"), Name("schema"), Attr("onchange", "this.form.submit()"), Group(schemaOptions)),
+							Details(
+								Class("dropdown details-reset details-overlay d-inline-block sql-context-picker"),
+								Summary(
+									Class("btn btn-sm sql-context-picker-button"),
+									Title("Select schema"),
+									Attr("aria-label", "Select schema"),
+									I(Class("btn-icon-glyph"), Attr("data-lucide", "folder"), Attr("aria-hidden", "true")),
+									Span(Class("sql-context-picker-label"), Text(selectedSchemaLabel)),
+									I(Class("btn-icon-glyph"), Attr("data-lucide", "chevrons-up-down"), Attr("aria-hidden", "true")),
+								),
+								Div(
+									Class("dropdown-menu dropdown-menu-sw sql-context-picker-menu"),
+									Group(schemaMenuItems),
+								),
 							),
 						),
 					),
@@ -205,13 +272,7 @@ func sqlEditorPage(principal domain.ContextPrincipal, sqlText string, result *qu
 									I(Class("btn-icon-glyph"), Attr("data-lucide", "align-left"), Attr("aria-hidden", "true")),
 									Span(Text("Format SQL")),
 								),
-								Span(Class("sql-shortcut-hint"), Text("Run: Cmd/Ctrl+Enter  Format: Cmd/Ctrl+Shift+F")),
-							),
-							Div(
-								Class("sql-snippet-toolbar"),
-								P(Class("sql-snippet-label"), Text("Snippets:")),
-								Div(Class("sql-snippet-inline"), snippetsNode),
-								Div(Class("sql-snippet-collapsed"), snippetsMenuNode),
+								Span(Class("sr-only"), Text("Shortcuts: Run Cmd or Ctrl plus Enter. Format Cmd or Ctrl plus Shift plus F.")),
 							),
 						),
 						Div(
@@ -252,97 +313,4 @@ func sqlContextURL(catalogName, schemaName string) string {
 		return "/ui/sql"
 	}
 	return "/ui/sql?" + encoded
-}
-
-func optionSelectedValue(value, selected, label string) Node {
-	if value == selected {
-		return Option(Value(value), Selected(), Text(label))
-	}
-	return Option(Value(value), Text(label))
-}
-
-func snippetLinks(catalogName, schemaName string) Node {
-	snippets := sqlSnippets()
-
-	links := make([]Node, 0, len(snippets))
-	for i := range snippets {
-		q := url.Values{}
-		q.Set("snippet", snippets[i].ID)
-		if catalogName != "" {
-			q.Set("catalog", catalogName)
-		}
-		if schemaName != "" {
-			q.Set("schema", schemaName)
-		}
-		links = append(links,
-			A(
-				Href("/ui/sql?"+q.Encode()),
-				Class("btn btn-sm"),
-				I(Class("btn-icon-glyph"), Attr("data-lucide", snippetIcon(snippets[i].ID)), Attr("aria-hidden", "true")),
-				Span(Text(snippets[i].Label)),
-			),
-		)
-	}
-	return Div(Class("snippet-list sql-snippet-list"), Group(links))
-}
-
-func snippetMenu(catalogName, schemaName string) Node {
-	snippets := sqlSnippets()
-	items := make([]Node, 0, len(snippets))
-	for i := range snippets {
-		q := url.Values{}
-		q.Set("snippet", snippets[i].ID)
-		if catalogName != "" {
-			q.Set("catalog", catalogName)
-		}
-		if schemaName != "" {
-			q.Set("schema", schemaName)
-		}
-		items = append(items,
-			A(
-				Href("/ui/sql?"+q.Encode()),
-				Class("dropdown-item"),
-				I(Class("dropdown-item-icon"), Attr("data-lucide", snippetIcon(snippets[i].ID)), Attr("aria-hidden", "true")),
-				Span(Text(snippets[i].Label)),
-			),
-		)
-	}
-
-	return Details(
-		Class("dropdown details-reset details-overlay d-inline-block sql-snippet-dropdown"),
-		Summary(Class("btn btn-sm"), Text("Snippets")),
-		Div(
-			Class("dropdown-menu dropdown-menu-sw"),
-			Group(items),
-		),
-	)
-}
-
-type sqlSnippet struct {
-	ID    string
-	Label string
-}
-
-func sqlSnippets() []sqlSnippet {
-	return []sqlSnippet{
-		{ID: "show_tables", Label: "Show tables"},
-		{ID: "show_views", Label: "Show views"},
-		{ID: "describe_table", Label: "Describe table"},
-		{ID: "sample_rows", Label: "Sample rows"},
-	}
-}
-
-func snippetIcon(id string) string {
-	switch id {
-	case "show_tables":
-		return "table"
-	case "show_views":
-		return "eye"
-	case "describe_table":
-		return "list"
-	case "sample_rows":
-		return "file-text"
-	default:
-		return "sparkles"
-	}
 }

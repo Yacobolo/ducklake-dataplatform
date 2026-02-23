@@ -126,7 +126,7 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 				Class("notebook-sql-editor-host"),
 				El(
 					"sql-editor-surface",
-					Attr("min-lines", "4"),
+					Attr("min-lines", "1"),
 					Style("--sql-editor-height:auto; --sql-editor-flex:0 0 auto;"),
 					Textarea(
 						Name("content"),

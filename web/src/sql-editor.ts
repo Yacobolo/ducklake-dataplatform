@@ -18,7 +18,7 @@ class SqlEditorSurface extends LitElement {
     :host {
       position: relative;
       display: grid;
-      grid-template-columns: calc(var(--control-small-size) + var(--space-3)) minmax(0, 1fr);
+      grid-template-columns: calc(var(--control-small-size) + var(--space-4)) minmax(0, 1fr);
       min-height: 0;
       width: 100%;
       height: var(--sql-editor-height, 100%);
@@ -29,9 +29,9 @@ class SqlEditorSurface extends LitElement {
     }
 
     .gutter {
+      position: relative;
       margin: 0;
-      padding: var(--space-2) var(--space-1) var(--space-2) var(--space-2);
-      border-right: var(--borderWidth-default) solid var(--borderColor-muted);
+      padding: var(--space-2) var(--space-3) var(--space-2) var(--space-2);
       color: var(--fgColor-muted);
       font-family: var(--fontStack-monospace);
       font-size: var(--text-codeBlock-size);
@@ -42,6 +42,22 @@ class SqlEditorSurface extends LitElement {
       overflow: hidden;
       height: 100%;
       box-sizing: border-box;
+    }
+
+    .gutter::after {
+      content: "";
+      position: absolute;
+      top: var(--sql-gutter-pad-top, var(--space-2));
+      right: var(--space-1);
+      width: var(--borderWidth-thick);
+      height: var(--sql-gutter-divider-height, 0);
+      background: var(--borderColor-accent-emphasis);
+      border-radius: var(--borderRadius-full);
+      pointer-events: none;
+    }
+
+    :host(:focus-within) .gutter::after {
+      background: var(--borderColor-accent-emphasis);
     }
 
     .input-wrap {
@@ -162,11 +178,11 @@ class SqlEditorSurface extends LitElement {
     }
   `;
 
-  private lineCount = 16;
+  private lineCount = 1;
   private activeLine = 1;
   private lineHeight = 20;
   private activeTop = 0;
-  private minLines = 16;
+  private minLines = 1;
   private textarea: HTMLTextAreaElement | null = null;
   private formatButton: HTMLButtonElement | null = null;
   private highlightedHTML = "";
@@ -346,7 +362,7 @@ class SqlEditorSurface extends LitElement {
 
     const value = this.textarea.value || "";
     const lines = value.split("\n").length;
-    this.lineCount = Math.max(this.minLines, lines + 1);
+    this.lineCount = Math.max(this.minLines, lines);
     const gutter = this.renderRoot.querySelector(".gutter");
     if (gutter instanceof HTMLElement) {
       const nums = [];
@@ -363,6 +379,9 @@ class SqlEditorSurface extends LitElement {
 
     const paddingTop = Number.parseFloat(computed.paddingTop);
     const topPadding = Number.isFinite(paddingTop) ? paddingTop : 0;
+
+    this.style.setProperty("--sql-gutter-pad-top", `${topPadding}px`);
+    this.style.setProperty("--sql-gutter-divider-height", `${this.lineCount * this.lineHeight}px`);
 
     const caret = this.textarea.selectionStart || 0;
     this.activeLine = value.slice(0, caret).split("\n").length;
