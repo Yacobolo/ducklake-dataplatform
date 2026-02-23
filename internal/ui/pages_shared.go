@@ -83,6 +83,7 @@ func appPage(title, active string, principal domain.ContextPrincipal, body ...No
 			),
 		),
 		Body(
+			Class("app-frame"),
 			A(Href("#main-content"), Class("skip-link"), Text("Skip to content")),
 			Main(Class("app-shell"),
 				Header(
@@ -142,7 +143,7 @@ func appPage(title, active string, principal domain.ContextPrincipal, body ...No
 						ID("main-content"),
 						Attr("tabindex", "-1"),
 						H1(Class("sr-only"), Text(title)),
-						Div(Class(contentClass), Group(body)),
+						Div(Class("app-main-content "+contentClass), Group(body)),
 					),
 				),
 				Div(Class("app-overlay"), ID("app-overlay"), Attr("aria-hidden", "true")),
