@@ -43,19 +43,22 @@
   display: grid;
   grid-template-columns: minmax(var(--overlay-width-xsmall), var(--overlay-width-small)) minmax(0, 1fr);
   gap: var(--space-2);
+  margin-top: var(--space-2);
 }
 
 .notebook-outline {
   position: sticky;
   top: var(--size-sticky-offset);
   align-self: start;
+  padding-right: var(--space-2);
+  border-right: var(--border-muted);
 }
 
 .notebook-outline-panel {
   margin: 0;
-  border: var(--border-default);
-  border-radius: var(--borderRadius-medium);
-  background: var(--bgColor-default);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .notebook-outline-summary {
@@ -65,8 +68,9 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
+  padding: 0 0 var(--space-2);
   font-weight: var(--base-text-weight-semibold);
+  border-bottom: var(--border-muted);
 }
 
 .notebook-outline-summary::-webkit-details-marker {
@@ -78,7 +82,11 @@
 }
 
 .notebook-outline-body {
-  padding: 0 var(--space-3) var(--space-3);
+  padding: var(--space-2) 0 0;
+}
+
+.notebook-outline-filter {
+  margin-bottom: var(--space-1);
 }
 
 .notebook-outline-list {
@@ -92,7 +100,15 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: var(--space-1);
+  gap: 0;
+}
+
+.notebook-outline-list li {
+  border-bottom: var(--border-muted);
+}
+
+.notebook-outline-list li:last-child {
+  border-bottom: 0;
 }
 
 .notebook-outline-link {
@@ -100,9 +116,9 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  border: var(--border-default);
-  border-radius: var(--borderRadius-medium);
-  padding: var(--space-1) var(--space-2);
+  border: 0;
+  border-radius: 0;
+  padding: var(--space-1) 0;
   color: var(--fgColor-default);
   text-decoration: none;
   transition: background-color var(--base-duration-100) var(--base-easing-ease);
@@ -113,7 +129,8 @@
 }
 
 .notebook-outline-link:hover {
-  background: var(--bgColor-muted);
+  background: transparent;
+  color: var(--fgColor-accent);
   text-decoration: none;
 }
 
@@ -123,8 +140,19 @@
 }
 
 .notebook-outline-link.is-active-outline-link {
-  border-color: var(--borderColor-accent-muted);
-  background: var(--bgColor-accent-muted);
+  background: transparent;
+  color: var(--fgColor-accent);
+}
+
+.notebook-outline-kind {
+  display: inline-flex;
+  align-items: center;
+  color: var(--fgColor-muted);
+}
+
+.notebook-outline-kind-icon {
+  width: var(--size-icon);
+  height: var(--size-icon);
 }
 
 .notebook-outline-link[data-outline-level="2"] {
@@ -511,6 +539,8 @@
 
   .notebook-outline {
     position: static;
+    padding-right: 0;
+    border-right: 0;
   }
 
   .notebook-outline-panel {

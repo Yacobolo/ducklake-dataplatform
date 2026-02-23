@@ -99,11 +99,6 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 		formID := "cell-form-" + c.ID
 		isMarkdown := c.CellType == string(domain.CellTypeMarkdown)
 
-		typeTone := "accent"
-		if isMarkdown {
-			typeTone = "attention"
-		}
-
 		runButton := Node(nil)
 		if c.CellType == string(domain.CellTypeSQL) {
 			runButton = Button(
@@ -291,6 +286,13 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 			outlineText = fmt.Sprintf("SQL %d", c.Position+1)
 		}
 
+		outlineKindIcon := "square-terminal"
+		outlineKindLabel := "SQL"
+		if isMarkdown {
+			outlineKindIcon = "pilcrow"
+			outlineKindLabel = "Markdown"
+		}
+
 		outlineNodes = append(outlineNodes,
 			Li(
 				data.Show(containsExpr(outlineText+" "+c.CellType+" "+c.Content)),
@@ -301,7 +303,11 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 					Attr("data-cell-anchor", "cell-"+c.ID),
 					Attr("data-outline-level", strconv.Itoa(outlineLevel)),
 					Text(outlineText+" "),
-					statusLabel(c.CellType, typeTone),
+					Span(
+						Class("notebook-outline-kind"),
+						I(Class("notebook-outline-kind-icon"), Attr("data-lucide", outlineKindIcon), Attr("aria-hidden", "true")),
+						Span(Class("sr-only"), Text(outlineKindLabel)),
+					),
 				),
 			),
 		)
@@ -330,7 +336,7 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 				Div(
 					Class("notebook-outline-body"),
 					Div(
-						Class("d-flex flex-items-center gap-2"),
+						Class("notebook-outline-filter d-flex flex-items-center gap-2"),
 						Label(Class("sr-only"), Text("Filter cells")),
 						Input(Type("search"), Class("form-control"), Placeholder("Filter cells"), data.Bind("q"), AutoComplete("off")),
 					),
