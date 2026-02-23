@@ -1,7 +1,7 @@
 :root {
   --bg: var(--bgColor-default);
   --canvas: var(--bgColor-muted);
-  --canvas-subtle: var(--bgColor-muted);
+  --canvas-subtle: var(--bgColor-default);
   --text: var(--fgColor-default);
   --muted: var(--fgColor-muted);
   --border: var(--borderColor-default);

@@ -10,7 +10,7 @@
   min-width: 0;
   border: var(--borderWidth-default) solid var(--border);
   border-radius: var(--radius);
-  background: var(--canvas);
+  background: var(--bgColor-default);
   box-shadow: var(--shadow-resting-xsmall);
 }
 
@@ -421,7 +421,7 @@
   padding: var(--space-2);
   border: var(--borderWidth-default) solid var(--borderColor-muted);
   border-radius: var(--borderRadius-medium);
-  background: var(--bgColor-muted);
+  background: var(--bgColor-default);
   overflow: auto;
 }
 

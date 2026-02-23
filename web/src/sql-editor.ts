@@ -24,7 +24,7 @@ class SqlEditorSurface extends LitElement {
       height: var(--sql-editor-height, 100%);
       flex: var(--sql-editor-flex, 1);
       direction: ltr;
-      background: linear-gradient(180deg, var(--bgColor-default), var(--bgColor-muted));
+      background: var(--bgColor-default);
       overflow: hidden;
     }
 

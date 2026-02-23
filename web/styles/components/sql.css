@@ -19,9 +19,7 @@
 .sql-workspace {
   border: var(--borderWidth-default) solid var(--border);
   border-radius: var(--radius);
-  background:
-    linear-gradient(180deg, var(--bgColor-muted), var(--bgColor-default)),
-    var(--canvas);
+  background: var(--bgColor-default);
   box-shadow: var(--shadow-resting-xsmall);
   padding: var(--space-3);
   margin-bottom: 0;
@@ -71,7 +69,7 @@
   flex-direction: column;
   border: var(--borderWidth-default) solid var(--borderColor-muted);
   border-radius: var(--radius);
-  background: var(--canvas);
+  background: var(--bgColor-default);
   overflow: hidden;
 }
 
@@ -84,7 +82,7 @@
   margin: 0;
   padding: var(--space-2);
   border-bottom: var(--borderWidth-default) solid var(--borderColor-muted);
-  background: var(--bgColor-muted);
+  background: var(--bgColor-default);
 }
 
 .sql-editor-toolbar .button-row {
@@ -156,7 +154,7 @@ sql-editor-surface {
 .sql-result-card {
   border: var(--borderWidth-default) solid var(--border);
   border-radius: var(--radius);
-  background: var(--canvas);
+  background: var(--bgColor-default);
   box-shadow: var(--shadow-resting-xsmall);
   padding: var(--space-3);
   height: 100%;
@@ -194,7 +192,7 @@ sql-editor-surface {
   padding: var(--space-1) var(--space-2);
   border: var(--borderWidth-default) solid var(--borderColor-muted);
   border-radius: var(--borderRadius-medium);
-  background: var(--bgColor-muted);
+  background: var(--bgColor-default);
 }
 
 .sql-results-header {
@@ -206,7 +204,7 @@ sql-editor-surface {
   position: sticky;
   top: 0;
   z-index: 2;
-  background: var(--canvas);
+  background: var(--bgColor-default);
   border-bottom: var(--borderWidth-default) solid var(--borderColor-muted);
   padding-bottom: var(--space-2);
   margin-bottom: var(--space-2);

@@ -46,7 +46,7 @@ ${JSON.stringify(I,void 0,2)}`)}}}var s;(function(T){T[T.SPACE=0]="SPACE",T[T.NO
       height: var(--sql-editor-height, 100%);
       flex: var(--sql-editor-flex, 1);
       direction: ltr;
-      background: linear-gradient(180deg, var(--bgColor-default), var(--bgColor-muted));
+      background: var(--bgColor-default);
       overflow: hidden;
     }
 

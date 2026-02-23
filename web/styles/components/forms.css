@@ -89,7 +89,7 @@ label {
   text-align: center;
   padding: var(--space-5);
   border: var(--borderWidth-default) dashed var(--borderColor-muted);
-  background: linear-gradient(180deg, var(--bgColor-default), var(--bgColor-muted));
+  background: var(--bgColor-default);
 }
 
 .snippet-list {

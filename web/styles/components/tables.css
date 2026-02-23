@@ -13,7 +13,7 @@
 }
 
 .toolbar {
-  background: linear-gradient(180deg, var(--bgColor-muted), var(--bgColor-default));
+  background: var(--bgColor-default);
 }
 
 table {
@@ -21,6 +21,7 @@ table {
   border-collapse: collapse;
   border: var(--borderWidth-default) solid var(--border);
   border-radius: var(--radius);
+  background: var(--bgColor-default);
 }
 
 th,
@@ -33,7 +34,7 @@ td {
 }
 
 th {
-  background: var(--canvas-subtle);
+  background: var(--bgColor-muted);
   color: var(--muted);
   font-weight: var(--base-text-weight-semibold);
   text-transform: uppercase;
@@ -44,10 +45,6 @@ th {
   position: sticky;
   top: 0;
   z-index: 1;
-}
-
-.data-table tbody tr:nth-child(even) {
-  background: var(--bgColor-muted);
 }
 
 .data-table tbody tr:hover {
