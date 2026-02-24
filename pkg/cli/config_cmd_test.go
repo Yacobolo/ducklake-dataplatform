@@ -1,9 +1,11 @@
 package cli
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMaskSecret(t *testing.T) {
@@ -61,4 +63,37 @@ func TestMaskConfig_EmptyProfiles(t *testing.T) {
 
 	masked := maskConfig(cfg)
 	assert.Empty(t, masked.Profiles)
+}
+
+func TestConfigShow_TableOutput(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	require.NoError(t, SaveUserConfig(&UserConfig{
+		CurrentProfile: "default",
+		Profiles: map[string]Profile{
+			"default": {
+				Host:   "http://localhost:8080",
+				APIKey: "dak_default_123456",
+				Token:  "tok_default_abcdef",
+				Output: "table",
+			},
+		},
+	}))
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{"config", "show", "--output", "table"})
+	old := captureStdout(t)
+
+	require.NoError(t, rootCmd.Execute())
+	output := old()
+
+	assert.Contains(t, output, "PROFILE")
+	assert.Contains(t, output, "ACTIVE")
+	assert.Contains(t, output, "HOST")
+	assert.Contains(t, output, "default")
+	assert.Contains(t, output, "http://localhost:8080")
+	assert.Contains(t, output, "*")
+	assert.NotContains(t, output, "current-profile:")
+	assert.False(t, strings.Contains(output, "dak_default_123456"), "api key should be masked in table output")
 }

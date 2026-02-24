@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"os"
+	"sort"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -38,15 +39,20 @@ func newConfigShowCmd() *cobra.Command {
 			if !reveal {
 				cfg = maskConfig(cfg)
 			}
-			if getOutputFormat(cmd) == "json" {
+			switch getOutputFormat(cmd) {
+			case "json":
 				return gen.PrintJSON(os.Stdout, cfg)
+			case "table":
+				renderConfigTable(os.Stdout, cfg)
+				return nil
+			default:
+				data, err := yaml.Marshal(cfg)
+				if err != nil {
+					return fmt.Errorf("marshal config: %w", err)
+				}
+				_, _ = fmt.Fprint(os.Stdout, string(data))
+				return nil
 			}
-			data, err := yaml.Marshal(cfg)
-			if err != nil {
-				return fmt.Errorf("marshal config: %w", err)
-			}
-			_, _ = fmt.Fprint(os.Stdout, string(data))
-			return nil
 		},
 	}
 
@@ -81,6 +87,26 @@ func maskSecret(s string) string {
 		return "****"
 	}
 	return s[:4] + "****" + s[len(s)-4:]
+}
+
+func renderConfigTable(w *os.File, cfg *UserConfig) {
+	rows := make([][]string, 0, len(cfg.Profiles))
+	profileNames := make([]string, 0, len(cfg.Profiles))
+	for name := range cfg.Profiles {
+		profileNames = append(profileNames, name)
+	}
+	sort.Strings(profileNames)
+
+	for _, name := range profileNames {
+		p := cfg.Profiles[name]
+		active := ""
+		if name == cfg.CurrentProfile {
+			active = "*"
+		}
+		rows = append(rows, []string{name, active, p.Host, p.Output, p.APIKey, p.Token})
+	}
+
+	gen.PrintTable(w, []string{"profile", "active", "host", "output", "api_key", "token"}, rows)
 }
 
 func newConfigSetProfileCmd() *cobra.Command {
