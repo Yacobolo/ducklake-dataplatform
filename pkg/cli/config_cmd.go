@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 
 	"duck-demo/pkg/cli/gen"
 )
@@ -41,11 +40,7 @@ func newConfigShowCmd() *cobra.Command {
 			if getOutputFormat(cmd) == "json" {
 				return gen.PrintJSON(os.Stdout, cfg)
 			}
-			data, err := yaml.Marshal(cfg)
-			if err != nil {
-				return fmt.Errorf("marshal config: %w", err)
-			}
-			_, _ = fmt.Fprint(os.Stdout, string(data))
+			printConfigTable(cfg)
 			return nil
 		},
 	}
@@ -53,6 +48,26 @@ func newConfigShowCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&reveal, "reveal", false, "Show sensitive values unmasked")
 
 	return cmd
+}
+
+func printConfigTable(cfg *UserConfig) {
+	columns := []string{"profile", "current", "host", "api_key", "token", "output"}
+	rows := make([]map[string]interface{}, 0, len(cfg.Profiles))
+	for name, p := range cfg.Profiles {
+		current := ""
+		if name == cfg.CurrentProfile {
+			current = "*"
+		}
+		rows = append(rows, map[string]interface{}{
+			"profile": name,
+			"current": current,
+			"host":    p.Host,
+			"api_key": p.APIKey,
+			"token":   p.Token,
+			"output":  p.Output,
+		})
+	}
+	gen.PrintTable(os.Stdout, columns, rows)
 }
 
 // maskConfig returns a copy of the config with sensitive fields masked.
