@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/google/uuid"
+
 	"duck-demo/internal/domain"
 )
 
@@ -111,6 +113,10 @@ func (h *APIHandler) CreatePrincipal(ctx context.Context, req CreatePrincipalReq
 
 // GetPrincipal implements the endpoint for retrieving a principal by ID.
 func (h *APIHandler) GetPrincipal(ctx context.Context, req GetPrincipalRequestObject) (GetPrincipalResponseObject, error) {
+	if _, err := uuid.Parse(req.PrincipalId); err != nil {
+		return GetPrincipal400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: "invalid principalId: must be a UUID"}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+	}
+
 	p, err := h.principals.GetByID(ctx, req.PrincipalId)
 	if err != nil {
 		switch {

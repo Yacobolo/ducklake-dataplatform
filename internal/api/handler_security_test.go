@@ -271,12 +271,14 @@ func TestHandler_GetPrincipal(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name     string
-		svcFn    func(ctx context.Context, id string) (*domain.Principal, error)
-		assertFn func(t *testing.T, resp GetPrincipalResponseObject, err error)
+		name        string
+		principalID string
+		svcFn       func(ctx context.Context, id string) (*domain.Principal, error)
+		assertFn    func(t *testing.T, resp GetPrincipalResponseObject, err error)
 	}{
 		{
-			name: "happy path returns 200",
+			name:        "happy path returns 200",
+			principalID: "00000000-0000-0000-0000-000000000001",
 			svcFn: func(_ context.Context, _ string) (*domain.Principal, error) {
 				p := secSamplePrincipal()
 				return &p, nil
@@ -291,7 +293,8 @@ func TestHandler_GetPrincipal(t *testing.T) {
 			},
 		},
 		{
-			name: "not found returns 404",
+			name:        "not found returns 404",
+			principalID: "00000000-0000-0000-0000-000000000001",
 			svcFn: func(_ context.Context, id string) (*domain.Principal, error) {
 				return nil, domain.ErrNotFound("principal %s not found", id)
 			},
@@ -303,6 +306,22 @@ func TestHandler_GetPrincipal(t *testing.T) {
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
 		},
+		{
+			name:        "malformed principalId returns 400",
+			principalID: "not-a-uuid",
+			svcFn: func(_ context.Context, _ string) (*domain.Principal, error) {
+				t.Fatalf("service should not be called for malformed principalId")
+				return nil, nil
+			},
+			assertFn: func(t *testing.T, resp GetPrincipalResponseObject, err error) {
+				t.Helper()
+				require.NoError(t, err)
+				badReq, ok := resp.(GetPrincipal400JSONResponse)
+				require.True(t, ok, "expected 400 response, got %T", resp)
+				assert.Equal(t, int32(400), badReq.Body.Code)
+				assert.Contains(t, badReq.Body.Message, "invalid principalId")
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -310,7 +329,7 @@ func TestHandler_GetPrincipal(t *testing.T) {
 			t.Parallel()
 			svc := &mockPrincipalService{getByIDFn: tt.svcFn}
 			handler := &APIHandler{principals: svc}
-			resp, err := handler.GetPrincipal(secTestCtx(), GetPrincipalRequestObject{PrincipalId: "p-1"})
+			resp, err := handler.GetPrincipal(secTestCtx(), GetPrincipalRequestObject{PrincipalId: tt.principalID})
 			tt.assertFn(t, resp, err)
 		})
 	}
