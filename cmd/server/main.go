@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
 	"net/http"
@@ -32,6 +33,11 @@ import (
 )
 
 func main() {
+	if isHelpArg(os.Args[1:]) {
+		printUsage(os.Stdout)
+		return
+	}
+
 	// Handle admin subcommands before starting the server.
 	if len(os.Args) >= 2 && os.Args[1] == "admin" {
 		if err := runAdmin(os.Args[2:]); err != nil {
@@ -45,6 +51,25 @@ func main() {
 		fmt.Fprintf(os.Stderr, "fatal: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+func isHelpArg(args []string) bool {
+	for _, arg := range args {
+		if arg == "-h" || arg == "--help" || arg == "help" {
+			return true
+		}
+	}
+	return false
+}
+
+func printUsage(w io.Writer) {
+	_, _ = fmt.Fprintln(w, "usage: server [flags]")
+	_, _ = fmt.Fprintln(w)
+	_, _ = fmt.Fprintln(w, "Starts the DuckLake HTTP API server.")
+	_, _ = fmt.Fprintln(w)
+	_, _ = fmt.Fprintln(w, "Admin commands:")
+	_, _ = fmt.Fprintln(w, "  server admin promote --principal=<name> [--create]")
+	_, _ = fmt.Fprintln(w, "  server admin demote  --principal=<name>")
 }
 
 func run() error {
