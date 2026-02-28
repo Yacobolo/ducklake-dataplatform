@@ -15,8 +15,11 @@ import (
 
 func init() {
 	gen.RegisterRunOverride("executeQuery", func(client *gen.Client) func(*cobra.Command, []string) error {
-		return func(cmd *cobra.Command, _ []string) error {
+		return func(cmd *cobra.Command, args []string) error {
 			sql, _ := cmd.Flags().GetString("sql")
+			if sql == "" && len(args) > 0 {
+				sql = strings.TrimSpace(strings.Join(args, " "))
+			}
 
 			// Read from stdin if no --sql flag
 			if sql == "" {
