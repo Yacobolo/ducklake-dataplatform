@@ -31,6 +31,7 @@ const (
 	KindPipeline                                // layer 7
 	KindPipelineJob                             // layer 7
 	KindModel                                   // layer 8
+	KindSemanticModel                           // layer 9
 )
 
 // String returns a human-readable kebab-case name for the resource kind.
@@ -86,6 +87,8 @@ func (k ResourceKind) String() string {
 		return "pipeline-job"
 	case KindModel:
 		return "model"
+	case KindSemanticModel:
+		return "semantic-model"
 	default:
 		return "unknown"
 	}
@@ -113,13 +116,15 @@ func (k ResourceKind) Layer() int {
 		return 7
 	case KindModel:
 		return 8
+	case KindSemanticModel:
+		return 9
 	default:
 		return 99
 	}
 }
 
 // MaxLayer is the highest dependency layer.
-const MaxLayer = 8
+const MaxLayer = 9
 
 // Operation represents a planned change type.
 type Operation int
@@ -170,6 +175,7 @@ const (
 	KindNameNotebook              = "Notebook"
 	KindNamePipeline              = "Pipeline"
 	KindNameModel                 = "Model"
+	KindNameSemanticModel         = "SemanticModel"
 	KindNameMacro                 = "Macro"
 )
 

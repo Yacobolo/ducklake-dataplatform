@@ -1,0 +1,603 @@
+paths:
+  /semantic-models:
+    get:
+      operationId: listSemanticModels
+      summary: List semantic models
+      tags: [Semantic]
+      parameters:
+        - name: project_name
+          in: query
+          required: false
+          schema:
+            type: string
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated semantic models
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/semantic.yaml#/PaginatedSemanticModels'
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+    post:
+      operationId: createSemanticModel
+      summary: Create semantic model
+      tags: [Semantic]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/semantic.yaml#/CreateSemanticModelRequest'
+      responses:
+        '201':
+          description: Created semantic model
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/semantic.yaml#/SemanticModel'
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '409':
+          $ref: '../schemas/responses.yaml#/responses/Conflict'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /semantic-models/{projectName}/{semanticModelName}:
+    parameters:
+      - name: projectName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: semanticModelName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getSemanticModel
+      summary: Get semantic model
+      tags: [Semantic]
+      responses:
+        '200':
+          description: Semantic model
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/semantic.yaml#/SemanticModel'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+    patch:
+      operationId: updateSemanticModel
+      summary: Update semantic model
+      tags: [Semantic]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/semantic.yaml#/UpdateSemanticModelRequest'
+      responses:
+        '200':
+          description: Updated semantic model
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/semantic.yaml#/SemanticModel'
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+    delete:
+      operationId: deleteSemanticModel
+      summary: Delete semantic model
+      tags: [Semantic]
+      responses:
+        '204':
+          description: Semantic model deleted
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /semantic-models/{projectName}/{semanticModelName}/metrics:
+    parameters:
+      - name: projectName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: semanticModelName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: listSemanticMetrics
+      summary: List semantic metrics
+      tags: [Semantic]
+      responses:
+        '200':
+          description: Semantic metric list
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/semantic.yaml#/SemanticMetricList'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+    post:
+      operationId: createSemanticMetric
+      summary: Create semantic metric
+      tags: [Semantic]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/semantic.yaml#/CreateSemanticMetricRequest'
+      responses:
+        '201':
+          description: Created semantic metric
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/semantic.yaml#/SemanticMetric'
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '409':
+          $ref: '../schemas/responses.yaml#/responses/Conflict'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /semantic-models/{projectName}/{semanticModelName}/metrics/{metricName}:
+    parameters:
+      - name: projectName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: semanticModelName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: metricName
+        in: path
+        required: true
+        schema:
+          type: string
+    patch:
+      operationId: updateSemanticMetric
+      summary: Update semantic metric
+      tags: [Semantic]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/semantic.yaml#/UpdateSemanticMetricRequest'
+      responses:
+        '200':
+          description: Updated semantic metric
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/semantic.yaml#/SemanticMetric'
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+    delete:
+      operationId: deleteSemanticMetric
+      summary: Delete semantic metric
+      tags: [Semantic]
+      responses:
+        '204':
+          description: Semantic metric deleted
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /semantic-models/{projectName}/{semanticModelName}/pre-aggregations:
+    parameters:
+      - name: projectName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: semanticModelName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: listSemanticPreAggregations
+      summary: List semantic pre-aggregations
+      tags: [Semantic]
+      responses:
+        '200':
+          description: Semantic pre-aggregation list
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/semantic.yaml#/SemanticPreAggregationList'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+    post:
+      operationId: createSemanticPreAggregation
+      summary: Create semantic pre-aggregation
+      tags: [Semantic]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/semantic.yaml#/CreateSemanticPreAggregationRequest'
+      responses:
+        '201':
+          description: Created semantic pre-aggregation
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/semantic.yaml#/SemanticPreAggregation'
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '409':
+          $ref: '../schemas/responses.yaml#/responses/Conflict'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /semantic-models/{projectName}/{semanticModelName}/pre-aggregations/{preAggregationName}:
+    parameters:
+      - name: projectName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: semanticModelName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: preAggregationName
+        in: path
+        required: true
+        schema:
+          type: string
+    patch:
+      operationId: updateSemanticPreAggregation
+      summary: Update semantic pre-aggregation
+      tags: [Semantic]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/semantic.yaml#/UpdateSemanticPreAggregationRequest'
+      responses:
+        '200':
+          description: Updated semantic pre-aggregation
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/semantic.yaml#/SemanticPreAggregation'
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+    delete:
+      operationId: deleteSemanticPreAggregation
+      summary: Delete semantic pre-aggregation
+      tags: [Semantic]
+      responses:
+        '204':
+          description: Semantic pre-aggregation deleted
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /semantic-relationships:
+    get:
+      operationId: listSemanticRelationships
+      summary: List semantic relationships
+      tags: [Semantic]
+      parameters:
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated semantic relationships
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/semantic.yaml#/PaginatedSemanticRelationships'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+    post:
+      operationId: createSemanticRelationship
+      summary: Create semantic relationship
+      tags: [Semantic]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/semantic.yaml#/CreateSemanticRelationshipRequest'
+      responses:
+        '201':
+          description: Created semantic relationship
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/semantic.yaml#/SemanticRelationship'
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '409':
+          $ref: '../schemas/responses.yaml#/responses/Conflict'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /semantic-relationships/{relationshipName}:
+    parameters:
+      - name: relationshipName
+        in: path
+        required: true
+        schema:
+          type: string
+    patch:
+      operationId: updateSemanticRelationship
+      summary: Update semantic relationship
+      tags: [Semantic]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/semantic.yaml#/UpdateSemanticRelationshipRequest'
+      responses:
+        '200':
+          description: Updated semantic relationship
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/semantic.yaml#/SemanticRelationship'
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+    delete:
+      operationId: deleteSemanticRelationship
+      summary: Delete semantic relationship
+      tags: [Semantic]
+      responses:
+        '204':
+          description: Semantic relationship deleted
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /metric-queries:explain:
+    post:
+      operationId: explainMetricQuery
+      summary: Compile and explain semantic metric query
+      tags: [Semantic]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/semantic.yaml#/MetricQueryRequest'
+      responses:
+        '200':
+          description: Metric query plan
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/semantic.yaml#/MetricQueryExplainResponse'
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /metric-queries:run:
+    post:
+      operationId: runMetricQuery
+      summary: Execute semantic metric query
+      tags: [Semantic]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/semantic.yaml#/MetricQueryRequest'
+      responses:
+        '200':
+          description: Metric query result and plan
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/semantic.yaml#/MetricQueryRunResponse'
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /metrics/{metricName}/freshness:
+    parameters:
+      - name: metricName
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
+    get:
+      operationId: checkMetricFreshness
+      summary: Check metric freshness
+      tags: [Semantic]
+      parameters:
+        - name: project_name
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 255
+            pattern: '^\S+$'
+        - name: semantic_model_name
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 255
+            pattern: '^\S+$'
+      responses:
+        '200':
+          description: Metric freshness status
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/semantic.yaml#/MetricFreshnessStatus'
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'

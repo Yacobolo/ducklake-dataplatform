@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	compute2 "duck-demo/internal/compute"
 	"duck-demo/internal/domain"
 	"duck-demo/internal/service/auditutil"
 )
@@ -68,12 +69,27 @@ func (s *ComputeEndpointService) Create(ctx context.Context, principal string, r
 }
 
 // GetByName returns a compute endpoint by name.
-func (s *ComputeEndpointService) GetByName(ctx context.Context, name string) (*domain.ComputeEndpoint, error) {
-	return s.repo.GetByName(ctx, name)
+func (s *ComputeEndpointService) GetByName(ctx context.Context, principal, name string) (*domain.ComputeEndpoint, error) {
+	if err := s.requirePrivilege(ctx, principal, domain.PrivManageCompute, "GET_COMPUTE_ENDPOINT", fmt.Sprintf("Denied get compute endpoint %q", name)); err != nil {
+		return nil, err
+	}
+
+	ep, err := s.repo.GetByName(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.requireEndpointPrivilege(ctx, principal, ep.ID, domain.PrivManageCompute); err != nil {
+		s.logAuditDenied(ctx, principal, "GET_COMPUTE_ENDPOINT", fmt.Sprintf("Denied get compute endpoint %q", name))
+		return nil, err
+	}
+	return ep, nil
 }
 
 // List returns a paginated list of compute endpoints.
-func (s *ComputeEndpointService) List(ctx context.Context, page domain.PageRequest) ([]domain.ComputeEndpoint, int64, error) {
+func (s *ComputeEndpointService) List(ctx context.Context, principal string, page domain.PageRequest) ([]domain.ComputeEndpoint, int64, error) {
+	if err := s.requirePrivilege(ctx, principal, domain.PrivManageCompute, "LIST_COMPUTE_ENDPOINTS", "Denied list compute endpoints"); err != nil {
+		return nil, 0, err
+	}
 	return s.repo.List(ctx, page)
 }
 
@@ -231,9 +247,17 @@ func (s *ComputeEndpointService) Unassign(ctx context.Context, principal string,
 }
 
 // ListAssignments returns assignments for a compute endpoint.
-func (s *ComputeEndpointService) ListAssignments(ctx context.Context, endpointName string, page domain.PageRequest) ([]domain.ComputeAssignment, int64, error) {
+func (s *ComputeEndpointService) ListAssignments(ctx context.Context, principal, endpointName string, page domain.PageRequest) ([]domain.ComputeAssignment, int64, error) {
+	if err := s.requirePrivilege(ctx, principal, domain.PrivManageCompute, "LIST_COMPUTE_ASSIGNMENTS", fmt.Sprintf("Denied list assignments for endpoint %q", endpointName)); err != nil {
+		return nil, 0, err
+	}
+
 	ep, err := s.repo.GetByName(ctx, endpointName)
 	if err != nil {
+		return nil, 0, err
+	}
+	if err := s.requireEndpointPrivilege(ctx, principal, ep.ID, domain.PrivManageCompute); err != nil {
+		s.logAuditDenied(ctx, principal, "LIST_COMPUTE_ASSIGNMENTS", fmt.Sprintf("Denied list assignments for endpoint %q", endpointName))
 		return nil, 0, err
 	}
 	return s.repo.ListAssignments(ctx, ep.ID, page)
@@ -276,7 +300,7 @@ func (s *ComputeEndpointService) HealthCheck(ctx context.Context, principal stri
 	if err != nil {
 		return nil, fmt.Errorf("create health request: %w", err)
 	}
-	req.Header.Set("X-Agent-Token", ep.AuthToken)
+	compute2.AttachSignedAgentHeaders(req, ep.AuthToken, nil, time.Now())
 
 	resp, err := client.Do(req)
 	if err != nil {

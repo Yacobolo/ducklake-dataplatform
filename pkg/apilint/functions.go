@@ -377,7 +377,7 @@ var actionVerbSet = map[string]bool{
 	"createManifest": true, "createUploadUrl": true, "searchCatalog": true,
 	"setDefaultCatalog": true, "reorderCells": true, "executeCell": true,
 	"runAllCells": true, "syncGitRepo": true, "cancelPipelineRun": true, "cancelModelRun": true,
-	"triggerPipelineRun": true,
+	"triggerPipelineRun": true, "explainMetricQuery": true, "runMetricQuery": true,
 }
 
 func (f *fnCheckPostCreateStatus) RunRule(nodes []*yaml.Node, ctx model.RuleFunctionContext) []model.RuleFunctionResult {

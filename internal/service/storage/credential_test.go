@@ -129,9 +129,9 @@ func TestStorageCredentialService_GetByName(t *testing.T) {
 				return &domain.StorageCredential{ID: "1", Name: name}, nil
 			},
 		}
-		svc := NewStorageCredentialService(repo, &mockAuthService{}, &mockAuditRepo{})
+		svc := NewStorageCredentialService(repo, allowAllAuth(), &mockAuditRepo{})
 
-		result, err := svc.GetByName(context.Background(), "my-cred")
+		result, err := svc.GetByName(context.Background(), "admin_user", "my-cred")
 
 		require.NoError(t, err)
 		assert.Equal(t, "my-cred", result.Name)
@@ -143,9 +143,9 @@ func TestStorageCredentialService_GetByName(t *testing.T) {
 				return nil, domain.ErrNotFound("credential not found")
 			},
 		}
-		svc := NewStorageCredentialService(repo, &mockAuthService{}, &mockAuditRepo{})
+		svc := NewStorageCredentialService(repo, allowAllAuth(), &mockAuditRepo{})
 
-		_, err := svc.GetByName(context.Background(), "missing")
+		_, err := svc.GetByName(context.Background(), "admin_user", "missing")
 
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
@@ -165,9 +165,9 @@ func TestStorageCredentialService_List(t *testing.T) {
 				}, 2, nil
 			},
 		}
-		svc := NewStorageCredentialService(repo, &mockAuthService{}, &mockAuditRepo{})
+		svc := NewStorageCredentialService(repo, allowAllAuth(), &mockAuditRepo{})
 
-		creds, total, err := svc.List(context.Background(), domain.PageRequest{MaxResults: 100})
+		creds, total, err := svc.List(context.Background(), "admin_user", domain.PageRequest{MaxResults: 100})
 
 		require.NoError(t, err)
 		assert.Equal(t, int64(2), total)
@@ -180,9 +180,9 @@ func TestStorageCredentialService_List(t *testing.T) {
 				return nil, 0, nil
 			},
 		}
-		svc := NewStorageCredentialService(repo, &mockAuthService{}, &mockAuditRepo{})
+		svc := NewStorageCredentialService(repo, allowAllAuth(), &mockAuditRepo{})
 
-		creds, total, err := svc.List(context.Background(), domain.PageRequest{MaxResults: 100})
+		creds, total, err := svc.List(context.Background(), "admin_user", domain.PageRequest{MaxResults: 100})
 
 		require.NoError(t, err)
 		assert.Equal(t, int64(0), total)

@@ -25,6 +25,7 @@ import (
 	"duck-demo/internal/service/pipeline"
 	"duck-demo/internal/service/query"
 	"duck-demo/internal/service/security"
+	"duck-demo/internal/service/semantic"
 	"duck-demo/internal/service/storage"
 )
 
@@ -68,6 +69,7 @@ type Services struct {
 	Pipeline            *pipeline.Service
 	Model               *svcmodel.Service
 	Macro               *macro.Service
+	Semantic            *semantic.Service
 }
 
 // App holds the fully-wired application: engine, services, and the
@@ -299,6 +301,14 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	modelSvc.SetMacroRepo(macroRepo)
 	modelSvc.SetNotebookProvider(notebookProvider)
 
+	// === Semantic ===
+	semanticModelRepo := repository.NewSemanticModelRepo(deps.WriteDB)
+	semanticMetricRepo := repository.NewSemanticMetricRepo(deps.WriteDB)
+	semanticRelRepo := repository.NewSemanticRelationshipRepo(deps.WriteDB)
+	semanticPreAggRepo := repository.NewSemanticPreAggregationRepo(deps.WriteDB)
+	semanticSvc := semantic.NewService(semanticModelRepo, semanticMetricRepo, semanticRelRepo, semanticPreAggRepo)
+	semanticSvc.SetQueryExecutor(querySvc)
+
 	// === API Key ===
 	apiKeyRepo := repository.NewAPIKeyRepo(deps.ReadDB)
 	apiKeySvc := security.NewAPIKeyService(apiKeyRepo, auditRepo)
@@ -332,6 +342,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 			Pipeline:            pipelineSvc,
 			Model:               modelSvc,
 			Macro:               macroSvc,
+			Semantic:            semanticSvc,
 		},
 		Engine:        eng,
 		APIKeyRepo:    apiKeyRepo,

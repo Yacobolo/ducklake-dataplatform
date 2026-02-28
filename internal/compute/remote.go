@@ -1,6 +1,7 @@
 package compute
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/tls"
@@ -59,13 +60,13 @@ func (e *RemoteExecutor) QueryContext(ctx context.Context, query string) (*sql.R
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost,
-		e.endpointURL+"/execute", strings.NewReader(string(bodyBytes)))
+		e.endpointURL+"/execute", bytes.NewReader(bodyBytes))
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("X-Agent-Token", e.authToken)
 	httpReq.Header.Set("X-Request-ID", requestID)
+	AttachSignedAgentHeaders(httpReq, e.authToken, bodyBytes, time.Now())
 
 	resp, err := e.httpClient.Do(httpReq)
 	if err != nil {
@@ -168,7 +169,7 @@ func (e *RemoteExecutor) Ping(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("create health request: %w", err)
 	}
-	req.Header.Set("X-Agent-Token", e.authToken)
+	AttachSignedAgentHeaders(req, e.authToken, nil, time.Now())
 
 	resp, err := e.httpClient.Do(req)
 	if err != nil {

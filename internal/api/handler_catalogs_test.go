@@ -446,6 +446,19 @@ func TestHandler_SetDefaultCatalog(t *testing.T) {
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
 		},
+		{
+			name: "validation returns 400",
+			svcFn: func(_ context.Context, _ string) (*domain.CatalogRegistration, error) {
+				return nil, domain.ErrValidation("catalog must be ACTIVE")
+			},
+			assertFn: func(t *testing.T, resp SetDefaultCatalogResponseObject, err error) {
+				t.Helper()
+				require.NoError(t, err)
+				badReq, ok := resp.(SetDefaultCatalog400JSONResponse)
+				require.True(t, ok, "expected 400 response, got %T", resp)
+				assert.Equal(t, int32(400), badReq.Body.Code)
+			},
+		},
 	}
 
 	for _, tt := range tests {

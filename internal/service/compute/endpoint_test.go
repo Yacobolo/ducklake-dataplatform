@@ -105,7 +105,7 @@ func TestComputeEndpointService_GetByName(t *testing.T) {
 		}
 		svc := newTestComputeEndpointService(repo, allowManageCompute(), &mockAuditRepo{})
 
-		result, err := svc.GetByName(context.Background(), "test-ep")
+		result, err := svc.GetByName(context.Background(), "admin", "test-ep")
 		require.NoError(t, err)
 		assert.Equal(t, "test-ep", result.Name)
 	})
@@ -118,7 +118,7 @@ func TestComputeEndpointService_GetByName(t *testing.T) {
 		}
 		svc := newTestComputeEndpointService(repo, allowManageCompute(), &mockAuditRepo{})
 
-		_, err := svc.GetByName(context.Background(), "nonexistent")
+		_, err := svc.GetByName(context.Background(), "admin", "nonexistent")
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
 		assert.ErrorAs(t, err, &notFound)
@@ -138,7 +138,7 @@ func TestComputeEndpointService_List(t *testing.T) {
 	}
 	svc := newTestComputeEndpointService(repo, allowManageCompute(), &mockAuditRepo{})
 
-	eps, total, err := svc.List(context.Background(), domain.PageRequest{})
+	eps, total, err := svc.List(context.Background(), "admin", domain.PageRequest{})
 	require.NoError(t, err)
 	assert.Equal(t, int64(2), total)
 	assert.Len(t, eps, 2)
@@ -364,7 +364,7 @@ func TestComputeEndpointService_ListAssignments(t *testing.T) {
 		}
 		svc := newTestComputeEndpointService(repo, allowManageCompute(), &mockAuditRepo{})
 
-		assignments, total, err := svc.ListAssignments(context.Background(), "ep1", domain.PageRequest{})
+		assignments, total, err := svc.ListAssignments(context.Background(), "admin", "ep1", domain.PageRequest{})
 		require.NoError(t, err)
 		assert.Equal(t, int64(1), total)
 		assert.Len(t, assignments, 1)
@@ -378,7 +378,7 @@ func TestComputeEndpointService_ListAssignments(t *testing.T) {
 		}
 		svc := newTestComputeEndpointService(repo, allowManageCompute(), &mockAuditRepo{})
 
-		_, _, err := svc.ListAssignments(context.Background(), "nonexistent", domain.PageRequest{})
+		_, _, err := svc.ListAssignments(context.Background(), "admin", "nonexistent", domain.PageRequest{})
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
 		assert.ErrorAs(t, err, &notFound)

@@ -9,12 +9,12 @@ import (
 
 // computeEndpointService defines the compute endpoint operations used by the API handler.
 type computeEndpointService interface {
-	List(ctx context.Context, page domain.PageRequest) ([]domain.ComputeEndpoint, int64, error)
+	List(ctx context.Context, principal string, page domain.PageRequest) ([]domain.ComputeEndpoint, int64, error)
 	Create(ctx context.Context, principal string, req domain.CreateComputeEndpointRequest) (*domain.ComputeEndpoint, error)
-	GetByName(ctx context.Context, name string) (*domain.ComputeEndpoint, error)
+	GetByName(ctx context.Context, principal, name string) (*domain.ComputeEndpoint, error)
 	Update(ctx context.Context, principal string, name string, req domain.UpdateComputeEndpointRequest) (*domain.ComputeEndpoint, error)
 	Delete(ctx context.Context, principal string, name string) error
-	ListAssignments(ctx context.Context, endpointName string, page domain.PageRequest) ([]domain.ComputeAssignment, int64, error)
+	ListAssignments(ctx context.Context, principal, endpointName string, page domain.PageRequest) ([]domain.ComputeAssignment, int64, error)
 	Assign(ctx context.Context, principal string, endpointName string, req domain.CreateComputeAssignmentRequest) (*domain.ComputeAssignment, error)
 	Unassign(ctx context.Context, principal string, assignmentID string) error
 	HealthCheck(ctx context.Context, principal string, endpointName string) (*domain.ComputeEndpointHealthResult, error)
@@ -25,7 +25,8 @@ type computeEndpointService interface {
 // ListComputeEndpoints implements the endpoint for listing all compute endpoints.
 func (h *APIHandler) ListComputeEndpoints(ctx context.Context, req ListComputeEndpointsRequestObject) (ListComputeEndpointsResponseObject, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
-	eps, total, err := h.computeEndpoints.List(ctx, page)
+	principal := principalFromCtx(ctx)
+	eps, total, err := h.computeEndpoints.List(ctx, principal, page)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +82,8 @@ func (h *APIHandler) CreateComputeEndpoint(ctx context.Context, req CreateComput
 
 // GetComputeEndpoint implements the endpoint for retrieving a compute endpoint by name.
 func (h *APIHandler) GetComputeEndpoint(ctx context.Context, req GetComputeEndpointRequestObject) (GetComputeEndpointResponseObject, error) {
-	result, err := h.computeEndpoints.GetByName(ctx, req.EndpointName)
+	principal := principalFromCtx(ctx)
+	result, err := h.computeEndpoints.GetByName(ctx, principal, req.EndpointName)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
@@ -151,7 +153,8 @@ func (h *APIHandler) DeleteComputeEndpoint(ctx context.Context, req DeleteComput
 // ListComputeAssignments implements the endpoint for listing assignments for a compute endpoint.
 func (h *APIHandler) ListComputeAssignments(ctx context.Context, req ListComputeAssignmentsRequestObject) (ListComputeAssignmentsResponseObject, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
-	assignments, total, err := h.computeEndpoints.ListAssignments(ctx, req.EndpointName, page)
+	principal := principalFromCtx(ctx)
+	assignments, total, err := h.computeEndpoints.ListAssignments(ctx, principal, req.EndpointName, page)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):

@@ -127,8 +127,8 @@ func newRootCmd() *cobra.Command {
 			_ = cmd.Root().PersistentFlags().Set("output", output)
 		}
 		// Validate output format
-		if output != "" && output != "table" && output != "json" {
-			return fmt.Errorf("unsupported output format %q: use 'table' or 'json'", output)
+		if err := validateOutputFormat(output); err != nil {
+			return err
 		}
 		if yesFlag := cmd.Flags().Lookup("yes"); yesFlag != nil {
 			yes, _ := cmd.Flags().GetBool("yes")

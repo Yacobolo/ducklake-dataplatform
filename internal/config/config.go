@@ -49,16 +49,19 @@ func (a *AuthConfig) Validate() error {
 // Config holds the configuration for the HTTP API and optional S3/DuckLake storage.
 type Config struct {
 	// S3 fields are optional — nil when not configured.
-	S3KeyID       *string
-	S3Secret      *string
-	S3Endpoint    *string
-	S3Region      *string
-	S3Bucket      *string
-	MetaDBPath    string // path to SQLite metadata file (control plane)
-	ListenAddr    string // HTTP listen address (default ":8080")
-	EncryptionKey string // 64-char hex string (32-byte AES key) for encrypting stored credentials
-	LogLevel      string // log level: debug, info, warn, error (default "info")
-	Env           string // environment: "development" (default) or "production"
+	S3KeyID           *string
+	S3Secret          *string
+	S3Endpoint        *string
+	S3Region          *string
+	S3Bucket          *string
+	MetaDBPath        string // path to SQLite metadata file (control plane)
+	ListenAddr        string // HTTP listen address (default ":8080")
+	TLSCertFile       string // TLS certificate file path (optional)
+	TLSKeyFile        string // TLS private key file path (optional)
+	AllowInsecureHTTP bool   // allow non-TLS listener in production (for trusted TLS termination)
+	EncryptionKey     string // 64-char hex string (32-byte AES key) for encrypting stored credentials
+	LogLevel          string // log level: debug, info, warn, error (default "info")
+	Env               string // environment: "development" (default) or "production"
 
 	// Rate limiting
 	RateLimitRPS   float64 // sustained requests per second (default 100)
@@ -106,6 +109,8 @@ func LoadFromEnv() (*Config, error) {
 	cfg := &Config{
 		MetaDBPath:    os.Getenv("META_DB_PATH"),
 		ListenAddr:    os.Getenv("LISTEN_ADDR"),
+		TLSCertFile:   os.Getenv("TLS_CERT_FILE"),
+		TLSKeyFile:    os.Getenv("TLS_KEY_FILE"),
 		EncryptionKey: os.Getenv("ENCRYPTION_KEY"),
 		LogLevel:      os.Getenv("LOG_LEVEL"),
 		Env:           os.Getenv("ENV"),
@@ -147,6 +152,9 @@ func LoadFromEnv() (*Config, error) {
 			origins[i] = strings.TrimSpace(origins[i])
 		}
 		cfg.CORSAllowedOrigins = origins
+	}
+	if strings.EqualFold(os.Getenv("ALLOW_INSECURE_HTTP"), "true") {
+		cfg.AllowInsecureHTTP = true
 	}
 
 	// Auth config
@@ -191,6 +199,9 @@ func LoadFromEnv() (*Config, error) {
 	if cfg.ListenAddr == "" {
 		cfg.ListenAddr = ":8080"
 	}
+	if (cfg.TLSCertFile == "") != (cfg.TLSKeyFile == "") {
+		return nil, fmt.Errorf("both TLS_CERT_FILE and TLS_KEY_FILE must be set together")
+	}
 	if !cfg.Auth.OIDCEnabled() {
 		cfg.Warnings = append(cfg.Warnings, "OIDC is not configured — set AUTH_ISSUER_URL or AUTH_JWKS_URL")
 	}
@@ -221,6 +232,9 @@ func LoadFromEnv() (*Config, error) {
 		}
 		if len(cfg.CORSAllowedOrigins) == 1 && cfg.CORSAllowedOrigins[0] == "*" {
 			return nil, fmt.Errorf("CORS wildcard (*) is not allowed in production (ENV=production)")
+		}
+		if cfg.TLSCertFile == "" && !cfg.AllowInsecureHTTP {
+			return nil, fmt.Errorf("TLS_CERT_FILE/TLS_KEY_FILE must be set in production unless ALLOW_INSECURE_HTTP=true")
 		}
 	}
 

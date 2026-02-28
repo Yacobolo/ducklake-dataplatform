@@ -1,0 +1,514 @@
+SemanticModel:
+  description: A semantic model definition anchored to a base transformation model.
+  type: object
+  properties:
+    id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      example: 550e8400-e29b-41d4-a716-446655440100
+    project_name:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+      example: analytics
+    name:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+      example: sales
+    description:
+      type: string
+      maxLength: 4096
+      pattern: '^[\s\S]*$'
+      example: Sales business semantic model
+    owner:
+      type: string
+      maxLength: 255
+      pattern: '^\S*$'
+      example: finance-team
+    base_model_ref:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+      example: analytics.fct_sales
+    default_time_dimension:
+      type: string
+      maxLength: 255
+      pattern: '^\S*$'
+      example: order_date
+    tags:
+      type: array
+      items:
+        type: string
+      example: [core, finance]
+    created_by:
+      type: string
+      example: admin
+    created_at:
+      type: string
+      format: date-time
+      example: '2025-01-15T09:30:00Z'
+    updated_at:
+      type: string
+      format: date-time
+      example: '2025-01-15T09:30:00Z'
+
+CreateSemanticModelRequest:
+  type: object
+  additionalProperties: false
+  required: [project_name, name, base_model_ref]
+  properties:
+    project_name:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+      example: analytics
+    name:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+      example: sales
+    description:
+      type: string
+      maxLength: 4096
+      pattern: '^[\s\S]*$'
+      example: Sales business semantic model
+    base_model_ref:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+      example: analytics.fct_sales
+    default_time_dimension:
+      type: string
+      maxLength: 255
+      pattern: '^\S*$'
+      example: order_date
+    tags:
+      type: array
+      items:
+        type: string
+
+UpdateSemanticModelRequest:
+  type: object
+  additionalProperties: false
+  properties:
+    description:
+      type: string
+      maxLength: 4096
+      pattern: '^[\s\S]*$'
+    owner:
+      type: string
+      maxLength: 255
+      pattern: '^\S*$'
+    base_model_ref:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+    default_time_dimension:
+      type: string
+      maxLength: 255
+      pattern: '^\S*$'
+    tags:
+      type: array
+      items:
+        type: string
+
+PaginatedSemanticModels:
+  type: object
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/SemanticModel'
+    next_page_token:
+      type: string
+      maxLength: 4096
+      pattern: '^\S+$'
+
+SemanticMetric:
+  type: object
+  properties:
+    id:
+      type: string
+      example: 550e8400-e29b-41d4-a716-446655440200
+    semantic_model_id:
+      type: string
+      example: 550e8400-e29b-41d4-a716-446655440100
+    name:
+      type: string
+      example: total_revenue
+    description:
+      type: string
+      example: Total revenue across filtered rows
+    metric_type:
+      type: string
+      enum: [SUM, COUNT, COUNT_DISTINCT, AVG, MIN, MAX, RATIO]
+      example: SUM
+    expression_mode:
+      type: string
+      enum: [DSL, SQL]
+      example: SQL
+    expression:
+      type: string
+      example: SUM(sales.amount)
+    default_time_grain:
+      type: string
+      example: day
+    format:
+      type: string
+      example: currency
+    owner:
+      type: string
+      example: finance-team
+    certification_state:
+      type: string
+      enum: [DRAFT, CERTIFIED, DEPRECATED]
+      example: CERTIFIED
+    created_by:
+      type: string
+      example: admin
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+
+CreateSemanticMetricRequest:
+  type: object
+  additionalProperties: false
+  required: [name, metric_type, expression]
+  properties:
+    name:
+      type: string
+    description:
+      type: string
+    metric_type:
+      type: string
+      enum: [SUM, COUNT, COUNT_DISTINCT, AVG, MIN, MAX, RATIO]
+    expression_mode:
+      type: string
+      enum: [DSL, SQL]
+      default: DSL
+    expression:
+      type: string
+    default_time_grain:
+      type: string
+    format:
+      type: string
+    certification_state:
+      type: string
+      enum: [DRAFT, CERTIFIED, DEPRECATED]
+
+UpdateSemanticMetricRequest:
+  type: object
+  additionalProperties: false
+  properties:
+    description:
+      type: string
+    metric_type:
+      type: string
+      enum: [SUM, COUNT, COUNT_DISTINCT, AVG, MIN, MAX, RATIO]
+    expression_mode:
+      type: string
+      enum: [DSL, SQL]
+    expression:
+      type: string
+    default_time_grain:
+      type: string
+    format:
+      type: string
+    owner:
+      type: string
+    certification_state:
+      type: string
+      enum: [DRAFT, CERTIFIED, DEPRECATED]
+
+SemanticMetricList:
+  type: object
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/SemanticMetric'
+
+SemanticRelationship:
+  type: object
+  properties:
+    id:
+      type: string
+    name:
+      type: string
+    from_semantic_id:
+      type: string
+    to_semantic_id:
+      type: string
+    relationship_type:
+      type: string
+      enum: [ONE_TO_ONE, ONE_TO_MANY, MANY_TO_ONE, MANY_TO_MANY]
+    join_sql:
+      type: string
+    is_default:
+      type: boolean
+    cost:
+      type: integer
+      format: int32
+    max_hops:
+      type: integer
+      format: int32
+    created_by:
+      type: string
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+
+CreateSemanticRelationshipRequest:
+  type: object
+  additionalProperties: false
+  required: [name, from_semantic_id, to_semantic_id, relationship_type, join_sql]
+  properties:
+    name:
+      type: string
+    from_semantic_id:
+      type: string
+    to_semantic_id:
+      type: string
+    relationship_type:
+      type: string
+      enum: [ONE_TO_ONE, ONE_TO_MANY, MANY_TO_ONE, MANY_TO_MANY]
+    join_sql:
+      type: string
+    is_default:
+      type: boolean
+      default: false
+    cost:
+      type: integer
+      format: int32
+      default: 0
+    max_hops:
+      type: integer
+      format: int32
+      default: 0
+
+UpdateSemanticRelationshipRequest:
+  type: object
+  additionalProperties: false
+  properties:
+    relationship_type:
+      type: string
+      enum: [ONE_TO_ONE, ONE_TO_MANY, MANY_TO_ONE, MANY_TO_MANY]
+    join_sql:
+      type: string
+    is_default:
+      type: boolean
+    cost:
+      type: integer
+      format: int32
+    max_hops:
+      type: integer
+      format: int32
+
+PaginatedSemanticRelationships:
+  type: object
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/SemanticRelationship'
+    next_page_token:
+      type: string
+
+SemanticPreAggregation:
+  type: object
+  properties:
+    id:
+      type: string
+    semantic_model_id:
+      type: string
+    name:
+      type: string
+    metric_set:
+      type: array
+      items:
+        type: string
+    dimension_set:
+      type: array
+      items:
+        type: string
+    grain:
+      type: string
+    target_relation:
+      type: string
+    refresh_policy:
+      type: string
+    created_by:
+      type: string
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+
+CreateSemanticPreAggregationRequest:
+  type: object
+  additionalProperties: false
+  required: [name, target_relation]
+  properties:
+    name:
+      type: string
+    metric_set:
+      type: array
+      items:
+        type: string
+    dimension_set:
+      type: array
+      items:
+        type: string
+    grain:
+      type: string
+    target_relation:
+      type: string
+    refresh_policy:
+      type: string
+
+UpdateSemanticPreAggregationRequest:
+  type: object
+  additionalProperties: false
+  properties:
+    metric_set:
+      type: array
+      items:
+        type: string
+    dimension_set:
+      type: array
+      items:
+        type: string
+    grain:
+      type: string
+    target_relation:
+      type: string
+    refresh_policy:
+      type: string
+
+SemanticPreAggregationList:
+  type: object
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/SemanticPreAggregation'
+
+MetricQueryRequest:
+  type: object
+  additionalProperties: false
+  required: [project_name, semantic_model_name, metrics]
+  properties:
+    project_name:
+      type: string
+    semantic_model_name:
+      type: string
+    metrics:
+      type: array
+      minItems: 1
+      items:
+        type: string
+    dimensions:
+      type: array
+      items:
+        type: string
+    filters:
+      type: array
+      items:
+        type: string
+    order_by:
+      type: array
+      items:
+        type: string
+    limit:
+      type: integer
+      format: int32
+      minimum: 1
+      maximum: 1000000
+
+MetricQueryJoinStep:
+  type: object
+  properties:
+    relationship_name:
+      type: string
+    from_model:
+      type: string
+    to_model:
+      type: string
+    join_sql:
+      type: string
+
+MetricQueryPlan:
+  type: object
+  properties:
+    base_model_name:
+      type: string
+    base_relation:
+      type: string
+    metrics:
+      type: array
+      items:
+        type: string
+    dimensions:
+      type: array
+      items:
+        type: string
+    join_path:
+      type: array
+      items:
+        $ref: '#/MetricQueryJoinStep'
+    selected_pre_aggregation:
+      type: string
+      nullable: true
+    generated_sql:
+      type: string
+    freshness_status:
+      type: string
+    freshness_basis:
+      type: array
+      items:
+        type: string
+
+MetricQueryExplainResponse:
+  type: object
+  properties:
+    plan:
+      $ref: '#/MetricQueryPlan'
+
+MetricQueryRunResponse:
+  type: object
+  properties:
+    plan:
+      $ref: '#/MetricQueryPlan'
+    result:
+      $ref: './common.yaml#/QueryResult'
+
+MetricFreshnessStatus:
+  type: object
+  properties:
+    metric_name:
+      type: string
+    project_name:
+      type: string
+    semantic_model_name:
+      type: string
+    freshness_status:
+      type: string
+    freshness_basis:
+      type: array
+      items:
+        type: string
+    selected_pre_aggregation:
+      type: string
+      nullable: true
+    checked_at:
+      type: string
+      format: date-time

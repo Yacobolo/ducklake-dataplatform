@@ -204,6 +204,35 @@ func TestExporter_RoundTripModelsAndMacros(t *testing.T) {
 				Status:      "DEPRECATED",
 			},
 		}},
+		SemanticModels: []SemanticModelResource{{
+			ProjectName: "analytics",
+			ModelName:   "sales",
+			Spec: SemanticModelSpec{
+				Description:          "Sales semantic model",
+				BaseModelRef:         "analytics.fct_sales",
+				DefaultTimeDimension: "order_date",
+				Tags:                 []string{"finance"},
+				Metrics: []SemanticMetricSpec{{
+					Name:               "total_revenue",
+					MetricType:         "SUM",
+					ExpressionMode:     "SQL",
+					Expression:         "sum(amount)",
+					CertificationState: "CERTIFIED",
+				}},
+				Relationships: []SemanticRelationshipSpec{{
+					Name:             "sales_to_customers",
+					ToModel:          "analytics.customers",
+					RelationshipType: "MANY_TO_ONE",
+					JoinSQL:          "sales.customer_id = customers.id",
+				}},
+				PreAggregations: []SemanticPreAggSpec{{
+					Name:           "daily_sales",
+					MetricSet:      []string{"total_revenue"},
+					DimensionSet:   []string{"order_date"},
+					TargetRelation: "analytics.agg_daily_sales",
+				}},
+			},
+		}},
 	}
 
 	dir := t.TempDir()
@@ -212,6 +241,7 @@ func TestExporter_RoundTripModelsAndMacros(t *testing.T) {
 
 	assertFileExists(t, filepath.Join(dir, "models", "analytics", "stg_orders.yaml"))
 	assertFileExists(t, filepath.Join(dir, "macros", "fmt_money.yaml"))
+	assertFileExists(t, filepath.Join(dir, "semantic_models", "analytics", "sales.yaml"))
 
 	loaded, err := LoadDirectory(dir)
 	require.NoError(t, err)
@@ -228,6 +258,13 @@ func TestExporter_RoundTripModelsAndMacros(t *testing.T) {
 	assert.Equal(t, original.Macros[0].Spec.Properties, loaded.Macros[0].Spec.Properties)
 	assert.Equal(t, original.Macros[0].Spec.Tags, loaded.Macros[0].Spec.Tags)
 	assert.Equal(t, original.Macros[0].Spec.Status, loaded.Macros[0].Spec.Status)
+
+	require.Len(t, loaded.SemanticModels, 1)
+	assert.Equal(t, original.SemanticModels[0].ProjectName, loaded.SemanticModels[0].ProjectName)
+	assert.Equal(t, original.SemanticModels[0].ModelName, loaded.SemanticModels[0].ModelName)
+	assert.Equal(t, original.SemanticModels[0].Spec.BaseModelRef, loaded.SemanticModels[0].Spec.BaseModelRef)
+	require.Len(t, loaded.SemanticModels[0].Spec.Metrics, 1)
+	assert.Equal(t, "total_revenue", loaded.SemanticModels[0].Spec.Metrics[0].Name)
 }
 
 // strPtr is defined in validator_test.go (same package).

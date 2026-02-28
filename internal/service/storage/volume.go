@@ -60,14 +60,20 @@ func (s *VolumeService) Create(ctx context.Context, principal, catalogName, sche
 }
 
 // GetByName returns a volume by schema and name.
-func (s *VolumeService) GetByName(ctx context.Context, catalogName, schemaName, name string) (*domain.Volume, error) {
-	_ = catalogName // volumes are stored globally; catalogName reserved for future use
+// Requires CREATE_VOLUME on catalog.
+func (s *VolumeService) GetByName(ctx context.Context, principal, catalogName, schemaName, name string) (*domain.Volume, error) {
+	if err := s.requirePrivilege(ctx, principal, domain.SecurableCatalog, catalogName, domain.PrivCreateVolume, "GET_VOLUME", fmt.Sprintf("Denied get volume %q in schema %q", name, schemaName)); err != nil {
+		return nil, err
+	}
 	return s.repo.GetByName(ctx, schemaName, name)
 }
 
 // List returns a paginated list of volumes in a schema.
-func (s *VolumeService) List(ctx context.Context, catalogName, schemaName string, page domain.PageRequest) ([]domain.Volume, int64, error) {
-	_ = catalogName // volumes are stored globally; catalogName reserved for future use
+// Requires CREATE_VOLUME on catalog.
+func (s *VolumeService) List(ctx context.Context, principal, catalogName, schemaName string, page domain.PageRequest) ([]domain.Volume, int64, error) {
+	if err := s.requirePrivilege(ctx, principal, domain.SecurableCatalog, catalogName, domain.PrivCreateVolume, "LIST_VOLUMES", fmt.Sprintf("Denied list volumes in schema %q", schemaName)); err != nil {
+		return nil, 0, err
+	}
 	return s.repo.List(ctx, schemaName, page)
 }
 

@@ -99,6 +99,11 @@ func newConfigSetProfileCmd() *cobra.Command {
 			if name == "" {
 				return fmt.Errorf("--name is required")
 			}
+			if cmd.Flags().Changed("output") {
+				if err := validateOutputFormat(output); err != nil {
+					return err
+				}
+			}
 
 			cfg, err := LoadUserConfig()
 			if err != nil {

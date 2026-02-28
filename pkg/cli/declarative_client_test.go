@@ -1318,6 +1318,194 @@ func TestExecuteModel_SkipsTestsWhenEndpointUnavailable(t *testing.T) {
 	assert.Equal(t, "/v1/models/analytics/stg_orders/tests", captured[1].Path)
 }
 
+func TestExecuteSemanticModel_CreateReconcilesChildren(t *testing.T) {
+	t.Parallel()
+
+	var (
+		mu       sync.Mutex
+		captured []execCapture
+	)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+
+		ec := execCapture{Method: r.Method, Path: r.URL.Path, Query: r.URL.Query()}
+		if r.Body != nil {
+			data, _ := io.ReadAll(r.Body)
+			if len(data) > 0 {
+				var m map[string]interface{}
+				_ = json.Unmarshal(data, &m)
+				ec.Body = m
+			}
+		}
+		captured = append(captured, ec)
+
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/semantic-models/analytics/sales/metrics":
+			_, _ = w.Write([]byte(`{"data":[]}`))
+			return
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/semantic-models/analytics/sales/pre-aggregations":
+			_, _ = w.Write([]byte(`{"data":[]}`))
+			return
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/semantic-relationships":
+			_, _ = w.Write([]byte(`{"data":[]}`))
+			return
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/semantic-models/analytics/customers":
+			_, _ = w.Write([]byte(`{"id":"sm-customers"}`))
+			return
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/semantic-models":
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"id":"sm-sales"}`))
+			return
+		default:
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"id":"generated-uuid-123"}`))
+			return
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	sc := NewAPIStateClient(gen.NewClient(srv.URL, "", "test-token"))
+	sc.index = newResourceIndex()
+
+	action := declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindSemanticModel,
+		ResourceName: "analytics.sales",
+		Desired: declarative.SemanticModelResource{
+			ProjectName: "analytics",
+			ModelName:   "sales",
+			Spec: declarative.SemanticModelSpec{
+				Description:          "Sales semantic model",
+				BaseModelRef:         "analytics.fct_sales",
+				DefaultTimeDimension: "order_date",
+				Tags:                 []string{"finance"},
+				Metrics: []declarative.SemanticMetricSpec{{
+					Name:               "total_revenue",
+					MetricType:         "SUM",
+					ExpressionMode:     "SQL",
+					Expression:         "sum(amount)",
+					CertificationState: "CERTIFIED",
+				}},
+				Relationships: []declarative.SemanticRelationshipSpec{{
+					Name:             "sales_to_customers",
+					ToModel:          "customers",
+					RelationshipType: "MANY_TO_ONE",
+					JoinSQL:          "sales.customer_id = customers.id",
+				}},
+				PreAggregations: []declarative.SemanticPreAggSpec{{
+					Name:           "daily_sales",
+					MetricSet:      []string{"total_revenue"},
+					DimensionSet:   []string{"order_date"},
+					TargetRelation: "analytics.agg_daily_sales",
+				}},
+			},
+		},
+	}
+
+	require.NoError(t, sc.Execute(context.Background(), action))
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	paths := make([]string, 0, len(captured))
+	for _, c := range captured {
+		paths = append(paths, c.Method+" "+c.Path)
+	}
+	assert.Contains(t, paths, "POST /v1/semantic-models")
+	assert.Contains(t, paths, "POST /v1/semantic-models/analytics/sales/metrics")
+	assert.Contains(t, paths, "POST /v1/semantic-models/analytics/sales/pre-aggregations")
+	assert.Contains(t, paths, "POST /v1/semantic-relationships")
+}
+
+func TestExecuteSemanticModel_UpdateReconcilesAndDeletesChildren(t *testing.T) {
+	t.Parallel()
+
+	var (
+		mu       sync.Mutex
+		captured []execCapture
+	)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+
+		ec := execCapture{Method: r.Method, Path: r.URL.Path, Query: r.URL.Query()}
+		if r.Body != nil {
+			data, _ := io.ReadAll(r.Body)
+			if len(data) > 0 {
+				var m map[string]interface{}
+				_ = json.Unmarshal(data, &m)
+				ec.Body = m
+			}
+		}
+		captured = append(captured, ec)
+
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/semantic-models/analytics/sales":
+			_, _ = w.Write([]byte(`{"id":"sm-sales"}`))
+			return
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/semantic-models/analytics/sales/metrics":
+			_, _ = w.Write([]byte(`{"data":[{"name":"total_revenue","metric_type":"SUM","expression_mode":"SQL","expression":"sum(old_amount)"},{"name":"stale_metric","metric_type":"COUNT","expression_mode":"SQL","expression":"count(*)"}]}`))
+			return
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/semantic-models/analytics/sales/pre-aggregations":
+			_, _ = w.Write([]byte(`{"data":[{"name":"stale_preagg"}]}`))
+			return
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/semantic-relationships":
+			_, _ = w.Write([]byte(`{"data":[{"name":"sales_to_customers","from_semantic_id":"sm-sales","to_semantic_id":"sm-customers","relationship_type":"MANY_TO_ONE","join_sql":"sales.customer_id = customers.id"},{"name":"other_rel","from_semantic_id":"sm-other","to_semantic_id":"sm-customers","relationship_type":"MANY_TO_ONE","join_sql":"other.customer_id = customers.id"}]}`))
+			return
+		default:
+			_, _ = w.Write([]byte(`{"id":"generated-uuid-123"}`))
+			return
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	sc := NewAPIStateClient(gen.NewClient(srv.URL, "", "test-token"))
+	sc.index = newResourceIndex()
+
+	action := declarative.Action{
+		Operation:    declarative.OpUpdate,
+		ResourceKind: declarative.KindSemanticModel,
+		ResourceName: "analytics.sales",
+		Desired: declarative.SemanticModelResource{
+			ProjectName: "analytics",
+			ModelName:   "sales",
+			Spec: declarative.SemanticModelSpec{
+				Description:          "Updated sales model",
+				BaseModelRef:         "analytics.fct_sales",
+				DefaultTimeDimension: "order_date",
+				Metrics: []declarative.SemanticMetricSpec{{
+					Name:           "total_revenue",
+					MetricType:     "SUM",
+					ExpressionMode: "SQL",
+					Expression:     "sum(amount)",
+				}},
+			},
+		},
+	}
+
+	require.NoError(t, sc.Execute(context.Background(), action))
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	paths := make([]string, 0, len(captured))
+	for _, c := range captured {
+		paths = append(paths, c.Method+" "+c.Path)
+	}
+
+	assert.Contains(t, paths, "PATCH /v1/semantic-models/analytics/sales")
+	assert.Contains(t, paths, "PATCH /v1/semantic-models/analytics/sales/metrics/total_revenue")
+	assert.Contains(t, paths, "DELETE /v1/semantic-models/analytics/sales/metrics/stale_metric")
+	assert.Contains(t, paths, "DELETE /v1/semantic-models/analytics/sales/pre-aggregations/stale_preagg")
+	assert.Contains(t, paths, "DELETE /v1/semantic-relationships/sales_to_customers")
+	assert.NotContains(t, paths, "DELETE /v1/semantic-relationships/other_rel")
+}
+
 func TestReadState_ModelsAndMacros(t *testing.T) {
 	t.Parallel()
 
@@ -1354,6 +1542,74 @@ func TestReadState_ModelsAndMacros(t *testing.T) {
 	assert.Equal(t, "analytics", macro.Spec.ProjectName)
 	assert.Equal(t, "project", macro.Spec.Visibility)
 	assert.Equal(t, "ACTIVE", macro.Spec.Status)
+}
+
+func TestReadState_SemanticModels(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/semantic-models", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":[{"id":"sm-sales","project_name":"analytics","name":"sales","description":"Sales model","base_model_ref":"analytics.fct_sales","default_time_dimension":"order_date","tags":["finance"]},{"id":"sm-customers","project_name":"analytics","name":"customers","description":"Customers model","base_model_ref":"analytics.dim_customers"}]}`))
+	})
+	mux.HandleFunc("/v1/semantic-models/analytics/sales/metrics", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":[{"name":"total_revenue","metric_type":"SUM","expression_mode":"SQL","expression":"sum(amount)","certification_state":"CERTIFIED"}]}`))
+	})
+	mux.HandleFunc("/v1/semantic-models/analytics/customers/metrics", emptyListHandler())
+	mux.HandleFunc("/v1/semantic-models/analytics/sales/pre-aggregations", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":[{"name":"daily_sales","metric_set":["total_revenue"],"dimension_set":["order_date"],"target_relation":"analytics.agg_daily_sales"}]}`))
+	})
+	mux.HandleFunc("/v1/semantic-models/analytics/customers/pre-aggregations", emptyListHandler())
+	mux.HandleFunc("/v1/semantic-relationships", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":[{"name":"sales_to_customers","from_semantic_id":"sm-sales","to_semantic_id":"sm-customers","relationship_type":"MANY_TO_ONE","join_sql":"sales.customer_id = customers.id"}]}`))
+	})
+	mux.HandleFunc("/", emptyListHandler())
+
+	sc := setupReadStateClient(t, mux)
+	state, err := sc.ReadState(context.Background())
+	require.NoError(t, err)
+
+	require.Len(t, state.SemanticModels, 2)
+	var sales declarative.SemanticModelResource
+	for _, model := range state.SemanticModels {
+		if model.ModelName == "sales" {
+			sales = model
+			break
+		}
+	}
+	assert.Equal(t, "analytics", sales.ProjectName)
+	assert.Equal(t, "analytics.fct_sales", sales.Spec.BaseModelRef)
+	require.Len(t, sales.Spec.Metrics, 1)
+	assert.Equal(t, "total_revenue", sales.Spec.Metrics[0].Name)
+	require.Len(t, sales.Spec.PreAggregations, 1)
+	assert.Equal(t, "daily_sales", sales.Spec.PreAggregations[0].Name)
+	require.Len(t, sales.Spec.Relationships, 1)
+	assert.Equal(t, "analytics.customers", sales.Spec.Relationships[0].ToModel)
+}
+
+func TestReadState_SemanticModelsErrorsOnUnknownRelationshipSource(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/semantic-models", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":[{"id":"sm-sales","project_name":"analytics","name":"sales","base_model_ref":"analytics.fct_sales"}]}`))
+	})
+	mux.HandleFunc("/v1/semantic-models/analytics/sales/metrics", emptyListHandler())
+	mux.HandleFunc("/v1/semantic-models/analytics/sales/pre-aggregations", emptyListHandler())
+	mux.HandleFunc("/v1/semantic-relationships", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":[{"name":"bad_rel","from_semantic_id":"sm-missing","to_semantic_id":"sm-sales","relationship_type":"MANY_TO_ONE","join_sql":"x=y"}]}`))
+	})
+	mux.HandleFunc("/", emptyListHandler())
+
+	sc := setupReadStateClient(t, mux)
+	_, err := sc.ReadState(context.Background())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown from_semantic_id")
 }
 
 func TestReadState_OptionalModelAndMacroEndpoints(t *testing.T) {
@@ -1412,6 +1668,8 @@ func TestReadState_ConnectionErrorsLegacyModeAreOptionalForModelMacro(t *testing
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write([]byte(`broken pipe`))
 	})
+	mux.HandleFunc("/v1/semantic-models", emptyListHandler())
+	mux.HandleFunc("/v1/semantic-relationships", emptyListHandler())
 
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
@@ -1446,6 +1704,26 @@ func TestValidateApplyCapabilities_ModelEndpointRequired(t *testing.T) {
 	}})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "/models endpoint is unavailable")
+}
+
+func TestValidateApplyCapabilities_SemanticEndpointRequired(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/semantic-models", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"code":"NOT_FOUND"}`))
+	})
+	mux.HandleFunc("/", emptyListHandler())
+
+	sc := setupReadStateClient(t, mux)
+	err := sc.ValidateApplyCapabilities(context.Background(), []declarative.Action{{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindSemanticModel,
+		ResourceName: "analytics.sales",
+	}})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "/semantic-models endpoint is unavailable")
 }
 
 // === ReadState helper ===

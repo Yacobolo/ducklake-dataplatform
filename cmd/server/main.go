@@ -148,6 +148,7 @@ func run() error {
 		svc.Pipeline,
 		svc.Model,
 		svc.Macro,
+		svc.Semantic,
 	)
 
 	// Create strict handler wrapper
@@ -307,6 +308,14 @@ func run() error {
 		defer shutdownCancel()
 		_ = srv.Shutdown(shutdownCtx)
 	}()
+
+	if cfg.TLSCertFile != "" && cfg.TLSKeyFile != "" {
+		logger.Info("TLS enabled for API server", "cert_file", cfg.TLSCertFile)
+		if err := srv.ListenAndServeTLS(cfg.TLSCertFile, cfg.TLSKeyFile); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			return fmt.Errorf("server: %w", err)
+		}
+		return nil
+	}
 
 	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return fmt.Errorf("server: %w", err)

@@ -5,7 +5,7 @@
 Duck declarative GrantList
 
 - Schema file: `kinds/grant-list.schema.json`
-- SHA256: `eed23e2ddb770f3c58b087d1004b852df7840e7a38ff2335e0256e8ad3989787`
+- SHA256: `a9927dae7b587157ddf260c8742c3e8a8326dcce8df6d3af76f7cf5d7e93418d`
 
 ## Spec Fields
 

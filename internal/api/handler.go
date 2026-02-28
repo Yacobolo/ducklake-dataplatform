@@ -30,6 +30,7 @@ type APIHandler struct {
 	pipelines           pipelineService
 	models              modelService
 	macros              macroService
+	semantics           semanticService
 }
 
 // NewHandler creates a new APIHandler with all required service dependencies.
@@ -61,6 +62,7 @@ func NewHandler(
 	pipelines pipelineService,
 	models modelService,
 	macros macroService,
+	semantics semanticService,
 ) *APIHandler {
 	return &APIHandler{
 		query:               query,
@@ -90,6 +92,7 @@ func NewHandler(
 		pipelines:           pipelines,
 		models:              models,
 		macros:              macros,
+		semantics:           semantics,
 	}
 }
 

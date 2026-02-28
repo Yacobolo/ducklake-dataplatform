@@ -14,18 +14,18 @@ import (
 // === Mocks ===
 
 type mockStorageCredentialService struct {
-	listFn   func(ctx context.Context, page domain.PageRequest) ([]domain.StorageCredential, int64, error)
+	listFn   func(ctx context.Context, principal string, page domain.PageRequest) ([]domain.StorageCredential, int64, error)
 	createFn func(ctx context.Context, principal string, req domain.CreateStorageCredentialRequest) (*domain.StorageCredential, error)
-	getFn    func(ctx context.Context, name string) (*domain.StorageCredential, error)
+	getFn    func(ctx context.Context, principal, name string) (*domain.StorageCredential, error)
 	updateFn func(ctx context.Context, principal string, name string, req domain.UpdateStorageCredentialRequest) (*domain.StorageCredential, error)
 	deleteFn func(ctx context.Context, principal string, name string) error
 }
 
-func (m *mockStorageCredentialService) List(ctx context.Context, page domain.PageRequest) ([]domain.StorageCredential, int64, error) {
+func (m *mockStorageCredentialService) List(ctx context.Context, principal string, page domain.PageRequest) ([]domain.StorageCredential, int64, error) {
 	if m.listFn == nil {
 		panic("mockStorageCredentialService.List called but not configured")
 	}
-	return m.listFn(ctx, page)
+	return m.listFn(ctx, principal, page)
 }
 
 func (m *mockStorageCredentialService) Create(ctx context.Context, principal string, req domain.CreateStorageCredentialRequest) (*domain.StorageCredential, error) {
@@ -35,11 +35,11 @@ func (m *mockStorageCredentialService) Create(ctx context.Context, principal str
 	return m.createFn(ctx, principal, req)
 }
 
-func (m *mockStorageCredentialService) GetByName(ctx context.Context, name string) (*domain.StorageCredential, error) {
+func (m *mockStorageCredentialService) GetByName(ctx context.Context, principal, name string) (*domain.StorageCredential, error) {
 	if m.getFn == nil {
 		panic("mockStorageCredentialService.GetByName called but not configured")
 	}
-	return m.getFn(ctx, name)
+	return m.getFn(ctx, principal, name)
 }
 
 func (m *mockStorageCredentialService) Update(ctx context.Context, principal string, name string, req domain.UpdateStorageCredentialRequest) (*domain.StorageCredential, error) {
@@ -57,18 +57,18 @@ func (m *mockStorageCredentialService) Delete(ctx context.Context, principal str
 }
 
 type mockExternalLocationService struct {
-	listFn   func(ctx context.Context, page domain.PageRequest) ([]domain.ExternalLocation, int64, error)
+	listFn   func(ctx context.Context, principal string, page domain.PageRequest) ([]domain.ExternalLocation, int64, error)
 	createFn func(ctx context.Context, principal string, req domain.CreateExternalLocationRequest) (*domain.ExternalLocation, error)
-	getFn    func(ctx context.Context, name string) (*domain.ExternalLocation, error)
+	getFn    func(ctx context.Context, principal, name string) (*domain.ExternalLocation, error)
 	updateFn func(ctx context.Context, principal string, name string, req domain.UpdateExternalLocationRequest) (*domain.ExternalLocation, error)
 	deleteFn func(ctx context.Context, principal string, name string) error
 }
 
-func (m *mockExternalLocationService) List(ctx context.Context, page domain.PageRequest) ([]domain.ExternalLocation, int64, error) {
+func (m *mockExternalLocationService) List(ctx context.Context, principal string, page domain.PageRequest) ([]domain.ExternalLocation, int64, error) {
 	if m.listFn == nil {
 		panic("mockExternalLocationService.List called but not configured")
 	}
-	return m.listFn(ctx, page)
+	return m.listFn(ctx, principal, page)
 }
 
 func (m *mockExternalLocationService) Create(ctx context.Context, principal string, req domain.CreateExternalLocationRequest) (*domain.ExternalLocation, error) {
@@ -78,11 +78,11 @@ func (m *mockExternalLocationService) Create(ctx context.Context, principal stri
 	return m.createFn(ctx, principal, req)
 }
 
-func (m *mockExternalLocationService) GetByName(ctx context.Context, name string) (*domain.ExternalLocation, error) {
+func (m *mockExternalLocationService) GetByName(ctx context.Context, principal, name string) (*domain.ExternalLocation, error) {
 	if m.getFn == nil {
 		panic("mockExternalLocationService.GetByName called but not configured")
 	}
-	return m.getFn(ctx, name)
+	return m.getFn(ctx, principal, name)
 }
 
 func (m *mockExternalLocationService) Update(ctx context.Context, principal string, name string, req domain.UpdateExternalLocationRequest) (*domain.ExternalLocation, error) {
@@ -100,18 +100,18 @@ func (m *mockExternalLocationService) Delete(ctx context.Context, principal stri
 }
 
 type mockVolumeService struct {
-	listFn   func(ctx context.Context, catalogName string, schemaName string, page domain.PageRequest) ([]domain.Volume, int64, error)
+	listFn   func(ctx context.Context, principal, catalogName string, schemaName string, page domain.PageRequest) ([]domain.Volume, int64, error)
 	createFn func(ctx context.Context, catalogName string, principal, schemaName string, req domain.CreateVolumeRequest) (*domain.Volume, error)
-	getFn    func(ctx context.Context, catalogName string, schemaName, name string) (*domain.Volume, error)
+	getFn    func(ctx context.Context, principal, catalogName string, schemaName, name string) (*domain.Volume, error)
 	updateFn func(ctx context.Context, catalogName string, principal, schemaName, name string, req domain.UpdateVolumeRequest) (*domain.Volume, error)
 	deleteFn func(ctx context.Context, catalogName string, principal, schemaName, name string) error
 }
 
-func (m *mockVolumeService) List(ctx context.Context, catalogName string, schemaName string, page domain.PageRequest) ([]domain.Volume, int64, error) {
+func (m *mockVolumeService) List(ctx context.Context, principal, catalogName string, schemaName string, page domain.PageRequest) ([]domain.Volume, int64, error) {
 	if m.listFn == nil {
 		panic("mockVolumeService.List called but not configured")
 	}
-	return m.listFn(ctx, catalogName, schemaName, page)
+	return m.listFn(ctx, principal, catalogName, schemaName, page)
 }
 
 func (m *mockVolumeService) Create(ctx context.Context, catalogName string, principal, schemaName string, req domain.CreateVolumeRequest) (*domain.Volume, error) {
@@ -121,11 +121,11 @@ func (m *mockVolumeService) Create(ctx context.Context, catalogName string, prin
 	return m.createFn(ctx, catalogName, principal, schemaName, req)
 }
 
-func (m *mockVolumeService) GetByName(ctx context.Context, catalogName string, schemaName, name string) (*domain.Volume, error) {
+func (m *mockVolumeService) GetByName(ctx context.Context, principal, catalogName string, schemaName, name string) (*domain.Volume, error) {
 	if m.getFn == nil {
 		panic("mockVolumeService.GetByName called but not configured")
 	}
-	return m.getFn(ctx, catalogName, schemaName, name)
+	return m.getFn(ctx, principal, catalogName, schemaName, name)
 }
 
 func (m *mockVolumeService) Update(ctx context.Context, catalogName string, principal, schemaName, name string, req domain.UpdateVolumeRequest) (*domain.Volume, error) {
@@ -203,13 +203,13 @@ func TestHandler_ListStorageCredentials(t *testing.T) {
 	tests := []struct {
 		name     string
 		params   ListStorageCredentialsParams
-		svcFn    func(ctx context.Context, page domain.PageRequest) ([]domain.StorageCredential, int64, error)
+		svcFn    func(ctx context.Context, principal string, page domain.PageRequest) ([]domain.StorageCredential, int64, error)
 		assertFn func(t *testing.T, resp ListStorageCredentialsResponseObject, err error)
 	}{
 		{
 			name:   "happy path returns 200 with results",
 			params: ListStorageCredentialsParams{},
-			svcFn: func(_ context.Context, _ domain.PageRequest) ([]domain.StorageCredential, int64, error) {
+			svcFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.StorageCredential, int64, error) {
 				return []domain.StorageCredential{sampleStorageCredential()}, 1, nil
 			},
 			assertFn: func(t *testing.T, resp ListStorageCredentialsResponseObject, err error) {
@@ -225,7 +225,7 @@ func TestHandler_ListStorageCredentials(t *testing.T) {
 		{
 			name:   "empty list returns 200 with empty data",
 			params: ListStorageCredentialsParams{},
-			svcFn: func(_ context.Context, _ domain.PageRequest) ([]domain.StorageCredential, int64, error) {
+			svcFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.StorageCredential, int64, error) {
 				return []domain.StorageCredential{}, 0, nil
 			},
 			assertFn: func(t *testing.T, resp ListStorageCredentialsResponseObject, err error) {
@@ -240,7 +240,7 @@ func TestHandler_ListStorageCredentials(t *testing.T) {
 		{
 			name:   "service error propagates",
 			params: ListStorageCredentialsParams{},
-			svcFn: func(_ context.Context, _ domain.PageRequest) ([]domain.StorageCredential, int64, error) {
+			svcFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.StorageCredential, int64, error) {
 				return nil, 0, assert.AnError
 			},
 			assertFn: func(t *testing.T, resp ListStorageCredentialsResponseObject, err error) {
@@ -369,13 +369,13 @@ func TestHandler_GetStorageCredential(t *testing.T) {
 	tests := []struct {
 		name     string
 		credName string
-		svcFn    func(ctx context.Context, name string) (*domain.StorageCredential, error)
+		svcFn    func(ctx context.Context, principal, name string) (*domain.StorageCredential, error)
 		assertFn func(t *testing.T, resp GetStorageCredentialResponseObject, err error)
 	}{
 		{
 			name:     "happy path returns 200",
 			credName: "my-s3-cred",
-			svcFn: func(_ context.Context, _ string) (*domain.StorageCredential, error) {
+			svcFn: func(_ context.Context, _ string, _ string) (*domain.StorageCredential, error) {
 				c := sampleStorageCredential()
 				return &c, nil
 			},
@@ -390,7 +390,7 @@ func TestHandler_GetStorageCredential(t *testing.T) {
 		{
 			name:     "not found returns 404",
 			credName: "nonexistent",
-			svcFn: func(_ context.Context, name string) (*domain.StorageCredential, error) {
+			svcFn: func(_ context.Context, _ string, name string) (*domain.StorageCredential, error) {
 				return nil, domain.ErrNotFound("credential %s not found", name)
 			},
 			assertFn: func(t *testing.T, resp GetStorageCredentialResponseObject, err error) {
@@ -560,13 +560,13 @@ func TestHandler_ListExternalLocations(t *testing.T) {
 	tests := []struct {
 		name     string
 		params   ListExternalLocationsParams
-		svcFn    func(ctx context.Context, page domain.PageRequest) ([]domain.ExternalLocation, int64, error)
+		svcFn    func(ctx context.Context, principal string, page domain.PageRequest) ([]domain.ExternalLocation, int64, error)
 		assertFn func(t *testing.T, resp ListExternalLocationsResponseObject, err error)
 	}{
 		{
 			name:   "happy path returns 200 with results",
 			params: ListExternalLocationsParams{},
-			svcFn: func(_ context.Context, _ domain.PageRequest) ([]domain.ExternalLocation, int64, error) {
+			svcFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.ExternalLocation, int64, error) {
 				return []domain.ExternalLocation{sampleExternalLocation()}, 1, nil
 			},
 			assertFn: func(t *testing.T, resp ListExternalLocationsResponseObject, err error) {
@@ -582,7 +582,7 @@ func TestHandler_ListExternalLocations(t *testing.T) {
 		{
 			name:   "service error propagates",
 			params: ListExternalLocationsParams{},
-			svcFn: func(_ context.Context, _ domain.PageRequest) ([]domain.ExternalLocation, int64, error) {
+			svcFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.ExternalLocation, int64, error) {
 				return nil, 0, assert.AnError
 			},
 			assertFn: func(t *testing.T, resp ListExternalLocationsResponseObject, err error) {
@@ -718,13 +718,13 @@ func TestHandler_GetExternalLocation(t *testing.T) {
 	tests := []struct {
 		name     string
 		locName  string
-		svcFn    func(ctx context.Context, name string) (*domain.ExternalLocation, error)
+		svcFn    func(ctx context.Context, principal, name string) (*domain.ExternalLocation, error)
 		assertFn func(t *testing.T, resp GetExternalLocationResponseObject, err error)
 	}{
 		{
 			name:    "happy path returns 200",
 			locName: "my-s3-location",
-			svcFn: func(_ context.Context, _ string) (*domain.ExternalLocation, error) {
+			svcFn: func(_ context.Context, _ string, _ string) (*domain.ExternalLocation, error) {
 				l := sampleExternalLocation()
 				return &l, nil
 			},
@@ -739,7 +739,7 @@ func TestHandler_GetExternalLocation(t *testing.T) {
 		{
 			name:    "not found returns 404",
 			locName: "nonexistent",
-			svcFn: func(_ context.Context, name string) (*domain.ExternalLocation, error) {
+			svcFn: func(_ context.Context, _ string, name string) (*domain.ExternalLocation, error) {
 				return nil, domain.ErrNotFound("location %s not found", name)
 			},
 			assertFn: func(t *testing.T, resp GetExternalLocationResponseObject, err error) {
@@ -908,12 +908,12 @@ func TestHandler_ListVolumes(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		svcFn    func(ctx context.Context, catalogName string, schemaName string, page domain.PageRequest) ([]domain.Volume, int64, error)
+		svcFn    func(ctx context.Context, principal, catalogName string, schemaName string, page domain.PageRequest) ([]domain.Volume, int64, error)
 		assertFn func(t *testing.T, resp ListVolumesResponseObject, err error)
 	}{
 		{
 			name: "happy path returns 200 with results",
-			svcFn: func(_ context.Context, _ string, _ string, _ domain.PageRequest) ([]domain.Volume, int64, error) {
+			svcFn: func(_ context.Context, _ string, _ string, _ string, _ domain.PageRequest) ([]domain.Volume, int64, error) {
 				return []domain.Volume{sampleVolume()}, 1, nil
 			},
 			assertFn: func(t *testing.T, resp ListVolumesResponseObject, err error) {
@@ -928,7 +928,7 @@ func TestHandler_ListVolumes(t *testing.T) {
 		},
 		{
 			name: "service error propagates",
-			svcFn: func(_ context.Context, _ string, _ string, _ domain.PageRequest) ([]domain.Volume, int64, error) {
+			svcFn: func(_ context.Context, _ string, _ string, _ string, _ domain.PageRequest) ([]domain.Volume, int64, error) {
 				return nil, 0, assert.AnError
 			},
 			assertFn: func(t *testing.T, resp ListVolumesResponseObject, err error) {
@@ -1059,13 +1059,13 @@ func TestHandler_GetVolume(t *testing.T) {
 	tests := []struct {
 		name       string
 		volumeName string
-		svcFn      func(ctx context.Context, catalogName string, schemaName, name string) (*domain.Volume, error)
+		svcFn      func(ctx context.Context, principal, catalogName string, schemaName, name string) (*domain.Volume, error)
 		assertFn   func(t *testing.T, resp GetVolumeResponseObject, err error)
 	}{
 		{
 			name:       "happy path returns 200",
 			volumeName: "my-volume",
-			svcFn: func(_ context.Context, _ string, _, _ string) (*domain.Volume, error) {
+			svcFn: func(_ context.Context, _ string, _ string, _, _ string) (*domain.Volume, error) {
 				v := sampleVolume()
 				return &v, nil
 			},
@@ -1080,7 +1080,7 @@ func TestHandler_GetVolume(t *testing.T) {
 		{
 			name:       "not found returns 404",
 			volumeName: "nonexistent",
-			svcFn: func(_ context.Context, _ string, _, name string) (*domain.Volume, error) {
+			svcFn: func(_ context.Context, _ string, _ string, _, name string) (*domain.Volume, error) {
 				return nil, domain.ErrNotFound("volume %s not found", name)
 			},
 			assertFn: func(t *testing.T, resp GetVolumeResponseObject, err error) {

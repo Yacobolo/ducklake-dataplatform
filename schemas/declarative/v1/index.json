@@ -1,7 +1,7 @@
 {
   "apiVersion": "duck/v1",
   "files": {
-    "duck.declarative.schema.json": "97265530bb8e7ad90453e92813a958146d301840d11610b47e60d92d6d570127",
+    "duck.declarative.schema.json": "5bb4f3b9f6a57f1198e815f5ecf77f2bb15befd985d9f41b963c7709d503d7e8",
     "kinds/api-key-list.schema.json": "90233e3aa0c3ba6174f1e8589f8cbcd962d4c7bcca5d3853ee7643099d9f9a15",
     "kinds/binding-list.schema.json": "5c46b7f6f9e38e5829fca8e8fdc52d3c4ea8d8f2c241f06d992899bd2207c6dd",
     "kinds/catalog.schema.json": "b09db032ebe5d9687e36898abf362ee79ea28f38a5dc11aed148c3622179a499",
@@ -19,6 +19,7 @@
     "kinds/privilege-preset-list.schema.json": "090c732c29ec1e85731909b89d44041f9e8138184a209812da0048290d53bf87",
     "kinds/row-filter-list.schema.json": "ac9b42eda99888d725ae668923c2ac73c0156587844108078a034292a22c5743",
     "kinds/schema.schema.json": "e8d6fdeb80c6b552101c4031014213099e56b67842095b1dcd7021c3af9ede06",
+    "kinds/semantic-model.schema.json": "f61f60f72ad5437709eed4463447a37a596e5a5ee5d14b3e10fb65c97ccd7886",
     "kinds/storage-credential-list.schema.json": "afe5ef7fd5ada3d8cb379c1064e6811c5dbab8e1f8015d141e7eedbf82347a2c",
     "kinds/table.schema.json": "ba5f538e24c38543b7e8ec9f2288624ecb6f265d9b1f320ebecdd513778bcda8",
     "kinds/tag-config.schema.json": "1e751bea5c972720ff8335f47b507c96d84339c9867328d1ddc7c072d0d907f8",
