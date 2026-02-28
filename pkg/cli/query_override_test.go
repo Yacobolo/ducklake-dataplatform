@@ -44,6 +44,19 @@ func TestQueryOverride(t *testing.T) {
 			},
 		},
 		{
+			name:       "SQL from positional arg",
+			args:       []string{"query", "execute", "SELECT 42"},
+			statusCode: http.StatusOK,
+			response:   `{"columns":["42"],"rows":[[42]],"row_count":1}`,
+			wantErr:    false,
+			checkReq: func(t *testing.T, c captured) {
+				t.Helper()
+				var body map[string]interface{}
+				require.NoError(t, json.Unmarshal(c.body, &body))
+				assert.Equal(t, "SELECT 42", body["sql"])
+			},
+		},
+		{
 			name:       "no SQL provided",
 			args:       []string{"query", "execute"},
 			statusCode: http.StatusOK,
