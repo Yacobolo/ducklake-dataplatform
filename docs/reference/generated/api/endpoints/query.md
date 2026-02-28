@@ -4,6 +4,130 @@
 
 Execute SQL queries against the platform.
 
+## `POST /queries`
+
+Submit asynchronous SQL query
+
+Submits a SQL query for asynchronous execution and returns a query ID for lifecycle polling.
+
+- Operation ID: `submitQuery`
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `202` | Query accepted |
+| `400` | Invalid request parameters or malformed request body. |
+| `401` | Authentication credentials are missing or invalid. |
+| `403` | Insufficient privileges to perform this operation. |
+| `429` | Rate limit exceeded. Retry after the indicated duration. |
+| `500` | An unexpected internal server error occurred. |
+
+## `GET /queries/{queryId}`
+
+Get asynchronous query status
+
+- Operation ID: `getQuery`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `queryId` | `string` | `true` | Query job identifier returned by submitQuery. |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | Query status |
+| `400` | Invalid request parameters or malformed request body. |
+| `401` | Authentication credentials are missing or invalid. |
+| `404` | The requested resource was not found. |
+| `429` | Rate limit exceeded. Retry after the indicated duration. |
+| `500` | An unexpected internal server error occurred. |
+
+## `DELETE /queries/{queryId}`
+
+Delete asynchronous query job
+
+- Operation ID: `deleteQuery`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `queryId` | `string` | `true` | Query job identifier returned by submitQuery. |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `204` | Query deleted |
+| `400` | Invalid request parameters or malformed request body. |
+| `401` | Authentication credentials are missing or invalid. |
+| `404` | The requested resource was not found. |
+| `429` | Rate limit exceeded. Retry after the indicated duration. |
+| `500` | An unexpected internal server error occurred. |
+
+## `POST /queries/{queryId}/cancel`
+
+Cancel asynchronous query job
+
+- Operation ID: `cancelQuery`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `queryId` | `string` | `true` | Query job identifier returned by submitQuery. |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | Query canceled |
+| `400` | Invalid request parameters or malformed request body. |
+| `401` | Authentication credentials are missing or invalid. |
+| `404` | The requested resource was not found. |
+| `429` | Rate limit exceeded. Retry after the indicated duration. |
+| `500` | An unexpected internal server error occurred. |
+
+## `GET /queries/{queryId}/results`
+
+Fetch paged asynchronous query results
+
+- Operation ID: `getQueryResults`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `queryId` | `string` | `true` | Query job identifier returned by submitQuery. |
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | Maximum number of results to return per page. |
+| `page_token` | `string` | `false` | Opaque pagination token from a previous response. |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | Query result page |
+| `400` | Invalid request parameters or malformed request body. |
+| `401` | Authentication credentials are missing or invalid. |
+| `404` | The requested resource was not found. |
+| `409` | The resource already exists or conflicts with current state. |
+| `429` | Rate limit exceeded. Retry after the indicated duration. |
+| `500` | An unexpected internal server error occurred. |
+
 ## `POST /query`
 
 Execute SQL as authenticated principal

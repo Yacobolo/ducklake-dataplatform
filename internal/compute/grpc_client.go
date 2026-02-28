@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"math"
 	"net/url"
 	"strings"
 	"time"
@@ -63,12 +64,6 @@ func grpcDialTarget(endpointURL string) (target string, secure bool, err error) 
 		return u.Host, scheme == "grpcs", nil
 	default:
 		return "", false, fmt.Errorf("grpc transport requires grpc:// or grpcs:// endpoint")
-	}
-}
-
-func (c *grpcWorkerClient) close() {
-	if c.conn != nil {
-		_ = c.conn.Close()
 	}
 }
 
@@ -134,10 +129,18 @@ func (c *grpcWorkerClient) fetchQueryResults(ctx context.Context, req FetchQuery
 	ctx, cancel := c.withTimeout(ctx)
 	defer cancel()
 	ctx = c.withMetadata(ctx, requestID)
+	maxResults := int32(0)
+	if req.MaxResults > 0 {
+		if req.MaxResults > math.MaxInt32 {
+			maxResults = math.MaxInt32
+		} else {
+			maxResults = int32(req.MaxResults)
+		}
+	}
 	out, err := c.client.FetchQueryResults(ctx, &computeproto.FetchQueryResultsRequest{
 		QueryId:    req.QueryID,
 		PageToken:  req.PageToken,
-		MaxResults: int32(req.MaxResults),
+		MaxResults: maxResults,
 	})
 	if err != nil {
 		return FetchQueryResultsResponse{}, err

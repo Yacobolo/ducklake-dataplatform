@@ -11,6 +11,7 @@ The result set returned after executing a SQL query.
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `columns` | `array[string]` | `false` | - |
+| `next_page_token` | `string` | `false` | - |
 | `row_count` | `integer` | `false` | - |
 | `rows` | `array[array[object]]` | `false` | - |
 

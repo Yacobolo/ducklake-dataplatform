@@ -1,3 +1,4 @@
+// Package router provides endpoint selection strategies for compute routing.
 package router
 
 import (

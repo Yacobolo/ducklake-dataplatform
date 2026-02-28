@@ -16,7 +16,7 @@ This page is generated from OpenAPI tags and operations.
 | [Notebooks](./endpoints/notebooks) | SQL notebooks, sessions, jobs, and Git integration. | 21 operations |
 | [Observability](./endpoints/observability) | Audit logs, query history, and metastore summary. | 3 operations |
 | [Pipelines](./endpoints/pipelines) | Pipeline workflow scheduling and orchestration. | 13 operations |
-| [Query](./endpoints/query) | Execute SQL queries against the platform. | 1 operations |
+| [Query](./endpoints/query) | Execute SQL queries against the platform. | 6 operations |
 | [Security](./endpoints/security) | Principals, groups, grants, row filters, and column masks. | 29 operations |
 | [Semantic](./endpoints/semantic) | Semantic models, metrics, relationships, query explain, and query run endpoints. | 20 operations |
 | [Storage](./endpoints/storage) | Storage credentials and external locations. | 10 operations |

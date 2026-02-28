@@ -2,6 +2,7 @@ package query
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -35,7 +36,8 @@ func (s *QueryService) SubmitAsync(ctx context.Context, principalName, sqlQuery,
 	if err == nil {
 		return existing, nil
 	}
-	if _, ok := err.(*domain.NotFoundError); !ok {
+	var notFoundErr *domain.NotFoundError
+	if !errors.As(err, &notFoundErr) {
 		return nil, fmt.Errorf("lookup query job by request id: %w", err)
 	}
 

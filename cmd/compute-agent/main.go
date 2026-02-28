@@ -125,7 +125,7 @@ func run() error {
 			Logger:          logger,
 		})
 
-		grpcLn, err := net.Listen("tcp", cfg.GRPCListenAddr)
+		grpcLn, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", cfg.GRPCListenAddr)
 		if err != nil {
 			return fmt.Errorf("listen grpc: %w", err)
 		}

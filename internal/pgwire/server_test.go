@@ -104,13 +104,13 @@ func TestServer_ExtendedQueryProtocol_UnnamedStatementPortal(t *testing.T) {
 	require.NoError(t, err)
 	typeByte, payload := readPGMessage(t, conn)
 	require.Equal(t, byte('1'), typeByte)
-	require.Len(t, payload, 0)
+	require.Empty(t, payload)
 
 	_, err = conn.Write(bindPacketNoParams(t))
 	require.NoError(t, err)
 	typeByte, payload = readPGMessage(t, conn)
 	require.Equal(t, byte('2'), typeByte)
-	require.Len(t, payload, 0)
+	require.Empty(t, payload)
 
 	_, err = conn.Write(describePortalPacket(t))
 	require.NoError(t, err)

@@ -22,7 +22,7 @@ func TestHTTP_ComputeEndpointCRUD(t *testing.T) {
 		{"create_remote_endpoint", func(t *testing.T) {
 			body := map[string]interface{}{
 				"name":       "crud-remote",
-				"url":        "http://localhost:9999",
+				"url":        "grpc://localhost:9999",
 				"type":       "REMOTE",
 				"size":       "MEDIUM",
 				"auth_token": "secret-123",
@@ -114,7 +114,7 @@ func TestHTTP_ComputeEndpointAuthorization(t *testing.T) {
 
 	// Pre-create as admin
 	body := map[string]interface{}{
-		"name": "auth-ep", "url": "http://x", "type": "REMOTE", "auth_token": "s",
+		"name": "auth-ep", "url": "grpc://x", "type": "REMOTE", "auth_token": "s",
 	}
 	resp := doRequest(t, "POST", env.Server.URL+"/v1/compute-endpoints", env.Keys.Admin, body)
 	require.Equal(t, 201, resp.StatusCode)
@@ -129,9 +129,9 @@ func TestHTTP_ComputeEndpointAuthorization(t *testing.T) {
 		wantStatus int
 	}{
 		{"analyst_create_403", "POST", "/v1/compute-endpoints", env.Keys.Analyst,
-			map[string]interface{}{"name": "x", "url": "http://x", "type": "REMOTE", "auth_token": "s"}, 403},
+			map[string]interface{}{"name": "x", "url": "grpc://x", "type": "REMOTE", "auth_token": "s"}, 403},
 		{"noaccess_create_403", "POST", "/v1/compute-endpoints", env.Keys.NoAccess,
-			map[string]interface{}{"name": "x", "url": "http://x", "type": "REMOTE", "auth_token": "s"}, 403},
+			map[string]interface{}{"name": "x", "url": "grpc://x", "type": "REMOTE", "auth_token": "s"}, 403},
 		{"analyst_delete_403", "DELETE", "/v1/compute-endpoints/auth-ep", env.Keys.Analyst, nil, 403},
 		{"analyst_update_403", "PATCH", "/v1/compute-endpoints/auth-ep", env.Keys.Analyst,
 			map[string]interface{}{"status": "ACTIVE"}, 403},
@@ -156,9 +156,9 @@ func TestHTTP_ComputeEndpointValidation(t *testing.T) {
 		body       map[string]interface{}
 		wantStatus int
 	}{
-		{"empty_name", map[string]interface{}{"name": "", "url": "http://x", "type": "REMOTE"}, 400},
+		{"empty_name", map[string]interface{}{"name": "", "url": "grpc://x", "type": "REMOTE"}, 400},
 		{"empty_url", map[string]interface{}{"name": "x", "url": "", "type": "REMOTE"}, 400},
-		{"invalid_type", map[string]interface{}{"name": "x", "url": "http://x", "type": "INVALID"}, 400},
+		{"invalid_type", map[string]interface{}{"name": "x", "url": "grpc://x", "type": "INVALID"}, 400},
 	}
 
 	for _, tc := range tests {
@@ -176,7 +176,7 @@ func TestHTTP_ComputeDuplicateEndpoint(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{WithComputeEndpoints: true})
 
 	body := map[string]interface{}{
-		"name": "dup-ep", "url": "http://x", "type": "REMOTE", "auth_token": "s",
+		"name": "dup-ep", "url": "grpc://x", "type": "REMOTE", "auth_token": "s",
 	}
 
 	resp := doRequest(t, "POST", env.Server.URL+"/v1/compute-endpoints", env.Keys.Admin, body)
@@ -206,7 +206,7 @@ func TestHTTP_ComputeAssignmentCRUD(t *testing.T) {
 	// Create endpoint
 	resp := doRequest(t, "POST", env.Server.URL+"/v1/compute-endpoints", env.Keys.Admin,
 		map[string]interface{}{
-			"name": "assign-ep", "url": "http://x", "type": "REMOTE", "auth_token": "s",
+			"name": "assign-ep", "url": "grpc://x", "type": "REMOTE", "auth_token": "s",
 		})
 	require.Equal(t, 201, resp.StatusCode)
 	_ = resp.Body.Close()
@@ -377,7 +377,7 @@ func TestHTTP_ComputeRemoteAgentDown(t *testing.T) {
 	resp := doRequest(t, "POST", env.Server.URL+"/v1/compute-endpoints", env.Keys.Admin,
 		map[string]interface{}{
 			"name":       "dead-agent",
-			"url":        "http://127.0.0.1:1",
+			"url":        "grpc://127.0.0.1:1",
 			"type":       "REMOTE",
 			"auth_token": "secret",
 		})

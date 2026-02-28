@@ -82,7 +82,7 @@ func (s *Server) Start() error {
 		return fmt.Errorf("pgwire listener already started")
 	}
 
-	ln, err := net.Listen("tcp", s.addr)
+	ln, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", s.addr)
 	if err != nil {
 		return fmt.Errorf("listen pgwire: %w", err)
 	}

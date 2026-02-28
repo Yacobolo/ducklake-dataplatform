@@ -208,7 +208,7 @@ func TestComputeEndpointService_Update(t *testing.T) {
 		_, err := svc.Update(context.Background(), "admin", "ep1", domain.UpdateComputeEndpointRequest{URL: &httpURL})
 		require.Error(t, err)
 		var valErr *domain.ValidationError
-		assert.ErrorAs(t, err, &valErr)
+		require.ErrorAs(t, err, &valErr)
 		assert.Contains(t, err.Error(), "grpc:// or grpcs://")
 	})
 }
