@@ -485,6 +485,14 @@ components:
 paths:
   /query:
     $ref: 'paths/query.yaml#/paths/~1query'
+  /queries:
+    $ref: 'paths/query.yaml#/paths/~1queries'
+  /queries/{queryId}:
+    $ref: 'paths/query.yaml#/paths/~1queries~1{queryId}'
+  /queries/{queryId}/results:
+    $ref: 'paths/query.yaml#/paths/~1queries~1{queryId}~1results'
+  /queries/{queryId}/cancel:
+    $ref: 'paths/query.yaml#/paths/~1queries~1{queryId}~1cancel'
   # === Security ===
   /principals:
     $ref: 'paths/security.yaml#/paths/~1principals'

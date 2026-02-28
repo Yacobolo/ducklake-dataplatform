@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -28,6 +29,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/golang-jwt/jwt/v5"
+	"google.golang.org/grpc"
 
 	"duck-demo/internal/agent"
 	"duck-demo/internal/api"
@@ -1637,13 +1639,13 @@ func fetchAuditLogs(t *testing.T, serverURL, apiKey string) []map[string]interfa
 
 // agentTestEnv holds the in-process compute agent and its auth token.
 type agentTestEnv struct {
-	Server     *httptest.Server
-	AgentToken string
+	EndpointURL string
+	AgentToken  string
 }
 
 // startTestAgent starts an in-process compute agent backed by a plain in-memory
 // DuckDB. No extensions, no S3, no DuckLake — just raw SQL execution. Returns
-// the agent's httptest.Server URL and the auth token for X-Agent-Token.
+// the agent's gRPC endpoint URL and the auth token for X-Agent-Token.
 func startTestAgent(t *testing.T) *agentTestEnv {
 	t.Helper()
 
@@ -1655,17 +1657,32 @@ func startTestAgent(t *testing.T) *agentTestEnv {
 	}
 	t.Cleanup(func() { _ = agentDB.Close() })
 
-	handler := agent.NewHandler(agent.HandlerConfig{
+	grpcServer := agent.NewComputeGRPCServer(agent.HandlerConfig{
 		DB:         agentDB,
 		AgentToken: agentToken,
 		StartTime:  time.Now(),
 		Logger:     slog.New(slog.NewTextHandler(io.Discard, nil)),
 	})
 
-	srv := httptest.NewServer(handler)
-	t.Cleanup(srv.Close)
+	lc := net.ListenConfig{}
+	listener, err := lc.Listen(context.Background(), "tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen grpc agent: %v", err)
+	}
 
-	return &agentTestEnv{Server: srv, AgentToken: agentToken}
+	server := grpc.NewServer()
+	agent.RegisterComputeWorkerGRPCServer(server, grpcServer)
+
+	go func() {
+		_ = server.Serve(listener)
+	}()
+
+	t.Cleanup(func() {
+		server.Stop()
+		_ = listener.Close()
+	})
+
+	return &agentTestEnv{EndpointURL: "grpc://" + listener.Addr().String(), AgentToken: agentToken}
 }
 
 // lookupPrincipalID finds a principal by name via the API and returns its ID.
@@ -1703,7 +1720,7 @@ func setupRemoteEndpoint(t *testing.T, env *httpTestEnv, agentEnv *agentTestEnv,
 	resp := doRequest(t, "POST", env.Server.URL+"/v1/compute-endpoints", env.Keys.Admin,
 		map[string]interface{}{
 			"name":       name,
-			"url":        agentEnv.Server.URL,
+			"url":        agentEnv.EndpointURL,
 			"type":       "REMOTE",
 			"auth_token": agentEnv.AgentToken,
 		})

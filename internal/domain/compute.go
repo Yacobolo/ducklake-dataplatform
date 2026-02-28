@@ -3,6 +3,8 @@ package domain
 import (
 	"context"
 	"database/sql"
+	"net/url"
+	"strings"
 	"time"
 )
 
@@ -11,7 +13,7 @@ type ComputeEndpoint struct {
 	ID          string
 	ExternalID  string // UUID for logs/external integrations
 	Name        string // unique, e.g. "analytics-xl"
-	URL         string // e.g. "https://compute-1.example.com:9443"
+	URL         string // e.g. "grpc://compute-1.example.com:9444" or "https://compute-1.example.com:9443"
 	Type        string // "LOCAL" or "REMOTE"
 	Status      string // ACTIVE, INACTIVE, STARTING, STOPPING, ERROR
 	Size        string // SMALL, MEDIUM, LARGE (informational)
@@ -85,6 +87,35 @@ func ValidateCreateComputeEndpointRequest(r CreateComputeEndpointRequest) error 
 	if r.MaxMemoryGB != nil && *r.MaxMemoryGB <= 0 {
 		return ErrValidation("max_memory_gb must be greater than zero")
 	}
+	if err := ValidateComputeEndpointURL(r.URL, r.Type); err != nil {
+		return err
+	}
+	return nil
+}
+
+// ValidateComputeEndpointURL validates endpoint URL requirements by endpoint type.
+func ValidateComputeEndpointURL(rawURL, endpointType string) error {
+	trimmed := strings.TrimSpace(rawURL)
+	if trimmed == "" {
+		return ErrValidation("url is required")
+	}
+
+	if endpointType != "REMOTE" {
+		return nil
+	}
+
+	u, err := url.Parse(trimmed)
+	if err != nil {
+		return ErrValidation("url must be a valid URI")
+	}
+	if u.Host == "" {
+		return ErrValidation("remote url must include host")
+	}
+	scheme := strings.ToLower(strings.TrimSpace(u.Scheme))
+	if scheme != "grpc" && scheme != "grpcs" {
+		return ErrValidation("remote url must use grpc:// or grpcs://")
+	}
+
 	return nil
 }
 

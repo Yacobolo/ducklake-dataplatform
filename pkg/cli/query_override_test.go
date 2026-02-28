@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 
@@ -129,4 +130,79 @@ func TestQueryOverride(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestQueryOverride_SubmitAndWaitResults(t *testing.T) {
+	t.Run("submit sends SQL and request id", func(t *testing.T) {
+		dir := t.TempDir()
+		t.Setenv("HOME", dir)
+
+		var capturedBody []byte
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodPost && r.URL.Path == "/v1/queries" {
+				capturedBody, _ = io.ReadAll(r.Body)
+				_ = r.Body.Close()
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusAccepted)
+				_, _ = w.Write([]byte(`{"query_id":"q-1","status":"QUEUED"}`))
+				return
+			}
+			w.WriteHeader(http.StatusNotFound)
+		}))
+		defer srv.Close()
+
+		rootCmd := newRootCmd()
+		rootCmd.SetArgs([]string{"--host", srv.URL, "query", "submit", "--sql", "SELECT 1", "--request-id", "rid-1", "--output", "json"})
+
+		err := rootCmd.Execute()
+		require.NoError(t, err)
+
+		var body map[string]interface{}
+		require.NoError(t, json.Unmarshal(capturedBody, &body))
+		assert.Equal(t, "SELECT 1", body["sql"])
+		assert.Equal(t, "rid-1", body["request_id"])
+	})
+
+	t.Run("submit wait results fetches status and rows", func(t *testing.T) {
+		dir := t.TempDir()
+		t.Setenv("HOME", dir)
+
+		var mu sync.Mutex
+		paths := make([]string, 0)
+
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			mu.Lock()
+			paths = append(paths, r.URL.Path)
+			mu.Unlock()
+
+			w.Header().Set("Content-Type", "application/json")
+			switch {
+			case r.Method == http.MethodPost && r.URL.Path == "/v1/queries":
+				w.WriteHeader(http.StatusAccepted)
+				_, _ = w.Write([]byte(`{"query_id":"q-2","status":"QUEUED"}`))
+			case r.Method == http.MethodGet && r.URL.Path == "/v1/queries/q-2":
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte(`{"query_id":"q-2","status":"SUCCEEDED","row_count":2}`))
+			case r.Method == http.MethodGet && r.URL.Path == "/v1/queries/q-2/results":
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte(`{"columns":["id"],"rows":[[1],[2]],"row_count":2}`))
+			default:
+				w.WriteHeader(http.StatusNotFound)
+			}
+		}))
+		defer srv.Close()
+
+		rootCmd := newRootCmd()
+		rootCmd.SetArgs([]string{"--host", srv.URL, "query", "submit", "--sql", "SELECT 1", "--wait", "--results", "--output", "json"})
+
+		err := rootCmd.Execute()
+		require.NoError(t, err)
+
+		mu.Lock()
+		joined := strings.Join(paths, ",")
+		mu.Unlock()
+		assert.Contains(t, joined, "/v1/queries")
+		assert.Contains(t, joined, "/v1/queries/q-2")
+		assert.Contains(t, joined, "/v1/queries/q-2/results")
+	})
 }

@@ -74,3 +74,83 @@ QueryResult:
       maximum: 9223372036854775807
       format: int64
       example: 42
+    next_page_token:
+      type: string
+      maxLength: 4096
+      pattern: '^\S+$'
+
+SubmitQueryRequest:
+  description: Submit SQL for asynchronous execution.
+  type: object
+  required: [sql]
+  properties:
+    sql:
+      type: string
+      maxLength: 65536
+      pattern: '[\s\S]+'
+      example: SELECT * FROM my_table LIMIT 10
+    request_id:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+
+SubmitQueryResponse:
+  description: Asynchronous query submission accepted.
+  type: object
+  required: [query_id, status]
+  properties:
+    query_id:
+      type: string
+      maxLength: 64
+      pattern: '^\S+$'
+    status:
+      type: string
+      enum: [QUEUED, RUNNING, SUCCEEDED, FAILED, CANCELED]
+
+QueryJob:
+  description: Query lifecycle status and metadata.
+  type: object
+  required: [query_id, status, row_count]
+  properties:
+    query_id:
+      type: string
+      maxLength: 64
+      pattern: '^\S+$'
+    request_id:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+    status:
+      type: string
+      enum: [QUEUED, RUNNING, SUCCEEDED, FAILED, CANCELED]
+    row_count:
+      type: integer
+      minimum: 0
+      maximum: 9223372036854775807
+      format: int64
+    error:
+      type: string
+      maxLength: 4096
+      pattern: '[\s\S]+'
+    created_at:
+      type: string
+      format: date-time
+    started_at:
+      type: string
+      format: date-time
+    completed_at:
+      type: string
+      format: date-time
+
+CancelQueryResponse:
+  description: Response after query cancellation.
+  type: object
+  required: [query_id, status]
+  properties:
+    query_id:
+      type: string
+      maxLength: 64
+      pattern: '^\S+$'
+    status:
+      type: string
+      enum: [QUEUED, RUNNING, SUCCEEDED, FAILED, CANCELED]

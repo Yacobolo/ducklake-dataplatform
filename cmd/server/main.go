@@ -28,7 +28,9 @@ import (
 	internaldb "duck-demo/internal/db"
 	"duck-demo/internal/domain"
 	"duck-demo/internal/engine"
+	"duck-demo/internal/flightsql"
 	"duck-demo/internal/middleware"
+	"duck-demo/internal/pgwire"
 	"duck-demo/internal/ui"
 )
 
@@ -118,6 +120,44 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("app init: %w", err)
 	}
+	var flightServer *flightsql.Server
+	if cfg.FeatureFlightSQL {
+		flightServer = flightsql.NewServer(cfg.FlightSQLAddr, logger.With("component", "flightsql"), func(ctx context.Context, principal string, sqlQuery string) (*flightsql.QueryResult, error) {
+			res, err := application.Services.Query.Execute(ctx, principal, sqlQuery)
+			if err != nil {
+				return nil, err
+			}
+			return &flightsql.QueryResult{Columns: res.Columns, Rows: res.Rows}, nil
+		})
+		if err := flightServer.Start(); err != nil {
+			return fmt.Errorf("start Flight SQL listener: %w", err)
+		}
+	}
+
+	var pgWireServer *pgwire.Server
+	if cfg.FeaturePGWire {
+		pgWireServer = pgwire.NewServer(cfg.PGWireAddr, logger.With("component", "pgwire"), func(ctx context.Context, principal string, sqlQuery string) (*pgwire.QueryResult, error) {
+			res, err := application.Services.Query.Execute(ctx, principal, sqlQuery)
+			if err != nil {
+				return nil, err
+			}
+			return &pgwire.QueryResult{Columns: res.Columns, Rows: res.Rows}, nil
+		})
+		if err := pgWireServer.Start(); err != nil {
+			if flightServer != nil {
+				_ = flightServer.Shutdown(context.Background())
+			}
+			return fmt.Errorf("start PG-wire listener: %w", err)
+		}
+	}
+	defer func() {
+		if pgWireServer != nil {
+			_ = pgWireServer.Shutdown(context.Background())
+		}
+		if flightServer != nil {
+			_ = flightServer.Shutdown(context.Background())
+		}
+	}()
 
 	// Attach all registered catalogs (concurrent, bounded parallelism)
 	if err := application.Services.CatalogRegistration.AttachAll(ctx); err != nil {
@@ -303,6 +343,16 @@ func run() error {
 	go func() {
 		<-ctx.Done()
 		logger.Info("shutting down server")
+		if pgWireServer != nil {
+			if err := pgWireServer.Shutdown(context.Background()); err != nil {
+				logger.Warn("shutdown pgwire listener failed", "error", err)
+			}
+		}
+		if flightServer != nil {
+			if err := flightServer.Shutdown(context.Background()); err != nil {
+				logger.Warn("shutdown flightsql listener failed", "error", err)
+			}
+		}
 		application.Services.SessionManager.CloseAll()
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer shutdownCancel()

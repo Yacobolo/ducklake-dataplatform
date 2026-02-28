@@ -14,14 +14,27 @@ type RemoteCache struct {
 	mu      sync.RWMutex
 	entries map[string]*RemoteExecutor
 	localDB *sql.DB
+	opts    RemoteExecutorOptions
+}
+
+// RemoteExecutorOptions control optional remote execution behavior.
+type RemoteExecutorOptions struct {
+	CursorModeEnabled bool
+	InternalGRPC      bool
 }
 
 // NewRemoteCache creates a RemoteCache that materializes remote results into
 // the given local DuckDB instance.
 func NewRemoteCache(localDB *sql.DB) *RemoteCache {
+	return NewRemoteCacheWithOptions(localDB, RemoteExecutorOptions{CursorModeEnabled: true, InternalGRPC: true})
+}
+
+// NewRemoteCacheWithOptions creates a RemoteCache with explicit remote executor options.
+func NewRemoteCacheWithOptions(localDB *sql.DB, opts RemoteExecutorOptions) *RemoteCache {
 	return &RemoteCache{
 		entries: make(map[string]*RemoteExecutor),
 		localDB: localDB,
+		opts:    opts,
 	}
 }
 
@@ -43,7 +56,7 @@ func (c *RemoteCache) GetOrCreate(ep *domain.ComputeEndpoint) *RemoteExecutor {
 		return exec
 	}
 
-	exec := NewRemoteExecutor(ep.URL, ep.AuthToken, c.localDB)
+	exec := NewRemoteExecutor(ep.URL, ep.AuthToken, c.localDB, c.opts)
 	c.entries[ep.ID] = exec
 	return exec
 }

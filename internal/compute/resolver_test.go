@@ -2,18 +2,46 @@ package compute
 
 import (
 	"context"
-	"encoding/json"
-	"net/http"
-	"net/http/httptest"
+	"net"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
 
 	_ "github.com/duckdb/duckdb-go/v2"
 
+	computeproto "duck-demo/internal/compute/proto"
 	"duck-demo/internal/domain"
 )
+
+type pingOnlyGRPCServer struct {
+	computeproto.UnimplementedComputeWorkerServer
+}
+
+func (s *pingOnlyGRPCServer) Health(ctx context.Context, _ *computeproto.HealthRequest) (*computeproto.HealthResponse, error) {
+	return &computeproto.HealthResponse{Status: "ok"}, nil
+}
+
+func startTestGRPCEndpoint(t *testing.T, token string) string {
+	t.Helper()
+
+	EnsureGRPCJSONCodec()
+	grpcServer := grpc.NewServer()
+	computeproto.RegisterComputeWorkerServer(grpcServer, &pingOnlyGRPCServer{})
+
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		grpcServer.GracefulStop()
+		_ = ln.Close()
+	})
+	go func() {
+		_ = grpcServer.Serve(ln)
+	}()
+
+	return "grpc://" + ln.Addr().String()
+}
 
 // === Mock repositories for resolver tests ===
 
@@ -154,7 +182,7 @@ func (m *mockComputeRepo) ListAssignments(ctx context.Context, endpointID string
 	if m.listAssignmentsFn != nil {
 		return m.listAssignmentsFn(ctx, endpointID, page)
 	}
-	panic("unexpected")
+	return nil, 0, nil
 }
 func (m *mockComputeRepo) GetDefaultForPrincipal(ctx context.Context, principalID string, principalType string) (*domain.ComputeEndpoint, error) {
 	if m.getDefaultForPrincipalFn != nil {
@@ -166,7 +194,7 @@ func (m *mockComputeRepo) GetAssignmentsForPrincipal(ctx context.Context, princi
 	if m.getAssignmentsForPrincipalFn != nil {
 		return m.getAssignmentsForPrincipalFn(ctx, principalID, principalType)
 	}
-	panic("unexpected")
+	return nil, nil
 }
 
 // === Interface checks ===
@@ -225,16 +253,7 @@ func TestResolver_DirectUserAssignment_Local(t *testing.T) {
 }
 
 func TestResolver_DirectUserAssignment_Remote(t *testing.T) {
-	// Set up a test server that responds to health checks
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/health" {
-			w.WriteHeader(http.StatusOK)
-			_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
-			return
-		}
-		w.WriteHeader(http.StatusNotFound)
-	}))
-	defer server.Close()
+	endpointURL := startTestGRPCEndpoint(t, "tok")
 
 	localDB := openTestDuckDB(t)
 	localExec := NewLocalExecutor(localDB)
@@ -251,7 +270,7 @@ func TestResolver_DirectUserAssignment_Remote(t *testing.T) {
 			if principalID == "1" && principalType == "user" {
 				return &domain.ComputeEndpoint{
 					ID: "10", Name: "remote-ep", Type: "REMOTE", Status: "ACTIVE",
-					URL: server.URL, AuthToken: "tok",
+					URL: endpointURL, AuthToken: "tok",
 				}, nil
 			}
 			return nil, domain.ErrNotFound("no assignment")
@@ -274,15 +293,7 @@ func TestResolver_DirectUserAssignment_Remote(t *testing.T) {
 }
 
 func TestResolver_GroupAssignment(t *testing.T) {
-	// Set up a healthy agent
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/health" {
-			w.WriteHeader(http.StatusOK)
-			_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
-			return
-		}
-	}))
-	defer server.Close()
+	endpointURL := startTestGRPCEndpoint(t, "tok")
 
 	localDB := openTestDuckDB(t)
 	localExec := NewLocalExecutor(localDB)
@@ -308,7 +319,7 @@ func TestResolver_GroupAssignment(t *testing.T) {
 			if principalType == "group" && principalID == "100" {
 				return &domain.ComputeEndpoint{
 					ID: "20", Name: "group-ep", Type: "REMOTE", Status: "ACTIVE",
-					URL: server.URL, AuthToken: "tok",
+					URL: endpointURL, AuthToken: "tok",
 				}, nil
 			}
 			return nil, domain.ErrNotFound("no assignment")
@@ -354,11 +365,7 @@ func TestResolver_NoAssignment(t *testing.T) {
 }
 
 func TestResolver_RemoteUnhealthy(t *testing.T) {
-	// Set up an unhealthy agent
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusServiceUnavailable)
-	}))
-	defer server.Close()
+	endpointURL := "grpc://127.0.0.1:1"
 
 	localDB := openTestDuckDB(t)
 	localExec := NewLocalExecutor(localDB)
@@ -375,10 +382,22 @@ func TestResolver_RemoteUnhealthy(t *testing.T) {
 			if principalType == "user" {
 				return &domain.ComputeEndpoint{
 					ID: "10", Name: "unhealthy-ep", Type: "REMOTE", Status: "ACTIVE",
-					URL: server.URL, AuthToken: "tok",
+					URL: endpointURL, AuthToken: "tok",
 				}, nil
 			}
 			return nil, domain.ErrNotFound("no assignment")
+		},
+		listAssignmentsFn: func(_ context.Context, endpointID string, _ domain.PageRequest) ([]domain.ComputeAssignment, int64, error) {
+			if endpointID != "10" {
+				return nil, 0, nil
+			}
+			return []domain.ComputeAssignment{{
+				PrincipalID:   "1",
+				PrincipalType: "user",
+				EndpointID:    "10",
+				IsDefault:     true,
+				FallbackLocal: false,
+			}}, 1, nil
 		},
 	}
 
@@ -391,4 +410,131 @@ func TestResolver_RemoteUnhealthy(t *testing.T) {
 	_, err := resolver.Resolve(context.Background(), "alice")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unhealthy")
+}
+
+func TestResolver_RemoteUnhealthy_FallbackLocal(t *testing.T) {
+	endpointURL := "grpc://127.0.0.1:1"
+
+	localDB := openTestDuckDB(t)
+	localExec := NewLocalExecutor(localDB)
+	cache := NewRemoteCache(localDB)
+
+	principalRepo := &mockPrincipalRepo{
+		getByNameFn: func(_ context.Context, _ string) (*domain.Principal, error) {
+			return &domain.Principal{ID: "1", Name: "alice"}, nil
+		},
+	}
+
+	computeRepo := &mockComputeRepo{
+		getDefaultForPrincipalFn: func(_ context.Context, _ string, principalType string) (*domain.ComputeEndpoint, error) {
+			if principalType == "user" {
+				return &domain.ComputeEndpoint{
+					ID: "10", Name: "unhealthy-ep", Type: "REMOTE", Status: "ACTIVE",
+					URL: endpointURL, AuthToken: "tok",
+				}, nil
+			}
+			return nil, domain.ErrNotFound("no assignment")
+		},
+		listAssignmentsFn: func(_ context.Context, endpointID string, _ domain.PageRequest) ([]domain.ComputeAssignment, int64, error) {
+			if endpointID != "10" {
+				return nil, 0, nil
+			}
+			return []domain.ComputeAssignment{{
+				PrincipalID:   "1",
+				PrincipalType: "user",
+				EndpointID:    "10",
+				IsDefault:     true,
+				FallbackLocal: true,
+			}}, 1, nil
+		},
+	}
+
+	resolver := NewResolver(localExec, computeRepo, principalRepo, &mockGroupRepo{
+		getGroupsForMemberFn: func(_ context.Context, _ string, _ string) ([]domain.Group, error) {
+			return nil, nil
+		},
+	}, cache, nil)
+
+	executor, err := resolver.Resolve(context.Background(), "alice")
+	require.NoError(t, err)
+	assert.Nil(t, executor)
+}
+
+func TestResolver_SelectsFromNonDefaultAssignments(t *testing.T) {
+	endpointURL := startTestGRPCEndpoint(t, "tok")
+
+	localDB := openTestDuckDB(t)
+	localExec := NewLocalExecutor(localDB)
+	cache := NewRemoteCache(localDB)
+
+	principalRepo := &mockPrincipalRepo{
+		getByNameFn: func(_ context.Context, _ string) (*domain.Principal, error) {
+			return &domain.Principal{ID: "1", Name: "alice"}, nil
+		},
+	}
+
+	groupRepo := &mockGroupRepo{
+		getGroupsForMemberFn: func(_ context.Context, _ string, _ string) ([]domain.Group, error) {
+			return nil, nil
+		},
+	}
+
+	computeRepo := &mockComputeRepo{
+		getDefaultForPrincipalFn: func(_ context.Context, _ string, _ string) (*domain.ComputeEndpoint, error) {
+			return nil, domain.ErrNotFound("no default assignment")
+		},
+		getAssignmentsForPrincipalFn: func(_ context.Context, principalID string, principalType string) ([]domain.ComputeEndpoint, error) {
+			if principalID == "1" && principalType == "user" {
+				return []domain.ComputeEndpoint{{
+					ID: "22", Name: "remote-non-default", Type: "REMOTE", Status: "ACTIVE",
+					URL: endpointURL, AuthToken: "tok",
+				}}, nil
+			}
+			return nil, nil
+		},
+	}
+
+	resolver := NewResolver(localExec, computeRepo, principalRepo, groupRepo, cache, nil)
+
+	executor, err := resolver.Resolve(context.Background(), "alice")
+	require.NoError(t, err)
+	require.NotNil(t, executor)
+	_, isRemote := executor.(*RemoteExecutor)
+	assert.True(t, isRemote)
+}
+
+func TestResolver_RoutingDisabledFallsBackLocal(t *testing.T) {
+	localDB := openTestDuckDB(t)
+	localExec := NewLocalExecutor(localDB)
+
+	principalRepo := &mockPrincipalRepo{
+		getByNameFn: func(_ context.Context, _ string) (*domain.Principal, error) {
+			return &domain.Principal{ID: "1", Name: "alice"}, nil
+		},
+	}
+
+	resolver := NewResolver(localExec, &mockComputeRepo{}, principalRepo, &mockGroupRepo{}, nil, nil)
+	resolver.SetRoutingEnabled(false)
+
+	executor, err := resolver.Resolve(context.Background(), "alice")
+	require.NoError(t, err)
+	assert.Nil(t, executor)
+}
+
+func TestResolver_CanaryUsersRestrictRouting(t *testing.T) {
+	localDB := openTestDuckDB(t)
+	localExec := NewLocalExecutor(localDB)
+
+	principalRepo := &mockPrincipalRepo{
+		getByNameFn: func(_ context.Context, _ string) (*domain.Principal, error) {
+			return &domain.Principal{ID: "1", Name: "alice"}, nil
+		},
+	}
+
+	resolver := NewResolver(localExec, &mockComputeRepo{}, principalRepo, &mockGroupRepo{}, nil, nil)
+	resolver.SetCanaryUsers([]string{"bob"})
+
+	executor, err := resolver.Resolve(context.Background(), "alice")
+	require.NoError(t, err)
+	assert.Nil(t, executor)
 }

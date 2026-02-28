@@ -59,6 +59,8 @@ type Config struct {
 	TLSCertFile       string // TLS certificate file path (optional)
 	TLSKeyFile        string // TLS private key file path (optional)
 	AllowInsecureHTTP bool   // allow non-TLS listener in production (for trusted TLS termination)
+	FlightSQLAddr     string // Flight SQL listen address (default ":32010")
+	PGWireAddr        string // PostgreSQL wire listen address (default ":5433")
 	EncryptionKey     string // 64-char hex string (32-byte AES key) for encrypting stored credentials
 	LogLevel          string // log level: debug, info, warn, error (default "info")
 	Env               string // environment: "development" (default) or "production"
@@ -72,6 +74,15 @@ type Config struct {
 
 	// Auth holds identity provider and authentication configuration.
 	Auth AuthConfig
+
+	// Distributed execution feature controls.
+	FeatureRemoteRouting bool
+	FeatureAsyncQueue    bool
+	FeatureCursorMode    bool
+	FeatureInternalGRPC  bool
+	FeatureFlightSQL     bool
+	FeaturePGWire        bool
+	RemoteCanaryUsers    []string
 
 	// Warnings collects non-fatal warnings generated during config loading.
 	// These are logged by the caller after the logger is initialised.
@@ -107,13 +118,21 @@ func (c *Config) HasS3Config() bool {
 // S3 variables are optional — the app can start without them.
 func LoadFromEnv() (*Config, error) {
 	cfg := &Config{
-		MetaDBPath:    os.Getenv("META_DB_PATH"),
-		ListenAddr:    os.Getenv("LISTEN_ADDR"),
-		TLSCertFile:   os.Getenv("TLS_CERT_FILE"),
-		TLSKeyFile:    os.Getenv("TLS_KEY_FILE"),
-		EncryptionKey: os.Getenv("ENCRYPTION_KEY"),
-		LogLevel:      os.Getenv("LOG_LEVEL"),
-		Env:           os.Getenv("ENV"),
+		MetaDBPath:           os.Getenv("META_DB_PATH"),
+		ListenAddr:           os.Getenv("LISTEN_ADDR"),
+		TLSCertFile:          os.Getenv("TLS_CERT_FILE"),
+		TLSKeyFile:           os.Getenv("TLS_KEY_FILE"),
+		FlightSQLAddr:        os.Getenv("FLIGHT_SQL_LISTEN_ADDR"),
+		PGWireAddr:           os.Getenv("PG_WIRE_LISTEN_ADDR"),
+		EncryptionKey:        os.Getenv("ENCRYPTION_KEY"),
+		LogLevel:             os.Getenv("LOG_LEVEL"),
+		Env:                  os.Getenv("ENV"),
+		FeatureRemoteRouting: parseBoolEnvDefault("FEATURE_REMOTE_ROUTING", true),
+		FeatureAsyncQueue:    parseBoolEnvDefault("FEATURE_ASYNC_QUEUE", true),
+		FeatureCursorMode:    parseBoolEnvDefault("FEATURE_CURSOR_MODE", true),
+		FeatureInternalGRPC:  parseBoolEnvDefault("FEATURE_INTERNAL_GRPC", true),
+		FeatureFlightSQL:     parseBoolEnvDefault("FEATURE_FLIGHT_SQL", true),
+		FeaturePGWire:        parseBoolEnvDefault("FEATURE_PG_WIRE", true),
 	}
 
 	// Rate limiting
@@ -155,6 +174,13 @@ func LoadFromEnv() (*Config, error) {
 	}
 	if strings.EqualFold(os.Getenv("ALLOW_INSECURE_HTTP"), "true") {
 		cfg.AllowInsecureHTTP = true
+	}
+	if v := os.Getenv("REMOTE_CANARY_USERS"); v != "" {
+		users := strings.Split(v, ",")
+		for i := range users {
+			users[i] = strings.TrimSpace(users[i])
+		}
+		cfg.RemoteCanaryUsers = compactNonEmpty(users)
 	}
 
 	// Auth config
@@ -202,6 +228,12 @@ func LoadFromEnv() (*Config, error) {
 	if (cfg.TLSCertFile == "") != (cfg.TLSKeyFile == "") {
 		return nil, fmt.Errorf("both TLS_CERT_FILE and TLS_KEY_FILE must be set together")
 	}
+	if cfg.FlightSQLAddr == "" {
+		cfg.FlightSQLAddr = ":32010"
+	}
+	if cfg.PGWireAddr == "" {
+		cfg.PGWireAddr = ":5433"
+	}
 	if !cfg.Auth.OIDCEnabled() {
 		cfg.Warnings = append(cfg.Warnings, "OIDC is not configured — set AUTH_ISSUER_URL or AUTH_JWKS_URL")
 	}
@@ -239,6 +271,30 @@ func LoadFromEnv() (*Config, error) {
 	}
 
 	return cfg, nil
+}
+
+func parseBoolEnvDefault(key string, defaultVal bool) bool {
+	v := strings.TrimSpace(strings.ToLower(os.Getenv(key)))
+	if v == "" {
+		return defaultVal
+	}
+	if v == "0" || v == "false" || v == "no" || v == "off" {
+		return false
+	}
+	if v == "1" || v == "true" || v == "yes" || v == "on" {
+		return true
+	}
+	return defaultVal
+}
+
+func compactNonEmpty(values []string) []string {
+	out := make([]string, 0, len(values))
+	for _, v := range values {
+		if v != "" {
+			out = append(out, v)
+		}
+	}
+	return out
 }
 
 // LoadDotEnv reads a .env file and sets any variables not already in the environment.

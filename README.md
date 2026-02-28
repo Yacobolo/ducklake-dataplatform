@@ -13,6 +13,7 @@ Secure SQL query layer over DuckDB with RBAC, row-level security, and column mas
 - **Storage Management** -- Storage credentials (S3/Azure/GCS), external locations, and volumes
 - **Ingestion** -- Upload and load data into managed tables via presigned URLs
 - **Compute Routing** -- Route queries to local or remote DuckDB compute endpoints
+- **Async Remote Query Lifecycle** -- Remote agents support submit/status/results/cancel APIs for paged result retrieval
 - **API Key Auth** -- Create and manage API keys alongside JWT/OIDC authentication
 - **DuckDB Extension** -- Client-side DuckDB extension for transparent table virtualization
 
@@ -55,6 +56,8 @@ All configuration is via environment variables. See `.env.sample` for a full ref
 | Variable | Default | Description |
 |---|---|---|
 | `LISTEN_ADDR` | `:8080` | HTTP listen address |
+| `FLIGHT_SQL_LISTEN_ADDR` | `:32010` | Flight SQL TCP listen address (used when `FEATURE_FLIGHT_SQL=true`) |
+| `PG_WIRE_LISTEN_ADDR` | `:5433` | PostgreSQL wire TCP listen address (used when `FEATURE_PG_WIRE=true`) |
 | `META_DB_PATH` | `ducklake_meta.sqlite` | SQLite metadata database path |
 | `LOG_LEVEL` | `info` | Log level: debug, info, warn, error |
 | `AUTH_ISSUER_URL` | `` | OIDC issuer URL for JWT validation |
@@ -64,6 +67,9 @@ All configuration is via environment variables. See `.env.sample` for a full ref
 | `ENV` | `development` | Set to `production` to enforce secure config |
 | `RATE_LIMIT_RPS` | `100` | Sustained requests per second |
 | `RATE_LIMIT_BURST` | `200` | Maximum burst capacity |
+| `FEATURE_INTERNAL_GRPC` | `true` | Enable internal gRPC worker transport (`grpc://`/`grpcs://` endpoint URLs) |
+| `FEATURE_FLIGHT_SQL` | `true` | Enable Flight SQL listener |
+| `FEATURE_PG_WIRE` | `true` | Enable PostgreSQL wire listener |
 
 ### Production Mode
 
@@ -95,6 +101,7 @@ task generate-api   # Regenerate API types/server from openapi.yaml
 ```
 
 Declarative schema artifacts are documented in `docs/declarative-schema.md`.
+Distributed compute operations are documented in `docs/distributed-compute.md`.
 
 ## Examples
 

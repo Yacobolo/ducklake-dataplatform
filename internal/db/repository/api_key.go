@@ -44,7 +44,7 @@ func (r *APIKeyRepo) Create(ctx context.Context, key *domain.APIKey) error {
 		Name:        key.Name,
 	}
 	if key.ExpiresAt != nil {
-		params.ExpiresAt = mapper.NullStrFromStr(key.ExpiresAt.Format(time.DateTime))
+		params.ExpiresAt = mapper.NullStrFromStr(key.ExpiresAt.UTC().Format(time.DateTime))
 	}
 	row, err := r.q.CreateAPIKey(ctx, params)
 	if err != nil {

@@ -43,7 +43,40 @@ func TestLoadFromEnv_Defaults(t *testing.T) {
 	assert.Nil(t, cfg.S3Bucket)
 	assert.Equal(t, "ducklake_meta.sqlite", cfg.MetaDBPath)
 	assert.Equal(t, ":8080", cfg.ListenAddr)
+	assert.Equal(t, ":32010", cfg.FlightSQLAddr)
+	assert.Equal(t, ":5433", cfg.PGWireAddr)
 	assert.Equal(t, "0000000000000000000000000000000000000000000000000000000000000000", cfg.EncryptionKey)
+	assert.True(t, cfg.FeatureRemoteRouting)
+	assert.True(t, cfg.FeatureAsyncQueue)
+	assert.True(t, cfg.FeatureCursorMode)
+	assert.True(t, cfg.FeatureInternalGRPC)
+	assert.True(t, cfg.FeatureFlightSQL)
+	assert.True(t, cfg.FeaturePGWire)
+}
+
+func TestLoadFromEnv_DistributedFeatureFlags(t *testing.T) {
+	t.Setenv("FEATURE_REMOTE_ROUTING", "false")
+	t.Setenv("FEATURE_ASYNC_QUEUE", "0")
+	t.Setenv("FEATURE_CURSOR_MODE", "off")
+	t.Setenv("FEATURE_INTERNAL_GRPC", "off")
+	t.Setenv("FEATURE_FLIGHT_SQL", "false")
+	t.Setenv("FEATURE_PG_WIRE", "0")
+	t.Setenv("FLIGHT_SQL_LISTEN_ADDR", ":41010")
+	t.Setenv("PG_WIRE_LISTEN_ADDR", ":6543")
+	t.Setenv("REMOTE_CANARY_USERS", "alice, bob , ,carol")
+
+	cfg, err := LoadFromEnv()
+	require.NoError(t, err)
+
+	assert.False(t, cfg.FeatureRemoteRouting)
+	assert.False(t, cfg.FeatureAsyncQueue)
+	assert.False(t, cfg.FeatureCursorMode)
+	assert.False(t, cfg.FeatureInternalGRPC)
+	assert.False(t, cfg.FeatureFlightSQL)
+	assert.False(t, cfg.FeaturePGWire)
+	assert.Equal(t, ":41010", cfg.FlightSQLAddr)
+	assert.Equal(t, ":6543", cfg.PGWireAddr)
+	assert.Equal(t, []string{"alice", "bob", "carol"}, cfg.RemoteCanaryUsers)
 }
 
 func TestLoadFromEnv_NoS3(t *testing.T) {

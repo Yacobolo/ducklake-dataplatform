@@ -114,6 +114,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	storageCredRepo := repository.NewStorageCredentialRepo(deps.WriteDB, encryptor)
 	computeEndpointRepo := repository.NewComputeEndpointRepo(deps.WriteDB, encryptor)
 	catalogRegRepo := repository.NewCatalogRegistrationRepo(deps.WriteDB)
+	queryJobRepo := repository.NewQueryJobRepo(deps.WriteDB)
 
 	// === 3. Factories (multi-catalog) ===
 	catalogRepoFactory := repository.NewCatalogRepoFactory(
@@ -130,11 +131,16 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 
 	// === 5. Compute resolver (needs endpoint repo, principal repo, group repo) ===
 	localExec := compute.NewLocalExecutor(deps.DuckDB)
-	remoteCache := compute.NewRemoteCache(deps.DuckDB)
+	remoteCache := compute.NewRemoteCacheWithOptions(deps.DuckDB, compute.RemoteExecutorOptions{
+		CursorModeEnabled: cfg.FeatureCursorMode,
+		InternalGRPC:      cfg.FeatureInternalGRPC,
+	})
 	fullResolver := compute.NewResolver(
 		localExec, computeEndpointRepo, principalRepo, groupRepo,
 		remoteCache, deps.Logger.With("component", "compute-resolver"),
 	)
+	fullResolver.SetRoutingEnabled(cfg.FeatureRemoteRouting && cfg.FeatureInternalGRPC)
+	fullResolver.SetCanaryUsers(cfg.RemoteCanaryUsers)
 
 	// === 6. Authorization (needs all security repos + extTableRepo) ===
 	authSvc := security.NewAuthorizationService(
@@ -205,8 +211,10 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 
 	// === 8. All services (all deps available at construction) ===
 	querySvc := query.NewQueryService(eng, auditRepo, lineageRepo)
+	querySvc.SetAsyncEnabled(cfg.FeatureAsyncQueue)
 	catalogAdapter := query.NewCatalogAdapter(introspectionRepo)
 	querySvc.SetColumnLineage(colLineageRepo, catalogAdapter)
+	querySvc.SetJobRepository(queryJobRepo)
 	principalSvc := security.NewPrincipalService(principalRepo, auditRepo)
 	groupSvc := security.NewGroupService(groupRepo, auditRepo)
 	grantSvc := security.NewGrantService(grantRepo, auditRepo, authSvc)

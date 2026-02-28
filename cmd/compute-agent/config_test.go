@@ -2,6 +2,7 @@ package main
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,13 +27,20 @@ func TestLoadAgentConfig(t *testing.T) {
 		t.Setenv("S3_BUCKET", "")
 		t.Setenv("LISTEN_ADDR", "")
 		t.Setenv("MAX_MEMORY_GB", "")
+		t.Setenv("QUERY_RESULT_TTL", "")
+		t.Setenv("QUERY_CLEANUP_INTERVAL", "")
 
 		cfg, err := loadAgentConfig()
 		require.NoError(t, err)
 		assert.Equal(t, "test-token", cfg.AgentToken)
-		assert.Equal(t, ":9443", cfg.ListenAddr)   // default
+		assert.Equal(t, ":9443", cfg.ListenAddr) // default
+		assert.Equal(t, ":9444", cfg.GRPCListenAddr)
 		assert.Equal(t, "duck-demo", cfg.S3Bucket) // default
 		assert.Equal(t, 0, cfg.MaxMemoryGB)
+		assert.Equal(t, 10*time.Minute, cfg.QueryResultTTL)
+		assert.Equal(t, 1*time.Minute, cfg.CleanupInterval)
+		assert.True(t, cfg.CursorMode)
+		assert.True(t, cfg.InternalGRPC)
 	})
 
 	t.Run("custom_values", func(t *testing.T) {
@@ -44,7 +52,11 @@ func TestLoadAgentConfig(t *testing.T) {
 		t.Setenv("S3_REGION", "us-east-1")
 		t.Setenv("S3_BUCKET", "custom-bucket")
 		t.Setenv("LISTEN_ADDR", ":8080")
+		t.Setenv("GRPC_LISTEN_ADDR", ":8081")
 		t.Setenv("MAX_MEMORY_GB", "64")
+		t.Setenv("QUERY_RESULT_TTL", "30m")
+		t.Setenv("QUERY_CLEANUP_INTERVAL", "45s")
+		t.Setenv("FEATURE_INTERNAL_GRPC", "true")
 
 		cfg, err := loadAgentConfig()
 		require.NoError(t, err)
@@ -56,7 +68,23 @@ func TestLoadAgentConfig(t *testing.T) {
 		assert.Equal(t, "us-east-1", cfg.S3Region)
 		assert.Equal(t, "custom-bucket", cfg.S3Bucket)
 		assert.Equal(t, ":8080", cfg.ListenAddr)
+		assert.Equal(t, ":8081", cfg.GRPCListenAddr)
 		assert.Equal(t, 64, cfg.MaxMemoryGB)
+		assert.Equal(t, 30*time.Minute, cfg.QueryResultTTL)
+		assert.Equal(t, 45*time.Second, cfg.CleanupInterval)
+		assert.True(t, cfg.CursorMode)
+		assert.True(t, cfg.InternalGRPC)
+	})
+
+	t.Run("cursor_mode_disabled", func(t *testing.T) {
+		t.Setenv("AGENT_TOKEN", "tok")
+		t.Setenv("FEATURE_CURSOR_MODE", "false")
+		t.Setenv("FEATURE_INTERNAL_GRPC", "false")
+
+		cfg, err := loadAgentConfig()
+		require.NoError(t, err)
+		assert.False(t, cfg.CursorMode)
+		assert.False(t, cfg.InternalGRPC)
 	})
 
 	t.Run("invalid_max_memory_gb", func(t *testing.T) {
@@ -66,5 +94,23 @@ func TestLoadAgentConfig(t *testing.T) {
 		_, err := loadAgentConfig()
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid MAX_MEMORY_GB")
+	})
+
+	t.Run("invalid_query_result_ttl", func(t *testing.T) {
+		t.Setenv("AGENT_TOKEN", "tok")
+		t.Setenv("QUERY_RESULT_TTL", "bogus")
+
+		_, err := loadAgentConfig()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid QUERY_RESULT_TTL")
+	})
+
+	t.Run("invalid_query_cleanup_interval", func(t *testing.T) {
+		t.Setenv("AGENT_TOKEN", "tok")
+		t.Setenv("QUERY_CLEANUP_INTERVAL", "bad")
+
+		_, err := loadAgentConfig()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid QUERY_CLEANUP_INTERVAL")
 	})
 }

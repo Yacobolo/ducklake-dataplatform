@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"duck-demo/internal/domain"
@@ -31,11 +32,14 @@ type QueryService struct {
 	colLineage    domain.ColumnLineageRepository
 	catalog       sqlrewrite.CatalogResolver
 	defaultSchema string
+	jobRepo       domain.QueryJobRepository
+	jobCancels    sync.Map
+	asyncEnabled  bool
 }
 
 // NewQueryService creates a new QueryService.
 func NewQueryService(eng domain.QueryEngine, audit domain.AuditRepository, lineage domain.LineageRepository) *QueryService {
-	return &QueryService{engine: eng, audit: audit, lineage: lineage, defaultSchema: "main"}
+	return &QueryService{engine: eng, audit: audit, lineage: lineage, defaultSchema: "main", asyncEnabled: true}
 }
 
 // SetColumnLineage configures column-level lineage capture.
@@ -43,6 +47,16 @@ func NewQueryService(eng domain.QueryEngine, audit domain.AuditRepository, linea
 func (s *QueryService) SetColumnLineage(colRepo domain.ColumnLineageRepository, catalog sqlrewrite.CatalogResolver) {
 	s.colLineage = colRepo
 	s.catalog = catalog
+}
+
+// SetJobRepository configures durable async query lifecycle storage.
+func (s *QueryService) SetJobRepository(repo domain.QueryJobRepository) {
+	s.jobRepo = repo
+}
+
+// SetAsyncEnabled toggles async query lifecycle endpoints.
+func (s *QueryService) SetAsyncEnabled(enabled bool) {
+	s.asyncEnabled = enabled
 }
 
 // Execute runs a SQL query as the given principal and returns structured results.

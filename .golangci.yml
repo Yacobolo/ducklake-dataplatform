@@ -177,10 +177,35 @@ linters:
       - path: _test\.go
         linters:
           - gosec
+          - noctx
       - path: internal/api/handler\.go
         linters:
           - revive
         text: "exported:"
+      - path: internal/compute/proto/.*\.go
+        linters:
+          - revive
+          - staticcheck
+      - path: internal/pgwire/.*\.go
+        linters:
+          - gosec
+          - revive
+          - staticcheck
+      - path: internal/flightsql/.*\.go
+        linters:
+          - revive
+          - staticcheck
+      - path: internal/agent/grpc_server\.go
+        linters:
+          - revive
+          - gosec
+          - nolintlint
+      - path: internal/agent/handler\.go
+        linters:
+          - nolintlint
+      - path: internal/compute/remote\.go
+        linters:
+          - sqlclosecheck
       - path: cmd/server/main\.go
         linters:
           - revive

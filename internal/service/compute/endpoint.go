@@ -4,15 +4,19 @@ package compute
 import (
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
-	"net/http"
+	"net/url"
 	"strings"
-	"time"
 
-	compute2 "duck-demo/internal/compute"
+	workercompute "duck-demo/internal/compute"
+	computeproto "duck-demo/internal/compute/proto"
 	"duck-demo/internal/domain"
 	"duck-demo/internal/service/auditutil"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 )
 
 // ComputeEndpointService provides CRUD operations for compute endpoints
@@ -108,6 +112,11 @@ func (s *ComputeEndpointService) Update(ctx context.Context, principal string, n
 	if err := s.requireEndpointPrivilege(ctx, principal, existing.ID, domain.PrivManageCompute); err != nil {
 		s.logAuditDenied(ctx, principal, "UPDATE_COMPUTE_ENDPOINT", fmt.Sprintf("Denied update compute endpoint %q", name))
 		return nil, err
+	}
+	if req.URL != nil {
+		if err := domain.ValidateComputeEndpointURL(*req.URL, existing.Type); err != nil {
+			return nil, err
+		}
 	}
 
 	// Handle status update if provided
@@ -285,50 +294,54 @@ func (s *ComputeEndpointService) HealthCheck(ctx context.Context, principal stri
 		return &domain.ComputeEndpointHealthResult{Status: &status}, nil
 	}
 
-	// Proxy health check to remote agent
-	client := &http.Client{
-		Timeout: 10 * time.Second,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				MinVersion: tls.VersionTLS12,
-			},
-		},
-	}
+	return s.grpcHealthCheck(ctx, ep.URL, ep.AuthToken)
+}
 
-	url := strings.TrimRight(ep.URL, "/") + "/health"
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+func (s *ComputeEndpointService) grpcHealthCheck(ctx context.Context, endpointURL, authToken string) (*domain.ComputeEndpointHealthResult, error) {
+	u, err := url.Parse(endpointURL)
 	if err != nil {
-		return nil, fmt.Errorf("create health request: %w", err)
+		return nil, fmt.Errorf("parse grpc endpoint url: %w", err)
 	}
-	compute2.AttachSignedAgentHeaders(req, ep.AuthToken, nil, time.Now())
+	if u.Host == "" {
+		return nil, fmt.Errorf("grpc endpoint host is required")
+	}
 
-	resp, err := client.Do(req)
+	workercompute.EnsureGRPCJSONCodec()
+
+	creds := insecure.NewCredentials()
+	if strings.EqualFold(u.Scheme, "grpcs") {
+		creds = credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS12})
+	}
+
+	conn, err := grpc.NewClient(
+		u.Host,
+		grpc.WithTransportCredentials(creds),
+		grpc.WithDefaultCallOptions(grpc.CallContentSubtype("json")),
+	)
 	if err != nil {
-		return nil, fmt.Errorf("health check failed: %w", err)
+		return nil, fmt.Errorf("dial grpc health endpoint: %w", err)
 	}
-	defer resp.Body.Close() //nolint:errcheck
+	defer conn.Close() //nolint:errcheck
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("agent returned status %d", resp.StatusCode)
+	ctxWithMD := metadata.NewOutgoingContext(ctx, metadata.Pairs("x-agent-token", authToken))
+	client := computeproto.NewComputeWorkerClient(conn)
+	resp, err := client.Health(ctxWithMD, &computeproto.HealthRequest{})
+	if err != nil {
+		return nil, fmt.Errorf("grpc health check failed: %w", err)
 	}
 
-	var body struct {
-		Status        string `json:"status"`
-		UptimeSeconds int    `json:"uptime_seconds"`
-		DuckdbVersion string `json:"duckdb_version"`
-		MemoryUsedMb  int    `json:"memory_used_mb"`
-		MaxMemoryGb   int    `json:"max_memory_gb"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
-		return nil, fmt.Errorf("decode health response: %w", err)
-	}
+	status := resp.Status
+	uptime := int(resp.UptimeSeconds)
+	duckDBVersion := resp.DuckdbVersion
+	memoryUsedMB := int(resp.MemoryUsedMb)
+	maxMemoryGB := int(resp.MaxMemoryGb)
 
 	return &domain.ComputeEndpointHealthResult{
-		Status:        &body.Status,
-		UptimeSeconds: &body.UptimeSeconds,
-		DuckdbVersion: &body.DuckdbVersion,
-		MemoryUsedMb:  &body.MemoryUsedMb,
-		MaxMemoryGb:   &body.MaxMemoryGb,
+		Status:        &status,
+		UptimeSeconds: &uptime,
+		DuckdbVersion: &duckDBVersion,
+		MemoryUsedMb:  &memoryUsedMB,
+		MaxMemoryGb:   &maxMemoryGB,
 	}, nil
 }
 

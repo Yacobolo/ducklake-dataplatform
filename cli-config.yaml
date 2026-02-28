@@ -33,6 +33,29 @@ command_overrides:
       sql:
         short: s
 
+  submitQuery:
+    verb: submit
+    command_path: []
+    flag_aliases:
+      sql:
+        short: s
+
+  getQuery:
+    verb: status
+    command_path: []
+
+  getQueryResults:
+    verb: results
+    command_path: []
+
+  cancelQuery:
+    verb: cancel
+    command_path: []
+
+  deleteQuery:
+    verb: delete
+    command_path: []
+
   # === Catalog: registration management ===
   registerCatalog:
     verb: register
