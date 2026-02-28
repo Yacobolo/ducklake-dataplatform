@@ -18,4 +18,5 @@ This page is generated from OpenAPI tags and operations.
 | [Pipelines](./endpoints/pipelines) | Pipeline workflow scheduling and orchestration. | 13 operations |
 | [Query](./endpoints/query) | Execute SQL queries against the platform. | 1 operations |
 | [Security](./endpoints/security) | Principals, groups, grants, row filters, and column masks. | 29 operations |
+| [Semantic](./endpoints/semantic) | Semantic models, metrics, relationships, query explain, and query run endpoints. | 20 operations |
 | [Storage](./endpoints/storage) | Storage credentials and external locations. | 10 operations |

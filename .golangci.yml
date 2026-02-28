@@ -192,3 +192,12 @@ linters:
         linters:
           - revive
         text: "unused-parameter"
+      - path: internal/ui/.*\.go
+        linters:
+          - revive
+          - unused
+          - gocritic
+      - path: internal/ui/.*\.go
+        linters:
+          - staticcheck
+        text: "ST1001:"

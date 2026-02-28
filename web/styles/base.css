@@ -1,0 +1,79 @@
+:root {
+  --bg: var(--bgColor-default);
+  --canvas: var(--bgColor-muted);
+  --canvas-subtle: var(--bgColor-default);
+  --text: var(--fgColor-default);
+  --muted: var(--fgColor-muted);
+  --border: var(--borderColor-default);
+  --accent: var(--fgColor-accent);
+  --danger: var(--fgColor-danger);
+  --radius: var(--borderRadius-medium);
+  --space-1: var(--control-xsmall-gap);
+  --space-2: var(--stack-gap-condensed);
+  --space-3: var(--controlStack-medium-gap-spacious);
+  --space-4: var(--stack-gap-normal);
+  --space-5: var(--stack-gap-spacious);
+  --size-icon: calc(var(--control-small-size) / 2);
+  --size-sidebar-width: calc(var(--overlay-width-xsmall) + var(--control-large-size));
+  --size-content-max-width: var(--breakpoint-xlarge);
+  --size-layout-max-width: calc(var(--breakpoint-large) - var(--control-medium-size));
+  --size-login-max-width: calc(var(--overlay-width-small) + var(--overlay-width-xsmall) + var(--control-xlarge-size));
+  --size-sticky-offset: calc(var(--control-xlarge-size) + var(--space-4) + var(--space-3));
+  --size-editor-min-height: calc(var(--control-xlarge-size) * 3);
+  --size-outline-max-height: calc(var(--overlay-height-large) + var(--control-medium-size));
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--fontStack-system);
+  font-size: var(--text-body-size-medium);
+  line-height: var(--text-body-lineHeight-medium);
+  color: var(--text);
+  background: var(--bg);
+}
+
+a,
+a:visited {
+  color: var(--fgColor-accent);
+}
+
+a:hover {
+  color: var(--fgColor-accent);
+}
+
+a:active {
+  color: var(--fgColor-accent);
+}
+
+a:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--outline-focus-offset);
+}
+
+.Box {
+  border: var(--borderWidth-default) solid var(--borderColor-default);
+  border-radius: var(--borderRadius-medium);
+  background: var(--bgColor-default);
+  box-shadow: var(--shadow-resting-xsmall);
+}
+
+.skip-link {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translateY(-100%);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--borderRadius-medium);
+  background: var(--bgColor-default);
+  color: var(--fgColor-accent);
+  box-shadow: var(--shadow-floating-small);
+  z-index: 20;
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+}

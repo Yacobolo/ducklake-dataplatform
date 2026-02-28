@@ -1,0 +1,52 @@
+.card {
+  margin-bottom: var(--space-3);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(calc(var(--overlay-width-xsmall) + var(--control-small-size)), 1fr));
+  gap: var(--space-3);
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.toolbar {
+  background: var(--bgColor-default);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  border: var(--borderWidth-default) solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bgColor-default);
+}
+
+th,
+td {
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: var(--borderWidth-default) solid var(--border);
+  vertical-align: top;
+  font-size: var(--text-codeBlock-size);
+}
+
+th {
+  background: var(--bgColor-muted);
+  color: var(--muted);
+  font-weight: var(--base-text-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.data-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.data-table tbody tr:hover {
+  background: var(--control-bgColor-hover);
+}

@@ -63,6 +63,14 @@ func NewAuthenticator(
 
 // Middleware returns an HTTP middleware that authenticates requests.
 func (a *Authenticator) Middleware() func(http.Handler) http.Handler {
+	return a.MiddlewareWithUnauthorized(writeUnauthorized)
+}
+
+// MiddlewareWithUnauthorized returns auth middleware with a custom unauthorized handler.
+func (a *Authenticator) MiddlewareWithUnauthorized(unauthorized func(http.ResponseWriter, *http.Request)) func(http.Handler) http.Handler {
+	if unauthorized == nil {
+		unauthorized = writeUnauthorized
+	}
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
@@ -89,7 +97,7 @@ func (a *Authenticator) Middleware() func(http.Handler) http.Handler {
 			}
 
 			// Both methods failed.
-			writeUnauthorized(w)
+			unauthorized(w, r)
 		})
 	}
 }
@@ -214,7 +222,7 @@ func sanitizePrincipalName(name string) string {
 	return name
 }
 
-func writeUnauthorized(w http.ResponseWriter) {
+func writeUnauthorized(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusUnauthorized)
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{

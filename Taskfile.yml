@@ -135,6 +135,12 @@ tasks:
       - npm ci --prefix docs
       - npm run docs:build --prefix docs
 
+  ui:assets:
+    desc: Install web deps and build UI CSS assets
+    cmds:
+      - npm ci --prefix web
+      - npm run build --prefix web
+
   verify:docs-generated:
     desc: Verify generated docs reference pages are up to date
     cmds:

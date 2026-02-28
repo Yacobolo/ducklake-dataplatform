@@ -1,0 +1,202 @@
+.workspace-layout {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(var(--overlay-width-xsmall), var(--overlay-width-small)) minmax(0, 1fr);
+  gap: var(--space-3);
+  height: 100%;
+  min-height: 100%;
+}
+
+.workspace-main {
+  min-width: 0;
+  padding-left: var(--space-3);
+  border-left: var(--borderWidth-thin) solid var(--borderColor-muted);
+}
+
+.workspace-aside {
+  min-width: 0;
+  align-self: stretch;
+  padding-right: var(--space-2);
+}
+
+.workspace-aside-shell {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.workspace-aside-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.workspace-aside-tabs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.workspace-aside-toggle {
+  flex-shrink: 0;
+}
+
+.workspace-aside-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--control-medium-size);
+  border: var(--borderWidth-default) solid var(--borderColor-transparent);
+  border-radius: var(--borderRadius-medium);
+  background: var(--bgColor-transparent);
+  color: var(--fgColor-muted);
+  padding: 0 var(--space-2);
+}
+
+.workspace-aside-tab:hover,
+.workspace-aside-tab:focus-visible,
+.workspace-aside-tab.is-active {
+  color: var(--fgColor-default);
+  border-color: var(--borderColor-muted);
+  background: var(--bgColor-muted);
+}
+
+.workspace-aside-tab-icon {
+  width: var(--size-icon);
+  height: var(--size-icon);
+}
+
+.workspace-aside-tab-label {
+  font-size: var(--text-caption-size);
+  font-weight: var(--base-text-weight-semibold);
+}
+
+.workspace-aside-tab-count {
+  color: var(--fgColor-muted);
+  font-size: var(--text-caption-size);
+}
+
+.workspace-aside-panel {
+  display: none;
+  min-width: 0;
+}
+
+.workspace-aside-panel.is-active {
+  display: block;
+}
+
+.workspace-layout.is-aside-collapsed {
+  grid-template-columns: calc(var(--control-medium-size) + (var(--space-1) * 2)) minmax(0, 1fr);
+}
+
+.workspace-layout.is-aside-collapsed .workspace-aside {
+  padding-right: var(--space-1);
+}
+
+.workspace-layout.is-aside-collapsed .workspace-aside-head {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-1);
+}
+
+.workspace-layout.is-aside-collapsed .workspace-aside-tabs {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.workspace-layout.is-aside-collapsed .workspace-aside-tab {
+  justify-content: center;
+  padding: 0;
+}
+
+.workspace-layout.is-aside-collapsed .workspace-aside-tab,
+.workspace-layout.is-aside-collapsed .workspace-aside-tab.is-active {
+  color: var(--fgColor-muted);
+  border-color: var(--borderColor-transparent);
+  background: var(--bgColor-transparent);
+}
+
+.workspace-layout.is-aside-collapsed .workspace-aside-tab:hover,
+.workspace-layout.is-aside-collapsed .workspace-aside-tab:focus-visible {
+  color: var(--fgColor-default);
+  border-color: var(--borderColor-muted);
+  background: var(--bgColor-muted);
+}
+
+.workspace-layout.is-aside-collapsed .workspace-aside-toggle {
+  display: none;
+}
+
+.workspace-layout.is-aside-collapsed .workspace-aside-tab-label,
+.workspace-layout.is-aside-collapsed .workspace-aside-tab-count,
+.workspace-layout.is-aside-collapsed .workspace-aside-panels {
+  display: none;
+}
+
+@media (max-width: var(--breakpoint-medium)) {
+  .workspace-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-aside {
+    align-self: start;
+    padding-right: 0;
+    border-bottom: var(--borderWidth-thin) solid var(--borderColor-muted);
+    padding-bottom: var(--space-2);
+    margin-bottom: var(--space-1);
+  }
+
+  .workspace-main {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .workspace-aside-shell {
+    position: static;
+  }
+
+  .workspace-aside-head {
+    align-items: flex-start;
+  }
+
+  .workspace-aside-tabs {
+    overflow-x: auto;
+  }
+
+  .workspace-layout.is-aside-collapsed {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-layout.is-aside-collapsed .workspace-aside {
+    padding-right: 0;
+  }
+
+  .workspace-layout.is-aside-collapsed .workspace-aside-head {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .workspace-layout.is-aside-collapsed .workspace-aside-tabs {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .workspace-layout.is-aside-collapsed .workspace-aside-tab {
+    justify-content: flex-start;
+    padding: 0 var(--space-2);
+  }
+
+  .workspace-layout.is-aside-collapsed .workspace-aside-tab-label,
+  .workspace-layout.is-aside-collapsed .workspace-aside-tab-count,
+  .workspace-layout.is-aside-collapsed .workspace-aside-panels {
+    display: inline;
+  }
+
+  .workspace-layout.is-aside-collapsed .workspace-aside-panels {
+    display: block;
+  }
+}

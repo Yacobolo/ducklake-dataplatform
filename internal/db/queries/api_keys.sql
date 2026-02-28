@@ -6,7 +6,7 @@ RETURNING *;
 -- name: GetAPIKeyByHash :one
 SELECT ak.*, p.name as principal_name FROM api_keys ak
 JOIN principals p ON ak.principal_id = p.id
-WHERE ak.key_hash = ? AND (ak.expires_at IS NULL OR ak.expires_at > datetime('now'));
+WHERE ak.key_hash = ? AND (ak.expires_at IS NULL OR ak.expires_at > datetime('now', 'localtime'));
 
 -- name: ListAPIKeysForPrincipal :many
 SELECT * FROM api_keys WHERE principal_id = ? ORDER BY created_at DESC;
@@ -30,4 +30,4 @@ SELECT * FROM api_keys ORDER BY created_at DESC LIMIT ? OFFSET ?;
 SELECT COUNT(*) as cnt FROM api_keys;
 
 -- name: DeleteExpiredKeys :execresult
-DELETE FROM api_keys WHERE expires_at IS NOT NULL AND expires_at <= datetime('now');
+DELETE FROM api_keys WHERE expires_at IS NOT NULL AND expires_at <= datetime('now', 'localtime');

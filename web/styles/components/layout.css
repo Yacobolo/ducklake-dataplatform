@@ -1,0 +1,205 @@
+.app-frame {
+  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app-shell {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border-bottom: var(--borderWidth-default) solid var(--border);
+  background: var(--canvas);
+  box-shadow: var(--shadow-resting-xsmall);
+}
+
+.app-header-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.app-header-brand strong {
+  display: block;
+  font-size: var(--text-codeBlock-size);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.app-header-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+#nav-toggle {
+  display: none;
+}
+
+#sidebar-toggle {
+  display: inline-flex;
+}
+
+.is-hidden {
+  display: none;
+}
+
+.app-header-meta form {
+  margin: 0;
+  display: inline-flex;
+}
+
+.app-body {
+  display: grid;
+  grid-template-columns: var(--size-sidebar-width) minmax(0, 1fr);
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.app-overlay {
+  display: none;
+}
+
+.app-sidebar {
+  background: var(--canvas);
+  border-right: var(--borderWidth-default) solid var(--border);
+  padding: var(--space-4) var(--space-2);
+  position: relative;
+  height: 100%;
+  overflow-y: auto;
+  box-shadow: var(--shadow-resting-xsmall);
+}
+
+.app-shell.sidebar-compact .app-body {
+  grid-template-columns: calc(var(--control-xlarge-size) + var(--space-4)) minmax(0, 1fr);
+}
+
+.app-shell.sidebar-compact .app-sidebar {
+  padding-left: var(--space-1);
+  padding-right: var(--space-1);
+}
+
+.app-main {
+  --app-main-pad-block: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--app-main-pad-block) clamp(var(--space-3), 3vw, var(--space-5));
+  background: var(--bgColor-default);
+}
+
+.app-main-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+  max-width: var(--size-content-max-width);
+  margin: 0 auto;
+  min-height: 0;
+}
+
+.layout {
+  max-width: var(--size-layout-max-width);
+  margin: 0 auto;
+  padding: var(--space-5);
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  padding: var(--space-3);
+  border: var(--borderWidth-default) solid var(--border);
+  border-radius: var(--radius);
+  background: var(--canvas);
+  box-shadow: var(--shadow-resting-small);
+}
+
+.page-title {
+  margin: 0;
+  font-size: calc(var(--text-title-size-medium) + var(--borderWidth-thick));
+  line-height: var(--text-title-lineHeight-medium);
+  font-weight: var(--base-text-weight-semibold);
+}
+
+@media (max-width: var(--breakpoint-medium)) {
+  .app-header {
+    padding: var(--space-3);
+    flex-wrap: wrap;
+  }
+
+  .app-header-meta {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  #nav-toggle {
+    display: inline-flex;
+  }
+
+  #sidebar-toggle {
+    display: none;
+  }
+
+  .app-body {
+    grid-template-columns: 1fr;
+  }
+
+  .app-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(var(--size-sidebar-width), calc(var(--overlay-width-small) + var(--space-5)));
+    height: 100vh;
+    border-right: var(--borderWidth-default) solid var(--border);
+    border-bottom: 0;
+    transform: translateX(-100%);
+    transition: transform var(--base-duration-100) ease;
+    z-index: 20;
+  }
+
+  .app-shell.nav-open .app-sidebar {
+    transform: translateX(0);
+  }
+
+  .app-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--overlay-backdrop-bgColor);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--base-duration-100) ease;
+    z-index: 10;
+  }
+
+  .app-shell.nav-open .app-overlay {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .app-main {
+    --app-main-pad-block: var(--space-3);
+    padding: var(--app-main-pad-block);
+  }
+}

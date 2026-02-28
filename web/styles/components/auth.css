@@ -1,0 +1,21 @@
+.login-body {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--space-5);
+}
+
+.login-wrap {
+  width: 100%;
+  max-width: var(--size-login-max-width);
+  background: var(--canvas);
+  border: var(--borderWidth-default) solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-floating-small);
+}
+
+.login-form {
+  display: grid;
+  gap: var(--space-2);
+}

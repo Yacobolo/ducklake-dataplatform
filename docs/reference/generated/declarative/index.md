@@ -26,6 +26,7 @@ This section is generated from versioned JSON Schema artifacts.
 - [PrivilegePresetList](./kinds/privilege-preset-list) (`kinds/privilege-preset-list.schema.json`)
 - [RowFilterList](./kinds/row-filter-list) (`kinds/row-filter-list.schema.json`)
 - [Schema](./kinds/schema) (`kinds/schema.schema.json`)
+- [SemanticModel](./kinds/semantic-model) (`kinds/semantic-model.schema.json`)
 - [StorageCredentialList](./kinds/storage-credential-list) (`kinds/storage-credential-list.schema.json`)
 - [Table](./kinds/table) (`kinds/table.schema.json`)
 - [TagConfig](./kinds/tag-config) (`kinds/tag-config.schema.json`)
@@ -53,6 +54,7 @@ This section is generated from versioned JSON Schema artifacts.
 | `kinds/privilege-preset-list.schema.json` | `090c732c29ec1e85731909b89d44041f9e8138184a209812da0048290d53bf87` |
 | `kinds/row-filter-list.schema.json` | `ac9b42eda99888d725ae668923c2ac73c0156587844108078a034292a22c5743` |
 | `kinds/schema.schema.json` | `e8d6fdeb80c6b552101c4031014213099e56b67842095b1dcd7021c3af9ede06` |
+| `kinds/semantic-model.schema.json` | `f61f60f72ad5437709eed4463447a37a596e5a5ee5d14b3e10fb65c97ccd7886` |
 | `kinds/storage-credential-list.schema.json` | `afe5ef7fd5ada3d8cb379c1064e6811c5dbab8e1f8015d141e7eedbf82347a2c` |
 | `kinds/table.schema.json` | `ba5f538e24c38543b7e8ec9f2288624ecb6f265d9b1f320ebecdd513778bcda8` |
 | `kinds/tag-config.schema.json` | `1e751bea5c972720ff8335f47b507c96d84339c9867328d1ddc7c072d0d907f8` |

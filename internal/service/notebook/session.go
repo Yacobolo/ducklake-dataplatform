@@ -265,11 +265,13 @@ func (m *SessionManager) ExecuteCell(ctx context.Context, sessionID, cellID stri
 
 	start := time.Now()
 	rows, err := m.engine.QueryOnConn(ctx, s.conn, s.principal, cell.Content)
-	duration := time.Since(start)
+	finishedAt := time.Now()
+	duration := finishedAt.Sub(start)
 
 	result := &domain.CellExecutionResult{
-		CellID:   cellID,
-		Duration: duration,
+		CellID:     cellID,
+		Duration:   duration,
+		ExecutedAt: &finishedAt,
 	}
 
 	if err != nil {
