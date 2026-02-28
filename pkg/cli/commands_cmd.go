@@ -154,12 +154,10 @@ func walkCommands(cmd *cobra.Command, parentPath string) []CommandEntry {
 // collectFlags gathers flag metadata from a command.
 func collectFlags(cmd *cobra.Command) []FlagEntry {
 	var flags []FlagEntry
-	cmd.Flags().VisitAll(func(f *pflag.Flag) {
-		if f.Hidden {
-			return
-		}
-		// Skip help flag
-		if f.Name == "help" {
+	seen := map[string]bool{}
+
+	add := func(f *pflag.Flag) {
+		if f.Hidden || f.Name == "help" || seen[f.Name] {
 			return
 		}
 		entry := FlagEntry{
@@ -169,11 +167,15 @@ func collectFlags(cmd *cobra.Command) []FlagEntry {
 			Default: f.DefValue,
 			Usage:   f.Usage,
 		}
-		// Check if flag is required by looking at annotations
 		if ann, ok := f.Annotations[cobra.BashCompOneRequiredFlag]; ok && len(ann) > 0 && ann[0] == "true" {
 			entry.Required = true
 		}
 		flags = append(flags, entry)
-	})
+		seen[f.Name] = true
+	}
+
+	cmd.Flags().VisitAll(add)
+	cmd.InheritedFlags().VisitAll(add)
+
 	return flags
 }

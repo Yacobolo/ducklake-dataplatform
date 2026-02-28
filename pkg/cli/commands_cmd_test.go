@@ -160,6 +160,40 @@ func TestCommands_FilterNoMatches(t *testing.T) {
 	assert.Empty(t, entries, "nonsense filter should return no commands")
 }
 
+func TestCommands_IncludesInheritedFlags(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{"--output", "json", "commands"})
+
+	old := captureStdout(t)
+	err := rootCmd.Execute()
+	output := old()
+	require.NoError(t, err)
+
+	var entries []CommandEntry
+	require.NoError(t, json.Unmarshal([]byte(output), &entries))
+
+	lookup := map[string]CommandEntry{}
+	for _, e := range entries {
+		lookup[e.Path] = e
+	}
+
+	for _, path := range []string{"version", "find columns"} {
+		entry, ok := lookup[path]
+		require.True(t, ok, "expected command entry for %s", path)
+		require.NotEmpty(t, entry.Flags, "expected inherited/global flags for %s", path)
+
+		names := map[string]bool{}
+		for _, f := range entry.Flags {
+			names[f.Name] = true
+		}
+		assert.True(t, names["output"], "expected --output in flags for %s", path)
+		assert.True(t, names["host"], "expected --host in flags for %s", path)
+	}
+}
+
 func TestCommands_TableOutput(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)
