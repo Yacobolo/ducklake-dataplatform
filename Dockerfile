@@ -2,9 +2,9 @@
 # Multi-stage build for the duck-demo data platform server.
 
 # === Build stage ===
-FROM golang:1.25-alpine AS builder
+FROM golang:1.25-bookworm AS builder
 
-RUN apk add --no-cache gcc g++ musl-dev
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential ca-certificates && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /src
 COPY go.mod go.sum ./
@@ -16,9 +16,9 @@ COPY . .
 RUN CGO_ENABLED=1 go build -o /bin/server ./cmd/server
 
 # === Runtime stage ===
-FROM alpine:3.21
+FROM debian:bookworm-slim
 
-RUN apk add --no-cache ca-certificates tzdata libstdc++
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates tzdata wget libstdc++6 && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /bin/server /usr/local/bin/server
 
