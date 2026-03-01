@@ -1,0 +1,91 @@
+services:
+  control-plane:
+    image: ghcr.io/${GHCR_OWNER}/${GHCR_REPO}-control-plane:${IMAGE_TAG:-main-latest}
+    pull_policy: always
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+      - "32010:32010"
+      - "5433:5433"
+    environment:
+      LISTEN_ADDR: ":8080"
+      META_DB_PATH: "/data/ducklake_meta.sqlite"
+      LOG_LEVEL: "info"
+
+      # Keep ENV=development for local testing convenience.
+      ENV: "development"
+      JWT_SECRET: "${JWT_SECRET:-dev-jwt-secret-change-me}"
+      ENCRYPTION_KEY: "${ENCRYPTION_KEY:-0000000000000000000000000000000000000000000000000000000000000000}"
+
+      # Protocol and distributed execution flags.
+      FEATURE_REMOTE_ROUTING: "true"
+      FEATURE_ASYNC_QUEUE: "true"
+      FEATURE_CURSOR_MODE: "true"
+      FEATURE_INTERNAL_GRPC: "true"
+      FEATURE_FLIGHT_SQL: "true"
+      FEATURE_PG_WIRE: "true"
+      FLIGHT_SQL_LISTEN_ADDR: ":32010"
+      PG_WIRE_LISTEN_ADDR: ":5433"
+
+      # Optional S3-compatible config for control-plane ingestion/catalog paths.
+      KEY_ID: "${S3_ACCESS_KEY:-duckdemo}"
+      SECRET: "${S3_SECRET_KEY:-duckdemo-secret}"
+      ENDPOINT: "${S3_ENDPOINT}"
+      REGION: "${S3_REGION}"
+      BUCKET: "${S3_BUCKET}"
+    volumes:
+      - control_plane_data:/data
+
+  compute-agent:
+    image: ghcr.io/${GHCR_OWNER}/${GHCR_REPO}-compute-agent:${IMAGE_TAG:-main-latest}
+    pull_policy: always
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "9443:9443"
+      - "9444:9444"
+    environment:
+      AGENT_TOKEN: "${AGENT_TOKEN:-dev-agent-token-change-me}"
+      LISTEN_ADDR: ":9443"
+      GRPC_LISTEN_ADDR: ":9444"
+      MAX_MEMORY_GB: "${AGENT_MAX_MEMORY_GB:-2}"
+      QUERY_RESULT_TTL: "${AGENT_QUERY_RESULT_TTL:-10m}"
+      QUERY_CLEANUP_INTERVAL: "${AGENT_QUERY_CLEANUP_INTERVAL:-1m}"
+      FEATURE_CURSOR_MODE: "true"
+      FEATURE_INTERNAL_GRPC: "true"
+
+      # DuckLake metadata catalog in Postgres.
+      CATALOG_DSN: "host=postgres port=5432 dbname=${POSTGRES_DB:-ducklake} user=${POSTGRES_USER:-ducklake} password=${POSTGRES_PASSWORD:-ducklake} sslmode=disable"
+
+      # S3-compatible object storage for DuckLake data files.
+      S3_KEY_ID: "${S3_ACCESS_KEY:-duckdemo}"
+      S3_SECRET: "${S3_SECRET_KEY:-duckdemo-secret}"
+      S3_ENDPOINT: "${S3_ENDPOINT}"
+      S3_REGION: "${S3_REGION}"
+      S3_BUCKET: "${S3_BUCKET}"
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: "${POSTGRES_DB:-ducklake}"
+      POSTGRES_USER: "${POSTGRES_USER:-ducklake}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-ducklake}"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ducklake} -d ${POSTGRES_DB:-ducklake}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  control_plane_data:
+  postgres_data:
