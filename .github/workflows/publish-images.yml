@@ -1,8 +1,10 @@
 name: Publish Images
 
 on:
-  push:
+  workflow_run:
+    workflows: ["CI"]
     branches: [main]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -19,11 +21,18 @@ env:
 jobs:
   publish:
     name: Build and push GHCR images
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -49,8 +58,14 @@ jobs:
         run: |
           OWNER="${GITHUB_REPOSITORY_OWNER,,}"
           REPO="${GITHUB_REPOSITORY#*/}"
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            SHA="${{ github.event.workflow_run.head_sha }}"
+          else
+            SHA="${{ github.sha }}"
+          fi
           echo "owner=$OWNER" >> "$GITHUB_OUTPUT"
           echo "repo=$REPO" >> "$GITHUB_OUTPUT"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
 
       - name: Login to GHCR
         uses: docker/login-action@v3
@@ -70,7 +85,7 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ steps.prep.outputs.owner }}/${{ steps.prep.outputs.repo }}-control-plane:main-latest
-            ghcr.io/${{ steps.prep.outputs.owner }}/${{ steps.prep.outputs.repo }}-control-plane:sha-${{ github.sha }}
+            ghcr.io/${{ steps.prep.outputs.owner }}/${{ steps.prep.outputs.repo }}-control-plane:sha-${{ steps.prep.outputs.sha }}
 
       - name: Build and push compute-agent image
         uses: docker/build-push-action@v6
@@ -80,4 +95,4 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ steps.prep.outputs.owner }}/${{ steps.prep.outputs.repo }}-compute-agent:main-latest
-            ghcr.io/${{ steps.prep.outputs.owner }}/${{ steps.prep.outputs.repo }}-compute-agent:sha-${{ github.sha }}
+            ghcr.io/${{ steps.prep.outputs.owner }}/${{ steps.prep.outputs.repo }}-compute-agent:sha-${{ steps.prep.outputs.sha }}
