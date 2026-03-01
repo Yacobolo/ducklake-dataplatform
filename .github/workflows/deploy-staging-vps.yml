@@ -34,7 +34,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Prepare runtime env file from GitHub Secrets
+      - name: Prepare runtime env file from GitHub vars and secrets
         run: |
           umask 077
           IMAGE_TAG="sha-${{ github.event.workflow_run.head_sha || github.sha }}"
@@ -42,24 +42,24 @@ jobs:
             IMAGE_TAG="${{ inputs.image_tag }}"
           fi
           cat > deploy/staging/vps/.env <<EOF
-          PUBLIC_DOMAIN=${{ secrets.PUBLIC_DOMAIN }}
-          GHCR_OWNER=${{ secrets.GHCR_OWNER }}
-          GHCR_REPO=${{ secrets.GHCR_REPO }}
+          PUBLIC_DOMAIN=${{ vars.PUBLIC_DOMAIN }}
+          GHCR_OWNER=${{ vars.GHCR_OWNER }}
+          GHCR_REPO=${{ vars.GHCR_REPO }}
           IMAGE_TAG=${IMAGE_TAG}
           AGENT_TOKEN=${{ secrets.AGENT_TOKEN }}
           JWT_SECRET=${{ secrets.JWT_SECRET }}
           ENCRYPTION_KEY=${{ secrets.ENCRYPTION_KEY }}
           S3_ACCESS_KEY=${{ secrets.S3_ACCESS_KEY }}
           S3_SECRET_KEY=${{ secrets.S3_SECRET_KEY }}
-          S3_ENDPOINT=${{ secrets.S3_ENDPOINT }}
-          S3_REGION=${{ secrets.S3_REGION }}
-          S3_BUCKET=${{ secrets.S3_BUCKET }}
-          POSTGRES_DB=${{ secrets.POSTGRES_DB }}
-          POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+          S3_ENDPOINT=${{ vars.S3_ENDPOINT }}
+          S3_REGION=${{ vars.S3_REGION }}
+          S3_BUCKET=${{ vars.S3_BUCKET }}
+          POSTGRES_DB=${{ vars.POSTGRES_DB }}
+          POSTGRES_USER=${{ vars.POSTGRES_USER }}
           POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
-          AGENT_MAX_MEMORY_GB=${{ secrets.AGENT_MAX_MEMORY_GB || '2' }}
-          AGENT_QUERY_RESULT_TTL=${{ secrets.AGENT_QUERY_RESULT_TTL || '10m' }}
-          AGENT_QUERY_CLEANUP_INTERVAL=${{ secrets.AGENT_QUERY_CLEANUP_INTERVAL || '1m' }}
+          AGENT_MAX_MEMORY_GB=${{ vars.AGENT_MAX_MEMORY_GB || '2' }}
+          AGENT_QUERY_RESULT_TTL=${{ vars.AGENT_QUERY_RESULT_TTL || '10m' }}
+          AGENT_QUERY_CLEANUP_INTERVAL=${{ vars.AGENT_QUERY_CLEANUP_INTERVAL || '1m' }}
           EOF
 
       - name: Configure SSH key
@@ -68,22 +68,22 @@ jobs:
           mkdir -p ~/.ssh
           printf '%s\n' '${{ secrets.VPS_SSH_KEY }}' > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          printf '%s\n' '${{ secrets.VPS_KNOWN_HOSTS }}' > ~/.ssh/known_hosts
+          printf '%s\n' '${{ vars.VPS_KNOWN_HOSTS }}' > ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
       - name: Copy deploy files to server
         run: |
-          ssh -p "${{ secrets.VPS_PORT }}" "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" "mkdir -p '${{ secrets.VPS_APP_DIR }}/.docker'"
-          scp -P "${{ secrets.VPS_PORT }}" deploy/staging/vps/docker-compose.yml "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_APP_DIR }}/docker-compose.yml"
-          scp -P "${{ secrets.VPS_PORT }}" deploy/staging/vps/Caddyfile "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_APP_DIR }}/Caddyfile"
-          scp -P "${{ secrets.VPS_PORT }}" deploy/staging/vps/.env "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_APP_DIR }}/.env"
+          ssh -p "${{ vars.VPS_PORT }}" "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}" "mkdir -p '${{ vars.VPS_APP_DIR }}/.docker'"
+          scp -P "${{ vars.VPS_PORT }}" deploy/staging/vps/docker-compose.yml "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}:${{ vars.VPS_APP_DIR }}/docker-compose.yml"
+          scp -P "${{ vars.VPS_PORT }}" deploy/staging/vps/Caddyfile "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}:${{ vars.VPS_APP_DIR }}/Caddyfile"
+          scp -P "${{ vars.VPS_PORT }}" deploy/staging/vps/.env "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}:${{ vars.VPS_APP_DIR }}/.env"
 
       - name: Pull and restart services
         run: |
-          ssh -p "${{ secrets.VPS_PORT }}" "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" "
+          ssh -p "${{ vars.VPS_PORT }}" "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}" "
             set -eu
-            cd '${{ secrets.VPS_APP_DIR }}'
-            printf '%s' '${{ secrets.GHCR_TOKEN }}' | docker --config ./.docker login ghcr.io -u '${{ secrets.GHCR_USERNAME }}' --password-stdin
+            cd '${{ vars.VPS_APP_DIR }}'
+            printf '%s' '${{ secrets.GHCR_TOKEN }}' | docker --config ./.docker login ghcr.io -u '${{ vars.GHCR_USERNAME }}' --password-stdin
             docker compose pull
             docker compose up -d --remove-orphans
             docker compose ps
