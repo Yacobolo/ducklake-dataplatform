@@ -37,14 +37,16 @@ jobs:
       - name: Prepare runtime env file from GitHub vars and secrets
         run: |
           umask 077
+          GHCR_OWNER="${GITHUB_REPOSITORY_OWNER,,}"
+          GHCR_REPO="${GITHUB_REPOSITORY#*/}"
           IMAGE_TAG="sha-${{ github.event.workflow_run.head_sha || github.sha }}"
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.image_tag }}" ]; then
             IMAGE_TAG="${{ inputs.image_tag }}"
           fi
           cat > deploy/staging/vps/.env <<EOF
           PUBLIC_DOMAIN=${{ vars.PUBLIC_DOMAIN }}
-          GHCR_OWNER=${{ vars.GHCR_OWNER }}
-          GHCR_REPO=${{ vars.GHCR_REPO }}
+          GHCR_OWNER=${GHCR_OWNER}
+          GHCR_REPO=${GHCR_REPO}
           IMAGE_TAG=${IMAGE_TAG}
           AGENT_TOKEN=${{ secrets.AGENT_TOKEN }}
           JWT_SECRET=${{ secrets.JWT_SECRET }}
@@ -83,7 +85,7 @@ jobs:
           ssh -p "${{ vars.VPS_PORT }}" "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}" "
             set -eu
             cd '${{ vars.VPS_APP_DIR }}'
-            printf '%s' '${{ secrets.GHCR_TOKEN }}' | docker --config ./.docker login ghcr.io -u '${{ vars.GHCR_USERNAME }}' --password-stdin
+            printf '%s' '${{ secrets.GHCR_TOKEN }}' | docker --config ./.docker login ghcr.io -u '${{ github.repository_owner }}' --password-stdin
             docker compose pull
             docker compose up -d --remove-orphans
             docker compose ps

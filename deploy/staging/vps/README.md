@@ -23,9 +23,7 @@ The `Deploy Staging VPS` GitHub Actions workflow writes runtime values from GitH
 
 ### GHCR and image coordinates
 
-- `GHCR_USERNAME`
-- `GHCR_OWNER`
-- `GHCR_REPO`
+- inferred from the GitHub repository at runtime (`github.repository_owner`, `github.repository`)
 
 ### Runtime config
 
