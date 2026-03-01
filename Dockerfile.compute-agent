@@ -1,0 +1,32 @@
+# syntax=docker/dockerfile:1
+
+# === Build stage ===
+FROM golang:1.25-alpine AS builder
+
+RUN apk add --no-cache gcc musl-dev
+
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+# Build the compute-agent binary with CGO enabled.
+RUN CGO_ENABLED=1 go build -o /bin/compute-agent ./cmd/compute-agent
+
+# === Runtime stage ===
+FROM alpine:3.21
+
+RUN apk add --no-cache ca-certificates tzdata wget
+
+COPY --from=builder /bin/compute-agent /usr/local/bin/compute-agent
+
+EXPOSE 9443 9444
+
+ENV LISTEN_ADDR=:9443 \
+    GRPC_LISTEN_ADDR=:9444
+
+HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=5 \
+    CMD wget -qO- http://localhost:9443/health || exit 1
+
+ENTRYPOINT ["compute-agent"]
