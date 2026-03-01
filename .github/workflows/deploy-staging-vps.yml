@@ -1,4 +1,4 @@
-name: Deploy Hetzner
+name: Deploy Staging VPS
 
 on:
   workflow_run:
@@ -17,12 +17,12 @@ permissions:
   packages: read
 
 concurrency:
-  group: deploy-hetzner-main
+  group: deploy-staging-vps-main
   cancel-in-progress: true
 
 jobs:
   deploy:
-    name: Deploy to Hetzner via SSH
+    name: Deploy to Staging VPS via SSH
     if: |
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'workflow_run' &&
@@ -41,7 +41,7 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.image_tag }}" ]; then
             IMAGE_TAG="${{ inputs.image_tag }}"
           fi
-          cat > deploy/hetzner/.env <<EOF
+          cat > deploy/staging/vps/.env <<EOF
           PUBLIC_DOMAIN=${{ secrets.PUBLIC_DOMAIN }}
           GHCR_OWNER=${{ secrets.GHCR_OWNER }}
           GHCR_REPO=${{ secrets.GHCR_REPO }}
@@ -66,23 +66,23 @@ jobs:
         run: |
           umask 077
           mkdir -p ~/.ssh
-          printf '%s\n' '${{ secrets.HETZNER_SSH_KEY }}' > ~/.ssh/id_ed25519
+          printf '%s\n' '${{ secrets.VPS_SSH_KEY }}' > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          printf '%s\n' '${{ secrets.HETZNER_KNOWN_HOSTS }}' > ~/.ssh/known_hosts
+          printf '%s\n' '${{ secrets.VPS_KNOWN_HOSTS }}' > ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
       - name: Copy deploy files to server
         run: |
-          ssh -p "${{ secrets.HETZNER_PORT }}" "${{ secrets.HETZNER_USER }}@${{ secrets.HETZNER_HOST }}" "mkdir -p '${{ secrets.HETZNER_APP_DIR }}/.docker'"
-          scp -P "${{ secrets.HETZNER_PORT }}" deploy/hetzner/docker-compose.yml "${{ secrets.HETZNER_USER }}@${{ secrets.HETZNER_HOST }}:${{ secrets.HETZNER_APP_DIR }}/docker-compose.yml"
-          scp -P "${{ secrets.HETZNER_PORT }}" deploy/hetzner/Caddyfile "${{ secrets.HETZNER_USER }}@${{ secrets.HETZNER_HOST }}:${{ secrets.HETZNER_APP_DIR }}/Caddyfile"
-          scp -P "${{ secrets.HETZNER_PORT }}" deploy/hetzner/.env "${{ secrets.HETZNER_USER }}@${{ secrets.HETZNER_HOST }}:${{ secrets.HETZNER_APP_DIR }}/.env"
+          ssh -p "${{ secrets.VPS_PORT }}" "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" "mkdir -p '${{ secrets.VPS_APP_DIR }}/.docker'"
+          scp -P "${{ secrets.VPS_PORT }}" deploy/staging/vps/docker-compose.yml "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_APP_DIR }}/docker-compose.yml"
+          scp -P "${{ secrets.VPS_PORT }}" deploy/staging/vps/Caddyfile "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_APP_DIR }}/Caddyfile"
+          scp -P "${{ secrets.VPS_PORT }}" deploy/staging/vps/.env "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_APP_DIR }}/.env"
 
       - name: Pull and restart services
         run: |
-          ssh -p "${{ secrets.HETZNER_PORT }}" "${{ secrets.HETZNER_USER }}@${{ secrets.HETZNER_HOST }}" "
+          ssh -p "${{ secrets.VPS_PORT }}" "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" "
             set -eu
-            cd '${{ secrets.HETZNER_APP_DIR }}'
+            cd '${{ secrets.VPS_APP_DIR }}'
             printf '%s' '${{ secrets.GHCR_TOKEN }}' | docker --config ./.docker login ghcr.io -u '${{ secrets.GHCR_USERNAME }}' --password-stdin
             docker compose pull
             docker compose up -d --remove-orphans

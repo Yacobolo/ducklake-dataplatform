@@ -49,6 +49,11 @@ docker run -p 8080:8080 \
   duck-demo
 ```
 
+### Compose Profiles
+
+- Default/local stack: `docker-compose.yml`
+- Continuous staging VPS stack: `deploy/staging/vps/docker-compose.yml`
+
 ## Configuration
 
 All configuration is via environment variables. See `.env.sample` for a full reference.

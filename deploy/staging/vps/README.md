@@ -1,4 +1,4 @@
-# Hetzner test deployment (GitHub Secrets only)
+# Staging VPS deployment (GitHub Secrets only)
 
 This setup deploys `control-plane` + `compute-agent` + `postgres` with:
 
@@ -6,7 +6,7 @@ This setup deploys `control-plane` + `compute-agent` + `postgres` with:
 
 Deploys are deterministic and CI-driven (no timer-based auto-updater).
 
-The `Deploy Hetzner` GitHub Actions workflow writes runtime values from GitHub Secrets into `.env` on the server during each deploy, then runs:
+The `Deploy Staging VPS` GitHub Actions workflow writes runtime values from GitHub Secrets into `.env` on the server during each deploy, then runs:
 
 - `docker compose pull`
 - `docker compose up -d --remove-orphans`
@@ -15,12 +15,12 @@ The `Deploy Hetzner` GitHub Actions workflow writes runtime values from GitHub S
 
 ### SSH / target host
 
-- `HETZNER_HOST`
-- `HETZNER_PORT`
-- `HETZNER_USER`
-- `HETZNER_SSH_KEY`
-- `HETZNER_KNOWN_HOSTS`
-- `HETZNER_APP_DIR`
+- `VPS_HOST`
+- `VPS_PORT`
+- `VPS_USER`
+- `VPS_SSH_KEY`
+- `VPS_KNOWN_HOSTS`
+- `VPS_APP_DIR`
 
 ### GHCR pull credentials
 
@@ -47,4 +47,4 @@ The `Deploy Hetzner` GitHub Actions workflow writes runtime values from GitHub S
 - `AGENT_QUERY_RESULT_TTL`
 - `AGENT_QUERY_CLEANUP_INTERVAL`
 
-You can use `deploy/hetzner/.env.example` as the source of truth for runtime values.
+You can use `deploy/staging/vps/.env.example` as the source of truth for runtime values.
