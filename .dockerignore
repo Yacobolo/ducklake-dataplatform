@@ -1,6 +1,13 @@
 .git
 .github
 .opencode
+.idea
+.vscode
+.DS_Store
+node_modules/
+coverage/
+tmp/
+dist/
 *.sqlite
 *.sqlite-journal
 *.sqlite-wal

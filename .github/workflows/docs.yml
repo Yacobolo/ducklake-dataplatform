@@ -3,8 +3,28 @@ name: Docs
 on:
   push:
     branches: [main]
+    paths:
+      - docs/**
+      - web/**
+      - internal/api/**
+      - internal/declarative/**
+      - internal/docsgen/**
+      - cmd/docsgen/**
+      - schemas/declarative/**
+      - Taskfile.yml
+      - scripts/redocly-react-global.cjs
   pull_request:
     branches: [main]
+    paths:
+      - docs/**
+      - web/**
+      - internal/api/**
+      - internal/declarative/**
+      - internal/docsgen/**
+      - cmd/docsgen/**
+      - schemas/declarative/**
+      - Taskfile.yml
+      - scripts/redocly-react-global.cjs
 
 concurrency:
   group: docs-${{ github.ref }}
