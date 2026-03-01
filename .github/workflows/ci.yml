@@ -61,7 +61,41 @@ jobs:
             internal/db/dbstore/
             pkg/cli/gen/
             schemas/declarative/
+            internal/duckdbsql/catalog/
           retention-days: 1
+
+  image-build-check:
+    name: Image Build Check (${{ matrix.name }})
+    needs: generate
+    if: github.event_name != 'push' || github.ref != 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: control-plane
+            dockerfile: Dockerfile
+            image_suffix: control-plane
+          - name: compute-agent
+            dockerfile: Dockerfile.compute-agent
+            image_suffix: compute-agent
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: generated-code
+          path: .
+      - uses: docker/setup-buildx-action@v3
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: false
+          tags: local/${{ matrix.image_suffix }}:pr-check
+          cache-from: type=gha,scope=${{ matrix.image_suffix }}
+          cache-to: type=gha,scope=${{ matrix.image_suffix }},mode=max
 
   # ── Lint ────────────────────────────────────────────────────
   lint:
