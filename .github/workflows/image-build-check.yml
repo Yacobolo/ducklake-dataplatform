@@ -5,6 +5,10 @@ on:
     branches: [main]
   merge_group:
 
+concurrency:
+  group: image-build-check-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -63,5 +67,5 @@ jobs:
           file: ${{ matrix.dockerfile }}
           push: false
           tags: local/${{ matrix.image_suffix }}:pr-check
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.image_suffix }}
+          cache-to: type=gha,scope=${{ matrix.image_suffix }},mode=max

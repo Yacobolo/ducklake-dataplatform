@@ -6,10 +6,20 @@ on:
     branches: [main]
     types: [completed]
   workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Optional mutable tag to publish (defaults to main-latest)"
+        required: false
+        type: string
 
 permissions:
   contents: read
+  actions: read
   packages: write
+
+concurrency:
+  group: publish-images-${{ github.event_name }}-${{ github.event.workflow_run.head_sha || github.sha }}
+  cancel-in-progress: true
 
 env:
   GO_VERSION: "1.25.7"
@@ -45,22 +55,37 @@ jobs:
           ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
       - name: Set up Go
+        if: github.event_name == 'workflow_dispatch'
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
 
       - name: Set up Node
+        if: github.event_name == 'workflow_dispatch'
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      - name: Download generated artifact from CI run
+        id: generated_artifact
+        if: github.event_name == 'workflow_run'
+        continue-on-error: true
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          run_id: ${{ github.event.workflow_run.id }}
+          name: generated-code
+          path: .
+
       - name: Install generation tools
+        if: github.event_name == 'workflow_dispatch' || steps.generated_artifact.outcome != 'success'
         run: |
           go install github.com/go-task/task/v3/cmd/task@${{ env.TASK_VERSION }}
           go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@${{ env.OAPI_CODEGEN_VERSION }}
           go install github.com/sqlc-dev/sqlc/cmd/sqlc@${{ env.SQLC_VERSION }}
 
       - name: Generate code required for Docker build
+        if: github.event_name == 'workflow_dispatch' || steps.generated_artifact.outcome != 'success'
         run: task generate
 
       - name: Prepare image coordinates
@@ -73,9 +98,14 @@ jobs:
           else
             SHA="${{ github.sha }}"
           fi
+          TAG="main-latest"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.image_tag }}" ]; then
+            TAG="${{ inputs.image_tag }}"
+          fi
           echo "owner=$OWNER" >> "$GITHUB_OUTPUT"
           echo "repo=$REPO" >> "$GITHUB_OUTPUT"
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
       - name: Login to GHCR
         uses: docker/login-action@v3
@@ -93,8 +123,8 @@ jobs:
           context: .
           file: ${{ matrix.dockerfile }}
           push: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.image_suffix }}
+          cache-to: type=gha,scope=${{ matrix.image_suffix }},mode=max
           tags: |
-            ghcr.io/${{ steps.prep.outputs.owner }}/${{ steps.prep.outputs.repo }}-${{ matrix.image_suffix }}:main-latest
+            ghcr.io/${{ steps.prep.outputs.owner }}/${{ steps.prep.outputs.repo }}-${{ matrix.image_suffix }}:${{ steps.prep.outputs.tag }}
             ghcr.io/${{ steps.prep.outputs.owner }}/${{ steps.prep.outputs.repo }}-${{ matrix.image_suffix }}:sha-${{ steps.prep.outputs.sha }}
