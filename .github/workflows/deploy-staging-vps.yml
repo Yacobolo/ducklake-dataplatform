@@ -85,7 +85,9 @@ jobs:
           ssh -p "${{ vars.VPS_PORT }}" "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}" "
             set -eu
             cd '${{ vars.VPS_APP_DIR }}'
-            printf '%s' '${{ secrets.GHCR_TOKEN }}' | docker --config ./.docker login ghcr.io -u '${{ github.repository_owner }}' --password-stdin
+            if [ -n '${{ secrets.GHCR_TOKEN }}' ]; then
+              printf '%s' '${{ secrets.GHCR_TOKEN }}' | docker --config ./.docker login ghcr.io -u '${{ github.repository_owner }}' --password-stdin
+            fi
             docker compose pull
             docker compose up -d --remove-orphans
             docker compose ps

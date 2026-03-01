@@ -43,12 +43,13 @@ The `Deploy Staging VPS` GitHub Actions workflow writes runtime values from GitH
 ## Required GitHub repository secrets
 
 - `VPS_SSH_KEY`
-- `GHCR_TOKEN`
 - `AGENT_TOKEN`
 - `JWT_SECRET`
 - `ENCRYPTION_KEY`
 - `S3_ACCESS_KEY`
 - `S3_SECRET_KEY`
 - `POSTGRES_PASSWORD`
+
+`GHCR_TOKEN` is optional for public images and required only if you switch to private GHCR packages.
 
 You can use `deploy/staging/vps/.env.example` as the source of truth for runtime values.
