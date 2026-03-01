@@ -17,9 +17,19 @@ env:
 
 jobs:
   build-images:
-    name: Build Docker images (no push)
+    name: Build ${{ matrix.name }} image (no push)
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: control-plane
+            dockerfile: Dockerfile
+            image_suffix: control-plane
+          - name: compute-agent
+            dockerfile: Dockerfile.compute-agent
+            image_suffix: compute-agent
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -46,22 +56,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build control-plane image
+      - name: Build image
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: Dockerfile
+          file: ${{ matrix.dockerfile }}
           push: false
-          tags: local/control-plane:pr-check
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build compute-agent image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: Dockerfile.compute-agent
-          push: false
-          tags: local/compute-agent:pr-check
+          tags: local/${{ matrix.image_suffix }}:pr-check
           cache-from: type=gha
           cache-to: type=gha,mode=max

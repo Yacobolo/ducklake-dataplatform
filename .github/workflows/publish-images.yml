@@ -20,7 +20,7 @@ env:
 
 jobs:
   publish:
-    name: Build and push GHCR images
+    name: Build and push ${{ matrix.name }} image
     if: |
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'workflow_run' &&
@@ -28,6 +28,16 @@ jobs:
        github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: control-plane
+            dockerfile: Dockerfile
+            image_suffix: control-plane
+          - name: compute-agent
+            dockerfile: Dockerfile.compute-agent
+            image_suffix: compute-agent
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -77,26 +87,14 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push control-plane image
+      - name: Build and push image
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: Dockerfile
+          file: ${{ matrix.dockerfile }}
           push: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
-            ghcr.io/${{ steps.prep.outputs.owner }}/${{ steps.prep.outputs.repo }}-control-plane:main-latest
-            ghcr.io/${{ steps.prep.outputs.owner }}/${{ steps.prep.outputs.repo }}-control-plane:sha-${{ steps.prep.outputs.sha }}
-
-      - name: Build and push compute-agent image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: Dockerfile.compute-agent
-          push: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          tags: |
-            ghcr.io/${{ steps.prep.outputs.owner }}/${{ steps.prep.outputs.repo }}-compute-agent:main-latest
-            ghcr.io/${{ steps.prep.outputs.owner }}/${{ steps.prep.outputs.repo }}-compute-agent:sha-${{ steps.prep.outputs.sha }}
+            ghcr.io/${{ steps.prep.outputs.owner }}/${{ steps.prep.outputs.repo }}-${{ matrix.image_suffix }}:main-latest
+            ghcr.io/${{ steps.prep.outputs.owner }}/${{ steps.prep.outputs.repo }}-${{ matrix.image_suffix }}:sha-${{ steps.prep.outputs.sha }}
