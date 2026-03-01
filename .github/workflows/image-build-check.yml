@@ -53,6 +53,8 @@ jobs:
           file: Dockerfile
           push: false
           tags: local/control-plane:pr-check
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Build compute-agent image
         uses: docker/build-push-action@v6
@@ -61,3 +63,5 @@ jobs:
           file: Dockerfile.compute-agent
           push: false
           tags: local/compute-agent:pr-check
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

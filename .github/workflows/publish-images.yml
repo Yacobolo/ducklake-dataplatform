@@ -83,6 +83,8 @@ jobs:
           context: .
           file: Dockerfile
           push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           tags: |
             ghcr.io/${{ steps.prep.outputs.owner }}/${{ steps.prep.outputs.repo }}-control-plane:main-latest
             ghcr.io/${{ steps.prep.outputs.owner }}/${{ steps.prep.outputs.repo }}-control-plane:sha-${{ steps.prep.outputs.sha }}
@@ -93,6 +95,8 @@ jobs:
           context: .
           file: Dockerfile.compute-agent
           push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           tags: |
             ghcr.io/${{ steps.prep.outputs.owner }}/${{ steps.prep.outputs.repo }}-compute-agent:main-latest
             ghcr.io/${{ steps.prep.outputs.owner }}/${{ steps.prep.outputs.repo }}-compute-agent:sha-${{ steps.prep.outputs.sha }}
