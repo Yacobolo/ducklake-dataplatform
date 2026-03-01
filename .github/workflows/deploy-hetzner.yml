@@ -1,0 +1,98 @@
+name: Deploy Hetzner
+
+on:
+  workflow_run:
+    workflows: ["Publish Images"]
+    branches: [main]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Optional image tag override (e.g. main-latest or sha-<commit>)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: deploy-hetzner-main
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy to Hetzner via SSH
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare runtime env file from GitHub Secrets
+        run: |
+          umask 077
+          IMAGE_TAG="sha-${{ github.event.workflow_run.head_sha || github.sha }}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.image_tag }}" ]; then
+            IMAGE_TAG="${{ inputs.image_tag }}"
+          fi
+          cat > deploy/hetzner/.env <<EOF
+          PUBLIC_DOMAIN=${{ secrets.PUBLIC_DOMAIN }}
+          GHCR_OWNER=${{ secrets.GHCR_OWNER }}
+          GHCR_REPO=${{ secrets.GHCR_REPO }}
+          IMAGE_TAG=${IMAGE_TAG}
+          AGENT_TOKEN=${{ secrets.AGENT_TOKEN }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          ENCRYPTION_KEY=${{ secrets.ENCRYPTION_KEY }}
+          S3_ACCESS_KEY=${{ secrets.S3_ACCESS_KEY }}
+          S3_SECRET_KEY=${{ secrets.S3_SECRET_KEY }}
+          S3_ENDPOINT=${{ secrets.S3_ENDPOINT }}
+          S3_REGION=${{ secrets.S3_REGION }}
+          S3_BUCKET=${{ secrets.S3_BUCKET }}
+          POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+          AGENT_MAX_MEMORY_GB=${{ secrets.AGENT_MAX_MEMORY_GB || '2' }}
+          AGENT_QUERY_RESULT_TTL=${{ secrets.AGENT_QUERY_RESULT_TTL || '10m' }}
+          AGENT_QUERY_CLEANUP_INTERVAL=${{ secrets.AGENT_QUERY_CLEANUP_INTERVAL || '1m' }}
+          EOF
+
+      - name: Configure SSH key
+        run: |
+          umask 077
+          mkdir -p ~/.ssh
+          printf '%s\n' '${{ secrets.HETZNER_SSH_KEY }}' > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' '${{ secrets.HETZNER_KNOWN_HOSTS }}' > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Copy deploy files to server
+        run: |
+          ssh -p "${{ secrets.HETZNER_PORT }}" "${{ secrets.HETZNER_USER }}@${{ secrets.HETZNER_HOST }}" "mkdir -p '${{ secrets.HETZNER_APP_DIR }}/.docker'"
+          scp -P "${{ secrets.HETZNER_PORT }}" deploy/hetzner/docker-compose.yml "${{ secrets.HETZNER_USER }}@${{ secrets.HETZNER_HOST }}:${{ secrets.HETZNER_APP_DIR }}/docker-compose.yml"
+          scp -P "${{ secrets.HETZNER_PORT }}" deploy/hetzner/Caddyfile "${{ secrets.HETZNER_USER }}@${{ secrets.HETZNER_HOST }}:${{ secrets.HETZNER_APP_DIR }}/Caddyfile"
+          scp -P "${{ secrets.HETZNER_PORT }}" deploy/hetzner/.env "${{ secrets.HETZNER_USER }}@${{ secrets.HETZNER_HOST }}:${{ secrets.HETZNER_APP_DIR }}/.env"
+
+      - name: Pull and restart services
+        run: |
+          ssh -p "${{ secrets.HETZNER_PORT }}" "${{ secrets.HETZNER_USER }}@${{ secrets.HETZNER_HOST }}" "
+            set -eu
+            cd '${{ secrets.HETZNER_APP_DIR }}'
+            printf '%s' '${{ secrets.GHCR_TOKEN }}' | docker --config ./.docker login ghcr.io -u '${{ secrets.GHCR_USERNAME }}' --password-stdin
+            docker compose pull
+            docker compose up -d --remove-orphans
+            docker compose ps
+            if command -v curl >/dev/null 2>&1; then
+              curl -fsS --retry 20 --retry-delay 2 --retry-connrefused http://127.0.0.1/healthz >/dev/null
+            elif command -v wget >/dev/null 2>&1; then
+              wget -q --tries=20 --waitretry=2 --retry-connrefused -O /dev/null http://127.0.0.1/healthz
+            else
+              echo 'Neither curl nor wget is installed on target host.' >&2
+              exit 1
+            fi
+          "
