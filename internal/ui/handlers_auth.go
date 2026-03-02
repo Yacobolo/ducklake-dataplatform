@@ -18,7 +18,7 @@ func (h *Handler) LoginPage(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/ui", http.StatusSeeOther)
 		return
 	}
-	renderHTML(w, http.StatusOK, loginPage(strings.TrimSpace(r.URL.Query().Get("error"))))
+	renderHTML(w, http.StatusOK, loginPage(strings.TrimSpace(r.URL.Query().Get("error")), h.hasOIDCLoginConfigured(r)))
 }
 
 func (h *Handler) LoginSubmit(w http.ResponseWriter, r *http.Request) {

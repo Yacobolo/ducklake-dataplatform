@@ -193,6 +193,7 @@ func run() error {
 
 	// Create strict handler wrapper
 	strictHandler := api.NewStrictHandler(handler, nil)
+	authHandler := api.NewAuthHTTPHandler(svc.Auth)
 
 	// Setup Chi router
 	r := chi.NewRouter()
@@ -259,9 +260,14 @@ func run() error {
 </html>`)
 	})
 
+	// Headless auth bootstrap/login endpoints (public)
+	r.Post("/v1/auth/bootstrap/complete", authHandler.BootstrapComplete)
+	r.Post("/v1/auth/local/login", authHandler.LocalLogin)
+
 	// Construct JWT validator based on auth config.
 	var jwtValidator middleware.JWTValidator
-	if cfg.Auth.OIDCEnabled() {
+	switch strings.ToLower(strings.TrimSpace(cfg.Auth.Mode)) {
+	case "oidc_only":
 		if cfg.Auth.JWKSURL != "" {
 			jwtValidator, err = middleware.NewOIDCValidatorFromJWKS(ctx,
 				cfg.Auth.JWKSURL, cfg.Auth.IssuerURL, cfg.Auth.Audience,
@@ -274,15 +280,40 @@ func run() error {
 			return fmt.Errorf("oidc validator: %w", err)
 		}
 		logger.Info("OIDC JWT validation enabled", "issuer", cfg.Auth.IssuerURL)
-	} else if cfg.Auth.JWTSecret != "" {
-		jwtValidator, err = middleware.NewHS256Validator(cfg.Auth.JWTSecret)
-		if err != nil {
-			return fmt.Errorf("hs256 validator: %w", err)
+	case "local_only":
+		if cfg.Auth.JWTSecret != "" {
+			jwtValidator, err = middleware.NewHS256Validator(cfg.Auth.JWTSecret)
+			if err != nil {
+				return fmt.Errorf("hs256 validator: %w", err)
+			}
+			logger.Info("HS256 JWT validation enabled")
 		}
-		logger.Info("HS256 JWT validation enabled (dev mode)")
+	case "api_key_only":
+		// No JWT validator.
+	default:
+		if cfg.Auth.OIDCEnabled() {
+			if cfg.Auth.JWKSURL != "" {
+				jwtValidator, err = middleware.NewOIDCValidatorFromJWKS(ctx,
+					cfg.Auth.JWKSURL, cfg.Auth.IssuerURL, cfg.Auth.Audience,
+					cfg.Auth.AllowedIssuers)
+			} else {
+				jwtValidator, err = middleware.NewOIDCValidator(ctx,
+					cfg.Auth.IssuerURL, cfg.Auth.Audience, cfg.Auth.AllowedIssuers)
+			}
+			if err != nil {
+				return fmt.Errorf("oidc validator: %w", err)
+			}
+			logger.Info("OIDC JWT validation enabled", "issuer", cfg.Auth.IssuerURL)
+		} else if cfg.Auth.JWTSecret != "" {
+			jwtValidator, err = middleware.NewHS256Validator(cfg.Auth.JWTSecret)
+			if err != nil {
+				return fmt.Errorf("hs256 validator: %w", err)
+			}
+			logger.Info("HS256 JWT validation enabled")
+		}
 	}
 
-	// Authenticated API routes under /v1 prefix (disabled in development)
+	// Authenticated API routes under /v1 prefix.
 	authenticator := middleware.NewAuthenticator(
 		jwtValidator,
 		application.APIKeyRepo,
@@ -291,17 +322,13 @@ func run() error {
 		cfg.Auth,
 		logger,
 	)
-	if cfg.IsProduction() {
-		r.Route("/v1", func(r chi.Router) {
-			r.Use(authenticator.Middleware())
-			api.HandlerFromMux(strictHandler, r)
-		})
-	} else {
-		logger.Warn("development mode: API auth disabled for /v1")
-		r.Route("/v1", func(r chi.Router) {
-			api.HandlerFromMux(strictHandler, r)
-		})
-	}
+	r.Route("/v1", func(r chi.Router) {
+		r.Use(authenticator.Middleware())
+		r.Post("/auth/bootstrap/tokens", authHandler.CreateBootstrapToken)
+		r.Get("/auth/provider/oidc", authHandler.GetOIDCProvider)
+		r.Put("/auth/provider/oidc", authHandler.UpsertOIDCProvider)
+		api.HandlerFromMux(strictHandler, r)
+	})
 
 	uiHandler := ui.NewHandler(
 		svc.CatalogRegistration,
@@ -313,14 +340,11 @@ func run() error {
 		svc.SessionManager,
 		svc.Macro,
 		svc.Model,
+		svc.Auth,
 		cfg.Auth,
 		cfg.IsProduction(),
 	)
 	uiAuth := authenticator.MiddlewareWithUnauthorized(ui.RedirectToLogin)
-	if !cfg.IsProduction() {
-		logger.Warn("development mode: UI auth disabled for /ui")
-		uiAuth = func(next http.Handler) http.Handler { return next }
-	}
 	r.Route("/ui", func(r chi.Router) {
 		ui.MountRoutes(r, uiHandler, uiAuth)
 	})

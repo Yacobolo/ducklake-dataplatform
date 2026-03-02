@@ -29,6 +29,9 @@ The API supports either:
 - JWT bearer token in `Authorization: Bearer <token>`
 - API key in `X-API-Key: <key>`
 
+By default (`AUTH_MODE=hybrid`), OIDC is optional. You can start with API keys or
+local JWT (`JWT_SECRET`) and add OIDC later.
+
 ## 4) Run your first query
 
 ```bash

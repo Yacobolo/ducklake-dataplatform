@@ -11,13 +11,19 @@ import (
 
 // PrincipalService provides principal management operations.
 type PrincipalService struct {
-	repo  domain.PrincipalRepository
-	audit domain.AuditRepository
+	repo         domain.PrincipalRepository
+	identityRepo domain.AuthIdentityRepository
+	audit        domain.AuditRepository
 }
 
 // NewPrincipalService creates a new PrincipalService.
 func NewPrincipalService(repo domain.PrincipalRepository, audit domain.AuditRepository) *PrincipalService {
 	return &PrincipalService{repo: repo, audit: audit}
+}
+
+// SetAuthIdentityRepository configures external identity storage.
+func (s *PrincipalService) SetAuthIdentityRepository(repo domain.AuthIdentityRepository) {
+	s.identityRepo = repo
 }
 
 // Create validates and persists a new principal. Requires admin privileges.
@@ -101,9 +107,28 @@ func (s *PrincipalService) ResolveOrProvision(ctx context.Context, req domain.Re
 		return nil, err
 	}
 
+	provider := identityProviderFromIssuer(req.Issuer)
+	issuer := issuerPtr(req.Issuer)
+
+	// Prefer normalized auth_identities if configured.
+	if s.identityRepo != nil {
+		identity, err := s.identityRepo.GetByProviderSubject(ctx, provider, issuer, req.ExternalID)
+		if err == nil {
+			p, getErr := s.repo.GetByID(ctx, identity.PrincipalID)
+			if getErr == nil {
+				return p, nil
+			}
+		}
+		var notFoundIdentity *domain.NotFoundError
+		if err != nil && !errors.As(err, &notFoundIdentity) {
+			return nil, fmt.Errorf("resolve auth identity: %w", err)
+		}
+	}
+
 	// Try to find existing principal by external ID.
 	p, err := s.repo.GetByExternalID(ctx, req.Issuer, req.ExternalID)
 	if err == nil {
+		s.backfillAuthIdentity(ctx, provider, issuer, req.ExternalID, p)
 		return p, nil
 	}
 	var notFound *domain.NotFoundError
@@ -120,6 +145,15 @@ func (s *PrincipalService) ResolveOrProvision(ctx context.Context, req domain.Re
 		if nameErr == nil && existing.ExternalID == nil {
 			if bindErr := s.repo.BindExternalID(ctx, existing.ID, req.ExternalID, req.Issuer); bindErr != nil {
 				return nil, fmt.Errorf("bind external identity: %w", bindErr)
+			}
+			if s.identityRepo != nil {
+				_, _ = s.identityRepo.Create(ctx, &domain.AuthIdentity{
+					PrincipalID:   existing.ID,
+					Provider:      provider,
+					Issuer:        issuer,
+					Subject:       req.ExternalID,
+					EmailVerified: false,
+				})
 			}
 			existing.ExternalID = &req.ExternalID
 			existing.ExternalIssuer = &req.Issuer
@@ -150,6 +184,16 @@ func (s *PrincipalService) ResolveOrProvision(ctx context.Context, req domain.Re
 		return nil, fmt.Errorf("provision principal: %w", err)
 	}
 
+	if s.identityRepo != nil {
+		_, _ = s.identityRepo.Create(ctx, &domain.AuthIdentity{
+			PrincipalID:   result.ID,
+			Provider:      provider,
+			Issuer:        issuer,
+			Subject:       req.ExternalID,
+			EmailVerified: false,
+		})
+	}
+
 	_ = s.audit.Insert(ctx, &domain.AuditEntry{
 		PrincipalName: result.Name,
 		Action:        "JIT_PROVISION",
@@ -157,6 +201,41 @@ func (s *PrincipalService) ResolveOrProvision(ctx context.Context, req domain.Re
 	})
 
 	return result, nil
+}
+
+func (s *PrincipalService) backfillAuthIdentity(ctx context.Context, provider string, issuer *string, subject string, p *domain.Principal) {
+	if s.identityRepo == nil || p == nil {
+		return
+	}
+	_, err := s.identityRepo.Create(ctx, &domain.AuthIdentity{
+		PrincipalID:   p.ID,
+		Provider:      provider,
+		Issuer:        issuer,
+		Subject:       subject,
+		EmailVerified: false,
+	})
+	if err == nil {
+		return
+	}
+	var conflict *domain.ConflictError
+	if errors.As(err, &conflict) {
+		return
+	}
+}
+
+func identityProviderFromIssuer(issuer string) string {
+	if strings.TrimSpace(issuer) == "" {
+		return "jwt"
+	}
+	return "oidc"
+}
+
+func issuerPtr(issuer string) *string {
+	if strings.TrimSpace(issuer) == "" {
+		return nil
+	}
+	clean := strings.TrimSpace(issuer)
+	return &clean
 }
 
 func sanitizeName(name string) string {

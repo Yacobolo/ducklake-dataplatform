@@ -13,6 +13,10 @@ import (
 
 // AuthConfig holds authentication and identity provider configuration.
 type AuthConfig struct {
+	// Auth mode controls which authentication methods are considered valid.
+	// Supported values: hybrid, oidc_only, local_only, api_key_only.
+	Mode string
+
 	// OIDC / JWKS configuration
 	IssuerURL      string        // OIDC issuer URL (e.g., https://login.microsoftonline.com/{tenant}/v2.0)
 	JWKSURL        string        // Override JWKS URL (if no .well-known discovery)
@@ -44,6 +48,41 @@ func (a *AuthConfig) Validate() error {
 		return fmt.Errorf("AUTH_AUDIENCE is required when AUTH_ISSUER_URL is set")
 	}
 	return nil
+}
+
+// HasEnabledMethod returns true if at least one auth mechanism is usable.
+func (a *AuthConfig) HasEnabledMethod() bool {
+	hasJWT := a.OIDCEnabled() || strings.TrimSpace(a.JWTSecret) != ""
+	return hasJWT || a.APIKeyEnabled
+}
+
+// ValidateMode checks auth-mode specific constraints.
+func (a *AuthConfig) ValidateMode() error {
+	mode := strings.ToLower(strings.TrimSpace(a.Mode))
+	switch mode {
+	case "", "hybrid":
+		if !a.HasEnabledMethod() {
+			return fmt.Errorf("AUTH_MODE=hybrid requires at least one auth method (OIDC, JWT_SECRET, or API key)")
+		}
+		return nil
+	case "oidc_only":
+		if !a.OIDCEnabled() {
+			return fmt.Errorf("AUTH_MODE=oidc_only requires AUTH_ISSUER_URL or AUTH_JWKS_URL")
+		}
+		return nil
+	case "local_only":
+		if strings.TrimSpace(a.JWTSecret) == "" && !a.APIKeyEnabled {
+			return fmt.Errorf("AUTH_MODE=local_only requires JWT_SECRET or AUTH_API_KEY_ENABLED=true")
+		}
+		return nil
+	case "api_key_only":
+		if !a.APIKeyEnabled {
+			return fmt.Errorf("AUTH_MODE=api_key_only requires AUTH_API_KEY_ENABLED=true")
+		}
+		return nil
+	default:
+		return fmt.Errorf("invalid AUTH_MODE %q (expected hybrid, oidc_only, local_only, api_key_only)", a.Mode)
+	}
 }
 
 // Config holds the configuration for the HTTP API and optional S3/DuckLake storage.
@@ -185,6 +224,7 @@ func LoadFromEnv() (*Config, error) {
 
 	// Auth config
 	cfg.Auth = AuthConfig{
+		Mode:           os.Getenv("AUTH_MODE"),
 		IssuerURL:      os.Getenv("AUTH_ISSUER_URL"),
 		JWKSURL:        os.Getenv("AUTH_JWKS_URL"),
 		JWTSecret:      os.Getenv("JWT_SECRET"),
@@ -210,6 +250,9 @@ func LoadFromEnv() (*Config, error) {
 	// Auth config defaults
 	if cfg.Auth.JWKSCacheTTL == 0 {
 		cfg.Auth.JWKSCacheTTL = time.Hour
+	}
+	if cfg.Auth.Mode == "" {
+		cfg.Auth.Mode = "hybrid"
 	}
 	if cfg.Auth.APIKeyHeader == "" {
 		cfg.Auth.APIKeyHeader = "X-API-Key"
@@ -254,10 +297,14 @@ func LoadFromEnv() (*Config, error) {
 		cfg.CORSAllowedOrigins = []string{"*"}
 	}
 
+	if err := cfg.Auth.ValidateMode(); err != nil {
+		return nil, err
+	}
+
 	// Production mode: insecure defaults are fatal errors.
 	if cfg.IsProduction() {
-		if !cfg.Auth.OIDCEnabled() {
-			return nil, fmt.Errorf("OIDC must be configured in production (set AUTH_ISSUER_URL or AUTH_JWKS_URL)")
+		if !cfg.Auth.HasEnabledMethod() {
+			return nil, fmt.Errorf("at least one auth method must be configured in production")
 		}
 		if cfg.EncryptionKey == "0000000000000000000000000000000000000000000000000000000000000000" {
 			return nil, fmt.Errorf("ENCRYPTION_KEY must be set in production (ENV=production)")

@@ -12,6 +12,8 @@ import (
 func MountRoutes(r chi.Router, h *Handler, authMiddleware func(http.Handler) http.Handler) {
 	r.Get("/login", h.LoginPage)
 	r.Post("/login", h.LoginSubmit)
+	r.Get("/login/oidc", h.OIDCLoginStart)
+	r.Get("/login/oidc/callback", h.OIDCLoginCallback)
 	r.Post("/logout", h.Logout)
 
 	staticFS, err := fs.Sub(assets.StaticFS(), "static")

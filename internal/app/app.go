@@ -15,6 +15,7 @@ import (
 	"duck-demo/internal/db/repository"
 	"duck-demo/internal/domain"
 	"duck-demo/internal/engine"
+	authsvc "duck-demo/internal/service/auth"
 	"duck-demo/internal/service/catalog"
 	svccompute "duck-demo/internal/service/compute"
 	"duck-demo/internal/service/governance"
@@ -63,6 +64,7 @@ type Services struct {
 	Volume              *storage.VolumeService
 	ComputeEndpoint     *svccompute.ComputeEndpointService
 	APIKey              *security.APIKeyService
+	Auth                *authsvc.Service
 	Notebook            *notebook.Service
 	SessionManager      *notebook.SessionManager
 	GitService          *notebook.GitService
@@ -115,6 +117,16 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	computeEndpointRepo := repository.NewComputeEndpointRepo(deps.WriteDB, encryptor)
 	catalogRegRepo := repository.NewCatalogRegistrationRepo(deps.WriteDB)
 	queryJobRepo := repository.NewQueryJobRepo(deps.WriteDB)
+	authIdentityRepo := repository.NewAuthIdentityRepo(deps.WriteDB)
+	localCredentialRepo := repository.NewLocalCredentialRepo(deps.WriteDB)
+	authSessionRepo := repository.NewAuthSessionRepo(deps.WriteDB)
+	authRecoveryRepo := repository.NewAuthRecoveryRepo(deps.WriteDB)
+	authLoginAttemptRepo := repository.NewAuthLoginAttemptRepo(deps.WriteDB)
+	setupStateRepo := repository.NewSetupStateRepo(deps.WriteDB)
+	authProviderRepo := repository.NewAuthProviderRepo(deps.WriteDB)
+	_ = authIdentityRepo
+	_ = authSessionRepo
+	_ = authRecoveryRepo
 
 	// === 3. Factories (multi-catalog) ===
 	catalogRepoFactory := repository.NewCatalogRepoFactory(
@@ -216,6 +228,8 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	querySvc.SetColumnLineage(colLineageRepo, catalogAdapter)
 	querySvc.SetJobRepository(queryJobRepo)
 	principalSvc := security.NewPrincipalService(principalRepo, auditRepo)
+	principalSvc.SetAuthIdentityRepository(authIdentityRepo)
+	authService := authsvc.NewService(principalRepo, localCredentialRepo, authLoginAttemptRepo, setupStateRepo, authProviderRepo, auditRepo, cfg.Auth.JWTSecret)
 	groupSvc := security.NewGroupService(groupRepo, auditRepo)
 	grantSvc := security.NewGrantService(grantRepo, auditRepo, authSvc)
 	rowFilterSvc := security.NewRowFilterService(rowFilterRepo, auditRepo)
@@ -344,6 +358,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 			Volume:              volumeSvc,
 			ComputeEndpoint:     computeEndpointSvc,
 			APIKey:              apiKeySvc,
+			Auth:                authService,
 			Notebook:            notebookSvc,
 			SessionManager:      sessionMgr,
 			GitService:          gitSvc,

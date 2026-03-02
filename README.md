@@ -68,6 +68,9 @@ All configuration is via environment variables. See `.env.sample` for a full ref
 | `AUTH_ISSUER_URL` | `` | OIDC issuer URL for JWT validation |
 | `AUTH_JWKS_URL` | `` | Optional JWKS URL override |
 | `AUTH_AUDIENCE` | `` | Required audience for issuer-based validation |
+| `AUTH_MODE` | `hybrid` | Auth policy: `hybrid`, `oidc_only`, `local_only`, `api_key_only` |
+| `JWT_SECRET` | `` | Optional HS256 secret for local JWT auth |
+| `AUTH_API_KEY_ENABLED` | `true` | Enable API key authentication |
 | `ENCRYPTION_KEY` | (insecure default) | 64-char hex AES-256 key for credential encryption |
 | `ENV` | `development` | Set to `production` to enforce secure config |
 | `RATE_LIMIT_RPS` | `100` | Sustained requests per second |
@@ -78,7 +81,7 @@ All configuration is via environment variables. See `.env.sample` for a full ref
 
 ### Production Mode
 
-Set `ENV=production` to enforce secure defaults. In production mode, the server will refuse to start unless OIDC (`AUTH_ISSUER_URL` or `AUTH_JWKS_URL`) and `ENCRYPTION_KEY` are configured.
+Set `ENV=production` to enforce secure defaults. In production mode, the server will refuse to start unless `ENCRYPTION_KEY` is configured and at least one auth method is enabled (OIDC, local JWT via `JWT_SECRET`, or API keys).
 
 ### Authentication
 
@@ -86,6 +89,13 @@ The server supports two authentication methods:
 
 1. **OIDC/JWKS** -- Set `AUTH_ISSUER_URL` (and `AUTH_AUDIENCE`) for external identity providers
 2. **API Keys** -- Create via the API; sent in the `X-API-Key` header
+
+`AUTH_MODE` controls policy and precedence:
+
+- `hybrid` (default): OIDC (if configured) with API key/local fallback
+- `oidc_only`: require OIDC config
+- `local_only`: use local JWT (`JWT_SECRET`) and/or API keys
+- `api_key_only`: API keys only
 
 ### S3 Storage (Optional)
 
