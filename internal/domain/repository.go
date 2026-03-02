@@ -74,6 +74,71 @@ type APIKeyRepository interface {
 	DeleteExpired(ctx context.Context) (int64, error)
 }
 
+// AuthIdentityRepository manages principal identity links.
+type AuthIdentityRepository interface {
+	Create(ctx context.Context, identity *AuthIdentity) (*AuthIdentity, error)
+	GetByProviderSubject(ctx context.Context, provider string, issuer *string, subject string) (*AuthIdentity, error)
+	ListByPrincipal(ctx context.Context, principalID string) ([]AuthIdentity, error)
+	Delete(ctx context.Context, id string) error
+}
+
+// LocalCredentialRepository manages local username/password credentials.
+type LocalCredentialRepository interface {
+	Upsert(ctx context.Context, credential *LocalCredential) error
+	GetByUsername(ctx context.Context, username string) (*LocalCredential, error)
+	GetByPrincipalID(ctx context.Context, principalID string) (*LocalCredential, error)
+	Delete(ctx context.Context, principalID string) error
+}
+
+// AuthSessionRepository manages interactive sessions.
+type AuthSessionRepository interface {
+	Create(ctx context.Context, session *AuthSession) (*AuthSession, error)
+	GetActiveByHash(ctx context.Context, sessionHash string) (*AuthSession, error)
+	Touch(ctx context.Context, sessionID string, idleExpiresAt time.Time) error
+	Revoke(ctx context.Context, sessionID string) error
+	RevokeByHash(ctx context.Context, sessionHash string) error
+	DeleteExpiredOrRevoked(ctx context.Context) (int64, error)
+}
+
+// AuthRecoveryRepository manages recovery codes.
+type AuthRecoveryRepository interface {
+	Create(ctx context.Context, code *AuthRecoveryCode) (*AuthRecoveryCode, error)
+	ListByPrincipal(ctx context.Context, principalID string) ([]AuthRecoveryCode, error)
+	GetUnusedByHash(ctx context.Context, codeHash string) (*AuthRecoveryCode, error)
+	MarkUsed(ctx context.Context, id string) error
+	DeleteExpired(ctx context.Context) (int64, error)
+}
+
+// AuthLoginAttemptRepository tracks local login attempts.
+type AuthLoginAttemptRepository interface {
+	Insert(ctx context.Context, attempt *AuthLoginAttempt) error
+	CountRecentFailedByUsername(ctx context.Context, username string, since time.Time) (int64, error)
+	CountRecentFailedByIP(ctx context.Context, ipAddress string, since time.Time) (int64, error)
+}
+
+// SetupStateRepository manages first-run bootstrap state.
+type SetupStateRepository interface {
+	Get(ctx context.Context) (*SetupState, error)
+	Complete(ctx context.Context, principalID string) error
+	SetBootstrapToken(ctx context.Context, tokenHash string, expiresAt time.Time) error
+	ClearBootstrapToken(ctx context.Context) error
+}
+
+// AuthProviderRepository manages runtime OIDC provider settings.
+type AuthProviderRepository interface {
+	Get(ctx context.Context) (*AuthProviderConfig, error)
+	Upsert(ctx context.Context, cfg *AuthProviderConfig) error
+}
+
+// WebAuthnCredentialRepository manages passkey credentials.
+type WebAuthnCredentialRepository interface {
+	Create(ctx context.Context, credential *WebAuthnCredential) (*WebAuthnCredential, error)
+	ListByPrincipal(ctx context.Context, principalID string) ([]WebAuthnCredential, error)
+	GetByCredentialID(ctx context.Context, credentialID string) (*WebAuthnCredential, error)
+	UpdateCounter(ctx context.Context, credentialID string, signCount int64) error
+	Delete(ctx context.Context, id string) error
+}
+
 // AuditFilter holds filter parameters for querying audit logs.
 type AuditFilter struct {
 	PrincipalName *string

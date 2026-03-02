@@ -29,6 +29,8 @@ Secure SQL query layer over DuckDB with RBAC, row-level security, and column mas
 ```bash
 # Copy and configure environment
 cp .env.sample .env
+# or generate a tailored file
+duck config init --mode hybrid --env development --output .env
 
 # Build and run
 task build
@@ -57,6 +59,7 @@ docker run -p 8080:8080 \
 ## Configuration
 
 All configuration is via environment variables. See `.env.sample` for a full reference.
+Scenario templates are also available: `.env.local-only.sample`, `.env.hybrid.sample`, `.env.oidc-only.sample`, `.env.prod.sample`.
 
 | Variable | Default | Description |
 |---|---|---|
@@ -68,8 +71,14 @@ All configuration is via environment variables. See `.env.sample` for a full ref
 | `AUTH_ISSUER_URL` | `` | OIDC issuer URL for JWT validation |
 | `AUTH_JWKS_URL` | `` | Optional JWKS URL override |
 | `AUTH_AUDIENCE` | `` | Required audience for issuer-based validation |
+| `AUTH_MODE` | `hybrid` | Auth policy: `hybrid`, `oidc_only`, `local_only`, `api_key_only` |
+| `JWT_SECRET` | `` | Optional HS256 secret for local JWT auth |
+| `AUTH_API_KEY_ENABLED` | `true` | Enable API key authentication |
 | `ENCRYPTION_KEY` | (insecure default) | 64-char hex AES-256 key for credential encryption |
+| `ENCRYPTION_KEY_FILE` | `` | Read encryption key from file (e.g. Docker/K8s secret mount) |
+| `JWT_SECRET_FILE` | `` | Read local JWT secret from file |
 | `ENV` | `development` | Set to `production` to enforce secure config |
+| `TRUST_DOWNSTREAM_PROXY` | `false` | Allow HTTP listener in production when TLS is terminated by a trusted reverse proxy |
 | `RATE_LIMIT_RPS` | `100` | Sustained requests per second |
 | `RATE_LIMIT_BURST` | `200` | Maximum burst capacity |
 | `FEATURE_INTERNAL_GRPC` | `true` | Enable internal gRPC worker transport (`grpc://`/`grpcs://` endpoint URLs) |
@@ -78,7 +87,7 @@ All configuration is via environment variables. See `.env.sample` for a full ref
 
 ### Production Mode
 
-Set `ENV=production` to enforce secure defaults. In production mode, the server will refuse to start unless OIDC (`AUTH_ISSUER_URL` or `AUTH_JWKS_URL`) and `ENCRYPTION_KEY` are configured.
+Set `ENV=production` to enforce secure defaults. In production mode, the server will refuse to start unless `ENCRYPTION_KEY` (or `ENCRYPTION_KEY_FILE`) is configured and at least one auth method is enabled (OIDC, local JWT via `JWT_SECRET`, or API keys).
 
 ### Authentication
 
@@ -87,9 +96,16 @@ The server supports two authentication methods:
 1. **OIDC/JWKS** -- Set `AUTH_ISSUER_URL` (and `AUTH_AUDIENCE`) for external identity providers
 2. **API Keys** -- Create via the API; sent in the `X-API-Key` header
 
+`AUTH_MODE` controls policy and precedence:
+
+- `hybrid` (default): OIDC (if configured) with API key/local fallback
+- `oidc_only`: require OIDC config
+- `local_only`: use local JWT (`JWT_SECRET`) and/or API keys
+- `api_key_only`: API keys only
+
 ### S3 Storage (Optional)
 
-Set `KEY_ID`, `SECRET`, `ENDPOINT`, and `REGION` to enable DuckLake catalog and ingestion features.
+Set `S3_KEY_ID`, `S3_SECRET` (or `S3_SECRET_FILE`), `S3_ENDPOINT`, and `S3_REGION` to enable DuckLake catalog and ingestion features.
 
 ## Development
 

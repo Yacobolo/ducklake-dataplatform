@@ -7,10 +7,24 @@ import (
 	. "maragu.dev/gomponents/html"
 )
 
-func loginPage(errMsg string) Node {
+func loginPage(errMsg string, showOIDC bool) Node {
 	content := []Node{
 		H1(Text("Duck Platform")),
-		P(Text("Sign in with an API token for the read-only UI.")),
+		P(Text("Sign in with local credentials, OIDC, or an API token.")),
+	}
+
+	if showOIDC {
+		content = append(content,
+			A(
+				Href("/ui/login/oidc"),
+				Class("btn btn-primary"),
+				Text("Continue with OIDC"),
+			),
+			P(Text("or use a token below")),
+		)
+	}
+
+	content = append(content,
 		Form(
 			Method("post"),
 			Action("/ui/login"),
@@ -33,7 +47,7 @@ func loginPage(errMsg string) Node {
 				Text("Sign In"),
 			),
 		),
-	}
+	)
 	if errMsg != "" {
 		content = append([]Node{P(Class("error"), Text(fmt.Sprintf("Error: %s", errMsg)))}, content...)
 	}

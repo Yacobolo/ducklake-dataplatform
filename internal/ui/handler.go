@@ -8,6 +8,7 @@ import (
 
 	"duck-demo/internal/config"
 	"duck-demo/internal/domain"
+	authsvc "duck-demo/internal/service/auth"
 	"duck-demo/internal/service/catalog"
 	"duck-demo/internal/service/macro"
 	"duck-demo/internal/service/model"
@@ -28,6 +29,7 @@ type Handler struct {
 	SessionManager      *notebook.SessionManager
 	Macro               *macro.Service
 	Model               *model.Service
+	AuthService         *authsvc.Service
 	Auth                config.AuthConfig
 	Production          bool
 }
@@ -42,6 +44,7 @@ func NewHandler(
 	sessionManager *notebook.SessionManager,
 	macroSvc *macro.Service,
 	modelSvc *model.Service,
+	authService *authsvc.Service,
 	auth config.AuthConfig,
 	production bool,
 ) *Handler {
@@ -55,6 +58,7 @@ func NewHandler(
 		SessionManager:      sessionManager,
 		Macro:               macroSvc,
 		Model:               modelSvc,
+		AuthService:         authService,
 		Auth:                auth,
 		Production:          production,
 	}

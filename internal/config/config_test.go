@@ -10,11 +10,11 @@ import (
 )
 
 func TestLoadFromEnv_AllVarsSet(t *testing.T) {
-	t.Setenv("KEY_ID", "testkey")
-	t.Setenv("SECRET", "testsecret")
-	t.Setenv("ENDPOINT", "s3.example.com")
-	t.Setenv("REGION", "us-east-1")
-	t.Setenv("BUCKET", "test-bucket")
+	t.Setenv("S3_KEY_ID", "testkey")
+	t.Setenv("S3_SECRET", "testsecret")
+	t.Setenv("S3_ENDPOINT", "s3.example.com")
+	t.Setenv("S3_REGION", "us-east-1")
+	t.Setenv("S3_BUCKET", "test-bucket")
 	t.Setenv("META_DB_PATH", "/tmp/test.sqlite")
 
 	cfg, err := LoadFromEnv()
@@ -29,11 +29,11 @@ func TestLoadFromEnv_AllVarsSet(t *testing.T) {
 
 func TestLoadFromEnv_Defaults(t *testing.T) {
 	// Clear all S3 vars
-	t.Setenv("KEY_ID", "")
-	t.Setenv("SECRET", "")
-	t.Setenv("ENDPOINT", "")
-	t.Setenv("REGION", "")
-	t.Setenv("BUCKET", "")
+	t.Setenv("S3_KEY_ID", "")
+	t.Setenv("S3_SECRET", "")
+	t.Setenv("S3_ENDPOINT", "")
+	t.Setenv("S3_REGION", "")
+	t.Setenv("S3_BUCKET", "")
 	t.Setenv("META_DB_PATH", "")
 
 	cfg, err := LoadFromEnv()
@@ -80,10 +80,10 @@ func TestLoadFromEnv_DistributedFeatureFlags(t *testing.T) {
 }
 
 func TestLoadFromEnv_NoS3(t *testing.T) {
-	t.Setenv("KEY_ID", "")
-	t.Setenv("SECRET", "")
-	t.Setenv("ENDPOINT", "")
-	t.Setenv("REGION", "")
+	t.Setenv("S3_KEY_ID", "")
+	t.Setenv("S3_SECRET", "")
+	t.Setenv("S3_ENDPOINT", "")
+	t.Setenv("S3_REGION", "")
 
 	cfg, err := LoadFromEnv()
 	require.NoError(t, err)
@@ -95,10 +95,10 @@ func TestLoadFromEnv_NoS3(t *testing.T) {
 }
 
 func TestLoadFromEnv_WithS3(t *testing.T) {
-	t.Setenv("KEY_ID", "testkey")
-	t.Setenv("SECRET", "testsecret")
-	t.Setenv("ENDPOINT", "s3.example.com")
-	t.Setenv("REGION", "us-east-1")
+	t.Setenv("S3_KEY_ID", "testkey")
+	t.Setenv("S3_SECRET", "testsecret")
+	t.Setenv("S3_ENDPOINT", "s3.example.com")
+	t.Setenv("S3_REGION", "us-east-1")
 
 	cfg, err := LoadFromEnv()
 	require.NoError(t, err)
@@ -108,14 +108,108 @@ func TestLoadFromEnv_WithS3(t *testing.T) {
 }
 
 func TestHasS3Config_PartialConfig(t *testing.T) {
-	t.Setenv("KEY_ID", "testkey")
-	t.Setenv("SECRET", "")
-	t.Setenv("ENDPOINT", "s3.example.com")
-	t.Setenv("REGION", "")
+	t.Setenv("S3_KEY_ID", "testkey")
+	t.Setenv("S3_SECRET", "")
+	t.Setenv("S3_ENDPOINT", "s3.example.com")
+	t.Setenv("S3_REGION", "")
 
 	cfg, err := LoadFromEnv()
 	require.NoError(t, err)
 	assert.False(t, cfg.HasS3Config(), "partial S3 config should return false")
+}
+
+func TestLoadFromEnv_LegacyS3VarsIgnored(t *testing.T) {
+	t.Setenv("KEY_ID", "legacy-key")
+	t.Setenv("SECRET", "legacy-secret")
+	t.Setenv("ENDPOINT", "legacy.example.com")
+	t.Setenv("REGION", "legacy-region")
+
+	cfg, err := LoadFromEnv()
+	require.NoError(t, err)
+	assert.Nil(t, cfg.S3KeyID)
+	assert.Nil(t, cfg.S3Secret)
+	assert.Nil(t, cfg.S3Endpoint)
+	assert.Nil(t, cfg.S3Region)
+}
+
+func TestAuthConfigValidateMode_ActionableOIDCOnlyError(t *testing.T) {
+	cfg := AuthConfig{Mode: "oidc_only", IssuerURL: "", JWKSURL: ""}
+	err := cfg.ValidateMode()
+	require.Error(t, err)
+	assert.Equal(t, "AUTH_MODE=oidc_only requires AUTH_ISSUER_URL or AUTH_JWKS_URL; you set neither", err.Error())
+}
+
+func TestConfigDoctorWarnings(t *testing.T) {
+	cfg := &Config{
+		Auth:               AuthConfig{Mode: "hybrid"},
+		CORSAllowedOrigins: []string{"*"},
+		EncryptionKey:      "0000000000000000000000000000000000000000000000000000000000000000",
+	}
+	warnings := cfg.ConfigDoctorWarnings()
+	assert.NotEmpty(t, warnings)
+	assert.Contains(t, warnings[0], "ENCRYPTION_KEY uses insecure default")
+}
+
+func TestConfigAuthPosture(t *testing.T) {
+	cfg := &Config{Auth: AuthConfig{Mode: "hybrid", IssuerURL: "https://issuer.example.com", APIKeyEnabled: true, JWTSecret: "secret"}}
+	assert.Equal(t, "mode=hybrid methods=oidc+jwt_secret+api_key", cfg.AuthPosture())
+}
+
+func TestLoadFromEnv_EncryptionKeyFromFile(t *testing.T) {
+	dir := t.TempDir()
+	keyPath := filepath.Join(dir, "encryption_key")
+	require.NoError(t, os.WriteFile(keyPath, []byte("abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789\n"), 0o600))
+
+	t.Setenv("ENCRYPTION_KEY", "")
+	t.Setenv("ENCRYPTION_KEY_FILE", keyPath)
+
+	cfg, err := LoadFromEnv()
+	require.NoError(t, err)
+	assert.Equal(t, "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789", cfg.EncryptionKey)
+}
+
+func TestLoadFromEnv_JWTSecretFromFile(t *testing.T) {
+	dir := t.TempDir()
+	secretPath := filepath.Join(dir, "jwt_secret")
+	require.NoError(t, os.WriteFile(secretPath, []byte("jwt-secret-from-file\n"), 0o600))
+
+	t.Setenv("JWT_SECRET", "")
+	t.Setenv("JWT_SECRET_FILE", secretPath)
+	t.Setenv("AUTH_MODE", "local_only")
+	t.Setenv("AUTH_API_KEY_ENABLED", "false")
+
+	cfg, err := LoadFromEnv()
+	require.NoError(t, err)
+	assert.Equal(t, "jwt-secret-from-file", cfg.Auth.JWTSecret)
+}
+
+func TestLoadFromEnv_SecretFileReadError(t *testing.T) {
+	t.Setenv("ENCRYPTION_KEY", "")
+	t.Setenv("ENCRYPTION_KEY_FILE", "/does/not/exist")
+
+	_, err := LoadFromEnv()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "read ENCRYPTION_KEY_FILE")
+}
+
+func TestLoadFromEnv_ModeConflictWarning_LocalOnlyWithOIDC(t *testing.T) {
+	t.Setenv("AUTH_MODE", "local_only")
+	t.Setenv("AUTH_ISSUER_URL", "https://issuer.example.com")
+
+	cfg, err := LoadFromEnv()
+	require.NoError(t, err)
+	assert.Contains(t, cfg.Warnings, "AUTH_ISSUER_URL/AUTH_JWKS_URL configured but AUTH_MODE=local_only; OIDC settings are ignored")
+}
+
+func TestLoadFromEnv_ModeConflictWarning_OIDCOnlyWithAPIKey(t *testing.T) {
+	t.Setenv("AUTH_MODE", "oidc_only")
+	t.Setenv("AUTH_ISSUER_URL", "https://issuer.example.com")
+	t.Setenv("AUTH_AUDIENCE", "duck-demo")
+	t.Setenv("AUTH_API_KEY_ENABLED", "true")
+
+	cfg, err := LoadFromEnv()
+	require.NoError(t, err)
+	assert.Contains(t, cfg.Warnings, "AUTH_MODE=oidc_only with AUTH_API_KEY_ENABLED=true still allows API keys; set AUTH_API_KEY_ENABLED=false for strict OIDC-only auth")
 }
 
 func TestLoadDotEnv_FileNotFound(t *testing.T) {
@@ -163,21 +257,25 @@ func TestLoadDotEnv_SkipsComments(t *testing.T) {
 	_ = os.Unsetenv("TEST_COMMENT_KEY")
 }
 
-func TestLoadFromEnv_ProductionModeRejectsMissingOIDC(t *testing.T) {
+func TestLoadFromEnv_ProductionModeAllowsMissingOIDCWhenOtherAuthEnabled(t *testing.T) {
 	t.Setenv("ENV", "production")
 	t.Setenv("AUTH_ISSUER_URL", "")
 	t.Setenv("AUTH_JWKS_URL", "")
 	t.Setenv("ENCRYPTION_KEY", "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789")
+	t.Setenv("CORS_ALLOWED_ORIGINS", "https://app.example.com")
+	t.Setenv("TRUST_DOWNSTREAM_PROXY", "true")
 
-	_, err := LoadFromEnv()
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "OIDC must be configured in production")
+	cfg, err := LoadFromEnv()
+	require.NoError(t, err)
+	assert.True(t, cfg.IsProduction())
 }
 
 func TestLoadFromEnv_ProductionModeRejectsInsecureEncryptionKey(t *testing.T) {
 	t.Setenv("ENV", "production")
 	t.Setenv("AUTH_JWKS_URL", "https://auth.example.com/jwks.json")
 	t.Setenv("ENCRYPTION_KEY", "")
+	t.Setenv("CORS_ALLOWED_ORIGINS", "https://app.example.com")
+	t.Setenv("TRUST_DOWNSTREAM_PROXY", "true")
 
 	_, err := LoadFromEnv()
 	require.Error(t, err)
@@ -189,11 +287,64 @@ func TestLoadFromEnv_ProductionModeAcceptsProperConfig(t *testing.T) {
 	t.Setenv("AUTH_JWKS_URL", "https://auth.example.com/jwks.json")
 	t.Setenv("ENCRYPTION_KEY", "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789")
 	t.Setenv("CORS_ALLOWED_ORIGINS", "https://app.example.com")
-	t.Setenv("ALLOW_INSECURE_HTTP", "true")
+	t.Setenv("TRUST_DOWNSTREAM_PROXY", "true")
 
 	cfg, err := LoadFromEnv()
 	require.NoError(t, err)
 	assert.True(t, cfg.IsProduction())
+}
+
+func TestLoadFromEnv_ProductionModeRejectsNoEnabledAuthMethods(t *testing.T) {
+	t.Setenv("ENV", "production")
+	t.Setenv("AUTH_MODE", "hybrid")
+	t.Setenv("AUTH_ISSUER_URL", "")
+	t.Setenv("AUTH_JWKS_URL", "")
+	t.Setenv("JWT_SECRET", "")
+	t.Setenv("AUTH_API_KEY_ENABLED", "false")
+	t.Setenv("ENCRYPTION_KEY", "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789")
+	t.Setenv("CORS_ALLOWED_ORIGINS", "https://app.example.com")
+	t.Setenv("TRUST_DOWNSTREAM_PROXY", "true")
+
+	_, err := LoadFromEnv()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "requires at least one auth method")
+}
+
+func TestLoadFromEnv_AuthModeOIDCOnlyRequiresOIDC(t *testing.T) {
+	t.Setenv("AUTH_MODE", "oidc_only")
+	t.Setenv("AUTH_ISSUER_URL", "")
+	t.Setenv("AUTH_JWKS_URL", "")
+
+	_, err := LoadFromEnv()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "AUTH_MODE=oidc_only requires")
+}
+
+func TestLoadFromEnv_AuthModeAPIKeyOnlyRequiresAPIKeyEnabled(t *testing.T) {
+	t.Setenv("AUTH_MODE", "api_key_only")
+	t.Setenv("AUTH_API_KEY_ENABLED", "false")
+
+	_, err := LoadFromEnv()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "AUTH_MODE=api_key_only requires")
+}
+
+func TestLoadFromEnv_AuthModeLocalOnlyAllowsJWTSecret(t *testing.T) {
+	t.Setenv("AUTH_MODE", "local_only")
+	t.Setenv("JWT_SECRET", "dev-secret")
+	t.Setenv("AUTH_API_KEY_ENABLED", "false")
+
+	cfg, err := LoadFromEnv()
+	require.NoError(t, err)
+	assert.Equal(t, "local_only", cfg.Auth.Mode)
+}
+
+func TestLoadFromEnv_RejectsInvalidAuthMode(t *testing.T) {
+	t.Setenv("AUTH_MODE", "wat")
+
+	_, err := LoadFromEnv()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid AUTH_MODE")
 }
 
 func TestLoadFromEnv_RateLimitDefaults(t *testing.T) {

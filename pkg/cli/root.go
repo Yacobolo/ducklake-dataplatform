@@ -149,7 +149,7 @@ func newRootCmd() *cobra.Command {
 	// Add hand-written commands
 	rootCmd.AddCommand(newVersionCmd())
 	rootCmd.AddCommand(newConfigCmd())
-	rootCmd.AddCommand(newAuthCmd())
+	rootCmd.AddCommand(newAuthCmd(client))
 
 	// Declarative configuration commands
 	rootCmd.AddCommand(newPlanCmd(client))

@@ -257,6 +257,36 @@ func TestAuth_BearerPrecedence(t *testing.T) {
 	assert.Equal(t, "jwt-user", cp.Name, "Bearer token should take precedence over API key")
 }
 
+func TestAuth_InvalidBearerFallsBackToAPIKey(t *testing.T) {
+	handler, getPrincipal := nextHandler()
+	rawKey := "test-api-key-12345678"
+
+	auth := NewAuthenticator(
+		&stubValidator{err: fmt.Errorf("token invalid")},
+		&stubAPIKeyLookup{keys: map[string]string{
+			hashKey(rawKey): "api-user",
+		}},
+		&stubPrincipalLookup{principals: map[string]*domain.Principal{
+			"api-user": {Name: "api-user", Type: "service_principal"},
+		}},
+		nil,
+		config.AuthConfig{APIKeyEnabled: true, APIKeyHeader: "X-API-Key", NameClaim: "sub"},
+		nil,
+	)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Authorization", "Bearer bad-token")
+	req.Header.Set("X-API-Key", rawKey)
+	w := httptest.NewRecorder()
+
+	auth.Middleware()(handler).ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	cp, found := getPrincipal()
+	require.True(t, found)
+	assert.Equal(t, "api-user", cp.Name)
+}
+
 func TestAuth_JITProvisionNewUser(t *testing.T) {
 	handler, getPrincipal := nextHandler()
 

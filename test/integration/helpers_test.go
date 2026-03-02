@@ -42,6 +42,7 @@ import (
 	"duck-demo/internal/domain"
 	"duck-demo/internal/engine"
 	"duck-demo/internal/middleware"
+	authsvc "duck-demo/internal/service/auth"
 	"duck-demo/internal/service/catalog"
 	svccompute "duck-demo/internal/service/compute"
 	"duck-demo/internal/service/governance"
@@ -1122,6 +1123,12 @@ type httpTestOpts struct {
 	// WithSemantic wires SemanticService into the handler (enables semantic
 	// models, metrics, relationships, pre-aggregations, explain, and run endpoints).
 	WithSemantic bool
+	// AuthMode configures auth middleware mode semantics in test wiring.
+	// Supported values: hybrid (default), oidc_only, local_only, api_key_only.
+	AuthMode string
+	// APIKeyEnabled overrides whether API key auth is enabled in middleware.
+	// Nil means default true.
+	APIKeyEnabled *bool
 }
 
 // httpTestEnv bundles the test server, API keys, and direct DB access.
@@ -1184,6 +1191,10 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	auditRepo := repository.NewAuditRepo(metaDB)
 	introspectionRepo := repository.NewIntrospectionRepo(metaDB)
 	apiKeyRepo := repository.NewAPIKeyRepo(metaDB)
+	localCredentialRepo := repository.NewLocalCredentialRepo(metaDB)
+	authLoginAttemptRepo := repository.NewAuthLoginAttemptRepo(metaDB)
+	setupStateRepo := repository.NewSetupStateRepo(metaDB)
+	authProviderRepo := repository.NewAuthProviderRepo(metaDB)
 	tagRepo := repository.NewTagRepo(metaDB)
 	lineageRepo := repository.NewLineageRepo(metaDB)
 	searchRepo := repository.NewSearchRepo(metaDB, metaDB)
@@ -1253,6 +1264,10 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		auditRepo = repository.NewAuditRepo(metaDB)
 		introspectionRepo = repository.NewIntrospectionRepo(metaDB)
 		apiKeyRepo = repository.NewAPIKeyRepo(metaDB)
+		localCredentialRepo = repository.NewLocalCredentialRepo(metaDB)
+		authLoginAttemptRepo = repository.NewAuthLoginAttemptRepo(metaDB)
+		setupStateRepo = repository.NewSetupStateRepo(metaDB)
+		authProviderRepo = repository.NewAuthProviderRepo(metaDB)
 		tagRepo = repository.NewTagRepo(metaDB)
 		lineageRepo = repository.NewLineageRepo(metaDB)
 		searchRepo = repository.NewSearchRepo(metaDB, metaDB)
@@ -1386,6 +1401,8 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	// Wire APIKeyService by default so API key endpoints are always available
 	// in integration test servers.
 	apiKeySvc := security.NewAPIKeyService(apiKeyRepo, auditRepo)
+	authService := authsvc.NewService(principalRepo, localCredentialRepo, authLoginAttemptRepo, setupStateRepo, authProviderRepo, auditRepo, string(jwtSecret))
+	authHandler := api.NewAuthHTTPHandler(authService)
 
 	// Optionally wire Model + Macro services
 	var modelSvc *svcmodel.Service
@@ -1460,13 +1477,25 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	if nameClaim == "" {
 		nameClaim = "sub"
 	}
+	authMode := opts.AuthMode
+	if strings.TrimSpace(authMode) == "" {
+		authMode = "hybrid"
+	}
+	apiKeyEnabled := true
+	if opts.APIKeyEnabled != nil {
+		apiKeyEnabled = *opts.APIKeyEnabled
+	}
 	authCfg := config.AuthConfig{
-		APIKeyEnabled:  true,
+		Mode:           authMode,
+		APIKeyEnabled:  apiKeyEnabled,
 		APIKeyHeader:   "X-API-Key",
 		NameClaim:      nameClaim,
 		BootstrapAdmin: opts.BootstrapAdmin,
 	}
-	validator := &testHS256Validator{secret: jwtSecret}
+	var validator middleware.JWTValidator
+	if strings.ToLower(strings.TrimSpace(authMode)) != "api_key_only" {
+		validator = &testHS256Validator{secret: jwtSecret}
+	}
 	var provisioner middleware.PrincipalProvisioner
 	if opts.WithAuthenticator {
 		provisioner = principalSvc
@@ -1479,8 +1508,13 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		authCfg,
 		nil, // logger
 	)
-	r.Use(authenticator.Middleware())
+	r.Post("/v1/auth/bootstrap/complete", authHandler.BootstrapComplete)
+	r.Post("/v1/auth/local/login", authHandler.LocalLogin)
 	r.Route("/v1", func(r chi.Router) {
+		r.Use(authenticator.Middleware())
+		r.Post("/auth/bootstrap/tokens", authHandler.CreateBootstrapToken)
+		r.Get("/auth/provider/oidc", authHandler.GetOIDCProvider)
+		r.Put("/auth/provider/oidc", authHandler.UpsertOIDCProvider)
 		api.HandlerFromMux(strictHandler, r)
 	})
 
