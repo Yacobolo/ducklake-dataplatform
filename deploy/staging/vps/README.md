@@ -23,12 +23,13 @@ The `Deploy Staging VPS` GitHub Actions workflow writes runtime values from GitH
 
 ### Image references
 
-- inferred from the GitHub repository and deployment tag at runtime (`CONTROL_PLANE_IMAGE`, `COMPUTE_AGENT_IMAGE`)
+- images are fixed to `ghcr.io/yacobolo/ducklake-dataplatform-...` and use `IMAGE_TAG`
 
 ### Runtime config
 
 - `PUBLIC_DOMAIN`
 - `CORS_ALLOWED_ORIGINS` (recommended; defaults to `https://${PUBLIC_DOMAIN}`)
+- `IMAGE_TAG` (optional for manual runs; workflow sets `sha-<commit>` automatically)
 - `S3_ENDPOINT`
 - `S3_REGION`
 - `S3_BUCKET`

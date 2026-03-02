@@ -42,8 +42,6 @@ jobs:
           if [ -z "$CORS_ALLOWED_ORIGINS" ]; then
             CORS_ALLOWED_ORIGINS="https://${PUBLIC_DOMAIN}"
           fi
-          GHCR_OWNER="${GITHUB_REPOSITORY_OWNER,,}"
-          GHCR_REPO="${GITHUB_REPOSITORY#*/}"
           IMAGE_TAG="sha-${{ github.event.workflow_run.head_sha || github.sha }}"
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.image_tag }}" ]; then
             IMAGE_TAG="${{ inputs.image_tag }}"
@@ -51,8 +49,7 @@ jobs:
           cat > deploy/staging/vps/.env <<EOF
           PUBLIC_DOMAIN=${PUBLIC_DOMAIN}
           CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
-          CONTROL_PLANE_IMAGE=ghcr.io/${GHCR_OWNER}/${GHCR_REPO}-control-plane:${IMAGE_TAG}
-          COMPUTE_AGENT_IMAGE=ghcr.io/${GHCR_OWNER}/${GHCR_REPO}-compute-agent:${IMAGE_TAG}
+          IMAGE_TAG=${IMAGE_TAG}
           AGENT_TOKEN=${{ secrets.AGENT_TOKEN }}
           JWT_SECRET=${{ secrets.JWT_SECRET }}
           ENCRYPTION_KEY=${{ secrets.ENCRYPTION_KEY }}
