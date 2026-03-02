@@ -1,0 +1,258 @@
+package api
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"duck-demo/internal/domain"
+	authsvc "duck-demo/internal/service/auth"
+)
+
+func TestAuthHTTPHandler_BootstrapComplete(t *testing.T) {
+	h, _ := setupAuthHandler(t)
+
+	body := map[string]string{"username": "admin", "password": "super-secure-password", "principal_name": "admin_user"}
+	payload, err := json.Marshal(body)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/auth/bootstrap/complete", bytes.NewReader(payload))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+
+	h.BootstrapComplete(rr, req)
+
+	require.Equal(t, http.StatusCreated, rr.Code)
+	var resp map[string]interface{}
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &resp))
+	assert.NotEmpty(t, resp["token"])
+	principal, ok := resp["principal"].(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, "admin_user", principal["name"])
+}
+
+func TestAuthHTTPHandler_LocalLogin(t *testing.T) {
+	h, svc := setupAuthHandler(t)
+
+	_, err := svc.Bootstrap(context.Background(), authsvc.BootstrapRequest{Username: "localadmin", Password: "super-secure-password", PrincipalName: "localadmin"})
+	require.NoError(t, err)
+
+	body := map[string]string{"username": "localadmin", "password": "super-secure-password"}
+	payload, err := json.Marshal(body)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/auth/local/login", bytes.NewReader(payload))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+
+	h.LocalLogin(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+	var resp map[string]interface{}
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &resp))
+	assert.NotEmpty(t, resp["token"])
+}
+
+func TestAuthHTTPHandler_OIDCProviderEndpoints(t *testing.T) {
+	h, _ := setupAuthHandler(t)
+
+	t.Run("non_admin_forbidden", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/v1/auth/provider/oidc", nil)
+		req = req.WithContext(domain.WithPrincipal(req.Context(), domain.ContextPrincipal{Name: "analyst", IsAdmin: false, Type: "user"}))
+		rr := httptest.NewRecorder()
+		h.GetOIDCProvider(rr, req)
+		require.Equal(t, http.StatusForbidden, rr.Code)
+	})
+
+	t.Run("admin_can_upsert_and_get", func(t *testing.T) {
+		upsert := map[string]interface{}{"enabled": true, "issuer_url": " https://issuer.example.com ", "client_secret": "secret"}
+		payload, err := json.Marshal(upsert)
+		require.NoError(t, err)
+
+		putReq := httptest.NewRequest(http.MethodPut, "/v1/auth/provider/oidc", bytes.NewReader(payload))
+		putReq = putReq.WithContext(domain.WithPrincipal(putReq.Context(), domain.ContextPrincipal{Name: "admin", IsAdmin: true, Type: "user"}))
+		putRR := httptest.NewRecorder()
+		h.UpsertOIDCProvider(putRR, putReq)
+		require.Equal(t, http.StatusNoContent, putRR.Code)
+
+		getReq := httptest.NewRequest(http.MethodGet, "/v1/auth/provider/oidc", nil)
+		getReq = getReq.WithContext(domain.WithPrincipal(getReq.Context(), domain.ContextPrincipal{Name: "admin", IsAdmin: true, Type: "user"}))
+		getRR := httptest.NewRecorder()
+		h.GetOIDCProvider(getRR, getReq)
+		require.Equal(t, http.StatusOK, getRR.Code)
+
+		var resp map[string]interface{}
+		require.NoError(t, json.Unmarshal(getRR.Body.Bytes(), &resp))
+		assert.Equal(t, true, resp["enabled"])
+		assert.Equal(t, "https://issuer.example.com", resp["issuer_url"])
+		assert.Equal(t, true, resp["secret_stored"])
+	})
+}
+
+func setupAuthHandler(t *testing.T) (*AuthHTTPHandler, *authsvc.Service) {
+	t.Helper()
+	principals := &apiStubPrincipalRepo{nextID: 1, byID: map[string]*domain.Principal{}, byName: map[string]*domain.Principal{}}
+	credentials := &apiStubCredentialRepo{byUsername: map[string]*domain.LocalCredential{}}
+	loginAttempts := &apiStubLoginAttemptRepo{}
+	setupState := &apiStubSetupStateRepo{state: &domain.SetupState{}}
+	providers := &apiStubProviderRepo{cfg: &domain.AuthProviderConfig{}}
+	audit := &apiStubAuditRepo{}
+	svc := authsvc.NewService(principals, credentials, loginAttempts, setupState, providers, audit, "handler-test-secret")
+	return NewAuthHTTPHandler(svc), svc
+}
+
+type apiStubPrincipalRepo struct {
+	nextID int
+	byID   map[string]*domain.Principal
+	byName map[string]*domain.Principal
+}
+
+func (r *apiStubPrincipalRepo) Create(_ context.Context, p *domain.Principal) (*domain.Principal, error) {
+	if _, exists := r.byName[p.Name]; exists {
+		return nil, domain.ErrConflict("principal %q already exists", p.Name)
+	}
+	id := fmt.Sprintf("p-%d", r.nextID)
+	r.nextID++
+	cp := *p
+	cp.ID = id
+	r.byID[id] = &cp
+	r.byName[cp.Name] = &cp
+	return &cp, nil
+}
+
+func (r *apiStubPrincipalRepo) GetByID(_ context.Context, id string) (*domain.Principal, error) {
+	p, ok := r.byID[id]
+	if !ok {
+		return nil, domain.ErrNotFound("principal %q not found", id)
+	}
+	cp := *p
+	return &cp, nil
+}
+
+func (r *apiStubPrincipalRepo) GetByName(_ context.Context, name string) (*domain.Principal, error) {
+	p, ok := r.byName[name]
+	if !ok {
+		return nil, domain.ErrNotFound("principal %q not found", name)
+	}
+	cp := *p
+	return &cp, nil
+}
+
+func (r *apiStubPrincipalRepo) GetByExternalID(_ context.Context, _, _ string) (*domain.Principal, error) {
+	return nil, domain.ErrNotFound("not found")
+}
+
+func (r *apiStubPrincipalRepo) List(_ context.Context, _ domain.PageRequest) ([]domain.Principal, int64, error) {
+	out := make([]domain.Principal, 0, len(r.byID))
+	for _, p := range r.byID {
+		out = append(out, *p)
+	}
+	return out, int64(len(out)), nil
+}
+
+func (r *apiStubPrincipalRepo) Delete(_ context.Context, _ string) error           { return nil }
+func (r *apiStubPrincipalRepo) SetAdmin(_ context.Context, _ string, _ bool) error { return nil }
+func (r *apiStubPrincipalRepo) BindExternalID(_ context.Context, _ string, _ string, _ string) error {
+	return nil
+}
+
+type apiStubCredentialRepo struct {
+	byUsername map[string]*domain.LocalCredential
+}
+
+func (r *apiStubCredentialRepo) Upsert(_ context.Context, c *domain.LocalCredential) error {
+	cp := *c
+	r.byUsername[c.Username] = &cp
+	return nil
+}
+
+func (r *apiStubCredentialRepo) GetByUsername(_ context.Context, username string) (*domain.LocalCredential, error) {
+	c, ok := r.byUsername[username]
+	if !ok {
+		return nil, domain.ErrNotFound("credential %q not found", username)
+	}
+	cp := *c
+	return &cp, nil
+}
+
+func (r *apiStubCredentialRepo) GetByPrincipalID(_ context.Context, principalID string) (*domain.LocalCredential, error) {
+	for _, c := range r.byUsername {
+		if c.PrincipalID == principalID {
+			cp := *c
+			return &cp, nil
+		}
+	}
+	return nil, domain.ErrNotFound("credential for principal %q not found", principalID)
+}
+
+func (r *apiStubCredentialRepo) Delete(_ context.Context, _ string) error { return nil }
+
+type apiStubLoginAttemptRepo struct{}
+
+func (s *apiStubLoginAttemptRepo) Insert(_ context.Context, _ *domain.AuthLoginAttempt) error {
+	return nil
+}
+
+func (s *apiStubLoginAttemptRepo) CountRecentFailedByUsername(_ context.Context, _ string, _ time.Time) (int64, error) {
+	return 0, nil
+}
+
+func (s *apiStubLoginAttemptRepo) CountRecentFailedByIP(_ context.Context, _ string, _ time.Time) (int64, error) {
+	return 0, nil
+}
+
+type apiStubSetupStateRepo struct{ state *domain.SetupState }
+
+func (s *apiStubSetupStateRepo) Get(_ context.Context) (*domain.SetupState, error) {
+	cp := *s.state
+	return &cp, nil
+}
+
+func (s *apiStubSetupStateRepo) Complete(_ context.Context, principalID string) error {
+	now := time.Now()
+	s.state.SetupCompleted = true
+	s.state.SetupCompletedBy = &principalID
+	s.state.SetupCompletedAt = &now
+	return nil
+}
+
+func (s *apiStubSetupStateRepo) SetBootstrapToken(_ context.Context, tokenHash string, expiresAt time.Time) error {
+	s.state.BootstrapTokenHash = &tokenHash
+	s.state.BootstrapTokenExpiresAt = &expiresAt
+	return nil
+}
+
+func (s *apiStubSetupStateRepo) ClearBootstrapToken(_ context.Context) error {
+	s.state.BootstrapTokenHash = nil
+	s.state.BootstrapTokenExpiresAt = nil
+	return nil
+}
+
+type apiStubProviderRepo struct{ cfg *domain.AuthProviderConfig }
+
+func (s *apiStubProviderRepo) Get(_ context.Context) (*domain.AuthProviderConfig, error) {
+	cp := *s.cfg
+	return &cp, nil
+}
+
+func (s *apiStubProviderRepo) Upsert(_ context.Context, cfg *domain.AuthProviderConfig) error {
+	cp := *cfg
+	s.cfg = &cp
+	return nil
+}
+
+type apiStubAuditRepo struct{}
+
+func (s *apiStubAuditRepo) Insert(_ context.Context, _ *domain.AuditEntry) error { return nil }
+
+func (s *apiStubAuditRepo) List(_ context.Context, _ domain.AuditFilter) ([]domain.AuditEntry, int64, error) {
+	return nil, 0, nil
+}

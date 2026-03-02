@@ -1,6 +1,9 @@
 package cli
 
 import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -142,4 +145,132 @@ func TestAuthTokenCmd_SaveToExistingProfile(t *testing.T) {
 	claims, ok := parsed.Claims.(jwt.MapClaims)
 	require.True(t, ok)
 	assert.Equal(t, "admin_user", claims["sub"])
+}
+
+func TestCLI_AuthLocalLoginCommand(t *testing.T) {
+	rec := &requestRecorder{}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rec.record(r)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"token":"local-token","principal":{"name":"admin"}}`))
+	}))
+	defer srv.Close()
+
+	rootCmd := newTestRootCmd(t, srv)
+	rootCmd.SetArgs([]string{"--host", srv.URL, "auth", "local-login", "--username", "admin", "--password", "super-secure-password"})
+	require.NoError(t, rootCmd.Execute())
+
+	captured := rec.last()
+	assert.Equal(t, "POST", captured.Method)
+	assert.Equal(t, "/v1/auth/local/login", captured.Path)
+
+	var body map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(captured.Body), &body))
+	assert.Equal(t, "admin", body["username"])
+
+	cfg, err := LoadUserConfig()
+	require.NoError(t, err)
+	assert.Equal(t, "local-token", cfg.Profiles[cfg.CurrentProfile].Token)
+}
+
+func TestCLI_AuthBootstrapCommands(t *testing.T) {
+	t.Run("complete", func(t *testing.T) {
+		rec := &requestRecorder{}
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			rec.record(r)
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"token":"bootstrap-token","principal":{"name":"admin_user"}}`))
+		}))
+		defer srv.Close()
+
+		rootCmd := newTestRootCmd(t, srv)
+		rootCmd.SetArgs([]string{"--host", srv.URL, "auth", "bootstrap", "complete", "--username", "admin", "--password", "super-secure-password", "--principal", "admin_user", "--token", "recovery-token"})
+		require.NoError(t, rootCmd.Execute())
+
+		captured := rec.last()
+		assert.Equal(t, "POST", captured.Method)
+		assert.Equal(t, "/v1/auth/bootstrap/complete", captured.Path)
+
+		var body map[string]interface{}
+		require.NoError(t, json.Unmarshal([]byte(captured.Body), &body))
+		assert.Equal(t, "admin_user", body["principal_name"])
+		assert.Equal(t, "recovery-token", body["bootstrap_token"])
+
+		cfg, err := LoadUserConfig()
+		require.NoError(t, err)
+		assert.Equal(t, "bootstrap-token", cfg.Profiles[cfg.CurrentProfile].Token)
+	})
+
+	t.Run("token_create", func(t *testing.T) {
+		rec := &requestRecorder{}
+		srv := httptest.NewServer(jsonHandler(rec, 201, `{"bootstrap_token":"btok","ttl_seconds":60}`))
+		defer srv.Close()
+
+		rootCmd := newTestRootCmd(t, srv)
+		rootCmd.SetArgs([]string{"--host", srv.URL, "auth", "bootstrap", "token-create", "--ttl", "1m"})
+		require.NoError(t, rootCmd.Execute())
+
+		captured := rec.last()
+		assert.Equal(t, "POST", captured.Method)
+		assert.Equal(t, "/v1/auth/bootstrap/tokens", captured.Path)
+
+		var body map[string]interface{}
+		require.NoError(t, json.Unmarshal([]byte(captured.Body), &body))
+		ttlSeconds, ok := body["ttl_seconds"].(float64)
+		require.True(t, ok)
+		assert.InDelta(t, 60, ttlSeconds, 0.00001)
+	})
+}
+
+func TestCLI_AuthProviderOIDCCommands(t *testing.T) {
+	t.Run("get", func(t *testing.T) {
+		rec := &requestRecorder{}
+		srv := httptest.NewServer(jsonHandler(rec, 200, `{"enabled":false}`))
+		defer srv.Close()
+
+		rootCmd := newTestRootCmd(t, srv)
+		rootCmd.SetArgs([]string{"--host", srv.URL, "auth", "provider", "oidc", "get"})
+		require.NoError(t, rootCmd.Execute())
+
+		captured := rec.last()
+		assert.Equal(t, "GET", captured.Method)
+		assert.Equal(t, "/v1/auth/provider/oidc", captured.Path)
+	})
+
+	t.Run("set", func(t *testing.T) {
+		rec := &requestRecorder{}
+		srv := httptest.NewServer(jsonHandler(rec, 204, ``))
+		defer srv.Close()
+
+		rootCmd := newTestRootCmd(t, srv)
+		rootCmd.SetArgs([]string{"--host", srv.URL, "auth", "provider", "oidc", "set", "--issuer", "https://issuer.example.com", "--client-id", "duck-client", "--client-secret", "secret"})
+		require.NoError(t, rootCmd.Execute())
+
+		captured := rec.last()
+		assert.Equal(t, "PUT", captured.Method)
+		assert.Equal(t, "/v1/auth/provider/oidc", captured.Path)
+
+		var body map[string]interface{}
+		require.NoError(t, json.Unmarshal([]byte(captured.Body), &body))
+		assert.Equal(t, true, body["enabled"])
+		assert.Equal(t, "https://issuer.example.com", body["issuer_url"])
+	})
+
+	t.Run("disable", func(t *testing.T) {
+		rec := &requestRecorder{}
+		srv := httptest.NewServer(jsonHandler(rec, 204, ``))
+		defer srv.Close()
+
+		rootCmd := newTestRootCmd(t, srv)
+		rootCmd.SetArgs([]string{"--host", srv.URL, "auth", "provider", "oidc", "disable"})
+		require.NoError(t, rootCmd.Execute())
+
+		captured := rec.last()
+		assert.Equal(t, "PUT", captured.Method)
+		assert.Equal(t, "/v1/auth/provider/oidc", captured.Path)
+
+		var body map[string]interface{}
+		require.NoError(t, json.Unmarshal([]byte(captured.Body), &body))
+		assert.Equal(t, false, body["enabled"])
+	})
 }
