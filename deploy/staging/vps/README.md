@@ -28,6 +28,7 @@ The `Deploy Staging VPS` GitHub Actions workflow writes runtime values from GitH
 ### Runtime config
 
 - `PUBLIC_DOMAIN`
+- `CORS_ALLOWED_ORIGINS` (recommended; defaults to `https://${PUBLIC_DOMAIN}`)
 - `AGENT_TOKEN`
 - `JWT_SECRET`
 - `ENCRYPTION_KEY`
