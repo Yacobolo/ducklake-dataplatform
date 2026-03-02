@@ -51,9 +51,8 @@ jobs:
           cat > deploy/staging/vps/.env <<EOF
           PUBLIC_DOMAIN=${PUBLIC_DOMAIN}
           CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
-          GHCR_OWNER=${GHCR_OWNER}
-          GHCR_REPO=${GHCR_REPO}
-          IMAGE_TAG=${IMAGE_TAG}
+          CONTROL_PLANE_IMAGE=ghcr.io/${GHCR_OWNER}/${GHCR_REPO}-control-plane:${IMAGE_TAG}
+          COMPUTE_AGENT_IMAGE=ghcr.io/${GHCR_OWNER}/${GHCR_REPO}-compute-agent:${IMAGE_TAG}
           AGENT_TOKEN=${{ secrets.AGENT_TOKEN }}
           JWT_SECRET=${{ secrets.JWT_SECRET }}
           ENCRYPTION_KEY=${{ secrets.ENCRYPTION_KEY }}

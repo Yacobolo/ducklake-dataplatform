@@ -1,4 +1,4 @@
-# Staging VPS deployment (GitHub Secrets only)
+# Staging VPS deployment
 
 This setup deploys `control-plane` + `compute-agent` + `postgres` with:
 
@@ -6,7 +6,7 @@ This setup deploys `control-plane` + `compute-agent` + `postgres` with:
 
 Deploys are deterministic and CI-driven (no timer-based auto-updater).
 
-The `Deploy Staging VPS` GitHub Actions workflow writes runtime values from GitHub Secrets into `.env` on the server during each deploy, then runs:
+The `Deploy Staging VPS` GitHub Actions workflow writes runtime values from GitHub Variables and Secrets into `.env` on the server during each deploy, then runs:
 
 - `docker compose pull`
 - `docker compose up -d --remove-orphans`
@@ -21,17 +21,14 @@ The `Deploy Staging VPS` GitHub Actions workflow writes runtime values from GitH
 - `VPS_KNOWN_HOSTS`
 - `VPS_APP_DIR`
 
-### GHCR and image coordinates
+### Image references
 
-- inferred from the GitHub repository at runtime (`github.repository_owner`, `github.repository`)
+- inferred from the GitHub repository and deployment tag at runtime (`CONTROL_PLANE_IMAGE`, `COMPUTE_AGENT_IMAGE`)
 
 ### Runtime config
 
 - `PUBLIC_DOMAIN`
 - `CORS_ALLOWED_ORIGINS` (recommended; defaults to `https://${PUBLIC_DOMAIN}`)
-- `AGENT_TOKEN`
-- `JWT_SECRET`
-- `ENCRYPTION_KEY`
 - `S3_ENDPOINT`
 - `S3_REGION`
 - `S3_BUCKET`

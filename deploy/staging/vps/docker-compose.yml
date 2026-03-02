@@ -16,7 +16,7 @@ services:
       - caddy_config:/config
 
   control-plane:
-    image: ghcr.io/${GHCR_OWNER}/${GHCR_REPO}-control-plane:${IMAGE_TAG:-main-latest}
+    image: ${CONTROL_PLANE_IMAGE}
     pull_policy: always
     restart: unless-stopped
     depends_on:
@@ -52,7 +52,7 @@ services:
       - control_plane_data:/data
 
   compute-agent:
-    image: ghcr.io/${GHCR_OWNER}/${GHCR_REPO}-compute-agent:${IMAGE_TAG:-main-latest}
+    image: ${COMPUTE_AGENT_IMAGE}
     pull_policy: always
     restart: unless-stopped
     depends_on:
