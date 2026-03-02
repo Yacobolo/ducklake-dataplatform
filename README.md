@@ -75,7 +75,10 @@ Scenario templates are also available: `.env.local-only.sample`, `.env.hybrid.sa
 | `JWT_SECRET` | `` | Optional HS256 secret for local JWT auth |
 | `AUTH_API_KEY_ENABLED` | `true` | Enable API key authentication |
 | `ENCRYPTION_KEY` | (insecure default) | 64-char hex AES-256 key for credential encryption |
+| `ENCRYPTION_KEY_FILE` | `` | Read encryption key from file (e.g. Docker/K8s secret mount) |
+| `JWT_SECRET_FILE` | `` | Read local JWT secret from file |
 | `ENV` | `development` | Set to `production` to enforce secure config |
+| `TRUST_DOWNSTREAM_PROXY` | `false` | Allow HTTP listener in production when TLS is terminated by a trusted reverse proxy |
 | `RATE_LIMIT_RPS` | `100` | Sustained requests per second |
 | `RATE_LIMIT_BURST` | `200` | Maximum burst capacity |
 | `FEATURE_INTERNAL_GRPC` | `true` | Enable internal gRPC worker transport (`grpc://`/`grpcs://` endpoint URLs) |
@@ -84,7 +87,7 @@ Scenario templates are also available: `.env.local-only.sample`, `.env.hybrid.sa
 
 ### Production Mode
 
-Set `ENV=production` to enforce secure defaults. In production mode, the server will refuse to start unless `ENCRYPTION_KEY` is configured and at least one auth method is enabled (OIDC, local JWT via `JWT_SECRET`, or API keys).
+Set `ENV=production` to enforce secure defaults. In production mode, the server will refuse to start unless `ENCRYPTION_KEY` (or `ENCRYPTION_KEY_FILE`) is configured and at least one auth method is enabled (OIDC, local JWT via `JWT_SECRET`, or API keys).
 
 ### Authentication
 
@@ -102,7 +105,7 @@ The server supports two authentication methods:
 
 ### S3 Storage (Optional)
 
-Set `S3_KEY_ID`, `S3_SECRET`, `S3_ENDPOINT`, and `S3_REGION` to enable DuckLake catalog and ingestion features.
+Set `S3_KEY_ID`, `S3_SECRET` (or `S3_SECRET_FILE`), `S3_ENDPOINT`, and `S3_REGION` to enable DuckLake catalog and ingestion features.
 
 ## Development
 

@@ -107,6 +107,7 @@ func renderEnvTemplate(mode, env string) string {
 	case "local_only":
 		base = append(base,
 			"JWT_SECRET=replace-with-long-random-local-secret",
+			"# JWT_SECRET_FILE=/run/secrets/jwt_secret",
 			"AUTH_API_KEY_ENABLED=true",
 			"AUTH_API_KEY_HEADER=X-API-Key",
 		)
@@ -121,6 +122,7 @@ func renderEnvTemplate(mode, env string) string {
 			"AUTH_AUDIENCE=duck-demo",
 			"# AUTH_JWKS_URL=https://issuer.example.com/.well-known/jwks.json",
 			"JWT_SECRET=replace-with-long-random-fallback-secret",
+			"# JWT_SECRET_FILE=/run/secrets/jwt_secret",
 			"AUTH_API_KEY_ENABLED=true",
 			"AUTH_API_KEY_HEADER=X-API-Key",
 		)
@@ -131,13 +133,15 @@ func renderEnvTemplate(mode, env string) string {
 		base = append(base,
 			"TLS_CERT_FILE=/etc/duck/tls/server.crt",
 			"TLS_KEY_FILE=/etc/duck/tls/server.key",
-			"# ALLOW_INSECURE_HTTP=false",
+			"# TRUST_DOWNSTREAM_PROXY=false",
 			"ENCRYPTION_KEY=replace-with-64-char-hex-key",
+			"# ENCRYPTION_KEY_FILE=/run/secrets/encryption_key",
 			"CORS_ALLOWED_ORIGINS=https://app.example.com",
 		)
 	} else {
 		base = append(base,
 			"ENCRYPTION_KEY=0000000000000000000000000000000000000000000000000000000000000000",
+			"# ENCRYPTION_KEY_FILE=/run/secrets/encryption_key",
 			"CORS_ALLOWED_ORIGINS=*",
 		)
 	}
@@ -147,6 +151,7 @@ func renderEnvTemplate(mode, env string) string {
 		"# Optional S3 config (preferred names)",
 		"# S3_KEY_ID=",
 		"# S3_SECRET=",
+		"# S3_SECRET_FILE=/run/secrets/s3_secret",
 		"# S3_ENDPOINT=",
 		"# S3_REGION=",
 		"# S3_BUCKET=duck-demo",

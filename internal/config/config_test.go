@@ -155,6 +155,63 @@ func TestConfigAuthPosture(t *testing.T) {
 	assert.Equal(t, "mode=hybrid methods=oidc+jwt_secret+api_key", cfg.AuthPosture())
 }
 
+func TestLoadFromEnv_EncryptionKeyFromFile(t *testing.T) {
+	dir := t.TempDir()
+	keyPath := filepath.Join(dir, "encryption_key")
+	require.NoError(t, os.WriteFile(keyPath, []byte("abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789\n"), 0o600))
+
+	t.Setenv("ENCRYPTION_KEY", "")
+	t.Setenv("ENCRYPTION_KEY_FILE", keyPath)
+
+	cfg, err := LoadFromEnv()
+	require.NoError(t, err)
+	assert.Equal(t, "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789", cfg.EncryptionKey)
+}
+
+func TestLoadFromEnv_JWTSecretFromFile(t *testing.T) {
+	dir := t.TempDir()
+	secretPath := filepath.Join(dir, "jwt_secret")
+	require.NoError(t, os.WriteFile(secretPath, []byte("jwt-secret-from-file\n"), 0o600))
+
+	t.Setenv("JWT_SECRET", "")
+	t.Setenv("JWT_SECRET_FILE", secretPath)
+	t.Setenv("AUTH_MODE", "local_only")
+	t.Setenv("AUTH_API_KEY_ENABLED", "false")
+
+	cfg, err := LoadFromEnv()
+	require.NoError(t, err)
+	assert.Equal(t, "jwt-secret-from-file", cfg.Auth.JWTSecret)
+}
+
+func TestLoadFromEnv_SecretFileReadError(t *testing.T) {
+	t.Setenv("ENCRYPTION_KEY", "")
+	t.Setenv("ENCRYPTION_KEY_FILE", "/does/not/exist")
+
+	_, err := LoadFromEnv()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "read ENCRYPTION_KEY_FILE")
+}
+
+func TestLoadFromEnv_ModeConflictWarning_LocalOnlyWithOIDC(t *testing.T) {
+	t.Setenv("AUTH_MODE", "local_only")
+	t.Setenv("AUTH_ISSUER_URL", "https://issuer.example.com")
+
+	cfg, err := LoadFromEnv()
+	require.NoError(t, err)
+	assert.Contains(t, cfg.Warnings, "AUTH_ISSUER_URL/AUTH_JWKS_URL configured but AUTH_MODE=local_only; OIDC settings are ignored")
+}
+
+func TestLoadFromEnv_ModeConflictWarning_OIDCOnlyWithAPIKey(t *testing.T) {
+	t.Setenv("AUTH_MODE", "oidc_only")
+	t.Setenv("AUTH_ISSUER_URL", "https://issuer.example.com")
+	t.Setenv("AUTH_AUDIENCE", "duck-demo")
+	t.Setenv("AUTH_API_KEY_ENABLED", "true")
+
+	cfg, err := LoadFromEnv()
+	require.NoError(t, err)
+	assert.Contains(t, cfg.Warnings, "AUTH_MODE=oidc_only with AUTH_API_KEY_ENABLED=true still allows API keys; set AUTH_API_KEY_ENABLED=false for strict OIDC-only auth")
+}
+
 func TestLoadDotEnv_FileNotFound(t *testing.T) {
 	err := LoadDotEnv("/nonexistent/.env")
 	if err != nil {
@@ -206,7 +263,7 @@ func TestLoadFromEnv_ProductionModeAllowsMissingOIDCWhenOtherAuthEnabled(t *test
 	t.Setenv("AUTH_JWKS_URL", "")
 	t.Setenv("ENCRYPTION_KEY", "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789")
 	t.Setenv("CORS_ALLOWED_ORIGINS", "https://app.example.com")
-	t.Setenv("ALLOW_INSECURE_HTTP", "true")
+	t.Setenv("TRUST_DOWNSTREAM_PROXY", "true")
 
 	cfg, err := LoadFromEnv()
 	require.NoError(t, err)
@@ -218,7 +275,7 @@ func TestLoadFromEnv_ProductionModeRejectsInsecureEncryptionKey(t *testing.T) {
 	t.Setenv("AUTH_JWKS_URL", "https://auth.example.com/jwks.json")
 	t.Setenv("ENCRYPTION_KEY", "")
 	t.Setenv("CORS_ALLOWED_ORIGINS", "https://app.example.com")
-	t.Setenv("ALLOW_INSECURE_HTTP", "true")
+	t.Setenv("TRUST_DOWNSTREAM_PROXY", "true")
 
 	_, err := LoadFromEnv()
 	require.Error(t, err)
@@ -230,7 +287,7 @@ func TestLoadFromEnv_ProductionModeAcceptsProperConfig(t *testing.T) {
 	t.Setenv("AUTH_JWKS_URL", "https://auth.example.com/jwks.json")
 	t.Setenv("ENCRYPTION_KEY", "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789")
 	t.Setenv("CORS_ALLOWED_ORIGINS", "https://app.example.com")
-	t.Setenv("ALLOW_INSECURE_HTTP", "true")
+	t.Setenv("TRUST_DOWNSTREAM_PROXY", "true")
 
 	cfg, err := LoadFromEnv()
 	require.NoError(t, err)
@@ -246,7 +303,7 @@ func TestLoadFromEnv_ProductionModeRejectsNoEnabledAuthMethods(t *testing.T) {
 	t.Setenv("AUTH_API_KEY_ENABLED", "false")
 	t.Setenv("ENCRYPTION_KEY", "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789")
 	t.Setenv("CORS_ALLOWED_ORIGINS", "https://app.example.com")
-	t.Setenv("ALLOW_INSECURE_HTTP", "true")
+	t.Setenv("TRUST_DOWNSTREAM_PROXY", "true")
 
 	_, err := LoadFromEnv()
 	require.Error(t, err)

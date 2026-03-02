@@ -90,21 +90,21 @@ func (a *AuthConfig) ValidateMode() error {
 // Config holds the configuration for the HTTP API and optional S3/DuckLake storage.
 type Config struct {
 	// S3 fields are optional — nil when not configured.
-	S3KeyID           *string
-	S3Secret          *string
-	S3Endpoint        *string
-	S3Region          *string
-	S3Bucket          *string
-	MetaDBPath        string // path to SQLite metadata file (control plane)
-	ListenAddr        string // HTTP listen address (default ":8080")
-	TLSCertFile       string // TLS certificate file path (optional)
-	TLSKeyFile        string // TLS private key file path (optional)
-	AllowInsecureHTTP bool   // allow non-TLS listener in production (for trusted TLS termination)
-	FlightSQLAddr     string // Flight SQL listen address (default ":32010")
-	PGWireAddr        string // PostgreSQL wire listen address (default ":5433")
-	EncryptionKey     string // 64-char hex string (32-byte AES key) for encrypting stored credentials
-	LogLevel          string // log level: debug, info, warn, error (default "info")
-	Env               string // environment: "development" (default) or "production"
+	S3KeyID              *string
+	S3Secret             *string
+	S3Endpoint           *string
+	S3Region             *string
+	S3Bucket             *string
+	MetaDBPath           string // path to SQLite metadata file (control plane)
+	ListenAddr           string // HTTP listen address (default ":8080")
+	TLSCertFile          string // TLS certificate file path (optional)
+	TLSKeyFile           string // TLS private key file path (optional)
+	TrustDownstreamProxy bool   // allow non-TLS listener when downstream proxy terminates TLS
+	FlightSQLAddr        string // Flight SQL listen address (default ":32010")
+	PGWireAddr           string // PostgreSQL wire listen address (default ":5433")
+	EncryptionKey        string // 64-char hex string (32-byte AES key) for encrypting stored credentials
+	LogLevel             string // log level: debug, info, warn, error (default "info")
+	Env                  string // environment: "development" (default) or "production"
 
 	// Rate limiting
 	RateLimitRPS   float64 // sustained requests per second (default 100)
@@ -158,6 +158,23 @@ func (c *Config) HasS3Config() bool {
 // LoadFromEnv loads configuration from environment variables.
 // S3 variables are optional — the app can start without them.
 func LoadFromEnv() (*Config, error) {
+	encryptionKey, err := readEnvOrFile("ENCRYPTION_KEY")
+	if err != nil {
+		return nil, err
+	}
+	jwtSecret, err := readEnvOrFile("JWT_SECRET")
+	if err != nil {
+		return nil, err
+	}
+	s3KeyID, err := readEnvOrFile("S3_KEY_ID")
+	if err != nil {
+		return nil, err
+	}
+	s3Secret, err := readEnvOrFile("S3_SECRET")
+	if err != nil {
+		return nil, err
+	}
+
 	cfg := &Config{
 		MetaDBPath:           os.Getenv("META_DB_PATH"),
 		ListenAddr:           os.Getenv("LISTEN_ADDR"),
@@ -165,7 +182,7 @@ func LoadFromEnv() (*Config, error) {
 		TLSKeyFile:           os.Getenv("TLS_KEY_FILE"),
 		FlightSQLAddr:        os.Getenv("FLIGHT_SQL_LISTEN_ADDR"),
 		PGWireAddr:           os.Getenv("PG_WIRE_LISTEN_ADDR"),
-		EncryptionKey:        os.Getenv("ENCRYPTION_KEY"),
+		EncryptionKey:        encryptionKey,
 		LogLevel:             os.Getenv("LOG_LEVEL"),
 		Env:                  os.Getenv("ENV"),
 		FeatureRemoteRouting: parseBoolEnvDefault("FEATURE_REMOTE_ROUTING", true),
@@ -189,10 +206,12 @@ func LoadFromEnv() (*Config, error) {
 	}
 
 	// S3 fields are optional — only set if present.
-	if v := os.Getenv("S3_KEY_ID"); v != "" {
+	if s3KeyID != "" {
+		v := s3KeyID
 		cfg.S3KeyID = &v
 	}
-	if v := os.Getenv("S3_SECRET"); v != "" {
+	if s3Secret != "" {
+		v := s3Secret
 		cfg.S3Secret = &v
 	}
 	if v := os.Getenv("S3_ENDPOINT"); v != "" {
@@ -213,8 +232,8 @@ func LoadFromEnv() (*Config, error) {
 		}
 		cfg.CORSAllowedOrigins = origins
 	}
-	if strings.EqualFold(os.Getenv("ALLOW_INSECURE_HTTP"), "true") {
-		cfg.AllowInsecureHTTP = true
+	if parseBoolEnvDefault("TRUST_DOWNSTREAM_PROXY", false) {
+		cfg.TrustDownstreamProxy = true
 	}
 	if v := os.Getenv("REMOTE_CANARY_USERS"); v != "" {
 		users := strings.Split(v, ",")
@@ -229,7 +248,7 @@ func LoadFromEnv() (*Config, error) {
 		Mode:           os.Getenv("AUTH_MODE"),
 		IssuerURL:      os.Getenv("AUTH_ISSUER_URL"),
 		JWKSURL:        os.Getenv("AUTH_JWKS_URL"),
-		JWTSecret:      os.Getenv("JWT_SECRET"),
+		JWTSecret:      jwtSecret,
 		Audience:       os.Getenv("AUTH_AUDIENCE"),
 		APIKeyEnabled:  true,
 		APIKeyHeader:   os.Getenv("AUTH_API_KEY_HEADER"),
@@ -302,6 +321,7 @@ func LoadFromEnv() (*Config, error) {
 	if err := cfg.Auth.ValidateMode(); err != nil {
 		return nil, err
 	}
+	cfg.Warnings = append(cfg.Warnings, cfg.modeConflictWarnings()...)
 
 	// Production mode: insecure defaults are fatal errors.
 	if cfg.IsProduction() {
@@ -314,8 +334,8 @@ func LoadFromEnv() (*Config, error) {
 		if len(cfg.CORSAllowedOrigins) == 1 && cfg.CORSAllowedOrigins[0] == "*" {
 			return nil, fmt.Errorf("CORS wildcard (*) is not allowed in production (ENV=production)")
 		}
-		if cfg.TLSCertFile == "" && !cfg.AllowInsecureHTTP {
-			return nil, fmt.Errorf("TLS_CERT_FILE/TLS_KEY_FILE must be set in production unless ALLOW_INSECURE_HTTP=true")
+		if cfg.TLSCertFile == "" && !cfg.TrustDownstreamProxy {
+			return nil, fmt.Errorf("TLS_CERT_FILE/TLS_KEY_FILE must be set in production unless TRUST_DOWNSTREAM_PROXY=true")
 		}
 	}
 
@@ -378,8 +398,8 @@ func (c *Config) ConfigDoctorWarnings() []string {
 		warnings = append(warnings, "CORS_ALLOWED_ORIGINS is wildcard (*)")
 	}
 	if c.TLSCertFile == "" || c.TLSKeyFile == "" {
-		if c.AllowInsecureHTTP {
-			warnings = append(warnings, "TLS is disabled; ALLOW_INSECURE_HTTP=true")
+		if c.TrustDownstreamProxy {
+			warnings = append(warnings, "TLS is terminated by downstream proxy (TRUST_DOWNSTREAM_PROXY=true)")
 		} else {
 			warnings = append(warnings, "TLS is disabled; set TLS_CERT_FILE and TLS_KEY_FILE")
 		}
@@ -388,6 +408,58 @@ func (c *Config) ConfigDoctorWarnings() []string {
 		warnings = append(warnings, "no auth method enabled")
 	}
 	return warnings
+}
+
+func (c *Config) modeConflictWarnings() []string {
+	mode := strings.ToLower(strings.TrimSpace(c.Auth.Mode))
+	if mode == "" {
+		mode = "hybrid"
+	}
+
+	hasOIDC := c.Auth.OIDCEnabled()
+	hasJWTSecret := strings.TrimSpace(c.Auth.JWTSecret) != ""
+	warnings := make([]string, 0, 3)
+
+	switch mode {
+	case "local_only":
+		if hasOIDC {
+			warnings = append(warnings, "AUTH_ISSUER_URL/AUTH_JWKS_URL configured but AUTH_MODE=local_only; OIDC settings are ignored")
+		}
+	case "oidc_only":
+		if hasJWTSecret {
+			warnings = append(warnings, "JWT_SECRET is set but AUTH_MODE=oidc_only; JWT secret auth is ignored")
+		}
+		if c.Auth.APIKeyEnabled {
+			warnings = append(warnings, "AUTH_MODE=oidc_only with AUTH_API_KEY_ENABLED=true still allows API keys; set AUTH_API_KEY_ENABLED=false for strict OIDC-only auth")
+		}
+	case "api_key_only":
+		if hasOIDC {
+			warnings = append(warnings, "AUTH_ISSUER_URL/AUTH_JWKS_URL configured but AUTH_MODE=api_key_only; OIDC settings are ignored")
+		}
+		if hasJWTSecret {
+			warnings = append(warnings, "JWT_SECRET is set but AUTH_MODE=api_key_only; JWT secret auth is ignored")
+		}
+	}
+
+	return warnings
+}
+
+func readEnvOrFile(key string) (string, error) {
+	if v := strings.TrimSpace(os.Getenv(key)); v != "" {
+		return v, nil
+	}
+
+	path := strings.TrimSpace(os.Getenv(key + "_FILE"))
+	if path == "" {
+		return "", nil
+	}
+
+	b, err := os.ReadFile(path) //nolint:gosec // path comes from operator-provided config
+	if err != nil {
+		return "", fmt.Errorf("read %s: %w", key+"_FILE", err)
+	}
+
+	return strings.TrimSpace(string(b)), nil
 }
 
 // LoadDotEnv reads a .env file and sets any variables not already in the environment.
