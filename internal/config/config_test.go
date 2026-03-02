@@ -10,11 +10,11 @@ import (
 )
 
 func TestLoadFromEnv_AllVarsSet(t *testing.T) {
-	t.Setenv("KEY_ID", "testkey")
-	t.Setenv("SECRET", "testsecret")
-	t.Setenv("ENDPOINT", "s3.example.com")
-	t.Setenv("REGION", "us-east-1")
-	t.Setenv("BUCKET", "test-bucket")
+	t.Setenv("S3_KEY_ID", "testkey")
+	t.Setenv("S3_SECRET", "testsecret")
+	t.Setenv("S3_ENDPOINT", "s3.example.com")
+	t.Setenv("S3_REGION", "us-east-1")
+	t.Setenv("S3_BUCKET", "test-bucket")
 	t.Setenv("META_DB_PATH", "/tmp/test.sqlite")
 
 	cfg, err := LoadFromEnv()
@@ -29,11 +29,11 @@ func TestLoadFromEnv_AllVarsSet(t *testing.T) {
 
 func TestLoadFromEnv_Defaults(t *testing.T) {
 	// Clear all S3 vars
-	t.Setenv("KEY_ID", "")
-	t.Setenv("SECRET", "")
-	t.Setenv("ENDPOINT", "")
-	t.Setenv("REGION", "")
-	t.Setenv("BUCKET", "")
+	t.Setenv("S3_KEY_ID", "")
+	t.Setenv("S3_SECRET", "")
+	t.Setenv("S3_ENDPOINT", "")
+	t.Setenv("S3_REGION", "")
+	t.Setenv("S3_BUCKET", "")
 	t.Setenv("META_DB_PATH", "")
 
 	cfg, err := LoadFromEnv()
@@ -80,10 +80,10 @@ func TestLoadFromEnv_DistributedFeatureFlags(t *testing.T) {
 }
 
 func TestLoadFromEnv_NoS3(t *testing.T) {
-	t.Setenv("KEY_ID", "")
-	t.Setenv("SECRET", "")
-	t.Setenv("ENDPOINT", "")
-	t.Setenv("REGION", "")
+	t.Setenv("S3_KEY_ID", "")
+	t.Setenv("S3_SECRET", "")
+	t.Setenv("S3_ENDPOINT", "")
+	t.Setenv("S3_REGION", "")
 
 	cfg, err := LoadFromEnv()
 	require.NoError(t, err)
@@ -95,10 +95,10 @@ func TestLoadFromEnv_NoS3(t *testing.T) {
 }
 
 func TestLoadFromEnv_WithS3(t *testing.T) {
-	t.Setenv("KEY_ID", "testkey")
-	t.Setenv("SECRET", "testsecret")
-	t.Setenv("ENDPOINT", "s3.example.com")
-	t.Setenv("REGION", "us-east-1")
+	t.Setenv("S3_KEY_ID", "testkey")
+	t.Setenv("S3_SECRET", "testsecret")
+	t.Setenv("S3_ENDPOINT", "s3.example.com")
+	t.Setenv("S3_REGION", "us-east-1")
 
 	cfg, err := LoadFromEnv()
 	require.NoError(t, err)
@@ -108,14 +108,51 @@ func TestLoadFromEnv_WithS3(t *testing.T) {
 }
 
 func TestHasS3Config_PartialConfig(t *testing.T) {
-	t.Setenv("KEY_ID", "testkey")
-	t.Setenv("SECRET", "")
-	t.Setenv("ENDPOINT", "s3.example.com")
-	t.Setenv("REGION", "")
+	t.Setenv("S3_KEY_ID", "testkey")
+	t.Setenv("S3_SECRET", "")
+	t.Setenv("S3_ENDPOINT", "s3.example.com")
+	t.Setenv("S3_REGION", "")
 
 	cfg, err := LoadFromEnv()
 	require.NoError(t, err)
 	assert.False(t, cfg.HasS3Config(), "partial S3 config should return false")
+}
+
+func TestLoadFromEnv_LegacyS3VarsIgnored(t *testing.T) {
+	t.Setenv("KEY_ID", "legacy-key")
+	t.Setenv("SECRET", "legacy-secret")
+	t.Setenv("ENDPOINT", "legacy.example.com")
+	t.Setenv("REGION", "legacy-region")
+
+	cfg, err := LoadFromEnv()
+	require.NoError(t, err)
+	assert.Nil(t, cfg.S3KeyID)
+	assert.Nil(t, cfg.S3Secret)
+	assert.Nil(t, cfg.S3Endpoint)
+	assert.Nil(t, cfg.S3Region)
+}
+
+func TestAuthConfigValidateMode_ActionableOIDCOnlyError(t *testing.T) {
+	cfg := AuthConfig{Mode: "oidc_only", IssuerURL: "", JWKSURL: ""}
+	err := cfg.ValidateMode()
+	require.Error(t, err)
+	assert.Equal(t, "AUTH_MODE=oidc_only requires AUTH_ISSUER_URL or AUTH_JWKS_URL; you set neither", err.Error())
+}
+
+func TestConfigDoctorWarnings(t *testing.T) {
+	cfg := &Config{
+		Auth:               AuthConfig{Mode: "hybrid"},
+		CORSAllowedOrigins: []string{"*"},
+		EncryptionKey:      "0000000000000000000000000000000000000000000000000000000000000000",
+	}
+	warnings := cfg.ConfigDoctorWarnings()
+	assert.NotEmpty(t, warnings)
+	assert.Contains(t, warnings[0], "ENCRYPTION_KEY uses insecure default")
+}
+
+func TestConfigAuthPosture(t *testing.T) {
+	cfg := &Config{Auth: AuthConfig{Mode: "hybrid", IssuerURL: "https://issuer.example.com", APIKeyEnabled: true, JWTSecret: "secret"}}
+	assert.Equal(t, "mode=hybrid methods=oidc+jwt_secret+api_key", cfg.AuthPosture())
 }
 
 func TestLoadDotEnv_FileNotFound(t *testing.T) {

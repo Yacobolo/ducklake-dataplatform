@@ -29,6 +29,8 @@ Secure SQL query layer over DuckDB with RBAC, row-level security, and column mas
 ```bash
 # Copy and configure environment
 cp .env.sample .env
+# or generate a tailored file
+duck config init --mode hybrid --env development --output .env
 
 # Build and run
 task build
@@ -57,6 +59,7 @@ docker run -p 8080:8080 \
 ## Configuration
 
 All configuration is via environment variables. See `.env.sample` for a full reference.
+Scenario templates are also available: `.env.local-only.sample`, `.env.hybrid.sample`, `.env.oidc-only.sample`, `.env.prod.sample`.
 
 | Variable | Default | Description |
 |---|---|---|
@@ -99,7 +102,7 @@ The server supports two authentication methods:
 
 ### S3 Storage (Optional)
 
-Set `KEY_ID`, `SECRET`, `ENDPOINT`, and `REGION` to enable DuckLake catalog and ingestion features.
+Set `S3_KEY_ID`, `S3_SECRET`, `S3_ENDPOINT`, and `S3_REGION` to enable DuckLake catalog and ingestion features.
 
 ## Development
 

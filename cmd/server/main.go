@@ -80,6 +80,11 @@ func run() error {
 		logger.Warn("config warning", "detail", w)
 	}
 
+	logger.Info("config doctor", "auth_posture", cfg.AuthPosture(), "env", cfg.Env)
+	for _, w := range cfg.ConfigDoctorWarnings() {
+		logger.Warn("config doctor warning", "detail", w)
+	}
+
 	// Open DuckDB (in-memory)
 	duckDB, err := sql.Open("duckdb", "")
 	if err != nil {

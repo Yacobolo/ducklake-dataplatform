@@ -59,25 +59,27 @@ func (a *AuthConfig) HasEnabledMethod() bool {
 // ValidateMode checks auth-mode specific constraints.
 func (a *AuthConfig) ValidateMode() error {
 	mode := strings.ToLower(strings.TrimSpace(a.Mode))
+	hasOIDC := a.OIDCEnabled()
+	hasJWTSecret := strings.TrimSpace(a.JWTSecret) != ""
 	switch mode {
 	case "", "hybrid":
 		if !a.HasEnabledMethod() {
-			return fmt.Errorf("AUTH_MODE=hybrid requires at least one auth method (OIDC, JWT_SECRET, or API key)")
+			return fmt.Errorf("AUTH_MODE=hybrid requires at least one auth method (OIDC, JWT_SECRET, or API key); current: oidc=%t jwt_secret=%t api_key_enabled=%t", hasOIDC, hasJWTSecret, a.APIKeyEnabled)
 		}
 		return nil
 	case "oidc_only":
-		if !a.OIDCEnabled() {
-			return fmt.Errorf("AUTH_MODE=oidc_only requires AUTH_ISSUER_URL or AUTH_JWKS_URL")
+		if !hasOIDC {
+			return fmt.Errorf("AUTH_MODE=oidc_only requires AUTH_ISSUER_URL or AUTH_JWKS_URL; you set neither")
 		}
 		return nil
 	case "local_only":
-		if strings.TrimSpace(a.JWTSecret) == "" && !a.APIKeyEnabled {
-			return fmt.Errorf("AUTH_MODE=local_only requires JWT_SECRET or AUTH_API_KEY_ENABLED=true")
+		if !hasJWTSecret && !a.APIKeyEnabled {
+			return fmt.Errorf("AUTH_MODE=local_only requires JWT_SECRET or AUTH_API_KEY_ENABLED=true; current: jwt_secret=%t api_key_enabled=%t", hasJWTSecret, a.APIKeyEnabled)
 		}
 		return nil
 	case "api_key_only":
 		if !a.APIKeyEnabled {
-			return fmt.Errorf("AUTH_MODE=api_key_only requires AUTH_API_KEY_ENABLED=true")
+			return fmt.Errorf("AUTH_MODE=api_key_only requires AUTH_API_KEY_ENABLED=true; current: api_key_enabled=%t", a.APIKeyEnabled)
 		}
 		return nil
 	default:
@@ -186,20 +188,20 @@ func LoadFromEnv() (*Config, error) {
 		}
 	}
 
-	// S3 fields are optional — only set if present
-	if v := os.Getenv("KEY_ID"); v != "" {
+	// S3 fields are optional — only set if present.
+	if v := os.Getenv("S3_KEY_ID"); v != "" {
 		cfg.S3KeyID = &v
 	}
-	if v := os.Getenv("SECRET"); v != "" {
+	if v := os.Getenv("S3_SECRET"); v != "" {
 		cfg.S3Secret = &v
 	}
-	if v := os.Getenv("ENDPOINT"); v != "" {
+	if v := os.Getenv("S3_ENDPOINT"); v != "" {
 		cfg.S3Endpoint = &v
 	}
-	if v := os.Getenv("REGION"); v != "" {
+	if v := os.Getenv("S3_REGION"); v != "" {
 		cfg.S3Region = &v
 	}
-	if v := os.Getenv("BUCKET"); v != "" {
+	if v := os.Getenv("S3_BUCKET"); v != "" {
 		cfg.S3Bucket = &v
 	}
 
@@ -342,6 +344,50 @@ func compactNonEmpty(values []string) []string {
 		}
 	}
 	return out
+}
+
+// AuthPosture returns a concise description of active auth posture.
+func (c *Config) AuthPosture() string {
+	mode := strings.ToLower(strings.TrimSpace(c.Auth.Mode))
+	if mode == "" {
+		mode = "hybrid"
+	}
+	methods := make([]string, 0, 3)
+	if c.Auth.OIDCEnabled() {
+		methods = append(methods, "oidc")
+	}
+	if strings.TrimSpace(c.Auth.JWTSecret) != "" {
+		methods = append(methods, "jwt_secret")
+	}
+	if c.Auth.APIKeyEnabled {
+		methods = append(methods, "api_key")
+	}
+	if len(methods) == 0 {
+		methods = append(methods, "none")
+	}
+	return fmt.Sprintf("mode=%s methods=%s", mode, strings.Join(methods, "+"))
+}
+
+// ConfigDoctorWarnings returns safety findings that operators should address.
+func (c *Config) ConfigDoctorWarnings() []string {
+	warnings := make([]string, 0, 4)
+	if c.EncryptionKey == "0000000000000000000000000000000000000000000000000000000000000000" {
+		warnings = append(warnings, "ENCRYPTION_KEY uses insecure default; set a 64-char hex key")
+	}
+	if len(c.CORSAllowedOrigins) == 1 && c.CORSAllowedOrigins[0] == "*" {
+		warnings = append(warnings, "CORS_ALLOWED_ORIGINS is wildcard (*)")
+	}
+	if c.TLSCertFile == "" || c.TLSKeyFile == "" {
+		if c.AllowInsecureHTTP {
+			warnings = append(warnings, "TLS is disabled; ALLOW_INSECURE_HTTP=true")
+		} else {
+			warnings = append(warnings, "TLS is disabled; set TLS_CERT_FILE and TLS_KEY_FILE")
+		}
+	}
+	if !c.Auth.HasEnabledMethod() {
+		warnings = append(warnings, "no auth method enabled")
+	}
+	return warnings
 }
 
 // LoadDotEnv reads a .env file and sets any variables not already in the environment.
