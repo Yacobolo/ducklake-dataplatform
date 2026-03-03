@@ -150,6 +150,7 @@ func newRootCmd() *cobra.Command {
 	rootCmd.AddCommand(newVersionCmd())
 	rootCmd.AddCommand(newConfigCmd())
 	rootCmd.AddCommand(newAuthCmd(client))
+	rootCmd.AddCommand(newInitCmd(client))
 
 	// Declarative configuration commands
 	rootCmd.AddCommand(newPlanCmd(client))
