@@ -153,6 +153,69 @@ func TestAuth_UIIgnoresTokenCookie_E2E(t *testing.T) {
 	assert.Contains(t, resp.Header.Get("Location"), "/ui/login")
 }
 
+func TestAuth_AdminRevokeAllSessionsAndStats_E2E(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{AuthMode: "local_only"})
+
+	bootstrapTokenResp := doRequest(t, "POST", env.Server.URL+"/v1/auth/bootstrap/tokens", env.Keys.Admin, map[string]interface{}{"ttl_seconds": 300})
+	require.Equal(t, 201, bootstrapTokenResp.StatusCode)
+	var bootstrapTokenPayload map[string]interface{}
+	decodeJSON(t, bootstrapTokenResp, &bootstrapTokenPayload)
+	bootstrapToken, _ := bootstrapTokenPayload["bootstrap_token"].(string)
+	require.NotEmpty(t, bootstrapToken)
+
+	bootstrapResp := doRequest(t, "POST", env.Server.URL+"/v1/auth/bootstrap/complete", "", map[string]interface{}{
+		"username":        "opsadmin",
+		"password":        "super-secure-password",
+		"principal_name":  "opsadmin",
+		"bootstrap_token": bootstrapToken,
+	})
+	require.Equal(t, 201, bootstrapResp.StatusCode)
+	var bootstrapPayload map[string]interface{}
+	decodeJSON(t, bootstrapResp, &bootstrapPayload)
+	principal, ok := bootstrapPayload["principal"].(map[string]interface{})
+	require.True(t, ok)
+	principalID, _ := principal["id"].(string)
+	require.NotEmpty(t, principalID)
+
+	loginResp := doFormRequest(t, http.MethodPost, env.Server.URL+"/ui/login", url.Values{
+		"username": []string{"opsadmin"},
+		"password": []string{"super-secure-password"},
+	}, nil)
+	require.Equal(t, http.StatusSeeOther, loginResp.StatusCode)
+	var sessionCookie *http.Cookie
+	for _, c := range loginResp.Cookies() {
+		if c.Name == "ui_session" {
+			sessionCookie = c
+			break
+		}
+	}
+	require.NotNil(t, sessionCookie)
+	_ = loginResp.Body.Close()
+
+	statsBefore := doRequest(t, http.MethodGet, env.Server.URL+"/v1/auth/sessions/stats", env.Keys.Admin, nil)
+	require.Equal(t, 200, statsBefore.StatusCode)
+	var beforePayload map[string]interface{}
+	decodeJSON(t, statsBefore, &beforePayload)
+	activeBefore, _ := beforePayload["active_sessions"].(float64)
+	assert.GreaterOrEqual(t, int(activeBefore), 1)
+
+	revokeResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/auth/sessions/revoke-all", env.Keys.Admin, map[string]interface{}{"principal_id": principalID})
+	require.Equal(t, http.StatusNoContent, revokeResp.StatusCode)
+	_ = revokeResp.Body.Close()
+
+	uiResp := doRequestWithCookies(t, http.MethodGet, env.Server.URL+"/ui/", nil, []*http.Cookie{sessionCookie})
+	defer uiResp.Body.Close() //nolint:errcheck
+	assert.Equal(t, http.StatusSeeOther, uiResp.StatusCode)
+	assert.Contains(t, uiResp.Header.Get("Location"), "/ui/login")
+
+	statsAfter := doRequest(t, http.MethodGet, env.Server.URL+"/v1/auth/sessions/stats", env.Keys.Admin, nil)
+	require.Equal(t, 200, statsAfter.StatusCode)
+	var afterPayload map[string]interface{}
+	decodeJSON(t, statsAfter, &afterPayload)
+	revokedAll, _ := afterPayload["revoked_all_total"].(float64)
+	assert.GreaterOrEqual(t, int(revokedAll), 1)
+}
+
 func doFormRequest(t *testing.T, method, requestURL string, form url.Values, cookies []*http.Cookie) *http.Response {
 	t.Helper()
 	req, err := http.NewRequestWithContext(ctx, method, requestURL, strings.NewReader(form.Encode()))

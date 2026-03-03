@@ -52,6 +52,31 @@ func TestSessionService_ReapExpired(t *testing.T) {
 	assert.Equal(t, int64(1), count)
 }
 
+func TestSessionService_Stats(t *testing.T) {
+	principals := newStubPrincipalRepo()
+	p, err := principals.Create(context.Background(), &domain.Principal{Name: "stats-user", Type: "user"})
+	require.NoError(t, err)
+
+	repo := newInMemorySessionRepo()
+	svc := NewSessionService(principals, repo, &stubAuditRepo{}, 5*time.Minute, time.Hour)
+
+	token, _, err := svc.CreateForPrincipal(context.Background(), p.ID, "local", "ua", "127.0.0.1")
+	require.NoError(t, err)
+
+	_, _, err = svc.Resolve(context.Background(), token)
+	require.NoError(t, err)
+
+	require.NoError(t, svc.RevokeAll(context.Background(), p.ID))
+
+	stats, err := svc.Stats(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), stats.CreatedTotal)
+	assert.Equal(t, int64(1), stats.ResolvedTotal)
+	assert.Equal(t, int64(0), stats.ResolveFailed)
+	assert.Equal(t, int64(1), stats.RevokedAllTotal)
+	assert.Equal(t, int64(0), stats.ActiveSessions)
+}
+
 type inMemorySessionRepo struct {
 	sessionsByID   map[string]*domain.AuthSession
 	sessionsByHash map[string]*domain.AuthSession
@@ -129,6 +154,17 @@ func (r *inMemorySessionRepo) RevokeAllForPrincipal(_ context.Context, principal
 		}
 	}
 	return nil
+}
+
+func (r *inMemorySessionRepo) CountActive(_ context.Context) (int64, error) {
+	var active int64
+	now := time.Now()
+	for _, s := range r.sessionsByID {
+		if s.RevokedAt == nil && s.ExpiresAt.After(now) && s.IdleExpiresAt.After(now) {
+			active++
+		}
+	}
+	return active, nil
 }
 
 func (r *inMemorySessionRepo) DeleteExpiredOrRevoked(_ context.Context) (int64, error) {

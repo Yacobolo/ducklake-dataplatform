@@ -116,6 +116,11 @@ Interactive `/ui` access uses an opaque `ui_session` cookie backed by server-sid
 - Operators can force logout by revoking sessions for a principal (all current browser sessions become invalid immediately).
 - API/CLI auth is separate (`/v1` bearer/API-key); revoking UI sessions does not rotate API keys or JWT signing configuration.
 
+Admin API support:
+
+- `POST /v1/auth/sessions/revoke-all` with `{"principal_id":"<id>"}` revokes all active UI sessions for that principal.
+- `GET /v1/auth/sessions/stats` returns session lifecycle counters and current active session count.
+
 ### S3 Storage (Optional)
 
 Set `S3_KEY_ID`, `S3_SECRET` (or `S3_SECRET_FILE`), `S3_ENDPOINT`, and `S3_REGION` to enable DuckLake catalog and ingestion features.

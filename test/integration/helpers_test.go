@@ -1406,7 +1406,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	apiKeySvc := security.NewAPIKeyService(apiKeyRepo, auditRepo)
 	authService := authsvc.NewService(principalRepo, localCredentialRepo, authLoginAttemptRepo, setupStateRepo, authProviderRepo, auditRepo, string(jwtSecret))
 	webSessionAuth := authsvc.NewSessionService(principalRepo, webSessionRepo, auditRepo, 30*time.Minute, 24*time.Hour)
-	authHandler := api.NewAuthHTTPHandler(authService)
+	authHandler := api.NewAuthHTTPHandler(authService, webSessionAuth)
 
 	// Optionally wire Model + Macro services
 	var modelSvc *svcmodel.Service
@@ -1520,6 +1520,8 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		r.Post("/auth/bootstrap/tokens", authHandler.CreateBootstrapToken)
 		r.Get("/auth/provider/oidc", authHandler.GetOIDCProvider)
 		r.Put("/auth/provider/oidc", authHandler.UpsertOIDCProvider)
+		r.Post("/auth/sessions/revoke-all", authHandler.RevokeAllWebSessions)
+		r.Get("/auth/sessions/stats", authHandler.GetWebSessionStats)
 		api.HandlerFromMux(strictHandler, r)
 	})
 

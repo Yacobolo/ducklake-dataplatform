@@ -98,6 +98,7 @@ type AuthSessionRepository interface {
 	Revoke(ctx context.Context, sessionID string) error
 	RevokeByHash(ctx context.Context, sessionHash string) error
 	RevokeAllForPrincipal(ctx context.Context, principalID string) error
+	CountActive(ctx context.Context) (int64, error)
 	DeleteExpiredOrRevoked(ctx context.Context) (int64, error)
 }
 

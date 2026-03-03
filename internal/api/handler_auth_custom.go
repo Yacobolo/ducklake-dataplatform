@@ -13,11 +13,12 @@ import (
 )
 
 type AuthHTTPHandler struct {
-	auth *authsvc.Service
+	auth        *authsvc.Service
+	webSessions *authsvc.SessionService
 }
 
-func NewAuthHTTPHandler(auth *authsvc.Service) *AuthHTTPHandler {
-	return &AuthHTTPHandler{auth: auth}
+func NewAuthHTTPHandler(auth *authsvc.Service, webSessions *authsvc.SessionService) *AuthHTTPHandler {
+	return &AuthHTTPHandler{auth: auth, webSessions: webSessions}
 }
 
 type bootstrapCompleteRequest struct {
@@ -44,6 +45,10 @@ type oidcProviderRequest struct {
 	ClientID     *string `json:"client_id"`
 	ClientSecret *string `json:"client_secret"`
 	Scopes       *string `json:"scopes"`
+}
+
+type revokeWebSessionsRequest struct {
+	PrincipalID string `json:"principal_id"`
 }
 
 func (h *AuthHTTPHandler) BootstrapComplete(w http.ResponseWriter, r *http.Request) {
@@ -176,6 +181,64 @@ func (h *AuthHTTPHandler) UpsertOIDCProvider(w http.ResponseWriter, r *http.Requ
 	}
 
 	writeAuthJSON(w, http.StatusNoContent, map[string]interface{}{})
+}
+
+func (h *AuthHTTPHandler) RevokeAllWebSessions(w http.ResponseWriter, r *http.Request) {
+	if !isAdminRequest(r) {
+		writeAuthError(w, http.StatusForbidden, "admin access required")
+		return
+	}
+	if h.webSessions == nil {
+		writeAuthError(w, http.StatusServiceUnavailable, "web session service unavailable")
+		return
+	}
+
+	var req revokeWebSessionsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeAuthError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	principalID := strings.TrimSpace(req.PrincipalID)
+	if principalID == "" {
+		writeAuthError(w, http.StatusBadRequest, "principal_id is required")
+		return
+	}
+
+	if err := h.webSessions.RevokeAll(r.Context(), principalID); err != nil {
+		writeAuthError(w, httpStatusFromDomainError(err), err.Error())
+		return
+	}
+
+	writeAuthJSON(w, http.StatusNoContent, map[string]interface{}{})
+}
+
+func (h *AuthHTTPHandler) GetWebSessionStats(w http.ResponseWriter, r *http.Request) {
+	if !isAdminRequest(r) {
+		writeAuthError(w, http.StatusForbidden, "admin access required")
+		return
+	}
+	if h.webSessions == nil {
+		writeAuthError(w, http.StatusServiceUnavailable, "web session service unavailable")
+		return
+	}
+
+	stats, err := h.webSessions.Stats(r.Context())
+	if err != nil {
+		writeAuthError(w, httpStatusFromDomainError(err), err.Error())
+		return
+	}
+
+	writeAuthJSON(w, http.StatusOK, map[string]interface{}{
+		"created_total":        stats.CreatedTotal,
+		"resolved_total":       stats.ResolvedTotal,
+		"resolve_failed_total": stats.ResolveFailed,
+		"revoked_total":        stats.RevokedTotal,
+		"revoked_all_total":    stats.RevokedAllTotal,
+		"reaped_total":         stats.ReapedTotal,
+		"active_sessions":      stats.ActiveSessions,
+		"idle_ttl_seconds":     stats.IdleTTLSeconds,
+		"absolute_ttl_seconds": stats.AbsoluteTTLSeconds,
+	})
 }
 
 func isAdminRequest(r *http.Request) bool {

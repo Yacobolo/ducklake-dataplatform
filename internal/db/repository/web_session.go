@@ -65,6 +65,14 @@ func (r *WebSessionRepo) RevokeAllForPrincipal(ctx context.Context, principalID 
 	return mapDBError(r.q.RevokeWebSessionsByPrincipal(ctx, principalID))
 }
 
+func (r *WebSessionRepo) CountActive(ctx context.Context) (int64, error) {
+	count, err := r.q.CountActiveWebSessions(ctx)
+	if err != nil {
+		return 0, mapDBError(err)
+	}
+	return count, nil
+}
+
 func (r *WebSessionRepo) DeleteExpiredOrRevoked(ctx context.Context) (int64, error) {
 	count, err := r.q.DeleteExpiredOrRevokedWebSessions(ctx)
 	if err != nil {

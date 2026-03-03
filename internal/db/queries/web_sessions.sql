@@ -36,6 +36,13 @@ SET revoked_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
 WHERE principal_id = ?
   AND revoked_at IS NULL;
 
+-- name: CountActiveWebSessions :one
+SELECT COUNT(*)
+FROM web_sessions
+WHERE revoked_at IS NULL
+  AND expires_at > CURRENT_TIMESTAMP
+  AND idle_expires_at > CURRENT_TIMESTAMP;
+
 -- name: DeleteExpiredOrRevokedWebSessions :execrows
 DELETE FROM web_sessions
 WHERE revoked_at IS NOT NULL
