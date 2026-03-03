@@ -77,6 +77,61 @@ func TestSessionService_Stats(t *testing.T) {
 	assert.Equal(t, int64(0), stats.ActiveSessions)
 }
 
+func TestSessionService_ResolveRejectsIdleExpired(t *testing.T) {
+	principals := newStubPrincipalRepo()
+	p, err := principals.Create(context.Background(), &domain.Principal{Name: "idle-expired-user", Type: "user"})
+	require.NoError(t, err)
+
+	repo := newInMemorySessionRepo()
+	svc := NewSessionService(principals, repo, &stubAuditRepo{}, 5*time.Minute, time.Hour)
+
+	token, session, err := svc.CreateForPrincipal(context.Background(), p.ID, "local", "ua", "127.0.0.1")
+	require.NoError(t, err)
+	repo.sessionsByID[session.ID].IdleExpiresAt = time.Now().Add(-time.Second)
+
+	_, _, err = svc.Resolve(context.Background(), token)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid web session")
+}
+
+func TestSessionService_ResolveRejectsAbsoluteExpired(t *testing.T) {
+	principals := newStubPrincipalRepo()
+	p, err := principals.Create(context.Background(), &domain.Principal{Name: "absolute-expired-user", Type: "user"})
+	require.NoError(t, err)
+
+	repo := newInMemorySessionRepo()
+	svc := NewSessionService(principals, repo, &stubAuditRepo{}, 5*time.Minute, time.Hour)
+
+	token, session, err := svc.CreateForPrincipal(context.Background(), p.ID, "local", "ua", "127.0.0.1")
+	require.NoError(t, err)
+	repo.sessionsByID[session.ID].ExpiresAt = time.Now().Add(-time.Second)
+
+	_, _, err = svc.Resolve(context.Background(), token)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid web session")
+}
+
+func TestSessionService_ResolveTouchAudited(t *testing.T) {
+	principals := newStubPrincipalRepo()
+	p, err := principals.Create(context.Background(), &domain.Principal{Name: "touch-user", Type: "user"})
+	require.NoError(t, err)
+
+	audit := &collectingAuditRepo{}
+	repo := newInMemorySessionRepo()
+	svc := NewSessionService(principals, repo, audit, 5*time.Minute, time.Hour)
+
+	token, session, err := svc.CreateForPrincipal(context.Background(), p.ID, "local", "ua", "127.0.0.1")
+	require.NoError(t, err)
+
+	// Force touch path.
+	repo.sessionsByID[session.ID].LastSeenAt = time.Now().Add(-2 * time.Minute)
+
+	_, _, err = svc.Resolve(context.Background(), token)
+	require.NoError(t, err)
+
+	assert.Contains(t, audit.actions(), "AUTH_WEB_SESSION_TOUCH")
+}
+
 type inMemorySessionRepo struct {
 	sessionsByID   map[string]*domain.AuthSession
 	sessionsByHash map[string]*domain.AuthSession
@@ -178,4 +233,30 @@ func (r *inMemorySessionRepo) DeleteExpiredOrRevoked(_ context.Context) (int64, 
 		}
 	}
 	return deleted, nil
+}
+
+type collectingAuditRepo struct {
+	entries []domain.AuditEntry
+}
+
+func (c *collectingAuditRepo) Insert(_ context.Context, e *domain.AuditEntry) error {
+	if e == nil {
+		return nil
+	}
+	c.entries = append(c.entries, *e)
+	return nil
+}
+
+func (c *collectingAuditRepo) List(_ context.Context, _ domain.AuditFilter) ([]domain.AuditEntry, int64, error) {
+	out := make([]domain.AuditEntry, len(c.entries))
+	copy(out, c.entries)
+	return out, int64(len(out)), nil
+}
+
+func (c *collectingAuditRepo) actions() []string {
+	out := make([]string, 0, len(c.entries))
+	for _, e := range c.entries {
+		out = append(out, e.Action)
+	}
+	return out
 }

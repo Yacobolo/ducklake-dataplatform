@@ -120,6 +120,7 @@ func (s *SessionService) Resolve(ctx context.Context, token string) (*domain.Pri
 	}
 
 	now := time.Now()
+	touched := false
 	if session.RevokedAt != nil || !session.ExpiresAt.After(now) || !session.IdleExpiresAt.After(now) {
 		s.resolveFailed.Add(1)
 		return nil, nil, domain.ErrAccessDenied("expired web session")
@@ -132,12 +133,16 @@ func (s *SessionService) Resolve(ctx context.Context, token string) (*domain.Pri
 		}
 		session.LastSeenAt = now
 		session.IdleExpiresAt = newIdle
+		touched = true
 	}
 
 	principal, err := s.principals.GetByID(ctx, session.PrincipalID)
 	if err != nil {
 		s.resolveFailed.Add(1)
 		return nil, nil, fmt.Errorf("resolve principal for session: %w", err)
+	}
+	if touched && s.audit != nil {
+		_ = s.audit.Insert(ctx, &domain.AuditEntry{PrincipalName: principal.Name, Action: "AUTH_WEB_SESSION_TOUCH", Status: "ALLOWED"})
 	}
 	s.resolvedTotal.Add(1)
 
