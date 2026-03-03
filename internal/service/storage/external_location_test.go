@@ -4,6 +4,7 @@ package storage
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -163,6 +164,63 @@ func TestExternalLocationService_Create(t *testing.T) {
 		_, err := svc.Create(ctxWithPrincipal("admin_user"), "admin_user", validReq)
 
 		require.Error(t, err)
+	})
+
+	t.Run("same_credential_multiple_locations_reuses_secret", func(t *testing.T) {
+		duckDB := testDuckDB(t)
+
+		credRepo := &mockStorageCredentialRepo{
+			GetByNameFn: func(_ context.Context, _ string) (*domain.StorageCredential, error) {
+				return testCred, nil
+			},
+		}
+
+		createCount := 0
+		deleteCalls := 0
+		locRepo := &mockExternalLocationRepo{
+			CreateFn: func(_ context.Context, loc *domain.ExternalLocation) (*domain.ExternalLocation, error) {
+				createCount++
+				return &domain.ExternalLocation{
+					ID:             fmt.Sprintf("%d", createCount),
+					Name:           loc.Name,
+					URL:            loc.URL,
+					CredentialName: loc.CredentialName,
+					StorageType:    loc.StorageType,
+					Owner:          loc.Owner,
+					CreatedAt:      time.Now(),
+					UpdatedAt:      time.Now(),
+				}, nil
+			},
+			DeleteFn: func(_ context.Context, _ string) error {
+				deleteCalls++
+				return nil
+			},
+		}
+
+		auth := &mockAuthService{
+			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ string, _ string) (bool, error) {
+				return true, nil
+			},
+		}
+
+		svc := NewExternalLocationService(locRepo, credRepo, auth, &mockAuditRepo{}, testSecretManager(duckDB), discardLogger())
+
+		_, err := svc.Create(ctxWithPrincipal("admin_user"), "admin_user", domain.CreateExternalLocationRequest{
+			Name:           "loc-landing",
+			URL:            "s3://my-bucket/landing/",
+			CredentialName: "my-cred",
+			StorageType:    domain.StorageTypeS3,
+		})
+		require.NoError(t, err)
+
+		_, err = svc.Create(ctxWithPrincipal("admin_user"), "admin_user", domain.CreateExternalLocationRequest{
+			Name:           "loc-bronze",
+			URL:            "s3://my-bucket/bronze/",
+			CredentialName: "my-cred",
+			StorageType:    domain.StorageTypeS3,
+		})
+		require.NoError(t, err)
+		assert.Equal(t, 0, deleteCalls, "second location should not rollback due to existing credential secret")
 	})
 }
 

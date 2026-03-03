@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"duck-demo/internal/domain"
 	"duck-demo/internal/service/auditutil"
@@ -195,9 +196,11 @@ func (s *ExternalLocationService) requirePrivilege(ctx context.Context, principa
 // createDuckDBSecret dispatches to the correct engine secret creator based on
 // the credential's type (S3, Azure, or GCS).
 func (s *ExternalLocationService) createDuckDBSecret(ctx context.Context, secretName string, cred *domain.StorageCredential) error {
+	var err error
+
 	switch cred.CredentialType {
 	case domain.CredentialTypeS3:
-		return s.secrets.CreateS3Secret(ctx, secretName,
+		err = s.secrets.CreateS3Secret(ctx, secretName,
 			cred.KeyID, cred.Secret, cred.Endpoint, cred.Region, cred.URLStyle)
 	case domain.CredentialTypeAzure:
 		// Build connection string if using account key (no service principal secret support in DuckDB yet)
@@ -205,13 +208,30 @@ func (s *ExternalLocationService) createDuckDBSecret(ctx context.Context, secret
 		if cred.AzureAccountKey != "" {
 			connectionString = fmt.Sprintf("AccountName=%s;AccountKey=%s", cred.AzureAccountName, cred.AzureAccountKey)
 		}
-		return s.secrets.CreateAzureSecret(ctx, secretName,
+		err = s.secrets.CreateAzureSecret(ctx, secretName,
 			cred.AzureAccountName, cred.AzureAccountKey, connectionString)
 	case domain.CredentialTypeGCS:
-		return s.secrets.CreateGCSSecret(ctx, secretName, cred.GCSKeyFilePath)
+		err = s.secrets.CreateGCSSecret(ctx, secretName, cred.GCSKeyFilePath)
 	default:
 		return fmt.Errorf("unsupported credential type %q", cred.CredentialType)
 	}
+
+	if err != nil {
+		if isSecretAlreadyExistsError(err) {
+			return nil
+		}
+		return err
+	}
+
+	return nil
+}
+
+func isSecretAlreadyExistsError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "secret") && strings.Contains(msg, "already exists")
 }
 
 func (s *ExternalLocationService) logAudit(ctx context.Context, principal, action, detail string) {
