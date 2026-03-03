@@ -3,6 +3,7 @@
 This setup deploys `control-plane` + `compute-agent` + `postgres` with:
 
 - `caddy` for HTTPS termination and reverse proxy
+- production-mode control-plane with downstream proxy trust enabled (`TRUST_DOWNSTREAM_PROXY=true`)
 
 Deploys are deterministic and CI-driven (no timer-based auto-updater).
 

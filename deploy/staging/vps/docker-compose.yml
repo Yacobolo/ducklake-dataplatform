@@ -30,6 +30,7 @@ services:
       META_DB_PATH: "/data/ducklake_meta.sqlite"
       LOG_LEVEL: "info"
       ENV: "production"
+      TRUST_DOWNSTREAM_PROXY: "true"
       CORS_ALLOWED_ORIGINS: "${CORS_ALLOWED_ORIGINS}"
       JWT_SECRET: "${JWT_SECRET}"
       ENCRYPTION_KEY: "${ENCRYPTION_KEY}"
