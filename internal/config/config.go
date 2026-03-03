@@ -32,6 +32,12 @@ type AuthConfig struct {
 	// JIT provisioning
 	NameClaim      string // JWT claim for principal name (default: "email")
 	BootstrapAdmin string // External ID (sub) of the bootstrap admin user
+
+	// UI web-session settings
+	WebSessionIdleTTL        time.Duration // idle timeout for browser sessions (default: 30m)
+	WebSessionAbsoluteTTL    time.Duration // max absolute lifetime for browser sessions (default: 24h)
+	WebSessionCookieName     string        // cookie name for UI sessions (default: ui_session)
+	WebSessionReaperInterval time.Duration // reaper interval for expired/revoked sessions (default: 5m)
 }
 
 // OIDCEnabled returns true when an external identity provider is configured.
@@ -46,6 +52,26 @@ func (a *AuthConfig) Validate() error {
 	}
 	if a.IssuerURL != "" && a.Audience == "" {
 		return fmt.Errorf("AUTH_AUDIENCE is required when AUTH_ISSUER_URL is set")
+	}
+	return nil
+}
+
+// ValidateWebSessions checks UI session-specific settings.
+func (a *AuthConfig) ValidateWebSessions() error {
+	if a.WebSessionIdleTTL <= 0 {
+		return fmt.Errorf("AUTH_WEB_SESSION_IDLE_TTL must be > 0")
+	}
+	if a.WebSessionAbsoluteTTL <= 0 {
+		return fmt.Errorf("AUTH_WEB_SESSION_ABSOLUTE_TTL must be > 0")
+	}
+	if a.WebSessionAbsoluteTTL < a.WebSessionIdleTTL {
+		return fmt.Errorf("AUTH_WEB_SESSION_ABSOLUTE_TTL must be >= AUTH_WEB_SESSION_IDLE_TTL")
+	}
+	if a.WebSessionReaperInterval <= 0 {
+		return fmt.Errorf("AUTH_WEB_SESSION_REAPER_INTERVAL must be > 0")
+	}
+	if strings.TrimSpace(a.WebSessionCookieName) == "" {
+		return fmt.Errorf("AUTH_WEB_SESSION_COOKIE_NAME must not be empty")
 	}
 	return nil
 }
@@ -245,15 +271,16 @@ func LoadFromEnv() (*Config, error) {
 
 	// Auth config
 	cfg.Auth = AuthConfig{
-		Mode:           os.Getenv("AUTH_MODE"),
-		IssuerURL:      os.Getenv("AUTH_ISSUER_URL"),
-		JWKSURL:        os.Getenv("AUTH_JWKS_URL"),
-		JWTSecret:      jwtSecret,
-		Audience:       os.Getenv("AUTH_AUDIENCE"),
-		APIKeyEnabled:  true,
-		APIKeyHeader:   os.Getenv("AUTH_API_KEY_HEADER"),
-		NameClaim:      os.Getenv("AUTH_NAME_CLAIM"),
-		BootstrapAdmin: os.Getenv("AUTH_BOOTSTRAP_ADMIN"),
+		Mode:                 os.Getenv("AUTH_MODE"),
+		IssuerURL:            os.Getenv("AUTH_ISSUER_URL"),
+		JWKSURL:              os.Getenv("AUTH_JWKS_URL"),
+		JWTSecret:            jwtSecret,
+		Audience:             os.Getenv("AUTH_AUDIENCE"),
+		APIKeyEnabled:        true,
+		APIKeyHeader:         os.Getenv("AUTH_API_KEY_HEADER"),
+		NameClaim:            os.Getenv("AUTH_NAME_CLAIM"),
+		BootstrapAdmin:       os.Getenv("AUTH_BOOTSTRAP_ADMIN"),
+		WebSessionCookieName: os.Getenv("AUTH_WEB_SESSION_COOKIE_NAME"),
 	}
 
 	if v := os.Getenv("AUTH_ALLOWED_ISSUERS"); v != "" {
@@ -263,6 +290,27 @@ func LoadFromEnv() (*Config, error) {
 		if d, err := time.ParseDuration(v); err == nil {
 			cfg.Auth.JWKSCacheTTL = d
 		}
+	}
+	if v := os.Getenv("AUTH_WEB_SESSION_IDLE_TTL"); strings.TrimSpace(v) != "" {
+		d, parseErr := time.ParseDuration(v)
+		if parseErr != nil {
+			return nil, fmt.Errorf("parse AUTH_WEB_SESSION_IDLE_TTL: %w", parseErr)
+		}
+		cfg.Auth.WebSessionIdleTTL = d
+	}
+	if v := os.Getenv("AUTH_WEB_SESSION_ABSOLUTE_TTL"); strings.TrimSpace(v) != "" {
+		d, parseErr := time.ParseDuration(v)
+		if parseErr != nil {
+			return nil, fmt.Errorf("parse AUTH_WEB_SESSION_ABSOLUTE_TTL: %w", parseErr)
+		}
+		cfg.Auth.WebSessionAbsoluteTTL = d
+	}
+	if v := os.Getenv("AUTH_WEB_SESSION_REAPER_INTERVAL"); strings.TrimSpace(v) != "" {
+		d, parseErr := time.ParseDuration(v)
+		if parseErr != nil {
+			return nil, fmt.Errorf("parse AUTH_WEB_SESSION_REAPER_INTERVAL: %w", parseErr)
+		}
+		cfg.Auth.WebSessionReaperInterval = d
 	}
 	if os.Getenv("AUTH_API_KEY_ENABLED") == "false" {
 		cfg.Auth.APIKeyEnabled = false
@@ -280,6 +328,18 @@ func LoadFromEnv() (*Config, error) {
 	}
 	if cfg.Auth.NameClaim == "" {
 		cfg.Auth.NameClaim = "email"
+	}
+	if cfg.Auth.WebSessionIdleTTL == 0 {
+		cfg.Auth.WebSessionIdleTTL = 30 * time.Minute
+	}
+	if cfg.Auth.WebSessionAbsoluteTTL == 0 {
+		cfg.Auth.WebSessionAbsoluteTTL = 24 * time.Hour
+	}
+	if cfg.Auth.WebSessionCookieName == "" {
+		cfg.Auth.WebSessionCookieName = "ui_session"
+	}
+	if cfg.Auth.WebSessionReaperInterval == 0 {
+		cfg.Auth.WebSessionReaperInterval = 5 * time.Minute
 	}
 
 	// Defaults
@@ -319,6 +379,9 @@ func LoadFromEnv() (*Config, error) {
 	}
 
 	if err := cfg.Auth.ValidateMode(); err != nil {
+		return nil, err
+	}
+	if err := cfg.Auth.ValidateWebSessions(); err != nil {
 		return nil, err
 	}
 	cfg.Warnings = append(cfg.Warnings, cfg.modeConflictWarnings()...)

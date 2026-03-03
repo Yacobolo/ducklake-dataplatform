@@ -131,6 +131,20 @@ func (s *Service) Bootstrap(ctx context.Context, req BootstrapRequest) (*LoginRe
 }
 
 func (s *Service) Login(ctx context.Context, username, password, ipAddress string) (*LoginResult, error) {
+	p, err := s.AuthenticateLocal(ctx, username, password, ipAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	token, err := s.issueJWT(p)
+	if err != nil {
+		return nil, err
+	}
+
+	return &LoginResult{Token: token, Principal: p}, nil
+}
+
+func (s *Service) AuthenticateLocal(ctx context.Context, username, password, ipAddress string) (*domain.Principal, error) {
 	username = strings.ToLower(strings.TrimSpace(username))
 	if username == "" || password == "" {
 		return nil, domain.ErrValidation("username and password are required")
@@ -162,18 +176,13 @@ func (s *Service) Login(ctx context.Context, username, password, ipAddress strin
 	}
 	s.recordLoginAttempt(ctx, username, ipAddress, true, nil)
 
-	token, err := s.issueJWT(p)
-	if err != nil {
-		return nil, err
-	}
-
 	_ = s.audit.Insert(ctx, &domain.AuditEntry{
 		PrincipalName: p.Name,
 		Action:        "AUTH_LOCAL_LOGIN",
 		Status:        "ALLOWED",
 	})
 
-	return &LoginResult{Token: token, Principal: p}, nil
+	return p, nil
 }
 
 func (s *Service) isRateLimited(ctx context.Context, username, ipAddress string) bool {

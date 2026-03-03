@@ -106,7 +106,39 @@ func setupAuthHandler(t *testing.T) (*AuthHTTPHandler, *authsvc.Service) {
 	providers := &apiStubProviderRepo{cfg: &domain.AuthProviderConfig{}}
 	audit := &apiStubAuditRepo{}
 	svc := authsvc.NewService(principals, credentials, loginAttempts, setupState, providers, audit, "handler-test-secret")
-	return NewAuthHTTPHandler(svc), svc
+	webSessions := authsvc.NewSessionService(principals, newAPIStubWebSessionRepo(), audit, 30*time.Minute, 24*time.Hour)
+	return NewAuthHTTPHandler(svc, webSessions), svc
+}
+
+func TestAuthHTTPHandler_WebSessionAdminEndpoints(t *testing.T) {
+	h, svc := setupAuthHandler(t)
+
+	bootstrap, err := svc.Bootstrap(context.Background(), authsvc.BootstrapRequest{Username: "admin", Password: "super-secure-password", PrincipalName: "admin"})
+	require.NoError(t, err)
+
+	nonAdminReq := httptest.NewRequest(http.MethodGet, "/v1/auth/sessions/stats", nil)
+	nonAdminReq = nonAdminReq.WithContext(domain.WithPrincipal(nonAdminReq.Context(), domain.ContextPrincipal{Name: "user", IsAdmin: false, Type: "user"}))
+	nonAdminRR := httptest.NewRecorder()
+	h.GetWebSessionStats(nonAdminRR, nonAdminReq)
+	require.Equal(t, http.StatusForbidden, nonAdminRR.Code)
+
+	revokeBody, err := json.Marshal(map[string]string{"principal_id": bootstrap.Principal.ID})
+	require.NoError(t, err)
+	revokeReq := httptest.NewRequest(http.MethodPost, "/v1/auth/sessions/revoke-all", bytes.NewReader(revokeBody))
+	revokeReq = revokeReq.WithContext(domain.WithPrincipal(revokeReq.Context(), domain.ContextPrincipal{Name: "admin", IsAdmin: true, Type: "user"}))
+	revokeRR := httptest.NewRecorder()
+	h.RevokeAllWebSessions(revokeRR, revokeReq)
+	require.Equal(t, http.StatusNoContent, revokeRR.Code)
+
+	statsReq := httptest.NewRequest(http.MethodGet, "/v1/auth/sessions/stats", nil)
+	statsReq = statsReq.WithContext(domain.WithPrincipal(statsReq.Context(), domain.ContextPrincipal{Name: "admin", IsAdmin: true, Type: "user"}))
+	statsRR := httptest.NewRecorder()
+	h.GetWebSessionStats(statsRR, statsReq)
+	require.Equal(t, http.StatusOK, statsRR.Code)
+	var payload map[string]interface{}
+	require.NoError(t, json.Unmarshal(statsRR.Body.Bytes(), &payload))
+	assert.Contains(t, payload, "active_sessions")
+	assert.Contains(t, payload, "revoked_all_total")
 }
 
 type apiStubPrincipalRepo struct {
@@ -255,4 +287,100 @@ func (s *apiStubAuditRepo) Insert(_ context.Context, _ *domain.AuditEntry) error
 
 func (s *apiStubAuditRepo) List(_ context.Context, _ domain.AuditFilter) ([]domain.AuditEntry, int64, error) {
 	return nil, 0, nil
+}
+
+type apiStubWebSessionRepo struct {
+	nextID   int
+	sessions map[string]*domain.AuthSession
+	byHash   map[string]*domain.AuthSession
+}
+
+func newAPIStubWebSessionRepo() *apiStubWebSessionRepo {
+	return &apiStubWebSessionRepo{nextID: 1, sessions: map[string]*domain.AuthSession{}, byHash: map[string]*domain.AuthSession{}}
+}
+
+func (r *apiStubWebSessionRepo) Create(_ context.Context, session *domain.AuthSession) (*domain.AuthSession, error) {
+	cp := *session
+	cp.ID = fmt.Sprintf("ws-%d", r.nextID)
+	r.nextID++
+	now := time.Now()
+	cp.CreatedAt = now
+	cp.UpdatedAt = now
+	cp.LastSeenAt = now
+	r.sessions[cp.ID] = &cp
+	r.byHash[cp.SessionHash] = &cp
+	return &cp, nil
+}
+
+func (r *apiStubWebSessionRepo) GetActiveByHash(_ context.Context, sessionHash string) (*domain.AuthSession, error) {
+	s, ok := r.byHash[sessionHash]
+	if !ok || s.RevokedAt != nil || !s.ExpiresAt.After(time.Now()) || !s.IdleExpiresAt.After(time.Now()) {
+		return nil, domain.ErrNotFound("session not found")
+	}
+	cp := *s
+	return &cp, nil
+}
+
+func (r *apiStubWebSessionRepo) Touch(_ context.Context, sessionID string, idleExpiresAt time.Time) error {
+	s, ok := r.sessions[sessionID]
+	if !ok {
+		return domain.ErrNotFound("session not found")
+	}
+	s.IdleExpiresAt = idleExpiresAt
+	s.LastSeenAt = time.Now()
+	return nil
+}
+
+func (r *apiStubWebSessionRepo) Revoke(_ context.Context, sessionID string) error {
+	s, ok := r.sessions[sessionID]
+	if !ok {
+		return domain.ErrNotFound("session not found")
+	}
+	now := time.Now()
+	s.RevokedAt = &now
+	return nil
+}
+
+func (r *apiStubWebSessionRepo) RevokeByHash(_ context.Context, sessionHash string) error {
+	s, ok := r.byHash[sessionHash]
+	if !ok {
+		return domain.ErrNotFound("session not found")
+	}
+	now := time.Now()
+	s.RevokedAt = &now
+	return nil
+}
+
+func (r *apiStubWebSessionRepo) RevokeAllForPrincipal(_ context.Context, principalID string) error {
+	now := time.Now()
+	for _, s := range r.sessions {
+		if s.PrincipalID == principalID {
+			s.RevokedAt = &now
+		}
+	}
+	return nil
+}
+
+func (r *apiStubWebSessionRepo) CountActive(_ context.Context) (int64, error) {
+	var count int64
+	now := time.Now()
+	for _, s := range r.sessions {
+		if s.RevokedAt == nil && s.ExpiresAt.After(now) && s.IdleExpiresAt.After(now) {
+			count++
+		}
+	}
+	return count, nil
+}
+
+func (r *apiStubWebSessionRepo) DeleteExpiredOrRevoked(_ context.Context) (int64, error) {
+	var deleted int64
+	now := time.Now()
+	for id, s := range r.sessions {
+		if s.RevokedAt != nil || !s.ExpiresAt.After(now) || !s.IdleExpiresAt.After(now) {
+			delete(r.sessions, id)
+			delete(r.byHash, s.SessionHash)
+			deleted++
+		}
+	}
+	return deleted, nil
 }

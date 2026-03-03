@@ -198,7 +198,7 @@ func run() error {
 
 	// Create strict handler wrapper
 	strictHandler := api.NewStrictHandler(handler, nil)
-	authHandler := api.NewAuthHTTPHandler(svc.Auth)
+	authHandler := api.NewAuthHTTPHandler(svc.Auth, svc.WebSessionAuth)
 
 	// Setup Chi router
 	r := chi.NewRouter()
@@ -332,6 +332,8 @@ func run() error {
 		r.Post("/auth/bootstrap/tokens", authHandler.CreateBootstrapToken)
 		r.Get("/auth/provider/oidc", authHandler.GetOIDCProvider)
 		r.Put("/auth/provider/oidc", authHandler.UpsertOIDCProvider)
+		r.Post("/auth/sessions/revoke-all", authHandler.RevokeAllWebSessions)
+		r.Get("/auth/sessions/stats", authHandler.GetWebSessionStats)
 		api.HandlerFromMux(strictHandler, r)
 	})
 
@@ -346,12 +348,13 @@ func run() error {
 		svc.Macro,
 		svc.Model,
 		svc.Auth,
+		svc.WebSessionAuth,
+		svc.Principal,
 		cfg.Auth,
 		cfg.IsProduction(),
 	)
-	uiAuth := authenticator.MiddlewareWithUnauthorized(ui.RedirectToLogin)
 	r.Route("/ui", func(r chi.Router) {
-		ui.MountRoutes(r, uiHandler, uiAuth)
+		ui.MountRoutes(r, uiHandler)
 	})
 
 	// Start server
@@ -367,6 +370,25 @@ func run() error {
 
 	// Start session reaper
 	go application.Services.SessionManager.ReapIdle(ctx)
+	go func() {
+		ticker := time.NewTicker(cfg.Auth.WebSessionReaperInterval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				count, reapErr := application.Services.WebSessionAuth.ReapExpired(ctx)
+				if reapErr != nil {
+					logger.Warn("web session reaper failed", "error", reapErr)
+					continue
+				}
+				if count > 0 {
+					logger.Info("web session reaper removed stale sessions", "count", count)
+				}
+			}
+		}
+	}()
 
 	// Graceful shutdown: wait for SIGTERM/SIGINT, then drain connections.
 	go func() {

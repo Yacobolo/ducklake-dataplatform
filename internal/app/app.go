@@ -65,6 +65,7 @@ type Services struct {
 	ComputeEndpoint     *svccompute.ComputeEndpointService
 	APIKey              *security.APIKeyService
 	Auth                *authsvc.Service
+	WebSessionAuth      *authsvc.SessionService
 	Notebook            *notebook.Service
 	SessionManager      *notebook.SessionManager
 	GitService          *notebook.GitService
@@ -119,13 +120,12 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	queryJobRepo := repository.NewQueryJobRepo(deps.WriteDB)
 	authIdentityRepo := repository.NewAuthIdentityRepo(deps.WriteDB)
 	localCredentialRepo := repository.NewLocalCredentialRepo(deps.WriteDB)
-	authSessionRepo := repository.NewAuthSessionRepo(deps.WriteDB)
+	webSessionRepo := repository.NewWebSessionRepo(deps.WriteDB)
 	authRecoveryRepo := repository.NewAuthRecoveryRepo(deps.WriteDB)
 	authLoginAttemptRepo := repository.NewAuthLoginAttemptRepo(deps.WriteDB)
 	setupStateRepo := repository.NewSetupStateRepo(deps.WriteDB)
 	authProviderRepo := repository.NewAuthProviderRepo(deps.WriteDB)
 	_ = authIdentityRepo
-	_ = authSessionRepo
 	_ = authRecoveryRepo
 
 	// === 3. Factories (multi-catalog) ===
@@ -230,6 +230,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	principalSvc := security.NewPrincipalService(principalRepo, auditRepo)
 	principalSvc.SetAuthIdentityRepository(authIdentityRepo)
 	authService := authsvc.NewService(principalRepo, localCredentialRepo, authLoginAttemptRepo, setupStateRepo, authProviderRepo, auditRepo, cfg.Auth.JWTSecret)
+	webSessionAuth := authsvc.NewSessionService(principalRepo, webSessionRepo, auditRepo, cfg.Auth.WebSessionIdleTTL, cfg.Auth.WebSessionAbsoluteTTL)
 	groupSvc := security.NewGroupService(groupRepo, auditRepo)
 	grantSvc := security.NewGrantService(grantRepo, auditRepo, authSvc)
 	rowFilterSvc := security.NewRowFilterService(rowFilterRepo, auditRepo)
@@ -359,6 +360,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 			ComputeEndpoint:     computeEndpointSvc,
 			APIKey:              apiKeySvc,
 			Auth:                authService,
+			WebSessionAuth:      webSessionAuth,
 			Notebook:            notebookSvc,
 			SessionManager:      sessionMgr,
 			GitService:          gitSvc,
