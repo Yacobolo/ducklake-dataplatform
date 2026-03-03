@@ -34,18 +34,19 @@ type initOptions struct {
 }
 
 type initDesiredState struct {
-	CatalogName   string
-	MetastoreType string
-	MetastoreDSN  string
-	DataPath      string
-	Schemas       []string
-	Credential    initStorageCredential
-	Locations     []initLocation
-	Groups        []string
-	Principals    []string
-	Memberships   []initMembership
-	SchemaGrants  []initGrantSpec
-	ServiceGrants []initGrantSpec
+	CatalogName    string
+	MetastoreType  string
+	MetastoreDSN   string
+	DataPath       string
+	Schemas        []string
+	SchemaLocation map[string]string
+	Credential     initStorageCredential
+	Locations      []initLocation
+	Groups         []string
+	Principals     []string
+	Memberships    []initMembership
+	SchemaGrants   []initGrantSpec
+	ServiceGrants  []initGrantSpec
 }
 
 type initStorageCredential struct {
@@ -318,7 +319,13 @@ func buildDesiredState(opts initOptions) initDesiredState {
 		MetastoreType: opts.metastoreType,
 		MetastoreDSN:  opts.metastoreDSN,
 		DataPath:      base,
-		Schemas:       []string{"bronze", "silver", "gold"},
+		Schemas:       []string{"landing", "bronze", "silver", "gold"},
+		SchemaLocation: map[string]string{
+			"landing": fmt.Sprintf("%s-landing", opts.env),
+			"bronze":  fmt.Sprintf("%s-bronze", opts.env),
+			"silver":  fmt.Sprintf("%s-silver", opts.env),
+			"gold":    fmt.Sprintf("%s-gold", opts.env),
+		},
 		Credential: initStorageCredential{
 			Name:     opts.credentialName,
 			Type:     "S3",
@@ -348,15 +355,19 @@ func buildDesiredState(opts initOptions) initDesiredState {
 			{GroupName: "analytics", PrincipalName: "svc-bi", PrincipalType: "user"},
 		}
 		state.SchemaGrants = []initGrantSpec{
+			{PrincipalName: "data-engineers", PrincipalType: "group", SchemaName: "landing", Privilege: "USAGE"},
 			{PrincipalName: "data-engineers", PrincipalType: "group", SchemaName: "bronze", Privilege: "USAGE"},
 			{PrincipalName: "data-engineers", PrincipalType: "group", SchemaName: "silver", Privilege: "USAGE"},
 			{PrincipalName: "data-engineers", PrincipalType: "group", SchemaName: "gold", Privilege: "USAGE"},
 			{PrincipalName: "analytics", PrincipalType: "group", SchemaName: "gold", Privilege: "USAGE"},
+			{PrincipalName: "service-accounts", PrincipalType: "group", SchemaName: "landing", Privilege: "USAGE"},
 			{PrincipalName: "service-accounts", PrincipalType: "group", SchemaName: "bronze", Privilege: "USAGE"},
 			{PrincipalName: "service-accounts", PrincipalType: "group", SchemaName: "silver", Privilege: "USAGE"},
 			{PrincipalName: "service-accounts", PrincipalType: "group", SchemaName: "gold", Privilege: "USAGE"},
 		}
 		state.ServiceGrants = []initGrantSpec{
+			{PrincipalName: "svc-ingest", PrincipalType: "user", SchemaName: "landing", Privilege: "USAGE"},
+			{PrincipalName: "svc-transform", PrincipalType: "user", SchemaName: "landing", Privilege: "USAGE"},
 			{PrincipalName: "svc-ingest", PrincipalType: "user", SchemaName: "bronze", Privilege: "USAGE"},
 			{PrincipalName: "svc-transform", PrincipalType: "user", SchemaName: "bronze", Privilege: "USAGE"},
 			{PrincipalName: "svc-transform", PrincipalType: "user", SchemaName: "silver", Privilege: "USAGE"},
@@ -430,15 +441,20 @@ func fetchExistingState(client *gen.Client, desired initDesiredState) (initExist
 		path := fmt.Sprintf("/catalogs/%s/schemas", desired.CatalogName)
 		var schemas struct {
 			Data []struct {
-				ID   string `json:"id"`
-				Name string `json:"name"`
+				ID       string `json:"id"`
+				SchemaID string `json:"schema_id"`
+				Name     string `json:"name"`
 			} `json:"data"`
 		}
 		if err := doJSON(client, "GET", path, nil, nil, &schemas); err != nil {
 			return state, err
 		}
 		for _, s := range schemas.Data {
-			state.Schemas[s.Name] = s.ID
+			id := s.SchemaID
+			if id == "" {
+				id = s.ID
+			}
+			state.Schemas[s.Name] = id
 		}
 	}
 
@@ -666,6 +682,9 @@ func applyDesiredState(client *gen.Client, desired initDesiredState, existing in
 		}
 		path := fmt.Sprintf("/catalogs/%s/schemas", desired.CatalogName)
 		body := map[string]interface{}{"name": schema}
+		if locationName, ok := desired.SchemaLocation[schema]; ok && strings.TrimSpace(locationName) != "" {
+			body["location_name"] = locationName
+		}
 		if err := doNoContentOrJSON(client, "POST", path, body); err != nil {
 			return fmt.Errorf("create schema %q: %w", schema, err)
 		}
