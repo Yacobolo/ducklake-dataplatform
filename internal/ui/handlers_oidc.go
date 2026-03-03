@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
+
+	"duck-demo/internal/domain"
 )
 
 const oidcStateCookieName = "ui_oidc_state"
@@ -65,34 +66,70 @@ func (h *Handler) OIDCLoginCallback(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/ui/login?error=oidc+exchange+failed", http.StatusSeeOther)
 		return
 	}
+
 	idToken, ok := tok.Extra("id_token").(string)
 	if !ok || strings.TrimSpace(idToken) == "" {
 		http.Redirect(w, r, "/ui/login?error=oidc+id_token+missing", http.StatusSeeOther)
 		return
 	}
 
-	expires := tok.Expiry
-	if expires.IsZero() {
-		expires = time.Now().Add(24 * time.Hour)
+	if h.PrincipalResolver == nil || h.WebSessionService == nil {
+		http.Redirect(w, r, "/ui/login?error=auth+service+unavailable", http.StatusSeeOther)
+		return
+	}
+	providerCfg, err := h.AuthService.GetOIDCProvider(r.Context())
+	if err != nil || providerCfg == nil || providerCfg.OIDCIssuerURL == nil || providerCfg.OIDCClientID == nil {
+		http.Redirect(w, r, "/ui/login?error=oidc+not+configured", http.StatusSeeOther)
+		return
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:     bearerCookieName,
-		Value:    strings.TrimSpace(idToken),
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   h.Production,
-		SameSite: http.SameSiteLaxMode,
-		Expires:  expires,
+	provider, err := oidc.NewProvider(r.Context(), strings.TrimSpace(*providerCfg.OIDCIssuerURL))
+	if err != nil {
+		http.Redirect(w, r, "/ui/login?error=oidc+verification+setup+failed", http.StatusSeeOther)
+		return
+	}
+	verifier := provider.Verifier(&oidc.Config{ClientID: strings.TrimSpace(*providerCfg.OIDCClientID)})
+	verified, err := verifier.Verify(r.Context(), strings.TrimSpace(idToken))
+	if err != nil {
+		http.Redirect(w, r, "/ui/login?error=oidc+token+verification+failed", http.StatusSeeOther)
+		return
+	}
+
+	var claims struct {
+		Issuer            string `json:"iss"`
+		Subject           string `json:"sub"`
+		Email             string `json:"email"`
+		PreferredUsername string `json:"preferred_username"`
+	}
+	if err := verified.Claims(&claims); err != nil {
+		http.Redirect(w, r, "/ui/login?error=oidc+claims+invalid", http.StatusSeeOther)
+		return
+	}
+	displayName := strings.TrimSpace(claims.Email)
+	if displayName == "" {
+		displayName = strings.TrimSpace(claims.PreferredUsername)
+	}
+	if displayName == "" {
+		displayName = strings.TrimSpace(claims.Subject)
+	}
+
+	principal, err := h.PrincipalResolver.ResolveOrProvision(r.Context(), domain.ResolveOrProvisionRequest{
+		Issuer:      strings.TrimSpace(claims.Issuer),
+		ExternalID:  strings.TrimSpace(claims.Subject),
+		DisplayName: displayName,
 	})
-	http.SetCookie(w, &http.Cookie{
-		Name:     apiKeyCookieName,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   h.Production,
-		SameSite: http.SameSiteLaxMode,
-		MaxAge:   -1,
-	})
+	if err != nil {
+		http.Redirect(w, r, "/ui/login?error=oidc+principal+resolution+failed", http.StatusSeeOther)
+		return
+	}
+
+	sessionToken, session, err := h.WebSessionService.CreateForPrincipal(r.Context(), principal.ID, "oidc", r.UserAgent(), clientIP(r))
+	if err != nil {
+		http.Redirect(w, r, "/ui/login?error=session+creation+failed", http.StatusSeeOther)
+		return
+	}
+
+	http.SetCookie(w, h.newSessionCookie(sessionToken, session.ExpiresAt))
 	http.SetCookie(w, &http.Cookie{
 		Name:     oidcStateCookieName,
 		Path:     "/",

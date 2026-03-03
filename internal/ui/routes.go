@@ -9,7 +9,7 @@ import (
 	"duck-demo/internal/ui/assets"
 )
 
-func MountRoutes(r chi.Router, h *Handler, authMiddleware func(http.Handler) http.Handler) {
+func MountRoutes(r chi.Router, h *Handler) {
 	r.Get("/login", h.LoginPage)
 	r.Post("/login", h.LoginSubmit)
 	r.Get("/login/oidc", h.OIDCLoginStart)
@@ -22,8 +22,7 @@ func MountRoutes(r chi.Router, h *Handler, authMiddleware func(http.Handler) htt
 	}
 
 	r.Group(func(r chi.Router) {
-		r.Use(h.CookieHeaderBridge)
-		r.Use(authMiddleware)
+		r.Use(h.RequireWebSession)
 		r.Use(h.EnsureCSRFToken)
 		r.Use(h.RequireCSRF)
 		r.Get("/", h.Home)

@@ -74,6 +74,10 @@ Scenario templates are also available: `.env.local-only.sample`, `.env.hybrid.sa
 | `AUTH_MODE` | `hybrid` | Auth policy: `hybrid`, `oidc_only`, `local_only`, `api_key_only` |
 | `JWT_SECRET` | `` | Optional HS256 secret for local JWT auth |
 | `AUTH_API_KEY_ENABLED` | `true` | Enable API key authentication |
+| `AUTH_WEB_SESSION_IDLE_TTL` | `30m` | UI session idle timeout |
+| `AUTH_WEB_SESSION_ABSOLUTE_TTL` | `24h` | UI session absolute max lifetime |
+| `AUTH_WEB_SESSION_COOKIE_NAME` | `ui_session` | Opaque UI session cookie name |
+| `AUTH_WEB_SESSION_REAPER_INTERVAL` | `5m` | Cleanup cadence for expired/revoked UI sessions |
 | `ENCRYPTION_KEY` | (insecure default) | 64-char hex AES-256 key for credential encryption |
 | `ENCRYPTION_KEY_FILE` | `` | Read encryption key from file (e.g. Docker/K8s secret mount) |
 | `JWT_SECRET_FILE` | `` | Read local JWT secret from file |
@@ -98,10 +102,19 @@ The server supports two authentication methods:
 
 `AUTH_MODE` controls policy and precedence:
 
-- `hybrid` (default): OIDC (if configured) with API key/local fallback
+- `hybrid` (default): OIDC plus optional local JWT/API key support
 - `oidc_only`: require OIDC config
 - `local_only`: use local JWT (`JWT_SECRET`) and/or API keys
 - `api_key_only`: API keys only
+
+### UI Session Revocation
+
+Interactive `/ui` access uses an opaque `ui_session` cookie backed by server-side session state.
+
+- Logging out revokes the current session server-side immediately.
+- Session expiry is enforced by both idle TTL and absolute TTL.
+- Operators can force logout by revoking sessions for a principal (all current browser sessions become invalid immediately).
+- API/CLI auth is separate (`/v1` bearer/API-key); revoking UI sessions does not rotate API keys or JWT signing configuration.
 
 ### S3 Storage (Optional)
 

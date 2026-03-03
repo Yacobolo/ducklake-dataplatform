@@ -3,6 +3,9 @@
 package integration
 
 import (
+	"net/http"
+	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -89,4 +92,100 @@ func TestAuth_ModeBehavior_E2E(t *testing.T) {
 		defer apiKeyResp.Body.Close() //nolint:errcheck
 		assert.Equal(t, 401, apiKeyResp.StatusCode)
 	})
+}
+
+func TestAuth_UIWebSession_E2E(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{AuthMode: "local_only"})
+
+	bootstrapTokenResp := doRequest(t, "POST", env.Server.URL+"/v1/auth/bootstrap/tokens", env.Keys.Admin, map[string]interface{}{"ttl_seconds": 300})
+	require.Equal(t, 201, bootstrapTokenResp.StatusCode)
+	var bootstrapTokenPayload map[string]interface{}
+	decodeJSON(t, bootstrapTokenResp, &bootstrapTokenPayload)
+	bootstrapToken, _ := bootstrapTokenPayload["bootstrap_token"].(string)
+	require.NotEmpty(t, bootstrapToken)
+
+	bootstrapResp := doRequest(t, "POST", env.Server.URL+"/v1/auth/bootstrap/complete", "", map[string]interface{}{
+		"username":        "uilocal",
+		"password":        "super-secure-password",
+		"principal_name":  "ui_local_admin",
+		"bootstrap_token": bootstrapToken,
+	})
+	require.Equal(t, 201, bootstrapResp.StatusCode)
+	_ = bootstrapResp.Body.Close()
+
+	loginResp := doFormRequest(t, http.MethodPost, env.Server.URL+"/ui/login", url.Values{
+		"username": []string{"uilocal"},
+		"password": []string{"super-secure-password"},
+	}, nil)
+	require.Equal(t, http.StatusSeeOther, loginResp.StatusCode)
+
+	var sessionCookie *http.Cookie
+	for _, c := range loginResp.Cookies() {
+		if c.Name == "ui_session" {
+			sessionCookie = c
+			break
+		}
+	}
+	require.NotNil(t, sessionCookie)
+	require.NotEmpty(t, sessionCookie.Value)
+	_ = loginResp.Body.Close()
+
+	homeResp := doRequestWithCookies(t, http.MethodGet, env.Server.URL+"/ui/", nil, []*http.Cookie{sessionCookie})
+	defer homeResp.Body.Close() //nolint:errcheck
+	assert.Equal(t, http.StatusOK, homeResp.StatusCode)
+
+	logoutResp := doRequestWithCookies(t, http.MethodPost, env.Server.URL+"/ui/logout", nil, []*http.Cookie{sessionCookie})
+	require.Equal(t, http.StatusSeeOther, logoutResp.StatusCode)
+	_ = logoutResp.Body.Close()
+
+	afterLogoutResp := doRequestWithCookies(t, http.MethodGet, env.Server.URL+"/ui/", nil, []*http.Cookie{sessionCookie})
+	defer afterLogoutResp.Body.Close() //nolint:errcheck
+	assert.Equal(t, http.StatusSeeOther, afterLogoutResp.StatusCode)
+	assert.Contains(t, afterLogoutResp.Header.Get("Location"), "/ui/login")
+}
+
+func TestAuth_UIIgnoresTokenCookie_E2E(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{AuthMode: "local_only"})
+
+	resp := doRequestWithCookies(t, http.MethodGet, env.Server.URL+"/ui/", nil, []*http.Cookie{{Name: "ui_bearer", Value: "token"}})
+	defer resp.Body.Close() //nolint:errcheck
+	require.Equal(t, http.StatusSeeOther, resp.StatusCode)
+	assert.Contains(t, resp.Header.Get("Location"), "/ui/login")
+}
+
+func doFormRequest(t *testing.T, method, requestURL string, form url.Values, cookies []*http.Cookie) *http.Response {
+	t.Helper()
+	req, err := http.NewRequestWithContext(ctx, method, requestURL, strings.NewReader(form.Encode()))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	for _, c := range cookies {
+		req.AddCookie(c)
+	}
+	client := &http.Client{CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }}
+	resp, err := client.Do(req)
+	require.NoError(t, err)
+	return resp
+}
+
+func doRequestWithCookies(t *testing.T, method, requestURL string, body interface{}, cookies []*http.Cookie) *http.Response {
+	t.Helper()
+
+	var req *http.Request
+	var err error
+	if body == nil {
+		req, err = http.NewRequestWithContext(ctx, method, requestURL, nil)
+		require.NoError(t, err)
+	} else {
+		resp := doRequest(t, method, requestURL, "", body)
+		return resp
+	}
+
+	for _, c := range cookies {
+		req.AddCookie(c)
+	}
+
+	client := &http.Client{CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }}
+	resp, err := client.Do(req)
+	require.NoError(t, err)
+	return resp
 }

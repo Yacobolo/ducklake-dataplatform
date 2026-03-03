@@ -4,10 +4,16 @@ package integration
 
 import (
 	"bytes"
+	"crypto/rand"
+	"crypto/rsa"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/big"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
@@ -15,6 +21,131 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestOIDC_UIFlow_CreatesSessionBackedAccess(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{AuthMode: "hybrid"})
+	providerURL, cleanup := startFakeOIDCProvider(t)
+	t.Cleanup(cleanup)
+
+	upsertResp := doRequest(t, http.MethodPut, env.Server.URL+"/v1/auth/provider/oidc", env.Keys.Admin, map[string]interface{}{
+		"enabled":       true,
+		"issuer_url":    providerURL,
+		"client_id":     "duck-ui-client",
+		"client_secret": "super-secret",
+	})
+	require.Equal(t, http.StatusNoContent, upsertResp.StatusCode)
+	_ = upsertResp.Body.Close()
+
+	noRedirectClient := &http.Client{CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }}
+	startReq, err := http.NewRequestWithContext(ctx, http.MethodGet, env.Server.URL+"/ui/login/oidc", nil)
+	require.NoError(t, err)
+	startResp, err := noRedirectClient.Do(startReq)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusFound, startResp.StatusCode)
+
+	var stateCookie *http.Cookie
+	for _, c := range startResp.Cookies() {
+		if c.Name == "ui_oidc_state" {
+			stateCookie = c
+			break
+		}
+	}
+	require.NotNil(t, stateCookie)
+	require.NotEmpty(t, stateCookie.Value)
+	_ = startResp.Body.Close()
+
+	callbackURL := fmt.Sprintf("%s/ui/login/oidc/callback?state=%s&code=test-code", env.Server.URL, url.QueryEscape(stateCookie.Value))
+	cbReq, err := http.NewRequestWithContext(ctx, http.MethodGet, callbackURL, nil)
+	require.NoError(t, err)
+	cbReq.AddCookie(stateCookie)
+	cbResp, err := noRedirectClient.Do(cbReq)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusSeeOther, cbResp.StatusCode)
+	require.Equal(t, "/ui", cbResp.Header.Get("Location"))
+
+	var sessionCookie *http.Cookie
+	for _, c := range cbResp.Cookies() {
+		if c.Name == "ui_session" {
+			sessionCookie = c
+			break
+		}
+	}
+	require.NotNil(t, sessionCookie)
+	require.NotEmpty(t, sessionCookie.Value)
+	_ = cbResp.Body.Close()
+
+	homeReq, err := http.NewRequestWithContext(ctx, http.MethodGet, env.Server.URL+"/ui/", nil)
+	require.NoError(t, err)
+	homeReq.AddCookie(sessionCookie)
+	homeResp, err := noRedirectClient.Do(homeReq)
+	require.NoError(t, err)
+	defer homeResp.Body.Close() //nolint:errcheck
+	assert.Equal(t, http.StatusOK, homeResp.StatusCode)
+}
+
+func startFakeOIDCProvider(t *testing.T) (string, func()) {
+	t.Helper()
+
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+
+	mux := http.NewServeMux()
+	server := httptest.NewServer(mux)
+
+	mux.HandleFunc("/.well-known/openid-configuration", func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"issuer":                 server.URL,
+			"authorization_endpoint": server.URL + "/authorize",
+			"token_endpoint":         server.URL + "/token",
+			"jwks_uri":               server.URL + "/jwks",
+		})
+	})
+
+	mux.HandleFunc("/jwks", func(w http.ResponseWriter, _ *http.Request) {
+		n := base64.RawURLEncoding.EncodeToString(privateKey.PublicKey.N.Bytes())
+		e := base64.RawURLEncoding.EncodeToString(big.NewInt(int64(privateKey.PublicKey.E)).Bytes())
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"keys": []map[string]interface{}{{
+				"kty": "RSA",
+				"alg": "RS256",
+				"use": "sig",
+				"kid": "test-key-1",
+				"n":   n,
+				"e":   e,
+			}},
+		})
+	})
+
+	mux.HandleFunc("/authorize", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	mux.HandleFunc("/token", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		claims := jwt.MapClaims{
+			"iss": server.URL,
+			"sub": "oidc-ui-user",
+			"aud": "duck-ui-client",
+			"exp": time.Now().Add(time.Hour).Unix(),
+			"iat": time.Now().Unix(),
+		}
+		token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+		token.Header["kid"] = "test-key-1"
+		signed, signErr := token.SignedString(privateKey)
+		if signErr != nil {
+			http.Error(w, signErr.Error(), http.StatusInternalServerError)
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"access_token": "access-token",
+			"token_type":   "Bearer",
+			"expires_in":   3600,
+			"id_token":     signed,
+		})
+	})
+
+	return server.URL, server.Close
+}
 
 // ---------------------------------------------------------------------------
 // JIT Provisioning E2E

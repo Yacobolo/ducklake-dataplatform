@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -52,6 +53,34 @@ func TestLoadFromEnv_Defaults(t *testing.T) {
 	assert.True(t, cfg.FeatureInternalGRPC)
 	assert.True(t, cfg.FeatureFlightSQL)
 	assert.True(t, cfg.FeaturePGWire)
+	assert.Equal(t, 30*time.Minute, cfg.Auth.WebSessionIdleTTL)
+	assert.Equal(t, 24*time.Hour, cfg.Auth.WebSessionAbsoluteTTL)
+	assert.Equal(t, "ui_session", cfg.Auth.WebSessionCookieName)
+	assert.Equal(t, 5*time.Minute, cfg.Auth.WebSessionReaperInterval)
+}
+
+func TestLoadFromEnv_WebSessionConfig(t *testing.T) {
+	t.Setenv("AUTH_WEB_SESSION_IDLE_TTL", "45m")
+	t.Setenv("AUTH_WEB_SESSION_ABSOLUTE_TTL", "36h")
+	t.Setenv("AUTH_WEB_SESSION_COOKIE_NAME", "duck_ui")
+	t.Setenv("AUTH_WEB_SESSION_REAPER_INTERVAL", "2m")
+
+	cfg, err := LoadFromEnv()
+	require.NoError(t, err)
+
+	assert.Equal(t, 45*time.Minute, cfg.Auth.WebSessionIdleTTL)
+	assert.Equal(t, 36*time.Hour, cfg.Auth.WebSessionAbsoluteTTL)
+	assert.Equal(t, "duck_ui", cfg.Auth.WebSessionCookieName)
+	assert.Equal(t, 2*time.Minute, cfg.Auth.WebSessionReaperInterval)
+}
+
+func TestLoadFromEnv_WebSessionInvalidBounds(t *testing.T) {
+	t.Setenv("AUTH_WEB_SESSION_IDLE_TTL", "2h")
+	t.Setenv("AUTH_WEB_SESSION_ABSOLUTE_TTL", "30m")
+
+	_, err := LoadFromEnv()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "AUTH_WEB_SESSION_ABSOLUTE_TTL must be >= AUTH_WEB_SESSION_IDLE_TTL")
 }
 
 func TestLoadFromEnv_DistributedFeatureFlags(t *testing.T) {

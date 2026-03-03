@@ -54,6 +54,7 @@ import (
 	"duck-demo/internal/service/security"
 	svcsemantic "duck-demo/internal/service/semantic"
 	"duck-demo/internal/service/storage"
+	"duck-demo/internal/ui"
 )
 
 // ctx is a package-level background context used by setup helpers.
@@ -1106,7 +1107,7 @@ type httpTestOpts struct {
 	// Used when tests need the catalog to be attached without going through full setup.
 	CatalogAttached bool
 	// WithAuthenticator uses the full Authenticator struct with JIT provisioning
-	// instead of the legacy AuthMiddleware wrapper.
+	// instead of the simplified AuthMiddleware wrapper.
 	WithAuthenticator bool
 	// BootstrapAdmin is the external ID (sub) of the bootstrap admin user.
 	// Only used when WithAuthenticator is true.
@@ -1195,6 +1196,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	authLoginAttemptRepo := repository.NewAuthLoginAttemptRepo(metaDB)
 	setupStateRepo := repository.NewSetupStateRepo(metaDB)
 	authProviderRepo := repository.NewAuthProviderRepo(metaDB)
+	webSessionRepo := repository.NewWebSessionRepo(metaDB)
 	tagRepo := repository.NewTagRepo(metaDB)
 	lineageRepo := repository.NewLineageRepo(metaDB)
 	searchRepo := repository.NewSearchRepo(metaDB, metaDB)
@@ -1268,6 +1270,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		authLoginAttemptRepo = repository.NewAuthLoginAttemptRepo(metaDB)
 		setupStateRepo = repository.NewSetupStateRepo(metaDB)
 		authProviderRepo = repository.NewAuthProviderRepo(metaDB)
+		webSessionRepo = repository.NewWebSessionRepo(metaDB)
 		tagRepo = repository.NewTagRepo(metaDB)
 		lineageRepo = repository.NewLineageRepo(metaDB)
 		searchRepo = repository.NewSearchRepo(metaDB, metaDB)
@@ -1402,6 +1405,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	// in integration test servers.
 	apiKeySvc := security.NewAPIKeyService(apiKeyRepo, auditRepo)
 	authService := authsvc.NewService(principalRepo, localCredentialRepo, authLoginAttemptRepo, setupStateRepo, authProviderRepo, auditRepo, string(jwtSecret))
+	webSessionAuth := authsvc.NewSessionService(principalRepo, webSessionRepo, auditRepo, 30*time.Minute, 24*time.Hour)
 	authHandler := api.NewAuthHTTPHandler(authService)
 
 	// Optionally wire Model + Macro services
@@ -1486,11 +1490,12 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		apiKeyEnabled = *opts.APIKeyEnabled
 	}
 	authCfg := config.AuthConfig{
-		Mode:           authMode,
-		APIKeyEnabled:  apiKeyEnabled,
-		APIKeyHeader:   "X-API-Key",
-		NameClaim:      nameClaim,
-		BootstrapAdmin: opts.BootstrapAdmin,
+		Mode:                 authMode,
+		APIKeyEnabled:        apiKeyEnabled,
+		APIKeyHeader:         "X-API-Key",
+		NameClaim:            nameClaim,
+		BootstrapAdmin:       opts.BootstrapAdmin,
+		WebSessionCookieName: "ui_session",
 	}
 	var validator middleware.JWTValidator
 	if strings.ToLower(strings.TrimSpace(authMode)) != "api_key_only" {
@@ -1516,6 +1521,26 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		r.Get("/auth/provider/oidc", authHandler.GetOIDCProvider)
 		r.Put("/auth/provider/oidc", authHandler.UpsertOIDCProvider)
 		api.HandlerFromMux(strictHandler, r)
+	})
+
+	uiHandler := ui.NewHandler(
+		catalogRegSvc,
+		catalogSvc,
+		querySvc,
+		viewSvc,
+		pipelineSvc,
+		notebookSvc,
+		nil,
+		macroSvc,
+		modelSvc,
+		authService,
+		webSessionAuth,
+		principalSvc,
+		authCfg,
+		false,
+	)
+	r.Route("/ui", func(r chi.Router) {
+		ui.MountRoutes(r, uiHandler)
 	})
 
 	srv := httptest.NewServer(r)

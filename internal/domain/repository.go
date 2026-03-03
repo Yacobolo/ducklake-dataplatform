@@ -97,6 +97,7 @@ type AuthSessionRepository interface {
 	Touch(ctx context.Context, sessionID string, idleExpiresAt time.Time) error
 	Revoke(ctx context.Context, sessionID string) error
 	RevokeByHash(ctx context.Context, sessionHash string) error
+	RevokeAllForPrincipal(ctx context.Context, principalID string) error
 	DeleteExpiredOrRevoked(ctx context.Context) (int64, error)
 }
 

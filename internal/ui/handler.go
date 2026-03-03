@@ -30,8 +30,14 @@ type Handler struct {
 	Macro               *macro.Service
 	Model               *model.Service
 	AuthService         *authsvc.Service
+	WebSessionService   *authsvc.SessionService
+	PrincipalResolver   PrincipalResolver
 	Auth                config.AuthConfig
 	Production          bool
+}
+
+type PrincipalResolver interface {
+	ResolveOrProvision(ctx context.Context, req domain.ResolveOrProvisionRequest) (*domain.Principal, error)
 }
 
 func NewHandler(
@@ -45,6 +51,8 @@ func NewHandler(
 	macroSvc *macro.Service,
 	modelSvc *model.Service,
 	authService *authsvc.Service,
+	webSessionService *authsvc.SessionService,
+	principalResolver PrincipalResolver,
 	auth config.AuthConfig,
 	production bool,
 ) *Handler {
@@ -59,6 +67,8 @@ func NewHandler(
 		Macro:               macroSvc,
 		Model:               modelSvc,
 		AuthService:         authService,
+		WebSessionService:   webSessionService,
+		PrincipalResolver:   principalResolver,
 		Auth:                auth,
 		Production:          production,
 	}

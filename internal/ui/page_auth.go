@@ -10,7 +10,7 @@ import (
 func loginPage(errMsg string, showOIDC bool) Node {
 	content := []Node{
 		H1(Text("Duck Platform")),
-		P(Text("Sign in with local credentials, OIDC, or an API token.")),
+		P(Text("Sign in with local credentials or OIDC.")),
 	}
 
 	if showOIDC {
@@ -20,7 +20,7 @@ func loginPage(errMsg string, showOIDC bool) Node {
 				Class("btn btn-primary"),
 				Text("Continue with OIDC"),
 			),
-			P(Text("or use a token below")),
+			P(Text("or sign in with local credentials")),
 		)
 	}
 
@@ -29,16 +29,18 @@ func loginPage(errMsg string, showOIDC bool) Node {
 			Method("post"),
 			Action("/ui/login"),
 			Class("login-form"),
-			Label(Text("Credential type")),
-			Select(
-				Name("kind"),
-				Option(Value("bearer"), Text("JWT bearer token")),
-				Option(Value("api_key"), Text("API key")),
+			Label(Text("Username")),
+			Input(
+				Type("text"),
+				Name("username"),
+				Placeholder("admin"),
+				Required(),
 			),
-			Label(Text("Token")),
-			Textarea(
-				Name("token"),
-				Placeholder("Paste token here"),
+			Label(Text("Password")),
+			Input(
+				Type("password"),
+				Name("password"),
+				Placeholder("••••••••••••"),
 				Required(),
 			),
 			Button(
