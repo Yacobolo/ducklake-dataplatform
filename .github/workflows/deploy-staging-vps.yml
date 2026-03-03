@@ -37,16 +37,18 @@ jobs:
       - name: Prepare runtime env file from GitHub vars and secrets
         run: |
           umask 077
-          GHCR_OWNER="${GITHUB_REPOSITORY_OWNER,,}"
-          GHCR_REPO="${GITHUB_REPOSITORY#*/}"
+          PUBLIC_DOMAIN='${{ vars.PUBLIC_DOMAIN }}'
+          CORS_ALLOWED_ORIGINS='${{ vars.CORS_ALLOWED_ORIGINS }}'
+          if [ -z "$CORS_ALLOWED_ORIGINS" ]; then
+            CORS_ALLOWED_ORIGINS="https://${PUBLIC_DOMAIN}"
+          fi
           IMAGE_TAG="sha-${{ github.event.workflow_run.head_sha || github.sha }}"
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.image_tag }}" ]; then
             IMAGE_TAG="${{ inputs.image_tag }}"
           fi
           cat > deploy/staging/vps/.env <<EOF
-          PUBLIC_DOMAIN=${{ vars.PUBLIC_DOMAIN }}
-          GHCR_OWNER=${GHCR_OWNER}
-          GHCR_REPO=${GHCR_REPO}
+          PUBLIC_DOMAIN=${PUBLIC_DOMAIN}
+          CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
           IMAGE_TAG=${IMAGE_TAG}
           AGENT_TOKEN=${{ secrets.AGENT_TOKEN }}
           JWT_SECRET=${{ secrets.JWT_SECRET }}

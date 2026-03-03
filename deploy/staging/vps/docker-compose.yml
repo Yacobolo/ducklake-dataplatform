@@ -16,7 +16,7 @@ services:
       - caddy_config:/config
 
   control-plane:
-    image: ghcr.io/${GHCR_OWNER}/${GHCR_REPO}-control-plane:${IMAGE_TAG:-main-latest}
+    image: ghcr.io/yacobolo/ducklake-dataplatform-control-plane:${IMAGE_TAG:-main-latest}
     pull_policy: always
     restart: unless-stopped
     depends_on:
@@ -30,6 +30,7 @@ services:
       META_DB_PATH: "/data/ducklake_meta.sqlite"
       LOG_LEVEL: "info"
       ENV: "production"
+      CORS_ALLOWED_ORIGINS: "${CORS_ALLOWED_ORIGINS}"
       JWT_SECRET: "${JWT_SECRET}"
       ENCRYPTION_KEY: "${ENCRYPTION_KEY}"
 
@@ -51,7 +52,7 @@ services:
       - control_plane_data:/data
 
   compute-agent:
-    image: ghcr.io/${GHCR_OWNER}/${GHCR_REPO}-compute-agent:${IMAGE_TAG:-main-latest}
+    image: ghcr.io/yacobolo/ducklake-dataplatform-compute-agent:${IMAGE_TAG:-main-latest}
     pull_policy: always
     restart: unless-stopped
     depends_on:
