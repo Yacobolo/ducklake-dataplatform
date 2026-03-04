@@ -863,10 +863,14 @@ type apiNotebook struct {
 }
 
 type apiNotebookCell struct {
-	ID       string `json:"id"`
-	CellType string `json:"cell_type"`
-	Content  string `json:"content"`
-	Position int    `json:"position"`
+	ID       string                        `json:"id"`
+	CellType string                        `json:"cell_type"`
+	Name     string                        `json:"name"`
+	Role     string                        `json:"role"`
+	Disabled bool                          `json:"disabled"`
+	Test     *declarative.NotebookTestSpec `json:"test"`
+	Content  string                        `json:"content"`
+	Position int                           `json:"position"`
 }
 
 type apiNotebookDetail struct {
@@ -905,8 +909,12 @@ func (c *APIStateClient) readNotebooks(ctx context.Context, state *declarative.D
 			cells = make([]declarative.CellSpec, 0, len(detail.Cells))
 			for _, cell := range detail.Cells {
 				cells = append(cells, declarative.CellSpec{
-					Type:    cell.CellType,
-					Content: cell.Content,
+					Type:     cell.CellType,
+					Name:     cell.Name,
+					Role:     cell.Role,
+					Disabled: cell.Disabled,
+					Test:     cell.Test,
+					Content:  cell.Content,
 				})
 			}
 		}
@@ -2408,6 +2416,18 @@ func (c *APIStateClient) syncNotebookCells(ctx context.Context, notebookID strin
 		body := map[string]interface{}{
 			"cell_type": cell.Type,
 			"position":  i,
+		}
+		if cell.Name != "" {
+			body["name"] = cell.Name
+		}
+		if cell.Role != "" {
+			body["role"] = cell.Role
+		}
+		if cell.Disabled {
+			body["disabled"] = true
+		}
+		if cell.Test != nil {
+			body["test"] = cell.Test
 		}
 		if cell.Content != "" {
 			body["content"] = cell.Content

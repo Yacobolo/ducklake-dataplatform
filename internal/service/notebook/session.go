@@ -251,6 +251,9 @@ func (m *SessionManager) ExecuteCell(ctx context.Context, sessionID, cellID stri
 	if cell.CellType != domain.CellTypeSQL {
 		return nil, domain.ErrValidation("cannot execute non-SQL cell (type: %s)", string(cell.CellType))
 	}
+	if cell.Disabled {
+		return nil, domain.ErrValidation("cannot execute disabled cell")
+	}
 
 	// Serialize execution per session
 	s.mu.Lock()
@@ -295,6 +298,17 @@ func (m *SessionManager) ExecuteCell(ctx context.Context, sessionID, cellID stri
 	result.Rows = data
 	result.RowCount = len(data)
 
+	if cell.Role == domain.CellRoleTest {
+		severity := domain.NotebookTestSeverityError
+		if cell.Test != nil && cell.Test.Severity != "" {
+			severity = cell.Test.Severity
+		}
+		if len(data) > 0 && severity == domain.NotebookTestSeverityError {
+			errMsg := fmt.Sprintf("test cell failed: expected zero rows, got %d", len(data))
+			result.Error = &errMsg
+		}
+	}
+
 	if err := m.persistCellResult(ctx, cellID, result); err != nil {
 		return nil, err
 	}
@@ -328,7 +342,7 @@ func (m *SessionManager) RunAll(ctx context.Context, sessionID string, principal
 	var results []domain.CellExecutionResult
 
 	for _, cell := range cells {
-		if cell.CellType != domain.CellTypeSQL {
+		if cell.CellType != domain.CellTypeSQL || cell.Disabled {
 			continue
 		}
 

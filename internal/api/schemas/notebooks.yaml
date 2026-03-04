@@ -51,6 +51,21 @@ Cell:
       type: string
       enum: [sql, markdown]
       example: sql
+    name:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+      example: stg_orders
+    role:
+      type: string
+      enum: [transform, output, test, markdown]
+      example: transform
+    disabled:
+      type: boolean
+      default: false
+      example: false
+    test:
+      $ref: '#/NotebookCellTestConfig'
     content:
       type: string
       maxLength: 65536
@@ -156,6 +171,21 @@ CreateCellRequest:
       type: string
       enum: [sql, markdown]
       example: sql
+    name:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+      example: stg_orders
+    role:
+      type: string
+      enum: [transform, output, test, markdown]
+      example: transform
+    disabled:
+      type: boolean
+      default: false
+      example: false
+    test:
+      $ref: '#/NotebookCellTestConfig'
     content:
       type: string
       maxLength: 65536
@@ -175,6 +205,20 @@ UpdateCellRequest:
   type: object
   additionalProperties: false
   properties:
+    name:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+      example: stg_orders
+    role:
+      type: string
+      enum: [transform, output, test, markdown]
+      example: output
+    disabled:
+      type: boolean
+      example: true
+    test:
+      $ref: '#/NotebookCellTestConfig'
     content:
       type: string
       maxLength: 65536
@@ -186,6 +230,17 @@ UpdateCellRequest:
       minimum: 0
       maximum: 2147483647
       example: 0
+
+NotebookCellTestConfig:
+  description: Test behavior for test-role notebook cells.
+  type: object
+  additionalProperties: false
+  properties:
+    severity:
+      type: string
+      enum: [error, warn]
+      default: error
+      example: error
 
 ReorderCellsRequest:
   description: Request payload for reordering cells in a notebook.

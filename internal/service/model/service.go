@@ -18,19 +18,20 @@ import (
 
 // Service provides business logic for model management.
 type Service struct {
-	models      domain.ModelRepository
-	runs        domain.ModelRunRepository
-	tests       domain.ModelTestRepository
-	testResults domain.ModelTestResultRepository
-	audit       domain.AuditRepository
-	lineage     domain.LineageRepository
-	colLineage  domain.ColumnLineageRepository
-	macros      domain.MacroRepository
-	notebooks   domain.NotebookProvider
-	engine      domain.SessionEngine
-	duckDB      *sql.DB
-	logger      *slog.Logger
-	runCancels  sync.Map
+	models        domain.ModelRepository
+	runs          domain.ModelRunRepository
+	tests         domain.ModelTestRepository
+	testResults   domain.ModelTestResultRepository
+	audit         domain.AuditRepository
+	lineage       domain.LineageRepository
+	colLineage    domain.ColumnLineageRepository
+	macros        domain.MacroRepository
+	notebooks     domain.NotebookProvider
+	notebookLinks domain.NotebookModelLinkRepository
+	engine        domain.SessionEngine
+	duckDB        *sql.DB
+	logger        *slog.Logger
+	runCancels    sync.Map
 }
 
 // NewService creates a new model Service.
@@ -460,6 +461,11 @@ func (s *Service) SetNotebookProvider(notebooks domain.NotebookProvider) {
 	s.notebooks = notebooks
 }
 
+// SetNotebookModelLinkRepo configures notebook-model link persistence for notebook promotion.
+func (s *Service) SetNotebookModelLinkRepo(links domain.NotebookModelLinkRepository) {
+	s.notebookLinks = links
+}
+
 // CreateTest creates a new test assertion for a model.
 func (s *Service) CreateTest(ctx context.Context, principal, projectName, modelName string, req domain.CreateModelTestRequest) (*domain.ModelTest, error) {
 	if err := req.Validate(); err != nil {
@@ -529,12 +535,27 @@ func (s *Service) PromoteNotebook(ctx context.Context, principal string, req dom
 	}
 
 	// Create the model with the extracted SQL.
-	return s.CreateModel(ctx, principal, domain.CreateModelRequest{
+	model, err := s.CreateModel(ctx, principal, domain.CreateModelRequest{
 		ProjectName:     req.ProjectName,
 		Name:            req.Name,
 		SQL:             sqlBody,
 		Materialization: req.Materialization,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	if s.notebookLinks != nil {
+		if err := s.notebookLinks.Upsert(ctx, &domain.NotebookModelLink{
+			NotebookID:   req.NotebookID,
+			ModelID:      model.ID,
+			OutputCellID: req.OutputCellID,
+		}); err != nil {
+			return nil, fmt.Errorf("upsert notebook-model link: %w", err)
+		}
+	}
+
+	return model, nil
 }
 
 func (s *Service) logAudit(ctx context.Context, principal, action, _ string) {

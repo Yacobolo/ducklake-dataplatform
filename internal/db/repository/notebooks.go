@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 
 	"duck-demo/internal/db/dbstore"
@@ -110,10 +111,31 @@ func (r *NotebookRepo) CreateCell(ctx context.Context, cell *domain.Cell) (*doma
 		position = int64(maxPos + 1)
 	}
 
+	role := cell.Role
+	if role == "" {
+		if cell.CellType == domain.CellTypeMarkdown {
+			role = domain.CellRoleMarkdown
+		} else {
+			role = domain.CellRoleTransform
+		}
+	}
+	testCfg := "{}"
+	if cell.Test != nil {
+		b, err := json.Marshal(cell.Test)
+		if err != nil {
+			return nil, fmt.Errorf("marshal test config: %w", err)
+		}
+		testCfg = string(b)
+	}
+
 	row, err := r.q.CreateCell(ctx, dbstore.CreateCellParams{
 		ID:         domain.NewID(),
 		NotebookID: cell.NotebookID,
 		CellType:   string(cell.CellType),
+		Name:       mapper.NullStrFromPtr(cell.Name),
+		Role:       string(role),
+		Disabled:   boolToInt64(cell.Disabled),
+		TestConfig: testCfg,
 		Content:    cell.Content,
 		Position:   position,
 	})
@@ -153,15 +175,45 @@ func (r *NotebookRepo) UpdateCell(ctx context.Context, id string, req domain.Upd
 		content = *req.Content
 	}
 
+	name := existing.Name
+	if req.Name != nil {
+		name = mapper.NullStrFromPtr(req.Name)
+	}
+
+	role := existing.Role
+	if req.Role != nil {
+		role = string(*req.Role)
+	}
+
+	disabled := existing.Disabled
+	if req.Disabled != nil {
+		disabled = boolToInt64(*req.Disabled)
+	}
+
+	testConfig := existing.TestConfig
+	if req.Test != nil {
+		b, err := json.Marshal(req.Test)
+		if err != nil {
+			return nil, fmt.Errorf("marshal test config: %w", err)
+		}
+		testConfig = string(b)
+	} else if req.Role != nil && *req.Role != domain.CellRoleTest {
+		testConfig = "{}"
+	}
+
 	position := existing.Position
 	if req.Position != nil {
 		position = int64(*req.Position)
 	}
 
 	row, err := r.q.UpdateCell(ctx, dbstore.UpdateCellParams{
-		Content:  content,
-		Position: position,
-		ID:       id,
+		Name:       name,
+		Role:       role,
+		Disabled:   disabled,
+		TestConfig: testConfig,
+		Content:    content,
+		Position:   position,
+		ID:         id,
 	})
 	if err != nil {
 		return nil, mapDBError(err)

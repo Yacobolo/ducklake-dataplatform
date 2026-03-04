@@ -42,7 +42,17 @@ func (p *DBNotebookProvider) GetSQLBlocks(ctx context.Context, notebookID string
 	// 3. Filter to SQL cells.
 	var blocks []string
 	for _, cell := range cells {
-		if cell.CellType == domain.CellTypeSQL && !isEmptyOrCommentOnlySQL(cell.Content) {
+		if cell.CellType != domain.CellTypeSQL || cell.Disabled {
+			continue
+		}
+		role := cell.Role
+		if role == "" {
+			role = domain.CellRoleTransform
+		}
+		if role != domain.CellRoleTransform && role != domain.CellRoleOutput {
+			continue
+		}
+		if !isEmptyOrCommentOnlySQL(cell.Content) {
 			blocks = append(blocks, cell.Content)
 		}
 	}
@@ -66,6 +76,12 @@ func (p *DBNotebookProvider) GetSQLBlockByCellID(ctx context.Context, notebookID
 	}
 	if cell.CellType != domain.CellTypeSQL {
 		return "", domain.ErrValidation("cell %s is not a SQL cell", cellID)
+	}
+	if cell.Disabled {
+		return "", domain.ErrValidation("cell %s is disabled", cellID)
+	}
+	if cell.Role != "" && cell.Role != domain.CellRoleOutput {
+		return "", domain.ErrValidation("cell %s is not an output cell", cellID)
 	}
 	if isEmptyOrCommentOnlySQL(cell.Content) {
 		return "", domain.ErrValidation("selected cell has empty SQL")

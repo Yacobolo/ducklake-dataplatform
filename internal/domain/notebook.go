@@ -14,6 +14,31 @@ const (
 	CellTypeMarkdown CellType = "markdown"
 )
 
+// CellRole represents the role of a notebook cell.
+type CellRole string
+
+// CellRole constants define supported notebook cell roles.
+const (
+	CellRoleTransform CellRole = "transform"
+	CellRoleOutput    CellRole = "output"
+	CellRoleTest      CellRole = "test"
+	CellRoleMarkdown  CellRole = "markdown"
+)
+
+// NotebookTestSeverity defines notebook test-cell severity.
+type NotebookTestSeverity string
+
+// NotebookTestSeverity constants define severity gates for test cells.
+const (
+	NotebookTestSeverityError NotebookTestSeverity = "error"
+	NotebookTestSeverityWarn  NotebookTestSeverity = "warn"
+)
+
+// NotebookCellTestConfig defines settings for notebook test cells.
+type NotebookCellTestConfig struct {
+	Severity NotebookTestSeverity `json:"severity"`
+}
+
 // Notebook represents a SQL notebook document.
 type Notebook struct {
 	ID          string
@@ -26,11 +51,25 @@ type Notebook struct {
 	UpdatedAt   time.Time
 }
 
+// NotebookModelLink stores the 1:1 relationship between a notebook and a published model.
+type NotebookModelLink struct {
+	ID           string
+	NotebookID   string
+	ModelID      string
+	OutputCellID string
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+}
+
 // Cell represents a single cell within a notebook.
 type Cell struct {
 	ID         string
 	NotebookID string
 	CellType   CellType
+	Name       *string
+	Role       CellRole
+	Disabled   bool
+	Test       *NotebookCellTestConfig
 	Content    string
 	Position   int
 	LastResult *string
@@ -62,6 +101,10 @@ type UpdateNotebookRequest struct {
 // CreateCellRequest holds parameters for creating a cell.
 type CreateCellRequest struct {
 	CellType CellType
+	Name     *string
+	Role     *CellRole
+	Disabled bool
+	Test     *NotebookCellTestConfig
 	Content  string
 	Position *int
 }
@@ -73,13 +116,73 @@ func (r *CreateCellRequest) Validate() error {
 	default:
 		return ErrValidation("cell_type must be 'sql' or 'markdown', got %q", string(r.CellType))
 	}
+	if r.Name != nil && strings.TrimSpace(*r.Name) == "" {
+		return ErrValidation("name cannot be empty")
+	}
+	role := CellRoleTransform
+	if r.CellType == CellTypeMarkdown {
+		role = CellRoleMarkdown
+	}
+	if r.Role != nil {
+		role = *r.Role
+	}
+	if err := validateCellRoleForType(role, r.CellType); err != nil {
+		return err
+	}
+	if role == CellRoleTest {
+		if r.Test == nil {
+			return ErrValidation("test config is required for test cells")
+		}
+		if err := r.Test.Validate(); err != nil {
+			return err
+		}
+	}
+	if role != CellRoleTest && r.Test != nil {
+		return ErrValidation("test config is only allowed for test cells")
+	}
 	return nil
 }
 
 // UpdateCellRequest holds partial-update parameters for a cell.
 type UpdateCellRequest struct {
+	Name     *string
+	Role     *CellRole
+	Disabled *bool
+	Test     *NotebookCellTestConfig
 	Content  *string
 	Position *int
+}
+
+// Validate validates notebook test cell config.
+func (c *NotebookCellTestConfig) Validate() error {
+	if c == nil {
+		return ErrValidation("test config is required")
+	}
+	if c.Severity == "" {
+		c.Severity = NotebookTestSeverityError
+	}
+	switch c.Severity {
+	case NotebookTestSeverityError, NotebookTestSeverityWarn:
+		return nil
+	default:
+		return ErrValidation("test severity must be 'error' or 'warn', got %q", string(c.Severity))
+	}
+}
+
+func validateCellRoleForType(role CellRole, cellType CellType) error {
+	switch role {
+	case CellRoleTransform, CellRoleOutput, CellRoleTest:
+		if cellType != CellTypeSQL {
+			return ErrValidation("role %q requires cell_type 'sql'", string(role))
+		}
+	case CellRoleMarkdown:
+		if cellType != CellTypeMarkdown {
+			return ErrValidation("role %q requires cell_type 'markdown'", string(role))
+		}
+	default:
+		return ErrValidation("role must be 'transform', 'output', 'test', or 'markdown', got %q", string(role))
+	}
+	return nil
 }
 
 // ReorderCellsRequest holds a list of cell IDs in the desired order.

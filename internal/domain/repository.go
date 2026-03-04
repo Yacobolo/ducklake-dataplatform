@@ -356,6 +356,14 @@ type NotebookJobRepository interface {
 	UpdateJobState(ctx context.Context, id string, state JobState, result *string, errMsg *string) error
 }
 
+// NotebookModelLinkRepository provides CRUD operations for notebook-model links.
+type NotebookModelLinkRepository interface {
+	Upsert(ctx context.Context, link *NotebookModelLink) error
+	GetByNotebookID(ctx context.Context, notebookID string) (*NotebookModelLink, error)
+	GetByModelID(ctx context.Context, modelID string) (*NotebookModelLink, error)
+	DeleteByNotebookID(ctx context.Context, notebookID string) error
+}
+
 // GitRepoRepository provides CRUD operations for registered Git repositories.
 type GitRepoRepository interface {
 	Create(ctx context.Context, repo *GitRepo) (*GitRepo, error)

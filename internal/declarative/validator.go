@@ -196,6 +196,18 @@ var validCellTypes = map[string]bool{
 	"markdown": true,
 }
 
+var validCellRoles = map[string]bool{
+	"transform": true,
+	"output":    true,
+	"test":      true,
+	"markdown":  true,
+}
+
+var validNotebookTestSeverities = map[string]bool{
+	"error": true,
+	"warn":  true,
+}
+
 // Valid tag assignment securable types.
 var validTagSecurableTypes = map[string]bool{
 	"schema": true,
@@ -360,11 +372,34 @@ func Validate(state *DesiredState) []ValidationError {
 
 	// 23. Validate models.
 	validateModels(state.Models, macroNames, &errs)
+	validateNotebookPublishTargets(state.Notebooks, state.Models, &errs)
 
 	// 24. Validate semantic models.
 	validateSemanticModels(state.SemanticModels, &errs)
 
 	return errs
+}
+
+func validateNotebookPublishTargets(notebooks []NotebookResource, models []ModelResource, errs *[]ValidationError) {
+	modelKeys := make(map[string]bool, len(models))
+	for _, m := range models {
+		modelKeys[m.ProjectName+"."+m.ModelName] = true
+	}
+
+	for i, n := range notebooks {
+		path := fmt.Sprintf("notebook[%d]", i)
+		if n.Name != "" {
+			path = fmt.Sprintf("notebook[%s]", n.Name)
+		}
+		if n.Spec.Publish == nil || n.Spec.Publish.Model == nil {
+			continue
+		}
+		pm := n.Spec.Publish.Model
+		key := pm.Project + "." + pm.Name
+		if modelKeys[key] {
+			addErr(errs, path, "publish.model target %q conflicts with standalone model resource; use notebook publish only", key)
+		}
+	}
 }
 
 func validatePrivilegePresets(presets []PrivilegePresetSpec, errs *[]ValidationError) {
@@ -1372,6 +1407,62 @@ func validateNotebooks(notebooks []NotebookResource, errs *[]ValidationError) {
 			}
 			if c.Content == "" {
 				addErr(errs, cpath, "content is required")
+			}
+			if c.Role != "" {
+				if !validCellRoles[c.Role] {
+					addErr(errs, cpath, "cell role must be one of [transform, output, test, markdown], got %q", c.Role)
+				} else {
+					switch c.Role {
+					case "transform", "output", "test":
+						if c.Type != "sql" {
+							addErr(errs, cpath, "cell role %q requires type \"sql\"", c.Role)
+						}
+					case "markdown":
+						if c.Type != "markdown" {
+							addErr(errs, cpath, "cell role \"markdown\" requires type \"markdown\"")
+						}
+					}
+				}
+			}
+			if c.Test != nil {
+				if c.Role != "test" {
+					addErr(errs, cpath, "test config is only allowed when role is \"test\"")
+				}
+				if c.Test.Severity != "" && !validNotebookTestSeverities[c.Test.Severity] {
+					addErr(errs, cpath, "test severity must be \"error\" or \"warn\", got %q", c.Test.Severity)
+				}
+			}
+		}
+
+		seenCellNames := make(map[string]bool)
+		outputCount := 0
+		for j, c := range n.Spec.Cells {
+			cpath := fmt.Sprintf("%s.cells[%d]", path, j)
+			if c.Name != "" {
+				if seenCellNames[c.Name] {
+					addErr(errs, cpath, "duplicate cell name %q", c.Name)
+				}
+				seenCellNames[c.Name] = true
+			}
+			if c.Role == "output" {
+				outputCount++
+			}
+		}
+		if outputCount > 1 {
+			addErr(errs, path, "notebook has multiple output cells")
+		}
+		if n.Spec.Publish != nil && n.Spec.Publish.Model != nil {
+			m := n.Spec.Publish.Model
+			if strings.TrimSpace(m.Project) == "" {
+				addErr(errs, path, "publish.model.project is required")
+			}
+			if strings.TrimSpace(m.Name) == "" {
+				addErr(errs, path, "publish.model.name is required")
+			}
+			if strings.TrimSpace(m.OutputCell) == "" {
+				addErr(errs, path, "publish.model.output_cell is required")
+			} else if !seenCellNames[m.OutputCell] {
+				addErr(errs, path, "publish.model.output_cell references unknown cell %q", m.OutputCell)
 			}
 		}
 

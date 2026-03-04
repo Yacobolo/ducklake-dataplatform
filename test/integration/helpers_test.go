@@ -1425,6 +1425,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		}
 
 		modelRepo := repository.NewModelRepo(metaDB)
+		notebookModelLinkRepo := repository.NewNotebookModelLinkRepo(metaDB)
 		modelRunRepo := repository.NewModelRunRepo(metaDB)
 		modelTestRepo := repository.NewModelTestRepo(metaDB)
 		modelTestResultRepo := repository.NewModelTestResultRepo(metaDB)
@@ -1438,6 +1439,8 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		macroRepo := repository.NewMacroRepo(metaDB)
 		macroSvc = macro.NewService(macroRepo, auditRepo)
 		modelSvc.SetMacroRepo(macroRepo)
+		modelSvc.SetNotebookProvider(notebookProvider)
+		modelSvc.SetNotebookModelLinkRepo(notebookModelLinkRepo)
 	}
 
 	// Optionally wire Semantic service.
