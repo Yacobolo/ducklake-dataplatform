@@ -456,9 +456,9 @@ Returns the directed acyclic graph of model dependencies.
 
 ## `POST /models/from-notebook`
 
-Promote a notebook cell to a model
+Promote a notebook output cell to a model
 
-Creates a new transformation model from a notebook cell's SQL.
+Creates a new transformation model from a notebook output cell's SQL.
 
 - Operation ID: `promoteNotebookToModel`
 

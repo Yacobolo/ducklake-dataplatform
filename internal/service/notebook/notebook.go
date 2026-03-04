@@ -148,11 +148,12 @@ func (s *Service) CreateCell(ctx context.Context, principal string, isAdmin bool
 		Content:    req.Content,
 		Position:   pos,
 	}
-	if req.Role != nil {
+	switch {
+	case req.Role != nil:
 		cell.Role = *req.Role
-	} else if req.CellType == domain.CellTypeMarkdown {
+	case req.CellType == domain.CellTypeMarkdown:
 		cell.Role = domain.CellRoleMarkdown
-	} else {
+	default:
 		cell.Role = domain.CellRoleTransform
 	}
 

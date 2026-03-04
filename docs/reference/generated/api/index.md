@@ -121,6 +121,7 @@ This section is generated from `internal/api/openapi.bundled.yaml`.
 - [ModelTestResult](./schemas/modeltestresult)
 - [ModelTestResultList](./schemas/modeltestresultlist)
 - [Notebook](./schemas/notebook)
+- [NotebookCellTestConfig](./schemas/notebookcelltestconfig)
 - [NotebookDetail](./schemas/notebookdetail)
 - [NotebookJob](./schemas/notebookjob)
 - [NotebookSession](./schemas/notebooksession)

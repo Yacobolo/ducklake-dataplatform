@@ -908,10 +908,11 @@ func (c *APIStateClient) readNotebooks(ctx context.Context, state *declarative.D
 			})
 			cells = make([]declarative.CellSpec, 0, len(detail.Cells))
 			for _, cell := range detail.Cells {
+				role := normalizeNotebookCellRole(cell.CellType, cell.Role)
 				cells = append(cells, declarative.CellSpec{
 					Type:     cell.CellType,
 					Name:     cell.Name,
-					Role:     cell.Role,
+					Role:     role,
 					Disabled: cell.Disabled,
 					Test:     cell.Test,
 					Content:  cell.Content,
@@ -929,6 +930,20 @@ func (c *APIStateClient) readNotebooks(ctx context.Context, state *declarative.D
 		})
 	}
 	return nil
+}
+
+func normalizeNotebookCellRole(cellType, role string) string {
+	switch cellType {
+	case "markdown":
+		if role == "markdown" {
+			return ""
+		}
+	case "sql":
+		if role == "transform" {
+			return ""
+		}
+	}
+	return role
 }
 
 func (c *APIStateClient) readNotebookDetail(_ context.Context, notebookID string) (*apiNotebookDetail, error) {

@@ -13,5 +13,9 @@ Request payload for creating a new cell.
 | --- | --- | --- | --- |
 | `cell_type` | `string` | `true` | - |
 | `content` | `string` | `false` | - |
+| `disabled` | `boolean` | `false` | - |
+| `name` | `string` | `false` | - |
 | `position` | `integer` | `false` | Position in the notebook. If omitted, appends to end. |
+| `role` | `string` | `false` | - |
+| `test` | `NotebookCellTestConfig` | `false` | Test behavior for test-role notebook cells. |
 

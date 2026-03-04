@@ -2,18 +2,18 @@
 
 # Schema: `PromoteNotebookRequest`
 
-Request payload for promoting a notebook cell to a transformation model.
+Request payload for promoting a notebook output cell to a transformation model.
 
 - Type: `object`
-- Required fields: `cell_index`, `name`, `notebook_id`, `project_name`
+- Required fields: `name`, `notebook_id`, `output_cell_id`, `project_name`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `cell_index` | `integer` | `true` | - |
 | `materialization` | `string` | `false` | - |
 | `name` | `string` | `true` | - |
 | `notebook_id` | `string` | `true` | - |
+| `output_cell_id` | `string` | `true` | - |
 | `project_name` | `string` | `true` | - |
 
