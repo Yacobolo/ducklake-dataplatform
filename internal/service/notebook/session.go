@@ -4,7 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -254,14 +256,17 @@ func (m *SessionManager) ExecuteCell(ctx context.Context, sessionID, cellID stri
 	if cell.Disabled {
 		return nil, domain.ErrValidation("cannot execute disabled cell")
 	}
-	if cell.Role == domain.CellRoleOutput {
-		cells, err := m.repo.ListCells(ctx, cell.NotebookID)
+	cells, err := m.repo.ListCells(ctx, cell.NotebookID)
+	if err != nil {
+		return nil, fmt.Errorf("list cells for compile: %w", err)
+	}
+	if needsNotebookCompile(cell, cells) {
+		compiled, err := CompileNotebookCellSQL(cells, cellID, false)
 		if err != nil {
-			return nil, fmt.Errorf("list cells for compile: %w", err)
-		}
-		compiled, err := CompileNotebookCellSQL(cells, cellID, true)
-		if err != nil {
-			return nil, err
+			if !errors.As(err, new(*domain.NotFoundError)) {
+				return nil, err
+			}
+			compiled = cell.Content
 		}
 		cell.Content = compiled
 	}
@@ -325,6 +330,22 @@ func (m *SessionManager) ExecuteCell(ctx context.Context, sessionID, cellID stri
 	}
 
 	return result, nil
+}
+
+func needsNotebookCompile(cell *domain.Cell, cells []domain.Cell) bool {
+	if cell.Role == domain.CellRoleOutput {
+		return true
+	}
+	if strings.Contains(cell.Content, "{{") || strings.Contains(cell.Content, "{%") {
+		return true
+	}
+	for _, c := range cells {
+		if c.CellType != domain.CellTypeSQL || c.Disabled || c.Name == nil || *c.Name == "" {
+			continue
+		}
+		return true
+	}
+	return false
 }
 
 // RunAll executes all SQL cells in a notebook sequentially.

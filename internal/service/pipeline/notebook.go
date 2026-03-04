@@ -28,6 +28,19 @@ func NewDBNotebookProvider(repo domain.NotebookRepository) *DBNotebookProvider {
 
 // GetSQLBlocks returns the SQL content of all SQL cells in a notebook, ordered by position.
 func (p *DBNotebookProvider) GetSQLBlocks(ctx context.Context, notebookID string) ([]string, error) {
+	execCells, err := p.GetExecutableCells(ctx, notebookID)
+	if err != nil {
+		return nil, err
+	}
+	blocks := make([]string, 0, len(execCells))
+	for _, cell := range execCells {
+		blocks = append(blocks, cell.SQL)
+	}
+	return blocks, nil
+}
+
+// GetExecutableCells returns compiled executable SQL cells for a notebook.
+func (p *DBNotebookProvider) GetExecutableCells(ctx context.Context, notebookID string) ([]domain.NotebookExecutableCell, error) {
 	// 1. Verify notebook exists.
 	_, err := p.repo.GetNotebook(ctx, notebookID)
 	if err != nil {
@@ -40,8 +53,8 @@ func (p *DBNotebookProvider) GetSQLBlocks(ctx context.Context, notebookID string
 		return nil, err
 	}
 
-	// 3. Filter to SQL cells.
-	var blocks []string
+	// 3. Filter to SQL executable cells.
+	exec := make([]domain.NotebookExecutableCell, 0)
 	for _, cell := range cells {
 		if cell.CellType != domain.CellTypeSQL || cell.Disabled {
 			continue
@@ -50,20 +63,28 @@ func (p *DBNotebookProvider) GetSQLBlocks(ctx context.Context, notebookID string
 		if role == "" {
 			role = domain.CellRoleTransform
 		}
-		if role != domain.CellRoleTransform && role != domain.CellRoleOutput {
+		if role != domain.CellRoleTransform && role != domain.CellRoleOutput && role != domain.CellRoleTest {
 			continue
 		}
-		if !isEmptyOrCommentOnlySQL(cell.Content) {
-			blocks = append(blocks, cell.Content)
+		if isEmptyOrCommentOnlySQL(cell.Content) {
+			continue
+		}
+
+		compiled, err := svcnotebook.CompileNotebookCellSQL(cells, cell.ID, false)
+		if err != nil {
+			return nil, err
+		}
+		if !isEmptyOrCommentOnlySQL(compiled) {
+			exec = append(exec, domain.NotebookExecutableCell{ID: cell.ID, SQL: compiled, Role: role, Test: cell.Test})
 		}
 	}
 
 	// 4. Error if no executable SQL cells found.
-	if len(blocks) == 0 {
+	if len(exec) == 0 {
 		return nil, domain.ErrValidation("notebook %s has no executable SQL cells", notebookID)
 	}
 
-	return blocks, nil
+	return exec, nil
 }
 
 // GetSQLBlockByCellID returns SQL content for a specific SQL cell in a notebook.

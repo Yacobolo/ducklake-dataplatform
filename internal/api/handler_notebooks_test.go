@@ -22,15 +22,16 @@ import (
 
 // mockNotebookService implements notebookService using function fields.
 type mockNotebookService struct {
-	createNotebookFn func(ctx context.Context, principal string, req domain.CreateNotebookRequest) (*domain.Notebook, error)
-	getNotebookFn    func(ctx context.Context, id string) (*domain.Notebook, []domain.Cell, error)
-	listNotebooksFn  func(ctx context.Context, owner *string, page domain.PageRequest) ([]domain.Notebook, int64, error)
-	updateNotebookFn func(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateNotebookRequest) (*domain.Notebook, error)
-	deleteNotebookFn func(ctx context.Context, principal string, isAdmin bool, id string) error
-	createCellFn     func(ctx context.Context, principal string, isAdmin bool, notebookID string, req domain.CreateCellRequest) (*domain.Cell, error)
-	updateCellFn     func(ctx context.Context, principal string, isAdmin bool, cellID string, req domain.UpdateCellRequest) (*domain.Cell, error)
-	deleteCellFn     func(ctx context.Context, principal string, isAdmin bool, cellID string) error
-	reorderCellsFn   func(ctx context.Context, principal string, isAdmin bool, notebookID string, req domain.ReorderCellsRequest) ([]domain.Cell, error)
+	createNotebookFn  func(ctx context.Context, principal string, req domain.CreateNotebookRequest) (*domain.Notebook, error)
+	getNotebookFn     func(ctx context.Context, id string) (*domain.Notebook, []domain.Cell, error)
+	getPublishModelFn func(ctx context.Context, notebookID string) (*domain.NotebookPublishModel, error)
+	listNotebooksFn   func(ctx context.Context, owner *string, page domain.PageRequest) ([]domain.Notebook, int64, error)
+	updateNotebookFn  func(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateNotebookRequest) (*domain.Notebook, error)
+	deleteNotebookFn  func(ctx context.Context, principal string, isAdmin bool, id string) error
+	createCellFn      func(ctx context.Context, principal string, isAdmin bool, notebookID string, req domain.CreateCellRequest) (*domain.Cell, error)
+	updateCellFn      func(ctx context.Context, principal string, isAdmin bool, cellID string, req domain.UpdateCellRequest) (*domain.Cell, error)
+	deleteCellFn      func(ctx context.Context, principal string, isAdmin bool, cellID string) error
+	reorderCellsFn    func(ctx context.Context, principal string, isAdmin bool, notebookID string, req domain.ReorderCellsRequest) ([]domain.Cell, error)
 }
 
 func (m *mockNotebookService) CreateNotebook(ctx context.Context, principal string, req domain.CreateNotebookRequest) (*domain.Notebook, error) {
@@ -44,6 +45,12 @@ func (m *mockNotebookService) GetNotebook(ctx context.Context, id string) (*doma
 		return m.getNotebookFn(ctx, id)
 	}
 	panic("GetNotebook not implemented")
+}
+func (m *mockNotebookService) GetPublishModel(ctx context.Context, notebookID string) (*domain.NotebookPublishModel, error) {
+	if m.getPublishModelFn != nil {
+		return m.getPublishModelFn(ctx, notebookID)
+	}
+	return nil, nil
 }
 func (m *mockNotebookService) ListNotebooks(ctx context.Context, owner *string, page domain.PageRequest) ([]domain.Notebook, int64, error) {
 	if m.listNotebooksFn != nil {

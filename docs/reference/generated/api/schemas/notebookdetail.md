@@ -12,4 +12,5 @@ A notebook with its cells.
 | --- | --- | --- | --- |
 | `cells` | `array[Cell]` | `false` | - |
 | `notebook` | `Notebook` | `false` | A SQL notebook document. |
+| `publish_model` | `NotebookPublishModel` | `false` | Notebook publish target metadata for notebook->model promotion. |
 

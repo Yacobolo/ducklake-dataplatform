@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -534,7 +535,7 @@ func (s *Service) PromoteNotebook(ctx context.Context, principal string, req dom
 		return nil, fmt.Errorf("compile notebook output SQL: %w", err)
 	}
 
-	// Create the model with the extracted SQL.
+	// Compute dependencies from compiled SQL.
 	allModels, err := s.models.ListAll(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list models for dep extraction: %w", err)
@@ -543,6 +544,37 @@ func (s *Service) PromoteNotebook(ctx context.Context, principal string, req dom
 	if err != nil {
 		s.logger.Warn("dependency extraction failed", "project", req.ProjectName, "model", req.Name, "error", err)
 		deps = []string{}
+	}
+
+	if existing, err := s.models.GetByName(ctx, req.ProjectName, req.Name); err == nil {
+		updateReq := domain.UpdateModelRequest{
+			SQL:             &sqlBody,
+			Materialization: &req.Materialization,
+		}
+		updated, err := s.models.Update(ctx, existing.ID, updateReq)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.models.UpdateDependencies(ctx, updated.ID, deps); err != nil {
+			return nil, fmt.Errorf("update dependencies for %s: %w", updated.QualifiedName(), err)
+		}
+		updated.DependsOn = deps
+
+		if s.notebookLinks == nil {
+			return nil, domain.ErrValidation("notebook-model link repository not configured")
+		}
+		if err := s.notebookLinks.Upsert(ctx, &domain.NotebookModelLink{
+			NotebookID:   req.NotebookID,
+			ModelID:      updated.ID,
+			OutputCellID: req.OutputCellID,
+		}); err != nil {
+			return nil, fmt.Errorf("upsert notebook-model link: %w", err)
+		}
+
+		s.logAudit(ctx, principal, "update_model", updated.QualifiedName())
+		return updated, nil
+	} else if !errors.As(err, new(*domain.NotFoundError)) {
+		return nil, err
 	}
 
 	created, err := s.models.CreateWithNotebookLink(ctx, &domain.Model{

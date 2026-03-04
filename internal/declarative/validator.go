@@ -1459,10 +1459,29 @@ func validateNotebooks(notebooks []NotebookResource, errs *[]ValidationError) {
 			if strings.TrimSpace(m.Name) == "" {
 				addErr(errs, path, "publish.model.name is required")
 			}
-			if strings.TrimSpace(m.OutputCell) == "" {
+			switch {
+			case strings.TrimSpace(m.OutputCell) == "":
 				addErr(errs, path, "publish.model.output_cell is required")
-			} else if !seenCellNames[m.OutputCell] {
+			case !seenCellNames[m.OutputCell]:
 				addErr(errs, path, "publish.model.output_cell references unknown cell %q", m.OutputCell)
+			default:
+				isOutput := false
+				for _, c := range n.Spec.Cells {
+					if c.Name != m.OutputCell {
+						continue
+					}
+					role := strings.TrimSpace(c.Role)
+					if role == "" && c.Type == "sql" {
+						role = "transform"
+					}
+					if role == "output" {
+						isOutput = true
+					}
+					break
+				}
+				if !isOutput {
+					addErr(errs, path, "publish.model.output_cell %q must reference a cell with role \"output\"", m.OutputCell)
+				}
 			}
 		}
 

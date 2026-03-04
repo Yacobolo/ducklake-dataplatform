@@ -33,6 +33,9 @@ type notebookProviderStub struct {
 func (s notebookProviderStub) GetSQLBlocks(context.Context, string) ([]string, error) {
 	return nil, domain.ErrNotImplemented("unused")
 }
+func (s notebookProviderStub) GetExecutableCells(context.Context, string) ([]domain.NotebookExecutableCell, error) {
+	return nil, domain.ErrNotImplemented("unused")
+}
 func (s notebookProviderStub) GetSQLBlockByCellID(context.Context, string, string) (string, error) {
 	return "", domain.ErrNotImplemented("unused")
 }

@@ -325,6 +325,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	modelSvc.SetMacroRepo(macroRepo)
 	modelSvc.SetNotebookProvider(notebookProvider)
 	modelSvc.SetNotebookModelLinkRepo(notebookModelLinkRepo)
+	notebookSvc.SetPublishRepositories(modelRepo, notebookModelLinkRepo)
 
 	// === Semantic ===
 	semanticModelRepo := repository.NewSemanticModelRepo(deps.WriteDB)

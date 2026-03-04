@@ -874,8 +874,16 @@ type apiNotebookCell struct {
 }
 
 type apiNotebookDetail struct {
-	Notebook apiNotebook       `json:"notebook"`
-	Cells    []apiNotebookCell `json:"cells"`
+	Notebook     apiNotebook            `json:"notebook"`
+	Cells        []apiNotebookCell      `json:"cells"`
+	PublishModel *apiNotebookPublishRef `json:"publish_model"`
+}
+
+type apiNotebookPublishRef struct {
+	ProjectName     string `json:"project_name"`
+	Name            string `json:"name"`
+	Materialization string `json:"materialization"`
+	OutputCellID    string `json:"output_cell_id"`
 }
 
 func (c *APIStateClient) readNotebooks(ctx context.Context, state *declarative.DesiredState) error {
@@ -898,6 +906,8 @@ func (c *APIStateClient) readNotebooks(ctx context.Context, state *declarative.D
 		}
 
 		cells := make([]declarative.CellSpec, 0)
+		cellNameByID := make(map[string]string)
+		var publish *declarative.NotebookPublishSpec
 		if nb.ID != "" {
 			detail, err := c.readNotebookDetail(ctx, nb.ID)
 			if err != nil {
@@ -908,6 +918,9 @@ func (c *APIStateClient) readNotebooks(ctx context.Context, state *declarative.D
 			})
 			cells = make([]declarative.CellSpec, 0, len(detail.Cells))
 			for _, cell := range detail.Cells {
+				if cell.Name != "" {
+					cellNameByID[cell.ID] = cell.Name
+				}
 				role := normalizeNotebookCellRole(cell.CellType, cell.Role)
 				cells = append(cells, declarative.CellSpec{
 					Type:     cell.CellType,
@@ -918,6 +931,19 @@ func (c *APIStateClient) readNotebooks(ctx context.Context, state *declarative.D
 					Content:  cell.Content,
 				})
 			}
+			if detail.PublishModel != nil {
+				outputCellName := cellNameByID[detail.PublishModel.OutputCellID]
+				if outputCellName != "" {
+					publish = &declarative.NotebookPublishSpec{
+						Model: &declarative.NotebookPublishModelSpec{
+							Project:         detail.PublishModel.ProjectName,
+							Name:            detail.PublishModel.Name,
+							Materialization: detail.PublishModel.Materialization,
+							OutputCell:      outputCellName,
+						},
+					}
+				}
+			}
 		}
 
 		state.Notebooks = append(state.Notebooks, declarative.NotebookResource{
@@ -926,6 +952,7 @@ func (c *APIStateClient) readNotebooks(ctx context.Context, state *declarative.D
 				Description: nb.Description,
 				Owner:       nb.Owner,
 				Cells:       cells,
+				Publish:     publish,
 			},
 		})
 	}
@@ -2497,9 +2524,6 @@ func (c *APIStateClient) applyNotebookPublish(ctx context.Context, notebookID st
 	resp, err := c.client.Do(http.MethodPost, "/models/from-notebook", nil, body)
 	if err != nil {
 		return err
-	}
-	if resp.StatusCode == http.StatusConflict {
-		return nil
 	}
 	return gen.CheckError(resp)
 }

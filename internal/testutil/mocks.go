@@ -960,7 +960,7 @@ func (m *MockNotebookRepo) ListCells(ctx context.Context, notebookID string) ([]
 	if m.ListCellsFn != nil {
 		return m.ListCellsFn(ctx, notebookID)
 	}
-	panic("unexpected call to MockNotebookRepo.ListCells")
+	return []domain.Cell{}, nil
 }
 
 // UpdateCell implements the interface method for testing.
@@ -1357,6 +1357,7 @@ var _ domain.PipelineRunRepository = (*MockPipelineRunRepo)(nil)
 // MockNotebookProvider implements domain.NotebookProvider for testing.
 type MockNotebookProvider struct {
 	GetSQLBlocksFn         func(ctx context.Context, notebookID string) ([]string, error)
+	GetExecutableCellsFn   func(ctx context.Context, notebookID string) ([]domain.NotebookExecutableCell, error)
 	GetSQLBlockByCellIDFn  func(ctx context.Context, notebookID, cellID string) (string, error)
 	CompileOutputCellSQLFn func(ctx context.Context, notebookID, outputCellID string) (string, error)
 	ListCellsFn            func(ctx context.Context, notebookID string) ([]domain.Cell, error)
@@ -1368,6 +1369,14 @@ func (m *MockNotebookProvider) GetSQLBlocks(ctx context.Context, notebookID stri
 		return m.GetSQLBlocksFn(ctx, notebookID)
 	}
 	panic("unexpected call to MockNotebookProvider.GetSQLBlocks")
+}
+
+// GetExecutableCells implements the interface method for testing.
+func (m *MockNotebookProvider) GetExecutableCells(ctx context.Context, notebookID string) ([]domain.NotebookExecutableCell, error) {
+	if m.GetExecutableCellsFn != nil {
+		return m.GetExecutableCellsFn(ctx, notebookID)
+	}
+	return nil, domain.ErrNotImplemented("GetExecutableCells not configured")
 }
 
 // GetSQLBlockByCellID implements the interface method for testing.

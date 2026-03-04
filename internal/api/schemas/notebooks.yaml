@@ -106,6 +106,32 @@ NotebookDetail:
       items:
         $ref: '#/Cell'
       example: []
+    publish_model:
+      $ref: '#/NotebookPublishModel'
+
+NotebookPublishModel:
+  description: Notebook publish target metadata for notebook->model promotion.
+  type: object
+  properties:
+    project_name:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+      example: analytics
+    name:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+      example: daily_sales
+    materialization:
+      type: string
+      enum: [VIEW, TABLE, INCREMENTAL, EPHEMERAL]
+      example: TABLE
+    output_cell_id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
 
 PaginatedNotebooks:
   description: A paginated list of notebooks.

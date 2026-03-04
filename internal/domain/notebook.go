@@ -61,6 +61,14 @@ type NotebookModelLink struct {
 	UpdatedAt    time.Time
 }
 
+// NotebookPublishModel describes notebook publish target metadata.
+type NotebookPublishModel struct {
+	ProjectName     string
+	Name            string
+	Materialization string
+	OutputCellID    string
+}
+
 // Cell represents a single cell within a notebook.
 type Cell struct {
 	ID         string
@@ -75,6 +83,14 @@ type Cell struct {
 	LastResult *string
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
+}
+
+// NotebookExecutableCell is a compiled executable notebook SQL cell.
+type NotebookExecutableCell struct {
+	ID   string
+	SQL  string
+	Role CellRole
+	Test *NotebookCellTestConfig
 }
 
 // CreateNotebookRequest holds parameters for creating a notebook.

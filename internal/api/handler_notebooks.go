@@ -11,6 +11,7 @@ import (
 type notebookService interface {
 	CreateNotebook(ctx context.Context, principal string, req domain.CreateNotebookRequest) (*domain.Notebook, error)
 	GetNotebook(ctx context.Context, id string) (*domain.Notebook, []domain.Cell, error)
+	GetPublishModel(ctx context.Context, notebookID string) (*domain.NotebookPublishModel, error)
 	ListNotebooks(ctx context.Context, owner *string, page domain.PageRequest) ([]domain.Notebook, int64, error)
 	UpdateNotebook(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateNotebookRequest) (*domain.Notebook, error)
 	DeleteNotebook(ctx context.Context, principal string, isAdmin bool, id string) error
@@ -105,8 +106,20 @@ func (h *APIHandler) GetNotebook(ctx context.Context, req GetNotebookRequestObje
 	for i, c := range cells {
 		apiCells[i] = cellToAPI(c)
 	}
+	var publishModel *NotebookPublishModel
+	if pm, err := h.notebooks.GetPublishModel(ctx, req.NotebookId); err == nil && pm != nil {
+		materialization := NotebookPublishModelMaterialization(pm.Materialization)
+		publishModel = &NotebookPublishModel{
+			ProjectName:     &pm.ProjectName,
+			Name:            &pm.Name,
+			Materialization: &materialization,
+			OutputCellId:    &pm.OutputCellID,
+		}
+	} else if err != nil {
+		return nil, err
+	}
 	return GetNotebook200JSONResponse{
-		Body:    NotebookDetail{Notebook: &apiNb, Cells: &apiCells},
+		Body:    NotebookDetail{Notebook: &apiNb, Cells: &apiCells, PublishModel: publishModel},
 		Headers: GetNotebook200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }

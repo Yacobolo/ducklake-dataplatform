@@ -124,6 +124,7 @@ This section is generated from `internal/api/openapi.bundled.yaml`.
 - [NotebookCellTestConfig](./schemas/notebookcelltestconfig)
 - [NotebookDetail](./schemas/notebookdetail)
 - [NotebookJob](./schemas/notebookjob)
+- [NotebookPublishModel](./schemas/notebookpublishmodel)
 - [NotebookSession](./schemas/notebooksession)
 - [PaginatedAPIKeys](./schemas/paginatedapikeys)
 - [PaginatedAuditLogs](./schemas/paginatedauditlogs)
