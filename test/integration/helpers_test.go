@@ -1441,6 +1441,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		modelSvc.SetMacroRepo(macroRepo)
 		modelSvc.SetNotebookProvider(notebookProvider)
 		modelSvc.SetNotebookModelLinkRepo(notebookModelLinkRepo)
+		notebookSvc.SetPublishRepositories(modelRepo, notebookModelLinkRepo)
 	}
 
 	// Optionally wire Semantic service.
