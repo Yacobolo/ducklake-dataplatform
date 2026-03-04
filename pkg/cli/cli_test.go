@@ -162,6 +162,38 @@ func TestCLI_MissingArgs(t *testing.T) {
 	assert.Contains(t, err.Error(), "accepts 1 arg(s)")
 }
 
+func TestCLI_APIKeyFlagOverridesProfileToken(t *testing.T) {
+	rec := &requestRecorder{}
+	srv := httptest.NewServer(jsonHandler(rec, 200, `{"data":[]}`))
+	defer srv.Close()
+
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+	require.NoError(t, SaveUserConfig(&UserConfig{
+		CurrentProfile: "default",
+		Profiles: map[string]Profile{
+			"default": {
+				Host:  srv.URL,
+				Token: "profile-token",
+			},
+		},
+	}))
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{
+		"--host", srv.URL,
+		"--api-key", "api-key-123",
+		"catalog", "schemas", "list", "test",
+	})
+
+	err := rootCmd.Execute()
+	require.NoError(t, err)
+
+	captured := rec.last()
+	assert.Equal(t, "api-key-123", captured.Headers.Get("X-API-Key"))
+	assert.Empty(t, captured.Headers.Get("Authorization"))
+}
+
 // === Path Parameter Substitution Tests (issue #100) ===
 
 func TestCLI_PathParamSubstitution(t *testing.T) {
