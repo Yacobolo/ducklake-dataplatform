@@ -512,7 +512,7 @@ func (s *Service) ListTestResults(ctx context.Context, _, stepID string) ([]doma
 	return s.testResults.ListByStep(ctx, stepID)
 }
 
-// PromoteNotebook promotes a notebook cell to a transformation model.
+// PromoteNotebook promotes a notebook output cell to a transformation model.
 func (s *Service) PromoteNotebook(ctx context.Context, principal string, req domain.PromoteNotebookRequest) (*domain.Model, error) {
 	if err := req.Validate(); err != nil {
 		return nil, err
@@ -522,19 +522,10 @@ func (s *Service) PromoteNotebook(ctx context.Context, principal string, req dom
 		return nil, domain.ErrValidation("notebook provider not configured")
 	}
 
-	// Get SQL blocks from the notebook.
-	blocks, err := s.notebooks.GetSQLBlocks(ctx, req.NotebookID)
+	// Get SQL from the selected output cell.
+	sqlBody, err := s.notebooks.GetSQLBlockByCellID(ctx, req.NotebookID, req.OutputCellID)
 	if err != nil {
-		return nil, fmt.Errorf("get notebook SQL: %w", err)
-	}
-
-	if req.CellIndex >= len(blocks) {
-		return nil, domain.ErrValidation("cell_index %d out of range (notebook has %d SQL cells)", req.CellIndex, len(blocks))
-	}
-
-	sqlBody := blocks[req.CellIndex]
-	if sqlBody == "" {
-		return nil, domain.ErrValidation("selected cell has empty SQL")
+		return nil, fmt.Errorf("get notebook output SQL: %w", err)
 	}
 
 	// Create the model with the extracted SQL.

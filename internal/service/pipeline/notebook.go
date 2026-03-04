@@ -55,6 +55,24 @@ func (p *DBNotebookProvider) GetSQLBlocks(ctx context.Context, notebookID string
 	return blocks, nil
 }
 
+// GetSQLBlockByCellID returns SQL content for a specific SQL cell in a notebook.
+func (p *DBNotebookProvider) GetSQLBlockByCellID(ctx context.Context, notebookID, cellID string) (string, error) {
+	cell, err := p.repo.GetCell(ctx, cellID)
+	if err != nil {
+		return "", err
+	}
+	if cell.NotebookID != notebookID {
+		return "", domain.ErrValidation("cell %s does not belong to notebook %s", cellID, notebookID)
+	}
+	if cell.CellType != domain.CellTypeSQL {
+		return "", domain.ErrValidation("cell %s is not a SQL cell", cellID)
+	}
+	if isEmptyOrCommentOnlySQL(cell.Content) {
+		return "", domain.ErrValidation("selected cell has empty SQL")
+	}
+	return cell.Content, nil
+}
+
 func isEmptyOrCommentOnlySQL(sql string) bool {
 	sanitized := strings.TrimSpace(sql)
 	if sanitized == "" {

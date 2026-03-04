@@ -1078,9 +1078,9 @@ paths:
   /models/from-notebook:
     post:
       operationId: promoteNotebookToModel
-      summary: Promote a notebook cell to a model
+      summary: Promote a notebook output cell to a model
       tags: [Models]
-      description: Creates a new transformation model from a notebook cell's SQL.
+      description: Creates a new transformation model from a notebook output cell's SQL.
       requestBody:
         required: true
         content:
@@ -1089,7 +1089,7 @@ paths:
               $ref: '../schemas/models.yaml#/PromoteNotebookRequest'
             example:
               notebook_id: "550e8400-e29b-41d4-a716-446655440050"
-              cell_index: 0
+              output_cell_id: "550e8400-e29b-41d4-a716-446655440051"
               project_name: "analytics"
               name: "stg_orders"
               materialization: "TABLE"

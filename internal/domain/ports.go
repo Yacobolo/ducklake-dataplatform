@@ -75,6 +75,7 @@ type MetastoreQuerier interface {
 // Used by the pipeline executor to extract SQL cells from notebooks.
 type NotebookProvider interface {
 	GetSQLBlocks(ctx context.Context, notebookID string) ([]string, error)
+	GetSQLBlockByCellID(ctx context.Context, notebookID, cellID string) (string, error)
 }
 
 // ModelRunner executes a model run synchronously. Used by the pipeline executor.
