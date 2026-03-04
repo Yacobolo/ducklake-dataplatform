@@ -89,7 +89,7 @@ func (s *Service) executeTests(ctx context.Context, conn *sql.Conn,
 
 // executeNotebookCellTests runs notebook test-role cells for models linked from notebooks.
 // Returns true if any error-severity test cell failed.
-func (s *Service) executeNotebookCellTests(ctx context.Context, conn *sql.Conn, model *domain.Model, principal string) (bool, error) {
+func (s *Service) executeNotebookCellTests(ctx context.Context, conn *sql.Conn, model *domain.Model, stepID, principal string) (bool, error) {
 	if s.notebookLinks == nil || s.notebooks == nil {
 		return false, nil
 	}
@@ -122,6 +122,31 @@ func (s *Service) executeNotebookCellTests(ctx context.Context, conn *sql.Conn, 
 		}
 		if hasRows && severity == domain.NotebookTestSeverityError {
 			anyFailed = true
+		}
+
+		if s.testResults != nil {
+			status := domain.TestResultPass
+			if hasRows {
+				status = domain.TestResultFail
+			}
+			rowsReturned := int64(0)
+			if hasRows {
+				rowsReturned = 1
+			}
+			testName := cell.ID
+			if cell.Name != nil && *cell.Name != "" {
+				testName = *cell.Name
+			}
+			if _, err := s.testResults.Create(ctx, &domain.ModelTestResult{
+				ID:           domain.NewID(),
+				RunStepID:    stepID,
+				TestID:       cell.ID,
+				TestName:     "notebook:" + testName,
+				Status:       status,
+				RowsReturned: &rowsReturned,
+			}); err != nil {
+				return false, fmt.Errorf("persist notebook test result for cell %s: %w", cell.ID, err)
+			}
 		}
 	}
 

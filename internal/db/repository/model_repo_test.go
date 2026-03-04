@@ -296,3 +296,40 @@ func TestModelRepo_DuplicateConflict(t *testing.T) {
 	var conflict *domain.ConflictError
 	assert.ErrorAs(t, err, &conflict)
 }
+
+func TestModelRepo_CreateWithNotebookLink(t *testing.T) {
+	repo := setupModelRepo(t)
+	notebookRepo := NewNotebookRepo(repo.db)
+	linkRepo := NewNotebookModelLinkRepo(repo.db)
+	ctx := context.Background()
+
+	nb, err := notebookRepo.CreateNotebook(ctx, &domain.Notebook{Name: "nb_link_test", Owner: "alice"})
+	require.NoError(t, err)
+	cellName := "out"
+	cell, err := notebookRepo.CreateCell(ctx, &domain.Cell{
+		NotebookID: nb.ID,
+		CellType:   domain.CellTypeSQL,
+		Role:       domain.CellRoleOutput,
+		Name:       &cellName,
+		Content:    "SELECT 1 AS id",
+		Position:   0,
+	})
+	require.NoError(t, err)
+
+	created, err := repo.CreateWithNotebookLink(ctx, &domain.Model{
+		ProjectName:     "analytics",
+		Name:            "from_nb",
+		SQL:             "SELECT 1 AS id",
+		Materialization: domain.MaterializationTable,
+		DependsOn:       []string{},
+		CreatedBy:       "alice",
+	}, nb.ID, cell.ID)
+	require.NoError(t, err)
+	require.NotNil(t, created)
+
+	link, err := linkRepo.GetByModelID(ctx, created.ID)
+	require.NoError(t, err)
+	assert.Equal(t, nb.ID, link.NotebookID)
+	assert.Equal(t, created.ID, link.ModelID)
+	assert.Equal(t, cell.ID, link.OutputCellID)
+}

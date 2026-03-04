@@ -1356,9 +1356,10 @@ var _ domain.PipelineRunRepository = (*MockPipelineRunRepo)(nil)
 
 // MockNotebookProvider implements domain.NotebookProvider for testing.
 type MockNotebookProvider struct {
-	GetSQLBlocksFn        func(ctx context.Context, notebookID string) ([]string, error)
-	GetSQLBlockByCellIDFn func(ctx context.Context, notebookID, cellID string) (string, error)
-	ListCellsFn           func(ctx context.Context, notebookID string) ([]domain.Cell, error)
+	GetSQLBlocksFn         func(ctx context.Context, notebookID string) ([]string, error)
+	GetSQLBlockByCellIDFn  func(ctx context.Context, notebookID, cellID string) (string, error)
+	CompileOutputCellSQLFn func(ctx context.Context, notebookID, outputCellID string) (string, error)
+	ListCellsFn            func(ctx context.Context, notebookID string) ([]domain.Cell, error)
 }
 
 // GetSQLBlocks implements the interface method for testing.
@@ -1375,6 +1376,14 @@ func (m *MockNotebookProvider) GetSQLBlockByCellID(ctx context.Context, notebook
 		return m.GetSQLBlockByCellIDFn(ctx, notebookID, cellID)
 	}
 	panic("unexpected call to MockNotebookProvider.GetSQLBlockByCellID")
+}
+
+// CompileOutputCellSQL implements the interface method for testing.
+func (m *MockNotebookProvider) CompileOutputCellSQL(ctx context.Context, notebookID, outputCellID string) (string, error) {
+	if m.CompileOutputCellSQLFn != nil {
+		return m.CompileOutputCellSQLFn(ctx, notebookID, outputCellID)
+	}
+	panic("unexpected call to MockNotebookProvider.CompileOutputCellSQL")
 }
 
 // ListCells implements the interface method for testing.

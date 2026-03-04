@@ -2259,7 +2259,10 @@ func (c *APIStateClient) executeNotebook(ctx context.Context, action declarative
 		if c.index != nil {
 			c.index.notebookIDByName[nb.Name] = notebookID
 		}
-		return c.syncNotebookCells(ctx, notebookID, nb.Spec.Cells)
+		if err := c.syncNotebookCells(ctx, notebookID, nb.Spec.Cells); err != nil {
+			return err
+		}
+		return c.applyNotebookPublish(ctx, notebookID, nb)
 
 	case declarative.OpUpdate:
 		nb := action.Desired.(declarative.NotebookResource)
@@ -2278,7 +2281,10 @@ func (c *APIStateClient) executeNotebook(ctx context.Context, action declarative
 		if err := gen.CheckError(resp); err != nil {
 			return err
 		}
-		return c.syncNotebookCells(ctx, notebookID, nb.Spec.Cells)
+		if err := c.syncNotebookCells(ctx, notebookID, nb.Spec.Cells); err != nil {
+			return err
+		}
+		return c.applyNotebookPublish(ctx, notebookID, nb)
 
 	case declarative.OpDelete:
 		notebookName := action.ResourceName
@@ -2457,6 +2463,45 @@ func (c *APIStateClient) syncNotebookCells(ctx context.Context, notebookID strin
 	}
 
 	return nil
+}
+
+func (c *APIStateClient) applyNotebookPublish(ctx context.Context, notebookID string, nb declarative.NotebookResource) error {
+	if nb.Spec.Publish == nil || nb.Spec.Publish.Model == nil {
+		return nil
+	}
+	detail, err := c.readNotebookDetail(ctx, notebookID)
+	if err != nil {
+		return err
+	}
+	outputCellName := nb.Spec.Publish.Model.OutputCell
+	outputCellID := ""
+	for _, cell := range detail.Cells {
+		if cell.Name == outputCellName {
+			outputCellID = cell.ID
+			break
+		}
+	}
+	if outputCellID == "" {
+		return fmt.Errorf("publish.model.output_cell %q not found in notebook %q", outputCellName, nb.Name)
+	}
+
+	body := map[string]interface{}{
+		"notebook_id":    notebookID,
+		"output_cell_id": outputCellID,
+		"project_name":   nb.Spec.Publish.Model.Project,
+		"name":           nb.Spec.Publish.Model.Name,
+	}
+	if nb.Spec.Publish.Model.Materialization != "" {
+		body["materialization"] = nb.Spec.Publish.Model.Materialization
+	}
+	resp, err := c.client.Do(http.MethodPost, "/models/from-notebook", nil, body)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode == http.StatusConflict {
+		return nil
+	}
+	return gen.CheckError(resp)
 }
 
 func (c *APIStateClient) createPipelineJob(ctx context.Context, pipelineName string, job declarative.PipelineJobSpec) error {

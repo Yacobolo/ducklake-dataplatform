@@ -36,6 +36,9 @@ func (s notebookProviderStub) GetSQLBlocks(context.Context, string) ([]string, e
 func (s notebookProviderStub) GetSQLBlockByCellID(context.Context, string, string) (string, error) {
 	return "", domain.ErrNotImplemented("unused")
 }
+func (s notebookProviderStub) CompileOutputCellSQL(context.Context, string, string) (string, error) {
+	return "", domain.ErrNotImplemented("unused")
+}
 func (s notebookProviderStub) ListCells(ctx context.Context, notebookID string) ([]domain.Cell, error) {
 	if s.listCellsFn != nil {
 		return s.listCellsFn(ctx, notebookID)
@@ -138,7 +141,7 @@ func TestExecuteNotebookCellTests_SeverityGate(t *testing.T) {
 			}}, nil
 		}}
 
-		failed, err := svc.executeNotebookCellTests(context.Background(), conn, &domain.Model{ID: "m-1", ProjectName: "p", Name: "n"}, "admin")
+		failed, err := svc.executeNotebookCellTests(context.Background(), conn, &domain.Model{ID: "m-1", ProjectName: "p", Name: "n"}, "step-1", "admin")
 		require.NoError(t, err)
 		assert.True(t, failed)
 	})
@@ -162,7 +165,7 @@ func TestExecuteNotebookCellTests_SeverityGate(t *testing.T) {
 			}}, nil
 		}}
 
-		failed, err := svc.executeNotebookCellTests(context.Background(), conn, &domain.Model{ID: "m-2", ProjectName: "p", Name: "n"}, "admin")
+		failed, err := svc.executeNotebookCellTests(context.Background(), conn, &domain.Model{ID: "m-2", ProjectName: "p", Name: "n"}, "step-1", "admin")
 		require.NoError(t, err)
 		assert.False(t, failed)
 	})

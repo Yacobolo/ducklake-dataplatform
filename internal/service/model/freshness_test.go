@@ -20,6 +20,10 @@ func (s freshnessModelRepoStub) Create(context.Context, *domain.Model) (*domain.
 	panic("unexpected call")
 }
 
+func (s freshnessModelRepoStub) CreateWithNotebookLink(context.Context, *domain.Model, string, string) (*domain.Model, error) {
+	panic("unexpected call")
+}
+
 func (s freshnessModelRepoStub) GetByID(context.Context, string) (*domain.Model, error) {
 	panic("unexpected call")
 }

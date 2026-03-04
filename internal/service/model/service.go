@@ -528,34 +528,37 @@ func (s *Service) PromoteNotebook(ctx context.Context, principal string, req dom
 		return nil, domain.ErrValidation("notebook provider not configured")
 	}
 
-	// Get SQL from the selected output cell.
-	sqlBody, err := s.notebooks.GetSQLBlockByCellID(ctx, req.NotebookID, req.OutputCellID)
+	// Compile SQL from selected output cell (graph-aware, tree-shaken).
+	sqlBody, err := s.notebooks.CompileOutputCellSQL(ctx, req.NotebookID, req.OutputCellID)
 	if err != nil {
-		return nil, fmt.Errorf("get notebook output SQL: %w", err)
+		return nil, fmt.Errorf("compile notebook output SQL: %w", err)
 	}
 
 	// Create the model with the extracted SQL.
-	model, err := s.CreateModel(ctx, principal, domain.CreateModelRequest{
+	allModels, err := s.models.ListAll(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list models for dep extraction: %w", err)
+	}
+	deps, err := ExtractDependencies(sqlBody, req.ProjectName, allModels)
+	if err != nil {
+		s.logger.Warn("dependency extraction failed", "project", req.ProjectName, "model", req.Name, "error", err)
+		deps = []string{}
+	}
+
+	created, err := s.models.CreateWithNotebookLink(ctx, &domain.Model{
 		ProjectName:     req.ProjectName,
 		Name:            req.Name,
 		SQL:             sqlBody,
 		Materialization: req.Materialization,
-	})
+		DependsOn:       deps,
+		CreatedBy:       principal,
+	}, req.NotebookID, req.OutputCellID)
 	if err != nil {
 		return nil, err
 	}
 
-	if s.notebookLinks != nil {
-		if err := s.notebookLinks.Upsert(ctx, &domain.NotebookModelLink{
-			NotebookID:   req.NotebookID,
-			ModelID:      model.ID,
-			OutputCellID: req.OutputCellID,
-		}); err != nil {
-			return nil, fmt.Errorf("upsert notebook-model link: %w", err)
-		}
-	}
-
-	return model, nil
+	s.logAudit(ctx, principal, "create_model", created.QualifiedName())
+	return created, nil
 }
 
 func (s *Service) logAudit(ctx context.Context, principal, action, _ string) {

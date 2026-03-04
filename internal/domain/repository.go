@@ -410,6 +410,7 @@ type PipelineRunRepository interface {
 // ModelRepository provides CRUD operations for transformation models.
 type ModelRepository interface {
 	Create(ctx context.Context, m *Model) (*Model, error)
+	CreateWithNotebookLink(ctx context.Context, m *Model, notebookID, outputCellID string) (*Model, error)
 	GetByID(ctx context.Context, id string) (*Model, error)
 	GetByName(ctx context.Context, projectName, name string) (*Model, error)
 	List(ctx context.Context, projectName *string, page PageRequest) ([]Model, int64, error)

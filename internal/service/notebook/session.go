@@ -254,6 +254,17 @@ func (m *SessionManager) ExecuteCell(ctx context.Context, sessionID, cellID stri
 	if cell.Disabled {
 		return nil, domain.ErrValidation("cannot execute disabled cell")
 	}
+	if cell.Role == domain.CellRoleOutput {
+		cells, err := m.repo.ListCells(ctx, cell.NotebookID)
+		if err != nil {
+			return nil, fmt.Errorf("list cells for compile: %w", err)
+		}
+		compiled, err := CompileNotebookCellSQL(cells, cellID, true)
+		if err != nil {
+			return nil, err
+		}
+		cell.Content = compiled
+	}
 
 	// Serialize execution per session
 	s.mu.Lock()

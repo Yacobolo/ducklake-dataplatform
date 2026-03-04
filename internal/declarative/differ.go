@@ -1050,7 +1050,6 @@ func diffNotebooks(plan *Plan, desired, actual []NotebookResource) {
 		var changes []FieldDiff
 		diffField(&changes, "description", a.Spec.Description, d.Spec.Description)
 		diffField(&changes, "owner", a.Spec.Owner, d.Spec.Owner)
-		diffField(&changes, "publish", mustJSON(a.Spec.Publish), mustJSON(d.Spec.Publish))
 		diffCells(&changes, a.Spec.Cells, d.Spec.Cells)
 		if len(changes) > 0 {
 			addUpdate(plan, KindNotebook, d.Name, "", d, a, changes)

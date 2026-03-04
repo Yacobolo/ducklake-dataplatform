@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"duck-demo/internal/domain"
+	svcnotebook "duck-demo/internal/service/notebook"
 )
 
 var blockCommentPattern = regexp.MustCompile(`(?s)/\*.*?\*/`)
@@ -80,13 +81,20 @@ func (p *DBNotebookProvider) GetSQLBlockByCellID(ctx context.Context, notebookID
 	if cell.Disabled {
 		return "", domain.ErrValidation("cell %s is disabled", cellID)
 	}
-	if cell.Role != "" && cell.Role != domain.CellRoleOutput {
-		return "", domain.ErrValidation("cell %s is not an output cell", cellID)
+	cells, err := p.repo.ListCells(ctx, notebookID)
+	if err != nil {
+		return "", err
 	}
-	if isEmptyOrCommentOnlySQL(cell.Content) {
-		return "", domain.ErrValidation("selected cell has empty SQL")
+	return svcnotebook.CompileNotebookCellSQL(cells, cellID, false)
+}
+
+// CompileOutputCellSQL compiles SQL for a notebook output cell with graph-aware extraction.
+func (p *DBNotebookProvider) CompileOutputCellSQL(ctx context.Context, notebookID, outputCellID string) (string, error) {
+	cells, err := p.repo.ListCells(ctx, notebookID)
+	if err != nil {
+		return "", err
 	}
-	return cell.Content, nil
+	return svcnotebook.CompileNotebookCellSQL(cells, outputCellID, true)
 }
 
 // ListCells returns all notebook cells ordered by position.
