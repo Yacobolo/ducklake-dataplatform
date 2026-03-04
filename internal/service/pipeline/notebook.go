@@ -89,6 +89,11 @@ func (p *DBNotebookProvider) GetSQLBlockByCellID(ctx context.Context, notebookID
 	return cell.Content, nil
 }
 
+// ListCells returns all notebook cells ordered by position.
+func (p *DBNotebookProvider) ListCells(ctx context.Context, notebookID string) ([]domain.Cell, error) {
+	return p.repo.ListCells(ctx, notebookID)
+}
+
 func isEmptyOrCommentOnlySQL(sql string) bool {
 	sanitized := strings.TrimSpace(sql)
 	if sanitized == "" {

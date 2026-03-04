@@ -375,6 +375,15 @@ func (s *Service) postMaterialize(ctx context.Context, model *domain.Model,
 		}
 	}
 
+	notebookFailed, err := s.executeNotebookCellTests(ctx, conn, model, principal)
+	if err != nil {
+		logger.Error("notebook test cell execution error", "model", model.QualifiedName(), "error", err)
+		return fmt.Errorf("notebook test execution for %s: %w", model.QualifiedName(), err)
+	}
+	if notebookFailed {
+		return fmt.Errorf("one or more notebook test cells failed for %s", model.QualifiedName())
+	}
+
 	return nil
 }
 

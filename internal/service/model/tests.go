@@ -3,6 +3,7 @@ package model
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -80,6 +81,47 @@ func (s *Service) executeTests(ctx context.Context, conn *sql.Conn,
 		} else {
 			var rowCount int64
 			s.recordTestResult(ctx, stepID, test, domain.TestResultPass, &rowCount, "")
+		}
+	}
+
+	return anyFailed, nil
+}
+
+// executeNotebookCellTests runs notebook test-role cells for models linked from notebooks.
+// Returns true if any error-severity test cell failed.
+func (s *Service) executeNotebookCellTests(ctx context.Context, conn *sql.Conn, model *domain.Model, principal string) (bool, error) {
+	if s.notebookLinks == nil || s.notebooks == nil {
+		return false, nil
+	}
+
+	link, err := s.notebookLinks.GetByModelID(ctx, model.ID)
+	if err != nil {
+		if errors.As(err, new(*domain.NotFoundError)) {
+			return false, nil
+		}
+		return false, fmt.Errorf("get notebook-model link for %s: %w", model.QualifiedName(), err)
+	}
+
+	cells, err := s.notebooks.ListCells(ctx, link.NotebookID)
+	if err != nil {
+		return false, fmt.Errorf("list notebook cells: %w", err)
+	}
+
+	anyFailed := false
+	for _, cell := range cells {
+		if cell.CellType != domain.CellTypeSQL || cell.Disabled || cell.Role != domain.CellRoleTest {
+			continue
+		}
+		hasRows, queryErr := s.runTestQuery(ctx, conn, principal, cell.Content)
+		if queryErr != nil {
+			return false, fmt.Errorf("execute notebook test cell %s: %w", cell.ID, queryErr)
+		}
+		severity := domain.NotebookTestSeverityError
+		if cell.Test != nil && cell.Test.Severity != "" {
+			severity = cell.Test.Severity
+		}
+		if hasRows && severity == domain.NotebookTestSeverityError {
+			anyFailed = true
 		}
 	}
 
