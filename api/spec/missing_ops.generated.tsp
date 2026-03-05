@@ -12,6 +12,79 @@ model GenericResponse {
   data?: Record<string>;
 }
 
+model StorageCredential {
+  id: string;
+  name: string;
+  credential_type?: string;
+  endpoint?: string;
+  region?: string;
+  url_style?: string;
+  comment?: string;
+  owner?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+model PaginatedStorageCredentials {
+  data: StorageCredential[];
+  next_page_token?: string;
+}
+
+model CreateStorageCredentialRequest {
+  name: string;
+  credential_type?: string;
+  key_id?: string;
+  secret?: string;
+  endpoint?: string;
+  region?: string;
+  url_style?: string;
+  comment?: string;
+}
+
+model UpdateStorageCredentialRequest {
+  key_id?: string;
+  secret?: string;
+  endpoint?: string;
+  region?: string;
+  url_style?: string;
+  comment?: string;
+}
+
+model ExternalLocation {
+  id: string;
+  name: string;
+  url: string;
+  credential_name?: string;
+  storage_type?: string;
+  comment?: string;
+  owner?: string;
+  read_only?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+model PaginatedExternalLocations {
+  data: ExternalLocation[];
+  next_page_token?: string;
+}
+
+model CreateExternalLocationRequest {
+  name: string;
+  url: string;
+  credential_name?: string;
+  storage_type?: string;
+  comment?: string;
+  read_only?: boolean;
+}
+
+model UpdateExternalLocationRequest {
+  url?: string;
+  credential_name?: string;
+  storage_type?: string;
+  comment?: string;
+  read_only?: boolean;
+}
+
 @route("/queries")
 @post
 op submitQuery(@body body: GenericRequest): GenericResponse;
@@ -102,19 +175,19 @@ op listClassifications(max_results?: int32, page_token?: string): GenericRespons
 
 @route("/storage-credentials")
 @get
-op listStorageCredentials(max_results?: int32, page_token?: string): GenericResponse;
+op listStorageCredentials(max_results?: int32, page_token?: string): PaginatedStorageCredentials;
 
 @route("/storage-credentials")
 @post
-op createStorageCredential(@body body: GenericRequest): GenericResponse;
+op createStorageCredential(@body body: CreateStorageCredentialRequest): StorageCredential;
 
 @route("/storage-credentials/{credentialName}")
 @get
-op getStorageCredential(credentialName: string): GenericResponse;
+op getStorageCredential(credentialName: string): StorageCredential;
 
 @route("/storage-credentials/{credentialName}")
 @patch(#{ implicitOptionality: true })
-op updateStorageCredential(credentialName: string, @body body: GenericRequest): GenericResponse;
+op updateStorageCredential(credentialName: string, @body body: UpdateStorageCredentialRequest): StorageCredential;
 
 @route("/storage-credentials/{credentialName}")
 @delete
@@ -122,19 +195,19 @@ op deleteStorageCredential(credentialName: string): void;
 
 @route("/external-locations")
 @get
-op listExternalLocations(max_results?: int32, page_token?: string): GenericResponse;
+op listExternalLocations(max_results?: int32, page_token?: string): PaginatedExternalLocations;
 
 @route("/external-locations")
 @post
-op createExternalLocation(@body body: GenericRequest): GenericResponse;
+op createExternalLocation(@body body: CreateExternalLocationRequest): ExternalLocation;
 
 @route("/external-locations/{locationName}")
 @get
-op getExternalLocation(locationName: string): GenericResponse;
+op getExternalLocation(locationName: string): ExternalLocation;
 
 @route("/external-locations/{locationName}")
 @patch(#{ implicitOptionality: true })
-op updateExternalLocation(locationName: string, @body body: GenericRequest): GenericResponse;
+op updateExternalLocation(locationName: string, @body body: UpdateExternalLocationRequest): ExternalLocation;
 
 @route("/external-locations/{locationName}")
 @delete
@@ -495,4 +568,3 @@ op runMetricQuery(@body body: GenericRequest): GenericResponse;
 @route("/metrics/{metricName}/freshness")
 @get
 op checkMetricFreshness(metricName: string, project_name?: string, semantic_model_name?: string): GenericResponse;
-

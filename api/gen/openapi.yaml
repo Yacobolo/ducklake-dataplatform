@@ -1224,7 +1224,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/PaginatedExternalLocations'
       requestBody:
         required: true
         content:
@@ -1246,13 +1246,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/ExternalLocation'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenericRequest'
+              $ref: '#/components/schemas/CreateExternalLocationRequest'
   /external-locations/{locationName}:
     get:
       operationId: getExternalLocation
@@ -1268,7 +1268,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/ExternalLocation'
     patch:
       operationId: updateExternalLocation
       parameters:
@@ -1283,13 +1283,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/ExternalLocation'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenericRequest'
+              $ref: '#/components/schemas/UpdateExternalLocationRequest'
     delete:
       operationId: deleteExternalLocation
       parameters:
@@ -3644,7 +3644,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/PaginatedStorageCredentials'
       requestBody:
         required: true
         content:
@@ -3666,13 +3666,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/StorageCredential'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenericRequest'
+              $ref: '#/components/schemas/CreateStorageCredentialRequest'
   /storage-credentials/{credentialName}:
     get:
       operationId: getStorageCredential
@@ -3688,7 +3688,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/StorageCredential'
     patch:
       operationId: updateStorageCredential
       parameters:
@@ -3703,13 +3703,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/StorageCredential'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenericRequest'
+              $ref: '#/components/schemas/UpdateStorageCredentialRequest'
     delete:
       operationId: deleteStorageCredential
       parameters:
@@ -4152,6 +4152,24 @@ components:
           type: boolean
         comment:
           type: string
+    CreateExternalLocationRequest:
+      type: object
+      required:
+        - name
+        - url
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+        credential_name:
+          type: string
+        storage_type:
+          type: string
+        comment:
+          type: string
+        read_only:
+          type: boolean
     CreateGrantRequest:
       type: object
       required:
@@ -4225,6 +4243,27 @@ components:
           type: object
           additionalProperties:
             type: string
+    CreateStorageCredentialRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        credential_type:
+          type: string
+        key_id:
+          type: string
+        secret:
+          type: string
+        endpoint:
+          type: string
+        region:
+          type: string
+        url_style:
+          type: string
+        comment:
+          type: string
     CreateTableRequest:
       type: object
       required:
@@ -4273,6 +4312,33 @@ components:
           type: integer
           format: int32
         message:
+          type: string
+    ExternalLocation:
+      type: object
+      required:
+        - id
+        - name
+        - url
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        url:
+          type: string
+        credential_name:
+          type: string
+        storage_type:
+          type: string
+        comment:
+          type: string
+        owner:
+          type: string
+        read_only:
+          type: boolean
+        created_at:
+          type: string
+        updated_at:
           type: string
     GenericRequest:
       type: object
@@ -4431,6 +4497,17 @@ components:
             $ref: '#/components/schemas/ColumnMask'
         next_page_token:
           type: string
+    PaginatedExternalLocations:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExternalLocation'
+        next_page_token:
+          type: string
     PaginatedGrants:
       type: object
       required:
@@ -4506,6 +4583,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SchemaDetail'
+        next_page_token:
+          type: string
+    PaginatedStorageCredentials:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/StorageCredential'
         next_page_token:
           type: string
     PaginatedTableDetails:
@@ -4686,6 +4774,32 @@ components:
           type: string
     SetDefaultCatalogRequest:
       type: object
+    StorageCredential:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        credential_type:
+          type: string
+        endpoint:
+          type: string
+        region:
+          type: string
+        url_style:
+          type: string
+        comment:
+          type: string
+        owner:
+          type: string
+        created_at:
+          type: string
+        updated_at:
+          type: string
     TableDetail:
       type: object
       required:
@@ -4746,6 +4860,19 @@ components:
           type: string
         nullable:
           type: boolean
+    UpdateExternalLocationRequest:
+      type: object
+      properties:
+        url:
+          type: string
+        credential_name:
+          type: string
+        storage_type:
+          type: string
+        comment:
+          type: string
+        read_only:
+          type: boolean
     UpdatePrincipalAdminRequest:
       type: object
       required:
@@ -4762,6 +4889,21 @@ components:
           type: object
           additionalProperties:
             type: string
+    UpdateStorageCredentialRequest:
+      type: object
+      properties:
+        key_id:
+          type: string
+        secret:
+          type: string
+        endpoint:
+          type: string
+        region:
+          type: string
+        url_style:
+          type: string
+        comment:
+          type: string
     UpdateTableRequest:
       type: object
       properties:

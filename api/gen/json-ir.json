@@ -37,6 +37,42 @@
       "description": "Audit and query observability endpoints"
     },
     {
+      "name": "storage",
+      "description": "Storage credentials and external locations"
+    },
+    {
+      "name": "compute",
+      "description": "Compute endpoint management"
+    },
+    {
+      "name": "lineage",
+      "description": "Lineage graph and impact analysis"
+    },
+    {
+      "name": "notebooks",
+      "description": "Notebook authoring and execution"
+    },
+    {
+      "name": "pipelines",
+      "description": "Pipeline orchestration endpoints"
+    },
+    {
+      "name": "models",
+      "description": "Model lifecycle and testing"
+    },
+    {
+      "name": "macros",
+      "description": "Macro management and revisions"
+    },
+    {
+      "name": "semantic",
+      "description": "Semantic models and metrics"
+    },
+    {
+      "name": "governance",
+      "description": "Tags and classifications"
+    },
+    {
       "name": "api",
       "description": "General API endpoints"
     }
@@ -1593,6 +1629,313 @@
         "payload": {
           "schema": {
             "ref": "Record"
+          }
+        }
+      }
+    },
+    "PaginatedStorageCredentials": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "schema": {
+            "type": "array"
+          }
+        },
+        "next_page_token": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "data"
+      ]
+    },
+    "StorageCredential": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "name": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "credential_type": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "endpoint": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "region": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "url_style": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "comment": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "owner": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "created_at": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "updated_at": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "CreateStorageCredentialRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "credential_type": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "key_id": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "secret": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "endpoint": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "region": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "url_style": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "comment": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "UpdateStorageCredentialRequest": {
+      "type": "object",
+      "properties": {
+        "key_id": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "secret": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "endpoint": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "region": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "url_style": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "comment": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "PaginatedExternalLocations": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "schema": {
+            "type": "array"
+          }
+        },
+        "next_page_token": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "data"
+      ]
+    },
+    "ExternalLocation": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "name": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "url": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "credential_name": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "storage_type": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "comment": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "owner": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "read_only": {
+          "schema": {
+            "type": "boolean"
+          }
+        },
+        "created_at": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "updated_at": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "url"
+      ]
+    },
+    "CreateExternalLocationRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "url": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "credential_name": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "storage_type": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "comment": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "read_only": {
+          "schema": {
+            "type": "boolean"
+          }
+        }
+      },
+      "required": [
+        "name",
+        "url"
+      ]
+    },
+    "UpdateExternalLocationRequest": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "credential_name": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "storage_type": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "comment": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "read_only": {
+          "schema": {
+            "type": "boolean"
           }
         }
       }
@@ -4697,7 +5040,7 @@
       "path": "/classifications",
       "operation_id": "listClassifications",
       "tags": [
-        "api"
+        "governance"
       ],
       "responses": [
         {
@@ -4971,7 +5314,7 @@
       "path": "/compute-endpoints",
       "operation_id": "listComputeEndpoints",
       "tags": [
-        "api"
+        "compute"
       ],
       "responses": [
         {
@@ -5043,7 +5386,7 @@
       "path": "/compute-endpoints",
       "operation_id": "createComputeEndpoint",
       "tags": [
-        "api"
+        "compute"
       ],
       "responses": [
         {
@@ -5092,7 +5435,7 @@
           }
         ],
         "x-authz": {
-          "mode": "authenticated"
+          "mode": "admin_only"
         }
       }
     },
@@ -5101,7 +5444,7 @@
       "path": "/compute-endpoints/{endpointName}",
       "operation_id": "getComputeEndpoint",
       "tags": [
-        "api"
+        "compute"
       ],
       "responses": [
         {
@@ -5170,7 +5513,7 @@
       "path": "/compute-endpoints/{endpointName}",
       "operation_id": "updateComputeEndpoint",
       "tags": [
-        "api"
+        "compute"
       ],
       "responses": [
         {
@@ -5230,7 +5573,7 @@
           }
         ],
         "x-authz": {
-          "mode": "authenticated"
+          "mode": "admin_only"
         }
       }
     },
@@ -5239,7 +5582,7 @@
       "path": "/compute-endpoints/{endpointName}",
       "operation_id": "deleteComputeEndpoint",
       "tags": [
-        "api"
+        "compute"
       ],
       "responses": [
         {
@@ -5289,7 +5632,7 @@
           }
         ],
         "x-authz": {
-          "mode": "authenticated"
+          "mode": "admin_only"
         }
       }
     },
@@ -5298,7 +5641,7 @@
       "path": "/compute-endpoints/{endpointName}/assignments",
       "operation_id": "listComputeAssignments",
       "tags": [
-        "api"
+        "compute"
       ],
       "responses": [
         {
@@ -5386,7 +5729,7 @@
       "path": "/compute-endpoints/{endpointName}/assignments",
       "operation_id": "createComputeAssignment",
       "tags": [
-        "api"
+        "compute"
       ],
       "responses": [
         {
@@ -5446,7 +5789,7 @@
           }
         ],
         "x-authz": {
-          "mode": "authenticated"
+          "mode": "admin_only"
         }
       }
     },
@@ -5455,7 +5798,7 @@
       "path": "/compute-endpoints/{endpointName}/assignments/{assignmentId}",
       "operation_id": "deleteComputeAssignment",
       "tags": [
-        "api"
+        "compute"
       ],
       "responses": [
         {
@@ -5514,7 +5857,7 @@
           }
         ],
         "x-authz": {
-          "mode": "authenticated"
+          "mode": "admin_only"
         }
       }
     },
@@ -5523,7 +5866,7 @@
       "path": "/compute-endpoints/{endpointName}/health",
       "operation_id": "getComputeEndpointHealth",
       "tags": [
-        "api"
+        "compute"
       ],
       "responses": [
         {
@@ -5592,14 +5935,14 @@
       "path": "/external-locations",
       "operation_id": "listExternalLocations",
       "tags": [
-        "api"
+        "storage"
       ],
       "responses": [
         {
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "ref": "PaginatedExternalLocations"
           }
         },
         {
@@ -5664,14 +6007,14 @@
       "path": "/external-locations",
       "operation_id": "createExternalLocation",
       "tags": [
-        "api"
+        "storage"
       ],
       "responses": [
         {
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "ref": "ExternalLocation"
           }
         },
         {
@@ -5700,7 +6043,7 @@
         "required": true,
         "description": "Request payload",
         "schema": {
-          "ref": "GenericRequest"
+          "ref": "CreateExternalLocationRequest"
         }
       },
       "extensions": {
@@ -5713,7 +6056,7 @@
           }
         ],
         "x-authz": {
-          "mode": "authenticated"
+          "mode": "admin_only"
         }
       }
     },
@@ -5722,14 +6065,14 @@
       "path": "/external-locations/{locationName}",
       "operation_id": "getExternalLocation",
       "tags": [
-        "api"
+        "storage"
       ],
       "responses": [
         {
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "ref": "ExternalLocation"
           }
         },
         {
@@ -5791,14 +6134,14 @@
       "path": "/external-locations/{locationName}",
       "operation_id": "updateExternalLocation",
       "tags": [
-        "api"
+        "storage"
       ],
       "responses": [
         {
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "ref": "ExternalLocation"
           }
         },
         {
@@ -5838,7 +6181,7 @@
         "required": true,
         "description": "Request payload",
         "schema": {
-          "ref": "GenericRequest"
+          "ref": "UpdateExternalLocationRequest"
         }
       },
       "extensions": {
@@ -5851,7 +6194,7 @@
           }
         ],
         "x-authz": {
-          "mode": "authenticated"
+          "mode": "admin_only"
         }
       }
     },
@@ -5860,7 +6203,7 @@
       "path": "/external-locations/{locationName}",
       "operation_id": "deleteExternalLocation",
       "tags": [
-        "api"
+        "storage"
       ],
       "responses": [
         {
@@ -5910,7 +6253,7 @@
           }
         ],
         "x-authz": {
-          "mode": "authenticated"
+          "mode": "admin_only"
         }
       }
     },
@@ -6991,7 +7334,7 @@
       "path": "/lineage/columns/{schemaName}/{tableName}",
       "operation_id": "getColumnLineage",
       "tags": [
-        "api"
+        "lineage"
       ],
       "responses": [
         {
@@ -7088,7 +7431,7 @@
       "path": "/lineage/columns/{schemaName}/{tableName}/{columnName}/impact",
       "operation_id": "getColumnImpact",
       "tags": [
-        "api"
+        "lineage"
       ],
       "responses": [
         {
@@ -7194,7 +7537,7 @@
       "path": "/lineage/edges/{edgeId}",
       "operation_id": "deleteLineageEdge",
       "tags": [
-        "api"
+        "lineage"
       ],
       "responses": [
         {
@@ -7253,7 +7596,7 @@
       "path": "/lineage/purge",
       "operation_id": "purgeLineage",
       "tags": [
-        "api"
+        "lineage"
       ],
       "responses": [
         {
@@ -7311,7 +7654,7 @@
       "path": "/lineage/tables/{schemaName}/{tableName}",
       "operation_id": "getTableLineage",
       "tags": [
-        "api"
+        "lineage"
       ],
       "responses": [
         {
@@ -7408,7 +7751,7 @@
       "path": "/lineage/tables/{schemaName}/{tableName}/downstream",
       "operation_id": "getDownstreamLineage",
       "tags": [
-        "api"
+        "lineage"
       ],
       "responses": [
         {
@@ -7505,7 +7848,7 @@
       "path": "/lineage/tables/{schemaName}/{tableName}/upstream",
       "operation_id": "getUpstreamLineage",
       "tags": [
-        "api"
+        "lineage"
       ],
       "responses": [
         {
@@ -7602,7 +7945,7 @@
       "path": "/macros",
       "operation_id": "listMacros",
       "tags": [
-        "api"
+        "macros"
       ],
       "responses": [
         {
@@ -7674,7 +8017,7 @@
       "path": "/macros",
       "operation_id": "createMacro",
       "tags": [
-        "api"
+        "macros"
       ],
       "responses": [
         {
@@ -7732,7 +8075,7 @@
       "path": "/macros/{macroName}",
       "operation_id": "getMacro",
       "tags": [
-        "api"
+        "macros"
       ],
       "responses": [
         {
@@ -7801,7 +8144,7 @@
       "path": "/macros/{macroName}",
       "operation_id": "updateMacro",
       "tags": [
-        "api"
+        "macros"
       ],
       "responses": [
         {
@@ -7870,7 +8213,7 @@
       "path": "/macros/{macroName}",
       "operation_id": "deleteMacro",
       "tags": [
-        "api"
+        "macros"
       ],
       "responses": [
         {
@@ -7929,7 +8272,7 @@
       "path": "/macros/{macroName}/diff",
       "operation_id": "diffMacroRevisions",
       "tags": [
-        "api"
+        "macros"
       ],
       "responses": [
         {
@@ -8018,7 +8361,7 @@
       "path": "/macros/{macroName}/impact",
       "operation_id": "getMacroImpact",
       "tags": [
-        "api"
+        "macros"
       ],
       "responses": [
         {
@@ -8106,7 +8449,7 @@
       "path": "/macros/{macroName}/revisions",
       "operation_id": "listMacroRevisions",
       "tags": [
-        "api"
+        "macros"
       ],
       "responses": [
         {
@@ -8233,7 +8576,7 @@
       "path": "/metric-queries:explain",
       "operation_id": "explainMetricQuery",
       "tags": [
-        "api"
+        "semantic"
       ],
       "responses": [
         {
@@ -8291,7 +8634,7 @@
       "path": "/metric-queries:run",
       "operation_id": "runMetricQuery",
       "tags": [
-        "api"
+        "semantic"
       ],
       "responses": [
         {
@@ -8349,7 +8692,7 @@
       "path": "/metrics/{metricName}/freshness",
       "operation_id": "checkMetricFreshness",
       "tags": [
-        "api"
+        "semantic"
       ],
       "responses": [
         {
@@ -8436,7 +8779,7 @@
       "path": "/model-runs",
       "operation_id": "listModelRuns",
       "tags": [
-        "api"
+        "models"
       ],
       "responses": [
         {
@@ -8517,7 +8860,7 @@
       "path": "/model-runs",
       "operation_id": "triggerModelRun",
       "tags": [
-        "api"
+        "models"
       ],
       "responses": [
         {
@@ -8575,7 +8918,7 @@
       "path": "/model-runs/{runId}",
       "operation_id": "getModelRun",
       "tags": [
-        "api"
+        "models"
       ],
       "responses": [
         {
@@ -8644,7 +8987,7 @@
       "path": "/model-runs/{runId}/cancel",
       "operation_id": "cancelModelRun",
       "tags": [
-        "api"
+        "models"
       ],
       "responses": [
         {
@@ -8706,7 +9049,7 @@
       "path": "/model-runs/{runId}/steps",
       "operation_id": "listModelRunSteps",
       "tags": [
-        "api"
+        "models"
       ],
       "responses": [
         {
@@ -8775,7 +9118,7 @@
       "path": "/model-runs/{runId}/steps/{stepId}/test-results",
       "operation_id": "listModelTestResults",
       "tags": [
-        "api"
+        "models"
       ],
       "responses": [
         {
@@ -8853,7 +9196,7 @@
       "path": "/models",
       "operation_id": "listModels",
       "tags": [
-        "api"
+        "models"
       ],
       "responses": [
         {
@@ -8934,7 +9277,7 @@
       "path": "/models",
       "operation_id": "createModel",
       "tags": [
-        "api"
+        "models"
       ],
       "responses": [
         {
@@ -8992,7 +9335,7 @@
       "path": "/models/{projectName}/{modelName}",
       "operation_id": "getModel",
       "tags": [
-        "api"
+        "models"
       ],
       "responses": [
         {
@@ -9070,7 +9413,7 @@
       "path": "/models/{projectName}/{modelName}",
       "operation_id": "updateModel",
       "tags": [
-        "api"
+        "models"
       ],
       "responses": [
         {
@@ -9148,7 +9491,7 @@
       "path": "/models/{projectName}/{modelName}",
       "operation_id": "deleteModel",
       "tags": [
-        "api"
+        "models"
       ],
       "responses": [
         {
@@ -9216,7 +9559,7 @@
       "path": "/models/{projectName}/{modelName}/freshness",
       "operation_id": "checkModelFreshness",
       "tags": [
-        "api"
+        "models"
       ],
       "responses": [
         {
@@ -9294,7 +9637,7 @@
       "path": "/models/{projectName}/{modelName}/tests",
       "operation_id": "listModelTests",
       "tags": [
-        "api"
+        "models"
       ],
       "responses": [
         {
@@ -9372,7 +9715,7 @@
       "path": "/models/{projectName}/{modelName}/tests",
       "operation_id": "createModelTest",
       "tags": [
-        "api"
+        "models"
       ],
       "responses": [
         {
@@ -9450,7 +9793,7 @@
       "path": "/models/{projectName}/{modelName}/tests/{testId}",
       "operation_id": "deleteModelTest",
       "tags": [
-        "api"
+        "models"
       ],
       "responses": [
         {
@@ -9527,7 +9870,7 @@
       "path": "/models/dag",
       "operation_id": "getModelDAG",
       "tags": [
-        "api"
+        "models"
       ],
       "responses": [
         {
@@ -9589,7 +9932,7 @@
       "path": "/models/from-notebook",
       "operation_id": "promoteNotebookToModel",
       "tags": [
-        "api"
+        "models"
       ],
       "responses": [
         {
@@ -9647,7 +9990,7 @@
       "path": "/notebooks",
       "operation_id": "listNotebooks",
       "tags": [
-        "api"
+        "notebooks"
       ],
       "responses": [
         {
@@ -9728,7 +10071,7 @@
       "path": "/notebooks",
       "operation_id": "createNotebook",
       "tags": [
-        "api"
+        "notebooks"
       ],
       "responses": [
         {
@@ -9786,7 +10129,7 @@
       "path": "/notebooks/{notebookId}",
       "operation_id": "getNotebook",
       "tags": [
-        "api"
+        "notebooks"
       ],
       "responses": [
         {
@@ -9855,7 +10198,7 @@
       "path": "/notebooks/{notebookId}",
       "operation_id": "updateNotebook",
       "tags": [
-        "api"
+        "notebooks"
       ],
       "responses": [
         {
@@ -9924,7 +10267,7 @@
       "path": "/notebooks/{notebookId}",
       "operation_id": "deleteNotebook",
       "tags": [
-        "api"
+        "notebooks"
       ],
       "responses": [
         {
@@ -9983,7 +10326,7 @@
       "path": "/notebooks/{notebookId}/cells",
       "operation_id": "createCell",
       "tags": [
-        "api"
+        "notebooks"
       ],
       "responses": [
         {
@@ -10052,7 +10395,7 @@
       "path": "/notebooks/{notebookId}/cells/{cellId}",
       "operation_id": "updateCell",
       "tags": [
-        "api"
+        "notebooks"
       ],
       "responses": [
         {
@@ -10130,7 +10473,7 @@
       "path": "/notebooks/{notebookId}/cells/{cellId}",
       "operation_id": "deleteCell",
       "tags": [
-        "api"
+        "notebooks"
       ],
       "responses": [
         {
@@ -10198,7 +10541,7 @@
       "path": "/notebooks/{notebookId}/cells/reorder",
       "operation_id": "reorderCells",
       "tags": [
-        "api"
+        "notebooks"
       ],
       "responses": [
         {
@@ -10267,7 +10610,7 @@
       "path": "/notebooks/{notebookId}/jobs",
       "operation_id": "listNotebookJobs",
       "tags": [
-        "api"
+        "notebooks"
       ],
       "responses": [
         {
@@ -10355,7 +10698,7 @@
       "path": "/notebooks/{notebookId}/jobs/{jobId}",
       "operation_id": "getNotebookJob",
       "tags": [
-        "api"
+        "notebooks"
       ],
       "responses": [
         {
@@ -10433,7 +10776,7 @@
       "path": "/notebooks/{notebookId}/sessions",
       "operation_id": "createNotebookSession",
       "tags": [
-        "api"
+        "notebooks"
       ],
       "responses": [
         {
@@ -10495,7 +10838,7 @@
       "path": "/notebooks/{notebookId}/sessions/{sessionId}",
       "operation_id": "closeNotebookSession",
       "tags": [
-        "api"
+        "notebooks"
       ],
       "responses": [
         {
@@ -10563,7 +10906,7 @@
       "path": "/notebooks/{notebookId}/sessions/{sessionId}/execute/{cellId}",
       "operation_id": "executeCell",
       "tags": [
-        "api"
+        "notebooks"
       ],
       "responses": [
         {
@@ -10643,7 +10986,7 @@
       "path": "/notebooks/{notebookId}/sessions/{sessionId}/run-all",
       "operation_id": "runAllCells",
       "tags": [
-        "api"
+        "notebooks"
       ],
       "responses": [
         {
@@ -10714,7 +11057,7 @@
       "path": "/notebooks/{notebookId}/sessions/{sessionId}/run-all-async",
       "operation_id": "runAllCellsAsync",
       "tags": [
-        "api"
+        "notebooks"
       ],
       "responses": [
         {
@@ -10785,7 +11128,7 @@
       "path": "/pipelines",
       "operation_id": "listPipelines",
       "tags": [
-        "api"
+        "pipelines"
       ],
       "responses": [
         {
@@ -10857,7 +11200,7 @@
       "path": "/pipelines",
       "operation_id": "createPipeline",
       "tags": [
-        "api"
+        "pipelines"
       ],
       "responses": [
         {
@@ -10915,7 +11258,7 @@
       "path": "/pipelines/{pipelineName}",
       "operation_id": "getPipeline",
       "tags": [
-        "api"
+        "pipelines"
       ],
       "responses": [
         {
@@ -10984,7 +11327,7 @@
       "path": "/pipelines/{pipelineName}",
       "operation_id": "updatePipeline",
       "tags": [
-        "api"
+        "pipelines"
       ],
       "responses": [
         {
@@ -11053,7 +11396,7 @@
       "path": "/pipelines/{pipelineName}",
       "operation_id": "deletePipeline",
       "tags": [
-        "api"
+        "pipelines"
       ],
       "responses": [
         {
@@ -11112,7 +11455,7 @@
       "path": "/pipelines/{pipelineName}/jobs",
       "operation_id": "listPipelineJobs",
       "tags": [
-        "api"
+        "pipelines"
       ],
       "responses": [
         {
@@ -11181,7 +11524,7 @@
       "path": "/pipelines/{pipelineName}/jobs",
       "operation_id": "createPipelineJob",
       "tags": [
-        "api"
+        "pipelines"
       ],
       "responses": [
         {
@@ -11250,7 +11593,7 @@
       "path": "/pipelines/{pipelineName}/jobs/{jobId}",
       "operation_id": "deletePipelineJob",
       "tags": [
-        "api"
+        "pipelines"
       ],
       "responses": [
         {
@@ -11318,7 +11661,7 @@
       "path": "/pipelines/{pipelineName}/runs",
       "operation_id": "listPipelineRuns",
       "tags": [
-        "api"
+        "pipelines"
       ],
       "responses": [
         {
@@ -11415,7 +11758,7 @@
       "path": "/pipelines/{pipelineName}/runs",
       "operation_id": "triggerPipelineRun",
       "tags": [
-        "api"
+        "pipelines"
       ],
       "responses": [
         {
@@ -11484,7 +11827,7 @@
       "path": "/pipelines/runs/{runId}",
       "operation_id": "getPipelineRun",
       "tags": [
-        "api"
+        "pipelines"
       ],
       "responses": [
         {
@@ -11553,7 +11896,7 @@
       "path": "/pipelines/runs/{runId}/cancel",
       "operation_id": "cancelPipelineRun",
       "tags": [
-        "api"
+        "pipelines"
       ],
       "responses": [
         {
@@ -11615,7 +11958,7 @@
       "path": "/pipelines/runs/{runId}/jobs",
       "operation_id": "listPipelineJobRuns",
       "tags": [
-        "api"
+        "pipelines"
       ],
       "responses": [
         {
@@ -12753,7 +13096,7 @@
       "path": "/semantic-models",
       "operation_id": "listSemanticModels",
       "tags": [
-        "api"
+        "semantic"
       ],
       "responses": [
         {
@@ -12834,7 +13177,7 @@
       "path": "/semantic-models",
       "operation_id": "createSemanticModel",
       "tags": [
-        "api"
+        "semantic"
       ],
       "responses": [
         {
@@ -12892,7 +13235,7 @@
       "path": "/semantic-models/{projectName}/{semanticModelName}",
       "operation_id": "getSemanticModel",
       "tags": [
-        "api"
+        "semantic"
       ],
       "responses": [
         {
@@ -12970,7 +13313,7 @@
       "path": "/semantic-models/{projectName}/{semanticModelName}",
       "operation_id": "updateSemanticModel",
       "tags": [
-        "api"
+        "semantic"
       ],
       "responses": [
         {
@@ -13048,7 +13391,7 @@
       "path": "/semantic-models/{projectName}/{semanticModelName}",
       "operation_id": "deleteSemanticModel",
       "tags": [
-        "api"
+        "semantic"
       ],
       "responses": [
         {
@@ -13116,7 +13459,7 @@
       "path": "/semantic-models/{projectName}/{semanticModelName}/metrics",
       "operation_id": "listSemanticMetrics",
       "tags": [
-        "api"
+        "semantic"
       ],
       "responses": [
         {
@@ -13194,7 +13537,7 @@
       "path": "/semantic-models/{projectName}/{semanticModelName}/metrics",
       "operation_id": "createSemanticMetric",
       "tags": [
-        "api"
+        "semantic"
       ],
       "responses": [
         {
@@ -13272,7 +13615,7 @@
       "path": "/semantic-models/{projectName}/{semanticModelName}/metrics/{metricName}",
       "operation_id": "updateSemanticMetric",
       "tags": [
-        "api"
+        "semantic"
       ],
       "responses": [
         {
@@ -13359,7 +13702,7 @@
       "path": "/semantic-models/{projectName}/{semanticModelName}/metrics/{metricName}",
       "operation_id": "deleteSemanticMetric",
       "tags": [
-        "api"
+        "semantic"
       ],
       "responses": [
         {
@@ -13436,7 +13779,7 @@
       "path": "/semantic-models/{projectName}/{semanticModelName}/pre-aggregations",
       "operation_id": "listSemanticPreAggregations",
       "tags": [
-        "api"
+        "semantic"
       ],
       "responses": [
         {
@@ -13514,7 +13857,7 @@
       "path": "/semantic-models/{projectName}/{semanticModelName}/pre-aggregations",
       "operation_id": "createSemanticPreAggregation",
       "tags": [
-        "api"
+        "semantic"
       ],
       "responses": [
         {
@@ -13592,7 +13935,7 @@
       "path": "/semantic-models/{projectName}/{semanticModelName}/pre-aggregations/{preAggregationName}",
       "operation_id": "updateSemanticPreAggregation",
       "tags": [
-        "api"
+        "semantic"
       ],
       "responses": [
         {
@@ -13679,7 +14022,7 @@
       "path": "/semantic-models/{projectName}/{semanticModelName}/pre-aggregations/{preAggregationName}",
       "operation_id": "deleteSemanticPreAggregation",
       "tags": [
-        "api"
+        "semantic"
       ],
       "responses": [
         {
@@ -13756,7 +14099,7 @@
       "path": "/semantic-relationships",
       "operation_id": "listSemanticRelationships",
       "tags": [
-        "api"
+        "semantic"
       ],
       "responses": [
         {
@@ -13828,7 +14171,7 @@
       "path": "/semantic-relationships",
       "operation_id": "createSemanticRelationship",
       "tags": [
-        "api"
+        "semantic"
       ],
       "responses": [
         {
@@ -13886,7 +14229,7 @@
       "path": "/semantic-relationships/{relationshipName}",
       "operation_id": "updateSemanticRelationship",
       "tags": [
-        "api"
+        "semantic"
       ],
       "responses": [
         {
@@ -13955,7 +14298,7 @@
       "path": "/semantic-relationships/{relationshipName}",
       "operation_id": "deleteSemanticRelationship",
       "tags": [
-        "api"
+        "semantic"
       ],
       "responses": [
         {
@@ -14014,7 +14357,7 @@
       "path": "/sources/{sourceSchema}/{sourceTable}/freshness",
       "operation_id": "checkSourceFreshness",
       "tags": [
-        "api"
+        "pipelines"
       ],
       "responses": [
         {
@@ -14111,14 +14454,14 @@
       "path": "/storage-credentials",
       "operation_id": "listStorageCredentials",
       "tags": [
-        "api"
+        "storage"
       ],
       "responses": [
         {
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "ref": "PaginatedStorageCredentials"
           }
         },
         {
@@ -14183,14 +14526,14 @@
       "path": "/storage-credentials",
       "operation_id": "createStorageCredential",
       "tags": [
-        "api"
+        "storage"
       ],
       "responses": [
         {
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "ref": "StorageCredential"
           }
         },
         {
@@ -14219,7 +14562,7 @@
         "required": true,
         "description": "Request payload",
         "schema": {
-          "ref": "GenericRequest"
+          "ref": "CreateStorageCredentialRequest"
         }
       },
       "extensions": {
@@ -14232,7 +14575,7 @@
           }
         ],
         "x-authz": {
-          "mode": "authenticated"
+          "mode": "admin_only"
         }
       }
     },
@@ -14241,14 +14584,14 @@
       "path": "/storage-credentials/{credentialName}",
       "operation_id": "getStorageCredential",
       "tags": [
-        "api"
+        "storage"
       ],
       "responses": [
         {
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "ref": "StorageCredential"
           }
         },
         {
@@ -14310,14 +14653,14 @@
       "path": "/storage-credentials/{credentialName}",
       "operation_id": "updateStorageCredential",
       "tags": [
-        "api"
+        "storage"
       ],
       "responses": [
         {
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "ref": "StorageCredential"
           }
         },
         {
@@ -14357,7 +14700,7 @@
         "required": true,
         "description": "Request payload",
         "schema": {
-          "ref": "GenericRequest"
+          "ref": "UpdateStorageCredentialRequest"
         }
       },
       "extensions": {
@@ -14370,7 +14713,7 @@
           }
         ],
         "x-authz": {
-          "mode": "authenticated"
+          "mode": "admin_only"
         }
       }
     },
@@ -14379,7 +14722,7 @@
       "path": "/storage-credentials/{credentialName}",
       "operation_id": "deleteStorageCredential",
       "tags": [
-        "api"
+        "storage"
       ],
       "responses": [
         {
@@ -14429,7 +14772,7 @@
           }
         ],
         "x-authz": {
-          "mode": "authenticated"
+          "mode": "admin_only"
         }
       }
     },
@@ -14752,7 +15095,7 @@
       "path": "/tag-assignments/{assignmentId}",
       "operation_id": "deleteTagAssignment",
       "tags": [
-        "api"
+        "governance"
       ],
       "responses": [
         {
@@ -14811,7 +15154,7 @@
       "path": "/tags",
       "operation_id": "listTags",
       "tags": [
-        "api"
+        "governance"
       ],
       "responses": [
         {
@@ -14883,7 +15226,7 @@
       "path": "/tags",
       "operation_id": "createTag",
       "tags": [
-        "api"
+        "governance"
       ],
       "responses": [
         {
@@ -14941,7 +15284,7 @@
       "path": "/tags/{tagId}",
       "operation_id": "deleteTag",
       "tags": [
-        "api"
+        "governance"
       ],
       "responses": [
         {
@@ -15000,7 +15343,7 @@
       "path": "/tags/{tagId}/assignments",
       "operation_id": "createTagAssignment",
       "tags": [
-        "api"
+        "governance"
       ],
       "responses": [
         {

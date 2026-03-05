@@ -32,6 +32,15 @@ export async function $onEmit(context) {
       { name: "catalogs", description: "Catalog and metadata endpoints" },
       { name: "manifest", description: "Manifest and data-access endpoints" },
       { name: "observability", description: "Audit and query observability endpoints" },
+      { name: "storage", description: "Storage credentials and external locations" },
+      { name: "compute", description: "Compute endpoint management" },
+      { name: "lineage", description: "Lineage graph and impact analysis" },
+      { name: "notebooks", description: "Notebook authoring and execution" },
+      { name: "pipelines", description: "Pipeline orchestration endpoints" },
+      { name: "models", description: "Model lifecycle and testing" },
+      { name: "macros", description: "Macro management and revisions" },
+      { name: "semantic", description: "Semantic models and metrics" },
+      { name: "governance", description: "Tags and classifications" },
       { name: "api", description: "General API endpoints" }
     ],
     schemas,
@@ -181,7 +190,18 @@ function operationAuthzMode(operationName) {
     operationName === "deleteView" ||
     operationName === "createVolume" ||
     operationName === "updateVolume" ||
-    operationName === "deleteVolume"
+    operationName === "deleteVolume" ||
+    operationName === "createStorageCredential" ||
+    operationName === "updateStorageCredential" ||
+    operationName === "deleteStorageCredential" ||
+    operationName === "createExternalLocation" ||
+    operationName === "updateExternalLocation" ||
+    operationName === "deleteExternalLocation" ||
+    operationName === "createComputeEndpoint" ||
+    operationName === "updateComputeEndpoint" ||
+    operationName === "deleteComputeEndpoint" ||
+    operationName === "createComputeAssignment" ||
+    operationName === "deleteComputeAssignment"
   ) {
     return "admin_only";
   }
@@ -204,6 +224,38 @@ function tagsForRoute(routePath) {
   }
   if (routePath.startsWith("/catalogs")) {
     return ["catalogs"];
+  }
+  if (routePath.startsWith("/storage-credentials") || routePath.startsWith("/external-locations")) {
+    return ["storage"];
+  }
+  if (routePath.startsWith("/compute-endpoints")) {
+    return ["compute"];
+  }
+  if (routePath.startsWith("/lineage")) {
+    return ["lineage"];
+  }
+  if (routePath.startsWith("/notebooks")) {
+    return ["notebooks"];
+  }
+  if (routePath.startsWith("/pipelines") || routePath.startsWith("/sources")) {
+    return ["pipelines"];
+  }
+  if (routePath.startsWith("/models") || routePath.startsWith("/model-runs")) {
+    return ["models"];
+  }
+  if (routePath.startsWith("/macros")) {
+    return ["macros"];
+  }
+  if (
+    routePath.startsWith("/semantic-models") ||
+    routePath.startsWith("/metrics") ||
+    routePath.startsWith("/metric-queries") ||
+    routePath.startsWith("/semantic-relationships")
+  ) {
+    return ["semantic"];
+  }
+  if (routePath.startsWith("/tags") || routePath.startsWith("/tag-assignments") || routePath.startsWith("/classifications")) {
+    return ["governance"];
   }
   if (
     routePath.startsWith("/principals") ||
