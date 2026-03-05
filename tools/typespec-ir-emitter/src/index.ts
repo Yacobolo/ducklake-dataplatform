@@ -87,6 +87,7 @@ export async function $onEmit(context: EmitContext<EmitterOptions>): Promise<voi
       { name: "system", description: "System endpoints" },
       { name: "query", description: "Query execution endpoints" },
       { name: "security", description: "Security and access-control endpoints" },
+      { name: "catalogs", description: "Catalog and metadata endpoints" },
       { name: "manifest", description: "Manifest and data-access endpoints" },
       { name: "observability", description: "Audit and query observability endpoints" },
       { name: "api", description: "General API endpoints" },
@@ -266,6 +267,9 @@ function tagsForRoute(routePath: string): string[] {
   ) {
     return ["observability"];
   }
+  if (routePath.startsWith("/catalogs")) {
+    return ["catalogs"];
+  }
   if (
     routePath.startsWith("/principals") ||
     routePath.startsWith("/groups") ||
@@ -324,7 +328,7 @@ function successStatusCode(method: string, operationName: string, hasResponseSch
     if (!hasResponseSchema) {
       return 204;
     }
-    if (operationName.startsWith("create")) {
+    if (operationName.startsWith("create") || operationName.startsWith("register")) {
       return 201;
     }
     return 200;

@@ -253,6 +253,47 @@ model MetastoreSummary {
   table_count?: int32;
 }
 
+model CatalogRegistration {
+  id: string;
+  name: string;
+  metastore_type?: string;
+  dsn?: string;
+  data_path?: string;
+  status?: string;
+  is_default?: boolean;
+  comment?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+model CatalogRegistrationList {
+  catalogs: CatalogRegistration[];
+  next_page_token?: string;
+  total_count?: int32;
+}
+
+model CreateCatalogRequest {
+  name: string;
+  metastore_type?: string;
+  dsn?: string;
+  data_path?: string;
+  comment?: string;
+}
+
+model UpdateCatalogRegistrationRequest {
+  data_path?: string;
+  comment?: string;
+}
+
+model SetDefaultCatalogRequest {}
+
+model CatalogInfo {
+  name: string;
+  comment?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 @route("/healthz")
 @get
 op getHealth(): HealthResponse;
@@ -412,3 +453,31 @@ op listQueryHistory(
   max_results?: int32,
   page_token?: string,
 ): PaginatedQueryHistoryEntries;
+
+@route("/catalogs")
+@post
+op registerCatalog(@body body: CreateCatalogRequest): CatalogRegistration;
+
+@route("/catalogs")
+@get
+op listCatalogs(max_results?: int32, page_token?: string): CatalogRegistrationList;
+
+@route("/catalogs/{catalogName}")
+@get
+op getCatalogRegistration(catalogName: string): CatalogRegistration;
+
+@route("/catalogs/{catalogName}")
+@patch(#{ implicitOptionality: true })
+op updateCatalogRegistration(catalogName: string, @body body: UpdateCatalogRegistrationRequest): CatalogRegistration;
+
+@route("/catalogs/{catalogName}")
+@delete
+op deleteCatalogRegistration(catalogName: string): void;
+
+@route("/catalogs/{catalogName}/set-default")
+@post
+op setDefaultCatalog(catalogName: string, @body body: SetDefaultCatalogRequest): CatalogRegistration;
+
+@route("/catalogs/{catalogName}/info")
+@get
+op getCatalog(catalogName: string): CatalogInfo;

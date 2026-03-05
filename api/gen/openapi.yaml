@@ -97,6 +97,109 @@ paths:
                   format: int32
                 page_token:
                   type: string
+  /catalogs:
+    post:
+      operationId: registerCatalog
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogRegistration'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCatalogRequest'
+    get:
+      operationId: listCatalogs
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogRegistrationList'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+  /catalogs/{catalogName}:
+    get:
+      operationId: getCatalogRegistration
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogRegistration'
+    patch:
+      operationId: updateCatalogRegistration
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogRegistration'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCatalogRegistrationRequest'
+    delete:
+      operationId: deleteCatalogRegistration
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+  /catalogs/{catalogName}/info:
+    get:
+      operationId: getCatalog
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogInfo'
   /catalogs/{catalogName}/metastore/summary:
     get:
       operationId: getMetastoreSummary
@@ -113,6 +216,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MetastoreSummary'
+  /catalogs/{catalogName}/set-default:
+    post:
+      operationId: setDefaultCatalog
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogRegistration'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetDefaultCatalogRequest'
   /column-masks/{columnMaskId}:
     delete:
       operationId: deleteColumnMask
@@ -727,6 +852,59 @@ components:
           format: int64
         created_at:
           type: string
+    CatalogInfo:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        comment:
+          type: string
+        created_at:
+          type: string
+        updated_at:
+          type: string
+    CatalogRegistration:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        metastore_type:
+          type: string
+        dsn:
+          type: string
+        data_path:
+          type: string
+        status:
+          type: string
+        is_default:
+          type: boolean
+        comment:
+          type: string
+        created_at:
+          type: string
+        updated_at:
+          type: string
+    CatalogRegistrationList:
+      type: object
+      required:
+        - catalogs
+      properties:
+        catalogs:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogRegistration'
+        next_page_token:
+          type: string
+        total_count:
+          type: integer
+          format: int32
     CleanupAPIKeysResponse:
       type: object
       required:
@@ -795,6 +973,21 @@ components:
         expires_at:
           type: string
         created_at:
+          type: string
+    CreateCatalogRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        metastore_type:
+          type: string
+        dsn:
+          type: string
+        data_path:
+          type: string
+        comment:
           type: string
     CreateColumnMaskRequest:
       type: object
@@ -1194,6 +1387,15 @@ components:
         principal_id:
           type: string
         principal_type:
+          type: string
+    SetDefaultCatalogRequest:
+      type: object
+    UpdateCatalogRegistrationRequest:
+      type: object
+      properties:
+        data_path:
+          type: string
+        comment:
           type: string
     UpdatePrincipalAdminRequest:
       type: object

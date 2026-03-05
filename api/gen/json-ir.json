@@ -25,6 +25,10 @@
       "description": "Security and access-control endpoints"
     },
     {
+      "name": "catalogs",
+      "description": "Catalog and metadata endpoints"
+    },
+    {
       "name": "manifest",
       "description": "Manifest and data-access endpoints"
     },
@@ -835,6 +839,169 @@
       "required": [
         "data"
       ]
+    },
+    "CatalogRegistration": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "name": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "metastore_type": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "dsn": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "data_path": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "status": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "is_default": {
+          "schema": {
+            "type": "boolean"
+          }
+        },
+        "comment": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "created_at": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "updated_at": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "CreateCatalogRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "metastore_type": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "dsn": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "data_path": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "comment": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "CatalogRegistrationList": {
+      "type": "object",
+      "properties": {
+        "catalogs": {
+          "schema": {
+            "type": "array"
+          }
+        },
+        "next_page_token": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "total_count": {
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "required": [
+        "catalogs"
+      ]
+    },
+    "UpdateCatalogRegistrationRequest": {
+      "type": "object",
+      "properties": {
+        "data_path": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "comment": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "SetDefaultCatalogRequest": {
+      "type": "object",
+      "properties": {}
+    },
+    "CatalogInfo": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "comment": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "created_at": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "updated_at": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "name"
+      ]
     }
   },
   "endpoints": [
@@ -1188,6 +1355,402 @@
     },
     {
       "method": "get",
+      "path": "/catalogs",
+      "operation_id": "listCatalogs",
+      "tags": [
+        "catalogs"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "CatalogRegistrationList"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "max_results",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        {
+          "name": "page_token",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/catalogs",
+      "operation_id": "registerCatalog",
+      "tags": [
+        "catalogs"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "CatalogRegistration"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "CreateCatalogRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/catalogs/{catalogName}",
+      "operation_id": "getCatalogRegistration",
+      "tags": [
+        "catalogs"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "CatalogRegistration"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "catalogName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "patch",
+      "path": "/catalogs/{catalogName}",
+      "operation_id": "updateCatalogRegistration",
+      "tags": [
+        "catalogs"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "CatalogRegistration"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "catalogName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "UpdateCatalogRegistrationRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "delete",
+      "path": "/catalogs/{catalogName}",
+      "operation_id": "deleteCatalogRegistration",
+      "tags": [
+        "catalogs"
+      ],
+      "responses": [
+        {
+          "status_code": 204,
+          "description": "No Content"
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "catalogName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/catalogs/{catalogName}/info",
+      "operation_id": "getCatalog",
+      "tags": [
+        "catalogs"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "CatalogInfo"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "catalogName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
       "path": "/catalogs/{catalogName}/metastore/summary",
       "operation_id": "getMetastoreSummary",
       "tags": [
@@ -1241,6 +1804,75 @@
           }
         }
       ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/catalogs/{catalogName}/set-default",
+      "operation_id": "setDefaultCatalog",
+      "tags": [
+        "catalogs"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "CatalogRegistration"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "catalogName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "SetDefaultCatalogRequest"
+        }
+      },
       "extensions": {
         "security": [
           {
