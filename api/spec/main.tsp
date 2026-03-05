@@ -294,6 +294,95 @@ model CatalogInfo {
   updated_at?: string;
 }
 
+model SchemaDetail {
+  schema_id: string;
+  name: string;
+  catalog_name: string;
+  comment?: string;
+  properties?: Record<string>;
+  owner?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+model PaginatedSchemaDetails {
+  data: SchemaDetail[];
+  next_page_token?: string;
+}
+
+model CreateSchemaRequest {
+  name: string;
+  comment?: string;
+  properties?: Record<string>;
+}
+
+model UpdateSchemaRequest {
+  comment?: string;
+  properties?: Record<string>;
+}
+
+model ColumnDetail {
+  name: string;
+  type: string;
+  position?: int32;
+  nullable?: boolean;
+  comment?: string;
+}
+
+model PaginatedColumnDetails {
+  data: ColumnDetail[];
+  next_page_token?: string;
+}
+
+model CreateColumnRequest {
+  name: string;
+  type: string;
+  nullable?: boolean;
+  comment?: string;
+}
+
+model TableDetail {
+  table_id: string;
+  name: string;
+  schema_name: string;
+  catalog_name: string;
+  table_type?: string;
+  columns?: ColumnDetail[];
+  comment?: string;
+  owner?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+model PaginatedTableDetails {
+  data: TableDetail[];
+  next_page_token?: string;
+}
+
+model CreateTableRequest {
+  name: string;
+  columns?: CreateColumnRequest[];
+  comment?: string;
+}
+
+model UpdateTableRequest {
+  comment?: string;
+  owner?: string;
+}
+
+model UpdateColumnRequest {
+  comment?: string;
+  nullable?: boolean;
+}
+
+model TableStatistics {
+  row_count?: int64;
+  size_bytes?: int64;
+  column_count?: int32;
+  last_profiled_at?: string;
+  profiled_by?: string;
+}
+
 @route("/healthz")
 @get
 op getHealth(): HealthResponse;
@@ -481,3 +570,67 @@ op setDefaultCatalog(catalogName: string, @body body: SetDefaultCatalogRequest):
 @route("/catalogs/{catalogName}/info")
 @get
 op getCatalog(catalogName: string): CatalogInfo;
+
+@route("/catalogs/{catalogName}/schemas")
+@get
+op listSchemas(catalogName: string, max_results?: int32, page_token?: string): PaginatedSchemaDetails;
+
+@route("/catalogs/{catalogName}/schemas")
+@post
+op createSchema(catalogName: string, @body body: CreateSchemaRequest): SchemaDetail;
+
+@route("/catalogs/{catalogName}/schemas/{schemaName}")
+@get
+op getSchema(catalogName: string, schemaName: string): SchemaDetail;
+
+@route("/catalogs/{catalogName}/schemas/{schemaName}")
+@patch(#{ implicitOptionality: true })
+op updateSchema(catalogName: string, schemaName: string, @body body: UpdateSchemaRequest): SchemaDetail;
+
+@route("/catalogs/{catalogName}/schemas/{schemaName}")
+@delete
+op deleteSchema(catalogName: string, schemaName: string, force?: boolean): void;
+
+@route("/catalogs/{catalogName}/schemas/{schemaName}/tables")
+@get
+op listTables(catalogName: string, schemaName: string, max_results?: int32, page_token?: string): PaginatedTableDetails;
+
+@route("/catalogs/{catalogName}/schemas/{schemaName}/tables")
+@post
+op createTable(catalogName: string, schemaName: string, @body body: CreateTableRequest): TableDetail;
+
+@route("/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}")
+@get
+op getTable(catalogName: string, schemaName: string, tableName: string): TableDetail;
+
+@route("/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}")
+@patch(#{ implicitOptionality: true })
+op updateTable(catalogName: string, schemaName: string, tableName: string, @body body: UpdateTableRequest): TableDetail;
+
+@route("/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}")
+@delete
+op deleteTable(catalogName: string, schemaName: string, tableName: string): void;
+
+@route("/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns")
+@get
+op listTableColumns(
+  catalogName: string,
+  schemaName: string,
+  tableName: string,
+  max_results?: int32,
+  page_token?: string,
+): PaginatedColumnDetails;
+
+@route("/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns/{columnName}")
+@patch(#{ implicitOptionality: true })
+op updateColumn(
+  catalogName: string,
+  schemaName: string,
+  tableName: string,
+  columnName: string,
+  @body body: UpdateColumnRequest,
+): ColumnDetail;
+
+@route("/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/profile")
+@post
+op profileTable(catalogName: string, schemaName: string, tableName: string): TableStatistics;

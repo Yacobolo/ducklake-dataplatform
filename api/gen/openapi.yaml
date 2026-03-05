@@ -216,6 +216,365 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MetastoreSummary'
+  /catalogs/{catalogName}/schemas:
+    get:
+      operationId: listSchemas
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSchemaDetails'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+    post:
+      operationId: createSchema
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaDetail'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSchemaRequest'
+  /catalogs/{catalogName}/schemas/{schemaName}:
+    get:
+      operationId: getSchema
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemaName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaDetail'
+    patch:
+      operationId: updateSchema
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemaName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaDetail'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSchemaRequest'
+    delete:
+      operationId: deleteSchema
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemaName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                force:
+                  type: boolean
+  /catalogs/{catalogName}/schemas/{schemaName}/tables:
+    get:
+      operationId: listTables
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemaName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTableDetails'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+    post:
+      operationId: createTable
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemaName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableDetail'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTableRequest'
+  /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}:
+    get:
+      operationId: getTable
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemaName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tableName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableDetail'
+    patch:
+      operationId: updateTable
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemaName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tableName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableDetail'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTableRequest'
+    delete:
+      operationId: deleteTable
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemaName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tableName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+  /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns:
+    get:
+      operationId: listTableColumns
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemaName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tableName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedColumnDetails'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+  /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns/{columnName}:
+    patch:
+      operationId: updateColumn
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemaName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tableName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: columnName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ColumnDetail'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateColumnRequest'
+  /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/profile:
+    post:
+      operationId: profileTable
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemaName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tableName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableStatistics'
   /catalogs/{catalogName}/set-default:
     post:
       operationId: setDefaultCatalog
@@ -913,6 +1272,23 @@ components:
         deleted_count:
           type: integer
           format: int32
+    ColumnDetail:
+      type: object
+      required:
+        - name
+        - type
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        position:
+          type: integer
+          format: int32
+        nullable:
+          type: boolean
+        comment:
+          type: string
     ColumnMask:
       type: object
       required:
@@ -1001,6 +1377,20 @@ components:
           type: string
         description:
           type: string
+    CreateColumnRequest:
+      type: object
+      required:
+        - name
+        - type
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        nullable:
+          type: boolean
+        comment:
+          type: string
     CreateGrantRequest:
       type: object
       required:
@@ -1060,6 +1450,32 @@ components:
         filter_sql:
           type: string
         description:
+          type: string
+    CreateSchemaRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        comment:
+          type: string
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+    CreateTableRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        columns:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreateColumnRequest'
+        comment:
           type: string
     Error:
       type: object
@@ -1193,6 +1609,17 @@ components:
             $ref: '#/components/schemas/AuditEntry'
         next_page_token:
           type: string
+    PaginatedColumnDetails:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ColumnDetail'
+        next_page_token:
+          type: string
     PaginatedColumnMasks:
       type: object
       required:
@@ -1268,6 +1695,28 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RowFilter'
+        next_page_token:
+          type: string
+    PaginatedSchemaDetails:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SchemaDetail'
+        next_page_token:
+          type: string
+    PaginatedTableDetails:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TableDetail'
         next_page_token:
           type: string
     Principal:
@@ -1388,8 +1837,79 @@ components:
           type: string
         principal_type:
           type: string
+    SchemaDetail:
+      type: object
+      required:
+        - schema_id
+        - name
+        - catalog_name
+      properties:
+        schema_id:
+          type: string
+        name:
+          type: string
+        catalog_name:
+          type: string
+        comment:
+          type: string
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+        owner:
+          type: string
+        created_at:
+          type: string
+        updated_at:
+          type: string
     SetDefaultCatalogRequest:
       type: object
+    TableDetail:
+      type: object
+      required:
+        - table_id
+        - name
+        - schema_name
+        - catalog_name
+      properties:
+        table_id:
+          type: string
+        name:
+          type: string
+        schema_name:
+          type: string
+        catalog_name:
+          type: string
+        table_type:
+          type: string
+        columns:
+          type: array
+          items:
+            $ref: '#/components/schemas/ColumnDetail'
+        comment:
+          type: string
+        owner:
+          type: string
+        created_at:
+          type: string
+        updated_at:
+          type: string
+    TableStatistics:
+      type: object
+      properties:
+        row_count:
+          type: integer
+          format: int64
+        size_bytes:
+          type: integer
+          format: int64
+        column_count:
+          type: integer
+          format: int32
+        last_profiled_at:
+          type: string
+        profiled_by:
+          type: string
     UpdateCatalogRegistrationRequest:
       type: object
       properties:
@@ -1397,6 +1917,13 @@ components:
           type: string
         comment:
           type: string
+    UpdateColumnRequest:
+      type: object
+      properties:
+        comment:
+          type: string
+        nullable:
+          type: boolean
     UpdatePrincipalAdminRequest:
       type: object
       required:
@@ -1404,3 +1931,19 @@ components:
       properties:
         is_admin:
           type: boolean
+    UpdateSchemaRequest:
+      type: object
+      properties:
+        comment:
+          type: string
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+    UpdateTableRequest:
+      type: object
+      properties:
+        comment:
+          type: string
+        owner:
+          type: string

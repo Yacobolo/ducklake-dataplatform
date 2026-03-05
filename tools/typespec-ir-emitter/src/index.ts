@@ -250,6 +250,17 @@ function operationAuthzMode(operationName: string): "public" | "authenticated" |
   if (operationName === "createGrant" || operationName === "deleteGrant") {
     return "admin_only";
   }
+  if (
+    operationName === "createSchema" ||
+    operationName === "updateSchema" ||
+    operationName === "deleteSchema" ||
+    operationName === "createTable" ||
+    operationName === "updateTable" ||
+    operationName === "deleteTable" ||
+    operationName === "updateColumn"
+  ) {
+    return "admin_only";
+  }
   return "authenticated";
 }
 
