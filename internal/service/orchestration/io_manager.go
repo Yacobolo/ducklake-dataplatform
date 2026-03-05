@@ -8,6 +8,8 @@ type IOManager interface {
 	StoreOutput(ctx context.Context, key string, value map[string]any) error
 }
 
+var _ IOManager = (*InMemoryIOManager)(nil)
+
 type InMemoryIOManager struct {
 	data map[string]map[string]any
 }

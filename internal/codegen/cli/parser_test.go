@@ -207,7 +207,7 @@ func TestParse_FullSpec(t *testing.T) {
 			assert.Greater(t, len(g.Commands), 15, "notebooks should have many commands")
 
 		case "pipelines":
-			assert.Greater(t, len(g.Commands), 10, "pipelines should have many commands")
+			assert.GreaterOrEqual(t, len(g.Commands), 8, "pipelines should have expected commands")
 		}
 	}
 }

@@ -33,20 +33,22 @@ type AssetPartitionRunTarget struct {
 }
 
 type AssetRun struct {
-	ID           string
-	AssetID      string
-	RunGroupID   *string
-	PartitionKey *string
-	Status       string
-	TriggerType  string
-	TriggeredBy  string
-	AttemptCount int
-	MaxAttempts  int
-	StartedAt    *time.Time
-	FinishedAt   *time.Time
-	ErrorMessage *string
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ID            string
+	AssetID       string
+	RunGroupID    *string
+	PartitionKey  *string
+	PartitionFrom *string
+	PartitionTo   *string
+	Status        string
+	TriggerType   string
+	TriggeredBy   string
+	AttemptCount  int
+	MaxAttempts   int
+	StartedAt     *time.Time
+	FinishedAt    *time.Time
+	ErrorMessage  *string
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }
 
 type AssetRunEvent struct {

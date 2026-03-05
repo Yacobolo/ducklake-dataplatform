@@ -321,27 +321,36 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	pipelineSvc.SetScheduleReloader(pipelineScheduler)
 
 	assetScheduler := orchestration.NewAssetScheduler(assetRepo, assetDepRepo, assetRunRepo)
+	ioManager, err := newOrchestrationIOManager(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("configure orchestration io manager: %w", err)
+	}
 	assetExecutor := orchestration.NewAssetExecutor(
 		assetRunRepo,
 		orchestration.NewAssetRunStateMachine(),
-		orchestration.NewInMemoryIOManager(),
+		ioManager,
 		orchestration.NewConcurrencyLimiter(16, 2),
 		&noopAssetStepper{},
 	)
 	triggerRouter := orchestration.NewTriggerRouter(orchEventRepo)
 	backfillSvc := orchestration.NewBackfillService(backfillRepo, triggerRouter, auditRepo)
+	backfillRunner := orchestration.NewBackfillRunner(backfillRepo, assetDepRepo, assetRunRepo, assetScheduler, assetExecutor)
 	reconciler := orchestration.NewReconciler(
 		orchEventRepo,
 		assetRepo,
 		assetRunRepo,
 		assetScheduler,
 		assetExecutor,
+		backfillRunner,
 		cfg.FeatureReconcilerShadow,
 	)
 	assetSvc := assetsvc.NewService(assetRepo, assetDepRepo, assetPartitionRepo, assetRunRepo, assetCheckRepo, backfillRepo, orchEventRepo, auditRepo)
 
 	// === Model ===
 	modelRepo := repository.NewModelRepo(deps.WriteDB)
+	if err := pipeline.SyncModelsToAssets(ctx, modelRepo, assetRepo, assetDepRepo); err != nil {
+		return nil, fmt.Errorf("sync models to assets: %w", err)
+	}
 	notebookModelLinkRepo := repository.NewNotebookModelLinkRepo(deps.WriteDB)
 	modelRunRepo := repository.NewModelRunRepo(deps.WriteDB)
 	modelTestRepo := repository.NewModelTestRepo(deps.WriteDB)

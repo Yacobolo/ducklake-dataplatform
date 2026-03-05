@@ -361,22 +361,14 @@ components:
       $ref: 'schemas/pipeline.yaml#/Pipeline'
     PipelineJob:
       $ref: 'schemas/pipeline.yaml#/PipelineJob'
-    PipelineRun:
-      $ref: 'schemas/pipeline.yaml#/PipelineRun'
-    PipelineJobRun:
-      $ref: 'schemas/pipeline.yaml#/PipelineJobRun'
     CreatePipelineRequest:
       $ref: 'schemas/pipeline.yaml#/CreatePipelineRequest'
     UpdatePipelineRequest:
       $ref: 'schemas/pipeline.yaml#/UpdatePipelineRequest'
     CreatePipelineJobRequest:
       $ref: 'schemas/pipeline.yaml#/CreatePipelineJobRequest'
-    TriggerPipelineRunRequest:
-      $ref: 'schemas/pipeline.yaml#/TriggerPipelineRunRequest'
     PaginatedPipelines:
       $ref: 'schemas/pipeline.yaml#/PaginatedPipelines'
-    PaginatedPipelineRuns:
-      $ref: 'schemas/pipeline.yaml#/PaginatedPipelineRuns'
     Asset:
       $ref: 'schemas/asset.yaml#/Asset'
     AssetGraph:
@@ -389,6 +381,8 @@ components:
       $ref: 'schemas/asset.yaml#/AssetMaterialization'
     AssetCheck:
       $ref: 'schemas/asset.yaml#/AssetCheck'
+    AssetCheckResult:
+      $ref: 'schemas/asset.yaml#/AssetCheckResult'
     BackfillRequest:
       $ref: 'schemas/asset.yaml#/BackfillRequest'
     BackfillSlice:
@@ -411,6 +405,8 @@ components:
       $ref: 'schemas/asset.yaml#/PaginatedAssetMaterializations'
     AssetCheckList:
       $ref: 'schemas/asset.yaml#/AssetCheckList'
+    PaginatedAssetCheckResults:
+      $ref: 'schemas/asset.yaml#/PaginatedAssetCheckResults'
     PaginatedBackfillRequests:
       $ref: 'schemas/asset.yaml#/PaginatedBackfillRequests'
     Model:
@@ -703,14 +699,6 @@ paths:
     $ref: 'paths/pipeline.yaml#/paths/~1pipelines~1{pipelineName}~1jobs'
   /pipelines/{pipelineName}/jobs/{jobId}:
     $ref: 'paths/pipeline.yaml#/paths/~1pipelines~1{pipelineName}~1jobs~1{jobId}'
-  /pipelines/{pipelineName}/runs:
-    $ref: 'paths/pipeline.yaml#/paths/~1pipelines~1{pipelineName}~1runs'
-  /pipelines/runs/{runId}:
-    $ref: 'paths/pipeline.yaml#/paths/~1pipelines~1runs~1{runId}'
-  /pipelines/runs/{runId}/cancel:
-    $ref: 'paths/pipeline.yaml#/paths/~1pipelines~1runs~1{runId}~1cancel'
-  /pipelines/runs/{runId}/jobs:
-    $ref: 'paths/pipeline.yaml#/paths/~1pipelines~1runs~1{runId}~1jobs'
   # === Assets ===
   /assets:
     $ref: 'paths/assets.yaml#/paths/~1assets'
@@ -728,8 +716,12 @@ paths:
     $ref: 'paths/assets.yaml#/paths/~1assets~1{assetKey}~1materializations'
   /assets/{assetKey}/checks:
     $ref: 'paths/assets.yaml#/paths/~1assets~1{assetKey}~1checks'
+  /assets/{assetKey}/check-results:
+    $ref: 'paths/assets.yaml#/paths/~1assets~1{assetKey}~1check-results'
   /assets/{assetKey}/backfills:
     $ref: 'paths/assets.yaml#/paths/~1assets~1{assetKey}~1backfills'
+  /assets/{assetKey}/backfills/{backfillId}:
+    $ref: 'paths/assets.yaml#/paths/~1assets~1{assetKey}~1backfills~1{backfillId}'
   # === Models ===
   /models:
     $ref: 'paths/models.yaml#/paths/~1models'

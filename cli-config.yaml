@@ -332,18 +332,3 @@ command_overrides:
 
   listPipelines:
     table_columns: [id, name, schedule_cron, is_paused, created_by, created_at]
-
-  triggerPipelineRun:
-    verb: trigger
-    command_path: [runs]
-
-  listPipelineRuns:
-    table_columns: [id, status, trigger_type, triggered_by, started_at, finished_at]
-
-  cancelPipelineRun:
-    verb: cancel
-    command_path: [runs]
-
-  listPipelineJobRuns:
-    verb: list-job-runs
-    command_path: [runs]

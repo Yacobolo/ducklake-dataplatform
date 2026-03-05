@@ -27,7 +27,7 @@ func TestReconciler_ShadowModeProcessesEvent(t *testing.T) {
 	scheduler := NewAssetScheduler(assetRepo, &fakeDeps{downstream: map[string][]domain.AssetDependency{}}, runRepo)
 	executor := NewAssetExecutor(runRepo, NewAssetRunStateMachine(), NewInMemoryIOManager(), NewConcurrencyLimiter(1, 1), &fakeStepper{})
 
-	r := NewReconciler(eventRepo, assetRepo, runRepo, scheduler, executor, true)
+	r := NewReconciler(eventRepo, assetRepo, runRepo, scheduler, executor, nil, true)
 	require.NoError(t, r.Tick(context.Background()))
 
 	status := domain.OrchestrationEventStatusProcessed
@@ -35,6 +35,389 @@ func TestReconciler_ShadowModeProcessesEvent(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), total)
 	require.Len(t, list, 1)
+}
+
+func TestReconciler_BlockedOnMissingUpstreamReadiness(t *testing.T) {
+	eventRepo := &memEventRepo{}
+	assetID := "asset-target"
+	upstreamID := "asset-upstream"
+	partitionKey := "2026-03-01"
+	_, err := eventRepo.Enqueue(context.Background(), &domain.OrchestrationEvent{
+		ID:           "ev-missing-upstream",
+		EventType:    domain.AssetTriggerTypeUpstreamUpdate,
+		AssetID:      &assetID,
+		PartitionKey: &partitionKey,
+		Status:       domain.OrchestrationEventStatusPending,
+	})
+	require.NoError(t, err)
+
+	assetRepo := &fakeAssets{items: map[string]*domain.DataAsset{
+		assetID: {
+			ID:                  assetID,
+			PartitionDefinition: &domain.PartitionDefinition{Type: domain.PartitionTypeDaily},
+		},
+		upstreamID: {
+			ID:                  upstreamID,
+			PartitionDefinition: &domain.PartitionDefinition{Type: domain.PartitionTypeDaily},
+		},
+	}}
+	runRepo := &fakeRunRepo{runs: map[string]*domain.AssetRun{}}
+	deps := &fakeDeps{
+		upstream: map[string][]domain.AssetDependency{
+			assetID: {{AssetID: assetID, UpstreamAssetID: upstreamID, DependencyType: domain.DependencyTypeHard}},
+		},
+		downstream: map[string][]domain.AssetDependency{},
+	}
+	scheduler := NewAssetScheduler(assetRepo, deps, runRepo)
+	executor := NewAssetExecutor(runRepo, NewAssetRunStateMachine(), NewInMemoryIOManager(), NewConcurrencyLimiter(1, 1), &fakeStepper{})
+
+	r := NewReconciler(eventRepo, assetRepo, runRepo, scheduler, executor, nil, false)
+	require.NoError(t, r.Tick(context.Background()))
+
+	assert.Empty(t, runRepo.runs)
+	require.Len(t, eventRepo.events, 1)
+	assert.Equal(t, domain.OrchestrationEventStatusPending, eventRepo.events[0].Status)
+	require.NotNil(t, eventRepo.events[0].LastError)
+	assert.Contains(t, *eventRepo.events[0].LastError, "waiting for upstream")
+	assert.Contains(t, *eventRepo.events[0].LastError, partitionKey)
+	assert.True(t, eventRepo.events[0].AvailableAt.After(time.Now().UTC().Add(-1*time.Second)))
+}
+
+func TestReconciler_ReadyPathExecutes(t *testing.T) {
+	eventRepo := &memEventRepo{}
+	assetID := "asset-target"
+	upstreamID := "asset-upstream"
+	partitionKey := "2026-03-01"
+	_, err := eventRepo.Enqueue(context.Background(), &domain.OrchestrationEvent{
+		ID:           "ev-ready",
+		EventType:    domain.AssetTriggerTypeUpstreamUpdate,
+		AssetID:      &assetID,
+		PartitionKey: &partitionKey,
+		Status:       domain.OrchestrationEventStatusPending,
+	})
+	require.NoError(t, err)
+
+	assetRepo := &fakeAssets{items: map[string]*domain.DataAsset{
+		assetID: {
+			ID:                  assetID,
+			PartitionDefinition: &domain.PartitionDefinition{Type: domain.PartitionTypeDaily},
+		},
+		upstreamID: {
+			ID:                  upstreamID,
+			PartitionDefinition: &domain.PartitionDefinition{Type: domain.PartitionTypeDaily},
+		},
+	}}
+	now := time.Now().UTC()
+	runRepo := &fakeRunRepo{
+		runs: map[string]*domain.AssetRun{},
+		materialize: map[string][]domain.AssetMaterialization{
+			upstreamID: {{AssetID: upstreamID, PartitionKey: &partitionKey, MaterializedAt: now.Add(-2 * time.Minute)}},
+		},
+	}
+	deps := &fakeDeps{
+		upstream: map[string][]domain.AssetDependency{
+			assetID: {{AssetID: assetID, UpstreamAssetID: upstreamID, DependencyType: domain.DependencyTypeHard}},
+		},
+		downstream: map[string][]domain.AssetDependency{},
+	}
+	scheduler := NewAssetScheduler(assetRepo, deps, runRepo)
+	executor := NewAssetExecutor(runRepo, NewAssetRunStateMachine(), NewInMemoryIOManager(), NewConcurrencyLimiter(1, 1), &fakeStepper{})
+
+	r := NewReconciler(eventRepo, assetRepo, runRepo, scheduler, executor, nil, false)
+	require.NoError(t, r.Tick(context.Background()))
+
+	require.Len(t, eventRepo.events, 1)
+	assert.Equal(t, domain.OrchestrationEventStatusProcessed, eventRepo.events[0].Status)
+	require.Len(t, runRepo.runs, 1)
+	for _, run := range runRepo.runs {
+		assert.Equal(t, assetID, run.AssetID)
+		require.NotNil(t, run.PartitionKey)
+		assert.Equal(t, partitionKey, *run.PartitionKey)
+		assert.Equal(t, domain.AssetRunStatusSuccess, run.Status)
+	}
+}
+
+func TestReconciler_PolicyIntervalBlocksImmediateRetrigger(t *testing.T) {
+	eventRepo := &memEventRepo{}
+	assetID := "asset-interval"
+	_, err := eventRepo.Enqueue(context.Background(), &domain.OrchestrationEvent{
+		ID:        "ev-policy",
+		EventType: domain.AssetTriggerTypeUpstreamUpdate,
+		AssetID:   &assetID,
+		Status:    domain.OrchestrationEventStatusPending,
+	})
+	require.NoError(t, err)
+
+	assetRepo := &fakeAssets{items: map[string]*domain.DataAsset{
+		assetID: {
+			ID: assetID,
+			AutoMaterializePolicy: &domain.AssetAutoMaterializePolicy{
+				MinIntervalSeconds:     600,
+				OnUpstreamMaterialized: true,
+			},
+		},
+	}}
+	runRepo := &fakeRunRepo{
+		runs: map[string]*domain.AssetRun{},
+		materialize: map[string][]domain.AssetMaterialization{
+			assetID: {{AssetID: assetID, MaterializedAt: time.Now().UTC().Add(-30 * time.Second)}},
+		},
+	}
+	deps := &fakeDeps{downstream: map[string][]domain.AssetDependency{}}
+	scheduler := NewAssetScheduler(assetRepo, deps, runRepo)
+	executor := NewAssetExecutor(runRepo, NewAssetRunStateMachine(), NewInMemoryIOManager(), NewConcurrencyLimiter(1, 1), &fakeStepper{})
+
+	r := NewReconciler(eventRepo, assetRepo, runRepo, scheduler, executor, nil, false)
+	require.NoError(t, r.Tick(context.Background()))
+
+	assert.Empty(t, runRepo.runs)
+	require.Len(t, eventRepo.events, 1)
+	assert.Equal(t, domain.OrchestrationEventStatusPending, eventRepo.events[0].Status)
+	require.NotNil(t, eventRepo.events[0].LastError)
+	assert.Contains(t, *eventRepo.events[0].LastError, "min interval")
+}
+
+func TestReconciler_AutoMaterializeModeOffSkipsNonManualEvents(t *testing.T) {
+	eventRepo := &memEventRepo{}
+	assetID := "asset-policy-off"
+	_, err := eventRepo.Enqueue(context.Background(), &domain.OrchestrationEvent{
+		ID:        "ev-policy-off",
+		EventType: domain.AssetTriggerTypeUpstreamUpdate,
+		AssetID:   &assetID,
+		Status:    domain.OrchestrationEventStatusPending,
+	})
+	require.NoError(t, err)
+
+	assetRepo := &fakeAssets{items: map[string]*domain.DataAsset{
+		assetID: {
+			ID: assetID,
+			AutoMaterializePolicy: &domain.AssetAutoMaterializePolicy{
+				Mode: "off",
+			},
+		},
+	}}
+	runRepo := &fakeRunRepo{runs: map[string]*domain.AssetRun{}}
+	scheduler := NewAssetScheduler(assetRepo, &fakeDeps{downstream: map[string][]domain.AssetDependency{}}, runRepo)
+	executor := NewAssetExecutor(runRepo, NewAssetRunStateMachine(), NewInMemoryIOManager(), NewConcurrencyLimiter(1, 1), &fakeStepper{})
+
+	r := NewReconciler(eventRepo, assetRepo, runRepo, scheduler, executor, nil, false)
+	require.NoError(t, r.Tick(context.Background()))
+
+	assert.Empty(t, runRepo.runs)
+	require.Len(t, eventRepo.events, 1)
+	assert.Equal(t, domain.OrchestrationEventStatusProcessed, eventRepo.events[0].Status)
+	require.NotNil(t, eventRepo.events[0].LastError)
+	assert.Contains(t, *eventRepo.events[0].LastError, "suppresses reconciler auto-trigger")
+}
+
+func TestReconciler_AutoMaterializeModeManualAllowsManualEvent(t *testing.T) {
+	eventRepo := &memEventRepo{}
+	assetID := "asset-policy-manual"
+	_, err := eventRepo.Enqueue(context.Background(), &domain.OrchestrationEvent{
+		ID:        "ev-policy-manual",
+		EventType: domain.AssetTriggerTypeManual,
+		AssetID:   &assetID,
+		Status:    domain.OrchestrationEventStatusPending,
+	})
+	require.NoError(t, err)
+
+	assetRepo := &fakeAssets{items: map[string]*domain.DataAsset{
+		assetID: {
+			ID: assetID,
+			AutoMaterializePolicy: &domain.AssetAutoMaterializePolicy{
+				Mode: "manual",
+			},
+		},
+	}}
+	runRepo := &fakeRunRepo{runs: map[string]*domain.AssetRun{}}
+	scheduler := NewAssetScheduler(assetRepo, &fakeDeps{downstream: map[string][]domain.AssetDependency{}}, runRepo)
+	executor := NewAssetExecutor(runRepo, NewAssetRunStateMachine(), NewInMemoryIOManager(), NewConcurrencyLimiter(1, 1), &fakeStepper{})
+
+	r := NewReconciler(eventRepo, assetRepo, runRepo, scheduler, executor, nil, false)
+	require.NoError(t, r.Tick(context.Background()))
+
+	require.Len(t, runRepo.runs, 1)
+	require.Len(t, eventRepo.events, 1)
+	assert.Equal(t, domain.OrchestrationEventStatusProcessed, eventRepo.events[0].Status)
+	assert.Nil(t, eventRepo.events[0].LastError)
+}
+
+func TestReconciler_OnUpstreamMaterializedFalseSkipsUpstreamUpdateEvent(t *testing.T) {
+	eventRepo := &memEventRepo{}
+	assetID := "asset-no-upstream-trigger"
+	_, err := eventRepo.Enqueue(context.Background(), &domain.OrchestrationEvent{
+		ID:        "ev-no-upstream-trigger",
+		EventType: domain.AssetTriggerTypeUpstreamUpdate,
+		AssetID:   &assetID,
+		Status:    domain.OrchestrationEventStatusPending,
+	})
+	require.NoError(t, err)
+
+	assetRepo := &fakeAssets{items: map[string]*domain.DataAsset{
+		assetID: {
+			ID: assetID,
+			AutoMaterializePolicy: &domain.AssetAutoMaterializePolicy{
+				OnUpstreamMaterialized: false,
+			},
+		},
+	}}
+	runRepo := &fakeRunRepo{runs: map[string]*domain.AssetRun{}}
+	scheduler := NewAssetScheduler(assetRepo, &fakeDeps{downstream: map[string][]domain.AssetDependency{}}, runRepo)
+	executor := NewAssetExecutor(runRepo, NewAssetRunStateMachine(), NewInMemoryIOManager(), NewConcurrencyLimiter(1, 1), &fakeStepper{})
+
+	r := NewReconciler(eventRepo, assetRepo, runRepo, scheduler, executor, nil, false)
+	require.NoError(t, r.Tick(context.Background()))
+
+	assert.Empty(t, runRepo.runs)
+	require.Len(t, eventRepo.events, 1)
+	assert.Equal(t, domain.OrchestrationEventStatusProcessed, eventRepo.events[0].Status)
+	require.NotNil(t, eventRepo.events[0].LastError)
+	assert.Contains(t, *eventRepo.events[0].LastError, "disables upstream materialization triggers")
+}
+
+func TestReconciler_OnFreshnessBreachTrueAllowsFreshnessEvent(t *testing.T) {
+	eventRepo := &memEventRepo{}
+	assetID := "asset-freshness-trigger"
+	_, err := eventRepo.Enqueue(context.Background(), &domain.OrchestrationEvent{
+		ID:        "ev-freshness-trigger",
+		EventType: domain.AssetTriggerTypeFreshnessBreach,
+		AssetID:   &assetID,
+		Status:    domain.OrchestrationEventStatusPending,
+	})
+	require.NoError(t, err)
+
+	assetRepo := &fakeAssets{items: map[string]*domain.DataAsset{
+		assetID: {
+			ID: assetID,
+			AutoMaterializePolicy: &domain.AssetAutoMaterializePolicy{
+				OnFreshnessBreach:      true,
+				OnUpstreamMaterialized: false,
+			},
+		},
+	}}
+	runRepo := &fakeRunRepo{runs: map[string]*domain.AssetRun{}}
+	scheduler := NewAssetScheduler(assetRepo, &fakeDeps{downstream: map[string][]domain.AssetDependency{}}, runRepo)
+	executor := NewAssetExecutor(runRepo, NewAssetRunStateMachine(), NewInMemoryIOManager(), NewConcurrencyLimiter(1, 1), &fakeStepper{})
+
+	r := NewReconciler(eventRepo, assetRepo, runRepo, scheduler, executor, nil, false)
+	require.NoError(t, r.Tick(context.Background()))
+
+	require.Len(t, runRepo.runs, 1)
+	require.Len(t, eventRepo.events, 1)
+	assert.Equal(t, domain.OrchestrationEventStatusProcessed, eventRepo.events[0].Status)
+	assert.Nil(t, eventRepo.events[0].LastError)
+}
+
+func TestReconciler_PartitionedFanInRequiresAllHardUpstreamsMatchingPartition(t *testing.T) {
+	eventRepo := &memEventRepo{}
+	assetID := "asset-target-fanin"
+	upstreamA := "asset-upstream-a"
+	upstreamB := "asset-upstream-b"
+	partitionKey := "2026-03-02"
+	otherPartition := "2026-03-01"
+	_, err := eventRepo.Enqueue(context.Background(), &domain.OrchestrationEvent{
+		ID:           "ev-fanin",
+		EventType:    domain.AssetTriggerTypeUpstreamUpdate,
+		AssetID:      &assetID,
+		PartitionKey: &partitionKey,
+		Status:       domain.OrchestrationEventStatusPending,
+	})
+	require.NoError(t, err)
+
+	assetRepo := &fakeAssets{items: map[string]*domain.DataAsset{
+		assetID: {
+			ID:                  assetID,
+			PartitionDefinition: &domain.PartitionDefinition{Type: domain.PartitionTypeDaily},
+			AutoMaterializePolicy: &domain.AssetAutoMaterializePolicy{
+				RequireAllUpstreams:    true,
+				OnUpstreamMaterialized: true,
+			},
+		},
+		upstreamA: {
+			ID:                  upstreamA,
+			PartitionDefinition: &domain.PartitionDefinition{Type: domain.PartitionTypeDaily},
+		},
+		upstreamB: {
+			ID:                  upstreamB,
+			PartitionDefinition: &domain.PartitionDefinition{Type: domain.PartitionTypeDaily},
+		},
+	}}
+	runRepo := &fakeRunRepo{
+		runs: map[string]*domain.AssetRun{},
+		materialize: map[string][]domain.AssetMaterialization{
+			upstreamA: {{AssetID: upstreamA, PartitionKey: &partitionKey, MaterializedAt: time.Now().UTC().Add(-2 * time.Minute)}},
+			upstreamB: {{AssetID: upstreamB, PartitionKey: &otherPartition, MaterializedAt: time.Now().UTC().Add(-2 * time.Minute)}},
+		},
+	}
+	deps := &fakeDeps{
+		upstream: map[string][]domain.AssetDependency{
+			assetID: {
+				{AssetID: assetID, UpstreamAssetID: upstreamA, DependencyType: domain.DependencyTypeHard},
+				{AssetID: assetID, UpstreamAssetID: upstreamB, DependencyType: domain.DependencyTypeHard},
+			},
+		},
+		downstream: map[string][]domain.AssetDependency{},
+	}
+	scheduler := NewAssetScheduler(assetRepo, deps, runRepo)
+	executor := NewAssetExecutor(runRepo, NewAssetRunStateMachine(), NewInMemoryIOManager(), NewConcurrencyLimiter(1, 1), &fakeStepper{})
+
+	r := NewReconciler(eventRepo, assetRepo, runRepo, scheduler, executor, nil, false)
+	require.NoError(t, r.Tick(context.Background()))
+
+	assert.Empty(t, runRepo.runs)
+	require.Len(t, eventRepo.events, 1)
+	assert.Equal(t, domain.OrchestrationEventStatusPending, eventRepo.events[0].Status)
+	require.NotNil(t, eventRepo.events[0].LastError)
+	assert.Contains(t, *eventRepo.events[0].LastError, "required upstream")
+	assert.Contains(t, *eventRepo.events[0].LastError, upstreamB)
+	assert.Contains(t, *eventRepo.events[0].LastError, partitionKey)
+}
+
+func TestReconciler_PartitionedTargetAllowsUnpartitionedUpstreamMaterialization(t *testing.T) {
+	eventRepo := &memEventRepo{}
+	assetID := "asset-target-partitioned"
+	upstreamID := "asset-upstream-unpartitioned"
+	partitionKey := "2026-03-02"
+	_, err := eventRepo.Enqueue(context.Background(), &domain.OrchestrationEvent{
+		ID:           "ev-unpartitioned-upstream",
+		EventType:    domain.AssetTriggerTypeUpstreamUpdate,
+		AssetID:      &assetID,
+		PartitionKey: &partitionKey,
+		Status:       domain.OrchestrationEventStatusPending,
+	})
+	require.NoError(t, err)
+
+	assetRepo := &fakeAssets{items: map[string]*domain.DataAsset{
+		assetID: {
+			ID:                  assetID,
+			PartitionDefinition: &domain.PartitionDefinition{Type: domain.PartitionTypeDaily},
+		},
+		upstreamID: {
+			ID:                  upstreamID,
+			PartitionDefinition: &domain.PartitionDefinition{Type: domain.PartitionTypeUnpartitioned},
+		},
+	}}
+	runRepo := &fakeRunRepo{
+		runs: map[string]*domain.AssetRun{},
+		materialize: map[string][]domain.AssetMaterialization{
+			upstreamID: {{AssetID: upstreamID, MaterializedAt: time.Now().UTC().Add(-2 * time.Minute)}},
+		},
+	}
+	deps := &fakeDeps{
+		upstream: map[string][]domain.AssetDependency{
+			assetID: {{AssetID: assetID, UpstreamAssetID: upstreamID, DependencyType: domain.DependencyTypeHard}},
+		},
+		downstream: map[string][]domain.AssetDependency{},
+	}
+	scheduler := NewAssetScheduler(assetRepo, deps, runRepo)
+	executor := NewAssetExecutor(runRepo, NewAssetRunStateMachine(), NewInMemoryIOManager(), NewConcurrencyLimiter(1, 1), &fakeStepper{})
+
+	r := NewReconciler(eventRepo, assetRepo, runRepo, scheduler, executor, nil, false)
+	require.NoError(t, r.Tick(context.Background()))
+
+	require.Len(t, runRepo.runs, 1)
+	require.Len(t, eventRepo.events, 1)
+	assert.Equal(t, domain.OrchestrationEventStatusProcessed, eventRepo.events[0].Status)
 }
 
 func TestBackfillService_CreateEmitsEvents(t *testing.T) {
@@ -49,6 +432,59 @@ func TestBackfillService_CreateEmitsEvents(t *testing.T) {
 	assert.Len(t, slices, 3)
 	assert.Len(t, backfills.slices, 3)
 	assert.Len(t, eventRepo.events, 3)
+}
+
+func TestReconciler_BackfillEventRunsBackfillRunner(t *testing.T) {
+	eventRepo := &memEventRepo{}
+	assetID := "asset-1"
+	requestID := "req-1"
+	_, err := eventRepo.Enqueue(context.Background(), &domain.OrchestrationEvent{
+		ID:        "ev-backfill",
+		EventType: domain.AssetTriggerTypeBackfill,
+		AssetID:   &assetID,
+		Status:    domain.OrchestrationEventStatusPending,
+		PayloadJSON: map[string]any{
+			"backfill_request_id": requestID,
+		},
+	})
+	require.NoError(t, err)
+
+	assetRepo := &fakeAssets{items: map[string]*domain.DataAsset{assetID: {ID: assetID}}}
+	runRepo := &fakeRunRepo{runs: map[string]*domain.AssetRun{}}
+	deps := &fakeDeps{upstream: map[string][]domain.AssetDependency{}, downstream: map[string][]domain.AssetDependency{}}
+	scheduler := NewAssetScheduler(assetRepo, deps, runRepo)
+	executor := NewAssetExecutor(runRepo, NewAssetRunStateMachine(), NewInMemoryIOManager(), NewConcurrencyLimiter(1, 1), &fakeStepper{})
+	backfills := &memBackfillRepo{
+		requests: []domain.BackfillRequest{{
+			ID:            requestID,
+			AssetID:       assetID,
+			PartitionFrom: "2026-03-01",
+			PartitionTo:   "2026-03-02",
+			Status:        domain.BackfillStatusPending,
+			RequestedBy:   "admin",
+		}},
+		slices: []domain.BackfillSlice{
+			{ID: "s-2", RequestID: requestID, AssetID: assetID, PartitionKey: "2026-03-02", Status: domain.BackfillStatusPending},
+			{ID: "s-1", RequestID: requestID, AssetID: assetID, PartitionKey: "2026-03-01", Status: domain.BackfillStatusPending},
+		},
+	}
+	runner := NewBackfillRunner(backfills, deps, runRepo, scheduler, executor)
+
+	r := NewReconciler(eventRepo, assetRepo, runRepo, scheduler, executor, runner, false)
+	require.NoError(t, r.Tick(context.Background()))
+
+	require.Len(t, eventRepo.events, 1)
+	assert.Equal(t, domain.OrchestrationEventStatusProcessed, eventRepo.events[0].Status)
+	req, err := backfills.GetRequestByID(context.Background(), requestID)
+	require.NoError(t, err)
+	assert.Equal(t, domain.BackfillStatusSuccess, req.Status)
+	assert.Equal(t, []string{"2026-03-01", "2026-03-02"}, runRepo.createOrder)
+	for _, run := range runRepo.runs {
+		require.NotNil(t, run.PartitionFrom)
+		require.NotNil(t, run.PartitionTo)
+		assert.Equal(t, "2026-03-01", *run.PartitionFrom)
+		assert.Equal(t, "2026-03-02", *run.PartitionTo)
+	}
 }
 
 type memEventRepo struct {
@@ -82,6 +518,9 @@ func (m *memEventRepo) ClaimNextPending(_ context.Context, now time.Time) (*doma
 func (m *memEventRepo) MarkProcessed(_ context.Context, id string) error {
 	for i := range m.events {
 		if m.events[i].ID == id {
+			if m.events[i].Status != domain.OrchestrationEventStatusFailed {
+				m.events[i].LastError = nil
+			}
 			m.events[i].Status = domain.OrchestrationEventStatusProcessed
 			return nil
 		}
@@ -142,7 +581,14 @@ func (m *memBackfillRepo) ListRequests(_ context.Context, _ domain.BackfillFilte
 	return m.requests, int64(len(m.requests)), nil
 }
 
-func (m *memBackfillRepo) UpdateRequestStatus(_ context.Context, _ string, _ string, _ *string) error {
+func (m *memBackfillRepo) UpdateRequestStatus(_ context.Context, id string, status string, errMsg *string) error {
+	for i := range m.requests {
+		if m.requests[i].ID == id {
+			m.requests[i].Status = status
+			m.requests[i].ErrorMessage = errMsg
+			return nil
+		}
+	}
 	return nil
 }
 
@@ -165,6 +611,16 @@ func (m *memBackfillRepo) ListSlicesByRequest(_ context.Context, requestID strin
 	return out, nil
 }
 
-func (m *memBackfillRepo) UpdateSliceStatus(_ context.Context, _ string, _ string, _ *string, _ *string) error {
+func (m *memBackfillRepo) UpdateSliceStatus(_ context.Context, id string, status string, runID *string, errMsg *string) error {
+	for i := range m.slices {
+		if m.slices[i].ID == id {
+			m.slices[i].Status = status
+			if runID != nil {
+				m.slices[i].RunID = runID
+			}
+			m.slices[i].ErrorMessage = errMsg
+			return nil
+		}
+	}
 	return nil
 }

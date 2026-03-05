@@ -16,7 +16,9 @@ type assetService interface {
 	ListRuns(ctx context.Context, filter domain.AssetRunFilter) ([]domain.AssetRun, int64, error)
 	ListMaterializations(ctx context.Context, assetID string, page domain.PageRequest) ([]domain.AssetMaterialization, int64, error)
 	ListChecks(ctx context.Context, assetID string) ([]domain.AssetCheck, error)
+	ListCheckResults(ctx context.Context, assetID string, page domain.PageRequest) ([]domain.AssetCheckResult, int64, error)
 	ListBackfills(ctx context.Context, filter domain.BackfillFilter) ([]domain.BackfillRequest, int64, error)
+	GetBackfill(ctx context.Context, assetID, backfillID string) (*domain.BackfillRequest, []domain.BackfillSlice, error)
 	TriggerMaterialization(ctx context.Context, assetID string, partitionKey *string, payload map[string]any, idempotencyKey *string) (*domain.OrchestrationEvent, error)
 }
 
@@ -227,6 +229,29 @@ func (h *APIHandler) ListAssetChecks(ctx context.Context, req ListAssetChecksReq
 	return ListAssetChecks200JSONResponse(AssetCheckList{Data: &data}), nil
 }
 
+func (h *APIHandler) ListAssetCheckResults(ctx context.Context, req ListAssetCheckResultsRequestObject) (ListAssetCheckResultsResponseObject, error) {
+	asset, err := h.assets.GetAsset(ctx, req.AssetKey)
+	if err != nil {
+		if errors.As(err, new(*domain.NotFoundError)) {
+			return ListAssetCheckResults404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		}
+		return nil, err
+	}
+
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	results, total, err := h.assets.ListCheckResults(ctx, asset.ID, page)
+	if err != nil {
+		return nil, err
+	}
+
+	data := make([]AssetCheckResult, len(results))
+	for i := range results {
+		data[i] = assetCheckResultToAPI(results[i])
+	}
+	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return ListAssetCheckResults200JSONResponse(PaginatedAssetCheckResults{Data: &data, NextPageToken: optStr(nextToken)}), nil
+}
+
 func (h *APIHandler) ListAssetBackfills(ctx context.Context, req ListAssetBackfillsRequestObject) (ListAssetBackfillsResponseObject, error) {
 	asset, err := h.assets.GetAsset(ctx, req.AssetKey)
 	if err != nil {
@@ -287,6 +312,36 @@ func (h *APIHandler) CreateAssetBackfill(ctx context.Context, req CreateAssetBac
 	}
 	request := backfillRequestToAPI(*created)
 	return CreateAssetBackfill201JSONResponse(CreateAssetBackfillResponse{Request: &request, Slices: &apiSlices}), nil
+}
+
+func (h *APIHandler) GetAssetBackfill(ctx context.Context, req GetAssetBackfillRequestObject) (GetAssetBackfillResponseObject, error) {
+	asset, err := h.assets.GetAsset(ctx, req.AssetKey)
+	if err != nil {
+		if errors.As(err, new(*domain.NotFoundError)) {
+			return GetAssetBackfill404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		}
+		return nil, err
+	}
+
+	backfill, slices, err := h.assets.GetBackfill(ctx, asset.ID, req.BackfillId)
+	if err != nil {
+		switch {
+		case errors.As(err, new(*domain.ValidationError)):
+			return GetAssetBackfill400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		case errors.As(err, new(*domain.NotFoundError)):
+			return GetAssetBackfill404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		default:
+			return nil, err
+		}
+	}
+
+	apiSlices := make([]BackfillSlice, len(slices))
+	for i := range slices {
+		apiSlices[i] = backfillSliceToAPI(slices[i])
+	}
+	request := backfillRequestToAPI(*backfill)
+
+	return GetAssetBackfill200JSONResponse(AssetBackfillDetails{Request: &request, Slices: &apiSlices}), nil
 }
 
 func assetToAPI(a domain.DataAsset) Asset {
@@ -367,6 +422,24 @@ func assetCheckToAPI(c domain.AssetCheck) AssetCheck {
 		Enabled:   &c.Enabled,
 		CreatedAt: &ct,
 		UpdatedAt: &ut,
+	}
+}
+
+func assetCheckResultToAPI(r domain.AssetCheckResult) AssetCheckResult {
+	ct := r.CreatedAt
+	var metrics *map[string]any
+	if r.MetricsJSON != nil {
+		metrics = &r.MetricsJSON
+	}
+	return AssetCheckResult{
+		Id:           &r.ID,
+		CheckId:      &r.CheckID,
+		RunId:        r.RunID,
+		PartitionKey: r.PartitionKey,
+		Status:       &r.Status,
+		Message:      r.Message,
+		MetricsJson:  metrics,
+		CreatedAt:    &ct,
 	}
 }
 

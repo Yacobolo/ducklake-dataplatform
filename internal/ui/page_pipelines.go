@@ -52,15 +52,6 @@ type pipelineJobRowData struct {
 	DeleteURL string
 }
 
-type pipelineRunRowData struct {
-	ID        string
-	Status    string
-	Trigger   string
-	Started   string
-	Finished  string
-	CancelURL string
-}
-
 type pipelineDetailPageData struct {
 	Principal     domain.ContextPrincipal
 	Name          string
@@ -69,10 +60,8 @@ type pipelineDetailPageData struct {
 	Schedule      string
 	EditURL       string
 	DeleteURL     string
-	TriggerURL    string
 	NewJobURL     string
 	Jobs          []pipelineJobRowData
-	Runs          []pipelineRunRowData
 	CSRFFieldFunc func() Node
 }
 
@@ -82,18 +71,12 @@ func pipelineDetailPage(d pipelineDetailPageData) Node {
 		j := d.Jobs[i]
 		jobRows = append(jobRows, Tr(Td(Text(j.Name)), Td(statusLabel(j.JobType, "accent")), Td(Text(j.Selector)), Td(Text(j.Notebook)), Td(Class("text-right"), actionMenu("Actions", actionMenuPost(j.DeleteURL, "Delete job", d.CSRFFieldFunc, true)))))
 	}
-	runRows := make([]Node, 0, len(d.Runs))
-	for i := range d.Runs {
-		r := d.Runs[i]
-		runRows = append(runRows, Tr(Td(Text(r.ID)), Td(statusLabel(r.Status, "attention")), Td(Text(r.Trigger)), Td(Text(r.Started)), Td(Text(r.Finished)), Td(Class("text-right"), actionMenu("Actions", actionMenuPost(r.CancelURL, "Cancel run", d.CSRFFieldFunc, true)))))
-	}
 	return appPage(
 		"Pipeline: "+d.Name,
 		"pipelines",
 		d.Principal,
-		Div(Class(cardClass()), P(Text("Created by: "+d.CreatedBy)), P(Text("Concurrency: "+d.Concurrency)), P(Text("Schedule: "+d.Schedule)), Div(Class("BtnGroup"), A(Href(d.EditURL), Class(secondaryButtonClass()), Text("Edit")), A(Href(d.NewJobURL), Class(secondaryButtonClass()), Text("New job")), Form(Method("post"), Action(d.TriggerURL), d.CSRFFieldFunc(), Button(Type("submit"), Class(primaryButtonClass()), Text("Trigger run"))), Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldFunc(), Button(Type("submit"), Class("btn btn-danger"), Text("Delete"))))),
+		Div(Class(cardClass()), P(Text("Created by: "+d.CreatedBy)), P(Text("Concurrency: "+d.Concurrency)), P(Text("Schedule: "+d.Schedule)), Div(Class("BtnGroup"), A(Href(d.EditURL), Class(secondaryButtonClass()), Text("Edit")), A(Href(d.NewJobURL), Class(secondaryButtonClass()), Text("New job")), A(Href("/ui/assets"), Class(secondaryButtonClass()), Text("Open assets")), Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldFunc(), Button(Type("submit"), Class("btn btn-danger"), Text("Delete"))))),
 		Div(Class(cardClass("table-wrap")), H2(Text("Jobs")), Table(Class("data-table"), THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Selector")), Th(Text("Notebook")), Th(Class("text-right"), Text("Actions")))), TBody(Group(jobRows)))),
-		Div(Class(cardClass("table-wrap")), H2(Text("Recent runs")), Table(Class("data-table"), THead(Tr(Th(Text("Run ID")), Th(Text("Status")), Th(Text("Trigger")), Th(Text("Started")), Th(Text("Finished")), Th(Class("text-right"), Text("Actions")))), TBody(Group(runRows)))),
 	)
 }
 

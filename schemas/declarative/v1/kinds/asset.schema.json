@@ -1,5 +1,26 @@
 {
   "$defs": {
+    "AssetAutoMaterializePolicySpec": {
+      "additionalProperties": false,
+      "properties": {
+        "min_interval_seconds": {
+          "type": "integer"
+        },
+        "mode": {
+          "type": "string"
+        },
+        "on_freshness_breach": {
+          "type": "boolean"
+        },
+        "on_upstream_materialized": {
+          "type": "boolean"
+        },
+        "require_all_upstreams": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
     "AssetCheckSpec": {
       "additionalProperties": false,
       "properties": {
@@ -58,6 +79,51 @@
       ],
       "type": "object"
     },
+    "AssetFreshnessPolicySpec": {
+      "additionalProperties": false,
+      "properties": {
+        "cron_schedule": {
+          "type": "string"
+        },
+        "max_lag_seconds": {
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "AssetMaterializationPolicySpec": {
+      "additionalProperties": false,
+      "properties": {
+        "allow_concurrent": {
+          "type": "boolean"
+        },
+        "mode": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "AssetPartitionDefinitionSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "dynamic_group": {
+          "type": "string"
+        },
+        "static_keys": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "timezone": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "AssetSpec": {
       "additionalProperties": false,
       "properties": {
@@ -66,6 +132,9 @@
         },
         "auto_materialize": {
           "type": "boolean"
+        },
+        "auto_materialize_policy": {
+          "$ref": "#/$defs/AssetAutoMaterializePolicySpec"
         },
         "checks": {
           "items": {
@@ -85,14 +154,23 @@
         "description": {
           "type": "string"
         },
+        "freshness_policy": {
+          "$ref": "#/$defs/AssetFreshnessPolicySpec"
+        },
         "io_profile": {
           "type": "string"
+        },
+        "materialization_policy": {
+          "$ref": "#/$defs/AssetMaterializationPolicySpec"
         },
         "max_lag_seconds": {
           "type": "integer"
         },
         "owner": {
           "type": "string"
+        },
+        "partition_definition": {
+          "$ref": "#/$defs/AssetPartitionDefinitionSpec"
         },
         "partition_type": {
           "type": "string"

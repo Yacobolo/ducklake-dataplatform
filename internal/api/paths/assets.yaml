@@ -168,6 +168,12 @@ paths:
       summary: Trigger asset materialization
       description: Enqueues a materialization event for an asset. Requires admin privileges.
       tags: [Assets]
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: MANAGE_PIPELINES
+            securable_id_source: catalog_sentinel
       requestBody:
         required: false
         content:
@@ -257,6 +263,39 @@ paths:
         '500':
           $ref: '../schemas/responses.yaml#/responses/InternalError'
 
+  /assets/{assetKey}/check-results:
+    parameters:
+      - name: assetKey
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
+    get:
+      operationId: listAssetCheckResults
+      summary: List check results for an asset
+      description: Lists data quality check results across all checks configured for an asset.
+      tags: [Assets]
+      parameters:
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of check results
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/asset.yaml#/PaginatedAssetCheckResults'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
   /assets/{assetKey}/backfills:
     parameters:
       - name: assetKey
@@ -300,6 +339,12 @@ paths:
       summary: Create a backfill request
       description: Creates a partition-range backfill request for an asset. Requires admin privileges.
       tags: [Assets]
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: MANAGE_PIPELINES
+            securable_id_source: catalog_sentinel
       requestBody:
         required: true
         content:
@@ -319,6 +364,45 @@ paths:
           $ref: '../schemas/responses.yaml#/responses/Unauthorized'
         '403':
           $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /assets/{assetKey}/backfills/{backfillId}:
+    parameters:
+      - name: assetKey
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
+      - name: backfillId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+          maxLength: 36
+    get:
+      operationId: getAssetBackfill
+      summary: Get one backfill request
+      description: Returns a backfill request and its generated partition slices.
+      tags: [Assets]
+      responses:
+        '200':
+          description: Backfill request details
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/asset.yaml#/AssetBackfillDetails'
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
         '404':
           $ref: '../schemas/responses.yaml#/responses/NotFound'
         '429':

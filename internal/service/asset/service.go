@@ -3,6 +3,7 @@ package asset
 
 import (
 	"context"
+	"sort"
 	"strings"
 
 	"duck-demo/internal/domain"
@@ -61,8 +62,73 @@ func (s *Service) ListChecks(ctx context.Context, assetID string) ([]domain.Asse
 	return s.checks.ListChecksByAsset(ctx, assetID)
 }
 
+func (s *Service) ListCheckResults(ctx context.Context, assetID string, page domain.PageRequest) ([]domain.AssetCheckResult, int64, error) {
+	checks, err := s.checks.ListChecksByAsset(ctx, assetID)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	allResults := make([]domain.AssetCheckResult, 0)
+	for i := range checks {
+		offset := 0
+		for {
+			results, total, listErr := s.checks.ListCheckResults(ctx, checks[i].ID, domain.PageRequest{MaxResults: domain.MaxMaxResults, PageToken: domain.EncodePageToken(offset)})
+			if listErr != nil {
+				return nil, 0, listErr
+			}
+			allResults = append(allResults, results...)
+
+			offset += len(results)
+			if len(results) == 0 || int64(offset) >= total {
+				break
+			}
+		}
+	}
+
+	sort.Slice(allResults, func(i, j int) bool {
+		return allResults[i].CreatedAt.After(allResults[j].CreatedAt)
+	})
+
+	total := int64(len(allResults))
+	offset := page.Offset()
+	if offset >= len(allResults) {
+		return []domain.AssetCheckResult{}, total, nil
+	}
+
+	end := offset + page.Limit()
+	if end > len(allResults) {
+		end = len(allResults)
+	}
+
+	return allResults[offset:end], total, nil
+}
+
 func (s *Service) ListBackfills(ctx context.Context, filter domain.BackfillFilter) ([]domain.BackfillRequest, int64, error) {
 	return s.backfills.ListRequests(ctx, filter)
+}
+
+func (s *Service) GetBackfill(ctx context.Context, assetID, backfillID string) (*domain.BackfillRequest, []domain.BackfillSlice, error) {
+	if strings.TrimSpace(assetID) == "" {
+		return nil, nil, domain.ErrValidation("asset_id is required")
+	}
+	if strings.TrimSpace(backfillID) == "" {
+		return nil, nil, domain.ErrValidation("backfill_id is required")
+	}
+
+	request, err := s.backfills.GetRequestByID(ctx, backfillID)
+	if err != nil {
+		return nil, nil, err
+	}
+	if request.AssetID != assetID {
+		return nil, nil, domain.ErrNotFound("backfill request not found")
+	}
+
+	slices, err := s.backfills.ListSlicesByRequest(ctx, request.ID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return request, slices, nil
 }
 
 func (s *Service) ListPartitions(ctx context.Context, assetID string, page domain.PageRequest) ([]domain.AssetPartition, int64, error) {

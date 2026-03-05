@@ -115,6 +115,63 @@ Creates a partition-range backfill request for an asset. Requires admin privileg
 | `429` | Rate limit exceeded. Retry after the indicated duration. |
 | `500` | An unexpected internal server error occurred. |
 
+## `GET /assets/{assetKey}/backfills/{backfillId}`
+
+Get one backfill request
+
+Returns a backfill request and its generated partition slices.
+
+- Operation ID: `getAssetBackfill`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `assetKey` | `string` | `true` | - |
+| `backfillId` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | Backfill request details |
+| `400` | Invalid request parameters or malformed request body. |
+| `401` | Authentication credentials are missing or invalid. |
+| `404` | The requested resource was not found. |
+| `429` | Rate limit exceeded. Retry after the indicated duration. |
+| `500` | An unexpected internal server error occurred. |
+
+## `GET /assets/{assetKey}/check-results`
+
+List check results for an asset
+
+Lists data quality check results across all checks configured for an asset.
+
+- Operation ID: `listAssetCheckResults`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `assetKey` | `string` | `true` | - |
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | Maximum number of results to return per page. |
+| `page_token` | `string` | `false` | Opaque pagination token from a previous response. |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | Paginated list of check results |
+| `401` | Authentication credentials are missing or invalid. |
+| `404` | The requested resource was not found. |
+| `429` | Rate limit exceeded. Retry after the indicated duration. |
+| `500` | An unexpected internal server error occurred. |
+
 ## `GET /assets/{assetKey}/checks`
 
 List checks for an asset

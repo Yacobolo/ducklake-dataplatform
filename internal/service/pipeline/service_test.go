@@ -4,9 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"runtime"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -613,7 +611,6 @@ func TestPipelineService_TriggerRun(t *testing.T) {
 		params      map[string]string
 		triggerType string
 		setupPipe   func(*testutil.MockPipelineRepo)
-		setupRun    func(*testutil.MockPipelineRunRepo)
 		wantErr     bool
 		errType     interface{}
 		errContains string
@@ -632,25 +629,6 @@ func TestPipelineService_TriggerRun(t *testing.T) {
 			errType: new(*domain.NotFoundError),
 		},
 		{
-			name:        "concurrency_limit_reached",
-			pipeName:    "my-pipe",
-			principal:   "alice",
-			triggerType: domain.TriggerTypeManual,
-			setupPipe: func(repo *testutil.MockPipelineRepo) {
-				repo.GetPipelineByNameFn = func(ctx context.Context, name string) (*domain.Pipeline, error) {
-					return &domain.Pipeline{ID: "p1", Name: name, ConcurrencyLimit: 1}, nil
-				}
-			},
-			setupRun: func(repo *testutil.MockPipelineRunRepo) {
-				repo.CountActiveRunsFn = func(ctx context.Context, pipelineID string) (int64, error) {
-					return 1, nil
-				}
-			},
-			wantErr:     true,
-			errType:     new(*domain.ValidationError),
-			errContains: "concurrency limit reached",
-		},
-		{
 			name:        "no_jobs",
 			pipeName:    "my-pipe",
 			principal:   "alice",
@@ -661,11 +639,6 @@ func TestPipelineService_TriggerRun(t *testing.T) {
 				}
 				repo.ListJobsByPipelineFn = func(ctx context.Context, pipelineID string) ([]domain.PipelineJob, error) {
 					return nil, nil
-				}
-			},
-			setupRun: func(repo *testutil.MockPipelineRunRepo) {
-				repo.CountActiveRunsFn = func(ctx context.Context, pipelineID string) (int64, error) {
-					return 0, nil
 				}
 			},
 			wantErr:     true,
@@ -689,31 +662,6 @@ func TestPipelineService_TriggerRun(t *testing.T) {
 					}, nil
 				}
 			},
-			setupRun: func(repo *testutil.MockPipelineRunRepo) {
-				repo.CountActiveRunsFn = func(ctx context.Context, pipelineID string) (int64, error) {
-					return 0, nil
-				}
-				repo.CreateRunFn = func(ctx context.Context, run *domain.PipelineRun) (*domain.PipelineRun, error) {
-					run.CreatedAt = time.Now()
-					return run, nil
-				}
-				repo.CreateJobRunFn = func(ctx context.Context, jr *domain.PipelineJobRun) (*domain.PipelineJobRun, error) {
-					jr.CreatedAt = time.Now()
-					return jr, nil
-				}
-
-				// Background goroutine mocks — prevent panics.
-				repo.UpdateRunStartedFn = func(ctx context.Context, id string) error { return nil }
-				repo.ListJobRunsByRunFn = func(ctx context.Context, runID string) ([]domain.PipelineJobRun, error) {
-					return nil, nil
-				}
-				repo.UpdateRunFinishedFn = func(ctx context.Context, id string, status string, errMsg *string) error {
-					return nil
-				}
-				repo.UpdateJobRunFinishedFn = func(ctx context.Context, id string, status string, errMsg *string) error {
-					return nil
-				}
-			},
 		},
 	}
 
@@ -726,9 +674,6 @@ func TestPipelineService_TriggerRun(t *testing.T) {
 
 			if tt.setupPipe != nil {
 				tt.setupPipe(pipeRepo)
-			}
-			if tt.setupRun != nil {
-				tt.setupRun(runRepo)
 			}
 
 			svc := newTestService(pipeRepo, runRepo, auditRepo, nbProvider)
@@ -756,9 +701,6 @@ func TestPipelineService_TriggerRun(t *testing.T) {
 			assert.Equal(t, tt.params, result.Parameters)
 
 			assert.True(t, auditRepo.HasAction("pipeline.trigger"))
-
-			// Give the background goroutine a moment to complete without blocking.
-			runtime.Gosched()
 		})
 	}
 }

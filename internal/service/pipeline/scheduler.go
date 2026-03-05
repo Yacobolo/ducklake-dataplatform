@@ -5,9 +5,8 @@ import (
 	"log/slog"
 	"sync"
 
-	"github.com/robfig/cron/v3"
-
 	"duck-demo/internal/domain"
+	"github.com/robfig/cron/v3"
 )
 
 // Scheduler manages cron-based pipeline execution.
@@ -79,7 +78,7 @@ func (s *Scheduler) loadSchedules(ctx context.Context) error {
 
 		entryID, err := s.cron.AddFunc(schedule, func() {
 			ctx := context.Background()
-			_, triggerErr := s.svc.TriggerRun(ctx, createdBy, pipelineName, nil, domain.TriggerTypeScheduled)
+			_, triggerErr := s.svc.triggerAssets(ctx, createdBy, pipelineName, nil)
 			if triggerErr != nil {
 				s.logger.Warn("scheduled trigger failed",
 					"pipeline", pipelineName,

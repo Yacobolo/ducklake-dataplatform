@@ -101,9 +101,14 @@ func (r *OrchestrationEventRepo) ClaimNextPending(ctx context.Context, now time.
 func (r *OrchestrationEventRepo) MarkProcessed(ctx context.Context, id string) error {
 	_, err := r.db.ExecContext(ctx, `
 		UPDATE orchestration_events
-		SET status = ?, last_error = NULL, updated_at = CURRENT_TIMESTAMP
+		SET status = ?,
+		    last_error = CASE
+				WHEN status = ? THEN last_error
+				ELSE NULL
+			END,
+		    updated_at = CURRENT_TIMESTAMP
 		WHERE id = ?
-	`, domain.OrchestrationEventStatusProcessed, id)
+	`, domain.OrchestrationEventStatusProcessed, domain.OrchestrationEventStatusFailed, id)
 	return mapDBError(err)
 }
 

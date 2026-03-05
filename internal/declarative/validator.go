@@ -1573,6 +1573,13 @@ func validatePipelines(pipelines []PipelineResource, notebookNames, endpointName
 }
 
 func validateAssets(assets []AssetResource, errs *[]ValidationError) {
+	validPartitionDefinitionTypes := map[string]bool{
+		"daily":   true,
+		"hourly":  true,
+		"static":  true,
+		"dynamic": true,
+	}
+
 	seen := make(map[string]bool, len(assets))
 	for i, a := range assets {
 		path := fmt.Sprintf("asset[%d]", i)
@@ -1592,6 +1599,57 @@ func validateAssets(assets []AssetResource, errs *[]ValidationError) {
 			if strings.TrimSpace(dep) == "" {
 				addErr(errs, fmt.Sprintf("%s.depends_on[%d]", path, j), "depends_on entry must not be blank")
 			}
+		}
+
+		if a.Spec.IOProfile != "" && strings.TrimSpace(a.Spec.IOProfile) == "" {
+			addErr(errs, fmt.Sprintf("%s.io_profile", path), "io_profile must not be blank when provided")
+		}
+
+		if a.Spec.PartitionDefinition != nil {
+			typeValue := strings.ToLower(strings.TrimSpace(a.Spec.PartitionDefinition.Type))
+			if !validPartitionDefinitionTypes[typeValue] {
+				addErr(errs, fmt.Sprintf("%s.partition_definition.type", path), "partition_definition.type must be one of [daily, hourly, static, dynamic], got %q", a.Spec.PartitionDefinition.Type)
+			}
+
+			if typeValue == "static" {
+				hasStaticKeys := false
+				for _, key := range a.Spec.PartitionDefinition.StaticKeys {
+					if strings.TrimSpace(key) != "" {
+						hasStaticKeys = true
+						break
+					}
+				}
+				if !hasStaticKeys {
+					addErr(errs, fmt.Sprintf("%s.partition_definition.static_keys", path), "static partition requires at least one non-empty static_keys entry")
+				}
+			}
+
+			if typeValue == "dynamic" && strings.TrimSpace(a.Spec.PartitionDefinition.DynamicGroup) == "" {
+				addErr(errs, fmt.Sprintf("%s.partition_definition.dynamic_group", path), "dynamic partition requires dynamic_group")
+			}
+		}
+
+		if a.Spec.AutoMaterializePolicy != nil {
+			if a.Spec.AutoMaterializePolicy.MinIntervalSeconds != nil && *a.Spec.AutoMaterializePolicy.MinIntervalSeconds <= 0 {
+				addErr(errs, fmt.Sprintf("%s.auto_materialize_policy.min_interval_seconds", path), "auto_materialize_policy.min_interval_seconds must be > 0")
+			}
+			if a.Spec.AutoMaterializePolicy.Mode != "" && strings.TrimSpace(a.Spec.AutoMaterializePolicy.Mode) == "" {
+				addErr(errs, fmt.Sprintf("%s.auto_materialize_policy.mode", path), "auto_materialize_policy.mode must not be blank when provided")
+			}
+		}
+
+		if a.Spec.FreshnessPolicy != nil {
+			if a.Spec.FreshnessPolicy.MaxLagSeconds != nil && *a.Spec.FreshnessPolicy.MaxLagSeconds <= 0 {
+				addErr(errs, fmt.Sprintf("%s.freshness_policy.max_lag_seconds", path), "freshness_policy.max_lag_seconds must be > 0")
+			}
+		}
+
+		if a.Spec.MaterializationPolicy != nil && a.Spec.MaterializationPolicy.Mode != "" && strings.TrimSpace(a.Spec.MaterializationPolicy.Mode) == "" {
+			addErr(errs, fmt.Sprintf("%s.materialization_policy.mode", path), "materialization_policy.mode must not be blank when provided")
+		}
+
+		if a.Spec.MaxLagSeconds != nil && *a.Spec.MaxLagSeconds <= 0 {
+			addErr(errs, fmt.Sprintf("%s.max_lag_seconds", path), "max_lag_seconds must be > 0")
 		}
 
 		for j, check := range a.Spec.CheckDefinitions {

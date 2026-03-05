@@ -461,9 +461,9 @@ func (r *AssetRunRepo) CreateRun(ctx context.Context, run *domain.AssetRun) (*do
 		id = newID()
 	}
 	_, err := r.db.ExecContext(ctx, `
-		INSERT INTO asset_runs (id, asset_id, run_group_id, partition_key, status, trigger_type, triggered_by, attempt_count, max_attempts)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, id, run.AssetID, nullStrFromPtr(run.RunGroupID), nullStrFromPtr(run.PartitionKey), run.Status, run.TriggerType, run.TriggeredBy, run.AttemptCount, run.MaxAttempts)
+		INSERT INTO asset_runs (id, asset_id, run_group_id, partition_key, partition_from, partition_to, status, trigger_type, triggered_by, attempt_count, max_attempts)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, id, run.AssetID, nullStrFromPtr(run.RunGroupID), nullStrFromPtr(run.PartitionKey), nullStrFromPtr(run.PartitionFrom), nullStrFromPtr(run.PartitionTo), run.Status, run.TriggerType, run.TriggeredBy, run.AttemptCount, run.MaxAttempts)
 	if err != nil {
 		return nil, mapDBError(err)
 	}
@@ -472,7 +472,7 @@ func (r *AssetRunRepo) CreateRun(ctx context.Context, run *domain.AssetRun) (*do
 
 func (r *AssetRunRepo) GetRunByID(ctx context.Context, id string) (*domain.AssetRun, error) {
 	row := r.db.QueryRowContext(ctx, `
-		SELECT id, asset_id, run_group_id, partition_key, status, trigger_type, triggered_by,
+		SELECT id, asset_id, run_group_id, partition_key, partition_from, partition_to, status, trigger_type, triggered_by,
 		       attempt_count, max_attempts, started_at, finished_at, error_message, created_at, updated_at
 		FROM asset_runs
 		WHERE id = ?
@@ -501,7 +501,7 @@ func (r *AssetRunRepo) ListRuns(ctx context.Context, filter domain.AssetRunFilte
 
 	//nolint:gosec // query fragments are assembled from fixed, parameterized clauses only.
 	q := `
-		SELECT id, asset_id, run_group_id, partition_key, status, trigger_type, triggered_by,
+		SELECT id, asset_id, run_group_id, partition_key, partition_from, partition_to, status, trigger_type, triggered_by,
 		       attempt_count, max_attempts, started_at, finished_at, error_message, created_at, updated_at
 		FROM asset_runs ` + w + `
 		ORDER BY created_at DESC
@@ -919,15 +919,17 @@ func scanAssetRun(scanner interface {
 	Scan(dest ...any) error
 }) (*domain.AssetRun, error) {
 	var (
-		run                                    domain.AssetRun
-		runGroupID, partitionKey, errorMessage sql.NullString
-		startedAt, finishedAt                  sql.NullTime
+		run                                                                domain.AssetRun
+		runGroupID, partitionKey, partitionFrom, partitionTo, errorMessage sql.NullString
+		startedAt, finishedAt                                              sql.NullTime
 	)
 	err := scanner.Scan(
 		&run.ID,
 		&run.AssetID,
 		&runGroupID,
 		&partitionKey,
+		&partitionFrom,
+		&partitionTo,
 		&run.Status,
 		&run.TriggerType,
 		&run.TriggeredBy,
@@ -949,6 +951,14 @@ func scanAssetRun(scanner interface {
 	if partitionKey.Valid {
 		s := partitionKey.String
 		run.PartitionKey = &s
+	}
+	if partitionFrom.Valid {
+		s := partitionFrom.String
+		run.PartitionFrom = &s
+	}
+	if partitionTo.Valid {
+		s := partitionTo.String
+		run.PartitionTo = &s
 	}
 	if startedAt.Valid {
 		t := startedAt.Time

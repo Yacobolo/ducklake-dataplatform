@@ -5,7 +5,7 @@
 Duck declarative Asset
 
 - Schema file: `kinds/asset.schema.json`
-- SHA256: `7cd73f038d21e7bad3782a05e451bf57e1e866437fc98b2b9415890348b1d827`
+- SHA256: `2997d5164d9725c7b6983006462f493cbe0cccd5f6a3430c90f71b214d95cc9d`
 
 ## Spec Fields
 
@@ -13,13 +13,17 @@ Duck declarative Asset
 | --- | --- | --- | --- |
 | `asset_type` | `string` | `false` | - |
 | `auto_materialize` | `boolean` | `false` | - |
+| `auto_materialize_policy` | `AssetAutoMaterializePolicySpec` | `false` | - |
 | `checks` | `array[AssetCheckSpec]` | `false` | - |
 | `cron_schedule` | `string` | `false` | - |
 | `depends_on` | `array[string]` | `false` | - |
 | `description` | `string` | `false` | - |
+| `freshness_policy` | `AssetFreshnessPolicySpec` | `false` | - |
 | `io_profile` | `string` | `false` | - |
+| `materialization_policy` | `AssetMaterializationPolicySpec` | `false` | - |
 | `max_lag_seconds` | `integer` | `false` | - |
 | `owner` | `string` | `false` | - |
+| `partition_definition` | `AssetPartitionDefinitionSpec` | `false` | - |
 | `partition_type` | `string` | `false` | - |
 | `properties` | `object` | `false` | - |
 | `tags` | `array[string]` | `false` | - |

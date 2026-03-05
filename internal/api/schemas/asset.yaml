@@ -104,6 +104,12 @@ AssetRun:
     partition_key:
       type: string
       maxLength: 255
+    partition_from:
+      type: string
+      maxLength: 255
+    partition_to:
+      type: string
+      maxLength: 255
     status:
       type: string
       maxLength: 64
@@ -206,6 +212,39 @@ AssetCheck:
       format: date-time
       maxLength: 64
     updated_at:
+      type: string
+      format: date-time
+      maxLength: 64
+
+AssetCheckResult:
+  description: Data quality check execution result.
+  type: object
+  properties:
+    id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+    check_id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+    run_id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+    partition_key:
+      type: string
+      maxLength: 255
+    status:
+      type: string
+      maxLength: 64
+    message:
+      type: string
+      maxLength: 4096
+    metrics_json:
+      type: object
+      additionalProperties: true
+    created_at:
       type: string
       format: date-time
       maxLength: 64
@@ -338,6 +377,17 @@ CreateAssetBackfillResponse:
       items:
         $ref: '#/BackfillSlice'
 
+AssetBackfillDetails:
+  description: One backfill request with its generated slices.
+  type: object
+  properties:
+    request:
+      $ref: '#/BackfillRequest'
+    slices:
+      type: array
+      items:
+        $ref: '#/BackfillSlice'
+
 PaginatedAssets:
   type: object
   properties:
@@ -389,6 +439,17 @@ AssetCheckList:
       type: array
       items:
         $ref: '#/AssetCheck'
+
+PaginatedAssetCheckResults:
+  type: object
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/AssetCheckResult'
+    next_page_token:
+      type: string
+      maxLength: 4096
 
 PaginatedBackfillRequests:
   type: object

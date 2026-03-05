@@ -151,6 +151,8 @@ type Config struct {
 	FeatureFlightSQL        bool
 	FeaturePGWire           bool
 	FeatureReconcilerShadow bool
+	OrchestrationIOManager  string
+	OrchestrationIOFSRoot   string
 	RemoteCanaryUsers       []string
 
 	// Warnings collects non-fatal warnings generated during config loading.
@@ -220,6 +222,8 @@ func LoadFromEnv() (*Config, error) {
 		FeatureFlightSQL:        parseBoolEnvDefault("FEATURE_FLIGHT_SQL", true),
 		FeaturePGWire:           parseBoolEnvDefault("FEATURE_PG_WIRE", true),
 		FeatureReconcilerShadow: parseBoolEnvDefault("FEATURE_RECONCILER_SHADOW", true),
+		OrchestrationIOManager:  os.Getenv("ORCHESTRATION_IO_MANAGER"),
+		OrchestrationIOFSRoot:   os.Getenv("ORCHESTRATION_IO_FS_ROOT"),
 	}
 
 	// Rate limiting
@@ -371,6 +375,9 @@ func LoadFromEnv() (*Config, error) {
 	}
 	if cfg.LogLevel == "" {
 		cfg.LogLevel = "info"
+	}
+	if cfg.OrchestrationIOManager == "" {
+		cfg.OrchestrationIOManager = "memory"
 	}
 	if cfg.RateLimitRPS == 0 {
 		cfg.RateLimitRPS = 100

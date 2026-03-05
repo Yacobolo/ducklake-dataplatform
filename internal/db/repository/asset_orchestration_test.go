@@ -84,6 +84,8 @@ func TestAssetRunRepo_RunEventMaterialization(t *testing.T) {
 	require.NoError(t, err)
 
 	partitionKey := "2026-03-05"
+	partitionFrom := "2026-03-01"
+	partitionTo := "2026-03-07"
 	_, err = partitionRepo.Upsert(ctx, &domain.AssetPartition{
 		AssetID:      asset.ID,
 		PartitionKey: partitionKey,
@@ -92,12 +94,14 @@ func TestAssetRunRepo_RunEventMaterialization(t *testing.T) {
 	require.NoError(t, err)
 
 	run, err := runRepo.CreateRun(ctx, &domain.AssetRun{
-		AssetID:      asset.ID,
-		PartitionKey: &partitionKey,
-		Status:       domain.AssetRunStatusQueued,
-		TriggerType:  domain.AssetTriggerTypeReconciler,
-		TriggeredBy:  "system",
-		MaxAttempts:  3,
+		AssetID:       asset.ID,
+		PartitionKey:  &partitionKey,
+		PartitionFrom: &partitionFrom,
+		PartitionTo:   &partitionTo,
+		Status:        domain.AssetRunStatusQueued,
+		TriggerType:   domain.AssetTriggerTypeReconciler,
+		TriggeredBy:   "system",
+		MaxAttempts:   3,
 	})
 	require.NoError(t, err)
 
@@ -134,6 +138,10 @@ func TestAssetRunRepo_RunEventMaterialization(t *testing.T) {
 	updatedRun, err := runRepo.GetRunByID(ctx, run.ID)
 	require.NoError(t, err)
 	assert.Equal(t, domain.AssetRunStatusSuccess, updatedRun.Status)
+	require.NotNil(t, updatedRun.PartitionFrom)
+	require.NotNil(t, updatedRun.PartitionTo)
+	assert.Equal(t, partitionFrom, *updatedRun.PartitionFrom)
+	assert.Equal(t, partitionTo, *updatedRun.PartitionTo)
 
 	events, totalEvents, err := runRepo.ListRunEvents(ctx, run.ID, domain.PageRequest{MaxResults: 10})
 	require.NoError(t, err)
