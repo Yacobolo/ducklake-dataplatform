@@ -97,4 +97,4 @@ func NewHandler(
 }
 
 // Ensure Handler implements the interface.
-var _ StrictServerInterface = (*APIHandler)(nil)
+var _ GenStrictServerInterface = (*APIHandler)(nil)
