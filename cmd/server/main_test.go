@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
@@ -86,30 +88,30 @@ func TestAPIGenRoutes_MountUnderV1_NoDoublePrefix(t *testing.T) {
 	}
 }
 
-func TestAPIGenLegacyAdapter_DispatchesExecuteQueryOnV1Route(t *testing.T) {
+func TestAPIGenStrictAdapter_DispatchesExecuteQueryOnV1Route(t *testing.T) {
 	t.Parallel()
 
 	strict := &executeQueryStrictStub{}
 	r := chi.NewRouter()
 	r.Route("/v1", func(r chi.Router) {
-		api.RegisterAPIGenRoutes(r, api.NewAPIGenLegacyAdapter(strict))
+		api.RegisterAPIGenRoutes(r, api.NewAPIGenStrictAdapter(strict))
 	})
 
-	req := httptest.NewRequest(http.MethodPost, "/v1/query", nil)
+	req := httptest.NewRequest(http.MethodPost, "/v1/query", strings.NewReader(`{"sql":"select 1"}`))
 	rr := httptest.NewRecorder()
 	r.ServeHTTP(rr, req)
 
-	assert.Equal(t, http.StatusCreated, rr.Code)
+	assert.Equal(t, http.StatusOK, rr.Code)
 	assert.True(t, strict.called)
 }
 
-func TestAPIGenLegacyAdapter_HandlesGetHealthOnV1Route(t *testing.T) {
+func TestAPIGenStrictAdapter_HandlesGetHealthOnV1Route(t *testing.T) {
 	t.Parallel()
 
 	strict := &executeQueryStrictStub{}
 	r := chi.NewRouter()
 	r.Route("/v1", func(r chi.Router) {
-		api.RegisterAPIGenRoutes(r, api.NewAPIGenLegacyAdapter(strict))
+		api.RegisterAPIGenRoutes(r, api.NewAPIGenStrictAdapter(strict))
 	})
 
 	req := httptest.NewRequest(http.MethodGet, "/v1/healthz", nil)
@@ -139,11 +141,11 @@ func (s *recordingGenServer) lastOperationID() string {
 }
 
 type executeQueryStrictStub struct {
-	api.Unimplemented
+	api.StrictServerInterface
 	called bool
 }
 
-func (s *executeQueryStrictStub) ExecuteQuery(w http.ResponseWriter, _ *http.Request) {
+func (s *executeQueryStrictStub) ExecuteQuery(_ context.Context, _ api.ExecuteQueryRequestObject) (api.ExecuteQueryResponseObject, error) {
 	s.called = true
-	w.WriteHeader(http.StatusCreated)
+	return api.ExecuteQuery200JSONResponse{}, nil
 }
