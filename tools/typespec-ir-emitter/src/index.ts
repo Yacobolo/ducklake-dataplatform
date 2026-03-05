@@ -257,7 +257,13 @@ function operationAuthzMode(operationName: string): "public" | "authenticated" |
     operationName === "createTable" ||
     operationName === "updateTable" ||
     operationName === "deleteTable" ||
-    operationName === "updateColumn"
+    operationName === "updateColumn" ||
+    operationName === "createView" ||
+    operationName === "updateView" ||
+    operationName === "deleteView" ||
+    operationName === "createVolume" ||
+    operationName === "updateVolume" ||
+    operationName === "deleteVolume"
   ) {
     return "admin_only";
   }

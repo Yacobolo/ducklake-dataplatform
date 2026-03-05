@@ -383,6 +383,67 @@ model TableStatistics {
   profiled_by?: string;
 }
 
+model ViewDetail {
+  id: string;
+  schema_id?: string;
+  schema_name: string;
+  catalog_name: string;
+  name: string;
+  view_definition?: string;
+  comment?: string;
+  owner?: string;
+  source_tables?: string[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+model PaginatedViewDetails {
+  data: ViewDetail[];
+  next_page_token?: string;
+}
+
+model CreateViewRequest {
+  name: string;
+  view_definition: string;
+  comment?: string;
+}
+
+model UpdateViewRequest {
+  comment?: string;
+  view_definition?: string;
+}
+
+model VolumeDetail {
+  id: string;
+  name: string;
+  schema_name: string;
+  catalog_name: string;
+  volume_type?: string;
+  storage_location?: string;
+  comment?: string;
+  owner?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+model PaginatedVolumes {
+  data: VolumeDetail[];
+  next_page_token?: string;
+}
+
+model CreateVolumeRequest {
+  name: string;
+  volume_type?: string;
+  storage_location?: string;
+  comment?: string;
+}
+
+model UpdateVolumeRequest {
+  comment?: string;
+  new_name?: string;
+  storage_location?: string;
+}
+
 @route("/healthz")
 @get
 op getHealth(): HealthResponse;
@@ -634,3 +695,43 @@ op updateColumn(
 @route("/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/profile")
 @post
 op profileTable(catalogName: string, schemaName: string, tableName: string): TableStatistics;
+
+@route("/catalogs/{catalogName}/schemas/{schemaName}/views")
+@get
+op listViews(catalogName: string, schemaName: string, max_results?: int32, page_token?: string): PaginatedViewDetails;
+
+@route("/catalogs/{catalogName}/schemas/{schemaName}/views")
+@post
+op createView(catalogName: string, schemaName: string, @body body: CreateViewRequest): ViewDetail;
+
+@route("/catalogs/{catalogName}/schemas/{schemaName}/views/{viewName}")
+@get
+op getView(catalogName: string, schemaName: string, viewName: string): ViewDetail;
+
+@route("/catalogs/{catalogName}/schemas/{schemaName}/views/{viewName}")
+@patch(#{ implicitOptionality: true })
+op updateView(catalogName: string, schemaName: string, viewName: string, @body body: UpdateViewRequest): ViewDetail;
+
+@route("/catalogs/{catalogName}/schemas/{schemaName}/views/{viewName}")
+@delete
+op deleteView(catalogName: string, schemaName: string, viewName: string): void;
+
+@route("/catalogs/{catalogName}/schemas/{schemaName}/volumes")
+@get
+op listVolumes(catalogName: string, schemaName: string, max_results?: int32, page_token?: string): PaginatedVolumes;
+
+@route("/catalogs/{catalogName}/schemas/{schemaName}/volumes")
+@post
+op createVolume(catalogName: string, schemaName: string, @body body: CreateVolumeRequest): VolumeDetail;
+
+@route("/catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}")
+@get
+op getVolume(catalogName: string, schemaName: string, volumeName: string): VolumeDetail;
+
+@route("/catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}")
+@patch(#{ implicitOptionality: true })
+op updateVolume(catalogName: string, schemaName: string, volumeName: string, @body body: UpdateVolumeRequest): VolumeDetail;
+
+@route("/catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}")
+@delete
+op deleteVolume(catalogName: string, schemaName: string, volumeName: string): void;

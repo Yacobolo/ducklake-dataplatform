@@ -575,6 +575,280 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TableStatistics'
+  /catalogs/{catalogName}/schemas/{schemaName}/views:
+    get:
+      operationId: listViews
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemaName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedViewDetails'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+    post:
+      operationId: createView
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemaName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ViewDetail'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateViewRequest'
+  /catalogs/{catalogName}/schemas/{schemaName}/views/{viewName}:
+    get:
+      operationId: getView
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemaName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: viewName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ViewDetail'
+    patch:
+      operationId: updateView
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemaName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: viewName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ViewDetail'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateViewRequest'
+    delete:
+      operationId: deleteView
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemaName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: viewName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+  /catalogs/{catalogName}/schemas/{schemaName}/volumes:
+    get:
+      operationId: listVolumes
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemaName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedVolumes'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+    post:
+      operationId: createVolume
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemaName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VolumeDetail'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateVolumeRequest'
+  /catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}:
+    get:
+      operationId: getVolume
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemaName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: volumeName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VolumeDetail'
+    patch:
+      operationId: updateVolume
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemaName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: volumeName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VolumeDetail'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateVolumeRequest'
+    delete:
+      operationId: deleteVolume
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemaName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: volumeName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
   /catalogs/{catalogName}/set-default:
     post:
       operationId: setDefaultCatalog
@@ -1477,6 +1751,31 @@ components:
             $ref: '#/components/schemas/CreateColumnRequest'
         comment:
           type: string
+    CreateViewRequest:
+      type: object
+      required:
+        - name
+        - view_definition
+      properties:
+        name:
+          type: string
+        view_definition:
+          type: string
+        comment:
+          type: string
+    CreateVolumeRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        volume_type:
+          type: string
+        storage_location:
+          type: string
+        comment:
+          type: string
     Error:
       type: object
       required:
@@ -1719,6 +2018,28 @@ components:
             $ref: '#/components/schemas/TableDetail'
         next_page_token:
           type: string
+    PaginatedViewDetails:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ViewDetail'
+        next_page_token:
+          type: string
+    PaginatedVolumes:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/VolumeDetail'
+        next_page_token:
+          type: string
     Principal:
       type: object
       required:
@@ -1946,4 +2267,80 @@ components:
         comment:
           type: string
         owner:
+          type: string
+    UpdateViewRequest:
+      type: object
+      properties:
+        comment:
+          type: string
+        view_definition:
+          type: string
+    UpdateVolumeRequest:
+      type: object
+      properties:
+        comment:
+          type: string
+        new_name:
+          type: string
+        storage_location:
+          type: string
+    ViewDetail:
+      type: object
+      required:
+        - id
+        - schema_name
+        - catalog_name
+        - name
+      properties:
+        id:
+          type: string
+        schema_id:
+          type: string
+        schema_name:
+          type: string
+        catalog_name:
+          type: string
+        name:
+          type: string
+        view_definition:
+          type: string
+        comment:
+          type: string
+        owner:
+          type: string
+        source_tables:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+        updated_at:
+          type: string
+    VolumeDetail:
+      type: object
+      required:
+        - id
+        - name
+        - schema_name
+        - catalog_name
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        schema_name:
+          type: string
+        catalog_name:
+          type: string
+        volume_type:
+          type: string
+        storage_location:
+          type: string
+        comment:
+          type: string
+        owner:
+          type: string
+        created_at:
+          type: string
+        updated_at:
           type: string

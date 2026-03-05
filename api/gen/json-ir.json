@@ -1326,6 +1326,256 @@
           }
         }
       }
+    },
+    "PaginatedViewDetails": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "schema": {
+            "type": "array"
+          }
+        },
+        "next_page_token": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "data"
+      ]
+    },
+    "ViewDetail": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "schema_id": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "schema_name": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "catalog_name": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "name": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "view_definition": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "comment": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "owner": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "source_tables": {
+          "schema": {
+            "type": "array"
+          }
+        },
+        "created_at": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "updated_at": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "schema_name",
+        "catalog_name",
+        "name"
+      ]
+    },
+    "CreateViewRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "view_definition": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "comment": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "name",
+        "view_definition"
+      ]
+    },
+    "UpdateViewRequest": {
+      "type": "object",
+      "properties": {
+        "comment": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "view_definition": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "PaginatedVolumes": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "schema": {
+            "type": "array"
+          }
+        },
+        "next_page_token": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "data"
+      ]
+    },
+    "VolumeDetail": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "name": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "schema_name": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "catalog_name": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "volume_type": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "storage_location": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "comment": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "owner": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "created_at": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "updated_at": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "schema_name",
+        "catalog_name"
+      ]
+    },
+    "CreateVolumeRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "volume_type": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "storage_location": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "comment": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "UpdateVolumeRequest": {
+      "type": "object",
+      "properties": {
+        "comment": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "new_name": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "storage_location": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      }
     }
   },
   "endpoints": [
@@ -3237,6 +3487,858 @@
         ],
         "x-authz": {
           "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/catalogs/{catalogName}/schemas/{schemaName}/views",
+      "operation_id": "listViews",
+      "tags": [
+        "catalogs"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "PaginatedViewDetails"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "catalogName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "max_results",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        {
+          "name": "page_token",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "schemaName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/catalogs/{catalogName}/schemas/{schemaName}/views",
+      "operation_id": "createView",
+      "tags": [
+        "catalogs"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "ViewDetail"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "catalogName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "schemaName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "CreateViewRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "admin_only"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/catalogs/{catalogName}/schemas/{schemaName}/views/{viewName}",
+      "operation_id": "getView",
+      "tags": [
+        "catalogs"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "ViewDetail"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "catalogName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "schemaName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "viewName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "patch",
+      "path": "/catalogs/{catalogName}/schemas/{schemaName}/views/{viewName}",
+      "operation_id": "updateView",
+      "tags": [
+        "catalogs"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "ViewDetail"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "catalogName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "schemaName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "viewName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "UpdateViewRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "admin_only"
+        }
+      }
+    },
+    {
+      "method": "delete",
+      "path": "/catalogs/{catalogName}/schemas/{schemaName}/views/{viewName}",
+      "operation_id": "deleteView",
+      "tags": [
+        "catalogs"
+      ],
+      "responses": [
+        {
+          "status_code": 204,
+          "description": "No Content"
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "catalogName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "schemaName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "viewName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "admin_only"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/catalogs/{catalogName}/schemas/{schemaName}/volumes",
+      "operation_id": "listVolumes",
+      "tags": [
+        "catalogs"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "PaginatedVolumes"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "catalogName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "max_results",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        {
+          "name": "page_token",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "schemaName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/catalogs/{catalogName}/schemas/{schemaName}/volumes",
+      "operation_id": "createVolume",
+      "tags": [
+        "catalogs"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "VolumeDetail"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "catalogName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "schemaName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "CreateVolumeRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "admin_only"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}",
+      "operation_id": "getVolume",
+      "tags": [
+        "catalogs"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "VolumeDetail"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "catalogName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "schemaName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "volumeName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "patch",
+      "path": "/catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}",
+      "operation_id": "updateVolume",
+      "tags": [
+        "catalogs"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "VolumeDetail"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "catalogName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "schemaName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "volumeName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "UpdateVolumeRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "admin_only"
+        }
+      }
+    },
+    {
+      "method": "delete",
+      "path": "/catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}",
+      "operation_id": "deleteVolume",
+      "tags": [
+        "catalogs"
+      ],
+      "responses": [
+        {
+          "status_code": 204,
+          "description": "No Content"
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "catalogName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "schemaName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "volumeName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "admin_only"
         }
       }
     },
