@@ -1576,6 +1576,26 @@
           }
         }
       }
+    },
+    "GenericResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "schema": {
+            "ref": "Record"
+          }
+        }
+      }
+    },
+    "GenericRequest": {
+      "type": "object",
+      "properties": {
+        "payload": {
+          "schema": {
+            "ref": "Record"
+          }
+        }
+      }
     }
   },
   "endpoints": [
@@ -1786,8 +1806,8 @@
       ],
       "responses": [
         {
-          "status_code": 200,
-          "description": "OK",
+          "status_code": 201,
+          "description": "Created",
           "schema": {
             "ref": "CleanupAPIKeysResponse"
           }
@@ -3412,6 +3432,267 @@
     },
     {
       "method": "post",
+      "path": "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/commit",
+      "operation_id": "commitTableIngestion",
+      "tags": [
+        "catalogs"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "catalogName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "schemaName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "tableName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/load",
+      "operation_id": "loadTableExternalFiles",
+      "tags": [
+        "catalogs"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "catalogName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "schemaName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "tableName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url",
+      "operation_id": "createUploadUrl",
+      "tags": [
+        "catalogs"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "catalogName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "schemaName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "tableName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
       "path": "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/profile",
       "operation_id": "profileTable",
       "tags": [
@@ -3419,8 +3700,8 @@
       ],
       "responses": [
         {
-          "status_code": 200,
-          "description": "OK",
+          "status_code": 201,
+          "description": "Created",
           "schema": {
             "ref": "TableStatistics"
           }
@@ -4351,8 +4632,8 @@
       ],
       "responses": [
         {
-          "status_code": 200,
-          "description": "OK",
+          "status_code": 201,
+          "description": "Created",
           "schema": {
             "ref": "CatalogRegistration"
           }
@@ -4397,6 +4678,78 @@
           "ref": "SetDefaultCatalogRequest"
         }
       },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/classifications",
+      "operation_id": "listClassifications",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "max_results",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        {
+          "name": "page_token",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
       "extensions": {
         "security": [
           {
@@ -4592,6 +4945,1274 @@
         {
           "name": "principal_type",
           "in": "query",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/compute-endpoints",
+      "operation_id": "listComputeEndpoints",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "max_results",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        {
+          "name": "page_token",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/compute-endpoints",
+      "operation_id": "createComputeEndpoint",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/compute-endpoints/{endpointName}",
+      "operation_id": "getComputeEndpoint",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "endpointName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "patch",
+      "path": "/compute-endpoints/{endpointName}",
+      "operation_id": "updateComputeEndpoint",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "endpointName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "delete",
+      "path": "/compute-endpoints/{endpointName}",
+      "operation_id": "deleteComputeEndpoint",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 204,
+          "description": "No Content"
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "endpointName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/compute-endpoints/{endpointName}/assignments",
+      "operation_id": "listComputeAssignments",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "endpointName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "max_results",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        {
+          "name": "page_token",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/compute-endpoints/{endpointName}/assignments",
+      "operation_id": "createComputeAssignment",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "endpointName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "delete",
+      "path": "/compute-endpoints/{endpointName}/assignments/{assignmentId}",
+      "operation_id": "deleteComputeAssignment",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 204,
+          "description": "No Content"
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "assignmentId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "endpointName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/compute-endpoints/{endpointName}/health",
+      "operation_id": "getComputeEndpointHealth",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "endpointName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/external-locations",
+      "operation_id": "listExternalLocations",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "max_results",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        {
+          "name": "page_token",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/external-locations",
+      "operation_id": "createExternalLocation",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/external-locations/{locationName}",
+      "operation_id": "getExternalLocation",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "locationName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "patch",
+      "path": "/external-locations/{locationName}",
+      "operation_id": "updateExternalLocation",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "locationName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "delete",
+      "path": "/external-locations/{locationName}",
+      "operation_id": "deleteExternalLocation",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 204,
+          "description": "No Content"
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "locationName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/git-repos",
+      "operation_id": "listGitRepos",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "max_results",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        {
+          "name": "page_token",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/git-repos",
+      "operation_id": "createGitRepo",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/git-repos/{gitRepoId}",
+      "operation_id": "getGitRepo",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "gitRepoId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "delete",
+      "path": "/git-repos/{gitRepoId}",
+      "operation_id": "deleteGitRepo",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 204,
+          "description": "No Content"
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "gitRepoId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/git-repos/{gitRepoId}/sync",
+      "operation_id": "syncGitRepo",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "gitRepoId",
+          "in": "path",
           "required": true,
           "description": "",
           "schema": {
@@ -5366,6 +6987,1190 @@
       ]
     },
     {
+      "method": "get",
+      "path": "/lineage/columns/{schemaName}/{tableName}",
+      "operation_id": "getColumnLineage",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "max_results",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        {
+          "name": "page_token",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "schemaName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "tableName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/lineage/columns/{schemaName}/{tableName}/{columnName}/impact",
+      "operation_id": "getColumnImpact",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "columnName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "max_results",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        {
+          "name": "page_token",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "schemaName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "tableName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "delete",
+      "path": "/lineage/edges/{edgeId}",
+      "operation_id": "deleteLineageEdge",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 204,
+          "description": "No Content"
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "edgeId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/lineage/purge",
+      "operation_id": "purgeLineage",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/lineage/tables/{schemaName}/{tableName}",
+      "operation_id": "getTableLineage",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "max_results",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        {
+          "name": "page_token",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "schemaName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "tableName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/lineage/tables/{schemaName}/{tableName}/downstream",
+      "operation_id": "getDownstreamLineage",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "max_results",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        {
+          "name": "page_token",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "schemaName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "tableName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/lineage/tables/{schemaName}/{tableName}/upstream",
+      "operation_id": "getUpstreamLineage",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "max_results",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        {
+          "name": "page_token",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "schemaName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "tableName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/macros",
+      "operation_id": "listMacros",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "max_results",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        {
+          "name": "page_token",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/macros",
+      "operation_id": "createMacro",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/macros/{macroName}",
+      "operation_id": "getMacro",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "macroName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "patch",
+      "path": "/macros/{macroName}",
+      "operation_id": "updateMacro",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "macroName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "delete",
+      "path": "/macros/{macroName}",
+      "operation_id": "deleteMacro",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 204,
+          "description": "No Content"
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "macroName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/macros/{macroName}/diff",
+      "operation_id": "diffMacroRevisions",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "from_version",
+          "in": "query",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        {
+          "name": "macroName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "to_version",
+          "in": "query",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/macros/{macroName}/impact",
+      "operation_id": "getMacroImpact",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "macroName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "max_results",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        {
+          "name": "page_token",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/macros/{macroName}/revisions",
+      "operation_id": "listMacroRevisions",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "macroName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
       "method": "post",
       "path": "/manifest",
       "operation_id": "createManifest",
@@ -5409,6 +8214,3457 @@
           "ref": "ManifestRequest"
         }
       },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/metric-queries:explain",
+      "operation_id": "explainMetricQuery",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/metric-queries:run",
+      "operation_id": "runMetricQuery",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/metrics/{metricName}/freshness",
+      "operation_id": "checkMetricFreshness",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "metricName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "project_name",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "semantic_model_name",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/model-runs",
+      "operation_id": "listModelRuns",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "max_results",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        {
+          "name": "page_token",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "status",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/model-runs",
+      "operation_id": "triggerModelRun",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/model-runs/{runId}",
+      "operation_id": "getModelRun",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "runId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/model-runs/{runId}/cancel",
+      "operation_id": "cancelModelRun",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "runId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/model-runs/{runId}/steps",
+      "operation_id": "listModelRunSteps",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "runId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/model-runs/{runId}/steps/{stepId}/test-results",
+      "operation_id": "listModelTestResults",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "runId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "stepId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/models",
+      "operation_id": "listModels",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "max_results",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        {
+          "name": "page_token",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "project_name",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/models",
+      "operation_id": "createModel",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/models/{projectName}/{modelName}",
+      "operation_id": "getModel",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "modelName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "projectName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "patch",
+      "path": "/models/{projectName}/{modelName}",
+      "operation_id": "updateModel",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "modelName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "projectName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "delete",
+      "path": "/models/{projectName}/{modelName}",
+      "operation_id": "deleteModel",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 204,
+          "description": "No Content"
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "modelName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "projectName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/models/{projectName}/{modelName}/freshness",
+      "operation_id": "checkModelFreshness",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "modelName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "projectName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/models/{projectName}/{modelName}/tests",
+      "operation_id": "listModelTests",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "modelName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "projectName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/models/{projectName}/{modelName}/tests",
+      "operation_id": "createModelTest",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "modelName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "projectName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "delete",
+      "path": "/models/{projectName}/{modelName}/tests/{testId}",
+      "operation_id": "deleteModelTest",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 204,
+          "description": "No Content"
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "modelName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "projectName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "testId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/models/dag",
+      "operation_id": "getModelDAG",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "project_name",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/models/from-notebook",
+      "operation_id": "promoteNotebookToModel",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/notebooks",
+      "operation_id": "listNotebooks",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "max_results",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        {
+          "name": "owner",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "page_token",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/notebooks",
+      "operation_id": "createNotebook",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/notebooks/{notebookId}",
+      "operation_id": "getNotebook",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "notebookId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "patch",
+      "path": "/notebooks/{notebookId}",
+      "operation_id": "updateNotebook",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "notebookId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "delete",
+      "path": "/notebooks/{notebookId}",
+      "operation_id": "deleteNotebook",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 204,
+          "description": "No Content"
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "notebookId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/notebooks/{notebookId}/cells",
+      "operation_id": "createCell",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "notebookId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "patch",
+      "path": "/notebooks/{notebookId}/cells/{cellId}",
+      "operation_id": "updateCell",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "cellId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "notebookId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "delete",
+      "path": "/notebooks/{notebookId}/cells/{cellId}",
+      "operation_id": "deleteCell",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 204,
+          "description": "No Content"
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "cellId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "notebookId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/notebooks/{notebookId}/cells/reorder",
+      "operation_id": "reorderCells",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "notebookId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/notebooks/{notebookId}/jobs",
+      "operation_id": "listNotebookJobs",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "max_results",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        {
+          "name": "notebookId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "page_token",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/notebooks/{notebookId}/jobs/{jobId}",
+      "operation_id": "getNotebookJob",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "jobId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "notebookId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/notebooks/{notebookId}/sessions",
+      "operation_id": "createNotebookSession",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "notebookId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "delete",
+      "path": "/notebooks/{notebookId}/sessions/{sessionId}",
+      "operation_id": "closeNotebookSession",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 204,
+          "description": "No Content"
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "notebookId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "sessionId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/notebooks/{notebookId}/sessions/{sessionId}/execute/{cellId}",
+      "operation_id": "executeCell",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "cellId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "notebookId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "sessionId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/notebooks/{notebookId}/sessions/{sessionId}/run-all",
+      "operation_id": "runAllCells",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "notebookId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "sessionId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/notebooks/{notebookId}/sessions/{sessionId}/run-all-async",
+      "operation_id": "runAllCellsAsync",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "notebookId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "sessionId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/pipelines",
+      "operation_id": "listPipelines",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "max_results",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        {
+          "name": "page_token",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/pipelines",
+      "operation_id": "createPipeline",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/pipelines/{pipelineName}",
+      "operation_id": "getPipeline",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "pipelineName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "patch",
+      "path": "/pipelines/{pipelineName}",
+      "operation_id": "updatePipeline",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "pipelineName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "delete",
+      "path": "/pipelines/{pipelineName}",
+      "operation_id": "deletePipeline",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 204,
+          "description": "No Content"
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "pipelineName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/pipelines/{pipelineName}/jobs",
+      "operation_id": "listPipelineJobs",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "pipelineName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/pipelines/{pipelineName}/jobs",
+      "operation_id": "createPipelineJob",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "pipelineName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "delete",
+      "path": "/pipelines/{pipelineName}/jobs/{jobId}",
+      "operation_id": "deletePipelineJob",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 204,
+          "description": "No Content"
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "jobId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "pipelineName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/pipelines/{pipelineName}/runs",
+      "operation_id": "listPipelineRuns",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "max_results",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        {
+          "name": "page_token",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "pipelineName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "status",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/pipelines/{pipelineName}/runs",
+      "operation_id": "triggerPipelineRun",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "pipelineName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/pipelines/runs/{runId}",
+      "operation_id": "getPipelineRun",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "runId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/pipelines/runs/{runId}/cancel",
+      "operation_id": "cancelPipelineRun",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "runId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/pipelines/runs/{runId}/jobs",
+      "operation_id": "listPipelineJobRuns",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "runId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
       "extensions": {
         "security": [
           {
@@ -5748,6 +12004,342 @@
       }
     },
     {
+      "method": "post",
+      "path": "/queries",
+      "operation_id": "submitQuery",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/queries/{queryId}",
+      "operation_id": "getQuery",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "queryId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "delete",
+      "path": "/queries/{queryId}",
+      "operation_id": "deleteQuery",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 204,
+          "description": "No Content"
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "queryId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/queries/{queryId}/cancel",
+      "operation_id": "cancelQuery",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "queryId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/queries/{queryId}/results",
+      "operation_id": "getQueryResults",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "max_results",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        {
+          "name": "page_token",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "queryId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
       "method": "get",
       "path": "/query-history",
       "operation_id": "listQueryHistory",
@@ -6035,6 +12627,1790 @@
         },
         {
           "name": "rowFilterId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/search",
+      "operation_id": "searchCatalog",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "catalog",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "max_results",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        {
+          "name": "page_token",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "query",
+          "in": "query",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "type",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/semantic-models",
+      "operation_id": "listSemanticModels",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "max_results",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        {
+          "name": "page_token",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "project_name",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/semantic-models",
+      "operation_id": "createSemanticModel",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/semantic-models/{projectName}/{semanticModelName}",
+      "operation_id": "getSemanticModel",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "projectName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "semanticModelName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "patch",
+      "path": "/semantic-models/{projectName}/{semanticModelName}",
+      "operation_id": "updateSemanticModel",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "projectName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "semanticModelName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "delete",
+      "path": "/semantic-models/{projectName}/{semanticModelName}",
+      "operation_id": "deleteSemanticModel",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 204,
+          "description": "No Content"
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "projectName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "semanticModelName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/semantic-models/{projectName}/{semanticModelName}/metrics",
+      "operation_id": "listSemanticMetrics",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "projectName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "semanticModelName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/semantic-models/{projectName}/{semanticModelName}/metrics",
+      "operation_id": "createSemanticMetric",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "projectName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "semanticModelName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "patch",
+      "path": "/semantic-models/{projectName}/{semanticModelName}/metrics/{metricName}",
+      "operation_id": "updateSemanticMetric",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "metricName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "projectName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "semanticModelName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "delete",
+      "path": "/semantic-models/{projectName}/{semanticModelName}/metrics/{metricName}",
+      "operation_id": "deleteSemanticMetric",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 204,
+          "description": "No Content"
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "metricName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "projectName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "semanticModelName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/semantic-models/{projectName}/{semanticModelName}/pre-aggregations",
+      "operation_id": "listSemanticPreAggregations",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "projectName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "semanticModelName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/semantic-models/{projectName}/{semanticModelName}/pre-aggregations",
+      "operation_id": "createSemanticPreAggregation",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "projectName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "semanticModelName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "patch",
+      "path": "/semantic-models/{projectName}/{semanticModelName}/pre-aggregations/{preAggregationName}",
+      "operation_id": "updateSemanticPreAggregation",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "preAggregationName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "projectName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "semanticModelName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "delete",
+      "path": "/semantic-models/{projectName}/{semanticModelName}/pre-aggregations/{preAggregationName}",
+      "operation_id": "deleteSemanticPreAggregation",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 204,
+          "description": "No Content"
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "preAggregationName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "projectName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "semanticModelName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/semantic-relationships",
+      "operation_id": "listSemanticRelationships",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "max_results",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        {
+          "name": "page_token",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/semantic-relationships",
+      "operation_id": "createSemanticRelationship",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "patch",
+      "path": "/semantic-relationships/{relationshipName}",
+      "operation_id": "updateSemanticRelationship",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "relationshipName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "delete",
+      "path": "/semantic-relationships/{relationshipName}",
+      "operation_id": "deleteSemanticRelationship",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 204,
+          "description": "No Content"
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "relationshipName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/sources/{sourceSchema}/{sourceTable}/freshness",
+      "operation_id": "checkSourceFreshness",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "max_lag_seconds",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        {
+          "name": "sourceSchema",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "sourceTable",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "timestamp_column",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/storage-credentials",
+      "operation_id": "listStorageCredentials",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "max_results",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        {
+          "name": "page_token",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/storage-credentials",
+      "operation_id": "createStorageCredential",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/storage-credentials/{credentialName}",
+      "operation_id": "getStorageCredential",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "credentialName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "patch",
+      "path": "/storage-credentials/{credentialName}",
+      "operation_id": "updateStorageCredential",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "credentialName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "delete",
+      "path": "/storage-credentials/{credentialName}",
+      "operation_id": "deleteStorageCredential",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 204,
+          "description": "No Content"
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "credentialName",
           "in": "path",
           "required": true,
           "description": "",
@@ -6372,6 +14748,323 @@
       }
     },
     {
+      "method": "delete",
+      "path": "/tag-assignments/{assignmentId}",
+      "operation_id": "deleteTagAssignment",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 204,
+          "description": "No Content"
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "assignmentId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/tags",
+      "operation_id": "listTags",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "max_results",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        {
+          "name": "page_token",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/tags",
+      "operation_id": "createTag",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "delete",
+      "path": "/tags/{tagId}",
+      "operation_id": "deleteTag",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 204,
+          "description": "No Content"
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "tagId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/tags/{tagId}/assignments",
+      "operation_id": "createTagAssignment",
+      "tags": [
+        "api"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "GenericResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "tagId",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "GenericRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
       "method": "post",
       "path": "/v1/query",
       "operation_id": "executeQuery",
@@ -6380,8 +15073,8 @@
       ],
       "responses": [
         {
-          "status_code": 200,
-          "description": "OK",
+          "status_code": 201,
+          "description": "Created",
           "schema": {
             "ref": "QueryResponse"
           }

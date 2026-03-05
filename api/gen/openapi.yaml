@@ -549,6 +549,102 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateColumnRequest'
+  /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/commit:
+    post:
+      operationId: commitTableIngestion
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemaName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tableName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+  /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/load:
+    post:
+      operationId: loadTableExternalFiles
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemaName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tableName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+  /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url:
+    post:
+      operationId: createUploadUrl
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemaName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tableName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
   /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/profile:
     post:
       operationId: profileTable
@@ -871,6 +967,29 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/SetDefaultCatalogRequest'
+  /classifications:
+    get:
+      operationId: listClassifications
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
   /column-masks/{columnMaskId}:
     delete:
       operationId: deleteColumnMask
@@ -926,6 +1045,344 @@ paths:
               required:
                 - principal_id
                 - principal_type
+  /compute-endpoints:
+    get:
+      operationId: listComputeEndpoints
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+    post:
+      operationId: createComputeEndpoint
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+  /compute-endpoints/{endpointName}:
+    get:
+      operationId: getComputeEndpoint
+      parameters:
+        - name: endpointName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    patch:
+      operationId: updateComputeEndpoint
+      parameters:
+        - name: endpointName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+    delete:
+      operationId: deleteComputeEndpoint
+      parameters:
+        - name: endpointName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+  /compute-endpoints/{endpointName}/assignments:
+    get:
+      operationId: listComputeAssignments
+      parameters:
+        - name: endpointName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+    post:
+      operationId: createComputeAssignment
+      parameters:
+        - name: endpointName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+  /compute-endpoints/{endpointName}/assignments/{assignmentId}:
+    delete:
+      operationId: deleteComputeAssignment
+      parameters:
+        - name: endpointName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: assignmentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+  /compute-endpoints/{endpointName}/health:
+    get:
+      operationId: getComputeEndpointHealth
+      parameters:
+        - name: endpointName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+  /external-locations:
+    get:
+      operationId: listExternalLocations
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+    post:
+      operationId: createExternalLocation
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+  /external-locations/{locationName}:
+    get:
+      operationId: getExternalLocation
+      parameters:
+        - name: locationName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    patch:
+      operationId: updateExternalLocation
+      parameters:
+        - name: locationName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+    delete:
+      operationId: deleteExternalLocation
+      parameters:
+        - name: locationName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+  /git-repos:
+    get:
+      operationId: listGitRepos
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+    post:
+      operationId: createGitRepo
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+  /git-repos/{gitRepoId}:
+    get:
+      operationId: getGitRepo
+      parameters:
+        - name: gitRepoId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    delete:
+      operationId: deleteGitRepo
+      parameters:
+        - name: gitRepoId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+  /git-repos/{gitRepoId}/sync:
+    post:
+      operationId: syncGitRepo
+      parameters:
+        - name: gitRepoId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
   /grants:
     get:
       operationId: listGrants
@@ -1132,6 +1589,368 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
+  /lineage/columns/{schemaName}/{tableName}:
+    get:
+      operationId: getColumnLineage
+      parameters:
+        - name: schemaName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tableName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+  /lineage/columns/{schemaName}/{tableName}/{columnName}/impact:
+    get:
+      operationId: getColumnImpact
+      parameters:
+        - name: schemaName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tableName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: columnName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+  /lineage/edges/{edgeId}:
+    delete:
+      operationId: deleteLineageEdge
+      parameters:
+        - name: edgeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+  /lineage/purge:
+    post:
+      operationId: purgeLineage
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+  /lineage/tables/{schemaName}/{tableName}:
+    get:
+      operationId: getTableLineage
+      parameters:
+        - name: schemaName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tableName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+  /lineage/tables/{schemaName}/{tableName}/downstream:
+    get:
+      operationId: getDownstreamLineage
+      parameters:
+        - name: schemaName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tableName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+  /lineage/tables/{schemaName}/{tableName}/upstream:
+    get:
+      operationId: getUpstreamLineage
+      parameters:
+        - name: schemaName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tableName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+  /macros:
+    get:
+      operationId: listMacros
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+    post:
+      operationId: createMacro
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+  /macros/{macroName}:
+    get:
+      operationId: getMacro
+      parameters:
+        - name: macroName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    patch:
+      operationId: updateMacro
+      parameters:
+        - name: macroName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+    delete:
+      operationId: deleteMacro
+      parameters:
+        - name: macroName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+  /macros/{macroName}/diff:
+    get:
+      operationId: diffMacroRevisions
+      parameters:
+        - name: macroName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                from_version:
+                  type: integer
+                  format: int32
+                to_version:
+                  type: integer
+                  format: int32
+              required:
+                - from_version
+                - to_version
+  /macros/{macroName}/impact:
+    get:
+      operationId: getMacroImpact
+      parameters:
+        - name: macroName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+  /macros/{macroName}/revisions:
+    get:
+      operationId: listMacroRevisions
+      parameters:
+        - name: macroName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
   /manifest:
     post:
       operationId: createManifest
@@ -1149,6 +1968,974 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ManifestRequest'
+  /metric-queries:explain:
+    post:
+      operationId: explainMetricQuery
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+  /metric-queries:run:
+    post:
+      operationId: runMetricQuery
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+  /metrics/{metricName}/freshness:
+    get:
+      operationId: checkMetricFreshness
+      parameters:
+        - name: metricName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                project_name:
+                  type: string
+                semantic_model_name:
+                  type: string
+  /model-runs:
+    post:
+      operationId: triggerModelRun
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+    get:
+      operationId: listModelRuns
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+  /model-runs/{runId}:
+    get:
+      operationId: getModelRun
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+  /model-runs/{runId}/cancel:
+    post:
+      operationId: cancelModelRun
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+  /model-runs/{runId}/steps:
+    get:
+      operationId: listModelRunSteps
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+  /model-runs/{runId}/steps/{stepId}/test-results:
+    get:
+      operationId: listModelTestResults
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: stepId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+  /models:
+    get:
+      operationId: listModels
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                project_name:
+                  type: string
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+    post:
+      operationId: createModel
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+  /models/dag:
+    get:
+      operationId: getModelDAG
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                project_name:
+                  type: string
+  /models/from-notebook:
+    post:
+      operationId: promoteNotebookToModel
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+  /models/{projectName}/{modelName}:
+    get:
+      operationId: getModel
+      parameters:
+        - name: projectName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: modelName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    patch:
+      operationId: updateModel
+      parameters:
+        - name: projectName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: modelName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+    delete:
+      operationId: deleteModel
+      parameters:
+        - name: projectName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: modelName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+  /models/{projectName}/{modelName}/freshness:
+    get:
+      operationId: checkModelFreshness
+      parameters:
+        - name: projectName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: modelName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+  /models/{projectName}/{modelName}/tests:
+    post:
+      operationId: createModelTest
+      parameters:
+        - name: projectName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: modelName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+    get:
+      operationId: listModelTests
+      parameters:
+        - name: projectName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: modelName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+  /models/{projectName}/{modelName}/tests/{testId}:
+    delete:
+      operationId: deleteModelTest
+      parameters:
+        - name: projectName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: modelName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+  /notebooks:
+    get:
+      operationId: listNotebooks
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                owner:
+                  type: string
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+    post:
+      operationId: createNotebook
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+  /notebooks/{notebookId}:
+    get:
+      operationId: getNotebook
+      parameters:
+        - name: notebookId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    patch:
+      operationId: updateNotebook
+      parameters:
+        - name: notebookId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+    delete:
+      operationId: deleteNotebook
+      parameters:
+        - name: notebookId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+  /notebooks/{notebookId}/cells:
+    post:
+      operationId: createCell
+      parameters:
+        - name: notebookId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+  /notebooks/{notebookId}/cells/reorder:
+    post:
+      operationId: reorderCells
+      parameters:
+        - name: notebookId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+  /notebooks/{notebookId}/cells/{cellId}:
+    patch:
+      operationId: updateCell
+      parameters:
+        - name: notebookId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: cellId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+    delete:
+      operationId: deleteCell
+      parameters:
+        - name: notebookId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: cellId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+  /notebooks/{notebookId}/jobs:
+    get:
+      operationId: listNotebookJobs
+      parameters:
+        - name: notebookId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+  /notebooks/{notebookId}/jobs/{jobId}:
+    get:
+      operationId: getNotebookJob
+      parameters:
+        - name: notebookId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+  /notebooks/{notebookId}/sessions:
+    post:
+      operationId: createNotebookSession
+      parameters:
+        - name: notebookId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+  /notebooks/{notebookId}/sessions/{sessionId}:
+    delete:
+      operationId: closeNotebookSession
+      parameters:
+        - name: notebookId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+  /notebooks/{notebookId}/sessions/{sessionId}/execute/{cellId}:
+    post:
+      operationId: executeCell
+      parameters:
+        - name: notebookId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: cellId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+  /notebooks/{notebookId}/sessions/{sessionId}/run-all:
+    post:
+      operationId: runAllCells
+      parameters:
+        - name: notebookId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+  /notebooks/{notebookId}/sessions/{sessionId}/run-all-async:
+    post:
+      operationId: runAllCellsAsync
+      parameters:
+        - name: notebookId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+  /pipelines:
+    get:
+      operationId: listPipelines
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+    post:
+      operationId: createPipeline
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+  /pipelines/runs/{runId}:
+    get:
+      operationId: getPipelineRun
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+  /pipelines/runs/{runId}/cancel:
+    post:
+      operationId: cancelPipelineRun
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+  /pipelines/runs/{runId}/jobs:
+    get:
+      operationId: listPipelineJobRuns
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+  /pipelines/{pipelineName}:
+    get:
+      operationId: getPipeline
+      parameters:
+        - name: pipelineName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    patch:
+      operationId: updatePipeline
+      parameters:
+        - name: pipelineName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+    delete:
+      operationId: deletePipeline
+      parameters:
+        - name: pipelineName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+  /pipelines/{pipelineName}/jobs:
+    get:
+      operationId: listPipelineJobs
+      parameters:
+        - name: pipelineName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    post:
+      operationId: createPipelineJob
+      parameters:
+        - name: pipelineName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+  /pipelines/{pipelineName}/jobs/{jobId}:
+    delete:
+      operationId: deletePipelineJob
+      parameters:
+        - name: pipelineName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+  /pipelines/{pipelineName}/runs:
+    post:
+      operationId: triggerPipelineRun
+      parameters:
+        - name: pipelineName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+    get:
+      operationId: listPipelineRuns
+      parameters:
+        - name: pipelineName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+                status:
+                  type: string
   /principals:
     get:
       operationId: listPrincipals
@@ -1233,6 +3020,94 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdatePrincipalAdminRequest'
+  /queries:
+    post:
+      operationId: submitQuery
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+  /queries/{queryId}:
+    get:
+      operationId: getQuery
+      parameters:
+        - name: queryId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    delete:
+      operationId: deleteQuery
+      parameters:
+        - name: queryId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+  /queries/{queryId}/cancel:
+    post:
+      operationId: cancelQuery
+      parameters:
+        - name: queryId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+  /queries/{queryId}/results:
+    get:
+      operationId: getQueryResults
+      parameters:
+        - name: queryId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
   /query-history:
     get:
       operationId: listQueryHistory
@@ -1319,6 +3194,533 @@ paths:
               required:
                 - principal_id
                 - principal_type
+  /search:
+    get:
+      operationId: searchCatalog
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                type:
+                  type: string
+                catalog:
+                  type: string
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+              required:
+                - query
+  /semantic-models:
+    get:
+      operationId: listSemanticModels
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                project_name:
+                  type: string
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+    post:
+      operationId: createSemanticModel
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+  /semantic-models/{projectName}/{semanticModelName}:
+    get:
+      operationId: getSemanticModel
+      parameters:
+        - name: projectName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: semanticModelName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    patch:
+      operationId: updateSemanticModel
+      parameters:
+        - name: projectName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: semanticModelName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+    delete:
+      operationId: deleteSemanticModel
+      parameters:
+        - name: projectName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: semanticModelName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+  /semantic-models/{projectName}/{semanticModelName}/metrics:
+    get:
+      operationId: listSemanticMetrics
+      parameters:
+        - name: projectName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: semanticModelName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    post:
+      operationId: createSemanticMetric
+      parameters:
+        - name: projectName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: semanticModelName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+  /semantic-models/{projectName}/{semanticModelName}/metrics/{metricName}:
+    patch:
+      operationId: updateSemanticMetric
+      parameters:
+        - name: projectName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: semanticModelName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: metricName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+    delete:
+      operationId: deleteSemanticMetric
+      parameters:
+        - name: projectName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: semanticModelName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: metricName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+  /semantic-models/{projectName}/{semanticModelName}/pre-aggregations:
+    get:
+      operationId: listSemanticPreAggregations
+      parameters:
+        - name: projectName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: semanticModelName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    post:
+      operationId: createSemanticPreAggregation
+      parameters:
+        - name: projectName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: semanticModelName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+  /semantic-models/{projectName}/{semanticModelName}/pre-aggregations/{preAggregationName}:
+    patch:
+      operationId: updateSemanticPreAggregation
+      parameters:
+        - name: projectName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: semanticModelName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: preAggregationName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+    delete:
+      operationId: deleteSemanticPreAggregation
+      parameters:
+        - name: projectName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: semanticModelName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: preAggregationName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+  /semantic-relationships:
+    get:
+      operationId: listSemanticRelationships
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+    post:
+      operationId: createSemanticRelationship
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+  /semantic-relationships/{relationshipName}:
+    patch:
+      operationId: updateSemanticRelationship
+      parameters:
+        - name: relationshipName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+    delete:
+      operationId: deleteSemanticRelationship
+      parameters:
+        - name: relationshipName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+  /sources/{sourceSchema}/{sourceTable}/freshness:
+    get:
+      operationId: checkSourceFreshness
+      parameters:
+        - name: sourceSchema
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sourceTable
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                timestamp_column:
+                  type: string
+                max_lag_seconds:
+                  type: integer
+                  format: int64
+  /storage-credentials:
+    get:
+      operationId: listStorageCredentials
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+    post:
+      operationId: createStorageCredential
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+  /storage-credentials/{credentialName}:
+    get:
+      operationId: getStorageCredential
+      parameters:
+        - name: credentialName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    patch:
+      operationId: updateStorageCredential
+      parameters:
+        - name: credentialName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+    delete:
+      operationId: deleteStorageCredential
+      parameters:
+        - name: credentialName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
   /tables/{tableId}/column-masks:
     get:
       operationId: listColumnMasks
@@ -1417,6 +3819,91 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateRowFilterRequest'
+  /tag-assignments/{assignmentId}:
+    delete:
+      operationId: deleteTagAssignment
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+  /tags:
+    get:
+      operationId: listTags
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+    post:
+      operationId: createTag
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
+  /tags/{tagId}:
+    delete:
+      operationId: deleteTag
+      parameters:
+        - name: tagId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+  /tags/{tagId}/assignments:
+    post:
+      operationId: createTagAssignment
+      parameters:
+        - name: tagId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericRequest'
   /v1/query:
     post:
       operationId: executeQuery
@@ -1787,6 +4274,20 @@ components:
           format: int32
         message:
           type: string
+    GenericRequest:
+      type: object
+      properties:
+        payload:
+          type: object
+          additionalProperties:
+            type: string
+    GenericResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          additionalProperties:
+            type: string
     Group:
       type: object
       required:

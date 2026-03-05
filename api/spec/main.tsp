@@ -1,5 +1,6 @@
 import "@typespec/http";
 import "@typespec/openapi3";
+import "./missing_ops.generated.tsp";
 
 using TypeSpec.Http;
 

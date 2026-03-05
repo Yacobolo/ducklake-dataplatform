@@ -258,10 +258,7 @@ function successStatusCode(method, operationName, hasResponseSchema) {
     if (!hasResponseSchema) {
       return 204;
     }
-    if (operationName.startsWith("create") || operationName.startsWith("register")) {
-      return 201;
-    }
-    return 200;
+    return 201;
   }
   return 200;
 }
