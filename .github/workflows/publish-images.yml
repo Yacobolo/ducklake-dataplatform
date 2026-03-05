@@ -61,7 +61,7 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
 
       - name: Set up Node
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' || steps.generated_artifact.outcome != 'success'
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}

@@ -328,7 +328,10 @@ func hasMatchingCheck(checks []apiAuthzCheck, exp authzContractExpectation) bool
 func loadAuthzByOperation(t *testing.T) map[string]apiAuthz {
 	t.Helper()
 
-	specPath := filepath.Join(repoRootDir(), "internal", "api", "openapi.bundled.yaml")
+	specPath := os.Getenv("AUTHZ_SPEC_PATH")
+	if strings.TrimSpace(specPath) == "" {
+		specPath = filepath.Join(repoRootDir(), "internal", "api", "openapi.bundled.yaml")
+	}
 	loader := openapi3.NewLoader()
 	doc, err := loader.LoadFromFile(specPath)
 	require.NoErrorf(t, err, "load openapi spec %s", specPath)

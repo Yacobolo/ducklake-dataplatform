@@ -87,6 +87,46 @@ tasks:
     generates:
       - pkg/cli/gen/*.gen.go
 
+  generate:api:
+    desc: Generate OpenAPI/server/CLI from JSON IR (apigen)
+    deps: [typespec:compile]
+    cmds:
+      - go run ./cmd/apigen all -ir api/gen/json-ir.json
+    sources:
+      - api/gen/json-ir.json
+      - cmd/apigen/**/*.go
+      - internal/apigen/**/*.go
+    generates:
+      - api/gen/openapi.yaml
+      - api/gen/json-ir.json
+      - internal/api/openapi.generated.yaml
+      - internal/api/server.apigen.gen.go
+      - pkg/cli/gen/apigen_registry.gen.go
+
+  typespec:compile:
+    desc: Compile TypeSpec into OpenAPI and JSON IR artifacts
+    cmds:
+      - npm install --prefix tools/typespec-ir-emitter
+      - npm install --prefix api/spec
+      - npm run compile --prefix api/spec
+    sources:
+      - api/spec/**/*.tsp
+      - api/spec/tspconfig.yaml
+      - api/spec/package.json
+      - tools/typespec-ir-emitter/**/*
+    generates:
+      - api/gen/openapi.yaml
+      - api/gen/json-ir.json
+
+  verify:apigen-generated:
+    desc: Verify apigen artifacts are up to date
+    preconditions:
+      - sh: test -f internal/api/openapi.generated.yaml
+        msg: "apigen artifacts missing. Run 'task generate:api' first."
+    cmds:
+      - task generate:api
+      - git diff --exit-code -- internal/api/openapi.generated.yaml internal/api/server.apigen.gen.go pkg/cli/gen/apigen_registry.gen.go
+
   generate:declarative-schema:
     desc: Generate declarative JSON Schema artifacts
     cmds:
@@ -121,6 +161,12 @@ tasks:
       - docs/reference/generated/api/features.md
       - docs/reference/generated/declarative/index.md
 
+  docs:generate:generated:
+    desc: Generate docs from apigen OpenAPI artifact and declarative schemas
+    deps: [generate:api, generate:declarative-schema]
+    cmds:
+      - go run ./cmd/docsgen -openapi api/gen/openapi.yaml -declarative-index schemas/declarative/v1/index.json -declarative-dir schemas/declarative/v1 -outdir docs/reference/generated
+
   docs:dev:
     desc: Start VitePress docs dev server
     deps: [docs:generate]
@@ -149,7 +195,7 @@ tasks:
 
   generate:
     desc: Run all code generation
-    deps: [generate-api, sqlc, generate-cli, genduckdb, generate:declarative-schema]
+    deps: [generate:api, generate-api, sqlc, generate-cli, genduckdb, generate:declarative-schema]
 
   build:
     desc: Build all packages
@@ -205,7 +251,7 @@ tasks:
 
   lint:
     desc: Run all linters (Go + OpenAPI)
-    deps: [lint:go, lint:api]
+    deps: [lint:go, lint:api, lint:api:generated]
 
   lint:go:
     desc: Run Go linters
@@ -217,6 +263,18 @@ tasks:
     deps: [bundle-api]
     cmds:
       - go run ./cmd/lint-api internal/api/openapi.bundled.yaml
+
+  lint:api:generated:
+    desc: Lint apigen OpenAPI artifact for consistency
+    deps: [generate:api]
+    cmds:
+      - go run ./cmd/lint-api internal/api/openapi.generated.yaml
+
+  lint:api:typespec:
+    desc: Lint TypeSpec OpenAPI artifact for consistency
+    deps: [typespec:compile]
+    cmds:
+      - go run ./cmd/lint-api api/gen/openapi.yaml
 
   test-cli:
     desc: Run CLI tests
@@ -234,7 +292,7 @@ tasks:
       - |
         failed=0
         results=""
-        for step in lint:go lint:api verify:declarative-schema verify:docs-generated test:arch test:unit test:integration; do
+        for step in lint:go lint:api lint:api:generated verify:apigen-generated verify:declarative-schema verify:docs-generated test:arch test:unit test:integration; do
           if task "$step" > /dev/null 2>&1; then
             results="${results}  ${step} ... ok\n"
           else

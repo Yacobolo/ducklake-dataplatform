@@ -56,8 +56,10 @@ jobs:
           name: generated-code
           path: |
             internal/api/openapi.bundled.yaml
+            internal/api/openapi.generated.yaml
             internal/api/types.gen.go
             internal/api/server.gen.go
+            internal/api/server.apigen.gen.go
             internal/db/dbstore/
             pkg/cli/gen/
             schemas/declarative/
@@ -116,6 +118,10 @@ jobs:
         run: go install github.com/go-task/task/v3/cmd/task@${{ env.TASK_VERSION }}
       - name: Lint OpenAPI spec
         run: task lint:api
+      - name: Lint apigen OpenAPI spec
+        run: task lint:api:generated
+      - name: Verify apigen artifacts
+        run: task verify:apigen-generated
       - name: Verify declarative schema artifacts
         run: task verify:declarative-schema
 

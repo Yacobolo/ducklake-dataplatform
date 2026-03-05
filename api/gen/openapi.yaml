@@ -1,0 +1,963 @@
+openapi: 3.0.0
+info:
+  title: Duck Data Platform API
+  version: 0.0.0
+tags: []
+paths:
+  /api-keys:
+    get:
+      operationId: listAPIKeys
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAPIKeys'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                principal_id:
+                  type: string
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+    post:
+      operationId: createAPIKey
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateAPIKeyResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAPIKeyRequest'
+  /api-keys/cleanup:
+    post:
+      operationId: cleanupExpiredAPIKeys
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CleanupAPIKeysResponse'
+  /api-keys/{apiKeyId}:
+    delete:
+      operationId: deleteAPIKey
+      parameters:
+        - name: apiKeyId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+  /column-masks/{columnMaskId}:
+    delete:
+      operationId: deleteColumnMask
+      parameters:
+        - name: columnMaskId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+  /column-masks/{columnMaskId}/bindings:
+    post:
+      operationId: bindColumnMask
+      parameters:
+        - name: columnMaskId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ColumnMaskBindingRequest'
+    delete:
+      operationId: unbindColumnMask
+      parameters:
+        - name: columnMaskId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                principal_id:
+                  type: string
+                principal_type:
+                  type: string
+              required:
+                - principal_id
+                - principal_type
+  /grants:
+    get:
+      operationId: listGrants
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGrants'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                principal_id:
+                  type: string
+                principal_type:
+                  type: string
+                securable_type:
+                  type: string
+                securable_id:
+                  type: string
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+    post:
+      operationId: createGrant
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivilegeGrant'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGrantRequest'
+  /grants/{grantId}:
+    delete:
+      operationId: deleteGrant
+      parameters:
+        - name: grantId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+  /groups:
+    get:
+      operationId: listGroups
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGroups'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+    post:
+      operationId: createGroup
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGroupRequest'
+  /groups/{groupId}:
+    get:
+      operationId: getGroup
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+    delete:
+      operationId: deleteGroup
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+  /groups/{groupId}/members:
+    get:
+      operationId: listGroupMembers
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGroupMembers'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+    post:
+      operationId: createGroupMember
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGroupMemberRequest'
+    delete:
+      operationId: deleteGroupMember
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                member_type:
+                  type: string
+                member_id:
+                  type: string
+              required:
+                - member_type
+                - member_id
+  /healthz:
+    get:
+      operationId: getHealth
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  /principals:
+    get:
+      operationId: listPrincipals
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPrincipals'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+    post:
+      operationId: createPrincipal
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Principal'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePrincipalRequest'
+  /principals/{principalId}:
+    get:
+      operationId: getPrincipal
+      parameters:
+        - name: principalId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Principal'
+    delete:
+      operationId: deletePrincipal
+      parameters:
+        - name: principalId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+  /principals/{principalId}/admin:
+    put:
+      operationId: updatePrincipalAdmin
+      parameters:
+        - name: principalId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePrincipalAdminRequest'
+  /row-filters/{rowFilterId}:
+    delete:
+      operationId: deleteRowFilter
+      parameters:
+        - name: rowFilterId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+  /row-filters/{rowFilterId}/bindings:
+    post:
+      operationId: bindRowFilter
+      parameters:
+        - name: rowFilterId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RowFilterBindingRequest'
+    delete:
+      operationId: unbindRowFilter
+      parameters:
+        - name: rowFilterId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                principal_id:
+                  type: string
+                principal_type:
+                  type: string
+              required:
+                - principal_id
+                - principal_type
+  /tables/{tableId}/column-masks:
+    get:
+      operationId: listColumnMasks
+      parameters:
+        - name: tableId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedColumnMasks'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+    post:
+      operationId: createColumnMask
+      parameters:
+        - name: tableId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ColumnMask'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateColumnMaskRequest'
+  /tables/{tableId}/row-filters:
+    get:
+      operationId: listRowFilters
+      parameters:
+        - name: tableId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRowFilters'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+    post:
+      operationId: createRowFilter
+      parameters:
+        - name: tableId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RowFilter'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRowFilterRequest'
+  /v1/query:
+    post:
+      operationId: executeQuery
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueryRequest'
+components:
+  schemas:
+    APIKeyInfo:
+      type: object
+      required:
+        - id
+        - principal_id
+        - name
+      properties:
+        id:
+          type: string
+        principal_id:
+          type: string
+        name:
+          type: string
+        key_prefix:
+          type: string
+        expires_at:
+          type: string
+        created_at:
+          type: string
+    CleanupAPIKeysResponse:
+      type: object
+      required:
+        - deleted_count
+      properties:
+        deleted_count:
+          type: integer
+          format: int32
+    ColumnMask:
+      type: object
+      required:
+        - id
+        - table_id
+        - column_name
+        - mask_expression
+      properties:
+        id:
+          type: string
+        table_id:
+          type: string
+        column_name:
+          type: string
+        mask_expression:
+          type: string
+        description:
+          type: string
+        created_at:
+          type: string
+    ColumnMaskBindingRequest:
+      type: object
+      required:
+        - principal_id
+        - principal_type
+      properties:
+        principal_id:
+          type: string
+        principal_type:
+          type: string
+        see_original:
+          type: boolean
+    CreateAPIKeyRequest:
+      type: object
+      required:
+        - principal_id
+      properties:
+        principal_id:
+          type: string
+        name:
+          type: string
+        expires_at:
+          type: string
+    CreateAPIKeyResponse:
+      type: object
+      required:
+        - id
+        - key
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+        name:
+          type: string
+        key_prefix:
+          type: string
+        expires_at:
+          type: string
+        created_at:
+          type: string
+    CreateColumnMaskRequest:
+      type: object
+      required:
+        - column_name
+        - mask_expression
+      properties:
+        column_name:
+          type: string
+        mask_expression:
+          type: string
+        description:
+          type: string
+    CreateGrantRequest:
+      type: object
+      required:
+        - principal_id
+        - principal_type
+        - securable_type
+        - securable_id
+        - privilege
+      properties:
+        principal_id:
+          type: string
+        principal_type:
+          type: string
+        securable_type:
+          type: string
+        securable_id:
+          type: string
+        privilege:
+          type: string
+    CreateGroupMemberRequest:
+      type: object
+      required:
+        - member_type
+        - member_id
+      properties:
+        member_type:
+          type: string
+        member_id:
+          type: string
+    CreateGroupRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+    CreatePrincipalRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        is_admin:
+          type: boolean
+    CreateRowFilterRequest:
+      type: object
+      required:
+        - filter_sql
+      properties:
+        table_id:
+          type: string
+        filter_sql:
+          type: string
+        description:
+          type: string
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+    Group:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        created_at:
+          type: string
+    GroupMember:
+      type: object
+      required:
+        - group_id
+        - member_type
+        - member_id
+      properties:
+        group_id:
+          type: string
+        member_type:
+          type: string
+        member_id:
+          type: string
+    HealthResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+    PaginatedAPIKeys:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/APIKeyInfo'
+        next_page_token:
+          type: string
+    PaginatedColumnMasks:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ColumnMask'
+        next_page_token:
+          type: string
+    PaginatedGrants:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrivilegeGrant'
+        next_page_token:
+          type: string
+    PaginatedGroupMembers:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupMember'
+        next_page_token:
+          type: string
+    PaginatedGroups:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Group'
+        next_page_token:
+          type: string
+    PaginatedPrincipals:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Principal'
+        next_page_token:
+          type: string
+    PaginatedRowFilters:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/RowFilter'
+        next_page_token:
+          type: string
+    Principal:
+      type: object
+      required:
+        - id
+        - name
+        - type
+        - is_admin
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        is_admin:
+          type: boolean
+        created_at:
+          type: string
+    PrivilegeGrant:
+      type: object
+      required:
+        - id
+        - principal_id
+        - principal_type
+        - securable_type
+        - securable_id
+        - privilege
+      properties:
+        id:
+          type: string
+        principal_id:
+          type: string
+        principal_type:
+          type: string
+        securable_type:
+          type: string
+        securable_id:
+          type: string
+        privilege:
+          type: string
+        granted_by:
+          type: string
+        granted_at:
+          type: string
+    QueryRequest:
+      type: object
+      required:
+        - sql
+      properties:
+        sql:
+          type: string
+    QueryResponse:
+      type: object
+      required:
+        - columns
+      properties:
+        columns:
+          type: array
+          items:
+            type: string
+    RowFilter:
+      type: object
+      required:
+        - id
+        - table_id
+        - filter_sql
+      properties:
+        id:
+          type: string
+        table_id:
+          type: string
+        filter_sql:
+          type: string
+        description:
+          type: string
+        created_at:
+          type: string
+    RowFilterBindingRequest:
+      type: object
+      required:
+        - principal_id
+        - principal_type
+      properties:
+        principal_id:
+          type: string
+        principal_type:
+          type: string
+    UpdatePrincipalAdminRequest:
+      type: object
+      required:
+        - is_admin
+      properties:
+        is_admin:
+          type: boolean

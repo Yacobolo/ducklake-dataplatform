@@ -2,7 +2,7 @@
 
 # API Reference
 
-This section is generated from `internal/api/openapi.bundled.yaml`.
+This section is generated from the OpenAPI artifact (`internal/api/openapi.generated.yaml` by default).
 
 - [Feature Overview](./features)
 
