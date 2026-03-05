@@ -100,32 +100,6 @@
         "message"
       ]
     },
-    "HealthResponse": {
-      "type": "object",
-      "properties": {
-        "status": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "status"
-      ]
-    },
-    "QueryResponse": {
-      "type": "object",
-      "properties": {
-        "columns": {
-          "schema": {
-            "type": "array"
-          }
-        }
-      },
-      "required": [
-        "columns"
-      ]
-    },
     "QueryRequest": {
       "type": "object",
       "properties": {
@@ -137,60 +111,6 @@
       },
       "required": [
         "sql"
-      ]
-    },
-    "PaginatedPrincipals": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "schema": {
-            "type": "array"
-          }
-        },
-        "next_page_token": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "data"
-      ]
-    },
-    "Principal": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "name": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "type": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "is_admin": {
-          "schema": {
-            "type": "boolean"
-          }
-        },
-        "created_at": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "id",
-        "name",
-        "type",
-        "is_admin"
       ]
     },
     "CreatePrincipalRequest": {
@@ -229,53 +149,6 @@
         "is_admin"
       ]
     },
-    "PaginatedGroups": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "schema": {
-            "type": "array"
-          }
-        },
-        "next_page_token": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "data"
-      ]
-    },
-    "Group": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "name": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "description": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "created_at": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "id",
-        "name"
-      ]
-    },
     "CreateGroupRequest": {
       "type": "object",
       "properties": {
@@ -292,24 +165,6 @@
       },
       "required": [
         "name"
-      ]
-    },
-    "PaginatedGroupMembers": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "schema": {
-            "type": "array"
-          }
-        },
-        "next_page_token": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "data"
       ]
     },
     "CreateGroupMemberRequest": {
@@ -329,77 +184,6 @@
       "required": [
         "member_type",
         "member_id"
-      ]
-    },
-    "PaginatedGrants": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "schema": {
-            "type": "array"
-          }
-        },
-        "next_page_token": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "data"
-      ]
-    },
-    "PrivilegeGrant": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "principal_id": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "principal_type": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "securable_type": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "securable_id": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "privilege": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "granted_by": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "granted_at": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "id",
-        "principal_id",
-        "principal_type",
-        "securable_type",
-        "securable_id",
-        "privilege"
       ]
     },
     "CreateGrantRequest": {
@@ -439,63 +223,6 @@
         "privilege"
       ]
     },
-    "PaginatedAPIKeys": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "schema": {
-            "type": "array"
-          }
-        },
-        "next_page_token": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "data"
-      ]
-    },
-    "CreateAPIKeyResponse": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "key": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "name": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "key_prefix": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "expires_at": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "created_at": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "id",
-        "key"
-      ]
-    },
     "CreateAPIKeyRequest": {
       "type": "object",
       "properties": {
@@ -517,73 +244,6 @@
       },
       "required": [
         "principal_id"
-      ]
-    },
-    "CleanupAPIKeysResponse": {
-      "type": "object",
-      "properties": {
-        "deleted_count": {
-          "schema": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
-      "required": [
-        "deleted_count"
-      ]
-    },
-    "PaginatedRowFilters": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "schema": {
-            "type": "array"
-          }
-        },
-        "next_page_token": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "data"
-      ]
-    },
-    "RowFilter": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "table_id": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "filter_sql": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "description": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "created_at": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "id",
-        "table_id",
-        "filter_sql"
       ]
     },
     "CreateRowFilterRequest": {
@@ -626,65 +286,6 @@
       "required": [
         "principal_id",
         "principal_type"
-      ]
-    },
-    "PaginatedColumnMasks": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "schema": {
-            "type": "array"
-          }
-        },
-        "next_page_token": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "data"
-      ]
-    },
-    "ColumnMask": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "table_id": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "column_name": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "mask_expression": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "description": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "created_at": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "id",
-        "table_id",
-        "column_name",
-        "mask_expression"
       ]
     },
     "CreateColumnMaskRequest": {
@@ -735,53 +336,6 @@
         "principal_type"
       ]
     },
-    "Record": {
-      "type": "object",
-      "properties": {}
-    },
-    "ManifestResponse": {
-      "type": "object",
-      "properties": {
-        "table": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "schema": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "columns": {
-          "schema": {
-            "type": "array"
-          }
-        },
-        "files": {
-          "schema": {
-            "type": "array"
-          }
-        },
-        "row_filters": {
-          "schema": {
-            "type": "array"
-          }
-        },
-        "column_masks": {
-          "schema": {
-            "ref": "Record"
-          }
-        },
-        "expires_at": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "table"
-      ]
-    },
     "ManifestRequest": {
       "type": "object",
       "properties": {
@@ -798,141 +352,6 @@
       },
       "required": [
         "table"
-      ]
-    },
-    "PaginatedAuditLogs": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "schema": {
-            "type": "array"
-          }
-        },
-        "next_page_token": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "data"
-      ]
-    },
-    "MetastoreSummary": {
-      "type": "object",
-      "properties": {
-        "catalog_name": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "metastore_type": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "storage_backend": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "data_path": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "schema_count": {
-          "schema": {
-            "type": "integer",
-            "format": "int32"
-          }
-        },
-        "table_count": {
-          "schema": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
-      "required": [
-        "catalog_name"
-      ]
-    },
-    "PaginatedQueryHistoryEntries": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "schema": {
-            "type": "array"
-          }
-        },
-        "next_page_token": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "data"
-      ]
-    },
-    "CatalogRegistration": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "name": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "metastore_type": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "dsn": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "data_path": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "status": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "is_default": {
-          "schema": {
-            "type": "boolean"
-          }
-        },
-        "comment": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "created_at": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "updated_at": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "id",
-        "name"
       ]
     },
     "CreateCatalogRequest": {
@@ -968,30 +387,6 @@
         "name"
       ]
     },
-    "CatalogRegistrationList": {
-      "type": "object",
-      "properties": {
-        "catalogs": {
-          "schema": {
-            "type": "array"
-          }
-        },
-        "next_page_token": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "total_count": {
-          "schema": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
-      "required": [
-        "catalogs"
-      ]
-    },
     "UpdateCatalogRegistrationRequest": {
       "type": "object",
       "properties": {
@@ -1011,101 +406,9 @@
       "type": "object",
       "properties": {}
     },
-    "CatalogInfo": {
+    "Record": {
       "type": "object",
-      "properties": {
-        "name": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "comment": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "created_at": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "updated_at": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "name"
-      ]
-    },
-    "PaginatedSchemaDetails": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "schema": {
-            "type": "array"
-          }
-        },
-        "next_page_token": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "data"
-      ]
-    },
-    "SchemaDetail": {
-      "type": "object",
-      "properties": {
-        "schema_id": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "name": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "catalog_name": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "comment": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "properties": {
-          "schema": {
-            "ref": "Record"
-          }
-        },
-        "owner": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "created_at": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "updated_at": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "schema_id",
-        "name",
-        "catalog_name"
-      ]
+      "properties": {}
     },
     "CreateSchemaRequest": {
       "type": "object",
@@ -1150,85 +453,6 @@
         }
       }
     },
-    "PaginatedTableDetails": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "schema": {
-            "type": "array"
-          }
-        },
-        "next_page_token": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "data"
-      ]
-    },
-    "TableDetail": {
-      "type": "object",
-      "properties": {
-        "table_id": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "name": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "schema_name": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "catalog_name": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "table_type": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "columns": {
-          "schema": {
-            "type": "array"
-          }
-        },
-        "comment": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "owner": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "created_at": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "updated_at": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "table_id",
-        "name",
-        "schema_name",
-        "catalog_name"
-      ]
-    },
     "CreateTableRequest": {
       "type": "object",
       "properties": {
@@ -1267,59 +491,6 @@
         }
       }
     },
-    "PaginatedColumnDetails": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "schema": {
-            "type": "array"
-          }
-        },
-        "next_page_token": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "data"
-      ]
-    },
-    "ColumnDetail": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "type": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "position": {
-          "schema": {
-            "type": "integer",
-            "format": "int32"
-          }
-        },
-        "nullable": {
-          "schema": {
-            "type": "boolean"
-          }
-        },
-        "comment": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "name",
-        "type"
-      ]
-    },
     "UpdateColumnRequest": {
       "type": "object",
       "properties": {
@@ -1334,123 +505,6 @@
           }
         }
       }
-    },
-    "TableStatistics": {
-      "type": "object",
-      "properties": {
-        "row_count": {
-          "schema": {
-            "type": "integer",
-            "format": "int64"
-          }
-        },
-        "size_bytes": {
-          "schema": {
-            "type": "integer",
-            "format": "int64"
-          }
-        },
-        "column_count": {
-          "schema": {
-            "type": "integer",
-            "format": "int32"
-          }
-        },
-        "last_profiled_at": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "profiled_by": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      }
-    },
-    "PaginatedViewDetails": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "schema": {
-            "type": "array"
-          }
-        },
-        "next_page_token": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "data"
-      ]
-    },
-    "ViewDetail": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "schema_id": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "schema_name": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "catalog_name": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "name": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "view_definition": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "comment": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "owner": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "source_tables": {
-          "schema": {
-            "type": "array"
-          }
-        },
-        "created_at": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "updated_at": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "id",
-        "schema_name",
-        "catalog_name",
-        "name"
-      ]
     },
     "CreateViewRequest": {
       "type": "object",
@@ -1490,85 +544,6 @@
           }
         }
       }
-    },
-    "PaginatedVolumes": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "schema": {
-            "type": "array"
-          }
-        },
-        "next_page_token": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "data"
-      ]
-    },
-    "VolumeDetail": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "name": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "schema_name": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "catalog_name": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "volume_type": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "storage_location": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "comment": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "owner": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "created_at": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "updated_at": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "id",
-        "name",
-        "schema_name",
-        "catalog_name"
-      ]
     },
     "CreateVolumeRequest": {
       "type": "object",
@@ -1618,16 +593,6 @@
         }
       }
     },
-    "GenericResponse": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "schema": {
-            "ref": "Record"
-          }
-        }
-      }
-    },
     "SubmitQueryRequest": {
       "type": "object",
       "properties": {
@@ -1655,83 +620,6 @@
           }
         }
       }
-    },
-    "PaginatedStorageCredentials": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "schema": {
-            "type": "array"
-          }
-        },
-        "next_page_token": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "data"
-      ]
-    },
-    "StorageCredential": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "name": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "credential_type": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "endpoint": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "region": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "url_style": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "comment": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "owner": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "created_at": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "updated_at": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "id",
-        "name"
-      ]
     },
     "CreateStorageCredentialRequest": {
       "type": "object",
@@ -1815,84 +703,6 @@
           }
         }
       }
-    },
-    "PaginatedExternalLocations": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "schema": {
-            "type": "array"
-          }
-        },
-        "next_page_token": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "data"
-      ]
-    },
-    "ExternalLocation": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "name": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "url": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "credential_name": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "storage_type": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "comment": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "owner": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "read_only": {
-          "schema": {
-            "type": "boolean"
-          }
-        },
-        "created_at": {
-          "schema": {
-            "type": "string"
-          }
-        },
-        "updated_at": {
-          "schema": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "id",
-        "name",
-        "url"
-      ]
     },
     "CreateExternalLocationRequest": {
       "type": "object",
@@ -1996,7 +806,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "PaginatedAPIKeys"
+            "type": "string"
           }
         },
         {
@@ -2079,7 +889,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "CreateAPIKeyResponse"
+            "type": "string"
           }
         },
         {
@@ -2200,7 +1010,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "CleanupAPIKeysResponse"
+            "type": "string"
           }
         },
         {
@@ -2253,7 +1063,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "PaginatedAuditLogs"
+            "type": "string"
           }
         },
         {
@@ -2354,7 +1164,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "CatalogRegistrationList"
+            "type": "string"
           }
         },
         {
@@ -2428,7 +1238,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "CatalogRegistration"
+            "type": "string"
           }
         },
         {
@@ -2488,7 +1298,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "CatalogRegistration"
+            "type": "string"
           }
         },
         {
@@ -2559,7 +1369,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "CatalogRegistration"
+            "type": "string"
           }
         },
         {
@@ -2691,7 +1501,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "CatalogInfo"
+            "type": "string"
           }
         },
         {
@@ -2762,7 +1572,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "MetastoreSummary"
+            "type": "string"
           }
         },
         {
@@ -2833,7 +1643,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "PaginatedSchemaDetails"
+            "type": "string"
           }
         },
         {
@@ -2923,7 +1733,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "SchemaDetail"
+            "type": "string"
           }
         },
         {
@@ -3001,7 +1811,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "SchemaDetail"
+            "type": "string"
           }
         },
         {
@@ -3081,7 +1891,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "SchemaDetail"
+            "type": "string"
           }
         },
         {
@@ -3254,7 +2064,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "PaginatedTableDetails"
+            "type": "string"
           }
         },
         {
@@ -3353,7 +2163,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "TableDetail"
+            "type": "string"
           }
         },
         {
@@ -3440,7 +2250,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "TableDetail"
+            "type": "string"
           }
         },
         {
@@ -3529,7 +2339,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "TableDetail"
+            "type": "string"
           }
         },
         {
@@ -3711,7 +2521,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "PaginatedColumnDetails"
+            "type": "string"
           }
         },
         {
@@ -3819,7 +2629,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "ColumnDetail"
+            "type": "string"
           }
         },
         {
@@ -3924,7 +2734,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -4013,7 +2823,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -4102,7 +2912,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -4191,7 +3001,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "TableStatistics"
+            "type": "string"
           }
         },
         {
@@ -4273,7 +3083,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "PaginatedViewDetails"
+            "type": "string"
           }
         },
         {
@@ -4372,7 +3182,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "ViewDetail"
+            "type": "string"
           }
         },
         {
@@ -4459,7 +3269,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "ViewDetail"
+            "type": "string"
           }
         },
         {
@@ -4548,7 +3358,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "ViewDetail"
+            "type": "string"
           }
         },
         {
@@ -4730,7 +3540,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "PaginatedVolumes"
+            "type": "string"
           }
         },
         {
@@ -4829,7 +3639,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "VolumeDetail"
+            "type": "string"
           }
         },
         {
@@ -4916,7 +3726,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "VolumeDetail"
+            "type": "string"
           }
         },
         {
@@ -5005,7 +3815,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "VolumeDetail"
+            "type": "string"
           }
         },
         {
@@ -5187,7 +3997,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "CatalogRegistration"
+            "type": "string"
           }
         },
         {
@@ -5258,7 +4068,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -5390,8 +4200,11 @@
       ],
       "responses": [
         {
-          "status_code": 204,
-          "description": "No Content"
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "type": "string"
+          }
         },
         {
           "status_code": 401,
@@ -5540,7 +4353,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -5614,7 +4427,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -5681,7 +4494,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -5752,7 +4565,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -5898,7 +4711,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -5988,7 +4801,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -6143,7 +4956,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -6214,7 +5027,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "PaginatedExternalLocations"
+            "type": "string"
           }
         },
         {
@@ -6288,7 +5101,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "ExternalLocation"
+            "type": "string"
           }
         },
         {
@@ -6355,7 +5168,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "ExternalLocation"
+            "type": "string"
           }
         },
         {
@@ -6426,7 +5239,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "ExternalLocation"
+            "type": "string"
           }
         },
         {
@@ -6572,7 +5385,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -6646,7 +5459,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -6706,7 +5519,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -6838,7 +5651,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -6902,7 +5715,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "PaginatedGrants"
+            "type": "string"
           }
         },
         {
@@ -7012,7 +5825,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "PrivilegeGrant"
+            "type": "string"
           }
         },
         {
@@ -7133,7 +5946,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "PaginatedGroups"
+            "type": "string"
           }
         },
         {
@@ -7207,7 +6020,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "Group"
+            "type": "string"
           }
         },
         {
@@ -7267,7 +6080,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "Group"
+            "type": "string"
           }
         },
         {
@@ -7399,7 +6212,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "PaginatedGroupMembers"
+            "type": "string"
           }
         },
         {
@@ -7636,7 +6449,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "HealthResponse"
+            "type": "string"
           }
         },
         {
@@ -7675,7 +6488,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -7774,7 +6587,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -7943,7 +6756,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -8003,7 +6816,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -8102,7 +6915,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -8201,7 +7014,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -8300,7 +7113,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -8374,7 +7187,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -8434,7 +7247,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -8505,7 +7318,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -8637,7 +7450,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -8728,7 +7541,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -8818,7 +7631,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -8889,7 +7702,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "ManifestResponse"
+            "type": "string"
           }
         },
         {
@@ -8949,7 +7762,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -9009,7 +7822,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -9069,7 +7882,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -9158,7 +7971,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -9241,7 +8054,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -9301,7 +8114,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -9372,7 +8185,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -9436,7 +8249,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -9507,7 +8320,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -9587,7 +8400,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -9670,7 +8483,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -9730,7 +8543,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -9810,7 +8623,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -9960,7 +8773,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -10040,7 +8853,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -10120,7 +8933,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -10279,7 +9092,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -10343,7 +9156,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -10403,7 +9216,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -10486,7 +9299,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -10546,7 +9359,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -10617,7 +9430,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -10749,7 +9562,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -10820,7 +9633,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -10970,7 +9783,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -11041,7 +9854,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -11131,7 +9944,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -11211,7 +10024,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -11345,7 +10158,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -11427,7 +10240,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -11500,7 +10313,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -11573,7 +10386,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -11647,7 +10460,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -11707,7 +10520,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -11778,7 +10591,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -11910,7 +10723,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -11981,7 +10794,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -12122,7 +10935,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -12221,7 +11034,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -12292,7 +11105,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -12363,7 +11176,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -12427,7 +11240,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -12498,7 +11311,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "PaginatedPrincipals"
+            "type": "string"
           }
         },
         {
@@ -12572,7 +11385,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "Principal"
+            "type": "string"
           }
         },
         {
@@ -12632,7 +11445,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "Principal"
+            "type": "string"
           }
         },
         {
@@ -12832,7 +11645,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -12892,7 +11705,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -13024,7 +11837,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -13088,7 +11901,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -13178,7 +11991,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "QueryResponse"
+            "type": "string"
           }
         },
         {
@@ -13238,7 +12051,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "PaginatedQueryHistoryEntries"
+            "type": "string"
           }
         },
         {
@@ -13406,8 +12219,11 @@
       ],
       "responses": [
         {
-          "status_code": 204,
-          "description": "No Content"
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "type": "string"
+          }
         },
         {
           "status_code": 401,
@@ -13556,7 +12372,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -13657,7 +12473,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -13740,7 +12556,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -13800,7 +12616,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -13880,7 +12696,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -14030,7 +12846,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -14110,7 +12926,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -14190,7 +13006,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -14358,7 +13174,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -14438,7 +13254,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -14518,7 +13334,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -14686,7 +13502,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -14760,7 +13576,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -14820,7 +13636,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -14952,7 +13768,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -15051,7 +13867,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "PaginatedStorageCredentials"
+            "type": "string"
           }
         },
         {
@@ -15125,7 +13941,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "StorageCredential"
+            "type": "string"
           }
         },
         {
@@ -15192,7 +14008,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "StorageCredential"
+            "type": "string"
           }
         },
         {
@@ -15263,7 +14079,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "StorageCredential"
+            "type": "string"
           }
         },
         {
@@ -15409,7 +14225,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "PaginatedColumnMasks"
+            "type": "string"
           }
         },
         {
@@ -15499,7 +14315,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "ColumnMask"
+            "type": "string"
           }
         },
         {
@@ -15570,7 +14386,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "PaginatedRowFilters"
+            "type": "string"
           }
         },
         {
@@ -15660,7 +14476,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "RowFilter"
+            "type": "string"
           }
         },
         {
@@ -15792,7 +14608,7 @@
           "status_code": 200,
           "description": "OK",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -15866,7 +14682,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {
@@ -15987,7 +14803,7 @@
           "status_code": 201,
           "description": "Created",
           "schema": {
-            "ref": "GenericResponse"
+            "type": "string"
           }
         },
         {

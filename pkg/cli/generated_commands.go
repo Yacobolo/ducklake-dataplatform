@@ -156,7 +156,11 @@ func newGeneratedLeafCommand(spec generatedCommandSpec, client *gen.Client) *cob
 		}
 
 		if p.In == "query" {
-			addTypedFlag(cmd, toFlagName(p.Name), p.Type, p.Required, p.Enum, p.Name)
+			flagName := toFlagName(p.Name)
+			addTypedFlag(cmd, flagName, p.Type, p.Required, p.Enum, p.Name)
+			if p.Required {
+				_ = cmd.MarkFlagRequired(flagName)
+			}
 		}
 	}
 
@@ -198,12 +202,12 @@ func runGeneratedEndpoint(cmd *cobra.Command, client *gen.Client, spec generated
 	urlPath := endpoint.Path
 	for _, name := range spec.PathParamNames {
 		if argIndex, ok := argIndexByPathParam[name]; ok {
-			urlPath = strings.Replace(urlPath, "{"+name+"}", args[argIndex], 1)
+			urlPath = strings.Replace(urlPath, "{"+name+"}", url.PathEscape(args[argIndex]), 1)
 			continue
 		}
 		v, _ := cmd.Flags().GetString(toFlagName(name))
 		if v != "" {
-			urlPath = strings.Replace(urlPath, "{"+name+"}", v, 1)
+			urlPath = strings.Replace(urlPath, "{"+name+"}", url.PathEscape(v), 1)
 		}
 	}
 

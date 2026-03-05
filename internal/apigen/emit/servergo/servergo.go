@@ -51,8 +51,18 @@ func Emit(doc ir.Document) ([]byte, error) {
 	}
 	b.WriteString("}\n")
 	b.WriteString("\n")
+	b.WriteString("// GenOperationDispatcher is the dispatch target for generated operations.\n")
+	b.WriteString("type GenOperationDispatcher interface {\n")
+	for _, endpoint := range doc.Endpoints {
+		if endpoint.OperationID == "getHealth" {
+			continue
+		}
+		name := exportedName(endpoint.OperationID)
+		b.WriteString("\t" + name + "(w http.ResponseWriter, r *http.Request)\n")
+	}
+	b.WriteString("}\n\n")
 	b.WriteString("// DispatchAPIGenOperation dispatches operation IDs to generated wrapper methods.\n")
-	b.WriteString("func DispatchAPIGenOperation(operationID string, wrapper *ServerInterfaceWrapper, w http.ResponseWriter, r *http.Request) bool {\n")
+	b.WriteString("func DispatchAPIGenOperation(operationID string, dispatcher GenOperationDispatcher, w http.ResponseWriter, r *http.Request) bool {\n")
 	b.WriteString("\tswitch operationID {\n")
 	for _, endpoint := range doc.Endpoints {
 		name := exportedName(endpoint.OperationID)
@@ -64,7 +74,7 @@ func Emit(doc ir.Document) ([]byte, error) {
 			b.WriteString("\t\treturn true\n")
 			continue
 		}
-		b.WriteString("\t\twrapper." + name + "(w, r)\n")
+		b.WriteString("\t\tdispatcher." + name + "(w, r)\n")
 		b.WriteString("\t\treturn true\n")
 	}
 	b.WriteString("\tdefault:\n")

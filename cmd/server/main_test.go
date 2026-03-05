@@ -52,16 +52,38 @@ func TestAPIGenRoutes_MountUnderV1_NoDoublePrefix(t *testing.T) {
 		api.RegisterAPIGenRoutes(r, gen)
 	})
 
-	req := httptest.NewRequest(http.MethodPost, "/v1/query", nil)
-	rr := httptest.NewRecorder()
-	r.ServeHTTP(rr, req)
-	assert.Equal(t, http.StatusNoContent, rr.Code)
-	assert.Equal(t, "executeQuery", gen.lastOperationID)
+	tests := []struct {
+		name       string
+		method     string
+		path       string
+		wantStatus int
+		wantOpID   string
+	}{
+		{name: "execute query", method: http.MethodPost, path: "/v1/query", wantStatus: http.StatusNoContent, wantOpID: "executeQuery"},
+		{name: "health", method: http.MethodGet, path: "/v1/healthz", wantStatus: http.StatusNoContent, wantOpID: "getHealth"},
+		{name: "path parameter", method: http.MethodGet, path: "/v1/catalogs/test-catalog", wantStatus: http.StatusNoContent, wantOpID: "getCatalogRegistration"},
+		{name: "nested path parameter", method: http.MethodPost, path: "/v1/catalogs/c1/schemas/s1/tables/t1/ingestion/commit", wantStatus: http.StatusNoContent, wantOpID: "commitTableIngestion"},
+		{name: "method mismatch", method: http.MethodGet, path: "/v1/query", wantStatus: http.StatusMethodNotAllowed},
+		{name: "double prefix", method: http.MethodPost, path: "/v1/v1/query", wantStatus: http.StatusNotFound},
+	}
 
-	wrongReq := httptest.NewRequest(http.MethodPost, "/v1/v1/query", nil)
-	wrongRR := httptest.NewRecorder()
-	r.ServeHTTP(wrongRR, wrongReq)
-	assert.Equal(t, http.StatusNotFound, wrongRR.Code)
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			before := len(gen.operationIDs)
+			req := httptest.NewRequest(tt.method, tt.path, nil)
+			rr := httptest.NewRecorder()
+			r.ServeHTTP(rr, req)
+
+			assert.Equal(t, tt.wantStatus, rr.Code)
+			if tt.wantOpID == "" {
+				assert.Len(t, gen.operationIDs, before)
+				return
+			}
+			assert.Len(t, gen.operationIDs, before+1)
+			assert.Equal(t, tt.wantOpID, gen.lastOperationID())
+		})
+	}
 }
 
 func TestAPIGenLegacyAdapter_DispatchesExecuteQueryOnV1Route(t *testing.T) {
@@ -81,13 +103,39 @@ func TestAPIGenLegacyAdapter_DispatchesExecuteQueryOnV1Route(t *testing.T) {
 	assert.True(t, strict.called)
 }
 
+func TestAPIGenLegacyAdapter_HandlesGetHealthOnV1Route(t *testing.T) {
+	t.Parallel()
+
+	strict := &executeQueryStrictStub{}
+	r := chi.NewRouter()
+	r.Route("/v1", func(r chi.Router) {
+		api.RegisterAPIGenRoutes(r, api.NewAPIGenLegacyAdapter(strict))
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/healthz", nil)
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Equal(t, "application/json", rr.Header().Get("Content-Type"))
+	assert.JSONEq(t, `{"status":"ok"}`, rr.Body.String())
+	assert.False(t, strict.called)
+}
+
 type recordingGenServer struct {
-	lastOperationID string
+	operationIDs []string
 }
 
 func (s *recordingGenServer) HandleAPIGen(operationID string, w http.ResponseWriter, _ *http.Request) {
-	s.lastOperationID = operationID
+	s.operationIDs = append(s.operationIDs, operationID)
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *recordingGenServer) lastOperationID() string {
+	if len(s.operationIDs) == 0 {
+		return ""
+	}
+	return s.operationIDs[len(s.operationIDs)-1]
 }
 
 type executeQueryStrictStub struct {

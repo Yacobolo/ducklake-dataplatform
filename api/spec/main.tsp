@@ -12,6 +12,66 @@ using TypeSpec.OpenAPI;
 @useAuth(BearerAuth | ApiKeyAuth<ApiKeyLocation.header, "X-API-Key">)
 namespace Duck;
 
+
+@error
+model Error {
+  code: int32;
+  message: string;
+  details?: Record<string>;
+}
+
+model Ok<T> {
+  @statusCode statusCode: 200;
+  @body body: T;
+}
+
+model Created<T> {
+  @statusCode statusCode: 201;
+  @body body: T;
+}
+
+model CreatedEmpty {
+  @statusCode statusCode: 201;
+}
+
+model NoContent {
+  @statusCode statusCode: 204;
+}
+
+@error
+model UnauthorizedResponse {
+  @statusCode statusCode: 401;
+  @body body: Error;
+}
+
+@error
+model ForbiddenResponse {
+  @statusCode statusCode: 403;
+  @body body: Error;
+}
+
+@error
+model NotFoundResponse {
+  @statusCode statusCode: 404;
+  @body body: Error;
+}
+
+@error
+model TooManyRequestsResponse {
+  @statusCode statusCode: 429;
+  @body body: Error;
+}
+
+@error
+model InternalServerErrorResponse {
+  @statusCode statusCode: 500;
+  @body body: Error;
+}
+
+alias StandardErrorResponses = UnauthorizedResponse | TooManyRequestsResponse | InternalServerErrorResponse;
+alias MutatingErrorResponses = StandardErrorResponses | ForbiddenResponse;
+alias ResourceErrorResponses = MutatingErrorResponses | NotFoundResponse;
+
 model HealthResponse {
   status: string;
 }
@@ -22,11 +82,6 @@ model QueryRequest {
 
 model QueryResponse {
   columns: string[];
-}
-
-model Error {
-  code: int32;
-  message: string;
 }
 
 model Principal {
@@ -453,59 +508,59 @@ model UpdateVolumeRequest {
 
 @route("/healthz")
 @get
-op getHealth(): HealthResponse;
+op getHealth(): Ok<HealthResponse> | StandardErrorResponses;
 
 @route("/query")
 @post
-op executeQuery(@body body: QueryRequest): QueryResponse;
+op executeQuery(@body body: QueryRequest): Ok<QueryResponse> | MutatingErrorResponses;
 
 @route("/principals")
 @get
-op listPrincipals(@query max_results?: int32, @query page_token?: string): PaginatedPrincipals;
+op listPrincipals(@query max_results?: int32, @query page_token?: string): Ok<PaginatedPrincipals> | StandardErrorResponses;
 
 @route("/principals")
 @post
-op createPrincipal(@body body: CreatePrincipalRequest): Principal;
+op createPrincipal(@body body: CreatePrincipalRequest): Created<Principal> | MutatingErrorResponses;
 
 @route("/principals/{principalId}")
 @get
-op getPrincipal(principalId: string): Principal;
+op getPrincipal(principalId: string): Ok<Principal> | ResourceErrorResponses;
 
 @route("/principals/{principalId}")
 @delete
-op deletePrincipal(principalId: string): void;
+op deletePrincipal(principalId: string): NoContent | MutatingErrorResponses;
 
 @route("/principals/{principalId}/admin")
 @put
-op updatePrincipalAdmin(principalId: string, @body body: UpdatePrincipalAdminRequest): void;
+op updatePrincipalAdmin(principalId: string, @body body: UpdatePrincipalAdminRequest): NoContent | MutatingErrorResponses;
 
 @route("/groups")
 @get
-op listGroups(@query max_results?: int32, @query page_token?: string): PaginatedGroups;
+op listGroups(@query max_results?: int32, @query page_token?: string): Ok<PaginatedGroups> | StandardErrorResponses;
 
 @route("/groups")
 @post
-op createGroup(@body body: CreateGroupRequest): Group;
+op createGroup(@body body: CreateGroupRequest): Created<Group> | MutatingErrorResponses;
 
 @route("/groups/{groupId}")
 @get
-op getGroup(groupId: string): Group;
+op getGroup(groupId: string): Ok<Group> | ResourceErrorResponses;
 
 @route("/groups/{groupId}")
 @delete
-op deleteGroup(groupId: string): void;
+op deleteGroup(groupId: string): NoContent | MutatingErrorResponses;
 
 @route("/groups/{groupId}/members")
 @get
-op listGroupMembers(groupId: string, @query max_results?: int32, @query page_token?: string): PaginatedGroupMembers;
+op listGroupMembers(groupId: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedGroupMembers> | ResourceErrorResponses;
 
 @route("/groups/{groupId}/members")
 @post
-op createGroupMember(groupId: string, @body body: CreateGroupMemberRequest): void;
+op createGroupMember(groupId: string, @body body: CreateGroupMemberRequest): CreatedEmpty | MutatingErrorResponses;
 
 @route("/groups/{groupId}/members")
 @delete
-op deleteGroupMember(groupId: string, member_type: string, member_id: string): void;
+op deleteGroupMember(groupId: string, @query member_type: string, @query member_id: string): NoContent | MutatingErrorResponses;
 
 @route("/grants")
 @get
@@ -516,75 +571,75 @@ op listGrants(
   @query securable_id?: string,
   @query max_results?: int32,
   @query page_token?: string,
-): PaginatedGrants;
+): Ok<PaginatedGrants> | StandardErrorResponses;
 
 @route("/grants")
 @post
-op createGrant(@body body: CreateGrantRequest): PrivilegeGrant;
+op createGrant(@body body: CreateGrantRequest): Created<PrivilegeGrant> | MutatingErrorResponses;
 
 @route("/grants/{grantId}")
 @delete
-op deleteGrant(grantId: string): void;
+op deleteGrant(grantId: string): NoContent | MutatingErrorResponses;
 
 @route("/api-keys")
 @get
-op listAPIKeys(@query principal_id?: string, @query max_results?: int32, @query page_token?: string): PaginatedAPIKeys;
+op listAPIKeys(@query principal_id?: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedAPIKeys> | StandardErrorResponses;
 
 @route("/api-keys")
 @post
-op createAPIKey(@body body: CreateAPIKeyRequest): CreateAPIKeyResponse;
+op createAPIKey(@body body: CreateAPIKeyRequest): Created<CreateAPIKeyResponse> | MutatingErrorResponses;
 
 @route("/api-keys/{apiKeyId}")
 @delete
-op deleteAPIKey(apiKeyId: string): void;
+op deleteAPIKey(apiKeyId: string): NoContent | MutatingErrorResponses;
 
 @route("/api-keys/cleanup")
 @post
-op cleanupExpiredAPIKeys(): CleanupAPIKeysResponse;
+op cleanupExpiredAPIKeys(): Ok<CleanupAPIKeysResponse> | MutatingErrorResponses;
 
 @route("/tables/{tableId}/row-filters")
 @get
-op listRowFilters(tableId: string, @query max_results?: int32, @query page_token?: string): PaginatedRowFilters;
+op listRowFilters(tableId: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedRowFilters> | ResourceErrorResponses;
 
 @route("/tables/{tableId}/row-filters")
 @post
-op createRowFilter(tableId: string, @body body: CreateRowFilterRequest): RowFilter;
+op createRowFilter(tableId: string, @body body: CreateRowFilterRequest): Created<RowFilter> | MutatingErrorResponses;
 
 @route("/row-filters/{rowFilterId}")
 @delete
-op deleteRowFilter(rowFilterId: string): void;
+op deleteRowFilter(rowFilterId: string): NoContent | MutatingErrorResponses;
 
 @route("/row-filters/{rowFilterId}/bindings")
 @post
-op bindRowFilter(rowFilterId: string, @body body: RowFilterBindingRequest): void;
+op bindRowFilter(rowFilterId: string, @body body: RowFilterBindingRequest): CreatedEmpty | MutatingErrorResponses;
 
 @route("/row-filters/{rowFilterId}/bindings")
 @delete
-op unbindRowFilter(rowFilterId: string, principal_id: string, principal_type: string): void;
+op unbindRowFilter(rowFilterId: string, @query principal_id: string, @query principal_type: string): NoContent | MutatingErrorResponses;
 
 @route("/tables/{tableId}/column-masks")
 @get
-op listColumnMasks(tableId: string, @query max_results?: int32, @query page_token?: string): PaginatedColumnMasks;
+op listColumnMasks(tableId: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedColumnMasks> | ResourceErrorResponses;
 
 @route("/tables/{tableId}/column-masks")
 @post
-op createColumnMask(tableId: string, @body body: CreateColumnMaskRequest): ColumnMask;
+op createColumnMask(tableId: string, @body body: CreateColumnMaskRequest): Created<ColumnMask> | MutatingErrorResponses;
 
 @route("/column-masks/{columnMaskId}")
 @delete
-op deleteColumnMask(columnMaskId: string): void;
+op deleteColumnMask(columnMaskId: string): NoContent | MutatingErrorResponses;
 
 @route("/column-masks/{columnMaskId}/bindings")
 @post
-op bindColumnMask(columnMaskId: string, @body body: ColumnMaskBindingRequest): void;
+op bindColumnMask(columnMaskId: string, @body body: ColumnMaskBindingRequest): CreatedEmpty | MutatingErrorResponses;
 
 @route("/column-masks/{columnMaskId}/bindings")
 @delete
-op unbindColumnMask(columnMaskId: string, principal_id: string, principal_type: string): void;
+op unbindColumnMask(columnMaskId: string, @query principal_id: string, @query principal_type: string): NoContent | MutatingErrorResponses;
 
 @route("/manifest")
 @post
-op createManifest(@body body: ManifestRequest): ManifestResponse;
+op createManifest(@body body: ManifestRequest): Ok<ManifestResponse> | MutatingErrorResponses;
 
 @route("/audit-logs")
 @get
@@ -594,11 +649,11 @@ op listAuditLogs(
   @query status?: string,
   @query max_results?: int32,
   @query page_token?: string,
-): PaginatedAuditLogs;
+): Ok<PaginatedAuditLogs> | StandardErrorResponses;
 
 @route("/catalogs/{catalogName}/metastore/summary")
 @get
-op getMetastoreSummary(catalogName: string): MetastoreSummary;
+op getMetastoreSummary(catalogName: string): Ok<MetastoreSummary> | ResourceErrorResponses;
 
 @route("/query-history")
 @get
@@ -609,75 +664,75 @@ op listQueryHistory(
   @query to?: string,
   @query max_results?: int32,
   @query page_token?: string,
-): PaginatedQueryHistoryEntries;
+): Ok<PaginatedQueryHistoryEntries> | StandardErrorResponses;
 
 @route("/catalogs")
 @post
-op registerCatalog(@body body: CreateCatalogRequest): CatalogRegistration;
+op registerCatalog(@body body: CreateCatalogRequest): Created<CatalogRegistration> | MutatingErrorResponses;
 
 @route("/catalogs")
 @get
-op listCatalogs(max_results?: int32, page_token?: string): CatalogRegistrationList;
+op listCatalogs(@query max_results?: int32, @query page_token?: string): Ok<CatalogRegistrationList> | StandardErrorResponses;
 
 @route("/catalogs/{catalogName}")
 @get
-op getCatalogRegistration(catalogName: string): CatalogRegistration;
+op getCatalogRegistration(catalogName: string): Ok<CatalogRegistration> | ResourceErrorResponses;
 
 @route("/catalogs/{catalogName}")
 @patch(#{ implicitOptionality: true })
-op updateCatalogRegistration(catalogName: string, @body body: UpdateCatalogRegistrationRequest): CatalogRegistration;
+op updateCatalogRegistration(catalogName: string, @body body: UpdateCatalogRegistrationRequest): Ok<CatalogRegistration> | MutatingErrorResponses;
 
 @route("/catalogs/{catalogName}")
 @delete
-op deleteCatalogRegistration(catalogName: string): void;
+op deleteCatalogRegistration(catalogName: string): NoContent | MutatingErrorResponses;
 
 @route("/catalogs/{catalogName}/set-default")
 @post
-op setDefaultCatalog(catalogName: string, @body body: SetDefaultCatalogRequest): CatalogRegistration;
+op setDefaultCatalog(catalogName: string, @body body: SetDefaultCatalogRequest): Ok<CatalogRegistration> | MutatingErrorResponses;
 
 @route("/catalogs/{catalogName}/info")
 @get
-op getCatalog(catalogName: string): CatalogInfo;
+op getCatalog(catalogName: string): Ok<CatalogInfo> | ResourceErrorResponses;
 
 @route("/catalogs/{catalogName}/schemas")
 @get
-op listSchemas(catalogName: string, @query max_results?: int32, @query page_token?: string): PaginatedSchemaDetails;
+op listSchemas(catalogName: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedSchemaDetails> | ResourceErrorResponses;
 
 @route("/catalogs/{catalogName}/schemas")
 @post
-op createSchema(catalogName: string, @body body: CreateSchemaRequest): SchemaDetail;
+op createSchema(catalogName: string, @body body: CreateSchemaRequest): Created<SchemaDetail> | MutatingErrorResponses;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}")
 @get
-op getSchema(catalogName: string, schemaName: string): SchemaDetail;
+op getSchema(catalogName: string, schemaName: string): Ok<SchemaDetail> | ResourceErrorResponses;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}")
 @patch(#{ implicitOptionality: true })
-op updateSchema(catalogName: string, schemaName: string, @body body: UpdateSchemaRequest): SchemaDetail;
+op updateSchema(catalogName: string, schemaName: string, @body body: UpdateSchemaRequest): Ok<SchemaDetail> | MutatingErrorResponses;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}")
 @delete
-op deleteSchema(catalogName: string, schemaName: string, force?: boolean): void;
+op deleteSchema(catalogName: string, schemaName: string, @query force?: boolean): NoContent | MutatingErrorResponses;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}/tables")
 @get
-op listTables(catalogName: string, schemaName: string, @query max_results?: int32, @query page_token?: string): PaginatedTableDetails;
+op listTables(catalogName: string, schemaName: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedTableDetails> | ResourceErrorResponses;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}/tables")
 @post
-op createTable(catalogName: string, schemaName: string, @body body: CreateTableRequest): TableDetail;
+op createTable(catalogName: string, schemaName: string, @body body: CreateTableRequest): Created<TableDetail> | MutatingErrorResponses;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}")
 @get
-op getTable(catalogName: string, schemaName: string, tableName: string): TableDetail;
+op getTable(catalogName: string, schemaName: string, tableName: string): Ok<TableDetail> | ResourceErrorResponses;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}")
 @patch(#{ implicitOptionality: true })
-op updateTable(catalogName: string, schemaName: string, tableName: string, @body body: UpdateTableRequest): TableDetail;
+op updateTable(catalogName: string, schemaName: string, tableName: string, @body body: UpdateTableRequest): Ok<TableDetail> | MutatingErrorResponses;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}")
 @delete
-op deleteTable(catalogName: string, schemaName: string, tableName: string): void;
+op deleteTable(catalogName: string, schemaName: string, tableName: string): NoContent | MutatingErrorResponses;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns")
 @get
@@ -687,7 +742,7 @@ op listTableColumns(
   tableName: string,
   @query max_results?: int32,
   @query page_token?: string,
-): PaginatedColumnDetails;
+): Ok<PaginatedColumnDetails> | ResourceErrorResponses;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns/{columnName}")
 @patch(#{ implicitOptionality: true })
@@ -697,51 +752,51 @@ op updateColumn(
   tableName: string,
   columnName: string,
   @body body: UpdateColumnRequest,
-): ColumnDetail;
+): Ok<ColumnDetail> | MutatingErrorResponses;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/profile")
 @post
-op profileTable(catalogName: string, schemaName: string, tableName: string): TableStatistics;
+op profileTable(catalogName: string, schemaName: string, tableName: string): Ok<TableStatistics> | MutatingErrorResponses;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}/views")
 @get
-op listViews(catalogName: string, schemaName: string, @query max_results?: int32, @query page_token?: string): PaginatedViewDetails;
+op listViews(catalogName: string, schemaName: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedViewDetails> | ResourceErrorResponses;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}/views")
 @post
-op createView(catalogName: string, schemaName: string, @body body: CreateViewRequest): ViewDetail;
+op createView(catalogName: string, schemaName: string, @body body: CreateViewRequest): Created<ViewDetail> | MutatingErrorResponses;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}/views/{viewName}")
 @get
-op getView(catalogName: string, schemaName: string, viewName: string): ViewDetail;
+op getView(catalogName: string, schemaName: string, viewName: string): Ok<ViewDetail> | ResourceErrorResponses;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}/views/{viewName}")
 @patch(#{ implicitOptionality: true })
-op updateView(catalogName: string, schemaName: string, viewName: string, @body body: UpdateViewRequest): ViewDetail;
+op updateView(catalogName: string, schemaName: string, viewName: string, @body body: UpdateViewRequest): Ok<ViewDetail> | MutatingErrorResponses;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}/views/{viewName}")
 @delete
-op deleteView(catalogName: string, schemaName: string, viewName: string): void;
+op deleteView(catalogName: string, schemaName: string, viewName: string): NoContent | MutatingErrorResponses;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}/volumes")
 @get
-op listVolumes(catalogName: string, schemaName: string, @query max_results?: int32, @query page_token?: string): PaginatedVolumes;
+op listVolumes(catalogName: string, schemaName: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedVolumes> | ResourceErrorResponses;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}/volumes")
 @post
-op createVolume(catalogName: string, schemaName: string, @body body: CreateVolumeRequest): VolumeDetail;
+op createVolume(catalogName: string, schemaName: string, @body body: CreateVolumeRequest): Created<VolumeDetail> | MutatingErrorResponses;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}")
 @get
-op getVolume(catalogName: string, schemaName: string, volumeName: string): VolumeDetail;
+op getVolume(catalogName: string, schemaName: string, volumeName: string): Ok<VolumeDetail> | ResourceErrorResponses;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}")
 @patch(#{ implicitOptionality: true })
-op updateVolume(catalogName: string, schemaName: string, volumeName: string, @body body: UpdateVolumeRequest): VolumeDetail;
+op updateVolume(catalogName: string, schemaName: string, volumeName: string, @body body: UpdateVolumeRequest): Ok<VolumeDetail> | MutatingErrorResponses;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}")
 @delete
-op deleteVolume(catalogName: string, schemaName: string, volumeName: string): void;
+op deleteVolume(catalogName: string, schemaName: string, volumeName: string): NoContent | MutatingErrorResponses;
 
 model GenericRequest {
   payload?: Record<string>;
@@ -836,487 +891,487 @@ model UpdateExternalLocationRequest {
 
 @route("/queries")
 @post
-op submitQuery(@body body: SubmitQueryRequest): GenericResponse;
+op submitQuery(@body body: SubmitQueryRequest): Created<GenericResponse> | MutatingErrorResponses;
 
 @route("/queries/{queryId}")
 @get
-op getQuery(queryId: string): GenericResponse;
+op getQuery(queryId: string): Ok<GenericResponse> | ResourceErrorResponses;
 
 @route("/queries/{queryId}")
 @delete
-op deleteQuery(queryId: string): void;
+op deleteQuery(queryId: string): NoContent | MutatingErrorResponses;
 
 @route("/queries/{queryId}/results")
 @get
-op getQueryResults(queryId: string, max_results?: int32, page_token?: string): GenericResponse;
+op getQueryResults(queryId: string, @query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | ResourceErrorResponses;
 
 @route("/queries/{queryId}/cancel")
 @post
-op cancelQuery(queryId: string): GenericResponse;
+op cancelQuery(queryId: string): Created<GenericResponse> | MutatingErrorResponses;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url")
 @post
-op createUploadUrl(catalogName: string, schemaName: string, tableName: string, @body body: GenericRequest): GenericResponse;
+op createUploadUrl(catalogName: string, schemaName: string, tableName: string, @body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/commit")
 @post
-op commitTableIngestion(catalogName: string, schemaName: string, tableName: string, @body body: GenericRequest): GenericResponse;
+op commitTableIngestion(catalogName: string, schemaName: string, tableName: string, @body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/load")
 @post
-op loadTableExternalFiles(catalogName: string, schemaName: string, tableName: string, @body body: GenericRequest): GenericResponse;
+op loadTableExternalFiles(catalogName: string, schemaName: string, tableName: string, @body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
 
 @route("/search")
 @get
-op searchCatalog(query: string, type?: string, catalog?: string, max_results?: int32, page_token?: string): GenericResponse;
+op searchCatalog(@query query: string, @query type?: string, @query catalog?: string, @query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | StandardErrorResponses;
 
 @route("/lineage/tables/{schemaName}/{tableName}")
 @get
-op getTableLineage(schemaName: string, tableName: string, max_results?: int32, page_token?: string): GenericResponse;
+op getTableLineage(schemaName: string, tableName: string, @query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | ResourceErrorResponses;
 
 @route("/lineage/tables/{schemaName}/{tableName}/upstream")
 @get
-op getUpstreamLineage(schemaName: string, tableName: string, max_results?: int32, page_token?: string): GenericResponse;
+op getUpstreamLineage(schemaName: string, tableName: string, @query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | ResourceErrorResponses;
 
 @route("/lineage/tables/{schemaName}/{tableName}/downstream")
 @get
-op getDownstreamLineage(schemaName: string, tableName: string, max_results?: int32, page_token?: string): GenericResponse;
+op getDownstreamLineage(schemaName: string, tableName: string, @query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | ResourceErrorResponses;
 
 @route("/lineage/edges/{edgeId}")
 @delete
-op deleteLineageEdge(edgeId: string): void;
+op deleteLineageEdge(edgeId: string): NoContent | MutatingErrorResponses;
 
 @route("/lineage/columns/{schemaName}/{tableName}")
 @get
-op getColumnLineage(schemaName: string, tableName: string, max_results?: int32, page_token?: string): GenericResponse;
+op getColumnLineage(schemaName: string, tableName: string, @query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | ResourceErrorResponses;
 
 @route("/lineage/columns/{schemaName}/{tableName}/{columnName}/impact")
 @get
-op getColumnImpact(schemaName: string, tableName: string, columnName: string, max_results?: int32, page_token?: string): GenericResponse;
+op getColumnImpact(schemaName: string, tableName: string, columnName: string, @query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | ResourceErrorResponses;
 
 @route("/lineage/purge")
 @post
-op purgeLineage(@body body: GenericRequest): GenericResponse;
+op purgeLineage(@body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
 
 @route("/tags")
 @get
-op listTags(max_results?: int32, page_token?: string): GenericResponse;
+op listTags(@query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | StandardErrorResponses;
 
 @route("/tags")
 @post
-op createTag(@body body: GenericRequest): GenericResponse;
+op createTag(@body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
 
 @route("/tags/{tagId}")
 @delete
-op deleteTag(tagId: string): void;
+op deleteTag(tagId: string): NoContent | MutatingErrorResponses;
 
 @route("/tags/{tagId}/assignments")
 @post
-op createTagAssignment(tagId: string, @body body: GenericRequest): GenericResponse;
+op createTagAssignment(tagId: string, @body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
 
 @route("/tag-assignments/{assignmentId}")
 @delete
-op deleteTagAssignment(assignmentId: string): void;
+op deleteTagAssignment(assignmentId: string): NoContent | MutatingErrorResponses;
 
 @route("/classifications")
 @get
-op listClassifications(max_results?: int32, page_token?: string): GenericResponse;
+op listClassifications(@query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | StandardErrorResponses;
 
 @route("/storage-credentials")
 @get
-op listStorageCredentials(@query max_results?: int32, @query page_token?: string): PaginatedStorageCredentials;
+op listStorageCredentials(@query max_results?: int32, @query page_token?: string): Ok<PaginatedStorageCredentials> | StandardErrorResponses;
 
 @route("/storage-credentials")
 @post
-op createStorageCredential(@body body: CreateStorageCredentialRequest): StorageCredential;
+op createStorageCredential(@body body: CreateStorageCredentialRequest): Created<StorageCredential> | MutatingErrorResponses;
 
 @route("/storage-credentials/{credentialName}")
 @get
-op getStorageCredential(credentialName: string): StorageCredential;
+op getStorageCredential(credentialName: string): Ok<StorageCredential> | ResourceErrorResponses;
 
 @route("/storage-credentials/{credentialName}")
 @patch(#{ implicitOptionality: true })
-op updateStorageCredential(credentialName: string, @body body: UpdateStorageCredentialRequest): StorageCredential;
+op updateStorageCredential(credentialName: string, @body body: UpdateStorageCredentialRequest): Ok<StorageCredential> | MutatingErrorResponses;
 
 @route("/storage-credentials/{credentialName}")
 @delete
-op deleteStorageCredential(credentialName: string): void;
+op deleteStorageCredential(credentialName: string): NoContent | MutatingErrorResponses;
 
 @route("/external-locations")
 @get
-op listExternalLocations(@query max_results?: int32, @query page_token?: string): PaginatedExternalLocations;
+op listExternalLocations(@query max_results?: int32, @query page_token?: string): Ok<PaginatedExternalLocations> | StandardErrorResponses;
 
 @route("/external-locations")
 @post
-op createExternalLocation(@body body: CreateExternalLocationRequest): ExternalLocation;
+op createExternalLocation(@body body: CreateExternalLocationRequest): Created<ExternalLocation> | MutatingErrorResponses;
 
 @route("/external-locations/{locationName}")
 @get
-op getExternalLocation(locationName: string): ExternalLocation;
+op getExternalLocation(locationName: string): Ok<ExternalLocation> | ResourceErrorResponses;
 
 @route("/external-locations/{locationName}")
 @patch(#{ implicitOptionality: true })
-op updateExternalLocation(locationName: string, @body body: UpdateExternalLocationRequest): ExternalLocation;
+op updateExternalLocation(locationName: string, @body body: UpdateExternalLocationRequest): Ok<ExternalLocation> | MutatingErrorResponses;
 
 @route("/external-locations/{locationName}")
 @delete
-op deleteExternalLocation(locationName: string): void;
+op deleteExternalLocation(locationName: string): NoContent | MutatingErrorResponses;
 
 @route("/compute-endpoints")
 @get
-op listComputeEndpoints(max_results?: int32, page_token?: string): GenericResponse;
+op listComputeEndpoints(@query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | StandardErrorResponses;
 
 @route("/compute-endpoints")
 @post
-op createComputeEndpoint(@body body: GenericRequest): GenericResponse;
+op createComputeEndpoint(@body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
 
 @route("/compute-endpoints/{endpointName}")
 @get
-op getComputeEndpoint(endpointName: string): GenericResponse;
+op getComputeEndpoint(endpointName: string): Ok<GenericResponse> | ResourceErrorResponses;
 
 @route("/compute-endpoints/{endpointName}")
 @patch(#{ implicitOptionality: true })
-op updateComputeEndpoint(endpointName: string, @body body: GenericRequest): GenericResponse;
+op updateComputeEndpoint(endpointName: string, @body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
 
 @route("/compute-endpoints/{endpointName}")
 @delete
-op deleteComputeEndpoint(endpointName: string): void;
+op deleteComputeEndpoint(endpointName: string): NoContent | MutatingErrorResponses;
 
 @route("/compute-endpoints/{endpointName}/assignments")
 @get
-op listComputeAssignments(endpointName: string, max_results?: int32, page_token?: string): GenericResponse;
+op listComputeAssignments(endpointName: string, @query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | ResourceErrorResponses;
 
 @route("/compute-endpoints/{endpointName}/assignments")
 @post
-op createComputeAssignment(endpointName: string, @body body: GenericRequest): GenericResponse;
+op createComputeAssignment(endpointName: string, @body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
 
 @route("/compute-endpoints/{endpointName}/health")
 @get
-op getComputeEndpointHealth(endpointName: string): GenericResponse;
+op getComputeEndpointHealth(endpointName: string): Ok<GenericResponse> | ResourceErrorResponses;
 
 @route("/compute-endpoints/{endpointName}/assignments/{assignmentId}")
 @delete
-op deleteComputeAssignment(endpointName: string, assignmentId: string): void;
+op deleteComputeAssignment(endpointName: string, assignmentId: string): NoContent | MutatingErrorResponses;
 
 @route("/notebooks")
 @get
-op listNotebooks(owner?: string, max_results?: int32, page_token?: string): GenericResponse;
+op listNotebooks(@query owner?: string, @query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | StandardErrorResponses;
 
 @route("/notebooks")
 @post
-op createNotebook(@body body: GenericRequest): GenericResponse;
+op createNotebook(@body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
 
 @route("/notebooks/{notebookId}")
 @get
-op getNotebook(notebookId: string): GenericResponse;
+op getNotebook(notebookId: string): Ok<GenericResponse> | ResourceErrorResponses;
 
 @route("/notebooks/{notebookId}")
 @patch(#{ implicitOptionality: true })
-op updateNotebook(notebookId: string, @body body: GenericRequest): GenericResponse;
+op updateNotebook(notebookId: string, @body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
 
 @route("/notebooks/{notebookId}")
 @delete
-op deleteNotebook(notebookId: string): void;
+op deleteNotebook(notebookId: string): NoContent | MutatingErrorResponses;
 
 @route("/notebooks/{notebookId}/cells")
 @post
-op createCell(notebookId: string, @body body: GenericRequest): GenericResponse;
+op createCell(notebookId: string, @body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
 
 @route("/notebooks/{notebookId}/cells/reorder")
 @post
-op reorderCells(notebookId: string, @body body: GenericRequest): GenericResponse;
+op reorderCells(notebookId: string, @body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
 
 @route("/notebooks/{notebookId}/cells/{cellId}")
 @patch(#{ implicitOptionality: true })
-op updateCell(notebookId: string, cellId: string, @body body: GenericRequest): GenericResponse;
+op updateCell(notebookId: string, cellId: string, @body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
 
 @route("/notebooks/{notebookId}/cells/{cellId}")
 @delete
-op deleteCell(notebookId: string, cellId: string): void;
+op deleteCell(notebookId: string, cellId: string): NoContent | MutatingErrorResponses;
 
 @route("/notebooks/{notebookId}/sessions")
 @post
-op createNotebookSession(notebookId: string): GenericResponse;
+op createNotebookSession(notebookId: string): Created<GenericResponse> | MutatingErrorResponses;
 
 @route("/notebooks/{notebookId}/sessions/{sessionId}")
 @delete
-op closeNotebookSession(notebookId: string, sessionId: string): void;
+op closeNotebookSession(notebookId: string, sessionId: string): NoContent | MutatingErrorResponses;
 
 @route("/notebooks/{notebookId}/sessions/{sessionId}/execute/{cellId}")
 @post
-op executeCell(notebookId: string, sessionId: string, cellId: string): GenericResponse;
+op executeCell(notebookId: string, sessionId: string, cellId: string): Ok<GenericResponse> | MutatingErrorResponses;
 
 @route("/notebooks/{notebookId}/sessions/{sessionId}/run-all")
 @post
-op runAllCells(notebookId: string, sessionId: string): GenericResponse;
+op runAllCells(notebookId: string, sessionId: string): Ok<GenericResponse> | MutatingErrorResponses;
 
 @route("/notebooks/{notebookId}/sessions/{sessionId}/run-all-async")
 @post
-op runAllCellsAsync(notebookId: string, sessionId: string): GenericResponse;
+op runAllCellsAsync(notebookId: string, sessionId: string): Created<GenericResponse> | MutatingErrorResponses;
 
 @route("/notebooks/{notebookId}/jobs")
 @get
-op listNotebookJobs(notebookId: string, max_results?: int32, page_token?: string): GenericResponse;
+op listNotebookJobs(notebookId: string, @query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | ResourceErrorResponses;
 
 @route("/notebooks/{notebookId}/jobs/{jobId}")
 @get
-op getNotebookJob(notebookId: string, jobId: string): GenericResponse;
+op getNotebookJob(notebookId: string, jobId: string): Ok<GenericResponse> | ResourceErrorResponses;
 
 @route("/git-repos")
 @get
-op listGitRepos(max_results?: int32, page_token?: string): GenericResponse;
+op listGitRepos(@query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | StandardErrorResponses;
 
 @route("/git-repos")
 @post
-op createGitRepo(@body body: GenericRequest): GenericResponse;
+op createGitRepo(@body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
 
 @route("/git-repos/{gitRepoId}")
 @get
-op getGitRepo(gitRepoId: string): GenericResponse;
+op getGitRepo(gitRepoId: string): Ok<GenericResponse> | ResourceErrorResponses;
 
 @route("/git-repos/{gitRepoId}")
 @delete
-op deleteGitRepo(gitRepoId: string): void;
+op deleteGitRepo(gitRepoId: string): NoContent | MutatingErrorResponses;
 
 @route("/git-repos/{gitRepoId}/sync")
 @post
-op syncGitRepo(gitRepoId: string): GenericResponse;
+op syncGitRepo(gitRepoId: string): Ok<GenericResponse> | MutatingErrorResponses;
 
 @route("/pipelines")
 @get
-op listPipelines(max_results?: int32, page_token?: string): GenericResponse;
+op listPipelines(@query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | StandardErrorResponses;
 
 @route("/pipelines")
 @post
-op createPipeline(@body body: GenericRequest): GenericResponse;
+op createPipeline(@body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
 
 @route("/pipelines/{pipelineName}")
 @get
-op getPipeline(pipelineName: string): GenericResponse;
+op getPipeline(pipelineName: string): Ok<GenericResponse> | ResourceErrorResponses;
 
 @route("/pipelines/{pipelineName}")
 @patch(#{ implicitOptionality: true })
-op updatePipeline(pipelineName: string, @body body: GenericRequest): GenericResponse;
+op updatePipeline(pipelineName: string, @body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
 
 @route("/pipelines/{pipelineName}")
 @delete
-op deletePipeline(pipelineName: string): void;
+op deletePipeline(pipelineName: string): NoContent | MutatingErrorResponses;
 
 @route("/pipelines/{pipelineName}/jobs")
 @get
-op listPipelineJobs(pipelineName: string): GenericResponse;
+op listPipelineJobs(pipelineName: string): Ok<GenericResponse> | ResourceErrorResponses;
 
 @route("/pipelines/{pipelineName}/jobs")
 @post
-op createPipelineJob(pipelineName: string, @body body: GenericRequest): GenericResponse;
+op createPipelineJob(pipelineName: string, @body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
 
 @route("/pipelines/{pipelineName}/jobs/{jobId}")
 @delete
-op deletePipelineJob(pipelineName: string, jobId: string): void;
+op deletePipelineJob(pipelineName: string, jobId: string): NoContent | MutatingErrorResponses;
 
 @route("/pipelines/{pipelineName}/runs")
 @post
-op triggerPipelineRun(pipelineName: string, @body body: GenericRequest): GenericResponse;
+op triggerPipelineRun(pipelineName: string, @body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
 
 @route("/pipelines/{pipelineName}/runs")
 @get
-op listPipelineRuns(pipelineName: string, max_results?: int32, page_token?: string, status?: string): GenericResponse;
+op listPipelineRuns(pipelineName: string, @query max_results?: int32, @query page_token?: string, @query status?: string): Ok<GenericResponse> | ResourceErrorResponses;
 
 @route("/pipelines/runs/{runId}")
 @get
-op getPipelineRun(runId: string): GenericResponse;
+op getPipelineRun(runId: string): Ok<GenericResponse> | ResourceErrorResponses;
 
 @route("/pipelines/runs/{runId}/cancel")
 @post
-op cancelPipelineRun(runId: string): GenericResponse;
+op cancelPipelineRun(runId: string): Ok<GenericResponse> | MutatingErrorResponses;
 
 @route("/pipelines/runs/{runId}/jobs")
 @get
-op listPipelineJobRuns(runId: string): GenericResponse;
+op listPipelineJobRuns(runId: string): Ok<GenericResponse> | ResourceErrorResponses;
 
 @route("/models")
 @get
-op listModels(project_name?: string, max_results?: int32, page_token?: string): GenericResponse;
+op listModels(@query project_name?: string, @query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | StandardErrorResponses;
 
 @route("/models")
 @post
-op createModel(@body body: CreateModelRequest): GenericResponse;
+op createModel(@body body: CreateModelRequest): Created<GenericResponse> | MutatingErrorResponses;
 
 @route("/models/{projectName}/{modelName}")
 @get
-op getModel(projectName: string, modelName: string): GenericResponse;
+op getModel(projectName: string, modelName: string): Ok<GenericResponse> | ResourceErrorResponses;
 
 @route("/models/{projectName}/{modelName}")
 @patch(#{ implicitOptionality: true })
-op updateModel(projectName: string, modelName: string, @body body: GenericRequest): GenericResponse;
+op updateModel(projectName: string, modelName: string, @body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
 
 @route("/models/{projectName}/{modelName}")
 @delete
-op deleteModel(projectName: string, modelName: string): void;
+op deleteModel(projectName: string, modelName: string): NoContent | MutatingErrorResponses;
 
 @route("/models/dag")
 @get
-op getModelDAG(project_name?: string): GenericResponse;
+op getModelDAG(@query project_name?: string): Ok<GenericResponse> | StandardErrorResponses;
 
 @route("/model-runs")
 @post
-op triggerModelRun(@body body: GenericRequest): GenericResponse;
+op triggerModelRun(@body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
 
 @route("/model-runs")
 @get
-op listModelRuns(status?: string, max_results?: int32, page_token?: string): GenericResponse;
+op listModelRuns(@query status?: string, @query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | StandardErrorResponses;
 
 @route("/model-runs/{runId}")
 @get
-op getModelRun(runId: string): GenericResponse;
+op getModelRun(runId: string): Ok<GenericResponse> | ResourceErrorResponses;
 
 @route("/model-runs/{runId}/steps")
 @get
-op listModelRunSteps(runId: string): GenericResponse;
+op listModelRunSteps(runId: string): Ok<GenericResponse> | ResourceErrorResponses;
 
 @route("/models/{projectName}/{modelName}/tests")
 @post
-op createModelTest(projectName: string, modelName: string, @body body: GenericRequest): GenericResponse;
+op createModelTest(projectName: string, modelName: string, @body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
 
 @route("/models/{projectName}/{modelName}/tests")
 @get
-op listModelTests(projectName: string, modelName: string): GenericResponse;
+op listModelTests(projectName: string, modelName: string): Ok<GenericResponse> | ResourceErrorResponses;
 
 @route("/models/{projectName}/{modelName}/tests/{testId}")
 @delete
-op deleteModelTest(projectName: string, modelName: string, testId: string): void;
+op deleteModelTest(projectName: string, modelName: string, testId: string): NoContent | MutatingErrorResponses;
 
 @route("/model-runs/{runId}/steps/{stepId}/test-results")
 @get
-op listModelTestResults(runId: string, stepId: string): GenericResponse;
+op listModelTestResults(runId: string, stepId: string): Ok<GenericResponse> | ResourceErrorResponses;
 
 @route("/models/{projectName}/{modelName}/freshness")
 @get
-op checkModelFreshness(projectName: string, modelName: string): GenericResponse;
+op checkModelFreshness(projectName: string, modelName: string): Ok<GenericResponse> | ResourceErrorResponses;
 
 @route("/sources/{sourceSchema}/{sourceTable}/freshness")
 @get
-op checkSourceFreshness(sourceSchema: string, sourceTable: string, timestamp_column?: string, max_lag_seconds?: int64): GenericResponse;
+op checkSourceFreshness(sourceSchema: string, sourceTable: string, @query timestamp_column?: string, @query max_lag_seconds?: int64): Ok<GenericResponse> | ResourceErrorResponses;
 
 @route("/models/from-notebook")
 @post
-op promoteNotebookToModel(@body body: GenericRequest): GenericResponse;
+op promoteNotebookToModel(@body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
 
 @route("/model-runs/{runId}/cancel")
 @post
-op cancelModelRun(runId: string): GenericResponse;
+op cancelModelRun(runId: string): Ok<GenericResponse> | MutatingErrorResponses;
 
 @route("/macros")
 @get
-op listMacros(max_results?: int32, page_token?: string): GenericResponse;
+op listMacros(@query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | StandardErrorResponses;
 
 @route("/macros")
 @post
-op createMacro(@body body: GenericRequest): GenericResponse;
+op createMacro(@body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
 
 @route("/macros/{macroName}")
 @get
-op getMacro(macroName: string): GenericResponse;
+op getMacro(macroName: string): Ok<GenericResponse> | ResourceErrorResponses;
 
 @route("/macros/{macroName}")
 @patch(#{ implicitOptionality: true })
-op updateMacro(macroName: string, @body body: GenericRequest): GenericResponse;
+op updateMacro(macroName: string, @body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
 
 @route("/macros/{macroName}")
 @delete
-op deleteMacro(macroName: string): void;
+op deleteMacro(macroName: string): NoContent | MutatingErrorResponses;
 
 @route("/macros/{macroName}/revisions")
 @get
-op listMacroRevisions(macroName: string): GenericResponse;
+op listMacroRevisions(macroName: string): Ok<GenericResponse> | ResourceErrorResponses;
 
 @route("/macros/{macroName}/impact")
 @get
-op getMacroImpact(macroName: string, max_results?: int32, page_token?: string): GenericResponse;
+op getMacroImpact(macroName: string, @query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | ResourceErrorResponses;
 
 @route("/macros/{macroName}/diff")
 @get
-op diffMacroRevisions(macroName: string, from_version: int32, to_version: int32): GenericResponse;
+op diffMacroRevisions(macroName: string, @query from_version: int32, @query to_version: int32): Ok<GenericResponse> | ResourceErrorResponses;
 
 @route("/semantic-models")
 @get
-op listSemanticModels(project_name?: string, max_results?: int32, page_token?: string): GenericResponse;
+op listSemanticModels(@query project_name?: string, @query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | StandardErrorResponses;
 
 @route("/semantic-models")
 @post
-op createSemanticModel(@body body: GenericRequest): GenericResponse;
+op createSemanticModel(@body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
 
 @route("/semantic-models/{projectName}/{semanticModelName}")
 @get
-op getSemanticModel(projectName: string, semanticModelName: string): GenericResponse;
+op getSemanticModel(projectName: string, semanticModelName: string): Ok<GenericResponse> | ResourceErrorResponses;
 
 @route("/semantic-models/{projectName}/{semanticModelName}")
 @patch(#{ implicitOptionality: true })
-op updateSemanticModel(projectName: string, semanticModelName: string, @body body: GenericRequest): GenericResponse;
+op updateSemanticModel(projectName: string, semanticModelName: string, @body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
 
 @route("/semantic-models/{projectName}/{semanticModelName}")
 @delete
-op deleteSemanticModel(projectName: string, semanticModelName: string): void;
+op deleteSemanticModel(projectName: string, semanticModelName: string): NoContent | MutatingErrorResponses;
 
 @route("/semantic-models/{projectName}/{semanticModelName}/metrics")
 @get
-op listSemanticMetrics(projectName: string, semanticModelName: string): GenericResponse;
+op listSemanticMetrics(projectName: string, semanticModelName: string): Ok<GenericResponse> | ResourceErrorResponses;
 
 @route("/semantic-models/{projectName}/{semanticModelName}/metrics")
 @post
-op createSemanticMetric(projectName: string, semanticModelName: string, @body body: GenericRequest): GenericResponse;
+op createSemanticMetric(projectName: string, semanticModelName: string, @body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
 
 @route("/semantic-models/{projectName}/{semanticModelName}/metrics/{metricName}")
 @patch(#{ implicitOptionality: true })
-op updateSemanticMetric(projectName: string, semanticModelName: string, metricName: string, @body body: GenericRequest): GenericResponse;
+op updateSemanticMetric(projectName: string, semanticModelName: string, metricName: string, @body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
 
 @route("/semantic-models/{projectName}/{semanticModelName}/metrics/{metricName}")
 @delete
-op deleteSemanticMetric(projectName: string, semanticModelName: string, metricName: string): void;
+op deleteSemanticMetric(projectName: string, semanticModelName: string, metricName: string): NoContent | MutatingErrorResponses;
 
 @route("/semantic-models/{projectName}/{semanticModelName}/pre-aggregations")
 @get
-op listSemanticPreAggregations(projectName: string, semanticModelName: string): GenericResponse;
+op listSemanticPreAggregations(projectName: string, semanticModelName: string): Ok<GenericResponse> | ResourceErrorResponses;
 
 @route("/semantic-models/{projectName}/{semanticModelName}/pre-aggregations")
 @post
-op createSemanticPreAggregation(projectName: string, semanticModelName: string, @body body: GenericRequest): GenericResponse;
+op createSemanticPreAggregation(projectName: string, semanticModelName: string, @body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
 
 @route("/semantic-models/{projectName}/{semanticModelName}/pre-aggregations/{preAggregationName}")
 @patch(#{ implicitOptionality: true })
-op updateSemanticPreAggregation(projectName: string, semanticModelName: string, preAggregationName: string, @body body: GenericRequest): GenericResponse;
+op updateSemanticPreAggregation(projectName: string, semanticModelName: string, preAggregationName: string, @body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
 
 @route("/semantic-models/{projectName}/{semanticModelName}/pre-aggregations/{preAggregationName}")
 @delete
-op deleteSemanticPreAggregation(projectName: string, semanticModelName: string, preAggregationName: string): void;
+op deleteSemanticPreAggregation(projectName: string, semanticModelName: string, preAggregationName: string): NoContent | MutatingErrorResponses;
 
 @route("/semantic-relationships")
 @get
-op listSemanticRelationships(max_results?: int32, page_token?: string): GenericResponse;
+op listSemanticRelationships(@query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | StandardErrorResponses;
 
 @route("/semantic-relationships")
 @post
-op createSemanticRelationship(@body body: GenericRequest): GenericResponse;
+op createSemanticRelationship(@body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
 
 @route("/semantic-relationships/{relationshipName}")
 @patch(#{ implicitOptionality: true })
-op updateSemanticRelationship(relationshipName: string, @body body: GenericRequest): GenericResponse;
+op updateSemanticRelationship(relationshipName: string, @body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
 
 @route("/semantic-relationships/{relationshipName}")
 @delete
-op deleteSemanticRelationship(relationshipName: string): void;
+op deleteSemanticRelationship(relationshipName: string): NoContent | MutatingErrorResponses;
 
 @route("/metric-queries:explain")
 @post
-op explainMetricQuery(@body body: GenericRequest): GenericResponse;
+op explainMetricQuery(@body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
 
 @route("/metric-queries:run")
 @post
-op runMetricQuery(@body body: GenericRequest): GenericResponse;
+op runMetricQuery(@body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
 
 @route("/metrics/{metricName}/freshness")
 @get
-op checkMetricFreshness(metricName: string, project_name?: string, semantic_model_name?: string): GenericResponse;
+op checkMetricFreshness(metricName: string, @query project_name?: string, @query semantic_model_name?: string): Ok<GenericResponse> | ResourceErrorResponses;
 
 @@extension(createSchema, "x-authz", #{ mode: "authenticated" });
 @@extension(updateSchema, "x-authz", #{ mode: "authenticated" });

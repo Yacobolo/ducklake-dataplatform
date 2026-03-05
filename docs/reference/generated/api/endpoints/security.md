@@ -125,7 +125,7 @@ bind Column Mask
 
 | Code | Description |
 | --- | --- |
-| `204` | No Content |
+| `201` | Created |
 | `401` | Unauthorized |
 | `429` | Too Many Requests |
 | `500` | Internal Server Error |
@@ -546,7 +546,7 @@ bind Row Filter
 
 | Code | Description |
 | --- | --- |
-| `204` | No Content |
+| `201` | Created |
 | `401` | Unauthorized |
 | `429` | Too Many Requests |
 | `500` | Internal Server Error |
