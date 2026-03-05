@@ -4,6 +4,10 @@ import "@typespec/openapi3";
 using TypeSpec.Http;
 
 @service(#{ title: "Duck Data Platform API" })
+@doc("Secure SQL query layer over DuckDB with RBAC, row-level security, and column masking, backed by SQLite metadata.")
+@server("https://api.example.com", "Primary API server")
+@tag("Duck")
+@useAuth(BearerAuth | ApiKeyAuth<ApiKeyLocation.header, "X-API-Key">)
 namespace Duck;
 
 model HealthResponse {
