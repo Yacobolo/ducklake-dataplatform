@@ -2,8 +2,6 @@
 
 # Schema: `QueryRequest`
 
-A SQL query to execute against the analytics engine.
-
 - Type: `object`
 - Required fields: `sql`
 

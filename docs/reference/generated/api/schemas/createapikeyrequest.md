@@ -2,16 +2,14 @@
 
 # Schema: `CreateAPIKeyRequest`
 
-Request body for creating a new API key.
-
 - Type: `object`
-- Required fields: `name`, `principal_id`
+- Required fields: `principal_id`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `expires_at` | `string` | `false` | - |
-| `name` | `string` | `true` | - |
+| `name` | `string` | `false` | - |
 | `principal_id` | `string` | `true` | - |
 

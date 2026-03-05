@@ -2,30 +2,21 @@
 
 # Schema: `TableDetail`
 
-Detailed information about a table including its columns and metadata.
-
 - Type: `object`
+- Required fields: `catalog_name`, `name`, `schema_name`, `table_id`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `catalog_name` | `string` | `false` | - |
-| `columns` | `array[ColumnDetail]` | `false` | - |
+| `catalog_name` | `string` | `true` | - |
+| `columns` | `array` | `false` | - |
 | `comment` | `string` | `false` | - |
 | `created_at` | `string` | `false` | - |
-| `deleted_at` | `string` | `false` | - |
-| `file_format` | `string` | `false` | File format for EXTERNAL tables (parquet or csv). |
-| `location_name` | `string` | `false` | External location name for EXTERNAL tables. |
-| `name` | `string` | `false` | - |
+| `name` | `string` | `true` | - |
 | `owner` | `string` | `false` | - |
-| `properties` | `object` | `false` | - |
-| `schema_name` | `string` | `false` | - |
-| `source_path` | `string` | `false` | S3/storage path for EXTERNAL tables. |
-| `statistics` | `TableStatistics` | `false` | Statistical metadata about a table's size and profiling status. |
-| `storage_path` | `string` | `false` | Resolved DuckLake data path for MANAGED tables. |
-| `table_id` | `string` | `false` | - |
+| `schema_name` | `string` | `true` | - |
+| `table_id` | `string` | `true` | - |
 | `table_type` | `string` | `false` | - |
-| `tags` | `array[Tag]` | `false` | - |
 | `updated_at` | `string` | `false` | - |
 

@@ -2,24 +2,16 @@
 
 # Schema: `CreateStorageCredentialRequest`
 
-Request payload for creating a new storage credential.
-
 - Type: `object`
-- Required fields: `credential_type`, `name`
+- Required fields: `name`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `azure_account_key` | `string` | `false` | - |
-| `azure_account_name` | `string` | `false` | - |
-| `azure_client_id` | `string` | `false` | - |
-| `azure_client_secret` | `string` | `false` | - |
-| `azure_tenant_id` | `string` | `false` | - |
 | `comment` | `string` | `false` | - |
-| `credential_type` | `string` | `true` | - |
+| `credential_type` | `string` | `false` | - |
 | `endpoint` | `string` | `false` | - |
-| `gcs_key_file_path` | `string` | `false` | - |
 | `key_id` | `string` | `false` | - |
 | `name` | `string` | `true` | - |
 | `region` | `string` | `false` | - |

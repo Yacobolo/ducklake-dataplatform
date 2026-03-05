@@ -2,21 +2,20 @@
 
 # Schema: `VolumeDetail`
 
-Detailed information about a storage volume.
-
 - Type: `object`
+- Required fields: `catalog_name`, `id`, `name`, `schema_name`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `catalog_name` | `string` | `false` | - |
+| `catalog_name` | `string` | `true` | - |
 | `comment` | `string` | `false` | - |
 | `created_at` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `name` | `string` | `false` | - |
+| `id` | `string` | `true` | - |
+| `name` | `string` | `true` | - |
 | `owner` | `string` | `false` | - |
-| `schema_name` | `string` | `false` | - |
+| `schema_name` | `string` | `true` | - |
 | `storage_location` | `string` | `false` | - |
 | `updated_at` | `string` | `false` | - |
 | `volume_type` | `string` | `false` | - |

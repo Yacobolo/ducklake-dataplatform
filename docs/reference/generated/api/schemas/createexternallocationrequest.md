@@ -2,17 +2,15 @@
 
 # Schema: `CreateExternalLocationRequest`
 
-Request payload for creating a new external location.
-
 - Type: `object`
-- Required fields: `credential_name`, `name`, `url`
+- Required fields: `name`, `url`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `comment` | `string` | `false` | - |
-| `credential_name` | `string` | `true` | - |
+| `credential_name` | `string` | `false` | - |
 | `name` | `string` | `true` | - |
 | `read_only` | `boolean` | `false` | - |
 | `storage_type` | `string` | `false` | - |

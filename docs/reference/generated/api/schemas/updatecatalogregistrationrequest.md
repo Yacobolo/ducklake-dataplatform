@@ -2,8 +2,6 @@
 
 # Schema: `UpdateCatalogRegistrationRequest`
 
-Request body for updating a catalog registration.
-
 - Type: `object`
 
 ## Properties
@@ -12,5 +10,4 @@ Request body for updating a catalog registration.
 | --- | --- | --- | --- |
 | `comment` | `string` | `false` | - |
 | `data_path` | `string` | `false` | - |
-| `dsn` | `string` | `false` | - |
 

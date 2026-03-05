@@ -2,8 +2,6 @@
 
 # Schema: `CreateViewRequest`
 
-Request body for creating a new view.
-
 - Type: `object`
 - Required fields: `name`, `view_definition`
 

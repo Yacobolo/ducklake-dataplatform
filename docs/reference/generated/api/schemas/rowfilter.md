@@ -2,9 +2,8 @@
 
 # Schema: `RowFilter`
 
-A row-level security filter applied to a table.
-
 - Type: `object`
+- Required fields: `filter_sql`, `id`, `table_id`
 
 ## Properties
 
@@ -12,7 +11,7 @@ A row-level security filter applied to a table.
 | --- | --- | --- | --- |
 | `created_at` | `string` | `false` | - |
 | `description` | `string` | `false` | - |
-| `filter_sql` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `table_id` | `string` | `false` | - |
+| `filter_sql` | `string` | `true` | - |
+| `id` | `string` | `true` | - |
+| `table_id` | `string` | `true` | - |
 

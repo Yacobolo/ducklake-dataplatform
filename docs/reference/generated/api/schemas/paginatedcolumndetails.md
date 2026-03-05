@@ -2,14 +2,13 @@
 
 # Schema: `PaginatedColumnDetails`
 
-Paginated list of column details.
-
 - Type: `object`
+- Required fields: `data`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `data` | `array[ColumnDetail]` | `false` | - |
+| `data` | `array` | `true` | - |
 | `next_page_token` | `string` | `false` | - |
 

@@ -2,18 +2,16 @@
 
 # Schema: `ColumnDetail`
 
-Detailed information about a single column in a table.
-
 - Type: `object`
+- Required fields: `name`, `type`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `comment` | `string` | `false` | - |
-| `name` | `string` | `false` | - |
-| `nullable` | `boolean` | `false` | Whether the column allows NULL values. |
+| `name` | `string` | `true` | - |
+| `nullable` | `boolean` | `false` | - |
 | `position` | `integer` | `false` | - |
-| `properties` | `object` | `false` | - |
-| `type` | `string` | `false` | - |
+| `type` | `string` | `true` | - |
 

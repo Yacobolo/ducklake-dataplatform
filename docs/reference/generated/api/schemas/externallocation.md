@@ -2,9 +2,8 @@
 
 # Schema: `ExternalLocation`
 
-An external storage location backed by a storage credential, used for accessing remote data.
-
 - Type: `object`
+- Required fields: `id`, `name`, `url`
 
 ## Properties
 
@@ -13,11 +12,11 @@ An external storage location backed by a storage credential, used for accessing 
 | `comment` | `string` | `false` | - |
 | `created_at` | `string` | `false` | - |
 | `credential_name` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `name` | `string` | `false` | - |
+| `id` | `string` | `true` | - |
+| `name` | `string` | `true` | - |
 | `owner` | `string` | `false` | - |
 | `read_only` | `boolean` | `false` | - |
 | `storage_type` | `string` | `false` | - |
 | `updated_at` | `string` | `false` | - |
-| `url` | `string` | `false` | - |
+| `url` | `string` | `true` | - |
 

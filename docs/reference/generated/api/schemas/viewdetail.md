@@ -2,24 +2,22 @@
 
 # Schema: `ViewDetail`
 
-Detailed information about a view including its definition and source tables.
-
 - Type: `object`
+- Required fields: `catalog_name`, `id`, `name`, `schema_name`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `catalog_name` | `string` | `false` | - |
+| `catalog_name` | `string` | `true` | - |
 | `comment` | `string` | `false` | - |
 | `created_at` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `name` | `string` | `false` | - |
+| `id` | `string` | `true` | - |
+| `name` | `string` | `true` | - |
 | `owner` | `string` | `false` | - |
-| `properties` | `object` | `false` | - |
 | `schema_id` | `string` | `false` | - |
-| `schema_name` | `string` | `false` | - |
-| `source_tables` | `array[string]` | `false` | - |
+| `schema_name` | `string` | `true` | - |
+| `source_tables` | `array` | `false` | - |
 | `updated_at` | `string` | `false` | - |
 | `view_definition` | `string` | `false` | - |
 

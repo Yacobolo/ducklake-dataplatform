@@ -2,8 +2,6 @@
 
 # Schema: `RowFilterBindingRequest`
 
-Request body for binding a row filter to a principal.
-
 - Type: `object`
 - Required fields: `principal_id`, `principal_type`
 

@@ -2,14 +2,13 @@
 
 # Schema: `PaginatedSchemaDetails`
 
-Paginated list of schema details.
-
 - Type: `object`
+- Required fields: `data`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `data` | `array[SchemaDetail]` | `false` | - |
+| `data` | `array` | `true` | - |
 | `next_page_token` | `string` | `false` | - |
 

@@ -2,8 +2,6 @@
 
 # Schema: `UpdateExternalLocationRequest`
 
-Request payload for updating an existing external location.
-
 - Type: `object`
 
 ## Properties
@@ -12,7 +10,7 @@ Request payload for updating an existing external location.
 | --- | --- | --- | --- |
 | `comment` | `string` | `false` | - |
 | `credential_name` | `string` | `false` | - |
-| `owner` | `string` | `false` | - |
 | `read_only` | `boolean` | `false` | - |
+| `storage_type` | `string` | `false` | - |
 | `url` | `string` | `false` | - |
 

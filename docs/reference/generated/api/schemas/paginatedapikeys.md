@@ -2,14 +2,13 @@
 
 # Schema: `PaginatedAPIKeys`
 
-Paginated list of API key metadata.
-
 - Type: `object`
+- Required fields: `data`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `data` | `array[APIKeyInfo]` | `false` | - |
+| `data` | `array` | `true` | - |
 | `next_page_token` | `string` | `false` | - |
 

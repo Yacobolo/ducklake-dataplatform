@@ -2,8 +2,6 @@
 
 # Schema: `UpdateVolumeRequest`
 
-Request body for updating an existing volume.
-
 - Type: `object`
 
 ## Properties
@@ -12,5 +10,5 @@ Request body for updating an existing volume.
 | --- | --- | --- | --- |
 | `comment` | `string` | `false` | - |
 | `new_name` | `string` | `false` | - |
-| `owner` | `string` | `false` | - |
+| `storage_location` | `string` | `false` | - |
 

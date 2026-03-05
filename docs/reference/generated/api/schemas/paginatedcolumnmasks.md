@@ -2,14 +2,13 @@
 
 # Schema: `PaginatedColumnMasks`
 
-Paginated list of column masks.
-
 - Type: `object`
+- Required fields: `data`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `data` | `array[ColumnMask]` | `false` | - |
+| `data` | `array` | `true` | - |
 | `next_page_token` | `string` | `false` | - |
 

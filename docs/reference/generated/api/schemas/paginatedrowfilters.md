@@ -2,14 +2,13 @@
 
 # Schema: `PaginatedRowFilters`
 
-Paginated list of row-level security filters.
-
 - Type: `object`
+- Required fields: `data`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `data` | `array[RowFilter]` | `false` | - |
+| `data` | `array` | `true` | - |
 | `next_page_token` | `string` | `false` | - |
 

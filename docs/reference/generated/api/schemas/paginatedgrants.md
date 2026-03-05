@@ -2,14 +2,13 @@
 
 # Schema: `PaginatedGrants`
 
-Paginated list of privilege grants.
-
 - Type: `object`
+- Required fields: `data`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `data` | `array[PrivilegeGrant]` | `false` | - |
+| `data` | `array` | `true` | - |
 | `next_page_token` | `string` | `false` | - |
 

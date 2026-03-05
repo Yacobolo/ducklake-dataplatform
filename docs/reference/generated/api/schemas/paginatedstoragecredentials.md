@@ -2,14 +2,13 @@
 
 # Schema: `PaginatedStorageCredentials`
 
-A paginated list of storage credentials.
-
 - Type: `object`
+- Required fields: `data`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `data` | `array[StorageCredential]` | `false` | - |
+| `data` | `array` | `true` | - |
 | `next_page_token` | `string` | `false` | - |
 

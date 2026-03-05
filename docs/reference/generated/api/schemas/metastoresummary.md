@@ -2,15 +2,14 @@
 
 # Schema: `MetastoreSummary`
 
-Summary information about the metastore including catalog and storage details.
-
 - Type: `object`
+- Required fields: `catalog_name`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `catalog_name` | `string` | `false` | - |
+| `catalog_name` | `string` | `true` | - |
 | `data_path` | `string` | `false` | - |
 | `metastore_type` | `string` | `false` | - |
 | `schema_count` | `integer` | `false` | - |

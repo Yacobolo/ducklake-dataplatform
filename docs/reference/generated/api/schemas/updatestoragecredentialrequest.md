@@ -2,22 +2,14 @@
 
 # Schema: `UpdateStorageCredentialRequest`
 
-Request payload for updating an existing storage credential.
-
 - Type: `object`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `azure_account_key` | `string` | `false` | - |
-| `azure_account_name` | `string` | `false` | - |
-| `azure_client_id` | `string` | `false` | - |
-| `azure_client_secret` | `string` | `false` | - |
-| `azure_tenant_id` | `string` | `false` | - |
 | `comment` | `string` | `false` | - |
 | `endpoint` | `string` | `false` | - |
-| `gcs_key_file_path` | `string` | `false` | - |
 | `key_id` | `string` | `false` | - |
 | `region` | `string` | `false` | - |
 | `secret` | `string` | `false` | - |

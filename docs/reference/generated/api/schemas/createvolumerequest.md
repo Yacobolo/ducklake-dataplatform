@@ -2,10 +2,8 @@
 
 # Schema: `CreateVolumeRequest`
 
-Request body for creating a new volume.
-
 - Type: `object`
-- Required fields: `name`, `volume_type`
+- Required fields: `name`
 
 ## Properties
 
@@ -13,6 +11,6 @@ Request body for creating a new volume.
 | --- | --- | --- | --- |
 | `comment` | `string` | `false` | - |
 | `name` | `string` | `true` | - |
-| `storage_location` | `string` | `false` | Required for EXTERNAL volumes. Ignored for MANAGED. |
-| `volume_type` | `string` | `true` | - |
+| `storage_location` | `string` | `false` | - |
+| `volume_type` | `string` | `false` | - |
 

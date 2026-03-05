@@ -2,9 +2,8 @@
 
 # Schema: `CreateAPIKeyResponse`
 
-Response returned after creating an API key, including the raw secret shown only once.
-
 - Type: `object`
+- Required fields: `id`, `key`
 
 ## Properties
 
@@ -12,8 +11,8 @@ Response returned after creating an API key, including the raw secret shown only
 | --- | --- | --- | --- |
 | `created_at` | `string` | `false` | - |
 | `expires_at` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `key` | `string` | `false` | Raw API key (shown only once) |
+| `id` | `string` | `true` | - |
+| `key` | `string` | `true` | - |
 | `key_prefix` | `string` | `false` | - |
 | `name` | `string` | `false` | - |
 

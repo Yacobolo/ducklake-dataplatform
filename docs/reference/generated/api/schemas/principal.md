@@ -2,17 +2,16 @@
 
 # Schema: `Principal`
 
-A security principal representing a user or service account.
-
 - Type: `object`
+- Required fields: `id`, `is_admin`, `name`, `type`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `created_at` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `is_admin` | `boolean` | `false` | - |
-| `name` | `string` | `false` | - |
-| `type` | `string` | `false` | - |
+| `id` | `string` | `true` | - |
+| `is_admin` | `boolean` | `true` | - |
+| `name` | `string` | `true` | - |
+| `type` | `string` | `true` | - |
 

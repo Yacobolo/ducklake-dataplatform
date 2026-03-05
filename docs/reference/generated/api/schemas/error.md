@@ -2,8 +2,6 @@
 
 # Schema: `Error`
 
-Standard error response returned by the API on failure.
-
 - Type: `object`
 - Required fields: `code`, `message`
 
@@ -11,6 +9,6 @@ Standard error response returned by the API on failure.
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `code` | `integer` | `true` | - |
-| `message` | `string` | `true` | - |
+| `code` | `integer` | `true` | HTTP status code |
+| `message` | `string` | `true` | Error message |
 

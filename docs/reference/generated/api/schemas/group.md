@@ -2,9 +2,8 @@
 
 # Schema: `Group`
 
-A group that can contain multiple principals for collective access control.
-
 - Type: `object`
+- Required fields: `id`, `name`
 
 ## Properties
 
@@ -12,6 +11,6 @@ A group that can contain multiple principals for collective access control.
 | --- | --- | --- | --- |
 | `created_at` | `string` | `false` | - |
 | `description` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `name` | `string` | `false` | - |
+| `id` | `string` | `true` | - |
+| `name` | `string` | `true` | - |
 

@@ -2,14 +2,13 @@
 
 # Schema: `PaginatedTableDetails`
 
-Paginated list of table details.
-
 - Type: `object`
+- Required fields: `data`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `data` | `array[TableDetail]` | `false` | - |
+| `data` | `array` | `true` | - |
 | `next_page_token` | `string` | `false` | - |
 

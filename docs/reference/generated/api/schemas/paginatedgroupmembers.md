@@ -2,14 +2,13 @@
 
 # Schema: `PaginatedGroupMembers`
 
-Paginated list of group members.
-
 - Type: `object`
+- Required fields: `data`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `data` | `array[GroupMember]` | `false` | - |
+| `data` | `array` | `true` | - |
 | `next_page_token` | `string` | `false` | - |
 

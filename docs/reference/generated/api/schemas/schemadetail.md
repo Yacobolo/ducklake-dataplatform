@@ -2,22 +2,19 @@
 
 # Schema: `SchemaDetail`
 
-Detailed information about a schema within a catalog.
-
 - Type: `object`
+- Required fields: `catalog_name`, `name`, `schema_id`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `catalog_name` | `string` | `false` | - |
+| `catalog_name` | `string` | `true` | - |
 | `comment` | `string` | `false` | - |
 | `created_at` | `string` | `false` | - |
-| `deleted_at` | `string` | `false` | - |
-| `name` | `string` | `false` | - |
+| `name` | `string` | `true` | - |
 | `owner` | `string` | `false` | - |
-| `properties` | `object` | `false` | - |
-| `schema_id` | `string` | `false` | - |
-| `tags` | `array[Tag]` | `false` | - |
+| `properties` | `Record` | `false` | - |
+| `schema_id` | `string` | `true` | - |
 | `updated_at` | `string` | `false` | - |
 

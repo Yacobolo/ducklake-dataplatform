@@ -2,19 +2,18 @@
 
 # Schema: `ManifestResponse`
 
-The manifest of a table including its schema, files, and access controls.
-
 - Type: `object`
+- Required fields: `table`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `column_masks` | `object` | `false` | - |
-| `columns` | `array[ManifestColumn]` | `false` | - |
+| `column_masks` | `Record` | `false` | - |
+| `columns` | `array` | `false` | - |
 | `expires_at` | `string` | `false` | - |
-| `files` | `array[string]` | `false` | - |
-| `row_filters` | `array[string]` | `false` | - |
+| `files` | `array` | `false` | - |
+| `row_filters` | `array` | `false` | - |
 | `schema` | `string` | `false` | - |
-| `table` | `string` | `false` | - |
+| `table` | `string` | `true` | - |
 

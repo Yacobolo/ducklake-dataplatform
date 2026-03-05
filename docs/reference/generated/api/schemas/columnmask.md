@@ -2,18 +2,17 @@
 
 # Schema: `ColumnMask`
 
-A column masking rule that transforms column values for specific principals.
-
 - Type: `object`
+- Required fields: `column_name`, `id`, `mask_expression`, `table_id`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `column_name` | `string` | `false` | - |
+| `column_name` | `string` | `true` | - |
 | `created_at` | `string` | `false` | - |
 | `description` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `mask_expression` | `string` | `false` | - |
-| `table_id` | `string` | `false` | - |
+| `id` | `string` | `true` | - |
+| `mask_expression` | `string` | `true` | - |
+| `table_id` | `string` | `true` | - |
 

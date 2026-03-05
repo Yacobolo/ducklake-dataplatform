@@ -2,8 +2,6 @@
 
 # Schema: `UpdatePrincipalAdminRequest`
 
-Request body for updating a principal's admin status.
-
 - Type: `object`
 - Required fields: `is_admin`
 

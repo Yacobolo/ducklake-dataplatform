@@ -2,8 +2,6 @@
 
 # Schema: `UpdateViewRequest`
 
-Request body for updating an existing view.
-
 - Type: `object`
 
 ## Properties
@@ -11,6 +9,5 @@ Request body for updating an existing view.
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `comment` | `string` | `false` | - |
-| `properties` | `object` | `false` | - |
 | `view_definition` | `string` | `false` | - |
 

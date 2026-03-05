@@ -2,8 +2,6 @@
 
 # Schema: `CreateGrantRequest`
 
-Request body for creating a new privilege grant.
-
 - Type: `object`
 - Required fields: `principal_id`, `principal_type`, `privilege`, `securable_id`, `securable_type`
 
@@ -13,7 +11,7 @@ Request body for creating a new privilege grant.
 | --- | --- | --- | --- |
 | `principal_id` | `string` | `true` | - |
 | `principal_type` | `string` | `true` | - |
-| `privilege` | `object` | `true` | - |
+| `privilege` | `string` | `true` | - |
 | `securable_id` | `string` | `true` | - |
 | `securable_type` | `string` | `true` | - |
 

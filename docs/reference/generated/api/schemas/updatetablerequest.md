@@ -2,8 +2,6 @@
 
 # Schema: `UpdateTableRequest`
 
-Request body for updating an existing table.
-
 - Type: `object`
 
 ## Properties
@@ -12,5 +10,4 @@ Request body for updating an existing table.
 | --- | --- | --- | --- |
 | `comment` | `string` | `false` | - |
 | `owner` | `string` | `false` | - |
-| `properties` | `object` | `false` | - |
 

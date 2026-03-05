@@ -2,8 +2,6 @@
 
 # Schema: `TableStatistics`
 
-Statistical metadata about a table's size and profiling status.
-
 - Type: `object`
 
 ## Properties

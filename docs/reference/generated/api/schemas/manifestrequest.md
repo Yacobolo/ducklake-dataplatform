@@ -2,8 +2,6 @@
 
 # Schema: `ManifestRequest`
 
-Request to retrieve the manifest for a specific table.
-
 - Type: `object`
 - Required fields: `table`
 

@@ -2,8 +2,6 @@
 
 # Schema: `CreateGroupMemberRequest`
 
-Request body for adding a member to a group.
-
 - Type: `object`
 - Required fields: `member_id`, `member_type`
 

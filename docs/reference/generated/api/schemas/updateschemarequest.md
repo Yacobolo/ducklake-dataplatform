@@ -2,8 +2,6 @@
 
 # Schema: `UpdateSchemaRequest`
 
-Request body for updating an existing schema.
-
 - Type: `object`
 
 ## Properties
@@ -11,5 +9,5 @@ Request body for updating an existing schema.
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `comment` | `string` | `false` | - |
-| `properties` | `object` | `false` | - |
+| `properties` | `Record` | `false` | - |
 

@@ -2,15 +2,14 @@
 
 # Schema: `CatalogRegistrationList`
 
-Paginated list of catalog registrations.
-
 - Type: `object`
+- Required fields: `catalogs`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `data` | `array[CatalogRegistration]` | `false` | - |
+| `catalogs` | `array` | `true` | - |
 | `next_page_token` | `string` | `false` | - |
 | `total_count` | `integer` | `false` | - |
 

@@ -2,14 +2,13 @@
 
 # Schema: `PaginatedVolumes`
 
-Paginated list of volumes.
-
 - Type: `object`
+- Required fields: `data`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `data` | `array[VolumeDetail]` | `false` | - |
+| `data` | `array` | `true` | - |
 | `next_page_token` | `string` | `false` | - |
 

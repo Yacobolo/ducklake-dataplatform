@@ -2,14 +2,13 @@
 
 # Schema: `PaginatedViewDetails`
 
-Paginated list of view details.
-
 - Type: `object`
+- Required fields: `data`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `data` | `array[ViewDetail]` | `false` | - |
+| `data` | `array` | `true` | - |
 | `next_page_token` | `string` | `false` | - |
 

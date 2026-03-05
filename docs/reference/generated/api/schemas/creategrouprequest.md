@@ -2,8 +2,6 @@
 
 # Schema: `CreateGroupRequest`
 
-Request body for creating a new group.
-
 - Type: `object`
 - Required fields: `name`
 

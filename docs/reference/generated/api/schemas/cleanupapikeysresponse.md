@@ -2,13 +2,12 @@
 
 # Schema: `CleanupAPIKeysResponse`
 
-Response returned after cleaning up expired API keys.
-
 - Type: `object`
+- Required fields: `deleted_count`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `deleted_count` | `integer` | `false` | - |
+| `deleted_count` | `integer` | `true` | - |
 

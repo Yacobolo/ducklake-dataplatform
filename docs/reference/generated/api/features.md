@@ -6,17 +6,19 @@ This page is generated from OpenAPI tags and operations.
 
 | Feature | What you can do | API coverage |
 | --- | --- | --- |
-| [Catalogs](./endpoints/catalogs) | Catalog registration, schema, table, column, and view management. | 30 operations |
-| [Compute](./endpoints/compute) | Compute endpoint and assignment management. | 9 operations |
-| [Governance](./endpoints/governance) | Tags, classifications, and catalog search. | 7 operations |
-| [Ingestion](./endpoints/ingestion) | Data ingestion via upload, commit, and external file loading. | 3 operations |
-| [Lineage](./endpoints/lineage) | Table lineage tracking and management. | 7 operations |
-| [Manifest](./endpoints/manifest) | Client-side query manifest with presigned URLs. | 1 operations |
-| [Models](./endpoints/models) | Transformation model definitions, runs, DAG management, macros, and freshness. | 26 operations |
-| [Notebooks](./endpoints/notebooks) | SQL notebooks, sessions, jobs, and Git integration. | 21 operations |
-| [Observability](./endpoints/observability) | Audit logs, query history, and metastore summary. | 3 operations |
-| [Pipelines](./endpoints/pipelines) | Pipeline workflow scheduling and orchestration. | 13 operations |
-| [Query](./endpoints/query) | Execute SQL queries against the platform. | 6 operations |
-| [Security](./endpoints/security) | Principals, groups, grants, row filters, and column masks. | 29 operations |
-| [Semantic](./endpoints/semantic) | Semantic models, metrics, relationships, query explain, and query run endpoints. | 20 operations |
-| [Storage](./endpoints/storage) | Storage credentials and external locations. | 10 operations |
+| [api](./endpoints/api) | General API endpoints | 11 operations |
+| [catalogs](./endpoints/catalogs) | Catalog and metadata endpoints | 33 operations |
+| [compute](./endpoints/compute) | Compute endpoint management | 9 operations |
+| [governance](./endpoints/governance) | Tags and classifications | 6 operations |
+| [lineage](./endpoints/lineage) | Lineage graph and impact analysis | 7 operations |
+| [macros](./endpoints/macros) | Macro management and revisions | 8 operations |
+| [manifest](./endpoints/manifest) | Manifest and data-access endpoints | 1 operations |
+| [models](./endpoints/models) | Model lifecycle and testing | 17 operations |
+| [notebooks](./endpoints/notebooks) | Notebook authoring and execution | 16 operations |
+| [observability](./endpoints/observability) | Audit and query observability endpoints | 3 operations |
+| [pipelines](./endpoints/pipelines) | Pipeline orchestration endpoints | 14 operations |
+| [query](./endpoints/query) | Query execution endpoints | 1 operations |
+| [security](./endpoints/security) | Security and access-control endpoints | 29 operations |
+| [semantic](./endpoints/semantic) | Semantic models and metrics | 20 operations |
+| [storage](./endpoints/storage) | Storage credentials and external locations | 10 operations |
+| [system](./endpoints/system) | System endpoints | 1 operations |

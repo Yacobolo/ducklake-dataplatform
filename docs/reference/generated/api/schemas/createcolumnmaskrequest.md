@@ -2,8 +2,6 @@
 
 # Schema: `CreateColumnMaskRequest`
 
-Request body for creating a new column mask.
-
 - Type: `object`
 - Required fields: `column_name`, `mask_expression`
 

@@ -2,8 +2,6 @@
 
 # Schema: `CreateSchemaRequest`
 
-Request body for creating a new schema.
-
 - Type: `object`
 - Required fields: `name`
 
@@ -12,7 +10,6 @@ Request body for creating a new schema.
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `comment` | `string` | `false` | - |
-| `location_name` | `string` | `false` | Optional external location name to use for schema storage path. |
 | `name` | `string` | `true` | - |
-| `properties` | `object` | `false` | - |
+| `properties` | `Record` | `false` | - |
 

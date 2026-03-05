@@ -2,18 +2,16 @@
 
 # Schema: `CreateCatalogRequest`
 
-Request body for registering a new catalog.
-
 - Type: `object`
-- Required fields: `data_path`, `dsn`, `metastore_type`, `name`
+- Required fields: `name`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `comment` | `string` | `false` | - |
-| `data_path` | `string` | `true` | - |
-| `dsn` | `string` | `true` | - |
-| `metastore_type` | `string` | `true` | - |
+| `data_path` | `string` | `false` | - |
+| `dsn` | `string` | `false` | - |
+| `metastore_type` | `string` | `false` | - |
 | `name` | `string` | `true` | - |
 

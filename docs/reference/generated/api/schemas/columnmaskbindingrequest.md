@@ -2,8 +2,6 @@
 
 # Schema: `ColumnMaskBindingRequest`
 
-Request body for binding a column mask to a principal.
-
 - Type: `object`
 - Required fields: `principal_id`, `principal_type`
 

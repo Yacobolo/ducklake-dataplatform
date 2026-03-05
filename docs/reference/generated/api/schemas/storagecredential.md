@@ -2,24 +2,19 @@
 
 # Schema: `StorageCredential`
 
-A credential for accessing external storage systems such as S3, Azure Blob, or GCS.
-
 - Type: `object`
+- Required fields: `id`, `name`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `azure_account_name` | `string` | `false` | - |
-| `azure_client_id` | `string` | `false` | - |
-| `azure_tenant_id` | `string` | `false` | - |
 | `comment` | `string` | `false` | - |
 | `created_at` | `string` | `false` | - |
 | `credential_type` | `string` | `false` | - |
 | `endpoint` | `string` | `false` | - |
-| `gcs_key_file_path` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `name` | `string` | `false` | - |
+| `id` | `string` | `true` | - |
+| `name` | `string` | `true` | - |
 | `owner` | `string` | `false` | - |
 | `region` | `string` | `false` | - |
 | `updated_at` | `string` | `false` | - |

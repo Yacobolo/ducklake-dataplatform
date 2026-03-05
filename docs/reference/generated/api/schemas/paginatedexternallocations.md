@@ -2,14 +2,13 @@
 
 # Schema: `PaginatedExternalLocations`
 
-A paginated list of external locations.
-
 - Type: `object`
+- Required fields: `data`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `data` | `array[ExternalLocation]` | `false` | - |
+| `data` | `array` | `true` | - |
 | `next_page_token` | `string` | `false` | - |
 

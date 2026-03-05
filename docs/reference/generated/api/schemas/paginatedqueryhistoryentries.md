@@ -2,14 +2,13 @@
 
 # Schema: `PaginatedQueryHistoryEntries`
 
-A paginated list of query history entries.
-
 - Type: `object`
+- Required fields: `data`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `data` | `array[QueryHistoryEntry]` | `false` | - |
+| `data` | `array` | `true` | - |
 | `next_page_token` | `string` | `false` | - |
 

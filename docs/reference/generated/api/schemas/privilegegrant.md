@@ -2,9 +2,8 @@
 
 # Schema: `PrivilegeGrant`
 
-A privilege grant linking a principal to a securable resource with a specific permission.
-
 - Type: `object`
+- Required fields: `id`, `principal_id`, `principal_type`, `privilege`, `securable_id`, `securable_type`
 
 ## Properties
 
@@ -12,10 +11,10 @@ A privilege grant linking a principal to a securable resource with a specific pe
 | --- | --- | --- | --- |
 | `granted_at` | `string` | `false` | - |
 | `granted_by` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `principal_id` | `string` | `false` | - |
-| `principal_type` | `string` | `false` | - |
-| `privilege` | `object` | `false` | - |
-| `securable_id` | `string` | `false` | - |
-| `securable_type` | `string` | `false` | - |
+| `id` | `string` | `true` | - |
+| `principal_id` | `string` | `true` | - |
+| `principal_type` | `string` | `true` | - |
+| `privilege` | `string` | `true` | - |
+| `securable_id` | `string` | `true` | - |
+| `securable_type` | `string` | `true` | - |
 

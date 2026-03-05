@@ -2,8 +2,6 @@
 
 # Schema: `CreateTableRequest`
 
-Request body for creating a new table (managed or external).
-
 - Type: `object`
 - Required fields: `name`
 
@@ -11,11 +9,7 @@ Request body for creating a new table (managed or external).
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `columns` | `array[CreateColumnRequest]` | `false` | Required for MANAGED tables; auto-discovered for EXTERNAL if omitted. |
+| `columns` | `array` | `false` | - |
 | `comment` | `string` | `false` | - |
-| `file_format` | `string` | `false` | File format of the external data. Required for EXTERNAL tables. |
-| `location_name` | `string` | `false` | Name of the external location that owns the source path. Required for EXTERNAL tables. |
 | `name` | `string` | `true` | - |
-| `source_path` | `string` | `false` | S3/storage path to the data file(s). Required for EXTERNAL tables. |
-| `table_type` | `string` | `false` | Type of table. MANAGED (default) or EXTERNAL. |
 

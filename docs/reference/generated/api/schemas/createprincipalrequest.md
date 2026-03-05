@@ -2,8 +2,6 @@
 
 # Schema: `CreatePrincipalRequest`
 
-Request body for creating a new principal.
-
 - Type: `object`
 - Required fields: `name`
 
