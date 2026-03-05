@@ -1,0 +1,402 @@
+Asset:
+  description: First-class data asset definition used by orchestration.
+  type: object
+  properties:
+    id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+    asset_key:
+      type: string
+      maxLength: 255
+    asset_type:
+      type: string
+      maxLength: 64
+    owner:
+      type: string
+      maxLength: 255
+    description:
+      type: string
+      maxLength: 4096
+    tags:
+      type: array
+      items:
+        type: string
+        maxLength: 255
+    io_profile:
+      type: string
+      maxLength: 255
+    is_active:
+      type: boolean
+    created_by:
+      type: string
+      maxLength: 255
+    created_at:
+      type: string
+      format: date-time
+      maxLength: 64
+    updated_at:
+      type: string
+      format: date-time
+      maxLength: 64
+
+AssetGraph:
+  description: Upstream and downstream dependencies for an asset.
+  type: object
+  properties:
+    asset_key:
+      type: string
+      maxLength: 255
+    upstream_asset_keys:
+      type: array
+      items:
+        type: string
+        maxLength: 255
+    downstream_asset_keys:
+      type: array
+      items:
+        type: string
+        maxLength: 255
+
+AssetPartition:
+  description: Partition state for a single asset partition key.
+  type: object
+  properties:
+    id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+    asset_id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+    partition_key:
+      type: string
+      maxLength: 255
+    status:
+      type: string
+      maxLength: 64
+    created_at:
+      type: string
+      format: date-time
+      maxLength: 64
+    updated_at:
+      type: string
+      format: date-time
+      maxLength: 64
+
+AssetRun:
+  description: Asset materialization run record.
+  type: object
+  properties:
+    id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+    asset_id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+    run_group_id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+    partition_key:
+      type: string
+      maxLength: 255
+    status:
+      type: string
+      maxLength: 64
+    trigger_type:
+      type: string
+      maxLength: 64
+    triggered_by:
+      type: string
+      maxLength: 255
+    attempt_count:
+      type: integer
+      format: int32
+      minimum: 0
+      maximum: 100
+    max_attempts:
+      type: integer
+      format: int32
+      minimum: 1
+      maximum: 100
+    started_at:
+      type: string
+      format: date-time
+      maxLength: 64
+    finished_at:
+      type: string
+      format: date-time
+      maxLength: 64
+    error_message:
+      type: string
+      maxLength: 4096
+    created_at:
+      type: string
+      format: date-time
+      maxLength: 64
+    updated_at:
+      type: string
+      format: date-time
+      maxLength: 64
+
+AssetMaterialization:
+  description: Recorded materialization result for an asset.
+  type: object
+  properties:
+    id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+    asset_id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+    run_id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+    partition_key:
+      type: string
+      maxLength: 255
+    row_count:
+      type: integer
+      format: int64
+      minimum: 0
+    schema_hash:
+      type: string
+      maxLength: 255
+    materialized_at:
+      type: string
+      format: date-time
+      maxLength: 64
+    created_at:
+      type: string
+      format: date-time
+      maxLength: 64
+
+AssetCheck:
+  description: Data quality check definition for an asset.
+  type: object
+  properties:
+    id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+    asset_id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+    name:
+      type: string
+      maxLength: 255
+    check_type:
+      type: string
+      maxLength: 255
+    severity:
+      type: string
+      maxLength: 64
+    enabled:
+      type: boolean
+    created_at:
+      type: string
+      format: date-time
+      maxLength: 64
+    updated_at:
+      type: string
+      format: date-time
+      maxLength: 64
+
+BackfillRequest:
+  description: Backfill request metadata for an asset partition range.
+  type: object
+  properties:
+    id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+    asset_id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+    partition_from:
+      type: string
+      maxLength: 255
+    partition_to:
+      type: string
+      maxLength: 255
+    status:
+      type: string
+      maxLength: 64
+    requested_by:
+      type: string
+      maxLength: 255
+    max_parallelism:
+      type: integer
+      format: int32
+      minimum: 0
+      maximum: 1000
+    created_at:
+      type: string
+      format: date-time
+      maxLength: 64
+    started_at:
+      type: string
+      format: date-time
+      maxLength: 64
+    finished_at:
+      type: string
+      format: date-time
+      maxLength: 64
+    error_message:
+      type: string
+      maxLength: 4096
+
+BackfillSlice:
+  description: One partition slice generated by a backfill request.
+  type: object
+  properties:
+    id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+    request_id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+    asset_id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+    partition_key:
+      type: string
+      maxLength: 255
+    status:
+      type: string
+      maxLength: 64
+    run_id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+
+CreateAssetBackfillRequest:
+  description: Request body for creating a partition-range backfill.
+  type: object
+  additionalProperties: false
+  required: [partition_from, partition_to]
+  properties:
+    partition_from:
+      type: string
+      maxLength: 255
+    partition_to:
+      type: string
+      maxLength: 255
+    max_parallelism:
+      type: integer
+      format: int32
+      minimum: 0
+      maximum: 1000
+
+TriggerAssetMaterializationRequest:
+  description: Request body for enqueuing asset materialization.
+  type: object
+  additionalProperties: false
+  properties:
+    partition_key:
+      type: string
+      maxLength: 255
+    idempotency_key:
+      type: string
+      maxLength: 255
+    payload:
+      type: object
+      additionalProperties: true
+
+AssetTriggerResponse:
+  description: Materialization trigger enqueue response.
+  type: object
+  properties:
+    event_id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+    status:
+      type: string
+      maxLength: 64
+
+CreateAssetBackfillResponse:
+  description: Backfill request and generated slices.
+  type: object
+  properties:
+    request:
+      $ref: '#/BackfillRequest'
+    slices:
+      type: array
+      items:
+        $ref: '#/BackfillSlice'
+
+PaginatedAssets:
+  type: object
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/Asset'
+    next_page_token:
+      type: string
+      maxLength: 4096
+
+PaginatedAssetPartitions:
+  type: object
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/AssetPartition'
+    next_page_token:
+      type: string
+      maxLength: 4096
+
+PaginatedAssetRuns:
+  type: object
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/AssetRun'
+    next_page_token:
+      type: string
+      maxLength: 4096
+
+PaginatedAssetMaterializations:
+  type: object
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/AssetMaterialization'
+    next_page_token:
+      type: string
+      maxLength: 4096
+
+AssetCheckList:
+  type: object
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/AssetCheck'
+
+PaginatedBackfillRequests:
+  type: object
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/BackfillRequest'
+    next_page_token:
+      type: string
+      maxLength: 4096

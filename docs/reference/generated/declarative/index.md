@@ -10,6 +10,7 @@ This section is generated from versioned JSON Schema artifacts.
 ## Kinds
 
 - [APIKeyList](./kinds/api-key-list) (`kinds/api-key-list.schema.json`)
+- [Asset](./kinds/asset) (`kinds/asset.schema.json`)
 - [BindingList](./kinds/binding-list) (`kinds/binding-list.schema.json`)
 - [Catalog](./kinds/catalog) (`kinds/catalog.schema.json`)
 - [ColumnMaskList](./kinds/column-mask-list) (`kinds/column-mask-list.schema.json`)
@@ -38,6 +39,7 @@ This section is generated from versioned JSON Schema artifacts.
 | File | SHA256 |
 | --- | --- |
 | `kinds/api-key-list.schema.json` | `90233e3aa0c3ba6174f1e8589f8cbcd962d4c7bcca5d3853ee7643099d9f9a15` |
+| `kinds/asset.schema.json` | `7cd73f038d21e7bad3782a05e451bf57e1e866437fc98b2b9415890348b1d827` |
 | `kinds/binding-list.schema.json` | `5c46b7f6f9e38e5829fca8e8fdc52d3c4ea8d8f2c241f06d992899bd2207c6dd` |
 | `kinds/catalog.schema.json` | `b09db032ebe5d9687e36898abf362ee79ea28f38a5dc11aed148c3622179a499` |
 | `kinds/column-mask-list.schema.json` | `d9c34a0d7affcf634680277d0eb960c7a4404902dc9d80a33a06e21baf12174b` |

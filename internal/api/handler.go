@@ -28,6 +28,8 @@ type APIHandler struct {
 	sessions            sessionService
 	gitRepos            gitRepoService
 	pipelines           pipelineService
+	assets              assetService
+	backfills           assetBackfillService
 	models              modelService
 	macros              macroService
 	semantics           semanticService
@@ -60,6 +62,8 @@ func NewHandler(
 	sessions sessionService,
 	gitRepos gitRepoService,
 	pipelines pipelineService,
+	assets assetService,
+	backfills assetBackfillService,
 	models modelService,
 	macros macroService,
 	semantics semanticService,
@@ -90,6 +94,8 @@ func NewHandler(
 		sessions:            sessions,
 		gitRepos:            gitRepos,
 		pipelines:           pipelines,
+		assets:              assets,
+		backfills:           backfills,
 		models:              models,
 		macros:              macros,
 		semantics:           semantics,

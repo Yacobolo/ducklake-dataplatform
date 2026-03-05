@@ -73,6 +73,11 @@ func LoadDirectoryWithOptions(dir string, opts LoadOptions) (*DesiredState, erro
 		return nil, err
 	}
 
+	// 7b. assets/
+	if err := loadAssets(dir, state, opts); err != nil {
+		return nil, err
+	}
+
 	// 8. models/
 	if err := loadModels(dir, state, opts); err != nil {
 		return nil, err
@@ -691,6 +696,47 @@ func loadPipelines(root string, state *DesiredState, opts LoadOptions) error {
 			Name: plName,
 			Spec: plDoc.Spec,
 		})
+	}
+
+	return nil
+}
+
+// loadAssets walks the assets/ directory. Each .yaml file is an asset.
+func loadAssets(root string, state *DesiredState, opts LoadOptions) error {
+	assetDir := filepath.Join(root, "assets")
+	if !dirExists(assetDir) {
+		return nil
+	}
+
+	entries, err := os.ReadDir(assetDir)
+	if err != nil {
+		return fmt.Errorf("read assets directory: %w", err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
+			continue
+		}
+
+		assetName := strings.TrimSuffix(entry.Name(), ".yaml")
+		assetFile := filepath.Join(assetDir, entry.Name())
+
+		var assetDoc AssetDoc
+		found, err := loadYAMLFile(assetFile, &assetDoc, opts)
+		if err != nil {
+			return err
+		}
+		if !found {
+			continue
+		}
+
+		if err := validateDocument(assetFile, assetDoc.APIVersion, assetDoc.Kind, KindNameAsset); err != nil {
+			return err
+		}
+		if assetDoc.Metadata.Name != assetName {
+			return fmt.Errorf("%s: metadata.name %q does not match file name %q", assetFile, assetDoc.Metadata.Name, assetName)
+		}
+		state.Assets = append(state.Assets, AssetResource{Name: assetName, Spec: assetDoc.Spec})
 	}
 
 	return nil

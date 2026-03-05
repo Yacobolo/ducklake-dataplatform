@@ -175,7 +175,7 @@ func newUITestRouter(t *testing.T) (*chi.Mux, string) {
 
 	webSessionService := authsvc.NewSessionService(principalRepo, webSessionRepo, auditRepo, 30*time.Minute, 24*time.Hour)
 	authCfg := config.AuthConfig{WebSessionCookieName: "ui_session"}
-	h := NewHandler(nil, nil, nil, nil, nil, nil, nil, nil, nil, authService, webSessionService, nil, authCfg, false)
+	h := NewHandler(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, authService, webSessionService, nil, authCfg, false)
 
 	r := chi.NewRouter()
 	r.Route("/ui", func(r chi.Router) {

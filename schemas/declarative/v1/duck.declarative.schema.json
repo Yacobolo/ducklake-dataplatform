@@ -61,6 +61,9 @@
       "$ref": "kinds/notebook.schema.json"
     },
     {
+      "$ref": "kinds/asset.schema.json"
+    },
+    {
       "$ref": "kinds/pipeline.schema.json"
     },
     {

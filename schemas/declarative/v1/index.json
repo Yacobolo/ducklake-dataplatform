@@ -1,8 +1,9 @@
 {
   "apiVersion": "duck/v1",
   "files": {
-    "duck.declarative.schema.json": "5bb4f3b9f6a57f1198e815f5ecf77f2bb15befd985d9f41b963c7709d503d7e8",
+    "duck.declarative.schema.json": "1f3e027813a61e2c8c688a05082559ed4cea5995663d348717a6b3f9bee33bb5",
     "kinds/api-key-list.schema.json": "90233e3aa0c3ba6174f1e8589f8cbcd962d4c7bcca5d3853ee7643099d9f9a15",
+    "kinds/asset.schema.json": "7cd73f038d21e7bad3782a05e451bf57e1e866437fc98b2b9415890348b1d827",
     "kinds/binding-list.schema.json": "5c46b7f6f9e38e5829fca8e8fdc52d3c4ea8d8f2c241f06d992899bd2207c6dd",
     "kinds/catalog.schema.json": "b09db032ebe5d9687e36898abf362ee79ea28f38a5dc11aed148c3622179a499",
     "kinds/column-mask-list.schema.json": "d9c34a0d7affcf634680277d0eb960c7a4404902dc9d80a33a06e21baf12174b",

@@ -175,6 +175,32 @@ func run() error {
 	}
 	defer application.Scheduler.Stop()
 
+	if cfg.FeatureAssetOrchestration && application.Reconciler != nil {
+		reconcilerStop := make(chan struct{})
+		go func() {
+			ticker := time.NewTicker(750 * time.Millisecond)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					close(reconcilerStop)
+					return
+				case <-ticker.C:
+					if err := application.Reconciler.Tick(ctx); err != nil {
+						logger.Warn("asset reconciler tick failed", "error", err)
+					}
+				}
+			}
+		}()
+		defer func() {
+			select {
+			case <-reconcilerStop:
+			case <-time.After(2 * time.Second):
+				logger.Warn("timed out waiting for reconciler shutdown")
+			}
+		}()
+	}
+
 	// Create API handler.
 	svc := application.Services
 	handler := api.NewHandler(
@@ -191,6 +217,8 @@ func run() error {
 		svc.SessionManager,
 		svc.GitService,
 		svc.Pipeline,
+		svc.Asset,
+		svc.Backfill,
 		svc.Model,
 		svc.Macro,
 		svc.Semantic,
@@ -343,6 +371,8 @@ func run() error {
 		svc.Query,
 		svc.View,
 		svc.Pipeline,
+		svc.Asset,
+		svc.Backfill,
 		svc.Notebook,
 		svc.SessionManager,
 		svc.Macro,

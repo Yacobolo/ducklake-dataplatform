@@ -1,0 +1,105 @@
+package repository
+
+import (
+	"context"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	internaldb "duck-demo/internal/db"
+	"duck-demo/internal/domain"
+)
+
+func setupQueueRepos(t *testing.T) (*OrchestrationEventRepo, *BackfillRepo, *DataAssetRepo) {
+	t.Helper()
+	writeDB, _ := internaldb.OpenTestSQLite(t)
+	return NewOrchestrationEventRepo(writeDB), NewBackfillRepo(writeDB), NewDataAssetRepo(writeDB)
+}
+
+func TestOrchestrationEventRepo_EnqueueClaimAndProcess(t *testing.T) {
+	events, _, assets := setupQueueRepos(t)
+	ctx := context.Background()
+
+	asset, err := assets.Create(ctx, &domain.DataAsset{
+		AssetKey:  "main.ops.events",
+		AssetType: domain.AssetTypeTable,
+		Owner:     "ops",
+		CreatedBy: "admin",
+		IsActive:  true,
+	})
+	require.NoError(t, err)
+
+	assetID := asset.ID
+	event, err := events.Enqueue(ctx, &domain.OrchestrationEvent{
+		EventType:      "UPSTREAM_UPDATE",
+		AssetID:        &assetID,
+		Status:         domain.OrchestrationEventStatusPending,
+		PayloadJSON:    map[string]any{"source": "test"},
+		IdempotencyKey: ptr("event-1"),
+	})
+	require.NoError(t, err)
+
+	claimed, err := events.ClaimNextPending(ctx, time.Now().UTC())
+	require.NoError(t, err)
+	assert.Equal(t, event.ID, claimed.ID)
+	assert.Equal(t, domain.OrchestrationEventStatusProcessing, claimed.Status)
+	assert.Equal(t, 1, claimed.AttemptCount)
+
+	err = events.MarkProcessed(ctx, claimed.ID)
+	require.NoError(t, err)
+
+	status := domain.OrchestrationEventStatusProcessed
+	list, total, err := events.List(ctx, domain.OrchestrationEventFilter{Status: &status, Page: domain.PageRequest{MaxResults: 10}})
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), total)
+	require.Len(t, list, 1)
+	assert.Equal(t, domain.OrchestrationEventStatusProcessed, list[0].Status)
+}
+
+func TestBackfillRepo_CreateAndUpdate(t *testing.T) {
+	_, backfills, assets := setupQueueRepos(t)
+	ctx := context.Background()
+
+	asset, err := assets.Create(ctx, &domain.DataAsset{
+		AssetKey:  "main.finance.daily_revenue",
+		AssetType: domain.AssetTypeTable,
+		Owner:     "finance",
+		CreatedBy: "admin",
+		IsActive:  true,
+	})
+	require.NoError(t, err)
+
+	req, err := backfills.CreateRequest(ctx, &domain.BackfillRequest{
+		AssetID:       asset.ID,
+		PartitionFrom: "2026-03-01",
+		PartitionTo:   "2026-03-03",
+		RequestedBy:   "admin",
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, req.ID)
+
+	slice, err := backfills.CreateSlice(ctx, &domain.BackfillSlice{
+		RequestID:    req.ID,
+		AssetID:      asset.ID,
+		PartitionKey: "2026-03-01",
+	})
+	require.NoError(t, err)
+
+	err = backfills.UpdateSliceStatus(ctx, slice.ID, domain.BackfillStatusRunning, nil, nil)
+	require.NoError(t, err)
+	err = backfills.UpdateSliceStatus(ctx, slice.ID, domain.BackfillStatusSuccess, nil, nil)
+	require.NoError(t, err)
+
+	err = backfills.UpdateRequestStatus(ctx, req.ID, domain.BackfillStatusSuccess, nil)
+	require.NoError(t, err)
+
+	list, total, err := backfills.ListRequests(ctx, domain.BackfillFilter{Page: domain.PageRequest{MaxResults: 10}})
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), total)
+	require.Len(t, list, 1)
+	assert.Equal(t, domain.BackfillStatusSuccess, list[0].Status)
+}
+
+func ptr(s string) *string { return &s }

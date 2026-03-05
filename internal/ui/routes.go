@@ -60,6 +60,11 @@ func MountRoutes(r chi.Router, h *Handler) {
 		r.Post("/pipelines/{pipelineName}/runs/trigger", h.PipelineRunsTrigger)
 		r.Post("/pipelines/runs/{runID}/cancel", h.PipelineRunsCancel)
 
+		r.Get("/assets", h.AssetsList)
+		r.Get("/assets/{assetKey}", h.AssetsDetail)
+		r.Post("/assets/{assetKey}/materialize", h.AssetMaterialize)
+		r.Post("/assets/{assetKey}/backfills", h.AssetBackfillCreate)
+
 		r.Get("/notebooks", h.NotebooksList)
 		r.Get("/notebooks/{notebookID}", h.NotebooksDetail)
 		r.Get("/notebooks/new", h.NotebooksNew)

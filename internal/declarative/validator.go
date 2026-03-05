@@ -366,6 +366,7 @@ func Validate(state *DesiredState) []ValidationError {
 
 	// 21. Validate pipelines.
 	validatePipelines(state.Pipelines, notebookNames, endpointNames, &errs)
+	validateAssets(state.Assets, &errs)
 
 	// 22. Validate macros.
 	validateMacros(state.Macros, &errs)
@@ -1567,6 +1568,49 @@ func validatePipelines(pipelines []PipelineResource, notebookNames, endpointName
 				addErr(errs, path, "duplicate pipeline name %q", p.Name)
 			}
 			seen[p.Name] = true
+		}
+	}
+}
+
+func validateAssets(assets []AssetResource, errs *[]ValidationError) {
+	seen := make(map[string]bool, len(assets))
+	for i, a := range assets {
+		path := fmt.Sprintf("asset[%d]", i)
+		if a.Name != "" {
+			path = fmt.Sprintf("asset[%s]", a.Name)
+		}
+		if strings.TrimSpace(a.Name) == "" {
+			addErr(errs, path, "name is required")
+			continue
+		}
+		if seen[a.Name] {
+			addErr(errs, path, "duplicate asset name %q", a.Name)
+		}
+		seen[a.Name] = true
+
+		for j, dep := range a.Spec.DependsOn {
+			if strings.TrimSpace(dep) == "" {
+				addErr(errs, fmt.Sprintf("%s.depends_on[%d]", path, j), "depends_on entry must not be blank")
+			}
+		}
+
+		for j, check := range a.Spec.CheckDefinitions {
+			cpath := fmt.Sprintf("%s.checks[%d]", path, j)
+			if strings.TrimSpace(check.Name) == "" {
+				addErr(errs, cpath, "check name is required")
+			}
+			if strings.TrimSpace(check.CheckType) == "" {
+				addErr(errs, cpath, "check_type is required")
+			}
+		}
+	}
+
+	for _, a := range assets {
+		path := fmt.Sprintf("asset[%s]", a.Name)
+		for i, dep := range a.Spec.DependsOn {
+			if !seen[dep] {
+				addErr(errs, fmt.Sprintf("%s.depends_on[%d]", path, i), "depends_on references unknown asset %q", dep)
+			}
 		}
 	}
 }

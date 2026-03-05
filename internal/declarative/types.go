@@ -441,6 +441,39 @@ type PipelineJobSpec struct {
 	Order           *int     `yaml:"order,omitempty"`
 }
 
+// AssetDoc declares an asset-centric orchestration node.
+type AssetDoc struct {
+	APIVersion string     `yaml:"apiVersion"`
+	Kind       string     `yaml:"kind"`
+	Metadata   ObjectMeta `yaml:"metadata"`
+	Spec       AssetSpec  `yaml:"spec"`
+}
+
+// AssetSpec holds the configuration for an orchestration asset.
+type AssetSpec struct {
+	AssetType        string            `yaml:"asset_type,omitempty"`
+	Owner            string            `yaml:"owner,omitempty"`
+	Description      string            `yaml:"description,omitempty"`
+	Tags             []string          `yaml:"tags,omitempty"`
+	DependsOn        []string          `yaml:"depends_on,omitempty"`
+	IOProfile        string            `yaml:"io_profile,omitempty"`
+	PartitionType    string            `yaml:"partition_type,omitempty"`
+	AutoMaterialize  bool              `yaml:"auto_materialize,omitempty"`
+	MaxLagSeconds    *int64            `yaml:"max_lag_seconds,omitempty"`
+	CronSchedule     string            `yaml:"cron_schedule,omitempty"`
+	CheckDefinitions []AssetCheckSpec  `yaml:"checks,omitempty"`
+	Properties       map[string]string `yaml:"properties,omitempty"`
+}
+
+// AssetCheckSpec declares an asset check in declarative config.
+type AssetCheckSpec struct {
+	Name      string            `yaml:"name"`
+	CheckType string            `yaml:"check_type"`
+	Severity  string            `yaml:"severity,omitempty"`
+	Enabled   *bool             `yaml:"enabled,omitempty"`
+	Config    map[string]string `yaml:"config,omitempty"`
+}
+
 // === State Containers ===
 
 // DesiredState is the fully-parsed representation of all YAML files.
@@ -465,6 +498,7 @@ type DesiredState struct {
 	ComputeAssignments []ComputeAssignmentSpec
 	APIKeys            []APIKeySpec
 	Notebooks          []NotebookResource
+	Assets             []AssetResource
 	Pipelines          []PipelineResource
 	Models             []ModelResource
 	SemanticModels     []SemanticModelResource
@@ -537,6 +571,12 @@ type NotebookResource struct {
 type PipelineResource struct {
 	Name string
 	Spec PipelineSpec
+}
+
+// AssetResource is an asset with its resolved key.
+type AssetResource struct {
+	Name string
+	Spec AssetSpec
 }
 
 // === SQL Macros ===

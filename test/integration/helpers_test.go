@@ -699,6 +699,8 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 		nil, nil, nil, nil, nil, // storageCredSvc, extLocationSvc, volumeSvc, computeEndpointSvc, apiKeySvc
 		nil, nil, nil, // notebookSvc, sessionSvc, gitRepoSvc
 		nil, // pipelineSvc
+		nil, // assetSvc
+		nil, // assetBackfillSvc
 		nil, // modelSvc
 		nil, // macroSvc
 		nil, // semanticSvc
@@ -835,6 +837,8 @@ func setupLocalExtensionServer(t *testing.T) *testEnv {
 		nil, nil, nil, nil, nil, // storageCredSvc, extLocationSvc, volumeSvc, computeEndpointSvc, apiKeySvc
 		nil, nil, nil, // notebookSvc, sessionSvc, gitRepoSvc
 		nil, // pipelineSvc
+		nil, // assetSvc
+		nil, // assetBackfillSvc
 		nil, // modelSvc
 		nil, // macroSvc
 		nil, // semanticSvc
@@ -1471,6 +1475,8 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		apiKeySvc,
 		notebookSvc, nil, gitRepoSvc,
 		pipelineSvc,
+		nil,      // assetSvc
+		nil,      // assetBackfillSvc
 		modelSvc, // modelSvc
 		macroSvc, // macroSvc
 		semanticSvc,
@@ -1535,6 +1541,8 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		querySvc,
 		viewSvc,
 		pipelineSvc,
+		nil,
+		nil,
 		notebookSvc,
 		nil,
 		macroSvc,
@@ -2220,6 +2228,8 @@ func setupMultiTableLocalServer(t *testing.T) *multiTableTestEnv {
 		nil, nil, nil, nil, nil,
 		nil, nil, nil, // notebookSvc, sessionSvc, gitRepoSvc
 		nil, // pipelineSvc
+		nil, // assetSvc
+		nil, // assetBackfillSvc
 		nil, // modelSvc
 		nil, // macroSvc
 		nil, // semanticSvc

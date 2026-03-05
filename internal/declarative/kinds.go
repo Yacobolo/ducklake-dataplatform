@@ -173,6 +173,7 @@ const (
 	KindNameComputeEndpointList   = "ComputeEndpointList"
 	KindNameComputeAssignmentList = "ComputeAssignmentList"
 	KindNameNotebook              = "Notebook"
+	KindNameAsset                 = "Asset"
 	KindNamePipeline              = "Pipeline"
 	KindNameModel                 = "Model"
 	KindNameSemanticModel         = "SemanticModel"

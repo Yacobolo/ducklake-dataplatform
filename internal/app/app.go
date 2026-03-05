@@ -15,6 +15,7 @@ import (
 	"duck-demo/internal/db/repository"
 	"duck-demo/internal/domain"
 	"duck-demo/internal/engine"
+	assetsvc "duck-demo/internal/service/asset"
 	authsvc "duck-demo/internal/service/auth"
 	"duck-demo/internal/service/catalog"
 	svccompute "duck-demo/internal/service/compute"
@@ -23,6 +24,7 @@ import (
 	"duck-demo/internal/service/macro"
 	svcmodel "duck-demo/internal/service/model"
 	"duck-demo/internal/service/notebook"
+	"duck-demo/internal/service/orchestration"
 	"duck-demo/internal/service/pipeline"
 	"duck-demo/internal/service/query"
 	"duck-demo/internal/service/security"
@@ -70,6 +72,8 @@ type Services struct {
 	SessionManager      *notebook.SessionManager
 	GitService          *notebook.GitService
 	Pipeline            *pipeline.Service
+	Asset               *assetsvc.Service
+	Backfill            *orchestration.BackfillService
 	Model               *svcmodel.Service
 	Macro               *macro.Service
 	Semantic            *semantic.Service
@@ -83,6 +87,7 @@ type App struct {
 	APIKeyRepo    *repository.APIKeyRepo
 	PrincipalRepo *repository.PrincipalRepo
 	Scheduler     *pipeline.Scheduler
+	Reconciler    *orchestration.Reconciler
 }
 
 // New wires all repositories, services, and engine from the provided deps.
@@ -294,15 +299,43 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	// === Pipeline ===
 	pipelineRepo := repository.NewPipelineRepo(deps.WriteDB)
 	pipelineRunRepo := repository.NewPipelineRunRepo(deps.WriteDB)
+	assetRepo := repository.NewDataAssetRepo(deps.WriteDB)
+	assetDepRepo := repository.NewAssetDependencyRepo(deps.WriteDB)
+	assetPartitionRepo := repository.NewAssetPartitionRepo(deps.WriteDB)
+	assetRunRepo := repository.NewAssetRunRepo(deps.WriteDB)
+	assetCheckRepo := repository.NewAssetCheckRepo(deps.WriteDB)
+	orchEventRepo := repository.NewOrchestrationEventRepo(deps.WriteDB)
+	backfillRepo := repository.NewBackfillRepo(deps.WriteDB)
 	notebookProvider := pipeline.NewDBNotebookProvider(notebookRepo)
 	pipelineSvc := pipeline.NewService(
 		pipelineRepo, pipelineRunRepo, auditRepo,
 		notebookProvider, eng, deps.DuckDB,
 		deps.Logger.With("component", "pipeline"),
 	)
+	pipelineSvc.SetAssetOrchestration(assetRepo, assetDepRepo, assetRunRepo)
 	pipelineScheduler := pipeline.NewScheduler(pipelineSvc, pipelineRepo,
 		deps.Logger.With("component", "pipeline-scheduler"))
 	pipelineSvc.SetScheduleReloader(pipelineScheduler)
+
+	assetScheduler := orchestration.NewAssetScheduler(assetRepo, assetDepRepo, assetRunRepo)
+	assetExecutor := orchestration.NewAssetExecutor(
+		assetRunRepo,
+		orchestration.NewAssetRunStateMachine(),
+		orchestration.NewInMemoryIOManager(),
+		orchestration.NewConcurrencyLimiter(16, 2),
+		&noopAssetStepper{},
+	)
+	triggerRouter := orchestration.NewTriggerRouter(orchEventRepo)
+	backfillSvc := orchestration.NewBackfillService(backfillRepo, triggerRouter, auditRepo)
+	reconciler := orchestration.NewReconciler(
+		orchEventRepo,
+		assetRepo,
+		assetRunRepo,
+		assetScheduler,
+		assetExecutor,
+		cfg.FeatureReconcilerShadow,
+	)
+	assetSvc := assetsvc.NewService(assetRepo, assetDepRepo, assetPartitionRepo, assetRunRepo, assetCheckRepo, backfillRepo, orchEventRepo, auditRepo)
 
 	// === Model ===
 	modelRepo := repository.NewModelRepo(deps.WriteDB)
@@ -368,6 +401,8 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 			SessionManager:      sessionMgr,
 			GitService:          gitSvc,
 			Pipeline:            pipelineSvc,
+			Asset:               assetSvc,
+			Backfill:            backfillSvc,
 			Model:               modelSvc,
 			Macro:               macroSvc,
 			Semantic:            semanticSvc,
@@ -376,5 +411,12 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 		APIKeyRepo:    apiKeyRepo,
 		PrincipalRepo: principalRepo,
 		Scheduler:     pipelineScheduler,
+		Reconciler:    reconciler,
 	}, nil
+}
+
+type noopAssetStepper struct{}
+
+func (n *noopAssetStepper) Execute(context.Context, string, orchestration.IOManager) (map[string]any, error) {
+	return map[string]any{"status": "noop"}, nil
 }

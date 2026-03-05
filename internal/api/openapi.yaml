@@ -39,6 +39,8 @@ tags:
     description: SQL notebooks, sessions, jobs, and Git integration.
   - name: Pipelines
     description: Pipeline workflow scheduling and orchestration.
+  - name: Assets
+    description: Asset-centric orchestration, runs, partitions, and backfills.
   - name: Models
     description: Transformation model definitions, runs, DAG management, macros, and freshness.
   - name: Semantic
@@ -375,6 +377,42 @@ components:
       $ref: 'schemas/pipeline.yaml#/PaginatedPipelines'
     PaginatedPipelineRuns:
       $ref: 'schemas/pipeline.yaml#/PaginatedPipelineRuns'
+    Asset:
+      $ref: 'schemas/asset.yaml#/Asset'
+    AssetGraph:
+      $ref: 'schemas/asset.yaml#/AssetGraph'
+    AssetPartition:
+      $ref: 'schemas/asset.yaml#/AssetPartition'
+    AssetRun:
+      $ref: 'schemas/asset.yaml#/AssetRun'
+    AssetMaterialization:
+      $ref: 'schemas/asset.yaml#/AssetMaterialization'
+    AssetCheck:
+      $ref: 'schemas/asset.yaml#/AssetCheck'
+    BackfillRequest:
+      $ref: 'schemas/asset.yaml#/BackfillRequest'
+    BackfillSlice:
+      $ref: 'schemas/asset.yaml#/BackfillSlice'
+    TriggerAssetMaterializationRequest:
+      $ref: 'schemas/asset.yaml#/TriggerAssetMaterializationRequest'
+    AssetTriggerResponse:
+      $ref: 'schemas/asset.yaml#/AssetTriggerResponse'
+    CreateAssetBackfillRequest:
+      $ref: 'schemas/asset.yaml#/CreateAssetBackfillRequest'
+    CreateAssetBackfillResponse:
+      $ref: 'schemas/asset.yaml#/CreateAssetBackfillResponse'
+    PaginatedAssets:
+      $ref: 'schemas/asset.yaml#/PaginatedAssets'
+    PaginatedAssetPartitions:
+      $ref: 'schemas/asset.yaml#/PaginatedAssetPartitions'
+    PaginatedAssetRuns:
+      $ref: 'schemas/asset.yaml#/PaginatedAssetRuns'
+    PaginatedAssetMaterializations:
+      $ref: 'schemas/asset.yaml#/PaginatedAssetMaterializations'
+    AssetCheckList:
+      $ref: 'schemas/asset.yaml#/AssetCheckList'
+    PaginatedBackfillRequests:
+      $ref: 'schemas/asset.yaml#/PaginatedBackfillRequests'
     Model:
       $ref: 'schemas/models.yaml#/Model'
     ModelConfig:
@@ -673,6 +711,25 @@ paths:
     $ref: 'paths/pipeline.yaml#/paths/~1pipelines~1runs~1{runId}~1cancel'
   /pipelines/runs/{runId}/jobs:
     $ref: 'paths/pipeline.yaml#/paths/~1pipelines~1runs~1{runId}~1jobs'
+  # === Assets ===
+  /assets:
+    $ref: 'paths/assets.yaml#/paths/~1assets'
+  /assets/{assetKey}:
+    $ref: 'paths/assets.yaml#/paths/~1assets~1{assetKey}'
+  /assets/{assetKey}/graph:
+    $ref: 'paths/assets.yaml#/paths/~1assets~1{assetKey}~1graph'
+  /assets/{assetKey}/partitions:
+    $ref: 'paths/assets.yaml#/paths/~1assets~1{assetKey}~1partitions'
+  /assets/{assetKey}/runs:
+    $ref: 'paths/assets.yaml#/paths/~1assets~1{assetKey}~1runs'
+  /assets/{assetKey}/materialize:
+    $ref: 'paths/assets.yaml#/paths/~1assets~1{assetKey}~1materialize'
+  /assets/{assetKey}/materializations:
+    $ref: 'paths/assets.yaml#/paths/~1assets~1{assetKey}~1materializations'
+  /assets/{assetKey}/checks:
+    $ref: 'paths/assets.yaml#/paths/~1assets~1{assetKey}~1checks'
+  /assets/{assetKey}/backfills:
+    $ref: 'paths/assets.yaml#/paths/~1assets~1{assetKey}~1backfills'
   # === Models ===
   /models:
     $ref: 'paths/models.yaml#/paths/~1models'

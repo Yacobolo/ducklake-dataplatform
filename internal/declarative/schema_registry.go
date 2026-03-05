@@ -33,6 +33,7 @@ func SchemaDocumentTypes() []SchemaDocumentType {
 		{Kind: KindNameComputeEndpointList, FileName: "compute-endpoint-list", Type: reflect.TypeOf(ComputeEndpointListDoc{})},
 		{Kind: KindNameComputeAssignmentList, FileName: "compute-assignment-list", Type: reflect.TypeOf(ComputeAssignmentListDoc{})},
 		{Kind: KindNameNotebook, FileName: "notebook", Type: reflect.TypeOf(NotebookDoc{})},
+		{Kind: KindNameAsset, FileName: "asset", Type: reflect.TypeOf(AssetDoc{})},
 		{Kind: KindNamePipeline, FileName: "pipeline", Type: reflect.TypeOf(PipelineDoc{})},
 		{Kind: KindNameModel, FileName: "model", Type: reflect.TypeOf(ModelDoc{})},
 		{Kind: KindNameSemanticModel, FileName: "semantic-model", Type: reflect.TypeOf(SemanticModelDoc{})},
