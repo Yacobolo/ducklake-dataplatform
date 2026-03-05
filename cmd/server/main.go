@@ -196,9 +196,7 @@ func run() error {
 		svc.Semantic,
 	)
 
-	// Create strict handler wrapper
-	strictHandler := api.NewStrictHandler(handler, nil)
-	apigenHandler := api.NewAPIGenLegacyAdapter(strictHandler)
+	apigenHandler := api.NewAPIGenStrictAdapter(handler)
 	authHandler := api.NewAuthHTTPHandler(svc.Auth, svc.WebSessionAuth)
 
 	// Setup Chi router

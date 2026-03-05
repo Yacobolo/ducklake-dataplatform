@@ -31,6 +31,9 @@ func TestEmit(t *testing.T) {
 	require.Contains(t, content, "router.MethodFunc(\"GET\", \"/healthz\"")
 	require.Contains(t, content, "func RegisterAPIGenRoutes(router chi.Router, server GenServerInterface)")
 	require.Contains(t, content, "func DispatchAPIGenOperation(operationID string, dispatcher GenOperationDispatcher")
+	require.Contains(t, content, "\"github.com/oapi-codegen/runtime\"")
+	require.Contains(t, content, "type genStrictBridge struct")
+	require.Contains(t, content, "func DispatchAPIGenStrictOperation(operationID string, handler StrictServerInterface")
 }
 
 func TestEmit_UsesIRPathAsIs(t *testing.T) {
@@ -103,4 +106,36 @@ func TestEmit_DispatchParityAndHealthHandling(t *testing.T) {
 	require.Contains(t, content, "w.Header().Set(\"Content-Type\", \"application/json\")")
 	require.Contains(t, content, "_ = json.NewEncoder(w).Encode(map[string]string{\"status\": \"ok\"})")
 	require.NotContains(t, content, "dispatcher.GetHealth(w, r)")
+}
+
+func TestEmit_GeneratesPathAndQueryBinding(t *testing.T) {
+	t.Helper()
+
+	doc := ir.Document{
+		SchemaVersion: "v1",
+		Info:          ir.Info{Title: "t", Version: "1"},
+		Endpoints: []ir.Endpoint{
+			{
+				Method:      "get",
+				Path:        "/groups/{groupId}/members",
+				OperationID: "listGroupMembers",
+				Parameters: []ir.Parameter{
+					{Name: "groupId", In: "path", Required: true, Schema: ir.SchemaRef{Type: "string"}},
+					{Name: "max_results", In: "query", Required: false, Schema: ir.SchemaRef{Type: "integer", Format: "int32"}},
+				},
+				Responses: []ir.Response{{StatusCode: 200, Description: "ok"}},
+			},
+		},
+	}
+
+	b, err := Emit(doc)
+	require.NoError(t, err)
+	content := string(b)
+
+	require.Contains(t, content, "ListGroupMembers(w http.ResponseWriter, r *http.Request, groupId string, params ListGroupMembersParams)")
+	require.Contains(t, content, "runtime.BindStyledParameterWithOptions(\"simple\", \"groupId\", chi.URLParam(r, \"groupId\")")
+	require.Contains(t, content, "runtime.BindQueryParameter(\"form\", true, false, \"max_results\", r.URL.Query(), &params.MaxResults)")
+	require.Contains(t, content, "dispatcher.ListGroupMembers(w, r, groupId, params)")
+	require.Contains(t, content, "response, err := b.handler.ListGroupMembers(r.Context(), request)")
+	require.Contains(t, content, "if err := response.VisitListGroupMembersResponse(w); err != nil")
 }
