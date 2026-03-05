@@ -6,6 +6,8 @@ Catalog and metadata endpoints
 
 ## `GET /catalogs`
 
+list Catalogs
+
 - Operation ID: `listCatalogs`
 
 ### Query Parameters
@@ -26,6 +28,8 @@ Catalog and metadata endpoints
 
 ## `POST /catalogs`
 
+register Catalog
+
 - Operation ID: `registerCatalog`
 
 ### Request Body
@@ -43,6 +47,8 @@ Catalog and metadata endpoints
 | `500` | Internal Server Error |
 
 ## `GET /catalogs/{catalogName}`
+
+get Catalog Registration
 
 - Operation ID: `getCatalogRegistration`
 
@@ -63,6 +69,8 @@ Catalog and metadata endpoints
 | `500` | Internal Server Error |
 
 ## `PATCH /catalogs/{catalogName}`
+
+update Catalog Registration
 
 - Operation ID: `updateCatalogRegistration`
 
@@ -88,6 +96,8 @@ Catalog and metadata endpoints
 
 ## `DELETE /catalogs/{catalogName}`
 
+delete Catalog Registration
+
 - Operation ID: `deleteCatalogRegistration`
 
 ### Path Parameters
@@ -106,6 +116,8 @@ Catalog and metadata endpoints
 | `500` | Internal Server Error |
 
 ## `GET /catalogs/{catalogName}/info`
+
+get Catalog
 
 - Operation ID: `getCatalog`
 
@@ -126,6 +138,8 @@ Catalog and metadata endpoints
 | `500` | Internal Server Error |
 
 ## `GET /catalogs/{catalogName}/schemas`
+
+list Schemas
 
 - Operation ID: `listSchemas`
 
@@ -154,6 +168,8 @@ Catalog and metadata endpoints
 
 ## `POST /catalogs/{catalogName}/schemas`
 
+create Schema
+
 - Operation ID: `createSchema`
 
 ### Path Parameters
@@ -178,6 +194,8 @@ Catalog and metadata endpoints
 
 ## `GET /catalogs/{catalogName}/schemas/{schemaName}`
 
+get Schema
+
 - Operation ID: `getSchema`
 
 ### Path Parameters
@@ -198,6 +216,8 @@ Catalog and metadata endpoints
 | `500` | Internal Server Error |
 
 ## `PATCH /catalogs/{catalogName}/schemas/{schemaName}`
+
+update Schema
 
 - Operation ID: `updateSchema`
 
@@ -224,6 +244,8 @@ Catalog and metadata endpoints
 
 ## `DELETE /catalogs/{catalogName}/schemas/{schemaName}`
 
+delete Schema
+
 - Operation ID: `deleteSchema`
 
 ### Path Parameters
@@ -249,6 +271,8 @@ Catalog and metadata endpoints
 | `500` | Internal Server Error |
 
 ## `GET /catalogs/{catalogName}/schemas/{schemaName}/tables`
+
+list Tables
 
 - Operation ID: `listTables`
 
@@ -278,6 +302,8 @@ Catalog and metadata endpoints
 
 ## `POST /catalogs/{catalogName}/schemas/{schemaName}/tables`
 
+create Table
+
 - Operation ID: `createTable`
 
 ### Path Parameters
@@ -303,6 +329,8 @@ Catalog and metadata endpoints
 
 ## `GET /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}`
 
+get Table
+
 - Operation ID: `getTable`
 
 ### Path Parameters
@@ -324,6 +352,8 @@ Catalog and metadata endpoints
 | `500` | Internal Server Error |
 
 ## `PATCH /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}`
+
+update Table
 
 - Operation ID: `updateTable`
 
@@ -351,6 +381,8 @@ Catalog and metadata endpoints
 
 ## `DELETE /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}`
 
+delete Table
+
 - Operation ID: `deleteTable`
 
 ### Path Parameters
@@ -371,6 +403,8 @@ Catalog and metadata endpoints
 | `500` | Internal Server Error |
 
 ## `GET /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns`
+
+list Table Columns
 
 - Operation ID: `listTableColumns`
 
@@ -401,6 +435,8 @@ Catalog and metadata endpoints
 
 ## `PATCH /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns/{columnName}`
 
+update Column
+
 - Operation ID: `updateColumn`
 
 ### Path Parameters
@@ -428,6 +464,8 @@ Catalog and metadata endpoints
 
 ## `POST /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/commit`
 
+commit Table Ingestion
+
 - Operation ID: `commitTableIngestion`
 
 ### Path Parameters
@@ -453,6 +491,8 @@ Catalog and metadata endpoints
 | `500` | Internal Server Error |
 
 ## `POST /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/load`
+
+load Table External Files
 
 - Operation ID: `loadTableExternalFiles`
 
@@ -480,6 +520,8 @@ Catalog and metadata endpoints
 
 ## `POST /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url`
 
+create Upload Url
+
 - Operation ID: `createUploadUrl`
 
 ### Path Parameters
@@ -506,6 +548,8 @@ Catalog and metadata endpoints
 
 ## `POST /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/profile`
 
+profile Table
+
 - Operation ID: `profileTable`
 
 ### Path Parameters
@@ -526,6 +570,8 @@ Catalog and metadata endpoints
 | `500` | Internal Server Error |
 
 ## `GET /catalogs/{catalogName}/schemas/{schemaName}/views`
+
+list Views
 
 - Operation ID: `listViews`
 
@@ -555,6 +601,8 @@ Catalog and metadata endpoints
 
 ## `POST /catalogs/{catalogName}/schemas/{schemaName}/views`
 
+create View
+
 - Operation ID: `createView`
 
 ### Path Parameters
@@ -580,6 +628,8 @@ Catalog and metadata endpoints
 
 ## `GET /catalogs/{catalogName}/schemas/{schemaName}/views/{viewName}`
 
+get View
+
 - Operation ID: `getView`
 
 ### Path Parameters
@@ -601,6 +651,8 @@ Catalog and metadata endpoints
 | `500` | Internal Server Error |
 
 ## `PATCH /catalogs/{catalogName}/schemas/{schemaName}/views/{viewName}`
+
+update View
 
 - Operation ID: `updateView`
 
@@ -628,6 +680,8 @@ Catalog and metadata endpoints
 
 ## `DELETE /catalogs/{catalogName}/schemas/{schemaName}/views/{viewName}`
 
+delete View
+
 - Operation ID: `deleteView`
 
 ### Path Parameters
@@ -648,6 +702,8 @@ Catalog and metadata endpoints
 | `500` | Internal Server Error |
 
 ## `GET /catalogs/{catalogName}/schemas/{schemaName}/volumes`
+
+list Volumes
 
 - Operation ID: `listVolumes`
 
@@ -677,6 +733,8 @@ Catalog and metadata endpoints
 
 ## `POST /catalogs/{catalogName}/schemas/{schemaName}/volumes`
 
+create Volume
+
 - Operation ID: `createVolume`
 
 ### Path Parameters
@@ -702,6 +760,8 @@ Catalog and metadata endpoints
 
 ## `GET /catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}`
 
+get Volume
+
 - Operation ID: `getVolume`
 
 ### Path Parameters
@@ -723,6 +783,8 @@ Catalog and metadata endpoints
 | `500` | Internal Server Error |
 
 ## `PATCH /catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}`
+
+update Volume
 
 - Operation ID: `updateVolume`
 
@@ -750,6 +812,8 @@ Catalog and metadata endpoints
 
 ## `DELETE /catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}`
 
+delete Volume
+
 - Operation ID: `deleteVolume`
 
 ### Path Parameters
@@ -770,6 +834,8 @@ Catalog and metadata endpoints
 | `500` | Internal Server Error |
 
 ## `POST /catalogs/{catalogName}/set-default`
+
+set Default Catalog
 
 - Operation ID: `setDefaultCatalog`
 

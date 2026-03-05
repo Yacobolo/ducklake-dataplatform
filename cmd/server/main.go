@@ -198,6 +198,7 @@ func run() error {
 
 	// Create strict handler wrapper
 	strictHandler := api.NewStrictHandler(handler, nil)
+	apigenHandler := api.NewAPIGenLegacyAdapter(strictHandler)
 	authHandler := api.NewAuthHTTPHandler(svc.Auth, svc.WebSessionAuth)
 
 	// Setup Chi router
@@ -334,7 +335,7 @@ func run() error {
 		r.Put("/auth/provider/oidc", authHandler.UpsertOIDCProvider)
 		r.Post("/auth/sessions/revoke-all", authHandler.RevokeAllWebSessions)
 		r.Get("/auth/sessions/stats", authHandler.GetWebSessionStats)
-		api.HandlerFromMux(strictHandler, r)
+		api.RegisterAPIGenRoutes(r, apigenHandler)
 	})
 
 	uiHandler := ui.NewHandler(

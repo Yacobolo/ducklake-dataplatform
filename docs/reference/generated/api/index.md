@@ -8,7 +8,7 @@ This section is generated from the OpenAPI artifact (`api/gen/openapi.yaml` by d
 
 ## Endpoint Groups
 
-- [api](./endpoints/api) (11 operations)
+- [api](./endpoints/api) (6 operations)
 - [catalogs](./endpoints/catalogs) (33 operations)
 - [compute](./endpoints/compute) (9 operations)
 - [governance](./endpoints/governance) (6 operations)
@@ -19,7 +19,7 @@ This section is generated from the OpenAPI artifact (`api/gen/openapi.yaml` by d
 - [notebooks](./endpoints/notebooks) (16 operations)
 - [observability](./endpoints/observability) (3 operations)
 - [pipelines](./endpoints/pipelines) (14 operations)
-- [query](./endpoints/query) (1 operations)
+- [query](./endpoints/query) (6 operations)
 - [security](./endpoints/security) (29 operations)
 - [semantic](./endpoints/semantic) (20 operations)
 - [storage](./endpoints/storage) (10 operations)
@@ -42,6 +42,7 @@ This section is generated from the OpenAPI artifact (`api/gen/openapi.yaml` by d
 - [CreateGrantRequest](./schemas/creategrantrequest)
 - [CreateGroupMemberRequest](./schemas/creategroupmemberrequest)
 - [CreateGroupRequest](./schemas/creategrouprequest)
+- [CreateModelRequest](./schemas/createmodelrequest)
 - [CreatePrincipalRequest](./schemas/createprincipalrequest)
 - [CreateRowFilterRequest](./schemas/createrowfilterrequest)
 - [CreateSchemaRequest](./schemas/createschemarequest)
@@ -84,6 +85,7 @@ This section is generated from the OpenAPI artifact (`api/gen/openapi.yaml` by d
 - [SchemaDetail](./schemas/schemadetail)
 - [SetDefaultCatalogRequest](./schemas/setdefaultcatalogrequest)
 - [StorageCredential](./schemas/storagecredential)
+- [SubmitQueryRequest](./schemas/submitqueryrequest)
 - [TableDetail](./schemas/tabledetail)
 - [TableStatistics](./schemas/tablestatistics)
 - [UpdateCatalogRegistrationRequest](./schemas/updatecatalogregistrationrequest)

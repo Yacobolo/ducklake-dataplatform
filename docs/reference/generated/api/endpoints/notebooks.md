@@ -6,6 +6,8 @@ Notebook authoring and execution
 
 ## `GET /notebooks`
 
+list Notebooks
+
 - Operation ID: `listNotebooks`
 
 ### Query Parameters
@@ -27,6 +29,8 @@ Notebook authoring and execution
 
 ## `POST /notebooks`
 
+create Notebook
+
 - Operation ID: `createNotebook`
 
 ### Request Body
@@ -44,6 +48,8 @@ Notebook authoring and execution
 | `500` | Internal Server Error |
 
 ## `GET /notebooks/{notebookId}`
+
+get Notebook
 
 - Operation ID: `getNotebook`
 
@@ -64,6 +70,8 @@ Notebook authoring and execution
 | `500` | Internal Server Error |
 
 ## `PATCH /notebooks/{notebookId}`
+
+update Notebook
 
 - Operation ID: `updateNotebook`
 
@@ -89,6 +97,8 @@ Notebook authoring and execution
 
 ## `DELETE /notebooks/{notebookId}`
 
+delete Notebook
+
 - Operation ID: `deleteNotebook`
 
 ### Path Parameters
@@ -107,6 +117,8 @@ Notebook authoring and execution
 | `500` | Internal Server Error |
 
 ## `POST /notebooks/{notebookId}/cells`
+
+create Cell
 
 - Operation ID: `createCell`
 
@@ -132,6 +144,8 @@ Notebook authoring and execution
 
 ## `POST /notebooks/{notebookId}/cells/reorder`
 
+reorder Cells
+
 - Operation ID: `reorderCells`
 
 ### Path Parameters
@@ -155,6 +169,8 @@ Notebook authoring and execution
 | `500` | Internal Server Error |
 
 ## `PATCH /notebooks/{notebookId}/cells/{cellId}`
+
+update Cell
 
 - Operation ID: `updateCell`
 
@@ -181,6 +197,8 @@ Notebook authoring and execution
 
 ## `DELETE /notebooks/{notebookId}/cells/{cellId}`
 
+delete Cell
+
 - Operation ID: `deleteCell`
 
 ### Path Parameters
@@ -200,6 +218,8 @@ Notebook authoring and execution
 | `500` | Internal Server Error |
 
 ## `GET /notebooks/{notebookId}/jobs`
+
+list Notebook Jobs
 
 - Operation ID: `listNotebookJobs`
 
@@ -228,6 +248,8 @@ Notebook authoring and execution
 
 ## `GET /notebooks/{notebookId}/jobs/{jobId}`
 
+get Notebook Job
+
 - Operation ID: `getNotebookJob`
 
 ### Path Parameters
@@ -249,6 +271,8 @@ Notebook authoring and execution
 
 ## `POST /notebooks/{notebookId}/sessions`
 
+create Notebook Session
+
 - Operation ID: `createNotebookSession`
 
 ### Path Parameters
@@ -267,6 +291,8 @@ Notebook authoring and execution
 | `500` | Internal Server Error |
 
 ## `DELETE /notebooks/{notebookId}/sessions/{sessionId}`
+
+close Notebook Session
 
 - Operation ID: `closeNotebookSession`
 
@@ -287,6 +313,8 @@ Notebook authoring and execution
 | `500` | Internal Server Error |
 
 ## `POST /notebooks/{notebookId}/sessions/{sessionId}/execute/{cellId}`
+
+execute Cell
 
 - Operation ID: `executeCell`
 
@@ -309,6 +337,8 @@ Notebook authoring and execution
 
 ## `POST /notebooks/{notebookId}/sessions/{sessionId}/run-all`
 
+run All Cells
+
 - Operation ID: `runAllCells`
 
 ### Path Parameters
@@ -328,6 +358,8 @@ Notebook authoring and execution
 | `500` | Internal Server Error |
 
 ## `POST /notebooks/{notebookId}/sessions/{sessionId}/run-all-async`
+
+run All Cells Async
 
 - Operation ID: `runAllCellsAsync`
 

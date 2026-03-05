@@ -2179,7 +2179,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenericRequest'
+              $ref: '#/components/schemas/CreateModelRequest'
   /models/dag:
     get:
       operationId: getModelDAG
@@ -3036,7 +3036,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenericRequest'
+              $ref: '#/components/schemas/SubmitQueryRequest'
   /queries/{queryId}:
     get:
       operationId: getQuery
@@ -3108,6 +3108,23 @@ paths:
                   format: int32
                 page_token:
                   type: string
+  /query:
+    post:
+      operationId: executeQuery
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueryRequest'
   /query-history:
     get:
       operationId: listQueryHistory
@@ -3904,23 +3921,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/GenericRequest'
-  /v1/query:
-    post:
-      operationId: executeQuery
-      parameters: []
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/QueryResponse'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/QueryRequest'
 components:
   schemas:
     APIKeyInfo:
@@ -4208,6 +4208,17 @@ components:
           type: string
         description:
           type: string
+    CreateModelRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        payload:
+          type: object
+          additionalProperties:
+            type: string
     CreatePrincipalRequest:
       type: object
       required:
@@ -4238,6 +4249,8 @@ components:
         name:
           type: string
         comment:
+          type: string
+        location_name:
           type: string
         properties:
           type: object
@@ -4799,6 +4812,15 @@ components:
         created_at:
           type: string
         updated_at:
+          type: string
+    SubmitQueryRequest:
+      type: object
+      required:
+        - sql
+      properties:
+        sql:
+          type: string
+        request_id:
           type: string
     TableDetail:
       type: object

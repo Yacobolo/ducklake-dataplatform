@@ -6,6 +6,8 @@ Manifest and data-access endpoints
 
 ## `POST /manifest`
 
+create Manifest
+
 - Operation ID: `createManifest`
 
 ### Request Body

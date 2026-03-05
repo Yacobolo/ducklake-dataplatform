@@ -6,6 +6,8 @@ Security and access-control endpoints
 
 ## `GET /api-keys`
 
+list APIKeys
+
 - Operation ID: `listAPIKeys`
 
 ### Query Parameters
@@ -27,6 +29,8 @@ Security and access-control endpoints
 
 ## `POST /api-keys`
 
+create APIKey
+
 - Operation ID: `createAPIKey`
 
 ### Request Body
@@ -45,6 +49,8 @@ Security and access-control endpoints
 
 ## `POST /api-keys/cleanup`
 
+cleanup Expired APIKeys
+
 - Operation ID: `cleanupExpiredAPIKeys`
 
 ### Responses
@@ -57,6 +63,8 @@ Security and access-control endpoints
 | `500` | Internal Server Error |
 
 ## `DELETE /api-keys/{apiKeyId}`
+
+delete APIKey
 
 - Operation ID: `deleteAPIKey`
 
@@ -77,6 +85,8 @@ Security and access-control endpoints
 
 ## `DELETE /column-masks/{columnMaskId}`
 
+delete Column Mask
+
 - Operation ID: `deleteColumnMask`
 
 ### Path Parameters
@@ -95,6 +105,8 @@ Security and access-control endpoints
 | `500` | Internal Server Error |
 
 ## `POST /column-masks/{columnMaskId}/bindings`
+
+bind Column Mask
 
 - Operation ID: `bindColumnMask`
 
@@ -119,6 +131,8 @@ Security and access-control endpoints
 | `500` | Internal Server Error |
 
 ## `DELETE /column-masks/{columnMaskId}/bindings`
+
+unbind Column Mask
 
 - Operation ID: `unbindColumnMask`
 
@@ -146,6 +160,8 @@ Security and access-control endpoints
 
 ## `GET /grants`
 
+list Grants
+
 - Operation ID: `listGrants`
 
 ### Query Parameters
@@ -170,6 +186,8 @@ Security and access-control endpoints
 
 ## `POST /grants`
 
+create Grant
+
 - Operation ID: `createGrant`
 
 ### Request Body
@@ -187,6 +205,8 @@ Security and access-control endpoints
 | `500` | Internal Server Error |
 
 ## `DELETE /grants/{grantId}`
+
+delete Grant
 
 - Operation ID: `deleteGrant`
 
@@ -206,6 +226,8 @@ Security and access-control endpoints
 | `500` | Internal Server Error |
 
 ## `GET /groups`
+
+list Groups
 
 - Operation ID: `listGroups`
 
@@ -227,6 +249,8 @@ Security and access-control endpoints
 
 ## `POST /groups`
 
+create Group
+
 - Operation ID: `createGroup`
 
 ### Request Body
@@ -244,6 +268,8 @@ Security and access-control endpoints
 | `500` | Internal Server Error |
 
 ## `GET /groups/{groupId}`
+
+get Group
 
 - Operation ID: `getGroup`
 
@@ -265,6 +291,8 @@ Security and access-control endpoints
 
 ## `DELETE /groups/{groupId}`
 
+delete Group
+
 - Operation ID: `deleteGroup`
 
 ### Path Parameters
@@ -283,6 +311,8 @@ Security and access-control endpoints
 | `500` | Internal Server Error |
 
 ## `GET /groups/{groupId}/members`
+
+list Group Members
 
 - Operation ID: `listGroupMembers`
 
@@ -311,6 +341,8 @@ Security and access-control endpoints
 
 ## `POST /groups/{groupId}/members`
 
+create Group Member
+
 - Operation ID: `createGroupMember`
 
 ### Path Parameters
@@ -334,6 +366,8 @@ Security and access-control endpoints
 | `500` | Internal Server Error |
 
 ## `DELETE /groups/{groupId}/members`
+
+delete Group Member
 
 - Operation ID: `deleteGroupMember`
 
@@ -361,6 +395,8 @@ Security and access-control endpoints
 
 ## `GET /principals`
 
+list Principals
+
 - Operation ID: `listPrincipals`
 
 ### Query Parameters
@@ -381,6 +417,8 @@ Security and access-control endpoints
 
 ## `POST /principals`
 
+create Principal
+
 - Operation ID: `createPrincipal`
 
 ### Request Body
@@ -398,6 +436,8 @@ Security and access-control endpoints
 | `500` | Internal Server Error |
 
 ## `GET /principals/{principalId}`
+
+get Principal
 
 - Operation ID: `getPrincipal`
 
@@ -419,6 +459,8 @@ Security and access-control endpoints
 
 ## `DELETE /principals/{principalId}`
 
+delete Principal
+
 - Operation ID: `deletePrincipal`
 
 ### Path Parameters
@@ -437,6 +479,8 @@ Security and access-control endpoints
 | `500` | Internal Server Error |
 
 ## `PUT /principals/{principalId}/admin`
+
+update Principal Admin
 
 - Operation ID: `updatePrincipalAdmin`
 
@@ -462,6 +506,8 @@ Security and access-control endpoints
 
 ## `DELETE /row-filters/{rowFilterId}`
 
+delete Row Filter
+
 - Operation ID: `deleteRowFilter`
 
 ### Path Parameters
@@ -480,6 +526,8 @@ Security and access-control endpoints
 | `500` | Internal Server Error |
 
 ## `POST /row-filters/{rowFilterId}/bindings`
+
+bind Row Filter
 
 - Operation ID: `bindRowFilter`
 
@@ -504,6 +552,8 @@ Security and access-control endpoints
 | `500` | Internal Server Error |
 
 ## `DELETE /row-filters/{rowFilterId}/bindings`
+
+unbind Row Filter
 
 - Operation ID: `unbindRowFilter`
 
@@ -530,6 +580,8 @@ Security and access-control endpoints
 | `500` | Internal Server Error |
 
 ## `GET /tables/{tableId}/column-masks`
+
+list Column Masks
 
 - Operation ID: `listColumnMasks`
 
@@ -558,6 +610,8 @@ Security and access-control endpoints
 
 ## `POST /tables/{tableId}/column-masks`
 
+create Column Mask
+
 - Operation ID: `createColumnMask`
 
 ### Path Parameters
@@ -581,6 +635,8 @@ Security and access-control endpoints
 | `500` | Internal Server Error |
 
 ## `GET /tables/{tableId}/row-filters`
+
+list Row Filters
 
 - Operation ID: `listRowFilters`
 
@@ -608,6 +664,8 @@ Security and access-control endpoints
 | `500` | Internal Server Error |
 
 ## `POST /tables/{tableId}/row-filters`
+
+create Row Filter
 
 - Operation ID: `createRowFilter`
 

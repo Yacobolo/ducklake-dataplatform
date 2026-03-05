@@ -6,6 +6,8 @@ Tags and classifications
 
 ## `GET /classifications`
 
+list Classifications
+
 - Operation ID: `listClassifications`
 
 ### Query Parameters
@@ -26,6 +28,8 @@ Tags and classifications
 
 ## `DELETE /tag-assignments/{assignmentId}`
 
+delete Tag Assignment
+
 - Operation ID: `deleteTagAssignment`
 
 ### Path Parameters
@@ -44,6 +48,8 @@ Tags and classifications
 | `500` | Internal Server Error |
 
 ## `GET /tags`
+
+list Tags
 
 - Operation ID: `listTags`
 
@@ -65,6 +71,8 @@ Tags and classifications
 
 ## `POST /tags`
 
+create Tag
+
 - Operation ID: `createTag`
 
 ### Request Body
@@ -82,6 +90,8 @@ Tags and classifications
 | `500` | Internal Server Error |
 
 ## `DELETE /tags/{tagId}`
+
+delete Tag
 
 - Operation ID: `deleteTag`
 
@@ -101,6 +111,8 @@ Tags and classifications
 | `500` | Internal Server Error |
 
 ## `POST /tags/{tagId}/assignments`
+
+create Tag Assignment
 
 - Operation ID: `createTagAssignment`
 

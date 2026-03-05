@@ -6,6 +6,8 @@ Audit and query observability endpoints
 
 ## `GET /audit-logs`
 
+list Audit Logs
+
 - Operation ID: `listAuditLogs`
 
 ### Query Parameters
@@ -29,6 +31,8 @@ Audit and query observability endpoints
 
 ## `GET /catalogs/{catalogName}/metastore/summary`
 
+get Metastore Summary
+
 - Operation ID: `getMetastoreSummary`
 
 ### Path Parameters
@@ -48,6 +52,8 @@ Audit and query observability endpoints
 | `500` | Internal Server Error |
 
 ## `GET /query-history`
+
+list Query History
 
 - Operation ID: `listQueryHistory`
 

@@ -6,6 +6,8 @@ Compute endpoint management
 
 ## `GET /compute-endpoints`
 
+list Compute Endpoints
+
 - Operation ID: `listComputeEndpoints`
 
 ### Query Parameters
@@ -26,6 +28,8 @@ Compute endpoint management
 
 ## `POST /compute-endpoints`
 
+create Compute Endpoint
+
 - Operation ID: `createComputeEndpoint`
 
 ### Request Body
@@ -43,6 +47,8 @@ Compute endpoint management
 | `500` | Internal Server Error |
 
 ## `GET /compute-endpoints/{endpointName}`
+
+get Compute Endpoint
 
 - Operation ID: `getComputeEndpoint`
 
@@ -63,6 +69,8 @@ Compute endpoint management
 | `500` | Internal Server Error |
 
 ## `PATCH /compute-endpoints/{endpointName}`
+
+update Compute Endpoint
 
 - Operation ID: `updateComputeEndpoint`
 
@@ -88,6 +96,8 @@ Compute endpoint management
 
 ## `DELETE /compute-endpoints/{endpointName}`
 
+delete Compute Endpoint
+
 - Operation ID: `deleteComputeEndpoint`
 
 ### Path Parameters
@@ -106,6 +116,8 @@ Compute endpoint management
 | `500` | Internal Server Error |
 
 ## `GET /compute-endpoints/{endpointName}/assignments`
+
+list Compute Assignments
 
 - Operation ID: `listComputeAssignments`
 
@@ -134,6 +146,8 @@ Compute endpoint management
 
 ## `POST /compute-endpoints/{endpointName}/assignments`
 
+create Compute Assignment
+
 - Operation ID: `createComputeAssignment`
 
 ### Path Parameters
@@ -158,6 +172,8 @@ Compute endpoint management
 
 ## `DELETE /compute-endpoints/{endpointName}/assignments/{assignmentId}`
 
+delete Compute Assignment
+
 - Operation ID: `deleteComputeAssignment`
 
 ### Path Parameters
@@ -177,6 +193,8 @@ Compute endpoint management
 | `500` | Internal Server Error |
 
 ## `GET /compute-endpoints/{endpointName}/health`
+
+get Compute Endpoint Health
 
 - Operation ID: `getComputeEndpointHealth`
 

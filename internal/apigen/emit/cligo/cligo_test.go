@@ -13,8 +13,32 @@ func TestEmit(t *testing.T) {
 	doc := ir.Document{
 		SchemaVersion: "v1",
 		Info:          ir.Info{Title: "t", Version: "1"},
+		Schemas: map[string]ir.Schema{
+			"CreateQueryRequest": {
+				Type: "object",
+				Properties: map[string]ir.SchemaProperty{
+					"sql": {Schema: ir.SchemaRef{Type: "string"}},
+				},
+				Required: []string{"sql"},
+			},
+		},
 		Endpoints: []ir.Endpoint{
-			{Method: "post", Path: "/v1/query", OperationID: "executeQuery", Tags: []string{"query"}, Responses: []ir.Response{{StatusCode: 200, Description: "ok"}}},
+			{
+				Method:      "post",
+				Path:        "/v1/query",
+				OperationID: "executeQuery",
+				Summary:     "Execute a query",
+				Description: "Runs SQL against the default catalog",
+				Tags:        []string{"query"},
+				Parameters: []ir.Parameter{
+					{Name: "catalogName", In: "path", Required: true, Schema: ir.SchemaRef{Type: "string"}},
+				},
+				RequestBody: &ir.RequestBody{Schema: ir.SchemaRef{Ref: "CreateQueryRequest"}},
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok"}},
+				Extensions: map[string]any{
+					"x-cli-command": "query execute",
+				},
+			},
 		},
 	}
 
@@ -22,4 +46,9 @@ func TestEmit(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, string(b), "APIGeneratedEndpoints")
 	require.Contains(t, string(b), "executeQuery")
+	require.Contains(t, string(b), "Summary: \"Execute a query\"")
+	require.Contains(t, string(b), "Description: \"Runs SQL against the default catalog\"")
+	require.Contains(t, string(b), "Parameters: []APIGenParam{{Name: \"catalogName\"")
+	require.Contains(t, string(b), "BodyFields: []APIGenField{{Name: \"sql\"")
+	require.Contains(t, string(b), "CLICommand: \"query execute\"")
 }

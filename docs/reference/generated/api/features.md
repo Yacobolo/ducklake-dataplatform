@@ -6,7 +6,7 @@ This page is generated from OpenAPI tags and operations.
 
 | Feature | What you can do | API coverage |
 | --- | --- | --- |
-| [api](./endpoints/api) | General API endpoints | 11 operations |
+| [api](./endpoints/api) | General API endpoints | 6 operations |
 | [catalogs](./endpoints/catalogs) | Catalog and metadata endpoints | 33 operations |
 | [compute](./endpoints/compute) | Compute endpoint management | 9 operations |
 | [governance](./endpoints/governance) | Tags and classifications | 6 operations |
@@ -17,7 +17,7 @@ This page is generated from OpenAPI tags and operations.
 | [notebooks](./endpoints/notebooks) | Notebook authoring and execution | 16 operations |
 | [observability](./endpoints/observability) | Audit and query observability endpoints | 3 operations |
 | [pipelines](./endpoints/pipelines) | Pipeline orchestration endpoints | 14 operations |
-| [query](./endpoints/query) | Query execution endpoints | 1 operations |
+| [query](./endpoints/query) | Query execution endpoints | 6 operations |
 | [security](./endpoints/security) | Security and access-control endpoints | 29 operations |
 | [semantic](./endpoints/semantic) | Semantic models and metrics | 20 operations |
 | [storage](./endpoints/storage) | Storage credentials and external locations | 10 operations |

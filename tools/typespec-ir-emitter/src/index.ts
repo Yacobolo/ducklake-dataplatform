@@ -162,11 +162,13 @@ function appendOperation(
   const authzMetadata = operationAuthz(operation.name);
   const isAuthenticated = authzMetadata.mode !== "public";
   const operationDoc = cleanText(getDoc(context.program, operation));
+  const cliCommand = cliCommandForOperation(operation.name);
 
   const endpoint: IREndpoint = {
     method: verb.toLowerCase(),
     path: routePath,
     operation_id: operation.name,
+    summary: humanizeOperationName(operation.name),
     ...(operationDoc ? { description: operationDoc } : {}),
     tags: tagsForRoute(routePath),
     responses: buildResponses(verb.toLowerCase(), routePath, operation.name, responseSchema),
@@ -184,11 +186,16 @@ function appendOperation(
     };
   }
 
+  const extensions: Record<string, unknown> = {};
+  if (cliCommand !== "") {
+    extensions["x-cli-command"] = cliCommand;
+  }
   if (isAuthenticated) {
-    endpoint.extensions = {
-      security: [{ ApiKeyAuth: [] }, { BearerAuth: [] }],
-      "x-authz": authzMetadata,
-    };
+    extensions.security = [{ ApiKeyAuth: [] }, { BearerAuth: [] }];
+    extensions["x-authz"] = authzMetadata;
+  }
+  if (Object.keys(extensions).length > 0) {
+    endpoint.extensions = extensions;
   }
 
   endpoints.push(endpoint);
@@ -461,7 +468,7 @@ function tagsForRoute(routePath: string): string[] {
   ) {
     return ["security"];
   }
-  if (routePath.startsWith("/v1/query")) {
+  if (routePath === "/query" || routePath.startsWith("/queries")) {
     return ["query"];
   }
   return ["api"];
@@ -587,6 +594,206 @@ function ensureModelSchema(model: Model, schemas: Record<string, IRSchema>): voi
     required: required.length > 0 ? required : undefined,
   };
 }
+
+function humanizeOperationName(operationName: string): string {
+  return operationName
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/_/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function cliCommandForOperation(operationName: string): string {
+  return legacyCLICommands[operationName] ?? "";
+}
+
+const legacyCLICommands: Record<string, string> = {
+  bindColumnMask: "security column-masks bind",
+  bindRowFilter: "security row-filters bind",
+  cancelModelRun: "models cancel cancel-model-run",
+  cancelPipelineRun: "pipelines runs cancel",
+  cancelQuery: "query cancel",
+  checkMetricFreshness: "semantic freshness check-metric-freshness",
+  checkModelFreshness: "models freshness check-model-freshness",
+  checkSourceFreshness: "models freshness check-source-freshness",
+  cleanupExpiredAPIKeys: "security api-keys cleanup",
+  closeNotebookSession: "notebooks sessions close",
+  commitTableIngestion: "ingestion commit",
+  createAPIKey: "security api-keys create",
+  createCell: "notebooks cells create",
+  createColumnMask: "security column-masks create",
+  createComputeAssignment: "compute assignments create",
+  createComputeEndpoint: "compute endpoints create",
+  createExternalLocation: "storage locations create",
+  createGitRepo: "notebooks git-repos create",
+  createGrant: "security grants create",
+  createGroup: "security groups create",
+  createGroupMember: "security members add",
+  createMacro: "models macros create",
+  createManifest: "manifest create",
+  createModel: "models models create",
+  createModelTest: "models tests create",
+  createNotebook: "notebooks notebooks create",
+  createNotebookSession: "notebooks sessions create",
+  createPipeline: "pipelines pipelines create",
+  createPipelineJob: "pipelines jobs create",
+  createPrincipal: "security principals create",
+  createRowFilter: "security row-filters create",
+  createSchema: "catalog schemas create",
+  createSemanticMetric: "semantic metrics create",
+  createSemanticModel: "semantic semantic-models create",
+  createSemanticPreAggregation: "semantic pre-aggregations create",
+  createSemanticRelationship: "semantic semantic-relationships create",
+  createStorageCredential: "storage credentials create",
+  createTable: "catalog tables create",
+  createTag: "governance tags create",
+  createTagAssignment: "governance tag-assignments create",
+  createUploadUrl: "ingestion upload-url",
+  createView: "catalog views create",
+  createVolume: "catalog volumes create",
+  deleteAPIKey: "security api-keys delete",
+  deleteCatalogRegistration: "catalog delete-registration",
+  deleteCell: "notebooks cells delete",
+  deleteColumnMask: "security column-masks delete",
+  deleteComputeAssignment: "compute assignments delete",
+  deleteComputeEndpoint: "compute endpoints delete",
+  deleteExternalLocation: "storage locations delete",
+  deleteGitRepo: "notebooks git-repos delete",
+  deleteGrant: "security grants revoke",
+  deleteGroup: "security groups delete",
+  deleteGroupMember: "security members remove",
+  deleteLineageEdge: "lineage edges delete",
+  deleteMacro: "models macros delete",
+  deleteModel: "models models delete",
+  deleteModelTest: "models tests delete",
+  deleteNotebook: "notebooks notebooks delete",
+  deletePipeline: "pipelines pipelines delete",
+  deletePipelineJob: "pipelines jobs delete",
+  deletePrincipal: "security principals delete",
+  deleteQuery: "query delete",
+  deleteRowFilter: "security row-filters delete",
+  deleteSchema: "catalog schemas delete",
+  deleteSemanticMetric: "semantic metrics delete",
+  deleteSemanticModel: "semantic semantic-models delete",
+  deleteSemanticPreAggregation: "semantic pre-aggregations delete",
+  deleteSemanticRelationship: "semantic semantic-relationships delete",
+  deleteStorageCredential: "storage credentials delete",
+  deleteTable: "catalog tables delete",
+  deleteTag: "governance tags delete",
+  deleteTagAssignment: "governance tag-assignments delete",
+  deleteView: "catalog views delete",
+  deleteVolume: "catalog volumes delete",
+  diffMacroRevisions: "models diff diff-macro-revisions",
+  executeCell: "notebooks cells execute",
+  executeQuery: "query",
+  explainMetricQuery: "semantic explain",
+  getCatalog: "catalog get",
+  getCatalogRegistration: "catalog get-registration",
+  getColumnImpact: "lineage impact get",
+  getColumnLineage: "lineage columns get",
+  getComputeEndpoint: "compute endpoints get",
+  getComputeEndpointHealth: "compute endpoints health",
+  getDownstreamLineage: "lineage tables downstream",
+  getExternalLocation: "storage locations get",
+  getGitRepo: "notebooks git-repos get",
+  getGroup: "security groups get",
+  getMacro: "models macros get",
+  getMacroImpact: "models impact get",
+  getMetastoreSummary: "observability metastore summary",
+  getModel: "models models get",
+  getModelDAG: "models dag get",
+  getModelRun: "models model-runs get",
+  getNotebook: "notebooks notebooks get",
+  getNotebookJob: "notebooks jobs get",
+  getPipeline: "pipelines pipelines get",
+  getPipelineRun: "pipelines runs get",
+  getPrincipal: "security principals get",
+  getQuery: "query status",
+  getQueryResults: "query results",
+  getSchema: "catalog schemas get",
+  getSemanticModel: "semantic semantic-models get",
+  getStorageCredential: "storage credentials get",
+  getTable: "catalog tables get",
+  getTableLineage: "lineage tables get",
+  getUpstreamLineage: "lineage tables upstream",
+  getView: "catalog views get",
+  getVolume: "catalog volumes get",
+  listAPIKeys: "security api-keys list",
+  listAuditLogs: "observability audit-logs list",
+  listCatalogs: "catalog list-registrations",
+  listClassifications: "governance classifications list",
+  listColumnMasks: "security column-masks list",
+  listComputeAssignments: "compute assignments list",
+  listComputeEndpoints: "compute endpoints list",
+  listExternalLocations: "storage locations list",
+  listGitRepos: "notebooks git-repos list",
+  listGrants: "security grants list",
+  listGroupMembers: "security members list",
+  listGroups: "security groups list",
+  listMacroRevisions: "models revisions list",
+  listMacros: "models macros list",
+  listModelRunSteps: "models steps list",
+  listModelRuns: "models model-runs list",
+  listModelTestResults: "models test-results list",
+  listModelTests: "models tests list",
+  listModels: "models models list",
+  listNotebookJobs: "notebooks jobs list",
+  listNotebooks: "notebooks notebooks list",
+  listPipelineJobRuns: "pipelines runs list-job-runs",
+  listPipelineJobs: "pipelines jobs list",
+  listPipelineRuns: "pipelines runs list",
+  listPipelines: "pipelines pipelines list",
+  listPrincipals: "security principals list",
+  listQueryHistory: "observability query-history list",
+  listRowFilters: "security row-filters list",
+  listSchemas: "catalog schemas list",
+  listSemanticMetrics: "semantic metrics list",
+  listSemanticModels: "semantic semantic-models list",
+  listSemanticPreAggregations: "semantic pre-aggregations list",
+  listSemanticRelationships: "semantic semantic-relationships list",
+  listStorageCredentials: "storage credentials list",
+  listTableColumns: "catalog columns list",
+  listTables: "catalog tables list",
+  listTags: "governance tags list",
+  listViews: "catalog views list",
+  listVolumes: "catalog volumes list",
+  loadTableExternalFiles: "ingestion load",
+  profileTable: "catalog tables profile",
+  promoteNotebookToModel: "models from-notebook promote-notebook-to-model",
+  purgeLineage: "lineage purge",
+  registerCatalog: "catalog register",
+  reorderCells: "notebooks cells reorder",
+  runAllCells: "notebooks sessions run-all",
+  runAllCellsAsync: "notebooks sessions run-all-async",
+  runMetricQuery: "semantic run",
+  searchCatalog: "governance search",
+  setDefaultCatalog: "catalog set-default",
+  submitQuery: "query submit",
+  syncGitRepo: "notebooks git-repos sync",
+  triggerModelRun: "models model-runs trigger-model-run",
+  triggerPipelineRun: "pipelines runs trigger",
+  unbindColumnMask: "security column-masks unbind",
+  unbindRowFilter: "security row-filters unbind",
+  updateCatalogRegistration: "catalog update-registration",
+  updateCell: "notebooks cells update",
+  updateColumn: "catalog columns update",
+  updateComputeEndpoint: "compute endpoints update",
+  updateExternalLocation: "storage locations update",
+  updateMacro: "models macros update",
+  updateModel: "models models update",
+  updateNotebook: "notebooks notebooks update",
+  updatePipeline: "pipelines pipelines update",
+  updatePrincipalAdmin: "security principals set-admin",
+  updateSchema: "catalog schemas update",
+  updateSemanticMetric: "semantic metrics update",
+  updateSemanticModel: "semantic semantic-models update",
+  updateSemanticPreAggregation: "semantic pre-aggregations update",
+  updateSemanticRelationship: "semantic semantic-relationships update",
+  updateStorageCredential: "storage credentials update",
+  updateTable: "catalog tables update",
+  updateView: "catalog views update",
+  updateVolume: "catalog volumes update",
+};
 
 function cleanText(value: string | undefined): string {
   return (value ?? "").trim();

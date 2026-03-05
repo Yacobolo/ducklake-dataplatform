@@ -22,7 +22,6 @@ func Emit(doc ir.Document) ([]byte, error) {
 	var b strings.Builder
 	b.WriteString("package api\n\n")
 	b.WriteString("import (\n")
-	b.WriteString("\t\"context\"\n")
 	b.WriteString("\t\"encoding/json\"\n")
 	b.WriteString("\t\"net/http\"\n\n")
 	b.WriteString("\t\"github.com/go-chi/chi/v5\"\n")
@@ -38,29 +37,39 @@ func Emit(doc ir.Document) ([]byte, error) {
 	b.WriteString("\t}\n")
 	b.WriteString("\treturn doc, nil\n")
 	b.WriteString("}\n\n")
-	b.WriteString("// GenServerInterface is generated from JSON IR.\n")
+	b.WriteString("// GenServerInterface dispatches generated operations.\n")
 	b.WriteString("type GenServerInterface interface {\n")
-	for _, endpoint := range doc.Endpoints {
-		name := exportedName(endpoint.OperationID)
-		b.WriteString("\t" + name + "(ctx context.Context, request *http.Request) (any, error)\n")
-	}
+	b.WriteString("\tHandleAPIGen(operationID string, w http.ResponseWriter, r *http.Request)\n")
 	b.WriteString("}\n\n")
 	b.WriteString("// RegisterAPIGenRoutes mounts generated routes on Chi router.\n")
 	b.WriteString("func RegisterAPIGenRoutes(router chi.Router, server GenServerInterface) {\n")
 	for _, endpoint := range doc.Endpoints {
-		name := exportedName(endpoint.OperationID)
 		method := strings.ToUpper(endpoint.Method)
 		b.WriteString("\trouter.MethodFunc(\"" + method + "\", \"" + endpoint.Path + "\", func(w http.ResponseWriter, r *http.Request) {\n")
-		b.WriteString("\t\tresponse, err := server." + name + "(r.Context(), r)\n")
-		b.WriteString("\t\tif err != nil {\n")
-		b.WriteString("\t\t\thttp.Error(w, err.Error(), http.StatusInternalServerError)\n")
-		b.WriteString("\t\t\treturn\n")
-		b.WriteString("\t\t}\n")
-		b.WriteString("\t\tw.Header().Set(\"Content-Type\", \"application/json\")\n")
-		b.WriteString("\t\tw.WriteHeader(http.StatusOK)\n")
-		b.WriteString("\t\t_ = json.NewEncoder(w).Encode(response)\n")
+		b.WriteString("\t\tserver.HandleAPIGen(\"" + endpoint.OperationID + "\", w, r)\n")
 		b.WriteString("\t})\n")
 	}
+	b.WriteString("}\n")
+	b.WriteString("\n")
+	b.WriteString("// DispatchAPIGenOperation dispatches operation IDs to generated wrapper methods.\n")
+	b.WriteString("func DispatchAPIGenOperation(operationID string, wrapper *ServerInterfaceWrapper, w http.ResponseWriter, r *http.Request) bool {\n")
+	b.WriteString("\tswitch operationID {\n")
+	for _, endpoint := range doc.Endpoints {
+		name := exportedName(endpoint.OperationID)
+		b.WriteString("\tcase \"" + endpoint.OperationID + "\":\n")
+		if endpoint.OperationID == "getHealth" {
+			b.WriteString("\t\tw.Header().Set(\"Content-Type\", \"application/json\")\n")
+			b.WriteString("\t\tw.WriteHeader(http.StatusOK)\n")
+			b.WriteString("\t\t_ = json.NewEncoder(w).Encode(map[string]string{\"status\": \"ok\"})\n")
+			b.WriteString("\t\treturn true\n")
+			continue
+		}
+		b.WriteString("\t\twrapper." + name + "(w, r)\n")
+		b.WriteString("\t\treturn true\n")
+	}
+	b.WriteString("\tdefault:\n")
+	b.WriteString("\t\treturn false\n")
+	b.WriteString("\t}\n")
 	b.WriteString("}\n")
 
 	return []byte(b.String()), nil

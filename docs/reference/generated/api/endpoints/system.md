@@ -6,6 +6,8 @@ System endpoints
 
 ## `GET /healthz`
 
+get Health
+
 - Operation ID: `getHealth`
 
 ### Responses

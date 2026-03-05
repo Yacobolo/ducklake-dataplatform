@@ -6,6 +6,8 @@ Macro management and revisions
 
 ## `GET /macros`
 
+list Macros
+
 - Operation ID: `listMacros`
 
 ### Query Parameters
@@ -26,6 +28,8 @@ Macro management and revisions
 
 ## `POST /macros`
 
+create Macro
+
 - Operation ID: `createMacro`
 
 ### Request Body
@@ -43,6 +47,8 @@ Macro management and revisions
 | `500` | Internal Server Error |
 
 ## `GET /macros/{macroName}`
+
+get Macro
 
 - Operation ID: `getMacro`
 
@@ -63,6 +69,8 @@ Macro management and revisions
 | `500` | Internal Server Error |
 
 ## `PATCH /macros/{macroName}`
+
+update Macro
 
 - Operation ID: `updateMacro`
 
@@ -88,6 +96,8 @@ Macro management and revisions
 
 ## `DELETE /macros/{macroName}`
 
+delete Macro
+
 - Operation ID: `deleteMacro`
 
 ### Path Parameters
@@ -106,6 +116,8 @@ Macro management and revisions
 | `500` | Internal Server Error |
 
 ## `GET /macros/{macroName}/diff`
+
+diff Macro Revisions
 
 - Operation ID: `diffMacroRevisions`
 
@@ -134,6 +146,8 @@ Macro management and revisions
 
 ## `GET /macros/{macroName}/impact`
 
+get Macro Impact
+
 - Operation ID: `getMacroImpact`
 
 ### Path Parameters
@@ -160,6 +174,8 @@ Macro management and revisions
 | `500` | Internal Server Error |
 
 ## `GET /macros/{macroName}/revisions`
+
+list Macro Revisions
 
 - Operation ID: `listMacroRevisions`
 

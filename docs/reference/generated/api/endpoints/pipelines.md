@@ -6,6 +6,8 @@ Pipeline orchestration endpoints
 
 ## `GET /pipelines`
 
+list Pipelines
+
 - Operation ID: `listPipelines`
 
 ### Query Parameters
@@ -26,6 +28,8 @@ Pipeline orchestration endpoints
 
 ## `POST /pipelines`
 
+create Pipeline
+
 - Operation ID: `createPipeline`
 
 ### Request Body
@@ -43,6 +47,8 @@ Pipeline orchestration endpoints
 | `500` | Internal Server Error |
 
 ## `GET /pipelines/runs/{runId}`
+
+get Pipeline Run
 
 - Operation ID: `getPipelineRun`
 
@@ -64,6 +70,8 @@ Pipeline orchestration endpoints
 
 ## `POST /pipelines/runs/{runId}/cancel`
 
+cancel Pipeline Run
+
 - Operation ID: `cancelPipelineRun`
 
 ### Path Parameters
@@ -82,6 +90,8 @@ Pipeline orchestration endpoints
 | `500` | Internal Server Error |
 
 ## `GET /pipelines/runs/{runId}/jobs`
+
+list Pipeline Job Runs
 
 - Operation ID: `listPipelineJobRuns`
 
@@ -103,6 +113,8 @@ Pipeline orchestration endpoints
 
 ## `GET /pipelines/{pipelineName}`
 
+get Pipeline
+
 - Operation ID: `getPipeline`
 
 ### Path Parameters
@@ -122,6 +134,8 @@ Pipeline orchestration endpoints
 | `500` | Internal Server Error |
 
 ## `PATCH /pipelines/{pipelineName}`
+
+update Pipeline
 
 - Operation ID: `updatePipeline`
 
@@ -147,6 +161,8 @@ Pipeline orchestration endpoints
 
 ## `DELETE /pipelines/{pipelineName}`
 
+delete Pipeline
+
 - Operation ID: `deletePipeline`
 
 ### Path Parameters
@@ -165,6 +181,8 @@ Pipeline orchestration endpoints
 | `500` | Internal Server Error |
 
 ## `GET /pipelines/{pipelineName}/jobs`
+
+list Pipeline Jobs
 
 - Operation ID: `listPipelineJobs`
 
@@ -185,6 +203,8 @@ Pipeline orchestration endpoints
 | `500` | Internal Server Error |
 
 ## `POST /pipelines/{pipelineName}/jobs`
+
+create Pipeline Job
 
 - Operation ID: `createPipelineJob`
 
@@ -210,6 +230,8 @@ Pipeline orchestration endpoints
 
 ## `DELETE /pipelines/{pipelineName}/jobs/{jobId}`
 
+delete Pipeline Job
+
 - Operation ID: `deletePipelineJob`
 
 ### Path Parameters
@@ -229,6 +251,8 @@ Pipeline orchestration endpoints
 | `500` | Internal Server Error |
 
 ## `GET /pipelines/{pipelineName}/runs`
+
+list Pipeline Runs
 
 - Operation ID: `listPipelineRuns`
 
@@ -258,6 +282,8 @@ Pipeline orchestration endpoints
 
 ## `POST /pipelines/{pipelineName}/runs`
 
+trigger Pipeline Run
+
 - Operation ID: `triggerPipelineRun`
 
 ### Path Parameters
@@ -281,6 +307,8 @@ Pipeline orchestration endpoints
 | `500` | Internal Server Error |
 
 ## `GET /sources/{sourceSchema}/{sourceTable}/freshness`
+
+check Source Freshness
 
 - Operation ID: `checkSourceFreshness`
 

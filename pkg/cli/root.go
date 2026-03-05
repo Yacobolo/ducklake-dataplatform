@@ -143,8 +143,8 @@ func newRootCmd() *cobra.Command {
 		return nil
 	}
 
-	// Add generated commands
-	gen.AddGeneratedCommands(rootCmd, client)
+	// Add runtime-generated API commands
+	addRuntimeGeneratedCommands(rootCmd, client)
 
 	// Add hand-written commands
 	rootCmd.AddCommand(newVersionCmd())

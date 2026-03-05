@@ -6,6 +6,8 @@ Lineage graph and impact analysis
 
 ## `GET /lineage/columns/{schemaName}/{tableName}`
 
+get Column Lineage
+
 - Operation ID: `getColumnLineage`
 
 ### Path Parameters
@@ -33,6 +35,8 @@ Lineage graph and impact analysis
 | `500` | Internal Server Error |
 
 ## `GET /lineage/columns/{schemaName}/{tableName}/{columnName}/impact`
+
+get Column Impact
 
 - Operation ID: `getColumnImpact`
 
@@ -63,6 +67,8 @@ Lineage graph and impact analysis
 
 ## `DELETE /lineage/edges/{edgeId}`
 
+delete Lineage Edge
+
 - Operation ID: `deleteLineageEdge`
 
 ### Path Parameters
@@ -82,6 +88,8 @@ Lineage graph and impact analysis
 
 ## `POST /lineage/purge`
 
+purge Lineage
+
 - Operation ID: `purgeLineage`
 
 ### Request Body
@@ -99,6 +107,8 @@ Lineage graph and impact analysis
 | `500` | Internal Server Error |
 
 ## `GET /lineage/tables/{schemaName}/{tableName}`
+
+get Table Lineage
 
 - Operation ID: `getTableLineage`
 
@@ -128,6 +138,8 @@ Lineage graph and impact analysis
 
 ## `GET /lineage/tables/{schemaName}/{tableName}/downstream`
 
+get Downstream Lineage
+
 - Operation ID: `getDownstreamLineage`
 
 ### Path Parameters
@@ -155,6 +167,8 @@ Lineage graph and impact analysis
 | `500` | Internal Server Error |
 
 ## `GET /lineage/tables/{schemaName}/{tableName}/upstream`
+
+get Upstream Lineage
 
 - Operation ID: `getUpstreamLineage`
 

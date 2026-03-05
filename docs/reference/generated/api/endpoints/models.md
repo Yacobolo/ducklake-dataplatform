@@ -6,6 +6,8 @@ Model lifecycle and testing
 
 ## `GET /model-runs`
 
+list Model Runs
+
 - Operation ID: `listModelRuns`
 
 ### Query Parameters
@@ -27,6 +29,8 @@ Model lifecycle and testing
 
 ## `POST /model-runs`
 
+trigger Model Run
+
 - Operation ID: `triggerModelRun`
 
 ### Request Body
@@ -44,6 +48,8 @@ Model lifecycle and testing
 | `500` | Internal Server Error |
 
 ## `GET /model-runs/{runId}`
+
+get Model Run
 
 - Operation ID: `getModelRun`
 
@@ -65,6 +71,8 @@ Model lifecycle and testing
 
 ## `POST /model-runs/{runId}/cancel`
 
+cancel Model Run
+
 - Operation ID: `cancelModelRun`
 
 ### Path Parameters
@@ -83,6 +91,8 @@ Model lifecycle and testing
 | `500` | Internal Server Error |
 
 ## `GET /model-runs/{runId}/steps`
+
+list Model Run Steps
 
 - Operation ID: `listModelRunSteps`
 
@@ -103,6 +113,8 @@ Model lifecycle and testing
 | `500` | Internal Server Error |
 
 ## `GET /model-runs/{runId}/steps/{stepId}/test-results`
+
+list Model Test Results
 
 - Operation ID: `listModelTestResults`
 
@@ -125,6 +137,8 @@ Model lifecycle and testing
 
 ## `GET /models`
 
+list Models
+
 - Operation ID: `listModels`
 
 ### Query Parameters
@@ -146,6 +160,8 @@ Model lifecycle and testing
 
 ## `POST /models`
 
+create Model
+
 - Operation ID: `createModel`
 
 ### Request Body
@@ -163,6 +179,8 @@ Model lifecycle and testing
 | `500` | Internal Server Error |
 
 ## `GET /models/dag`
+
+get Model DAG
 
 - Operation ID: `getModelDAG`
 
@@ -183,6 +201,8 @@ Model lifecycle and testing
 
 ## `POST /models/from-notebook`
 
+promote Notebook To Model
+
 - Operation ID: `promoteNotebookToModel`
 
 ### Request Body
@@ -200,6 +220,8 @@ Model lifecycle and testing
 | `500` | Internal Server Error |
 
 ## `GET /models/{projectName}/{modelName}`
+
+get Model
 
 - Operation ID: `getModel`
 
@@ -221,6 +243,8 @@ Model lifecycle and testing
 | `500` | Internal Server Error |
 
 ## `PATCH /models/{projectName}/{modelName}`
+
+update Model
 
 - Operation ID: `updateModel`
 
@@ -247,6 +271,8 @@ Model lifecycle and testing
 
 ## `DELETE /models/{projectName}/{modelName}`
 
+delete Model
+
 - Operation ID: `deleteModel`
 
 ### Path Parameters
@@ -266,6 +292,8 @@ Model lifecycle and testing
 | `500` | Internal Server Error |
 
 ## `GET /models/{projectName}/{modelName}/freshness`
+
+check Model Freshness
 
 - Operation ID: `checkModelFreshness`
 
@@ -288,6 +316,8 @@ Model lifecycle and testing
 
 ## `GET /models/{projectName}/{modelName}/tests`
 
+list Model Tests
+
 - Operation ID: `listModelTests`
 
 ### Path Parameters
@@ -308,6 +338,8 @@ Model lifecycle and testing
 | `500` | Internal Server Error |
 
 ## `POST /models/{projectName}/{modelName}/tests`
+
+create Model Test
 
 - Operation ID: `createModelTest`
 
@@ -333,6 +365,8 @@ Model lifecycle and testing
 | `500` | Internal Server Error |
 
 ## `DELETE /models/{projectName}/{modelName}/tests/{testId}`
+
+delete Model Test
 
 - Operation ID: `deleteModelTest`
 

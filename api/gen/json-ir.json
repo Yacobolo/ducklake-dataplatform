@@ -1120,6 +1120,11 @@
             "type": "string"
           }
         },
+        "location_name": {
+          "schema": {
+            "type": "string"
+          }
+        },
         "properties": {
           "schema": {
             "ref": "Record"
@@ -1623,6 +1628,24 @@
         }
       }
     },
+    "SubmitQueryRequest": {
+      "type": "object",
+      "properties": {
+        "sql": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "request_id": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "sql"
+      ]
+    },
     "GenericRequest": {
       "type": "object",
       "properties": {
@@ -1939,6 +1962,24 @@
           }
         }
       }
+    },
+    "CreateModelRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "payload": {
+          "schema": {
+            "ref": "Record"
+          }
+        }
+      },
+      "required": [
+        "name"
+      ]
     }
   },
   "endpoints": [
@@ -1946,6 +1987,7 @@
       "method": "get",
       "path": "/api-keys",
       "operation_id": "listAPIKeys",
+      "summary": "list APIKeys",
       "tags": [
         "security"
       ],
@@ -2010,6 +2052,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "security api-keys list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -2027,6 +2070,7 @@
       "method": "post",
       "path": "/api-keys",
       "operation_id": "createAPIKey",
+      "summary": "create APIKey",
       "tags": [
         "security"
       ],
@@ -2068,6 +2112,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "security api-keys create",
         "security": [
           {
             "ApiKeyAuth": []
@@ -2085,6 +2130,7 @@
       "method": "delete",
       "path": "/api-keys/{apiKeyId}",
       "operation_id": "deleteAPIKey",
+      "summary": "delete APIKey",
       "tags": [
         "security"
       ],
@@ -2127,6 +2173,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "security api-keys delete",
         "security": [
           {
             "ApiKeyAuth": []
@@ -2144,6 +2191,7 @@
       "method": "post",
       "path": "/api-keys/cleanup",
       "operation_id": "cleanupExpiredAPIKeys",
+      "summary": "cleanup Expired APIKeys",
       "tags": [
         "security"
       ],
@@ -2178,6 +2226,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "security api-keys cleanup",
         "security": [
           {
             "ApiKeyAuth": []
@@ -2195,6 +2244,7 @@
       "method": "get",
       "path": "/audit-logs",
       "operation_id": "listAuditLogs",
+      "summary": "list Audit Logs",
       "tags": [
         "observability"
       ],
@@ -2277,6 +2327,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "observability audit-logs list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -2294,6 +2345,7 @@
       "method": "get",
       "path": "/catalogs",
       "operation_id": "listCatalogs",
+      "summary": "list Catalogs",
       "tags": [
         "catalogs"
       ],
@@ -2349,6 +2401,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "catalog list-registrations",
         "security": [
           {
             "ApiKeyAuth": []
@@ -2366,6 +2419,7 @@
       "method": "post",
       "path": "/catalogs",
       "operation_id": "registerCatalog",
+      "summary": "register Catalog",
       "tags": [
         "catalogs"
       ],
@@ -2407,6 +2461,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "catalog register",
         "security": [
           {
             "ApiKeyAuth": []
@@ -2424,6 +2479,7 @@
       "method": "get",
       "path": "/catalogs/{catalogName}",
       "operation_id": "getCatalogRegistration",
+      "summary": "get Catalog Registration",
       "tags": [
         "catalogs"
       ],
@@ -2476,6 +2532,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "catalog get-registration",
         "security": [
           {
             "ApiKeyAuth": []
@@ -2493,6 +2550,7 @@
       "method": "patch",
       "path": "/catalogs/{catalogName}",
       "operation_id": "updateCatalogRegistration",
+      "summary": "update Catalog Registration",
       "tags": [
         "catalogs"
       ],
@@ -2545,6 +2603,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "catalog update-registration",
         "security": [
           {
             "ApiKeyAuth": []
@@ -2562,6 +2621,7 @@
       "method": "delete",
       "path": "/catalogs/{catalogName}",
       "operation_id": "deleteCatalogRegistration",
+      "summary": "delete Catalog Registration",
       "tags": [
         "catalogs"
       ],
@@ -2604,6 +2664,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "catalog delete-registration",
         "security": [
           {
             "ApiKeyAuth": []
@@ -2621,6 +2682,7 @@
       "method": "get",
       "path": "/catalogs/{catalogName}/info",
       "operation_id": "getCatalog",
+      "summary": "get Catalog",
       "tags": [
         "catalogs"
       ],
@@ -2673,6 +2735,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "catalog get",
         "security": [
           {
             "ApiKeyAuth": []
@@ -2690,6 +2753,7 @@
       "method": "get",
       "path": "/catalogs/{catalogName}/metastore/summary",
       "operation_id": "getMetastoreSummary",
+      "summary": "get Metastore Summary",
       "tags": [
         "observability"
       ],
@@ -2742,6 +2806,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "observability metastore summary",
         "security": [
           {
             "ApiKeyAuth": []
@@ -2759,6 +2824,7 @@
       "method": "get",
       "path": "/catalogs/{catalogName}/schemas",
       "operation_id": "listSchemas",
+      "summary": "list Schemas",
       "tags": [
         "catalogs"
       ],
@@ -2830,6 +2896,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "catalog schemas list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -2847,6 +2914,7 @@
       "method": "post",
       "path": "/catalogs/{catalogName}/schemas",
       "operation_id": "createSchema",
+      "summary": "create Schema",
       "tags": [
         "catalogs"
       ],
@@ -2899,6 +2967,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "catalog schemas create",
         "security": [
           {
             "ApiKeyAuth": []
@@ -2923,6 +2992,7 @@
       "method": "get",
       "path": "/catalogs/{catalogName}/schemas/{schemaName}",
       "operation_id": "getSchema",
+      "summary": "get Schema",
       "tags": [
         "catalogs"
       ],
@@ -2984,6 +3054,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "catalog schemas get",
         "security": [
           {
             "ApiKeyAuth": []
@@ -3001,6 +3072,7 @@
       "method": "patch",
       "path": "/catalogs/{catalogName}/schemas/{schemaName}",
       "operation_id": "updateSchema",
+      "summary": "update Schema",
       "tags": [
         "catalogs"
       ],
@@ -3062,6 +3134,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "catalog schemas update",
         "security": [
           {
             "ApiKeyAuth": []
@@ -3086,6 +3159,7 @@
       "method": "delete",
       "path": "/catalogs/{catalogName}/schemas/{schemaName}",
       "operation_id": "deleteSchema",
+      "summary": "delete Schema",
       "tags": [
         "catalogs"
       ],
@@ -3146,6 +3220,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "catalog schemas delete",
         "security": [
           {
             "ApiKeyAuth": []
@@ -3170,6 +3245,7 @@
       "method": "get",
       "path": "/catalogs/{catalogName}/schemas/{schemaName}/tables",
       "operation_id": "listTables",
+      "summary": "list Tables",
       "tags": [
         "catalogs"
       ],
@@ -3250,6 +3326,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "catalog tables list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -3267,6 +3344,7 @@
       "method": "post",
       "path": "/catalogs/{catalogName}/schemas/{schemaName}/tables",
       "operation_id": "createTable",
+      "summary": "create Table",
       "tags": [
         "catalogs"
       ],
@@ -3328,6 +3406,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "catalog tables create",
         "security": [
           {
             "ApiKeyAuth": []
@@ -3352,6 +3431,7 @@
       "method": "get",
       "path": "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}",
       "operation_id": "getTable",
+      "summary": "get Table",
       "tags": [
         "catalogs"
       ],
@@ -3422,6 +3502,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "catalog tables get",
         "security": [
           {
             "ApiKeyAuth": []
@@ -3439,6 +3520,7 @@
       "method": "patch",
       "path": "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}",
       "operation_id": "updateTable",
+      "summary": "update Table",
       "tags": [
         "catalogs"
       ],
@@ -3509,6 +3591,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "catalog tables update",
         "security": [
           {
             "ApiKeyAuth": []
@@ -3533,6 +3616,7 @@
       "method": "delete",
       "path": "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}",
       "operation_id": "deleteTable",
+      "summary": "delete Table",
       "tags": [
         "catalogs"
       ],
@@ -3593,6 +3677,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "catalog tables delete",
         "security": [
           {
             "ApiKeyAuth": []
@@ -3617,6 +3702,7 @@
       "method": "get",
       "path": "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns",
       "operation_id": "listTableColumns",
+      "summary": "list Table Columns",
       "tags": [
         "catalogs"
       ],
@@ -3706,6 +3792,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "catalog columns list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -3723,6 +3810,7 @@
       "method": "patch",
       "path": "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns/{columnName}",
       "operation_id": "updateColumn",
+      "summary": "update Column",
       "tags": [
         "catalogs"
       ],
@@ -3802,6 +3890,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "catalog columns update",
         "security": [
           {
             "ApiKeyAuth": []
@@ -3826,6 +3915,7 @@
       "method": "post",
       "path": "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/commit",
       "operation_id": "commitTableIngestion",
+      "summary": "commit Table Ingestion",
       "tags": [
         "catalogs"
       ],
@@ -3896,6 +3986,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "ingestion commit",
         "security": [
           {
             "ApiKeyAuth": []
@@ -3913,6 +4004,7 @@
       "method": "post",
       "path": "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/load",
       "operation_id": "loadTableExternalFiles",
+      "summary": "load Table External Files",
       "tags": [
         "catalogs"
       ],
@@ -3983,6 +4075,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "ingestion load",
         "security": [
           {
             "ApiKeyAuth": []
@@ -4000,6 +4093,7 @@
       "method": "post",
       "path": "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url",
       "operation_id": "createUploadUrl",
+      "summary": "create Upload Url",
       "tags": [
         "catalogs"
       ],
@@ -4070,6 +4164,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "ingestion upload-url",
         "security": [
           {
             "ApiKeyAuth": []
@@ -4087,6 +4182,7 @@
       "method": "post",
       "path": "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/profile",
       "operation_id": "profileTable",
+      "summary": "profile Table",
       "tags": [
         "catalogs"
       ],
@@ -4150,6 +4246,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "catalog tables profile",
         "security": [
           {
             "ApiKeyAuth": []
@@ -4167,6 +4264,7 @@
       "method": "get",
       "path": "/catalogs/{catalogName}/schemas/{schemaName}/views",
       "operation_id": "listViews",
+      "summary": "list Views",
       "tags": [
         "catalogs"
       ],
@@ -4247,6 +4345,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "catalog views list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -4264,6 +4363,7 @@
       "method": "post",
       "path": "/catalogs/{catalogName}/schemas/{schemaName}/views",
       "operation_id": "createView",
+      "summary": "create View",
       "tags": [
         "catalogs"
       ],
@@ -4325,6 +4425,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "catalog views create",
         "security": [
           {
             "ApiKeyAuth": []
@@ -4349,6 +4450,7 @@
       "method": "get",
       "path": "/catalogs/{catalogName}/schemas/{schemaName}/views/{viewName}",
       "operation_id": "getView",
+      "summary": "get View",
       "tags": [
         "catalogs"
       ],
@@ -4419,6 +4521,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "catalog views get",
         "security": [
           {
             "ApiKeyAuth": []
@@ -4436,6 +4539,7 @@
       "method": "patch",
       "path": "/catalogs/{catalogName}/schemas/{schemaName}/views/{viewName}",
       "operation_id": "updateView",
+      "summary": "update View",
       "tags": [
         "catalogs"
       ],
@@ -4506,6 +4610,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "catalog views update",
         "security": [
           {
             "ApiKeyAuth": []
@@ -4530,6 +4635,7 @@
       "method": "delete",
       "path": "/catalogs/{catalogName}/schemas/{schemaName}/views/{viewName}",
       "operation_id": "deleteView",
+      "summary": "delete View",
       "tags": [
         "catalogs"
       ],
@@ -4590,6 +4696,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "catalog views delete",
         "security": [
           {
             "ApiKeyAuth": []
@@ -4614,6 +4721,7 @@
       "method": "get",
       "path": "/catalogs/{catalogName}/schemas/{schemaName}/volumes",
       "operation_id": "listVolumes",
+      "summary": "list Volumes",
       "tags": [
         "catalogs"
       ],
@@ -4694,6 +4802,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "catalog volumes list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -4711,6 +4820,7 @@
       "method": "post",
       "path": "/catalogs/{catalogName}/schemas/{schemaName}/volumes",
       "operation_id": "createVolume",
+      "summary": "create Volume",
       "tags": [
         "catalogs"
       ],
@@ -4772,6 +4882,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "catalog volumes create",
         "security": [
           {
             "ApiKeyAuth": []
@@ -4796,6 +4907,7 @@
       "method": "get",
       "path": "/catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}",
       "operation_id": "getVolume",
+      "summary": "get Volume",
       "tags": [
         "catalogs"
       ],
@@ -4866,6 +4978,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "catalog volumes get",
         "security": [
           {
             "ApiKeyAuth": []
@@ -4883,6 +4996,7 @@
       "method": "patch",
       "path": "/catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}",
       "operation_id": "updateVolume",
+      "summary": "update Volume",
       "tags": [
         "catalogs"
       ],
@@ -4953,6 +5067,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "catalog volumes update",
         "security": [
           {
             "ApiKeyAuth": []
@@ -4977,6 +5092,7 @@
       "method": "delete",
       "path": "/catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}",
       "operation_id": "deleteVolume",
+      "summary": "delete Volume",
       "tags": [
         "catalogs"
       ],
@@ -5037,6 +5153,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "catalog volumes delete",
         "security": [
           {
             "ApiKeyAuth": []
@@ -5061,6 +5178,7 @@
       "method": "post",
       "path": "/catalogs/{catalogName}/set-default",
       "operation_id": "setDefaultCatalog",
+      "summary": "set Default Catalog",
       "tags": [
         "catalogs"
       ],
@@ -5113,6 +5231,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "catalog set-default",
         "security": [
           {
             "ApiKeyAuth": []
@@ -5130,6 +5249,7 @@
       "method": "get",
       "path": "/classifications",
       "operation_id": "listClassifications",
+      "summary": "list Classifications",
       "tags": [
         "governance"
       ],
@@ -5185,6 +5305,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "governance classifications list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -5202,6 +5323,7 @@
       "method": "delete",
       "path": "/column-masks/{columnMaskId}",
       "operation_id": "deleteColumnMask",
+      "summary": "delete Column Mask",
       "tags": [
         "security"
       ],
@@ -5244,6 +5366,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "security column-masks delete",
         "security": [
           {
             "ApiKeyAuth": []
@@ -5261,6 +5384,7 @@
       "method": "post",
       "path": "/column-masks/{columnMaskId}/bindings",
       "operation_id": "bindColumnMask",
+      "summary": "bind Column Mask",
       "tags": [
         "security"
       ],
@@ -5310,6 +5434,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "security column-masks bind",
         "security": [
           {
             "ApiKeyAuth": []
@@ -5327,6 +5452,7 @@
       "method": "delete",
       "path": "/column-masks/{columnMaskId}/bindings",
       "operation_id": "unbindColumnMask",
+      "summary": "unbind Column Mask",
       "tags": [
         "security"
       ],
@@ -5387,6 +5513,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "security column-masks unbind",
         "security": [
           {
             "ApiKeyAuth": []
@@ -5404,6 +5531,7 @@
       "method": "get",
       "path": "/compute-endpoints",
       "operation_id": "listComputeEndpoints",
+      "summary": "list Compute Endpoints",
       "tags": [
         "compute"
       ],
@@ -5459,6 +5587,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "compute endpoints list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -5476,6 +5605,7 @@
       "method": "post",
       "path": "/compute-endpoints",
       "operation_id": "createComputeEndpoint",
+      "summary": "create Compute Endpoint",
       "tags": [
         "compute"
       ],
@@ -5517,6 +5647,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "compute endpoints create",
         "security": [
           {
             "ApiKeyAuth": []
@@ -5541,6 +5672,7 @@
       "method": "get",
       "path": "/compute-endpoints/{endpointName}",
       "operation_id": "getComputeEndpoint",
+      "summary": "get Compute Endpoint",
       "tags": [
         "compute"
       ],
@@ -5593,6 +5725,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "compute endpoints get",
         "security": [
           {
             "ApiKeyAuth": []
@@ -5610,6 +5743,7 @@
       "method": "patch",
       "path": "/compute-endpoints/{endpointName}",
       "operation_id": "updateComputeEndpoint",
+      "summary": "update Compute Endpoint",
       "tags": [
         "compute"
       ],
@@ -5662,6 +5796,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "compute endpoints update",
         "security": [
           {
             "ApiKeyAuth": []
@@ -5686,6 +5821,7 @@
       "method": "delete",
       "path": "/compute-endpoints/{endpointName}",
       "operation_id": "deleteComputeEndpoint",
+      "summary": "delete Compute Endpoint",
       "tags": [
         "compute"
       ],
@@ -5728,6 +5864,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "compute endpoints delete",
         "security": [
           {
             "ApiKeyAuth": []
@@ -5752,6 +5889,7 @@
       "method": "get",
       "path": "/compute-endpoints/{endpointName}/assignments",
       "operation_id": "listComputeAssignments",
+      "summary": "list Compute Assignments",
       "tags": [
         "compute"
       ],
@@ -5823,6 +5961,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "compute assignments list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -5840,6 +5979,7 @@
       "method": "post",
       "path": "/compute-endpoints/{endpointName}/assignments",
       "operation_id": "createComputeAssignment",
+      "summary": "create Compute Assignment",
       "tags": [
         "compute"
       ],
@@ -5892,6 +6032,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "compute assignments create",
         "security": [
           {
             "ApiKeyAuth": []
@@ -5916,6 +6057,7 @@
       "method": "delete",
       "path": "/compute-endpoints/{endpointName}/assignments/{assignmentId}",
       "operation_id": "deleteComputeAssignment",
+      "summary": "delete Compute Assignment",
       "tags": [
         "compute"
       ],
@@ -5967,6 +6109,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "compute assignments delete",
         "security": [
           {
             "ApiKeyAuth": []
@@ -5991,6 +6134,7 @@
       "method": "get",
       "path": "/compute-endpoints/{endpointName}/health",
       "operation_id": "getComputeEndpointHealth",
+      "summary": "get Compute Endpoint Health",
       "tags": [
         "compute"
       ],
@@ -6043,6 +6187,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "compute endpoints health",
         "security": [
           {
             "ApiKeyAuth": []
@@ -6060,6 +6205,7 @@
       "method": "get",
       "path": "/external-locations",
       "operation_id": "listExternalLocations",
+      "summary": "list External Locations",
       "tags": [
         "storage"
       ],
@@ -6115,6 +6261,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "storage locations list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -6132,6 +6279,7 @@
       "method": "post",
       "path": "/external-locations",
       "operation_id": "createExternalLocation",
+      "summary": "create External Location",
       "tags": [
         "storage"
       ],
@@ -6173,6 +6321,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "storage locations create",
         "security": [
           {
             "ApiKeyAuth": []
@@ -6197,6 +6346,7 @@
       "method": "get",
       "path": "/external-locations/{locationName}",
       "operation_id": "getExternalLocation",
+      "summary": "get External Location",
       "tags": [
         "storage"
       ],
@@ -6249,6 +6399,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "storage locations get",
         "security": [
           {
             "ApiKeyAuth": []
@@ -6266,6 +6417,7 @@
       "method": "patch",
       "path": "/external-locations/{locationName}",
       "operation_id": "updateExternalLocation",
+      "summary": "update External Location",
       "tags": [
         "storage"
       ],
@@ -6318,6 +6470,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "storage locations update",
         "security": [
           {
             "ApiKeyAuth": []
@@ -6342,6 +6495,7 @@
       "method": "delete",
       "path": "/external-locations/{locationName}",
       "operation_id": "deleteExternalLocation",
+      "summary": "delete External Location",
       "tags": [
         "storage"
       ],
@@ -6384,6 +6538,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "storage locations delete",
         "security": [
           {
             "ApiKeyAuth": []
@@ -6408,6 +6563,7 @@
       "method": "get",
       "path": "/git-repos",
       "operation_id": "listGitRepos",
+      "summary": "list Git Repos",
       "tags": [
         "api"
       ],
@@ -6463,6 +6619,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "notebooks git-repos list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -6480,6 +6637,7 @@
       "method": "post",
       "path": "/git-repos",
       "operation_id": "createGitRepo",
+      "summary": "create Git Repo",
       "tags": [
         "api"
       ],
@@ -6521,6 +6679,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "notebooks git-repos create",
         "security": [
           {
             "ApiKeyAuth": []
@@ -6538,6 +6697,7 @@
       "method": "get",
       "path": "/git-repos/{gitRepoId}",
       "operation_id": "getGitRepo",
+      "summary": "get Git Repo",
       "tags": [
         "api"
       ],
@@ -6590,6 +6750,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "notebooks git-repos get",
         "security": [
           {
             "ApiKeyAuth": []
@@ -6607,6 +6768,7 @@
       "method": "delete",
       "path": "/git-repos/{gitRepoId}",
       "operation_id": "deleteGitRepo",
+      "summary": "delete Git Repo",
       "tags": [
         "api"
       ],
@@ -6649,6 +6811,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "notebooks git-repos delete",
         "security": [
           {
             "ApiKeyAuth": []
@@ -6666,6 +6829,7 @@
       "method": "post",
       "path": "/git-repos/{gitRepoId}/sync",
       "operation_id": "syncGitRepo",
+      "summary": "sync Git Repo",
       "tags": [
         "api"
       ],
@@ -6711,6 +6875,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "notebooks git-repos sync",
         "security": [
           {
             "ApiKeyAuth": []
@@ -6728,6 +6893,7 @@
       "method": "get",
       "path": "/grants",
       "operation_id": "listGrants",
+      "summary": "list Grants",
       "tags": [
         "security"
       ],
@@ -6819,6 +6985,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "security grants list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -6836,6 +7003,7 @@
       "method": "post",
       "path": "/grants",
       "operation_id": "createGrant",
+      "summary": "create Grant",
       "tags": [
         "security"
       ],
@@ -6877,6 +7045,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "security grants create",
         "security": [
           {
             "ApiKeyAuth": []
@@ -6894,6 +7063,7 @@
       "method": "delete",
       "path": "/grants/{grantId}",
       "operation_id": "deleteGrant",
+      "summary": "delete Grant",
       "tags": [
         "security"
       ],
@@ -6936,6 +7106,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "security grants revoke",
         "security": [
           {
             "ApiKeyAuth": []
@@ -6953,6 +7124,7 @@
       "method": "get",
       "path": "/groups",
       "operation_id": "listGroups",
+      "summary": "list Groups",
       "tags": [
         "security"
       ],
@@ -7008,6 +7180,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "security groups list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -7025,6 +7198,7 @@
       "method": "post",
       "path": "/groups",
       "operation_id": "createGroup",
+      "summary": "create Group",
       "tags": [
         "security"
       ],
@@ -7066,6 +7240,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "security groups create",
         "security": [
           {
             "ApiKeyAuth": []
@@ -7083,6 +7258,7 @@
       "method": "get",
       "path": "/groups/{groupId}",
       "operation_id": "getGroup",
+      "summary": "get Group",
       "tags": [
         "security"
       ],
@@ -7135,6 +7311,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "security groups get",
         "security": [
           {
             "ApiKeyAuth": []
@@ -7152,6 +7329,7 @@
       "method": "delete",
       "path": "/groups/{groupId}",
       "operation_id": "deleteGroup",
+      "summary": "delete Group",
       "tags": [
         "security"
       ],
@@ -7194,6 +7372,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "security groups delete",
         "security": [
           {
             "ApiKeyAuth": []
@@ -7211,6 +7390,7 @@
       "method": "get",
       "path": "/groups/{groupId}/members",
       "operation_id": "listGroupMembers",
+      "summary": "list Group Members",
       "tags": [
         "security"
       ],
@@ -7282,6 +7462,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "security members list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -7299,6 +7480,7 @@
       "method": "post",
       "path": "/groups/{groupId}/members",
       "operation_id": "createGroupMember",
+      "summary": "create Group Member",
       "tags": [
         "security"
       ],
@@ -7348,6 +7530,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "security members add",
         "security": [
           {
             "ApiKeyAuth": []
@@ -7365,6 +7548,7 @@
       "method": "delete",
       "path": "/groups/{groupId}/members",
       "operation_id": "deleteGroupMember",
+      "summary": "delete Group Member",
       "tags": [
         "security"
       ],
@@ -7425,6 +7609,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "security members remove",
         "security": [
           {
             "ApiKeyAuth": []
@@ -7442,6 +7627,7 @@
       "method": "get",
       "path": "/healthz",
       "operation_id": "getHealth",
+      "summary": "get Health",
       "tags": [
         "system"
       ],
@@ -7480,6 +7666,7 @@
       "method": "get",
       "path": "/lineage/columns/{schemaName}/{tableName}",
       "operation_id": "getColumnLineage",
+      "summary": "get Column Lineage",
       "tags": [
         "lineage"
       ],
@@ -7560,6 +7747,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "lineage columns get",
         "security": [
           {
             "ApiKeyAuth": []
@@ -7577,6 +7765,7 @@
       "method": "get",
       "path": "/lineage/columns/{schemaName}/{tableName}/{columnName}/impact",
       "operation_id": "getColumnImpact",
+      "summary": "get Column Impact",
       "tags": [
         "lineage"
       ],
@@ -7666,6 +7855,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "lineage impact get",
         "security": [
           {
             "ApiKeyAuth": []
@@ -7683,6 +7873,7 @@
       "method": "delete",
       "path": "/lineage/edges/{edgeId}",
       "operation_id": "deleteLineageEdge",
+      "summary": "delete Lineage Edge",
       "tags": [
         "lineage"
       ],
@@ -7725,6 +7916,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "lineage edges delete",
         "security": [
           {
             "ApiKeyAuth": []
@@ -7742,6 +7934,7 @@
       "method": "post",
       "path": "/lineage/purge",
       "operation_id": "purgeLineage",
+      "summary": "purge Lineage",
       "tags": [
         "lineage"
       ],
@@ -7783,6 +7976,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "lineage purge",
         "security": [
           {
             "ApiKeyAuth": []
@@ -7800,6 +7994,7 @@
       "method": "get",
       "path": "/lineage/tables/{schemaName}/{tableName}",
       "operation_id": "getTableLineage",
+      "summary": "get Table Lineage",
       "tags": [
         "lineage"
       ],
@@ -7880,6 +8075,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "lineage tables get",
         "security": [
           {
             "ApiKeyAuth": []
@@ -7897,6 +8093,7 @@
       "method": "get",
       "path": "/lineage/tables/{schemaName}/{tableName}/downstream",
       "operation_id": "getDownstreamLineage",
+      "summary": "get Downstream Lineage",
       "tags": [
         "lineage"
       ],
@@ -7977,6 +8174,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "lineage tables downstream",
         "security": [
           {
             "ApiKeyAuth": []
@@ -7994,6 +8192,7 @@
       "method": "get",
       "path": "/lineage/tables/{schemaName}/{tableName}/upstream",
       "operation_id": "getUpstreamLineage",
+      "summary": "get Upstream Lineage",
       "tags": [
         "lineage"
       ],
@@ -8074,6 +8273,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "lineage tables upstream",
         "security": [
           {
             "ApiKeyAuth": []
@@ -8091,6 +8291,7 @@
       "method": "get",
       "path": "/macros",
       "operation_id": "listMacros",
+      "summary": "list Macros",
       "tags": [
         "macros"
       ],
@@ -8146,6 +8347,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "models macros list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -8163,6 +8365,7 @@
       "method": "post",
       "path": "/macros",
       "operation_id": "createMacro",
+      "summary": "create Macro",
       "tags": [
         "macros"
       ],
@@ -8204,6 +8407,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "models macros create",
         "security": [
           {
             "ApiKeyAuth": []
@@ -8221,6 +8425,7 @@
       "method": "get",
       "path": "/macros/{macroName}",
       "operation_id": "getMacro",
+      "summary": "get Macro",
       "tags": [
         "macros"
       ],
@@ -8273,6 +8478,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "models macros get",
         "security": [
           {
             "ApiKeyAuth": []
@@ -8290,6 +8496,7 @@
       "method": "patch",
       "path": "/macros/{macroName}",
       "operation_id": "updateMacro",
+      "summary": "update Macro",
       "tags": [
         "macros"
       ],
@@ -8342,6 +8549,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "models macros update",
         "security": [
           {
             "ApiKeyAuth": []
@@ -8359,6 +8567,7 @@
       "method": "delete",
       "path": "/macros/{macroName}",
       "operation_id": "deleteMacro",
+      "summary": "delete Macro",
       "tags": [
         "macros"
       ],
@@ -8401,6 +8610,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "models macros delete",
         "security": [
           {
             "ApiKeyAuth": []
@@ -8418,6 +8628,7 @@
       "method": "get",
       "path": "/macros/{macroName}/diff",
       "operation_id": "diffMacroRevisions",
+      "summary": "diff Macro Revisions",
       "tags": [
         "macros"
       ],
@@ -8490,6 +8701,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "models diff diff-macro-revisions",
         "security": [
           {
             "ApiKeyAuth": []
@@ -8507,6 +8719,7 @@
       "method": "get",
       "path": "/macros/{macroName}/impact",
       "operation_id": "getMacroImpact",
+      "summary": "get Macro Impact",
       "tags": [
         "macros"
       ],
@@ -8578,6 +8791,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "models impact get",
         "security": [
           {
             "ApiKeyAuth": []
@@ -8595,6 +8809,7 @@
       "method": "get",
       "path": "/macros/{macroName}/revisions",
       "operation_id": "listMacroRevisions",
+      "summary": "list Macro Revisions",
       "tags": [
         "macros"
       ],
@@ -8647,6 +8862,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "models revisions list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -8664,6 +8880,7 @@
       "method": "post",
       "path": "/manifest",
       "operation_id": "createManifest",
+      "summary": "create Manifest",
       "tags": [
         "manifest"
       ],
@@ -8705,6 +8922,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "manifest create",
         "security": [
           {
             "ApiKeyAuth": []
@@ -8722,6 +8940,7 @@
       "method": "post",
       "path": "/metric-queries:explain",
       "operation_id": "explainMetricQuery",
+      "summary": "explain Metric Query",
       "tags": [
         "semantic"
       ],
@@ -8763,6 +8982,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "semantic explain",
         "security": [
           {
             "ApiKeyAuth": []
@@ -8780,6 +9000,7 @@
       "method": "post",
       "path": "/metric-queries:run",
       "operation_id": "runMetricQuery",
+      "summary": "run Metric Query",
       "tags": [
         "semantic"
       ],
@@ -8821,6 +9042,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "semantic run",
         "security": [
           {
             "ApiKeyAuth": []
@@ -8838,6 +9060,7 @@
       "method": "get",
       "path": "/metrics/{metricName}/freshness",
       "operation_id": "checkMetricFreshness",
+      "summary": "check Metric Freshness",
       "tags": [
         "semantic"
       ],
@@ -8908,6 +9131,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "semantic freshness check-metric-freshness",
         "security": [
           {
             "ApiKeyAuth": []
@@ -8925,6 +9149,7 @@
       "method": "get",
       "path": "/model-runs",
       "operation_id": "listModelRuns",
+      "summary": "list Model Runs",
       "tags": [
         "models"
       ],
@@ -8989,6 +9214,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "models model-runs list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -9006,6 +9232,7 @@
       "method": "post",
       "path": "/model-runs",
       "operation_id": "triggerModelRun",
+      "summary": "trigger Model Run",
       "tags": [
         "models"
       ],
@@ -9047,6 +9274,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "models model-runs trigger-model-run",
         "security": [
           {
             "ApiKeyAuth": []
@@ -9064,6 +9292,7 @@
       "method": "get",
       "path": "/model-runs/{runId}",
       "operation_id": "getModelRun",
+      "summary": "get Model Run",
       "tags": [
         "models"
       ],
@@ -9116,6 +9345,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "models model-runs get",
         "security": [
           {
             "ApiKeyAuth": []
@@ -9133,6 +9363,7 @@
       "method": "post",
       "path": "/model-runs/{runId}/cancel",
       "operation_id": "cancelModelRun",
+      "summary": "cancel Model Run",
       "tags": [
         "models"
       ],
@@ -9178,6 +9409,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "models cancel cancel-model-run",
         "security": [
           {
             "ApiKeyAuth": []
@@ -9195,6 +9427,7 @@
       "method": "get",
       "path": "/model-runs/{runId}/steps",
       "operation_id": "listModelRunSteps",
+      "summary": "list Model Run Steps",
       "tags": [
         "models"
       ],
@@ -9247,6 +9480,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "models steps list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -9264,6 +9498,7 @@
       "method": "get",
       "path": "/model-runs/{runId}/steps/{stepId}/test-results",
       "operation_id": "listModelTestResults",
+      "summary": "list Model Test Results",
       "tags": [
         "models"
       ],
@@ -9325,6 +9560,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "models test-results list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -9342,6 +9578,7 @@
       "method": "get",
       "path": "/models",
       "operation_id": "listModels",
+      "summary": "list Models",
       "tags": [
         "models"
       ],
@@ -9406,6 +9643,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "models models list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -9423,6 +9661,7 @@
       "method": "post",
       "path": "/models",
       "operation_id": "createModel",
+      "summary": "create Model",
       "tags": [
         "models"
       ],
@@ -9460,10 +9699,11 @@
         "required": true,
         "description": "Request payload",
         "schema": {
-          "ref": "GenericRequest"
+          "ref": "CreateModelRequest"
         }
       },
       "extensions": {
+        "x-cli-command": "models models create",
         "security": [
           {
             "ApiKeyAuth": []
@@ -9481,6 +9721,7 @@
       "method": "get",
       "path": "/models/{projectName}/{modelName}",
       "operation_id": "getModel",
+      "summary": "get Model",
       "tags": [
         "models"
       ],
@@ -9542,6 +9783,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "models models get",
         "security": [
           {
             "ApiKeyAuth": []
@@ -9559,6 +9801,7 @@
       "method": "patch",
       "path": "/models/{projectName}/{modelName}",
       "operation_id": "updateModel",
+      "summary": "update Model",
       "tags": [
         "models"
       ],
@@ -9620,6 +9863,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "models models update",
         "security": [
           {
             "ApiKeyAuth": []
@@ -9637,6 +9881,7 @@
       "method": "delete",
       "path": "/models/{projectName}/{modelName}",
       "operation_id": "deleteModel",
+      "summary": "delete Model",
       "tags": [
         "models"
       ],
@@ -9688,6 +9933,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "models models delete",
         "security": [
           {
             "ApiKeyAuth": []
@@ -9705,6 +9951,7 @@
       "method": "get",
       "path": "/models/{projectName}/{modelName}/freshness",
       "operation_id": "checkModelFreshness",
+      "summary": "check Model Freshness",
       "tags": [
         "models"
       ],
@@ -9766,6 +10013,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "models freshness check-model-freshness",
         "security": [
           {
             "ApiKeyAuth": []
@@ -9783,6 +10031,7 @@
       "method": "get",
       "path": "/models/{projectName}/{modelName}/tests",
       "operation_id": "listModelTests",
+      "summary": "list Model Tests",
       "tags": [
         "models"
       ],
@@ -9844,6 +10093,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "models tests list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -9861,6 +10111,7 @@
       "method": "post",
       "path": "/models/{projectName}/{modelName}/tests",
       "operation_id": "createModelTest",
+      "summary": "create Model Test",
       "tags": [
         "models"
       ],
@@ -9922,6 +10173,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "models tests create",
         "security": [
           {
             "ApiKeyAuth": []
@@ -9939,6 +10191,7 @@
       "method": "delete",
       "path": "/models/{projectName}/{modelName}/tests/{testId}",
       "operation_id": "deleteModelTest",
+      "summary": "delete Model Test",
       "tags": [
         "models"
       ],
@@ -9999,6 +10252,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "models tests delete",
         "security": [
           {
             "ApiKeyAuth": []
@@ -10016,6 +10270,7 @@
       "method": "get",
       "path": "/models/dag",
       "operation_id": "getModelDAG",
+      "summary": "get Model DAG",
       "tags": [
         "models"
       ],
@@ -10061,6 +10316,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "models dag get",
         "security": [
           {
             "ApiKeyAuth": []
@@ -10078,6 +10334,7 @@
       "method": "post",
       "path": "/models/from-notebook",
       "operation_id": "promoteNotebookToModel",
+      "summary": "promote Notebook To Model",
       "tags": [
         "models"
       ],
@@ -10119,6 +10376,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "models from-notebook promote-notebook-to-model",
         "security": [
           {
             "ApiKeyAuth": []
@@ -10136,6 +10394,7 @@
       "method": "get",
       "path": "/notebooks",
       "operation_id": "listNotebooks",
+      "summary": "list Notebooks",
       "tags": [
         "notebooks"
       ],
@@ -10200,6 +10459,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "notebooks notebooks list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -10217,6 +10477,7 @@
       "method": "post",
       "path": "/notebooks",
       "operation_id": "createNotebook",
+      "summary": "create Notebook",
       "tags": [
         "notebooks"
       ],
@@ -10258,6 +10519,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "notebooks notebooks create",
         "security": [
           {
             "ApiKeyAuth": []
@@ -10275,6 +10537,7 @@
       "method": "get",
       "path": "/notebooks/{notebookId}",
       "operation_id": "getNotebook",
+      "summary": "get Notebook",
       "tags": [
         "notebooks"
       ],
@@ -10327,6 +10590,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "notebooks notebooks get",
         "security": [
           {
             "ApiKeyAuth": []
@@ -10344,6 +10608,7 @@
       "method": "patch",
       "path": "/notebooks/{notebookId}",
       "operation_id": "updateNotebook",
+      "summary": "update Notebook",
       "tags": [
         "notebooks"
       ],
@@ -10396,6 +10661,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "notebooks notebooks update",
         "security": [
           {
             "ApiKeyAuth": []
@@ -10413,6 +10679,7 @@
       "method": "delete",
       "path": "/notebooks/{notebookId}",
       "operation_id": "deleteNotebook",
+      "summary": "delete Notebook",
       "tags": [
         "notebooks"
       ],
@@ -10455,6 +10722,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "notebooks notebooks delete",
         "security": [
           {
             "ApiKeyAuth": []
@@ -10472,6 +10740,7 @@
       "method": "post",
       "path": "/notebooks/{notebookId}/cells",
       "operation_id": "createCell",
+      "summary": "create Cell",
       "tags": [
         "notebooks"
       ],
@@ -10524,6 +10793,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "notebooks cells create",
         "security": [
           {
             "ApiKeyAuth": []
@@ -10541,6 +10811,7 @@
       "method": "patch",
       "path": "/notebooks/{notebookId}/cells/{cellId}",
       "operation_id": "updateCell",
+      "summary": "update Cell",
       "tags": [
         "notebooks"
       ],
@@ -10602,6 +10873,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "notebooks cells update",
         "security": [
           {
             "ApiKeyAuth": []
@@ -10619,6 +10891,7 @@
       "method": "delete",
       "path": "/notebooks/{notebookId}/cells/{cellId}",
       "operation_id": "deleteCell",
+      "summary": "delete Cell",
       "tags": [
         "notebooks"
       ],
@@ -10670,6 +10943,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "notebooks cells delete",
         "security": [
           {
             "ApiKeyAuth": []
@@ -10687,6 +10961,7 @@
       "method": "post",
       "path": "/notebooks/{notebookId}/cells/reorder",
       "operation_id": "reorderCells",
+      "summary": "reorder Cells",
       "tags": [
         "notebooks"
       ],
@@ -10739,6 +11014,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "notebooks cells reorder",
         "security": [
           {
             "ApiKeyAuth": []
@@ -10756,6 +11032,7 @@
       "method": "get",
       "path": "/notebooks/{notebookId}/jobs",
       "operation_id": "listNotebookJobs",
+      "summary": "list Notebook Jobs",
       "tags": [
         "notebooks"
       ],
@@ -10827,6 +11104,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "notebooks jobs list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -10844,6 +11122,7 @@
       "method": "get",
       "path": "/notebooks/{notebookId}/jobs/{jobId}",
       "operation_id": "getNotebookJob",
+      "summary": "get Notebook Job",
       "tags": [
         "notebooks"
       ],
@@ -10905,6 +11184,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "notebooks jobs get",
         "security": [
           {
             "ApiKeyAuth": []
@@ -10922,6 +11202,7 @@
       "method": "post",
       "path": "/notebooks/{notebookId}/sessions",
       "operation_id": "createNotebookSession",
+      "summary": "create Notebook Session",
       "tags": [
         "notebooks"
       ],
@@ -10967,6 +11248,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "notebooks sessions create",
         "security": [
           {
             "ApiKeyAuth": []
@@ -10984,6 +11266,7 @@
       "method": "delete",
       "path": "/notebooks/{notebookId}/sessions/{sessionId}",
       "operation_id": "closeNotebookSession",
+      "summary": "close Notebook Session",
       "tags": [
         "notebooks"
       ],
@@ -11035,6 +11318,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "notebooks sessions close",
         "security": [
           {
             "ApiKeyAuth": []
@@ -11052,6 +11336,7 @@
       "method": "post",
       "path": "/notebooks/{notebookId}/sessions/{sessionId}/execute/{cellId}",
       "operation_id": "executeCell",
+      "summary": "execute Cell",
       "tags": [
         "notebooks"
       ],
@@ -11115,6 +11400,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "notebooks cells execute",
         "security": [
           {
             "ApiKeyAuth": []
@@ -11132,6 +11418,7 @@
       "method": "post",
       "path": "/notebooks/{notebookId}/sessions/{sessionId}/run-all",
       "operation_id": "runAllCells",
+      "summary": "run All Cells",
       "tags": [
         "notebooks"
       ],
@@ -11186,6 +11473,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "notebooks sessions run-all",
         "security": [
           {
             "ApiKeyAuth": []
@@ -11203,6 +11491,7 @@
       "method": "post",
       "path": "/notebooks/{notebookId}/sessions/{sessionId}/run-all-async",
       "operation_id": "runAllCellsAsync",
+      "summary": "run All Cells Async",
       "tags": [
         "notebooks"
       ],
@@ -11257,6 +11546,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "notebooks sessions run-all-async",
         "security": [
           {
             "ApiKeyAuth": []
@@ -11274,6 +11564,7 @@
       "method": "get",
       "path": "/pipelines",
       "operation_id": "listPipelines",
+      "summary": "list Pipelines",
       "tags": [
         "pipelines"
       ],
@@ -11329,6 +11620,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "pipelines pipelines list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -11346,6 +11638,7 @@
       "method": "post",
       "path": "/pipelines",
       "operation_id": "createPipeline",
+      "summary": "create Pipeline",
       "tags": [
         "pipelines"
       ],
@@ -11387,6 +11680,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "pipelines pipelines create",
         "security": [
           {
             "ApiKeyAuth": []
@@ -11404,6 +11698,7 @@
       "method": "get",
       "path": "/pipelines/{pipelineName}",
       "operation_id": "getPipeline",
+      "summary": "get Pipeline",
       "tags": [
         "pipelines"
       ],
@@ -11456,6 +11751,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "pipelines pipelines get",
         "security": [
           {
             "ApiKeyAuth": []
@@ -11473,6 +11769,7 @@
       "method": "patch",
       "path": "/pipelines/{pipelineName}",
       "operation_id": "updatePipeline",
+      "summary": "update Pipeline",
       "tags": [
         "pipelines"
       ],
@@ -11525,6 +11822,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "pipelines pipelines update",
         "security": [
           {
             "ApiKeyAuth": []
@@ -11542,6 +11840,7 @@
       "method": "delete",
       "path": "/pipelines/{pipelineName}",
       "operation_id": "deletePipeline",
+      "summary": "delete Pipeline",
       "tags": [
         "pipelines"
       ],
@@ -11584,6 +11883,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "pipelines pipelines delete",
         "security": [
           {
             "ApiKeyAuth": []
@@ -11601,6 +11901,7 @@
       "method": "get",
       "path": "/pipelines/{pipelineName}/jobs",
       "operation_id": "listPipelineJobs",
+      "summary": "list Pipeline Jobs",
       "tags": [
         "pipelines"
       ],
@@ -11653,6 +11954,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "pipelines jobs list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -11670,6 +11972,7 @@
       "method": "post",
       "path": "/pipelines/{pipelineName}/jobs",
       "operation_id": "createPipelineJob",
+      "summary": "create Pipeline Job",
       "tags": [
         "pipelines"
       ],
@@ -11722,6 +12025,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "pipelines jobs create",
         "security": [
           {
             "ApiKeyAuth": []
@@ -11739,6 +12043,7 @@
       "method": "delete",
       "path": "/pipelines/{pipelineName}/jobs/{jobId}",
       "operation_id": "deletePipelineJob",
+      "summary": "delete Pipeline Job",
       "tags": [
         "pipelines"
       ],
@@ -11790,6 +12095,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "pipelines jobs delete",
         "security": [
           {
             "ApiKeyAuth": []
@@ -11807,6 +12113,7 @@
       "method": "get",
       "path": "/pipelines/{pipelineName}/runs",
       "operation_id": "listPipelineRuns",
+      "summary": "list Pipeline Runs",
       "tags": [
         "pipelines"
       ],
@@ -11887,6 +12194,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "pipelines runs list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -11904,6 +12212,7 @@
       "method": "post",
       "path": "/pipelines/{pipelineName}/runs",
       "operation_id": "triggerPipelineRun",
+      "summary": "trigger Pipeline Run",
       "tags": [
         "pipelines"
       ],
@@ -11956,6 +12265,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "pipelines runs trigger",
         "security": [
           {
             "ApiKeyAuth": []
@@ -11973,6 +12283,7 @@
       "method": "get",
       "path": "/pipelines/runs/{runId}",
       "operation_id": "getPipelineRun",
+      "summary": "get Pipeline Run",
       "tags": [
         "pipelines"
       ],
@@ -12025,6 +12336,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "pipelines runs get",
         "security": [
           {
             "ApiKeyAuth": []
@@ -12042,6 +12354,7 @@
       "method": "post",
       "path": "/pipelines/runs/{runId}/cancel",
       "operation_id": "cancelPipelineRun",
+      "summary": "cancel Pipeline Run",
       "tags": [
         "pipelines"
       ],
@@ -12087,6 +12400,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "pipelines runs cancel",
         "security": [
           {
             "ApiKeyAuth": []
@@ -12104,6 +12418,7 @@
       "method": "get",
       "path": "/pipelines/runs/{runId}/jobs",
       "operation_id": "listPipelineJobRuns",
+      "summary": "list Pipeline Job Runs",
       "tags": [
         "pipelines"
       ],
@@ -12156,6 +12471,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "pipelines runs list-job-runs",
         "security": [
           {
             "ApiKeyAuth": []
@@ -12173,6 +12489,7 @@
       "method": "get",
       "path": "/principals",
       "operation_id": "listPrincipals",
+      "summary": "list Principals",
       "tags": [
         "security"
       ],
@@ -12228,6 +12545,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "security principals list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -12245,6 +12563,7 @@
       "method": "post",
       "path": "/principals",
       "operation_id": "createPrincipal",
+      "summary": "create Principal",
       "tags": [
         "security"
       ],
@@ -12286,6 +12605,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "security principals create",
         "security": [
           {
             "ApiKeyAuth": []
@@ -12303,6 +12623,7 @@
       "method": "get",
       "path": "/principals/{principalId}",
       "operation_id": "getPrincipal",
+      "summary": "get Principal",
       "tags": [
         "security"
       ],
@@ -12355,6 +12676,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "security principals get",
         "security": [
           {
             "ApiKeyAuth": []
@@ -12372,6 +12694,7 @@
       "method": "delete",
       "path": "/principals/{principalId}",
       "operation_id": "deletePrincipal",
+      "summary": "delete Principal",
       "tags": [
         "security"
       ],
@@ -12414,6 +12737,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "security principals delete",
         "security": [
           {
             "ApiKeyAuth": []
@@ -12431,6 +12755,7 @@
       "method": "put",
       "path": "/principals/{principalId}/admin",
       "operation_id": "updatePrincipalAdmin",
+      "summary": "update Principal Admin",
       "tags": [
         "security"
       ],
@@ -12480,6 +12805,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "security principals set-admin",
         "security": [
           {
             "ApiKeyAuth": []
@@ -12497,8 +12823,9 @@
       "method": "post",
       "path": "/queries",
       "operation_id": "submitQuery",
+      "summary": "submit Query",
       "tags": [
-        "api"
+        "query"
       ],
       "responses": [
         {
@@ -12534,10 +12861,11 @@
         "required": true,
         "description": "Request payload",
         "schema": {
-          "ref": "GenericRequest"
+          "ref": "SubmitQueryRequest"
         }
       },
       "extensions": {
+        "x-cli-command": "query submit",
         "security": [
           {
             "ApiKeyAuth": []
@@ -12555,8 +12883,9 @@
       "method": "get",
       "path": "/queries/{queryId}",
       "operation_id": "getQuery",
+      "summary": "get Query",
       "tags": [
-        "api"
+        "query"
       ],
       "responses": [
         {
@@ -12607,6 +12936,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "query status",
         "security": [
           {
             "ApiKeyAuth": []
@@ -12624,8 +12954,9 @@
       "method": "delete",
       "path": "/queries/{queryId}",
       "operation_id": "deleteQuery",
+      "summary": "delete Query",
       "tags": [
-        "api"
+        "query"
       ],
       "responses": [
         {
@@ -12666,6 +12997,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "query delete",
         "security": [
           {
             "ApiKeyAuth": []
@@ -12683,8 +13015,9 @@
       "method": "post",
       "path": "/queries/{queryId}/cancel",
       "operation_id": "cancelQuery",
+      "summary": "cancel Query",
       "tags": [
-        "api"
+        "query"
       ],
       "responses": [
         {
@@ -12728,6 +13061,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "query cancel",
         "security": [
           {
             "ApiKeyAuth": []
@@ -12745,8 +13079,9 @@
       "method": "get",
       "path": "/queries/{queryId}/results",
       "operation_id": "getQueryResults",
+      "summary": "get Query Results",
       "tags": [
-        "api"
+        "query"
       ],
       "responses": [
         {
@@ -12816,6 +13151,67 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "query results",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "post",
+      "path": "/query",
+      "operation_id": "executeQuery",
+      "summary": "execute Query",
+      "tags": [
+        "query"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "QueryResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "QueryRequest"
+        }
+      },
+      "extensions": {
+        "x-cli-command": "query",
         "security": [
           {
             "ApiKeyAuth": []
@@ -12833,6 +13229,7 @@
       "method": "get",
       "path": "/query-history",
       "operation_id": "listQueryHistory",
+      "summary": "list Query History",
       "tags": [
         "observability"
       ],
@@ -12924,6 +13321,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "observability query-history list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -12941,6 +13339,7 @@
       "method": "delete",
       "path": "/row-filters/{rowFilterId}",
       "operation_id": "deleteRowFilter",
+      "summary": "delete Row Filter",
       "tags": [
         "security"
       ],
@@ -12983,6 +13382,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "security row-filters delete",
         "security": [
           {
             "ApiKeyAuth": []
@@ -13000,6 +13400,7 @@
       "method": "post",
       "path": "/row-filters/{rowFilterId}/bindings",
       "operation_id": "bindRowFilter",
+      "summary": "bind Row Filter",
       "tags": [
         "security"
       ],
@@ -13049,6 +13450,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "security row-filters bind",
         "security": [
           {
             "ApiKeyAuth": []
@@ -13066,6 +13468,7 @@
       "method": "delete",
       "path": "/row-filters/{rowFilterId}/bindings",
       "operation_id": "unbindRowFilter",
+      "summary": "unbind Row Filter",
       "tags": [
         "security"
       ],
@@ -13126,6 +13529,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "security row-filters unbind",
         "security": [
           {
             "ApiKeyAuth": []
@@ -13143,6 +13547,7 @@
       "method": "get",
       "path": "/search",
       "operation_id": "searchCatalog",
+      "summary": "search Catalog",
       "tags": [
         "api"
       ],
@@ -13225,6 +13630,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "governance search",
         "security": [
           {
             "ApiKeyAuth": []
@@ -13242,6 +13648,7 @@
       "method": "get",
       "path": "/semantic-models",
       "operation_id": "listSemanticModels",
+      "summary": "list Semantic Models",
       "tags": [
         "semantic"
       ],
@@ -13306,6 +13713,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "semantic semantic-models list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -13323,6 +13731,7 @@
       "method": "post",
       "path": "/semantic-models",
       "operation_id": "createSemanticModel",
+      "summary": "create Semantic Model",
       "tags": [
         "semantic"
       ],
@@ -13364,6 +13773,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "semantic semantic-models create",
         "security": [
           {
             "ApiKeyAuth": []
@@ -13381,6 +13791,7 @@
       "method": "get",
       "path": "/semantic-models/{projectName}/{semanticModelName}",
       "operation_id": "getSemanticModel",
+      "summary": "get Semantic Model",
       "tags": [
         "semantic"
       ],
@@ -13442,6 +13853,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "semantic semantic-models get",
         "security": [
           {
             "ApiKeyAuth": []
@@ -13459,6 +13871,7 @@
       "method": "patch",
       "path": "/semantic-models/{projectName}/{semanticModelName}",
       "operation_id": "updateSemanticModel",
+      "summary": "update Semantic Model",
       "tags": [
         "semantic"
       ],
@@ -13520,6 +13933,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "semantic semantic-models update",
         "security": [
           {
             "ApiKeyAuth": []
@@ -13537,6 +13951,7 @@
       "method": "delete",
       "path": "/semantic-models/{projectName}/{semanticModelName}",
       "operation_id": "deleteSemanticModel",
+      "summary": "delete Semantic Model",
       "tags": [
         "semantic"
       ],
@@ -13588,6 +14003,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "semantic semantic-models delete",
         "security": [
           {
             "ApiKeyAuth": []
@@ -13605,6 +14021,7 @@
       "method": "get",
       "path": "/semantic-models/{projectName}/{semanticModelName}/metrics",
       "operation_id": "listSemanticMetrics",
+      "summary": "list Semantic Metrics",
       "tags": [
         "semantic"
       ],
@@ -13666,6 +14083,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "semantic metrics list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -13683,6 +14101,7 @@
       "method": "post",
       "path": "/semantic-models/{projectName}/{semanticModelName}/metrics",
       "operation_id": "createSemanticMetric",
+      "summary": "create Semantic Metric",
       "tags": [
         "semantic"
       ],
@@ -13744,6 +14163,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "semantic metrics create",
         "security": [
           {
             "ApiKeyAuth": []
@@ -13761,6 +14181,7 @@
       "method": "patch",
       "path": "/semantic-models/{projectName}/{semanticModelName}/metrics/{metricName}",
       "operation_id": "updateSemanticMetric",
+      "summary": "update Semantic Metric",
       "tags": [
         "semantic"
       ],
@@ -13831,6 +14252,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "semantic metrics update",
         "security": [
           {
             "ApiKeyAuth": []
@@ -13848,6 +14270,7 @@
       "method": "delete",
       "path": "/semantic-models/{projectName}/{semanticModelName}/metrics/{metricName}",
       "operation_id": "deleteSemanticMetric",
+      "summary": "delete Semantic Metric",
       "tags": [
         "semantic"
       ],
@@ -13908,6 +14331,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "semantic metrics delete",
         "security": [
           {
             "ApiKeyAuth": []
@@ -13925,6 +14349,7 @@
       "method": "get",
       "path": "/semantic-models/{projectName}/{semanticModelName}/pre-aggregations",
       "operation_id": "listSemanticPreAggregations",
+      "summary": "list Semantic Pre Aggregations",
       "tags": [
         "semantic"
       ],
@@ -13986,6 +14411,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "semantic pre-aggregations list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -14003,6 +14429,7 @@
       "method": "post",
       "path": "/semantic-models/{projectName}/{semanticModelName}/pre-aggregations",
       "operation_id": "createSemanticPreAggregation",
+      "summary": "create Semantic Pre Aggregation",
       "tags": [
         "semantic"
       ],
@@ -14064,6 +14491,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "semantic pre-aggregations create",
         "security": [
           {
             "ApiKeyAuth": []
@@ -14081,6 +14509,7 @@
       "method": "patch",
       "path": "/semantic-models/{projectName}/{semanticModelName}/pre-aggregations/{preAggregationName}",
       "operation_id": "updateSemanticPreAggregation",
+      "summary": "update Semantic Pre Aggregation",
       "tags": [
         "semantic"
       ],
@@ -14151,6 +14580,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "semantic pre-aggregations update",
         "security": [
           {
             "ApiKeyAuth": []
@@ -14168,6 +14598,7 @@
       "method": "delete",
       "path": "/semantic-models/{projectName}/{semanticModelName}/pre-aggregations/{preAggregationName}",
       "operation_id": "deleteSemanticPreAggregation",
+      "summary": "delete Semantic Pre Aggregation",
       "tags": [
         "semantic"
       ],
@@ -14228,6 +14659,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "semantic pre-aggregations delete",
         "security": [
           {
             "ApiKeyAuth": []
@@ -14245,6 +14677,7 @@
       "method": "get",
       "path": "/semantic-relationships",
       "operation_id": "listSemanticRelationships",
+      "summary": "list Semantic Relationships",
       "tags": [
         "semantic"
       ],
@@ -14300,6 +14733,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "semantic semantic-relationships list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -14317,6 +14751,7 @@
       "method": "post",
       "path": "/semantic-relationships",
       "operation_id": "createSemanticRelationship",
+      "summary": "create Semantic Relationship",
       "tags": [
         "semantic"
       ],
@@ -14358,6 +14793,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "semantic semantic-relationships create",
         "security": [
           {
             "ApiKeyAuth": []
@@ -14375,6 +14811,7 @@
       "method": "patch",
       "path": "/semantic-relationships/{relationshipName}",
       "operation_id": "updateSemanticRelationship",
+      "summary": "update Semantic Relationship",
       "tags": [
         "semantic"
       ],
@@ -14427,6 +14864,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "semantic semantic-relationships update",
         "security": [
           {
             "ApiKeyAuth": []
@@ -14444,6 +14882,7 @@
       "method": "delete",
       "path": "/semantic-relationships/{relationshipName}",
       "operation_id": "deleteSemanticRelationship",
+      "summary": "delete Semantic Relationship",
       "tags": [
         "semantic"
       ],
@@ -14486,6 +14925,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "semantic semantic-relationships delete",
         "security": [
           {
             "ApiKeyAuth": []
@@ -14503,6 +14943,7 @@
       "method": "get",
       "path": "/sources/{sourceSchema}/{sourceTable}/freshness",
       "operation_id": "checkSourceFreshness",
+      "summary": "check Source Freshness",
       "tags": [
         "pipelines"
       ],
@@ -14583,6 +15024,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "models freshness check-source-freshness",
         "security": [
           {
             "ApiKeyAuth": []
@@ -14600,6 +15042,7 @@
       "method": "get",
       "path": "/storage-credentials",
       "operation_id": "listStorageCredentials",
+      "summary": "list Storage Credentials",
       "tags": [
         "storage"
       ],
@@ -14655,6 +15098,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "storage credentials list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -14672,6 +15116,7 @@
       "method": "post",
       "path": "/storage-credentials",
       "operation_id": "createStorageCredential",
+      "summary": "create Storage Credential",
       "tags": [
         "storage"
       ],
@@ -14713,6 +15158,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "storage credentials create",
         "security": [
           {
             "ApiKeyAuth": []
@@ -14737,6 +15183,7 @@
       "method": "get",
       "path": "/storage-credentials/{credentialName}",
       "operation_id": "getStorageCredential",
+      "summary": "get Storage Credential",
       "tags": [
         "storage"
       ],
@@ -14789,6 +15236,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "storage credentials get",
         "security": [
           {
             "ApiKeyAuth": []
@@ -14806,6 +15254,7 @@
       "method": "patch",
       "path": "/storage-credentials/{credentialName}",
       "operation_id": "updateStorageCredential",
+      "summary": "update Storage Credential",
       "tags": [
         "storage"
       ],
@@ -14858,6 +15307,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "storage credentials update",
         "security": [
           {
             "ApiKeyAuth": []
@@ -14882,6 +15332,7 @@
       "method": "delete",
       "path": "/storage-credentials/{credentialName}",
       "operation_id": "deleteStorageCredential",
+      "summary": "delete Storage Credential",
       "tags": [
         "storage"
       ],
@@ -14924,6 +15375,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "storage credentials delete",
         "security": [
           {
             "ApiKeyAuth": []
@@ -14948,6 +15400,7 @@
       "method": "get",
       "path": "/tables/{tableId}/column-masks",
       "operation_id": "listColumnMasks",
+      "summary": "list Column Masks",
       "tags": [
         "security"
       ],
@@ -15019,6 +15472,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "security column-masks list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -15036,6 +15490,7 @@
       "method": "post",
       "path": "/tables/{tableId}/column-masks",
       "operation_id": "createColumnMask",
+      "summary": "create Column Mask",
       "tags": [
         "security"
       ],
@@ -15088,6 +15543,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "security column-masks create",
         "security": [
           {
             "ApiKeyAuth": []
@@ -15105,6 +15561,7 @@
       "method": "get",
       "path": "/tables/{tableId}/row-filters",
       "operation_id": "listRowFilters",
+      "summary": "list Row Filters",
       "tags": [
         "security"
       ],
@@ -15176,6 +15633,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "security row-filters list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -15193,6 +15651,7 @@
       "method": "post",
       "path": "/tables/{tableId}/row-filters",
       "operation_id": "createRowFilter",
+      "summary": "create Row Filter",
       "tags": [
         "security"
       ],
@@ -15245,6 +15704,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "security row-filters create",
         "security": [
           {
             "ApiKeyAuth": []
@@ -15262,6 +15722,7 @@
       "method": "delete",
       "path": "/tag-assignments/{assignmentId}",
       "operation_id": "deleteTagAssignment",
+      "summary": "delete Tag Assignment",
       "tags": [
         "governance"
       ],
@@ -15304,6 +15765,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "governance tag-assignments delete",
         "security": [
           {
             "ApiKeyAuth": []
@@ -15321,6 +15783,7 @@
       "method": "get",
       "path": "/tags",
       "operation_id": "listTags",
+      "summary": "list Tags",
       "tags": [
         "governance"
       ],
@@ -15376,6 +15839,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "governance tags list",
         "security": [
           {
             "ApiKeyAuth": []
@@ -15393,6 +15857,7 @@
       "method": "post",
       "path": "/tags",
       "operation_id": "createTag",
+      "summary": "create Tag",
       "tags": [
         "governance"
       ],
@@ -15434,6 +15899,7 @@
         }
       },
       "extensions": {
+        "x-cli-command": "governance tags create",
         "security": [
           {
             "ApiKeyAuth": []
@@ -15451,6 +15917,7 @@
       "method": "delete",
       "path": "/tags/{tagId}",
       "operation_id": "deleteTag",
+      "summary": "delete Tag",
       "tags": [
         "governance"
       ],
@@ -15493,6 +15960,7 @@
         }
       ],
       "extensions": {
+        "x-cli-command": "governance tags delete",
         "security": [
           {
             "ApiKeyAuth": []
@@ -15510,6 +15978,7 @@
       "method": "post",
       "path": "/tags/{tagId}/assignments",
       "operation_id": "createTagAssignment",
+      "summary": "create Tag Assignment",
       "tags": [
         "governance"
       ],
@@ -15562,64 +16031,7 @@
         }
       },
       "extensions": {
-        "security": [
-          {
-            "ApiKeyAuth": []
-          },
-          {
-            "BearerAuth": []
-          }
-        ],
-        "x-authz": {
-          "mode": "authenticated"
-        }
-      }
-    },
-    {
-      "method": "post",
-      "path": "/v1/query",
-      "operation_id": "executeQuery",
-      "tags": [
-        "query"
-      ],
-      "responses": [
-        {
-          "status_code": 201,
-          "description": "Created",
-          "schema": {
-            "ref": "QueryResponse"
-          }
-        },
-        {
-          "status_code": 401,
-          "description": "Unauthorized",
-          "schema": {
-            "ref": "Error"
-          }
-        },
-        {
-          "status_code": 429,
-          "description": "Too Many Requests",
-          "schema": {
-            "ref": "Error"
-          }
-        },
-        {
-          "status_code": 500,
-          "description": "Internal Server Error",
-          "schema": {
-            "ref": "Error"
-          }
-        }
-      ],
-      "request_body": {
-        "required": true,
-        "description": "Request payload",
-        "schema": {
-          "ref": "QueryRequest"
-        }
-      },
-      "extensions": {
+        "x-cli-command": "governance tag-assignments create",
         "security": [
           {
             "ApiKeyAuth": []

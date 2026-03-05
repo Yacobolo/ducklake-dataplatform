@@ -6,6 +6,8 @@ General API endpoints
 
 ## `GET /git-repos`
 
+list Git Repos
+
 - Operation ID: `listGitRepos`
 
 ### Query Parameters
@@ -26,6 +28,8 @@ General API endpoints
 
 ## `POST /git-repos`
 
+create Git Repo
+
 - Operation ID: `createGitRepo`
 
 ### Request Body
@@ -43,6 +47,8 @@ General API endpoints
 | `500` | Internal Server Error |
 
 ## `GET /git-repos/{gitRepoId}`
+
+get Git Repo
 
 - Operation ID: `getGitRepo`
 
@@ -64,6 +70,8 @@ General API endpoints
 
 ## `DELETE /git-repos/{gitRepoId}`
 
+delete Git Repo
+
 - Operation ID: `deleteGitRepo`
 
 ### Path Parameters
@@ -83,6 +91,8 @@ General API endpoints
 
 ## `POST /git-repos/{gitRepoId}/sync`
 
+sync Git Repo
+
 - Operation ID: `syncGitRepo`
 
 ### Path Parameters
@@ -100,110 +110,9 @@ General API endpoints
 | `429` | Too Many Requests |
 | `500` | Internal Server Error |
 
-## `POST /queries`
-
-- Operation ID: `submitQuery`
-
-### Request Body
-
-- Required: `true`
-- Content types: `application/json`
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `201` | Created |
-| `401` | Unauthorized |
-| `429` | Too Many Requests |
-| `500` | Internal Server Error |
-
-## `GET /queries/{queryId}`
-
-- Operation ID: `getQuery`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `queryId` | `string` | `true` | - |
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `200` | OK |
-| `401` | Unauthorized |
-| `404` | Not Found |
-| `429` | Too Many Requests |
-| `500` | Internal Server Error |
-
-## `DELETE /queries/{queryId}`
-
-- Operation ID: `deleteQuery`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `queryId` | `string` | `true` | - |
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `204` | No Content |
-| `401` | Unauthorized |
-| `429` | Too Many Requests |
-| `500` | Internal Server Error |
-
-## `POST /queries/{queryId}/cancel`
-
-- Operation ID: `cancelQuery`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `queryId` | `string` | `true` | - |
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `201` | Created |
-| `401` | Unauthorized |
-| `429` | Too Many Requests |
-| `500` | Internal Server Error |
-
-## `GET /queries/{queryId}/results`
-
-- Operation ID: `getQueryResults`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `queryId` | `string` | `true` | - |
-
-### Query Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `200` | OK |
-| `401` | Unauthorized |
-| `404` | Not Found |
-| `429` | Too Many Requests |
-| `500` | Internal Server Error |
-
 ## `GET /search`
+
+search Catalog
 
 - Operation ID: `searchCatalog`
 

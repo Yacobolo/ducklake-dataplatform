@@ -6,6 +6,8 @@ Storage credentials and external locations
 
 ## `GET /external-locations`
 
+list External Locations
+
 - Operation ID: `listExternalLocations`
 
 ### Query Parameters
@@ -26,6 +28,8 @@ Storage credentials and external locations
 
 ## `POST /external-locations`
 
+create External Location
+
 - Operation ID: `createExternalLocation`
 
 ### Request Body
@@ -43,6 +47,8 @@ Storage credentials and external locations
 | `500` | Internal Server Error |
 
 ## `GET /external-locations/{locationName}`
+
+get External Location
 
 - Operation ID: `getExternalLocation`
 
@@ -63,6 +69,8 @@ Storage credentials and external locations
 | `500` | Internal Server Error |
 
 ## `PATCH /external-locations/{locationName}`
+
+update External Location
 
 - Operation ID: `updateExternalLocation`
 
@@ -88,6 +96,8 @@ Storage credentials and external locations
 
 ## `DELETE /external-locations/{locationName}`
 
+delete External Location
+
 - Operation ID: `deleteExternalLocation`
 
 ### Path Parameters
@@ -106,6 +116,8 @@ Storage credentials and external locations
 | `500` | Internal Server Error |
 
 ## `GET /storage-credentials`
+
+list Storage Credentials
 
 - Operation ID: `listStorageCredentials`
 
@@ -127,6 +139,8 @@ Storage credentials and external locations
 
 ## `POST /storage-credentials`
 
+create Storage Credential
+
 - Operation ID: `createStorageCredential`
 
 ### Request Body
@@ -144,6 +158,8 @@ Storage credentials and external locations
 | `500` | Internal Server Error |
 
 ## `GET /storage-credentials/{credentialName}`
+
+get Storage Credential
 
 - Operation ID: `getStorageCredential`
 
@@ -164,6 +180,8 @@ Storage credentials and external locations
 | `500` | Internal Server Error |
 
 ## `PATCH /storage-credentials/{credentialName}`
+
+update Storage Credential
 
 - Operation ID: `updateStorageCredential`
 
@@ -188,6 +206,8 @@ Storage credentials and external locations
 | `500` | Internal Server Error |
 
 ## `DELETE /storage-credentials/{credentialName}`
+
+delete Storage Credential
 
 - Operation ID: `deleteStorageCredential`
 

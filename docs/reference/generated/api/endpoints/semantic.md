@@ -6,6 +6,8 @@ Semantic models and metrics
 
 ## `POST /metric-queries:explain`
 
+explain Metric Query
+
 - Operation ID: `explainMetricQuery`
 
 ### Request Body
@@ -24,6 +26,8 @@ Semantic models and metrics
 
 ## `POST /metric-queries:run`
 
+run Metric Query
+
 - Operation ID: `runMetricQuery`
 
 ### Request Body
@@ -41,6 +45,8 @@ Semantic models and metrics
 | `500` | Internal Server Error |
 
 ## `GET /metrics/{metricName}/freshness`
+
+check Metric Freshness
 
 - Operation ID: `checkMetricFreshness`
 
@@ -69,6 +75,8 @@ Semantic models and metrics
 
 ## `GET /semantic-models`
 
+list Semantic Models
+
 - Operation ID: `listSemanticModels`
 
 ### Query Parameters
@@ -90,6 +98,8 @@ Semantic models and metrics
 
 ## `POST /semantic-models`
 
+create Semantic Model
+
 - Operation ID: `createSemanticModel`
 
 ### Request Body
@@ -107,6 +117,8 @@ Semantic models and metrics
 | `500` | Internal Server Error |
 
 ## `GET /semantic-models/{projectName}/{semanticModelName}`
+
+get Semantic Model
 
 - Operation ID: `getSemanticModel`
 
@@ -128,6 +140,8 @@ Semantic models and metrics
 | `500` | Internal Server Error |
 
 ## `PATCH /semantic-models/{projectName}/{semanticModelName}`
+
+update Semantic Model
 
 - Operation ID: `updateSemanticModel`
 
@@ -154,6 +168,8 @@ Semantic models and metrics
 
 ## `DELETE /semantic-models/{projectName}/{semanticModelName}`
 
+delete Semantic Model
+
 - Operation ID: `deleteSemanticModel`
 
 ### Path Parameters
@@ -173,6 +189,8 @@ Semantic models and metrics
 | `500` | Internal Server Error |
 
 ## `GET /semantic-models/{projectName}/{semanticModelName}/metrics`
+
+list Semantic Metrics
 
 - Operation ID: `listSemanticMetrics`
 
@@ -194,6 +212,8 @@ Semantic models and metrics
 | `500` | Internal Server Error |
 
 ## `POST /semantic-models/{projectName}/{semanticModelName}/metrics`
+
+create Semantic Metric
 
 - Operation ID: `createSemanticMetric`
 
@@ -219,6 +239,8 @@ Semantic models and metrics
 | `500` | Internal Server Error |
 
 ## `PATCH /semantic-models/{projectName}/{semanticModelName}/metrics/{metricName}`
+
+update Semantic Metric
 
 - Operation ID: `updateSemanticMetric`
 
@@ -246,6 +268,8 @@ Semantic models and metrics
 
 ## `DELETE /semantic-models/{projectName}/{semanticModelName}/metrics/{metricName}`
 
+delete Semantic Metric
+
 - Operation ID: `deleteSemanticMetric`
 
 ### Path Parameters
@@ -267,6 +291,8 @@ Semantic models and metrics
 
 ## `GET /semantic-models/{projectName}/{semanticModelName}/pre-aggregations`
 
+list Semantic Pre Aggregations
+
 - Operation ID: `listSemanticPreAggregations`
 
 ### Path Parameters
@@ -287,6 +313,8 @@ Semantic models and metrics
 | `500` | Internal Server Error |
 
 ## `POST /semantic-models/{projectName}/{semanticModelName}/pre-aggregations`
+
+create Semantic Pre Aggregation
 
 - Operation ID: `createSemanticPreAggregation`
 
@@ -312,6 +340,8 @@ Semantic models and metrics
 | `500` | Internal Server Error |
 
 ## `PATCH /semantic-models/{projectName}/{semanticModelName}/pre-aggregations/{preAggregationName}`
+
+update Semantic Pre Aggregation
 
 - Operation ID: `updateSemanticPreAggregation`
 
@@ -339,6 +369,8 @@ Semantic models and metrics
 
 ## `DELETE /semantic-models/{projectName}/{semanticModelName}/pre-aggregations/{preAggregationName}`
 
+delete Semantic Pre Aggregation
+
 - Operation ID: `deleteSemanticPreAggregation`
 
 ### Path Parameters
@@ -360,6 +392,8 @@ Semantic models and metrics
 
 ## `GET /semantic-relationships`
 
+list Semantic Relationships
+
 - Operation ID: `listSemanticRelationships`
 
 ### Query Parameters
@@ -380,6 +414,8 @@ Semantic models and metrics
 
 ## `POST /semantic-relationships`
 
+create Semantic Relationship
+
 - Operation ID: `createSemanticRelationship`
 
 ### Request Body
@@ -397,6 +433,8 @@ Semantic models and metrics
 | `500` | Internal Server Error |
 
 ## `PATCH /semantic-relationships/{relationshipName}`
+
+update Semantic Relationship
 
 - Operation ID: `updateSemanticRelationship`
 
@@ -421,6 +459,8 @@ Semantic models and metrics
 | `500` | Internal Server Error |
 
 ## `DELETE /semantic-relationships/{relationshipName}`
+
+delete Semantic Relationship
 
 - Operation ID: `deleteSemanticRelationship`
 
