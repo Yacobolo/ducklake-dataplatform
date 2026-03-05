@@ -186,6 +186,73 @@ model ColumnMaskBindingRequest {
   see_original?: boolean;
 }
 
+model ManifestRequest {
+  table: string;
+  schema?: string;
+}
+
+model ManifestColumn {
+  name: string;
+  type: string;
+}
+
+model ManifestResponse {
+  table: string;
+  schema?: string;
+  columns?: ManifestColumn[];
+  files?: string[];
+  row_filters?: string[];
+  column_masks?: Record<string>;
+  expires_at?: string;
+}
+
+model AuditEntry {
+  id: string;
+  principal_name?: string;
+  action?: string;
+  statement_type?: string;
+  original_sql?: string;
+  rewritten_sql?: string;
+  tables_accessed?: string[];
+  status?: string;
+  error_message?: string;
+  duration_ms?: int64;
+  created_at?: string;
+}
+
+model PaginatedAuditLogs {
+  data: AuditEntry[];
+  next_page_token?: string;
+}
+
+model QueryHistoryEntry {
+  id: string;
+  principal_name?: string;
+  original_sql?: string;
+  rewritten_sql?: string;
+  statement_type?: string;
+  tables_accessed?: string[];
+  status?: string;
+  error_message?: string;
+  duration_ms?: int64;
+  rows_returned?: int64;
+  created_at?: string;
+}
+
+model PaginatedQueryHistoryEntries {
+  data: QueryHistoryEntry[];
+  next_page_token?: string;
+}
+
+model MetastoreSummary {
+  catalog_name: string;
+  metastore_type?: string;
+  storage_backend?: string;
+  data_path?: string;
+  schema_count?: int32;
+  table_count?: int32;
+}
+
 @route("/healthz")
 @get
 op getHealth(): HealthResponse;
@@ -316,3 +383,32 @@ op bindColumnMask(columnMaskId: string, @body body: ColumnMaskBindingRequest): v
 @route("/column-masks/{columnMaskId}/bindings")
 @delete
 op unbindColumnMask(columnMaskId: string, principal_id: string, principal_type: string): void;
+
+@route("/manifest")
+@post
+op createManifest(@body body: ManifestRequest): ManifestResponse;
+
+@route("/audit-logs")
+@get
+op listAuditLogs(
+  principal_name?: string,
+  action?: string,
+  status?: string,
+  max_results?: int32,
+  page_token?: string,
+): PaginatedAuditLogs;
+
+@route("/catalogs/{catalogName}/metastore/summary")
+@get
+op getMetastoreSummary(catalogName: string): MetastoreSummary;
+
+@route("/query-history")
+@get
+op listQueryHistory(
+  principal_name?: string,
+  status?: string,
+  from?: string,
+  to?: string,
+  max_results?: int32,
+  page_token?: string,
+): PaginatedQueryHistoryEntries;

@@ -87,6 +87,8 @@ export async function $onEmit(context: EmitContext<EmitterOptions>): Promise<voi
       { name: "system", description: "System endpoints" },
       { name: "query", description: "Query execution endpoints" },
       { name: "security", description: "Security and access-control endpoints" },
+      { name: "manifest", description: "Manifest and data-access endpoints" },
+      { name: "observability", description: "Audit and query observability endpoints" },
       { name: "api", description: "General API endpoints" },
     ],
     schemas,
@@ -254,11 +256,24 @@ function tagsForRoute(routePath: string): string[] {
   if (routePath === "/healthz") {
     return ["system"];
   }
+  if (routePath === "/manifest") {
+    return ["manifest"];
+  }
+  if (
+    routePath === "/audit-logs" ||
+    routePath === "/query-history" ||
+    routePath.includes("/metastore/summary")
+  ) {
+    return ["observability"];
+  }
   if (
     routePath.startsWith("/principals") ||
     routePath.startsWith("/groups") ||
     routePath.startsWith("/grants") ||
-    routePath.startsWith("/api-keys")
+    routePath.startsWith("/api-keys") ||
+    routePath.startsWith("/tables/") ||
+    routePath.startsWith("/row-filters") ||
+    routePath.startsWith("/column-masks")
   ) {
     return ["security"];
   }

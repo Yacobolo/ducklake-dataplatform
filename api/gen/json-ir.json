@@ -25,6 +25,14 @@
       "description": "Security and access-control endpoints"
     },
     {
+      "name": "manifest",
+      "description": "Manifest and data-access endpoints"
+    },
+    {
+      "name": "observability",
+      "description": "Audit and query observability endpoints"
+    },
+    {
       "name": "api",
       "description": "General API endpoints"
     }
@@ -686,6 +694,147 @@
         "principal_id",
         "principal_type"
       ]
+    },
+    "Record": {
+      "type": "object",
+      "properties": {}
+    },
+    "ManifestResponse": {
+      "type": "object",
+      "properties": {
+        "table": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "schema": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "columns": {
+          "schema": {
+            "type": "array"
+          }
+        },
+        "files": {
+          "schema": {
+            "type": "array"
+          }
+        },
+        "row_filters": {
+          "schema": {
+            "type": "array"
+          }
+        },
+        "column_masks": {
+          "schema": {
+            "ref": "Record"
+          }
+        },
+        "expires_at": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "table"
+      ]
+    },
+    "ManifestRequest": {
+      "type": "object",
+      "properties": {
+        "table": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "schema": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "table"
+      ]
+    },
+    "PaginatedAuditLogs": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "schema": {
+            "type": "array"
+          }
+        },
+        "next_page_token": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "data"
+      ]
+    },
+    "MetastoreSummary": {
+      "type": "object",
+      "properties": {
+        "catalog_name": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "metastore_type": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "storage_backend": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "data_path": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "schema_count": {
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "table_count": {
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "required": [
+        "catalog_name"
+      ]
+    },
+    "PaginatedQueryHistoryEntries": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "schema": {
+            "type": "array"
+          }
+        },
+        "next_page_token": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "data"
+      ]
     }
   },
   "endpoints": [
@@ -939,11 +1088,179 @@
       }
     },
     {
+      "method": "get",
+      "path": "/audit-logs",
+      "operation_id": "listAuditLogs",
+      "tags": [
+        "observability"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "PaginatedAuditLogs"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "action",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "max_results",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        {
+          "name": "page_token",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "principal_name",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "status",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/catalogs/{catalogName}/metastore/summary",
+      "operation_id": "getMetastoreSummary",
+      "tags": [
+        "observability"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "MetastoreSummary"
+          }
+        },
+        {
+          "status_code": 404,
+          "description": "Not Found",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "catalogName",
+          "in": "path",
+          "required": true,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
       "method": "delete",
       "path": "/column-masks/{columnMaskId}",
       "operation_id": "deleteColumnMask",
       "tags": [
-        "api"
+        "security"
       ],
       "responses": [
         {
@@ -1002,7 +1319,7 @@
       "path": "/column-masks/{columnMaskId}/bindings",
       "operation_id": "bindColumnMask",
       "tags": [
-        "api"
+        "security"
       ],
       "responses": [
         {
@@ -1068,7 +1385,7 @@
       "path": "/column-masks/{columnMaskId}/bindings",
       "operation_id": "unbindColumnMask",
       "tags": [
-        "api"
+        "security"
       ],
       "responses": [
         {
@@ -1893,6 +2210,64 @@
       ]
     },
     {
+      "method": "post",
+      "path": "/manifest",
+      "operation_id": "createManifest",
+      "tags": [
+        "manifest"
+      ],
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "Created",
+          "schema": {
+            "ref": "ManifestResponse"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "request_body": {
+        "required": true,
+        "description": "Request payload",
+        "schema": {
+          "ref": "ManifestRequest"
+        }
+      },
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
       "method": "get",
       "path": "/principals",
       "operation_id": "listPrincipals",
@@ -2217,11 +2592,119 @@
       }
     },
     {
+      "method": "get",
+      "path": "/query-history",
+      "operation_id": "listQueryHistory",
+      "tags": [
+        "observability"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "OK",
+          "schema": {
+            "ref": "PaginatedQueryHistoryEntries"
+          }
+        },
+        {
+          "status_code": 401,
+          "description": "Unauthorized",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 429,
+          "description": "Too Many Requests",
+          "schema": {
+            "ref": "Error"
+          }
+        },
+        {
+          "status_code": 500,
+          "description": "Internal Server Error",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "from",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "max_results",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        {
+          "name": "page_token",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "principal_name",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "status",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "to",
+          "in": "query",
+          "required": false,
+          "description": "",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "extensions": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-authz": {
+          "mode": "authenticated"
+        }
+      }
+    },
+    {
       "method": "delete",
       "path": "/row-filters/{rowFilterId}",
       "operation_id": "deleteRowFilter",
       "tags": [
-        "api"
+        "security"
       ],
       "responses": [
         {
@@ -2280,7 +2763,7 @@
       "path": "/row-filters/{rowFilterId}/bindings",
       "operation_id": "bindRowFilter",
       "tags": [
-        "api"
+        "security"
       ],
       "responses": [
         {
@@ -2346,7 +2829,7 @@
       "path": "/row-filters/{rowFilterId}/bindings",
       "operation_id": "unbindRowFilter",
       "tags": [
-        "api"
+        "security"
       ],
       "responses": [
         {
@@ -2423,7 +2906,7 @@
       "path": "/tables/{tableId}/column-masks",
       "operation_id": "listColumnMasks",
       "tags": [
-        "api"
+        "security"
       ],
       "responses": [
         {
@@ -2511,7 +2994,7 @@
       "path": "/tables/{tableId}/column-masks",
       "operation_id": "createColumnMask",
       "tags": [
-        "api"
+        "security"
       ],
       "responses": [
         {
@@ -2580,7 +3063,7 @@
       "path": "/tables/{tableId}/row-filters",
       "operation_id": "listRowFilters",
       "tags": [
-        "api"
+        "security"
       ],
       "responses": [
         {
@@ -2668,7 +3151,7 @@
       "path": "/tables/{tableId}/row-filters",
       "operation_id": "createRowFilter",
       "tags": [
-        "api"
+        "security"
       ],
       "responses": [
         {

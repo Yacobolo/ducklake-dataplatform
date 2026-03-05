@@ -68,6 +68,51 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+  /audit-logs:
+    get:
+      operationId: listAuditLogs
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAuditLogs'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                principal_name:
+                  type: string
+                action:
+                  type: string
+                status:
+                  type: string
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
+  /catalogs/{catalogName}/metastore/summary:
+    get:
+      operationId: getMetastoreSummary
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetastoreSummary'
   /column-masks/{columnMaskId}:
     delete:
       operationId: deleteColumnMask
@@ -329,6 +374,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
+  /manifest:
+    post:
+      operationId: createManifest
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManifestResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ManifestRequest'
   /principals:
     get:
       operationId: listPrincipals
@@ -413,6 +475,37 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdatePrincipalAdminRequest'
+  /query-history:
+    get:
+      operationId: listQueryHistory
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedQueryHistoryEntries'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                principal_name:
+                  type: string
+                status:
+                  type: string
+                from:
+                  type: string
+                to:
+                  type: string
+                max_results:
+                  type: integer
+                  format: int32
+                page_token:
+                  type: string
   /row-filters/{rowFilterId}:
     delete:
       operationId: deleteRowFilter
@@ -604,6 +697,36 @@ components:
           type: string
         created_at:
           type: string
+    AuditEntry:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+        principal_name:
+          type: string
+        action:
+          type: string
+        statement_type:
+          type: string
+        original_sql:
+          type: string
+        rewritten_sql:
+          type: string
+        tables_accessed:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+        error_message:
+          type: string
+        duration_ms:
+          type: integer
+          format: int64
+        created_at:
+          type: string
     CleanupAPIKeysResponse:
       type: object
       required:
@@ -790,6 +913,71 @@ components:
       properties:
         status:
           type: string
+    ManifestColumn:
+      type: object
+      required:
+        - name
+        - type
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+    ManifestRequest:
+      type: object
+      required:
+        - table
+      properties:
+        table:
+          type: string
+        schema:
+          type: string
+    ManifestResponse:
+      type: object
+      required:
+        - table
+      properties:
+        table:
+          type: string
+        schema:
+          type: string
+        columns:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManifestColumn'
+        files:
+          type: array
+          items:
+            type: string
+        row_filters:
+          type: array
+          items:
+            type: string
+        column_masks:
+          type: object
+          additionalProperties:
+            type: string
+        expires_at:
+          type: string
+    MetastoreSummary:
+      type: object
+      required:
+        - catalog_name
+      properties:
+        catalog_name:
+          type: string
+        metastore_type:
+          type: string
+        storage_backend:
+          type: string
+        data_path:
+          type: string
+        schema_count:
+          type: integer
+          format: int32
+        table_count:
+          type: integer
+          format: int32
     PaginatedAPIKeys:
       type: object
       required:
@@ -799,6 +987,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/APIKeyInfo'
+        next_page_token:
+          type: string
+    PaginatedAuditLogs:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditEntry'
         next_page_token:
           type: string
     PaginatedColumnMasks:
@@ -856,6 +1055,17 @@ components:
             $ref: '#/components/schemas/Principal'
         next_page_token:
           type: string
+    PaginatedQueryHistoryEntries:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/QueryHistoryEntry'
+        next_page_token:
+          type: string
     PaginatedRowFilters:
       type: object
       required:
@@ -910,6 +1120,37 @@ components:
         granted_by:
           type: string
         granted_at:
+          type: string
+    QueryHistoryEntry:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+        principal_name:
+          type: string
+        original_sql:
+          type: string
+        rewritten_sql:
+          type: string
+        statement_type:
+          type: string
+        tables_accessed:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+        error_message:
+          type: string
+        duration_ms:
+          type: integer
+          format: int64
+        rows_returned:
+          type: integer
+          format: int64
+        created_at:
           type: string
     QueryRequest:
       type: object
