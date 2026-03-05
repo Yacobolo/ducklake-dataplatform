@@ -82,6 +82,84 @@ func (r *ModelRepo) Create(ctx context.Context, m *domain.Model) (*domain.Model,
 	return modelFromDB(row), nil
 }
 
+// CreateWithNotebookLink inserts a model and its notebook link atomically.
+func (r *ModelRepo) CreateWithNotebookLink(ctx context.Context, m *domain.Model, notebookID, outputCellID string) (*domain.Model, error) {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	qtx := r.q.WithTx(tx)
+
+	tagsJSON, err := json.Marshal(m.Tags)
+	if err != nil {
+		return nil, fmt.Errorf("marshal tags: %w", err)
+	}
+	depsJSON, err := json.Marshal(m.DependsOn)
+	if err != nil {
+		return nil, fmt.Errorf("marshal depends_on: %w", err)
+	}
+	configJSON, err := json.Marshal(m.Config)
+	if err != nil {
+		return nil, fmt.Errorf("marshal config: %w", err)
+	}
+	contractJSON := "{}"
+	if m.Contract != nil {
+		b, err := json.Marshal(m.Contract)
+		if err != nil {
+			return nil, fmt.Errorf("marshal contract: %w", err)
+		}
+		contractJSON = string(b)
+	}
+
+	var freshnessMaxLag sql.NullInt64
+	var freshnessCron sql.NullString
+	if m.Freshness != nil {
+		if m.Freshness.MaxLagSeconds > 0 {
+			freshnessMaxLag = sql.NullInt64{Int64: m.Freshness.MaxLagSeconds, Valid: true}
+		}
+		if m.Freshness.CronSchedule != "" {
+			freshnessCron = sql.NullString{String: m.Freshness.CronSchedule, Valid: true}
+		}
+	}
+
+	modelID := newID()
+	row, err := qtx.CreateModel(ctx, dbstore.CreateModelParams{
+		ID:              modelID,
+		ProjectName:     m.ProjectName,
+		Name:            m.Name,
+		SqlBody:         m.SQL,
+		Materialization: m.Materialization,
+		Description:     m.Description,
+		Owner:           m.Owner,
+		Tags:            string(tagsJSON),
+		DependsOn:       string(depsJSON),
+		Config:          string(configJSON),
+		CreatedBy:       m.CreatedBy,
+		Contract:        contractJSON,
+		FreshnessMaxLag: freshnessMaxLag,
+		FreshnessCron:   freshnessCron,
+	})
+	if err != nil {
+		return nil, mapDBError(err)
+	}
+
+	if err := qtx.UpsertNotebookModelLink(ctx, dbstore.UpsertNotebookModelLinkParams{
+		ID:           newID(),
+		NotebookID:   notebookID,
+		ModelID:      modelID,
+		OutputCellID: outputCellID,
+	}); err != nil {
+		return nil, mapDBError(err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("commit tx: %w", err)
+	}
+	return modelFromDB(row), nil
+}
+
 // GetByID returns a model by its ID.
 func (r *ModelRepo) GetByID(ctx context.Context, id string) (*domain.Model, error) {
 	row, err := r.q.GetModelByID(ctx, id)

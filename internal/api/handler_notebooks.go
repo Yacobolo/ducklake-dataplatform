@@ -11,6 +11,7 @@ import (
 type notebookService interface {
 	CreateNotebook(ctx context.Context, principal string, req domain.CreateNotebookRequest) (*domain.Notebook, error)
 	GetNotebook(ctx context.Context, id string) (*domain.Notebook, []domain.Cell, error)
+	GetPublishModel(ctx context.Context, notebookID string) (*domain.NotebookPublishModel, error)
 	ListNotebooks(ctx context.Context, owner *string, page domain.PageRequest) ([]domain.Notebook, int64, error)
 	UpdateNotebook(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateNotebookRequest) (*domain.Notebook, error)
 	DeleteNotebook(ctx context.Context, principal string, isAdmin bool, id string) error
@@ -105,8 +106,20 @@ func (h *APIHandler) GetNotebook(ctx context.Context, req GetNotebookRequestObje
 	for i, c := range cells {
 		apiCells[i] = cellToAPI(c)
 	}
+	var publishModel *NotebookPublishModel
+	if pm, err := h.notebooks.GetPublishModel(ctx, req.NotebookId); err == nil && pm != nil {
+		materialization := NotebookPublishModelMaterialization(pm.Materialization)
+		publishModel = &NotebookPublishModel{
+			ProjectName:     &pm.ProjectName,
+			Name:            &pm.Name,
+			Materialization: &materialization,
+			OutputCellId:    &pm.OutputCellID,
+		}
+	} else if err != nil {
+		return nil, err
+	}
 	return GetNotebook200JSONResponse{
-		Body:    NotebookDetail{Notebook: &apiNb, Cells: &apiCells},
+		Body:    NotebookDetail{Notebook: &apiNb, Cells: &apiCells, PublishModel: publishModel},
 		Headers: GetNotebook200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -166,6 +179,21 @@ func (h *APIHandler) DeleteNotebook(ctx context.Context, req DeleteNotebookReque
 func (h *APIHandler) CreateCell(ctx context.Context, req CreateCellRequestObject) (CreateCellResponseObject, error) {
 	domReq := domain.CreateCellRequest{
 		CellType: domain.CellType(req.Body.CellType),
+		Name:     req.Body.Name,
+	}
+	if req.Body.Role != nil {
+		role := domain.CellRole(*req.Body.Role)
+		domReq.Role = &role
+	}
+	if req.Body.Disabled != nil {
+		domReq.Disabled = *req.Body.Disabled
+	}
+	if req.Body.Test != nil {
+		testCfg := &domain.NotebookCellTestConfig{}
+		if req.Body.Test.Severity != nil {
+			testCfg.Severity = domain.NotebookTestSeverity(*req.Body.Test.Severity)
+		}
+		domReq.Test = testCfg
 	}
 	if req.Body.Content != nil {
 		domReq.Content = *req.Body.Content
@@ -201,7 +229,22 @@ func (h *APIHandler) CreateCell(ctx context.Context, req CreateCellRequestObject
 // UpdateCell implements the endpoint for updating a cell.
 func (h *APIHandler) UpdateCell(ctx context.Context, req UpdateCellRequestObject) (UpdateCellResponseObject, error) {
 	domReq := domain.UpdateCellRequest{
+		Name:    req.Body.Name,
 		Content: req.Body.Content,
+	}
+	if req.Body.Role != nil {
+		role := domain.CellRole(*req.Body.Role)
+		domReq.Role = &role
+	}
+	if req.Body.Disabled != nil {
+		domReq.Disabled = req.Body.Disabled
+	}
+	if req.Body.Test != nil {
+		testCfg := &domain.NotebookCellTestConfig{}
+		if req.Body.Test.Severity != nil {
+			testCfg.Severity = domain.NotebookTestSeverity(*req.Body.Test.Severity)
+		}
+		domReq.Test = testCfg
 	}
 	if req.Body.Position != nil {
 		pos := int(*req.Body.Position)
@@ -557,17 +600,31 @@ func cellToAPI(c domain.Cell) Cell {
 	ct := c.CreatedAt
 	ut := c.UpdatedAt
 	cellType := CellCellType(c.CellType)
+	role := CellRole(c.Role)
 	pos := int32(c.Position) //nolint:gosec // positions are small ints
+	test := notebookCellTestConfigToAPI(c.Test)
 	return Cell{
 		Id:         &c.ID,
 		NotebookId: &c.NotebookID,
 		CellType:   &cellType,
+		Name:       c.Name,
+		Role:       &role,
+		Disabled:   &c.Disabled,
+		Test:       test,
 		Content:    &c.Content,
 		Position:   &pos,
 		LastResult: c.LastResult,
 		CreatedAt:  &ct,
 		UpdatedAt:  &ut,
 	}
+}
+
+func notebookCellTestConfigToAPI(c *domain.NotebookCellTestConfig) *NotebookCellTestConfig {
+	if c == nil {
+		return nil
+	}
+	severity := NotebookCellTestConfigSeverity(c.Severity)
+	return &NotebookCellTestConfig{Severity: &severity}
 }
 
 func sessionToAPI(s domain.NotebookSession) NotebookSession {

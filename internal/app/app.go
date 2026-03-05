@@ -306,6 +306,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 
 	// === Model ===
 	modelRepo := repository.NewModelRepo(deps.WriteDB)
+	notebookModelLinkRepo := repository.NewNotebookModelLinkRepo(deps.WriteDB)
 	modelRunRepo := repository.NewModelRunRepo(deps.WriteDB)
 	modelTestRepo := repository.NewModelTestRepo(deps.WriteDB)
 	modelTestResultRepo := repository.NewModelTestResultRepo(deps.WriteDB)
@@ -323,6 +324,8 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	// Wire optional dependencies into model service.
 	modelSvc.SetMacroRepo(macroRepo)
 	modelSvc.SetNotebookProvider(notebookProvider)
+	modelSvc.SetNotebookModelLinkRepo(notebookModelLinkRepo)
+	notebookSvc.SetPublishRepositories(modelRepo, notebookModelLinkRepo)
 
 	// === Semantic ===
 	semanticModelRepo := repository.NewSemanticModelRepo(deps.WriteDB)

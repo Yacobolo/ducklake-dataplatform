@@ -166,3 +166,24 @@ func TestDBNotebookProvider_GetSQLBlocks(t *testing.T) {
 		})
 	}
 }
+
+func TestDBNotebookProvider_CompileOutputCellSQL(t *testing.T) {
+	ctx := context.Background()
+	base := "base"
+	output := "out"
+
+	repo := &testutil.MockNotebookRepo{
+		ListCellsFn: func(_ context.Context, _ string) ([]domain.Cell, error) {
+			return []domain.Cell{
+				{ID: "c1", NotebookID: "nb-1", CellType: domain.CellTypeSQL, Role: domain.CellRoleTransform, Name: &base, Content: "SELECT 1 AS id"},
+				{ID: "c2", NotebookID: "nb-1", CellType: domain.CellTypeSQL, Role: domain.CellRoleOutput, Name: &output, Content: "SELECT * FROM base"},
+			}, nil
+		},
+	}
+	provider := NewDBNotebookProvider(repo)
+
+	compiled, err := provider.CompileOutputCellSQL(ctx, "nb-1", "c2")
+	require.NoError(t, err)
+	assert.Contains(t, compiled, `"base" AS (`)
+	assert.Contains(t, compiled, "SELECT * FROM base")
+}

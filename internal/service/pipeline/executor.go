@@ -3,6 +3,7 @@ package pipeline
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log/slog"
 	"regexp"
@@ -189,21 +190,60 @@ func (s *Service) executeJobAttempt(ctx context.Context, job domain.PipelineJob,
 		}
 	}
 
-	// Get SQL blocks from the notebook.
-	blocks, err := s.notebooks.GetSQLBlocks(ctx, job.NotebookID)
+	// Get compiled executable cells from the notebook.
+	execCells, err := s.notebooks.GetExecutableCells(ctx, job.NotebookID)
 	if err != nil {
-		return fmt.Errorf("get notebook SQL: %w", err)
+		if errors.As(err, new(*domain.NotImplementedError)) {
+			blocks, blockErr := s.notebooks.GetSQLBlocks(ctx, job.NotebookID)
+			if blockErr != nil {
+				return fmt.Errorf("get notebook SQL: %w", blockErr)
+			}
+			execCells = make([]domain.NotebookExecutableCell, 0, len(blocks))
+			for _, block := range blocks {
+				execCells = append(execCells, domain.NotebookExecutableCell{SQL: block, Role: domain.CellRoleTransform})
+			}
+		} else {
+			return fmt.Errorf("get notebook executable SQL: %w", err)
+		}
 	}
 
-	// Execute each SQL block.
-	for i, block := range blocks {
-		if err := s.execOnConn(ctx, conn, principal, block); err != nil {
-			return fmt.Errorf("execute block %d: %w", i+1, err)
+	// Execute each executable cell.
+	for i, cell := range execCells {
+		if cell.Role == domain.CellRoleTest {
+			hasRows, err := s.queryHasRows(ctx, conn, principal, cell.SQL)
+			if err != nil {
+				return fmt.Errorf("execute test cell %s: %w", cell.ID, err)
+			}
+			severity := domain.NotebookTestSeverityError
+			if cell.Test != nil && cell.Test.Severity != "" {
+				severity = cell.Test.Severity
+			}
+			if hasRows && severity == domain.NotebookTestSeverityError {
+				return fmt.Errorf("execute cell %d: error-severity notebook test failed", i+1)
+			}
+			continue
+		}
+
+		if err := s.execOnConn(ctx, conn, principal, cell.SQL); err != nil {
+			return fmt.Errorf("execute cell %d: %w", i+1, err)
 		}
 	}
 
 	logger.Info("job completed successfully")
 	return nil
+}
+
+func (s *Service) queryHasRows(ctx context.Context, conn *sql.Conn, principal, query string) (bool, error) {
+	rows, err := s.engine.QueryOnConn(ctx, conn, principal, query)
+	if err != nil {
+		return false, err
+	}
+	defer func() { _ = rows.Close() }()
+	hasRows := rows.Next()
+	if err := rows.Err(); err != nil {
+		return false, err
+	}
+	return hasRows, nil
 }
 
 // executeModelRunJob triggers a synchronous model run via the ModelRunner interface.

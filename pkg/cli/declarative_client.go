@@ -863,15 +863,27 @@ type apiNotebook struct {
 }
 
 type apiNotebookCell struct {
-	ID       string `json:"id"`
-	CellType string `json:"cell_type"`
-	Content  string `json:"content"`
-	Position int    `json:"position"`
+	ID       string                        `json:"id"`
+	CellType string                        `json:"cell_type"`
+	Name     string                        `json:"name"`
+	Role     string                        `json:"role"`
+	Disabled bool                          `json:"disabled"`
+	Test     *declarative.NotebookTestSpec `json:"test"`
+	Content  string                        `json:"content"`
+	Position int                           `json:"position"`
 }
 
 type apiNotebookDetail struct {
-	Notebook apiNotebook       `json:"notebook"`
-	Cells    []apiNotebookCell `json:"cells"`
+	Notebook     apiNotebook            `json:"notebook"`
+	Cells        []apiNotebookCell      `json:"cells"`
+	PublishModel *apiNotebookPublishRef `json:"publish_model"`
+}
+
+type apiNotebookPublishRef struct {
+	ProjectName     string `json:"project_name"`
+	Name            string `json:"name"`
+	Materialization string `json:"materialization"`
+	OutputCellID    string `json:"output_cell_id"`
 }
 
 func (c *APIStateClient) readNotebooks(ctx context.Context, state *declarative.DesiredState) error {
@@ -894,6 +906,8 @@ func (c *APIStateClient) readNotebooks(ctx context.Context, state *declarative.D
 		}
 
 		cells := make([]declarative.CellSpec, 0)
+		cellNameByID := make(map[string]string)
+		var publish *declarative.NotebookPublishSpec
 		if nb.ID != "" {
 			detail, err := c.readNotebookDetail(ctx, nb.ID)
 			if err != nil {
@@ -904,10 +918,31 @@ func (c *APIStateClient) readNotebooks(ctx context.Context, state *declarative.D
 			})
 			cells = make([]declarative.CellSpec, 0, len(detail.Cells))
 			for _, cell := range detail.Cells {
+				if cell.Name != "" {
+					cellNameByID[cell.ID] = cell.Name
+				}
+				role := normalizeNotebookCellRole(cell.CellType, cell.Role)
 				cells = append(cells, declarative.CellSpec{
-					Type:    cell.CellType,
-					Content: cell.Content,
+					Type:     cell.CellType,
+					Name:     cell.Name,
+					Role:     role,
+					Disabled: cell.Disabled,
+					Test:     cell.Test,
+					Content:  cell.Content,
 				})
+			}
+			if detail.PublishModel != nil {
+				outputCellName := cellNameByID[detail.PublishModel.OutputCellID]
+				if outputCellName != "" {
+					publish = &declarative.NotebookPublishSpec{
+						Model: &declarative.NotebookPublishModelSpec{
+							Project:         detail.PublishModel.ProjectName,
+							Name:            detail.PublishModel.Name,
+							Materialization: detail.PublishModel.Materialization,
+							OutputCell:      outputCellName,
+						},
+					}
+				}
 			}
 		}
 
@@ -917,10 +952,25 @@ func (c *APIStateClient) readNotebooks(ctx context.Context, state *declarative.D
 				Description: nb.Description,
 				Owner:       nb.Owner,
 				Cells:       cells,
+				Publish:     publish,
 			},
 		})
 	}
 	return nil
+}
+
+func normalizeNotebookCellRole(cellType, role string) string {
+	switch cellType {
+	case "markdown":
+		if role == "markdown" {
+			return ""
+		}
+	case "sql":
+		if role == "transform" {
+			return ""
+		}
+	}
+	return role
 }
 
 func (c *APIStateClient) readNotebookDetail(_ context.Context, notebookID string) (*apiNotebookDetail, error) {
@@ -2236,7 +2286,10 @@ func (c *APIStateClient) executeNotebook(ctx context.Context, action declarative
 		if c.index != nil {
 			c.index.notebookIDByName[nb.Name] = notebookID
 		}
-		return c.syncNotebookCells(ctx, notebookID, nb.Spec.Cells)
+		if err := c.syncNotebookCells(ctx, notebookID, nb.Spec.Cells); err != nil {
+			return err
+		}
+		return c.applyNotebookPublish(ctx, notebookID, nb)
 
 	case declarative.OpUpdate:
 		nb := action.Desired.(declarative.NotebookResource)
@@ -2255,7 +2308,10 @@ func (c *APIStateClient) executeNotebook(ctx context.Context, action declarative
 		if err := gen.CheckError(resp); err != nil {
 			return err
 		}
-		return c.syncNotebookCells(ctx, notebookID, nb.Spec.Cells)
+		if err := c.syncNotebookCells(ctx, notebookID, nb.Spec.Cells); err != nil {
+			return err
+		}
+		return c.applyNotebookPublish(ctx, notebookID, nb)
 
 	case declarative.OpDelete:
 		notebookName := action.ResourceName
@@ -2409,6 +2465,18 @@ func (c *APIStateClient) syncNotebookCells(ctx context.Context, notebookID strin
 			"cell_type": cell.Type,
 			"position":  i,
 		}
+		if cell.Name != "" {
+			body["name"] = cell.Name
+		}
+		if cell.Role != "" {
+			body["role"] = cell.Role
+		}
+		if cell.Disabled {
+			body["disabled"] = true
+		}
+		if cell.Test != nil {
+			body["test"] = cell.Test
+		}
 		if cell.Content != "" {
 			body["content"] = cell.Content
 		}
@@ -2422,6 +2490,42 @@ func (c *APIStateClient) syncNotebookCells(ctx context.Context, notebookID strin
 	}
 
 	return nil
+}
+
+func (c *APIStateClient) applyNotebookPublish(ctx context.Context, notebookID string, nb declarative.NotebookResource) error {
+	if nb.Spec.Publish == nil || nb.Spec.Publish.Model == nil {
+		return nil
+	}
+	detail, err := c.readNotebookDetail(ctx, notebookID)
+	if err != nil {
+		return err
+	}
+	outputCellName := nb.Spec.Publish.Model.OutputCell
+	outputCellID := ""
+	for _, cell := range detail.Cells {
+		if cell.Name == outputCellName {
+			outputCellID = cell.ID
+			break
+		}
+	}
+	if outputCellID == "" {
+		return fmt.Errorf("publish.model.output_cell %q not found in notebook %q", outputCellName, nb.Name)
+	}
+
+	body := map[string]interface{}{
+		"notebook_id":    notebookID,
+		"output_cell_id": outputCellID,
+		"project_name":   nb.Spec.Publish.Model.Project,
+		"name":           nb.Spec.Publish.Model.Name,
+	}
+	if nb.Spec.Publish.Model.Materialization != "" {
+		body["materialization"] = nb.Spec.Publish.Model.Materialization
+	}
+	resp, err := c.client.Do(http.MethodPost, "/models/from-notebook", nil, body)
+	if err != nil {
+		return err
+	}
+	return gen.CheckError(resp)
 }
 
 func (c *APIStateClient) createPipelineJob(ctx context.Context, pipelineName string, job declarative.PipelineJobSpec) error {

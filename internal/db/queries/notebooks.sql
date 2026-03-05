@@ -26,8 +26,8 @@ RETURNING *;
 DELETE FROM notebooks WHERE id = ?;
 
 -- name: CreateCell :one
-INSERT INTO cells (id, notebook_id, cell_type, content, position)
-VALUES (?, ?, ?, ?, ?)
+INSERT INTO cells (id, notebook_id, cell_type, name, role, disabled, test_config, content, position)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetCell :one
@@ -38,7 +38,7 @@ SELECT * FROM cells WHERE notebook_id = ? ORDER BY position ASC;
 
 -- name: UpdateCell :one
 UPDATE cells
-SET content = ?, position = ?, updated_at = datetime('now')
+SET name = ?, role = ?, disabled = ?, test_config = ?, content = ?, position = ?, updated_at = datetime('now')
 WHERE id = ?
 RETURNING *;
 

@@ -1050,6 +1050,7 @@ func diffNotebooks(plan *Plan, desired, actual []NotebookResource) {
 		var changes []FieldDiff
 		diffField(&changes, "description", a.Spec.Description, d.Spec.Description)
 		diffField(&changes, "owner", a.Spec.Owner, d.Spec.Owner)
+		diffField(&changes, "publish", mustJSON(a.Spec.Publish), mustJSON(d.Spec.Publish))
 		diffCells(&changes, a.Spec.Cells, d.Spec.Cells)
 		if len(changes) > 0 {
 			addUpdate(plan, KindNotebook, d.Name, "", d, a, changes)
@@ -1068,7 +1069,7 @@ func diffCells(changes *[]FieldDiff, actual, desired []CellSpec) {
 	if len(actual) == len(desired) {
 		equal := true
 		for i := range actual {
-			if actual[i].Type != desired[i].Type || actual[i].Content != desired[i].Content {
+			if mustJSON(actual[i]) != mustJSON(desired[i]) {
 				equal = false
 				break
 			}
@@ -1082,6 +1083,14 @@ func diffCells(changes *[]FieldDiff, actual, desired []CellSpec) {
 		OldValue: fmt.Sprintf("%d cells", len(actual)),
 		NewValue: fmt.Sprintf("%d cells", len(desired)),
 	})
+}
+
+func mustJSON(v interface{}) string {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return ""
+	}
+	return string(b)
 }
 
 // === Pipelines ===

@@ -785,22 +785,21 @@ SourceFreshnessStatus:
       example: "2025-01-15T11:00:00Z"
 
 PromoteNotebookRequest:
-  description: Request payload for promoting a notebook cell to a transformation model.
+  description: Request payload for promoting a notebook output cell to a transformation model.
   type: object
   additionalProperties: false
-  required: [notebook_id, cell_index, project_name, name]
+  required: [notebook_id, output_cell_id, project_name, name]
   properties:
     notebook_id:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
       example: 550e8400-e29b-41d4-a716-446655440050
-    cell_index:
-      type: integer
-      format: int32
-      minimum: 0
-      maximum: 10000
-      example: 0
+    output_cell_id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+      example: 550e8400-e29b-41d4-a716-446655440051
     project_name:
       type: string
       maxLength: 255

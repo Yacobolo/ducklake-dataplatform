@@ -13,7 +13,7 @@
     "kinds/group-list.schema.json": "3c23b29013f530fefac36ed3beabb88fb8bc873bb1ad2e53d30d0376b91823d5",
     "kinds/macro.schema.json": "fe3a76e6ed90c61b5be605c11462910fcc8f97e58609050cd92b6e22a5b2bed6",
     "kinds/model.schema.json": "ec3ee7f0e447d9840dfaf3ffaf6e67c7167bb5f4dcee8b01aec94ff09439d9c4",
-    "kinds/notebook.schema.json": "e4cc4c511869cdd304e76675c9f6a3b67865b506be4f26ba3afb9091721a1e4c",
+    "kinds/notebook.schema.json": "10398673f15ef93cbc9acaf142f5bd71c3390623936002dc083745b52defc168",
     "kinds/pipeline.schema.json": "08ba3655115f67848aad556d8e1d59ea00dbba9834392cbbd68094b5b37a3b32",
     "kinds/principal-list.schema.json": "950660b984996c155f9e12c25948f3c8443d5b76940c3c0289eb532c8de151d4",
     "kinds/privilege-preset-list.schema.json": "090c732c29ec1e85731909b89d44041f9e8138184a209812da0048290d53bf87",

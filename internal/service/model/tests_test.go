@@ -1,6 +1,7 @@
 package model
 
 import (
+	"context"
 	"testing"
 
 	"duck-demo/internal/domain"
@@ -8,6 +9,45 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+type notebookLinkRepoStub struct {
+	getByModelIDFn func(ctx context.Context, modelID string) (*domain.NotebookModelLink, error)
+}
+
+func (s notebookLinkRepoStub) Upsert(context.Context, *domain.NotebookModelLink) error { return nil }
+func (s notebookLinkRepoStub) GetByNotebookID(context.Context, string) (*domain.NotebookModelLink, error) {
+	return nil, domain.ErrNotFound("not found")
+}
+func (s notebookLinkRepoStub) GetByModelID(ctx context.Context, modelID string) (*domain.NotebookModelLink, error) {
+	if s.getByModelIDFn != nil {
+		return s.getByModelIDFn(ctx, modelID)
+	}
+	return nil, domain.ErrNotFound("not found")
+}
+func (s notebookLinkRepoStub) DeleteByNotebookID(context.Context, string) error { return nil }
+
+type notebookProviderStub struct {
+	listCellsFn func(ctx context.Context, notebookID string) ([]domain.Cell, error)
+}
+
+func (s notebookProviderStub) GetSQLBlocks(context.Context, string) ([]string, error) {
+	return nil, domain.ErrNotImplemented("unused")
+}
+func (s notebookProviderStub) GetExecutableCells(context.Context, string) ([]domain.NotebookExecutableCell, error) {
+	return nil, domain.ErrNotImplemented("unused")
+}
+func (s notebookProviderStub) GetSQLBlockByCellID(context.Context, string, string) (string, error) {
+	return "", domain.ErrNotImplemented("unused")
+}
+func (s notebookProviderStub) CompileOutputCellSQL(context.Context, string, string) (string, error) {
+	return "", domain.ErrNotImplemented("unused")
+}
+func (s notebookProviderStub) ListCells(ctx context.Context, notebookID string) ([]domain.Cell, error) {
+	if s.listCellsFn != nil {
+		return s.listCellsFn(ctx, notebookID)
+	}
+	return []domain.Cell{}, nil
+}
 
 func TestGenerateTestSQL(t *testing.T) {
 	tests := []struct {
@@ -82,4 +122,54 @@ func TestGenerateTestSQL(t *testing.T) {
 			assert.Equal(t, tt.wantSQL, sql)
 		})
 	}
+}
+
+func TestExecuteNotebookCellTests_SeverityGate(t *testing.T) {
+	t.Run("error severity fails on rows", func(t *testing.T) {
+		svc, db := newDuckDBServiceForTest(t)
+		conn, err := db.Conn(context.Background())
+		require.NoError(t, err)
+		defer func() { _ = conn.Close() }()
+
+		svc.notebookLinks = notebookLinkRepoStub{getByModelIDFn: func(_ context.Context, _ string) (*domain.NotebookModelLink, error) {
+			return &domain.NotebookModelLink{NotebookID: "nb-1"}, nil
+		}}
+		svc.notebooks = notebookProviderStub{listCellsFn: func(_ context.Context, _ string) ([]domain.Cell, error) {
+			return []domain.Cell{{
+				ID:       "cell-test-1",
+				CellType: domain.CellTypeSQL,
+				Role:     domain.CellRoleTest,
+				Content:  "SELECT 1",
+				Test:     &domain.NotebookCellTestConfig{Severity: domain.NotebookTestSeverityError},
+			}}, nil
+		}}
+
+		failed, err := svc.executeNotebookCellTests(context.Background(), conn, &domain.Model{ID: "m-1", ProjectName: "p", Name: "n"}, "step-1", "admin")
+		require.NoError(t, err)
+		assert.True(t, failed)
+	})
+
+	t.Run("warn severity does not fail on rows", func(t *testing.T) {
+		svc, db := newDuckDBServiceForTest(t)
+		conn, err := db.Conn(context.Background())
+		require.NoError(t, err)
+		defer func() { _ = conn.Close() }()
+
+		svc.notebookLinks = notebookLinkRepoStub{getByModelIDFn: func(_ context.Context, _ string) (*domain.NotebookModelLink, error) {
+			return &domain.NotebookModelLink{NotebookID: "nb-1"}, nil
+		}}
+		svc.notebooks = notebookProviderStub{listCellsFn: func(_ context.Context, _ string) ([]domain.Cell, error) {
+			return []domain.Cell{{
+				ID:       "cell-test-2",
+				CellType: domain.CellTypeSQL,
+				Role:     domain.CellRoleTest,
+				Content:  "SELECT 1",
+				Test:     &domain.NotebookCellTestConfig{Severity: domain.NotebookTestSeverityWarn},
+			}}, nil
+		}}
+
+		failed, err := svc.executeNotebookCellTests(context.Background(), conn, &domain.Model{ID: "m-2", ProjectName: "p", Name: "n"}, "step-1", "admin")
+		require.NoError(t, err)
+		assert.False(t, failed)
+	})
 }

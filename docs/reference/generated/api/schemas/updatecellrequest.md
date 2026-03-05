@@ -11,5 +11,9 @@ Request payload for updating a cell.
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `content` | `string` | `false` | - |
+| `disabled` | `boolean` | `false` | - |
+| `name` | `string` | `false` | - |
 | `position` | `integer` | `false` | - |
+| `role` | `string` | `false` | - |
+| `test` | `NotebookCellTestConfig` | `false` | Test behavior for test-role notebook cells. |
 

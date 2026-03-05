@@ -51,6 +51,21 @@ Cell:
       type: string
       enum: [sql, markdown]
       example: sql
+    name:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+      example: stg_orders
+    role:
+      type: string
+      enum: [transform, output, test, markdown]
+      example: transform
+    disabled:
+      type: boolean
+      default: false
+      example: false
+    test:
+      $ref: '#/NotebookCellTestConfig'
     content:
       type: string
       maxLength: 65536
@@ -91,6 +106,32 @@ NotebookDetail:
       items:
         $ref: '#/Cell'
       example: []
+    publish_model:
+      $ref: '#/NotebookPublishModel'
+
+NotebookPublishModel:
+  description: Notebook publish target metadata for notebook->model promotion.
+  type: object
+  properties:
+    project_name:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+      example: analytics
+    name:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+      example: daily_sales
+    materialization:
+      type: string
+      enum: [VIEW, TABLE, INCREMENTAL, EPHEMERAL]
+      example: TABLE
+    output_cell_id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
 
 PaginatedNotebooks:
   description: A paginated list of notebooks.
@@ -156,6 +197,21 @@ CreateCellRequest:
       type: string
       enum: [sql, markdown]
       example: sql
+    name:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+      example: stg_orders
+    role:
+      type: string
+      enum: [transform, output, test, markdown]
+      example: transform
+    disabled:
+      type: boolean
+      default: false
+      example: false
+    test:
+      $ref: '#/NotebookCellTestConfig'
     content:
       type: string
       maxLength: 65536
@@ -175,6 +231,20 @@ UpdateCellRequest:
   type: object
   additionalProperties: false
   properties:
+    name:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+      example: stg_orders
+    role:
+      type: string
+      enum: [transform, output, test, markdown]
+      example: output
+    disabled:
+      type: boolean
+      example: true
+    test:
+      $ref: '#/NotebookCellTestConfig'
     content:
       type: string
       maxLength: 65536
@@ -186,6 +256,17 @@ UpdateCellRequest:
       minimum: 0
       maximum: 2147483647
       example: 0
+
+NotebookCellTestConfig:
+  description: Test behavior for test-role notebook cells.
+  type: object
+  additionalProperties: false
+  properties:
+    severity:
+      type: string
+      enum: [error, warn]
+      default: error
+      example: error
 
 ReorderCellsRequest:
   description: Request payload for reordering cells in a notebook.

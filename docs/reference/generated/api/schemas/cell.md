@@ -13,9 +13,13 @@ A single cell within a notebook.
 | `cell_type` | `string` | `false` | - |
 | `content` | `string` | `false` | - |
 | `created_at` | `string` | `false` | - |
+| `disabled` | `boolean` | `false` | - |
 | `id` | `string` | `false` | - |
 | `last_result` | `string` | `false` | JSON-encoded cached result from last execution |
+| `name` | `string` | `false` | - |
 | `notebook_id` | `string` | `false` | - |
 | `position` | `integer` | `false` | - |
+| `role` | `string` | `false` | - |
+| `test` | `NotebookCellTestConfig` | `false` | Test behavior for test-role notebook cells. |
 | `updated_at` | `string` | `false` | - |
 

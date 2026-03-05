@@ -1006,6 +1006,122 @@ func TestExecuteNotebook_CreateCreatesCells(t *testing.T) {
 	assert.Equal(t, "sql", bodyStr(captured[3], "cell_type"))
 }
 
+func TestExecuteNotebook_CreatePublishesModelFromOutputCell(t *testing.T) {
+	type createdCell struct {
+		ID   string
+		Name string
+	}
+
+	var (
+		mu             sync.Mutex
+		cells          []createdCell
+		publishBody    map[string]interface{}
+		notebookCreate bool
+	)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		switch {
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/notebooks"):
+			notebookCreate = true
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"id":"nb-id-1"}`))
+			return
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/notebooks/nb-id-1"):
+			mu.Lock()
+			resp := map[string]interface{}{
+				"notebook": map[string]interface{}{"id": "nb-id-1", "name": "kpi_walkthrough", "description": "KPI notebook", "owner": "alice"},
+				"cells":    []map[string]interface{}{},
+			}
+			if len(cells) > 0 {
+				respCells := make([]map[string]interface{}, 0, len(cells))
+				for i, c := range cells {
+					respCells = append(respCells, map[string]interface{}{
+						"id":          c.ID,
+						"notebook_id": "nb-id-1",
+						"cell_type":   "sql",
+						"name":        c.Name,
+						"content":     "SELECT 1",
+						"position":    i,
+					})
+				}
+				resp["cells"] = respCells
+			}
+			mu.Unlock()
+			b, _ := json.Marshal(resp)
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(b)
+			return
+		case r.Method == http.MethodPost && strings.Contains(r.URL.Path, "/notebooks/nb-id-1/cells"):
+			body, _ := io.ReadAll(r.Body)
+			var req map[string]interface{}
+			_ = json.Unmarshal(body, &req)
+			name, _ := req["name"].(string)
+			mu.Lock()
+			cellID := "cell-" + name
+			if cellID == "cell-" {
+				cellID = "cell-generated"
+			}
+			cells = append(cells, createdCell{ID: cellID, Name: name})
+			mu.Unlock()
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"id":"` + cellID + `"}`))
+			return
+		case r.Method == http.MethodDelete && strings.Contains(r.URL.Path, "/notebooks/nb-id-1/cells/"):
+			w.WriteHeader(http.StatusNoContent)
+			return
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/models/from-notebook"):
+			body, _ := io.ReadAll(r.Body)
+			_ = json.Unmarshal(body, &publishBody)
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"id":"model-id-1"}`))
+			return
+		default:
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	defer srv.Close()
+
+	client := gen.NewClient(srv.URL, "", "test-token")
+	sc := NewAPIStateClient(client)
+	sc.index = newResourceIndex()
+
+	outputName := "out"
+	action := declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindNotebook,
+		ResourceName: "kpi_walkthrough",
+		Desired: declarative.NotebookResource{
+			Name: "kpi_walkthrough",
+			Spec: declarative.NotebookSpec{
+				Description: "KPI notebook",
+				Cells: []declarative.CellSpec{
+					{Type: "sql", Name: "base", Role: "transform", Content: "SELECT 1 AS id"},
+					{Type: "sql", Name: outputName, Role: "output", Content: "SELECT * FROM base"},
+				},
+				Publish: &declarative.NotebookPublishSpec{Model: &declarative.NotebookPublishModelSpec{
+					Project:         "analytics",
+					Name:            "stg_orders",
+					Materialization: "TABLE",
+					OutputCell:      outputName,
+				}},
+			},
+		},
+	}
+
+	err := sc.Execute(context.Background(), action)
+	require.NoError(t, err)
+	assert.True(t, notebookCreate)
+	require.NotNil(t, publishBody)
+	assert.Equal(t, "nb-id-1", publishBody["notebook_id"])
+	assert.Equal(t, "cell-out", publishBody["output_cell_id"])
+	assert.Equal(t, "analytics", publishBody["project_name"])
+	assert.Equal(t, "stg_orders", publishBody["name"])
+	assert.Equal(t, "TABLE", publishBody["materialization"])
+}
+
 func TestExecutePipelineJob_CreateResolvesNotebookAndComputeIDs(t *testing.T) {
 	var captured []execCapture
 	sc := withTestIndex(newTestExecuteClient(t, &captured))

@@ -379,15 +379,38 @@ type NotebookDoc struct {
 
 // NotebookSpec holds the configuration for a notebook.
 type NotebookSpec struct {
-	Description string     `yaml:"description,omitempty"`
-	Owner       string     `yaml:"owner,omitempty"`
-	Cells       []CellSpec `yaml:"cells,omitempty"`
+	Description string               `yaml:"description,omitempty"`
+	Owner       string               `yaml:"owner,omitempty"`
+	Cells       []CellSpec           `yaml:"cells,omitempty"`
+	Publish     *NotebookPublishSpec `yaml:"publish,omitempty"`
 }
 
 // CellSpec describes a single cell in a notebook.
 type CellSpec struct {
-	Type    string `yaml:"type"` // sql or markdown
-	Content string `yaml:"content"`
+	Type     string            `yaml:"type"` // sql or markdown
+	Name     string            `yaml:"name,omitempty"`
+	Role     string            `yaml:"role,omitempty"` // transform | output | test | markdown
+	Disabled bool              `yaml:"disabled,omitempty"`
+	Test     *NotebookTestSpec `yaml:"test,omitempty"`
+	Content  string            `yaml:"content"`
+}
+
+// NotebookTestSpec configures notebook test-cell behavior.
+type NotebookTestSpec struct {
+	Severity string `yaml:"severity,omitempty"` // error | warn
+}
+
+// NotebookPublishSpec defines notebook->model publish metadata.
+type NotebookPublishSpec struct {
+	Model *NotebookPublishModelSpec `yaml:"model,omitempty"`
+}
+
+// NotebookPublishModelSpec defines target model publish settings.
+type NotebookPublishModelSpec struct {
+	Project         string `yaml:"project"`
+	Name            string `yaml:"name"`
+	Materialization string `yaml:"materialization,omitempty"`
+	OutputCell      string `yaml:"output_cell"`
 }
 
 // PipelineDoc declares a pipeline of notebook jobs.
