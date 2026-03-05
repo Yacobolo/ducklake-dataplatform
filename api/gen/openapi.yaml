@@ -9,7 +9,26 @@ paths:
   /api-keys:
     get:
       operationId: listAPIKeys
-      parameters: []
+      parameters:
+        - name: principal_id
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
       responses:
         '200':
           description: The request has succeeded.
@@ -19,20 +38,6 @@ paths:
                 $ref: '#/components/schemas/PaginatedAPIKeys'
       tags:
         - Duck
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                principal_id:
-                  type: string
-                max_results:
-                  type: integer
-                  format: int32
-                page_token:
-                  type: string
     post:
       operationId: createAPIKey
       parameters: []
@@ -81,7 +86,38 @@ paths:
   /audit-logs:
     get:
       operationId: listAuditLogs
-      parameters: []
+      parameters:
+        - name: principal_name
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: action
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
       responses:
         '200':
           description: The request has succeeded.
@@ -91,24 +127,6 @@ paths:
                 $ref: '#/components/schemas/PaginatedAuditLogs'
       tags:
         - Duck
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                principal_name:
-                  type: string
-                action:
-                  type: string
-                status:
-                  type: string
-                max_results:
-                  type: integer
-                  format: int32
-                page_token:
-                  type: string
   /catalogs:
     post:
       operationId: registerCatalog
@@ -251,6 +269,19 @@ paths:
           required: true
           schema:
             type: string
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
       responses:
         '200':
           description: The request has succeeded.
@@ -260,18 +291,6 @@ paths:
                 $ref: '#/components/schemas/PaginatedSchemaDetails'
       tags:
         - Duck
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                max_results:
-                  type: integer
-                  format: int32
-                page_token:
-                  type: string
     post:
       operationId: createSchema
       parameters:
@@ -295,6 +314,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateSchemaRequest'
+      x-authz:
+        mode: authenticated
   /catalogs/{catalogName}/schemas/{schemaName}:
     get:
       operationId: getSchema
@@ -346,6 +367,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateSchemaRequest'
+      x-authz:
+        mode: authenticated
     delete:
       operationId: deleteSchema
       parameters:
@@ -373,6 +396,8 @@ paths:
               properties:
                 force:
                   type: boolean
+      x-authz:
+        mode: authenticated
   /catalogs/{catalogName}/schemas/{schemaName}/tables:
     get:
       operationId: listTables
@@ -387,6 +412,19 @@ paths:
           required: true
           schema:
             type: string
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
       responses:
         '200':
           description: The request has succeeded.
@@ -396,18 +434,6 @@ paths:
                 $ref: '#/components/schemas/PaginatedTableDetails'
       tags:
         - Duck
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                max_results:
-                  type: integer
-                  format: int32
-                page_token:
-                  type: string
     post:
       operationId: createTable
       parameters:
@@ -436,6 +462,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateTableRequest'
+      x-authz:
+        mode: authenticated
   /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}:
     get:
       operationId: getTable
@@ -497,6 +525,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateTableRequest'
+      x-authz:
+        mode: authenticated
     delete:
       operationId: deleteTable
       parameters:
@@ -520,6 +550,8 @@ paths:
           description: 'There is no content to send for this request, but the headers may be useful. '
       tags:
         - Duck
+      x-authz:
+        mode: authenticated
   /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns:
     get:
       operationId: listTableColumns
@@ -539,6 +571,19 @@ paths:
           required: true
           schema:
             type: string
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
       responses:
         '200':
           description: The request has succeeded.
@@ -548,18 +593,6 @@ paths:
                 $ref: '#/components/schemas/PaginatedColumnDetails'
       tags:
         - Duck
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                max_results:
-                  type: integer
-                  format: int32
-                page_token:
-                  type: string
   /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns/{columnName}:
     patch:
       operationId: updateColumn
@@ -599,6 +632,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateColumnRequest'
+      x-authz:
+        mode: authenticated
   /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/commit:
     post:
       operationId: commitTableIngestion
@@ -743,6 +778,19 @@ paths:
           required: true
           schema:
             type: string
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
       responses:
         '200':
           description: The request has succeeded.
@@ -752,18 +800,6 @@ paths:
                 $ref: '#/components/schemas/PaginatedViewDetails'
       tags:
         - Duck
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                max_results:
-                  type: integer
-                  format: int32
-                page_token:
-                  type: string
     post:
       operationId: createView
       parameters:
@@ -792,6 +828,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateViewRequest'
+      x-authz:
+        mode: authenticated
   /catalogs/{catalogName}/schemas/{schemaName}/views/{viewName}:
     get:
       operationId: getView
@@ -853,6 +891,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateViewRequest'
+      x-authz:
+        mode: authenticated
     delete:
       operationId: deleteView
       parameters:
@@ -876,6 +916,8 @@ paths:
           description: 'There is no content to send for this request, but the headers may be useful. '
       tags:
         - Duck
+      x-authz:
+        mode: authenticated
   /catalogs/{catalogName}/schemas/{schemaName}/volumes:
     get:
       operationId: listVolumes
@@ -890,6 +932,19 @@ paths:
           required: true
           schema:
             type: string
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
       responses:
         '200':
           description: The request has succeeded.
@@ -899,18 +954,6 @@ paths:
                 $ref: '#/components/schemas/PaginatedVolumes'
       tags:
         - Duck
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                max_results:
-                  type: integer
-                  format: int32
-                page_token:
-                  type: string
     post:
       operationId: createVolume
       parameters:
@@ -939,6 +982,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateVolumeRequest'
+      x-authz:
+        mode: authenticated
   /catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}:
     get:
       operationId: getVolume
@@ -1000,6 +1045,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateVolumeRequest'
+      x-authz:
+        mode: authenticated
     delete:
       operationId: deleteVolume
       parameters:
@@ -1023,6 +1070,8 @@ paths:
           description: 'There is no content to send for this request, but the headers may be useful. '
       tags:
         - Duck
+      x-authz:
+        mode: authenticated
   /catalogs/{catalogName}/set-default:
     post:
       operationId: setDefaultCatalog
@@ -1176,6 +1225,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/GenericRequest'
+      x-authz:
+        mode: authenticated
   /compute-endpoints/{endpointName}:
     get:
       operationId: getComputeEndpoint
@@ -1217,6 +1268,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/GenericRequest'
+      x-authz:
+        mode: authenticated
     delete:
       operationId: deleteComputeEndpoint
       parameters:
@@ -1230,6 +1283,8 @@ paths:
           description: 'There is no content to send for this request, but the headers may be useful. '
       tags:
         - Duck
+      x-authz:
+        mode: authenticated
   /compute-endpoints/{endpointName}/assignments:
     get:
       operationId: listComputeAssignments
@@ -1283,6 +1338,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/GenericRequest'
+      x-authz:
+        mode: authenticated
   /compute-endpoints/{endpointName}/assignments/{assignmentId}:
     delete:
       operationId: deleteComputeAssignment
@@ -1302,6 +1359,8 @@ paths:
           description: 'There is no content to send for this request, but the headers may be useful. '
       tags:
         - Duck
+      x-authz:
+        mode: authenticated
   /compute-endpoints/{endpointName}/health:
     get:
       operationId: getComputeEndpointHealth
@@ -1323,7 +1382,20 @@ paths:
   /external-locations:
     get:
       operationId: listExternalLocations
-      parameters: []
+      parameters:
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
       responses:
         '200':
           description: The request has succeeded.
@@ -1333,18 +1405,6 @@ paths:
                 $ref: '#/components/schemas/PaginatedExternalLocations'
       tags:
         - Duck
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                max_results:
-                  type: integer
-                  format: int32
-                page_token:
-                  type: string
     post:
       operationId: createExternalLocation
       parameters: []
@@ -1363,6 +1423,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateExternalLocationRequest'
+      x-authz:
+        mode: authenticated
   /external-locations/{locationName}:
     get:
       operationId: getExternalLocation
@@ -1404,6 +1466,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateExternalLocationRequest'
+      x-authz:
+        mode: authenticated
     delete:
       operationId: deleteExternalLocation
       parameters:
@@ -1417,6 +1481,8 @@ paths:
           description: 'There is no content to send for this request, but the headers may be useful. '
       tags:
         - Duck
+      x-authz:
+        mode: authenticated
   /git-repos:
     get:
       operationId: listGitRepos
@@ -1512,7 +1578,44 @@ paths:
   /grants:
     get:
       operationId: listGrants
-      parameters: []
+      parameters:
+        - name: principal_id
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: principal_type
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: securable_type
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: securable_id
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
       responses:
         '200':
           description: The request has succeeded.
@@ -1522,26 +1625,6 @@ paths:
                 $ref: '#/components/schemas/PaginatedGrants'
       tags:
         - Duck
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                principal_id:
-                  type: string
-                principal_type:
-                  type: string
-                securable_type:
-                  type: string
-                securable_id:
-                  type: string
-                max_results:
-                  type: integer
-                  format: int32
-                page_token:
-                  type: string
     post:
       operationId: createGrant
       parameters: []
@@ -1560,6 +1643,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateGrantRequest'
+      x-authz:
+        mode: authenticated
   /grants/{grantId}:
     delete:
       operationId: deleteGrant
@@ -1574,10 +1659,25 @@ paths:
           description: 'There is no content to send for this request, but the headers may be useful. '
       tags:
         - Duck
+      x-authz:
+        mode: authenticated
   /groups:
     get:
       operationId: listGroups
-      parameters: []
+      parameters:
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
       responses:
         '200':
           description: The request has succeeded.
@@ -1587,18 +1687,6 @@ paths:
                 $ref: '#/components/schemas/PaginatedGroups'
       tags:
         - Duck
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                max_results:
-                  type: integer
-                  format: int32
-                page_token:
-                  type: string
     post:
       operationId: createGroup
       parameters: []
@@ -1657,6 +1745,19 @@ paths:
           required: true
           schema:
             type: string
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
       responses:
         '200':
           description: The request has succeeded.
@@ -1666,18 +1767,6 @@ paths:
                 $ref: '#/components/schemas/PaginatedGroupMembers'
       tags:
         - Duck
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                max_results:
-                  type: integer
-                  format: int32
-                page_token:
-                  type: string
     post:
       operationId: createGroupMember
       parameters:
@@ -3217,7 +3306,20 @@ paths:
   /principals:
     get:
       operationId: listPrincipals
-      parameters: []
+      parameters:
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
       responses:
         '200':
           description: The request has succeeded.
@@ -3227,18 +3329,6 @@ paths:
                 $ref: '#/components/schemas/PaginatedPrincipals'
       tags:
         - Duck
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                max_results:
-                  type: integer
-                  format: int32
-                page_token:
-                  type: string
     post:
       operationId: createPrincipal
       parameters: []
@@ -3428,7 +3518,44 @@ paths:
   /query-history:
     get:
       operationId: listQueryHistory
-      parameters: []
+      parameters:
+        - name: principal_name
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
       responses:
         '200':
           description: The request has succeeded.
@@ -3438,26 +3565,6 @@ paths:
                 $ref: '#/components/schemas/PaginatedQueryHistoryEntries'
       tags:
         - Duck
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                principal_name:
-                  type: string
-                status:
-                  type: string
-                from:
-                  type: string
-                to:
-                  type: string
-                max_results:
-                  type: integer
-                  format: int32
-                page_token:
-                  type: string
   /row-filters/{rowFilterId}:
     delete:
       operationId: deleteRowFilter
@@ -4000,7 +4107,20 @@ paths:
   /storage-credentials:
     get:
       operationId: listStorageCredentials
-      parameters: []
+      parameters:
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
       responses:
         '200':
           description: The request has succeeded.
@@ -4010,18 +4130,6 @@ paths:
                 $ref: '#/components/schemas/PaginatedStorageCredentials'
       tags:
         - Duck
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                max_results:
-                  type: integer
-                  format: int32
-                page_token:
-                  type: string
     post:
       operationId: createStorageCredential
       parameters: []
@@ -4040,6 +4148,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateStorageCredentialRequest'
+      x-authz:
+        mode: authenticated
   /storage-credentials/{credentialName}:
     get:
       operationId: getStorageCredential
@@ -4081,6 +4191,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateStorageCredentialRequest'
+      x-authz:
+        mode: authenticated
     delete:
       operationId: deleteStorageCredential
       parameters:
@@ -4094,6 +4206,8 @@ paths:
           description: 'There is no content to send for this request, but the headers may be useful. '
       tags:
         - Duck
+      x-authz:
+        mode: authenticated
   /tables/{tableId}/column-masks:
     get:
       operationId: listColumnMasks
@@ -4103,6 +4217,19 @@ paths:
           required: true
           schema:
             type: string
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
       responses:
         '200':
           description: The request has succeeded.
@@ -4112,18 +4239,6 @@ paths:
                 $ref: '#/components/schemas/PaginatedColumnMasks'
       tags:
         - Duck
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                max_results:
-                  type: integer
-                  format: int32
-                page_token:
-                  type: string
     post:
       operationId: createColumnMask
       parameters:
@@ -4156,6 +4271,19 @@ paths:
           required: true
           schema:
             type: string
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
       responses:
         '200':
           description: The request has succeeded.
@@ -4165,18 +4293,6 @@ paths:
                 $ref: '#/components/schemas/PaginatedRowFilters'
       tags:
         - Duck
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                max_results:
-                  type: integer
-                  format: int32
-                page_token:
-                  type: string
     post:
       operationId: createRowFilter
       parameters:

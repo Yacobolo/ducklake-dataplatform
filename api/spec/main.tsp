@@ -1,7 +1,9 @@
 import "@typespec/http";
+import "@typespec/openapi";
 import "@typespec/openapi3";
 
 using TypeSpec.Http;
+using TypeSpec.OpenAPI;
 
 @service(#{ title: "Duck Data Platform API" })
 @doc("Secure SQL query layer over DuckDB with RBAC, row-level security, and column masking, backed by SQLite metadata.")
@@ -459,7 +461,7 @@ op executeQuery(@body body: QueryRequest): QueryResponse;
 
 @route("/principals")
 @get
-op listPrincipals(max_results?: int32, page_token?: string): PaginatedPrincipals;
+op listPrincipals(@query max_results?: int32, @query page_token?: string): PaginatedPrincipals;
 
 @route("/principals")
 @post
@@ -479,7 +481,7 @@ op updatePrincipalAdmin(principalId: string, @body body: UpdatePrincipalAdminReq
 
 @route("/groups")
 @get
-op listGroups(max_results?: int32, page_token?: string): PaginatedGroups;
+op listGroups(@query max_results?: int32, @query page_token?: string): PaginatedGroups;
 
 @route("/groups")
 @post
@@ -495,7 +497,7 @@ op deleteGroup(groupId: string): void;
 
 @route("/groups/{groupId}/members")
 @get
-op listGroupMembers(groupId: string, max_results?: int32, page_token?: string): PaginatedGroupMembers;
+op listGroupMembers(groupId: string, @query max_results?: int32, @query page_token?: string): PaginatedGroupMembers;
 
 @route("/groups/{groupId}/members")
 @post
@@ -508,12 +510,12 @@ op deleteGroupMember(groupId: string, member_type: string, member_id: string): v
 @route("/grants")
 @get
 op listGrants(
-  principal_id?: string,
-  principal_type?: string,
-  securable_type?: string,
-  securable_id?: string,
-  max_results?: int32,
-  page_token?: string,
+  @query principal_id?: string,
+  @query principal_type?: string,
+  @query securable_type?: string,
+  @query securable_id?: string,
+  @query max_results?: int32,
+  @query page_token?: string,
 ): PaginatedGrants;
 
 @route("/grants")
@@ -526,7 +528,7 @@ op deleteGrant(grantId: string): void;
 
 @route("/api-keys")
 @get
-op listAPIKeys(principal_id?: string, max_results?: int32, page_token?: string): PaginatedAPIKeys;
+op listAPIKeys(@query principal_id?: string, @query max_results?: int32, @query page_token?: string): PaginatedAPIKeys;
 
 @route("/api-keys")
 @post
@@ -542,7 +544,7 @@ op cleanupExpiredAPIKeys(): CleanupAPIKeysResponse;
 
 @route("/tables/{tableId}/row-filters")
 @get
-op listRowFilters(tableId: string, max_results?: int32, page_token?: string): PaginatedRowFilters;
+op listRowFilters(tableId: string, @query max_results?: int32, @query page_token?: string): PaginatedRowFilters;
 
 @route("/tables/{tableId}/row-filters")
 @post
@@ -562,7 +564,7 @@ op unbindRowFilter(rowFilterId: string, principal_id: string, principal_type: st
 
 @route("/tables/{tableId}/column-masks")
 @get
-op listColumnMasks(tableId: string, max_results?: int32, page_token?: string): PaginatedColumnMasks;
+op listColumnMasks(tableId: string, @query max_results?: int32, @query page_token?: string): PaginatedColumnMasks;
 
 @route("/tables/{tableId}/column-masks")
 @post
@@ -587,11 +589,11 @@ op createManifest(@body body: ManifestRequest): ManifestResponse;
 @route("/audit-logs")
 @get
 op listAuditLogs(
-  principal_name?: string,
-  action?: string,
-  status?: string,
-  max_results?: int32,
-  page_token?: string,
+  @query principal_name?: string,
+  @query action?: string,
+  @query status?: string,
+  @query max_results?: int32,
+  @query page_token?: string,
 ): PaginatedAuditLogs;
 
 @route("/catalogs/{catalogName}/metastore/summary")
@@ -601,12 +603,12 @@ op getMetastoreSummary(catalogName: string): MetastoreSummary;
 @route("/query-history")
 @get
 op listQueryHistory(
-  principal_name?: string,
-  status?: string,
-  from?: string,
-  to?: string,
-  max_results?: int32,
-  page_token?: string,
+  @query principal_name?: string,
+  @query status?: string,
+  @query from?: string,
+  @query to?: string,
+  @query max_results?: int32,
+  @query page_token?: string,
 ): PaginatedQueryHistoryEntries;
 
 @route("/catalogs")
@@ -639,7 +641,7 @@ op getCatalog(catalogName: string): CatalogInfo;
 
 @route("/catalogs/{catalogName}/schemas")
 @get
-op listSchemas(catalogName: string, max_results?: int32, page_token?: string): PaginatedSchemaDetails;
+op listSchemas(catalogName: string, @query max_results?: int32, @query page_token?: string): PaginatedSchemaDetails;
 
 @route("/catalogs/{catalogName}/schemas")
 @post
@@ -659,7 +661,7 @@ op deleteSchema(catalogName: string, schemaName: string, force?: boolean): void;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}/tables")
 @get
-op listTables(catalogName: string, schemaName: string, max_results?: int32, page_token?: string): PaginatedTableDetails;
+op listTables(catalogName: string, schemaName: string, @query max_results?: int32, @query page_token?: string): PaginatedTableDetails;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}/tables")
 @post
@@ -683,8 +685,8 @@ op listTableColumns(
   catalogName: string,
   schemaName: string,
   tableName: string,
-  max_results?: int32,
-  page_token?: string,
+  @query max_results?: int32,
+  @query page_token?: string,
 ): PaginatedColumnDetails;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns/{columnName}")
@@ -703,7 +705,7 @@ op profileTable(catalogName: string, schemaName: string, tableName: string): Tab
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}/views")
 @get
-op listViews(catalogName: string, schemaName: string, max_results?: int32, page_token?: string): PaginatedViewDetails;
+op listViews(catalogName: string, schemaName: string, @query max_results?: int32, @query page_token?: string): PaginatedViewDetails;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}/views")
 @post
@@ -723,7 +725,7 @@ op deleteView(catalogName: string, schemaName: string, viewName: string): void;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}/volumes")
 @get
-op listVolumes(catalogName: string, schemaName: string, max_results?: int32, page_token?: string): PaginatedVolumes;
+op listVolumes(catalogName: string, schemaName: string, @query max_results?: int32, @query page_token?: string): PaginatedVolumes;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}/volumes")
 @post
@@ -922,7 +924,7 @@ op listClassifications(max_results?: int32, page_token?: string): GenericRespons
 
 @route("/storage-credentials")
 @get
-op listStorageCredentials(max_results?: int32, page_token?: string): PaginatedStorageCredentials;
+op listStorageCredentials(@query max_results?: int32, @query page_token?: string): PaginatedStorageCredentials;
 
 @route("/storage-credentials")
 @post
@@ -942,7 +944,7 @@ op deleteStorageCredential(credentialName: string): void;
 
 @route("/external-locations")
 @get
-op listExternalLocations(max_results?: int32, page_token?: string): PaginatedExternalLocations;
+op listExternalLocations(@query max_results?: int32, @query page_token?: string): PaginatedExternalLocations;
 
 @route("/external-locations")
 @post
@@ -1315,3 +1317,30 @@ op runMetricQuery(@body body: GenericRequest): GenericResponse;
 @route("/metrics/{metricName}/freshness")
 @get
 op checkMetricFreshness(metricName: string, project_name?: string, semantic_model_name?: string): GenericResponse;
+
+@@extension(createSchema, "x-authz", #{ mode: "authenticated" });
+@@extension(updateSchema, "x-authz", #{ mode: "authenticated" });
+@@extension(deleteSchema, "x-authz", #{ mode: "authenticated" });
+@@extension(createTable, "x-authz", #{ mode: "authenticated" });
+@@extension(updateTable, "x-authz", #{ mode: "authenticated" });
+@@extension(deleteTable, "x-authz", #{ mode: "authenticated" });
+@@extension(updateColumn, "x-authz", #{ mode: "authenticated" });
+@@extension(createView, "x-authz", #{ mode: "authenticated" });
+@@extension(updateView, "x-authz", #{ mode: "authenticated" });
+@@extension(deleteView, "x-authz", #{ mode: "authenticated" });
+@@extension(createVolume, "x-authz", #{ mode: "authenticated" });
+@@extension(updateVolume, "x-authz", #{ mode: "authenticated" });
+@@extension(deleteVolume, "x-authz", #{ mode: "authenticated" });
+@@extension(createComputeEndpoint, "x-authz", #{ mode: "authenticated" });
+@@extension(updateComputeEndpoint, "x-authz", #{ mode: "authenticated" });
+@@extension(deleteComputeEndpoint, "x-authz", #{ mode: "authenticated" });
+@@extension(createComputeAssignment, "x-authz", #{ mode: "authenticated" });
+@@extension(deleteComputeAssignment, "x-authz", #{ mode: "authenticated" });
+@@extension(createExternalLocation, "x-authz", #{ mode: "authenticated" });
+@@extension(updateExternalLocation, "x-authz", #{ mode: "authenticated" });
+@@extension(deleteExternalLocation, "x-authz", #{ mode: "authenticated" });
+@@extension(createGrant, "x-authz", #{ mode: "authenticated" });
+@@extension(deleteGrant, "x-authz", #{ mode: "authenticated" });
+@@extension(createStorageCredential, "x-authz", #{ mode: "authenticated" });
+@@extension(updateStorageCredential, "x-authz", #{ mode: "authenticated" });
+@@extension(deleteStorageCredential, "x-authz", #{ mode: "authenticated" });
