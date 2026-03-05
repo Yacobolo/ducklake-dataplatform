@@ -1,0 +1,30 @@
+using TypeSpec.OpenAPI;
+
+namespace Duck;
+
+@@extension(createSchema, "x-authz", #{ mode: "authenticated" });
+@@extension(updateSchema, "x-authz", #{ mode: "authenticated" });
+@@extension(deleteSchema, "x-authz", #{ mode: "authenticated" });
+@@extension(createTable, "x-authz", #{ mode: "authenticated" });
+@@extension(updateTable, "x-authz", #{ mode: "authenticated" });
+@@extension(deleteTable, "x-authz", #{ mode: "authenticated" });
+@@extension(updateColumn, "x-authz", #{ mode: "authenticated" });
+@@extension(createView, "x-authz", #{ mode: "authenticated" });
+@@extension(updateView, "x-authz", #{ mode: "authenticated" });
+@@extension(deleteView, "x-authz", #{ mode: "authenticated" });
+@@extension(createVolume, "x-authz", #{ mode: "authenticated" });
+@@extension(updateVolume, "x-authz", #{ mode: "authenticated" });
+@@extension(deleteVolume, "x-authz", #{ mode: "authenticated" });
+@@extension(createComputeEndpoint, "x-authz", #{ mode: "authenticated" });
+@@extension(updateComputeEndpoint, "x-authz", #{ mode: "authenticated" });
+@@extension(deleteComputeEndpoint, "x-authz", #{ mode: "authenticated" });
+@@extension(createComputeAssignment, "x-authz", #{ mode: "authenticated" });
+@@extension(deleteComputeAssignment, "x-authz", #{ mode: "authenticated" });
+@@extension(createExternalLocation, "x-authz", #{ mode: "authenticated" });
+@@extension(updateExternalLocation, "x-authz", #{ mode: "authenticated" });
+@@extension(deleteExternalLocation, "x-authz", #{ mode: "authenticated" });
+@@extension(createGrant, "x-authz", #{ mode: "authenticated" });
+@@extension(deleteGrant, "x-authz", #{ mode: "authenticated" });
+@@extension(createStorageCredential, "x-authz", #{ mode: "authenticated" });
+@@extension(updateStorageCredential, "x-authz", #{ mode: "authenticated" });
+@@extension(deleteStorageCredential, "x-authz", #{ mode: "authenticated" });
