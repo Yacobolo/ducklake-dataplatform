@@ -115,7 +115,19 @@ func (s *AuthorizationService) LookupTableID(ctx context.Context, tableName stri
 	if catalogName != "" && schemaName != "" && s.lookupCatalogTable != nil {
 		tbl, lookupErr := s.lookupCatalogTable(ctx, catalogName, schemaName, bareTableName)
 		if lookupErr == nil {
-			return tbl.TableID, "", strings.EqualFold(tbl.TableType, domain.TableTypeExternal), nil
+			isExternal := strings.EqualFold(tbl.TableType, domain.TableTypeExternal)
+
+			if !isExternal {
+				if managed, managedErr := s.lookupManagedTableBySchema(ctx, schemaName, bareTableName); managedErr == nil {
+					return managed.ID, managed.SchemaID, false, nil
+				}
+			}
+
+			if sch, schErr := s.introspection.GetSchemaByName(ctx, schemaName); schErr == nil {
+				return tbl.TableID, sch.ID, isExternal, nil
+			}
+
+			return tbl.TableID, "", isExternal, nil
 		}
 
 		var notFoundErr *domain.NotFoundError
