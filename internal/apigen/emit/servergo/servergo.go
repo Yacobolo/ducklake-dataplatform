@@ -22,8 +22,18 @@ func Emit(doc ir.Document) ([]byte, error) {
 	}
 
 	var b strings.Builder
+	hasStrictOperations := false
+	for _, endpoint := range doc.Endpoints {
+		if endpoint.OperationID != "getHealth" {
+			hasStrictOperations = true
+			break
+		}
+	}
 	b.WriteString("package api\n\n")
 	b.WriteString("import (\n")
+	if hasStrictOperations {
+		b.WriteString("\t\"context\"\n")
+	}
 	b.WriteString("\t\"encoding/json\"\n")
 	b.WriteString("\t\"net/http\"\n\n")
 	b.WriteString("\t\"github.com/go-chi/chi/v5\"\n")
@@ -140,8 +150,19 @@ func Emit(doc ir.Document) ([]byte, error) {
 	b.WriteString("\t}\n")
 	b.WriteString("}\n")
 	b.WriteString("\n")
+	b.WriteString("// GenStrictServerInterface represents strict handlers for APIGen transport dispatch.\n")
+	b.WriteString("type GenStrictServerInterface interface {\n")
+	for _, endpoint := range doc.Endpoints {
+		if endpoint.OperationID == "getHealth" {
+			continue
+		}
+		name := exportedName(endpoint.OperationID)
+		b.WriteString("\t" + name + "(ctx context.Context, request " + name + "RequestObject) (" + name + "ResponseObject, error)\n")
+	}
+	b.WriteString("}\n\n")
+
 	b.WriteString("type genStrictBridge struct {\n")
-	b.WriteString("\thandler StrictServerInterface\n")
+	b.WriteString("\thandler GenStrictServerInterface\n")
 	b.WriteString("}\n\n")
 
 	for _, endpoint := range doc.Endpoints {
@@ -193,7 +214,7 @@ func Emit(doc ir.Document) ([]byte, error) {
 	}
 
 	b.WriteString("// DispatchAPIGenStrictOperation dispatches to strict handlers without oapi strict wrappers.\n")
-	b.WriteString("func DispatchAPIGenStrictOperation(operationID string, handler StrictServerInterface, w http.ResponseWriter, r *http.Request) bool {\n")
+	b.WriteString("func DispatchAPIGenStrictOperation(operationID string, handler GenStrictServerInterface, w http.ResponseWriter, r *http.Request) bool {\n")
 	b.WriteString("\treturn DispatchAPIGenOperation(operationID, genStrictBridge{handler: handler}, w, r)\n")
 	b.WriteString("}\n")
 

@@ -33,7 +33,8 @@ func TestEmit(t *testing.T) {
 	require.Contains(t, content, "func DispatchAPIGenOperation(operationID string, dispatcher GenOperationDispatcher")
 	require.Contains(t, content, "\"github.com/oapi-codegen/runtime\"")
 	require.Contains(t, content, "type genStrictBridge struct")
-	require.Contains(t, content, "func DispatchAPIGenStrictOperation(operationID string, handler StrictServerInterface")
+	require.Contains(t, content, "type GenStrictServerInterface interface")
+	require.Contains(t, content, "func DispatchAPIGenStrictOperation(operationID string, handler GenStrictServerInterface")
 }
 
 func TestEmit_UsesIRPathAsIs(t *testing.T) {
@@ -136,6 +137,9 @@ func TestEmit_GeneratesPathAndQueryBinding(t *testing.T) {
 	require.Contains(t, content, "runtime.BindStyledParameterWithOptions(\"simple\", \"groupId\", chi.URLParam(r, \"groupId\")")
 	require.Contains(t, content, "runtime.BindQueryParameter(\"form\", true, false, \"max_results\", r.URL.Query(), &params.MaxResults)")
 	require.Contains(t, content, "dispatcher.ListGroupMembers(w, r, groupId, params)")
+	require.Contains(t, content, "var request ListGroupMembersRequestObject")
 	require.Contains(t, content, "response, err := b.handler.ListGroupMembers(r.Context(), request)")
 	require.Contains(t, content, "if err := response.VisitListGroupMembersResponse(w); err != nil")
+	require.NotContains(t, content, "type APIGenListGroupMembersRequestObject =")
+	require.NotContains(t, content, "type APIGenListGroupMembersResponseObject =")
 }

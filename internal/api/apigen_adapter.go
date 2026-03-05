@@ -4,11 +4,11 @@ import "net/http"
 
 // GenStrictAdapter dispatches APIGen routes directly to strict handler methods.
 type GenStrictAdapter struct {
-	handler StrictServerInterface
+	handler GenStrictServerInterface
 }
 
 // NewAPIGenStrictAdapter creates an adapter backed by strict handler methods.
-func NewAPIGenStrictAdapter(handler StrictServerInterface) *GenStrictAdapter {
+func NewAPIGenStrictAdapter(handler GenStrictServerInterface) *GenStrictAdapter {
 	return &GenStrictAdapter{handler: handler}
 }
 
