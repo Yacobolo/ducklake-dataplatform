@@ -152,3 +152,21 @@ func TestHandler_TriggerAssetMaterialization(t *testing.T) {
 	require.True(t, cast)
 	assert.Equal(t, "event-1", *accepted.EventId)
 }
+
+func TestHandler_TriggerAssetMaterialization_RequiresAdmin(t *testing.T) {
+	t.Parallel()
+	h := &APIHandler{assets: &mockAssetService{
+		getAssetFn: func(_ context.Context, _ string) (*domain.DataAsset, error) {
+			return &domain.DataAsset{ID: "asset-1", AssetKey: "sales.daily"}, nil
+		},
+		triggerMaterializationFn: func(_ context.Context, _ string, _ *string, _ map[string]any, _ *string) (*domain.OrchestrationEvent, error) {
+			t.Fatalf("trigger should not be called for non-admin")
+			return nil, nil
+		},
+	}}
+
+	resp, err := h.TriggerAssetMaterialization(assetTestCtx(false), TriggerAssetMaterializationRequestObject{AssetKey: "sales.daily"})
+	require.NoError(t, err)
+	_, cast := resp.(TriggerAssetMaterialization403JSONResponse)
+	require.True(t, cast)
+}
