@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"strconv"
+
 	"duck-demo/internal/domain"
 
 	. "maragu.dev/gomponents"
@@ -68,6 +70,8 @@ type assetDetailPageData struct {
 	Description         string
 	IOProfile           string
 	IsActive            bool
+	FreshnessLabel      string
+	FreshnessTone       string
 	UpdatedAt           string
 	UpstreamAssetKeys   []string
 	DownstreamAssetKeys []string
@@ -76,6 +80,7 @@ type assetDetailPageData struct {
 	Checks              []domain.AssetCheck
 	Partitions          []domain.AssetPartition
 	Backfills           []domain.BackfillRequest
+	PartitionStatus     map[string]int
 	CSRFFieldFunc       func() Node
 }
 
@@ -162,6 +167,7 @@ func assetDetailPage(d assetDetailPageData) Node {
 			P(Text("Description: "+fallbackString(d.Description, "-"))),
 			P(Text("IO Profile: "+fallbackString(d.IOProfile, "-"))),
 			P(Text("Active: "+boolLabel(d.IsActive))),
+			P(Text("Freshness: "), statusLabel(d.FreshnessLabel, d.FreshnessTone)),
 			P(Text("Updated: "+d.UpdatedAt)),
 			Div(Class("d-flex flex-wrap gap-2 mt-2"),
 				Form(Method("post"), Action("/ui/assets/"+d.AssetKey+"/materialize"), d.CSRFFieldFunc(), Input(Type("text"), Name("partition_key"), Placeholder("Partition key (optional)")), Button(Type("submit"), Class(primaryButtonClass()), Text("Trigger materialization"))),
@@ -172,9 +178,20 @@ func assetDetailPage(d assetDetailPageData) Node {
 		Div(Class(cardClass("table-wrap")), H2(Text("Recent Runs")), runsTable),
 		Div(Class(cardClass("table-wrap")), H2(Text("Materializations")), matTable),
 		Div(Class(cardClass("table-wrap")), H2(Text("Checks")), checksTable),
-		Div(Class(cardClass("table-wrap")), H2(Text("Partitions")), partitionsTable),
+		Div(Class(cardClass("table-wrap")), H2(Text("Partitions")), partitionSummary(d.PartitionStatus), partitionsTable),
 		Div(Class(cardClass("table-wrap")), H2(Text("Backfills")), backfillsTable),
 	)
+}
+
+func partitionSummary(statuses map[string]int) Node {
+	if len(statuses) == 0 {
+		return P(Class("color-fg-muted"), Text("No partition status recorded."))
+	}
+	items := make([]Node, 0, len(statuses))
+	for status, count := range statuses {
+		items = append(items, Span(Class("mr-2"), statusLabel(status+": "+strconv.Itoa(count), "attention")))
+	}
+	return Div(Class("mb-2"), Group(items))
 }
 
 func boolLabel(v bool) string {

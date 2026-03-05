@@ -3,6 +3,7 @@ paths:
     get:
       operationId: listAssets
       summary: List assets
+      description: Returns first-class asset definitions visible to the authenticated principal.
       tags: [Assets]
       parameters:
         - $ref: '../schemas/common.yaml#/parameters/MaxResults'
@@ -33,6 +34,7 @@ paths:
     get:
       operationId: getAsset
       summary: Get asset by key
+      description: Returns one asset definition and orchestration metadata by asset key.
       tags: [Assets]
       responses:
         '200':
@@ -62,6 +64,7 @@ paths:
     get:
       operationId: getAssetGraph
       summary: Get asset graph edges
+      description: Returns immediate upstream and downstream edges for the requested asset.
       tags: [Assets]
       responses:
         '200':
@@ -91,6 +94,7 @@ paths:
     get:
       operationId: listAssetPartitions
       summary: List partitions for an asset
+      description: Lists partition states for the requested asset.
       tags: [Assets]
       parameters:
         - $ref: '../schemas/common.yaml#/parameters/MaxResults'
@@ -123,6 +127,7 @@ paths:
     get:
       operationId: listAssetRuns
       summary: List runs for an asset
+      description: Lists asset materialization runs and status transitions.
       tags: [Assets]
       parameters:
         - $ref: '../schemas/common.yaml#/parameters/MaxResults'
@@ -161,6 +166,7 @@ paths:
     post:
       operationId: triggerAssetMaterialization
       summary: Trigger asset materialization
+      description: Enqueues a materialization event for an asset. Requires admin privileges.
       tags: [Assets]
       requestBody:
         required: false
@@ -200,6 +206,7 @@ paths:
     get:
       operationId: listAssetMaterializations
       summary: List materializations for an asset
+      description: Lists completed materializations and metadata for an asset.
       tags: [Assets]
       parameters:
         - $ref: '../schemas/common.yaml#/parameters/MaxResults'
@@ -232,6 +239,7 @@ paths:
     get:
       operationId: listAssetChecks
       summary: List checks for an asset
+      description: Lists data quality checks configured for an asset.
       tags: [Assets]
       responses:
         '200':
@@ -261,6 +269,7 @@ paths:
     get:
       operationId: listAssetBackfills
       summary: List backfill requests for an asset
+      description: Lists historical and active backfill requests for an asset.
       tags: [Assets]
       parameters:
         - $ref: '../schemas/common.yaml#/parameters/MaxResults'
@@ -289,6 +298,7 @@ paths:
     post:
       operationId: createAssetBackfill
       summary: Create a backfill request
+      description: Creates a partition-range backfill request for an asset. Requires admin privileges.
       tags: [Assets]
       requestBody:
         required: true

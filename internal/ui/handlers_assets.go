@@ -3,6 +3,7 @@ package ui
 import (
 	"net/http"
 	"sort"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -109,6 +110,9 @@ func (h *Handler) AssetsDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	freshnessLabel, freshnessTone := freshnessStatus(asset, materializations)
+	partitionStatus := summarizePartitions(partitions)
+
 	renderHTML(w, http.StatusOK, assetDetailPage(assetDetailPageData{
 		Principal:           principalFromContext(r.Context()),
 		AssetKey:            asset.AssetKey,
@@ -117,6 +121,8 @@ func (h *Handler) AssetsDetail(w http.ResponseWriter, r *http.Request) {
 		Description:         asset.Description,
 		IOProfile:           asset.IOProfile,
 		IsActive:            asset.IsActive,
+		FreshnessLabel:      freshnessLabel,
+		FreshnessTone:       freshnessTone,
 		UpdatedAt:           formatTime(asset.UpdatedAt),
 		UpstreamAssetKeys:   upstream,
 		DownstreamAssetKeys: downstream,
@@ -125,8 +131,34 @@ func (h *Handler) AssetsDetail(w http.ResponseWriter, r *http.Request) {
 		Checks:              checks,
 		Partitions:          partitions,
 		Backfills:           backfills,
+		PartitionStatus:     partitionStatus,
 		CSRFFieldFunc:       csrfFieldProvider(r),
 	}))
+}
+
+func freshnessStatus(asset *domain.DataAsset, materializations []domain.AssetMaterialization) (string, string) {
+	if asset == nil || asset.FreshnessPolicy == nil {
+		return "No SLA", "accent"
+	}
+	if asset.FreshnessPolicy.MaxLagSeconds <= 0 {
+		return "Configured", "attention"
+	}
+	if len(materializations) == 0 {
+		return "Never materialized", "severe"
+	}
+	lag := time.Since(materializations[0].MaterializedAt)
+	if lag <= time.Duration(asset.FreshnessPolicy.MaxLagSeconds)*time.Second {
+		return "Healthy", "success"
+	}
+	return "Stale", "severe"
+}
+
+func summarizePartitions(partitions []domain.AssetPartition) map[string]int {
+	counts := make(map[string]int)
+	for i := range partitions {
+		counts[partitions[i].Status]++
+	}
+	return counts
 }
 
 func (h *Handler) AssetMaterialize(w http.ResponseWriter, r *http.Request) {

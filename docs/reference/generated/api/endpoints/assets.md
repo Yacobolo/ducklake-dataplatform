@@ -8,6 +8,8 @@ Asset-centric orchestration, runs, partitions, and backfills.
 
 List assets
 
+Returns first-class asset definitions visible to the authenticated principal.
+
 - Operation ID: `listAssets`
 
 ### Query Parameters
@@ -30,6 +32,8 @@ List assets
 
 Get asset by key
 
+Returns one asset definition and orchestration metadata by asset key.
+
 - Operation ID: `getAsset`
 
 ### Path Parameters
@@ -51,6 +55,8 @@ Get asset by key
 ## `GET /assets/{assetKey}/backfills`
 
 List backfill requests for an asset
+
+Lists historical and active backfill requests for an asset.
 
 - Operation ID: `listAssetBackfills`
 
@@ -82,6 +88,8 @@ List backfill requests for an asset
 
 Create a backfill request
 
+Creates a partition-range backfill request for an asset. Requires admin privileges.
+
 - Operation ID: `createAssetBackfill`
 
 ### Path Parameters
@@ -111,6 +119,8 @@ Create a backfill request
 
 List checks for an asset
 
+Lists data quality checks configured for an asset.
+
 - Operation ID: `listAssetChecks`
 
 ### Path Parameters
@@ -133,6 +143,8 @@ List checks for an asset
 
 Get asset graph edges
 
+Returns immediate upstream and downstream edges for the requested asset.
+
 - Operation ID: `getAssetGraph`
 
 ### Path Parameters
@@ -154,6 +166,8 @@ Get asset graph edges
 ## `GET /assets/{assetKey}/materializations`
 
 List materializations for an asset
+
+Lists completed materializations and metadata for an asset.
 
 - Operation ID: `listAssetMaterializations`
 
@@ -184,6 +198,8 @@ List materializations for an asset
 
 Trigger asset materialization
 
+Enqueues a materialization event for an asset. Requires admin privileges.
+
 - Operation ID: `triggerAssetMaterialization`
 
 ### Path Parameters
@@ -213,6 +229,8 @@ Trigger asset materialization
 
 List partitions for an asset
 
+Lists partition states for the requested asset.
+
 - Operation ID: `listAssetPartitions`
 
 ### Path Parameters
@@ -241,6 +259,8 @@ List partitions for an asset
 ## `GET /assets/{assetKey}/runs`
 
 List runs for an asset
+
+Lists asset materialization runs and status transitions.
 
 - Operation ID: `listAssetRuns`
 
