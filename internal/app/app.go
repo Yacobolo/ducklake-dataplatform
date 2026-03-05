@@ -313,6 +313,9 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 		deps.Logger.With("component", "pipeline"),
 	)
 	pipelineSvc.SetAssetOrchestration(assetRepo, assetDepRepo, assetRunRepo)
+	if err := pipelineSvc.SyncPipelinesToAssets(ctx); err != nil {
+		return nil, fmt.Errorf("sync pipelines to assets: %w", err)
+	}
 	pipelineScheduler := pipeline.NewScheduler(pipelineSvc, pipelineRepo,
 		deps.Logger.With("component", "pipeline-scheduler"))
 	pipelineSvc.SetScheduleReloader(pipelineScheduler)

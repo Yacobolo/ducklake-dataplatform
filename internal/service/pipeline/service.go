@@ -79,6 +79,79 @@ func (s *Service) SetAssetOrchestration(
 	s.assetRunRepo = assetRunRepo
 }
 
+// SyncPipelinesToAssets maps existing pipeline/job definitions to asset graph state.
+func (s *Service) SyncPipelinesToAssets(ctx context.Context) error {
+	if s.assetRepo == nil || s.assetDepRepo == nil {
+		return nil
+	}
+
+	page := domain.PageRequest{MaxResults: 500}
+	for {
+		pipelines, total, err := s.pipelines.ListPipelines(ctx, page)
+		if err != nil {
+			return fmt.Errorf("list pipelines: %w", err)
+		}
+
+		for i := range pipelines {
+			if err := s.syncPipelineAssets(ctx, &pipelines[i]); err != nil {
+				return err
+			}
+		}
+
+		next := domain.NextPageToken(page.Offset(), page.Limit(), total)
+		if next == "" {
+			break
+		}
+		page.PageToken = next
+	}
+
+	return nil
+}
+
+func (s *Service) syncPipelineAssets(ctx context.Context, pipeline *domain.Pipeline) error {
+	jobs, err := s.pipelines.ListJobsByPipeline(ctx, pipeline.ID)
+	if err != nil {
+		return fmt.Errorf("list pipeline jobs for %s: %w", pipeline.Name, err)
+	}
+	if len(jobs) == 0 {
+		return nil
+	}
+
+	adapted, err := BuildPipelineAssetGraph(pipeline, jobs)
+	if err != nil {
+		return fmt.Errorf("build pipeline asset graph for %s: %w", pipeline.Name, err)
+	}
+
+	for i := range adapted.Assets {
+		asset := adapted.Assets[i]
+		if _, getErr := s.assetRepo.GetByID(ctx, asset.ID); getErr == nil {
+			if _, updateErr := s.assetRepo.Update(ctx, asset.ID, &asset); updateErr != nil {
+				return fmt.Errorf("update asset %s: %w", asset.AssetKey, updateErr)
+			}
+		} else {
+			if _, createErr := s.assetRepo.Create(ctx, &asset); createErr != nil {
+				return fmt.Errorf("create asset %s: %w", asset.AssetKey, createErr)
+			}
+		}
+
+		if depErr := s.assetDepRepo.DeleteByAsset(ctx, asset.ID); depErr != nil {
+			return fmt.Errorf("clear dependencies for asset %s: %w", asset.AssetKey, depErr)
+		}
+	}
+
+	for i := range adapted.Dependencies {
+		dep := adapted.Dependencies[i]
+		if _, depErr := s.assetDepRepo.Create(ctx, &dep); depErr != nil {
+			var conflict *domain.ConflictError
+			if !errors.As(depErr, &conflict) {
+				return fmt.Errorf("create dependency %s->%s: %w", dep.UpstreamAssetID, dep.AssetID, depErr)
+			}
+		}
+	}
+
+	return nil
+}
+
 // === Pipeline CRUD ===
 
 // CreatePipeline validates and persists a new pipeline, then reloads schedules.
