@@ -175,7 +175,7 @@ func run() error {
 	}
 	defer application.Scheduler.Stop()
 
-	if cfg.FeatureAssetOrchestration && application.Reconciler != nil {
+	if application.Reconciler != nil {
 		reconcilerStop := make(chan struct{})
 		go func() {
 			ticker := time.NewTicker(750 * time.Millisecond)
