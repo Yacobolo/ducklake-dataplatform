@@ -152,12 +152,16 @@ func (s *Service) executeJob(ctx context.Context, job domain.PipelineJob,
 	}
 
 	if lastErr != nil {
-		errMsg := lastErr.Error()
-		_ = s.runs.UpdateJobRunFinished(ctx, jobRunID, domain.PipelineJobRunStatusFailed, &errMsg)
+		if jobRunID != "" {
+			errMsg := lastErr.Error()
+			_ = s.runs.UpdateJobRunFinished(ctx, jobRunID, domain.PipelineJobRunStatusFailed, &errMsg)
+		}
 		return lastErr
 	}
 
-	_ = s.runs.UpdateJobRunFinished(ctx, jobRunID, domain.PipelineJobRunStatusSuccess, nil)
+	if jobRunID != "" {
+		_ = s.runs.UpdateJobRunFinished(ctx, jobRunID, domain.PipelineJobRunStatusSuccess, nil)
+	}
 	return nil
 }
 

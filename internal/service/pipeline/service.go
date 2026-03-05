@@ -325,20 +325,6 @@ func (s *Service) TriggerRun(ctx context.Context, principal string, pipelineName
 		return nil, err
 	}
 
-	// Create job runs for each job.
-	for _, job := range jobs {
-		jr := &domain.PipelineJobRun{
-			ID:      domain.NewID(),
-			RunID:   result.ID,
-			JobID:   job.ID,
-			JobName: job.Name,
-			Status:  domain.PipelineJobRunStatusPending,
-		}
-		if _, err := s.runs.CreateJobRun(ctx, jr); err != nil {
-			return nil, fmt.Errorf("create job run: %w", err)
-		}
-	}
-
 	_ = s.audit.Insert(ctx, &domain.AuditEntry{
 		ID:            domain.NewID(),
 		PrincipalName: principal,
@@ -434,19 +420,13 @@ func (s *Service) executeRunViaAssets(
 	for _, job := range jobs {
 		jobByID[job.ID] = job
 	}
-	jobRunRows, _ := s.runs.ListJobRunsByRun(ctx, pipelineRunID)
-	jobRunByJobID := make(map[string]string, len(jobRunRows))
-	for _, jr := range jobRunRows {
-		jobRunByJobID[jr.JobID] = jr.ID
-	}
 
 	stepper := &pipelineAssetStepper{
-		svc:        s,
-		jobByID:    jobByID,
-		jobRunByID: jobRunByJobID,
-		params:     params,
-		principal:  principal,
-		logger:     s.logger.With("pipeline_run_id", pipelineRunID),
+		svc:       s,
+		jobByID:   jobByID,
+		params:    params,
+		principal: principal,
+		logger:    s.logger.With("pipeline_run_id", pipelineRunID),
 	}
 	executor := orchestration.NewAssetExecutor(s.assetRunRepo, state, io, limiter, stepper)
 
@@ -460,12 +440,11 @@ func (s *Service) executeRunViaAssets(
 }
 
 type pipelineAssetStepper struct {
-	svc        *Service
-	jobByID    map[string]domain.PipelineJob
-	jobRunByID map[string]string
-	params     map[string]string
-	principal  string
-	logger     *slog.Logger
+	svc       *Service
+	jobByID   map[string]domain.PipelineJob
+	params    map[string]string
+	principal string
+	logger    *slog.Logger
 }
 
 func (p *pipelineAssetStepper) Execute(ctx context.Context, assetID string, _ orchestration.IOManager) (map[string]any, error) {
@@ -473,11 +452,7 @@ func (p *pipelineAssetStepper) Execute(ctx context.Context, assetID string, _ or
 	if !ok {
 		return nil, domain.ErrValidation("asset job not found for asset id %s", assetID)
 	}
-	jobRunID := p.jobRunByID[assetID]
-	if jobRunID != "" {
-		_ = p.svc.runs.UpdateJobRunStarted(ctx, jobRunID)
-	}
-	if err := p.svc.executeJob(ctx, job, jobRunID, p.params, p.principal, p.logger); err != nil {
+	if err := p.svc.executeJob(ctx, job, "", p.params, p.principal, p.logger); err != nil {
 		return nil, err
 	}
 	return map[string]any{"asset_id": assetID, "status": "success"}, nil
