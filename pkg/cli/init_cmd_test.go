@@ -29,7 +29,7 @@ func TestBuildDesiredState_IncludesSandboxAndShowcase(t *testing.T) {
 	assert.Contains(t, state.Schemas, "sandbox")
 	assert.Equal(t, "rides_demo", state.Showcase.PipelineName)
 	assert.Equal(t, "rides_raw", state.Showcase.RawTableName)
-	assert.Equal(t, "rides_gold_daily_metrics", state.Showcase.GoldViewName)
+	assert.Equal(t, "rides_gold_daily_metrics", state.Showcase.GoldTableName)
 	assert.Equal(t, "sandbox_getting_started", state.Showcase.SandboxSmokeTable)
 }
 
@@ -76,6 +76,6 @@ func TestComputeInitPlan_ShowcaseAndPipelineMissing(t *testing.T) {
 	plan := computeInitPlan(desired, existing)
 	require.NotEmpty(t, plan.Creates)
 	assert.Contains(t, plan.Creates, `showcase table "landing"."rides_raw"`)
-	assert.Contains(t, plan.Creates, `showcase view "gold"."rides_gold_daily_metrics"`)
+	assert.Contains(t, plan.Creates, `showcase table "gold"."rides_gold_daily_metrics"`)
 	assert.Contains(t, plan.Creates, `pipeline "rides_demo"`)
 }

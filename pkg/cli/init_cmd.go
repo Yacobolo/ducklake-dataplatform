@@ -53,10 +53,10 @@ type initDesiredState struct {
 type initShowcaseSpec struct {
 	PipelineName      string
 	RawTableName      string
-	BronzeViewName    string
-	SilverViewName    string
-	GoldViewName      string
-	QualityViewName   string
+	BronzeTableName   string
+	SilverTableName   string
+	GoldTableName     string
+	QualityTableName  string
 	SandboxSmokeTable string
 }
 
@@ -404,10 +404,10 @@ func buildDesiredState(opts initOptions) initDesiredState {
 		Showcase: initShowcaseSpec{
 			PipelineName:      "rides_demo",
 			RawTableName:      "rides_raw",
-			BronzeViewName:    "rides_bronze_trips",
-			SilverViewName:    "rides_silver_trips",
-			GoldViewName:      "rides_gold_daily_metrics",
-			QualityViewName:   "rides_quality_checks",
+			BronzeTableName:   "rides_bronze_trips",
+			SilverTableName:   "rides_silver_trips",
+			GoldTableName:     "rides_gold_daily_metrics",
+			QualityTableName:  "rides_quality_checks",
 			SandboxSmokeTable: "sandbox_getting_started",
 		},
 	}
@@ -743,20 +743,20 @@ func computeInitPlan(desired initDesiredState, existing initExistingState) initP
 		plan.Creates = append(plan.Creates, fmt.Sprintf("showcase table %q.%q", "landing", desired.Showcase.RawTableName))
 	}
 
-	viewChecks := []struct {
+	showcaseTables := []struct {
 		schema string
 		name   string
 	}{
-		{schema: "bronze", name: desired.Showcase.BronzeViewName},
-		{schema: "silver", name: desired.Showcase.SilverViewName},
-		{schema: "gold", name: desired.Showcase.GoldViewName},
-		{schema: "gold", name: desired.Showcase.QualityViewName},
+		{schema: "bronze", name: desired.Showcase.BronzeTableName},
+		{schema: "silver", name: desired.Showcase.SilverTableName},
+		{schema: "gold", name: desired.Showcase.GoldTableName},
+		{schema: "gold", name: desired.Showcase.QualityTableName},
 	}
-	for _, view := range viewChecks {
-		if existing.Views[view.schema] != nil && existing.Views[view.schema][view.name] {
-			plan.Exists = append(plan.Exists, fmt.Sprintf("showcase view %q.%q", view.schema, view.name))
+	for _, table := range showcaseTables {
+		if existing.Tables[table.schema] != nil && existing.Tables[table.schema][table.name] {
+			plan.Exists = append(plan.Exists, fmt.Sprintf("showcase table %q.%q", table.schema, table.name))
 		} else {
-			plan.Creates = append(plan.Creates, fmt.Sprintf("showcase view %q.%q", view.schema, view.name))
+			plan.Creates = append(plan.Creates, fmt.Sprintf("showcase table %q.%q", table.schema, table.name))
 		}
 	}
 
@@ -951,26 +951,88 @@ func applyDesiredState(client *gen.Client, desired initDesiredState, existing in
 
 func applyShowcaseState(client *gen.Client, desired initDesiredState) error {
 	rawRef := qualifiedName(desired.CatalogName, "landing", desired.Showcase.RawTableName)
-	bronzeRef := qualifiedName(desired.CatalogName, "bronze", desired.Showcase.BronzeViewName)
-	silverRef := qualifiedName(desired.CatalogName, "silver", desired.Showcase.SilverViewName)
-	goldRef := qualifiedName(desired.CatalogName, "gold", desired.Showcase.GoldViewName)
-	qualityRef := qualifiedName(desired.CatalogName, "gold", desired.Showcase.QualityViewName)
+	bronzeRef := qualifiedName(desired.CatalogName, "bronze", desired.Showcase.BronzeTableName)
+	silverRef := qualifiedName(desired.CatalogName, "silver", desired.Showcase.SilverTableName)
+	goldRef := qualifiedName(desired.CatalogName, "gold", desired.Showcase.GoldTableName)
+	qualityRef := qualifiedName(desired.CatalogName, "gold", desired.Showcase.QualityTableName)
 	sandboxRef := qualifiedName(desired.CatalogName, "sandbox", desired.Showcase.SandboxSmokeTable)
 
-	createRawSQL := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (
-		ride_id BIGINT,
-		pickup_ts TIMESTAMP,
-		dropoff_ts TIMESTAMP,
-		pickup_zone VARCHAR,
-		dropoff_zone VARCHAR,
-		passenger_count INTEGER,
-		trip_distance_mi DOUBLE,
-		fare_amount DOUBLE,
-		tip_amount DOUBLE,
-		total_amount DOUBLE
-	)`, rawRef)
-	if err := executeSQL(client, createRawSQL); err != nil {
-		return fmt.Errorf("create showcase table: %w", err)
+	if err := deleteViewIfExists(client, desired.CatalogName, "bronze", desired.Showcase.BronzeTableName); err != nil {
+		return err
+	}
+	if err := deleteViewIfExists(client, desired.CatalogName, "silver", desired.Showcase.SilverTableName); err != nil {
+		return err
+	}
+	if err := deleteViewIfExists(client, desired.CatalogName, "gold", desired.Showcase.GoldTableName); err != nil {
+		return err
+	}
+	if err := deleteViewIfExists(client, desired.CatalogName, "gold", desired.Showcase.QualityTableName); err != nil {
+		return err
+	}
+
+	if err := ensureManagedTable(client, desired.CatalogName, "landing", desired.Showcase.RawTableName, []map[string]string{
+		{"name": "ride_id", "type": "BIGINT"},
+		{"name": "pickup_ts", "type": "TIMESTAMP"},
+		{"name": "dropoff_ts", "type": "TIMESTAMP"},
+		{"name": "pickup_zone", "type": "VARCHAR"},
+		{"name": "dropoff_zone", "type": "VARCHAR"},
+		{"name": "passenger_count", "type": "INTEGER"},
+		{"name": "trip_distance_mi", "type": "DOUBLE"},
+		{"name": "fare_amount", "type": "DOUBLE"},
+		{"name": "tip_amount", "type": "DOUBLE"},
+		{"name": "total_amount", "type": "DOUBLE"},
+	}); err != nil {
+		return fmt.Errorf("ensure showcase table: %w", err)
+	}
+	if err := ensureManagedTable(client, desired.CatalogName, "bronze", desired.Showcase.BronzeTableName, []map[string]string{
+		{"name": "ride_id", "type": "BIGINT"},
+		{"name": "pickup_ts", "type": "TIMESTAMP"},
+		{"name": "dropoff_ts", "type": "TIMESTAMP"},
+		{"name": "pickup_zone", "type": "VARCHAR"},
+		{"name": "dropoff_zone", "type": "VARCHAR"},
+		{"name": "passenger_count", "type": "INTEGER"},
+		{"name": "trip_distance_mi", "type": "DOUBLE"},
+		{"name": "fare_amount", "type": "DOUBLE"},
+		{"name": "tip_amount", "type": "DOUBLE"},
+		{"name": "total_amount", "type": "DOUBLE"},
+	}); err != nil {
+		return fmt.Errorf("ensure bronze showcase table: %w", err)
+	}
+	if err := ensureManagedTable(client, desired.CatalogName, "silver", desired.Showcase.SilverTableName, []map[string]string{
+		{"name": "ride_id", "type": "BIGINT"},
+		{"name": "pickup_ts", "type": "TIMESTAMP"},
+		{"name": "dropoff_ts", "type": "TIMESTAMP"},
+		{"name": "pickup_zone", "type": "VARCHAR"},
+		{"name": "dropoff_zone", "type": "VARCHAR"},
+		{"name": "passenger_count", "type": "INTEGER"},
+		{"name": "trip_distance_mi", "type": "DOUBLE"},
+		{"name": "fare_amount", "type": "DOUBLE"},
+		{"name": "tip_amount", "type": "DOUBLE"},
+		{"name": "total_amount", "type": "DOUBLE"},
+		{"name": "tip_rate", "type": "DOUBLE"},
+	}); err != nil {
+		return fmt.Errorf("ensure silver showcase table: %w", err)
+	}
+	if err := ensureManagedTable(client, desired.CatalogName, "gold", desired.Showcase.GoldTableName, []map[string]string{
+		{"name": "trip_date", "type": "DATE"},
+		{"name": "ride_count", "type": "BIGINT"},
+		{"name": "gross_revenue", "type": "DOUBLE"},
+		{"name": "avg_fare", "type": "DOUBLE"},
+		{"name": "avg_distance_mi", "type": "DOUBLE"},
+	}); err != nil {
+		return fmt.Errorf("ensure gold showcase table: %w", err)
+	}
+	if err := ensureManagedTable(client, desired.CatalogName, "gold", desired.Showcase.QualityTableName, []map[string]string{
+		{"name": "check_name", "type": "VARCHAR"},
+		{"name": "passed", "type": "BOOLEAN"},
+	}); err != nil {
+		return fmt.Errorf("ensure quality showcase table: %w", err)
+	}
+	if err := ensureManagedTable(client, desired.CatalogName, "sandbox", desired.Showcase.SandboxSmokeTable, []map[string]string{
+		{"name": "id", "type": "BIGINT"},
+		{"name": "note", "type": "VARCHAR"},
+	}); err != nil {
+		return fmt.Errorf("create sandbox smoke table: %w", err)
 	}
 
 	rowCount, err := queryScalarInt64(client, fmt.Sprintf("SELECT COUNT(*) FROM %s", rawRef))
@@ -994,73 +1056,40 @@ func applyShowcaseState(client *gen.Client, desired initDesiredState) error {
 		}
 	}
 
-	createBronzeViewSQL := fmt.Sprintf(`CREATE OR REPLACE VIEW %s AS
-	SELECT
-		ride_id,
-		pickup_ts,
-		dropoff_ts,
-		pickup_zone,
-		dropoff_zone,
-		COALESCE(passenger_count, 1) AS passenger_count,
-		trip_distance_mi,
-		fare_amount,
-		tip_amount,
-		total_amount
-	FROM %s`, bronzeRef, rawRef)
-	if err := executeSQL(client, createBronzeViewSQL); err != nil {
-		return fmt.Errorf("create bronze showcase view: %w", err)
+	refreshSQL := []string{
+		fmt.Sprintf("DELETE FROM %s", bronzeRef),
+		fmt.Sprintf(`INSERT INTO %s (ride_id, pickup_ts, dropoff_ts, pickup_zone, dropoff_zone, passenger_count, trip_distance_mi, fare_amount, tip_amount, total_amount)
+		SELECT ride_id, pickup_ts, dropoff_ts, pickup_zone, dropoff_zone, COALESCE(passenger_count, 1), trip_distance_mi, fare_amount, tip_amount, total_amount
+		FROM %s`, bronzeRef, rawRef),
+		fmt.Sprintf("DELETE FROM %s", silverRef),
+		fmt.Sprintf(`INSERT INTO %s (ride_id, pickup_ts, dropoff_ts, pickup_zone, dropoff_zone, passenger_count, trip_distance_mi, fare_amount, tip_amount, total_amount, tip_rate)
+		SELECT ride_id, pickup_ts, dropoff_ts, pickup_zone, dropoff_zone, passenger_count, trip_distance_mi, fare_amount, tip_amount, total_amount,
+		       ROUND(CASE WHEN total_amount > 0 THEN tip_amount / total_amount ELSE 0 END, 4)
+		FROM %s
+		WHERE trip_distance_mi > 0 AND total_amount > 0`, silverRef, bronzeRef),
+		fmt.Sprintf("DELETE FROM %s", goldRef),
+		fmt.Sprintf(`INSERT INTO %s (trip_date, ride_count, gross_revenue, avg_fare, avg_distance_mi)
+		SELECT CAST(date_trunc('day', pickup_ts) AS DATE),
+		       COUNT(*),
+		       ROUND(SUM(total_amount), 2),
+		       ROUND(AVG(total_amount), 2),
+		       ROUND(AVG(trip_distance_mi), 2)
+		FROM %s
+		GROUP BY 1`, goldRef, silverRef),
+		fmt.Sprintf("DELETE FROM %s", qualityRef),
+		fmt.Sprintf(`INSERT INTO %s (check_name, passed)
+		SELECT 'silver_positive_distance', SUM(CASE WHEN trip_distance_mi <= 0 THEN 1 ELSE 0 END) = 0 FROM %s
+		UNION ALL
+		SELECT 'silver_non_null_pickup', SUM(CASE WHEN pickup_ts IS NULL THEN 1 ELSE 0 END) = 0 FROM %s
+		UNION ALL
+		SELECT 'gold_non_empty', COUNT(*) > 0 FROM %s`, qualityRef, silverRef, silverRef, goldRef),
+		fmt.Sprintf(`INSERT INTO %s (id, note)
+		SELECT 1, 'safe playground' WHERE NOT EXISTS (SELECT 1 FROM %s WHERE id = 1)`, sandboxRef, sandboxRef),
 	}
-
-	createSilverViewSQL := fmt.Sprintf(`CREATE OR REPLACE VIEW %s AS
-	SELECT
-		ride_id,
-		pickup_ts,
-		dropoff_ts,
-		pickup_zone,
-		dropoff_zone,
-		passenger_count,
-		trip_distance_mi,
-		fare_amount,
-		tip_amount,
-		total_amount,
-		ROUND(CASE WHEN total_amount > 0 THEN tip_amount / total_amount ELSE 0 END, 4) AS tip_rate
-	FROM %s
-	WHERE trip_distance_mi > 0
-	  AND total_amount > 0`, silverRef, bronzeRef)
-	if err := executeSQL(client, createSilverViewSQL); err != nil {
-		return fmt.Errorf("create silver showcase view: %w", err)
-	}
-
-	createGoldViewSQL := fmt.Sprintf(`CREATE OR REPLACE VIEW %s AS
-	SELECT
-		CAST(date_trunc('day', pickup_ts) AS DATE) AS trip_date,
-		COUNT(*) AS ride_count,
-		ROUND(SUM(total_amount), 2) AS gross_revenue,
-		ROUND(AVG(total_amount), 2) AS avg_fare,
-		ROUND(AVG(trip_distance_mi), 2) AS avg_distance_mi
-	FROM %s
-	GROUP BY 1
-	ORDER BY 1`, goldRef, silverRef)
-	if err := executeSQL(client, createGoldViewSQL); err != nil {
-		return fmt.Errorf("create gold showcase view: %w", err)
-	}
-
-	createQualitySQL := fmt.Sprintf(`CREATE OR REPLACE VIEW %s AS
-	SELECT 'silver_positive_distance' AS check_name, SUM(CASE WHEN trip_distance_mi <= 0 THEN 1 ELSE 0 END) = 0 AS passed FROM %s
-	UNION ALL
-	SELECT 'silver_non_null_pickup', SUM(CASE WHEN pickup_ts IS NULL THEN 1 ELSE 0 END) = 0 AS passed FROM %s
-	UNION ALL
-	SELECT 'gold_non_empty', COUNT(*) > 0 AS passed FROM %s`, qualityRef, silverRef, silverRef, goldRef)
-	if err := executeSQL(client, createQualitySQL); err != nil {
-		return fmt.Errorf("create quality showcase view: %w", err)
-	}
-
-	createSandboxSQL := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (
-		id BIGINT,
-		note VARCHAR
-	)`, sandboxRef)
-	if err := executeSQL(client, createSandboxSQL); err != nil {
-		return fmt.Errorf("create sandbox smoke table: %w", err)
+	for _, sql := range refreshSQL {
+		if err := executeSQL(client, sql); err != nil {
+			return fmt.Errorf("materialize showcase data: %w", err)
+		}
 	}
 
 	return nil
@@ -1070,8 +1099,8 @@ func runInitHealthChecks(client *gen.Client, desired initDesiredState) ([]string
 	issues := make([]string, 0)
 
 	rawRef := qualifiedName(desired.CatalogName, "landing", desired.Showcase.RawTableName)
-	goldRef := qualifiedName(desired.CatalogName, "gold", desired.Showcase.GoldViewName)
-	qualityRef := qualifiedName(desired.CatalogName, "gold", desired.Showcase.QualityViewName)
+	goldRef := qualifiedName(desired.CatalogName, "gold", desired.Showcase.GoldTableName)
+	qualityRef := qualifiedName(desired.CatalogName, "gold", desired.Showcase.QualityTableName)
 
 	rawCount, err := queryScalarInt64(client, fmt.Sprintf("SELECT COUNT(*) FROM %s", rawRef))
 	if err != nil {
@@ -1109,33 +1138,31 @@ func destroyDesiredState(client *gen.Client, desired initDesiredState) error {
 		return fmt.Errorf("delete pipeline %q: %w", desired.Showcase.PipelineName, err)
 	}
 
-	goldRef := qualifiedName(desired.CatalogName, "gold", desired.Showcase.GoldViewName)
-	qualityRef := qualifiedName(desired.CatalogName, "gold", desired.Showcase.QualityViewName)
-	silverRef := qualifiedName(desired.CatalogName, "silver", desired.Showcase.SilverViewName)
-	bronzeRef := qualifiedName(desired.CatalogName, "bronze", desired.Showcase.BronzeViewName)
-	rawRef := qualifiedName(desired.CatalogName, "landing", desired.Showcase.RawTableName)
-	sandboxRef := qualifiedName(desired.CatalogName, "sandbox", desired.Showcase.SandboxSmokeTable)
-
-	dropSQL := []string{
-		fmt.Sprintf("DROP VIEW IF EXISTS %s", qualityRef),
-		fmt.Sprintf("DROP VIEW IF EXISTS %s", goldRef),
-		fmt.Sprintf("DROP VIEW IF EXISTS %s", silverRef),
-		fmt.Sprintf("DROP VIEW IF EXISTS %s", bronzeRef),
-		fmt.Sprintf("DROP TABLE IF EXISTS %s", rawRef),
-		fmt.Sprintf("DROP TABLE IF EXISTS %s", sandboxRef),
+	if err := deleteTable(client, desired.CatalogName, "gold", desired.Showcase.QualityTableName); err != nil {
+		return err
 	}
-	for _, sql := range dropSQL {
-		if err := executeSQL(client, sql); err != nil {
-			return fmt.Errorf("destroy showcase asset: %w", err)
-		}
+	if err := deleteTable(client, desired.CatalogName, "gold", desired.Showcase.GoldTableName); err != nil {
+		return err
+	}
+	if err := deleteTable(client, desired.CatalogName, "silver", desired.Showcase.SilverTableName); err != nil {
+		return err
+	}
+	if err := deleteTable(client, desired.CatalogName, "bronze", desired.Showcase.BronzeTableName); err != nil {
+		return err
+	}
+	if err := deleteTable(client, desired.CatalogName, "landing", desired.Showcase.RawTableName); err != nil {
+		return err
+	}
+	if err := deleteTable(client, desired.CatalogName, "sandbox", desired.Showcase.SandboxSmokeTable); err != nil {
+		return err
 	}
 
 	return nil
 }
 
 func printInitRunbook(desired initDesiredState) {
-	goldRef := qualifiedName(desired.CatalogName, "gold", desired.Showcase.GoldViewName)
-	qualityRef := qualifiedName(desired.CatalogName, "gold", desired.Showcase.QualityViewName)
+	goldRef := qualifiedName(desired.CatalogName, "gold", desired.Showcase.GoldTableName)
+	qualityRef := qualifiedName(desired.CatalogName, "gold", desired.Showcase.QualityTableName)
 	sandboxRef := qualifiedName(desired.CatalogName, "sandbox", desired.Showcase.SandboxSmokeTable)
 
 	_, _ = fmt.Fprintln(os.Stdout, "")
@@ -1158,6 +1185,35 @@ func executeSQL(client *gen.Client, sql string) error {
 	_, err = gen.ReadBody(resp)
 	if err != nil {
 		return fmt.Errorf("read response: %w", err)
+	}
+	return nil
+}
+
+func ensureManagedTable(client *gen.Client, catalogName, schemaName, tableName string, columns []map[string]string) error {
+	path := fmt.Sprintf("/catalogs/%s/schemas/%s/tables", catalogName, schemaName)
+	body := map[string]interface{}{
+		"name":       tableName,
+		"table_type": "MANAGED",
+		"columns":    columns,
+	}
+	if err := doNoContentOrJSON(client, "POST", path, body); err != nil {
+		return err
+	}
+	return nil
+}
+
+func deleteTable(client *gen.Client, catalogName, schemaName, tableName string) error {
+	path := fmt.Sprintf("/catalogs/%s/schemas/%s/tables/%s", catalogName, schemaName, tableName)
+	if err := doNoContentOrJSONAllowNotFound(client, "DELETE", path, nil); err != nil {
+		return fmt.Errorf("delete table %q.%q: %w", schemaName, tableName, err)
+	}
+	return nil
+}
+
+func deleteViewIfExists(client *gen.Client, catalogName, schemaName, viewName string) error {
+	path := fmt.Sprintf("/catalogs/%s/schemas/%s/views/%s", catalogName, schemaName, viewName)
+	if err := doNoContentOrJSONAllowNotFound(client, "DELETE", path, nil); err != nil {
+		return fmt.Errorf("delete legacy view %q.%q: %w", schemaName, viewName, err)
 	}
 	return nil
 }
