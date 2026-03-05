@@ -33,7 +33,7 @@ features:
     details: Follow practical onboarding docs for first query, auth basics, and core concepts.
     link: /getting-started
   - title: "✅ Contract-First Source of Truth"
-    details: Docs derive from openapi.bundled.yaml and declarative schema artifacts to reduce doc drift.
+    details: Docs derive from internal/api/openapi.generated.yaml and declarative schema artifacts to reduce doc drift.
     link: /declarative-schema
   - title: "⚡ Rapid-Dev Friendly"
     details: Narrative docs stay concise while high-churn API details are generated automatically.

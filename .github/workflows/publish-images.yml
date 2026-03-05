@@ -25,7 +25,6 @@ env:
   GO_VERSION: "1.25.7"
   NODE_VERSION: "20"
   TASK_VERSION: "v3.45.4"
-  OAPI_CODEGEN_VERSION: "v2.5.1"
   SQLC_VERSION: "v1.30.0"
 
 jobs:
@@ -81,7 +80,6 @@ jobs:
         if: github.event_name == 'workflow_dispatch' || steps.generated_artifact.outcome != 'success'
         run: |
           go install github.com/go-task/task/v3/cmd/task@${{ env.TASK_VERSION }}
-          go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@${{ env.OAPI_CODEGEN_VERSION }}
           go install github.com/sqlc-dev/sqlc/cmd/sqlc@${{ env.SQLC_VERSION }}
 
       - name: Generate code required for Docker build

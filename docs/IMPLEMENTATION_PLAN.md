@@ -11,7 +11,7 @@ Before diving into each feature, these are the patterns every implementation mus
 - **Repository**: `internal/db/repository/*.go`, constructor `NewXxxRepo(db *sql.DB)`
 - **Service**: `internal/service/*.go`, constructor `NewXxxService(deps...)`
 - **API Handler**: `internal/api/handler.go` — `APIHandler` struct with service fields, implements `StrictServerInterface`
-- **OpenAPI**: `internal/api/openapi.yaml` → `task generate-api` → `types.gen.go` + `server.gen.go`
+- **OpenAPI/IR generation**: `api/spec/main.tsp` → `task generate:api` → `api/gen/openapi.yaml` + `api/gen/json-ir.json` + `internal/api/openapi.generated.yaml` + `internal/api/server.apigen.gen.go` + `pkg/cli/gen/apigen_registry.gen.go`
 - **Pagination**: `domain.PageRequest` + `domain.NextPageToken()`, API params `max_results`/`page_token`
 - **Auth**: `middleware.PrincipalFromContext(ctx)` returns the principal name
 - **Audit**: Best-effort `_ = s.audit.Insert(ctx, entry)`

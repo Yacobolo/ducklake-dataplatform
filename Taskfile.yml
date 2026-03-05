@@ -38,55 +38,6 @@ tasks:
     cmds:
       - go run . -gen=all -outdir=../../internal/duckdbsql/catalog/
 
-  bundle-api:
-    desc: Bundle split OpenAPI files into single resolved spec
-    run: once
-    cmds:
-      - |
-        attempts=0
-        while [ "$attempts" -lt 3 ]; do
-          attempts=$((attempts + 1))
-          echo "Bundling OpenAPI spec (attempt ${attempts}/3)..."
-          REDOCLY_BIN=$(npx --yes -p @redocly/cli@2.18.2 sh -lc 'command -v redocly')
-          if node --require ./scripts/redocly-react-global.cjs "$REDOCLY_BIN" bundle internal/api/openapi.yaml -o internal/api/openapi.bundled.yaml; then
-            exit 0
-          fi
-          if [ "$attempts" -lt 3 ]; then
-            echo "Redocly bundle failed; retrying in 5s..."
-            sleep 5
-          fi
-        done
-        echo "Redocly bundle failed after 3 attempts."
-        exit 1
-    sources:
-      - internal/api/openapi.yaml
-      - internal/api/paths/*.yaml
-      - internal/api/schemas/*.yaml
-    generates:
-      - internal/api/openapi.bundled.yaml
-
-  generate-api:
-    desc: Generate API types and server from OpenAPI spec
-    deps: [bundle-api]
-    cmds:
-      - oapi-codegen -generate models -package api -o internal/api/types.gen.go internal/api/openapi.bundled.yaml
-      - oapi-codegen -generate chi-server,strict-server,spec -package api -o internal/api/server.gen.go internal/api/openapi.bundled.yaml
-
-  generate-cli:
-    desc: Generate CLI commands from OpenAPI spec
-    deps: [bundle-api]
-    cmds:
-      - go run ./cmd/cli-gen -spec internal/api/openapi.bundled.yaml -config cli-config.yaml -out pkg/cli/gen/
-    sources:
-      - internal/api/openapi.yaml
-      - internal/api/paths/*.yaml
-      - internal/api/schemas/*.yaml
-      - cli-config.yaml
-      - internal/codegen/cli/**/*.go
-      - internal/codegen/cli/templates/*.tmpl
-    generates:
-      - pkg/cli/gen/*.gen.go
-
   generate:api:
     desc: Generate OpenAPI/server/CLI from JSON IR (apigen)
     deps: [typespec:compile]
@@ -146,12 +97,12 @@ tasks:
       - git diff --exit-code -- schemas/declarative/v1
 
   docs:generate:
-    desc: Generate docs reference pages from API and schemas
-    deps: [bundle-api, generate:declarative-schema]
+    desc: Generate docs reference pages from generated API and schemas
+    deps: [generate:api, generate:declarative-schema]
     cmds:
-      - go run ./cmd/docsgen -openapi internal/api/openapi.bundled.yaml -declarative-index schemas/declarative/v1/index.json -declarative-dir schemas/declarative/v1 -outdir docs/reference/generated
+      - go run ./cmd/docsgen -openapi internal/api/openapi.generated.yaml -declarative-index schemas/declarative/v1/index.json -declarative-dir schemas/declarative/v1 -outdir docs/reference/generated
     sources:
-      - internal/api/openapi.bundled.yaml
+      - internal/api/openapi.generated.yaml
       - schemas/declarative/v1/index.json
       - schemas/declarative/v1/kinds/*.schema.json
       - cmd/docsgen/*.go
@@ -195,12 +146,12 @@ tasks:
 
   generate:
     desc: Run all code generation
-    deps: [generate:api, generate-api, sqlc, generate-cli, genduckdb, generate:declarative-schema]
+    deps: [generate:api, sqlc, genduckdb, generate:declarative-schema]
 
   build:
     desc: Build all packages
     preconditions:
-      - sh: test -f internal/api/types.gen.go
+      - sh: test -f internal/api/server.apigen.gen.go
         msg: "Generated files missing. Run 'task generate' first."
     cmds:
       - go build ./...
@@ -251,7 +202,7 @@ tasks:
 
   lint:
     desc: Run all linters (Go + OpenAPI)
-    deps: [lint:go, lint:api, lint:api:generated]
+    deps: [lint:go, lint:api]
 
   lint:go:
     desc: Run Go linters
@@ -259,13 +210,13 @@ tasks:
       - golangci-lint run
 
   lint:api:
-    desc: Lint the OpenAPI spec for consistency
-    deps: [bundle-api]
+    desc: Lint generated OpenAPI spec for consistency
+    deps: [generate:api]
     cmds:
-      - go run ./cmd/lint-api internal/api/openapi.bundled.yaml
+      - go run ./cmd/lint-api internal/api/openapi.generated.yaml
 
   lint:api:generated:
-    desc: Lint apigen OpenAPI artifact for consistency
+    desc: Alias for generated OpenAPI lint
     deps: [generate:api]
     cmds:
       - go run ./cmd/lint-api internal/api/openapi.generated.yaml
@@ -279,7 +230,7 @@ tasks:
   test-cli:
     desc: Run CLI tests
     cmds:
-      - gotestsum --format pkgname-and-test-fails -- -race ./pkg/cli/... ./internal/codegen/cli/...
+      - gotestsum --format pkgname-and-test-fails -- -race ./pkg/cli/...
 
   integration-test:
     desc: "Run integration tests (alias for test:integration)"
@@ -292,7 +243,7 @@ tasks:
       - |
         failed=0
         results=""
-        for step in lint:go lint:api lint:api:generated verify:apigen-generated verify:declarative-schema verify:docs-generated test:arch test:unit test:integration; do
+        for step in lint:go lint:api verify:apigen-generated verify:declarative-schema verify:docs-generated test:arch test:unit test:integration; do
           if task "$step" > /dev/null 2>&1; then
             results="${results}  ${step} ... ok\n"
           else

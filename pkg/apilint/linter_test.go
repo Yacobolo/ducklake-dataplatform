@@ -1,9 +1,7 @@
 package apilint
 
 import (
-	"context"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -809,25 +807,16 @@ func TestViolation_String(t *testing.T) {
 }
 
 func TestLintActualSpec(t *testing.T) {
-	// Lint the bundled project spec end-to-end to verify the linter runs
+	// Lint the generated project spec end-to-end to verify the linter runs
 	// without crashing and reports violations. The spec currently has many
 	// OWASP-level violations that need to be fixed incrementally.
-	bundledPath := "../../internal/api/openapi.bundled.yaml"
-	sourcePath := "../../internal/api/openapi.yaml"
+	specPath := "../../internal/api/openapi.generated.yaml"
 
-	// If the bundled file doesn't exist, try to generate it.
-	if _, err := os.Stat(bundledPath); os.IsNotExist(err) {
-		if _, err := os.Stat(sourcePath); os.IsNotExist(err) {
-			t.Skip("openapi.yaml not found at expected path")
-		}
-		cmd := exec.CommandContext(context.Background(), "npx", "--yes", "@redocly/cli", "bundle", sourcePath, "-o", bundledPath)
-		out, err := cmd.CombinedOutput()
-		if err != nil {
-			t.Skipf("failed to bundle spec (install @redocly/cli): %s: %v", out, err)
-		}
+	if _, err := os.Stat(specPath); os.IsNotExist(err) {
+		t.Skip("internal/api/openapi.generated.yaml not found at expected path (run task generate:api)")
 	}
 
-	l, err := New(bundledPath)
+	l, err := New(specPath)
 	require.NoError(t, err)
 
 	vs := l.Run()

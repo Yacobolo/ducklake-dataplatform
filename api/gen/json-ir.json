@@ -2908,7 +2908,14 @@
           }
         ],
         "x-authz": {
-          "mode": "admin_only"
+          "mode": "privilege",
+          "checks": [
+            {
+              "securable_type": "catalog",
+              "privilege": "CREATE_SCHEMA",
+              "securable_id_source": "catalog_name_param"
+            }
+          ]
         }
       }
     },
@@ -3064,7 +3071,14 @@
           }
         ],
         "x-authz": {
-          "mode": "admin_only"
+          "mode": "privilege",
+          "checks": [
+            {
+              "securable_type": "schema",
+              "privilege": "CREATE_SCHEMA",
+              "securable_id_source": "runtime_resolved_object_id"
+            }
+          ]
         }
       }
     },
@@ -3141,7 +3155,14 @@
           }
         ],
         "x-authz": {
-          "mode": "admin_only"
+          "mode": "privilege",
+          "checks": [
+            {
+              "securable_type": "schema",
+              "privilege": "CREATE_SCHEMA",
+              "securable_id_source": "runtime_resolved_object_id"
+            }
+          ]
         }
       }
     },
@@ -3316,7 +3337,14 @@
           }
         ],
         "x-authz": {
-          "mode": "admin_only"
+          "mode": "privilege",
+          "checks": [
+            {
+              "securable_type": "schema",
+              "privilege": "CREATE_TABLE",
+              "securable_id_source": "runtime_resolved_object_id"
+            }
+          ]
         }
       }
     },
@@ -3490,7 +3518,14 @@
           }
         ],
         "x-authz": {
-          "mode": "admin_only"
+          "mode": "privilege",
+          "checks": [
+            {
+              "securable_type": "table",
+              "privilege": "CREATE_TABLE",
+              "securable_id_source": "runtime_resolved_object_id"
+            }
+          ]
         }
       }
     },
@@ -3567,7 +3602,14 @@
           }
         ],
         "x-authz": {
-          "mode": "admin_only"
+          "mode": "privilege",
+          "checks": [
+            {
+              "securable_type": "table",
+              "privilege": "CREATE_TABLE",
+              "securable_id_source": "runtime_resolved_object_id"
+            }
+          ]
         }
       }
     },
@@ -3769,7 +3811,14 @@
           }
         ],
         "x-authz": {
-          "mode": "admin_only"
+          "mode": "privilege",
+          "checks": [
+            {
+              "securable_type": "table",
+              "privilege": "CREATE_TABLE",
+              "securable_id_source": "runtime_resolved_object_id"
+            }
+          ]
         }
       }
     },
@@ -4285,7 +4334,14 @@
           }
         ],
         "x-authz": {
-          "mode": "admin_only"
+          "mode": "privilege",
+          "checks": [
+            {
+              "securable_type": "schema",
+              "privilege": "CREATE_TABLE",
+              "securable_id_source": "runtime_resolved_object_id"
+            }
+          ]
         }
       }
     },
@@ -4459,7 +4515,14 @@
           }
         ],
         "x-authz": {
-          "mode": "admin_only"
+          "mode": "privilege",
+          "checks": [
+            {
+              "securable_type": "schema",
+              "privilege": "CREATE_TABLE",
+              "securable_id_source": "runtime_resolved_object_id"
+            }
+          ]
         }
       }
     },
@@ -4536,7 +4599,14 @@
           }
         ],
         "x-authz": {
-          "mode": "admin_only"
+          "mode": "privilege",
+          "checks": [
+            {
+              "securable_type": "schema",
+              "privilege": "CREATE_TABLE",
+              "securable_id_source": "runtime_resolved_object_id"
+            }
+          ]
         }
       }
     },
@@ -4711,7 +4781,14 @@
           }
         ],
         "x-authz": {
-          "mode": "admin_only"
+          "mode": "privilege",
+          "checks": [
+            {
+              "securable_type": "catalog",
+              "privilege": "CREATE_VOLUME",
+              "securable_id_source": "catalog_sentinel"
+            }
+          ]
         }
       }
     },
@@ -4885,7 +4962,14 @@
           }
         ],
         "x-authz": {
-          "mode": "admin_only"
+          "mode": "privilege",
+          "checks": [
+            {
+              "securable_type": "volume",
+              "privilege": "CREATE_VOLUME",
+              "securable_id_source": "runtime_resolved_object_id"
+            }
+          ]
         }
       }
     },
@@ -4962,7 +5046,14 @@
           }
         ],
         "x-authz": {
-          "mode": "admin_only"
+          "mode": "privilege",
+          "checks": [
+            {
+              "securable_type": "volume",
+              "privilege": "CREATE_VOLUME",
+              "securable_id_source": "runtime_resolved_object_id"
+            }
+          ]
         }
       }
     },
@@ -5435,7 +5526,14 @@
           }
         ],
         "x-authz": {
-          "mode": "admin_only"
+          "mode": "privilege",
+          "checks": [
+            {
+              "securable_type": "catalog",
+              "privilege": "MANAGE_COMPUTE",
+              "securable_id_source": "catalog_sentinel"
+            }
+          ]
         }
       }
     },
@@ -5573,7 +5671,14 @@
           }
         ],
         "x-authz": {
-          "mode": "admin_only"
+          "mode": "privilege",
+          "checks": [
+            {
+              "securable_type": "compute_endpoint",
+              "privilege": "MANAGE_COMPUTE",
+              "securable_id_source": "runtime_resolved_object_id"
+            }
+          ]
         }
       }
     },
@@ -5632,7 +5737,14 @@
           }
         ],
         "x-authz": {
-          "mode": "admin_only"
+          "mode": "privilege",
+          "checks": [
+            {
+              "securable_type": "compute_endpoint",
+              "privilege": "MANAGE_COMPUTE",
+              "securable_id_source": "runtime_resolved_object_id"
+            }
+          ]
         }
       }
     },
@@ -5789,7 +5901,14 @@
           }
         ],
         "x-authz": {
-          "mode": "admin_only"
+          "mode": "privilege",
+          "checks": [
+            {
+              "securable_type": "compute_endpoint",
+              "privilege": "MANAGE_COMPUTE",
+              "securable_id_source": "runtime_resolved_object_id"
+            }
+          ]
         }
       }
     },
@@ -5857,7 +5976,14 @@
           }
         ],
         "x-authz": {
-          "mode": "admin_only"
+          "mode": "privilege",
+          "checks": [
+            {
+              "securable_type": "catalog",
+              "privilege": "MANAGE_COMPUTE",
+              "securable_id_source": "catalog_sentinel"
+            }
+          ]
         }
       }
     },
@@ -6056,7 +6182,14 @@
           }
         ],
         "x-authz": {
-          "mode": "admin_only"
+          "mode": "privilege",
+          "checks": [
+            {
+              "securable_type": "catalog",
+              "privilege": "CREATE_EXTERNAL_LOCATION",
+              "securable_id_source": "catalog_sentinel"
+            }
+          ]
         }
       }
     },
@@ -6194,7 +6327,14 @@
           }
         ],
         "x-authz": {
-          "mode": "admin_only"
+          "mode": "privilege",
+          "checks": [
+            {
+              "securable_type": "external_location",
+              "privilege": "CREATE_EXTERNAL_LOCATION",
+              "securable_id_source": "runtime_resolved_object_id"
+            }
+          ]
         }
       }
     },
@@ -6253,7 +6393,14 @@
           }
         ],
         "x-authz": {
-          "mode": "admin_only"
+          "mode": "privilege",
+          "checks": [
+            {
+              "securable_type": "external_location",
+              "privilege": "CREATE_EXTERNAL_LOCATION",
+              "securable_id_source": "runtime_resolved_object_id"
+            }
+          ]
         }
       }
     },
@@ -14575,7 +14722,14 @@
           }
         ],
         "x-authz": {
-          "mode": "admin_only"
+          "mode": "privilege",
+          "checks": [
+            {
+              "securable_type": "catalog",
+              "privilege": "CREATE_STORAGE_CREDENTIAL",
+              "securable_id_source": "catalog_sentinel"
+            }
+          ]
         }
       }
     },
@@ -14713,7 +14867,14 @@
           }
         ],
         "x-authz": {
-          "mode": "admin_only"
+          "mode": "privilege",
+          "checks": [
+            {
+              "securable_type": "storage_credential",
+              "privilege": "CREATE_STORAGE_CREDENTIAL",
+              "securable_id_source": "runtime_resolved_object_id"
+            }
+          ]
         }
       }
     },
@@ -14772,7 +14933,14 @@
           }
         ],
         "x-authz": {
-          "mode": "admin_only"
+          "mode": "privilege",
+          "checks": [
+            {
+              "securable_type": "storage_credential",
+              "privilege": "CREATE_STORAGE_CREDENTIAL",
+              "securable_id_source": "runtime_resolved_object_id"
+            }
+          ]
         }
       }
     },

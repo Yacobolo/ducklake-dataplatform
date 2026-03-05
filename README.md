@@ -133,10 +133,10 @@ task test:unit      # Run unit tests
 task test           # Run all tests (unit + integration)
 task vet            # Run go vet
 task lint           # Run all linters
-task generate       # Regenerate all code (API types + sqlc + CLI)
+task generate       # Regenerate all code (TypeSpec/apigen + sqlc)
 task generate:declarative-schema # Regenerate declarative JSON Schema artifacts
 task sqlc           # Regenerate DB query code
-task generate-api   # Regenerate API types/server from openapi.yaml
+task generate:api   # Regenerate OpenAPI/server/CLI registry from JSON IR
 ```
 
 Declarative schema artifacts are documented in `docs/declarative-schema.md`.

@@ -159,8 +159,8 @@ function appendOperation(
   const responseSchema = isNoContentReturn(operation.returnType) ? undefined : toSchemaRef(operation.returnType, schemas);
   const bodySchema = getBodySchema(context, operation, schemas);
   const parameters = getParameters(context, operation, routePath, schemas);
-  const authzMode = operationAuthzMode(operation.name);
-  const isAuthenticated = authzMode !== "public";
+  const authzMetadata = operationAuthz(operation.name);
+  const isAuthenticated = authzMetadata.mode !== "public";
   const operationDoc = cleanText(getDoc(context.program, operation));
 
   const endpoint: IREndpoint = {
@@ -187,7 +187,7 @@ function appendOperation(
   if (isAuthenticated) {
     endpoint.extensions = {
       security: [{ ApiKeyAuth: [] }, { BearerAuth: [] }],
-      "x-authz": { mode: authzMode },
+      "x-authz": authzMetadata,
     };
   }
 
@@ -252,42 +252,153 @@ function httpMethodRank(method: string): number {
   }
 }
 
-function operationAuthzMode(operationName: string): "public" | "authenticated" | "admin_only" {
+type AuthzMode = "public" | "authenticated" | "admin_only" | "privilege";
+
+type AuthzCheck = {
+  securable_type: string;
+  privilege: string;
+  securable_id_source: string;
+};
+
+type AuthzMetadata = {
+  mode: AuthzMode;
+  checks?: AuthzCheck[];
+};
+
+function operationAuthz(operationName: string): AuthzMetadata {
   if (operationName === "getHealth") {
-    return "public";
+    return { mode: "public" };
   }
   if (operationName === "createGrant" || operationName === "deleteGrant") {
-    return "admin_only";
+    return { mode: "admin_only" };
   }
-  if (
-    operationName === "createSchema" ||
-    operationName === "updateSchema" ||
-    operationName === "deleteSchema" ||
-    operationName === "createTable" ||
-    operationName === "updateTable" ||
-    operationName === "deleteTable" ||
-    operationName === "updateColumn" ||
-    operationName === "createView" ||
-    operationName === "updateView" ||
-    operationName === "deleteView" ||
-    operationName === "createVolume" ||
-    operationName === "updateVolume" ||
-    operationName === "deleteVolume" ||
-    operationName === "createStorageCredential" ||
-    operationName === "updateStorageCredential" ||
-    operationName === "deleteStorageCredential" ||
-    operationName === "createExternalLocation" ||
-    operationName === "updateExternalLocation" ||
-    operationName === "deleteExternalLocation" ||
-    operationName === "createComputeEndpoint" ||
-    operationName === "updateComputeEndpoint" ||
-    operationName === "deleteComputeEndpoint" ||
-    operationName === "createComputeAssignment" ||
-    operationName === "deleteComputeAssignment"
-  ) {
-    return "admin_only";
+  const privilegeChecks: Record<string, AuthzCheck> = {
+    createSchema: {
+      securable_type: "catalog",
+      privilege: "CREATE_SCHEMA",
+      securable_id_source: "catalog_name_param",
+    },
+    updateSchema: {
+      securable_type: "schema",
+      privilege: "CREATE_SCHEMA",
+      securable_id_source: "runtime_resolved_object_id",
+    },
+    deleteSchema: {
+      securable_type: "schema",
+      privilege: "CREATE_SCHEMA",
+      securable_id_source: "runtime_resolved_object_id",
+    },
+    createTable: {
+      securable_type: "schema",
+      privilege: "CREATE_TABLE",
+      securable_id_source: "runtime_resolved_object_id",
+    },
+    updateTable: {
+      securable_type: "table",
+      privilege: "CREATE_TABLE",
+      securable_id_source: "runtime_resolved_object_id",
+    },
+    deleteTable: {
+      securable_type: "table",
+      privilege: "CREATE_TABLE",
+      securable_id_source: "runtime_resolved_object_id",
+    },
+    updateColumn: {
+      securable_type: "table",
+      privilege: "CREATE_TABLE",
+      securable_id_source: "runtime_resolved_object_id",
+    },
+    createView: {
+      securable_type: "schema",
+      privilege: "CREATE_TABLE",
+      securable_id_source: "runtime_resolved_object_id",
+    },
+    updateView: {
+      securable_type: "schema",
+      privilege: "CREATE_TABLE",
+      securable_id_source: "runtime_resolved_object_id",
+    },
+    deleteView: {
+      securable_type: "schema",
+      privilege: "CREATE_TABLE",
+      securable_id_source: "runtime_resolved_object_id",
+    },
+    createVolume: {
+      securable_type: "catalog",
+      privilege: "CREATE_VOLUME",
+      securable_id_source: "catalog_sentinel",
+    },
+    updateVolume: {
+      securable_type: "volume",
+      privilege: "CREATE_VOLUME",
+      securable_id_source: "runtime_resolved_object_id",
+    },
+    deleteVolume: {
+      securable_type: "volume",
+      privilege: "CREATE_VOLUME",
+      securable_id_source: "runtime_resolved_object_id",
+    },
+    createStorageCredential: {
+      securable_type: "catalog",
+      privilege: "CREATE_STORAGE_CREDENTIAL",
+      securable_id_source: "catalog_sentinel",
+    },
+    updateStorageCredential: {
+      securable_type: "storage_credential",
+      privilege: "CREATE_STORAGE_CREDENTIAL",
+      securable_id_source: "runtime_resolved_object_id",
+    },
+    deleteStorageCredential: {
+      securable_type: "storage_credential",
+      privilege: "CREATE_STORAGE_CREDENTIAL",
+      securable_id_source: "runtime_resolved_object_id",
+    },
+    createExternalLocation: {
+      securable_type: "catalog",
+      privilege: "CREATE_EXTERNAL_LOCATION",
+      securable_id_source: "catalog_sentinel",
+    },
+    updateExternalLocation: {
+      securable_type: "external_location",
+      privilege: "CREATE_EXTERNAL_LOCATION",
+      securable_id_source: "runtime_resolved_object_id",
+    },
+    deleteExternalLocation: {
+      securable_type: "external_location",
+      privilege: "CREATE_EXTERNAL_LOCATION",
+      securable_id_source: "runtime_resolved_object_id",
+    },
+    createComputeEndpoint: {
+      securable_type: "catalog",
+      privilege: "MANAGE_COMPUTE",
+      securable_id_source: "catalog_sentinel",
+    },
+    updateComputeEndpoint: {
+      securable_type: "compute_endpoint",
+      privilege: "MANAGE_COMPUTE",
+      securable_id_source: "runtime_resolved_object_id",
+    },
+    deleteComputeEndpoint: {
+      securable_type: "compute_endpoint",
+      privilege: "MANAGE_COMPUTE",
+      securable_id_source: "runtime_resolved_object_id",
+    },
+    createComputeAssignment: {
+      securable_type: "compute_endpoint",
+      privilege: "MANAGE_COMPUTE",
+      securable_id_source: "runtime_resolved_object_id",
+    },
+    deleteComputeAssignment: {
+      securable_type: "catalog",
+      privilege: "MANAGE_COMPUTE",
+      securable_id_source: "catalog_sentinel",
+    },
+  };
+  const check = privilegeChecks[operationName];
+  if (check) {
+    return { mode: "privilege", checks: [check] };
   }
-  return "authenticated";
+  return { mode: "authenticated" };
 }
 
 function tagsForRoute(routePath: string): string[] {

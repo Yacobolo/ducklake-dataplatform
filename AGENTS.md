@@ -63,9 +63,7 @@ Dependency direction: `api` → `service` → `domain` ← `repository`. Never i
 
 ## Generated Code — Do Not Edit
 
-- `internal/api/types.gen.go`, `server.gen.go` — from `openapi.yaml` via oapi-codegen
 - `api/gen/openapi.yaml`, `api/gen/json-ir.json` — from TypeSpec (`api/spec/main.tsp`) via `task typespec:compile`
 - `internal/api/openapi.generated.yaml`, `internal/api/server.apigen.gen.go`, `pkg/cli/gen/apigen_registry.gen.go` — from JSON IR (`api/gen/json-ir.json`) via `cmd/apigen`
 - `internal/db/dbstore/*.sql.go` — from `internal/db/queries/*.sql` via sqlc
-- `pkg/cli/gen/*.gen.go` — from `openapi.yaml` via `cmd/cli-gen`
 - `internal/duckdbsql/catalog/*_gen.go` — from DuckDB introspection via `scripts/genduckdb`
