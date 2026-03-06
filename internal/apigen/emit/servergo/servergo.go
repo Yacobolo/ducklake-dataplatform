@@ -4,8 +4,6 @@ package servergo
 import (
 	"encoding/json"
 	"fmt"
-	"os"
-	"regexp"
 	"sort"
 	"strings"
 
@@ -73,7 +71,7 @@ func Emit(doc ir.Document) ([]byte, error) {
 		name := exportedName(endpoint.OperationID)
 		signature := "\t" + name + "(w http.ResponseWriter, r *http.Request"
 		for _, p := range endpointPathParams(endpoint) {
-			signature += ", " + lowerCamelName(p.Name) + " " + pathParamTypeName(p.Name)
+			signature += ", " + lowerCamelName(p.Name) + " " + pathParamTypeName(p)
 		}
 		queryParams := endpointQueryParams(endpoint)
 		if len(queryParams) > 0 {
@@ -105,7 +103,7 @@ func Emit(doc ir.Document) ([]byte, error) {
 
 		for _, p := range pathParams {
 			varName := lowerCamelName(p.Name)
-			typeName := pathParamTypeName(p.Name)
+			typeName := pathParamTypeName(p)
 			required := "false"
 			if p.Required {
 				required = "true"
@@ -190,7 +188,7 @@ func Emit(doc ir.Document) ([]byte, error) {
 
 		sig := "func (b genStrictBridge) " + name + "(w http.ResponseWriter, r *http.Request"
 		for _, p := range pathParams {
-			sig += ", " + lowerCamelName(p.Name) + " " + pathParamTypeName(p.Name)
+			sig += ", " + lowerCamelName(p.Name) + " " + pathParamTypeName(p)
 		}
 		if len(queryParams) > 0 {
 			sig += ", params " + name + "Params"
@@ -309,40 +307,32 @@ func endpointQueryParams(endpoint ir.Endpoint) []ir.Parameter {
 	return out
 }
 
-func pathParamTypeName(rawName string) string {
-	candidate := exportedName(rawName)
-	if hasDeclaredType(candidate) {
-		return candidate
-	}
-	return "string"
-}
+func pathParamTypeName(param ir.Parameter) string {
+	schemaType := strings.ToLower(strings.TrimSpace(param.Schema.Type))
+	schemaFormat := strings.ToLower(strings.TrimSpace(param.Schema.Format))
 
-func hasDeclaredType(typeName string) bool {
-	if typeName == "" {
-		return false
-	}
-	types, err := declaredTypesInServerGen()
-	if err != nil {
-		return false
-	}
-	_, ok := types[typeName]
-	return ok
-}
-
-func declaredTypesInServerGen() (map[string]struct{}, error) {
-	content, err := os.ReadFile("internal/api/server.gen.go")
-	if err != nil {
-		return nil, err
-	}
-	re := regexp.MustCompile(`(?m)^type\s+([A-Za-z_][A-Za-z0-9_]*)\s+`)
-	matches := re.FindAllStringSubmatch(string(content), -1)
-	out := make(map[string]struct{}, len(matches))
-	for _, m := range matches {
-		if len(m) > 1 {
-			out[m[1]] = struct{}{}
+	switch schemaType {
+	case "integer":
+		switch schemaFormat {
+		case "int32":
+			return "int32"
+		case "int64":
+			return "int64"
 		}
+		return "int"
+	case "number":
+		switch schemaFormat {
+		case "float", "float32":
+			return "float32"
+		case "double", "float64":
+			return "float64"
+		}
+		return "float64"
+	case "boolean", "bool":
+		return "bool"
+	default:
+		return "string"
 	}
-	return out, nil
 }
 
 // ValidateOperationIDs checks for exported handler name collisions.

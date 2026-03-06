@@ -144,3 +144,67 @@ func TestEmit_GeneratesPathAndQueryBinding(t *testing.T) {
 	require.Contains(t, content, "type GenListGroupMembersResponse = ListGroupMembersResponseObject")
 	require.Contains(t, content, "ListGroupMembers(ctx context.Context, request GenListGroupMembersRequest) (GenListGroupMembersResponse, error)")
 }
+
+func TestPathParamTypeName(t *testing.T) {
+	t.Helper()
+
+	tests := []struct {
+		name     string
+		param    ir.Parameter
+		expected string
+	}{
+		{
+			name:     "default string",
+			param:    ir.Parameter{Schema: ir.SchemaRef{Type: "string"}},
+			expected: "string",
+		},
+		{
+			name:     "int32",
+			param:    ir.Parameter{Schema: ir.SchemaRef{Type: "integer", Format: "int32"}},
+			expected: "int32",
+		},
+		{
+			name:     "int64",
+			param:    ir.Parameter{Schema: ir.SchemaRef{Type: "integer", Format: "int64"}},
+			expected: "int64",
+		},
+		{
+			name:     "integer default",
+			param:    ir.Parameter{Schema: ir.SchemaRef{Type: "integer"}},
+			expected: "int",
+		},
+		{
+			name:     "float",
+			param:    ir.Parameter{Schema: ir.SchemaRef{Type: "number", Format: "float"}},
+			expected: "float32",
+		},
+		{
+			name:     "double",
+			param:    ir.Parameter{Schema: ir.SchemaRef{Type: "number", Format: "double"}},
+			expected: "float64",
+		},
+		{
+			name:     "number default",
+			param:    ir.Parameter{Schema: ir.SchemaRef{Type: "number"}},
+			expected: "float64",
+		},
+		{
+			name:     "boolean",
+			param:    ir.Parameter{Schema: ir.SchemaRef{Type: "boolean"}},
+			expected: "bool",
+		},
+		{
+			name:     "unknown type fallback",
+			param:    ir.Parameter{Schema: ir.SchemaRef{Type: "object"}},
+			expected: "string",
+		},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Helper()
+			require.Equal(t, tc.expected, pathParamTypeName(tc.param))
+		})
+	}
+}

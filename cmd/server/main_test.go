@@ -141,11 +141,11 @@ func (s *recordingGenServer) lastOperationID() string {
 }
 
 type executeQueryStrictStub struct {
-	api.StrictServerInterface
+	api.GenStrictServerInterface
 	called bool
 }
 
-func (s *executeQueryStrictStub) ExecuteQuery(_ context.Context, _ api.ExecuteQueryRequestObject) (api.ExecuteQueryResponseObject, error) {
+func (s *executeQueryStrictStub) ExecuteQuery(_ context.Context, _ api.GenExecuteQueryRequest) (api.GenExecuteQueryResponse, error) {
 	s.called = true
 	return api.ExecuteQuery200JSONResponse{}, nil
 }
