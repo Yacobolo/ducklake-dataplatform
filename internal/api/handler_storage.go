@@ -37,7 +37,7 @@ type volumeService interface {
 // === Storage Credentials ===
 
 // ListStorageCredentials implements the endpoint for listing all storage credentials.
-func (h *APIHandler) ListStorageCredentials(ctx context.Context, req ListStorageCredentialsRequestObject) (ListStorageCredentialsResponseObject, error) {
+func (h *APIHandler) ListStorageCredentials(ctx context.Context, req GenListStorageCredentialsRequest) (GenListStorageCredentialsResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	principal := principalFromCtx(ctx)
 	creds, total, err := h.storageCreds.List(ctx, principal, page)
@@ -57,7 +57,7 @@ func (h *APIHandler) ListStorageCredentials(ctx context.Context, req ListStorage
 }
 
 // CreateStorageCredential implements the endpoint for creating a new storage credential.
-func (h *APIHandler) CreateStorageCredential(ctx context.Context, req CreateStorageCredentialRequestObject) (CreateStorageCredentialResponseObject, error) {
+func (h *APIHandler) CreateStorageCredential(ctx context.Context, req GenCreateStorageCredentialRequest) (GenCreateStorageCredentialResponse, error) {
 	domReq := domain.CreateStorageCredentialRequest{
 		Name:           req.Body.Name,
 		CredentialType: domain.CredentialType(req.Body.CredentialType),
@@ -127,7 +127,7 @@ func (h *APIHandler) CreateStorageCredential(ctx context.Context, req CreateStor
 }
 
 // GetStorageCredential implements the endpoint for retrieving a storage credential by name.
-func (h *APIHandler) GetStorageCredential(ctx context.Context, req GetStorageCredentialRequestObject) (GetStorageCredentialResponseObject, error) {
+func (h *APIHandler) GetStorageCredential(ctx context.Context, req GenGetStorageCredentialRequest) (GenGetStorageCredentialResponse, error) {
 	principal := principalFromCtx(ctx)
 	result, err := h.storageCreds.GetByName(ctx, principal, req.CredentialName)
 	if err != nil {
@@ -145,7 +145,7 @@ func (h *APIHandler) GetStorageCredential(ctx context.Context, req GetStorageCre
 }
 
 // UpdateStorageCredential implements the endpoint for updating a storage credential by name.
-func (h *APIHandler) UpdateStorageCredential(ctx context.Context, req UpdateStorageCredentialRequestObject) (UpdateStorageCredentialResponseObject, error) {
+func (h *APIHandler) UpdateStorageCredential(ctx context.Context, req GenUpdateStorageCredentialRequest) (GenUpdateStorageCredentialResponse, error) {
 	domReq := domain.UpdateStorageCredentialRequest{
 		// S3 fields
 		KeyID:    req.Body.KeyId,
@@ -184,7 +184,7 @@ func (h *APIHandler) UpdateStorageCredential(ctx context.Context, req UpdateStor
 }
 
 // DeleteStorageCredential implements the endpoint for deleting a storage credential by name.
-func (h *APIHandler) DeleteStorageCredential(ctx context.Context, req DeleteStorageCredentialRequestObject) (DeleteStorageCredentialResponseObject, error) {
+func (h *APIHandler) DeleteStorageCredential(ctx context.Context, req GenDeleteStorageCredentialRequest) (GenDeleteStorageCredentialResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.storageCreds.Delete(ctx, principal, req.CredentialName); err != nil {
@@ -203,7 +203,7 @@ func (h *APIHandler) DeleteStorageCredential(ctx context.Context, req DeleteStor
 // === External Locations ===
 
 // ListExternalLocations implements the endpoint for listing all external locations.
-func (h *APIHandler) ListExternalLocations(ctx context.Context, req ListExternalLocationsRequestObject) (ListExternalLocationsResponseObject, error) {
+func (h *APIHandler) ListExternalLocations(ctx context.Context, req GenListExternalLocationsRequest) (GenListExternalLocationsResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	principal := principalFromCtx(ctx)
 	locs, total, err := h.externalLocations.List(ctx, principal, page)
@@ -223,7 +223,7 @@ func (h *APIHandler) ListExternalLocations(ctx context.Context, req ListExternal
 }
 
 // CreateExternalLocation implements the endpoint for creating a new external location.
-func (h *APIHandler) CreateExternalLocation(ctx context.Context, req CreateExternalLocationRequestObject) (CreateExternalLocationResponseObject, error) {
+func (h *APIHandler) CreateExternalLocation(ctx context.Context, req GenCreateExternalLocationRequest) (GenCreateExternalLocationResponse, error) {
 	domReq := domain.CreateExternalLocationRequest{
 		Name:           req.Body.Name,
 		URL:            req.Body.Url,
@@ -268,7 +268,7 @@ func (h *APIHandler) CreateExternalLocation(ctx context.Context, req CreateExter
 }
 
 // GetExternalLocation implements the endpoint for retrieving an external location by name.
-func (h *APIHandler) GetExternalLocation(ctx context.Context, req GetExternalLocationRequestObject) (GetExternalLocationResponseObject, error) {
+func (h *APIHandler) GetExternalLocation(ctx context.Context, req GenGetExternalLocationRequest) (GenGetExternalLocationResponse, error) {
 	principal := principalFromCtx(ctx)
 	result, err := h.externalLocations.GetByName(ctx, principal, req.LocationName)
 	if err != nil {
@@ -286,7 +286,7 @@ func (h *APIHandler) GetExternalLocation(ctx context.Context, req GetExternalLoc
 }
 
 // UpdateExternalLocation implements the endpoint for updating an external location by name.
-func (h *APIHandler) UpdateExternalLocation(ctx context.Context, req UpdateExternalLocationRequestObject) (UpdateExternalLocationResponseObject, error) {
+func (h *APIHandler) UpdateExternalLocation(ctx context.Context, req GenUpdateExternalLocationRequest) (GenUpdateExternalLocationResponse, error) {
 	domReq := domain.UpdateExternalLocationRequest{
 		URL:     req.Body.Url,
 		Comment: req.Body.Comment,
@@ -319,7 +319,7 @@ func (h *APIHandler) UpdateExternalLocation(ctx context.Context, req UpdateExter
 }
 
 // DeleteExternalLocation implements the endpoint for deleting an external location by name.
-func (h *APIHandler) DeleteExternalLocation(ctx context.Context, req DeleteExternalLocationRequestObject) (DeleteExternalLocationResponseObject, error) {
+func (h *APIHandler) DeleteExternalLocation(ctx context.Context, req GenDeleteExternalLocationRequest) (GenDeleteExternalLocationResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.externalLocations.Delete(ctx, principal, req.LocationName); err != nil {
@@ -382,7 +382,7 @@ func externalLocationToAPI(l domain.ExternalLocation) ExternalLocation {
 // === Volumes ===
 
 // ListVolumes implements the endpoint for listing volumes in a schema.
-func (h *APIHandler) ListVolumes(ctx context.Context, request ListVolumesRequestObject) (ListVolumesResponseObject, error) {
+func (h *APIHandler) ListVolumes(ctx context.Context, request GenListVolumesRequest) (GenListVolumesResponse, error) {
 	page := pageFromParams(request.Params.MaxResults, request.Params.PageToken)
 	principal := principalFromCtx(ctx)
 	vols, total, err := h.volumes.List(ctx, principal, string(request.CatalogName), request.SchemaName, page)
@@ -402,7 +402,7 @@ func (h *APIHandler) ListVolumes(ctx context.Context, request ListVolumesRequest
 }
 
 // CreateVolume implements the endpoint for creating a new volume in a schema.
-func (h *APIHandler) CreateVolume(ctx context.Context, request CreateVolumeRequestObject) (CreateVolumeResponseObject, error) {
+func (h *APIHandler) CreateVolume(ctx context.Context, request GenCreateVolumeRequest) (GenCreateVolumeResponse, error) {
 	domReq := domain.CreateVolumeRequest{
 		Name:       request.Body.Name,
 		VolumeType: string(request.Body.VolumeType),
@@ -438,7 +438,7 @@ func (h *APIHandler) CreateVolume(ctx context.Context, request CreateVolumeReque
 }
 
 // GetVolume implements the endpoint for retrieving a volume by name.
-func (h *APIHandler) GetVolume(ctx context.Context, request GetVolumeRequestObject) (GetVolumeResponseObject, error) {
+func (h *APIHandler) GetVolume(ctx context.Context, request GenGetVolumeRequest) (GenGetVolumeResponse, error) {
 	principal := principalFromCtx(ctx)
 	result, err := h.volumes.GetByName(ctx, principal, string(request.CatalogName), request.SchemaName, request.VolumeName)
 	if err != nil {
@@ -456,7 +456,7 @@ func (h *APIHandler) GetVolume(ctx context.Context, request GetVolumeRequestObje
 }
 
 // UpdateVolume implements the endpoint for updating a volume by name.
-func (h *APIHandler) UpdateVolume(ctx context.Context, request UpdateVolumeRequestObject) (UpdateVolumeResponseObject, error) {
+func (h *APIHandler) UpdateVolume(ctx context.Context, request GenUpdateVolumeRequest) (GenUpdateVolumeResponse, error) {
 	domReq := domain.UpdateVolumeRequest{
 		NewName: request.Body.NewName,
 		Comment: request.Body.Comment,
@@ -482,7 +482,7 @@ func (h *APIHandler) UpdateVolume(ctx context.Context, request UpdateVolumeReque
 }
 
 // DeleteVolume implements the endpoint for deleting a volume by name.
-func (h *APIHandler) DeleteVolume(ctx context.Context, request DeleteVolumeRequestObject) (DeleteVolumeResponseObject, error) {
+func (h *APIHandler) DeleteVolume(ctx context.Context, request GenDeleteVolumeRequest) (GenDeleteVolumeResponse, error) {
 	principal := principalFromCtx(ctx)
 	if err := h.volumes.Delete(ctx, principal, string(request.CatalogName), request.SchemaName, request.VolumeName); err != nil {
 		switch {

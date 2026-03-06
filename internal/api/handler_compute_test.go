@@ -137,7 +137,7 @@ func TestHandler_ListComputeEndpoints(t *testing.T) {
 		name     string
 		params   ListComputeEndpointsParams
 		svcFn    func(ctx context.Context, principal string, page domain.PageRequest) ([]domain.ComputeEndpoint, int64, error)
-		assertFn func(t *testing.T, resp ListComputeEndpointsResponseObject, err error)
+		assertFn func(t *testing.T, resp GenListComputeEndpointsResponse, err error)
 	}{
 		{
 			name:   "happy path returns 200 with results",
@@ -145,7 +145,7 @@ func TestHandler_ListComputeEndpoints(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.ComputeEndpoint, int64, error) {
 				return []domain.ComputeEndpoint{sampleComputeEndpoint()}, 1, nil
 			},
-			assertFn: func(t *testing.T, resp ListComputeEndpointsResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListComputeEndpointsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(ListComputeEndpoints200JSONResponse)
@@ -161,7 +161,7 @@ func TestHandler_ListComputeEndpoints(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.ComputeEndpoint, int64, error) {
 				return []domain.ComputeEndpoint{}, 0, nil
 			},
-			assertFn: func(t *testing.T, resp ListComputeEndpointsResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListComputeEndpointsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(ListComputeEndpoints200JSONResponse)
@@ -176,7 +176,7 @@ func TestHandler_ListComputeEndpoints(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.ComputeEndpoint, int64, error) {
 				return nil, 0, assert.AnError
 			},
-			assertFn: func(t *testing.T, resp ListComputeEndpointsResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListComputeEndpointsResponse, err error) {
 				t.Helper()
 				require.Error(t, err)
 			},
@@ -188,7 +188,7 @@ func TestHandler_ListComputeEndpoints(t *testing.T) {
 			t.Parallel()
 			svc := &mockComputeEndpointService{listFn: tt.svcFn}
 			handler := &APIHandler{computeEndpoints: svc}
-			resp, err := handler.ListComputeEndpoints(computeTestCtx(), ListComputeEndpointsRequestObject{Params: tt.params})
+			resp, err := handler.ListComputeEndpoints(computeTestCtx(), GenListComputeEndpointsRequest{Params: tt.params})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -199,18 +199,18 @@ func TestHandler_CreateComputeEndpoint(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		body     CreateComputeEndpointJSONRequestBody
+		body     GenCreateComputeEndpointJSONBody
 		svcFn    func(ctx context.Context, principal string, req domain.CreateComputeEndpointRequest) (*domain.ComputeEndpoint, error)
-		assertFn func(t *testing.T, resp CreateComputeEndpointResponseObject, err error)
+		assertFn func(t *testing.T, resp GenCreateComputeEndpointResponse, err error)
 	}{
 		{
 			name: "happy path returns 201",
-			body: CreateComputeEndpointJSONRequestBody{Name: "analytics-xl", Url: "https://compute.example.com", Type: CreateComputeEndpointRequestTypeLOCAL},
+			body: GenCreateComputeEndpointJSONBody{Name: "analytics-xl", Url: "https://compute.example.com", Type: CreateComputeEndpointRequestTypeLOCAL},
 			svcFn: func(_ context.Context, _ string, _ domain.CreateComputeEndpointRequest) (*domain.ComputeEndpoint, error) {
 				ep := sampleComputeEndpoint()
 				return &ep, nil
 			},
-			assertFn: func(t *testing.T, resp CreateComputeEndpointResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateComputeEndpointResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				created, ok := resp.(CreateComputeEndpoint201JSONResponse)
@@ -221,11 +221,11 @@ func TestHandler_CreateComputeEndpoint(t *testing.T) {
 		},
 		{
 			name: "validation error returns 400",
-			body: CreateComputeEndpointJSONRequestBody{Name: "", Url: "", Type: CreateComputeEndpointRequestTypeLOCAL},
+			body: GenCreateComputeEndpointJSONBody{Name: "", Url: "", Type: CreateComputeEndpointRequestTypeLOCAL},
 			svcFn: func(_ context.Context, _ string, _ domain.CreateComputeEndpointRequest) (*domain.ComputeEndpoint, error) {
 				return nil, domain.ErrValidation("name is required")
 			},
-			assertFn: func(t *testing.T, resp CreateComputeEndpointResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateComputeEndpointResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				badReq, ok := resp.(CreateComputeEndpoint400JSONResponse)
@@ -236,11 +236,11 @@ func TestHandler_CreateComputeEndpoint(t *testing.T) {
 		},
 		{
 			name: "access denied returns 403",
-			body: CreateComputeEndpointJSONRequestBody{Name: "ep", Url: "http://x", Type: CreateComputeEndpointRequestTypeLOCAL},
+			body: GenCreateComputeEndpointJSONBody{Name: "ep", Url: "http://x", Type: CreateComputeEndpointRequestTypeLOCAL},
 			svcFn: func(_ context.Context, _ string, _ domain.CreateComputeEndpointRequest) (*domain.ComputeEndpoint, error) {
 				return nil, domain.ErrAccessDenied("not allowed")
 			},
-			assertFn: func(t *testing.T, resp CreateComputeEndpointResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateComputeEndpointResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				forbidden, ok := resp.(CreateComputeEndpoint403JSONResponse)
@@ -250,11 +250,11 @@ func TestHandler_CreateComputeEndpoint(t *testing.T) {
 		},
 		{
 			name: "conflict error returns 409",
-			body: CreateComputeEndpointJSONRequestBody{Name: "analytics-xl", Url: "http://x", Type: CreateComputeEndpointRequestTypeLOCAL},
+			body: GenCreateComputeEndpointJSONBody{Name: "analytics-xl", Url: "http://x", Type: CreateComputeEndpointRequestTypeLOCAL},
 			svcFn: func(_ context.Context, _ string, _ domain.CreateComputeEndpointRequest) (*domain.ComputeEndpoint, error) {
 				return nil, domain.ErrConflict("endpoint analytics-xl already exists")
 			},
-			assertFn: func(t *testing.T, resp CreateComputeEndpointResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateComputeEndpointResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				conflict, ok := resp.(CreateComputeEndpoint409JSONResponse)
@@ -265,11 +265,11 @@ func TestHandler_CreateComputeEndpoint(t *testing.T) {
 		},
 		{
 			name: "unknown error falls through to 400",
-			body: CreateComputeEndpointJSONRequestBody{Name: "fail", Url: "http://x", Type: CreateComputeEndpointRequestTypeLOCAL},
+			body: GenCreateComputeEndpointJSONBody{Name: "fail", Url: "http://x", Type: CreateComputeEndpointRequestTypeLOCAL},
 			svcFn: func(_ context.Context, _ string, _ domain.CreateComputeEndpointRequest) (*domain.ComputeEndpoint, error) {
 				return nil, assert.AnError
 			},
-			assertFn: func(t *testing.T, resp CreateComputeEndpointResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateComputeEndpointResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				badReq, ok := resp.(CreateComputeEndpoint400JSONResponse)
@@ -285,7 +285,7 @@ func TestHandler_CreateComputeEndpoint(t *testing.T) {
 			svc := &mockComputeEndpointService{createFn: tt.svcFn}
 			handler := &APIHandler{computeEndpoints: svc}
 			body := tt.body
-			resp, err := handler.CreateComputeEndpoint(computeTestCtx(), CreateComputeEndpointRequestObject{Body: &body})
+			resp, err := handler.CreateComputeEndpoint(computeTestCtx(), GenCreateComputeEndpointRequest{Body: &body})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -298,7 +298,7 @@ func TestHandler_GetComputeEndpoint(t *testing.T) {
 		name         string
 		endpointName string
 		svcFn        func(ctx context.Context, principal, name string) (*domain.ComputeEndpoint, error)
-		assertFn     func(t *testing.T, resp GetComputeEndpointResponseObject, err error)
+		assertFn     func(t *testing.T, resp GenGetComputeEndpointResponse, err error)
 	}{
 		{
 			name:         "happy path returns 200",
@@ -307,7 +307,7 @@ func TestHandler_GetComputeEndpoint(t *testing.T) {
 				ep := sampleComputeEndpoint()
 				return &ep, nil
 			},
-			assertFn: func(t *testing.T, resp GetComputeEndpointResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenGetComputeEndpointResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(GetComputeEndpoint200JSONResponse)
@@ -321,7 +321,7 @@ func TestHandler_GetComputeEndpoint(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, name string) (*domain.ComputeEndpoint, error) {
 				return nil, domain.ErrNotFound("endpoint %s not found", name)
 			},
-			assertFn: func(t *testing.T, resp GetComputeEndpointResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenGetComputeEndpointResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(GetComputeEndpoint404JSONResponse)
@@ -337,7 +337,7 @@ func TestHandler_GetComputeEndpoint(t *testing.T) {
 			t.Parallel()
 			svc := &mockComputeEndpointService{getFn: tt.svcFn}
 			handler := &APIHandler{computeEndpoints: svc}
-			resp, err := handler.GetComputeEndpoint(computeTestCtx(), GetComputeEndpointRequestObject{EndpointName: tt.endpointName})
+			resp, err := handler.GetComputeEndpoint(computeTestCtx(), GenGetComputeEndpointRequest{EndpointName: tt.endpointName})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -349,20 +349,20 @@ func TestHandler_UpdateComputeEndpoint(t *testing.T) {
 	tests := []struct {
 		name         string
 		endpointName string
-		body         UpdateComputeEndpointJSONRequestBody
+		body         GenUpdateComputeEndpointJSONBody
 		svcFn        func(ctx context.Context, principal string, name string, req domain.UpdateComputeEndpointRequest) (*domain.ComputeEndpoint, error)
-		assertFn     func(t *testing.T, resp UpdateComputeEndpointResponseObject, err error)
+		assertFn     func(t *testing.T, resp GenUpdateComputeEndpointResponse, err error)
 	}{
 		{
 			name:         "happy path returns 200",
 			endpointName: "analytics-xl",
-			body:         UpdateComputeEndpointJSONRequestBody{Url: computeStrPtr("https://new-url.com")},
+			body:         GenUpdateComputeEndpointJSONBody{Url: computeStrPtr("https://new-url.com")},
 			svcFn: func(_ context.Context, _ string, _ string, _ domain.UpdateComputeEndpointRequest) (*domain.ComputeEndpoint, error) {
 				ep := sampleComputeEndpoint()
 				ep.URL = "https://new-url.com"
 				return &ep, nil
 			},
-			assertFn: func(t *testing.T, resp UpdateComputeEndpointResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenUpdateComputeEndpointResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(UpdateComputeEndpoint200JSONResponse)
@@ -373,11 +373,11 @@ func TestHandler_UpdateComputeEndpoint(t *testing.T) {
 		{
 			name:         "access denied returns 403",
 			endpointName: "analytics-xl",
-			body:         UpdateComputeEndpointJSONRequestBody{Url: computeStrPtr("x")},
+			body:         GenUpdateComputeEndpointJSONBody{Url: computeStrPtr("x")},
 			svcFn: func(_ context.Context, _ string, _ string, _ domain.UpdateComputeEndpointRequest) (*domain.ComputeEndpoint, error) {
 				return nil, domain.ErrAccessDenied("not allowed")
 			},
-			assertFn: func(t *testing.T, resp UpdateComputeEndpointResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenUpdateComputeEndpointResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				forbidden, ok := resp.(UpdateComputeEndpoint403JSONResponse)
@@ -388,11 +388,11 @@ func TestHandler_UpdateComputeEndpoint(t *testing.T) {
 		{
 			name:         "not found returns 404",
 			endpointName: "nonexistent",
-			body:         UpdateComputeEndpointJSONRequestBody{Url: computeStrPtr("x")},
+			body:         GenUpdateComputeEndpointJSONBody{Url: computeStrPtr("x")},
 			svcFn: func(_ context.Context, _ string, name string, _ domain.UpdateComputeEndpointRequest) (*domain.ComputeEndpoint, error) {
 				return nil, domain.ErrNotFound("endpoint %s not found", name)
 			},
-			assertFn: func(t *testing.T, resp UpdateComputeEndpointResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenUpdateComputeEndpointResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(UpdateComputeEndpoint404JSONResponse)
@@ -408,7 +408,7 @@ func TestHandler_UpdateComputeEndpoint(t *testing.T) {
 			svc := &mockComputeEndpointService{updateFn: tt.svcFn}
 			handler := &APIHandler{computeEndpoints: svc}
 			body := tt.body
-			resp, err := handler.UpdateComputeEndpoint(computeTestCtx(), UpdateComputeEndpointRequestObject{
+			resp, err := handler.UpdateComputeEndpoint(computeTestCtx(), GenUpdateComputeEndpointRequest{
 				EndpointName: tt.endpointName,
 				Body:         &body,
 			})
@@ -424,7 +424,7 @@ func TestHandler_DeleteComputeEndpoint(t *testing.T) {
 		name         string
 		endpointName string
 		svcFn        func(ctx context.Context, principal string, name string) error
-		assertFn     func(t *testing.T, resp DeleteComputeEndpointResponseObject, err error)
+		assertFn     func(t *testing.T, resp GenDeleteComputeEndpointResponse, err error)
 	}{
 		{
 			name:         "happy path returns 204",
@@ -432,7 +432,7 @@ func TestHandler_DeleteComputeEndpoint(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _ string) error {
 				return nil
 			},
-			assertFn: func(t *testing.T, resp DeleteComputeEndpointResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeleteComputeEndpointResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				_, ok := resp.(DeleteComputeEndpoint204Response)
@@ -445,7 +445,7 @@ func TestHandler_DeleteComputeEndpoint(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _ string) error {
 				return domain.ErrAccessDenied("not allowed")
 			},
-			assertFn: func(t *testing.T, resp DeleteComputeEndpointResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeleteComputeEndpointResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				forbidden, ok := resp.(DeleteComputeEndpoint403JSONResponse)
@@ -459,7 +459,7 @@ func TestHandler_DeleteComputeEndpoint(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, name string) error {
 				return domain.ErrNotFound("endpoint %s not found", name)
 			},
-			assertFn: func(t *testing.T, resp DeleteComputeEndpointResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeleteComputeEndpointResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(DeleteComputeEndpoint404JSONResponse)
@@ -474,7 +474,7 @@ func TestHandler_DeleteComputeEndpoint(t *testing.T) {
 			t.Parallel()
 			svc := &mockComputeEndpointService{deleteFn: tt.svcFn}
 			handler := &APIHandler{computeEndpoints: svc}
-			resp, err := handler.DeleteComputeEndpoint(computeTestCtx(), DeleteComputeEndpointRequestObject{EndpointName: tt.endpointName})
+			resp, err := handler.DeleteComputeEndpoint(computeTestCtx(), GenDeleteComputeEndpointRequest{EndpointName: tt.endpointName})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -488,7 +488,7 @@ func TestHandler_ListComputeAssignments(t *testing.T) {
 		endpointName string
 		params       ListComputeAssignmentsParams
 		svcFn        func(ctx context.Context, principal, endpointName string, page domain.PageRequest) ([]domain.ComputeAssignment, int64, error)
-		assertFn     func(t *testing.T, resp ListComputeAssignmentsResponseObject, err error)
+		assertFn     func(t *testing.T, resp GenListComputeAssignmentsResponse, err error)
 	}{
 		{
 			name:         "happy path returns 200",
@@ -497,7 +497,7 @@ func TestHandler_ListComputeAssignments(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _ string, _ domain.PageRequest) ([]domain.ComputeAssignment, int64, error) {
 				return []domain.ComputeAssignment{sampleComputeAssignment()}, 1, nil
 			},
-			assertFn: func(t *testing.T, resp ListComputeAssignmentsResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListComputeAssignmentsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(ListComputeAssignments200JSONResponse)
@@ -514,7 +514,7 @@ func TestHandler_ListComputeAssignments(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, name string, _ domain.PageRequest) ([]domain.ComputeAssignment, int64, error) {
 				return nil, 0, domain.ErrNotFound("endpoint %s not found", name)
 			},
-			assertFn: func(t *testing.T, resp ListComputeAssignmentsResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListComputeAssignmentsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(ListComputeAssignments404JSONResponse)
@@ -529,7 +529,7 @@ func TestHandler_ListComputeAssignments(t *testing.T) {
 			t.Parallel()
 			svc := &mockComputeEndpointService{listAssignmentsFn: tt.svcFn}
 			handler := &APIHandler{computeEndpoints: svc}
-			resp, err := handler.ListComputeAssignments(computeTestCtx(), ListComputeAssignmentsRequestObject{
+			resp, err := handler.ListComputeAssignments(computeTestCtx(), GenListComputeAssignmentsRequest{
 				EndpointName: tt.endpointName,
 				Params:       tt.params,
 			})
@@ -544,14 +544,14 @@ func TestHandler_CreateComputeAssignment(t *testing.T) {
 	tests := []struct {
 		name         string
 		endpointName string
-		body         CreateComputeAssignmentJSONRequestBody
+		body         GenCreateComputeAssignmentJSONBody
 		svcFn        func(ctx context.Context, principal string, endpointName string, req domain.CreateComputeAssignmentRequest) (*domain.ComputeAssignment, error)
-		assertFn     func(t *testing.T, resp CreateComputeAssignmentResponseObject, err error)
+		assertFn     func(t *testing.T, resp GenCreateComputeAssignmentResponse, err error)
 	}{
 		{
 			name:         "happy path returns 201",
 			endpointName: "analytics-xl",
-			body:         CreateComputeAssignmentJSONRequestBody{PrincipalId: "user-1", PrincipalType: CreateComputeAssignmentRequestPrincipalTypeUser},
+			body:         GenCreateComputeAssignmentJSONBody{PrincipalId: "user-1", PrincipalType: CreateComputeAssignmentRequestPrincipalTypeUser},
 			svcFn: func(_ context.Context, _ string, _ string, req domain.CreateComputeAssignmentRequest) (*domain.ComputeAssignment, error) {
 				if req.IsDefault {
 					return nil, domain.ErrValidation("is_default must be explicit")
@@ -560,7 +560,7 @@ func TestHandler_CreateComputeAssignment(t *testing.T) {
 				a.IsDefault = req.IsDefault
 				return &a, nil
 			},
-			assertFn: func(t *testing.T, resp CreateComputeAssignmentResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateComputeAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				created, ok := resp.(CreateComputeAssignment201JSONResponse)
@@ -571,11 +571,11 @@ func TestHandler_CreateComputeAssignment(t *testing.T) {
 		{
 			name:         "validation error returns 400",
 			endpointName: "analytics-xl",
-			body:         CreateComputeAssignmentJSONRequestBody{PrincipalId: "", PrincipalType: CreateComputeAssignmentRequestPrincipalTypeUser},
+			body:         GenCreateComputeAssignmentJSONBody{PrincipalId: "", PrincipalType: CreateComputeAssignmentRequestPrincipalTypeUser},
 			svcFn: func(_ context.Context, _ string, _ string, _ domain.CreateComputeAssignmentRequest) (*domain.ComputeAssignment, error) {
 				return nil, domain.ErrValidation("principal_id is required")
 			},
-			assertFn: func(t *testing.T, resp CreateComputeAssignmentResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateComputeAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				badReq, ok := resp.(CreateComputeAssignment400JSONResponse)
@@ -586,11 +586,11 @@ func TestHandler_CreateComputeAssignment(t *testing.T) {
 		{
 			name:         "access denied returns 403",
 			endpointName: "analytics-xl",
-			body:         CreateComputeAssignmentJSONRequestBody{PrincipalId: "u-1", PrincipalType: CreateComputeAssignmentRequestPrincipalTypeUser},
+			body:         GenCreateComputeAssignmentJSONBody{PrincipalId: "u-1", PrincipalType: CreateComputeAssignmentRequestPrincipalTypeUser},
 			svcFn: func(_ context.Context, _ string, _ string, _ domain.CreateComputeAssignmentRequest) (*domain.ComputeAssignment, error) {
 				return nil, domain.ErrAccessDenied("not allowed")
 			},
-			assertFn: func(t *testing.T, resp CreateComputeAssignmentResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateComputeAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				forbidden, ok := resp.(CreateComputeAssignment403JSONResponse)
@@ -601,11 +601,11 @@ func TestHandler_CreateComputeAssignment(t *testing.T) {
 		{
 			name:         "conflict error returns 409",
 			endpointName: "analytics-xl",
-			body:         CreateComputeAssignmentJSONRequestBody{PrincipalId: "user-1", PrincipalType: CreateComputeAssignmentRequestPrincipalTypeUser},
+			body:         GenCreateComputeAssignmentJSONBody{PrincipalId: "user-1", PrincipalType: CreateComputeAssignmentRequestPrincipalTypeUser},
 			svcFn: func(_ context.Context, _ string, _ string, _ domain.CreateComputeAssignmentRequest) (*domain.ComputeAssignment, error) {
 				return nil, domain.ErrConflict("assignment already exists")
 			},
-			assertFn: func(t *testing.T, resp CreateComputeAssignmentResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateComputeAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				conflict, ok := resp.(CreateComputeAssignment409JSONResponse)
@@ -616,11 +616,11 @@ func TestHandler_CreateComputeAssignment(t *testing.T) {
 		{
 			name:         "unknown error falls through to 400",
 			endpointName: "analytics-xl",
-			body:         CreateComputeAssignmentJSONRequestBody{PrincipalId: "u-1", PrincipalType: CreateComputeAssignmentRequestPrincipalTypeUser},
+			body:         GenCreateComputeAssignmentJSONBody{PrincipalId: "u-1", PrincipalType: CreateComputeAssignmentRequestPrincipalTypeUser},
 			svcFn: func(_ context.Context, _ string, _ string, _ domain.CreateComputeAssignmentRequest) (*domain.ComputeAssignment, error) {
 				return nil, assert.AnError
 			},
-			assertFn: func(t *testing.T, resp CreateComputeAssignmentResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateComputeAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				badReq, ok := resp.(CreateComputeAssignment400JSONResponse)
@@ -636,7 +636,7 @@ func TestHandler_CreateComputeAssignment(t *testing.T) {
 			svc := &mockComputeEndpointService{assignFn: tt.svcFn}
 			handler := &APIHandler{computeEndpoints: svc}
 			body := tt.body
-			resp, err := handler.CreateComputeAssignment(computeTestCtx(), CreateComputeAssignmentRequestObject{
+			resp, err := handler.CreateComputeAssignment(computeTestCtx(), GenCreateComputeAssignmentRequest{
 				EndpointName: tt.endpointName,
 				Body:         &body,
 			})
@@ -652,7 +652,7 @@ func TestHandler_DeleteComputeAssignment(t *testing.T) {
 		name         string
 		assignmentID string
 		svcFn        func(ctx context.Context, principal string, assignmentID string) error
-		assertFn     func(t *testing.T, resp DeleteComputeAssignmentResponseObject, err error)
+		assertFn     func(t *testing.T, resp GenDeleteComputeAssignmentResponse, err error)
 	}{
 		{
 			name:         "happy path returns 204",
@@ -660,7 +660,7 @@ func TestHandler_DeleteComputeAssignment(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _ string) error {
 				return nil
 			},
-			assertFn: func(t *testing.T, resp DeleteComputeAssignmentResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeleteComputeAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				_, ok := resp.(DeleteComputeAssignment204Response)
@@ -673,7 +673,7 @@ func TestHandler_DeleteComputeAssignment(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _ string) error {
 				return domain.ErrAccessDenied("not allowed")
 			},
-			assertFn: func(t *testing.T, resp DeleteComputeAssignmentResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeleteComputeAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				forbidden, ok := resp.(DeleteComputeAssignment403JSONResponse)
@@ -687,7 +687,7 @@ func TestHandler_DeleteComputeAssignment(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, id string) error {
 				return domain.ErrNotFound("assignment %s not found", id)
 			},
-			assertFn: func(t *testing.T, resp DeleteComputeAssignmentResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeleteComputeAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(DeleteComputeAssignment404JSONResponse)
@@ -702,7 +702,7 @@ func TestHandler_DeleteComputeAssignment(t *testing.T) {
 			t.Parallel()
 			svc := &mockComputeEndpointService{unassignFn: tt.svcFn}
 			handler := &APIHandler{computeEndpoints: svc}
-			resp, err := handler.DeleteComputeAssignment(computeTestCtx(), DeleteComputeAssignmentRequestObject{AssignmentId: tt.assignmentID})
+			resp, err := handler.DeleteComputeAssignment(computeTestCtx(), GenDeleteComputeAssignmentRequest{AssignmentId: tt.assignmentID})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -715,7 +715,7 @@ func TestHandler_GetComputeEndpointHealth(t *testing.T) {
 		name         string
 		endpointName string
 		svcFn        func(ctx context.Context, principal string, endpointName string) (*domain.ComputeEndpointHealthResult, error)
-		assertFn     func(t *testing.T, resp GetComputeEndpointHealthResponseObject, err error)
+		assertFn     func(t *testing.T, resp GenGetComputeEndpointHealthResponse, err error)
 	}{
 		{
 			name:         "happy path returns 200",
@@ -730,7 +730,7 @@ func TestHandler_GetComputeEndpointHealth(t *testing.T) {
 					DuckdbVersion: &version,
 				}, nil
 			},
-			assertFn: func(t *testing.T, resp GetComputeEndpointHealthResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenGetComputeEndpointHealthResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(GetComputeEndpointHealth200JSONResponse)
@@ -745,7 +745,7 @@ func TestHandler_GetComputeEndpointHealth(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _ string) (*domain.ComputeEndpointHealthResult, error) {
 				return nil, domain.ErrAccessDenied("not allowed")
 			},
-			assertFn: func(t *testing.T, resp GetComputeEndpointHealthResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenGetComputeEndpointHealthResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				forbidden, ok := resp.(GetComputeEndpointHealth403JSONResponse)
@@ -759,7 +759,7 @@ func TestHandler_GetComputeEndpointHealth(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, name string) (*domain.ComputeEndpointHealthResult, error) {
 				return nil, domain.ErrNotFound("endpoint %s not found", name)
 			},
-			assertFn: func(t *testing.T, resp GetComputeEndpointHealthResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenGetComputeEndpointHealthResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(GetComputeEndpointHealth404JSONResponse)
@@ -773,7 +773,7 @@ func TestHandler_GetComputeEndpointHealth(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _ string) (*domain.ComputeEndpointHealthResult, error) {
 				return nil, assert.AnError
 			},
-			assertFn: func(t *testing.T, resp GetComputeEndpointHealthResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenGetComputeEndpointHealthResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				badGateway, ok := resp.(GetComputeEndpointHealth502JSONResponse)
@@ -788,7 +788,7 @@ func TestHandler_GetComputeEndpointHealth(t *testing.T) {
 			t.Parallel()
 			svc := &mockComputeEndpointService{healthCheckFn: tt.svcFn}
 			handler := &APIHandler{computeEndpoints: svc}
-			resp, err := handler.GetComputeEndpointHealth(computeTestCtx(), GetComputeEndpointHealthRequestObject{EndpointName: tt.endpointName})
+			resp, err := handler.GetComputeEndpointHealth(computeTestCtx(), GenGetComputeEndpointHealthRequest{EndpointName: tt.endpointName})
 			tt.assertFn(t, resp, err)
 		})
 	}

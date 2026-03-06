@@ -150,7 +150,7 @@ func TestHandler_CreateSemanticModel_UsesPrincipalAndMapsRequest(t *testing.T) {
 		},
 	}
 
-	resp, err := h.CreateSemanticModel(ctx, CreateSemanticModelRequestObject{Body: &CreateSemanticModelJSONRequestBody{
+	resp, err := h.CreateSemanticModel(ctx, GenCreateSemanticModelRequest{Body: &GenCreateSemanticModelJSONBody{
 		ProjectName:          "analytics",
 		Name:                 "sales",
 		BaseModelRef:         "analytics.fct_sales",
@@ -181,7 +181,7 @@ func TestHandler_CreateSemanticModel_ValidationErrorMaps400(t *testing.T) {
 		},
 	}
 
-	resp, err := h.CreateSemanticModel(context.Background(), CreateSemanticModelRequestObject{Body: &CreateSemanticModelJSONRequestBody{
+	resp, err := h.CreateSemanticModel(context.Background(), GenCreateSemanticModelRequest{Body: &GenCreateSemanticModelJSONBody{
 		ProjectName:  "analytics",
 		Name:         "sales",
 		BaseModelRef: "analytics.fct_sales",
@@ -211,7 +211,7 @@ func TestHandler_ListSemanticModels_PassesFiltersAndPagination(t *testing.T) {
 		},
 	}
 
-	resp, err := h.ListSemanticModels(context.Background(), ListSemanticModelsRequestObject{Params: ListSemanticModelsParams{ProjectName: &projectName, MaxResults: &maxResults}})
+	resp, err := h.ListSemanticModels(context.Background(), GenListSemanticModelsRequest{Params: ListSemanticModelsParams{ProjectName: &projectName, MaxResults: &maxResults}})
 	require.NoError(t, err)
 
 	okResp, ok := resp.(ListSemanticModels200JSONResponse)
@@ -257,7 +257,7 @@ func TestHandler_ExplainMetricQuery_MapsRequestAndResponse(t *testing.T) {
 		},
 	}
 
-	resp, err := h.ExplainMetricQuery(context.Background(), ExplainMetricQueryRequestObject{Body: &MetricQueryRequest{
+	resp, err := h.ExplainMetricQuery(context.Background(), GenExplainMetricQueryRequest{Body: &MetricQueryRequest{
 		ProjectName:       "analytics",
 		SemanticModelName: "sales",
 		Metrics:           []string{"total_revenue"},
@@ -309,7 +309,7 @@ func TestHandler_RunMetricQuery_UsesPrincipalAndMapsResult(t *testing.T) {
 		},
 	}
 
-	resp, err := h.RunMetricQuery(ctx, RunMetricQueryRequestObject{Body: &MetricQueryRequest{
+	resp, err := h.RunMetricQuery(ctx, GenRunMetricQueryRequest{Body: &MetricQueryRequest{
 		ProjectName:       "analytics",
 		SemanticModelName: "sales",
 		Metrics:           []string{"total_revenue"},
@@ -352,7 +352,7 @@ func TestHandler_CheckMetricFreshness_ResolvesMetricAndReturnsFreshness(t *testi
 		},
 	}
 
-	resp, err := h.CheckMetricFreshness(context.Background(), CheckMetricFreshnessRequestObject{MetricName: "total_revenue"})
+	resp, err := h.CheckMetricFreshness(context.Background(), GenCheckMetricFreshnessRequest{MetricName: "total_revenue"})
 	require.NoError(t, err)
 
 	okResp, ok := resp.(CheckMetricFreshness200JSONResponse)
@@ -387,7 +387,7 @@ func TestHandler_CheckMetricFreshness_AmbiguousMetricReturns400(t *testing.T) {
 		},
 	}
 
-	resp, err := h.CheckMetricFreshness(context.Background(), CheckMetricFreshnessRequestObject{MetricName: "total_revenue"})
+	resp, err := h.CheckMetricFreshness(context.Background(), GenCheckMetricFreshnessRequest{MetricName: "total_revenue"})
 	require.NoError(t, err)
 
 	badReq, ok := resp.(CheckMetricFreshness400JSONResponse)

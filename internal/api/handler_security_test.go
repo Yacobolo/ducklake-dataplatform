@@ -273,7 +273,7 @@ func TestHandler_GetPrincipal(t *testing.T) {
 	tests := []struct {
 		name     string
 		svcFn    func(ctx context.Context, id string) (*domain.Principal, error)
-		assertFn func(t *testing.T, resp GetPrincipalResponseObject, err error)
+		assertFn func(t *testing.T, resp GenGetPrincipalResponse, err error)
 	}{
 		{
 			name: "happy path returns 200",
@@ -281,7 +281,7 @@ func TestHandler_GetPrincipal(t *testing.T) {
 				p := secSamplePrincipal()
 				return &p, nil
 			},
-			assertFn: func(t *testing.T, resp GetPrincipalResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenGetPrincipalResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(GetPrincipal200JSONResponse)
@@ -295,7 +295,7 @@ func TestHandler_GetPrincipal(t *testing.T) {
 			svcFn: func(_ context.Context, id string) (*domain.Principal, error) {
 				return nil, domain.ErrNotFound("principal %s not found", id)
 			},
-			assertFn: func(t *testing.T, resp GetPrincipalResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenGetPrincipalResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(GetPrincipal404JSONResponse)
@@ -310,7 +310,7 @@ func TestHandler_GetPrincipal(t *testing.T) {
 			t.Parallel()
 			svc := &mockPrincipalService{getByIDFn: tt.svcFn}
 			handler := &APIHandler{principals: svc}
-			resp, err := handler.GetPrincipal(secTestCtx(), GetPrincipalRequestObject{PrincipalId: "p-1"})
+			resp, err := handler.GetPrincipal(secTestCtx(), GenGetPrincipalRequest{PrincipalId: "p-1"})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -322,7 +322,7 @@ func TestHandler_GetGroup(t *testing.T) {
 	tests := []struct {
 		name     string
 		svcFn    func(ctx context.Context, id string) (*domain.Group, error)
-		assertFn func(t *testing.T, resp GetGroupResponseObject, err error)
+		assertFn func(t *testing.T, resp GenGetGroupResponse, err error)
 	}{
 		{
 			name: "happy path returns 200",
@@ -330,7 +330,7 @@ func TestHandler_GetGroup(t *testing.T) {
 				g := secSampleGroup()
 				return &g, nil
 			},
-			assertFn: func(t *testing.T, resp GetGroupResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenGetGroupResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(GetGroup200JSONResponse)
@@ -344,7 +344,7 @@ func TestHandler_GetGroup(t *testing.T) {
 			svcFn: func(_ context.Context, id string) (*domain.Group, error) {
 				return nil, domain.ErrNotFound("group %s not found", id)
 			},
-			assertFn: func(t *testing.T, resp GetGroupResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenGetGroupResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(GetGroup404JSONResponse)
@@ -359,7 +359,7 @@ func TestHandler_GetGroup(t *testing.T) {
 			t.Parallel()
 			svc := &mockGroupService{getByIDFn: tt.svcFn}
 			handler := &APIHandler{groups: svc}
-			resp, err := handler.GetGroup(secTestCtx(), GetGroupRequestObject{GroupId: "g-1"})
+			resp, err := handler.GetGroup(secTestCtx(), GenGetGroupRequest{GroupId: "g-1"})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -371,14 +371,14 @@ func TestHandler_ListGroupMembers(t *testing.T) {
 	tests := []struct {
 		name     string
 		svcFn    func(ctx context.Context, groupID string, page domain.PageRequest) ([]domain.GroupMember, int64, error)
-		assertFn func(t *testing.T, resp ListGroupMembersResponseObject, err error)
+		assertFn func(t *testing.T, resp GenListGroupMembersResponse, err error)
 	}{
 		{
 			name: "happy path returns 200 with members",
 			svcFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.GroupMember, int64, error) {
 				return []domain.GroupMember{secSampleGroupMember()}, 1, nil
 			},
-			assertFn: func(t *testing.T, resp ListGroupMembersResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListGroupMembersResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(ListGroupMembers200JSONResponse)
@@ -393,7 +393,7 @@ func TestHandler_ListGroupMembers(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.GroupMember, int64, error) {
 				return nil, 0, domain.ErrAccessDenied("not allowed")
 			},
-			assertFn: func(t *testing.T, resp ListGroupMembersResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListGroupMembersResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				forbidden, ok := resp.(ListGroupMembers403JSONResponse)
@@ -408,7 +408,7 @@ func TestHandler_ListGroupMembers(t *testing.T) {
 			t.Parallel()
 			svc := &mockGroupService{listMembersFn: tt.svcFn}
 			handler := &APIHandler{groups: svc}
-			resp, err := handler.ListGroupMembers(secTestCtx(), ListGroupMembersRequestObject{
+			resp, err := handler.ListGroupMembers(secTestCtx(), GenListGroupMembersRequest{
 				GroupId: "g-1",
 				Params:  ListGroupMembersParams{},
 			})
@@ -423,14 +423,14 @@ func TestHandler_CreateGroupMember(t *testing.T) {
 	tests := []struct {
 		name     string
 		svcFn    func(ctx context.Context, req domain.AddGroupMemberRequest) error
-		assertFn func(t *testing.T, resp CreateGroupMemberResponseObject, err error)
+		assertFn func(t *testing.T, resp GenCreateGroupMemberResponse, err error)
 	}{
 		{
 			name: "happy path returns 204",
 			svcFn: func(_ context.Context, _ domain.AddGroupMemberRequest) error {
 				return nil
 			},
-			assertFn: func(t *testing.T, resp CreateGroupMemberResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateGroupMemberResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				_, ok := resp.(CreateGroupMember204Response)
@@ -442,7 +442,7 @@ func TestHandler_CreateGroupMember(t *testing.T) {
 			svcFn: func(_ context.Context, _ domain.AddGroupMemberRequest) error {
 				return domain.ErrAccessDenied("not allowed")
 			},
-			assertFn: func(t *testing.T, resp CreateGroupMemberResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateGroupMemberResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				forbidden, ok := resp.(CreateGroupMember403JSONResponse)
@@ -457,11 +457,11 @@ func TestHandler_CreateGroupMember(t *testing.T) {
 			t.Parallel()
 			svc := &mockGroupService{addMemberFn: tt.svcFn}
 			handler := &APIHandler{groups: svc}
-			body := CreateGroupMemberJSONRequestBody{
+			body := GenCreateGroupMemberJSONBody{
 				MemberId:   "p-1",
 				MemberType: "user",
 			}
-			resp, err := handler.CreateGroupMember(secTestCtx(), CreateGroupMemberRequestObject{
+			resp, err := handler.CreateGroupMember(secTestCtx(), GenCreateGroupMemberRequest{
 				GroupId: "g-1",
 				Body:    &body,
 			})
@@ -476,14 +476,14 @@ func TestHandler_DeleteGroupMember(t *testing.T) {
 	tests := []struct {
 		name     string
 		svcFn    func(ctx context.Context, req domain.RemoveGroupMemberRequest) error
-		assertFn func(t *testing.T, resp DeleteGroupMemberResponseObject, err error)
+		assertFn func(t *testing.T, resp GenDeleteGroupMemberResponse, err error)
 	}{
 		{
 			name: "happy path returns 204",
 			svcFn: func(_ context.Context, _ domain.RemoveGroupMemberRequest) error {
 				return nil
 			},
-			assertFn: func(t *testing.T, resp DeleteGroupMemberResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeleteGroupMemberResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				_, ok := resp.(DeleteGroupMember204Response)
@@ -495,7 +495,7 @@ func TestHandler_DeleteGroupMember(t *testing.T) {
 			svcFn: func(_ context.Context, _ domain.RemoveGroupMemberRequest) error {
 				return domain.ErrAccessDenied("not allowed")
 			},
-			assertFn: func(t *testing.T, resp DeleteGroupMemberResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeleteGroupMemberResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				forbidden, ok := resp.(DeleteGroupMember403JSONResponse)
@@ -510,7 +510,7 @@ func TestHandler_DeleteGroupMember(t *testing.T) {
 			t.Parallel()
 			svc := &mockGroupService{removeMemberFn: tt.svcFn}
 			handler := &APIHandler{groups: svc}
-			resp, err := handler.DeleteGroupMember(secTestCtx(), DeleteGroupMemberRequestObject{
+			resp, err := handler.DeleteGroupMember(secTestCtx(), GenDeleteGroupMemberRequest{
 				GroupId: "g-1",
 				Params: DeleteGroupMemberParams{
 					MemberId:   "p-1",
@@ -536,7 +536,7 @@ func TestHandler_ListGrants(t *testing.T) {
 		listForPrincipalFn func(ctx context.Context, principalID string, principalType string, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error)
 		listForSecurableFn func(ctx context.Context, securableType string, securableID string, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error)
 		listAllFn          func(ctx context.Context, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error)
-		assertFn           func(t *testing.T, resp ListGrantsResponseObject, err error)
+		assertFn           func(t *testing.T, resp GenListGrantsResponse, err error)
 	}{
 		{
 			name:   "with principal filter returns 200",
@@ -544,7 +544,7 @@ func TestHandler_ListGrants(t *testing.T) {
 			listForPrincipalFn: func(_ context.Context, _ string, _ string, _ domain.PageRequest) ([]domain.PrivilegeGrant, int64, error) {
 				return []domain.PrivilegeGrant{secSampleGrant()}, 1, nil
 			},
-			assertFn: func(t *testing.T, resp ListGrantsResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListGrantsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(ListGrants200JSONResponse)
@@ -560,7 +560,7 @@ func TestHandler_ListGrants(t *testing.T) {
 			listForSecurableFn: func(_ context.Context, _ string, _ string, _ domain.PageRequest) ([]domain.PrivilegeGrant, int64, error) {
 				return []domain.PrivilegeGrant{secSampleGrant()}, 1, nil
 			},
-			assertFn: func(t *testing.T, resp ListGrantsResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListGrantsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(ListGrants200JSONResponse)
@@ -575,7 +575,7 @@ func TestHandler_ListGrants(t *testing.T) {
 			listAllFn: func(_ context.Context, _ domain.PageRequest) ([]domain.PrivilegeGrant, int64, error) {
 				return []domain.PrivilegeGrant{secSampleGrant()}, 1, nil
 			},
-			assertFn: func(t *testing.T, resp ListGrantsResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListGrantsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(ListGrants200JSONResponse)
@@ -590,7 +590,7 @@ func TestHandler_ListGrants(t *testing.T) {
 			listForPrincipalFn: func(_ context.Context, _ string, _ string, _ domain.PageRequest) ([]domain.PrivilegeGrant, int64, error) {
 				return nil, 0, domain.ErrAccessDenied("not allowed")
 			},
-			assertFn: func(t *testing.T, resp ListGrantsResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListGrantsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				forbidden, ok := resp.(ListGrants403JSONResponse)
@@ -609,7 +609,7 @@ func TestHandler_ListGrants(t *testing.T) {
 				listAllFn:          tt.listAllFn,
 			}
 			handler := &APIHandler{grants: svc}
-			resp, err := handler.ListGrants(secTestCtx(), ListGrantsRequestObject{Params: tt.params})
+			resp, err := handler.ListGrants(secTestCtx(), GenListGrantsRequest{Params: tt.params})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -621,14 +621,14 @@ func TestHandler_DeleteGrant(t *testing.T) {
 	tests := []struct {
 		name     string
 		svcFn    func(ctx context.Context, principal string, grantID string) error
-		assertFn func(t *testing.T, resp DeleteGrantResponseObject, err error)
+		assertFn func(t *testing.T, resp GenDeleteGrantResponse, err error)
 	}{
 		{
 			name: "happy path returns 204",
 			svcFn: func(_ context.Context, _ string, _ string) error {
 				return nil
 			},
-			assertFn: func(t *testing.T, resp DeleteGrantResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeleteGrantResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				_, ok := resp.(DeleteGrant204Response)
@@ -640,7 +640,7 @@ func TestHandler_DeleteGrant(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, id string) error {
 				return domain.ErrNotFound("grant %s not found", id)
 			},
-			assertFn: func(t *testing.T, resp DeleteGrantResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeleteGrantResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(DeleteGrant404JSONResponse)
@@ -653,7 +653,7 @@ func TestHandler_DeleteGrant(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _ string) error {
 				return domain.ErrAccessDenied("not allowed")
 			},
-			assertFn: func(t *testing.T, resp DeleteGrantResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeleteGrantResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				forbidden, ok := resp.(DeleteGrant403JSONResponse)
@@ -668,7 +668,7 @@ func TestHandler_DeleteGrant(t *testing.T) {
 			t.Parallel()
 			svc := &mockGrantService{revokeFn: tt.svcFn}
 			handler := &APIHandler{grants: svc}
-			resp, err := handler.DeleteGrant(secTestCtx(), DeleteGrantRequestObject{GrantId: "grant-1"})
+			resp, err := handler.DeleteGrant(secTestCtx(), GenDeleteGrantRequest{GrantId: "grant-1"})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -680,14 +680,14 @@ func TestHandler_ListColumnMasks(t *testing.T) {
 	tests := []struct {
 		name     string
 		svcFn    func(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.ColumnMask, int64, error)
-		assertFn func(t *testing.T, resp ListColumnMasksResponseObject, err error)
+		assertFn func(t *testing.T, resp GenListColumnMasksResponse, err error)
 	}{
 		{
 			name: "happy path returns 200 with masks",
 			svcFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.ColumnMask, int64, error) {
 				return []domain.ColumnMask{secSampleColumnMask()}, 1, nil
 			},
-			assertFn: func(t *testing.T, resp ListColumnMasksResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListColumnMasksResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(ListColumnMasks200JSONResponse)
@@ -703,7 +703,7 @@ func TestHandler_ListColumnMasks(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.ColumnMask, int64, error) {
 				return nil, 0, assert.AnError
 			},
-			assertFn: func(t *testing.T, resp ListColumnMasksResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListColumnMasksResponse, err error) {
 				t.Helper()
 				require.Error(t, err)
 			},
@@ -715,7 +715,7 @@ func TestHandler_ListColumnMasks(t *testing.T) {
 			t.Parallel()
 			svc := &mockColumnMaskService{getForTableFn: tt.svcFn}
 			handler := &APIHandler{columnMasks: svc}
-			resp, err := handler.ListColumnMasks(secTestCtx(), ListColumnMasksRequestObject{
+			resp, err := handler.ListColumnMasks(secTestCtx(), GenListColumnMasksRequest{
 				TableId: "t-1",
 				Params:  ListColumnMasksParams{},
 			})
@@ -730,7 +730,7 @@ func TestHandler_CreateColumnMask(t *testing.T) {
 	tests := []struct {
 		name     string
 		svcFn    func(ctx context.Context, req domain.CreateColumnMaskRequest) (*domain.ColumnMask, error)
-		assertFn func(t *testing.T, resp CreateColumnMaskResponseObject, err error)
+		assertFn func(t *testing.T, resp GenCreateColumnMaskResponse, err error)
 	}{
 		{
 			name: "happy path returns 201",
@@ -738,7 +738,7 @@ func TestHandler_CreateColumnMask(t *testing.T) {
 				m := secSampleColumnMask()
 				return &m, nil
 			},
-			assertFn: func(t *testing.T, resp CreateColumnMaskResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateColumnMaskResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				created, ok := resp.(CreateColumnMask201JSONResponse)
@@ -752,7 +752,7 @@ func TestHandler_CreateColumnMask(t *testing.T) {
 			svcFn: func(_ context.Context, _ domain.CreateColumnMaskRequest) (*domain.ColumnMask, error) {
 				return nil, domain.ErrAccessDenied("not allowed")
 			},
-			assertFn: func(t *testing.T, resp CreateColumnMaskResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateColumnMaskResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				forbidden, ok := resp.(CreateColumnMask403JSONResponse)
@@ -765,7 +765,7 @@ func TestHandler_CreateColumnMask(t *testing.T) {
 			svcFn: func(_ context.Context, _ domain.CreateColumnMaskRequest) (*domain.ColumnMask, error) {
 				return nil, domain.ErrValidation("column_name is required")
 			},
-			assertFn: func(t *testing.T, resp CreateColumnMaskResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateColumnMaskResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				badReq, ok := resp.(CreateColumnMask400JSONResponse)
@@ -780,11 +780,11 @@ func TestHandler_CreateColumnMask(t *testing.T) {
 			t.Parallel()
 			svc := &mockColumnMaskService{createFn: tt.svcFn}
 			handler := &APIHandler{columnMasks: svc}
-			body := CreateColumnMaskJSONRequestBody{
+			body := GenCreateColumnMaskJSONBody{
 				ColumnName:     "ssn",
 				MaskExpression: "'***'",
 			}
-			resp, err := handler.CreateColumnMask(secTestCtx(), CreateColumnMaskRequestObject{
+			resp, err := handler.CreateColumnMask(secTestCtx(), GenCreateColumnMaskRequest{
 				TableId: "t-1",
 				Body:    &body,
 			})
@@ -799,14 +799,14 @@ func TestHandler_DeleteColumnMask(t *testing.T) {
 	tests := []struct {
 		name     string
 		svcFn    func(ctx context.Context, id string) error
-		assertFn func(t *testing.T, resp DeleteColumnMaskResponseObject, err error)
+		assertFn func(t *testing.T, resp GenDeleteColumnMaskResponse, err error)
 	}{
 		{
 			name: "happy path returns 204",
 			svcFn: func(_ context.Context, _ string) error {
 				return nil
 			},
-			assertFn: func(t *testing.T, resp DeleteColumnMaskResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeleteColumnMaskResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				_, ok := resp.(DeleteColumnMask204Response)
@@ -818,7 +818,7 @@ func TestHandler_DeleteColumnMask(t *testing.T) {
 			svcFn: func(_ context.Context, _ string) error {
 				return domain.ErrAccessDenied("not allowed")
 			},
-			assertFn: func(t *testing.T, resp DeleteColumnMaskResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeleteColumnMaskResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				forbidden, ok := resp.(DeleteColumnMask403JSONResponse)
@@ -831,7 +831,7 @@ func TestHandler_DeleteColumnMask(t *testing.T) {
 			svcFn: func(_ context.Context, _ string) error {
 				return domain.ErrNotFound("column mask not found")
 			},
-			assertFn: func(t *testing.T, resp DeleteColumnMaskResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeleteColumnMaskResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(DeleteColumnMask404JSONResponse)
@@ -846,7 +846,7 @@ func TestHandler_DeleteColumnMask(t *testing.T) {
 			t.Parallel()
 			svc := &mockColumnMaskService{deleteFn: tt.svcFn}
 			handler := &APIHandler{columnMasks: svc}
-			resp, err := handler.DeleteColumnMask(secTestCtx(), DeleteColumnMaskRequestObject{ColumnMaskId: "m-1"})
+			resp, err := handler.DeleteColumnMask(secTestCtx(), GenDeleteColumnMaskRequest{ColumnMaskId: "m-1"})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -858,14 +858,14 @@ func TestHandler_BindColumnMask(t *testing.T) {
 	tests := []struct {
 		name     string
 		svcFn    func(ctx context.Context, req domain.BindColumnMaskRequest) error
-		assertFn func(t *testing.T, resp BindColumnMaskResponseObject, err error)
+		assertFn func(t *testing.T, resp GenBindColumnMaskResponse, err error)
 	}{
 		{
 			name: "happy path returns 204",
 			svcFn: func(_ context.Context, _ domain.BindColumnMaskRequest) error {
 				return nil
 			},
-			assertFn: func(t *testing.T, resp BindColumnMaskResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenBindColumnMaskResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				_, ok := resp.(BindColumnMask204Response)
@@ -877,7 +877,7 @@ func TestHandler_BindColumnMask(t *testing.T) {
 			svcFn: func(_ context.Context, _ domain.BindColumnMaskRequest) error {
 				return domain.ErrAccessDenied("not allowed")
 			},
-			assertFn: func(t *testing.T, resp BindColumnMaskResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenBindColumnMaskResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				forbidden, ok := resp.(BindColumnMask403JSONResponse)
@@ -890,7 +890,7 @@ func TestHandler_BindColumnMask(t *testing.T) {
 			svcFn: func(_ context.Context, _ domain.BindColumnMaskRequest) error {
 				return domain.ErrValidation("principal_type must be 'user' or 'group'")
 			},
-			assertFn: func(t *testing.T, resp BindColumnMaskResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenBindColumnMaskResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				badReq, ok := resp.(BindColumnMask400JSONResponse)
@@ -905,11 +905,11 @@ func TestHandler_BindColumnMask(t *testing.T) {
 			t.Parallel()
 			svc := &mockColumnMaskService{bindFn: tt.svcFn}
 			handler := &APIHandler{columnMasks: svc}
-			body := BindColumnMaskJSONRequestBody{
+			body := GenBindColumnMaskJSONBody{
 				PrincipalId:   "p-1",
 				PrincipalType: "user",
 			}
-			resp, err := handler.BindColumnMask(secTestCtx(), BindColumnMaskRequestObject{
+			resp, err := handler.BindColumnMask(secTestCtx(), GenBindColumnMaskRequest{
 				ColumnMaskId: "m-1",
 				Body:         &body,
 			})
@@ -924,14 +924,14 @@ func TestHandler_UnbindColumnMask(t *testing.T) {
 	tests := []struct {
 		name     string
 		svcFn    func(ctx context.Context, req domain.BindColumnMaskRequest) error
-		assertFn func(t *testing.T, resp UnbindColumnMaskResponseObject, err error)
+		assertFn func(t *testing.T, resp GenUnbindColumnMaskResponse, err error)
 	}{
 		{
 			name: "happy path returns 204",
 			svcFn: func(_ context.Context, _ domain.BindColumnMaskRequest) error {
 				return nil
 			},
-			assertFn: func(t *testing.T, resp UnbindColumnMaskResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenUnbindColumnMaskResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				_, ok := resp.(UnbindColumnMask204Response)
@@ -943,7 +943,7 @@ func TestHandler_UnbindColumnMask(t *testing.T) {
 			svcFn: func(_ context.Context, _ domain.BindColumnMaskRequest) error {
 				return domain.ErrAccessDenied("not allowed")
 			},
-			assertFn: func(t *testing.T, resp UnbindColumnMaskResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenUnbindColumnMaskResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				forbidden, ok := resp.(UnbindColumnMask403JSONResponse)
@@ -958,7 +958,7 @@ func TestHandler_UnbindColumnMask(t *testing.T) {
 			t.Parallel()
 			svc := &mockColumnMaskService{unbindFn: tt.svcFn}
 			handler := &APIHandler{columnMasks: svc}
-			resp, err := handler.UnbindColumnMask(secTestCtx(), UnbindColumnMaskRequestObject{
+			resp, err := handler.UnbindColumnMask(secTestCtx(), GenUnbindColumnMaskRequest{
 				ColumnMaskId: "m-1",
 				Params: UnbindColumnMaskParams{
 					PrincipalId:   "p-1",

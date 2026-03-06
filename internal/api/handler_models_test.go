@@ -107,8 +107,8 @@ func TestHandler_TriggerModelRun_UsesAllModelNames(t *testing.T) {
 
 	ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "admin-user", IsAdmin: true})
 	modelNames := []string{"stg_orders", "fct_orders"}
-	resp, err := h.TriggerModelRun(ctx, TriggerModelRunRequestObject{
-		Body: &TriggerModelRunJSONRequestBody{
+	resp, err := h.TriggerModelRun(ctx, GenTriggerModelRunRequest{
+		Body: &GenTriggerModelRunJSONBody{
 			ProjectName: "analytics",
 			ModelNames:  &modelNames,
 		},
@@ -129,7 +129,7 @@ func TestHandler_TriggerModelRun_MapsPayloadFields(t *testing.T) {
 
 	ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice", IsAdmin: true})
 
-	reqBody := TriggerModelRunJSONRequestBody{
+	reqBody := GenTriggerModelRunJSONBody{
 		ProjectName:   "proj_a",
 		ModelNames:    &[]string{"stg_orders", "+fct_orders"},
 		FullRefresh:   boolPtr(true),
@@ -148,7 +148,7 @@ func TestHandler_TriggerModelRun_MapsPayloadFields(t *testing.T) {
 		}},
 	}
 
-	resp, err := h.TriggerModelRun(ctx, TriggerModelRunRequestObject{Body: &reqBody})
+	resp, err := h.TriggerModelRun(ctx, GenTriggerModelRunRequest{Body: &reqBody})
 	require.NoError(t, err)
 	_, ok := resp.(TriggerModelRun201JSONResponse)
 	require.True(t, ok, "expected 201 response, got %T", resp)
@@ -166,7 +166,7 @@ func TestHandler_TriggerModelRun_DefaultTargetValues(t *testing.T) {
 
 	ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice", IsAdmin: true})
 
-	reqBody := TriggerModelRunJSONRequestBody{ProjectName: "proj_a"}
+	reqBody := GenTriggerModelRunJSONBody{ProjectName: "proj_a"}
 
 	var gotReq domain.TriggerModelRunRequest
 	h := &APIHandler{
@@ -177,7 +177,7 @@ func TestHandler_TriggerModelRun_DefaultTargetValues(t *testing.T) {
 		}},
 	}
 
-	resp, err := h.TriggerModelRun(ctx, TriggerModelRunRequestObject{Body: &reqBody})
+	resp, err := h.TriggerModelRun(ctx, GenTriggerModelRunRequest{Body: &reqBody})
 	require.NoError(t, err)
 	_, ok := resp.(TriggerModelRun201JSONResponse)
 	require.True(t, ok, "expected 201 response, got %T", resp)
@@ -202,7 +202,7 @@ func TestHandler_ListModelRuns_InvalidStatusReturns400(t *testing.T) {
 	}
 
 	invalid := ListModelRunsParamsStatus("INVALID")
-	resp, err := h.ListModelRuns(context.Background(), ListModelRunsRequestObject{Params: ListModelRunsParams{Status: &invalid}})
+	resp, err := h.ListModelRuns(context.Background(), GenListModelRunsRequest{Params: ListModelRunsParams{Status: &invalid}})
 	require.NoError(t, err)
 	assert.False(t, called)
 
@@ -231,7 +231,7 @@ func TestHandler_ListModelRuns_IncludesModelNamesAndProject(t *testing.T) {
 		},
 	}
 
-	resp, err := h.ListModelRuns(context.Background(), ListModelRunsRequestObject{})
+	resp, err := h.ListModelRuns(context.Background(), GenListModelRunsRequest{})
 	require.NoError(t, err)
 
 	okResp, ok := resp.(ListModelRuns200JSONResponse)
@@ -324,7 +324,7 @@ func TestHandler_CheckSourceFreshness_DefaultsAndMapping(t *testing.T) {
 		}, nil
 	}}}
 
-	resp, err := h.CheckSourceFreshness(ctx, CheckSourceFreshnessRequestObject{
+	resp, err := h.CheckSourceFreshness(ctx, GenCheckSourceFreshnessRequest{
 		SourceSchema: "raw",
 		SourceTable:  "orders",
 		Params:       CheckSourceFreshnessParams{},

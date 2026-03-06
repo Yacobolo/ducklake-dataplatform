@@ -20,7 +20,7 @@ type catalogRegistrationService interface {
 // === Catalog Registration ===
 
 // RegisterCatalog implements the endpoint for registering a new catalog.
-func (h *APIHandler) RegisterCatalog(ctx context.Context, request RegisterCatalogRequestObject) (RegisterCatalogResponseObject, error) {
+func (h *APIHandler) RegisterCatalog(ctx context.Context, request GenRegisterCatalogRequest) (GenRegisterCatalogResponse, error) {
 	domReq := domain.CreateCatalogRequest{
 		Name:          request.Body.Name,
 		MetastoreType: string(request.Body.MetastoreType),
@@ -51,7 +51,7 @@ func (h *APIHandler) RegisterCatalog(ctx context.Context, request RegisterCatalo
 }
 
 // ListCatalogs implements the endpoint for listing registered catalogs.
-func (h *APIHandler) ListCatalogs(ctx context.Context, request ListCatalogsRequestObject) (ListCatalogsResponseObject, error) {
+func (h *APIHandler) ListCatalogs(ctx context.Context, request GenListCatalogsRequest) (GenListCatalogsResponse, error) {
 	page := pageFromParams(request.Params.MaxResults, request.Params.PageToken)
 	catalogs, total, err := h.catalogRegistration.List(ctx, page)
 	if err != nil {
@@ -75,7 +75,7 @@ func (h *APIHandler) ListCatalogs(ctx context.Context, request ListCatalogsReque
 }
 
 // GetCatalogRegistration implements the endpoint for retrieving a catalog registration by name.
-func (h *APIHandler) GetCatalogRegistration(ctx context.Context, request GetCatalogRegistrationRequestObject) (GetCatalogRegistrationResponseObject, error) {
+func (h *APIHandler) GetCatalogRegistration(ctx context.Context, request GenGetCatalogRegistrationRequest) (GenGetCatalogRegistrationResponse, error) {
 	result, err := h.catalogRegistration.Get(ctx, string(request.CatalogName))
 	if err != nil {
 		switch {
@@ -92,7 +92,7 @@ func (h *APIHandler) GetCatalogRegistration(ctx context.Context, request GetCata
 }
 
 // UpdateCatalogRegistration implements the endpoint for updating a catalog registration.
-func (h *APIHandler) UpdateCatalogRegistration(ctx context.Context, request UpdateCatalogRegistrationRequestObject) (UpdateCatalogRegistrationResponseObject, error) {
+func (h *APIHandler) UpdateCatalogRegistration(ctx context.Context, request GenUpdateCatalogRegistrationRequest) (GenUpdateCatalogRegistrationResponse, error) {
 	domReq := domain.UpdateCatalogRegistrationRequest{
 		Comment:  request.Body.Comment,
 		DataPath: request.Body.DataPath,
@@ -117,7 +117,7 @@ func (h *APIHandler) UpdateCatalogRegistration(ctx context.Context, request Upda
 }
 
 // DeleteCatalogRegistration implements the endpoint for deleting a catalog registration.
-func (h *APIHandler) DeleteCatalogRegistration(ctx context.Context, request DeleteCatalogRegistrationRequestObject) (DeleteCatalogRegistrationResponseObject, error) {
+func (h *APIHandler) DeleteCatalogRegistration(ctx context.Context, request GenDeleteCatalogRegistrationRequest) (GenDeleteCatalogRegistrationResponse, error) {
 	if err := h.catalogRegistration.Delete(ctx, string(request.CatalogName)); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
@@ -134,7 +134,7 @@ func (h *APIHandler) DeleteCatalogRegistration(ctx context.Context, request Dele
 }
 
 // SetDefaultCatalog implements the endpoint for setting a catalog as the default.
-func (h *APIHandler) SetDefaultCatalog(ctx context.Context, request SetDefaultCatalogRequestObject) (SetDefaultCatalogResponseObject, error) {
+func (h *APIHandler) SetDefaultCatalog(ctx context.Context, request GenSetDefaultCatalogRequest) (GenSetDefaultCatalogResponse, error) {
 	result, err := h.catalogRegistration.SetDefault(ctx, string(request.CatalogName))
 	if err != nil {
 		switch {

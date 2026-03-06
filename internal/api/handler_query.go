@@ -32,7 +32,7 @@ type manifestService interface {
 }
 
 // ExecuteQuery implements the endpoint for executing a SQL query.
-func (h *APIHandler) ExecuteQuery(ctx context.Context, req ExecuteQueryRequestObject) (ExecuteQueryResponseObject, error) {
+func (h *APIHandler) ExecuteQuery(ctx context.Context, req GenExecuteQueryRequest) (GenExecuteQueryResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	result, err := h.query.Execute(ctx, principal, req.Body.Sql)
@@ -68,7 +68,7 @@ func (h *APIHandler) ExecuteQuery(ctx context.Context, req ExecuteQueryRequestOb
 }
 
 // SubmitQuery implements async query submission endpoint.
-func (h *APIHandler) SubmitQuery(ctx context.Context, req SubmitQueryRequestObject) (SubmitQueryResponseObject, error) {
+func (h *APIHandler) SubmitQuery(ctx context.Context, req GenSubmitQueryRequest) (GenSubmitQueryResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 
@@ -101,7 +101,7 @@ func (h *APIHandler) SubmitQuery(ctx context.Context, req SubmitQueryRequestObje
 }
 
 // GetQuery implements async query status endpoint.
-func (h *APIHandler) GetQuery(ctx context.Context, req GetQueryRequestObject) (GetQueryResponseObject, error) {
+func (h *APIHandler) GetQuery(ctx context.Context, req GenGetQueryRequest) (GenGetQueryResponse, error) {
 	job, err := h.lookupAsyncJob(ctx, req.QueryId)
 	if err != nil {
 		code := errorCodeFromError(err)
@@ -119,7 +119,7 @@ func (h *APIHandler) GetQuery(ctx context.Context, req GetQueryRequestObject) (G
 }
 
 // GetQueryResults returns a page of async query results.
-func (h *APIHandler) GetQueryResults(ctx context.Context, req GetQueryResultsRequestObject) (GetQueryResultsResponseObject, error) {
+func (h *APIHandler) GetQueryResults(ctx context.Context, req GenGetQueryResultsRequest) (GenGetQueryResultsResponse, error) {
 	job, err := h.lookupAsyncJob(ctx, req.QueryId)
 	if err != nil {
 		code := errorCodeFromError(err)
@@ -184,7 +184,7 @@ func (h *APIHandler) GetQueryResults(ctx context.Context, req GetQueryResultsReq
 }
 
 // CancelQuery cancels async query execution.
-func (h *APIHandler) CancelQuery(ctx context.Context, req CancelQueryRequestObject) (CancelQueryResponseObject, error) {
+func (h *APIHandler) CancelQuery(ctx context.Context, req GenCancelQueryRequest) (GenCancelQueryResponse, error) {
 	job, err := h.lookupAsyncJob(ctx, req.QueryId)
 	if err != nil {
 		code := errorCodeFromError(err)
@@ -220,7 +220,7 @@ func (h *APIHandler) CancelQuery(ctx context.Context, req CancelQueryRequestObje
 }
 
 // DeleteQuery deletes async query state.
-func (h *APIHandler) DeleteQuery(ctx context.Context, req DeleteQueryRequestObject) (DeleteQueryResponseObject, error) {
+func (h *APIHandler) DeleteQuery(ctx context.Context, req GenDeleteQueryRequest) (GenDeleteQueryResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 
@@ -280,7 +280,7 @@ func queryJobToAPI(job *domain.QueryJob) QueryJob {
 }
 
 // CreateManifest implements the endpoint for generating a table read manifest.
-func (h *APIHandler) CreateManifest(ctx context.Context, req CreateManifestRequestObject) (CreateManifestResponseObject, error) {
+func (h *APIHandler) CreateManifest(ctx context.Context, req GenCreateManifestRequest) (GenCreateManifestResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 

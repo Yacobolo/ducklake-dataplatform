@@ -26,7 +26,7 @@ type macroService interface {
 // === Macros ===
 
 // ListMacros implements the endpoint for listing SQL macros.
-func (h *APIHandler) ListMacros(ctx context.Context, req ListMacrosRequestObject) (ListMacrosResponseObject, error) {
+func (h *APIHandler) ListMacros(ctx context.Context, req GenListMacrosRequest) (GenListMacrosResponse, error) {
 	if isNilService(h.macros) {
 		empty := []Macro{}
 		return ListMacros200JSONResponse{
@@ -53,7 +53,7 @@ func (h *APIHandler) ListMacros(ctx context.Context, req ListMacrosRequestObject
 }
 
 // CreateMacro implements the endpoint for creating a new SQL macro.
-func (h *APIHandler) CreateMacro(ctx context.Context, req CreateMacroRequestObject) (CreateMacroResponseObject, error) {
+func (h *APIHandler) CreateMacro(ctx context.Context, req GenCreateMacroRequest) (GenCreateMacroResponse, error) {
 	domReq := domain.CreateMacroRequest{
 		Name: req.Body.Name,
 		Body: req.Body.Body,
@@ -111,7 +111,7 @@ func (h *APIHandler) CreateMacro(ctx context.Context, req CreateMacroRequestObje
 }
 
 // ListMacroRevisions implements the endpoint for listing macro revisions.
-func (h *APIHandler) ListMacroRevisions(ctx context.Context, req ListMacroRevisionsRequestObject) (ListMacroRevisionsResponseObject, error) {
+func (h *APIHandler) ListMacroRevisions(ctx context.Context, req GenListMacroRevisionsRequest) (GenListMacroRevisionsResponse, error) {
 	revisions, err := h.macros.ListRevisions(ctx, req.MacroName)
 	if err != nil {
 		switch {
@@ -132,7 +132,7 @@ func (h *APIHandler) ListMacroRevisions(ctx context.Context, req ListMacroRevisi
 }
 
 // DiffMacroRevisions implements the endpoint for comparing two macro revisions.
-func (h *APIHandler) DiffMacroRevisions(ctx context.Context, req DiffMacroRevisionsRequestObject) (DiffMacroRevisionsResponseObject, error) {
+func (h *APIHandler) DiffMacroRevisions(ctx context.Context, req GenDiffMacroRevisionsRequest) (GenDiffMacroRevisionsResponse, error) {
 	diff, err := h.macros.DiffRevisions(ctx, req.MacroName, int(req.Params.FromVersion), int(req.Params.ToVersion))
 	if err != nil {
 		switch {
@@ -200,7 +200,7 @@ func (h *APIHandler) DiffMacroRevisions(ctx context.Context, req DiffMacroRevisi
 }
 
 // GetMacroImpact implements the endpoint for retrieving reverse macro impact.
-func (h *APIHandler) GetMacroImpact(ctx context.Context, req GetMacroImpactRequestObject) (GetMacroImpactResponseObject, error) {
+func (h *APIHandler) GetMacroImpact(ctx context.Context, req GenGetMacroImpactRequest) (GenGetMacroImpactResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 
 	if _, err := h.macros.Get(ctx, req.MacroName); err != nil {
@@ -239,7 +239,7 @@ func (h *APIHandler) GetMacroImpact(ctx context.Context, req GetMacroImpactReque
 }
 
 // GetMacro implements the endpoint for retrieving a macro by name.
-func (h *APIHandler) GetMacro(ctx context.Context, req GetMacroRequestObject) (GetMacroResponseObject, error) {
+func (h *APIHandler) GetMacro(ctx context.Context, req GenGetMacroRequest) (GenGetMacroResponse, error) {
 	result, err := h.macros.Get(ctx, req.MacroName)
 	if err != nil {
 		switch {
@@ -256,7 +256,7 @@ func (h *APIHandler) GetMacro(ctx context.Context, req GetMacroRequestObject) (G
 }
 
 // UpdateMacro implements the endpoint for updating a SQL macro.
-func (h *APIHandler) UpdateMacro(ctx context.Context, req UpdateMacroRequestObject) (UpdateMacroResponseObject, error) {
+func (h *APIHandler) UpdateMacro(ctx context.Context, req GenUpdateMacroRequest) (GenUpdateMacroResponse, error) {
 	domReq := domain.UpdateMacroRequest{
 		Body:        req.Body.Body,
 		Description: req.Body.Description,
@@ -310,7 +310,7 @@ func (h *APIHandler) UpdateMacro(ctx context.Context, req UpdateMacroRequestObje
 }
 
 // DeleteMacro implements the endpoint for deleting a SQL macro.
-func (h *APIHandler) DeleteMacro(ctx context.Context, req DeleteMacroRequestObject) (DeleteMacroResponseObject, error) {
+func (h *APIHandler) DeleteMacro(ctx context.Context, req GenDeleteMacroRequest) (GenDeleteMacroResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.macros.Delete(ctx, principal, req.MacroName); err != nil {

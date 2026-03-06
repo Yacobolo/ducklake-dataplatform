@@ -94,14 +94,14 @@ func TestHandler_ListViews(t *testing.T) {
 	tests := []struct {
 		name     string
 		svcFn    func(ctx context.Context, catalogName string, schemaName string, page domain.PageRequest) ([]domain.ViewDetail, int64, error)
-		assertFn func(t *testing.T, resp ListViewsResponseObject, err error)
+		assertFn func(t *testing.T, resp GenListViewsResponse, err error)
 	}{
 		{
 			name: "happy path returns 200 with results",
 			svcFn: func(_ context.Context, _ string, _ string, _ domain.PageRequest) ([]domain.ViewDetail, int64, error) {
 				return []domain.ViewDetail{sampleViewDetail()}, 1, nil
 			},
-			assertFn: func(t *testing.T, resp ListViewsResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListViewsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(ListViews200JSONResponse)
@@ -116,7 +116,7 @@ func TestHandler_ListViews(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, schemaName string, _ domain.PageRequest) ([]domain.ViewDetail, int64, error) {
 				return nil, 0, domain.ErrNotFound("schema %s not found", schemaName)
 			},
-			assertFn: func(t *testing.T, resp ListViewsResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListViewsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(ListViews404JSONResponse)
@@ -129,7 +129,7 @@ func TestHandler_ListViews(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _ string, _ domain.PageRequest) ([]domain.ViewDetail, int64, error) {
 				return nil, 0, assert.AnError
 			},
-			assertFn: func(t *testing.T, resp ListViewsResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListViewsResponse, err error) {
 				t.Helper()
 				require.Error(t, err)
 			},
@@ -141,7 +141,7 @@ func TestHandler_ListViews(t *testing.T) {
 			t.Parallel()
 			svc := &mockViewService{listViewsFn: tt.svcFn}
 			handler := &APIHandler{views: svc}
-			resp, err := handler.ListViews(viewTestCtx(), ListViewsRequestObject{
+			resp, err := handler.ListViews(viewTestCtx(), GenListViewsRequest{
 				CatalogName: CatalogName("test-catalog"),
 				SchemaName:  "test-schema",
 				Params:      ListViewsParams{},
@@ -156,18 +156,18 @@ func TestHandler_CreateView(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		body     CreateViewJSONRequestBody
+		body     GenCreateViewJSONBody
 		svcFn    func(ctx context.Context, catalogName string, principal string, schemaName string, req domain.CreateViewRequest) (*domain.ViewDetail, error)
-		assertFn func(t *testing.T, resp CreateViewResponseObject, err error)
+		assertFn func(t *testing.T, resp GenCreateViewResponse, err error)
 	}{
 		{
 			name: "happy path returns 201",
-			body: CreateViewJSONRequestBody{Name: "my-view", ViewDefinition: "SELECT 1"},
+			body: GenCreateViewJSONBody{Name: "my-view", ViewDefinition: "SELECT 1"},
 			svcFn: func(_ context.Context, _ string, _ string, _ string, _ domain.CreateViewRequest) (*domain.ViewDetail, error) {
 				v := sampleViewDetail()
 				return &v, nil
 			},
-			assertFn: func(t *testing.T, resp CreateViewResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateViewResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				created, ok := resp.(CreateView201JSONResponse)
@@ -178,11 +178,11 @@ func TestHandler_CreateView(t *testing.T) {
 		},
 		{
 			name: "validation error returns 400",
-			body: CreateViewJSONRequestBody{Name: "", ViewDefinition: ""},
+			body: GenCreateViewJSONBody{Name: "", ViewDefinition: ""},
 			svcFn: func(_ context.Context, _ string, _ string, _ string, _ domain.CreateViewRequest) (*domain.ViewDetail, error) {
 				return nil, domain.ErrValidation("view name is required")
 			},
-			assertFn: func(t *testing.T, resp CreateViewResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateViewResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				badReq, ok := resp.(CreateView400JSONResponse)
@@ -193,11 +193,11 @@ func TestHandler_CreateView(t *testing.T) {
 		},
 		{
 			name: "access denied returns 403",
-			body: CreateViewJSONRequestBody{Name: "v", ViewDefinition: "SELECT 1"},
+			body: GenCreateViewJSONBody{Name: "v", ViewDefinition: "SELECT 1"},
 			svcFn: func(_ context.Context, _ string, _ string, _ string, _ domain.CreateViewRequest) (*domain.ViewDetail, error) {
 				return nil, domain.ErrAccessDenied("not allowed")
 			},
-			assertFn: func(t *testing.T, resp CreateViewResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateViewResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				forbidden, ok := resp.(CreateView403JSONResponse)
@@ -207,11 +207,11 @@ func TestHandler_CreateView(t *testing.T) {
 		},
 		{
 			name: "conflict error returns 409",
-			body: CreateViewJSONRequestBody{Name: "my-view", ViewDefinition: "SELECT 1"},
+			body: GenCreateViewJSONBody{Name: "my-view", ViewDefinition: "SELECT 1"},
 			svcFn: func(_ context.Context, _ string, _ string, _ string, _ domain.CreateViewRequest) (*domain.ViewDetail, error) {
 				return nil, domain.ErrConflict("view my-view already exists")
 			},
-			assertFn: func(t *testing.T, resp CreateViewResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateViewResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				conflict, ok := resp.(CreateView409JSONResponse)
@@ -222,11 +222,11 @@ func TestHandler_CreateView(t *testing.T) {
 		},
 		{
 			name: "unknown error falls through to 400",
-			body: CreateViewJSONRequestBody{Name: "fail", ViewDefinition: "SELECT 1"},
+			body: GenCreateViewJSONBody{Name: "fail", ViewDefinition: "SELECT 1"},
 			svcFn: func(_ context.Context, _ string, _ string, _ string, _ domain.CreateViewRequest) (*domain.ViewDetail, error) {
 				return nil, assert.AnError
 			},
-			assertFn: func(t *testing.T, resp CreateViewResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateViewResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				badReq, ok := resp.(CreateView400JSONResponse)
@@ -242,7 +242,7 @@ func TestHandler_CreateView(t *testing.T) {
 			svc := &mockViewService{createViewFn: tt.svcFn}
 			handler := &APIHandler{views: svc}
 			body := tt.body
-			resp, err := handler.CreateView(viewTestCtx(), CreateViewRequestObject{
+			resp, err := handler.CreateView(viewTestCtx(), GenCreateViewRequest{
 				CatalogName: CatalogName("test-catalog"),
 				SchemaName:  "test-schema",
 				Body:        &body,
@@ -259,7 +259,7 @@ func TestHandler_GetView(t *testing.T) {
 		name     string
 		viewName string
 		svcFn    func(ctx context.Context, catalogName string, schemaName, viewName string) (*domain.ViewDetail, error)
-		assertFn func(t *testing.T, resp GetViewResponseObject, err error)
+		assertFn func(t *testing.T, resp GenGetViewResponse, err error)
 	}{
 		{
 			name:     "happy path returns 200",
@@ -268,7 +268,7 @@ func TestHandler_GetView(t *testing.T) {
 				v := sampleViewDetail()
 				return &v, nil
 			},
-			assertFn: func(t *testing.T, resp GetViewResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenGetViewResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(GetView200JSONResponse)
@@ -282,7 +282,7 @@ func TestHandler_GetView(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _, viewName string) (*domain.ViewDetail, error) {
 				return nil, domain.ErrNotFound("view %s not found", viewName)
 			},
-			assertFn: func(t *testing.T, resp GetViewResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenGetViewResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(GetView404JSONResponse)
@@ -298,7 +298,7 @@ func TestHandler_GetView(t *testing.T) {
 			t.Parallel()
 			svc := &mockViewService{getViewFn: tt.svcFn}
 			handler := &APIHandler{views: svc}
-			resp, err := handler.GetView(viewTestCtx(), GetViewRequestObject{
+			resp, err := handler.GetView(viewTestCtx(), GenGetViewRequest{
 				CatalogName: CatalogName("test-catalog"),
 				SchemaName:  "test-schema",
 				ViewName:    tt.viewName,
@@ -314,20 +314,20 @@ func TestHandler_UpdateView(t *testing.T) {
 	tests := []struct {
 		name     string
 		viewName string
-		body     UpdateViewJSONRequestBody
+		body     GenUpdateViewJSONBody
 		svcFn    func(ctx context.Context, catalogName string, principal string, schemaName, viewName string, req domain.UpdateViewRequest) (*domain.ViewDetail, error)
-		assertFn func(t *testing.T, resp UpdateViewResponseObject, err error)
+		assertFn func(t *testing.T, resp GenUpdateViewResponse, err error)
 	}{
 		{
 			name:     "happy path returns 200",
 			viewName: "my-view",
-			body:     UpdateViewJSONRequestBody{Comment: viewStrPtr("updated comment")},
+			body:     GenUpdateViewJSONBody{Comment: viewStrPtr("updated comment")},
 			svcFn: func(_ context.Context, _ string, _ string, _, _ string, _ domain.UpdateViewRequest) (*domain.ViewDetail, error) {
 				v := sampleViewDetail()
 				v.Comment = viewStrPtr("updated comment")
 				return &v, nil
 			},
-			assertFn: func(t *testing.T, resp UpdateViewResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenUpdateViewResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(UpdateView200JSONResponse)
@@ -338,11 +338,11 @@ func TestHandler_UpdateView(t *testing.T) {
 		{
 			name:     "access denied returns 403",
 			viewName: "my-view",
-			body:     UpdateViewJSONRequestBody{Comment: viewStrPtr("x")},
+			body:     GenUpdateViewJSONBody{Comment: viewStrPtr("x")},
 			svcFn: func(_ context.Context, _ string, _ string, _, _ string, _ domain.UpdateViewRequest) (*domain.ViewDetail, error) {
 				return nil, domain.ErrAccessDenied("not allowed")
 			},
-			assertFn: func(t *testing.T, resp UpdateViewResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenUpdateViewResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				forbidden, ok := resp.(UpdateView403JSONResponse)
@@ -353,11 +353,11 @@ func TestHandler_UpdateView(t *testing.T) {
 		{
 			name:     "not found returns 404",
 			viewName: "nonexistent",
-			body:     UpdateViewJSONRequestBody{Comment: viewStrPtr("x")},
+			body:     GenUpdateViewJSONBody{Comment: viewStrPtr("x")},
 			svcFn: func(_ context.Context, _ string, _ string, _, viewName string, _ domain.UpdateViewRequest) (*domain.ViewDetail, error) {
 				return nil, domain.ErrNotFound("view %s not found", viewName)
 			},
-			assertFn: func(t *testing.T, resp UpdateViewResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenUpdateViewResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(UpdateView404JSONResponse)
@@ -373,7 +373,7 @@ func TestHandler_UpdateView(t *testing.T) {
 			svc := &mockViewService{updateViewFn: tt.svcFn}
 			handler := &APIHandler{views: svc}
 			body := tt.body
-			resp, err := handler.UpdateView(viewTestCtx(), UpdateViewRequestObject{
+			resp, err := handler.UpdateView(viewTestCtx(), GenUpdateViewRequest{
 				CatalogName: CatalogName("test-catalog"),
 				SchemaName:  "test-schema",
 				ViewName:    tt.viewName,
@@ -391,7 +391,7 @@ func TestHandler_DeleteView(t *testing.T) {
 		name     string
 		viewName string
 		svcFn    func(ctx context.Context, catalogName string, principal string, schemaName, viewName string) error
-		assertFn func(t *testing.T, resp DeleteViewResponseObject, err error)
+		assertFn func(t *testing.T, resp GenDeleteViewResponse, err error)
 	}{
 		{
 			name:     "happy path returns 204",
@@ -399,7 +399,7 @@ func TestHandler_DeleteView(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _ string, _, _ string) error {
 				return nil
 			},
-			assertFn: func(t *testing.T, resp DeleteViewResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeleteViewResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				_, ok := resp.(DeleteView204Response)
@@ -412,7 +412,7 @@ func TestHandler_DeleteView(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _ string, _, _ string) error {
 				return domain.ErrAccessDenied("not allowed")
 			},
-			assertFn: func(t *testing.T, resp DeleteViewResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeleteViewResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				forbidden, ok := resp.(DeleteView403JSONResponse)
@@ -426,7 +426,7 @@ func TestHandler_DeleteView(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _ string, _, viewName string) error {
 				return domain.ErrNotFound("view %s not found", viewName)
 			},
-			assertFn: func(t *testing.T, resp DeleteViewResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeleteViewResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(DeleteView404JSONResponse)
@@ -441,7 +441,7 @@ func TestHandler_DeleteView(t *testing.T) {
 			t.Parallel()
 			svc := &mockViewService{deleteViewFn: tt.svcFn}
 			handler := &APIHandler{views: svc}
-			resp, err := handler.DeleteView(viewTestCtx(), DeleteViewRequestObject{
+			resp, err := handler.DeleteView(viewTestCtx(), GenDeleteViewRequest{
 				CatalogName: CatalogName("test-catalog"),
 				SchemaName:  "test-schema",
 				ViewName:    tt.viewName,

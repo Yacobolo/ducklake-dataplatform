@@ -43,7 +43,7 @@ type gitRepoService interface {
 // === Notebooks ===
 
 // ListNotebooks implements the endpoint for listing notebooks.
-func (h *APIHandler) ListNotebooks(ctx context.Context, req ListNotebooksRequestObject) (ListNotebooksResponseObject, error) {
+func (h *APIHandler) ListNotebooks(ctx context.Context, req GenListNotebooksRequest) (GenListNotebooksResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	nbs, total, err := h.notebooks.ListNotebooks(ctx, req.Params.Owner, page)
 	if err != nil {
@@ -62,7 +62,7 @@ func (h *APIHandler) ListNotebooks(ctx context.Context, req ListNotebooksRequest
 }
 
 // CreateNotebook implements the endpoint for creating a notebook.
-func (h *APIHandler) CreateNotebook(ctx context.Context, req CreateNotebookRequestObject) (CreateNotebookResponseObject, error) {
+func (h *APIHandler) CreateNotebook(ctx context.Context, req GenCreateNotebookRequest) (GenCreateNotebookResponse, error) {
 	domReq := domain.CreateNotebookRequest{
 		Name:        req.Body.Name,
 		Description: req.Body.Description,
@@ -89,7 +89,7 @@ func (h *APIHandler) CreateNotebook(ctx context.Context, req CreateNotebookReque
 }
 
 // GetNotebook implements the endpoint for retrieving a notebook with its cells.
-func (h *APIHandler) GetNotebook(ctx context.Context, req GetNotebookRequestObject) (GetNotebookResponseObject, error) {
+func (h *APIHandler) GetNotebook(ctx context.Context, req GenGetNotebookRequest) (GenGetNotebookResponse, error) {
 	nb, cells, err := h.notebooks.GetNotebook(ctx, req.NotebookId)
 	if err != nil {
 		switch {
@@ -112,7 +112,7 @@ func (h *APIHandler) GetNotebook(ctx context.Context, req GetNotebookRequestObje
 }
 
 // UpdateNotebook implements the endpoint for updating notebook metadata.
-func (h *APIHandler) UpdateNotebook(ctx context.Context, req UpdateNotebookRequestObject) (UpdateNotebookResponseObject, error) {
+func (h *APIHandler) UpdateNotebook(ctx context.Context, req GenUpdateNotebookRequest) (GenUpdateNotebookResponse, error) {
 	domReq := domain.UpdateNotebookRequest{
 		Name:        req.Body.Name,
 		Description: req.Body.Description,
@@ -142,7 +142,7 @@ func (h *APIHandler) UpdateNotebook(ctx context.Context, req UpdateNotebookReque
 }
 
 // DeleteNotebook implements the endpoint for deleting a notebook.
-func (h *APIHandler) DeleteNotebook(ctx context.Context, req DeleteNotebookRequestObject) (DeleteNotebookResponseObject, error) {
+func (h *APIHandler) DeleteNotebook(ctx context.Context, req GenDeleteNotebookRequest) (GenDeleteNotebookResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	isAdmin := cp.IsAdmin
@@ -163,7 +163,7 @@ func (h *APIHandler) DeleteNotebook(ctx context.Context, req DeleteNotebookReque
 // === Cells ===
 
 // CreateCell implements the endpoint for adding a cell to a notebook.
-func (h *APIHandler) CreateCell(ctx context.Context, req CreateCellRequestObject) (CreateCellResponseObject, error) {
+func (h *APIHandler) CreateCell(ctx context.Context, req GenCreateCellRequest) (GenCreateCellResponse, error) {
 	domReq := domain.CreateCellRequest{
 		CellType: domain.CellType(req.Body.CellType),
 	}
@@ -199,7 +199,7 @@ func (h *APIHandler) CreateCell(ctx context.Context, req CreateCellRequestObject
 }
 
 // UpdateCell implements the endpoint for updating a cell.
-func (h *APIHandler) UpdateCell(ctx context.Context, req UpdateCellRequestObject) (UpdateCellResponseObject, error) {
+func (h *APIHandler) UpdateCell(ctx context.Context, req GenUpdateCellRequest) (GenUpdateCellResponse, error) {
 	domReq := domain.UpdateCellRequest{
 		Content: req.Body.Content,
 	}
@@ -232,7 +232,7 @@ func (h *APIHandler) UpdateCell(ctx context.Context, req UpdateCellRequestObject
 }
 
 // DeleteCell implements the endpoint for deleting a cell.
-func (h *APIHandler) DeleteCell(ctx context.Context, req DeleteCellRequestObject) (DeleteCellResponseObject, error) {
+func (h *APIHandler) DeleteCell(ctx context.Context, req GenDeleteCellRequest) (GenDeleteCellResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	isAdmin := cp.IsAdmin
@@ -251,7 +251,7 @@ func (h *APIHandler) DeleteCell(ctx context.Context, req DeleteCellRequestObject
 }
 
 // ReorderCells implements the endpoint for reordering cells in a notebook.
-func (h *APIHandler) ReorderCells(ctx context.Context, req ReorderCellsRequestObject) (ReorderCellsResponseObject, error) {
+func (h *APIHandler) ReorderCells(ctx context.Context, req GenReorderCellsRequest) (GenReorderCellsResponse, error) {
 	domReq := domain.ReorderCellsRequest{
 		CellIDs: req.Body.CellIds,
 	}
@@ -287,7 +287,7 @@ func (h *APIHandler) ReorderCells(ctx context.Context, req ReorderCellsRequestOb
 // === Sessions ===
 
 // CreateNotebookSession implements the endpoint for starting a notebook session.
-func (h *APIHandler) CreateNotebookSession(ctx context.Context, req CreateNotebookSessionRequestObject) (CreateNotebookSessionResponseObject, error) {
+func (h *APIHandler) CreateNotebookSession(ctx context.Context, req GenCreateNotebookSessionRequest) (GenCreateNotebookSessionResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 
@@ -307,7 +307,7 @@ func (h *APIHandler) CreateNotebookSession(ctx context.Context, req CreateNotebo
 }
 
 // CloseNotebookSession implements the endpoint for closing a notebook session.
-func (h *APIHandler) CloseNotebookSession(ctx context.Context, req CloseNotebookSessionRequestObject) (CloseNotebookSessionResponseObject, error) {
+func (h *APIHandler) CloseNotebookSession(ctx context.Context, req GenCloseNotebookSessionRequest) (GenCloseNotebookSessionResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.sessions.CloseSession(ctx, req.SessionId, principal); err != nil {
@@ -322,7 +322,7 @@ func (h *APIHandler) CloseNotebookSession(ctx context.Context, req CloseNotebook
 }
 
 // ExecuteCell implements the endpoint for executing a single cell in a session.
-func (h *APIHandler) ExecuteCell(ctx context.Context, req ExecuteCellRequestObject) (ExecuteCellResponseObject, error) {
+func (h *APIHandler) ExecuteCell(ctx context.Context, req GenExecuteCellRequest) (GenExecuteCellResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	result, err := h.sessions.ExecuteCell(ctx, req.SessionId, req.CellId, principal)
@@ -345,7 +345,7 @@ func (h *APIHandler) ExecuteCell(ctx context.Context, req ExecuteCellRequestObje
 }
 
 // RunAllCells implements the endpoint for executing all SQL cells synchronously.
-func (h *APIHandler) RunAllCells(ctx context.Context, req RunAllCellsRequestObject) (RunAllCellsResponseObject, error) {
+func (h *APIHandler) RunAllCells(ctx context.Context, req GenRunAllCellsRequest) (GenRunAllCellsResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	result, err := h.sessions.RunAll(ctx, req.SessionId, principal)
@@ -364,7 +364,7 @@ func (h *APIHandler) RunAllCells(ctx context.Context, req RunAllCellsRequestObje
 }
 
 // RunAllCellsAsync implements the endpoint for starting async execution of all cells.
-func (h *APIHandler) RunAllCellsAsync(ctx context.Context, req RunAllCellsAsyncRequestObject) (RunAllCellsAsyncResponseObject, error) {
+func (h *APIHandler) RunAllCellsAsync(ctx context.Context, req GenRunAllCellsAsyncRequest) (GenRunAllCellsAsyncResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	result, err := h.sessions.RunAllAsync(ctx, req.SessionId, principal)
@@ -385,7 +385,7 @@ func (h *APIHandler) RunAllCellsAsync(ctx context.Context, req RunAllCellsAsyncR
 // === Jobs ===
 
 // ListNotebookJobs implements the endpoint for listing jobs for a notebook.
-func (h *APIHandler) ListNotebookJobs(ctx context.Context, req ListNotebookJobsRequestObject) (ListNotebookJobsResponseObject, error) {
+func (h *APIHandler) ListNotebookJobs(ctx context.Context, req GenListNotebookJobsRequest) (GenListNotebookJobsResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	jobs, total, err := h.sessions.ListJobs(ctx, req.NotebookId, page)
 	if err != nil {
@@ -409,7 +409,7 @@ func (h *APIHandler) ListNotebookJobs(ctx context.Context, req ListNotebookJobsR
 }
 
 // GetNotebookJob implements the endpoint for getting job status.
-func (h *APIHandler) GetNotebookJob(ctx context.Context, req GetNotebookJobRequestObject) (GetNotebookJobResponseObject, error) {
+func (h *APIHandler) GetNotebookJob(ctx context.Context, req GenGetNotebookJobRequest) (GenGetNotebookJobResponse, error) {
 	result, err := h.sessions.GetJob(ctx, req.JobId)
 	if err != nil {
 		switch {
@@ -428,7 +428,7 @@ func (h *APIHandler) GetNotebookJob(ctx context.Context, req GetNotebookJobReque
 // === Git Repos ===
 
 // ListGitRepos implements the endpoint for listing Git repositories.
-func (h *APIHandler) ListGitRepos(ctx context.Context, req ListGitReposRequestObject) (ListGitReposResponseObject, error) {
+func (h *APIHandler) ListGitRepos(ctx context.Context, req GenListGitReposRequest) (GenListGitReposResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	repos, total, err := h.gitRepos.ListGitRepos(ctx, page)
 	if err != nil {
@@ -447,7 +447,7 @@ func (h *APIHandler) ListGitRepos(ctx context.Context, req ListGitReposRequestOb
 }
 
 // CreateGitRepo implements the endpoint for registering a Git repository.
-func (h *APIHandler) CreateGitRepo(ctx context.Context, req CreateGitRepoRequestObject) (CreateGitRepoResponseObject, error) {
+func (h *APIHandler) CreateGitRepo(ctx context.Context, req GenCreateGitRepoRequest) (GenCreateGitRepoResponse, error) {
 	domReq := domain.CreateGitRepoRequest{
 		URL:       req.Body.Url,
 		Branch:    req.Body.Branch,
@@ -477,7 +477,7 @@ func (h *APIHandler) CreateGitRepo(ctx context.Context, req CreateGitRepoRequest
 }
 
 // GetGitRepo implements the endpoint for retrieving a Git repository.
-func (h *APIHandler) GetGitRepo(ctx context.Context, req GetGitRepoRequestObject) (GetGitRepoResponseObject, error) {
+func (h *APIHandler) GetGitRepo(ctx context.Context, req GenGetGitRepoRequest) (GenGetGitRepoResponse, error) {
 	result, err := h.gitRepos.GetGitRepo(ctx, req.GitRepoId)
 	if err != nil {
 		switch {
@@ -494,7 +494,7 @@ func (h *APIHandler) GetGitRepo(ctx context.Context, req GetGitRepoRequestObject
 }
 
 // DeleteGitRepo implements the endpoint for deleting a Git repository.
-func (h *APIHandler) DeleteGitRepo(ctx context.Context, req DeleteGitRepoRequestObject) (DeleteGitRepoResponseObject, error) {
+func (h *APIHandler) DeleteGitRepo(ctx context.Context, req GenDeleteGitRepoRequest) (GenDeleteGitRepoResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	isAdmin := cp.IsAdmin
@@ -511,7 +511,7 @@ func (h *APIHandler) DeleteGitRepo(ctx context.Context, req DeleteGitRepoRequest
 }
 
 // SyncGitRepo implements the endpoint for triggering a Git sync.
-func (h *APIHandler) SyncGitRepo(ctx context.Context, req SyncGitRepoRequestObject) (SyncGitRepoResponseObject, error) {
+func (h *APIHandler) SyncGitRepo(ctx context.Context, req GenSyncGitRepoRequest) (GenSyncGitRepoResponse, error) {
 	result, err := h.gitRepos.SyncGitRepo(ctx, req.GitRepoId)
 	if err != nil {
 		switch {

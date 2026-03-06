@@ -19,7 +19,7 @@ type viewService interface {
 // === Views ===
 
 // ListViews implements the endpoint for listing views in a schema.
-func (h *APIHandler) ListViews(ctx context.Context, request ListViewsRequestObject) (ListViewsResponseObject, error) {
+func (h *APIHandler) ListViews(ctx context.Context, request GenListViewsRequest) (GenListViewsResponse, error) {
 	page := pageFromParams(request.Params.MaxResults, request.Params.PageToken)
 	views, total, err := h.views.ListViews(ctx, string(request.CatalogName), request.SchemaName, page)
 	if err != nil {
@@ -44,7 +44,7 @@ func (h *APIHandler) ListViews(ctx context.Context, request ListViewsRequestObje
 }
 
 // CreateView implements the endpoint for creating a new view in a schema.
-func (h *APIHandler) CreateView(ctx context.Context, request CreateViewRequestObject) (CreateViewResponseObject, error) {
+func (h *APIHandler) CreateView(ctx context.Context, request GenCreateViewRequest) (GenCreateViewResponse, error) {
 	domReq := domain.CreateViewRequest{
 		Name:           request.Body.Name,
 		ViewDefinition: request.Body.ViewDefinition,
@@ -74,7 +74,7 @@ func (h *APIHandler) CreateView(ctx context.Context, request CreateViewRequestOb
 }
 
 // GetView implements the endpoint for retrieving a view by name.
-func (h *APIHandler) GetView(ctx context.Context, request GetViewRequestObject) (GetViewResponseObject, error) {
+func (h *APIHandler) GetView(ctx context.Context, request GenGetViewRequest) (GenGetViewResponse, error) {
 	result, err := h.views.GetView(ctx, string(request.CatalogName), request.SchemaName, request.ViewName)
 	if err != nil {
 		switch {
@@ -91,7 +91,7 @@ func (h *APIHandler) GetView(ctx context.Context, request GetViewRequestObject) 
 }
 
 // UpdateView implements the endpoint for updating a view by name.
-func (h *APIHandler) UpdateView(ctx context.Context, request UpdateViewRequestObject) (UpdateViewResponseObject, error) {
+func (h *APIHandler) UpdateView(ctx context.Context, request GenUpdateViewRequest) (GenUpdateViewResponse, error) {
 	domReq := domain.UpdateViewRequest{}
 	if request.Body.Comment != nil {
 		domReq.Comment = request.Body.Comment
@@ -122,7 +122,7 @@ func (h *APIHandler) UpdateView(ctx context.Context, request UpdateViewRequestOb
 }
 
 // DeleteView implements the endpoint for deleting a view by name.
-func (h *APIHandler) DeleteView(ctx context.Context, request DeleteViewRequestObject) (DeleteViewResponseObject, error) {
+func (h *APIHandler) DeleteView(ctx context.Context, request GenDeleteViewRequest) (GenDeleteViewResponse, error) {
 	principal := principalFromCtx(ctx)
 	if err := h.views.DeleteView(ctx, string(request.CatalogName), principal, request.SchemaName, request.ViewName); err != nil {
 		switch {

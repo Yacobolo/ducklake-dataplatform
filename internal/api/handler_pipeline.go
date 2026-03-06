@@ -27,7 +27,7 @@ type pipelineService interface {
 // === Pipelines ===
 
 // ListPipelines implements the endpoint for listing all pipelines.
-func (h *APIHandler) ListPipelines(ctx context.Context, req ListPipelinesRequestObject) (ListPipelinesResponseObject, error) {
+func (h *APIHandler) ListPipelines(ctx context.Context, req GenListPipelinesRequest) (GenListPipelinesResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	pipelines, total, err := h.pipelines.ListPipelines(ctx, page)
 	if err != nil {
@@ -46,7 +46,7 @@ func (h *APIHandler) ListPipelines(ctx context.Context, req ListPipelinesRequest
 }
 
 // CreatePipeline implements the endpoint for creating a new pipeline.
-func (h *APIHandler) CreatePipeline(ctx context.Context, req CreatePipelineRequestObject) (CreatePipelineResponseObject, error) {
+func (h *APIHandler) CreatePipeline(ctx context.Context, req GenCreatePipelineRequest) (GenCreatePipelineResponse, error) {
 	domReq := domain.CreatePipelineRequest{
 		Name: req.Body.Name,
 	}
@@ -85,7 +85,7 @@ func (h *APIHandler) CreatePipeline(ctx context.Context, req CreatePipelineReque
 }
 
 // GetPipeline implements the endpoint for retrieving a pipeline by name.
-func (h *APIHandler) GetPipeline(ctx context.Context, req GetPipelineRequestObject) (GetPipelineResponseObject, error) {
+func (h *APIHandler) GetPipeline(ctx context.Context, req GenGetPipelineRequest) (GenGetPipelineResponse, error) {
 	result, err := h.pipelines.GetPipeline(ctx, req.PipelineName)
 	if err != nil {
 		switch {
@@ -102,7 +102,7 @@ func (h *APIHandler) GetPipeline(ctx context.Context, req GetPipelineRequestObje
 }
 
 // UpdatePipeline implements the endpoint for updating a pipeline.
-func (h *APIHandler) UpdatePipeline(ctx context.Context, req UpdatePipelineRequestObject) (UpdatePipelineResponseObject, error) {
+func (h *APIHandler) UpdatePipeline(ctx context.Context, req GenUpdatePipelineRequest) (GenUpdatePipelineResponse, error) {
 	domReq := domain.UpdatePipelineRequest{
 		Description:  req.Body.Description,
 		ScheduleCron: req.Body.ScheduleCron,
@@ -133,7 +133,7 @@ func (h *APIHandler) UpdatePipeline(ctx context.Context, req UpdatePipelineReque
 }
 
 // DeletePipeline implements the endpoint for deleting a pipeline.
-func (h *APIHandler) DeletePipeline(ctx context.Context, req DeletePipelineRequestObject) (DeletePipelineResponseObject, error) {
+func (h *APIHandler) DeletePipeline(ctx context.Context, req GenDeletePipelineRequest) (GenDeletePipelineResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.pipelines.DeletePipeline(ctx, principal, req.PipelineName); err != nil {
@@ -154,7 +154,7 @@ func (h *APIHandler) DeletePipeline(ctx context.Context, req DeletePipelineReque
 // === Pipeline Jobs ===
 
 // ListPipelineJobs implements the endpoint for listing jobs in a pipeline.
-func (h *APIHandler) ListPipelineJobs(ctx context.Context, req ListPipelineJobsRequestObject) (ListPipelineJobsResponseObject, error) {
+func (h *APIHandler) ListPipelineJobs(ctx context.Context, req GenListPipelineJobsRequest) (GenListPipelineJobsResponse, error) {
 	jobs, err := h.pipelines.ListJobs(ctx, req.PipelineName)
 	if err != nil {
 		switch {
@@ -176,7 +176,7 @@ func (h *APIHandler) ListPipelineJobs(ctx context.Context, req ListPipelineJobsR
 }
 
 // CreatePipelineJob implements the endpoint for creating a job in a pipeline.
-func (h *APIHandler) CreatePipelineJob(ctx context.Context, req CreatePipelineJobRequestObject) (CreatePipelineJobResponseObject, error) {
+func (h *APIHandler) CreatePipelineJob(ctx context.Context, req GenCreatePipelineJobRequest) (GenCreatePipelineJobResponse, error) {
 	domReq := domain.CreatePipelineJobRequest{
 		Name: req.Body.Name,
 	}
@@ -229,7 +229,7 @@ func (h *APIHandler) CreatePipelineJob(ctx context.Context, req CreatePipelineJo
 }
 
 // DeletePipelineJob implements the endpoint for deleting a pipeline job.
-func (h *APIHandler) DeletePipelineJob(ctx context.Context, req DeletePipelineJobRequestObject) (DeletePipelineJobResponseObject, error) {
+func (h *APIHandler) DeletePipelineJob(ctx context.Context, req GenDeletePipelineJobRequest) (GenDeletePipelineJobResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.pipelines.DeleteJob(ctx, principal, req.PipelineName, req.JobId); err != nil {
@@ -250,7 +250,7 @@ func (h *APIHandler) DeletePipelineJob(ctx context.Context, req DeletePipelineJo
 // === Pipeline Runs ===
 
 // TriggerPipelineRun implements the endpoint for triggering a pipeline run.
-func (h *APIHandler) TriggerPipelineRun(ctx context.Context, req TriggerPipelineRunRequestObject) (TriggerPipelineRunResponseObject, error) {
+func (h *APIHandler) TriggerPipelineRun(ctx context.Context, req GenTriggerPipelineRunRequest) (GenTriggerPipelineRunResponse, error) {
 	var params map[string]string
 	if req.Body != nil && req.Body.Parameters != nil {
 		params = *req.Body.Parameters
@@ -280,7 +280,7 @@ func (h *APIHandler) TriggerPipelineRun(ctx context.Context, req TriggerPipeline
 }
 
 // ListPipelineRuns implements the endpoint for listing runs of a pipeline.
-func (h *APIHandler) ListPipelineRuns(ctx context.Context, req ListPipelineRunsRequestObject) (ListPipelineRunsResponseObject, error) {
+func (h *APIHandler) ListPipelineRuns(ctx context.Context, req GenListPipelineRunsRequest) (GenListPipelineRunsResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	filter := domain.PipelineRunFilter{
 		Page: page,
@@ -312,7 +312,7 @@ func (h *APIHandler) ListPipelineRuns(ctx context.Context, req ListPipelineRunsR
 }
 
 // GetPipelineRun implements the endpoint for retrieving a pipeline run.
-func (h *APIHandler) GetPipelineRun(ctx context.Context, req GetPipelineRunRequestObject) (GetPipelineRunResponseObject, error) {
+func (h *APIHandler) GetPipelineRun(ctx context.Context, req GenGetPipelineRunRequest) (GenGetPipelineRunResponse, error) {
 	result, err := h.pipelines.GetRun(ctx, req.RunId)
 	if err != nil {
 		switch {
@@ -329,7 +329,7 @@ func (h *APIHandler) GetPipelineRun(ctx context.Context, req GetPipelineRunReque
 }
 
 // CancelPipelineRun implements the endpoint for cancelling a pipeline run.
-func (h *APIHandler) CancelPipelineRun(ctx context.Context, req CancelPipelineRunRequestObject) (CancelPipelineRunResponseObject, error) {
+func (h *APIHandler) CancelPipelineRun(ctx context.Context, req GenCancelPipelineRunRequest) (GenCancelPipelineRunResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.pipelines.CancelRun(ctx, principal, req.RunId); err != nil {
@@ -361,7 +361,7 @@ func (h *APIHandler) CancelPipelineRun(ctx context.Context, req CancelPipelineRu
 // === Pipeline Job Runs ===
 
 // ListPipelineJobRuns implements the endpoint for listing job runs of a pipeline run.
-func (h *APIHandler) ListPipelineJobRuns(ctx context.Context, req ListPipelineJobRunsRequestObject) (ListPipelineJobRunsResponseObject, error) {
+func (h *APIHandler) ListPipelineJobRuns(ctx context.Context, req GenListPipelineJobRunsRequest) (GenListPipelineJobRunsResponse, error) {
 	jobRuns, err := h.pipelines.ListJobRuns(ctx, req.RunId)
 	if err != nil {
 		switch {

@@ -61,13 +61,13 @@ func TestHandler_CreateUploadUrl(t *testing.T) {
 	tests := []struct {
 		name     string
 		svc      ingestionService // nil tests the nil-check path
-		body     CreateUploadUrlJSONRequestBody
+		body     GenCreateUploadUrlJSONBody
 		svcFn    func(ctx context.Context, principal string, catalogName string, schemaName, tableName string, filename *string) (*domain.UploadURLResult, error)
-		assertFn func(t *testing.T, resp CreateUploadUrlResponseObject, err error)
+		assertFn func(t *testing.T, resp GenCreateUploadUrlResponse, err error)
 	}{
 		{
 			name: "happy path returns 200",
-			body: CreateUploadUrlJSONRequestBody{Filename: ingestionStrPtr("data.csv")},
+			body: GenCreateUploadUrlJSONBody{Filename: ingestionStrPtr("data.csv")},
 			svcFn: func(_ context.Context, _ string, _ string, _, _ string, _ *string) (*domain.UploadURLResult, error) {
 				return &domain.UploadURLResult{
 					UploadURL: "https://s3.amazonaws.com/bucket/key",
@@ -75,7 +75,7 @@ func TestHandler_CreateUploadUrl(t *testing.T) {
 					ExpiresAt: ingestionFixedTime.Add(time.Hour),
 				}, nil
 			},
-			assertFn: func(t *testing.T, resp CreateUploadUrlResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateUploadUrlResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(CreateUploadUrl200JSONResponse)
@@ -87,9 +87,9 @@ func TestHandler_CreateUploadUrl(t *testing.T) {
 		{
 			name:  "ingestion nil returns 400",
 			svc:   nil, // explicitly nil
-			body:  CreateUploadUrlJSONRequestBody{},
+			body:  GenCreateUploadUrlJSONBody{},
 			svcFn: nil,
-			assertFn: func(t *testing.T, resp CreateUploadUrlResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateUploadUrlResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				badReq, ok := resp.(CreateUploadUrl400JSONResponse)
@@ -100,11 +100,11 @@ func TestHandler_CreateUploadUrl(t *testing.T) {
 		},
 		{
 			name: "not found returns 404",
-			body: CreateUploadUrlJSONRequestBody{},
+			body: GenCreateUploadUrlJSONBody{},
 			svcFn: func(_ context.Context, _ string, _ string, _, tableName string, _ *string) (*domain.UploadURLResult, error) {
 				return nil, domain.ErrNotFound("table %s not found", tableName)
 			},
-			assertFn: func(t *testing.T, resp CreateUploadUrlResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateUploadUrlResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(CreateUploadUrl404JSONResponse)
@@ -114,11 +114,11 @@ func TestHandler_CreateUploadUrl(t *testing.T) {
 		},
 		{
 			name: "access denied returns 403",
-			body: CreateUploadUrlJSONRequestBody{},
+			body: GenCreateUploadUrlJSONBody{},
 			svcFn: func(_ context.Context, _ string, _ string, _, _ string, _ *string) (*domain.UploadURLResult, error) {
 				return nil, domain.ErrAccessDenied("not allowed")
 			},
-			assertFn: func(t *testing.T, resp CreateUploadUrlResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateUploadUrlResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				forbidden, ok := resp.(CreateUploadUrl403JSONResponse)
@@ -128,11 +128,11 @@ func TestHandler_CreateUploadUrl(t *testing.T) {
 		},
 		{
 			name: "unknown error returns 400",
-			body: CreateUploadUrlJSONRequestBody{},
+			body: GenCreateUploadUrlJSONBody{},
 			svcFn: func(_ context.Context, _ string, _ string, _, _ string, _ *string) (*domain.UploadURLResult, error) {
 				return nil, assert.AnError
 			},
-			assertFn: func(t *testing.T, resp CreateUploadUrlResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateUploadUrlResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				badReq, ok := resp.(CreateUploadUrl400JSONResponse)
@@ -153,7 +153,7 @@ func TestHandler_CreateUploadUrl(t *testing.T) {
 				handler = &APIHandler{ingestion: svc}
 			}
 			body := tt.body
-			resp, err := handler.CreateUploadUrl(ingestionTestCtx(), CreateUploadUrlRequestObject{
+			resp, err := handler.CreateUploadUrl(ingestionTestCtx(), GenCreateUploadUrlRequest{
 				CatalogName: CatalogName("test-catalog"),
 				SchemaName:  "test-schema",
 				TableName:   "test-table",
@@ -170,13 +170,13 @@ func TestHandler_CommitTableIngestion(t *testing.T) {
 	tests := []struct {
 		name     string
 		nilSvc   bool
-		body     CommitTableIngestionJSONRequestBody
+		body     GenCommitTableIngestionJSONBody
 		svcFn    func(ctx context.Context, principal string, catalogName string, schemaName, tableName string, s3Keys []string, opts domain.IngestionOptions) (*domain.IngestionResult, error)
-		assertFn func(t *testing.T, resp CommitTableIngestionResponseObject, err error)
+		assertFn func(t *testing.T, resp GenCommitTableIngestionResponse, err error)
 	}{
 		{
 			name: "happy path returns 200",
-			body: CommitTableIngestionJSONRequestBody{S3Keys: []string{"uploads/data.csv"}},
+			body: GenCommitTableIngestionJSONBody{S3Keys: []string{"uploads/data.csv"}},
 			svcFn: func(_ context.Context, _ string, _ string, _, _ string, _ []string, _ domain.IngestionOptions) (*domain.IngestionResult, error) {
 				return &domain.IngestionResult{
 					FilesRegistered: 1,
@@ -185,7 +185,7 @@ func TestHandler_CommitTableIngestion(t *testing.T) {
 					Schema:          "test-schema",
 				}, nil
 			},
-			assertFn: func(t *testing.T, resp CommitTableIngestionResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCommitTableIngestionResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(CommitTableIngestion200JSONResponse)
@@ -198,9 +198,9 @@ func TestHandler_CommitTableIngestion(t *testing.T) {
 		{
 			name:   "ingestion nil returns 400",
 			nilSvc: true,
-			body:   CommitTableIngestionJSONRequestBody{S3Keys: []string{"key"}},
+			body:   GenCommitTableIngestionJSONBody{S3Keys: []string{"key"}},
 			svcFn:  nil,
-			assertFn: func(t *testing.T, resp CommitTableIngestionResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCommitTableIngestionResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				badReq, ok := resp.(CommitTableIngestion400JSONResponse)
@@ -210,11 +210,11 @@ func TestHandler_CommitTableIngestion(t *testing.T) {
 		},
 		{
 			name: "not found returns 404",
-			body: CommitTableIngestionJSONRequestBody{S3Keys: []string{"key"}},
+			body: GenCommitTableIngestionJSONBody{S3Keys: []string{"key"}},
 			svcFn: func(_ context.Context, _ string, _ string, _, _ string, _ []string, _ domain.IngestionOptions) (*domain.IngestionResult, error) {
 				return nil, domain.ErrNotFound("table not found")
 			},
-			assertFn: func(t *testing.T, resp CommitTableIngestionResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCommitTableIngestionResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(CommitTableIngestion404JSONResponse)
@@ -224,11 +224,11 @@ func TestHandler_CommitTableIngestion(t *testing.T) {
 		},
 		{
 			name: "access denied returns 403",
-			body: CommitTableIngestionJSONRequestBody{S3Keys: []string{"key"}},
+			body: GenCommitTableIngestionJSONBody{S3Keys: []string{"key"}},
 			svcFn: func(_ context.Context, _ string, _ string, _, _ string, _ []string, _ domain.IngestionOptions) (*domain.IngestionResult, error) {
 				return nil, domain.ErrAccessDenied("not allowed")
 			},
-			assertFn: func(t *testing.T, resp CommitTableIngestionResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCommitTableIngestionResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				forbidden, ok := resp.(CommitTableIngestion403JSONResponse)
@@ -238,11 +238,11 @@ func TestHandler_CommitTableIngestion(t *testing.T) {
 		},
 		{
 			name: "validation error returns 400",
-			body: CommitTableIngestionJSONRequestBody{S3Keys: []string{}},
+			body: GenCommitTableIngestionJSONBody{S3Keys: []string{}},
 			svcFn: func(_ context.Context, _ string, _ string, _, _ string, _ []string, _ domain.IngestionOptions) (*domain.IngestionResult, error) {
 				return nil, domain.ErrValidation("s3_keys must not be empty")
 			},
-			assertFn: func(t *testing.T, resp CommitTableIngestionResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCommitTableIngestionResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				badReq, ok := resp.(CommitTableIngestion400JSONResponse)
@@ -252,11 +252,11 @@ func TestHandler_CommitTableIngestion(t *testing.T) {
 		},
 		{
 			name: "unknown error falls through to 400",
-			body: CommitTableIngestionJSONRequestBody{S3Keys: []string{"key"}},
+			body: GenCommitTableIngestionJSONBody{S3Keys: []string{"key"}},
 			svcFn: func(_ context.Context, _ string, _ string, _, _ string, _ []string, _ domain.IngestionOptions) (*domain.IngestionResult, error) {
 				return nil, assert.AnError
 			},
-			assertFn: func(t *testing.T, resp CommitTableIngestionResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCommitTableIngestionResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				badReq, ok := resp.(CommitTableIngestion400JSONResponse)
@@ -277,7 +277,7 @@ func TestHandler_CommitTableIngestion(t *testing.T) {
 				handler = &APIHandler{ingestion: svc}
 			}
 			body := tt.body
-			resp, err := handler.CommitTableIngestion(ingestionTestCtx(), CommitTableIngestionRequestObject{
+			resp, err := handler.CommitTableIngestion(ingestionTestCtx(), GenCommitTableIngestionRequest{
 				CatalogName: CatalogName("test-catalog"),
 				SchemaName:  "test-schema",
 				TableName:   "test-table",
@@ -294,13 +294,13 @@ func TestHandler_LoadTableExternalFiles(t *testing.T) {
 	tests := []struct {
 		name     string
 		nilSvc   bool
-		body     LoadTableExternalFilesJSONRequestBody
+		body     GenLoadTableExternalFilesJSONBody
 		svcFn    func(ctx context.Context, principal string, catalogName string, schemaName, tableName string, paths []string, opts domain.IngestionOptions) (*domain.IngestionResult, error)
-		assertFn func(t *testing.T, resp LoadTableExternalFilesResponseObject, err error)
+		assertFn func(t *testing.T, resp GenLoadTableExternalFilesResponse, err error)
 	}{
 		{
 			name: "happy path returns 200",
-			body: LoadTableExternalFilesJSONRequestBody{Paths: []string{"s3://bucket/data.csv"}},
+			body: GenLoadTableExternalFilesJSONBody{Paths: []string{"s3://bucket/data.csv"}},
 			svcFn: func(_ context.Context, _ string, _ string, _, _ string, _ []string, _ domain.IngestionOptions) (*domain.IngestionResult, error) {
 				return &domain.IngestionResult{
 					FilesRegistered: 1,
@@ -309,7 +309,7 @@ func TestHandler_LoadTableExternalFiles(t *testing.T) {
 					Schema:          "test-schema",
 				}, nil
 			},
-			assertFn: func(t *testing.T, resp LoadTableExternalFilesResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenLoadTableExternalFilesResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(LoadTableExternalFiles200JSONResponse)
@@ -321,9 +321,9 @@ func TestHandler_LoadTableExternalFiles(t *testing.T) {
 		{
 			name:   "ingestion nil returns 400",
 			nilSvc: true,
-			body:   LoadTableExternalFilesJSONRequestBody{Paths: []string{"path"}},
+			body:   GenLoadTableExternalFilesJSONBody{Paths: []string{"path"}},
 			svcFn:  nil,
-			assertFn: func(t *testing.T, resp LoadTableExternalFilesResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenLoadTableExternalFilesResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				badReq, ok := resp.(LoadTableExternalFiles400JSONResponse)
@@ -333,11 +333,11 @@ func TestHandler_LoadTableExternalFiles(t *testing.T) {
 		},
 		{
 			name: "not found returns 404",
-			body: LoadTableExternalFilesJSONRequestBody{Paths: []string{"path"}},
+			body: GenLoadTableExternalFilesJSONBody{Paths: []string{"path"}},
 			svcFn: func(_ context.Context, _ string, _ string, _, _ string, _ []string, _ domain.IngestionOptions) (*domain.IngestionResult, error) {
 				return nil, domain.ErrNotFound("table not found")
 			},
-			assertFn: func(t *testing.T, resp LoadTableExternalFilesResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenLoadTableExternalFilesResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(LoadTableExternalFiles404JSONResponse)
@@ -347,11 +347,11 @@ func TestHandler_LoadTableExternalFiles(t *testing.T) {
 		},
 		{
 			name: "access denied returns 403",
-			body: LoadTableExternalFilesJSONRequestBody{Paths: []string{"path"}},
+			body: GenLoadTableExternalFilesJSONBody{Paths: []string{"path"}},
 			svcFn: func(_ context.Context, _ string, _ string, _, _ string, _ []string, _ domain.IngestionOptions) (*domain.IngestionResult, error) {
 				return nil, domain.ErrAccessDenied("not allowed")
 			},
-			assertFn: func(t *testing.T, resp LoadTableExternalFilesResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenLoadTableExternalFilesResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				forbidden, ok := resp.(LoadTableExternalFiles403JSONResponse)
@@ -361,11 +361,11 @@ func TestHandler_LoadTableExternalFiles(t *testing.T) {
 		},
 		{
 			name: "validation error returns 400",
-			body: LoadTableExternalFilesJSONRequestBody{Paths: []string{}},
+			body: GenLoadTableExternalFilesJSONBody{Paths: []string{}},
 			svcFn: func(_ context.Context, _ string, _ string, _, _ string, _ []string, _ domain.IngestionOptions) (*domain.IngestionResult, error) {
 				return nil, domain.ErrValidation("paths must not be empty")
 			},
-			assertFn: func(t *testing.T, resp LoadTableExternalFilesResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenLoadTableExternalFilesResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				badReq, ok := resp.(LoadTableExternalFiles400JSONResponse)
@@ -375,11 +375,11 @@ func TestHandler_LoadTableExternalFiles(t *testing.T) {
 		},
 		{
 			name: "unknown error falls through to 400",
-			body: LoadTableExternalFilesJSONRequestBody{Paths: []string{"path"}},
+			body: GenLoadTableExternalFilesJSONBody{Paths: []string{"path"}},
 			svcFn: func(_ context.Context, _ string, _ string, _, _ string, _ []string, _ domain.IngestionOptions) (*domain.IngestionResult, error) {
 				return nil, assert.AnError
 			},
-			assertFn: func(t *testing.T, resp LoadTableExternalFilesResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenLoadTableExternalFilesResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				badReq, ok := resp.(LoadTableExternalFiles400JSONResponse)
@@ -400,7 +400,7 @@ func TestHandler_LoadTableExternalFiles(t *testing.T) {
 				handler = &APIHandler{ingestion: svc}
 			}
 			body := tt.body
-			resp, err := handler.LoadTableExternalFiles(ingestionTestCtx(), LoadTableExternalFilesRequestObject{
+			resp, err := handler.LoadTableExternalFiles(ingestionTestCtx(), GenLoadTableExternalFilesRequest{
 				CatalogName: CatalogName("test-catalog"),
 				SchemaName:  "test-schema",
 				TableName:   "test-table",

@@ -238,7 +238,7 @@ func TestHandler_ListAuditLogs(t *testing.T) {
 		name     string
 		params   ListAuditLogsParams
 		svcFn    func(ctx context.Context, filter domain.AuditFilter) ([]domain.AuditEntry, int64, error)
-		assertFn func(t *testing.T, resp ListAuditLogsResponseObject, err error)
+		assertFn func(t *testing.T, resp GenListAuditLogsResponse, err error)
 	}{
 		{
 			name:   "happy path returns 200 with results",
@@ -246,7 +246,7 @@ func TestHandler_ListAuditLogs(t *testing.T) {
 			svcFn: func(_ context.Context, _ domain.AuditFilter) ([]domain.AuditEntry, int64, error) {
 				return []domain.AuditEntry{sampleAuditEntry()}, 1, nil
 			},
-			assertFn: func(t *testing.T, resp ListAuditLogsResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListAuditLogsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(ListAuditLogs200JSONResponse)
@@ -262,7 +262,7 @@ func TestHandler_ListAuditLogs(t *testing.T) {
 			svcFn: func(_ context.Context, _ domain.AuditFilter) ([]domain.AuditEntry, int64, error) {
 				return nil, 0, assert.AnError
 			},
-			assertFn: func(t *testing.T, resp ListAuditLogsResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListAuditLogsResponse, err error) {
 				t.Helper()
 				require.Error(t, err)
 			},
@@ -274,7 +274,7 @@ func TestHandler_ListAuditLogs(t *testing.T) {
 			t.Parallel()
 			svc := &mockAuditService{listFn: tt.svcFn}
 			handler := &APIHandler{audit: svc}
-			resp, err := handler.ListAuditLogs(govTestCtx(), ListAuditLogsRequestObject{Params: tt.params})
+			resp, err := handler.ListAuditLogs(govTestCtx(), GenListAuditLogsRequest{Params: tt.params})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -287,7 +287,7 @@ func TestHandler_ListQueryHistory(t *testing.T) {
 		name     string
 		params   ListQueryHistoryParams
 		svcFn    func(ctx context.Context, filter domain.QueryHistoryFilter) ([]domain.QueryHistoryEntry, int64, error)
-		assertFn func(t *testing.T, resp ListQueryHistoryResponseObject, err error)
+		assertFn func(t *testing.T, resp GenListQueryHistoryResponse, err error)
 	}{
 		{
 			name:   "happy path returns 200 with results",
@@ -295,7 +295,7 @@ func TestHandler_ListQueryHistory(t *testing.T) {
 			svcFn: func(_ context.Context, _ domain.QueryHistoryFilter) ([]domain.QueryHistoryEntry, int64, error) {
 				return []domain.QueryHistoryEntry{sampleQueryHistoryEntry()}, 1, nil
 			},
-			assertFn: func(t *testing.T, resp ListQueryHistoryResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListQueryHistoryResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(ListQueryHistory200JSONResponse)
@@ -311,7 +311,7 @@ func TestHandler_ListQueryHistory(t *testing.T) {
 			svcFn: func(_ context.Context, _ domain.QueryHistoryFilter) ([]domain.QueryHistoryEntry, int64, error) {
 				return nil, 0, assert.AnError
 			},
-			assertFn: func(t *testing.T, resp ListQueryHistoryResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListQueryHistoryResponse, err error) {
 				t.Helper()
 				require.Error(t, err)
 			},
@@ -323,7 +323,7 @@ func TestHandler_ListQueryHistory(t *testing.T) {
 			t.Parallel()
 			svc := &mockQueryHistoryService{listFn: tt.svcFn}
 			handler := &APIHandler{queryHistory: svc}
-			resp, err := handler.ListQueryHistory(govTestCtx(), ListQueryHistoryRequestObject{Params: tt.params})
+			resp, err := handler.ListQueryHistory(govTestCtx(), GenListQueryHistoryRequest{Params: tt.params})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -336,7 +336,7 @@ func TestHandler_SearchCatalog(t *testing.T) {
 		name     string
 		params   SearchCatalogParams
 		svcFn    func(ctx context.Context, query string, objectType *string, catalogName *string, page domain.PageRequest) ([]domain.SearchResult, int64, error)
-		assertFn func(t *testing.T, resp SearchCatalogResponseObject, err error)
+		assertFn func(t *testing.T, resp GenSearchCatalogResponse, err error)
 	}{
 		{
 			name:   "happy path returns 200 with results",
@@ -344,7 +344,7 @@ func TestHandler_SearchCatalog(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _ *string, _ *string, _ domain.PageRequest) ([]domain.SearchResult, int64, error) {
 				return []domain.SearchResult{sampleSearchResult()}, 1, nil
 			},
-			assertFn: func(t *testing.T, resp SearchCatalogResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenSearchCatalogResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(SearchCatalog200JSONResponse)
@@ -360,7 +360,7 @@ func TestHandler_SearchCatalog(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _ *string, _ *string, _ domain.PageRequest) ([]domain.SearchResult, int64, error) {
 				return nil, 0, assert.AnError
 			},
-			assertFn: func(t *testing.T, resp SearchCatalogResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenSearchCatalogResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				serverErr, ok := resp.(SearchCatalog500JSONResponse)
@@ -375,7 +375,7 @@ func TestHandler_SearchCatalog(t *testing.T) {
 			t.Parallel()
 			svc := &mockSearchService{searchFn: tt.svcFn}
 			handler := &APIHandler{search: svc}
-			resp, err := handler.SearchCatalog(govTestCtx(), SearchCatalogRequestObject{Params: tt.params})
+			resp, err := handler.SearchCatalog(govTestCtx(), GenSearchCatalogRequest{Params: tt.params})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -387,7 +387,7 @@ func TestHandler_GetTableLineage(t *testing.T) {
 	tests := []struct {
 		name     string
 		svcFn    func(ctx context.Context, tableName string, page domain.PageRequest) (*domain.LineageNode, error)
-		assertFn func(t *testing.T, resp GetTableLineageResponseObject, err error)
+		assertFn func(t *testing.T, resp GenGetTableLineageResponse, err error)
 	}{
 		{
 			name: "happy path returns 200",
@@ -398,7 +398,7 @@ func TestHandler_GetTableLineage(t *testing.T) {
 					Downstream: []domain.LineageEdge{},
 				}, nil
 			},
-			assertFn: func(t *testing.T, resp GetTableLineageResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenGetTableLineageResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(GetTableLineage200JSONResponse)
@@ -413,7 +413,7 @@ func TestHandler_GetTableLineage(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _ domain.PageRequest) (*domain.LineageNode, error) {
 				return nil, assert.AnError
 			},
-			assertFn: func(t *testing.T, resp GetTableLineageResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenGetTableLineageResponse, err error) {
 				t.Helper()
 				require.Error(t, err)
 			},
@@ -425,7 +425,7 @@ func TestHandler_GetTableLineage(t *testing.T) {
 			t.Parallel()
 			svc := &mockLineageService{getFullLineageFn: tt.svcFn}
 			handler := &APIHandler{lineage: svc}
-			resp, err := handler.GetTableLineage(govTestCtx(), GetTableLineageRequestObject{
+			resp, err := handler.GetTableLineage(govTestCtx(), GenGetTableLineageRequest{
 				SchemaName: "test-schema",
 				TableName:  "my_table",
 				Params:     GetTableLineageParams{},
@@ -441,14 +441,14 @@ func TestHandler_GetUpstreamLineage(t *testing.T) {
 	tests := []struct {
 		name     string
 		svcFn    func(ctx context.Context, tableName string, page domain.PageRequest) ([]domain.LineageEdge, int64, error)
-		assertFn func(t *testing.T, resp GetUpstreamLineageResponseObject, err error)
+		assertFn func(t *testing.T, resp GenGetUpstreamLineageResponse, err error)
 	}{
 		{
 			name: "happy path returns 200",
 			svcFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
 				return []domain.LineageEdge{sampleLineageEdge()}, 1, nil
 			},
-			assertFn: func(t *testing.T, resp GetUpstreamLineageResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenGetUpstreamLineageResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(GetUpstreamLineage200JSONResponse)
@@ -463,7 +463,7 @@ func TestHandler_GetUpstreamLineage(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
 				return nil, 0, assert.AnError
 			},
-			assertFn: func(t *testing.T, resp GetUpstreamLineageResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenGetUpstreamLineageResponse, err error) {
 				t.Helper()
 				require.Error(t, err)
 			},
@@ -475,7 +475,7 @@ func TestHandler_GetUpstreamLineage(t *testing.T) {
 			t.Parallel()
 			svc := &mockLineageService{getUpstreamFn: tt.svcFn}
 			handler := &APIHandler{lineage: svc}
-			resp, err := handler.GetUpstreamLineage(govTestCtx(), GetUpstreamLineageRequestObject{
+			resp, err := handler.GetUpstreamLineage(govTestCtx(), GenGetUpstreamLineageRequest{
 				SchemaName: "test-schema",
 				TableName:  "my_table",
 				Params:     GetUpstreamLineageParams{},
@@ -491,14 +491,14 @@ func TestHandler_GetDownstreamLineage(t *testing.T) {
 	tests := []struct {
 		name     string
 		svcFn    func(ctx context.Context, tableName string, page domain.PageRequest) ([]domain.LineageEdge, int64, error)
-		assertFn func(t *testing.T, resp GetDownstreamLineageResponseObject, err error)
+		assertFn func(t *testing.T, resp GenGetDownstreamLineageResponse, err error)
 	}{
 		{
 			name: "happy path returns 200",
 			svcFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
 				return []domain.LineageEdge{sampleLineageEdge()}, 1, nil
 			},
-			assertFn: func(t *testing.T, resp GetDownstreamLineageResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenGetDownstreamLineageResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(GetDownstreamLineage200JSONResponse)
@@ -512,7 +512,7 @@ func TestHandler_GetDownstreamLineage(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.LineageEdge, int64, error) {
 				return nil, 0, assert.AnError
 			},
-			assertFn: func(t *testing.T, resp GetDownstreamLineageResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenGetDownstreamLineageResponse, err error) {
 				t.Helper()
 				require.Error(t, err)
 			},
@@ -524,7 +524,7 @@ func TestHandler_GetDownstreamLineage(t *testing.T) {
 			t.Parallel()
 			svc := &mockLineageService{getDownstreamFn: tt.svcFn}
 			handler := &APIHandler{lineage: svc}
-			resp, err := handler.GetDownstreamLineage(govTestCtx(), GetDownstreamLineageRequestObject{
+			resp, err := handler.GetDownstreamLineage(govTestCtx(), GenGetDownstreamLineageRequest{
 				SchemaName: "test-schema",
 				TableName:  "my_table",
 				Params:     GetDownstreamLineageParams{},
@@ -541,7 +541,7 @@ func TestHandler_DeleteLineageEdge(t *testing.T) {
 		name     string
 		edgeID   string
 		svcFn    func(ctx context.Context, id string) error
-		assertFn func(t *testing.T, resp DeleteLineageEdgeResponseObject, err error)
+		assertFn func(t *testing.T, resp GenDeleteLineageEdgeResponse, err error)
 	}{
 		{
 			name:   "happy path returns 204",
@@ -549,7 +549,7 @@ func TestHandler_DeleteLineageEdge(t *testing.T) {
 			svcFn: func(_ context.Context, _ string) error {
 				return nil
 			},
-			assertFn: func(t *testing.T, resp DeleteLineageEdgeResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeleteLineageEdgeResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				_, ok := resp.(DeleteLineageEdge204Response)
@@ -562,7 +562,7 @@ func TestHandler_DeleteLineageEdge(t *testing.T) {
 			svcFn: func(_ context.Context, id string) error {
 				return domain.ErrNotFound("edge %s not found", id)
 			},
-			assertFn: func(t *testing.T, resp DeleteLineageEdgeResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeleteLineageEdgeResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(DeleteLineageEdge404JSONResponse)
@@ -577,7 +577,7 @@ func TestHandler_DeleteLineageEdge(t *testing.T) {
 			t.Parallel()
 			svc := &mockLineageService{deleteEdgeFn: tt.svcFn}
 			handler := &APIHandler{lineage: svc}
-			resp, err := handler.DeleteLineageEdge(govTestCtx(), DeleteLineageEdgeRequestObject{EdgeId: tt.edgeID})
+			resp, err := handler.DeleteLineageEdge(govTestCtx(), GenDeleteLineageEdgeRequest{EdgeId: tt.edgeID})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -589,18 +589,18 @@ func TestHandler_PurgeLineage(t *testing.T) {
 	tests := []struct {
 		name     string
 		ctx      context.Context
-		body     PurgeLineageJSONRequestBody
+		body     GenPurgeLineageJSONBody
 		svcFn    func(ctx context.Context, olderThanDays int) (int64, error)
-		assertFn func(t *testing.T, resp PurgeLineageResponseObject, err error)
+		assertFn func(t *testing.T, resp GenPurgeLineageResponse, err error)
 	}{
 		{
 			name: "happy path returns 200",
 			ctx:  govTestCtx(),
-			body: PurgeLineageJSONRequestBody{OlderThanDays: 30},
+			body: GenPurgeLineageJSONBody{OlderThanDays: 30},
 			svcFn: func(_ context.Context, _ int) (int64, error) {
 				return 42, nil
 			},
-			assertFn: func(t *testing.T, resp PurgeLineageResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenPurgeLineageResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(PurgeLineage200JSONResponse)
@@ -611,11 +611,11 @@ func TestHandler_PurgeLineage(t *testing.T) {
 		{
 			name: "non-admin returns 403",
 			ctx:  govNonAdminCtx(),
-			body: PurgeLineageJSONRequestBody{OlderThanDays: 30},
+			body: GenPurgeLineageJSONBody{OlderThanDays: 30},
 			svcFn: func(_ context.Context, _ int) (int64, error) {
 				panic("should not be called for non-admin")
 			},
-			assertFn: func(t *testing.T, resp PurgeLineageResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenPurgeLineageResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				forbidden, ok := resp.(PurgeLineage403JSONResponse)
@@ -627,11 +627,11 @@ func TestHandler_PurgeLineage(t *testing.T) {
 		{
 			name: "service error returns 500",
 			ctx:  govTestCtx(),
-			body: PurgeLineageJSONRequestBody{OlderThanDays: 30},
+			body: GenPurgeLineageJSONBody{OlderThanDays: 30},
 			svcFn: func(_ context.Context, _ int) (int64, error) {
 				return 0, assert.AnError
 			},
-			assertFn: func(t *testing.T, resp PurgeLineageResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenPurgeLineageResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				serverErr, ok := resp.(PurgeLineage500JSONResponse)
@@ -647,7 +647,7 @@ func TestHandler_PurgeLineage(t *testing.T) {
 			svc := &mockLineageService{purgeOlderThanFn: tt.svcFn}
 			handler := &APIHandler{lineage: svc}
 			body := tt.body
-			resp, err := handler.PurgeLineage(tt.ctx, PurgeLineageRequestObject{Body: &body})
+			resp, err := handler.PurgeLineage(tt.ctx, GenPurgeLineageRequest{Body: &body})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -662,7 +662,7 @@ func TestHandler_ListTags(t *testing.T) {
 		name     string
 		params   ListTagsParams
 		svcFn    func(ctx context.Context, page domain.PageRequest) ([]domain.Tag, int64, error)
-		assertFn func(t *testing.T, resp ListTagsResponseObject, err error)
+		assertFn func(t *testing.T, resp GenListTagsResponse, err error)
 	}{
 		{
 			name:   "happy path returns 200 with results",
@@ -670,7 +670,7 @@ func TestHandler_ListTags(t *testing.T) {
 			svcFn: func(_ context.Context, _ domain.PageRequest) ([]domain.Tag, int64, error) {
 				return []domain.Tag{sampleTag()}, 1, nil
 			},
-			assertFn: func(t *testing.T, resp ListTagsResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListTagsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(ListTags200JSONResponse)
@@ -686,7 +686,7 @@ func TestHandler_ListTags(t *testing.T) {
 			svcFn: func(_ context.Context, _ domain.PageRequest) ([]domain.Tag, int64, error) {
 				return nil, 0, assert.AnError
 			},
-			assertFn: func(t *testing.T, resp ListTagsResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListTagsResponse, err error) {
 				t.Helper()
 				require.Error(t, err)
 			},
@@ -698,7 +698,7 @@ func TestHandler_ListTags(t *testing.T) {
 			t.Parallel()
 			svc := &mockTagService{listTagsFn: tt.svcFn}
 			handler := &APIHandler{tags: svc}
-			resp, err := handler.ListTags(govTestCtx(), ListTagsRequestObject{Params: tt.params})
+			resp, err := handler.ListTags(govTestCtx(), GenListTagsRequest{Params: tt.params})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -710,19 +710,19 @@ func TestHandler_CreateTag(t *testing.T) {
 	tests := []struct {
 		name     string
 		ctx      context.Context
-		body     CreateTagJSONRequestBody
+		body     GenCreateTagJSONBody
 		svcFn    func(ctx context.Context, principal string, req domain.CreateTagRequest) (*domain.Tag, error)
-		assertFn func(t *testing.T, resp CreateTagResponseObject, err error)
+		assertFn func(t *testing.T, resp GenCreateTagResponse, err error)
 	}{
 		{
 			name: "happy path returns 201",
 			ctx:  govTestCtx(),
-			body: CreateTagJSONRequestBody{Key: "classification", Value: govStrPtr("pii")},
+			body: GenCreateTagJSONBody{Key: "classification", Value: govStrPtr("pii")},
 			svcFn: func(_ context.Context, _ string, _ domain.CreateTagRequest) (*domain.Tag, error) {
 				tg := sampleTag()
 				return &tg, nil
 			},
-			assertFn: func(t *testing.T, resp CreateTagResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateTagResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				created, ok := resp.(CreateTag201JSONResponse)
@@ -734,11 +734,11 @@ func TestHandler_CreateTag(t *testing.T) {
 		{
 			name: "non-admin returns 403",
 			ctx:  govNonAdminCtx(),
-			body: CreateTagJSONRequestBody{Key: "classification", Value: govStrPtr("pii")},
+			body: GenCreateTagJSONBody{Key: "classification", Value: govStrPtr("pii")},
 			svcFn: func(_ context.Context, _ string, _ domain.CreateTagRequest) (*domain.Tag, error) {
 				panic("should not be called for non-admin")
 			},
-			assertFn: func(t *testing.T, resp CreateTagResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateTagResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				forbidden, ok := resp.(CreateTag403JSONResponse)
@@ -750,11 +750,11 @@ func TestHandler_CreateTag(t *testing.T) {
 		{
 			name: "validation error returns 400",
 			ctx:  govTestCtx(),
-			body: CreateTagJSONRequestBody{Key: ""},
+			body: GenCreateTagJSONBody{Key: ""},
 			svcFn: func(_ context.Context, _ string, _ domain.CreateTagRequest) (*domain.Tag, error) {
 				return nil, domain.ErrValidation("tag key is required")
 			},
-			assertFn: func(t *testing.T, resp CreateTagResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateTagResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				badReq, ok := resp.(CreateTag400JSONResponse)
@@ -765,11 +765,11 @@ func TestHandler_CreateTag(t *testing.T) {
 		{
 			name: "conflict error returns 409",
 			ctx:  govTestCtx(),
-			body: CreateTagJSONRequestBody{Key: "classification", Value: govStrPtr("pii")},
+			body: GenCreateTagJSONBody{Key: "classification", Value: govStrPtr("pii")},
 			svcFn: func(_ context.Context, _ string, _ domain.CreateTagRequest) (*domain.Tag, error) {
 				return nil, domain.ErrConflict("tag already exists")
 			},
-			assertFn: func(t *testing.T, resp CreateTagResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateTagResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				conflict, ok := resp.(CreateTag409JSONResponse)
@@ -785,7 +785,7 @@ func TestHandler_CreateTag(t *testing.T) {
 			svc := &mockTagService{createTagFn: tt.svcFn}
 			handler := &APIHandler{tags: svc}
 			body := tt.body
-			resp, err := handler.CreateTag(tt.ctx, CreateTagRequestObject{Body: &body})
+			resp, err := handler.CreateTag(tt.ctx, GenCreateTagRequest{Body: &body})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -799,7 +799,7 @@ func TestHandler_DeleteTag(t *testing.T) {
 		ctx      context.Context
 		tagID    string
 		svcFn    func(ctx context.Context, principal string, id string) error
-		assertFn func(t *testing.T, resp DeleteTagResponseObject, err error)
+		assertFn func(t *testing.T, resp GenDeleteTagResponse, err error)
 	}{
 		{
 			name:  "happy path returns 204",
@@ -808,7 +808,7 @@ func TestHandler_DeleteTag(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _ string) error {
 				return nil
 			},
-			assertFn: func(t *testing.T, resp DeleteTagResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeleteTagResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				_, ok := resp.(DeleteTag204Response)
@@ -822,7 +822,7 @@ func TestHandler_DeleteTag(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _ string) error {
 				panic("should not be called for non-admin")
 			},
-			assertFn: func(t *testing.T, resp DeleteTagResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeleteTagResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				forbidden, ok := resp.(DeleteTag403JSONResponse)
@@ -838,7 +838,7 @@ func TestHandler_DeleteTag(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, id string) error {
 				return domain.ErrNotFound("tag %s not found", id)
 			},
-			assertFn: func(t *testing.T, resp DeleteTagResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeleteTagResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(DeleteTag404JSONResponse)
@@ -853,7 +853,7 @@ func TestHandler_DeleteTag(t *testing.T) {
 			t.Parallel()
 			svc := &mockTagService{deleteTagFn: tt.svcFn}
 			handler := &APIHandler{tags: svc}
-			resp, err := handler.DeleteTag(tt.ctx, DeleteTagRequestObject{TagId: tt.tagID})
+			resp, err := handler.DeleteTag(tt.ctx, GenDeleteTagRequest{TagId: tt.tagID})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -865,19 +865,19 @@ func TestHandler_CreateTagAssignment(t *testing.T) {
 	tests := []struct {
 		name     string
 		tagID    string
-		body     CreateTagAssignmentJSONRequestBody
+		body     GenCreateTagAssignmentJSONBody
 		svcFn    func(ctx context.Context, principal string, req domain.AssignTagRequest) (*domain.TagAssignment, error)
-		assertFn func(t *testing.T, resp CreateTagAssignmentResponseObject, err error)
+		assertFn func(t *testing.T, resp GenCreateTagAssignmentResponse, err error)
 	}{
 		{
 			name:  "happy path returns 201",
 			tagID: "tag-1",
-			body:  CreateTagAssignmentJSONRequestBody{SecurableType: "table", SecurableId: "table-1"},
+			body:  GenCreateTagAssignmentJSONBody{SecurableType: "table", SecurableId: "table-1"},
 			svcFn: func(_ context.Context, _ string, _ domain.AssignTagRequest) (*domain.TagAssignment, error) {
 				a := sampleTagAssignment()
 				return &a, nil
 			},
-			assertFn: func(t *testing.T, resp CreateTagAssignmentResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateTagAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				created, ok := resp.(CreateTagAssignment201JSONResponse)
@@ -888,11 +888,11 @@ func TestHandler_CreateTagAssignment(t *testing.T) {
 		{
 			name:  "conflict error returns 409",
 			tagID: "tag-1",
-			body:  CreateTagAssignmentJSONRequestBody{SecurableType: "table", SecurableId: "table-1"},
+			body:  GenCreateTagAssignmentJSONBody{SecurableType: "table", SecurableId: "table-1"},
 			svcFn: func(_ context.Context, _ string, _ domain.AssignTagRequest) (*domain.TagAssignment, error) {
 				return nil, domain.ErrConflict("assignment already exists")
 			},
-			assertFn: func(t *testing.T, resp CreateTagAssignmentResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateTagAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				conflict, ok := resp.(CreateTagAssignment409JSONResponse)
@@ -903,11 +903,11 @@ func TestHandler_CreateTagAssignment(t *testing.T) {
 		{
 			name:  "unknown error propagates",
 			tagID: "tag-1",
-			body:  CreateTagAssignmentJSONRequestBody{SecurableType: "table", SecurableId: "table-1"},
+			body:  GenCreateTagAssignmentJSONBody{SecurableType: "table", SecurableId: "table-1"},
 			svcFn: func(_ context.Context, _ string, _ domain.AssignTagRequest) (*domain.TagAssignment, error) {
 				return nil, assert.AnError
 			},
-			assertFn: func(t *testing.T, resp CreateTagAssignmentResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateTagAssignmentResponse, err error) {
 				t.Helper()
 				require.Error(t, err)
 			},
@@ -920,7 +920,7 @@ func TestHandler_CreateTagAssignment(t *testing.T) {
 			svc := &mockTagService{assignTagFn: tt.svcFn}
 			handler := &APIHandler{tags: svc}
 			body := tt.body
-			resp, err := handler.CreateTagAssignment(govTestCtx(), CreateTagAssignmentRequestObject{
+			resp, err := handler.CreateTagAssignment(govTestCtx(), GenCreateTagAssignmentRequest{
 				TagId: tt.tagID,
 				Body:  &body,
 			})
@@ -936,7 +936,7 @@ func TestHandler_DeleteTagAssignment(t *testing.T) {
 		name         string
 		assignmentID string
 		svcFn        func(ctx context.Context, principal string, id string) error
-		assertFn     func(t *testing.T, resp DeleteTagAssignmentResponseObject, err error)
+		assertFn     func(t *testing.T, resp GenDeleteTagAssignmentResponse, err error)
 	}{
 		{
 			name:         "happy path returns 204",
@@ -944,7 +944,7 @@ func TestHandler_DeleteTagAssignment(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _ string) error {
 				return nil
 			},
-			assertFn: func(t *testing.T, resp DeleteTagAssignmentResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeleteTagAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				_, ok := resp.(DeleteTagAssignment204Response)
@@ -957,7 +957,7 @@ func TestHandler_DeleteTagAssignment(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, id string) error {
 				return domain.ErrNotFound("assignment %s not found", id)
 			},
-			assertFn: func(t *testing.T, resp DeleteTagAssignmentResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeleteTagAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(DeleteTagAssignment404JSONResponse)
@@ -971,7 +971,7 @@ func TestHandler_DeleteTagAssignment(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _ string) error {
 				return domain.ErrAccessDenied("not allowed")
 			},
-			assertFn: func(t *testing.T, resp DeleteTagAssignmentResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeleteTagAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				forbidden, ok := resp.(DeleteTagAssignment403JSONResponse)
@@ -985,7 +985,7 @@ func TestHandler_DeleteTagAssignment(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _ string) error {
 				return domain.ErrValidation("invalid assignment")
 			},
-			assertFn: func(t *testing.T, resp DeleteTagAssignmentResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeleteTagAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				badReq, ok := resp.(DeleteTagAssignment400JSONResponse)
@@ -999,7 +999,7 @@ func TestHandler_DeleteTagAssignment(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _ string) error {
 				return assert.AnError
 			},
-			assertFn: func(t *testing.T, resp DeleteTagAssignmentResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeleteTagAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				serverErr, ok := resp.(DeleteTagAssignment500JSONResponse)
@@ -1014,7 +1014,7 @@ func TestHandler_DeleteTagAssignment(t *testing.T) {
 			t.Parallel()
 			svc := &mockTagService{unassignTagFn: tt.svcFn}
 			handler := &APIHandler{tags: svc}
-			resp, err := handler.DeleteTagAssignment(govTestCtx(), DeleteTagAssignmentRequestObject{AssignmentId: tt.assignmentID})
+			resp, err := handler.DeleteTagAssignment(govTestCtx(), GenDeleteTagAssignmentRequest{AssignmentId: tt.assignmentID})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -1026,7 +1026,7 @@ func TestHandler_ListClassifications(t *testing.T) {
 	tests := []struct {
 		name     string
 		svcFn    func(ctx context.Context, page domain.PageRequest) ([]domain.Tag, int64, error)
-		assertFn func(t *testing.T, resp ListClassificationsResponseObject, err error)
+		assertFn func(t *testing.T, resp GenListClassificationsResponse, err error)
 	}{
 		{
 			name: "happy path returns only classification and sensitivity tags",
@@ -1037,7 +1037,7 @@ func TestHandler_ListClassifications(t *testing.T) {
 					{ID: "t-3", Key: "custom", Value: govStrPtr("value"), CreatedBy: "admin", CreatedAt: govFixedTime},
 				}, 3, nil
 			},
-			assertFn: func(t *testing.T, resp ListClassificationsResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListClassificationsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(ListClassifications200JSONResponse)
@@ -1053,7 +1053,7 @@ func TestHandler_ListClassifications(t *testing.T) {
 					{ID: "t-1", Key: "custom", Value: govStrPtr("val"), CreatedBy: "admin", CreatedAt: govFixedTime},
 				}, 1, nil
 			},
-			assertFn: func(t *testing.T, resp ListClassificationsResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListClassificationsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(ListClassifications200JSONResponse)
@@ -1067,7 +1067,7 @@ func TestHandler_ListClassifications(t *testing.T) {
 			svcFn: func(_ context.Context, _ domain.PageRequest) ([]domain.Tag, int64, error) {
 				return nil, 0, assert.AnError
 			},
-			assertFn: func(t *testing.T, resp ListClassificationsResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListClassificationsResponse, err error) {
 				t.Helper()
 				require.Error(t, err)
 			},
@@ -1079,7 +1079,7 @@ func TestHandler_ListClassifications(t *testing.T) {
 			t.Parallel()
 			svc := &mockTagService{listTagsFn: tt.svcFn}
 			handler := &APIHandler{tags: svc}
-			resp, err := handler.ListClassifications(govTestCtx(), ListClassificationsRequestObject{})
+			resp, err := handler.ListClassifications(govTestCtx(), GenListClassificationsRequest{})
 			tt.assertFn(t, resp, err)
 		})
 	}

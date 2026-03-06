@@ -34,7 +34,7 @@ type modelService interface {
 // === Models ===
 
 // ListModels implements the endpoint for listing transformation models.
-func (h *APIHandler) ListModels(ctx context.Context, req ListModelsRequestObject) (ListModelsResponseObject, error) {
+func (h *APIHandler) ListModels(ctx context.Context, req GenListModelsRequest) (GenListModelsResponse, error) {
 	if isNilService(h.models) {
 		empty := []Model{}
 		return ListModels200JSONResponse{
@@ -61,7 +61,7 @@ func (h *APIHandler) ListModels(ctx context.Context, req ListModelsRequestObject
 }
 
 // CreateModel implements the endpoint for creating a new transformation model.
-func (h *APIHandler) CreateModel(ctx context.Context, req CreateModelRequestObject) (CreateModelResponseObject, error) {
+func (h *APIHandler) CreateModel(ctx context.Context, req GenCreateModelRequest) (GenCreateModelResponse, error) {
 	domReq := domain.CreateModelRequest{
 		ProjectName: req.Body.ProjectName,
 		Name:        req.Body.Name,
@@ -110,7 +110,7 @@ func (h *APIHandler) CreateModel(ctx context.Context, req CreateModelRequestObje
 }
 
 // GetModel implements the endpoint for retrieving a model by project and name.
-func (h *APIHandler) GetModel(ctx context.Context, req GetModelRequestObject) (GetModelResponseObject, error) {
+func (h *APIHandler) GetModel(ctx context.Context, req GenGetModelRequest) (GenGetModelResponse, error) {
 	result, err := h.models.GetModel(ctx, req.ProjectName, req.ModelName)
 	if err != nil {
 		switch {
@@ -127,7 +127,7 @@ func (h *APIHandler) GetModel(ctx context.Context, req GetModelRequestObject) (G
 }
 
 // UpdateModel implements the endpoint for updating a transformation model.
-func (h *APIHandler) UpdateModel(ctx context.Context, req UpdateModelRequestObject) (UpdateModelResponseObject, error) {
+func (h *APIHandler) UpdateModel(ctx context.Context, req GenUpdateModelRequest) (GenUpdateModelResponse, error) {
 	domReq := domain.UpdateModelRequest{
 		SQL:         req.Body.Sql,
 		Description: req.Body.Description,
@@ -174,7 +174,7 @@ func (h *APIHandler) UpdateModel(ctx context.Context, req UpdateModelRequestObje
 }
 
 // DeleteModel implements the endpoint for deleting a transformation model.
-func (h *APIHandler) DeleteModel(ctx context.Context, req DeleteModelRequestObject) (DeleteModelResponseObject, error) {
+func (h *APIHandler) DeleteModel(ctx context.Context, req GenDeleteModelRequest) (GenDeleteModelResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.models.DeleteModel(ctx, principal, req.ProjectName, req.ModelName); err != nil {
@@ -193,7 +193,7 @@ func (h *APIHandler) DeleteModel(ctx context.Context, req DeleteModelRequestObje
 }
 
 // GetModelDAG implements the endpoint for retrieving the model dependency DAG.
-func (h *APIHandler) GetModelDAG(ctx context.Context, req GetModelDAGRequestObject) (GetModelDAGResponseObject, error) {
+func (h *APIHandler) GetModelDAG(ctx context.Context, req GenGetModelDAGRequest) (GenGetModelDAGResponse, error) {
 	tiers, err := h.models.GetDAG(ctx, req.Params.ProjectName)
 	if err != nil {
 		switch {
@@ -212,7 +212,7 @@ func (h *APIHandler) GetModelDAG(ctx context.Context, req GetModelDAGRequestObje
 // === Model Runs ===
 
 // TriggerModelRun implements the endpoint for triggering a model run.
-func (h *APIHandler) TriggerModelRun(ctx context.Context, req TriggerModelRunRequestObject) (TriggerModelRunResponseObject, error) {
+func (h *APIHandler) TriggerModelRun(ctx context.Context, req GenTriggerModelRunRequest) (GenTriggerModelRunResponse, error) {
 	domReq := domain.TriggerModelRunRequest{
 		TargetCatalog: "memory",
 		TargetSchema:  req.Body.ProjectName,
@@ -253,7 +253,7 @@ func (h *APIHandler) TriggerModelRun(ctx context.Context, req TriggerModelRunReq
 }
 
 // ListModelRuns implements the endpoint for listing model runs.
-func (h *APIHandler) ListModelRuns(ctx context.Context, req ListModelRunsRequestObject) (ListModelRunsResponseObject, error) {
+func (h *APIHandler) ListModelRuns(ctx context.Context, req GenListModelRunsRequest) (GenListModelRunsResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	filter := domain.ModelRunFilter{
 		Page: page,
@@ -283,7 +283,7 @@ func (h *APIHandler) ListModelRuns(ctx context.Context, req ListModelRunsRequest
 }
 
 // GetModelRun implements the endpoint for retrieving a model run.
-func (h *APIHandler) GetModelRun(ctx context.Context, req GetModelRunRequestObject) (GetModelRunResponseObject, error) {
+func (h *APIHandler) GetModelRun(ctx context.Context, req GenGetModelRunRequest) (GenGetModelRunResponse, error) {
 	result, err := h.models.GetRun(ctx, req.RunId)
 	if err != nil {
 		switch {
@@ -300,7 +300,7 @@ func (h *APIHandler) GetModelRun(ctx context.Context, req GetModelRunRequestObje
 }
 
 // ListModelRunSteps implements the endpoint for listing model run steps.
-func (h *APIHandler) ListModelRunSteps(ctx context.Context, req ListModelRunStepsRequestObject) (ListModelRunStepsResponseObject, error) {
+func (h *APIHandler) ListModelRunSteps(ctx context.Context, req GenListModelRunStepsRequest) (GenListModelRunStepsResponse, error) {
 	steps, err := h.models.ListRunSteps(ctx, req.RunId)
 	if err != nil {
 		switch {
@@ -322,7 +322,7 @@ func (h *APIHandler) ListModelRunSteps(ctx context.Context, req ListModelRunStep
 }
 
 // CancelModelRun implements the endpoint for cancelling a model run.
-func (h *APIHandler) CancelModelRun(ctx context.Context, req CancelModelRunRequestObject) (CancelModelRunResponseObject, error) {
+func (h *APIHandler) CancelModelRun(ctx context.Context, req GenCancelModelRunRequest) (GenCancelModelRunResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.models.CancelRun(ctx, principal, req.RunId); err != nil {
@@ -574,7 +574,7 @@ func domainModelConfig(c ModelConfig) domain.ModelConfig {
 // === Model Tests ===
 
 // CreateModelTest implements the endpoint for creating a model test.
-func (h *APIHandler) CreateModelTest(ctx context.Context, req CreateModelTestRequestObject) (CreateModelTestResponseObject, error) {
+func (h *APIHandler) CreateModelTest(ctx context.Context, req GenCreateModelTestRequest) (GenCreateModelTestResponse, error) {
 	domReq := domain.CreateModelTestRequest{
 		Name:     req.Body.Name,
 		TestType: string(req.Body.TestType),
@@ -610,7 +610,7 @@ func (h *APIHandler) CreateModelTest(ctx context.Context, req CreateModelTestReq
 }
 
 // ListModelTests implements the endpoint for listing tests for a model.
-func (h *APIHandler) ListModelTests(ctx context.Context, req ListModelTestsRequestObject) (ListModelTestsResponseObject, error) {
+func (h *APIHandler) ListModelTests(ctx context.Context, req GenListModelTestsRequest) (GenListModelTestsResponse, error) {
 	tests, err := h.models.ListTests(ctx, req.ProjectName, req.ModelName)
 	if err != nil {
 		switch {
@@ -632,7 +632,7 @@ func (h *APIHandler) ListModelTests(ctx context.Context, req ListModelTestsReque
 }
 
 // DeleteModelTest implements the endpoint for deleting a model test.
-func (h *APIHandler) DeleteModelTest(ctx context.Context, req DeleteModelTestRequestObject) (DeleteModelTestResponseObject, error) {
+func (h *APIHandler) DeleteModelTest(ctx context.Context, req GenDeleteModelTestRequest) (GenDeleteModelTestResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.models.DeleteTest(ctx, principal, req.ProjectName, req.ModelName, req.TestId); err != nil {
@@ -651,7 +651,7 @@ func (h *APIHandler) DeleteModelTest(ctx context.Context, req DeleteModelTestReq
 }
 
 // ListModelTestResults implements the endpoint for listing test results for a run step.
-func (h *APIHandler) ListModelTestResults(ctx context.Context, req ListModelTestResultsRequestObject) (ListModelTestResultsResponseObject, error) {
+func (h *APIHandler) ListModelTestResults(ctx context.Context, req GenListModelTestResultsRequest) (GenListModelTestResultsResponse, error) {
 	results, err := h.models.ListTestResults(ctx, req.RunId, req.StepId)
 	if err != nil {
 		switch {
@@ -809,7 +809,7 @@ func domainFreshnessPolicy(f FreshnessPolicy) domain.FreshnessPolicy {
 // === Freshness ===
 
 // CheckModelFreshness implements the endpoint for checking a model's freshness status.
-func (h *APIHandler) CheckModelFreshness(ctx context.Context, req CheckModelFreshnessRequestObject) (CheckModelFreshnessResponseObject, error) {
+func (h *APIHandler) CheckModelFreshness(ctx context.Context, req GenCheckModelFreshnessRequest) (GenCheckModelFreshnessResponse, error) {
 	result, err := h.models.CheckFreshness(ctx, req.ProjectName, req.ModelName)
 	if err != nil {
 		switch {
@@ -840,7 +840,7 @@ func freshnessStatusToAPI(s domain.FreshnessStatus) FreshnessStatus {
 }
 
 // CheckSourceFreshness implements the endpoint for checking source freshness status.
-func (h *APIHandler) CheckSourceFreshness(ctx context.Context, req CheckSourceFreshnessRequestObject) (CheckSourceFreshnessResponseObject, error) {
+func (h *APIHandler) CheckSourceFreshness(ctx context.Context, req GenCheckSourceFreshnessRequest) (GenCheckSourceFreshnessResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 
@@ -893,7 +893,7 @@ func sourceFreshnessStatusToAPI(s domain.SourceFreshnessStatus) SourceFreshnessS
 // === Notebook Promotion ===
 
 // PromoteNotebookToModel implements the endpoint for promoting a notebook cell to a model.
-func (h *APIHandler) PromoteNotebookToModel(ctx context.Context, req PromoteNotebookToModelRequestObject) (PromoteNotebookToModelResponseObject, error) {
+func (h *APIHandler) PromoteNotebookToModel(ctx context.Context, req GenPromoteNotebookToModelRequest) (GenPromoteNotebookToModelResponse, error) {
 	domReq := domain.PromoteNotebookRequest{
 		NotebookID:  req.Body.NotebookId,
 		CellIndex:   int(req.Body.CellIndex),

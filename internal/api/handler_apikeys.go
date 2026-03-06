@@ -18,7 +18,7 @@ type apiKeyService interface {
 // === API Keys ===
 
 // CreateAPIKey implements the endpoint for creating a new API key.
-func (h *APIHandler) CreateAPIKey(ctx context.Context, req CreateAPIKeyRequestObject) (CreateAPIKeyResponseObject, error) {
+func (h *APIHandler) CreateAPIKey(ctx context.Context, req GenCreateAPIKeyRequest) (GenCreateAPIKeyResponse, error) {
 	rawKey, key, err := h.apiKeys.Create(ctx, domain.CreateAPIKeyRequest{
 		PrincipalID: req.Body.PrincipalId,
 		Name:        req.Body.Name,
@@ -52,7 +52,7 @@ func (h *APIHandler) CreateAPIKey(ctx context.Context, req CreateAPIKeyRequestOb
 }
 
 // ListAPIKeys implements the endpoint for listing API keys for a principal.
-func (h *APIHandler) ListAPIKeys(ctx context.Context, req ListAPIKeysRequestObject) (ListAPIKeysResponseObject, error) {
+func (h *APIHandler) ListAPIKeys(ctx context.Context, req GenListAPIKeysRequest) (GenListAPIKeysResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	keys, total, err := h.apiKeys.List(ctx, req.Params.PrincipalId, page)
 	if err != nil {
@@ -75,7 +75,7 @@ func (h *APIHandler) ListAPIKeys(ctx context.Context, req ListAPIKeysRequestObje
 }
 
 // DeleteAPIKey implements the endpoint for deleting an API key by ID.
-func (h *APIHandler) DeleteAPIKey(ctx context.Context, req DeleteAPIKeyRequestObject) (DeleteAPIKeyResponseObject, error) {
+func (h *APIHandler) DeleteAPIKey(ctx context.Context, req GenDeleteAPIKeyRequest) (GenDeleteAPIKeyResponse, error) {
 	if err := h.apiKeys.Delete(ctx, req.ApiKeyId); err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
@@ -88,7 +88,7 @@ func (h *APIHandler) DeleteAPIKey(ctx context.Context, req DeleteAPIKeyRequestOb
 }
 
 // CleanupExpiredAPIKeys implements the endpoint for removing expired API keys.
-func (h *APIHandler) CleanupExpiredAPIKeys(ctx context.Context, _ CleanupExpiredAPIKeysRequestObject) (CleanupExpiredAPIKeysResponseObject, error) {
+func (h *APIHandler) CleanupExpiredAPIKeys(ctx context.Context, _ GenCleanupExpiredAPIKeysRequest) (GenCleanupExpiredAPIKeysResponse, error) {
 	count, err := h.apiKeys.CleanupExpired(ctx)
 	if err != nil {
 		switch {

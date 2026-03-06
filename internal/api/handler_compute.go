@@ -23,7 +23,7 @@ type computeEndpointService interface {
 // === Compute Endpoints ===
 
 // ListComputeEndpoints implements the endpoint for listing all compute endpoints.
-func (h *APIHandler) ListComputeEndpoints(ctx context.Context, req ListComputeEndpointsRequestObject) (ListComputeEndpointsResponseObject, error) {
+func (h *APIHandler) ListComputeEndpoints(ctx context.Context, req GenListComputeEndpointsRequest) (GenListComputeEndpointsResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	principal := principalFromCtx(ctx)
 	eps, total, err := h.computeEndpoints.List(ctx, principal, page)
@@ -43,7 +43,7 @@ func (h *APIHandler) ListComputeEndpoints(ctx context.Context, req ListComputeEn
 }
 
 // CreateComputeEndpoint implements the endpoint for creating a new compute endpoint.
-func (h *APIHandler) CreateComputeEndpoint(ctx context.Context, req CreateComputeEndpointRequestObject) (CreateComputeEndpointResponseObject, error) {
+func (h *APIHandler) CreateComputeEndpoint(ctx context.Context, req GenCreateComputeEndpointRequest) (GenCreateComputeEndpointResponse, error) {
 	domReq := domain.CreateComputeEndpointRequest{
 		Name: req.Body.Name,
 		URL:  req.Body.Url,
@@ -81,7 +81,7 @@ func (h *APIHandler) CreateComputeEndpoint(ctx context.Context, req CreateComput
 }
 
 // GetComputeEndpoint implements the endpoint for retrieving a compute endpoint by name.
-func (h *APIHandler) GetComputeEndpoint(ctx context.Context, req GetComputeEndpointRequestObject) (GetComputeEndpointResponseObject, error) {
+func (h *APIHandler) GetComputeEndpoint(ctx context.Context, req GenGetComputeEndpointRequest) (GenGetComputeEndpointResponse, error) {
 	principal := principalFromCtx(ctx)
 	result, err := h.computeEndpoints.GetByName(ctx, principal, req.EndpointName)
 	if err != nil {
@@ -99,7 +99,7 @@ func (h *APIHandler) GetComputeEndpoint(ctx context.Context, req GetComputeEndpo
 }
 
 // UpdateComputeEndpoint implements the endpoint for updating a compute endpoint.
-func (h *APIHandler) UpdateComputeEndpoint(ctx context.Context, req UpdateComputeEndpointRequestObject) (UpdateComputeEndpointResponseObject, error) {
+func (h *APIHandler) UpdateComputeEndpoint(ctx context.Context, req GenUpdateComputeEndpointRequest) (GenUpdateComputeEndpointResponse, error) {
 	domReq := domain.UpdateComputeEndpointRequest{
 		URL:         req.Body.Url,
 		MaxMemoryGB: req.Body.MaxMemoryGb,
@@ -134,7 +134,7 @@ func (h *APIHandler) UpdateComputeEndpoint(ctx context.Context, req UpdateComput
 }
 
 // DeleteComputeEndpoint implements the endpoint for deleting a compute endpoint.
-func (h *APIHandler) DeleteComputeEndpoint(ctx context.Context, req DeleteComputeEndpointRequestObject) (DeleteComputeEndpointResponseObject, error) {
+func (h *APIHandler) DeleteComputeEndpoint(ctx context.Context, req GenDeleteComputeEndpointRequest) (GenDeleteComputeEndpointResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.computeEndpoints.Delete(ctx, principal, req.EndpointName); err != nil {
@@ -151,7 +151,7 @@ func (h *APIHandler) DeleteComputeEndpoint(ctx context.Context, req DeleteComput
 }
 
 // ListComputeAssignments implements the endpoint for listing assignments for a compute endpoint.
-func (h *APIHandler) ListComputeAssignments(ctx context.Context, req ListComputeAssignmentsRequestObject) (ListComputeAssignmentsResponseObject, error) {
+func (h *APIHandler) ListComputeAssignments(ctx context.Context, req GenListComputeAssignmentsRequest) (GenListComputeAssignmentsResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	principal := principalFromCtx(ctx)
 	assignments, total, err := h.computeEndpoints.ListAssignments(ctx, principal, req.EndpointName, page)
@@ -176,7 +176,7 @@ func (h *APIHandler) ListComputeAssignments(ctx context.Context, req ListCompute
 }
 
 // CreateComputeAssignment implements the endpoint for assigning a principal to a compute endpoint.
-func (h *APIHandler) CreateComputeAssignment(ctx context.Context, req CreateComputeAssignmentRequestObject) (CreateComputeAssignmentResponseObject, error) {
+func (h *APIHandler) CreateComputeAssignment(ctx context.Context, req GenCreateComputeAssignmentRequest) (GenCreateComputeAssignmentResponse, error) {
 	domReq := domain.CreateComputeAssignmentRequest{
 		PrincipalID:   req.Body.PrincipalId,
 		PrincipalType: string(req.Body.PrincipalType),
@@ -210,7 +210,7 @@ func (h *APIHandler) CreateComputeAssignment(ctx context.Context, req CreateComp
 }
 
 // GetComputeEndpointHealth implements the endpoint for checking compute endpoint health.
-func (h *APIHandler) GetComputeEndpointHealth(ctx context.Context, req GetComputeEndpointHealthRequestObject) (GetComputeEndpointHealthResponseObject, error) {
+func (h *APIHandler) GetComputeEndpointHealth(ctx context.Context, req GenGetComputeEndpointHealthRequest) (GenGetComputeEndpointHealthResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 
@@ -255,7 +255,7 @@ func (h *APIHandler) GetComputeEndpointHealth(ctx context.Context, req GetComput
 }
 
 // DeleteComputeAssignment implements the endpoint for removing a compute assignment.
-func (h *APIHandler) DeleteComputeAssignment(ctx context.Context, req DeleteComputeAssignmentRequestObject) (DeleteComputeAssignmentResponseObject, error) {
+func (h *APIHandler) DeleteComputeAssignment(ctx context.Context, req GenDeleteComputeAssignmentRequest) (GenDeleteComputeAssignmentResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.computeEndpoints.Unassign(ctx, principal, req.AssignmentId); err != nil {

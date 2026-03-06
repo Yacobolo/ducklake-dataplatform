@@ -200,18 +200,18 @@ func TestHandler_CreatePipeline(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		body     CreatePipelineJSONRequestBody
+		body     GenCreatePipelineJSONBody
 		svcFn    func(ctx context.Context, principal string, req domain.CreatePipelineRequest) (*domain.Pipeline, error)
-		assertFn func(t *testing.T, resp CreatePipelineResponseObject, err error)
+		assertFn func(t *testing.T, resp GenCreatePipelineResponse, err error)
 	}{
 		{
 			name: "happy path returns 201",
-			body: CreatePipelineJSONRequestBody{Name: "etl-daily", Description: pipelineStrPtr("Daily ETL pipeline")},
+			body: GenCreatePipelineJSONBody{Name: "etl-daily", Description: pipelineStrPtr("Daily ETL pipeline")},
 			svcFn: func(_ context.Context, _ string, _ domain.CreatePipelineRequest) (*domain.Pipeline, error) {
 				p := samplePipeline()
 				return &p, nil
 			},
-			assertFn: func(t *testing.T, resp CreatePipelineResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreatePipelineResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				created, ok := resp.(CreatePipeline201JSONResponse)
@@ -222,11 +222,11 @@ func TestHandler_CreatePipeline(t *testing.T) {
 		},
 		{
 			name: "validation error returns 400",
-			body: CreatePipelineJSONRequestBody{Name: "bad"},
+			body: GenCreatePipelineJSONBody{Name: "bad"},
 			svcFn: func(_ context.Context, _ string, _ domain.CreatePipelineRequest) (*domain.Pipeline, error) {
 				return nil, domain.ErrValidation("name is invalid")
 			},
-			assertFn: func(t *testing.T, resp CreatePipelineResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreatePipelineResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				badReq, ok := resp.(CreatePipeline400JSONResponse)
@@ -237,11 +237,11 @@ func TestHandler_CreatePipeline(t *testing.T) {
 		},
 		{
 			name: "conflict error returns 409",
-			body: CreatePipelineJSONRequestBody{Name: "etl-daily"},
+			body: GenCreatePipelineJSONBody{Name: "etl-daily"},
 			svcFn: func(_ context.Context, _ string, _ domain.CreatePipelineRequest) (*domain.Pipeline, error) {
 				return nil, domain.ErrConflict("pipeline etl-daily already exists")
 			},
-			assertFn: func(t *testing.T, resp CreatePipelineResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreatePipelineResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				conflict, ok := resp.(CreatePipeline409JSONResponse)
@@ -252,11 +252,11 @@ func TestHandler_CreatePipeline(t *testing.T) {
 		},
 		{
 			name: "unknown error falls through to 400",
-			body: CreatePipelineJSONRequestBody{Name: "fail"},
+			body: GenCreatePipelineJSONBody{Name: "fail"},
 			svcFn: func(_ context.Context, _ string, _ domain.CreatePipelineRequest) (*domain.Pipeline, error) {
 				return nil, assert.AnError
 			},
-			assertFn: func(t *testing.T, resp CreatePipelineResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreatePipelineResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				badReq, ok := resp.(CreatePipeline400JSONResponse)
@@ -272,7 +272,7 @@ func TestHandler_CreatePipeline(t *testing.T) {
 			svc := &mockPipelineService{createPipelineFn: tt.svcFn}
 			handler := &APIHandler{pipelines: svc}
 			body := tt.body
-			resp, err := handler.CreatePipeline(pipelineTestCtx(), CreatePipelineRequestObject{Body: &body})
+			resp, err := handler.CreatePipeline(pipelineTestCtx(), GenCreatePipelineRequest{Body: &body})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -285,7 +285,7 @@ func TestHandler_GetPipeline(t *testing.T) {
 		name     string
 		pipeName string
 		svcFn    func(ctx context.Context, name string) (*domain.Pipeline, error)
-		assertFn func(t *testing.T, resp GetPipelineResponseObject, err error)
+		assertFn func(t *testing.T, resp GenGetPipelineResponse, err error)
 	}{
 		{
 			name:     "happy path returns 200",
@@ -295,7 +295,7 @@ func TestHandler_GetPipeline(t *testing.T) {
 				p.Name = name
 				return &p, nil
 			},
-			assertFn: func(t *testing.T, resp GetPipelineResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenGetPipelineResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(GetPipeline200JSONResponse)
@@ -309,7 +309,7 @@ func TestHandler_GetPipeline(t *testing.T) {
 			svcFn: func(_ context.Context, name string) (*domain.Pipeline, error) {
 				return nil, domain.ErrNotFound("pipeline %s not found", name)
 			},
-			assertFn: func(t *testing.T, resp GetPipelineResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenGetPipelineResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(GetPipeline404JSONResponse)
@@ -325,7 +325,7 @@ func TestHandler_GetPipeline(t *testing.T) {
 			t.Parallel()
 			svc := &mockPipelineService{getPipelineFn: tt.svcFn}
 			handler := &APIHandler{pipelines: svc}
-			resp, err := handler.GetPipeline(pipelineTestCtx(), GetPipelineRequestObject{PipelineName: tt.pipeName})
+			resp, err := handler.GetPipeline(pipelineTestCtx(), GenGetPipelineRequest{PipelineName: tt.pipeName})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -337,20 +337,20 @@ func TestHandler_UpdatePipeline(t *testing.T) {
 	tests := []struct {
 		name     string
 		pipeName string
-		body     UpdatePipelineJSONRequestBody
+		body     GenUpdatePipelineJSONBody
 		svcFn    func(ctx context.Context, principal string, name string, req domain.UpdatePipelineRequest) (*domain.Pipeline, error)
-		assertFn func(t *testing.T, resp UpdatePipelineResponseObject, err error)
+		assertFn func(t *testing.T, resp GenUpdatePipelineResponse, err error)
 	}{
 		{
 			name:     "happy path returns 200",
 			pipeName: "etl-daily",
-			body:     UpdatePipelineJSONRequestBody{Description: pipelineStrPtr("updated desc")},
+			body:     GenUpdatePipelineJSONBody{Description: pipelineStrPtr("updated desc")},
 			svcFn: func(_ context.Context, _ string, _ string, _ domain.UpdatePipelineRequest) (*domain.Pipeline, error) {
 				p := samplePipeline()
 				p.Description = "updated desc"
 				return &p, nil
 			},
-			assertFn: func(t *testing.T, resp UpdatePipelineResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenUpdatePipelineResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(UpdatePipeline200JSONResponse)
@@ -361,11 +361,11 @@ func TestHandler_UpdatePipeline(t *testing.T) {
 		{
 			name:     "not found returns 404",
 			pipeName: "nonexistent",
-			body:     UpdatePipelineJSONRequestBody{Description: pipelineStrPtr("x")},
+			body:     GenUpdatePipelineJSONBody{Description: pipelineStrPtr("x")},
 			svcFn: func(_ context.Context, _ string, name string, _ domain.UpdatePipelineRequest) (*domain.Pipeline, error) {
 				return nil, domain.ErrNotFound("pipeline %s not found", name)
 			},
-			assertFn: func(t *testing.T, resp UpdatePipelineResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenUpdatePipelineResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(UpdatePipeline404JSONResponse)
@@ -381,7 +381,7 @@ func TestHandler_UpdatePipeline(t *testing.T) {
 			svc := &mockPipelineService{updatePipelineFn: tt.svcFn}
 			handler := &APIHandler{pipelines: svc}
 			body := tt.body
-			resp, err := handler.UpdatePipeline(pipelineTestCtx(), UpdatePipelineRequestObject{
+			resp, err := handler.UpdatePipeline(pipelineTestCtx(), GenUpdatePipelineRequest{
 				PipelineName: tt.pipeName,
 				Body:         &body,
 			})
@@ -397,7 +397,7 @@ func TestHandler_DeletePipeline(t *testing.T) {
 		name     string
 		pipeName string
 		svcFn    func(ctx context.Context, principal string, name string) error
-		assertFn func(t *testing.T, resp DeletePipelineResponseObject, err error)
+		assertFn func(t *testing.T, resp GenDeletePipelineResponse, err error)
 	}{
 		{
 			name:     "happy path returns 204",
@@ -405,7 +405,7 @@ func TestHandler_DeletePipeline(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _ string) error {
 				return nil
 			},
-			assertFn: func(t *testing.T, resp DeletePipelineResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeletePipelineResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				_, ok := resp.(DeletePipeline204Response)
@@ -418,7 +418,7 @@ func TestHandler_DeletePipeline(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, name string) error {
 				return domain.ErrNotFound("pipeline %s not found", name)
 			},
-			assertFn: func(t *testing.T, resp DeletePipelineResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeletePipelineResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(DeletePipeline404JSONResponse)
@@ -433,7 +433,7 @@ func TestHandler_DeletePipeline(t *testing.T) {
 			t.Parallel()
 			svc := &mockPipelineService{deletePipelineFn: tt.svcFn}
 			handler := &APIHandler{pipelines: svc}
-			resp, err := handler.DeletePipeline(pipelineTestCtx(), DeletePipelineRequestObject{PipelineName: tt.pipeName})
+			resp, err := handler.DeletePipeline(pipelineTestCtx(), GenDeletePipelineRequest{PipelineName: tt.pipeName})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -446,7 +446,7 @@ func TestHandler_ListPipelines(t *testing.T) {
 		name     string
 		params   ListPipelinesParams
 		svcFn    func(ctx context.Context, page domain.PageRequest) ([]domain.Pipeline, int64, error)
-		assertFn func(t *testing.T, resp ListPipelinesResponseObject, err error)
+		assertFn func(t *testing.T, resp GenListPipelinesResponse, err error)
 	}{
 		{
 			name:   "happy path returns 200 with results",
@@ -454,7 +454,7 @@ func TestHandler_ListPipelines(t *testing.T) {
 			svcFn: func(_ context.Context, _ domain.PageRequest) ([]domain.Pipeline, int64, error) {
 				return []domain.Pipeline{samplePipeline()}, 1, nil
 			},
-			assertFn: func(t *testing.T, resp ListPipelinesResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListPipelinesResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(ListPipelines200JSONResponse)
@@ -471,7 +471,7 @@ func TestHandler_ListPipelines(t *testing.T) {
 			svcFn: func(_ context.Context, _ domain.PageRequest) ([]domain.Pipeline, int64, error) {
 				return []domain.Pipeline{}, 0, nil
 			},
-			assertFn: func(t *testing.T, resp ListPipelinesResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListPipelinesResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(ListPipelines200JSONResponse)
@@ -487,7 +487,7 @@ func TestHandler_ListPipelines(t *testing.T) {
 			t.Parallel()
 			svc := &mockPipelineService{listPipelinesFn: tt.svcFn}
 			handler := &APIHandler{pipelines: svc}
-			resp, err := handler.ListPipelines(pipelineTestCtx(), ListPipelinesRequestObject{Params: tt.params})
+			resp, err := handler.ListPipelines(pipelineTestCtx(), GenListPipelinesRequest{Params: tt.params})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -499,19 +499,19 @@ func TestHandler_CreatePipelineJob(t *testing.T) {
 	tests := []struct {
 		name     string
 		pipeName string
-		body     CreatePipelineJobJSONRequestBody
+		body     GenCreatePipelineJobJSONBody
 		svcFn    func(ctx context.Context, principal string, pipelineName string, req domain.CreatePipelineJobRequest) (*domain.PipelineJob, error)
-		assertFn func(t *testing.T, resp CreatePipelineJobResponseObject, err error)
+		assertFn func(t *testing.T, resp GenCreatePipelineJobResponse, err error)
 	}{
 		{
 			name:     "happy path returns 201",
 			pipeName: "etl-daily",
-			body:     CreatePipelineJobJSONRequestBody{Name: "extract", NotebookId: pipelineStrPtr("nb-1")},
+			body:     GenCreatePipelineJobJSONBody{Name: "extract", NotebookId: pipelineStrPtr("nb-1")},
 			svcFn: func(_ context.Context, _ string, _ string, _ domain.CreatePipelineJobRequest) (*domain.PipelineJob, error) {
 				j := sampleJob()
 				return &j, nil
 			},
-			assertFn: func(t *testing.T, resp CreatePipelineJobResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreatePipelineJobResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				created, ok := resp.(CreatePipelineJob201JSONResponse)
@@ -523,11 +523,11 @@ func TestHandler_CreatePipelineJob(t *testing.T) {
 		{
 			name:     "validation error returns 400",
 			pipeName: "etl-daily",
-			body:     CreatePipelineJobJSONRequestBody{Name: "", NotebookId: pipelineStrPtr("nb-1")},
+			body:     GenCreatePipelineJobJSONBody{Name: "", NotebookId: pipelineStrPtr("nb-1")},
 			svcFn: func(_ context.Context, _ string, _ string, _ domain.CreatePipelineJobRequest) (*domain.PipelineJob, error) {
 				return nil, domain.ErrValidation("name is required")
 			},
-			assertFn: func(t *testing.T, resp CreatePipelineJobResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreatePipelineJobResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				badReq, ok := resp.(CreatePipelineJob400JSONResponse)
@@ -539,11 +539,11 @@ func TestHandler_CreatePipelineJob(t *testing.T) {
 		{
 			name:     "pipeline not found maps to 400",
 			pipeName: "nonexistent",
-			body:     CreatePipelineJobJSONRequestBody{Name: "extract", NotebookId: pipelineStrPtr("nb-1")},
+			body:     GenCreatePipelineJobJSONBody{Name: "extract", NotebookId: pipelineStrPtr("nb-1")},
 			svcFn: func(_ context.Context, _ string, pipelineName string, _ domain.CreatePipelineJobRequest) (*domain.PipelineJob, error) {
 				return nil, domain.ErrNotFound("pipeline %s not found", pipelineName)
 			},
-			assertFn: func(t *testing.T, resp CreatePipelineJobResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreatePipelineJobResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				badReq, ok := resp.(CreatePipelineJob400JSONResponse)
@@ -555,11 +555,11 @@ func TestHandler_CreatePipelineJob(t *testing.T) {
 		{
 			name:     "conflict error returns 409",
 			pipeName: "etl-daily",
-			body:     CreatePipelineJobJSONRequestBody{Name: "extract", NotebookId: pipelineStrPtr("nb-1")},
+			body:     GenCreatePipelineJobJSONBody{Name: "extract", NotebookId: pipelineStrPtr("nb-1")},
 			svcFn: func(_ context.Context, _ string, _ string, _ domain.CreatePipelineJobRequest) (*domain.PipelineJob, error) {
 				return nil, domain.ErrConflict("job extract already exists")
 			},
-			assertFn: func(t *testing.T, resp CreatePipelineJobResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreatePipelineJobResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				conflict, ok := resp.(CreatePipelineJob409JSONResponse)
@@ -575,7 +575,7 @@ func TestHandler_CreatePipelineJob(t *testing.T) {
 			svc := &mockPipelineService{createJobFn: tt.svcFn}
 			handler := &APIHandler{pipelines: svc}
 			body := tt.body
-			resp, err := handler.CreatePipelineJob(pipelineTestCtx(), CreatePipelineJobRequestObject{
+			resp, err := handler.CreatePipelineJob(pipelineTestCtx(), GenCreatePipelineJobRequest{
 				PipelineName: tt.pipeName,
 				Body:         &body,
 			})
@@ -591,7 +591,7 @@ func TestHandler_ListPipelineJobs(t *testing.T) {
 		name     string
 		pipeName string
 		svcFn    func(ctx context.Context, pipelineName string) ([]domain.PipelineJob, error)
-		assertFn func(t *testing.T, resp ListPipelineJobsResponseObject, err error)
+		assertFn func(t *testing.T, resp GenListPipelineJobsResponse, err error)
 	}{
 		{
 			name:     "happy path returns 200",
@@ -599,7 +599,7 @@ func TestHandler_ListPipelineJobs(t *testing.T) {
 			svcFn: func(_ context.Context, _ string) ([]domain.PipelineJob, error) {
 				return []domain.PipelineJob{sampleJob()}, nil
 			},
-			assertFn: func(t *testing.T, resp ListPipelineJobsResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListPipelineJobsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(ListPipelineJobs200JSONResponse)
@@ -615,7 +615,7 @@ func TestHandler_ListPipelineJobs(t *testing.T) {
 			svcFn: func(_ context.Context, name string) ([]domain.PipelineJob, error) {
 				return nil, domain.ErrNotFound("pipeline %s not found", name)
 			},
-			assertFn: func(t *testing.T, resp ListPipelineJobsResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListPipelineJobsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(ListPipelineJobs404JSONResponse)
@@ -630,7 +630,7 @@ func TestHandler_ListPipelineJobs(t *testing.T) {
 			t.Parallel()
 			svc := &mockPipelineService{listJobsFn: tt.svcFn}
 			handler := &APIHandler{pipelines: svc}
-			resp, err := handler.ListPipelineJobs(pipelineTestCtx(), ListPipelineJobsRequestObject{PipelineName: tt.pipeName})
+			resp, err := handler.ListPipelineJobs(pipelineTestCtx(), GenListPipelineJobsRequest{PipelineName: tt.pipeName})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -644,7 +644,7 @@ func TestHandler_DeletePipelineJob(t *testing.T) {
 		pipeName string
 		jobID    string
 		svcFn    func(ctx context.Context, principal string, pipelineName string, jobID string) error
-		assertFn func(t *testing.T, resp DeletePipelineJobResponseObject, err error)
+		assertFn func(t *testing.T, resp GenDeletePipelineJobResponse, err error)
 	}{
 		{
 			name:     "happy path returns 204",
@@ -653,7 +653,7 @@ func TestHandler_DeletePipelineJob(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _ string, _ string) error {
 				return nil
 			},
-			assertFn: func(t *testing.T, resp DeletePipelineJobResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeletePipelineJobResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				_, ok := resp.(DeletePipelineJob204Response)
@@ -667,7 +667,7 @@ func TestHandler_DeletePipelineJob(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _ string, jobID string) error {
 				return domain.ErrNotFound("job %s not found", jobID)
 			},
-			assertFn: func(t *testing.T, resp DeletePipelineJobResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeletePipelineJobResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(DeletePipelineJob404JSONResponse)
@@ -682,7 +682,7 @@ func TestHandler_DeletePipelineJob(t *testing.T) {
 			t.Parallel()
 			svc := &mockPipelineService{deleteJobFn: tt.svcFn}
 			handler := &APIHandler{pipelines: svc}
-			resp, err := handler.DeletePipelineJob(pipelineTestCtx(), DeletePipelineJobRequestObject{
+			resp, err := handler.DeletePipelineJob(pipelineTestCtx(), GenDeletePipelineJobRequest{
 				PipelineName: tt.pipeName,
 				JobId:        tt.jobID,
 			})
@@ -697,19 +697,19 @@ func TestHandler_TriggerPipelineRun(t *testing.T) {
 	tests := []struct {
 		name     string
 		pipeName string
-		body     *TriggerPipelineRunJSONRequestBody
+		body     *GenTriggerPipelineRunJSONBody
 		svcFn    func(ctx context.Context, principal string, pipelineName string, params map[string]string, triggerType string) (*domain.PipelineRun, error)
-		assertFn func(t *testing.T, resp TriggerPipelineRunResponseObject, err error)
+		assertFn func(t *testing.T, resp GenTriggerPipelineRunResponse, err error)
 	}{
 		{
 			name:     "happy path returns 201",
 			pipeName: "etl-daily",
-			body:     &TriggerPipelineRunJSONRequestBody{Parameters: &map[string]string{"env": "prod"}},
+			body:     &GenTriggerPipelineRunJSONBody{Parameters: &map[string]string{"env": "prod"}},
 			svcFn: func(_ context.Context, _ string, _ string, _ map[string]string, _ string) (*domain.PipelineRun, error) {
 				r := sampleRun()
 				return &r, nil
 			},
-			assertFn: func(t *testing.T, resp TriggerPipelineRunResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenTriggerPipelineRunResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				created, ok := resp.(TriggerPipelineRun201JSONResponse)
@@ -729,7 +729,7 @@ func TestHandler_TriggerPipelineRun(t *testing.T) {
 				r.Parameters = nil
 				return &r, nil
 			},
-			assertFn: func(t *testing.T, resp TriggerPipelineRunResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenTriggerPipelineRunResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				_, ok := resp.(TriggerPipelineRun201JSONResponse)
@@ -739,11 +739,11 @@ func TestHandler_TriggerPipelineRun(t *testing.T) {
 		{
 			name:     "validation error returns 400",
 			pipeName: "etl-daily",
-			body:     &TriggerPipelineRunJSONRequestBody{},
+			body:     &GenTriggerPipelineRunJSONBody{},
 			svcFn: func(_ context.Context, _ string, _ string, _ map[string]string, _ string) (*domain.PipelineRun, error) {
 				return nil, domain.ErrValidation("pipeline is paused")
 			},
-			assertFn: func(t *testing.T, resp TriggerPipelineRunResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenTriggerPipelineRunResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				badReq, ok := resp.(TriggerPipelineRun400JSONResponse)
@@ -755,11 +755,11 @@ func TestHandler_TriggerPipelineRun(t *testing.T) {
 		{
 			name:     "not found returns 404",
 			pipeName: "nonexistent",
-			body:     &TriggerPipelineRunJSONRequestBody{},
+			body:     &GenTriggerPipelineRunJSONBody{},
 			svcFn: func(_ context.Context, _ string, name string, _ map[string]string, _ string) (*domain.PipelineRun, error) {
 				return nil, domain.ErrNotFound("pipeline %s not found", name)
 			},
-			assertFn: func(t *testing.T, resp TriggerPipelineRunResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenTriggerPipelineRunResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(TriggerPipelineRun404JSONResponse)
@@ -774,7 +774,7 @@ func TestHandler_TriggerPipelineRun(t *testing.T) {
 			t.Parallel()
 			svc := &mockPipelineService{triggerRunFn: tt.svcFn}
 			handler := &APIHandler{pipelines: svc}
-			resp, err := handler.TriggerPipelineRun(pipelineTestCtx(), TriggerPipelineRunRequestObject{
+			resp, err := handler.TriggerPipelineRun(pipelineTestCtx(), GenTriggerPipelineRunRequest{
 				PipelineName: tt.pipeName,
 				Body:         tt.body,
 			})
@@ -791,7 +791,7 @@ func TestHandler_ListPipelineRuns(t *testing.T) {
 		pipeName string
 		params   ListPipelineRunsParams
 		svcFn    func(ctx context.Context, pipelineName string, filter domain.PipelineRunFilter) ([]domain.PipelineRun, int64, error)
-		assertFn func(t *testing.T, resp ListPipelineRunsResponseObject, err error)
+		assertFn func(t *testing.T, resp GenListPipelineRunsResponse, err error)
 	}{
 		{
 			name:     "happy path returns 200",
@@ -800,7 +800,7 @@ func TestHandler_ListPipelineRuns(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _ domain.PipelineRunFilter) ([]domain.PipelineRun, int64, error) {
 				return []domain.PipelineRun{sampleRun()}, 1, nil
 			},
-			assertFn: func(t *testing.T, resp ListPipelineRunsResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListPipelineRunsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(ListPipelineRuns200JSONResponse)
@@ -817,7 +817,7 @@ func TestHandler_ListPipelineRuns(t *testing.T) {
 			svcFn: func(_ context.Context, name string, _ domain.PipelineRunFilter) ([]domain.PipelineRun, int64, error) {
 				return nil, 0, domain.ErrNotFound("pipeline %s not found", name)
 			},
-			assertFn: func(t *testing.T, resp ListPipelineRunsResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListPipelineRunsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(ListPipelineRuns404JSONResponse)
@@ -837,7 +837,7 @@ func TestHandler_ListPipelineRuns(t *testing.T) {
 				assert.Equal(t, "RUNNING", *filter.Status)
 				return []domain.PipelineRun{sampleRun()}, 1, nil
 			},
-			assertFn: func(t *testing.T, resp ListPipelineRunsResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListPipelineRunsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				_, ok := resp.(ListPipelineRuns200JSONResponse)
@@ -851,7 +851,7 @@ func TestHandler_ListPipelineRuns(t *testing.T) {
 			t.Parallel()
 			svc := &mockPipelineService{listRunsFn: tt.svcFn}
 			handler := &APIHandler{pipelines: svc}
-			resp, err := handler.ListPipelineRuns(pipelineTestCtx(), ListPipelineRunsRequestObject{
+			resp, err := handler.ListPipelineRuns(pipelineTestCtx(), GenListPipelineRunsRequest{
 				PipelineName: tt.pipeName,
 				Params:       tt.params,
 			})
@@ -867,7 +867,7 @@ func TestHandler_GetPipelineRun(t *testing.T) {
 		name     string
 		runID    string
 		svcFn    func(ctx context.Context, runID string) (*domain.PipelineRun, error)
-		assertFn func(t *testing.T, resp GetPipelineRunResponseObject, err error)
+		assertFn func(t *testing.T, resp GenGetPipelineRunResponse, err error)
 	}{
 		{
 			name:  "happy path returns 200",
@@ -876,7 +876,7 @@ func TestHandler_GetPipelineRun(t *testing.T) {
 				r := sampleRun()
 				return &r, nil
 			},
-			assertFn: func(t *testing.T, resp GetPipelineRunResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenGetPipelineRunResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(GetPipelineRun200JSONResponse)
@@ -891,7 +891,7 @@ func TestHandler_GetPipelineRun(t *testing.T) {
 			svcFn: func(_ context.Context, runID string) (*domain.PipelineRun, error) {
 				return nil, domain.ErrNotFound("run %s not found", runID)
 			},
-			assertFn: func(t *testing.T, resp GetPipelineRunResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenGetPipelineRunResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(GetPipelineRun404JSONResponse)
@@ -906,7 +906,7 @@ func TestHandler_GetPipelineRun(t *testing.T) {
 			t.Parallel()
 			svc := &mockPipelineService{getRunFn: tt.svcFn}
 			handler := &APIHandler{pipelines: svc}
-			resp, err := handler.GetPipelineRun(pipelineTestCtx(), GetPipelineRunRequestObject{RunId: tt.runID})
+			resp, err := handler.GetPipelineRun(pipelineTestCtx(), GenGetPipelineRunRequest{RunId: tt.runID})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -920,7 +920,7 @@ func TestHandler_CancelPipelineRun(t *testing.T) {
 		runID    string
 		cancelFn func(ctx context.Context, principal string, runID string) error
 		getRunFn func(ctx context.Context, runID string) (*domain.PipelineRun, error)
-		assertFn func(t *testing.T, resp CancelPipelineRunResponseObject, err error)
+		assertFn func(t *testing.T, resp GenCancelPipelineRunResponse, err error)
 	}{
 		{
 			name:  "happy path returns 200 with cancelled run",
@@ -933,7 +933,7 @@ func TestHandler_CancelPipelineRun(t *testing.T) {
 				r.Status = domain.PipelineRunStatusCancelled
 				return &r, nil
 			},
-			assertFn: func(t *testing.T, resp CancelPipelineRunResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCancelPipelineRunResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(CancelPipelineRun200JSONResponse)
@@ -948,7 +948,7 @@ func TestHandler_CancelPipelineRun(t *testing.T) {
 				return domain.ErrValidation("run is already completed")
 			},
 			getRunFn: nil, // should not be called
-			assertFn: func(t *testing.T, resp CancelPipelineRunResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCancelPipelineRunResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				badReq, ok := resp.(CancelPipelineRun400JSONResponse)
@@ -964,7 +964,7 @@ func TestHandler_CancelPipelineRun(t *testing.T) {
 				return domain.ErrNotFound("run %s not found", runID)
 			},
 			getRunFn: nil, // should not be called
-			assertFn: func(t *testing.T, resp CancelPipelineRunResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCancelPipelineRunResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(CancelPipelineRun404JSONResponse)
@@ -982,7 +982,7 @@ func TestHandler_CancelPipelineRun(t *testing.T) {
 				getRunFn:    tt.getRunFn,
 			}
 			handler := &APIHandler{pipelines: svc}
-			resp, err := handler.CancelPipelineRun(pipelineTestCtx(), CancelPipelineRunRequestObject{RunId: tt.runID})
+			resp, err := handler.CancelPipelineRun(pipelineTestCtx(), GenCancelPipelineRunRequest{RunId: tt.runID})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -995,7 +995,7 @@ func TestHandler_ListPipelineJobRuns(t *testing.T) {
 		name     string
 		runID    string
 		svcFn    func(ctx context.Context, runID string) ([]domain.PipelineJobRun, error)
-		assertFn func(t *testing.T, resp ListPipelineJobRunsResponseObject, err error)
+		assertFn func(t *testing.T, resp GenListPipelineJobRunsResponse, err error)
 	}{
 		{
 			name:  "happy path returns 200",
@@ -1003,7 +1003,7 @@ func TestHandler_ListPipelineJobRuns(t *testing.T) {
 			svcFn: func(_ context.Context, _ string) ([]domain.PipelineJobRun, error) {
 				return []domain.PipelineJobRun{sampleJobRun()}, nil
 			},
-			assertFn: func(t *testing.T, resp ListPipelineJobRunsResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListPipelineJobRunsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(ListPipelineJobRuns200JSONResponse)
@@ -1021,7 +1021,7 @@ func TestHandler_ListPipelineJobRuns(t *testing.T) {
 			svcFn: func(_ context.Context, runID string) ([]domain.PipelineJobRun, error) {
 				return nil, domain.ErrNotFound("run %s not found", runID)
 			},
-			assertFn: func(t *testing.T, resp ListPipelineJobRunsResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListPipelineJobRunsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(ListPipelineJobRuns404JSONResponse)
@@ -1036,7 +1036,7 @@ func TestHandler_ListPipelineJobRuns(t *testing.T) {
 			t.Parallel()
 			svc := &mockPipelineService{listJobRunsFn: tt.svcFn}
 			handler := &APIHandler{pipelines: svc}
-			resp, err := handler.ListPipelineJobRuns(pipelineTestCtx(), ListPipelineJobRunsRequestObject{RunId: tt.runID})
+			resp, err := handler.ListPipelineJobRuns(pipelineTestCtx(), GenListPipelineJobRunsRequest{RunId: tt.runID})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -1056,8 +1056,8 @@ func TestHandler_CreatePipeline_PassesPrincipal(t *testing.T) {
 		},
 	}
 	handler := &APIHandler{pipelines: svc}
-	body := CreatePipelineJSONRequestBody{Name: "test"}
-	_, err := handler.CreatePipeline(pipelineTestCtx(), CreatePipelineRequestObject{Body: &body})
+	body := GenCreatePipelineJSONBody{Name: "test"}
+	_, err := handler.CreatePipeline(pipelineTestCtx(), GenCreatePipelineRequest{Body: &body})
 	require.NoError(t, err)
 	assert.Equal(t, "test-user", capturedPrincipal)
 }
@@ -1073,7 +1073,7 @@ func TestHandler_DeletePipeline_PassesPrincipal(t *testing.T) {
 		},
 	}
 	handler := &APIHandler{pipelines: svc}
-	_, err := handler.DeletePipeline(pipelineTestCtx(), DeletePipelineRequestObject{PipelineName: "test"})
+	_, err := handler.DeletePipeline(pipelineTestCtx(), GenDeletePipelineRequest{PipelineName: "test"})
 	require.NoError(t, err)
 	assert.Equal(t, "test-user", capturedPrincipal)
 }
@@ -1091,8 +1091,8 @@ func TestHandler_TriggerPipelineRun_PassesPrincipalAndTriggerType(t *testing.T) 
 		},
 	}
 	handler := &APIHandler{pipelines: svc}
-	body := TriggerPipelineRunJSONRequestBody{}
-	_, err := handler.TriggerPipelineRun(pipelineTestCtx(), TriggerPipelineRunRequestObject{
+	body := GenTriggerPipelineRunJSONBody{}
+	_, err := handler.TriggerPipelineRun(pipelineTestCtx(), GenTriggerPipelineRunRequest{
 		PipelineName: "etl-daily",
 		Body:         &body,
 	})

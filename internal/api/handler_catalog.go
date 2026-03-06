@@ -36,7 +36,7 @@ type catalogService interface {
 // === Catalog Management ===
 
 // GetCatalog implements the endpoint for retrieving catalog information.
-func (h *APIHandler) GetCatalog(ctx context.Context, request GetCatalogRequestObject) (GetCatalogResponseObject, error) {
+func (h *APIHandler) GetCatalog(ctx context.Context, request GenGetCatalogRequest) (GenGetCatalogResponse, error) {
 	info, err := h.catalog.GetCatalogInfo(ctx, string(request.CatalogName))
 	if err != nil {
 		switch {
@@ -53,7 +53,7 @@ func (h *APIHandler) GetCatalog(ctx context.Context, request GetCatalogRequestOb
 }
 
 // ListSchemas implements the endpoint for listing schemas in the catalog.
-func (h *APIHandler) ListSchemas(ctx context.Context, request ListSchemasRequestObject) (ListSchemasResponseObject, error) {
+func (h *APIHandler) ListSchemas(ctx context.Context, request GenListSchemasRequest) (GenListSchemasResponse, error) {
 	page := pageFromParams(request.Params.MaxResults, request.Params.PageToken)
 	schemas, total, err := h.catalog.ListSchemas(ctx, string(request.CatalogName), page)
 	if err != nil {
@@ -71,7 +71,7 @@ func (h *APIHandler) ListSchemas(ctx context.Context, request ListSchemasRequest
 }
 
 // CreateSchema implements the endpoint for creating a new schema.
-func (h *APIHandler) CreateSchema(ctx context.Context, request CreateSchemaRequestObject) (CreateSchemaResponseObject, error) {
+func (h *APIHandler) CreateSchema(ctx context.Context, request GenCreateSchemaRequest) (GenCreateSchemaResponse, error) {
 	domReq := domain.CreateSchemaRequest{
 		Name: request.Body.Name,
 	}
@@ -106,7 +106,7 @@ func (h *APIHandler) CreateSchema(ctx context.Context, request CreateSchemaReque
 }
 
 // GetSchema implements the endpoint for retrieving a schema by name.
-func (h *APIHandler) GetSchema(ctx context.Context, request GetSchemaRequestObject) (GetSchemaResponseObject, error) {
+func (h *APIHandler) GetSchema(ctx context.Context, request GenGetSchemaRequest) (GenGetSchemaResponse, error) {
 	result, err := h.catalog.GetSchema(ctx, string(request.CatalogName), request.SchemaName)
 	if err != nil {
 		switch {
@@ -123,7 +123,7 @@ func (h *APIHandler) GetSchema(ctx context.Context, request GetSchemaRequestObje
 }
 
 // UpdateSchema implements the endpoint for updating schema metadata.
-func (h *APIHandler) UpdateSchema(ctx context.Context, request UpdateSchemaRequestObject) (UpdateSchemaResponseObject, error) {
+func (h *APIHandler) UpdateSchema(ctx context.Context, request GenUpdateSchemaRequest) (GenUpdateSchemaResponse, error) {
 	domReq := domain.UpdateSchemaRequest{
 		Comment: request.Body.Comment,
 	}
@@ -150,7 +150,7 @@ func (h *APIHandler) UpdateSchema(ctx context.Context, request UpdateSchemaReque
 }
 
 // DeleteSchema implements the endpoint for deleting a schema by name.
-func (h *APIHandler) DeleteSchema(ctx context.Context, request DeleteSchemaRequestObject) (DeleteSchemaResponseObject, error) {
+func (h *APIHandler) DeleteSchema(ctx context.Context, request GenDeleteSchemaRequest) (GenDeleteSchemaResponse, error) {
 	force := false
 	if request.Params.Force != nil {
 		force = *request.Params.Force
@@ -174,7 +174,7 @@ func (h *APIHandler) DeleteSchema(ctx context.Context, request DeleteSchemaReque
 }
 
 // ListTables implements the endpoint for listing tables in a schema.
-func (h *APIHandler) ListTables(ctx context.Context, request ListTablesRequestObject) (ListTablesResponseObject, error) {
+func (h *APIHandler) ListTables(ctx context.Context, request GenListTablesRequest) (GenListTablesResponse, error) {
 	page := pageFromParams(request.Params.MaxResults, request.Params.PageToken)
 	tables, total, err := h.catalog.ListTables(ctx, string(request.CatalogName), request.SchemaName, page)
 	if err != nil {
@@ -197,7 +197,7 @@ func (h *APIHandler) ListTables(ctx context.Context, request ListTablesRequestOb
 }
 
 // CreateTable implements the endpoint for creating a new table in a schema.
-func (h *APIHandler) CreateTable(ctx context.Context, request CreateTableRequestObject) (CreateTableResponseObject, error) {
+func (h *APIHandler) CreateTable(ctx context.Context, request GenCreateTableRequest) (GenCreateTableResponse, error) {
 	var cols []domain.CreateColumnDef
 	if request.Body.Columns != nil {
 		cols = make([]domain.CreateColumnDef, len(*request.Body.Columns))
@@ -248,7 +248,7 @@ func (h *APIHandler) CreateTable(ctx context.Context, request CreateTableRequest
 }
 
 // GetTable implements the endpoint for retrieving a table by name.
-func (h *APIHandler) GetTable(ctx context.Context, request GetTableRequestObject) (GetTableResponseObject, error) {
+func (h *APIHandler) GetTable(ctx context.Context, request GenGetTableRequest) (GenGetTableResponse, error) {
 	result, err := h.catalog.GetTable(ctx, string(request.CatalogName), request.SchemaName, request.TableName)
 	if err != nil {
 		switch {
@@ -265,7 +265,7 @@ func (h *APIHandler) GetTable(ctx context.Context, request GetTableRequestObject
 }
 
 // UpdateTable implements the endpoint for updating table metadata.
-func (h *APIHandler) UpdateTable(ctx context.Context, request UpdateTableRequestObject) (UpdateTableResponseObject, error) {
+func (h *APIHandler) UpdateTable(ctx context.Context, request GenUpdateTableRequest) (GenUpdateTableResponse, error) {
 	domReq := domain.UpdateTableRequest{}
 	if request.Body.Comment != nil {
 		domReq.Comment = request.Body.Comment
@@ -296,7 +296,7 @@ func (h *APIHandler) UpdateTable(ctx context.Context, request UpdateTableRequest
 }
 
 // DeleteTable implements the endpoint for deleting a table by name.
-func (h *APIHandler) DeleteTable(ctx context.Context, request DeleteTableRequestObject) (DeleteTableResponseObject, error) {
+func (h *APIHandler) DeleteTable(ctx context.Context, request GenDeleteTableRequest) (GenDeleteTableResponse, error) {
 	principal := principalFromCtx(ctx)
 	if err := h.catalog.DeleteTable(ctx, string(request.CatalogName), principal, request.SchemaName, request.TableName); err != nil {
 		switch {
@@ -312,7 +312,7 @@ func (h *APIHandler) DeleteTable(ctx context.Context, request DeleteTableRequest
 }
 
 // ListTableColumns implements the endpoint for listing columns of a table.
-func (h *APIHandler) ListTableColumns(ctx context.Context, request ListTableColumnsRequestObject) (ListTableColumnsResponseObject, error) {
+func (h *APIHandler) ListTableColumns(ctx context.Context, request GenListTableColumnsRequest) (GenListTableColumnsResponse, error) {
 	page := pageFromParams(request.Params.MaxResults, request.Params.PageToken)
 	cols, total, err := h.catalog.ListColumns(ctx, string(request.CatalogName), request.SchemaName, request.TableName, page)
 	if err != nil {
@@ -335,7 +335,7 @@ func (h *APIHandler) ListTableColumns(ctx context.Context, request ListTableColu
 }
 
 // UpdateColumn implements the endpoint for updating column metadata.
-func (h *APIHandler) UpdateColumn(ctx context.Context, request UpdateColumnRequestObject) (UpdateColumnResponseObject, error) {
+func (h *APIHandler) UpdateColumn(ctx context.Context, request GenUpdateColumnRequest) (GenUpdateColumnResponse, error) {
 	domReq := domain.UpdateColumnRequest{}
 	if request.Body.Comment != nil {
 		domReq.Comment = request.Body.Comment
@@ -363,7 +363,7 @@ func (h *APIHandler) UpdateColumn(ctx context.Context, request UpdateColumnReque
 }
 
 // ProfileTable implements the endpoint for profiling table statistics.
-func (h *APIHandler) ProfileTable(ctx context.Context, request ProfileTableRequestObject) (ProfileTableResponseObject, error) {
+func (h *APIHandler) ProfileTable(ctx context.Context, request GenProfileTableRequest) (GenProfileTableResponse, error) {
 	principal := principalFromCtx(ctx)
 	stats, err := h.catalog.ProfileTable(ctx, string(request.CatalogName), principal, request.SchemaName, request.TableName)
 	if err != nil {
@@ -383,7 +383,7 @@ func (h *APIHandler) ProfileTable(ctx context.Context, request ProfileTableReque
 }
 
 // GetMetastoreSummary implements the endpoint for retrieving the metastore summary.
-func (h *APIHandler) GetMetastoreSummary(ctx context.Context, request GetMetastoreSummaryRequestObject) (GetMetastoreSummaryResponseObject, error) {
+func (h *APIHandler) GetMetastoreSummary(ctx context.Context, request GenGetMetastoreSummaryRequest) (GenGetMetastoreSummaryResponse, error) {
 	summary, err := h.catalog.GetMetastoreSummary(ctx, string(request.CatalogName))
 	if err != nil {
 		return nil, err
