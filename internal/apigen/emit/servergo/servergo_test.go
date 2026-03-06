@@ -137,9 +137,10 @@ func TestEmit_GeneratesPathAndQueryBinding(t *testing.T) {
 	require.Contains(t, content, "runtime.BindStyledParameterWithOptions(\"simple\", \"groupId\", chi.URLParam(r, \"groupId\")")
 	require.Contains(t, content, "runtime.BindQueryParameter(\"form\", true, false, \"max_results\", r.URL.Query(), &params.MaxResults)")
 	require.Contains(t, content, "dispatcher.ListGroupMembers(w, r, groupId, params)")
-	require.Contains(t, content, "var request ListGroupMembersRequestObject")
+	require.Contains(t, content, "var request GenListGroupMembersRequest")
 	require.Contains(t, content, "response, err := b.handler.ListGroupMembers(r.Context(), request)")
 	require.Contains(t, content, "if err := response.VisitListGroupMembersResponse(w); err != nil")
-	require.NotContains(t, content, "type APIGenListGroupMembersRequestObject =")
-	require.NotContains(t, content, "type APIGenListGroupMembersResponseObject =")
+	require.Contains(t, content, "type GenListGroupMembersRequest = ListGroupMembersRequestObject")
+	require.Contains(t, content, "type GenListGroupMembersResponse = ListGroupMembersResponseObject")
+	require.Contains(t, content, "ListGroupMembers(ctx context.Context, request GenListGroupMembersRequest) (GenListGroupMembersResponse, error)")
 }

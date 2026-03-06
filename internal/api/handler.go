@@ -1,7 +1,7 @@
 // Package api provides HTTP handlers for the data platform REST API.
 package api
 
-// APIHandler implements the StrictServerInterface.
+// APIHandler implements the GenStrictServerInterface.
 type APIHandler struct {
 	query               queryService
 	principals          principalService

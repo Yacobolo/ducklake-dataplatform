@@ -150,6 +150,21 @@ func Emit(doc ir.Document) ([]byte, error) {
 	b.WriteString("\t}\n")
 	b.WriteString("}\n")
 	b.WriteString("\n")
+	for _, endpoint := range doc.Endpoints {
+		if endpoint.OperationID == "getHealth" {
+			continue
+		}
+		name := exportedName(endpoint.OperationID)
+		b.WriteString("// Gen" + name + "Request aliases the APIGen strict request contract for " + name + ".\n")
+		b.WriteString("type Gen" + name + "Request = " + name + "RequestObject\n\n")
+		b.WriteString("// Gen" + name + "Response aliases the APIGen strict response contract for " + name + ".\n")
+		b.WriteString("type Gen" + name + "Response = " + name + "ResponseObject\n\n")
+		if endpoint.RequestBody != nil {
+			b.WriteString("// Gen" + name + "JSONBody aliases the APIGen strict JSON request body contract for " + name + ".\n")
+			b.WriteString("type Gen" + name + "JSONBody = " + name + "JSONRequestBody\n\n")
+		}
+	}
+
 	b.WriteString("// GenStrictServerInterface represents strict handlers for APIGen transport dispatch.\n")
 	b.WriteString("type GenStrictServerInterface interface {\n")
 	for _, endpoint := range doc.Endpoints {
@@ -157,7 +172,7 @@ func Emit(doc ir.Document) ([]byte, error) {
 			continue
 		}
 		name := exportedName(endpoint.OperationID)
-		b.WriteString("\t" + name + "(ctx context.Context, request " + name + "RequestObject) (" + name + "ResponseObject, error)\n")
+		b.WriteString("\t" + name + "(ctx context.Context, request Gen" + name + "Request) (Gen" + name + "Response, error)\n")
 	}
 	b.WriteString("}\n\n")
 
@@ -182,7 +197,7 @@ func Emit(doc ir.Document) ([]byte, error) {
 		}
 		sig += ") {\n"
 		b.WriteString(sig)
-		b.WriteString("\tvar request " + name + "RequestObject\n")
+		b.WriteString("\tvar request Gen" + name + "Request\n")
 
 		for _, p := range pathParams {
 			fieldName := exportedName(p.Name)
@@ -194,7 +209,7 @@ func Emit(doc ir.Document) ([]byte, error) {
 		}
 
 		if endpoint.RequestBody != nil {
-			b.WriteString("\tvar body " + name + "JSONRequestBody\n")
+			b.WriteString("\tvar body Gen" + name + "JSONBody\n")
 			b.WriteString("\tif err := json.NewDecoder(r.Body).Decode(&body); err != nil {\n")
 			b.WriteString("\t\thttp.Error(w, err.Error(), http.StatusBadRequest)\n")
 			b.WriteString("\t\treturn\n")
