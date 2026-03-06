@@ -98,9 +98,9 @@ func (h *APIHandler) CleanupExpiredAPIKeys(ctx context.Context, _ GenCleanupExpi
 			return nil, err
 		}
 	}
-	return GenCleanupExpiredAPIKeys200JSONResponse{
+	return GenCleanupExpiredAPIKeys201JSONResponse{
 		Body:    CleanupAPIKeysResponse{DeletedCount: &count},
-		Headers: GenCleanupExpiredAPIKeys200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: CleanupExpiredAPIKeys200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 

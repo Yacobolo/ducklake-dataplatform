@@ -149,7 +149,7 @@ func TestEmit_GeneratesPathAndQueryBinding(t *testing.T) {
 	require.Contains(t, content, "ListGroupMembers(ctx context.Context, request GenListGroupMembersRequest) (GenListGroupMembersResponse, error)")
 }
 
-func TestEmit_GeneratesQueryFamilyConcreteResponsesFromIR(t *testing.T) {
+func TestEmit_GeneratesNativeConcreteResponsesFromIR(t *testing.T) {
 	t.Helper()
 
 	doc := ir.Document{
@@ -196,7 +196,82 @@ func TestEmit_GeneratesQueryFamilyConcreteResponsesFromIR(t *testing.T) {
 				Method:      "get",
 				Path:        "/groups",
 				OperationID: "listGroups",
-				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/PaginatedGroups"}}},
+				Responses: []ir.Response{
+					{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/PaginatedGroups"}},
+					{StatusCode: 403, Description: "forbidden", Schema: &ir.SchemaRef{Ref: "#/schemas/Error"}},
+				},
+			},
+			{
+				Method:      "post",
+				Path:        "/groups",
+				OperationID: "createGroup",
+				Responses:   []ir.Response{{StatusCode: 201, Description: "created", Schema: &ir.SchemaRef{Ref: "#/schemas/Group"}}},
+			},
+			{
+				Method:      "get",
+				Path:        "/groups/{groupId}",
+				OperationID: "getGroup",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/Group"}}},
+			},
+			{
+				Method:      "delete",
+				Path:        "/groups/{groupId}",
+				OperationID: "deleteGroup",
+				Responses:   []ir.Response{{StatusCode: 204, Description: "no content"}},
+			},
+			{
+				Method:      "get",
+				Path:        "/principals",
+				OperationID: "listPrincipals",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/PaginatedPrincipals"}}},
+			},
+			{
+				Method:      "post",
+				Path:        "/principals",
+				OperationID: "createPrincipal",
+				Responses:   []ir.Response{{StatusCode: 201, Description: "created", Schema: &ir.SchemaRef{Ref: "#/schemas/Principal"}}},
+			},
+			{
+				Method:      "get",
+				Path:        "/principals/{principalId}",
+				OperationID: "getPrincipal",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/Principal"}}},
+			},
+			{
+				Method:      "delete",
+				Path:        "/principals/{principalId}",
+				OperationID: "deletePrincipal",
+				Responses:   []ir.Response{{StatusCode: 204, Description: "no content"}},
+			},
+			{
+				Method:      "get",
+				Path:        "/api-keys",
+				OperationID: "listAPIKeys",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/PaginatedAPIKeys"}}},
+			},
+			{
+				Method:      "post",
+				Path:        "/api-keys",
+				OperationID: "createAPIKey",
+				Responses:   []ir.Response{{StatusCode: 201, Description: "created", Schema: &ir.SchemaRef{Ref: "#/schemas/CreateAPIKeyResponse"}}},
+			},
+			{
+				Method:      "post",
+				Path:        "/api-keys/cleanup",
+				OperationID: "cleanupExpiredAPIKeys",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/CleanupAPIKeysResponse"}}},
+			},
+			{
+				Method:      "delete",
+				Path:        "/api-keys/{apiKeyId}",
+				OperationID: "deleteAPIKey",
+				Responses:   []ir.Response{{StatusCode: 204, Description: "no content"}},
+			},
+			{
+				Method:      "get",
+				Path:        "/tables",
+				OperationID: "listTables",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/PaginatedTables"}}},
 			},
 		},
 	}
@@ -225,7 +300,47 @@ func TestEmit_GeneratesQueryFamilyConcreteResponsesFromIR(t *testing.T) {
 	require.Contains(t, content, "return DeleteQuery204Response(response).VisitDeleteQueryResponse(w)")
 	require.NotContains(t, content, "type GenDeleteQuery204Response = DeleteQuery204Response")
 
-	require.Contains(t, content, "type GenListGroups200JSONResponse = ListGroups200JSONResponse")
+	require.Contains(t, content, "type GenListGroups200JSONResponse ListGroups200JSONResponse")
+	require.Contains(t, content, "return ListGroups200JSONResponse(response).VisitListGroupsResponse(w)")
+	require.Contains(t, content, "type GenListGroups403JSONResponse ListGroups403JSONResponse")
+	require.Contains(t, content, "return ListGroups403JSONResponse(response).VisitListGroupsResponse(w)")
+	require.Contains(t, content, "type GenCreateGroup201JSONResponse CreateGroup201JSONResponse")
+	require.Contains(t, content, "return CreateGroup201JSONResponse(response).VisitCreateGroupResponse(w)")
+	require.Contains(t, content, "type GenGetGroup200JSONResponse GetGroup200JSONResponse")
+	require.Contains(t, content, "return GetGroup200JSONResponse(response).VisitGetGroupResponse(w)")
+	require.Contains(t, content, "type GenDeleteGroup204Response DeleteGroup204Response")
+	require.Contains(t, content, "return DeleteGroup204Response(response).VisitDeleteGroupResponse(w)")
+	require.Contains(t, content, "type GenListPrincipals200JSONResponse ListPrincipals200JSONResponse")
+	require.Contains(t, content, "return ListPrincipals200JSONResponse(response).VisitListPrincipalsResponse(w)")
+	require.Contains(t, content, "type GenCreatePrincipal201JSONResponse CreatePrincipal201JSONResponse")
+	require.Contains(t, content, "return CreatePrincipal201JSONResponse(response).VisitCreatePrincipalResponse(w)")
+	require.Contains(t, content, "type GenGetPrincipal200JSONResponse GetPrincipal200JSONResponse")
+	require.Contains(t, content, "return GetPrincipal200JSONResponse(response).VisitGetPrincipalResponse(w)")
+	require.Contains(t, content, "type GenDeletePrincipal204Response DeletePrincipal204Response")
+	require.Contains(t, content, "return DeletePrincipal204Response(response).VisitDeletePrincipalResponse(w)")
+	require.Contains(t, content, "type GenListAPIKeys200JSONResponse ListAPIKeys200JSONResponse")
+	require.Contains(t, content, "return ListAPIKeys200JSONResponse(response).VisitListAPIKeysResponse(w)")
+	require.Contains(t, content, "type GenCreateAPIKey201JSONResponse CreateAPIKey201JSONResponse")
+	require.Contains(t, content, "return CreateAPIKey201JSONResponse(response).VisitCreateAPIKeyResponse(w)")
+	require.Contains(t, content, "type GenCleanupExpiredAPIKeys200JSONResponse CleanupExpiredAPIKeys200JSONResponse")
+	require.Contains(t, content, "return CleanupExpiredAPIKeys200JSONResponse(response).VisitCleanupExpiredAPIKeysResponse(w)")
+	require.Contains(t, content, "type GenDeleteAPIKey204Response DeleteAPIKey204Response")
+	require.Contains(t, content, "return DeleteAPIKey204Response(response).VisitDeleteAPIKeyResponse(w)")
+
+	require.NotContains(t, content, "type GenListGroups200JSONResponse = ListGroups200JSONResponse")
+	require.NotContains(t, content, "type GenCreateGroup201JSONResponse = CreateGroup201JSONResponse")
+	require.NotContains(t, content, "type GenGetGroup200JSONResponse = GetGroup200JSONResponse")
+	require.NotContains(t, content, "type GenDeleteGroup204Response = DeleteGroup204Response")
+	require.NotContains(t, content, "type GenListPrincipals200JSONResponse = ListPrincipals200JSONResponse")
+	require.NotContains(t, content, "type GenCreatePrincipal201JSONResponse = CreatePrincipal201JSONResponse")
+	require.NotContains(t, content, "type GenGetPrincipal200JSONResponse = GetPrincipal200JSONResponse")
+	require.NotContains(t, content, "type GenDeletePrincipal204Response = DeletePrincipal204Response")
+	require.NotContains(t, content, "type GenListAPIKeys200JSONResponse = ListAPIKeys200JSONResponse")
+	require.NotContains(t, content, "type GenCreateAPIKey201JSONResponse = CreateAPIKey201JSONResponse")
+	require.NotContains(t, content, "type GenCleanupExpiredAPIKeys200JSONResponse = CleanupExpiredAPIKeys200JSONResponse")
+	require.NotContains(t, content, "type GenDeleteAPIKey204Response = DeleteAPIKey204Response")
+
+	require.Contains(t, content, "type GenListTables200JSONResponse = ListTables200JSONResponse")
 }
 
 func TestPathParamTypeName(t *testing.T) {

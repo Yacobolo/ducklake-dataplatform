@@ -346,7 +346,7 @@ func TestHandler_SubmitQuery(t *testing.T) {
 	resp, err := handler.SubmitQuery(queryTestCtx(), GenSubmitQueryRequest{Body: &body})
 	require.NoError(t, err)
 
-	ok, okType := resp.(GenSubmitQuery202JSONResponse)
+	ok, okType := resp.(GenSubmitQuery201JSONResponse)
 	require.True(t, okType)
 	assert.Equal(t, "job-1", ok.Body.QueryId)
 	assert.Equal(t, SubmitQueryResponseStatus("QUEUED"), ok.Body.Status)

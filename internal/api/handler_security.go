@@ -449,7 +449,7 @@ func (h *APIHandler) BindRowFilter(ctx context.Context, req GenBindRowFilterRequ
 			return nil, err
 		}
 	}
-	return GenBindRowFilter204Response{}, nil
+	return GenBindRowFilter201JSONResponse{}, nil
 }
 
 // UnbindRowFilter implements the endpoint for unbinding a row filter from a principal.
@@ -554,7 +554,7 @@ func (h *APIHandler) BindColumnMask(ctx context.Context, req GenBindColumnMaskRe
 			return nil, err
 		}
 	}
-	return GenBindColumnMask204Response{}, nil
+	return GenBindColumnMask201JSONResponse{}, nil
 }
 
 // UnbindColumnMask implements the endpoint for unbinding a column mask from a principal.

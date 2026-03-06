@@ -173,7 +173,7 @@ func Emit(doc ir.Document) ([]byte, error) {
 		b.WriteString("}\n\n")
 		for _, response := range endpoint.Responses {
 			statusCode := fmt.Sprintf("%d", response.StatusCode)
-			if isQueryFamilyOperation(endpoint.OperationID) {
+			if isNativeConcreteGenResponseOperation(endpoint.OperationID) {
 				if response.Schema != nil {
 					b.WriteString("// Gen" + name + statusCode + "JSONResponse is the APIGen concrete JSON response for " + name + " " + statusCode + ".\n")
 					b.WriteString("type Gen" + name + statusCode + "JSONResponse " + name + statusCode + "JSONResponse\n\n")
@@ -379,9 +379,13 @@ func pathParamTypeName(param ir.Parameter) string {
 	}
 }
 
-func isQueryFamilyOperation(operationID string) bool {
+func isNativeConcreteGenResponseOperation(operationID string) bool {
 	switch operationID {
 	case "executeQuery", "submitQuery", "getQuery", "getQueryResults", "cancelQuery", "deleteQuery":
+		return true
+	case "listPrincipals", "createPrincipal", "getPrincipal", "deletePrincipal", "listGroups", "createGroup", "getGroup", "deleteGroup":
+		return true
+	case "listAPIKeys", "createAPIKey", "cleanupExpiredAPIKeys", "deleteAPIKey":
 		return true
 	default:
 		return false

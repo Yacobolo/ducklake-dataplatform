@@ -868,7 +868,7 @@ func TestHandler_BindColumnMask(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenBindColumnMaskResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				_, ok := resp.(GenBindColumnMask204Response)
+				_, ok := resp.(GenBindColumnMask201JSONResponse)
 				require.True(t, ok, "expected 204 response, got %T", resp)
 			},
 		},

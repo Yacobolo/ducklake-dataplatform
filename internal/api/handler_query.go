@@ -57,13 +57,13 @@ func (h *APIHandler) ExecuteQuery(ctx context.Context, req GenExecuteQueryReques
 	}
 	rowCount := int64(result.RowCount)
 
-	return GenExecuteQuery200JSONResponse{
+	return GenExecuteQuery201JSONResponse{
 		Body: QueryResult{
 			Columns:  &result.Columns,
 			Rows:     &rows,
 			RowCount: &rowCount,
 		},
-		Headers: GenExecuteQuery200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: ExecuteQuery200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -94,9 +94,9 @@ func (h *APIHandler) SubmitQuery(ctx context.Context, req GenSubmitQueryRequest)
 
 	status := string(job.Status)
 	apiStatus := SubmitQueryResponseStatus(status)
-	return GenSubmitQuery202JSONResponse{
+	return GenSubmitQuery201JSONResponse{
 		Body:    SubmitQueryResponse{QueryId: job.ID, Status: apiStatus},
-		Headers: GenSubmitQuery202ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: SubmitQuery202ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -213,9 +213,9 @@ func (h *APIHandler) CancelQuery(ctx context.Context, req GenCancelQueryRequest)
 		status = string(domain.QueryJobStatusCanceled)
 	}
 	apiStatus := CancelQueryResponseStatus(status)
-	return GenCancelQuery200JSONResponse{
+	return GenCancelQuery201JSONResponse{
 		Body:    CancelQueryResponse{QueryId: job.ID, Status: apiStatus},
-		Headers: GenCancelQuery200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: CancelQuery200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
