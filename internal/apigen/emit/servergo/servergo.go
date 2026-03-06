@@ -31,6 +31,8 @@ func Emit(doc ir.Document) ([]byte, error) {
 	b.WriteString("import (\n")
 	if hasStrictOperations {
 		b.WriteString("\t\"context\"\n")
+		b.WriteString("\t\"fmt\"\n")
+		b.WriteString("\t\"reflect\"\n")
 	}
 	b.WriteString("\t\"encoding/json\"\n")
 	b.WriteString("\t\"net/http\"\n\n")
@@ -173,13 +175,37 @@ func Emit(doc ir.Document) ([]byte, error) {
 		b.WriteString("}\n\n")
 		for _, response := range endpoint.Responses {
 			statusCode := fmt.Sprintf("%d", response.StatusCode)
+			useLegacyVisit := isStatusDriftAlias(endpoint.OperationID, statusCode)
 			if isNativeConcreteGenResponseOperation(endpoint.OperationID) {
 				if response.Schema != nil {
 					b.WriteString("// Gen" + name + statusCode + "JSONResponse is the APIGen concrete JSON response for " + name + " " + statusCode + ".\n")
 					b.WriteString("type Gen" + name + statusCode + "JSONResponse " + name + statusCode + "JSONResponse\n\n")
 					b.WriteString("// Visit" + name + "Response writes " + name + " " + statusCode + " responses to the client.\n")
 					b.WriteString("func (response Gen" + name + statusCode + "JSONResponse) Visit" + name + "Response(w http.ResponseWriter) error {\n")
-					b.WriteString("\treturn " + name + statusCode + "JSONResponse(response).Visit" + name + "Response(w)\n")
+					if useLegacyVisit {
+						b.WriteString("\treturn " + name + statusCode + "JSONResponse(response).Visit" + name + "Response(w)\n")
+					} else {
+						b.WriteString("\trv := reflect.ValueOf(response)\n")
+						b.WriteString("\theaders := rv.FieldByName(\"Headers\")\n")
+						b.WriteString("\tif headers.IsValid() {\n")
+						b.WriteString("\t\tif v := headers.FieldByName(\"XRateLimitLimit\"); v.IsValid() {\n")
+						b.WriteString("\t\t\tw.Header().Set(\"X-RateLimit-Limit\", fmt.Sprint(v.Interface()))\n")
+						b.WriteString("\t\t}\n")
+						b.WriteString("\t\tif v := headers.FieldByName(\"XRateLimitRemaining\"); v.IsValid() {\n")
+						b.WriteString("\t\t\tw.Header().Set(\"X-RateLimit-Remaining\", fmt.Sprint(v.Interface()))\n")
+						b.WriteString("\t\t}\n")
+						b.WriteString("\t\tif v := headers.FieldByName(\"XRateLimitReset\"); v.IsValid() {\n")
+						b.WriteString("\t\t\tw.Header().Set(\"X-RateLimit-Reset\", fmt.Sprint(v.Interface()))\n")
+						b.WriteString("\t\t}\n")
+						b.WriteString("\t}\n")
+						b.WriteString("\tbody := rv.FieldByName(\"Body\")\n")
+						b.WriteString("\tif !body.IsValid() {\n")
+						b.WriteString("\t\treturn " + name + statusCode + "JSONResponse(response).Visit" + name + "Response(w)\n")
+						b.WriteString("\t}\n")
+						b.WriteString("\tw.Header().Set(\"Content-Type\", \"application/json\")\n")
+						b.WriteString("\tw.WriteHeader(" + statusCode + ")\n")
+						b.WriteString("\treturn json.NewEncoder(w).Encode(body.Interface())\n")
+					}
 					b.WriteString("}\n\n")
 					continue
 				}
@@ -188,7 +214,25 @@ func Emit(doc ir.Document) ([]byte, error) {
 				b.WriteString("type Gen" + name + statusCode + "Response " + name + statusCode + "Response\n\n")
 				b.WriteString("// Visit" + name + "Response writes " + name + " " + statusCode + " responses to the client.\n")
 				b.WriteString("func (response Gen" + name + statusCode + "Response) Visit" + name + "Response(w http.ResponseWriter) error {\n")
-				b.WriteString("\treturn " + name + statusCode + "Response(response).Visit" + name + "Response(w)\n")
+				if useLegacyVisit {
+					b.WriteString("\treturn " + name + statusCode + "Response(response).Visit" + name + "Response(w)\n")
+				} else {
+					b.WriteString("\trv := reflect.ValueOf(response)\n")
+					b.WriteString("\theaders := rv.FieldByName(\"Headers\")\n")
+					b.WriteString("\tif headers.IsValid() {\n")
+					b.WriteString("\t\tif v := headers.FieldByName(\"XRateLimitLimit\"); v.IsValid() {\n")
+					b.WriteString("\t\t\tw.Header().Set(\"X-RateLimit-Limit\", fmt.Sprint(v.Interface()))\n")
+					b.WriteString("\t\t}\n")
+					b.WriteString("\t\tif v := headers.FieldByName(\"XRateLimitRemaining\"); v.IsValid() {\n")
+					b.WriteString("\t\t\tw.Header().Set(\"X-RateLimit-Remaining\", fmt.Sprint(v.Interface()))\n")
+					b.WriteString("\t\t}\n")
+					b.WriteString("\t\tif v := headers.FieldByName(\"XRateLimitReset\"); v.IsValid() {\n")
+					b.WriteString("\t\t\tw.Header().Set(\"X-RateLimit-Reset\", fmt.Sprint(v.Interface()))\n")
+					b.WriteString("\t\t}\n")
+					b.WriteString("\t}\n")
+					b.WriteString("\tw.WriteHeader(" + statusCode + ")\n")
+					b.WriteString("\treturn nil\n")
+				}
 				b.WriteString("}\n\n")
 				continue
 			}
@@ -430,6 +474,37 @@ func isNativeConcreteGenResponseOperation(operationID string) bool {
 	case "listTags", "createTag", "deleteTag", "createTagAssignment", "deleteTagAssignment":
 		return true
 	case "listRowFilters", "createRowFilter", "bindRowFilter", "unbindRowFilter", "deleteRowFilter", "listColumnMasks", "createColumnMask", "bindColumnMask", "unbindColumnMask", "deleteColumnMask":
+		return true
+	default:
+		return false
+	}
+}
+
+func isStatusDriftAlias(operationID, statusCode string) bool {
+	key := operationID + ":" + statusCode
+	switch key {
+	case "bindColumnMask:201",
+		"bindRowFilter:201",
+		"cancelModelRun:201",
+		"cancelPipelineRun:201",
+		"cancelQuery:201",
+		"cleanupExpiredAPIKeys:201",
+		"commitTableIngestion:201",
+		"createManifest:201",
+		"createUploadUrl:201",
+		"executeCell:201",
+		"executeQuery:201",
+		"explainMetricQuery:201",
+		"loadTableExternalFiles:201",
+		"profileTable:201",
+		"purgeLineage:201",
+		"reorderCells:201",
+		"runAllCells:201",
+		"runAllCellsAsync:201",
+		"runMetricQuery:201",
+		"setDefaultCatalog:201",
+		"submitQuery:201",
+		"syncGitRepo:201":
 		return true
 	default:
 		return false
