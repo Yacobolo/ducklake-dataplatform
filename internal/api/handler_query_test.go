@@ -156,7 +156,7 @@ func TestHandler_CreateManifest(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateManifestResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(CreateManifest200JSONResponse)
+				ok200, ok := resp.(GenCreateManifest200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Table)
 				assert.Equal(t, "users", *ok200.Body.Table)
@@ -179,7 +179,7 @@ func TestHandler_CreateManifest(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateManifestResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(CreateManifest404JSONResponse)
+				notFound, ok := resp.(GenCreateManifest404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -193,7 +193,7 @@ func TestHandler_CreateManifest(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateManifestResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(CreateManifest403JSONResponse)
+				forbidden, ok := resp.(GenCreateManifest403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -207,7 +207,7 @@ func TestHandler_CreateManifest(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateManifestResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(CreateManifest400JSONResponse)
+				badReq, ok := resp.(GenCreateManifest400JSONResponse)
 				require.True(t, ok, "expected 400 response, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 			},
@@ -221,7 +221,7 @@ func TestHandler_CreateManifest(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateManifestResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				serverErr, ok := resp.(CreateManifest500JSONResponse)
+				serverErr, ok := resp.(GenCreateManifest500JSONResponse)
 				require.True(t, ok, "expected 500 response, got %T", resp)
 				assert.Equal(t, int32(500), serverErr.Body.Code)
 			},
@@ -246,7 +246,7 @@ func TestHandler_CreateManifest(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateManifestResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				_, ok := resp.(CreateManifest200JSONResponse)
+				_, ok := resp.(GenCreateManifest200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 			},
 		},
@@ -283,7 +283,7 @@ func TestHandler_ProfileTable(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenProfileTableResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(ProfileTable200JSONResponse)
+				ok200, ok := resp.(GenProfileTable200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.RowCount)
 				assert.Equal(t, int64(42), *ok200.Body.RowCount)
@@ -297,7 +297,7 @@ func TestHandler_ProfileTable(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenProfileTableResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(ProfileTable404JSONResponse)
+				notFound, ok := resp.(GenProfileTable404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -310,7 +310,7 @@ func TestHandler_ProfileTable(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenProfileTableResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(ProfileTable403JSONResponse)
+				forbidden, ok := resp.(GenProfileTable403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -346,7 +346,7 @@ func TestHandler_SubmitQuery(t *testing.T) {
 	resp, err := handler.SubmitQuery(queryTestCtx(), GenSubmitQueryRequest{Body: &body})
 	require.NoError(t, err)
 
-	ok, okType := resp.(SubmitQuery202JSONResponse)
+	ok, okType := resp.(GenSubmitQuery202JSONResponse)
 	require.True(t, okType)
 	assert.Equal(t, "job-1", ok.Body.QueryId)
 	assert.Equal(t, SubmitQueryResponseStatus("QUEUED"), ok.Body.Status)
@@ -374,7 +374,7 @@ func TestHandler_GetQueryResults_Paged(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	ok, okType := resp.(GetQueryResults200JSONResponse)
+	ok, okType := resp.(GenGetQueryResults200JSONResponse)
 	require.True(t, okType)
 	require.NotNil(t, ok.Body.Rows)
 	require.Len(t, *ok.Body.Rows, 1)

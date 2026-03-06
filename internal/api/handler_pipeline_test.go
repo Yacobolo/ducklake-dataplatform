@@ -214,7 +214,7 @@ func TestHandler_CreatePipeline(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreatePipelineResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				created, ok := resp.(CreatePipeline201JSONResponse)
+				created, ok := resp.(GenCreatePipeline201JSONResponse)
 				require.True(t, ok, "expected 201 response, got %T", resp)
 				assert.Equal(t, "etl-daily", *created.Body.Name)
 				assert.Equal(t, "pipe-1", *created.Body.Id)
@@ -229,7 +229,7 @@ func TestHandler_CreatePipeline(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreatePipelineResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(CreatePipeline400JSONResponse)
+				badReq, ok := resp.(GenCreatePipeline400JSONResponse)
 				require.True(t, ok, "expected 400 response, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 				assert.Contains(t, badReq.Body.Message, "name is invalid")
@@ -244,7 +244,7 @@ func TestHandler_CreatePipeline(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreatePipelineResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				conflict, ok := resp.(CreatePipeline409JSONResponse)
+				conflict, ok := resp.(GenCreatePipeline409JSONResponse)
 				require.True(t, ok, "expected 409 response, got %T", resp)
 				assert.Equal(t, int32(409), conflict.Body.Code)
 				assert.Contains(t, conflict.Body.Message, "already exists")
@@ -259,7 +259,7 @@ func TestHandler_CreatePipeline(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreatePipelineResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(CreatePipeline400JSONResponse)
+				badReq, ok := resp.(GenCreatePipeline400JSONResponse)
 				require.True(t, ok, "expected 400 response for unknown error, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 			},
@@ -298,7 +298,7 @@ func TestHandler_GetPipeline(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenGetPipelineResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(GetPipeline200JSONResponse)
+				ok200, ok := resp.(GenGetPipeline200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				assert.Equal(t, "etl-daily", *ok200.Body.Name)
 			},
@@ -312,7 +312,7 @@ func TestHandler_GetPipeline(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenGetPipelineResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(GetPipeline404JSONResponse)
+				notFound, ok := resp.(GenGetPipeline404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 				assert.Contains(t, notFound.Body.Message, "nonexistent")
@@ -353,7 +353,7 @@ func TestHandler_UpdatePipeline(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenUpdatePipelineResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(UpdatePipeline200JSONResponse)
+				ok200, ok := resp.(GenUpdatePipeline200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				assert.Equal(t, "updated desc", *ok200.Body.Description)
 			},
@@ -368,7 +368,7 @@ func TestHandler_UpdatePipeline(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenUpdatePipelineResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(UpdatePipeline404JSONResponse)
+				notFound, ok := resp.(GenUpdatePipeline404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -408,7 +408,7 @@ func TestHandler_DeletePipeline(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeletePipelineResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				_, ok := resp.(DeletePipeline204Response)
+				_, ok := resp.(GenDeletePipeline204Response)
 				require.True(t, ok, "expected 204 response, got %T", resp)
 			},
 		},
@@ -421,7 +421,7 @@ func TestHandler_DeletePipeline(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeletePipelineResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(DeletePipeline404JSONResponse)
+				notFound, ok := resp.(GenDeletePipeline404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -457,7 +457,7 @@ func TestHandler_ListPipelines(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenListPipelinesResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(ListPipelines200JSONResponse)
+				ok200, ok := resp.(GenListPipelines200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
 				require.Len(t, *ok200.Body.Data, 1)
@@ -474,7 +474,7 @@ func TestHandler_ListPipelines(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenListPipelinesResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(ListPipelines200JSONResponse)
+				ok200, ok := resp.(GenListPipelines200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
 				assert.Empty(t, *ok200.Body.Data)
@@ -514,7 +514,7 @@ func TestHandler_CreatePipelineJob(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreatePipelineJobResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				created, ok := resp.(CreatePipelineJob201JSONResponse)
+				created, ok := resp.(GenCreatePipelineJob201JSONResponse)
 				require.True(t, ok, "expected 201 response, got %T", resp)
 				assert.Equal(t, "extract", *created.Body.Name)
 				assert.Equal(t, "job-1", *created.Body.Id)
@@ -530,7 +530,7 @@ func TestHandler_CreatePipelineJob(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreatePipelineJobResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(CreatePipelineJob400JSONResponse)
+				badReq, ok := resp.(GenCreatePipelineJob400JSONResponse)
 				require.True(t, ok, "expected 400 response, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 				assert.Contains(t, badReq.Body.Message, "name is required")
@@ -546,7 +546,7 @@ func TestHandler_CreatePipelineJob(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreatePipelineJobResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(CreatePipelineJob400JSONResponse)
+				badReq, ok := resp.(GenCreatePipelineJob400JSONResponse)
 				require.True(t, ok, "expected 400 response for not-found pipeline, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 				assert.Contains(t, badReq.Body.Message, "nonexistent")
@@ -562,7 +562,7 @@ func TestHandler_CreatePipelineJob(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreatePipelineJobResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				conflict, ok := resp.(CreatePipelineJob409JSONResponse)
+				conflict, ok := resp.(GenCreatePipelineJob409JSONResponse)
 				require.True(t, ok, "expected 409 response, got %T", resp)
 				assert.Equal(t, int32(409), conflict.Body.Code)
 			},
@@ -602,7 +602,7 @@ func TestHandler_ListPipelineJobs(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenListPipelineJobsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(ListPipelineJobs200JSONResponse)
+				ok200, ok := resp.(GenListPipelineJobs200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
 				require.Len(t, *ok200.Body.Data, 1)
@@ -618,7 +618,7 @@ func TestHandler_ListPipelineJobs(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenListPipelineJobsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(ListPipelineJobs404JSONResponse)
+				notFound, ok := resp.(GenListPipelineJobs404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -656,7 +656,7 @@ func TestHandler_DeletePipelineJob(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeletePipelineJobResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				_, ok := resp.(DeletePipelineJob204Response)
+				_, ok := resp.(GenDeletePipelineJob204Response)
 				require.True(t, ok, "expected 204 response, got %T", resp)
 			},
 		},
@@ -670,7 +670,7 @@ func TestHandler_DeletePipelineJob(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeletePipelineJobResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(DeletePipelineJob404JSONResponse)
+				notFound, ok := resp.(GenDeletePipelineJob404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -712,7 +712,7 @@ func TestHandler_TriggerPipelineRun(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenTriggerPipelineRunResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				created, ok := resp.(TriggerPipelineRun201JSONResponse)
+				created, ok := resp.(GenTriggerPipelineRun201JSONResponse)
 				require.True(t, ok, "expected 201 response, got %T", resp)
 				assert.Equal(t, "run-1", *created.Body.Id)
 				assert.Equal(t, PipelineRunStatus(domain.PipelineRunStatusRunning), *created.Body.Status)
@@ -732,7 +732,7 @@ func TestHandler_TriggerPipelineRun(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenTriggerPipelineRunResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				_, ok := resp.(TriggerPipelineRun201JSONResponse)
+				_, ok := resp.(GenTriggerPipelineRun201JSONResponse)
 				require.True(t, ok, "expected 201 response, got %T", resp)
 			},
 		},
@@ -746,7 +746,7 @@ func TestHandler_TriggerPipelineRun(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenTriggerPipelineRunResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(TriggerPipelineRun400JSONResponse)
+				badReq, ok := resp.(GenTriggerPipelineRun400JSONResponse)
 				require.True(t, ok, "expected 400 response, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 				assert.Contains(t, badReq.Body.Message, "paused")
@@ -762,7 +762,7 @@ func TestHandler_TriggerPipelineRun(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenTriggerPipelineRunResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(TriggerPipelineRun404JSONResponse)
+				notFound, ok := resp.(GenTriggerPipelineRun404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -803,7 +803,7 @@ func TestHandler_ListPipelineRuns(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenListPipelineRunsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(ListPipelineRuns200JSONResponse)
+				ok200, ok := resp.(GenListPipelineRuns200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
 				require.Len(t, *ok200.Body.Data, 1)
@@ -820,7 +820,7 @@ func TestHandler_ListPipelineRuns(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenListPipelineRunsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(ListPipelineRuns404JSONResponse)
+				notFound, ok := resp.(GenListPipelineRuns404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -840,7 +840,7 @@ func TestHandler_ListPipelineRuns(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenListPipelineRunsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				_, ok := resp.(ListPipelineRuns200JSONResponse)
+				_, ok := resp.(GenListPipelineRuns200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 			},
 		},
@@ -879,7 +879,7 @@ func TestHandler_GetPipelineRun(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenGetPipelineRunResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(GetPipelineRun200JSONResponse)
+				ok200, ok := resp.(GenGetPipelineRun200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				assert.Equal(t, "run-1", *ok200.Body.Id)
 				assert.Equal(t, PipelineRunStatus(domain.PipelineRunStatusRunning), *ok200.Body.Status)
@@ -894,7 +894,7 @@ func TestHandler_GetPipelineRun(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenGetPipelineRunResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(GetPipelineRun404JSONResponse)
+				notFound, ok := resp.(GenGetPipelineRun404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -936,7 +936,7 @@ func TestHandler_CancelPipelineRun(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCancelPipelineRunResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(CancelPipelineRun200JSONResponse)
+				ok200, ok := resp.(GenCancelPipelineRun200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				assert.Equal(t, PipelineRunStatus(domain.PipelineRunStatusCancelled), *ok200.Body.Status)
 			},
@@ -951,7 +951,7 @@ func TestHandler_CancelPipelineRun(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCancelPipelineRunResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(CancelPipelineRun400JSONResponse)
+				badReq, ok := resp.(GenCancelPipelineRun400JSONResponse)
 				require.True(t, ok, "expected 400 response, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 				assert.Contains(t, badReq.Body.Message, "already completed")
@@ -967,7 +967,7 @@ func TestHandler_CancelPipelineRun(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCancelPipelineRunResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(CancelPipelineRun404JSONResponse)
+				notFound, ok := resp.(GenCancelPipelineRun404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -1006,7 +1006,7 @@ func TestHandler_ListPipelineJobRuns(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenListPipelineJobRunsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(ListPipelineJobRuns200JSONResponse)
+				ok200, ok := resp.(GenListPipelineJobRuns200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
 				require.Len(t, *ok200.Body.Data, 1)
@@ -1024,7 +1024,7 @@ func TestHandler_ListPipelineJobRuns(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenListPipelineJobRunsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(ListPipelineJobRuns404JSONResponse)
+				notFound, ok := resp.(GenListPipelineJobRuns404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},

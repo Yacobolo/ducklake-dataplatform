@@ -41,7 +41,7 @@ type semanticService interface {
 func (h *APIHandler) ListSemanticModels(ctx context.Context, req GenListSemanticModelsRequest) (GenListSemanticModelsResponse, error) {
 	if isNilService(h.semantics) {
 		empty := []SemanticModel{}
-		return ListSemanticModels200JSONResponse(PaginatedSemanticModels{Data: &empty, NextPageToken: nil}), nil
+		return GenListSemanticModels200JSONResponse(PaginatedSemanticModels{Data: &empty, NextPageToken: nil}), nil
 	}
 
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
@@ -55,7 +55,7 @@ func (h *APIHandler) ListSemanticModels(ctx context.Context, req GenListSemantic
 		data[i] = semanticModelToAPI(m)
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListSemanticModels200JSONResponse(PaginatedSemanticModels{Data: &data, NextPageToken: optStr(nextToken)}), nil
+	return GenListSemanticModels200JSONResponse(PaginatedSemanticModels{Data: &data, NextPageToken: optStr(nextToken)}), nil
 }
 
 // CreateSemanticModel creates a semantic model.
@@ -72,17 +72,17 @@ func (h *APIHandler) CreateSemanticModel(ctx context.Context, req GenCreateSeman
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CreateSemanticModel403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenCreateSemanticModel403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.ValidationError)):
-			return CreateSemanticModel400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenCreateSemanticModel400JSONResponse{GenBadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: GenBadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.ConflictError)):
-			return CreateSemanticModel409JSONResponse{ConflictJSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenCreateSemanticModel409JSONResponse{GenConflictJSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: GenConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
 	}
 
-	return CreateSemanticModel201JSONResponse(semanticModelToAPI(*result)), nil
+	return GenCreateSemanticModel201JSONResponse(semanticModelToAPI(*result)), nil
 }
 
 // GetSemanticModel retrieves a semantic model.
@@ -90,11 +90,11 @@ func (h *APIHandler) GetSemanticModel(ctx context.Context, req GenGetSemanticMod
 	result, err := h.semantics.GetSemanticModel(ctx, req.ProjectName, req.SemanticModelName)
 	if err != nil {
 		if errors.As(err, new(*domain.NotFoundError)) {
-			return GetSemanticModel404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenGetSemanticModel404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 		return nil, err
 	}
-	return GetSemanticModel200JSONResponse(semanticModelToAPI(*result)), nil
+	return GenGetSemanticModel200JSONResponse(semanticModelToAPI(*result)), nil
 }
 
 // UpdateSemanticModel updates a semantic model.
@@ -113,17 +113,17 @@ func (h *APIHandler) UpdateSemanticModel(ctx context.Context, req GenUpdateSeman
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return UpdateSemanticModel403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenUpdateSemanticModel403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return UpdateSemanticModel404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenUpdateSemanticModel404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.ValidationError)):
-			return UpdateSemanticModel400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenUpdateSemanticModel400JSONResponse{GenBadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: GenBadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
 	}
 
-	return UpdateSemanticModel200JSONResponse(semanticModelToAPI(*result)), nil
+	return GenUpdateSemanticModel200JSONResponse(semanticModelToAPI(*result)), nil
 }
 
 // DeleteSemanticModel deletes a semantic model.
@@ -131,28 +131,28 @@ func (h *APIHandler) DeleteSemanticModel(ctx context.Context, req GenDeleteSeman
 	if err := h.semantics.DeleteSemanticModel(ctx, req.ProjectName, req.SemanticModelName); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return DeleteSemanticModel403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenDeleteSemanticModel403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return DeleteSemanticModel404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenDeleteSemanticModel404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
 	}
 
-	return DeleteSemanticModel204Response{}, nil
+	return GenDeleteSemanticModel204Response{}, nil
 }
 
 // ListSemanticMetrics lists metrics under a semantic model.
 func (h *APIHandler) ListSemanticMetrics(ctx context.Context, req GenListSemanticMetricsRequest) (GenListSemanticMetricsResponse, error) {
 	if isNilService(h.semantics) {
 		empty := []SemanticMetric{}
-		return ListSemanticMetrics200JSONResponse(SemanticMetricList{Data: &empty}), nil
+		return GenListSemanticMetrics200JSONResponse(SemanticMetricList{Data: &empty}), nil
 	}
 
 	items, err := h.semantics.ListMetrics(ctx, req.ProjectName, req.SemanticModelName)
 	if err != nil {
 		if errors.As(err, new(*domain.NotFoundError)) {
-			return ListSemanticMetrics404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenListSemanticMetrics404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 		return nil, err
 	}
@@ -160,7 +160,7 @@ func (h *APIHandler) ListSemanticMetrics(ctx context.Context, req GenListSemanti
 	for i, item := range items {
 		data[i] = semanticMetricToAPI(item)
 	}
-	return ListSemanticMetrics200JSONResponse(SemanticMetricList{Data: &data}), nil
+	return GenListSemanticMetrics200JSONResponse(SemanticMetricList{Data: &data}), nil
 }
 
 // CreateSemanticMetric creates a metric under a semantic model.
@@ -184,19 +184,19 @@ func (h *APIHandler) CreateSemanticMetric(ctx context.Context, req GenCreateSema
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CreateSemanticMetric403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenCreateSemanticMetric403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return CreateSemanticMetric404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenCreateSemanticMetric404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.ValidationError)):
-			return CreateSemanticMetric400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenCreateSemanticMetric400JSONResponse{GenBadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: GenBadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.ConflictError)):
-			return CreateSemanticMetric409JSONResponse{ConflictJSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenCreateSemanticMetric409JSONResponse{GenConflictJSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: GenConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
 	}
 
-	return CreateSemanticMetric201JSONResponse(semanticMetricToAPI(*result)), nil
+	return GenCreateSemanticMetric201JSONResponse(semanticMetricToAPI(*result)), nil
 }
 
 // UpdateSemanticMetric updates a metric under a semantic model.
@@ -225,17 +225,17 @@ func (h *APIHandler) UpdateSemanticMetric(ctx context.Context, req GenUpdateSema
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return UpdateSemanticMetric403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenUpdateSemanticMetric403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return UpdateSemanticMetric404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenUpdateSemanticMetric404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.ValidationError)):
-			return UpdateSemanticMetric400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenUpdateSemanticMetric400JSONResponse{GenBadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: GenBadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
 	}
 
-	return UpdateSemanticMetric200JSONResponse(semanticMetricToAPI(*result)), nil
+	return GenUpdateSemanticMetric200JSONResponse(semanticMetricToAPI(*result)), nil
 }
 
 // DeleteSemanticMetric deletes a metric under a semantic model.
@@ -243,27 +243,27 @@ func (h *APIHandler) DeleteSemanticMetric(ctx context.Context, req GenDeleteSema
 	if err := h.semantics.DeleteMetric(ctx, req.ProjectName, req.SemanticModelName, req.MetricName); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return DeleteSemanticMetric403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenDeleteSemanticMetric403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return DeleteSemanticMetric404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenDeleteSemanticMetric404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return DeleteSemanticMetric204Response{}, nil
+	return GenDeleteSemanticMetric204Response{}, nil
 }
 
 // ListSemanticPreAggregations lists pre-aggregations under a semantic model.
 func (h *APIHandler) ListSemanticPreAggregations(ctx context.Context, req GenListSemanticPreAggregationsRequest) (GenListSemanticPreAggregationsResponse, error) {
 	if isNilService(h.semantics) {
 		empty := []SemanticPreAggregation{}
-		return ListSemanticPreAggregations200JSONResponse(SemanticPreAggregationList{Data: &empty}), nil
+		return GenListSemanticPreAggregations200JSONResponse(SemanticPreAggregationList{Data: &empty}), nil
 	}
 
 	items, err := h.semantics.ListPreAggregations(ctx, req.ProjectName, req.SemanticModelName)
 	if err != nil {
 		if errors.As(err, new(*domain.NotFoundError)) {
-			return ListSemanticPreAggregations404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenListSemanticPreAggregations404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 		return nil, err
 	}
@@ -271,7 +271,7 @@ func (h *APIHandler) ListSemanticPreAggregations(ctx context.Context, req GenLis
 	for i, item := range items {
 		data[i] = semanticPreAggregationToAPI(item)
 	}
-	return ListSemanticPreAggregations200JSONResponse(SemanticPreAggregationList{Data: &data}), nil
+	return GenListSemanticPreAggregations200JSONResponse(SemanticPreAggregationList{Data: &data}), nil
 }
 
 // CreateSemanticPreAggregation creates a pre-aggregation under a semantic model.
@@ -289,18 +289,18 @@ func (h *APIHandler) CreateSemanticPreAggregation(ctx context.Context, req GenCr
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CreateSemanticPreAggregation403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenCreateSemanticPreAggregation403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return CreateSemanticPreAggregation404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenCreateSemanticPreAggregation404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.ValidationError)):
-			return CreateSemanticPreAggregation400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenCreateSemanticPreAggregation400JSONResponse{GenBadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: GenBadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.ConflictError)):
-			return CreateSemanticPreAggregation409JSONResponse{ConflictJSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenCreateSemanticPreAggregation409JSONResponse{GenConflictJSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: GenConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return CreateSemanticPreAggregation201JSONResponse(semanticPreAggregationToAPI(*result)), nil
+	return GenCreateSemanticPreAggregation201JSONResponse(semanticPreAggregationToAPI(*result)), nil
 }
 
 // UpdateSemanticPreAggregation updates a pre-aggregation under a semantic model.
@@ -316,16 +316,16 @@ func (h *APIHandler) UpdateSemanticPreAggregation(ctx context.Context, req GenUp
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return UpdateSemanticPreAggregation403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenUpdateSemanticPreAggregation403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return UpdateSemanticPreAggregation404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenUpdateSemanticPreAggregation404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.ValidationError)):
-			return UpdateSemanticPreAggregation400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenUpdateSemanticPreAggregation400JSONResponse{GenBadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: GenBadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return UpdateSemanticPreAggregation200JSONResponse(semanticPreAggregationToAPI(*result)), nil
+	return GenUpdateSemanticPreAggregation200JSONResponse(semanticPreAggregationToAPI(*result)), nil
 }
 
 // DeleteSemanticPreAggregation deletes a pre-aggregation under a semantic model.
@@ -333,21 +333,21 @@ func (h *APIHandler) DeleteSemanticPreAggregation(ctx context.Context, req GenDe
 	if err := h.semantics.DeletePreAggregation(ctx, req.ProjectName, req.SemanticModelName, req.PreAggregationName); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return DeleteSemanticPreAggregation403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenDeleteSemanticPreAggregation403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return DeleteSemanticPreAggregation404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenDeleteSemanticPreAggregation404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return DeleteSemanticPreAggregation204Response{}, nil
+	return GenDeleteSemanticPreAggregation204Response{}, nil
 }
 
 // ListSemanticRelationships lists semantic relationships.
 func (h *APIHandler) ListSemanticRelationships(ctx context.Context, req GenListSemanticRelationshipsRequest) (GenListSemanticRelationshipsResponse, error) {
 	if isNilService(h.semantics) {
 		empty := []SemanticRelationship{}
-		return ListSemanticRelationships200JSONResponse(PaginatedSemanticRelationships{Data: &empty, NextPageToken: nil}), nil
+		return GenListSemanticRelationships200JSONResponse(PaginatedSemanticRelationships{Data: &empty, NextPageToken: nil}), nil
 	}
 
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
@@ -360,7 +360,7 @@ func (h *APIHandler) ListSemanticRelationships(ctx context.Context, req GenListS
 		data[i] = semanticRelationshipToAPI(rel)
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListSemanticRelationships200JSONResponse(PaginatedSemanticRelationships{Data: &data, NextPageToken: optStr(nextToken)}), nil
+	return GenListSemanticRelationships200JSONResponse(PaginatedSemanticRelationships{Data: &data, NextPageToken: optStr(nextToken)}), nil
 }
 
 // CreateSemanticRelationship creates a semantic relationship.
@@ -379,16 +379,16 @@ func (h *APIHandler) CreateSemanticRelationship(ctx context.Context, req GenCrea
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CreateSemanticRelationship403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenCreateSemanticRelationship403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.ValidationError)):
-			return CreateSemanticRelationship400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenCreateSemanticRelationship400JSONResponse{GenBadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: GenBadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.ConflictError)):
-			return CreateSemanticRelationship409JSONResponse{ConflictJSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenCreateSemanticRelationship409JSONResponse{GenConflictJSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: GenConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return CreateSemanticRelationship201JSONResponse(semanticRelationshipToAPI(*result)), nil
+	return GenCreateSemanticRelationship201JSONResponse(semanticRelationshipToAPI(*result)), nil
 }
 
 // UpdateSemanticRelationship updates a semantic relationship.
@@ -414,16 +414,16 @@ func (h *APIHandler) UpdateSemanticRelationship(ctx context.Context, req GenUpda
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return UpdateSemanticRelationship403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenUpdateSemanticRelationship403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return UpdateSemanticRelationship404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenUpdateSemanticRelationship404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.ValidationError)):
-			return UpdateSemanticRelationship400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenUpdateSemanticRelationship400JSONResponse{GenBadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: GenBadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return UpdateSemanticRelationship200JSONResponse(semanticRelationshipToAPI(*result)), nil
+	return GenUpdateSemanticRelationship200JSONResponse(semanticRelationshipToAPI(*result)), nil
 }
 
 // DeleteSemanticRelationship deletes a semantic relationship.
@@ -431,20 +431,20 @@ func (h *APIHandler) DeleteSemanticRelationship(ctx context.Context, req GenDele
 	if err := h.semantics.DeleteRelationship(ctx, req.RelationshipName); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return DeleteSemanticRelationship403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenDeleteSemanticRelationship403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return DeleteSemanticRelationship404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenDeleteSemanticRelationship404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return DeleteSemanticRelationship204Response{}, nil
+	return GenDeleteSemanticRelationship204Response{}, nil
 }
 
 // CheckMetricFreshness resolves a metric and returns its current freshness metadata.
 func (h *APIHandler) CheckMetricFreshness(ctx context.Context, req GenCheckMetricFreshnessRequest) (GenCheckMetricFreshnessResponse, error) {
 	if isNilService(h.semantics) {
-		return CheckMetricFreshness404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: "semantic service is not configured"}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		return GenCheckMetricFreshness404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: "semantic service is not configured"}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
 
 	models, _, err := h.semantics.ListSemanticModels(ctx, req.Params.ProjectName, domain.PageRequest{MaxResults: 10000})
@@ -475,11 +475,11 @@ func (h *APIHandler) CheckMetricFreshness(ctx context.Context, req GenCheckMetri
 
 	if len(matches) == 0 {
 		err = domain.ErrNotFound("metric %q not found", req.MetricName)
-		return CheckMetricFreshness404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		return GenCheckMetricFreshness404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
 	if len(matches) > 1 {
 		err = domain.ErrValidation("metric %q is ambiguous; provide project_name and semantic_model_name", req.MetricName)
-		return CheckMetricFreshness400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		return GenCheckMetricFreshness400JSONResponse{GenBadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: GenBadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
 
 	match := matches[0]
@@ -491,9 +491,9 @@ func (h *APIHandler) CheckMetricFreshness(ctx context.Context, req GenCheckMetri
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.ValidationError)):
-			return CheckMetricFreshness400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenCheckMetricFreshness400JSONResponse{GenBadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: GenBadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return CheckMetricFreshness404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenCheckMetricFreshness404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -501,7 +501,7 @@ func (h *APIHandler) CheckMetricFreshness(ctx context.Context, req GenCheckMetri
 
 	basis := append([]string(nil), plan.FreshnessBasis...)
 	checkedAt := time.Now().UTC()
-	return CheckMetricFreshness200JSONResponse(MetricFreshnessStatus{
+	return GenCheckMetricFreshness200JSONResponse(MetricFreshnessStatus{
 		MetricName:             &req.MetricName,
 		ProjectName:            &match.projectName,
 		SemanticModelName:      &match.semanticModelName,
@@ -518,16 +518,16 @@ func (h *APIHandler) ExplainMetricQuery(ctx context.Context, req GenExplainMetri
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.ValidationError)):
-			return ExplainMetricQuery400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenExplainMetricQuery400JSONResponse{GenBadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: GenBadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return ExplainMetricQuery404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenExplainMetricQuery404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
 	}
 
 	apiPlan := metricQueryPlanToAPI(*plan)
-	return ExplainMetricQuery200JSONResponse(MetricQueryExplainResponse{Plan: &apiPlan}), nil
+	return GenExplainMetricQuery200JSONResponse(MetricQueryExplainResponse{Plan: &apiPlan}), nil
 }
 
 // RunMetricQuery compiles and executes a semantic metric query.
@@ -537,11 +537,11 @@ func (h *APIHandler) RunMetricQuery(ctx context.Context, req GenRunMetricQueryRe
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return RunMetricQuery403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenRunMetricQuery403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.ValidationError)):
-			return RunMetricQuery400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenRunMetricQuery400JSONResponse{GenBadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: GenBadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return RunMetricQuery404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenRunMetricQuery404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -553,7 +553,7 @@ func (h *APIHandler) RunMetricQuery(ctx context.Context, req GenRunMetricQueryRe
 		Rows:     &result.Result.Rows,
 		RowCount: ptrInt64(int64(result.Result.RowCount)),
 	}
-	return RunMetricQuery200JSONResponse(MetricQueryRunResponse{Plan: &apiPlan, Result: &apiResult}), nil
+	return GenRunMetricQuery200JSONResponse(MetricQueryRunResponse{Plan: &apiPlan, Result: &apiResult}), nil
 }
 
 func semanticModelToAPI(m domain.SemanticModel) SemanticModel {

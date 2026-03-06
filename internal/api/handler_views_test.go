@@ -104,7 +104,7 @@ func TestHandler_ListViews(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenListViewsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(ListViews200JSONResponse)
+				ok200, ok := resp.(GenListViews200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
 				require.Len(t, *ok200.Body.Data, 1)
@@ -119,7 +119,7 @@ func TestHandler_ListViews(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenListViewsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(ListViews404JSONResponse)
+				notFound, ok := resp.(GenListViews404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -170,7 +170,7 @@ func TestHandler_CreateView(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateViewResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				created, ok := resp.(CreateView201JSONResponse)
+				created, ok := resp.(GenCreateView201JSONResponse)
 				require.True(t, ok, "expected 201 response, got %T", resp)
 				assert.Equal(t, "my-view", *created.Body.Name)
 				assert.Equal(t, "view-1", *created.Body.Id)
@@ -185,7 +185,7 @@ func TestHandler_CreateView(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateViewResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(CreateView400JSONResponse)
+				badReq, ok := resp.(GenCreateView400JSONResponse)
 				require.True(t, ok, "expected 400 response, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 				assert.Contains(t, badReq.Body.Message, "view name is required")
@@ -200,7 +200,7 @@ func TestHandler_CreateView(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateViewResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(CreateView403JSONResponse)
+				forbidden, ok := resp.(GenCreateView403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -214,7 +214,7 @@ func TestHandler_CreateView(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateViewResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				conflict, ok := resp.(CreateView409JSONResponse)
+				conflict, ok := resp.(GenCreateView409JSONResponse)
 				require.True(t, ok, "expected 409 response, got %T", resp)
 				assert.Equal(t, int32(409), conflict.Body.Code)
 				assert.Contains(t, conflict.Body.Message, "already exists")
@@ -229,7 +229,7 @@ func TestHandler_CreateView(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateViewResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(CreateView400JSONResponse)
+				badReq, ok := resp.(GenCreateView400JSONResponse)
 				require.True(t, ok, "expected 400 response for unknown error, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 			},
@@ -271,7 +271,7 @@ func TestHandler_GetView(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenGetViewResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(GetView200JSONResponse)
+				ok200, ok := resp.(GenGetView200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				assert.Equal(t, "my-view", *ok200.Body.Name)
 			},
@@ -285,7 +285,7 @@ func TestHandler_GetView(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenGetViewResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(GetView404JSONResponse)
+				notFound, ok := resp.(GenGetView404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 				assert.Contains(t, notFound.Body.Message, "nonexistent")
@@ -330,7 +330,7 @@ func TestHandler_UpdateView(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenUpdateViewResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(UpdateView200JSONResponse)
+				ok200, ok := resp.(GenUpdateView200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				assert.Equal(t, "my-view", *ok200.Body.Name)
 			},
@@ -345,7 +345,7 @@ func TestHandler_UpdateView(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenUpdateViewResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(UpdateView403JSONResponse)
+				forbidden, ok := resp.(GenUpdateView403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -360,7 +360,7 @@ func TestHandler_UpdateView(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenUpdateViewResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(UpdateView404JSONResponse)
+				notFound, ok := resp.(GenUpdateView404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -402,7 +402,7 @@ func TestHandler_DeleteView(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteViewResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				_, ok := resp.(DeleteView204Response)
+				_, ok := resp.(GenDeleteView204Response)
 				require.True(t, ok, "expected 204 response, got %T", resp)
 			},
 		},
@@ -415,7 +415,7 @@ func TestHandler_DeleteView(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteViewResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(DeleteView403JSONResponse)
+				forbidden, ok := resp.(GenDeleteView403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -429,7 +429,7 @@ func TestHandler_DeleteView(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteViewResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(DeleteView404JSONResponse)
+				notFound, ok := resp.(GenDeleteView404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},

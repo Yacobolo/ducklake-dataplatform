@@ -116,7 +116,7 @@ func TestHandler_TriggerModelRun_UsesAllModelNames(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "stg_orders,fct_orders", gotReq.Selector)
 
-	created, ok := resp.(TriggerModelRun201JSONResponse)
+	created, ok := resp.(GenTriggerModelRun201JSONResponse)
 	require.True(t, ok, "expected 201 response, got %T", resp)
 	require.NotNil(t, created.Body.ProjectName)
 	assert.Equal(t, "analytics", *created.Body.ProjectName)
@@ -150,7 +150,7 @@ func TestHandler_TriggerModelRun_MapsPayloadFields(t *testing.T) {
 
 	resp, err := h.TriggerModelRun(ctx, GenTriggerModelRunRequest{Body: &reqBody})
 	require.NoError(t, err)
-	_, ok := resp.(TriggerModelRun201JSONResponse)
+	_, ok := resp.(GenTriggerModelRun201JSONResponse)
 	require.True(t, ok, "expected 201 response, got %T", resp)
 
 	assert.Equal(t, "alice", gotPrincipal)
@@ -179,7 +179,7 @@ func TestHandler_TriggerModelRun_DefaultTargetValues(t *testing.T) {
 
 	resp, err := h.TriggerModelRun(ctx, GenTriggerModelRunRequest{Body: &reqBody})
 	require.NoError(t, err)
-	_, ok := resp.(TriggerModelRun201JSONResponse)
+	_, ok := resp.(GenTriggerModelRun201JSONResponse)
 	require.True(t, ok, "expected 201 response, got %T", resp)
 
 	assert.Equal(t, "memory", gotReq.TargetCatalog)
@@ -206,7 +206,7 @@ func TestHandler_ListModelRuns_InvalidStatusReturns400(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, called)
 
-	badReq, ok := resp.(ListModelRuns400JSONResponse)
+	badReq, ok := resp.(GenListModelRuns400JSONResponse)
 	require.True(t, ok, "expected 400 response, got %T", resp)
 	assert.Contains(t, badReq.Body.Message, "status must be one of")
 }
@@ -234,7 +234,7 @@ func TestHandler_ListModelRuns_IncludesModelNamesAndProject(t *testing.T) {
 	resp, err := h.ListModelRuns(context.Background(), GenListModelRunsRequest{})
 	require.NoError(t, err)
 
-	okResp, ok := resp.(ListModelRuns200JSONResponse)
+	okResp, ok := resp.(GenListModelRuns200JSONResponse)
 	require.True(t, ok, "expected 200 response, got %T", resp)
 	require.NotNil(t, okResp.Body.Data)
 	require.Len(t, *okResp.Body.Data, 1)
@@ -332,7 +332,7 @@ func TestHandler_CheckSourceFreshness_DefaultsAndMapping(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, called)
 
-	okResp, ok := resp.(CheckSourceFreshness200JSONResponse)
+	okResp, ok := resp.(GenCheckSourceFreshness200JSONResponse)
 	require.True(t, ok, "expected 200 response, got %T", resp)
 	require.NotNil(t, okResp.Body.SourceSchema)
 	assert.Equal(t, "raw", *okResp.Body.SourceSchema)

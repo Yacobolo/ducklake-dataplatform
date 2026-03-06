@@ -249,7 +249,7 @@ func TestHandler_ListAuditLogs(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenListAuditLogsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(ListAuditLogs200JSONResponse)
+				ok200, ok := resp.(GenListAuditLogs200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
 				require.Len(t, *ok200.Body.Data, 1)
@@ -298,7 +298,7 @@ func TestHandler_ListQueryHistory(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenListQueryHistoryResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(ListQueryHistory200JSONResponse)
+				ok200, ok := resp.(GenListQueryHistory200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
 				require.Len(t, *ok200.Body.Data, 1)
@@ -347,7 +347,7 @@ func TestHandler_SearchCatalog(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenSearchCatalogResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(SearchCatalog200JSONResponse)
+				ok200, ok := resp.(GenSearchCatalog200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
 				require.Len(t, *ok200.Body.Data, 1)
@@ -363,7 +363,7 @@ func TestHandler_SearchCatalog(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenSearchCatalogResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				serverErr, ok := resp.(SearchCatalog500JSONResponse)
+				serverErr, ok := resp.(GenSearchCatalog500JSONResponse)
 				require.True(t, ok, "expected 500 response, got %T", resp)
 				assert.Equal(t, int32(500), serverErr.Body.Code)
 			},
@@ -401,7 +401,7 @@ func TestHandler_GetTableLineage(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenGetTableLineageResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(GetTableLineage200JSONResponse)
+				ok200, ok := resp.(GenGetTableLineage200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				assert.Equal(t, "test-schema.my_table", *ok200.Body.TableName)
 				require.NotNil(t, ok200.Body.Upstream)
@@ -451,7 +451,7 @@ func TestHandler_GetUpstreamLineage(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenGetUpstreamLineageResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(GetUpstreamLineage200JSONResponse)
+				ok200, ok := resp.(GenGetUpstreamLineage200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
 				require.Len(t, *ok200.Body.Data, 1)
@@ -501,7 +501,7 @@ func TestHandler_GetDownstreamLineage(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenGetDownstreamLineageResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(GetDownstreamLineage200JSONResponse)
+				ok200, ok := resp.(GenGetDownstreamLineage200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
 				require.Len(t, *ok200.Body.Data, 1)
@@ -552,7 +552,7 @@ func TestHandler_DeleteLineageEdge(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteLineageEdgeResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				_, ok := resp.(DeleteLineageEdge204Response)
+				_, ok := resp.(GenDeleteLineageEdge204Response)
 				require.True(t, ok, "expected 204 response, got %T", resp)
 			},
 		},
@@ -565,7 +565,7 @@ func TestHandler_DeleteLineageEdge(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteLineageEdgeResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(DeleteLineageEdge404JSONResponse)
+				notFound, ok := resp.(GenDeleteLineageEdge404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -603,7 +603,7 @@ func TestHandler_PurgeLineage(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenPurgeLineageResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(PurgeLineage200JSONResponse)
+				ok200, ok := resp.(GenPurgeLineage200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				assert.Equal(t, int64(42), *ok200.Body.DeletedCount)
 			},
@@ -618,7 +618,7 @@ func TestHandler_PurgeLineage(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenPurgeLineageResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(PurgeLineage403JSONResponse)
+				forbidden, ok := resp.(GenPurgeLineage403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 				assert.Contains(t, forbidden.Body.Message, "admin")
@@ -634,7 +634,7 @@ func TestHandler_PurgeLineage(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenPurgeLineageResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				serverErr, ok := resp.(PurgeLineage500JSONResponse)
+				serverErr, ok := resp.(GenPurgeLineage500JSONResponse)
 				require.True(t, ok, "expected 500 response, got %T", resp)
 				assert.Equal(t, int32(500), serverErr.Body.Code)
 			},
@@ -673,7 +673,7 @@ func TestHandler_ListTags(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenListTagsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(ListTags200JSONResponse)
+				ok200, ok := resp.(GenListTags200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
 				require.Len(t, *ok200.Body.Data, 1)
@@ -725,7 +725,7 @@ func TestHandler_CreateTag(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateTagResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				created, ok := resp.(CreateTag201JSONResponse)
+				created, ok := resp.(GenCreateTag201JSONResponse)
 				require.True(t, ok, "expected 201 response, got %T", resp)
 				assert.Equal(t, "tag-1", *created.Body.Id)
 				assert.Equal(t, "classification", *created.Body.Key)
@@ -741,7 +741,7 @@ func TestHandler_CreateTag(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateTagResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(CreateTag403JSONResponse)
+				forbidden, ok := resp.(GenCreateTag403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 				assert.Contains(t, forbidden.Body.Message, "admin")
@@ -757,7 +757,7 @@ func TestHandler_CreateTag(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateTagResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(CreateTag400JSONResponse)
+				badReq, ok := resp.(GenCreateTag400JSONResponse)
 				require.True(t, ok, "expected 400 response, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 			},
@@ -772,7 +772,7 @@ func TestHandler_CreateTag(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateTagResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				conflict, ok := resp.(CreateTag409JSONResponse)
+				conflict, ok := resp.(GenCreateTag409JSONResponse)
 				require.True(t, ok, "expected 409 response, got %T", resp)
 				assert.Equal(t, int32(409), conflict.Body.Code)
 			},
@@ -811,7 +811,7 @@ func TestHandler_DeleteTag(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteTagResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				_, ok := resp.(DeleteTag204Response)
+				_, ok := resp.(GenDeleteTag204Response)
 				require.True(t, ok, "expected 204 response, got %T", resp)
 			},
 		},
@@ -825,7 +825,7 @@ func TestHandler_DeleteTag(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteTagResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(DeleteTag403JSONResponse)
+				forbidden, ok := resp.(GenDeleteTag403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 				assert.Contains(t, forbidden.Body.Message, "admin")
@@ -841,7 +841,7 @@ func TestHandler_DeleteTag(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteTagResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(DeleteTag404JSONResponse)
+				notFound, ok := resp.(GenDeleteTag404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -880,7 +880,7 @@ func TestHandler_CreateTagAssignment(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateTagAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				created, ok := resp.(CreateTagAssignment201JSONResponse)
+				created, ok := resp.(GenCreateTagAssignment201JSONResponse)
 				require.True(t, ok, "expected 201 response, got %T", resp)
 				assert.Equal(t, "ta-1", *created.Body.Id)
 			},
@@ -895,7 +895,7 @@ func TestHandler_CreateTagAssignment(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateTagAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				conflict, ok := resp.(CreateTagAssignment409JSONResponse)
+				conflict, ok := resp.(GenCreateTagAssignment409JSONResponse)
 				require.True(t, ok, "expected 409 response, got %T", resp)
 				assert.Equal(t, int32(409), conflict.Body.Code)
 			},
@@ -947,7 +947,7 @@ func TestHandler_DeleteTagAssignment(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteTagAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				_, ok := resp.(DeleteTagAssignment204Response)
+				_, ok := resp.(GenDeleteTagAssignment204Response)
 				require.True(t, ok, "expected 204 response, got %T", resp)
 			},
 		},
@@ -960,7 +960,7 @@ func TestHandler_DeleteTagAssignment(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteTagAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(DeleteTagAssignment404JSONResponse)
+				notFound, ok := resp.(GenDeleteTagAssignment404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -974,7 +974,7 @@ func TestHandler_DeleteTagAssignment(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteTagAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(DeleteTagAssignment403JSONResponse)
+				forbidden, ok := resp.(GenDeleteTagAssignment403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -988,7 +988,7 @@ func TestHandler_DeleteTagAssignment(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteTagAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(DeleteTagAssignment400JSONResponse)
+				badReq, ok := resp.(GenDeleteTagAssignment400JSONResponse)
 				require.True(t, ok, "expected 400 response, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 			},
@@ -1002,7 +1002,7 @@ func TestHandler_DeleteTagAssignment(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteTagAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				serverErr, ok := resp.(DeleteTagAssignment500JSONResponse)
+				serverErr, ok := resp.(GenDeleteTagAssignment500JSONResponse)
 				require.True(t, ok, "expected 500 response, got %T", resp)
 				assert.Equal(t, int32(500), serverErr.Body.Code)
 			},
@@ -1040,7 +1040,7 @@ func TestHandler_ListClassifications(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenListClassificationsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(ListClassifications200JSONResponse)
+				ok200, ok := resp.(GenListClassifications200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
 				assert.Len(t, *ok200.Body.Data, 2, "should filter to classification and sensitivity only")
@@ -1056,7 +1056,7 @@ func TestHandler_ListClassifications(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenListClassificationsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(ListClassifications200JSONResponse)
+				ok200, ok := resp.(GenListClassifications200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
 				assert.Empty(t, *ok200.Body.Data)

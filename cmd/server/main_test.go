@@ -147,5 +147,5 @@ type executeQueryStrictStub struct {
 
 func (s *executeQueryStrictStub) ExecuteQuery(_ context.Context, _ api.GenExecuteQueryRequest) (api.GenExecuteQueryResponse, error) {
 	s.called = true
-	return api.ExecuteQuery200JSONResponse{}, nil
+	return api.GenExecuteQuery200JSONResponse{}, nil
 }

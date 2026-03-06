@@ -148,7 +148,7 @@ func TestHandler_ListComputeEndpoints(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenListComputeEndpointsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(ListComputeEndpoints200JSONResponse)
+				ok200, ok := resp.(GenListComputeEndpoints200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
 				require.Len(t, *ok200.Body.Data, 1)
@@ -164,7 +164,7 @@ func TestHandler_ListComputeEndpoints(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenListComputeEndpointsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(ListComputeEndpoints200JSONResponse)
+				ok200, ok := resp.(GenListComputeEndpoints200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
 				assert.Empty(t, *ok200.Body.Data)
@@ -213,7 +213,7 @@ func TestHandler_CreateComputeEndpoint(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateComputeEndpointResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				created, ok := resp.(CreateComputeEndpoint201JSONResponse)
+				created, ok := resp.(GenCreateComputeEndpoint201JSONResponse)
 				require.True(t, ok, "expected 201 response, got %T", resp)
 				assert.Equal(t, "analytics-xl", *created.Body.Name)
 				assert.Equal(t, "ep-1", *created.Body.Id)
@@ -228,7 +228,7 @@ func TestHandler_CreateComputeEndpoint(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateComputeEndpointResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(CreateComputeEndpoint400JSONResponse)
+				badReq, ok := resp.(GenCreateComputeEndpoint400JSONResponse)
 				require.True(t, ok, "expected 400 response, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 				assert.Contains(t, badReq.Body.Message, "name is required")
@@ -243,7 +243,7 @@ func TestHandler_CreateComputeEndpoint(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateComputeEndpointResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(CreateComputeEndpoint403JSONResponse)
+				forbidden, ok := resp.(GenCreateComputeEndpoint403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -257,7 +257,7 @@ func TestHandler_CreateComputeEndpoint(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateComputeEndpointResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				conflict, ok := resp.(CreateComputeEndpoint409JSONResponse)
+				conflict, ok := resp.(GenCreateComputeEndpoint409JSONResponse)
 				require.True(t, ok, "expected 409 response, got %T", resp)
 				assert.Equal(t, int32(409), conflict.Body.Code)
 				assert.Contains(t, conflict.Body.Message, "already exists")
@@ -272,7 +272,7 @@ func TestHandler_CreateComputeEndpoint(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateComputeEndpointResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(CreateComputeEndpoint400JSONResponse)
+				badReq, ok := resp.(GenCreateComputeEndpoint400JSONResponse)
 				require.True(t, ok, "expected 400 response for unknown error, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 			},
@@ -310,7 +310,7 @@ func TestHandler_GetComputeEndpoint(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenGetComputeEndpointResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(GetComputeEndpoint200JSONResponse)
+				ok200, ok := resp.(GenGetComputeEndpoint200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				assert.Equal(t, "analytics-xl", *ok200.Body.Name)
 			},
@@ -324,7 +324,7 @@ func TestHandler_GetComputeEndpoint(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenGetComputeEndpointResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(GetComputeEndpoint404JSONResponse)
+				notFound, ok := resp.(GenGetComputeEndpoint404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 				assert.Contains(t, notFound.Body.Message, "nonexistent")
@@ -365,7 +365,7 @@ func TestHandler_UpdateComputeEndpoint(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenUpdateComputeEndpointResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(UpdateComputeEndpoint200JSONResponse)
+				ok200, ok := resp.(GenUpdateComputeEndpoint200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				assert.Equal(t, "analytics-xl", *ok200.Body.Name)
 			},
@@ -380,7 +380,7 @@ func TestHandler_UpdateComputeEndpoint(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenUpdateComputeEndpointResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(UpdateComputeEndpoint403JSONResponse)
+				forbidden, ok := resp.(GenUpdateComputeEndpoint403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -395,7 +395,7 @@ func TestHandler_UpdateComputeEndpoint(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenUpdateComputeEndpointResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(UpdateComputeEndpoint404JSONResponse)
+				notFound, ok := resp.(GenUpdateComputeEndpoint404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -435,7 +435,7 @@ func TestHandler_DeleteComputeEndpoint(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteComputeEndpointResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				_, ok := resp.(DeleteComputeEndpoint204Response)
+				_, ok := resp.(GenDeleteComputeEndpoint204Response)
 				require.True(t, ok, "expected 204 response, got %T", resp)
 			},
 		},
@@ -448,7 +448,7 @@ func TestHandler_DeleteComputeEndpoint(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteComputeEndpointResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(DeleteComputeEndpoint403JSONResponse)
+				forbidden, ok := resp.(GenDeleteComputeEndpoint403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -462,7 +462,7 @@ func TestHandler_DeleteComputeEndpoint(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteComputeEndpointResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(DeleteComputeEndpoint404JSONResponse)
+				notFound, ok := resp.(GenDeleteComputeEndpoint404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -500,7 +500,7 @@ func TestHandler_ListComputeAssignments(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenListComputeAssignmentsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(ListComputeAssignments200JSONResponse)
+				ok200, ok := resp.(GenListComputeAssignments200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
 				require.Len(t, *ok200.Body.Data, 1)
@@ -517,7 +517,7 @@ func TestHandler_ListComputeAssignments(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenListComputeAssignmentsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(ListComputeAssignments404JSONResponse)
+				notFound, ok := resp.(GenListComputeAssignments404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -563,7 +563,7 @@ func TestHandler_CreateComputeAssignment(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateComputeAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				created, ok := resp.(CreateComputeAssignment201JSONResponse)
+				created, ok := resp.(GenCreateComputeAssignment201JSONResponse)
 				require.True(t, ok, "expected 201 response, got %T", resp)
 				assert.Equal(t, "assign-1", *created.Body.Id)
 			},
@@ -578,7 +578,7 @@ func TestHandler_CreateComputeAssignment(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateComputeAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(CreateComputeAssignment400JSONResponse)
+				badReq, ok := resp.(GenCreateComputeAssignment400JSONResponse)
 				require.True(t, ok, "expected 400 response, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 			},
@@ -593,7 +593,7 @@ func TestHandler_CreateComputeAssignment(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateComputeAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(CreateComputeAssignment403JSONResponse)
+				forbidden, ok := resp.(GenCreateComputeAssignment403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -608,7 +608,7 @@ func TestHandler_CreateComputeAssignment(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateComputeAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				conflict, ok := resp.(CreateComputeAssignment409JSONResponse)
+				conflict, ok := resp.(GenCreateComputeAssignment409JSONResponse)
 				require.True(t, ok, "expected 409 response, got %T", resp)
 				assert.Equal(t, int32(409), conflict.Body.Code)
 			},
@@ -623,7 +623,7 @@ func TestHandler_CreateComputeAssignment(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateComputeAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(CreateComputeAssignment400JSONResponse)
+				badReq, ok := resp.(GenCreateComputeAssignment400JSONResponse)
 				require.True(t, ok, "expected 400 response for unknown error, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 			},
@@ -663,7 +663,7 @@ func TestHandler_DeleteComputeAssignment(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteComputeAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				_, ok := resp.(DeleteComputeAssignment204Response)
+				_, ok := resp.(GenDeleteComputeAssignment204Response)
 				require.True(t, ok, "expected 204 response, got %T", resp)
 			},
 		},
@@ -676,7 +676,7 @@ func TestHandler_DeleteComputeAssignment(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteComputeAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(DeleteComputeAssignment403JSONResponse)
+				forbidden, ok := resp.(GenDeleteComputeAssignment403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -690,7 +690,7 @@ func TestHandler_DeleteComputeAssignment(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteComputeAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(DeleteComputeAssignment404JSONResponse)
+				notFound, ok := resp.(GenDeleteComputeAssignment404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -733,7 +733,7 @@ func TestHandler_GetComputeEndpointHealth(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenGetComputeEndpointHealthResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(GetComputeEndpointHealth200JSONResponse)
+				ok200, ok := resp.(GenGetComputeEndpointHealth200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				assert.Equal(t, "healthy", *ok200.Body.Status)
 				assert.Equal(t, int32(3600), *ok200.Body.UptimeSeconds)
@@ -748,7 +748,7 @@ func TestHandler_GetComputeEndpointHealth(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenGetComputeEndpointHealthResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(GetComputeEndpointHealth403JSONResponse)
+				forbidden, ok := resp.(GenGetComputeEndpointHealth403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -762,7 +762,7 @@ func TestHandler_GetComputeEndpointHealth(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenGetComputeEndpointHealthResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(GetComputeEndpointHealth404JSONResponse)
+				notFound, ok := resp.(GenGetComputeEndpointHealth404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -776,7 +776,7 @@ func TestHandler_GetComputeEndpointHealth(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenGetComputeEndpointHealthResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badGateway, ok := resp.(GetComputeEndpointHealth502JSONResponse)
+				badGateway, ok := resp.(GenGetComputeEndpointHealth502JSONResponse)
 				require.True(t, ok, "expected 502 response, got %T", resp)
 				assert.Equal(t, int32(502), badGateway.Body.Code)
 			},
