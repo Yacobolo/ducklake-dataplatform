@@ -1152,7 +1152,7 @@ func mustJSON(v interface{}) string {
 	return string(b)
 }
 
-// === Pipelines ===
+// === Helpers ===
 
 // formatStringSlice returns a stable comma-separated string for comparison.
 func formatStringSlice(s []string) string {

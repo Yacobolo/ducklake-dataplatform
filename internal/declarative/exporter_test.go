@@ -274,18 +274,6 @@ func TestExporter_RoundTripModelsAndMacros(t *testing.T) {
 	assert.Equal(t, "total_revenue", loaded.SemanticModels[0].Spec.Metrics[0].Name)
 }
 
-func TestExporter_FailsForLegacyPipelines(t *testing.T) {
-	dir := t.TempDir()
-	err := ExportDirectory(dir, &DesiredState{
-		Pipelines: []PipelineResource{{
-			Name: "legacy",
-			Spec: PipelineSpec{Description: "legacy"},
-		}},
-	}, false)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "cannot export legacy pipelines")
-}
-
 // strPtr is defined in validator_test.go (same package).
 
 func assertFileExists(t *testing.T, path string) {

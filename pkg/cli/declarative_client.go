@@ -40,8 +40,6 @@ type resourceIndex struct {
 	rowFilterIDByPath     map[string]string // "cat.sch.tbl/filterName" → UUID
 	columnMaskIDByPath    map[string]string // "cat.sch.tbl/maskName" → UUID
 	notebookIDByName      map[string]string // "kpi_walkthrough" → UUID
-	pipelineIDByName      map[string]string // "daily_pipeline" → UUID
-	jobIDByPath           map[string]string // "pipeline/job" → UUID
 }
 
 func newResourceIndex() *resourceIndex {
@@ -60,8 +58,6 @@ func newResourceIndex() *resourceIndex {
 		rowFilterIDByPath:     make(map[string]string),
 		columnMaskIDByPath:    make(map[string]string),
 		notebookIDByName:      make(map[string]string),
-		pipelineIDByName:      make(map[string]string),
-		jobIDByPath:           make(map[string]string),
 	}
 }
 

@@ -6,8 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"sync"
 
 	"duck-demo/internal/domain"
+	"golang.org/x/sync/errgroup"
 )
 
 type BackfillRunner struct {
@@ -81,64 +83,37 @@ func (r *BackfillRunner) RunRequest(ctx context.Context, requestID string) error
 	})
 
 	failedReasons := make([]string, 0)
+
+	maxParallelism := normalizeMaxParallelism(req.MaxParallelism)
+	failedBySliceID := make(map[string]string)
+	var failedMu sync.Mutex
+
+	g, gctx := errgroup.WithContext(ctx)
+	g.SetLimit(maxParallelism)
+
 	for _, slice := range slices {
-		if slice.Status == domain.BackfillStatusSuccess || slice.Status == domain.BackfillStatusCancelled {
-			continue
-		}
-
-		ready, reason, readyErr := r.upstreamReady(ctx, slice.AssetID, slice.PartitionKey)
-		if readyErr != nil {
-			return readyErr
-		}
-		if !ready {
-			deferReason := fmt.Sprintf("deferred: %s", reason)
-			if err := r.backfills.UpdateSliceStatus(ctx, slice.ID, domain.BackfillStatusFailed, slice.RunID, &deferReason); err != nil {
-				return fmt.Errorf("set slice deferred: %w", err)
+		slice := slice
+		g.Go(func() error {
+			errMsg, failed, err := r.runSlice(gctx, req, plan, slice)
+			if err != nil {
+				return err
 			}
-			failedReasons = append(failedReasons, deferReason)
-			continue
-		}
-
-		if err := r.backfills.UpdateSliceStatus(ctx, slice.ID, domain.BackfillStatusRunning, slice.RunID, nil); err != nil {
-			return fmt.Errorf("set slice running: %w", err)
-		}
-
-		run := &domain.AssetRun{
-			ID:            domain.NewID(),
-			AssetID:       req.AssetID,
-			PartitionKey:  ptrSliceKey(slice.PartitionKey),
-			PartitionFrom: ptrSliceKey(req.PartitionFrom),
-			PartitionTo:   ptrSliceKey(req.PartitionTo),
-			Status:        domain.AssetRunStatusQueued,
-			TriggerType:   domain.AssetTriggerTypeBackfill,
-			TriggeredBy:   req.RequestedBy,
-			MaxAttempts:   1,
-		}
-		created, err := r.runs.CreateRun(ctx, run)
-		if err != nil {
-			errMsg := fmt.Sprintf("create run: %v", err)
-			if updateErr := r.backfills.UpdateSliceStatus(ctx, slice.ID, domain.BackfillStatusFailed, slice.RunID, &errMsg); updateErr != nil {
-				return fmt.Errorf("create run and update slice status: %w", errors.Join(err, updateErr))
+			if failed {
+				failedMu.Lock()
+				failedBySliceID[slice.ID] = errMsg
+				failedMu.Unlock()
 			}
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return err
+	}
+
+	for _, slice := range slices {
+		if errMsg, ok := failedBySliceID[slice.ID]; ok {
 			failedReasons = append(failedReasons, errMsg)
-			continue
-		}
-
-		if err := r.backfills.UpdateSliceStatus(ctx, slice.ID, domain.BackfillStatusRunning, &created.ID, nil); err != nil {
-			return fmt.Errorf("link run id to slice: %w", err)
-		}
-
-		if err := r.executor.ExecutePlan(ctx, created.ID, created.Status, plan); err != nil {
-			errMsg := fmt.Sprintf("execute partition %s: %v", slice.PartitionKey, err)
-			if updateErr := r.backfills.UpdateSliceStatus(ctx, slice.ID, domain.BackfillStatusFailed, &created.ID, &errMsg); updateErr != nil {
-				return fmt.Errorf("execute slice and update status: %w", errors.Join(err, updateErr))
-			}
-			failedReasons = append(failedReasons, errMsg)
-			continue
-		}
-
-		if err := r.backfills.UpdateSliceStatus(ctx, slice.ID, domain.BackfillStatusSuccess, &created.ID, nil); err != nil {
-			return fmt.Errorf("set slice success: %w", err)
 		}
 	}
 
@@ -154,6 +129,66 @@ func (r *BackfillRunner) RunRequest(ctx context.Context, requestID string) error
 		return fmt.Errorf("set request success: %w", err)
 	}
 	return nil
+}
+
+func (r *BackfillRunner) runSlice(ctx context.Context, req *domain.BackfillRequest, plan *AssetRunPlan, slice domain.BackfillSlice) (string, bool, error) {
+	if slice.Status == domain.BackfillStatusSuccess || slice.Status == domain.BackfillStatusCancelled {
+		return "", false, nil
+	}
+
+	ready, reason, readyErr := r.upstreamReady(ctx, slice.AssetID, slice.PartitionKey)
+	if readyErr != nil {
+		return "", false, readyErr
+	}
+	if !ready {
+		deferReason := fmt.Sprintf("deferred: %s", reason)
+		if err := r.backfills.UpdateSliceStatus(ctx, slice.ID, domain.BackfillStatusFailed, slice.RunID, &deferReason); err != nil {
+			return "", false, fmt.Errorf("set slice deferred: %w", err)
+		}
+		return deferReason, true, nil
+	}
+
+	if err := r.backfills.UpdateSliceStatus(ctx, slice.ID, domain.BackfillStatusRunning, slice.RunID, nil); err != nil {
+		return "", false, fmt.Errorf("set slice running: %w", err)
+	}
+
+	run := &domain.AssetRun{
+		ID:            domain.NewID(),
+		AssetID:       req.AssetID,
+		PartitionKey:  ptrSliceKey(slice.PartitionKey),
+		PartitionFrom: ptrSliceKey(req.PartitionFrom),
+		PartitionTo:   ptrSliceKey(req.PartitionTo),
+		Status:        domain.AssetRunStatusQueued,
+		TriggerType:   domain.AssetTriggerTypeBackfill,
+		TriggeredBy:   req.RequestedBy,
+		MaxAttempts:   1,
+	}
+	created, err := r.runs.CreateRun(ctx, run)
+	if err != nil {
+		errMsg := fmt.Sprintf("create run: %v", err)
+		if updateErr := r.backfills.UpdateSliceStatus(ctx, slice.ID, domain.BackfillStatusFailed, slice.RunID, &errMsg); updateErr != nil {
+			return "", false, fmt.Errorf("create run and update slice status: %w", errors.Join(err, updateErr))
+		}
+		return errMsg, true, nil
+	}
+
+	if err := r.backfills.UpdateSliceStatus(ctx, slice.ID, domain.BackfillStatusRunning, &created.ID, nil); err != nil {
+		return "", false, fmt.Errorf("link run id to slice: %w", err)
+	}
+
+	if err := r.executor.ExecutePlan(ctx, created.ID, created.Status, plan); err != nil {
+		errMsg := fmt.Sprintf("execute partition %s: %v", slice.PartitionKey, err)
+		if updateErr := r.backfills.UpdateSliceStatus(ctx, slice.ID, domain.BackfillStatusFailed, &created.ID, &errMsg); updateErr != nil {
+			return "", false, fmt.Errorf("execute slice and update status: %w", errors.Join(err, updateErr))
+		}
+		return errMsg, true, nil
+	}
+
+	if err := r.backfills.UpdateSliceStatus(ctx, slice.ID, domain.BackfillStatusSuccess, &created.ID, nil); err != nil {
+		return "", false, fmt.Errorf("set slice success: %w", err)
+	}
+
+	return "", false, nil
 }
 
 func (r *BackfillRunner) upstreamReady(ctx context.Context, assetID, partitionKey string) (bool, string, error) {
@@ -201,4 +236,11 @@ func isTerminalBackfillStatus(status string) bool {
 func ptrSliceKey(key string) *string {
 	k := key
 	return &k
+}
+
+func normalizeMaxParallelism(maxParallelism int) int {
+	if maxParallelism <= 0 {
+		return 1
+	}
+	return maxParallelism
 }

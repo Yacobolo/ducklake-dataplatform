@@ -413,34 +413,6 @@ type NotebookPublishModelSpec struct {
 	OutputCell      string `yaml:"output_cell"`
 }
 
-// PipelineDoc declares a pipeline of notebook jobs.
-type PipelineDoc struct {
-	APIVersion string       `yaml:"apiVersion"`
-	Kind       string       `yaml:"kind"`
-	Metadata   ObjectMeta   `yaml:"metadata"`
-	Spec       PipelineSpec `yaml:"spec"`
-}
-
-// PipelineSpec holds the configuration for a pipeline.
-type PipelineSpec struct {
-	Description      string            `yaml:"description,omitempty"`
-	ScheduleCron     string            `yaml:"schedule_cron,omitempty"`
-	IsPaused         bool              `yaml:"is_paused,omitempty"`
-	ConcurrencyLimit *int              `yaml:"concurrency_limit,omitempty"`
-	Jobs             []PipelineJobSpec `yaml:"jobs,omitempty"`
-}
-
-// PipelineJobSpec describes a single job within a pipeline.
-type PipelineJobSpec struct {
-	Name            string   `yaml:"name"`
-	Notebook        string   `yaml:"notebook"`
-	ComputeEndpoint string   `yaml:"compute_endpoint,omitempty"`
-	DependsOn       []string `yaml:"depends_on,omitempty"`
-	TimeoutSeconds  *int     `yaml:"timeout_seconds,omitempty"`
-	RetryCount      *int     `yaml:"retry_count,omitempty"`
-	Order           *int     `yaml:"order,omitempty"`
-}
-
 // AssetDoc declares an asset-centric orchestration node.
 type AssetDoc struct {
 	APIVersion string     `yaml:"apiVersion"`
@@ -532,7 +504,6 @@ type DesiredState struct {
 	APIKeys            []APIKeySpec
 	Notebooks          []NotebookResource
 	Assets             []AssetResource
-	Pipelines          []PipelineResource
 	Models             []ModelResource
 	SemanticModels     []SemanticModelResource
 	Macros             []MacroResource
@@ -598,12 +569,6 @@ type ColumnMaskResource struct {
 type NotebookResource struct {
 	Name string
 	Spec NotebookSpec
-}
-
-// PipelineResource is a pipeline with its resolved name.
-type PipelineResource struct {
-	Name string
-	Spec PipelineSpec
 }
 
 // AssetResource is an asset with its resolved key.

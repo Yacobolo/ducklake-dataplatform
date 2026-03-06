@@ -169,12 +169,6 @@ func run() error {
 		logger.Warn("catalog AttachAll failed", "error", err)
 	}
 
-	// Start pipeline scheduler
-	if err := application.Scheduler.Start(ctx); err != nil {
-		logger.Warn("pipeline scheduler failed to start", "error", err)
-	}
-	defer application.Scheduler.Stop()
-
 	if application.Reconciler != nil {
 		reconcilerStop := make(chan struct{})
 		go func() {

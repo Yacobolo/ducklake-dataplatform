@@ -55,7 +55,15 @@ func (r *OrchestrationEventRepo) Enqueue(ctx context.Context, event *domain.Orch
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, id, event.EventType, nullStrFromPtr(event.AssetID), nullStrFromPtr(event.PartitionKey), string(payloadJSON), event.Status, event.AttemptCount, event.AvailableAt, nullStrFromPtr(event.LastError), nullStrFromPtr(event.IdempotencyKey))
 	if err != nil {
-		return nil, mapDBError(err)
+		mappedErr := mapDBError(err)
+		var conflictErr *domain.ConflictError
+		if errors.As(mappedErr, &conflictErr) && event.IdempotencyKey != nil && *event.IdempotencyKey != "" {
+			existing, lookupErr := r.getByIdempotencyKey(ctx, *event.IdempotencyKey)
+			if lookupErr == nil {
+				return existing, nil
+			}
+		}
+		return nil, mappedErr
 	}
 	event.ID = id
 	return r.getByID(ctx, id)
@@ -258,6 +266,16 @@ func (r *OrchestrationEventRepo) getByID(ctx context.Context, id string) (*domai
 		FROM orchestration_events
 		WHERE id = ?
 	`, id)
+	return scanOrchestrationEvent(row)
+}
+
+func (r *OrchestrationEventRepo) getByIdempotencyKey(ctx context.Context, key string) (*domain.OrchestrationEvent, error) {
+	row := r.db.QueryRowContext(ctx, `
+		SELECT id, event_type, asset_id, partition_key, payload_json, status, attempt_count,
+		       available_at, last_error, idempotency_key, created_at, updated_at
+		FROM orchestration_events
+		WHERE idempotency_key = ?
+	`, key)
 	return scanOrchestrationEvent(row)
 }
 

@@ -86,7 +86,6 @@ type App struct {
 	Engine        *engine.SecureEngine
 	APIKeyRepo    *repository.APIKeyRepo
 	PrincipalRepo *repository.PrincipalRepo
-	Scheduler     *pipeline.Scheduler
 	Reconciler    *orchestration.Reconciler
 }
 
@@ -316,10 +315,6 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	if err := pipelineSvc.SyncPipelinesToAssets(ctx); err != nil {
 		return nil, fmt.Errorf("sync pipelines to assets: %w", err)
 	}
-	pipelineScheduler := pipeline.NewScheduler(pipelineSvc, pipelineRepo,
-		deps.Logger.With("component", "pipeline-scheduler"))
-	pipelineSvc.SetScheduleReloader(pipelineScheduler)
-
 	assetScheduler := orchestration.NewAssetScheduler(assetRepo, assetDepRepo, assetRunRepo)
 	ioManager, err := newOrchestrationIOManager(cfg)
 	if err != nil {
@@ -422,7 +417,6 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 		Engine:        eng,
 		APIKeyRepo:    apiKeyRepo,
 		PrincipalRepo: principalRepo,
-		Scheduler:     pipelineScheduler,
 		Reconciler:    reconciler,
 	}, nil
 }

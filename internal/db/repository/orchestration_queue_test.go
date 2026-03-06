@@ -60,6 +60,48 @@ func TestOrchestrationEventRepo_EnqueueClaimAndProcess(t *testing.T) {
 	assert.Equal(t, domain.OrchestrationEventStatusProcessed, list[0].Status)
 }
 
+func TestOrchestrationEventRepo_Enqueue_IdempotentByKey(t *testing.T) {
+	events, _, assets := setupQueueRepos(t)
+	ctx := context.Background()
+
+	asset, err := assets.Create(ctx, &domain.DataAsset{
+		AssetKey:  "main.ops.idem",
+		AssetType: domain.AssetTypeTable,
+		Owner:     "ops",
+		CreatedBy: "admin",
+		IsActive:  true,
+	})
+	require.NoError(t, err)
+
+	assetID := asset.ID
+	key := "event-idem-1"
+	first, err := events.Enqueue(ctx, &domain.OrchestrationEvent{
+		EventType:      "UPSTREAM_UPDATE",
+		AssetID:        &assetID,
+		Status:         domain.OrchestrationEventStatusPending,
+		PayloadJSON:    map[string]any{"source": "first"},
+		IdempotencyKey: &key,
+	})
+	require.NoError(t, err)
+
+	second, err := events.Enqueue(ctx, &domain.OrchestrationEvent{
+		EventType:      "UPSTREAM_UPDATE",
+		AssetID:        &assetID,
+		Status:         domain.OrchestrationEventStatusPending,
+		PayloadJSON:    map[string]any{"source": "second"},
+		IdempotencyKey: &key,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, second)
+	assert.Equal(t, first.ID, second.ID)
+
+	all, total, err := events.List(ctx, domain.OrchestrationEventFilter{Page: domain.PageRequest{MaxResults: 10}})
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), total)
+	require.Len(t, all, 1)
+	assert.Equal(t, key, derefStr(all[0].IdempotencyKey))
+}
+
 func TestBackfillRepo_CreateAndUpdate(t *testing.T) {
 	_, backfills, assets := setupQueueRepos(t)
 	ctx := context.Background()
@@ -74,13 +116,15 @@ func TestBackfillRepo_CreateAndUpdate(t *testing.T) {
 	require.NoError(t, err)
 
 	req, err := backfills.CreateRequest(ctx, &domain.BackfillRequest{
-		AssetID:       asset.ID,
-		PartitionFrom: "2026-03-01",
-		PartitionTo:   "2026-03-03",
-		RequestedBy:   "admin",
+		AssetID:        asset.ID,
+		PartitionFrom:  "2026-03-01",
+		PartitionTo:    "2026-03-03",
+		RequestedBy:    "admin",
+		MaxParallelism: 0,
 	})
 	require.NoError(t, err)
 	require.NotEmpty(t, req.ID)
+	assert.Equal(t, 1, req.MaxParallelism)
 
 	slice, err := backfills.CreateSlice(ctx, &domain.BackfillSlice{
 		RequestID:    req.ID,
@@ -102,6 +146,7 @@ func TestBackfillRepo_CreateAndUpdate(t *testing.T) {
 	assert.Equal(t, int64(1), total)
 	require.Len(t, list, 1)
 	assert.Equal(t, domain.BackfillStatusSuccess, list[0].Status)
+	assert.Equal(t, 1, list[0].MaxParallelism)
 }
 
 func TestOrchestrationEventRepo_ClaimNextPending_ConcurrentSingleWinner(t *testing.T) {
@@ -180,3 +225,10 @@ func TestClaimRetryableLockError(t *testing.T) {
 }
 
 func ptr(s string) *string { return &s }
+
+func derefStr(v *string) string {
+	if v == nil {
+		return ""
+	}
+	return *v
+}

@@ -59,10 +59,6 @@ func ExportDirectory(dir string, state *DesiredState, overwrite bool) error {
 		return err
 	}
 
-	if len(state.Pipelines) > 0 {
-		return fmt.Errorf("cannot export legacy pipelines: declarative config now uses assets/; migrate pipeline definitions to assets")
-	}
-
 	// Models.
 	if err := exportModels(dir, state); err != nil {
 		return err
@@ -426,7 +422,7 @@ func exportNotebooks(dir string, state *DesiredState) error {
 	return nil
 }
 
-// === Pipelines ===
+// === Assets ===
 
 func exportAssets(dir string, state *DesiredState) error {
 	for _, asset := range state.Assets {

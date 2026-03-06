@@ -3,6 +3,7 @@ package orchestration
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -159,6 +160,7 @@ func (f *fakeDeps) Delete(context.Context, string) error        { panic("not imp
 func (f *fakeDeps) DeleteByAsset(context.Context, string) error { panic("not implemented") }
 
 type fakeRunRepo struct {
+	mu            sync.Mutex
 	runs          map[string]*domain.AssetRun
 	events        []domain.AssetRunEvent
 	materialize   map[string][]domain.AssetMaterialization
@@ -168,6 +170,9 @@ type fakeRunRepo struct {
 }
 
 func (f *fakeRunRepo) CreateRun(_ context.Context, run *domain.AssetRun) (*domain.AssetRun, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
 	if f.runs == nil {
 		f.runs = map[string]*domain.AssetRun{}
 	}
@@ -189,9 +194,20 @@ func (f *fakeRunRepo) CreateRun(_ context.Context, run *domain.AssetRun) (*domai
 	return &runCopy, nil
 }
 func (f *fakeRunRepo) GetRunByID(_ context.Context, id string) (*domain.AssetRun, error) {
-	return f.runs[id], nil
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	run := f.runs[id]
+	if run == nil {
+		return nil, nil
+	}
+	copyRun := *run
+	return &copyRun, nil
 }
 func (f *fakeRunRepo) ListRuns(_ context.Context, filter domain.AssetRunFilter) ([]domain.AssetRun, int64, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
 	out := make([]domain.AssetRun, 0, len(f.runs))
 	for _, run := range f.runs {
 		if filter.AssetID != nil && run.AssetID != *filter.AssetID {
@@ -205,6 +221,9 @@ func (f *fakeRunRepo) ListRuns(_ context.Context, filter domain.AssetRunFilter) 
 	return out, int64(len(out)), nil
 }
 func (f *fakeRunRepo) UpdateRunStarted(_ context.Context, id string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
 	f.runs[id].Status = domain.AssetRunStatusRunning
 	now := time.Now().UTC()
 	f.runs[id].StartedAt = &now
@@ -212,6 +231,9 @@ func (f *fakeRunRepo) UpdateRunStarted(_ context.Context, id string) error {
 	return nil
 }
 func (f *fakeRunRepo) UpdateRunFinished(_ context.Context, id string, status string, errMsg *string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
 	f.runs[id].Status = status
 	f.runs[id].ErrorMessage = errMsg
 	now := time.Now().UTC()
@@ -219,6 +241,9 @@ func (f *fakeRunRepo) UpdateRunFinished(_ context.Context, id string, status str
 	return nil
 }
 func (f *fakeRunRepo) UpdateRunRetrying(_ context.Context, id string, attempt int, errMsg *string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
 	f.runs[id].Status = domain.AssetRunStatusRetrying
 	f.runs[id].AttemptCount = attempt
 	f.runs[id].ErrorMessage = errMsg
@@ -226,6 +251,9 @@ func (f *fakeRunRepo) UpdateRunRetrying(_ context.Context, id string, attempt in
 	return nil
 }
 func (f *fakeRunRepo) CreateRunEvent(_ context.Context, event *domain.AssetRunEvent) (*domain.AssetRunEvent, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
 	f.events = append(f.events, *event)
 	return event, nil
 }
@@ -236,6 +264,9 @@ func (f *fakeRunRepo) CreateMaterialization(context.Context, *domain.AssetMateri
 	panic("not implemented")
 }
 func (f *fakeRunRepo) ListMaterializationsByAsset(_ context.Context, assetID string, page domain.PageRequest) ([]domain.AssetMaterialization, int64, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
 	materializations := f.materialize[assetID]
 	if len(materializations) == 0 {
 		return nil, 0, nil
@@ -255,11 +286,15 @@ func (f *fakeRunRepo) ListMaterializationsByAsset(_ context.Context, assetID str
 }
 
 type fakeStepper struct {
+	mu                sync.Mutex
 	failuresRemaining map[string]int
 	executeCalls      map[string]int
 }
 
 func (f *fakeStepper) Execute(_ context.Context, assetID string, _ IOManager) (map[string]any, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
 	if f.executeCalls == nil {
 		f.executeCalls = map[string]int{}
 	}

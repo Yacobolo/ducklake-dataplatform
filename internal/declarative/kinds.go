@@ -4,7 +4,7 @@ package declarative
 type ResourceKind int
 
 // Resource kind constants identify each type of managed resource.
-// They are ordered by dependency layer (0-7) for correct apply/delete sequencing.
+// They are ordered by dependency layer (0-9) for correct apply/delete sequencing.
 const (
 	KindStorageCredential   ResourceKind = iota // layer 0
 	KindPrincipal                               // layer 0
@@ -29,8 +29,6 @@ const (
 	KindAPIKey                                  // layer 6
 	KindNotebook                                // layer 6
 	KindAsset                                   // layer 7
-	KindPipeline                                // layer 7 (legacy)
-	KindPipelineJob                             // layer 7 (legacy)
 	KindModel                                   // layer 8
 	KindSemanticModel                           // layer 9
 )
@@ -84,10 +82,6 @@ func (k ResourceKind) String() string {
 		return "notebook"
 	case KindAsset:
 		return "asset"
-	case KindPipeline:
-		return "pipeline"
-	case KindPipelineJob:
-		return "pipeline-job"
 	case KindModel:
 		return "model"
 	case KindSemanticModel:
@@ -97,7 +91,7 @@ func (k ResourceKind) String() string {
 	}
 }
 
-// Layer returns the dependency layer (0-7) for ordering.
+// Layer returns the dependency layer (0-9) for ordering.
 // Layer 0 has no dependencies; higher layers depend on lower ones.
 func (k ResourceKind) Layer() int {
 	switch k {
@@ -115,7 +109,7 @@ func (k ResourceKind) Layer() int {
 		return 5
 	case KindRowFilterBinding, KindColumnMaskBinding, KindAPIKey, KindNotebook:
 		return 6
-	case KindAsset, KindPipeline, KindPipelineJob:
+	case KindAsset:
 		return 7
 	case KindModel:
 		return 8
@@ -177,7 +171,6 @@ const (
 	KindNameComputeAssignmentList = "ComputeAssignmentList"
 	KindNameNotebook              = "Notebook"
 	KindNameAsset                 = "Asset"
-	KindNamePipeline              = "Pipeline"
 	KindNameModel                 = "Model"
 	KindNameSemanticModel         = "SemanticModel"
 	KindNameMacro                 = "Macro"

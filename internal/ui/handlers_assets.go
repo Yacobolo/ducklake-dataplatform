@@ -446,11 +446,6 @@ func (h *Handler) AssetMaterialize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	principal := principalFromContext(r.Context())
-	if !principal.IsAdmin {
-		h.renderServiceError(w, r, domain.ErrAccessDenied("asset materialization requires admin privileges"))
-		return
-	}
 	assetKey := chi.URLParam(r, "assetKey")
 	asset, err := h.Asset.GetAsset(r.Context(), assetKey)
 	if err != nil {
@@ -475,11 +470,6 @@ func (h *Handler) AssetBackfillCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	principal := principalFromContext(r.Context())
-	if !principal.IsAdmin {
-		h.renderServiceError(w, r, domain.ErrAccessDenied("asset backfill requires admin privileges"))
-		return
-	}
 	assetKey := chi.URLParam(r, "assetKey")
 	asset, err := h.Asset.GetAsset(r.Context(), assetKey)
 	if err != nil {

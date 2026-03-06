@@ -71,8 +71,6 @@ func withTestIndex(sc *APIStateClient) *APIStateClient {
 	sc.index.rowFilterIDByPath["demo.titanic.passengers/first_class"] = "rf-id-first"
 	sc.index.columnMaskIDByPath["demo.titanic.passengers/mask_name"] = "cm-id-name"
 	sc.index.notebookIDByName["nb1"] = "notebook-id-1"
-	sc.index.pipelineIDByName["pipe1"] = "pipeline-id-1"
-	sc.index.jobIDByPath["pipe1/job1"] = "job-id-1"
 	sc.index.computeIDByName["local"] = "compute-id-local"
 	return sc
 }
@@ -1122,34 +1120,6 @@ func TestExecuteNotebook_CreatePublishesModelFromOutputCell(t *testing.T) {
 	assert.Equal(t, "TABLE", publishBody["materialization"])
 }
 
-func TestExecutePipelineJob_IsNotImplemented(t *testing.T) {
-	var captured []execCapture
-	sc := withTestIndex(newTestExecuteClient(t, &captured))
-
-	timeout := 300
-	retries := 2
-	order := 1
-	action := declarative.Action{
-		Operation:    declarative.OpCreate,
-		ResourceKind: declarative.KindPipelineJob,
-		ResourceName: "pipe1/job1",
-		Desired: declarative.PipelineJobSpec{
-			Name:            "job1",
-			Notebook:        "nb1",
-			ComputeEndpoint: "local",
-			DependsOn:       []string{"job0"},
-			TimeoutSeconds:  &timeout,
-			RetryCount:      &retries,
-			Order:           &order,
-		},
-	}
-
-	err := sc.Execute(context.Background(), action)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "resource kind not yet implemented")
-	assert.Empty(t, captured)
-}
-
 func TestExecuteMacro_CreateUpdateDelete(t *testing.T) {
 	var captured []execCapture
 	sc := newTestExecuteClient(t, &captured)
@@ -1769,7 +1739,6 @@ func TestReadState_ConnectionErrorsLegacyModeAreOptionalForModelMacro(t *testing
 	mux.HandleFunc("/v1/compute-endpoints", emptyListHandler())
 	mux.HandleFunc("/v1/tags", emptyListHandler())
 	mux.HandleFunc("/v1/notebooks", emptyListHandler())
-	mux.HandleFunc("/v1/pipelines", emptyListHandler())
 	mux.HandleFunc("/v1/models", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write([]byte(`eof`))
@@ -1880,7 +1849,6 @@ func TestReadState_EmptyState(t *testing.T) {
 	assert.Empty(t, state.ExternalLocations)
 	assert.Empty(t, state.ComputeEndpoints)
 	assert.Empty(t, state.Notebooks)
-	assert.Empty(t, state.Pipelines)
 	assert.Empty(t, state.APIKeys)
 }
 
