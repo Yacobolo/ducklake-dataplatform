@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"net"
 	"net/http"
 	"strings"
@@ -68,6 +69,12 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) RequireWebSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if h.Auth.UIDevBypass && !h.Production && isLoopbackRequest(r) {
+			ctx := domain.WithPrincipal(r.Context(), h.uiDevBypassPrincipal(r.Context()))
+			next.ServeHTTP(w, r.WithContext(ctx))
+			return
+		}
+
 		if h.WebSessionService == nil {
 			RedirectToLogin(w, r)
 			return
@@ -146,4 +153,42 @@ func clientIP(r *http.Request) string {
 		return host
 	}
 	return strings.TrimSpace(r.RemoteAddr)
+}
+
+func isLoopbackRequest(r *http.Request) bool {
+	host, _, err := net.SplitHostPort(strings.TrimSpace(r.RemoteAddr))
+	if err != nil {
+		host = strings.TrimSpace(r.RemoteAddr)
+	}
+	ip := net.ParseIP(host)
+	if ip != nil {
+		return ip.IsLoopback()
+	}
+	return strings.EqualFold(host, "localhost")
+}
+
+func (h *Handler) uiDevBypassPrincipal(ctx context.Context) domain.ContextPrincipal {
+	if h.PrincipalResolver != nil {
+		principal, err := h.PrincipalResolver.ResolveOrProvision(ctx, domain.ResolveOrProvisionRequest{
+			Issuer:      "dev-local",
+			ExternalID:  "ui-dev-bypass",
+			DisplayName: "dev-admin",
+			IsBootstrap: true,
+		})
+		if err == nil {
+			return domain.ContextPrincipal{
+				ID:      principal.ID,
+				Name:    principal.Name,
+				Type:    principal.Type,
+				IsAdmin: principal.IsAdmin,
+			}
+		}
+	}
+
+	return domain.ContextPrincipal{
+		ID:      "ui-dev-bypass",
+		Name:    "dev-admin",
+		Type:    "user",
+		IsAdmin: true,
+	}
 }

@@ -38,6 +38,7 @@ type AuthConfig struct {
 	WebSessionAbsoluteTTL    time.Duration // max absolute lifetime for browser sessions (default: 24h)
 	WebSessionCookieName     string        // cookie name for UI sessions (default: ui_session)
 	WebSessionReaperInterval time.Duration // reaper interval for expired/revoked sessions (default: 5m)
+	UIDevBypass              bool          // bypass UI auth for localhost in development only (default: false)
 }
 
 // OIDCEnabled returns true when an external identity provider is configured.
@@ -281,6 +282,7 @@ func LoadFromEnv() (*Config, error) {
 		NameClaim:            os.Getenv("AUTH_NAME_CLAIM"),
 		BootstrapAdmin:       os.Getenv("AUTH_BOOTSTRAP_ADMIN"),
 		WebSessionCookieName: os.Getenv("AUTH_WEB_SESSION_COOKIE_NAME"),
+		UIDevBypass:          parseBoolEnvDefault("AUTH_UI_DEV_BYPASS", false),
 	}
 
 	if v := os.Getenv("AUTH_ALLOWED_ISSUERS"); v != "" {
@@ -388,6 +390,9 @@ func LoadFromEnv() (*Config, error) {
 
 	// Production mode: insecure defaults are fatal errors.
 	if cfg.IsProduction() {
+		if cfg.Auth.UIDevBypass {
+			return nil, fmt.Errorf("AUTH_UI_DEV_BYPASS is not allowed in production (ENV=production)")
+		}
 		if !cfg.Auth.HasEnabledMethod() {
 			return nil, fmt.Errorf("at least one auth method must be configured in production")
 		}
