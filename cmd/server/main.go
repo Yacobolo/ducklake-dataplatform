@@ -216,7 +216,6 @@ func run() error {
 		svc.Notebook,
 		svc.SessionManager,
 		svc.GitService,
-		svc.Pipeline,
 		svc.Asset,
 		svc.Backfill,
 		svc.Model,

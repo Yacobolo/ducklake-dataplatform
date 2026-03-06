@@ -131,16 +131,21 @@ func TestOrchestrationEventRepo_ClaimNextPending_ConcurrentSingleWinner(t *testi
 		err   error
 	}
 
-	results := make(chan claimResult, 2)
+	const workers = 8
+	start := make(chan struct{})
+	results := make(chan claimResult, workers)
 	var wg sync.WaitGroup
-	for i := 0; i < 2; i++ {
+	claimAt := time.Now().UTC()
+	for i := 0; i < workers; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			event, claimErr := events.ClaimNextPending(ctx, time.Now().UTC())
+			<-start
+			event, claimErr := events.ClaimNextPending(ctx, claimAt)
 			results <- claimResult{event: event, err: claimErr}
 		}()
 	}
+	close(start)
 	wg.Wait()
 	close(results)
 
@@ -161,7 +166,17 @@ func TestOrchestrationEventRepo_ClaimNextPending_ConcurrentSingleWinner(t *testi
 	}
 
 	assert.Equal(t, 1, successes)
-	assert.Equal(t, 1, notFounds)
+	assert.Equal(t, workers-1, notFounds)
+}
+
+func TestClaimRetryableLockError(t *testing.T) {
+	t.Parallel()
+
+	assert.True(t, claimRetryableLockError(errors.New("database is locked")))
+	assert.True(t, claimRetryableLockError(errors.New("database table is locked: orchestration_events")))
+	assert.True(t, claimRetryableLockError(errors.New("database schema is locked")))
+	assert.True(t, claimRetryableLockError(errors.New("database is busy")))
+	assert.False(t, claimRetryableLockError(errors.New("constraint failed")))
 }
 
 func ptr(s string) *string { return &s }

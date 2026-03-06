@@ -27,7 +27,6 @@ type APIHandler struct {
 	notebooks           notebookService
 	sessions            sessionService
 	gitRepos            gitRepoService
-	pipelines           pipelineService
 	assets              assetService
 	backfills           assetBackfillService
 	models              modelService
@@ -61,7 +60,6 @@ func NewHandler(
 	notebooks notebookService,
 	sessions sessionService,
 	gitRepos gitRepoService,
-	pipelines pipelineService,
 	assets assetService,
 	backfills assetBackfillService,
 	models modelService,
@@ -93,7 +91,6 @@ func NewHandler(
 		notebooks:           notebooks,
 		sessions:            sessions,
 		gitRepos:            gitRepos,
-		pipelines:           pipelines,
 		assets:              assets,
 		backfills:           backfills,
 		models:              models,

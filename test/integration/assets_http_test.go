@@ -125,6 +125,177 @@ func TestHTTP_AssetBackfill_DeniesWithoutPrivilege(t *testing.T) {
 	_ = readBody(t, resp)
 }
 
+func TestHTTP_AssetReadEndpoints_ReturnExpectedData(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{WithAssets: true})
+
+	upstream := createTestAsset(t, env.MetaDB, "analytics.read_upstream", domain.PartitionTypeDaily)
+	asset := createTestAsset(t, env.MetaDB, "analytics.read_target", domain.PartitionTypeDaily)
+	downstream := createTestAsset(t, env.MetaDB, "analytics.read_downstream", domain.PartitionTypeDaily)
+
+	depRepo := repository.NewAssetDependencyRepo(env.MetaDB)
+	_, err := depRepo.Create(ctx, &domain.AssetDependency{AssetID: asset.ID, UpstreamAssetID: upstream.ID, DependencyType: domain.DependencyTypeHard})
+	require.NoError(t, err)
+	_, err = depRepo.Create(ctx, &domain.AssetDependency{AssetID: downstream.ID, UpstreamAssetID: asset.ID, DependencyType: domain.DependencyTypeHard})
+	require.NoError(t, err)
+
+	partitionRepo := repository.NewAssetPartitionRepo(env.MetaDB)
+	_, err = partitionRepo.Upsert(ctx, &domain.AssetPartition{ID: domain.NewID(), AssetID: asset.ID, PartitionKey: "2026-05-01", Status: "MATERIALIZED", MetadataJSON: map[string]any{"seeded": true}})
+	require.NoError(t, err)
+
+	runRepo := repository.NewAssetRunRepo(env.MetaDB)
+	run, err := runRepo.CreateRun(ctx, &domain.AssetRun{ID: domain.NewID(), AssetID: asset.ID, Status: domain.AssetRunStatusSuccess, TriggerType: domain.AssetTriggerTypeManual, TriggeredBy: "admin", MaxAttempts: 1})
+	require.NoError(t, err)
+	_, err = runRepo.CreateMaterialization(ctx, &domain.AssetMaterialization{ID: domain.NewID(), AssetID: asset.ID, RunID: &run.ID, MaterializedAt: time.Now().UTC(), MetadataJSON: map[string]any{"source": "test"}})
+	require.NoError(t, err)
+
+	checkRepo := repository.NewAssetCheckRepo(env.MetaDB)
+	check, err := checkRepo.CreateCheck(ctx, &domain.AssetCheck{ID: domain.NewID(), AssetID: asset.ID, Name: "row_count", CheckType: "ROW_COUNT", Severity: "WARN", Enabled: true, ConfigJSON: map[string]any{"min": 1}})
+	require.NoError(t, err)
+	_, err = checkRepo.CreateCheckResult(ctx, &domain.AssetCheckResult{ID: domain.NewID(), CheckID: check.ID, Status: "PASS", MetricsJSON: map[string]any{"rows": float64(12)}})
+	require.NoError(t, err)
+
+	backfillRepo := repository.NewBackfillRepo(env.MetaDB)
+	backfill, err := backfillRepo.CreateRequest(ctx, &domain.BackfillRequest{ID: domain.NewID(), AssetID: asset.ID, PartitionFrom: "2026-05-01", PartitionTo: "2026-05-01", Status: domain.BackfillStatusPending, RequestedBy: "admin", MaxParallelism: 1})
+	require.NoError(t, err)
+	_, err = backfillRepo.CreateSlice(ctx, &domain.BackfillSlice{ID: domain.NewID(), RequestID: backfill.ID, AssetID: asset.ID, PartitionKey: "2026-05-01", Status: domain.BackfillStatusPending, MaxAttempts: 1})
+	require.NoError(t, err)
+
+	listResp := doRequest(t, "GET", env.Server.URL+"/v1/assets", env.Keys.Admin, nil)
+	require.Equal(t, httpStatusOK, listResp.StatusCode)
+	var listResult map[string]any
+	decodeJSON(t, listResp, &listResult)
+	assetRows, ok := listResult["data"].([]any)
+	require.True(t, ok)
+	assert.True(t, hasAssetKey(assetRows, asset.AssetKey))
+
+	getResp := doRequest(t, "GET", env.Server.URL+"/v1/assets/"+asset.AssetKey, env.Keys.Admin, nil)
+	require.Equal(t, httpStatusOK, getResp.StatusCode)
+	var getResult map[string]any
+	decodeJSON(t, getResp, &getResult)
+	assert.Equal(t, asset.AssetKey, getResult["asset_key"])
+
+	graphResp := doRequest(t, "GET", env.Server.URL+"/v1/assets/"+asset.AssetKey+"/graph", env.Keys.Admin, nil)
+	require.Equal(t, httpStatusOK, graphResp.StatusCode)
+	var graphResult map[string]any
+	decodeJSON(t, graphResp, &graphResult)
+	assert.Contains(t, graphResult["upstream_asset_keys"], upstream.AssetKey)
+	assert.Contains(t, graphResult["downstream_asset_keys"], downstream.AssetKey)
+
+	partitionsResp := doRequest(t, "GET", env.Server.URL+"/v1/assets/"+asset.AssetKey+"/partitions", env.Keys.Admin, nil)
+	require.Equal(t, httpStatusOK, partitionsResp.StatusCode)
+	var partitionsResult map[string]any
+	decodeJSON(t, partitionsResp, &partitionsResult)
+	partitions, ok := partitionsResult["data"].([]any)
+	require.True(t, ok)
+	require.Len(t, partitions, 1)
+
+	materializationsResp := doRequest(t, "GET", env.Server.URL+"/v1/assets/"+asset.AssetKey+"/materializations", env.Keys.Admin, nil)
+	require.Equal(t, httpStatusOK, materializationsResp.StatusCode)
+	var materializationsResult map[string]any
+	decodeJSON(t, materializationsResp, &materializationsResult)
+	materializations, ok := materializationsResult["data"].([]any)
+	require.True(t, ok)
+	require.Len(t, materializations, 1)
+
+	checksResp := doRequest(t, "GET", env.Server.URL+"/v1/assets/"+asset.AssetKey+"/checks", env.Keys.Admin, nil)
+	require.Equal(t, httpStatusOK, checksResp.StatusCode)
+	var checksResult map[string]any
+	decodeJSON(t, checksResp, &checksResult)
+	checks, ok := checksResult["data"].([]any)
+	require.True(t, ok)
+	require.Len(t, checks, 1)
+
+	checkResultsResp := doRequest(t, "GET", env.Server.URL+"/v1/assets/"+asset.AssetKey+"/check-results", env.Keys.Admin, nil)
+	require.Equal(t, httpStatusOK, checkResultsResp.StatusCode)
+	var checkResultsResult map[string]any
+	decodeJSON(t, checkResultsResp, &checkResultsResult)
+	checkResults, ok := checkResultsResult["data"].([]any)
+	require.True(t, ok)
+	require.Len(t, checkResults, 1)
+
+	backfillsResp := doRequest(t, "GET", env.Server.URL+"/v1/assets/"+asset.AssetKey+"/backfills", env.Keys.Admin, nil)
+	require.Equal(t, httpStatusOK, backfillsResp.StatusCode)
+	var backfillsResult map[string]any
+	decodeJSON(t, backfillsResp, &backfillsResult)
+	backfills, ok := backfillsResult["data"].([]any)
+	require.True(t, ok)
+	require.Len(t, backfills, 1)
+}
+
+func TestHTTP_AssetReadEndpoints_PaginationAndEmpty(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{WithAssets: true})
+	asset := createTestAsset(t, env.MetaDB, "analytics.read_pagination", domain.PartitionTypeDaily)
+	emptyAsset := createTestAsset(t, env.MetaDB, "analytics.read_empty", domain.PartitionTypeDaily)
+
+	partitionRepo := repository.NewAssetPartitionRepo(env.MetaDB)
+	_, err := partitionRepo.Upsert(ctx, &domain.AssetPartition{ID: domain.NewID(), AssetID: asset.ID, PartitionKey: "2026-06-01", Status: "MATERIALIZED", MetadataJSON: map[string]any{}})
+	require.NoError(t, err)
+	_, err = partitionRepo.Upsert(ctx, &domain.AssetPartition{ID: domain.NewID(), AssetID: asset.ID, PartitionKey: "2026-06-02", Status: "MATERIALIZED", MetadataJSON: map[string]any{}})
+	require.NoError(t, err)
+
+	checkRepo := repository.NewAssetCheckRepo(env.MetaDB)
+	check, err := checkRepo.CreateCheck(ctx, &domain.AssetCheck{ID: domain.NewID(), AssetID: asset.ID, Name: "non_null", CheckType: "NOT_NULL", Severity: "ERROR", Enabled: true, ConfigJSON: map[string]any{}})
+	require.NoError(t, err)
+	_, err = checkRepo.CreateCheckResult(ctx, &domain.AssetCheckResult{ID: domain.NewID(), CheckID: check.ID, Status: "PASS", MetricsJSON: map[string]any{"rows": float64(10)}})
+	require.NoError(t, err)
+	_, err = checkRepo.CreateCheckResult(ctx, &domain.AssetCheckResult{ID: domain.NewID(), CheckID: check.ID, Status: "FAIL", MetricsJSON: map[string]any{"rows": float64(3)}})
+	require.NoError(t, err)
+
+	partitionsPage1Resp := doRequest(t, "GET", env.Server.URL+"/v1/assets/"+asset.AssetKey+"/partitions?max_results=1", env.Keys.Admin, nil)
+	require.Equal(t, httpStatusOK, partitionsPage1Resp.StatusCode)
+	var partitionsPage1 map[string]any
+	decodeJSON(t, partitionsPage1Resp, &partitionsPage1)
+	page1Rows, ok := partitionsPage1["data"].([]any)
+	require.True(t, ok)
+	require.Len(t, page1Rows, 1)
+	nextPartitionsToken, ok := partitionsPage1["next_page_token"].(string)
+	require.True(t, ok)
+	require.NotEmpty(t, nextPartitionsToken)
+
+	partitionsPage2Resp := doRequest(t, "GET", env.Server.URL+"/v1/assets/"+asset.AssetKey+"/partitions?max_results=1&page_token="+nextPartitionsToken, env.Keys.Admin, nil)
+	require.Equal(t, httpStatusOK, partitionsPage2Resp.StatusCode)
+	var partitionsPage2 map[string]any
+	decodeJSON(t, partitionsPage2Resp, &partitionsPage2)
+	page2Rows, ok := partitionsPage2["data"].([]any)
+	require.True(t, ok)
+	require.Len(t, page2Rows, 1)
+
+	checkResultsPage1Resp := doRequest(t, "GET", env.Server.URL+"/v1/assets/"+asset.AssetKey+"/check-results?max_results=1", env.Keys.Admin, nil)
+	require.Equal(t, httpStatusOK, checkResultsPage1Resp.StatusCode)
+	var checkResultsPage1 map[string]any
+	decodeJSON(t, checkResultsPage1Resp, &checkResultsPage1)
+	checkPage1Rows, ok := checkResultsPage1["data"].([]any)
+	require.True(t, ok)
+	require.Len(t, checkPage1Rows, 1)
+	nextChecksToken, ok := checkResultsPage1["next_page_token"].(string)
+	require.True(t, ok)
+	require.NotEmpty(t, nextChecksToken)
+
+	checkResultsPage2Resp := doRequest(t, "GET", env.Server.URL+"/v1/assets/"+asset.AssetKey+"/check-results?max_results=1&page_token="+nextChecksToken, env.Keys.Admin, nil)
+	require.Equal(t, httpStatusOK, checkResultsPage2Resp.StatusCode)
+	var checkResultsPage2 map[string]any
+	decodeJSON(t, checkResultsPage2Resp, &checkResultsPage2)
+	checkPage2Rows, ok := checkResultsPage2["data"].([]any)
+	require.True(t, ok)
+	require.Len(t, checkPage2Rows, 1)
+
+	emptyChecksResp := doRequest(t, "GET", env.Server.URL+"/v1/assets/"+emptyAsset.AssetKey+"/checks", env.Keys.Admin, nil)
+	require.Equal(t, httpStatusOK, emptyChecksResp.StatusCode)
+	var emptyChecks map[string]any
+	decodeJSON(t, emptyChecksResp, &emptyChecks)
+	emptyChecksRows, ok := emptyChecks["data"].([]any)
+	require.True(t, ok)
+	require.Empty(t, emptyChecksRows)
+
+	emptyBackfillsResp := doRequest(t, "GET", env.Server.URL+"/v1/assets/"+emptyAsset.AssetKey+"/backfills", env.Keys.Admin, nil)
+	require.Equal(t, httpStatusOK, emptyBackfillsResp.StatusCode)
+	var emptyBackfills map[string]any
+	decodeJSON(t, emptyBackfillsResp, &emptyBackfills)
+	emptyBackfillRows, ok := emptyBackfills["data"].([]any)
+	require.True(t, ok)
+	require.Empty(t, emptyBackfillRows)
+}
+
 func grantCatalogPrivilege(t *testing.T, db *sql.DB, principalName string, privilege string) {
 	t.Helper()
 	principal, err := repository.NewPrincipalRepo(db).GetByName(ctx, principalName)
@@ -241,6 +412,19 @@ func listAssetRuns(t *testing.T, env *httpTestEnv, assetKey string) []map[string
 		out = append(out, row)
 	}
 	return out
+}
+
+func hasAssetKey(rows []any, assetKey string) bool {
+	for i := range rows {
+		row, ok := rows[i].(map[string]any)
+		if !ok {
+			continue
+		}
+		if key, cast := row["asset_key"].(string); cast && key == assetKey {
+			return true
+		}
+	}
+	return false
 }
 
 const (

@@ -1122,7 +1122,7 @@ func TestExecuteNotebook_CreatePublishesModelFromOutputCell(t *testing.T) {
 	assert.Equal(t, "TABLE", publishBody["materialization"])
 }
 
-func TestExecutePipelineJob_CreateResolvesNotebookAndComputeIDs(t *testing.T) {
+func TestExecutePipelineJob_IsNotImplemented(t *testing.T) {
 	var captured []execCapture
 	sc := withTestIndex(newTestExecuteClient(t, &captured))
 
@@ -1145,15 +1145,9 @@ func TestExecutePipelineJob_CreateResolvesNotebookAndComputeIDs(t *testing.T) {
 	}
 
 	err := sc.Execute(context.Background(), action)
-	require.NoError(t, err)
-	require.Len(t, captured, 1)
-
-	req := captured[0]
-	assert.Equal(t, http.MethodPost, req.Method)
-	assert.Contains(t, req.Path, "/pipelines/pipe1/jobs")
-	assert.Equal(t, "notebook-id-1", bodyStr(req, "notebook_id"))
-	assert.Equal(t, "compute-id-local", bodyStr(req, "compute_endpoint_id"))
-	assert.Equal(t, "job1", bodyStr(req, "name"))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "resource kind not yet implemented")
+	assert.Empty(t, captured)
 }
 
 func TestExecuteMacro_CreateUpdateDelete(t *testing.T) {
@@ -1798,7 +1792,9 @@ func TestReadState_ConnectionErrorsLegacyModeAreOptionalForModelMacro(t *testing
 	require.NoError(t, err)
 	assert.Empty(t, state.Models)
 	assert.Empty(t, state.Macros)
-	assert.Len(t, sc.OptionalReadWarnings(), 2)
+	warnings := sc.OptionalReadWarnings()
+	assert.Len(t, warnings, 3)
+	assert.Contains(t, strings.Join(warnings, "\n"), "assets endpoint unavailable")
 }
 
 func TestValidateApplyCapabilities_ModelEndpointRequired(t *testing.T) {
@@ -2326,7 +2322,7 @@ func TestReadState_ComputeEndpointsWithAssignments(t *testing.T) {
 	assert.True(t, state.ComputeAssignments[0].IsDefault)
 }
 
-func TestReadState_NotebooksAndPipelines(t *testing.T) {
+func TestReadState_NotebooksAndAssets(t *testing.T) {
 	t.Parallel()
 
 	mux := http.NewServeMux()
@@ -2355,36 +2351,34 @@ func TestReadState_NotebooksAndPipelines(t *testing.T) {
 		}
 		_ = json.NewEncoder(w).Encode(resp)
 	})
-	mux.HandleFunc("/v1/pipelines", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/v1/assets", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		resp := map[string]interface{}{
 			"data": []map[string]interface{}{
 				{
-					"id":                "pipe-id-1",
-					"name":              "pipe1",
-					"description":       "ETL pipeline",
-					"schedule_cron":     "0 0 * * *",
-					"is_paused":         true,
-					"concurrency_limit": 1,
+					"asset_key":   "daily_kpi",
+					"asset_type":  "table",
+					"description": "KPI asset",
+					"owner":       "alice",
+					"tags":        []string{"finance"},
 				},
 			},
 		}
 		_ = json.NewEncoder(w).Encode(resp)
 	})
-	mux.HandleFunc("/v1/pipelines/pipe1/jobs", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/v1/assets/daily_kpi/graph", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"asset_key":           "daily_kpi",
+			"upstream_asset_keys": []string{"seed_orders"},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("/v1/assets/daily_kpi/checks", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		resp := map[string]interface{}{
 			"data": []map[string]interface{}{
-				{
-					"id":                  "job-id-1",
-					"name":                "daily-kpi",
-					"notebook_id":         "nb-id-1",
-					"compute_endpoint_id": "",
-					"depends_on":          []string{},
-					"timeout_seconds":     300,
-					"retry_count":         1,
-					"job_order":           0,
-				},
+				{"name": "row_count_positive", "check_type": "row_count", "severity": "warning", "enabled": true},
 			},
 		}
 		_ = json.NewEncoder(w).Encode(resp)
@@ -2404,16 +2398,32 @@ func TestReadState_NotebooksAndPipelines(t *testing.T) {
 	assert.Equal(t, "markdown", state.Notebooks[0].Spec.Cells[0].Type)
 	assert.Equal(t, "SELECT 1", state.Notebooks[0].Spec.Cells[1].Content)
 
-	require.Len(t, state.Pipelines, 1)
-	assert.Equal(t, "pipe1", state.Pipelines[0].Name)
-	assert.Equal(t, "ETL pipeline", state.Pipelines[0].Spec.Description)
-	assert.Equal(t, "0 0 * * *", state.Pipelines[0].Spec.ScheduleCron)
-	assert.True(t, state.Pipelines[0].Spec.IsPaused)
-	require.NotNil(t, state.Pipelines[0].Spec.ConcurrencyLimit)
-	assert.Equal(t, 1, *state.Pipelines[0].Spec.ConcurrencyLimit)
-	require.Len(t, state.Pipelines[0].Spec.Jobs, 1)
-	assert.Equal(t, "daily-kpi", state.Pipelines[0].Spec.Jobs[0].Name)
-	assert.Equal(t, "nb1", state.Pipelines[0].Spec.Jobs[0].Notebook)
+	require.Len(t, state.Assets, 1)
+	assert.Equal(t, "daily_kpi", state.Assets[0].Name)
+	assert.Equal(t, "table", state.Assets[0].Spec.AssetType)
+	assert.Equal(t, "KPI asset", state.Assets[0].Spec.Description)
+	assert.Equal(t, []string{"seed_orders"}, state.Assets[0].Spec.DependsOn)
+	require.Len(t, state.Assets[0].Spec.CheckDefinitions, 1)
+	assert.Equal(t, "row_count_positive", state.Assets[0].Spec.CheckDefinitions[0].Name)
+}
+
+func TestExecuteAsset_ReturnsReadOnlyError(t *testing.T) {
+	t.Parallel()
+
+	var captured []execCapture
+	sc := newTestExecuteClient(t, &captured)
+	err := sc.Execute(context.Background(), declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindAsset,
+		ResourceName: "daily_kpi",
+		Desired: declarative.AssetResource{
+			Name: "daily_kpi",
+			Spec: declarative.AssetSpec{AssetType: "table"},
+		},
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "asset definitions are read-only")
+	assert.Empty(t, captured)
 }
 
 func TestReadState_APIKeys(t *testing.T) {

@@ -54,9 +54,13 @@ func ExportDirectory(dir string, state *DesiredState, overwrite bool) error {
 		return err
 	}
 
-	// Pipelines.
-	if err := exportPipelines(dir, state); err != nil {
+	// Assets.
+	if err := exportAssets(dir, state); err != nil {
 		return err
+	}
+
+	if len(state.Pipelines) > 0 {
+		return fmt.Errorf("cannot export legacy pipelines: declarative config now uses assets/; migrate pipeline definitions to assets")
 	}
 
 	// Models.
@@ -424,15 +428,15 @@ func exportNotebooks(dir string, state *DesiredState) error {
 
 // === Pipelines ===
 
-func exportPipelines(dir string, state *DesiredState) error {
-	for _, pl := range state.Pipelines {
-		doc := PipelineDoc{
+func exportAssets(dir string, state *DesiredState) error {
+	for _, asset := range state.Assets {
+		doc := AssetDoc{
 			APIVersion: SupportedAPIVersion,
-			Kind:       KindNamePipeline,
-			Metadata:   ObjectMeta{Name: pl.Name},
-			Spec:       pl.Spec,
+			Kind:       KindNameAsset,
+			Metadata:   ObjectMeta{Name: asset.Name},
+			Spec:       asset.Spec,
 		}
-		path := filepath.Join(dir, "pipelines", safeResourceFileName(pl.Name))
+		path := filepath.Join(dir, "assets", safeResourceFileName(asset.Name))
 		if err := writeYAMLFile(path, doc); err != nil {
 			return err
 		}

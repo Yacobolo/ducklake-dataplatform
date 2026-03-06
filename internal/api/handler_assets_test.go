@@ -123,6 +123,152 @@ func TestHandler_GetAsset_NotFound(t *testing.T) {
 	require.True(t, cast)
 }
 
+func TestHandler_GetAsset(t *testing.T) {
+	t.Parallel()
+	createdAt := time.Now().UTC()
+	h := &APIHandler{assets: &mockAssetService{getAssetFn: func(_ context.Context, key string) (*domain.DataAsset, error) {
+		require.Equal(t, "sales.daily", key)
+		return &domain.DataAsset{ID: "asset-1", AssetKey: key, AssetType: domain.AssetTypeModel, Owner: "analytics", CreatedAt: createdAt, UpdatedAt: createdAt}, nil
+	}}}
+
+	resp, err := h.GetAsset(assetTestCtx(true), GetAssetRequestObject{AssetKey: "sales.daily"})
+	require.NoError(t, err)
+	ok, cast := resp.(GetAsset200JSONResponse)
+	require.True(t, cast)
+	assert.Equal(t, "sales.daily", *ok.AssetKey)
+	assert.Equal(t, domain.AssetTypeModel, *ok.AssetType)
+	assert.Equal(t, "analytics", *ok.Owner)
+}
+
+func TestHandler_GetAssetGraph(t *testing.T) {
+	t.Parallel()
+	h := &APIHandler{assets: &mockAssetService{
+		getAssetFn: func(_ context.Context, key string) (*domain.DataAsset, error) {
+			require.Equal(t, "sales.daily", key)
+			return &domain.DataAsset{ID: "asset-1", AssetKey: key}, nil
+		},
+		getGraphFn: func(_ context.Context, assetID string) ([]domain.AssetDependency, []domain.AssetDependency, error) {
+			require.Equal(t, "asset-1", assetID)
+			return []domain.AssetDependency{{UpstreamAssetID: "asset-upstream"}}, []domain.AssetDependency{{AssetID: "asset-downstream"}}, nil
+		},
+		listAssetsFn: func(_ context.Context, filter domain.AssetFilter) ([]domain.DataAsset, int64, error) {
+			require.Equal(t, 10000, filter.Page.MaxResults)
+			return []domain.DataAsset{
+				{ID: "asset-upstream", AssetKey: "raw.orders"},
+				{ID: "asset-downstream", AssetKey: "analytics.orders"},
+			}, 2, nil
+		},
+	}}
+
+	resp, err := h.GetAssetGraph(assetTestCtx(true), GetAssetGraphRequestObject{AssetKey: "sales.daily"})
+	require.NoError(t, err)
+	ok, cast := resp.(GetAssetGraph200JSONResponse)
+	require.True(t, cast)
+	require.NotNil(t, ok.UpstreamAssetKeys)
+	require.NotNil(t, ok.DownstreamAssetKeys)
+	assert.Equal(t, []string{"raw.orders"}, *ok.UpstreamAssetKeys)
+	assert.Equal(t, []string{"analytics.orders"}, *ok.DownstreamAssetKeys)
+}
+
+func TestHandler_ListAssetPartitions(t *testing.T) {
+	t.Parallel()
+	h := &APIHandler{assets: &mockAssetService{
+		getAssetFn: func(_ context.Context, key string) (*domain.DataAsset, error) {
+			require.Equal(t, "sales.daily", key)
+			return &domain.DataAsset{ID: "asset-1", AssetKey: key}, nil
+		},
+		listPartitionsFn: func(_ context.Context, assetID string, page domain.PageRequest) ([]domain.AssetPartition, int64, error) {
+			require.Equal(t, "asset-1", assetID)
+			require.Equal(t, 0, page.Offset())
+			return []domain.AssetPartition{{ID: "partition-1", AssetID: assetID, PartitionKey: "2026-01-01", Status: "READY", CreatedAt: time.Now().UTC(), UpdatedAt: time.Now().UTC()}}, 1, nil
+		},
+	}}
+
+	resp, err := h.ListAssetPartitions(assetTestCtx(true), ListAssetPartitionsRequestObject{AssetKey: "sales.daily"})
+	require.NoError(t, err)
+	ok, cast := resp.(ListAssetPartitions200JSONResponse)
+	require.True(t, cast)
+	require.NotNil(t, ok.Data)
+	require.Len(t, *ok.Data, 1)
+	assert.Equal(t, "2026-01-01", *(*ok.Data)[0].PartitionKey)
+	assert.Equal(t, "READY", *(*ok.Data)[0].Status)
+}
+
+func TestHandler_ListAssetMaterializations(t *testing.T) {
+	t.Parallel()
+	partitionKey := "2026-01-01"
+	rowCount := int64(42)
+	h := &APIHandler{assets: &mockAssetService{
+		getAssetFn: func(_ context.Context, key string) (*domain.DataAsset, error) {
+			require.Equal(t, "sales.daily", key)
+			return &domain.DataAsset{ID: "asset-1", AssetKey: key}, nil
+		},
+		listMaterializationsFn: func(_ context.Context, assetID string, page domain.PageRequest) ([]domain.AssetMaterialization, int64, error) {
+			require.Equal(t, "asset-1", assetID)
+			require.Equal(t, 0, page.Offset())
+			return []domain.AssetMaterialization{{ID: "mat-1", AssetID: assetID, PartitionKey: &partitionKey, RowCount: &rowCount, MaterializedAt: time.Now().UTC(), CreatedAt: time.Now().UTC()}}, 1, nil
+		},
+	}}
+
+	resp, err := h.ListAssetMaterializations(assetTestCtx(true), ListAssetMaterializationsRequestObject{AssetKey: "sales.daily"})
+	require.NoError(t, err)
+	ok, cast := resp.(ListAssetMaterializations200JSONResponse)
+	require.True(t, cast)
+	require.NotNil(t, ok.Data)
+	require.Len(t, *ok.Data, 1)
+	require.NotNil(t, (*ok.Data)[0].PartitionKey)
+	require.NotNil(t, (*ok.Data)[0].RowCount)
+	assert.Equal(t, partitionKey, *(*ok.Data)[0].PartitionKey)
+	assert.Equal(t, rowCount, *(*ok.Data)[0].RowCount)
+}
+
+func TestHandler_ListAssetChecks(t *testing.T) {
+	t.Parallel()
+	h := &APIHandler{assets: &mockAssetService{
+		getAssetFn: func(_ context.Context, key string) (*domain.DataAsset, error) {
+			require.Equal(t, "sales.daily", key)
+			return &domain.DataAsset{ID: "asset-1", AssetKey: key}, nil
+		},
+		listChecksFn: func(_ context.Context, assetID string) ([]domain.AssetCheck, error) {
+			require.Equal(t, "asset-1", assetID)
+			return []domain.AssetCheck{{ID: "check-1", AssetID: assetID, Name: "row_count", CheckType: "ROW_COUNT", Severity: "WARN", Enabled: true, CreatedAt: time.Now().UTC(), UpdatedAt: time.Now().UTC()}}, nil
+		},
+	}}
+
+	resp, err := h.ListAssetChecks(assetTestCtx(true), ListAssetChecksRequestObject{AssetKey: "sales.daily"})
+	require.NoError(t, err)
+	ok, cast := resp.(ListAssetChecks200JSONResponse)
+	require.True(t, cast)
+	require.NotNil(t, ok.Data)
+	require.Len(t, *ok.Data, 1)
+	assert.Equal(t, "row_count", *(*ok.Data)[0].Name)
+	assert.Equal(t, "ROW_COUNT", *(*ok.Data)[0].CheckType)
+}
+
+func TestHandler_ListAssetBackfills(t *testing.T) {
+	t.Parallel()
+	h := &APIHandler{assets: &mockAssetService{
+		getAssetFn: func(_ context.Context, key string) (*domain.DataAsset, error) {
+			require.Equal(t, "sales.daily", key)
+			return &domain.DataAsset{ID: "asset-1", AssetKey: key}, nil
+		},
+		listBackfillsFn: func(_ context.Context, filter domain.BackfillFilter) ([]domain.BackfillRequest, int64, error) {
+			require.NotNil(t, filter.AssetID)
+			require.Equal(t, "asset-1", *filter.AssetID)
+			return []domain.BackfillRequest{{ID: "550e8400-e29b-41d4-a716-446655440000", AssetID: "asset-1", PartitionFrom: "2026-01-01", PartitionTo: "2026-01-02", Status: domain.BackfillStatusPending, RequestedBy: "tester", CreatedAt: time.Now().UTC()}}, 1, nil
+		},
+	}}
+
+	resp, err := h.ListAssetBackfills(assetTestCtx(true), ListAssetBackfillsRequestObject{AssetKey: "sales.daily"})
+	require.NoError(t, err)
+	ok, cast := resp.(ListAssetBackfills200JSONResponse)
+	require.True(t, cast)
+	require.NotNil(t, ok.Data)
+	require.Len(t, *ok.Data, 1)
+	assert.Equal(t, domain.BackfillStatusPending, *(*ok.Data)[0].Status)
+	assert.Equal(t, "2026-01-01", *(*ok.Data)[0].PartitionFrom)
+}
+
 func TestHandler_ListAssetCheckResults(t *testing.T) {
 	t.Parallel()
 	createdAt := time.Now().UTC()

@@ -2,13 +2,17 @@ package declarative
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"gopkg.in/yaml.v3"
 )
+
+var errLegacyPipelines = errors.New("legacy pipelines/ configs are no longer supported; migrate pipeline definitions to assets/ and remove pipelines/")
 
 // LoadOptions configures YAML loading behavior.
 type LoadOptions struct {
@@ -34,6 +38,10 @@ func LoadDirectoryWithOptions(dir string, opts LoadOptions) (*DesiredState, erro
 	}
 	if !info.IsDir() {
 		return nil, fmt.Errorf("config directory: %s is not a directory", dir)
+	}
+
+	if err := failIfLegacyPipelinesPresent(dir); err != nil {
+		return nil, err
 	}
 
 	// Load each section. Missing directories are OK (partial configs).
@@ -89,6 +97,35 @@ func LoadDirectoryWithOptions(dir string, opts LoadOptions) (*DesiredState, erro
 	}
 
 	return state, nil
+}
+
+func failIfLegacyPipelinesPresent(root string) error {
+	pipelinesDir := filepath.Join(root, "pipelines")
+	if !dirExists(pipelinesDir) {
+		return nil
+	}
+
+	err := filepath.WalkDir(pipelinesDir, func(_ string, d fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if d.IsDir() {
+			return nil
+		}
+		name := strings.ToLower(d.Name())
+		if strings.HasSuffix(name, ".yaml") || strings.HasSuffix(name, ".yml") {
+			return errLegacyPipelines
+		}
+		return nil
+	})
+	if err != nil {
+		if errors.Is(err, errLegacyPipelines) {
+			return err
+		}
+		return fmt.Errorf("scan pipelines directory %s: %w", pipelinesDir, err)
+	}
+
+	return nil
 }
 
 // loadYAMLFile reads and unmarshals a YAML file into the given target.

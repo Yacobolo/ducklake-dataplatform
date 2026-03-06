@@ -201,11 +201,11 @@ func (c *APIStateClient) ReadState(ctx context.Context) (*declarative.DesiredSta
 	if err := c.readNotebooks(ctx, state); err != nil {
 		return nil, fmt.Errorf("read notebooks: %w", err)
 	}
-	if err := c.readPipelines(ctx, state); err != nil {
+	if err := c.readAssets(ctx, state); err != nil {
 		if !c.isOptionalReadError(err) {
-			return nil, fmt.Errorf("read pipelines: %w", err)
+			return nil, fmt.Errorf("read assets: %w", err)
 		}
-		c.addOptionalReadWarning("pipelines", err)
+		c.addOptionalReadWarning("assets", err)
 	}
 	if err := c.readMacros(ctx, state); err != nil {
 		if !c.isOptionalReadError(err) {
@@ -995,28 +995,31 @@ func (c *APIStateClient) readNotebookDetail(_ context.Context, notebookID string
 	return &detail, nil
 }
 
-type apiPipeline struct {
-	ID               string `json:"id"`
-	Name             string `json:"name"`
-	Description      string `json:"description"`
-	ScheduleCron     string `json:"schedule_cron"`
-	IsPaused         bool   `json:"is_paused"`
-	ConcurrencyLimit *int   `json:"concurrency_limit"`
+type apiAsset struct {
+	AssetKey     string   `json:"asset_key"`
+	AssetType    string   `json:"asset_type"`
+	Owner        string   `json:"owner"`
+	Description  string   `json:"description"`
+	Tags         []string `json:"tags"`
+	IOProfile    string   `json:"io_profile"`
+	IsActive     bool     `json:"is_active"`
+	CronSchedule string   `json:"cron_schedule"`
 }
 
-type apiPipelineJob struct {
-	ID                string   `json:"id"`
-	Name              string   `json:"name"`
-	ComputeEndpointID string   `json:"compute_endpoint_id"`
-	DependsOn         []string `json:"depends_on"`
-	NotebookID        string   `json:"notebook_id"`
-	TimeoutSeconds    *int     `json:"timeout_seconds"`
-	RetryCount        *int     `json:"retry_count"`
-	JobOrder          *int     `json:"job_order"`
+type apiAssetGraph struct {
+	AssetKey          string   `json:"asset_key"`
+	UpstreamAssetKeys []string `json:"upstream_asset_keys"`
 }
 
-func (c *APIStateClient) readPipelines(ctx context.Context, state *declarative.DesiredState) error {
-	pages, err := c.fetchAllPages(ctx, "/pipelines")
+type apiAssetCheck struct {
+	Name      string `json:"name"`
+	CheckType string `json:"check_type"`
+	Severity  string `json:"severity"`
+	Enabled   *bool  `json:"enabled"`
+}
+
+func (c *APIStateClient) readAssets(ctx context.Context, state *declarative.DesiredState) error {
+	pages, err := c.fetchAllPages(ctx, "/assets")
 	if err != nil {
 		return err
 	}
@@ -1024,82 +1027,82 @@ func (c *APIStateClient) readPipelines(ctx context.Context, state *declarative.D
 		return nil
 	}
 
-	var items []apiPipeline
+	var items []apiAsset
 	if err := mergePages(pages, &items); err != nil {
 		return err
 	}
 
-	for _, pl := range items {
-		if pl.ID != "" && c.index != nil {
-			c.index.pipelineIDByName[pl.Name] = pl.ID
+	for _, asset := range items {
+		spec := declarative.AssetSpec{
+			AssetType:    asset.AssetType,
+			Owner:        asset.Owner,
+			Description:  asset.Description,
+			Tags:         append([]string(nil), asset.Tags...),
+			IOProfile:    asset.IOProfile,
+			CronSchedule: asset.CronSchedule,
 		}
 
-		jobs, err := c.readPipelineJobs(ctx, pl.Name)
-		if err != nil {
-			return fmt.Errorf("pipeline %q jobs: %w", pl.Name, err)
+		if graph, graphErr := c.readAssetGraph(ctx, asset.AssetKey); graphErr == nil {
+			spec.DependsOn = append([]string(nil), graph.UpstreamAssetKeys...)
 		}
 
-		jobSpecs := make([]declarative.PipelineJobSpec, 0, len(jobs))
-		for _, job := range jobs {
-			notebookName := job.NotebookID
-			if c.index != nil {
-				for name, id := range c.index.notebookIDByName {
-					if id == job.NotebookID {
-						notebookName = name
-						break
-					}
-				}
-			}
-			computeEndpoint := ""
-			if job.ComputeEndpointID != "" && c.index != nil {
-				for name, id := range c.index.computeIDByName {
-					if id == job.ComputeEndpointID {
-						computeEndpoint = name
-						break
-					}
-				}
-			}
-			jobSpecs = append(jobSpecs, declarative.PipelineJobSpec{
-				Name:            job.Name,
-				Notebook:        notebookName,
-				ComputeEndpoint: computeEndpoint,
-				DependsOn:       job.DependsOn,
-				TimeoutSeconds:  job.TimeoutSeconds,
-				RetryCount:      job.RetryCount,
-				Order:           job.JobOrder,
-			})
-			if job.ID != "" && c.index != nil {
-				c.index.jobIDByPath[pl.Name+"/"+job.Name] = job.ID
-			}
+		checks, checksErr := c.readAssetChecks(ctx, asset.AssetKey)
+		if checksErr == nil {
+			spec.CheckDefinitions = checks
 		}
 
-		state.Pipelines = append(state.Pipelines, declarative.PipelineResource{
-			Name: pl.Name,
-			Spec: declarative.PipelineSpec{
-				Description:      pl.Description,
-				ScheduleCron:     pl.ScheduleCron,
-				IsPaused:         pl.IsPaused,
-				ConcurrencyLimit: pl.ConcurrencyLimit,
-				Jobs:             jobSpecs,
-			},
+		state.Assets = append(state.Assets, declarative.AssetResource{
+			Name: asset.AssetKey,
+			Spec: spec,
 		})
 	}
+
 	return nil
 }
 
-func (c *APIStateClient) readPipelineJobs(ctx context.Context, pipelineName string) ([]apiPipelineJob, error) {
-	pages, err := c.fetchAllPages(ctx, "/pipelines/"+pipelineName+"/jobs")
+func (c *APIStateClient) readAssetGraph(_ context.Context, assetKey string) (*apiAssetGraph, error) {
+	resp, err := c.client.Do(http.MethodGet, "/assets/"+assetKey+"/graph", nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	body, err := gen.ReadBody(resp)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("GET /assets/%s/graph: HTTP %d: %s", assetKey, resp.StatusCode, string(body))
+	}
+	var graph apiAssetGraph
+	if err := json.Unmarshal(body, &graph); err != nil {
+		return nil, err
+	}
+	return &graph, nil
+}
+
+func (c *APIStateClient) readAssetChecks(ctx context.Context, assetKey string) ([]declarative.AssetCheckSpec, error) {
+	pages, err := c.fetchAllPages(ctx, "/assets/"+assetKey+"/checks")
 	if err != nil {
 		return nil, err
 	}
 	if len(pages) == 0 {
-		return []apiPipelineJob{}, nil
+		return nil, nil
 	}
-	var jobs []apiPipelineJob
-	if err := mergePages(pages, &jobs); err != nil {
+
+	var checks []apiAssetCheck
+	if err := mergePages(pages, &checks); err != nil {
 		return nil, err
 	}
-	return jobs, nil
+
+	out := make([]declarative.AssetCheckSpec, 0, len(checks))
+	for _, check := range checks {
+		out = append(out, declarative.AssetCheckSpec{
+			Name:      check.Name,
+			CheckType: check.CheckType,
+			Severity:  check.Severity,
+			Enabled:   check.Enabled,
+		})
+	}
+	return out, nil
 }
 
 type apiMacro struct {
@@ -1873,10 +1876,8 @@ func (c *APIStateClient) Execute(ctx context.Context, action declarative.Action)
 		return c.executeAPIKey(ctx, action)
 	case declarative.KindNotebook:
 		return c.executeNotebook(ctx, action)
-	case declarative.KindPipeline:
-		return c.executePipeline(ctx, action)
-	case declarative.KindPipelineJob:
-		return c.executePipelineJob(ctx, action)
+	case declarative.KindAsset:
+		return c.executeAsset(ctx, action)
 	case declarative.KindMacro:
 		return c.executeMacro(ctx, action)
 	case declarative.KindModel:
@@ -2342,109 +2343,9 @@ func (c *APIStateClient) executeNotebook(ctx context.Context, action declarative
 	}
 }
 
-func (c *APIStateClient) executePipeline(_ context.Context, action declarative.Action) error {
-	switch action.Operation {
-	case declarative.OpCreate:
-		pipeline := action.Desired.(declarative.PipelineResource)
-		body := map[string]interface{}{
-			"name": pipeline.Name,
-		}
-		if pipeline.Spec.Description != "" {
-			body["description"] = pipeline.Spec.Description
-		}
-		if pipeline.Spec.ScheduleCron != "" {
-			body["schedule_cron"] = pipeline.Spec.ScheduleCron
-		}
-		body["is_paused"] = pipeline.Spec.IsPaused
-		if pipeline.Spec.ConcurrencyLimit != nil {
-			body["concurrency_limit"] = *pipeline.Spec.ConcurrencyLimit
-		}
-		resp, err := c.client.Do(http.MethodPost, "/pipelines", nil, body)
-		if err != nil {
-			return err
-		}
-		id, err := c.checkCreateResponse(resp)
-		if err != nil {
-			return err
-		}
-		if id != "" && c.index != nil {
-			c.index.pipelineIDByName[pipeline.Name] = id
-		}
-		return nil
-
-	case declarative.OpUpdate:
-		pipeline := action.Desired.(declarative.PipelineResource)
-		body := map[string]interface{}{
-			"description":   pipeline.Spec.Description,
-			"schedule_cron": pipeline.Spec.ScheduleCron,
-			"is_paused":     pipeline.Spec.IsPaused,
-		}
-		if pipeline.Spec.ConcurrencyLimit != nil {
-			body["concurrency_limit"] = *pipeline.Spec.ConcurrencyLimit
-		}
-		resp, err := c.client.Do(http.MethodPatch, "/pipelines/"+pipeline.Name, nil, body)
-		if err != nil {
-			return err
-		}
-		return gen.CheckError(resp)
-
-	case declarative.OpDelete:
-		pipelineName := action.ResourceName
-		resp, err := c.client.Do(http.MethodDelete, "/pipelines/"+pipelineName, nil, nil)
-		if err != nil {
-			return err
-		}
-		if err := gen.CheckError(resp); err != nil {
-			return err
-		}
-		if c.index != nil {
-			delete(c.index.pipelineIDByName, pipelineName)
-		}
-		return nil
-
-	default:
-		return fmt.Errorf("unsupported operation %s for pipeline", action.Operation)
-	}
-}
-
-func (c *APIStateClient) executePipelineJob(ctx context.Context, action declarative.Action) error {
-	pipelineName, jobName, err := splitPipelineJobResourceName(action.ResourceName)
-	if err != nil {
-		return err
-	}
-
-	switch action.Operation {
-	case declarative.OpCreate:
-		job := action.Desired.(declarative.PipelineJobSpec)
-		if job.Name == "" {
-			job.Name = jobName
-		}
-		return c.createPipelineJob(ctx, pipelineName, job)
-
-	case declarative.OpUpdate:
-		actualJob, _ := action.Actual.(declarative.PipelineJobSpec)
-		if actualJob.Name == "" {
-			actualJob.Name = jobName
-		}
-		if err := c.deletePipelineJobByName(ctx, pipelineName, actualJob.Name); err != nil {
-			return err
-		}
-		desiredJob := action.Desired.(declarative.PipelineJobSpec)
-		if desiredJob.Name == "" {
-			desiredJob.Name = jobName
-		}
-		return c.createPipelineJob(ctx, pipelineName, desiredJob)
-
-	case declarative.OpDelete:
-		actualJob, _ := action.Actual.(declarative.PipelineJobSpec)
-		if actualJob.Name != "" {
-			jobName = actualJob.Name
-		}
-		return c.deletePipelineJobByName(ctx, pipelineName, jobName)
-
-	default:
-		return fmt.Errorf("unsupported operation %s for pipeline-job", action.Operation)
-	}
+func (c *APIStateClient) executeAsset(_ context.Context, action declarative.Action) error {
+	_ = action
+	return fmt.Errorf("asset definitions are read-only through the current API; declarative apply cannot create/update/delete assets yet")
 }
 
 func (c *APIStateClient) syncNotebookCells(ctx context.Context, notebookID string, desired []declarative.CellSpec) error {
@@ -2531,68 +2432,6 @@ func (c *APIStateClient) applyNotebookPublish(ctx context.Context, notebookID st
 	return gen.CheckError(resp)
 }
 
-func (c *APIStateClient) createPipelineJob(ctx context.Context, pipelineName string, job declarative.PipelineJobSpec) error {
-	notebookID, err := c.resolveNotebookID(ctx, job.Notebook)
-	if err != nil {
-		return fmt.Errorf("resolve notebook for pipeline job %q: %w", job.Name, err)
-	}
-
-	body := map[string]interface{}{
-		"name":        job.Name,
-		"notebook_id": notebookID,
-	}
-	if job.ComputeEndpoint != "" {
-		computeID, err := c.resolveComputeEndpointID(ctx, job.ComputeEndpoint)
-		if err != nil {
-			return fmt.Errorf("resolve compute endpoint for pipeline job %q: %w", job.Name, err)
-		}
-		body["compute_endpoint_id"] = computeID
-	}
-	if len(job.DependsOn) > 0 {
-		body["depends_on"] = job.DependsOn
-	}
-	if job.TimeoutSeconds != nil {
-		body["timeout_seconds"] = *job.TimeoutSeconds
-	}
-	if job.RetryCount != nil {
-		body["retry_count"] = *job.RetryCount
-	}
-	if job.Order != nil {
-		body["job_order"] = *job.Order
-	}
-
-	resp, err := c.client.Do(http.MethodPost, "/pipelines/"+pipelineName+"/jobs", nil, body)
-	if err != nil {
-		return err
-	}
-	id, err := c.checkCreateResponse(resp)
-	if err != nil {
-		return err
-	}
-	if id != "" && c.index != nil {
-		c.index.jobIDByPath[pipelineName+"/"+job.Name] = id
-	}
-	return nil
-}
-
-func (c *APIStateClient) deletePipelineJobByName(ctx context.Context, pipelineName, jobName string) error {
-	jobID, err := c.lookupPipelineJobID(ctx, pipelineName, jobName)
-	if err != nil {
-		return fmt.Errorf("resolve pipeline job for delete: %w", err)
-	}
-	resp, err := c.client.Do(http.MethodDelete, "/pipelines/"+pipelineName+"/jobs/"+jobID, nil, nil)
-	if err != nil {
-		return err
-	}
-	if err := gen.CheckError(resp); err != nil {
-		return err
-	}
-	if c.index != nil {
-		delete(c.index.jobIDByPath, pipelineName+"/"+jobName)
-	}
-	return nil
-}
-
 func (c *APIStateClient) resolveNotebookID(ctx context.Context, notebookName string) (string, error) {
 	if c.index != nil {
 		if id, ok := c.index.notebookIDByName[notebookName]; ok {
@@ -2626,70 +2465,6 @@ func (c *APIStateClient) lookupNotebookIDByName(ctx context.Context, notebookNam
 		}
 	}
 	return "", fmt.Errorf("notebook %q not found", notebookName)
-}
-
-func (c *APIStateClient) resolveComputeEndpointID(ctx context.Context, endpointName string) (string, error) {
-	if c.index != nil {
-		if id, ok := c.index.computeIDByName[endpointName]; ok {
-			return id, nil
-		}
-	}
-	pages, err := c.fetchAllPages(ctx, "/compute-endpoints")
-	if err != nil {
-		return "", err
-	}
-	if len(pages) == 0 {
-		return "", fmt.Errorf("compute endpoint %q not found", endpointName)
-	}
-	var endpoints []apiComputeEndpoint
-	if err := mergePages(pages, &endpoints); err != nil {
-		return "", err
-	}
-	for _, endpoint := range endpoints {
-		if endpoint.Name == endpointName {
-			if endpoint.ID == "" {
-				return "", fmt.Errorf("compute endpoint %q has empty id", endpointName)
-			}
-			if c.index != nil {
-				c.index.computeIDByName[endpointName] = endpoint.ID
-			}
-			return endpoint.ID, nil
-		}
-	}
-	return "", fmt.Errorf("compute endpoint %q not found", endpointName)
-}
-
-func (c *APIStateClient) lookupPipelineJobID(ctx context.Context, pipelineName, jobName string) (string, error) {
-	jobPath := pipelineName + "/" + jobName
-	if c.index != nil {
-		if id, ok := c.index.jobIDByPath[jobPath]; ok {
-			return id, nil
-		}
-	}
-	jobs, err := c.readPipelineJobs(ctx, pipelineName)
-	if err != nil {
-		return "", err
-	}
-	for _, job := range jobs {
-		if job.Name == jobName {
-			if job.ID == "" {
-				return "", fmt.Errorf("pipeline job %q has empty id", jobPath)
-			}
-			if c.index != nil {
-				c.index.jobIDByPath[jobPath] = job.ID
-			}
-			return job.ID, nil
-		}
-	}
-	return "", fmt.Errorf("pipeline job %q not found", jobPath)
-}
-
-func splitPipelineJobResourceName(resourceName string) (string, string, error) {
-	parts := strings.SplitN(resourceName, "/", 2)
-	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-		return "", "", fmt.Errorf("invalid pipeline-job resource name: %s", resourceName)
-	}
-	return parts[0], parts[1], nil
 }
 
 // ValidateNoSelfAPIKeyDeletion fails fast when a plan would delete the API key

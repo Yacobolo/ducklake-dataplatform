@@ -13,6 +13,13 @@ import (
 
 const reconcilerRetryBackoff = 2 * time.Second
 
+var dedupeInFlightRunStatuses = []string{
+	domain.AssetRunStatusQueued,
+	domain.AssetRunStatusPlanning,
+	domain.AssetRunStatusRunning,
+	domain.AssetRunStatusRetrying,
+}
+
 type Reconciler struct {
 	events     domain.OrchestrationEventRepository
 	assets     domain.DataAssetRepository
@@ -112,6 +119,17 @@ func (r *Reconciler) Tick(ctx context.Context) error {
 			return nil
 		}
 		r.markProcessedNoop(ctx, event.ID, reason)
+		return nil
+	}
+
+	inFlight, err := r.hasInFlightRun(ctx, assetID, event.PartitionKey)
+	if err != nil {
+		retryAt := time.Now().UTC().Add(reconcilerRetryBackoff)
+		_ = r.events.MarkFailed(ctx, event.ID, err.Error(), &retryAt)
+		return err
+	}
+	if inFlight {
+		r.markProcessedNoop(ctx, event.ID, "duplicate event ignored; matching run already in progress")
 		return nil
 	}
 
@@ -304,6 +322,38 @@ func (r *Reconciler) hasUpstreamMaterialization(
 func (r *Reconciler) markProcessedNoop(ctx context.Context, eventID string, reason string) {
 	_ = r.events.MarkFailed(ctx, eventID, reason, nil)
 	_ = r.events.MarkProcessed(ctx, eventID)
+}
+
+func (r *Reconciler) hasInFlightRun(ctx context.Context, assetID string, partitionKey *string) (bool, error) {
+	for _, status := range dedupeInFlightRunStatuses {
+		status := status
+		runs, _, err := r.runs.ListRuns(ctx, domain.AssetRunFilter{
+			AssetID: &assetID,
+			Status:  &status,
+			Page:    domain.PageRequest{MaxResults: domain.DefaultMaxResults},
+		})
+		if err != nil {
+			return false, fmt.Errorf("list in-flight runs for asset %s and status %s: %w", assetID, status, err)
+		}
+
+		for _, run := range runs {
+			if samePartition(partitionKey, run.PartitionKey) {
+				return true, nil
+			}
+		}
+	}
+
+	return false, nil
+}
+
+func samePartition(a, b *string) bool {
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	return *a == *b
 }
 
 func (r *Reconciler) latestMaterializationAt(

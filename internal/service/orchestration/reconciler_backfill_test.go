@@ -2,6 +2,7 @@ package orchestration
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -435,6 +436,50 @@ func TestBackfillService_CreateEmitsEvents(t *testing.T) {
 	assert.Len(t, eventRepo.events, 3)
 }
 
+func TestBackfillService_CreateFailsWhenEventEnqueueFails(t *testing.T) {
+	eventRepo := &memEventRepo{failEnqueueAtCall: 2, enqueueErr: errors.New("queue unavailable")}
+	router := NewTriggerRouter(eventRepo)
+	backfills := &memBackfillRepo{}
+	svc := NewBackfillService(backfills, router, nil, nil)
+
+	ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "admin", IsAdmin: true, Type: "user"})
+	req, slices, err := svc.Create(ctx, "asset-1", "admin", "2026-03-01", "2026-03-03", 2)
+	require.Error(t, err)
+	require.Nil(t, req)
+	require.Nil(t, slices)
+	assert.Contains(t, err.Error(), "queue unavailable")
+
+	require.Len(t, backfills.requests, 1)
+	assert.Equal(t, domain.BackfillStatusFailed, backfills.requests[0].Status)
+	require.NotNil(t, backfills.requests[0].ErrorMessage)
+	assert.Contains(t, *backfills.requests[0].ErrorMessage, "queue unavailable")
+
+	require.Len(t, backfills.slices, 2)
+	for _, slice := range backfills.slices {
+		assert.Equal(t, domain.BackfillStatusFailed, slice.Status)
+		require.NotNil(t, slice.ErrorMessage)
+		assert.Contains(t, *slice.ErrorMessage, "queue unavailable")
+	}
+	assert.Len(t, eventRepo.events, 1)
+}
+
+func TestBackfillService_CreateValidatesRangeBeforePersistingRequest(t *testing.T) {
+	eventRepo := &memEventRepo{}
+	router := NewTriggerRouter(eventRepo)
+	backfills := &memBackfillRepo{}
+	svc := NewBackfillService(backfills, router, nil, nil)
+
+	ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "admin", IsAdmin: true, Type: "user"})
+	req, slices, err := svc.Create(ctx, "asset-1", "admin", "2026-03-03", "2026-03-01", 2)
+	require.Error(t, err)
+	require.Nil(t, req)
+	require.Nil(t, slices)
+	assert.Contains(t, err.Error(), "partition_from must be <= partition_to")
+	assert.Empty(t, backfills.requests)
+	assert.Empty(t, backfills.slices)
+	assert.Empty(t, eventRepo.events)
+}
+
 func TestReconciler_BackfillEventRunsBackfillRunner(t *testing.T) {
 	eventRepo := &memEventRepo{}
 	assetID := "asset-1"
@@ -488,11 +533,63 @@ func TestReconciler_BackfillEventRunsBackfillRunner(t *testing.T) {
 	}
 }
 
+func TestReconciler_DuplicateEventWithInFlightRunIsNoop(t *testing.T) {
+	eventRepo := &memEventRepo{}
+	assetID := "asset-dup"
+	partitionKey := "2026-03-01"
+	_, err := eventRepo.Enqueue(context.Background(), &domain.OrchestrationEvent{
+		ID:           "ev-dup",
+		EventType:    domain.AssetTriggerTypeUpstreamUpdate,
+		AssetID:      &assetID,
+		PartitionKey: &partitionKey,
+		Status:       domain.OrchestrationEventStatusPending,
+	})
+	require.NoError(t, err)
+
+	assetRepo := &fakeAssets{items: map[string]*domain.DataAsset{
+		assetID: {
+			ID:                  assetID,
+			PartitionDefinition: &domain.PartitionDefinition{Type: domain.PartitionTypeDaily},
+		},
+	}}
+	deps := &fakeDeps{downstream: map[string][]domain.AssetDependency{}, upstream: map[string][]domain.AssetDependency{}}
+	runRepo := &fakeRunRepo{runs: map[string]*domain.AssetRun{
+		"run-existing": {
+			ID:           "run-existing",
+			AssetID:      assetID,
+			PartitionKey: &partitionKey,
+			Status:       domain.AssetRunStatusRunning,
+		},
+	}}
+	scheduler := NewAssetScheduler(assetRepo, deps, runRepo)
+	executor := NewAssetExecutor(runRepo, NewAssetRunStateMachine(), NewInMemoryIOManager(), NewConcurrencyLimiter(1, 1), &fakeStepper{})
+
+	r := NewReconciler(eventRepo, assetRepo, runRepo, scheduler, executor, nil, false)
+	require.NoError(t, r.Tick(context.Background()))
+
+	require.Len(t, runRepo.runs, 1)
+	require.Len(t, eventRepo.events, 1)
+	assert.Equal(t, domain.OrchestrationEventStatusProcessed, eventRepo.events[0].Status)
+	require.NotNil(t, eventRepo.events[0].LastError)
+	assert.Contains(t, *eventRepo.events[0].LastError, "matching run already in progress")
+}
+
 type memEventRepo struct {
-	events []domain.OrchestrationEvent
+	events            []domain.OrchestrationEvent
+	enqueueCalls      int
+	failEnqueueAtCall int
+	enqueueErr        error
 }
 
 func (m *memEventRepo) Enqueue(_ context.Context, event *domain.OrchestrationEvent) (*domain.OrchestrationEvent, error) {
+	m.enqueueCalls++
+	if m.failEnqueueAtCall > 0 && m.enqueueCalls == m.failEnqueueAtCall {
+		if m.enqueueErr != nil {
+			return nil, m.enqueueErr
+		}
+		return nil, errors.New("enqueue failed")
+	}
+
 	eventCopy := *event
 	if eventCopy.ID == "" {
 		eventCopy.ID = domain.NewID()

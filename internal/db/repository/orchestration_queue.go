@@ -7,9 +7,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"duck-demo/internal/domain"
+)
+
+const (
+	claimLockRetryLimit = 5
+	claimRetryStepDelay = 10 * time.Millisecond
 )
 
 var (
@@ -57,9 +63,18 @@ func (r *OrchestrationEventRepo) Enqueue(ctx context.Context, event *domain.Orch
 
 func (r *OrchestrationEventRepo) ClaimNextPending(ctx context.Context, now time.Time) (*domain.OrchestrationEvent, error) {
 	nowUTC := now.UTC()
+	lockRetries := 0
 	for {
 		tx, err := r.db.BeginTx(ctx, nil)
 		if err != nil {
+			if claimRetryableLockError(err) {
+				if waitErr := waitClaimRetry(ctx, lockRetries); waitErr == nil {
+					lockRetries++
+					continue
+				} else {
+					return nil, waitErr
+				}
+			}
 			return nil, fmt.Errorf("begin claim transaction: %w", err)
 		}
 
@@ -75,6 +90,14 @@ func (r *OrchestrationEventRepo) ClaimNextPending(ctx context.Context, now time.
 		event, scanErr := scanOrchestrationEvent(row)
 		if scanErr != nil {
 			_ = tx.Rollback()
+			if claimRetryableLockError(scanErr) {
+				if waitErr := waitClaimRetry(ctx, lockRetries); waitErr == nil {
+					lockRetries++
+					continue
+				} else {
+					return nil, waitErr
+				}
+			}
 			var notFoundErr *domain.NotFoundError
 			if errors.As(scanErr, &notFoundErr) {
 				return nil, domain.ErrNotFound("no pending orchestration event")
@@ -92,6 +115,14 @@ func (r *OrchestrationEventRepo) ClaimNextPending(ctx context.Context, now time.
 		`, domain.OrchestrationEventStatusProcessing, event.ID, domain.OrchestrationEventStatusPending)
 		if execErr != nil {
 			_ = tx.Rollback()
+			if claimRetryableLockError(execErr) {
+				if waitErr := waitClaimRetry(ctx, lockRetries); waitErr == nil {
+					lockRetries++
+					continue
+				} else {
+					return nil, waitErr
+				}
+			}
 			return nil, fmt.Errorf("claim orchestration event %s: %w", event.ID, mapDBError(execErr))
 		}
 
@@ -104,14 +135,50 @@ func (r *OrchestrationEventRepo) ClaimNextPending(ctx context.Context, now time.
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
 				return nil, fmt.Errorf("rollback failed claim transaction: %w", rollbackErr)
 			}
+			lockRetries = 0
 			continue
 		}
 
 		if commitErr := tx.Commit(); commitErr != nil {
+			if claimRetryableLockError(commitErr) {
+				if waitErr := waitClaimRetry(ctx, lockRetries); waitErr == nil {
+					lockRetries++
+					continue
+				} else {
+					return nil, waitErr
+				}
+			}
 			return nil, fmt.Errorf("commit claim transaction for orchestration event %s: %w", event.ID, commitErr)
 		}
+		lockRetries = 0
 
 		return r.getByID(ctx, event.ID)
+	}
+}
+
+func claimRetryableLockError(err error) bool {
+	if err == nil {
+		return false
+	}
+	message := strings.ToLower(err.Error())
+	return strings.Contains(message, "database is locked") ||
+		strings.Contains(message, "database table is locked") ||
+		strings.Contains(message, "database schema is locked") ||
+		strings.Contains(message, "database is busy")
+}
+
+func waitClaimRetry(ctx context.Context, retries int) error {
+	if retries >= claimLockRetryLimit {
+		return domain.ErrConflict("orchestration queue is contended")
+	}
+	delay := time.Duration(retries+1) * claimRetryStepDelay
+	timer := time.NewTimer(delay)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
 	}
 }
 

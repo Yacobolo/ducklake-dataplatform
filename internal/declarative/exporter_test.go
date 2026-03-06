@@ -73,6 +73,9 @@ func TestExporter_RoundTrip(t *testing.T) {
 		Tags: []TagSpec{
 			{Key: "env", Value: strPtr("prod")},
 		},
+		Assets: []AssetResource{
+			{Name: "daily_kpi", Spec: AssetSpec{AssetType: "table", Description: "Daily KPI asset"}},
+		},
 	}
 
 	// Export to temp dir
@@ -88,6 +91,7 @@ func TestExporter_RoundTrip(t *testing.T) {
 	assertFileExists(t, filepath.Join(dir, "catalogs", "main", "schemas", "analytics", "schema.yaml"))
 	assertFileExists(t, filepath.Join(dir, "catalogs", "main", "schemas", "analytics", "tables", "orders", "table.yaml"))
 	assertFileExists(t, filepath.Join(dir, "catalogs", "main", "schemas", "analytics", "views", "summary.yaml"))
+	assertFileExists(t, filepath.Join(dir, "assets", "daily_kpi.yaml"))
 
 	// Load back
 	loaded, err := LoadDirectory(dir)
@@ -119,6 +123,9 @@ func TestExporter_RoundTrip(t *testing.T) {
 
 	require.Len(t, loaded.Volumes, 1)
 	assert.Equal(t, "raw", loaded.Volumes[0].VolumeName)
+
+	require.Len(t, loaded.Assets, 1)
+	assert.Equal(t, "daily_kpi", loaded.Assets[0].Name)
 }
 
 func TestExporter_EmptyState(t *testing.T) {
@@ -265,6 +272,18 @@ func TestExporter_RoundTripModelsAndMacros(t *testing.T) {
 	assert.Equal(t, original.SemanticModels[0].Spec.BaseModelRef, loaded.SemanticModels[0].Spec.BaseModelRef)
 	require.Len(t, loaded.SemanticModels[0].Spec.Metrics, 1)
 	assert.Equal(t, "total_revenue", loaded.SemanticModels[0].Spec.Metrics[0].Name)
+}
+
+func TestExporter_FailsForLegacyPipelines(t *testing.T) {
+	dir := t.TempDir()
+	err := ExportDirectory(dir, &DesiredState{
+		Pipelines: []PipelineResource{{
+			Name: "legacy",
+			Spec: PipelineSpec{Description: "legacy"},
+		}},
+	}, false)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "cannot export legacy pipelines")
 }
 
 // strPtr is defined in validator_test.go (same package).

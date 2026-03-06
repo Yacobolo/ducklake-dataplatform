@@ -25,12 +25,21 @@ func (s *BackfillService) Create(ctx context.Context, assetID, requestedBy, from
 	if strings.TrimSpace(assetID) == "" {
 		return nil, nil, domain.ErrValidation("asset_id is required")
 	}
+	if s.router == nil {
+		return nil, nil, domain.ErrValidation("trigger router is required")
+	}
 	if err := s.requirePrivilege(ctx, requestedBy, domain.PrivExecuteAssetMaterialization); err != nil {
 		return nil, nil, err
 	}
 	if from == "" || to == "" {
 		return nil, nil, domain.ErrValidation("partition_from and partition_to are required")
 	}
+
+	keys, err := partitionRange(from, to)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	req, err := s.backfills.CreateRequest(ctx, &domain.BackfillRequest{
 		ID:             domain.NewID(),
 		AssetID:        assetID,
@@ -53,12 +62,8 @@ func (s *BackfillService) Create(ctx context.Context, assetID, requestedBy, from
 		})
 	}
 
-	keys, err := partitionRange(from, to)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	slices := make([]domain.BackfillSlice, 0, len(keys))
+	createdSliceIDs := make([]string, 0, len(keys))
 	for _, key := range keys {
 		slice, createErr := s.backfills.CreateSlice(ctx, &domain.BackfillSlice{
 			ID:           domain.NewID(),
@@ -69,16 +74,31 @@ func (s *BackfillService) Create(ctx context.Context, assetID, requestedBy, from
 			MaxAttempts:  1,
 		})
 		if createErr != nil {
+			s.failCreate(ctx, req.ID, createdSliceIDs, createErr)
 			return nil, nil, createErr
 		}
 		slices = append(slices, *slice)
+		createdSliceIDs = append(createdSliceIDs, slice.ID)
 
-		_, _ = s.router.Ingest(ctx, domain.AssetTriggerTypeBackfill, &assetID, &key, map[string]any{
+		if _, ingestErr := s.router.Ingest(ctx, domain.AssetTriggerTypeBackfill, &assetID, &key, map[string]any{
 			"backfill_request_id": req.ID,
-		}, nil)
+		}, nil); ingestErr != nil {
+			s.failCreate(ctx, req.ID, createdSliceIDs, ingestErr)
+			return nil, nil, fmt.Errorf("enqueue backfill slice %s: %w", key, ingestErr)
+		}
 	}
 
 	return req, slices, nil
+}
+
+func (s *BackfillService) failCreate(ctx context.Context, requestID string, sliceIDs []string, cause error) {
+	errMsg := cause.Error()
+	if requestID != "" {
+		_ = s.backfills.UpdateRequestStatus(ctx, requestID, domain.BackfillStatusFailed, &errMsg)
+	}
+	for _, sliceID := range sliceIDs {
+		_ = s.backfills.UpdateSliceStatus(ctx, sliceID, domain.BackfillStatusFailed, nil, &errMsg)
+	}
 }
 
 func (s *BackfillService) requirePrivilege(ctx context.Context, principalName string, privilege string) error {

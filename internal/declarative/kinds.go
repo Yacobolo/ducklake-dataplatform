@@ -28,8 +28,9 @@ const (
 	KindColumnMaskBinding                       // layer 6
 	KindAPIKey                                  // layer 6
 	KindNotebook                                // layer 6
-	KindPipeline                                // layer 7
-	KindPipelineJob                             // layer 7
+	KindAsset                                   // layer 7
+	KindPipeline                                // layer 7 (legacy)
+	KindPipelineJob                             // layer 7 (legacy)
 	KindModel                                   // layer 8
 	KindSemanticModel                           // layer 9
 )
@@ -81,6 +82,8 @@ func (k ResourceKind) String() string {
 		return "api-key"
 	case KindNotebook:
 		return "notebook"
+	case KindAsset:
+		return "asset"
 	case KindPipeline:
 		return "pipeline"
 	case KindPipelineJob:
@@ -112,7 +115,7 @@ func (k ResourceKind) Layer() int {
 		return 5
 	case KindRowFilterBinding, KindColumnMaskBinding, KindAPIKey, KindNotebook:
 		return 6
-	case KindPipeline, KindPipelineJob:
+	case KindAsset, KindPipeline, KindPipelineJob:
 		return 7
 	case KindModel:
 		return 8

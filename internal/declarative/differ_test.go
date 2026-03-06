@@ -1088,84 +1088,57 @@ func TestDiff_Notebooks(t *testing.T) {
 	})
 }
 
-func TestDiff_Pipelines(t *testing.T) {
+func TestDiff_Assets(t *testing.T) {
 	t.Parallel()
-	t.Run("create with jobs", func(t *testing.T) {
+	t.Run("create", func(t *testing.T) {
 		desired := &DesiredState{
-			Pipelines: []PipelineResource{
-				{Name: "pl1", Spec: PipelineSpec{
-					Description:  "test pipeline",
-					ScheduleCron: "0 * * * *",
-					Jobs: []PipelineJobSpec{
-						{Name: "job1", Notebook: "nb1"},
-					},
-				}},
+			Assets: []AssetResource{
+				{Name: "daily_kpi", Spec: AssetSpec{AssetType: "table", DependsOn: []string{"seed_orders"}}},
 			},
 		}
 		actual := &DesiredState{}
 		plan := Diff(desired, actual)
-		// Should create: the pipeline + its job
-		require.Len(t, plan.Actions, 2)
-		kinds := map[ResourceKind]int{}
-		for _, a := range plan.Actions {
-			assert.Equal(t, OpCreate, a.Operation)
-			kinds[a.ResourceKind]++
-		}
-		assert.Equal(t, 1, kinds[KindPipeline])
-		assert.Equal(t, 1, kinds[KindPipelineJob])
+		require.Len(t, plan.Actions, 1)
+		assert.Equal(t, OpCreate, plan.Actions[0].Operation)
+		assert.Equal(t, KindAsset, plan.Actions[0].ResourceKind)
+		assert.Equal(t, "daily_kpi", plan.Actions[0].ResourceName)
 	})
 
-	t.Run("update schedule", func(t *testing.T) {
+	t.Run("update", func(t *testing.T) {
 		desired := &DesiredState{
-			Pipelines: []PipelineResource{
-				{Name: "pl1", Spec: PipelineSpec{
-					Description:  "test",
-					ScheduleCron: "0 0 * * *",
-				}},
+			Assets: []AssetResource{
+				{Name: "daily_kpi", Spec: AssetSpec{AssetType: "table", Description: "new"}},
 			},
 		}
 		actual := &DesiredState{
-			Pipelines: []PipelineResource{
-				{Name: "pl1", Spec: PipelineSpec{
-					Description:  "test",
-					ScheduleCron: "0 * * * *",
-				}},
+			Assets: []AssetResource{
+				{Name: "daily_kpi", Spec: AssetSpec{AssetType: "table", Description: "old"}},
 			},
 		}
 		plan := Diff(desired, actual)
 		require.Len(t, plan.Actions, 1)
 		assert.Equal(t, OpUpdate, plan.Actions[0].Operation)
-		assert.Equal(t, KindPipeline, plan.Actions[0].ResourceKind)
+		assert.Equal(t, KindAsset, plan.Actions[0].ResourceKind)
 		found := false
 		for _, c := range plan.Actions[0].Changes {
-			if c.Field == "schedule_cron" {
+			if c.Field == "description" {
 				found = true
 			}
 		}
-		assert.True(t, found, "expected schedule_cron field diff")
+		assert.True(t, found, "expected description field diff")
 	})
 
-	t.Run("delete with jobs", func(t *testing.T) {
+	t.Run("delete", func(t *testing.T) {
 		desired := &DesiredState{}
 		actual := &DesiredState{
-			Pipelines: []PipelineResource{
-				{Name: "pl1", Spec: PipelineSpec{
-					Jobs: []PipelineJobSpec{
-						{Name: "job1", Notebook: "nb1"},
-					},
-				}},
+			Assets: []AssetResource{
+				{Name: "daily_kpi", Spec: AssetSpec{AssetType: "table"}},
 			},
 		}
 		plan := Diff(desired, actual)
-		// Should delete: the job + the pipeline
-		require.Len(t, plan.Actions, 2)
-		kinds := map[ResourceKind]int{}
-		for _, a := range plan.Actions {
-			assert.Equal(t, OpDelete, a.Operation)
-			kinds[a.ResourceKind]++
-		}
-		assert.Equal(t, 1, kinds[KindPipeline])
-		assert.Equal(t, 1, kinds[KindPipelineJob])
+		require.Len(t, plan.Actions, 1)
+		assert.Equal(t, OpDelete, plan.Actions[0].Operation)
+		assert.Equal(t, KindAsset, plan.Actions[0].ResourceKind)
 	})
 }
 
