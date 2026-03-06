@@ -145,7 +145,9 @@ func TestEmit_GeneratesPathAndQueryBinding(t *testing.T) {
 	require.Contains(t, content, "\tParams ListGroupMembersParams")
 	require.Contains(t, content, "type GenListGroupMembersResponse interface {")
 	require.Contains(t, content, "\tVisitListGroupMembersResponse(w http.ResponseWriter) error")
-	require.Contains(t, content, "type GenListGroupMembers200Response = ListGroupMembers200Response")
+	require.Contains(t, content, "type GenListGroupMembers200Response ListGroupMembers200Response")
+	require.Contains(t, content, "return ListGroupMembers200Response(response).VisitListGroupMembersResponse(w)")
+	require.NotContains(t, content, "type GenListGroupMembers200Response = ListGroupMembers200Response")
 	require.Contains(t, content, "ListGroupMembers(ctx context.Context, request GenListGroupMembersRequest) (GenListGroupMembersResponse, error)")
 }
 
@@ -759,7 +761,9 @@ func TestEmit_GeneratesNativeConcreteResponsesFromIR(t *testing.T) {
 	require.NotContains(t, content, "type GenCancelPipelineRun200JSONResponse = CancelPipelineRun200JSONResponse")
 	require.NotContains(t, content, "type GenListPipelineJobRuns200JSONResponse = ListPipelineJobRuns200JSONResponse")
 
-	require.Contains(t, content, "type GenListCatalogs200JSONResponse = ListCatalogs200JSONResponse")
+	require.Contains(t, content, "type GenListCatalogs200JSONResponse ListCatalogs200JSONResponse")
+	require.Contains(t, content, "return ListCatalogs200JSONResponse(response).VisitListCatalogsResponse(w)")
+	require.NotContains(t, content, "type GenListCatalogs200JSONResponse = ListCatalogs200JSONResponse")
 }
 
 func TestEmit_GeneratesNativeConcreteResponsesForModelsAndSemantic(t *testing.T) {
@@ -802,7 +806,9 @@ func TestEmit_GeneratesNativeConcreteResponsesForModelsAndSemantic(t *testing.T)
 	require.Contains(t, content, "return ListSemanticModels200JSONResponse(response).VisitListSemanticModelsResponse(w)")
 	require.NotContains(t, content, "type GenListSemanticModels200JSONResponse = ListSemanticModels200JSONResponse")
 
-	require.Contains(t, content, "type GenListCatalogs200JSONResponse = ListCatalogs200JSONResponse")
+	require.Contains(t, content, "type GenListCatalogs200JSONResponse ListCatalogs200JSONResponse")
+	require.Contains(t, content, "return ListCatalogs200JSONResponse(response).VisitListCatalogsResponse(w)")
+	require.NotContains(t, content, "type GenListCatalogs200JSONResponse = ListCatalogs200JSONResponse")
 }
 
 func TestEmit_GeneratesNativeConcreteResponsesForNotebookDomainOps(t *testing.T) {
@@ -879,7 +885,9 @@ func TestEmit_GeneratesNativeConcreteResponsesForNotebookDomainOps(t *testing.T)
 	require.Contains(t, content, "type GenSyncGitRepo201JSONResponse SyncGitRepo201JSONResponse")
 	require.Contains(t, content, "return SyncGitRepo201JSONResponse(response).VisitSyncGitRepoResponse(w)")
 
-	require.Contains(t, content, "type GenListCatalogs200JSONResponse = ListCatalogs200JSONResponse")
+	require.Contains(t, content, "type GenListCatalogs200JSONResponse ListCatalogs200JSONResponse")
+	require.Contains(t, content, "return ListCatalogs200JSONResponse(response).VisitListCatalogsResponse(w)")
+	require.NotContains(t, content, "type GenListCatalogs200JSONResponse = ListCatalogs200JSONResponse")
 }
 
 func TestEmit_GeneratesNativeConcreteResponsesForRemainingDomains(t *testing.T) {
@@ -962,7 +970,99 @@ func TestEmit_GeneratesNativeConcreteResponsesForRemainingDomains(t *testing.T) 
 	require.Contains(t, content, "return ListRowFilters200JSONResponse(response).VisitListRowFiltersResponse(w)")
 	require.NotContains(t, content, "type GenListRowFilters200JSONResponse = ListRowFilters200JSONResponse")
 
-	require.Contains(t, content, "type GenListCatalogs200JSONResponse = ListCatalogs200JSONResponse")
+	require.Contains(t, content, "type GenListCatalogs200JSONResponse ListCatalogs200JSONResponse")
+	require.Contains(t, content, "return ListCatalogs200JSONResponse(response).VisitListCatalogsResponse(w)")
+	require.NotContains(t, content, "type GenListCatalogs200JSONResponse = ListCatalogs200JSONResponse")
+}
+
+func TestEmit_GeneratesNativeConcreteResponsesForSelectorGapOps(t *testing.T) {
+	t.Helper()
+
+	doc := ir.Document{
+		SchemaVersion: "v1",
+		Info:          ir.Info{Title: "t", Version: "1"},
+		Endpoints: []ir.Endpoint{
+			{Method: "get", Path: "/catalogs", OperationID: "listCatalogs", Responses: []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/CatalogRegistrationList"}}}},
+			{Method: "get", Path: "/compute/endpoints", OperationID: "listComputeEndpoints", Responses: []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/PaginatedComputeEndpoints"}}}},
+			{Method: "post", Path: "/compute/endpoints", OperationID: "createComputeEndpoint", Responses: []ir.Response{{StatusCode: 201, Description: "created", Schema: &ir.SchemaRef{Ref: "#/schemas/ComputeEndpoint"}}}},
+			{Method: "get", Path: "/compute/endpoints/{endpointId}", OperationID: "getComputeEndpoint", Responses: []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/ComputeEndpoint"}}}},
+			{Method: "patch", Path: "/compute/endpoints/{endpointId}", OperationID: "updateComputeEndpoint", Responses: []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/ComputeEndpoint"}}}},
+			{Method: "delete", Path: "/compute/endpoints/{endpointId}", OperationID: "deleteComputeEndpoint", Responses: []ir.Response{{StatusCode: 204, Description: "no content"}}},
+			{Method: "get", Path: "/compute/assignments", OperationID: "listComputeAssignments", Responses: []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/PaginatedComputeAssignments"}}}},
+			{Method: "post", Path: "/compute/assignments", OperationID: "createComputeAssignment", Responses: []ir.Response{{StatusCode: 201, Description: "created", Schema: &ir.SchemaRef{Ref: "#/schemas/ComputeAssignment"}}}},
+			{Method: "delete", Path: "/compute/assignments/{assignmentId}", OperationID: "deleteComputeAssignment", Responses: []ir.Response{{StatusCode: 204, Description: "no content"}}},
+			{Method: "get", Path: "/compute/endpoints/{endpointId}/health", OperationID: "getComputeEndpointHealth", Responses: []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/ComputeEndpointHealth"}}}},
+			{Method: "get", Path: "/groups/{groupId}/members", OperationID: "listGroupMembers", Responses: []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/PaginatedGroupMembers"}}}},
+			{Method: "post", Path: "/groups/{groupId}/members", OperationID: "createGroupMember", Responses: []ir.Response{{StatusCode: 201, Description: "created", Schema: &ir.SchemaRef{Ref: "#/schemas/GroupMember"}}}},
+			{Method: "delete", Path: "/groups/{groupId}/members/{principalId}", OperationID: "deleteGroupMember", Responses: []ir.Response{{StatusCode: 204, Description: "no content"}}},
+			{Method: "post", Path: "/manifests", OperationID: "createManifest", Responses: []ir.Response{{StatusCode: 201, Description: "created", Schema: &ir.SchemaRef{Ref: "#/schemas/Manifest"}}}},
+			{Method: "patch", Path: "/principals/{principalId}/admin", OperationID: "updatePrincipalAdmin", Responses: []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/Principal"}}}},
+		},
+	}
+
+	b, err := Emit(doc)
+	require.NoError(t, err)
+	content := string(b)
+
+	require.Contains(t, content, "type GenListCatalogs200JSONResponse ListCatalogs200JSONResponse")
+	require.Contains(t, content, "return ListCatalogs200JSONResponse(response).VisitListCatalogsResponse(w)")
+	require.NotContains(t, content, "type GenListCatalogs200JSONResponse = ListCatalogs200JSONResponse")
+
+	require.Contains(t, content, "type GenListComputeEndpoints200JSONResponse ListComputeEndpoints200JSONResponse")
+	require.Contains(t, content, "return ListComputeEndpoints200JSONResponse(response).VisitListComputeEndpointsResponse(w)")
+	require.NotContains(t, content, "type GenListComputeEndpoints200JSONResponse = ListComputeEndpoints200JSONResponse")
+
+	require.Contains(t, content, "type GenCreateComputeEndpoint201JSONResponse CreateComputeEndpoint201JSONResponse")
+	require.Contains(t, content, "return CreateComputeEndpoint201JSONResponse(response).VisitCreateComputeEndpointResponse(w)")
+	require.NotContains(t, content, "type GenCreateComputeEndpoint201JSONResponse = CreateComputeEndpoint201JSONResponse")
+
+	require.Contains(t, content, "type GenGetComputeEndpoint200JSONResponse GetComputeEndpoint200JSONResponse")
+	require.Contains(t, content, "return GetComputeEndpoint200JSONResponse(response).VisitGetComputeEndpointResponse(w)")
+	require.NotContains(t, content, "type GenGetComputeEndpoint200JSONResponse = GetComputeEndpoint200JSONResponse")
+
+	require.Contains(t, content, "type GenUpdateComputeEndpoint200JSONResponse UpdateComputeEndpoint200JSONResponse")
+	require.Contains(t, content, "return UpdateComputeEndpoint200JSONResponse(response).VisitUpdateComputeEndpointResponse(w)")
+	require.NotContains(t, content, "type GenUpdateComputeEndpoint200JSONResponse = UpdateComputeEndpoint200JSONResponse")
+
+	require.Contains(t, content, "type GenDeleteComputeEndpoint204Response DeleteComputeEndpoint204Response")
+	require.Contains(t, content, "return DeleteComputeEndpoint204Response(response).VisitDeleteComputeEndpointResponse(w)")
+	require.NotContains(t, content, "type GenDeleteComputeEndpoint204Response = DeleteComputeEndpoint204Response")
+
+	require.Contains(t, content, "type GenListComputeAssignments200JSONResponse ListComputeAssignments200JSONResponse")
+	require.Contains(t, content, "return ListComputeAssignments200JSONResponse(response).VisitListComputeAssignmentsResponse(w)")
+	require.NotContains(t, content, "type GenListComputeAssignments200JSONResponse = ListComputeAssignments200JSONResponse")
+
+	require.Contains(t, content, "type GenCreateComputeAssignment201JSONResponse CreateComputeAssignment201JSONResponse")
+	require.Contains(t, content, "return CreateComputeAssignment201JSONResponse(response).VisitCreateComputeAssignmentResponse(w)")
+	require.NotContains(t, content, "type GenCreateComputeAssignment201JSONResponse = CreateComputeAssignment201JSONResponse")
+
+	require.Contains(t, content, "type GenDeleteComputeAssignment204Response DeleteComputeAssignment204Response")
+	require.Contains(t, content, "return DeleteComputeAssignment204Response(response).VisitDeleteComputeAssignmentResponse(w)")
+	require.NotContains(t, content, "type GenDeleteComputeAssignment204Response = DeleteComputeAssignment204Response")
+
+	require.Contains(t, content, "type GenGetComputeEndpointHealth200JSONResponse GetComputeEndpointHealth200JSONResponse")
+	require.Contains(t, content, "return GetComputeEndpointHealth200JSONResponse(response).VisitGetComputeEndpointHealthResponse(w)")
+	require.NotContains(t, content, "type GenGetComputeEndpointHealth200JSONResponse = GetComputeEndpointHealth200JSONResponse")
+
+	require.Contains(t, content, "type GenListGroupMembers200JSONResponse ListGroupMembers200JSONResponse")
+	require.Contains(t, content, "return ListGroupMembers200JSONResponse(response).VisitListGroupMembersResponse(w)")
+	require.NotContains(t, content, "type GenListGroupMembers200JSONResponse = ListGroupMembers200JSONResponse")
+
+	require.Contains(t, content, "type GenCreateGroupMember201JSONResponse CreateGroupMember201JSONResponse")
+	require.Contains(t, content, "return CreateGroupMember201JSONResponse(response).VisitCreateGroupMemberResponse(w)")
+	require.NotContains(t, content, "type GenCreateGroupMember201JSONResponse = CreateGroupMember201JSONResponse")
+
+	require.Contains(t, content, "type GenDeleteGroupMember204Response DeleteGroupMember204Response")
+	require.Contains(t, content, "return DeleteGroupMember204Response(response).VisitDeleteGroupMemberResponse(w)")
+	require.NotContains(t, content, "type GenDeleteGroupMember204Response = DeleteGroupMember204Response")
+
+	require.Contains(t, content, "type GenCreateManifest201JSONResponse CreateManifest201JSONResponse")
+	require.Contains(t, content, "return CreateManifest201JSONResponse(response).VisitCreateManifestResponse(w)")
+	require.NotContains(t, content, "type GenCreateManifest201JSONResponse = CreateManifest201JSONResponse")
+
+	require.Contains(t, content, "type GenUpdatePrincipalAdmin200JSONResponse UpdatePrincipalAdmin200JSONResponse")
+	require.Contains(t, content, "return UpdatePrincipalAdmin200JSONResponse(response).VisitUpdatePrincipalAdminResponse(w)")
+	require.NotContains(t, content, "type GenUpdatePrincipalAdmin200JSONResponse = UpdatePrincipalAdmin200JSONResponse")
 }
 
 func TestPathParamTypeName(t *testing.T) {

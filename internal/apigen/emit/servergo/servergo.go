@@ -425,6 +425,8 @@ func isNativeConcreteGenResponseOperation(operationID string) bool {
 		return true
 	case "registerCatalog", "getCatalogRegistration", "updateCatalogRegistration", "deleteCatalogRegistration", "loadTableExternalFiles", "commitTableIngestion", "createUploadUrl", "setDefaultCatalog", "listViews", "createView", "getView", "updateView", "deleteView":
 		return true
+	case "listCatalogs", "listComputeEndpoints", "createComputeEndpoint", "getComputeEndpoint", "updateComputeEndpoint", "deleteComputeEndpoint", "listComputeAssignments", "createComputeAssignment", "deleteComputeAssignment", "getComputeEndpointHealth", "listGroupMembers", "createGroupMember", "deleteGroupMember", "createManifest", "updatePrincipalAdmin":
+		return true
 	case "listTags", "createTag", "deleteTag", "createTagAssignment", "deleteTagAssignment":
 		return true
 	case "listRowFilters", "createRowFilter", "bindRowFilter", "unbindRowFilter", "deleteRowFilter", "listColumnMasks", "createColumnMask", "bindColumnMask", "unbindColumnMask", "deleteColumnMask":
