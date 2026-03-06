@@ -78,6 +78,7 @@ Scenario templates are also available: `.env.local-only.sample`, `.env.hybrid.sa
 | `AUTH_WEB_SESSION_ABSOLUTE_TTL` | `24h` | UI session absolute max lifetime |
 | `AUTH_WEB_SESSION_COOKIE_NAME` | `ui_session` | Opaque UI session cookie name |
 | `AUTH_WEB_SESSION_REAPER_INTERVAL` | `5m` | Cleanup cadence for expired/revoked UI sessions |
+| `AUTH_UI_DEV_BYPASS` | `false` | Development-only localhost bypass for `/ui` auth (ignored in production) |
 | `ENCRYPTION_KEY` | (insecure default) | 64-char hex AES-256 key for credential encryption |
 | `ENCRYPTION_KEY_FILE` | `` | Read encryption key from file (e.g. Docker/K8s secret mount) |
 | `JWT_SECRET_FILE` | `` | Read local JWT secret from file |

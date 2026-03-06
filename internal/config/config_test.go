@@ -57,6 +57,7 @@ func TestLoadFromEnv_Defaults(t *testing.T) {
 	assert.Equal(t, 24*time.Hour, cfg.Auth.WebSessionAbsoluteTTL)
 	assert.Equal(t, "ui_session", cfg.Auth.WebSessionCookieName)
 	assert.Equal(t, 5*time.Minute, cfg.Auth.WebSessionReaperInterval)
+	assert.False(t, cfg.Auth.UIDevBypass)
 }
 
 func TestLoadFromEnv_WebSessionConfig(t *testing.T) {
@@ -64,6 +65,7 @@ func TestLoadFromEnv_WebSessionConfig(t *testing.T) {
 	t.Setenv("AUTH_WEB_SESSION_ABSOLUTE_TTL", "36h")
 	t.Setenv("AUTH_WEB_SESSION_COOKIE_NAME", "duck_ui")
 	t.Setenv("AUTH_WEB_SESSION_REAPER_INTERVAL", "2m")
+	t.Setenv("AUTH_UI_DEV_BYPASS", "true")
 
 	cfg, err := LoadFromEnv()
 	require.NoError(t, err)
@@ -72,6 +74,20 @@ func TestLoadFromEnv_WebSessionConfig(t *testing.T) {
 	assert.Equal(t, 36*time.Hour, cfg.Auth.WebSessionAbsoluteTTL)
 	assert.Equal(t, "duck_ui", cfg.Auth.WebSessionCookieName)
 	assert.Equal(t, 2*time.Minute, cfg.Auth.WebSessionReaperInterval)
+	assert.True(t, cfg.Auth.UIDevBypass)
+}
+
+func TestLoadFromEnv_ProductionRejectsUIDevBypass(t *testing.T) {
+	t.Setenv("ENV", "production")
+	t.Setenv("AUTH_JWKS_URL", "https://auth.example.com/jwks.json")
+	t.Setenv("ENCRYPTION_KEY", "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789")
+	t.Setenv("CORS_ALLOWED_ORIGINS", "https://app.example.com")
+	t.Setenv("TRUST_DOWNSTREAM_PROXY", "true")
+	t.Setenv("AUTH_UI_DEV_BYPASS", "true")
+
+	_, err := LoadFromEnv()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "AUTH_UI_DEV_BYPASS is not allowed in production")
 }
 
 func TestLoadFromEnv_WebSessionInvalidBounds(t *testing.T) {
