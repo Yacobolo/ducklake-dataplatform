@@ -11,6 +11,7 @@ import (
 type assetService interface {
 	ListAssets(ctx context.Context, filter domain.AssetFilter) ([]domain.DataAsset, int64, error)
 	GetAsset(ctx context.Context, key string) (*domain.DataAsset, error)
+	ResolveAssetKeys(ctx context.Context, assetIDs []string) (map[string]string, error)
 	GetGraph(ctx context.Context, assetID string) ([]domain.AssetDependency, []domain.AssetDependency, error)
 	ListPartitions(ctx context.Context, assetID string, page domain.PageRequest) ([]domain.AssetPartition, int64, error)
 	ListRuns(ctx context.Context, filter domain.AssetRunFilter) ([]domain.AssetRun, int64, error)
@@ -66,13 +67,10 @@ func (h *APIHandler) GetAssetGraph(ctx context.Context, req GetAssetGraphRequest
 	if err != nil {
 		return nil, err
 	}
-	assets, _, err := h.assets.ListAssets(ctx, domain.AssetFilter{Page: domain.PageRequest{MaxResults: 10000}})
+	assetIDs := dependencyAssetIDs(upstream, downstream)
+	keyByID, err := h.assets.ResolveAssetKeys(ctx, assetIDs)
 	if err != nil {
 		return nil, err
-	}
-	keyByID := make(map[string]string, len(assets))
-	for i := range assets {
-		keyByID[assets[i].ID] = assets[i].AssetKey
 	}
 
 	upstreamKeys := make([]string, 0, len(upstream))
@@ -94,6 +92,17 @@ func (h *APIHandler) GetAssetGraph(ctx context.Context, req GetAssetGraphRequest
 		DownstreamAssetKeys: &downstreamKeys,
 	}
 	return GetAssetGraph200JSONResponse(graph), nil
+}
+
+func dependencyAssetIDs(upstream []domain.AssetDependency, downstream []domain.AssetDependency) []string {
+	ids := make([]string, 0, len(upstream)+len(downstream))
+	for i := range upstream {
+		ids = append(ids, upstream[i].UpstreamAssetID)
+	}
+	for i := range downstream {
+		ids = append(ids, downstream[i].AssetID)
+	}
+	return ids
 }
 
 func (h *APIHandler) ListAssetPartitions(ctx context.Context, req ListAssetPartitionsRequestObject) (ListAssetPartitionsResponseObject, error) {

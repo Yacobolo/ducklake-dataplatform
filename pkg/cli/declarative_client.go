@@ -65,7 +65,6 @@ func newResourceIndex() *resourceIndex {
 type APIStateClient struct {
 	client               *gen.Client
 	index                *resourceIndex
-	compatibilityMode    CapabilityCompatibilityMode
 	optionalReadWarnings []string
 }
 
@@ -77,14 +76,8 @@ var (
 
 // NewAPIStateClient creates a new client adapter.
 func NewAPIStateClient(client *gen.Client) *APIStateClient {
-	return NewAPIStateClientWithOptions(client, APIStateClientOptions{})
-}
-
-// NewAPIStateClientWithOptions creates a new client adapter with behavior options.
-func NewAPIStateClientWithOptions(client *gen.Client, options APIStateClientOptions) *APIStateClient {
 	return &APIStateClient{
-		client:            client,
-		compatibilityMode: normalizeCompatibilityMode(options.CompatibilityMode),
+		client: client,
 	}
 }
 

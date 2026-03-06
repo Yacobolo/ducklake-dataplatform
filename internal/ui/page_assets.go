@@ -88,6 +88,9 @@ type assetDetailPageData struct {
 	FailureRootCauses   []assetFailureRootCauseGroup
 	PartitionCalendar   []assetPartitionCalendarMonth
 	PartitionStatus     map[string]int
+	CanMaterialize      bool
+	CanBackfill         bool
+	BackfillConfigured  bool
 	CSRFFieldFunc       func() Node
 }
 
@@ -264,8 +267,8 @@ func assetDetailPage(d assetDetailPageData) Node {
 			P(Text("Freshness: "), statusLabel(d.FreshnessLabel, d.FreshnessTone)),
 			P(Text("Updated: "+d.UpdatedAt)),
 			Div(Class("d-flex flex-wrap gap-2 mt-2"),
-				Form(Method("post"), Action("/ui/assets/"+d.AssetKey+"/materialize"), d.CSRFFieldFunc(), Input(Type("text"), Name("partition_key"), Placeholder("Partition key (optional)")), Button(Type("submit"), Class(primaryButtonClass()), Text("Trigger materialization"))),
-				Form(Method("post"), Action("/ui/assets/"+d.AssetKey+"/backfills"), d.CSRFFieldFunc(), Input(Type("text"), Name("partition_from"), Placeholder("partition_from (YYYY-MM-DD)"), Required()), Input(Type("text"), Name("partition_to"), Placeholder("partition_to (YYYY-MM-DD)"), Required()), Input(Type("number"), Name("max_parallelism"), Placeholder("max parallelism")), Button(Type("submit"), Class(secondaryButtonClass()), Text("Create backfill"))),
+				materializeForm(d),
+				backfillForm(d),
 			),
 		),
 		Div(Class(cardClass("table-wrap")), H2(Text("Dependencies")), dependencyAdjacencyView(d.AssetKey, d.DependencyEdges), H3(Text("Upstream")), upstream, H3(Text("Downstream")), downstream),
@@ -276,6 +279,71 @@ func assetDetailPage(d assetDetailPageData) Node {
 		Div(Class(cardClass("table-wrap")), H2(Text("Checks")), checksTable),
 		Div(Class(cardClass("table-wrap")), H2(Text("Partitions")), partitionSummary(d.PartitionStatus), partitionCalendarNode, partitionsTable),
 		Div(Class(cardClass("table-wrap")), H2(Text("Backfills")), backfillsTable),
+	)
+}
+
+func materializeForm(d assetDetailPageData) Node {
+	if d.CanMaterialize {
+		return Form(
+			Method("post"),
+			Action("/ui/assets/"+d.AssetKey+"/materialize"),
+			d.CSRFFieldFunc(),
+			Input(Type("text"), Name("partition_key"), Placeholder("Partition key (optional)")),
+			Button(Type("submit"), Class(primaryButtonClass()), Text("Trigger materialization")),
+		)
+	}
+
+	return Div(
+		Class(cardClass()),
+		P(Class("color-fg-muted mb-2"), Text("Materialization unavailable.")),
+		Form(
+			Method("post"),
+			Action("/ui/assets/"+d.AssetKey+"/materialize"),
+			d.CSRFFieldFunc(),
+			FieldSet(Disabled(),
+				Input(Type("text"), Name("partition_key"), Placeholder("Partition key (optional)")),
+				Button(Type("submit"), Class(primaryButtonClass()), Text("Trigger materialization")),
+			),
+		),
+		P(Class("color-fg-muted text-small mt-2"), Text("Requires execute asset materialization on catalog.")),
+	)
+}
+
+func backfillForm(d assetDetailPageData) Node {
+	if !d.BackfillConfigured {
+		return Div(
+			Class(cardClass()),
+			P(Class("color-fg-muted"), Text("Backfill service is not configured.")),
+		)
+	}
+
+	if d.CanBackfill {
+		return Form(
+			Method("post"),
+			Action("/ui/assets/"+d.AssetKey+"/backfills"),
+			d.CSRFFieldFunc(),
+			Input(Type("text"), Name("partition_from"), Placeholder("partition_from (YYYY-MM-DD)"), Required()),
+			Input(Type("text"), Name("partition_to"), Placeholder("partition_to (YYYY-MM-DD)"), Required()),
+			Input(Type("number"), Name("max_parallelism"), Placeholder("max parallelism")),
+			Button(Type("submit"), Class(secondaryButtonClass()), Text("Create backfill")),
+		)
+	}
+
+	return Div(
+		Class(cardClass()),
+		P(Class("color-fg-muted mb-2"), Text("Backfill unavailable.")),
+		Form(
+			Method("post"),
+			Action("/ui/assets/"+d.AssetKey+"/backfills"),
+			d.CSRFFieldFunc(),
+			FieldSet(Disabled(),
+				Input(Type("text"), Name("partition_from"), Placeholder("partition_from (YYYY-MM-DD)"), Required()),
+				Input(Type("text"), Name("partition_to"), Placeholder("partition_to (YYYY-MM-DD)"), Required()),
+				Input(Type("number"), Name("max_parallelism"), Placeholder("max parallelism")),
+				Button(Type("submit"), Class(secondaryButtonClass()), Text("Create backfill")),
+			),
+		),
+		P(Class("color-fg-muted text-small mt-2"), Text("Requires execute asset materialization on catalog.")),
 	)
 }
 

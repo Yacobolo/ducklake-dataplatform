@@ -2,6 +2,7 @@ package orchestration
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -175,10 +176,77 @@ func TestBackfillRunner_RunRequestNormalizesMaxParallelismToOne(t *testing.T) {
 	assert.Equal(t, domain.BackfillStatusSuccess, repo.requests["req-norm"].Status)
 }
 
+func TestBackfillRunner_RunRequestSerializesDuplicateExecution(t *testing.T) {
+	ctx := context.Background()
+	repo := newBackfillRepoForRunnerTest()
+	repo.requests["req-serial"] = domain.BackfillRequest{
+		ID:            "req-serial",
+		AssetID:       "asset-1",
+		PartitionFrom: "2026-03-01",
+		PartitionTo:   "2026-03-01",
+		Status:        domain.BackfillStatusPending,
+		RequestedBy:   "admin",
+	}
+	repo.slices["s-1"] = domain.BackfillSlice{ID: "s-1", RequestID: "req-serial", AssetID: "asset-1", PartitionKey: "2026-03-01", Status: domain.BackfillStatusPending}
+
+	assets := &fakeAssets{items: map[string]*domain.DataAsset{"asset-1": {ID: "asset-1"}}}
+	deps := &fakeDeps{downstream: map[string][]domain.AssetDependency{}, upstream: map[string][]domain.AssetDependency{}}
+	runs := &fakeRunRepo{runs: map[string]*domain.AssetRun{}}
+	stepper := newGateStepper()
+	scheduler := NewAssetScheduler(assets, deps, runs)
+	executor := NewAssetExecutor(runs, NewAssetRunStateMachine(), NewInMemoryIOManager(), NewConcurrencyLimiter(10, 10), stepper)
+	runner := NewBackfillRunner(repo, deps, runs, scheduler, executor)
+
+	errCh := make(chan error, 2)
+	go func() { errCh <- runner.RunRequest(ctx, "req-serial") }()
+	go func() { errCh <- runner.RunRequest(ctx, "req-serial") }()
+
+	stepper.waitForStarted(t)
+	stepper.assertNoAdditionalStart(t)
+	stepper.releaseOne()
+
+	require.NoError(t, <-errCh)
+	require.NoError(t, <-errCh)
+	assert.Equal(t, []string{"2026-03-01"}, runs.createOrder)
+	assert.Equal(t, domain.BackfillStatusSuccess, repo.requests["req-serial"].Status)
+}
+
+func TestBackfillRunner_RunRequestFinalizesRequestOnInfraError(t *testing.T) {
+	ctx := context.Background()
+	repo := newBackfillRepoForRunnerTest()
+	repo.requests["req-infra"] = domain.BackfillRequest{
+		ID:            "req-infra",
+		AssetID:       "asset-1",
+		PartitionFrom: "2026-03-01",
+		PartitionTo:   "2026-03-01",
+		Status:        domain.BackfillStatusPending,
+		RequestedBy:   "admin",
+	}
+	repo.listSlicesErr = errors.New("slice store unavailable")
+
+	assets := &fakeAssets{items: map[string]*domain.DataAsset{"asset-1": {ID: "asset-1"}}}
+	deps := &fakeDeps{downstream: map[string][]domain.AssetDependency{}, upstream: map[string][]domain.AssetDependency{}}
+	runs := &fakeRunRepo{runs: map[string]*domain.AssetRun{}}
+	scheduler := NewAssetScheduler(assets, deps, runs)
+	executor := NewAssetExecutor(runs, NewAssetRunStateMachine(), NewInMemoryIOManager(), NewConcurrencyLimiter(1, 1), &fakeStepper{})
+	runner := NewBackfillRunner(repo, deps, runs, scheduler, executor)
+
+	err := runner.RunRequest(ctx, "req-infra")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "slice store unavailable")
+
+	req := repo.requests["req-infra"]
+	assert.Equal(t, domain.BackfillStatusFailed, req.Status)
+	require.NotNil(t, req.ErrorMessage)
+	assert.Contains(t, *req.ErrorMessage, "slice store unavailable")
+}
+
 type backfillRepoForRunnerTest struct {
 	mu       sync.Mutex
 	requests map[string]domain.BackfillRequest
 	slices   map[string]domain.BackfillSlice
+
+	listSlicesErr error
 }
 
 func newBackfillRepoForRunnerTest() *backfillRepoForRunnerTest {
@@ -226,6 +294,10 @@ func (m *backfillRepoForRunnerTest) CreateSlice(context.Context, *domain.Backfil
 func (m *backfillRepoForRunnerTest) ListSlicesByRequest(_ context.Context, requestID string) ([]domain.BackfillSlice, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+
+	if m.listSlicesErr != nil {
+		return nil, m.listSlicesErr
+	}
 
 	out := make([]domain.BackfillSlice, 0)
 	for _, s := range m.slices {

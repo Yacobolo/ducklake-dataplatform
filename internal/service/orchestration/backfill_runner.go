@@ -18,6 +18,7 @@ type BackfillRunner struct {
 	runs         domain.AssetRunRepository
 	scheduler    *AssetScheduler
 	executor     *AssetExecutor
+	requestLocks sync.Map
 }
 
 func NewBackfillRunner(
@@ -39,13 +40,16 @@ func NewBackfillRunner(
 	}
 }
 
-func (r *BackfillRunner) RunRequest(ctx context.Context, requestID string) error {
+func (r *BackfillRunner) RunRequest(ctx context.Context, requestID string) (retErr error) {
 	if r == nil || r.backfills == nil || r.scheduler == nil || r.executor == nil || r.runs == nil {
 		return domain.ErrValidation("backfill runner is not fully configured")
 	}
 	if requestID == "" {
 		return domain.ErrValidation("backfill request id is required")
 	}
+
+	unlock := r.lockRequest(requestID)
+	defer unlock()
 
 	req, err := r.backfills.GetRequestByID(ctx, requestID)
 	if err != nil {
@@ -54,6 +58,23 @@ func (r *BackfillRunner) RunRequest(ctx context.Context, requestID string) error
 	if isTerminalBackfillStatus(req.Status) {
 		return nil
 	}
+	if req.Status == domain.BackfillStatusRunning {
+		return nil
+	}
+
+	requestFinalized := false
+	defer func() {
+		if retErr == nil || requestFinalized {
+			return
+		}
+		errMsg := retErr.Error()
+		finalizeErr := r.backfills.UpdateRequestStatus(context.WithoutCancel(ctx), requestID, domain.BackfillStatusFailed, &errMsg)
+		if finalizeErr != nil {
+			retErr = errors.Join(retErr, fmt.Errorf("finalize backfill request %s as failed: %w", requestID, finalizeErr))
+			return
+		}
+		requestFinalized = true
+	}()
 
 	if err := r.backfills.UpdateRequestStatus(ctx, requestID, domain.BackfillStatusRunning, nil); err != nil {
 		return fmt.Errorf("set request running: %w", err)
@@ -122,13 +143,22 @@ func (r *BackfillRunner) RunRequest(ctx context.Context, requestID string) error
 		if err := r.backfills.UpdateRequestStatus(ctx, requestID, domain.BackfillStatusFailed, &errMsg); err != nil {
 			return fmt.Errorf("set request failed: %w", err)
 		}
+		requestFinalized = true
 		return fmt.Errorf("backfill request %s failed: %s", requestID, errMsg)
 	}
 
 	if err := r.backfills.UpdateRequestStatus(ctx, requestID, domain.BackfillStatusSuccess, nil); err != nil {
 		return fmt.Errorf("set request success: %w", err)
 	}
+	requestFinalized = true
 	return nil
+}
+
+func (r *BackfillRunner) lockRequest(requestID string) func() {
+	v, _ := r.requestLocks.LoadOrStore(requestID, &sync.Mutex{})
+	mu := v.(*sync.Mutex)
+	mu.Lock()
+	return mu.Unlock
 }
 
 func (r *BackfillRunner) runSlice(ctx context.Context, req *domain.BackfillRequest, plan *AssetRunPlan, slice domain.BackfillSlice) (string, bool, error) {

@@ -11,7 +11,6 @@ func (h *Handler) Home(w http.ResponseWriter, r *http.Request) {
 	renderHTML(w, http.StatusOK, overviewPage(principalFromContext(r.Context()), []overviewCardData{
 		{Title: "SQL Editor", Description: "Run ad-hoc SQL with current principal permissions.", Href: "/ui/sql", LinkLabel: "Open SQL editor ->"},
 		{Title: "Catalogs", Description: "Browse registered catalogs and metastore summary.", Href: "/ui/catalogs", LinkLabel: "Open catalogs ->"},
-		{Title: "Pipelines", Description: "Inspect pipeline definitions, jobs, and recent runs.", Href: "/ui/pipelines", LinkLabel: "Open pipelines ->"},
 		{Title: "Assets", Description: "Inspect asset graph, runs, materializations, and backfills.", Href: "/ui/assets", LinkLabel: "Open assets ->"},
 		{Title: "Notebooks", Description: "Read notebook metadata and cell snapshots.", Href: "/ui/notebooks", LinkLabel: "Open notebooks ->"},
 		{Title: "Macros", Description: "Inspect macro definitions and revisions.", Href: "/ui/macros", LinkLabel: "Open macros ->"},

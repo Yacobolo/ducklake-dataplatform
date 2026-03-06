@@ -295,9 +295,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	gitRepoRepo := repository.NewGitRepoRepo(deps.WriteDB)
 	gitSvc := notebook.NewGitService(gitRepoRepo, auditRepo)
 
-	// === Pipeline ===
-	pipelineRepo := repository.NewPipelineRepo(deps.WriteDB)
-	pipelineRunRepo := repository.NewPipelineRunRepo(deps.WriteDB)
+	// === Asset orchestration ===
 	assetRepo := repository.NewDataAssetRepo(deps.WriteDB)
 	assetDepRepo := repository.NewAssetDependencyRepo(deps.WriteDB)
 	assetPartitionRepo := repository.NewAssetPartitionRepo(deps.WriteDB)
@@ -306,15 +304,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	orchEventRepo := repository.NewOrchestrationEventRepo(deps.WriteDB)
 	backfillRepo := repository.NewBackfillRepo(deps.WriteDB)
 	notebookProvider := pipeline.NewDBNotebookProvider(notebookRepo)
-	pipelineSvc := pipeline.NewService(
-		pipelineRepo, pipelineRunRepo, auditRepo,
-		notebookProvider, eng, deps.DuckDB,
-		deps.Logger.With("component", "pipeline"),
-	)
-	pipelineSvc.SetAssetOrchestration(assetRepo, assetDepRepo, assetRunRepo)
-	if err := pipelineSvc.SyncPipelinesToAssets(ctx); err != nil {
-		return nil, fmt.Errorf("sync pipelines to assets: %w", err)
-	}
+	var pipelineSvc *pipeline.Service
 	assetScheduler := orchestration.NewAssetScheduler(assetRepo, assetDepRepo, assetRunRepo)
 	ioManager, err := newOrchestrationIOManager(cfg)
 	if err != nil {

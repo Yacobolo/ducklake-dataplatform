@@ -221,7 +221,7 @@ func LoadFromEnv() (*Config, error) {
 		FeatureInternalGRPC:     parseBoolEnvDefault("FEATURE_INTERNAL_GRPC", true),
 		FeatureFlightSQL:        parseBoolEnvDefault("FEATURE_FLIGHT_SQL", true),
 		FeaturePGWire:           parseBoolEnvDefault("FEATURE_PG_WIRE", true),
-		FeatureReconcilerShadow: parseBoolEnvDefault("FEATURE_RECONCILER_SHADOW", true),
+		FeatureReconcilerShadow: parseBoolEnvDefault("FEATURE_RECONCILER_SHADOW", false),
 		OrchestrationIOManager:  os.Getenv("ORCHESTRATION_IO_MANAGER"),
 		OrchestrationIOFSRoot:   os.Getenv("ORCHESTRATION_IO_FS_ROOT"),
 	}

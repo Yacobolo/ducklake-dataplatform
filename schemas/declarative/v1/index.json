@@ -10,7 +10,7 @@
     "kinds/compute-assignment-list.schema.json": "6fbe93f03583e8d78c49daf83e080acbe453ad59a0f075aec68ca81c6ce0cbc7",
     "kinds/compute-endpoint-list.schema.json": "f78cd62eb662a204b1cfb9bb3aa3175c103631b0dfc8470aea4670df123a0538",
     "kinds/external-location-list.schema.json": "0ee50a446813a293604b06df459c07013a211df1e2bb11365062d306793b2514",
-    "kinds/grant-list.schema.json": "a31b4b090e5cd29ef4568de4839bfa526baa0c508749ba95d714377072f851aa",
+    "kinds/grant-list.schema.json": "01894b437ecda3477ace579d8c9fce446218daf8c49976513baef5fa7de0ed76",
     "kinds/group-list.schema.json": "3c23b29013f530fefac36ed3beabb88fb8bc873bb1ad2e53d30d0376b91823d5",
     "kinds/macro.schema.json": "fe3a76e6ed90c61b5be605c11462910fcc8f97e58609050cd92b6e22a5b2bed6",
     "kinds/model.schema.json": "ec3ee7f0e447d9840dfaf3ffaf6e67c7167bb5f4dcee8b01aec94ff09439d9c4",

@@ -53,7 +53,7 @@ func TestLoadFromEnv_Defaults(t *testing.T) {
 	assert.True(t, cfg.FeatureInternalGRPC)
 	assert.True(t, cfg.FeatureFlightSQL)
 	assert.True(t, cfg.FeaturePGWire)
-	assert.True(t, cfg.FeatureReconcilerShadow)
+	assert.False(t, cfg.FeatureReconcilerShadow)
 	assert.Equal(t, 30*time.Minute, cfg.Auth.WebSessionIdleTTL)
 	assert.Equal(t, 24*time.Hour, cfg.Auth.WebSessionAbsoluteTTL)
 	assert.Equal(t, "ui_session", cfg.Auth.WebSessionCookieName)

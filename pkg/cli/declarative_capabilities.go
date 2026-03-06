@@ -11,33 +11,6 @@ import (
 	"duck-demo/pkg/cli/gen"
 )
 
-// CapabilityCompatibilityMode controls optional-endpoint compatibility behavior.
-type CapabilityCompatibilityMode string
-
-const (
-	// CapabilityCompatibilityStrict only treats explicit endpoint absence HTTP
-	// statuses as optional.
-	CapabilityCompatibilityStrict CapabilityCompatibilityMode = "strict"
-	// CapabilityCompatibilityLegacy preserves legacy behavior and also tolerates
-	// a set of transport-level errors as optional.
-	CapabilityCompatibilityLegacy CapabilityCompatibilityMode = "legacy"
-)
-
-// APIStateClientOptions configures APIStateClient behavior.
-type APIStateClientOptions struct {
-	CompatibilityMode CapabilityCompatibilityMode
-}
-
-func normalizeCompatibilityMode(mode CapabilityCompatibilityMode) CapabilityCompatibilityMode {
-	if mode == "" {
-		return CapabilityCompatibilityStrict
-	}
-	if mode != CapabilityCompatibilityLegacy {
-		return CapabilityCompatibilityStrict
-	}
-	return mode
-}
-
 func httpStatusFromError(err error) (int, bool) {
 	if err == nil {
 		return 0, false
@@ -68,17 +41,10 @@ func (c *APIStateClient) isOptionalReadError(err error) bool {
 	if status, ok := httpStatusFromError(err); ok {
 		return isOptionalEndpointStatus(status)
 	}
-	if c.compatibilityMode == CapabilityCompatibilityLegacy {
-		msg := strings.ToLower(err.Error())
-		if strings.Contains(msg, "eof") || strings.Contains(msg, "connection reset by peer") || strings.Contains(msg, "broken pipe") {
-			return true
-		}
-	}
 	return false
 }
 
-// OptionalReadWarnings returns model/macro compatibility warnings captured during
-// ReadState.
+// OptionalReadWarnings returns optional-endpoint warnings captured during ReadState.
 func (c *APIStateClient) OptionalReadWarnings() []string {
 	if len(c.optionalReadWarnings) == 0 {
 		return nil
@@ -98,7 +64,7 @@ func (c *APIStateClient) addOptionalReadWarning(resource string, err error) {
 		return
 	}
 	c.optionalReadWarnings = append(c.optionalReadWarnings,
-		fmt.Sprintf("%s endpoint read failed in compatibility mode: %v", resource, err))
+		fmt.Sprintf("%s endpoint read failed: %v", resource, err))
 }
 
 func endpointRequiredByPlan(actions []declarative.Action, kind declarative.ResourceKind) bool {
@@ -151,6 +117,9 @@ func (c *APIStateClient) ValidateApplyCapabilities(ctx context.Context, actions 
 		if err := c.probeEndpoint(ctx, "/semantic-models"); err != nil {
 			return fmt.Errorf("semantic model actions present but /semantic-models endpoint is unavailable: %w", err)
 		}
+	}
+	if endpointRequiredByPlan(actions, declarative.KindAsset) {
+		return fmt.Errorf("asset actions are not supported by declarative apply yet; asset definitions are currently read-only through the API")
 	}
 	return nil
 }

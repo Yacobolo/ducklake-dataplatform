@@ -16,6 +16,7 @@ import (
 const (
 	claimLockRetryLimit = 5
 	claimRetryStepDelay = 10 * time.Millisecond
+	processingLeaseTTL  = 5 * time.Minute
 )
 
 var (
@@ -71,6 +72,7 @@ func (r *OrchestrationEventRepo) Enqueue(ctx context.Context, event *domain.Orch
 
 func (r *OrchestrationEventRepo) ClaimNextPending(ctx context.Context, now time.Time) (*domain.OrchestrationEvent, error) {
 	nowUTC := now.UTC()
+	staleProcessingBefore := nowUTC.Add(-processingLeaseTTL)
 	lockRetries := 0
 	for {
 		tx, err := r.db.BeginTx(ctx, nil)
@@ -90,10 +92,21 @@ func (r *OrchestrationEventRepo) ClaimNextPending(ctx context.Context, now time.
 			SELECT id, event_type, asset_id, partition_key, payload_json, status, attempt_count,
 			       available_at, last_error, idempotency_key, created_at, updated_at
 			FROM orchestration_events
-			WHERE status = ? AND available_at <= ?
-			ORDER BY available_at ASC, created_at ASC
+			WHERE (status = ? AND available_at <= ?)
+			   OR (status = ? AND updated_at <= ?)
+			ORDER BY CASE
+				WHEN status = ? THEN available_at
+				ELSE updated_at
+			END ASC,
+			created_at ASC
 			LIMIT 1
-		`, domain.OrchestrationEventStatusPending, nowUTC)
+		`,
+			domain.OrchestrationEventStatusPending,
+			nowUTC,
+			domain.OrchestrationEventStatusProcessing,
+			staleProcessingBefore,
+			domain.OrchestrationEventStatusPending,
+		)
 
 		event, scanErr := scanOrchestrationEvent(row)
 		if scanErr != nil {
@@ -119,8 +132,17 @@ func (r *OrchestrationEventRepo) ClaimNextPending(ctx context.Context, now time.
 		result, execErr := tx.ExecContext(ctx, `
 			UPDATE orchestration_events
 			SET status = ?, attempt_count = attempt_count + 1, updated_at = CURRENT_TIMESTAMP
-			WHERE id = ? AND status = ?
-		`, domain.OrchestrationEventStatusProcessing, event.ID, domain.OrchestrationEventStatusPending)
+			WHERE id = ? AND (
+				status = ?
+				OR (status = ? AND updated_at <= ?)
+			)
+		`,
+			domain.OrchestrationEventStatusProcessing,
+			event.ID,
+			domain.OrchestrationEventStatusPending,
+			domain.OrchestrationEventStatusProcessing,
+			staleProcessingBefore,
+		)
 		if execErr != nil {
 			_ = tx.Rollback()
 			if claimRetryableLockError(execErr) {

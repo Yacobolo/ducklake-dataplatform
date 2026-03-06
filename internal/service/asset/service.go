@@ -3,6 +3,7 @@ package asset
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -47,6 +48,9 @@ func NewService(
 }
 
 func (s *Service) ListAssets(ctx context.Context, filter domain.AssetFilter) ([]domain.DataAsset, int64, error) {
+	if s == nil || s.assets == nil {
+		return []domain.DataAsset{}, 0, nil
+	}
 	return s.assets.List(ctx, filter)
 }
 
@@ -151,6 +155,36 @@ func (s *Service) GetGraph(ctx context.Context, assetID string) ([]domain.AssetD
 	return upstream, downstream, nil
 }
 
+func (s *Service) ResolveAssetKeys(ctx context.Context, assetIDs []string) (map[string]string, error) {
+	keysByID := make(map[string]string, len(assetIDs))
+	if s == nil || s.assets == nil {
+		return keysByID, nil
+	}
+
+	seen := make(map[string]struct{}, len(assetIDs))
+	for _, assetID := range assetIDs {
+		if strings.TrimSpace(assetID) == "" {
+			continue
+		}
+		if _, ok := seen[assetID]; ok {
+			continue
+		}
+		seen[assetID] = struct{}{}
+
+		asset, err := s.assets.GetByID(ctx, assetID)
+		if err != nil {
+			var notFoundErr *domain.NotFoundError
+			if errors.As(err, &notFoundErr) {
+				continue
+			}
+			return nil, err
+		}
+		keysByID[assetID] = asset.AssetKey
+	}
+
+	return keysByID, nil
+}
+
 func (s *Service) TriggerMaterialization(ctx context.Context, assetID string, partitionKey *string, payload map[string]any, idempotencyKey *string) (*domain.OrchestrationEvent, error) {
 	if strings.TrimSpace(assetID) == "" {
 		return nil, domain.ErrValidation("asset_id is required")
@@ -187,6 +221,20 @@ func (s *Service) TriggerMaterialization(ctx context.Context, assetID string, pa
 	}
 
 	return event, nil
+}
+
+func (s *Service) CanTriggerMaterialization(ctx context.Context) (bool, error) {
+	err := s.requirePrivilege(ctx, domain.PrivExecuteAssetMaterialization)
+	if err == nil {
+		return true, nil
+	}
+
+	var accessDenied *domain.AccessDeniedError
+	if errors.As(err, &accessDenied) {
+		return false, nil
+	}
+
+	return false, err
 }
 
 func (s *Service) requirePrivilege(ctx context.Context, privilege string) error {

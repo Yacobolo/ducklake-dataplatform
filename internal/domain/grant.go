@@ -28,7 +28,6 @@ const (
 	PrivReadFiles                   = "READ_FILES"
 	PrivWriteFiles                  = "WRITE_FILES"
 	PrivManageCompute               = "MANAGE_COMPUTE"
-	PrivManagePipelines             = "MANAGE_PIPELINES"
 	PrivManageAssetDefinitions      = "MANAGE_ASSET_DEFINITIONS"
 	PrivExecuteAssetMaterialization = "EXECUTE_ASSET_MATERIALIZATION"
 	PrivManageAssetPolicies         = "MANAGE_ASSET_POLICIES"

@@ -3,6 +3,7 @@ package orchestration
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -17,6 +18,8 @@ type BackfillService struct {
 	auth      domain.AuthorizationService
 }
 
+const maxActiveBackfillsPerPrincipal = 4
+
 func NewBackfillService(backfills domain.BackfillRepository, router *TriggerRouter, audit domain.AuditRepository, auth domain.AuthorizationService) *BackfillService {
 	return &BackfillService{backfills: backfills, router: router, audit: audit, auth: auth}
 }
@@ -28,7 +31,17 @@ func (s *BackfillService) Create(ctx context.Context, assetID, requestedBy, from
 	if s.router == nil {
 		return nil, nil, domain.ErrValidation("trigger router is required")
 	}
-	if err := s.requirePrivilege(ctx, requestedBy, domain.PrivExecuteAssetMaterialization); err != nil {
+	principalName, err := s.principalNameFromContext(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	if strings.TrimSpace(requestedBy) != "" && requestedBy != principalName {
+		return nil, nil, domain.ErrAccessDenied("requested_by does not match authenticated principal")
+	}
+	if err := s.requirePrivilege(ctx, principalName, domain.PrivExecuteAssetMaterialization); err != nil {
+		return nil, nil, err
+	}
+	if err := s.ensurePrincipalBackfillQuota(ctx, principalName); err != nil {
 		return nil, nil, err
 	}
 	if from == "" || to == "" {
@@ -46,7 +59,7 @@ func (s *BackfillService) Create(ctx context.Context, assetID, requestedBy, from
 		PartitionFrom:  from,
 		PartitionTo:    to,
 		Status:         domain.BackfillStatusPending,
-		RequestedBy:    requestedBy,
+		RequestedBy:    principalName,
 		MaxParallelism: maxParallelism,
 	})
 	if err != nil {
@@ -55,7 +68,7 @@ func (s *BackfillService) Create(ctx context.Context, assetID, requestedBy, from
 	if s.audit != nil {
 		_ = s.audit.Insert(ctx, &domain.AuditEntry{
 			ID:            domain.NewID(),
-			PrincipalName: requestedBy,
+			PrincipalName: principalName,
 			Action:        "asset.backfill.create",
 			Status:        "ALLOWED",
 			CreatedAt:     req.CreatedAt,
@@ -79,16 +92,108 @@ func (s *BackfillService) Create(ctx context.Context, assetID, requestedBy, from
 		}
 		slices = append(slices, *slice)
 		createdSliceIDs = append(createdSliceIDs, slice.ID)
+	}
 
-		if _, ingestErr := s.router.Ingest(ctx, domain.AssetTriggerTypeBackfill, &assetID, &key, map[string]any{
-			"backfill_request_id": req.ID,
-		}, nil); ingestErr != nil {
-			s.failCreate(ctx, req.ID, createdSliceIDs, ingestErr)
-			return nil, nil, fmt.Errorf("enqueue backfill slice %s: %w", key, ingestErr)
-		}
+	idemKey := backfillRequestEventIdempotencyKey(req.ID)
+	if _, ingestErr := s.router.Ingest(ctx, domain.AssetTriggerTypeBackfill, &assetID, nil, map[string]any{
+		"backfill_request_id": req.ID,
+	}, &idemKey); ingestErr != nil {
+		s.failCreate(ctx, req.ID, createdSliceIDs, ingestErr)
+		return nil, nil, fmt.Errorf("enqueue backfill request %s: %w", req.ID, ingestErr)
 	}
 
 	return req, slices, nil
+}
+
+func backfillRequestEventIdempotencyKey(requestID string) string {
+	return fmt.Sprintf("backfill-request:%s", requestID)
+}
+
+func (s *BackfillService) CanCreate(ctx context.Context, requestedBy string) (bool, error) {
+	if s.router == nil || s.backfills == nil {
+		return false, nil
+	}
+	principalName, err := s.principalNameFromContext(ctx)
+	if err != nil {
+		var accessDenied *domain.AccessDeniedError
+		if errors.As(err, &accessDenied) {
+			return false, nil
+		}
+		return false, err
+	}
+	if strings.TrimSpace(requestedBy) != "" && requestedBy != principalName {
+		return false, nil
+	}
+
+	err = s.requirePrivilege(ctx, principalName, domain.PrivExecuteAssetMaterialization)
+	if err == nil {
+		quotaErr := s.ensurePrincipalBackfillQuota(ctx, principalName)
+		if quotaErr == nil {
+			return true, nil
+		}
+		var denied *domain.AccessDeniedError
+		if errors.As(quotaErr, &denied) {
+			return false, nil
+		}
+		return false, quotaErr
+	}
+
+	var accessDenied *domain.AccessDeniedError
+	if errors.As(err, &accessDenied) {
+		return false, nil
+	}
+
+	return false, err
+}
+
+func (s *BackfillService) principalNameFromContext(ctx context.Context) (string, error) {
+	principal, _ := domain.PrincipalFromContext(ctx)
+	principalName := strings.TrimSpace(principal.Name)
+	if principalName == "" {
+		return "", domain.ErrAccessDenied("principal context is required")
+	}
+	return principalName, nil
+}
+
+func (s *BackfillService) ensurePrincipalBackfillQuota(ctx context.Context, principalName string) error {
+	activeCount, err := s.activeBackfillCountByPrincipal(ctx, principalName)
+	if err != nil {
+		return err
+	}
+	if activeCount >= maxActiveBackfillsPerPrincipal {
+		return domain.ErrAccessDenied("%q exceeded active backfill quota (%d)", principalName, maxActiveBackfillsPerPrincipal)
+	}
+	return nil
+}
+
+func (s *BackfillService) activeBackfillCountByPrincipal(ctx context.Context, principalName string) (int, error) {
+	count := 0
+	for _, status := range []string{domain.BackfillStatusPending, domain.BackfillStatusRunning} {
+		status := status
+		offset := 0
+		for {
+			requests, total, err := s.backfills.ListRequests(ctx, domain.BackfillFilter{
+				Status: &status,
+				Page: domain.PageRequest{
+					MaxResults: domain.MaxMaxResults,
+					PageToken:  domain.EncodePageToken(offset),
+				},
+			})
+			if err != nil {
+				return 0, fmt.Errorf("list backfill requests by status %s: %w", status, err)
+			}
+			for _, req := range requests {
+				if req.RequestedBy == principalName {
+					count++
+				}
+			}
+			offset += len(requests)
+			if len(requests) == 0 || int64(offset) >= total {
+				break
+			}
+		}
+	}
+	return count, nil
 }
 
 func (s *BackfillService) failCreate(ctx context.Context, requestID string, sliceIDs []string, cause error) {

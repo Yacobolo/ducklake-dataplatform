@@ -11,7 +11,10 @@ import (
 	"duck-demo/internal/domain"
 )
 
-const reconcilerRetryBackoff = 2 * time.Second
+const (
+	reconcilerRetryBackoff = 2 * time.Second
+	reconcilerMaxAttempts  = 5
+)
 
 var dedupeInFlightRunStatuses = []string{
 	domain.AssetRunStatusQueued,
@@ -79,15 +82,20 @@ func (r *Reconciler) Tick(ctx context.Context) error {
 		return err
 	}
 
-	if event.EventType == domain.AssetTriggerTypeBackfill && r.backfills != nil && !r.shadowMode {
+	if event.EventType == domain.AssetTriggerTypeBackfill && r.shadowMode {
+		retryAt := time.Now().UTC().Add(reconcilerRetryBackoff)
+		_ = r.events.MarkFailed(ctx, event.ID, "backfill event deferred while reconciler shadow mode is enabled", &retryAt)
+		return nil
+	}
+
+	if event.EventType == domain.AssetTriggerTypeBackfill && r.backfills != nil {
 		requestID, err := backfillRequestIDFromPayload(event.PayloadJSON)
 		if err != nil {
 			_ = r.events.MarkFailed(ctx, event.ID, err.Error(), nil)
 			return err
 		}
 		if err := r.backfills.RunRequest(ctx, requestID); err != nil {
-			retryAt := time.Now().UTC().Add(reconcilerRetryBackoff)
-			_ = r.events.MarkFailed(ctx, event.ID, err.Error(), &retryAt)
+			r.markRetryableFailure(ctx, event, err.Error())
 			return err
 		}
 		_ = r.events.MarkProcessed(ctx, event.ID)
@@ -96,8 +104,7 @@ func (r *Reconciler) Tick(ctx context.Context) error {
 
 	plan, err := r.scheduler.BuildPlan(ctx, assetID)
 	if err != nil {
-		retryAt := time.Now().UTC().Add(reconcilerRetryBackoff)
-		_ = r.events.MarkFailed(ctx, event.ID, err.Error(), &retryAt)
+		r.markRetryableFailure(ctx, event, err.Error())
 		return err
 	}
 
@@ -108,14 +115,12 @@ func (r *Reconciler) Tick(ctx context.Context) error {
 
 	ready, reason, retriable, err := r.isReadyForRun(ctx, assetID, event.EventType, event.PartitionKey)
 	if err != nil {
-		retryAt := time.Now().UTC().Add(reconcilerRetryBackoff)
-		_ = r.events.MarkFailed(ctx, event.ID, err.Error(), &retryAt)
+		r.markRetryableFailure(ctx, event, err.Error())
 		return err
 	}
 	if !ready {
 		if retriable {
-			retryAt := time.Now().UTC().Add(reconcilerRetryBackoff)
-			_ = r.events.MarkFailed(ctx, event.ID, reason, &retryAt)
+			r.markRetryableFailure(ctx, event, reason)
 			return nil
 		}
 		r.markProcessedNoop(ctx, event.ID, reason)
@@ -124,8 +129,7 @@ func (r *Reconciler) Tick(ctx context.Context) error {
 
 	inFlight, err := r.hasInFlightRun(ctx, assetID, event.PartitionKey)
 	if err != nil {
-		retryAt := time.Now().UTC().Add(reconcilerRetryBackoff)
-		_ = r.events.MarkFailed(ctx, event.ID, err.Error(), &retryAt)
+		r.markRetryableFailure(ctx, event, err.Error())
 		return err
 	}
 	if inFlight {
@@ -147,14 +151,12 @@ func (r *Reconciler) Tick(ctx context.Context) error {
 	}
 	created, err := r.runs.CreateRun(ctx, run)
 	if err != nil {
-		retryAt := time.Now().UTC().Add(reconcilerRetryBackoff)
-		_ = r.events.MarkFailed(ctx, event.ID, err.Error(), &retryAt)
+		r.markRetryableFailure(ctx, event, err.Error())
 		return err
 	}
 
 	if err := r.executor.ExecutePlan(ctx, created.ID, created.Status, plan); err != nil {
-		retryAt := time.Now().UTC().Add(reconcilerRetryBackoff)
-		_ = r.events.MarkFailed(ctx, event.ID, err.Error(), &retryAt)
+		r.markRetryableFailure(ctx, event, err.Error())
 		return err
 	}
 
@@ -322,6 +324,18 @@ func (r *Reconciler) hasUpstreamMaterialization(
 func (r *Reconciler) markProcessedNoop(ctx context.Context, eventID string, reason string) {
 	_ = r.events.MarkFailed(ctx, eventID, reason, nil)
 	_ = r.events.MarkProcessed(ctx, eventID)
+}
+
+func (r *Reconciler) markRetryableFailure(ctx context.Context, event *domain.OrchestrationEvent, errMsg string) {
+	if event == nil {
+		return
+	}
+	if event.AttemptCount >= reconcilerMaxAttempts {
+		_ = r.events.MarkFailed(ctx, event.ID, errMsg, nil)
+		return
+	}
+	retryAt := time.Now().UTC().Add(reconcilerRetryBackoff)
+	_ = r.events.MarkFailed(ctx, event.ID, errMsg, &retryAt)
 }
 
 func (r *Reconciler) hasInFlightRun(ctx context.Context, assetID string, partitionKey *string) (bool, error) {

@@ -47,17 +47,6 @@ func MountRoutes(r chi.Router, h *Handler) {
 		r.Get("/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}", h.CatalogTablesDetail)
 		r.Get("/catalogs/{catalogName}/schemas/{schemaName}/views/{viewName}", h.CatalogViewsDetail)
 
-		r.Get("/pipelines", h.PipelinesList)
-		r.Get("/pipelines/{pipelineName}", h.PipelinesDetail)
-		r.Get("/pipelines/new", h.PipelinesNew)
-		r.Post("/pipelines", h.PipelinesCreate)
-		r.Get("/pipelines/{pipelineName}/edit", h.PipelinesEdit)
-		r.Post("/pipelines/{pipelineName}/update", h.PipelinesUpdate)
-		r.Post("/pipelines/{pipelineName}/delete", h.PipelinesDelete)
-		r.Get("/pipelines/{pipelineName}/jobs/new", h.PipelineJobsNew)
-		r.Post("/pipelines/{pipelineName}/jobs", h.PipelineJobsCreate)
-		r.Post("/pipelines/{pipelineName}/jobs/{jobID}/delete", h.PipelineJobsDelete)
-
 		r.Get("/assets", h.AssetsList)
 		r.Get("/assets/{assetKey}", h.AssetsDetail)
 		r.Post("/assets/{assetKey}/materialize", h.AssetMaterialize)

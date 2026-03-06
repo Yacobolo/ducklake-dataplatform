@@ -14,6 +14,7 @@ import (
 type mockAssetService struct {
 	listAssetsFn             func(context.Context, domain.AssetFilter) ([]domain.DataAsset, int64, error)
 	getAssetFn               func(context.Context, string) (*domain.DataAsset, error)
+	resolveAssetKeysFn       func(context.Context, []string) (map[string]string, error)
 	getGraphFn               func(context.Context, string) ([]domain.AssetDependency, []domain.AssetDependency, error)
 	listPartitionsFn         func(context.Context, string, domain.PageRequest) ([]domain.AssetPartition, int64, error)
 	listRunsFn               func(context.Context, domain.AssetRunFilter) ([]domain.AssetRun, int64, error)
@@ -30,6 +31,12 @@ func (m *mockAssetService) ListAssets(ctx context.Context, filter domain.AssetFi
 }
 func (m *mockAssetService) GetAsset(ctx context.Context, key string) (*domain.DataAsset, error) {
 	return m.getAssetFn(ctx, key)
+}
+func (m *mockAssetService) ResolveAssetKeys(ctx context.Context, assetIDs []string) (map[string]string, error) {
+	if m.resolveAssetKeysFn == nil {
+		return map[string]string{}, nil
+	}
+	return m.resolveAssetKeysFn(ctx, assetIDs)
 }
 func (m *mockAssetService) GetGraph(ctx context.Context, assetID string) ([]domain.AssetDependency, []domain.AssetDependency, error) {
 	if m.getGraphFn == nil {
@@ -151,12 +158,12 @@ func TestHandler_GetAssetGraph(t *testing.T) {
 			require.Equal(t, "asset-1", assetID)
 			return []domain.AssetDependency{{UpstreamAssetID: "asset-upstream"}}, []domain.AssetDependency{{AssetID: "asset-downstream"}}, nil
 		},
-		listAssetsFn: func(_ context.Context, filter domain.AssetFilter) ([]domain.DataAsset, int64, error) {
-			require.Equal(t, 10000, filter.Page.MaxResults)
-			return []domain.DataAsset{
-				{ID: "asset-upstream", AssetKey: "raw.orders"},
-				{ID: "asset-downstream", AssetKey: "analytics.orders"},
-			}, 2, nil
+		resolveAssetKeysFn: func(_ context.Context, assetIDs []string) (map[string]string, error) {
+			assert.ElementsMatch(t, []string{"asset-upstream", "asset-downstream"}, assetIDs)
+			return map[string]string{
+				"asset-upstream":   "raw.orders",
+				"asset-downstream": "analytics.orders",
+			}, nil
 		},
 	}}
 

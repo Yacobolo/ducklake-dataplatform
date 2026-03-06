@@ -61,15 +61,11 @@ func (h *Handler) AssetsDetail(w http.ResponseWriter, r *http.Request) {
 		h.renderServiceError(w, r, err)
 		return
 	}
-
-	assets, _, err := h.Asset.ListAssets(r.Context(), domain.AssetFilter{Page: domain.PageRequest{MaxResults: 10000}})
+	assetIDs := dependencyAssetIDs(upstreamDeps, downstreamDeps)
+	keyByID, err := h.Asset.ResolveAssetKeys(r.Context(), assetIDs)
 	if err != nil {
 		h.renderServiceError(w, r, err)
 		return
-	}
-	keyByID := make(map[string]string, len(assets))
-	for i := range assets {
-		keyByID[assets[i].ID] = assets[i].AssetKey
 	}
 
 	upstream := make([]string, 0, len(upstreamDeps))
@@ -132,6 +128,22 @@ func (h *Handler) AssetsDetail(w http.ResponseWriter, r *http.Request) {
 	retryTimeline := shapeRetryTimeline(runs)
 	failureRootCauses := shapeFailureRootCauses(runs)
 	partitionCalendar := shapePartitionCalendar(partitions)
+	canMaterialize, err := h.Asset.CanTriggerMaterialization(r.Context())
+	if err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+
+	backfillConfigured := h.Backfill != nil
+	canBackfill := false
+	if backfillConfigured {
+		requestedBy, _ := principalLabel(r.Context())
+		canBackfill, err = h.Backfill.CanCreate(r.Context(), requestedBy)
+		if err != nil {
+			h.renderServiceError(w, r, err)
+			return
+		}
+	}
 
 	renderHTML(w, http.StatusOK, assetDetailPage(assetDetailPageData{
 		Principal:           principalFromContext(r.Context()),
@@ -156,6 +168,9 @@ func (h *Handler) AssetsDetail(w http.ResponseWriter, r *http.Request) {
 		FailureRootCauses:   failureRootCauses,
 		PartitionCalendar:   partitionCalendar,
 		PartitionStatus:     partitionStatus,
+		CanMaterialize:      canMaterialize,
+		CanBackfill:         canBackfill,
+		BackfillConfigured:  backfillConfigured,
 		CSRFFieldFunc:       csrfFieldProvider(r),
 	}))
 }
@@ -438,6 +453,17 @@ func parsePartitionDay(partition domain.AssetPartition) (time.Time, bool) {
 
 func daysInMonth(value time.Time) int {
 	return time.Date(value.Year(), value.Month()+1, 0, 0, 0, 0, 0, time.UTC).Day()
+}
+
+func dependencyAssetIDs(upstream []domain.AssetDependency, downstream []domain.AssetDependency) []string {
+	ids := make([]string, 0, len(upstream)+len(downstream))
+	for i := range upstream {
+		ids = append(ids, upstream[i].UpstreamAssetID)
+	}
+	for i := range downstream {
+		ids = append(ids, downstream[i].AssetID)
+	}
+	return ids
 }
 
 func (h *Handler) AssetMaterialize(w http.ResponseWriter, r *http.Request) {

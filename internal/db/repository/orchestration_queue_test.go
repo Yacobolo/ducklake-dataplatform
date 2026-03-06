@@ -214,6 +214,84 @@ func TestOrchestrationEventRepo_ClaimNextPending_ConcurrentSingleWinner(t *testi
 	assert.Equal(t, workers-1, notFounds)
 }
 
+func TestOrchestrationEventRepo_ClaimNextPending_DoesNotReclaimFreshProcessing(t *testing.T) {
+	events, _, assets := setupQueueRepos(t)
+	ctx := context.Background()
+
+	asset, err := assets.Create(ctx, &domain.DataAsset{
+		AssetKey:  "main.ops.events_fresh_processing",
+		AssetType: domain.AssetTypeTable,
+		Owner:     "ops",
+		CreatedBy: "admin",
+		IsActive:  true,
+	})
+	require.NoError(t, err)
+
+	assetID := asset.ID
+	_, err = events.Enqueue(ctx, &domain.OrchestrationEvent{
+		EventType:   "UPSTREAM_UPDATE",
+		AssetID:     &assetID,
+		Status:      domain.OrchestrationEventStatusPending,
+		PayloadJSON: map[string]any{"source": "fresh-processing"},
+	})
+	require.NoError(t, err)
+
+	claimed, err := events.ClaimNextPending(ctx, time.Now().UTC())
+	require.NoError(t, err)
+	require.NotNil(t, claimed)
+
+	_, err = events.ClaimNextPending(ctx, time.Now().UTC())
+	require.Error(t, err)
+	var notFoundErr *domain.NotFoundError
+	require.ErrorAs(t, err, &notFoundErr)
+}
+
+func TestOrchestrationEventRepo_ClaimNextPending_ReclaimsStaleProcessing(t *testing.T) {
+	writeDB, _ := internaldb.OpenTestSQLite(t)
+	events := NewOrchestrationEventRepo(writeDB)
+	assets := NewDataAssetRepo(writeDB)
+	ctx := context.Background()
+
+	asset, err := assets.Create(ctx, &domain.DataAsset{
+		AssetKey:  "main.ops.events_stale_processing",
+		AssetType: domain.AssetTypeTable,
+		Owner:     "ops",
+		CreatedBy: "admin",
+		IsActive:  true,
+	})
+	require.NoError(t, err)
+
+	assetID := asset.ID
+	enqueued, err := events.Enqueue(ctx, &domain.OrchestrationEvent{
+		EventType:   "UPSTREAM_UPDATE",
+		AssetID:     &assetID,
+		Status:      domain.OrchestrationEventStatusPending,
+		PayloadJSON: map[string]any{"source": "stale-processing"},
+	})
+	require.NoError(t, err)
+
+	claimed, err := events.ClaimNextPending(ctx, time.Now().UTC())
+	require.NoError(t, err)
+	require.NotNil(t, claimed)
+	assert.Equal(t, enqueued.ID, claimed.ID)
+	assert.Equal(t, 1, claimed.AttemptCount)
+
+	staleAt := time.Now().UTC().Add(-(processingLeaseTTL + time.Minute))
+	_, err = writeDB.ExecContext(ctx, `
+		UPDATE orchestration_events
+		SET updated_at = ?
+		WHERE id = ?
+	`, staleAt, enqueued.ID)
+	require.NoError(t, err)
+
+	reclaimed, err := events.ClaimNextPending(ctx, time.Now().UTC())
+	require.NoError(t, err)
+	require.NotNil(t, reclaimed)
+	assert.Equal(t, enqueued.ID, reclaimed.ID)
+	assert.Equal(t, domain.OrchestrationEventStatusProcessing, reclaimed.Status)
+	assert.Equal(t, 2, reclaimed.AttemptCount)
+}
+
 func TestClaimRetryableLockError(t *testing.T) {
 	t.Parallel()
 

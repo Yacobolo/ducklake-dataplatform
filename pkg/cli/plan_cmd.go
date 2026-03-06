@@ -12,11 +12,10 @@ import (
 
 func newPlanCmd(client *gen.Client) *cobra.Command {
 	var (
-		configDir                string
-		output                   string
-		noColor                  bool
-		allowUnknownFields       bool
-		legacyOptionalReadErrors bool
+		configDir          string
+		output             string
+		noColor            bool
+		allowUnknownFields bool
 	)
 
 	cmd := &cobra.Command{
@@ -50,19 +49,16 @@ func newPlanCmd(client *gen.Client) *cobra.Command {
 				os.Exit(1)
 			}
 
-			compatMode := CapabilityCompatibilityStrict
-			if legacyOptionalReadErrors {
-				compatMode = CapabilityCompatibilityLegacy
-			}
-
 			// 3. Read current state from server.
-			reader := NewAPIStateClientWithOptions(client, APIStateClientOptions{CompatibilityMode: compatMode})
+			reader := NewAPIStateClient(client)
 			actual, err := reader.ReadState(cmd.Context())
 			if err != nil {
 				return fmt.Errorf("read server state: %w", err)
 			}
-			for _, warning := range reader.OptionalReadWarnings() {
-				_, _ = fmt.Fprintf(os.Stderr, "warning: %s\n", warning)
+			if effectiveOutput != "json" {
+				for _, warning := range reader.OptionalReadWarnings() {
+					_, _ = fmt.Fprintf(os.Stderr, "warning: %s\n", warning)
+				}
 			}
 
 			// 4. Diff desired vs actual.
@@ -91,7 +87,6 @@ func newPlanCmd(client *gen.Client) *cobra.Command {
 	cmd.Flags().StringVarP(&output, "output", "o", "text", "Output format (text, json)")
 	cmd.Flags().BoolVar(&noColor, "no-color", false, "Disable colored output")
 	cmd.Flags().BoolVar(&allowUnknownFields, "allow-unknown-fields", false, "Allow unknown YAML fields in declarative config")
-	cmd.Flags().BoolVar(&legacyOptionalReadErrors, "legacy-optional-read-errors", false, "Treat transport errors as optional for model/macro capability checks")
 
 	return cmd
 }
