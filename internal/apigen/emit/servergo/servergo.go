@@ -157,6 +157,16 @@ func Emit(doc ir.Document) ([]byte, error) {
 		b.WriteString("type Gen" + name + "Request = " + name + "RequestObject\n\n")
 		b.WriteString("// Gen" + name + "Response aliases the APIGen strict response contract for " + name + ".\n")
 		b.WriteString("type Gen" + name + "Response = " + name + "ResponseObject\n\n")
+		for _, response := range endpoint.Responses {
+			statusCode := fmt.Sprintf("%d", response.StatusCode)
+			if response.Schema != nil {
+				b.WriteString("// Gen" + name + statusCode + "JSONResponse aliases the APIGen concrete JSON response for " + name + " " + statusCode + ".\n")
+				b.WriteString("type Gen" + name + statusCode + "JSONResponse = " + name + statusCode + "JSONResponse\n\n")
+				continue
+			}
+			b.WriteString("// Gen" + name + statusCode + "Response aliases the APIGen concrete response for " + name + " " + statusCode + ".\n")
+			b.WriteString("type Gen" + name + statusCode + "Response = " + name + statusCode + "Response\n\n")
+		}
 		if endpoint.RequestBody != nil {
 			b.WriteString("// Gen" + name + "JSONBody aliases the APIGen strict JSON request body contract for " + name + ".\n")
 			b.WriteString("type Gen" + name + "JSONBody = " + name + "JSONRequestBody\n\n")

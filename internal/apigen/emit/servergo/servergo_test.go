@@ -142,7 +142,37 @@ func TestEmit_GeneratesPathAndQueryBinding(t *testing.T) {
 	require.Contains(t, content, "if err := response.VisitListGroupMembersResponse(w); err != nil")
 	require.Contains(t, content, "type GenListGroupMembersRequest = ListGroupMembersRequestObject")
 	require.Contains(t, content, "type GenListGroupMembersResponse = ListGroupMembersResponseObject")
+	require.Contains(t, content, "type GenListGroupMembers200Response = ListGroupMembers200Response")
 	require.Contains(t, content, "ListGroupMembers(ctx context.Context, request GenListGroupMembersRequest) (GenListGroupMembersResponse, error)")
+}
+
+func TestEmit_GeneratesConcreteResponseAliasesFromIR(t *testing.T) {
+	t.Helper()
+
+	doc := ir.Document{
+		SchemaVersion: "v1",
+		Info:          ir.Info{Title: "t", Version: "1"},
+		Endpoints: []ir.Endpoint{
+			{
+				Method:      "post",
+				Path:        "/query",
+				OperationID: "executeQuery",
+				Responses: []ir.Response{
+					{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/QueryResult"}},
+					{StatusCode: 204, Description: "no content"},
+				},
+			},
+		},
+	}
+
+	b, err := Emit(doc)
+	require.NoError(t, err)
+	content := string(b)
+
+	require.Contains(t, content, "type GenExecuteQuery200JSONResponse = ExecuteQuery200JSONResponse")
+	require.NotContains(t, content, "type GenExecuteQuery200Response = ExecuteQuery200Response")
+	require.Contains(t, content, "type GenExecuteQuery204Response = ExecuteQuery204Response")
+	require.NotContains(t, content, "type GenExecuteQuery204JSONResponse = ExecuteQuery204JSONResponse")
 }
 
 func TestPathParamTypeName(t *testing.T) {
