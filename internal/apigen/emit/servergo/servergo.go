@@ -173,6 +173,26 @@ func Emit(doc ir.Document) ([]byte, error) {
 		b.WriteString("}\n\n")
 		for _, response := range endpoint.Responses {
 			statusCode := fmt.Sprintf("%d", response.StatusCode)
+			if isQueryFamilyOperation(endpoint.OperationID) {
+				if response.Schema != nil {
+					b.WriteString("// Gen" + name + statusCode + "JSONResponse is the APIGen concrete JSON response for " + name + " " + statusCode + ".\n")
+					b.WriteString("type Gen" + name + statusCode + "JSONResponse " + name + statusCode + "JSONResponse\n\n")
+					b.WriteString("// Visit" + name + "Response writes " + name + " " + statusCode + " responses to the client.\n")
+					b.WriteString("func (response Gen" + name + statusCode + "JSONResponse) Visit" + name + "Response(w http.ResponseWriter) error {\n")
+					b.WriteString("\treturn " + name + statusCode + "JSONResponse(response).Visit" + name + "Response(w)\n")
+					b.WriteString("}\n\n")
+					continue
+				}
+
+				b.WriteString("// Gen" + name + statusCode + "Response is the APIGen concrete response for " + name + " " + statusCode + ".\n")
+				b.WriteString("type Gen" + name + statusCode + "Response " + name + statusCode + "Response\n\n")
+				b.WriteString("// Visit" + name + "Response writes " + name + " " + statusCode + " responses to the client.\n")
+				b.WriteString("func (response Gen" + name + statusCode + "Response) Visit" + name + "Response(w http.ResponseWriter) error {\n")
+				b.WriteString("\treturn " + name + statusCode + "Response(response).Visit" + name + "Response(w)\n")
+				b.WriteString("}\n\n")
+				continue
+			}
+
 			if response.Schema != nil {
 				b.WriteString("// Gen" + name + statusCode + "JSONResponse aliases the APIGen concrete JSON response for " + name + " " + statusCode + ".\n")
 				b.WriteString("type Gen" + name + statusCode + "JSONResponse = " + name + statusCode + "JSONResponse\n\n")
@@ -356,6 +376,15 @@ func pathParamTypeName(param ir.Parameter) string {
 		return "bool"
 	default:
 		return "string"
+	}
+}
+
+func isQueryFamilyOperation(operationID string) bool {
+	switch operationID {
+	case "executeQuery", "submitQuery", "getQuery", "getQueryResults", "cancelQuery", "deleteQuery":
+		return true
+	default:
+		return false
 	}
 }
 

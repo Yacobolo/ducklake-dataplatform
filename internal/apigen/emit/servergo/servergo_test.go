@@ -149,7 +149,7 @@ func TestEmit_GeneratesPathAndQueryBinding(t *testing.T) {
 	require.Contains(t, content, "ListGroupMembers(ctx context.Context, request GenListGroupMembersRequest) (GenListGroupMembersResponse, error)")
 }
 
-func TestEmit_GeneratesConcreteResponseAliasesFromIR(t *testing.T) {
+func TestEmit_GeneratesQueryFamilyConcreteResponsesFromIR(t *testing.T) {
 	t.Helper()
 
 	doc := ir.Document{
@@ -160,11 +160,43 @@ func TestEmit_GeneratesConcreteResponseAliasesFromIR(t *testing.T) {
 				Method:      "post",
 				Path:        "/query",
 				OperationID: "executeQuery",
-				RequestBody: &ir.RequestBody{Schema: ir.SchemaRef{Ref: "#/schemas/QueryRequest"}},
-				Responses: []ir.Response{
-					{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/QueryResult"}},
-					{StatusCode: 204, Description: "no content"},
-				},
+				Responses:   []ir.Response{{StatusCode: 201, Description: "created", Schema: &ir.SchemaRef{Ref: "#/schemas/QueryResult"}}},
+			},
+			{
+				Method:      "post",
+				Path:        "/queries",
+				OperationID: "submitQuery",
+				Responses:   []ir.Response{{StatusCode: 201, Description: "created", Schema: &ir.SchemaRef{Ref: "#/schemas/SubmitQueryResponse"}}},
+			},
+			{
+				Method:      "get",
+				Path:        "/queries/{queryId}",
+				OperationID: "getQuery",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/QueryJob"}}},
+			},
+			{
+				Method:      "get",
+				Path:        "/queries/{queryId}/results",
+				OperationID: "getQueryResults",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/QueryResult"}}},
+			},
+			{
+				Method:      "post",
+				Path:        "/queries/{queryId}/cancel",
+				OperationID: "cancelQuery",
+				Responses:   []ir.Response{{StatusCode: 201, Description: "created", Schema: &ir.SchemaRef{Ref: "#/schemas/CancelQueryResponse"}}},
+			},
+			{
+				Method:      "delete",
+				Path:        "/queries/{queryId}",
+				OperationID: "deleteQuery",
+				Responses:   []ir.Response{{StatusCode: 204, Description: "no content"}},
+			},
+			{
+				Method:      "get",
+				Path:        "/groups",
+				OperationID: "listGroups",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/PaginatedGroups"}}},
 			},
 		},
 	}
@@ -174,14 +206,26 @@ func TestEmit_GeneratesConcreteResponseAliasesFromIR(t *testing.T) {
 	content := string(b)
 
 	require.Contains(t, content, "type GenExecuteQueryRequest struct {")
-	require.Contains(t, content, "\tBody *GenExecuteQueryJSONBody")
 	require.Contains(t, content, "type GenExecuteQueryResponse interface {")
 	require.Contains(t, content, "\tVisitExecuteQueryResponse(w http.ResponseWriter) error")
-	require.Contains(t, content, "type GenExecuteQueryJSONBody = ExecuteQueryJSONRequestBody")
-	require.Contains(t, content, "type GenExecuteQuery200JSONResponse = ExecuteQuery200JSONResponse")
-	require.NotContains(t, content, "type GenExecuteQuery200Response = ExecuteQuery200Response")
-	require.Contains(t, content, "type GenExecuteQuery204Response = ExecuteQuery204Response")
-	require.NotContains(t, content, "type GenExecuteQuery204JSONResponse = ExecuteQuery204JSONResponse")
+	require.Contains(t, content, "type GenExecuteQuery201JSONResponse ExecuteQuery201JSONResponse")
+	require.Contains(t, content, "func (response GenExecuteQuery201JSONResponse) VisitExecuteQueryResponse(w http.ResponseWriter) error {")
+	require.Contains(t, content, "return ExecuteQuery201JSONResponse(response).VisitExecuteQueryResponse(w)")
+	require.NotContains(t, content, "type GenExecuteQuery201JSONResponse = ExecuteQuery201JSONResponse")
+
+	require.Contains(t, content, "type GenSubmitQuery201JSONResponse SubmitQuery201JSONResponse")
+	require.Contains(t, content, "return SubmitQuery201JSONResponse(response).VisitSubmitQueryResponse(w)")
+	require.Contains(t, content, "type GenGetQuery200JSONResponse GetQuery200JSONResponse")
+	require.Contains(t, content, "return GetQuery200JSONResponse(response).VisitGetQueryResponse(w)")
+	require.Contains(t, content, "type GenGetQueryResults200JSONResponse GetQueryResults200JSONResponse")
+	require.Contains(t, content, "return GetQueryResults200JSONResponse(response).VisitGetQueryResultsResponse(w)")
+	require.Contains(t, content, "type GenCancelQuery201JSONResponse CancelQuery201JSONResponse")
+	require.Contains(t, content, "return CancelQuery201JSONResponse(response).VisitCancelQueryResponse(w)")
+	require.Contains(t, content, "type GenDeleteQuery204Response DeleteQuery204Response")
+	require.Contains(t, content, "return DeleteQuery204Response(response).VisitDeleteQueryResponse(w)")
+	require.NotContains(t, content, "type GenDeleteQuery204Response = DeleteQuery204Response")
+
+	require.Contains(t, content, "type GenListGroups200JSONResponse = ListGroups200JSONResponse")
 }
 
 func TestPathParamTypeName(t *testing.T) {
