@@ -882,6 +882,89 @@ func TestEmit_GeneratesNativeConcreteResponsesForNotebookDomainOps(t *testing.T)
 	require.Contains(t, content, "type GenListCatalogs200JSONResponse = ListCatalogs200JSONResponse")
 }
 
+func TestEmit_GeneratesNativeConcreteResponsesForRemainingDomains(t *testing.T) {
+	t.Helper()
+
+	doc := ir.Document{
+		SchemaVersion: "v1",
+		Info:          ir.Info{Title: "t", Version: "1"},
+		Endpoints: []ir.Endpoint{
+			{
+				Method:      "post",
+				Path:        "/governance/grants",
+				OperationID: "createGrant",
+				Responses:   []ir.Response{{StatusCode: 201, Description: "created", Schema: &ir.SchemaRef{Ref: "#/schemas/Grant"}}},
+			},
+			{
+				Method:      "get",
+				Path:        "/lineage/columns/{columnId}",
+				OperationID: "getColumnLineage",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/ColumnLineage"}}},
+			},
+			{
+				Method:      "post",
+				Path:        "/macros",
+				OperationID: "createMacro",
+				Responses:   []ir.Response{{StatusCode: 201, Description: "created", Schema: &ir.SchemaRef{Ref: "#/schemas/Macro"}}},
+			},
+			{
+				Method:      "post",
+				Path:        "/catalogs/register",
+				OperationID: "registerCatalog",
+				Responses:   []ir.Response{{StatusCode: 201, Description: "created", Schema: &ir.SchemaRef{Ref: "#/schemas/CatalogRegistration"}}},
+			},
+			{
+				Method:      "get",
+				Path:        "/tags",
+				OperationID: "listTags",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/TagList"}}},
+			},
+			{
+				Method:      "get",
+				Path:        "/row-filters",
+				OperationID: "listRowFilters",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/RowFilterList"}}},
+			},
+			{
+				Method:      "get",
+				Path:        "/catalogs",
+				OperationID: "listCatalogs",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/CatalogRegistrationList"}}},
+			},
+		},
+	}
+
+	b, err := Emit(doc)
+	require.NoError(t, err)
+	content := string(b)
+
+	require.Contains(t, content, "type GenCreateGrant201JSONResponse CreateGrant201JSONResponse")
+	require.Contains(t, content, "return CreateGrant201JSONResponse(response).VisitCreateGrantResponse(w)")
+	require.NotContains(t, content, "type GenCreateGrant201JSONResponse = CreateGrant201JSONResponse")
+
+	require.Contains(t, content, "type GenGetColumnLineage200JSONResponse GetColumnLineage200JSONResponse")
+	require.Contains(t, content, "return GetColumnLineage200JSONResponse(response).VisitGetColumnLineageResponse(w)")
+	require.NotContains(t, content, "type GenGetColumnLineage200JSONResponse = GetColumnLineage200JSONResponse")
+
+	require.Contains(t, content, "type GenCreateMacro201JSONResponse CreateMacro201JSONResponse")
+	require.Contains(t, content, "return CreateMacro201JSONResponse(response).VisitCreateMacroResponse(w)")
+	require.NotContains(t, content, "type GenCreateMacro201JSONResponse = CreateMacro201JSONResponse")
+
+	require.Contains(t, content, "type GenRegisterCatalog201JSONResponse RegisterCatalog201JSONResponse")
+	require.Contains(t, content, "return RegisterCatalog201JSONResponse(response).VisitRegisterCatalogResponse(w)")
+	require.NotContains(t, content, "type GenRegisterCatalog201JSONResponse = RegisterCatalog201JSONResponse")
+
+	require.Contains(t, content, "type GenListTags200JSONResponse ListTags200JSONResponse")
+	require.Contains(t, content, "return ListTags200JSONResponse(response).VisitListTagsResponse(w)")
+	require.NotContains(t, content, "type GenListTags200JSONResponse = ListTags200JSONResponse")
+
+	require.Contains(t, content, "type GenListRowFilters200JSONResponse ListRowFilters200JSONResponse")
+	require.Contains(t, content, "return ListRowFilters200JSONResponse(response).VisitListRowFiltersResponse(w)")
+	require.NotContains(t, content, "type GenListRowFilters200JSONResponse = ListRowFilters200JSONResponse")
+
+	require.Contains(t, content, "type GenListCatalogs200JSONResponse = ListCatalogs200JSONResponse")
+}
+
 func TestPathParamTypeName(t *testing.T) {
 	t.Helper()
 

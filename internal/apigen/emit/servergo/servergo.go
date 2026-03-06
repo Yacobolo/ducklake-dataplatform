@@ -417,6 +417,18 @@ func isNativeConcreteGenResponseOperation(operationID string) bool {
 		return true
 	case "listSemanticModels", "createSemanticModel", "getSemanticModel", "updateSemanticModel", "deleteSemanticModel", "listSemanticMetrics", "createSemanticMetric", "updateSemanticMetric", "deleteSemanticMetric", "listSemanticRelationships", "createSemanticRelationship", "updateSemanticRelationship", "deleteSemanticRelationship", "listSemanticPreAggregations", "createSemanticPreAggregation", "updateSemanticPreAggregation", "deleteSemanticPreAggregation", "explainMetricQuery", "runMetricQuery", "checkMetricFreshness":
 		return true
+	case "createGrant", "deleteGrant", "listGrants", "listClassifications", "listAuditLogs", "searchCatalog", "listQueryHistory":
+		return true
+	case "getColumnLineage", "getColumnImpact", "getUpstreamLineage", "getDownstreamLineage", "getTableLineage", "deleteLineageEdge", "purgeLineage":
+		return true
+	case "createMacro", "listMacros", "getMacro", "updateMacro", "deleteMacro", "listMacroRevisions", "diffMacroRevisions", "getMacroImpact":
+		return true
+	case "registerCatalog", "getCatalogRegistration", "updateCatalogRegistration", "deleteCatalogRegistration", "loadTableExternalFiles", "commitTableIngestion", "createUploadUrl", "setDefaultCatalog", "listViews", "createView", "getView", "updateView", "deleteView":
+		return true
+	case "listTags", "createTag", "deleteTag", "createTagAssignment", "deleteTagAssignment":
+		return true
+	case "listRowFilters", "createRowFilter", "bindRowFilter", "unbindRowFilter", "deleteRowFilter", "listColumnMasks", "createColumnMask", "bindColumnMask", "unbindColumnMask", "deleteColumnMask":
+		return true
 	default:
 		return false
 	}
