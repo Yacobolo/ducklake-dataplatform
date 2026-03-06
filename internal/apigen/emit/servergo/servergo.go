@@ -153,10 +153,24 @@ func Emit(doc ir.Document) ([]byte, error) {
 			continue
 		}
 		name := exportedName(endpoint.OperationID)
-		b.WriteString("// Gen" + name + "Request aliases the APIGen strict request contract for " + name + ".\n")
-		b.WriteString("type Gen" + name + "Request = " + name + "RequestObject\n\n")
-		b.WriteString("// Gen" + name + "Response aliases the APIGen strict response contract for " + name + ".\n")
-		b.WriteString("type Gen" + name + "Response = " + name + "ResponseObject\n\n")
+		pathParams := endpointPathParams(endpoint)
+		queryParams := endpointQueryParams(endpoint)
+		b.WriteString("// Gen" + name + "Request represents the APIGen strict request contract for " + name + ".\n")
+		b.WriteString("type Gen" + name + "Request struct {\n")
+		for _, p := range pathParams {
+			b.WriteString("\t" + exportedName(p.Name) + " " + pathParamTypeName(p) + "\n")
+		}
+		if len(queryParams) > 0 {
+			b.WriteString("\tParams " + name + "Params\n")
+		}
+		if endpoint.RequestBody != nil {
+			b.WriteString("\tBody *Gen" + name + "JSONBody\n")
+		}
+		b.WriteString("}\n\n")
+		b.WriteString("// Gen" + name + "Response represents the APIGen strict response contract for " + name + ".\n")
+		b.WriteString("type Gen" + name + "Response interface {\n")
+		b.WriteString("\tVisit" + name + "Response(w http.ResponseWriter) error\n")
+		b.WriteString("}\n\n")
 		for _, response := range endpoint.Responses {
 			statusCode := fmt.Sprintf("%d", response.StatusCode)
 			if response.Schema != nil {

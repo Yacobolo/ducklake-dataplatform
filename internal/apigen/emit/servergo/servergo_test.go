@@ -140,8 +140,11 @@ func TestEmit_GeneratesPathAndQueryBinding(t *testing.T) {
 	require.Contains(t, content, "var request GenListGroupMembersRequest")
 	require.Contains(t, content, "response, err := b.handler.ListGroupMembers(r.Context(), request)")
 	require.Contains(t, content, "if err := response.VisitListGroupMembersResponse(w); err != nil")
-	require.Contains(t, content, "type GenListGroupMembersRequest = ListGroupMembersRequestObject")
-	require.Contains(t, content, "type GenListGroupMembersResponse = ListGroupMembersResponseObject")
+	require.Contains(t, content, "type GenListGroupMembersRequest struct {")
+	require.Contains(t, content, "\tGroupId string")
+	require.Contains(t, content, "\tParams ListGroupMembersParams")
+	require.Contains(t, content, "type GenListGroupMembersResponse interface {")
+	require.Contains(t, content, "\tVisitListGroupMembersResponse(w http.ResponseWriter) error")
 	require.Contains(t, content, "type GenListGroupMembers200Response = ListGroupMembers200Response")
 	require.Contains(t, content, "ListGroupMembers(ctx context.Context, request GenListGroupMembersRequest) (GenListGroupMembersResponse, error)")
 }
@@ -157,6 +160,7 @@ func TestEmit_GeneratesConcreteResponseAliasesFromIR(t *testing.T) {
 				Method:      "post",
 				Path:        "/query",
 				OperationID: "executeQuery",
+				RequestBody: &ir.RequestBody{Schema: ir.SchemaRef{Ref: "#/schemas/QueryRequest"}},
 				Responses: []ir.Response{
 					{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/QueryResult"}},
 					{StatusCode: 204, Description: "no content"},
@@ -169,6 +173,11 @@ func TestEmit_GeneratesConcreteResponseAliasesFromIR(t *testing.T) {
 	require.NoError(t, err)
 	content := string(b)
 
+	require.Contains(t, content, "type GenExecuteQueryRequest struct {")
+	require.Contains(t, content, "\tBody *GenExecuteQueryJSONBody")
+	require.Contains(t, content, "type GenExecuteQueryResponse interface {")
+	require.Contains(t, content, "\tVisitExecuteQueryResponse(w http.ResponseWriter) error")
+	require.Contains(t, content, "type GenExecuteQueryJSONBody = ExecuteQueryJSONRequestBody")
 	require.Contains(t, content, "type GenExecuteQuery200JSONResponse = ExecuteQuery200JSONResponse")
 	require.NotContains(t, content, "type GenExecuteQuery200Response = ExecuteQuery200Response")
 	require.Contains(t, content, "type GenExecuteQuery204Response = ExecuteQuery204Response")
